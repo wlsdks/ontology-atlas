@@ -4,11 +4,11 @@ import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
 
-import { Chip } from '@/shared/ui';
-import { controlClass } from '@/shared/ui/control-class';
+import { Button, buttonVariants } from '@/shared/ui';
+import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Download } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
@@ -50,7 +50,6 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t('agentNoVaultHint')}
         </p>
-        {/* The card asks for a folder, so the open button sits here and carries the region's one emphasis. */}
         <div className="mt-3">
           <OpenVaultCta
             testId="agents-open-vault"
@@ -75,20 +74,20 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
             {t('cliPlaceholderHint')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {/* Neutral so "Open my folder" keeps the one emphasis; prose label, so no `font-mono`. */}
-            <Chip
-              tone="secondary"
-              hoverInk="strong"
+            <Button
+              variant="outline"
+              size="sm"
               data-testid="agents-terminal-setup-copy"
               onClick={() => void copy(CLI_TERMINAL_SETUP)}
+              className="atlas-touch-floor"
             >
               {copyState === 'copied' ? (
-                <Check size={ICON_SIZE.sm} aria-hidden />
+                <Check size={ICON_SIZE.md} aria-hidden />
               ) : (
-                <Copy size={ICON_SIZE.sm} aria-hidden />
+                <Copy size={ICON_SIZE.md} aria-hidden />
               )}
               {copyState === 'copied' ? t('agentTerminalCopied') : t('agentTerminalCopy')}
-            </Chip>
+            </Button>
             {/* Only without a bundled server: the installed app must never offer its own
                 download (AGENTS.md), and `launch` is non-null exactly there. */}
             {serverAvailability.launch === null ? (
@@ -96,12 +95,9 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
                 href="/download/"
                 onClick={onBeforeNavigate}
                 data-testid="agents-terminal-setup-download"
-                className={controlClass({
-                  shape: 'chip',
-                  tone: 'secondary',
-                  hoverInk: 'strong',
-                })}
+                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
               >
+                <Download size={ICON_SIZE.md} aria-hidden />
                 {t('agentTerminalAppLink')}
               </Link>
             ) : null}

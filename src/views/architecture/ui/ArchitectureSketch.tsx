@@ -11,14 +11,13 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
-import { placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
+import { laneHeadingRect, placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
 import {
   balanceLinesByWidthAt,
   captionLineRoom,
   estimateCaptionWidth,
   estimateTextWidthAt,
   splitLinesByWidthAt,
-  splitSummaryLinesByWidth,
 } from '../model/summary-lines';
 
 /** One stroke colour, named once: the brand step clears 3:1 on the canvas where translucent indigo did not. The legend reads it too. */
@@ -29,7 +28,7 @@ export const VIOLATED_STROKE = 'var(--color-danger-text)';
 const BOX_W = 148;
 /** The wide-workbench face; the compact width stays the fallback when an expanded role set would not fit. */
 const BOX_W_ROOMY = 220;
-const BOX_H_ROOMY = 84;
+const BOX_H_ACROSS_SPLIT = 90;
 const OBSERVATION_BOX_H = 44;
 const OBSERVATION_LANE_GAP = 48;
 /* 180 fits the widest measured receipt line (156px) and keeps seven roles across at 1920 (1628 of 1756px). */
@@ -52,8 +51,9 @@ const SKIP_LANE_STEP = 14;
 const SUMMARY_LINES = 2;
 /* The across split face has room for a third caption line without the per-face lane label. */
 const SUMMARY_LINES_ACROSS = 3;
-/** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
-const CAPTION_LEADING = 14;
+const SUMMARY_FONT_PX = 11;
+/** One sentence line to the next, in SVG units: the `--leading-label` pair of `text-label`. */
+const SUMMARY_LEADING = 16;
 
 /** Shapes, not colour: tick for clean, slashed circle where a role's edges break its rules, hollow circle where no source matched. */
 const LEDGER_GLYPH: Record<RoleLedger['state'], string> = {
@@ -574,8 +574,8 @@ export function ArchitectureSketch({
         : PAD_Y;
   /* One owner for the chrome row's vertical rhythm: headings sit on the ladder's top padding and faces are placed from the same `padY`. */
   const laneHeadingY = padY + 14;
-  const boxH = usesRoomyBoxes
-    ? BOX_H_ROOMY
+  const boxH = axis === 'across' && splitsEvidence
+    ? BOX_H_ACROSS_SPLIT
     : usesPairedDown
       ? usesTightLadder
         ? BOX_H_PAIRED_TIGHT
@@ -584,7 +584,7 @@ export function ArchitectureSketch({
       ? BOX_H
     : axis === 'down'
       ? 64
-      : hasLedger || splitsEvidence
+      : hasLedger
         ? BOX_H_LEDGER
         : BOX_H;
   /* The observation face is exactly its row, so both lanes share arrow lengths and sentence baselines. */
@@ -1059,15 +1059,23 @@ export function ArchitectureSketch({
         focus,
       });
     if (!splitsEvidence) return placeLaneSentences(graph.edges, placed, contractBoxW, boxH);
+    const headings =
+      axis === 'across'
+        ? [
+            laneHeadingRect(contractTrackLabel, PAD_X, padY + layoutLeadRoom - 6),
+            laneHeadingRect(observationTrackLabel, PAD_X, padY + layoutLeadRoom + observationOffset - 6),
+          ]
+        : [];
     const rules = placeLaneSentences(
       graph.edges.filter((edge) => edge.kind === 'permitted'),
       placed,
       contractBoxW,
       boxH,
       usesPairedDown ? 'negative' : 'positive',
+      headings,
     );
     /* The rule lane places first; a count sentence that would touch it gives way. */
-    const held = rules.flatMap((placement) => (placement.rect ? [placement.rect] : []));
+    const held = [...headings, ...rules.flatMap((placement) => (placement.rect ? [placement.rect] : []))];
     return [
       ...rules,
       ...placeLaneSentences(
@@ -1083,6 +1091,7 @@ export function ArchitectureSketch({
     axis,
     boxH,
     contractBoxW,
+    contractTrackLabel,
     colGap,
     edgeSentence,
     emptyColumnLeft,
@@ -1092,7 +1101,10 @@ export function ArchitectureSketch({
     layoutTrailRoom,
     observationBoxH,
     observationBoxW,
+    observationOffset,
+    observationTrackLabel,
     observedPlaced,
+    padY,
     pairedGutterW,
     placed,
     rowGap,
@@ -1582,7 +1594,7 @@ export function ArchitectureSketch({
               ? at.y + 21
               : summary === null
                 ? at.y + boxH / 2 - 4
-                : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
+                : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * SUMMARY_LEADING) / 2;
           const countsY = splitsEvidence
             ? at.y + 43
             : axis === 'down'
@@ -1592,7 +1604,7 @@ export function ArchitectureSketch({
             summary === null
               ? null
               : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches. */
-                splitSummaryLinesByWidth(summary, captionLineRoom(contractBoxW), summaryLineCount);
+                splitLinesByWidthAt(summary, captionLineRoom(contractBoxW), summaryLineCount, SUMMARY_FONT_PX);
 
           return (
             <g
@@ -1722,7 +1734,7 @@ export function ArchitectureSketch({
                 y={countsY}
                 textAnchor="middle"
                 className={cn(
-                  'text-caption fill-[color:var(--color-text-tertiary)]',
+                  'text-label fill-[color:var(--color-text-tertiary)]',
                   summaryLines === null && 'tabular-nums',
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
@@ -1737,7 +1749,7 @@ export function ArchitectureSketch({
                       <tspan
                         key={index}
                         x={at.x + contractBoxW / 2}
-                        y={countsY + index * CAPTION_LEADING}
+                        y={countsY + index * SUMMARY_LEADING}
                       >
                         {line}
                       </tspan>

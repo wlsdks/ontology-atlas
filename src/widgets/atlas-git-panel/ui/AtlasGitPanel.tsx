@@ -21,7 +21,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { CONTROL_DISABLED_CLASS, fieldClass } from "@/shared/ui/control-class";
+import { fieldClass } from "@/shared/ui/control-class";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Link } from "@/i18n/navigation";
 import {
@@ -62,13 +62,12 @@ import {
 } from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
-import { Checkbox, controlClass } from "@/shared/ui";
+import { Button, Checkbox, buttonVariants, controlClass } from "@/shared/ui";
 import { Tooltip } from "@/shared/ui/tooltip";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import {
-  CONFIRM_CANCEL_CLASS,
-  CONFIRM_PRIMARY_CLASS,
+  CONFIRM_PLACEMENT,
   DocumentConfirmStep,
   useInlineConfirmFocus,
 } from "./DocumentConfirmStep";
@@ -109,28 +108,7 @@ export interface AtlasGitPanelProps {
 /** The setup's terminal escape; git vocabulary appears only here. */
 const INIT_CLI_COMMAND = "git init";
 
-/**
- * The setup screens' one primary action, all at one weight: `--git-setup-action-height`
- * (36px, 44px on a coarse pointer) at `text-body`.
- */
-const PRIMARY_ACTION_CLASS =
-  // Disabled styling arrives as one value-layer set (55 dim, cursor, hover
-  // neutralised). This is a filled control, so the hover-neutralising
-  // `bg-inherit` would erase the fill; the base fill is pinned again after it,
-  // and consumers go through cn(twMerge), so the later declaration wins.
-  `inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] ${CONTROL_DISABLED_CLASS} disabled:hover:bg-[color:var(--color-indigo-brand)]`;
-
-/** Secondary escape — present, but never competing with the primary action. */
-const SECONDARY_ACTION_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-3.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]";
-
-/**
- * The commit slot when there is nothing to record: kept in place as a quiet "done" shape
- * rather than a faded primary. It and the commit door use the chip `lg` step, matching the
- * confirm pair that replaces the door.
- */
-const SNAPSHOT_INERT_CLASS =
-  "inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-3 py-1 text-body text-[color:var(--color-text-quaternary)]";
+const SETUP_ACTION_PLACEMENT = "atlas-touch-floor atlas-touch-floor-wide shrink-0";
 
 const noopSubscribe = () => () => {};
 
@@ -1410,9 +1388,9 @@ function WebSetup({
       <Link
         href="/download"
         data-testid="atlas-git-web-get-app"
-        className={cn(PRIMARY_ACTION_CLASS, "self-start")}
+        className={cn(buttonVariants({ variant: "primary", size: "sm" }), SETUP_ACTION_PLACEMENT, "self-start")}
       >
-        <Download size={ICON_SIZE.sm} aria-hidden />
+        <Download size={ICON_SIZE.md} aria-hidden />
         {t("webGetApp")}
       </Link>
 
@@ -1442,9 +1420,9 @@ function NoVaultSetup({ t }: { t: Translator }) {
       <Link
         href="/docs"
         data-testid="atlas-git-pick-vault"
-        className={cn(PRIMARY_ACTION_CLASS, "self-start")}
+        className={cn(buttonVariants({ variant: "primary", size: "sm" }), SETUP_ACTION_PLACEMENT, "self-start")}
       >
-        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
+        <FolderOpen size={ICON_SIZE.md} aria-hidden />
         {t("noVaultAction")}
       </Link>
     </SetupFrame>
@@ -1502,7 +1480,7 @@ function RemoteActionButton({
         size: "lg",
         tone: "secondary",
         className:
-          "font-[var(--font-weight-signature)] border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
+          "justify-center max-sm:w-full font-[var(--font-weight-signature)] border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
       })}
     >
       {busy ? "…" : label}
@@ -1610,6 +1588,7 @@ function LocationLine({
             </span>
           )}
           {/* Fetch, Pull and Push keep the git terms; translating them blurs what happens. */}
+          <div data-testid="atlas-git-remote-actions" className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
           <RemoteActionButton
             id="fetch"
             label={t("remoteFetch")}
@@ -1640,6 +1619,7 @@ function LocationLine({
             disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
+          </div>
         </Fragment>
       ) : remoteState === "no-remote" ? (
         <Fragment key="no-remote">
@@ -2011,11 +1991,10 @@ function StepListScroller({
 
 /**
  * One list row: a full-width table row whose 2px indigo edge marks selection (not a railed
- * card, which `design.md` forbids). Columns are time, name and why; below `xl` the why drops
- * under the name so a wide row does not split into islands.
+ * card, which `design.md` forbids).
  */
 const STEP_ROW =
-  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] xl:grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-x-3 gap-y-0.5 xl:gap-y-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] max-xl:[&>*:first-child]:row-span-2 max-xl:[&>*:nth-child(3)]:col-start-2";
+  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-x-3 gap-y-0.5 border-b border-l-2 border-b-[color:var(--color-divider)] py-2 pl-3.5 pr-4 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] [&>*:first-child]:row-span-2 [&>*:nth-child(3)]:col-start-2";
 
 function StepList({
   t,
@@ -2218,7 +2197,6 @@ function StepList({
                   <span className="truncate" title={commit.subject}>{headline}</span>
                 )}
               </span>
-              {/* The why column, on the same line so time, name and reason each align down the list. */}
               <span
                 className="truncate text-label text-[color:var(--color-text-tertiary)]"
                 title={stepConcepts.length > 0 ? why : undefined}
@@ -2440,38 +2418,41 @@ function ActionDock({
                     : t("upstreamUnknown")}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="sm"
               data-testid="atlas-git-confirm-button"
               disabled={snapshotting}
               onClick={confirmSnapshot}
-              className={CONFIRM_PRIMARY_CLASS}
+              className={CONFIRM_PLACEMENT}
             >
               {snapshotting ? t("snapshotRunning") : t("confirmButton")}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               data-testid="atlas-git-cancel-button"
               disabled={snapshotting}
               onClick={close}
-              className={CONFIRM_CANCEL_CLASS}
+              className={CONFIRM_PLACEMENT}
             >
               {t("cancelButton")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <button
-          type="button"
+        <Button
           ref={triggerRef}
+          variant={hasChanges ? "primary" : "outline"}
+          size="sm"
           data-testid="atlas-git-snapshot-button"
           disabled={!hasChanges}
           onClick={() => setConfirming(true)}
-          className={cn(hasChanges ? CONFIRM_PRIMARY_CLASS : SNAPSHOT_INERT_CLASS, "self-start")}
+          className={cn(CONFIRM_PLACEMENT, "self-start")}
         >
-          {hasChanges ? null : <Check size={ICON_SIZE.sm} aria-hidden />}
+          {hasChanges ? null : <Check size={ICON_SIZE.md} aria-hidden />}
           {hasChanges ? t("snapshotButton", { count: changeCount }) : t("noChanges")}
-        </button>
+        </Button>
       )}
 
       {snapshotError ? (
@@ -2764,17 +2745,18 @@ function DesktopBody({
               </li>
             ))}
           </ul>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             data-testid="atlas-git-install-recheck"
             onClick={() => {
               onRecheckGit();
             }}
-            className={cn(SECONDARY_ACTION_CLASS, "self-start")}
+            className={cn(SETUP_ACTION_PLACEMENT, "self-start")}
           >
-            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
+            <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t("install.recheck")}
-          </button>
+          </Button>
         </div>
       </SetupFrame>
     );
@@ -2793,15 +2775,16 @@ function DesktopBody({
         note={t("scopeNotice")}
       >
         <div className="flex flex-col gap-3" data-testid="atlas-git-load-error">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             data-testid="atlas-git-retry"
             onClick={onRetry}
-            className={cn(SECONDARY_ACTION_CLASS, "self-start")}
+            className={cn(SETUP_ACTION_PLACEMENT, "self-start")}
           >
-            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
+            <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t("retryButton")}
-          </button>
+          </Button>
         </div>
       </SetupFrame>
     );
@@ -2825,28 +2808,30 @@ function DesktopBody({
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="sm"
               data-testid="atlas-git-init"
               disabled={initRunning}
               onClick={onInit}
-              className={PRIMARY_ACTION_CLASS}
+              className={SETUP_ACTION_PLACEMENT}
             >
               {initRunning ? t("initRunning") : t("initButton")}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               data-testid="atlas-git-init-copy"
               title={t("initTerminalHint")}
               onClick={onCopyInitCommand}
-              className={SECONDARY_ACTION_CLASS}
+              className={SETUP_ACTION_PLACEMENT}
             >
               {initCopyState === "copied"
                 ? t("webCopied")
                 : initCopyState === "failed"
                   ? t("webCopyFailed")
                   : t("initTerminalButton")}
-            </button>
+            </Button>
           </div>
 
           {initError ? (

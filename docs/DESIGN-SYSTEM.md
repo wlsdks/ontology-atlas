@@ -1231,7 +1231,6 @@ Forcing pages to remember `shrink-0` actually failed: after fixing one screen, t
 | Token | Value | What it defines |
 |---|---|---|
 | `--git-setup-measure` | 520px | Single task column width before connection (no web/folder, before recording starts) |
-| `--git-setup-action-height` | 36px (coarse 44px) | Primary/secondary action row height |
 | `--git-evidence-stack-max` | 460px | Upper bound for vertically stacked evidence (scrolls within) |
 | `--git-row-h` | 26px (coarse 44px) | Change row height — content cannot dictate this as it's a repeating set |
 | `--git-row-stagger` | 14ms | List appearance stagger interval. Max 8 rows → total delay ≤112ms |

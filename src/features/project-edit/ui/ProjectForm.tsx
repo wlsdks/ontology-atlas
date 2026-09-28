@@ -7,7 +7,6 @@ import {
   useState,
   type FormEvent,
   type InputHTMLAttributes,
-  type SelectHTMLAttributes,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from "react";
@@ -23,7 +22,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
-import { Button, Checkbox, controlClass } from "@/shared/ui";
+import { Button, Checkbox, Select, controlClass } from "@/shared/ui";
 import {
   ProjectCard,
   computeHubSlugs,
@@ -828,12 +827,10 @@ export function ProjectForm({
       >
         <Select
           id={PROJECT_FIELD_IDS.category}
-          name="category"
           data-testid="project-input-category"
           value={values.category}
           onChange={(v) => setValue("category", v)}
           options={categoryOptions}
-          aria-invalid={Boolean(errors.category)}
         />
         {!getCategory(values.category) &&
           values.category &&
@@ -854,12 +851,10 @@ export function ProjectForm({
       >
         <Select
           id={PROJECT_FIELD_IDS.status}
-          name="status"
           data-testid="project-input-status"
           value={values.status}
           onChange={(v) => setValue("status", v)}
           options={statusOptions}
-          aria-invalid={Boolean(errors.status)}
         />
         {!getStatus(values.status) &&
           values.status &&
@@ -1183,7 +1178,10 @@ export function ProjectForm({
               </span>
               <span
                 title={values.slug || undefined}
-                className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]"
+                className={cn(
+                  "min-w-0 flex-1 truncate text-label text-[color:var(--color-text-tertiary)]",
+                  values.slug && "font-mono",
+                )}
               >
                 {values.slug || t("fields.slugAutoPending")}
               </span>
@@ -1276,16 +1274,14 @@ export function ProjectForm({
           <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
             {/* Delete lives in the danger row at the foot, away from the save cluster. */}
             <Button
-              data-testid="project-save-top"
-              type="submit"
-              data-submit-behavior="stay"
-              onClick={() => {
-                submitBehaviorRef.current = "stay";
-              }}
-              disabled={submitting || deleting || writeDisabled}
-              className="order-last col-span-2 justify-center md:order-none md:col-span-1 md:min-w-[88px]"
+              data-testid="project-cancel-top"
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={submitting || deleting}
+              className="justify-center"
             >
-              {primarySubmitLabel}
+              {t("actions.cancel")}
             </Button>
             <Button
               data-testid="project-save-return-top"
@@ -1301,14 +1297,16 @@ export function ProjectForm({
               {returnSubmitLabel}
             </Button>
             <Button
-              data-testid="project-cancel-top"
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-              disabled={submitting || deleting}
-              className="justify-center"
+              data-testid="project-save-top"
+              type="submit"
+              data-submit-behavior="stay"
+              onClick={() => {
+                submitBehaviorRef.current = "stay";
+              }}
+              disabled={submitting || deleting || writeDisabled}
+              className="col-span-2 justify-center md:col-span-1 md:min-w-[88px]"
             >
-              {t("actions.cancel")}
+              {primarySubmitLabel}
             </Button>
           </div>
         </div>
@@ -1839,34 +1837,5 @@ function Textarea({
       })}
       {...props}
     />
-  );
-}
-
-function Select<T extends string>({
-  value,
-  onChange,
-  options,
-  ...props
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: Array<{ value: T; label: string }>;
-} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange">) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as T)}
-      className={fieldClass({
-        size: "lg",
-        className: "hover:border-[color:var(--color-border-strong)]",
-      })}
-      {...props}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
   );
 }

@@ -30,7 +30,7 @@ export function InsightsLoadingView() {
             </p>
           </div>
         </header>
-        <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-body text-[color:var(--color-text-secondary)]">
+        <div role="status" className="route-loading-in flex flex-1 flex-col items-center justify-center gap-3 py-12 text-body text-[color:var(--color-text-secondary)]">
           <BrandWaitingMark active initialVisibility="visible" />
           <p>{t('loading')}</p>
         </div>

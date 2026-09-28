@@ -53,7 +53,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-none flex-col gap-2.5 px-5 py-4">
+    <section className="flex flex-none flex-col gap-2.5 px-4 py-4">
       <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
         {label}
         {note ? (
@@ -322,7 +322,7 @@ export function CommitDetail({
    */
   const notInStep =
     holding && follow ? (
-      <div className="flex flex-none flex-col gap-1 px-5 py-4">
+      <div className="flex flex-none flex-col gap-1 px-4 py-4">
         <p
           data-testid="atlas-git-doc-not-in-step"
           data-document-anchor
@@ -355,7 +355,7 @@ export function CommitDetail({
         title so the selection wins, at the signature weight. A short id and a locale date
         replace the full hash and ISO timestamp.
       */}
-      <header className="flex flex-none flex-col gap-1.5 px-5 pt-5 pb-4">
+      <header className="flex flex-none flex-col gap-1.5 px-4 pt-5 pb-4">
         <h2
           data-testid="atlas-git-detail-headline"
           title={subject}
@@ -405,7 +405,7 @@ export function CommitDetail({
       <div
         role="tablist"
         aria-label={t("lensLabel")}
-        className="flex flex-none items-center gap-1 border-b border-[color:var(--color-divider)] px-5"
+        className="flex flex-none items-center gap-1 border-b border-[color:var(--color-divider)] pl-1.5 pr-4"
       >
         {(["concepts", "files"] as const).map((id) => (
           <button
@@ -431,7 +431,7 @@ export function CommitDetail({
         {lens === "concepts" ? (
           concepts.length > 0 ? (
             <>
-              <div className="flex flex-none flex-col gap-2.5 px-5 pt-4">
+              <div className="flex flex-none flex-col gap-2.5 px-4 pt-4">
                 <div {...conceptGroup.groupProps} aria-label={t("conceptChipsAria")} className="flex flex-wrap gap-1.5">
                   {concepts.map((concept, index) => (
                     <button
@@ -474,7 +474,7 @@ export function CommitDetail({
               {notInStep}
               {conceptReader}
               {focusedFile ? (
-                <div className="px-5 pb-4">
+                <div className="px-4 pb-4">
                   {/* Keyed by document, so a new document never shows the last one's rows while reading. */}
                   <DocumentHistory
                     key={focusedFile.path}
@@ -494,7 +494,7 @@ export function CommitDetail({
             </>
           ) : (
             <>
-              <p className="px-5 py-6 text-label text-[color:var(--color-text-quaternary)]">
+              <p className="px-4 py-6 text-label text-[color:var(--color-text-quaternary)]">
                 {t("stepNoConcepts")}
               </p>
               {notInStep}
@@ -518,7 +518,7 @@ export function CommitDetail({
                       setHeld(false);
                       setOpenFile(file.path);
                     }}
-                    className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent px-5 hover:bg-[color:var(--color-overlay-1)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]" })}
+                    className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent pl-3.5 pr-4 hover:bg-[color:var(--color-overlay-1)] aria-[current=true]:border-l-[color:var(--color-indigo-brand)] aria-[current=true]:bg-[color:var(--color-overlay-2)]" })}
                   >
                     <span
                       aria-hidden
@@ -554,7 +554,7 @@ export function CommitDetail({
             ) : null}
             {/* The document first, then its history and door, in the same order as the concepts lens. */}
             {activeEntry ? (
-              <div className="px-5 pb-4">
+              <div className="px-4 pb-4">
                 <DocumentHistory
                   key={activeEntry.path}
                   t={t}

@@ -1,0 +1,7 @@
+{
+  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "count": 2,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The setup stages' one way forward, \"Get the app\" in the browser and \"Choose a folder\" in the app without one (2026-09-29). They wore a 36px hand-written fill of their own; now they are the primary sm standard button every other web-only door wears, beside the setup buttons that became `<Button>`. Both are `<Link>` because they navigate, and `control-class.ts` does not replace standard buttons."
+}

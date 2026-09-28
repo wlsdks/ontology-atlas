@@ -158,10 +158,6 @@
        * one defaults to lagging behind, which is why we had to add this
        * line separately on 2026-07-29.)
        */
-      /* Connection setup actions for history destination (app install · folder selection · start recording).
-         Since this page's only job is that button, leaving it at 36px on touch
-         means the entire page loses its purpose. */
-      --git-setup-action-height: var(--touch-target-min);
       /* Change rows in the workbench are **clickable rows** (clicking them brings
          the changed row of that concept into the evidence column). Passing 26px desktop density
          directly to touch means hitting adjacent rows — pointer, not width, determines this

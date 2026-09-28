@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ProjectForm } from "@/features/project-edit";
 import {
   ProjectStaticModeError,
@@ -18,6 +18,7 @@ import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
+  projectDisplayName,
   type Project,
   type ProjectInput,
 } from "@/entities/project";
@@ -64,6 +65,7 @@ function EditorContent({
   savedNotice,
 }: Props) {
   const t = useTranslations("projectPages.editor");
+  const locale = useLocale();
   const router = useRouter();
   const toast = useToast();
   const projectMutations = useProjectMutations();
@@ -75,6 +77,7 @@ function EditorContent({
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
   const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
+  const projectName = project ? projectDisplayName(project, locale) : undefined;
   const { projects: allProjects, loaded: projectsLoaded } = useProjects();
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(targetSlug));
@@ -273,9 +276,9 @@ function EditorContent({
             <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-hero">
               {mode === "create"
                 ? duplicateFromSlug
-                  ? t("titleDuplicate", { name: project?.name ?? duplicateFromSlug })
+                  ? t("titleDuplicate", { name: projectName ?? duplicateFromSlug })
                   : t("titleNew")
-                : project?.name}
+                : projectName}
             </h1>
             {isDirty && (
               <span

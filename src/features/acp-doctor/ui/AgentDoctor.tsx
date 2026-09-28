@@ -272,8 +272,8 @@ export function useAgentDoctor(
           className="block h-1 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
         >
           <span
-            className="block h-full rounded-full bg-[color:var(--color-indigo-brand)] transition-[width]"
-            style={{ width: percent }}
+            className="block h-full rounded-full bg-[color:var(--color-indigo-brand)] transition-transform"
+            style={{ transform: `translateX(${Number.parseFloat(percent) - 100}%)` }}
           />
         </span>
       ) : progress.note ? (

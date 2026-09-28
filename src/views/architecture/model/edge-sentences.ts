@@ -88,6 +88,20 @@ const TIER_1 = 16;
 const TIER_2 = 32;
 const MIN_CHARS = 12;
 
+const LANE_HEADING_CHAR_PX = 7.5;
+const LANE_HEADING_WIDE_CHAR_PX = 11;
+const LANE_HEADING_ASCENT = 10;
+const LANE_HEADING_H = 13;
+
+export function laneHeadingRect(text: string, x: number, baseline: number) {
+  const width = [...text].reduce(
+    (sum, character) =>
+      sum + (/[ᄀ-ᇿ㄰-㆏㐀-䶿一-鿿가-힯]/u.test(character) ? LANE_HEADING_WIDE_CHAR_PX : LANE_HEADING_CHAR_PX),
+    0,
+  );
+  return { x, y: baseline - LANE_HEADING_ASCENT, width, height: LANE_HEADING_H };
+}
+
 function budgetFor(roomPx: number): number {
   return Math.floor(roomPx / CHAR_PX);
 }
@@ -186,6 +200,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     let y: number;
     let anchor: SentencePlacement['anchor'];
     let roomPx: number;
+    let altY: number | null = null;
     if (axis === 'down') {
       const sy = a.y + boxH;
       const ty = b.y;
@@ -229,10 +244,11 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       const sx = a.x + boxW;
       const tx = b.x;
       if (!isSkip) {
-        const tier = tierFlip % 2 === 0 ? TIER_1 : TIER_2;
+        const [tier, otherTier] = tierFlip % 2 === 0 ? [TIER_1, TIER_2] : [TIER_2, TIER_1];
         tierFlip += 1;
         x = (sx + tx) / 2;
         y = Math.min(a.y, b.y) - tier;
+        altY = Math.min(a.y, b.y) - otherTier;
         anchor = 'middle';
         roomPx = Math.min(2 * pitch - 24, leadRoom > 0 ? 2 * pitch - 24 : 0);
       } else {
@@ -249,12 +265,12 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text: full, x, y, anchor, hidden: 'no-room' });
       continue;
     }
-    const fitAt = (chars: number) => {
+    const fitAt = (chars: number, seatY = y) => {
       const [text] = splitSummaryLines(full, chars, 1);
       const width = estimatedTextWidth(text);
       const rect = {
         x: anchor === 'end' ? x - width : anchor === 'middle' ? x - width / 2 : x,
-        y: y - 9,
+        y: seatY - 9,
         width,
         height: LINE_H,
       };
@@ -266,6 +282,13 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     };
     let chars = budget;
     let fit = fitAt(chars);
+    if (fit.collides && altY !== null) {
+      const alternate = fitAt(chars, altY);
+      if (!alternate.collides) {
+        y = altY;
+        fit = alternate;
+      }
+    }
     /* Two nested focused skips can share a baseline: tighten only the later budget until both clear. */
     while (fit.collides && chars > MIN_CHARS) fit = fitAt(--chars);
     const { text, rect } = fit;

@@ -1,13 +1,11 @@
 'use client';
 
 import { lazy, Suspense, useId, useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import {getTauriVaultRootPath} from '@/shared/lib/tauri-vault-fs';
 import { withBasePath } from '@/shared/lib/base-path';
 import { ChromeTile, Dialog, RouteLoadingFallback, RowButton } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { growthProgress, growthProjectKey, growthTargets } from '../model/companion-growth';
 import { useCompanionGrowth } from '../model/use-companion-growth';
 import {emptyLearningDraft,type LearningDraft} from '../model/companion-learning';
@@ -88,12 +86,10 @@ export function CompanionHome({ compact = false, door }: { compact?: boolean; do
       <RowButton onClick={show} data-testid="companion-home" className="w-full">
         <span className={styles.homeRow}>
           <CompanionRoom stage={progress.stage} />
-          {/* `flex-1` so the chevron keeps the row's right edge instead of trailing the text. */}
           <span className="min-w-0 flex-1 text-left">
             <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{t('home')}</span>
             <span className="mt-1 block truncate text-label text-[color:var(--color-text-secondary)]">{latest ? latest.note : t('emptyHome')}</span>
           </span>
-          <ChevronRight size={ICON_SIZE.sm} aria-hidden className="shrink-0 text-[color:var(--color-text-secondary)]" />
         </span>
       </RowButton>
     )}

@@ -18,6 +18,7 @@ export function ArchitectureRules({
   legendViolated,
   directionLabel,
   hiddenAtWorkbench = false,
+  className,
 }: {
   graph: ArchitectureGraph;
   /** `from>to` for each crossing the receipt counted as a violation. */
@@ -29,6 +30,7 @@ export function ArchitectureRules({
   directionLabel: string;
   /** True while the dock is answering a role: the rules are one button away, not stacked under it. */
   hiddenAtWorkbench?: boolean;
+  className?: string;
 }) {
   if (graph.edges.length === 0) return null;
 
@@ -37,6 +39,7 @@ export function ArchitectureRules({
       className={cn(
         'flex shrink-0 flex-col gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2',
         hiddenAtWorkbench ? 'xl:hidden' : undefined,
+        className,
       )}
       data-testid="architecture-rules"
     >

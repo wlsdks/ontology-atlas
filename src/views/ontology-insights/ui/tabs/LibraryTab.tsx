@@ -109,14 +109,13 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const clear = cards.filter((card) => card.size === 0);
   const beside = filled.length > 0 && clear.length > 0;
   const noCardCutRows = cards.every((card) => (card.shownOverride ?? Math.min(ROWS, card.size)) >= card.size);
-  // From 1280 the clear statuses stand beside the cards, both columns starting on one line, and the clear panel keeps
-  // its own height. The tab ends on a line saying this is everything, so a small folder's empty canvas is not
-  // read as a load failure.
+  // From 1280 the clear statuses stand beside the cards, both columns starting and ending on one line. The tab ends on
+  // a line saying this is everything, so a small folder's empty canvas is not read as a load failure.
   return (
     <section
       data-testid="library-tab"
       data-library-layout={beside ? 'beside' : 'stacked'}
-      className={cn('grid grid-cols-1 items-start gap-[var(--card-gap)]', beside && 'xl:grid-cols-[minmax(0,1fr)_20rem]')}
+      className={cn('grid grid-cols-1 gap-[var(--card-gap)]', beside && 'xl:grid-cols-[minmax(0,1fr)_20rem]')}
     >
       {filled.length > 0 ? (
         <div className="grid grid-cols-1 content-start gap-[var(--card-gap)] lg:grid-cols-2">
@@ -133,7 +132,7 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
         </div>
       ) : null}
       {clear.length > 0 ? (
-        <div data-library-clear className="self-start rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+        <div data-library-clear className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
           <ul className={cn('flex flex-wrap gap-x-6 gap-y-2', beside && 'xl:flex-col xl:gap-3')}>
             {clear.map((card) => (
               <li key={card.key} data-library-clear-item={card.key} className="flex items-baseline gap-2 text-body tabular-nums text-[color:var(--color-text-secondary)]">

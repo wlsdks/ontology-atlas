@@ -460,7 +460,7 @@ describe('the evidence split plane', () => {
       ).toBeNull();
       expect(screen.getByTestId('architecture-graph-box-domain')).toHaveAttribute(
         'data-box-height',
-        '84',
+        '90',
       );
       expect(screen.queryByTestId('architecture-role-observation-domain')).toBeNull();
       expect(container.querySelector('[data-testid="architecture-graph-run"]')).toBeNull();

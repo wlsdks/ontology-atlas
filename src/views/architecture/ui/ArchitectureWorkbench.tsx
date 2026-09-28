@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Boxes, Check, ChevronDown, PanelRight, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -154,6 +154,25 @@ export function ArchitectureWorkbench({
   });
   const inspectorOpen = inspector !== null && !contextDockOpen;
   const rightDockOpen = inspectorOpen || evidenceOpen;
+  const stackedGutter = embedded ? HARNESS_GUTTER_X : 'px-5 md:px-8';
+  const columnLayout = contextDockOpen ? 'context' : evidenceOpen ? 'evidence' : inspectorOpen ? 'inspector' : 'closed';
+  const flowHostRef = useRef<HTMLDivElement | null>(null);
+  const previousColumnLayout = useRef(columnLayout);
+  useLayoutEffect(() => {
+    const from = previousColumnLayout.current;
+    previousColumnLayout.current = columnLayout;
+    const host = flowHostRef.current;
+    if (from === columnLayout || !host || typeof host.animate !== 'function') return;
+    if (typeof window.matchMedia !== 'function' || !window.matchMedia('(min-width: 1280px)').matches) return;
+    const style = getComputedStyle(host);
+    const raw = style.getPropertyValue('--motion-fast').trim();
+    const duration = (Number.parseFloat(raw) || 0) * (raw.endsWith('ms') ? 1 : 1000);
+    if (duration <= 0) return;
+    host.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration,
+      easing: style.getPropertyValue('--motion-ease').trim() || undefined,
+    });
+  }, [columnLayout]);
   const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
   const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
@@ -623,8 +642,8 @@ export function ArchitectureWorkbench({
           <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
               {embedded ? (
                 /* The profile's name and the door to its history are one group, the name a label, not a control. */
-                <div className="flex min-w-0 shrink items-center gap-2">
-                  <h2 className="min-w-0 shrink truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                <div className="flex min-w-0 shrink-0 items-center gap-2">
+                  <h2 className="max-w-[16rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {selected.title}
                   </h2>
                   {/* The same `Button` md as every other control in this row. */}
@@ -832,7 +851,7 @@ export function ArchitectureWorkbench({
                 <span className="max-xl:sr-only">{t('inspectorTitle')}</span>
               </Button>
           </div>
-          <div className="relative flex min-h-0 flex-1">
+          <div ref={flowHostRef} className="relative flex min-h-0 flex-1">
               <ArchitectureFlow
                 profile={selected}
                 modules={selectedModules}
@@ -913,7 +932,7 @@ export function ArchitectureWorkbench({
           data-architecture-presentation="dock"
           className="min-w-0 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] lg:col-span-2 xl:col-span-1 xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:border-b-0 xl:border-l"
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+          <div className={cn('flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] py-3', stackedGutter, 'xl:px-4')}>
             <div className="min-w-0">
               <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
                 {t('evidenceOverlayTitle')}
@@ -941,7 +960,7 @@ export function ArchitectureWorkbench({
               </IconButton>
             </div>
           </div>
-          <div className="min-w-0 p-3 xl:flex-1 xl:p-4">
+          <div className={cn('min-w-0 py-3 xl:flex-1', stackedGutter, 'xl:p-4')}>
             <ArchitectureEvidencePlane
               ariaLabel={t('evidencePlaneAria')}
               contractLabel={t('contractLabel')}
@@ -1006,7 +1025,9 @@ export function ArchitectureWorkbench({
             ref={roleDetailRef}
             data-testid="architecture-role-detail-slot"
             className={cn(
-              'mt-5 scroll-mt-3 lg:col-span-2 xl:mt-0 xl:shrink-0 xl:px-4 xl:py-3',
+              'mt-5 scroll-mt-3 lg:col-span-2 xl:mt-0 xl:shrink-0',
+              stackedGutter,
+              'xl:px-4 xl:py-3',
               inspector === 'role' ? undefined : 'xl:hidden',
             )}
           >
@@ -1058,7 +1079,9 @@ export function ArchitectureWorkbench({
           {sourceListingCapable || !sourceUnavailableReason ? null : (
             <div
               className={cn(
-                'border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2 xl:shrink-0',
+                'border-b border-[color:var(--color-border-soft)] py-3 lg:col-span-2 xl:shrink-0',
+                stackedGutter,
+                'xl:px-4',
                 /* Why a module count is missing belongs with the role whose modules are missing. */
                 inspector === 'role' ? undefined : 'xl:hidden',
               )}
@@ -1094,10 +1117,12 @@ export function ArchitectureWorkbench({
         {/* One inset down the dock, so its sections share a left edge. */}
         {/* `shrink-0`, not `min-h-0`: a shrinkable child in a scrolling flex column paints over the list beneath it. */}
         <section ref={rulesSectionRef} id="architecture-blueprint" className={cn(
-          'min-w-0 scroll-mt-3 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3',
+          'min-w-0 scroll-mt-3 py-5 md:py-8 lg:col-span-2 xl:shrink-0',
+          stackedGutter,
+          'xl:px-4 xl:py-3',
           inspector === 'rules' ? undefined : 'xl:hidden',
         )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
-          <div className="mx-auto flex w-full max-w-5xl flex-col xl:max-w-none">
+          <div className="flex w-full max-w-5xl flex-col xl:max-w-none">
             <div className="flex flex-wrap items-start justify-between gap-3">
               {/* The kind of drawing leads: the axis names the question and the pattern the answer (C4: clarify the diagram type and scope). */}
               <div className="min-w-0">
@@ -1155,17 +1180,20 @@ export function ArchitectureWorkbench({
             legendViolated={t('legendViolated')}
             directionLabel={t('ladderDirection')}
             hiddenAtWorkbench={inspector !== 'rules'}
+            className={cn(stackedGutter, 'xl:px-4')}
           />
           )}
 
         <aside className={cn(
-          'border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:shrink-0 xl:border-b-0 xl:border-r-0',
+          'border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] py-4 lg:col-span-2 xl:shrink-0 xl:border-b-0',
+          stackedGutter,
+          'xl:px-4',
           inspector === 'rules' ? undefined : 'xl:hidden',
         )}>
           <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
             {t('profileList')}
           </h2>
-          <div className="mt-3 flex flex-col gap-1.5">
+          <div className="mt-3 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-col">
             {profiles.map((profile) => {
               const current = profile.slug === selected.slug;
               const content = (

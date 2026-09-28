@@ -33,6 +33,7 @@ import {
   IconButton,
   LastEditSubjectRow,
   MtimeConflictBadge,
+  Select,
   controlClass,
 } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
@@ -658,12 +659,13 @@ export function DocFrontmatterBlock({
       <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
         <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editKindLabel")}
-          <select
+          <Select
+            size="sm"
             value={draftKind}
-            onChange={(event) => setDraftKind(event.target.value)}
+            onChange={setDraftKind}
             disabled={saving}
             data-testid="doc-frontmatter-kind-select"
-            aria-describedby={
+            ariaDescribedby={
               [
                 moveTarget ? `doc-frontmatter-move-hint-${doc.slug}` : null,
                 kindChangeRows.length > 0 ? `doc-frontmatter-kind-referrers-${doc.slug}` : null,
@@ -671,16 +673,9 @@ export function DocFrontmatterBlock({
                 .filter(Boolean)
                 .join(" ") || undefined
             }
-            className={fieldClass({ size: "xs" })}
-          >
-            {/* Without a placeholder the browser shows the first option as if a kind were chosen. */}
-            {draftKind === "" ? <option value="">{t("editKindUnset")}</option> : null}
-            {EDITABLE_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {kindLabel(kind)}
-              </option>
-            ))}
-          </select>
+            placeholder={t("editKindUnset")}
+            options={EDITABLE_KINDS.map((kind) => ({ value: kind, label: kindLabel(kind) }))}
+          />
         </label>
         {moveTarget ? (
           <p
@@ -719,19 +714,17 @@ export function DocFrontmatterBlock({
         ) : null}
         <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editDomainLabel")}
-          <select
+          <Select
+            size="sm"
             value={draftDomain}
-            onChange={(event) => setDraftDomain(event.target.value)}
+            onChange={setDraftDomain}
             disabled={saving}
-            className={fieldClass({ size: "xs" })}
-          >
-            <option value="">{t("editDomainNone")}</option>
-            {domainOptions.map((option) => (
-              <option key={option.slug} value={option.slug}>
-                {option.title}
-              </option>
-            ))}
-          </select>
+            data-testid="doc-frontmatter-domain-select"
+            options={[
+              { value: "", label: t("editDomainNone") },
+              ...domainOptions.map((option) => ({ value: option.slug, label: option.title })),
+            ]}
+          />
         </label>
         <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editTitleLabel")}

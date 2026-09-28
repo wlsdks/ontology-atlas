@@ -1030,8 +1030,8 @@ export function ProjectDrawer({
                                     rel="noopener noreferrer"
                                     className={controlClass({ shape: "link", tone: "accent", className: "gap-1.5 text-body-lg hover:text-[color:var(--color-indigo-hover)]" })}
                                   >
+                                    <ArrowUpRight size={ICON_SIZE.md} aria-hidden />
                                     {link.label}
-                                    <ArrowUpRight size={ICON_SIZE.md} />
                                   </a>
                                 </li>
                               ))}

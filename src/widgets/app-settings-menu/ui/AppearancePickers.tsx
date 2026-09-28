@@ -137,13 +137,12 @@ export function CanvasBackgroundPicker() {
     onChange: writeCanvasBackground,
   });
   return (
-    // No margin of its own: the pane owns it, or this section's start line would differ.
-    <div data-testid="app-settings-canvas-background">
+    <div className="border-x border-transparent px-3 py-2.5" data-testid="app-settings-canvas-background">
       <p className="text-body text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('canvasBgCaption')}
       </p>
-      <div {...group.groupProps} aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
+      <div {...group.groupProps} aria-label={t('canvasBgLabel')} className="mt-2 grid grid-cols-3 gap-2">
         {CANVAS_BACKGROUNDS.map((variant, index) => {
           const active = variant === value;
           return (

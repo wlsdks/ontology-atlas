@@ -528,11 +528,13 @@ export function ProjectDetailPage({
                 className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
               />
             </div>
-            {/* Shrinks and wraps, or at 390px the actions push the page wider. */}
-            <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 @5xl/project-hero:ml-auto @5xl/project-hero:basis-auto">
+            <div
+              data-testid="project-detail-hero-actions"
+              className="grid min-w-0 basis-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center @5xl/project-hero:ml-auto @5xl/project-hero:basis-auto"
+            >
               {/* Opening on the map is the one filled control; the reviewer's picker is second, outlined. */}
               <Link href={getTopologyProjectNodeHref(project.slug)} data-testid="project-detail-topology-link">
-                <Button type="button" variant="primary" size="sm">
+                <Button type="button" variant="primary" size="sm" className="w-full sm:w-auto">
                   {t("topBarTopologyView")}
                 </Button>
               </Link>
@@ -548,6 +550,7 @@ export function ProjectDetailPage({
                 size="sm"
                 disabled={constructionReview.status === "reading"}
                 onClick={constructionReview.openPicker}
+                className="w-full sm:w-auto"
               >
                 <FileText size={ICON_SIZE.md} aria-hidden="true" />
                 {constructionReview.status === "reading"
@@ -555,13 +558,15 @@ export function ProjectDetailPage({
                   : t("constructionReview.openResult")}
               </Button>
               {canManageProject ? (
-                <ProjectQuickEditPanel
-                  project={project}
-                  settingsHref={projectFullEditHref}
-                  triggerVariant="outline"
-                  displayName={displayName ?? null}
-                  displayLocale={locale}
-                />
+                <div className="col-span-2 flex [&>button]:w-full sm:[&>button]:w-auto">
+                  <ProjectQuickEditPanel
+                    project={project}
+                    settingsHref={projectFullEditHref}
+                    triggerVariant="outline"
+                    displayName={displayName ?? null}
+                    displayLocale={locale}
+                  />
+                </div>
               ) : null}
             </div>
           </div>

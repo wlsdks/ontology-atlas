@@ -337,7 +337,7 @@
   }
 
   .agent-pending-dot {
-    animation: agentPendingPulse 2.4s ease-in-out infinite;
+    animation: agentPendingPulse calc(var(--motion-settle) * 10) ease-in-out infinite;
   }
 
   /*
@@ -483,12 +483,6 @@
   box-shadow: inset 0 1px 0 var(--color-shadow-a35);
 }
 
-@media (min-width: 1280px) {
-  .architecture-workbench-grid {
-    transition: grid-template-columns var(--motion-base) var(--topology-motion-ease-out);
-  }
-}
-
 /*
  * The download hero's spotlight (2026-09-08): one radial pool of the accent behind the three.js
  * object's anchor. It is a still gradient on tokens — the allowed gradient after the 2026-09-08
@@ -588,24 +582,22 @@
  * observation track follows one fast step later. Per-role staggering made a seven-role entrance
  * last 418ms and read like a presentation rather than a workbench. It still waits for the measured
  * canvas width, so the first compact layout never animates into a second position. These are
- * transform/opacity-only and release their final style after the entrance, leaving hover/selection
- * opacity in charge.
+ * opacity-only, on the brightness curve, and release their final style after the entrance, leaving
+ * hover/selection opacity in charge.
  */
 @keyframes architectureEvidenceStepIn {
   from {
     opacity: 0;
-    transform: translateY(3px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .architecture-evidence-rail-segment {
-  animation: architectureEvidenceStepIn var(--motion-base)
-    var(--topology-motion-ease-out) backwards;
+  animation: architectureEvidenceStepIn var(--motion-base) var(--motion-ease)
+    backwards;
   animation-delay: calc(
     var(--motion-fast) * 0.33 * var(--architecture-reveal-step, 0)
   );
@@ -613,11 +605,9 @@
 
 .architecture-role-reveal,
 .architecture-observation-reveal {
-  animation: architectureEvidenceStepIn var(--motion-fast)
-    var(--topology-motion-ease-out) backwards paused;
+  animation: architectureEvidenceStepIn var(--motion-fast) var(--motion-ease)
+    backwards paused;
   animation-delay: 0ms;
-  transform-box: fill-box;
-  transform-origin: center;
 }
 
 .architecture-observation-reveal {
@@ -656,7 +646,6 @@
     animation-name: panelCrossfadeIn !important;
     animation-duration: var(--motion-fast) !important;
     animation-delay: 0ms !important;
-    transform: none !important;
   }
 
   .architecture-selection-trace {
@@ -670,10 +659,6 @@
      `.architecture-stroke`, which the base-layer rule already zeroes, so the pair still starts and
      ends together. */
   .architecture-violation-halo {
-    transition: none !important;
-  }
-
-  .architecture-workbench-grid {
     transition: none !important;
   }
 }
