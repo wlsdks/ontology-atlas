@@ -12,6 +12,7 @@ export { OntologyMapEdgeHoverCard } from './ui/OntologyMapEdgeHoverCard';
 export type { HoverAvoidRect } from './ui/topology-pointer-handlers';
 export { OntologyMapClusterHoverCard } from './ui/OntologyMapClusterHoverCard';
 export { OntologyMapContextMenu } from './ui/OntologyMapContextMenu';
+export { requestOntologyMapFrame } from './ui/use-topology-frame-loop';
 export {
   buildV2Connections,
   buildV2ConnectionGroups,

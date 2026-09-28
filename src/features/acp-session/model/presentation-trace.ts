@@ -48,6 +48,8 @@ interface AcpPresentationBlocked {
 
 export type AcpPresentationResult = AcpPresentationTrace | AcpPresentationBlocked;
 
+export type KnownRelations = Pick<ReadonlySet<string>, "has">;
+
 interface BuildAcpPresentationTraceInput {
   intent: AcpPresentationIntent | null;
   /** Exact app-authored request that activates this projection for one turn. */
@@ -55,7 +57,7 @@ interface BuildAcpPresentationTraceInput {
   sessionStatus: AcpSessionStatus;
   events: readonly AcpEvent[];
   knownSlugs: ReadonlySet<string>;
-  knownRelations: ReadonlySet<string>;
+  knownRelations: KnownRelations;
 }
 
 const MIN_SCENES = 3;
@@ -190,7 +192,7 @@ function citedSlugs(body: string, knownSlugs: ReadonlySet<string>): string[] {
 
 function firstUnknownRelation(
   body: string,
-  knownRelations: ReadonlySet<string>,
+  knownRelations: KnownRelations,
 ): string | null {
   for (const match of body.matchAll(RELATION_PATTERN)) {
     const [, from, type, to] = match;

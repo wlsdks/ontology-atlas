@@ -15,8 +15,8 @@ describe("windowRows", () => {
     // 600 / 40 = 15 rows in view, then 8 more.
     expect(w.end).toBe(23);
     expect(w.before).toBe(0);
-    // Every row after `end` with its gap, less the trailing gap the list draws itself.
-    expect(w.after).toBe((1000 - 23) * 40 - 4);
+    // Every row after `end`, each with the gap above it.
+    expect(w.after).toBe((1000 - 23) * 40);
   });
 
   it("scrolled into the middle, the pads add up to the rows not rendered and the window brackets the viewport", () => {
@@ -25,7 +25,7 @@ describe("windowRows", () => {
     expect(w.start).toBe(242);
     expect(w.end).toBe(250 + 15 + 8);
     expect(w.before).toBe(242 * 40);
-    expect(w.after).toBe((1000 - w.end) * 40 - 4);
+    expect(w.after).toBe((1000 - w.end) * 40);
   });
 
   it("at the end, the last row is rendered and nothing is padded after it", () => {
@@ -42,6 +42,17 @@ describe("windowRows", () => {
     expect(w.before).toBe(80);
     expect(w.end).toBe(4);
     expect(w.after).toBe(20 + 60 + 40 + 80);
+  });
+
+  it("pads and rendered rows add up to the height of the whole list", () => {
+    const varied = Array.from({ length: 300 }, (_, i) => (i % 3 === 0 ? 72 : 36));
+    const gap = 4;
+    const whole = varied.reduce((sum, h) => sum + h, 0) + (varied.length - 1) * gap;
+    for (const top of [0, 2_000, 9_000, whole - 600]) {
+      const w = windowRows(varied, gap, top, 600, 8);
+      const rendered = varied.slice(w.start, w.end).reduce((sum, h) => sum + h, 0) + (w.end - w.start - 1) * gap;
+      expect(w.before + rendered + w.after, `scrolled to ${top}`).toBe(whole);
+    }
   });
 
   it("a list that fits its viewport renders every row", () => {

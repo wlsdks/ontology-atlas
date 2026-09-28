@@ -68,17 +68,7 @@ export function edgePairKey(sourceId: string, targetId: string): string {
   return `${sourceId} ${targetId}`;
 }
 
-/*
- * perf 2026-08-19 — pair key and seed cache.
- *
- * `edgePairKey` (string concatenation) and `fireflySeed` (character-by-character
- * hash of that string) **cannot change over an edge's lifetime**, yet they were
- * recomputed every frame — O(n log n) times inside the sort comparator, a
- * sizeable share of `drawTopologyFrame` self time in the 3D rotation profile.
- * Edge objects are replaced wholesale on a world rebuild and never mutated in
- * place (same reasoning as the `phaseCache` doc-block), so a WeakMap computes
- * this once per object. Same values, same pixels.
- */
+/** An edge's endpoints never change, and a world build replaces edges rather than mutating them. */
 interface EdgePairRef {
   sourceId: string;
   targetId: string;
@@ -96,85 +86,115 @@ export function edgePairMeta(edge: EdgePairRef): { seed: number; key: string } {
 }
 
 /**
- * Design Guardian-approved cap on comets over `contains` edges incident to the
- * selection (ego). When the focused node has a large fan-out — a domain with 90
- * children, say — lighting all of them produces an unreadable mass of particles.
- * Edges are ranked by ascending `fireflySeed` (deterministic, no RNG state) and
- * only the first `limit` become comets; the rest keep the ego brightening with
- * no particles. The caller applies this same Set both to the advance condition
- * in `updateParticles` and to the draw condition in `render/traces.ts`.
+ * Design Guardian-approved cap on comets over the selection's incident `contains` edges, and the
+ * same cap on the always-on `depends` comets (which still flow regardless of focus, #512): a
+ * 90-child domain would otherwise light an unreadable mass of particles.
  */
 export const EGO_CONTAINS_COMET_LIMIT = 24;
 
-export function selectEgoContainsComets(
-  incidentContainsEdges: readonly { sourceId: string; targetId: string }[],
-  limit: number = EGO_CONTAINS_COMET_LIMIT,
-): ReadonlySet<string> {
-  return rankCometEdges(incidentContainsEdges, limit);
+/** `order[rank]` is an edge index; `rankOf[edgeIndex]` is its rank. */
+interface CometRanking {
+  order: Uint32Array;
+  rankOf: Uint32Array;
+}
+const rankingCache = new WeakMap<readonly EdgePairRef[], CometRanking>();
+
+/**
+ * Comet rank order: ascending `fireflySeed`, ties by pair key, so it is deterministic with no RNG
+ * state. Sorted once per edge list, O(E log E); the list is the key because a world build replaces
+ * it and nothing reshapes it afterwards.
+ */
+function cometRanking(edges: readonly EdgePairRef[]): CometRanking {
+  let ranking = rankingCache.get(edges);
+  if (ranking === undefined) {
+    const metas = edges.map(edgePairMeta);
+    const order = Uint32Array.from(metas.keys()).sort((a, b) => {
+      const seedDiff = metas[a].seed - metas[b].seed;
+      if (seedDiff !== 0) return seedDiff;
+      return metas[a].key < metas[b].key ? -1 : metas[a].key > metas[b].key ? 1 : 0;
+    });
+    const rankOf = new Uint32Array(order.length);
+    for (let rank = 0; rank < order.length; rank += 1) rankOf[order[rank]] = rank;
+    ranking = { order, rankOf };
+    rankingCache.set(edges, ranking);
+  }
+  return ranking;
 }
 
 /**
- * The same cap, applied to the **always-on ambient `depends` comets** (2026-07-31).
- *
- * The `contains` branch got its 24-edge ceiling above; the `depends` branch had
- * neither a ceiling nor a ranking. Viewport culling and the tier conditions act
- * as a de facto limit today, but once the element tier fills the screen with
- * `depends` edges there is no ceiling on how many dots flow at once.
- *
- * ⚠️ **This does not re-reverse #512 (the owner's restoration of the ambient
- * comets).** They still flow always, regardless of focus, at the same speed.
- * All this does is apply an already-approved pattern to the branch that was
- * missing it. The old Guardian call to limit comets to ego was explicitly
- * reversed by the owner, and that decision stands.
+ * The pair keys of the first `limit` edges in rank order that `isCandidate` accepts, written into
+ * `into`. It walks the cached ranking and stops at the cap: no sort and no allocation per frame,
+ * O(E) only when fewer than `limit` edges qualify.
  */
 export function selectAmbientDependsComets(
-  visibleDependsEdges: readonly { sourceId: string; targetId: string }[],
+  edges: readonly EdgePairRef[],
+  isCandidate: (edgeIndex: number) => boolean,
+  into: Set<string>,
   limit: number = EGO_CONTAINS_COMET_LIMIT,
 ): ReadonlySet<string> {
-  return rankCometEdges(visibleDependsEdges, limit);
+  into.clear();
+  const { order } = cometRanking(edges);
+  let taken = 0;
+  for (let rank = 0; rank < order.length && taken < limit; rank += 1) {
+    const index = order[rank];
+    if (!isCandidate(index)) continue;
+    into.add(edgePairMeta(edges[index]).key);
+    taken += 1;
+  }
+  return into;
+}
+
+export interface EgoContainsComets<E extends EdgePairRef = EdgePairRef> {
+  keys: ReadonlySet<string>;
+  /** Every incident `contains` edge whose pair key is in `keys`, for an identity lookup per frame. */
+  edges: ReadonlySet<E>;
+}
+
+const egoCometCache = new WeakMap<
+  readonly EdgePairRef[],
+  { incidentIndices: readonly number[] | undefined; limit: number; comets: EgoContainsComets }
+>();
+
+/**
+ * The comet-carrying `contains` edges touching the focused node: its incident `contains` edges in
+ * rank order, first `limit`. `incidentIndices` is the world's `edgeIndexByNode` entry, where a
+ * self-loop appears twice in a row. Cached per edge list and entry, since the physics step and the
+ * draw both ask every frame.
+ */
+export function selectEgoContainsComets<E extends EdgePairRef & { kind: string }>(
+  edges: readonly E[],
+  incidentIndices: readonly number[] | undefined,
+  limit: number = EGO_CONTAINS_COMET_LIMIT,
+): EgoContainsComets<E> {
+  const cached = egoCometCache.get(edges);
+  if (cached !== undefined && cached.incidentIndices === incidentIndices && cached.limit === limit) {
+    return cached.comets as EgoContainsComets<E>;
+  }
+  const { rankOf } = cometRanking(edges);
+  const incident: number[] = [];
+  let previous = -1;
+  for (const index of incidentIndices ?? []) {
+    if (index !== previous && edges[index].kind === "contains") incident.push(index);
+    previous = index;
+  }
+  incident.sort((a, b) => rankOf[a] - rankOf[b]);
+  const keys = new Set(incident.slice(0, Math.max(0, limit)).map((index) => edgePairMeta(edges[index]).key));
+  const cometEdges = new Set(incident.filter((index) => keys.has(edgePairMeta(edges[index]).key)).map((index) => edges[index]));
+  const comets = { keys, edges: cometEdges };
+  egoCometCache.set(edges, { incidentIndices, limit, comets });
+  return comets;
 }
 
 /**
- * Deterministic ranking — ascending `fireflySeed`, ties broken by pair key in
- * lexicographic order. No RNG state.
- *
- * perf 2026-08-19 — this runs every frame. The old comparator recomputed
- * `fireflySeed` (concatenate + hash) twice per call, i.e. O(n log n) string
- * hashes. The `edgePairMeta` cache (once per edge object) is now resolved before
- * the sort and the comparator reads only a number and a cached string. The
- * ordering criteria are unchanged, so the resulting set is element-for-element
- * identical — sort stability is irrelevant here, the comparator is a total order.
+ * The prototype's `updateParticles`: advances every depends edge's phase in place, nothing under
+ * reduced motion. `contains` edges stay still unless `isEgoContainsEligible` accepts them.
  */
-function rankCometEdges(
-  edges: readonly { sourceId: string; targetId: string }[],
-  limit: number,
-): ReadonlySet<string> {
-  const metas = edges.map((e) => edgePairMeta(e));
-  metas.sort((a, b) => {
-    const seedDiff = a.seed - b.seed;
-    if (seedDiff !== 0) return seedDiff;
-    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
-  });
-  return new Set(metas.slice(0, Math.max(0, limit)).map((m) => m.key));
-}
-
-/**
- * The prototype's `updateParticles` — always advances depends-edge phase in
- * place. Under reduced-motion it does nothing. Per-edge speed arrives via
- * `speedOf`, so ego acceleration and the like are the caller's decision and this
- * module imports nothing from `model/`.
- *
- * `contains` edges are stationary by default; only those for which
- * `isEgoContainsEligible` returns true (incident to the selection and inside the
- * cap) advance exactly as depends edges do. Omitting the argument makes every
- * contains edge stationary, the original contract.
- */
-export function updateParticles(
-  edges: readonly ParticleEdge[],
+export function updateParticles<E extends ParticleEdge>(
+  edges: readonly E[],
   dt: number,
   reducedMotion: boolean,
-  speedOf: (edge: ParticleEdge) => number,
-  isEgoContainsEligible: (edge: ParticleEdge) => boolean = () => false,
+  speedOf: (edge: E) => number,
+  isEgoContainsEligible: (edge: E) => boolean = () => false,
 ): void {
   if (reducedMotion) return;
   for (const edge of edges) {

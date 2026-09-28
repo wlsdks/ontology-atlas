@@ -70,9 +70,7 @@ export function windowRows(
   for (let i = 0; i < start; i += 1) before += heights[i] + gap;
   let after = 0;
   for (let i = end; i < count; i += 1) after += heights[i] + gap;
-  // The gap after the last rendered row is drawn by the list itself when `after` is 0.
-  if (end < count) after -= gap;
-  return { start, end, before, after: Math.max(0, after) };
+  return { start, end, before, after };
 }
 
 /** Where row `index` starts, measured from the first row's top edge. */
@@ -96,17 +94,20 @@ function sameWindow(a: WindowedRows, b: WindowedRows): boolean {
   return a.start === b.start && a.end === b.end && a.before === b.before && a.after === b.after;
 }
 
-export function useWindowedRows({
+export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   count,
   estimate,
   overscan = 8,
+  initialRows,
 }: {
   count: number;
   /** A row's height in px before it has been measured. */
   estimate: number;
   overscan?: number;
-}): [WindowedRows, RefObject<HTMLUListElement | null>, (index: number) => void] {
-  const listRef = useRef<HTMLUListElement | null>(null);
+  /** Rows before the first measurement; omitted, every row. */
+  initialRows?: number;
+}): [WindowedRows, RefObject<E | null>, (index: number) => void] {
+  const listRef = useRef<E | null>(null);
   /** Every row's height, measured where it has been rendered, the estimate elsewhere. */
   const heightsRef = useRef<number[]>([]);
   /** The `before` pad the list is currently drawn with, so its own top can be found under it. */
@@ -118,7 +119,10 @@ export function useWindowedRows({
    * and while it does not, the scroll is retried with the heights measured on the way.
    */
   const pendingRef = useRef<{ index: number; tries: number } | null>(null);
-  const [range, setRange] = useState<WindowedRows>(() => EVERYTHING(count));
+  const [range, setRange] = useState<WindowedRows>(() => {
+    const end = Math.min(count, initialRows ?? count);
+    return { start: 0, end, before: 0, after: (count - end) * estimate };
+  });
 
   const compute = useCallback(() => {
     const list = listRef.current;
@@ -206,7 +210,8 @@ export function useWindowedRows({
         changed = true;
       }
     }
-    if (changed) compute();
+    // A new row count recomputes before paint, or the old pads show for a frame.
+    if (changed || heightsRef.current.length !== count) compute();
   });
 
   useEffect(() => {

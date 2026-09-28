@@ -99,6 +99,11 @@ interface FrameResult {
   dt: number;
 }
 
+/** Nothing to draw yet, or the screen is being left: the loop asks again next frame. */
+export const FRAME_NOT_READY = "not-ready";
+/** Nothing moves and the grace window has passed: the loop stops until woken. */
+export const FRAME_ASLEEP = "asleep";
+
 /** Commit viewport changes, advance preview clocks, and decide whether this frame needs work. */
 export function createFrameGate({
   pointerMachineRef,
@@ -164,7 +169,7 @@ export function createFrameGate({
   const result = {} as FrameResult;
   return function runFrameGate(
     now: number,
-  ) {
+  ): FrameResult | typeof FRAME_NOT_READY | typeof FRAME_ASLEEP {
 
     // Lower the backing resolution while dragging (`INTERACTION_DPR_CAP`).
     // The transition happens exactly **twice** — at the start and end of an
@@ -213,9 +218,9 @@ export function createFrameGate({
 
     const { width, height, dpr } = viewportRef.current;
 
-    if (!tokens || !world || width <= 0 || height <= 0) {
-      return null;
-    }
+    if (!tokens || !world) return FRAME_NOT_READY;
+    // A resize wakes the loop (`measure` in the viewport lifecycle).
+    if (width <= 0 || height <= 0) return FRAME_ASLEEP;
 
     const dt =
       lastFrameTimeRef.current === 0
@@ -272,13 +277,13 @@ export function createFrameGate({
     // activity flags say (auto-spin, comets, assembly ramp), a screen that is
     // being left does not get drawn.
     if (now < navYieldUntilRef.current) {
-      return null;
+      return FRAME_NOT_READY;
     }
 
     // --- Idle gate: re-evaluate the activity flags from the refs. Once they
-    // are all off and the grace period has passed, physics and painting are
-    // skipped. rAF keeps running, so any state change resumes naturally on
-    // the next frame — no wake wiring and no freeze failure mode.
+    // are all off and the grace period has passed, the loop stops. Whatever
+    // changes a flag outside a frame must wake it: input and every "draw once
+    // more" write `lastActiveMsRef`, a render and a resize ask for one frame.
     {
       const cam = cameraRef.current;
       const target = cameraTargetRef.current;
@@ -299,23 +304,7 @@ export function createFrameGate({
         Math.abs(cam.scale.value - prev.s) > 0.0001;
       prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
 
-      /**
-       * Ambient sleep factor (design council 「Workbench」 P0 prescription,
-       * 2026-07-28).
-       *
-       * The always-on comets and the fresh breathe are **not switched off**:
-       * the comets are the only channel carrying a `depends` edge's
-       * direction, so switching them off would delete a typed fact. (The
-       * council's test — "does turning that motion off lose information?" —
-       * answers yes here.) Instead, once the person has let go for long
-       * enough, their speed ramps to 0 and they fall asleep.
-       *
-       * The factor multiplies comet speed, so the flow decelerates to a stop
-       * rather than cutting; the moment it reaches 0 the two activity flags
-       * above drop and `isCanvasActive` closes on its own. Any input pushes
-       * `lastInputMs` via `noteInput()` and the factor returns to 1 on the
-       * next frame — the idle-gate design that needs no wake wiring.
-       */
+      // Comets and the fresh breathe sleep rather than switch off (`model/ambient-sleep.ts`).
       const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
       const ambientAsleep = isAmbientAsleep(ambientFactor);
 
@@ -493,7 +482,7 @@ export function createFrameGate({
           lastActiveCausesRef.current = { t: now, causes };
         }
       } else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
-        return null;
+        return FRAME_ASLEEP;
       }
     }
     result.tokens = tokens;

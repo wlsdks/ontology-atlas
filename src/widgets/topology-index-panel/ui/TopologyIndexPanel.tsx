@@ -2,9 +2,9 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useId,
   useMemo,
-  useRef,
   useState,
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -23,6 +23,7 @@ import {
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import { treeAncestorIds } from "../lib/reveal-row";
+import { useIndexRootWindow } from "../lib/use-index-root-window";
 import {
   flattenVisibleRowIds,
   nextRovingId,
@@ -349,13 +350,11 @@ export function TopologyIndexPanel({
 
   // Roving tabindex over the visible rows (the same `isOpen` as the auto-expansion); arrow keys are
   // handled on the tree container.
-  const treeRef = useRef<HTMLDivElement>(null);
+  const [rootRange, rootListRef, bringRow, tabStopFor] = useIndexRootWindow(visibleRoots);
+  const revealRow = useEffectEvent((nodeId: string) => bringRow(nodeId, "reveal"));
   // A revealed row is scrolled into the tree's own view, also when a search ends.
   useEffect(() => {
-    if (!revealedSelection) return;
-    treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]").forEach((row) => {
-      if (row.dataset.indexRow === revealedSelection) row.scrollIntoView?.({ block: "nearest" });
-    });
+    if (revealedSelection) revealRow(revealedSelection);
   }, [revealedSelection, isFiltering]);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const orderedRowIds = useMemo(
@@ -365,14 +364,10 @@ export function TopologyIndexPanel({
     [visibleRoots, openIds, isFiltering, lensActive],
   );
   const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectedId);
+  const tabStopRowId = tabStopFor(resolvedActiveRowId);
 
-  const focusRow = (nodeId: string) => {
-    // A tabIndex=-1 row still accepts focus(); it becomes the entry point on the next render.
-    const rows = treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]");
-    rows?.forEach((el) => {
-      if (el.dataset.indexRow === nodeId) el.focus();
-    });
-  };
+  // A tabIndex=-1 row still accepts focus(); it becomes the entry point on the next render.
+  const focusRow = (nodeId: string) => bringRow(nodeId, "focus");
 
   const handleTreeKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
     const key = event.key;
@@ -661,14 +656,13 @@ export function TopologyIndexPanel({
       ) : null}
 
       <div
-        ref={treeRef}
         role="tree"
         aria-label={labels.label}
         data-testid="topology-index-tree"
         onKeyDown={handleTreeKeyDown}
         onFocusCapture={handleTreeFocus}
         // min-h 24 keeps the tree from collapsing to 0 in a short window beside the first-run card.
-        className="min-h-24 shrink space-y-px overflow-y-auto"
+        className="min-h-24 shrink overflow-y-auto"
         // A 12px bottom mask fade instead of a hard-clipped last row.
         style={{
           maskImage: "linear-gradient(to bottom, black calc(100% - 12px), transparent)",
@@ -680,26 +674,33 @@ export function TopologyIndexPanel({
             {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
-          visibleRoots.map((root, rootIndex) => (
-            <TopologyIndexTreeRow
-              key={root.node.id}
-              entry={root}
-              depth={0}
-              position={rootIndex + 1}
-              setSize={visibleRoots.length}
-              isOpen={isOpen}
-              onToggleOpen={toggleOpen}
-              onSelect={onSelect}
-              selectedId={selectedId}
-              activeRowId={resolvedActiveRowId}
-              changedSlugs={changedSlugs}
-              agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
-              maxDomainDescendantCount={maxDomainDescendantCount}
-              domainCensus={domainCensus}
-              query={trimmedQuery || undefined}
-              labels={labels}
-            />
-          ))
+          <div
+            ref={rootListRef}
+            className="flex flex-col gap-px"
+            style={{ paddingTop: rootRange.before, paddingBottom: rootRange.after }}
+          >
+            {visibleRoots.slice(rootRange.start, rootRange.end).map((root, offset) => (
+              <div key={root.node.id} data-row-index={rootRange.start + offset}>
+                <TopologyIndexTreeRow
+                  entry={root}
+                  depth={0}
+                  position={rootRange.start + offset + 1}
+                  setSize={visibleRoots.length}
+                  isOpen={isOpen}
+                  onToggleOpen={toggleOpen}
+                  onSelect={onSelect}
+                  selectedId={selectedId}
+                  activeRowId={tabStopRowId}
+                  changedSlugs={changedSlugs}
+                  agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
+                  maxDomainDescendantCount={maxDomainDescendantCount}
+                  domainCensus={domainCensus}
+                  query={trimmedQuery || undefined}
+                  labels={labels}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
