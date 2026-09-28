@@ -24,6 +24,13 @@
 @import "./styles/base-root-alpha.css";
 @import "./styles/base-map-tokens.css";
 @import "./styles/base-responsive.css";
+@import "./styles/motion-indicator.css";
+@import "./styles/motion-stagger.css";
+@import "./styles/motion-feedback.css";
+@import "./styles/motion-work.css";
+@import "./styles/motion-checkbox.css";
+@import "./styles/motion-surface.css";
+@import "./styles/motion-morph.css";
 @import "./styles/shell.css";
 @import "./styles/gateway.css";
 @import "./styles/gateway-map.css";

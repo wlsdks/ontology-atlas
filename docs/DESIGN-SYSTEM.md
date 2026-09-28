@@ -60,7 +60,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [One text edge per column (2026-09-12)](#one-text-edge-per-column-2026-09-12)
 - [The Library's ground — an object, and a field (2026-09-09)](#the-librarys-ground--an-object-and-a-field-2026-09-09)
 - [Contextual ontology writing; Studio surface retired 2026-08-21](#contextual-ontology-writing-studio-surface-retired-2026-08-21)
-- [Motion principles](#motion-principles)
+- [Motion primitives](#motion-primitives)
 - [Page header — English caption + Korean h1](#page-header--english-caption--korean-h1)
 - [Geometry & Type Codex (R5, 2026-07)](#geometry--type-codex-r5-2026-07)
 - [Chrome Syntax (feat/chrome-system)](#chrome-syntax-featchrome-system)
@@ -2262,14 +2262,95 @@ reflection → accumulating progress), not from bling — Duolingo/Oura/Linear m
 this surface too. Full history + KEEP/KILL/BUILD: session memory
 `ontology-studio-game-direction`.
 
-## Motion principles
+## Motion primitives
 
-- Initial load: `opacity 0 → 1` + `translateY 8px → 0` (spring)
-- Hover: border opacity rises, connected edges brighten — no scale or glow
-- Drawer: right-side `x: 100% → 0` spring
-- Filter toggle: deselected categories fade to `opacity 0.15`
-- Background: fully static
-- Respect `prefers-reduced-motion`
+Every surface moves through one of these thirteen primitives. Durations and
+easings come from `--motion-*` or `MOTION`/`STAGGER` only; no primitive adds a
+duration or an easing. Three named values arrive with their primitives: a 35ms
+stagger step, a 3px refusal travel and a 6px page rise. Each primitive's
+CSS lives in its own `app/styles/motion-*.css` part inside `@layer base`, with
+its reduced-motion equivalent; the OS preference is the only switch.
+
+**Decoration rule.** Every use names what it explains: causality, identity,
+origin, state progression, or order established once. A use that cannot name
+one is dropped. Count-ups answer an action; existing arrival count-ups keep
+their behaviour.
+
+### Shared-element morph
+
+`runMorph` and `morphName` in `src/shared/motion/shared-element.ts`, CSS in
+`motion-morph.css`. The first target is concept popover to full detail. Names
+exist only while a transition runs; React `ViewTransition` and `transitionTypes`
+are not used.
+
+### Staggered entrance
+
+`useStaggerOnce` in `src/shared/motion/stagger.ts`, CSS in `motion-stagger.css`.
+Every list staggers on its first arrival, once per session, keyed by vault and
+list, capped at three steps (105ms) on `--motion-base`. Dense rows fade only;
+later arrivals get one unstaggered `motion-arrive`.
+
+### Count-up
+
+`useCountUp` on `MOTION.settle` with `easeMotion`; `CountUpNumber` renders an
+aria-hidden animated value beside an sr-only final value.
+
+### Relation reveal
+
+Built only if its recording spike shows the ego edges hard-cut. Relations draw
+source to target; comets and pulses stay inside the drawn span.
+
+### Continuous state
+
+`WorkStatus` in `src/shared/motion/work-status.tsx`, CSS in `motion-work.css`:
+one glyph (ring, arc, check or X) and a crossfading label. It carries no live
+region; a status mounted as done draws no check.
+
+### Expand and collapse
+
+`Disclosure` animates through `RowDisclosure`; `Input` error text opens through
+`RowDisclosure` and stays `role="alert"`.
+
+### Progress to done
+
+`WorkProgress` in `src/shared/motion/work-progress.tsx`, CSS in
+`motion-work.css`: a scaleX fill, an indeterminate sweep only without a total.
+
+### Press
+
+`CONTROL_TRANSITION` includes `translate`; detached shapes and `Button` travel
+`active:translate-y-px`, flush shapes press with one surface or ink step, and
+reduced motion uses `motion-reduce:translate-none`.
+
+### Hover
+
+Hover changes ink, surface or border on `--motion-fast`, never position.
+
+### Toggle and checkbox draw
+
+`DrawnCheck` in `src/shared/motion/drawn-check.tsx`, CSS in
+`motion-checkbox.css`: the check draws on `--motion-fast`.
+
+### Selection indicator
+
+`useSlidingIndicator` in `src/shared/motion/use-sliding-indicator.ts`, CSS in
+`motion-indicator.css`: one indicator per group, placed without a transition
+first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
+`--motion-fast`.
+
+### Success and failure
+
+`useCopyFeedback` gains `run`, `settle` and a `done` state on one dwell;
+`FeedbackGlyph` in `src/shared/motion/feedback-glyph.tsx`, CSS in
+`motion-feedback.css`. Only icon-only controls with `data-feedback-travel`
+shake, by the 3px refusal travel.
+
+### Direction
+
+Pages crossfade with a 6px rise on `--motion-base` and
+fade only under reduced motion. Anchored popovers grow from their trigger,
+agent docks share one reflow grammar, drawers slide from their edge, modals
+rise; each leaves the way it came. CSS in `motion-surface.css`.
 
 ## Page header — English caption + Korean h1
 
@@ -2859,12 +2940,7 @@ no-restricted-syntax -- <reason>`. Current listings:
 
 ### Motion Syntax Index
 
-Motion tokens paired with geometry (value source: `--topology-motion-*` at the bottom of `app/globals.css`):
-
-- **Spring family** — Noted as `damping` / `response` pairs. A single physical vocabulary shared by chrome appearance, camera, panel, and drag.
-- **Chrome appearance** — 180ms.
-- **Camera/focus movement** — 200~420ms range.
-- `prefers-reduced-motion` respect is already handled in the base layer.
+See [Motion primitives](#motion-primitives).
 
 ## Chrome Syntax (feat/chrome-system)
 
