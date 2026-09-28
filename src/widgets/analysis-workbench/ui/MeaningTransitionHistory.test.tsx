@@ -74,6 +74,7 @@ describe('MeaningTransitionHistory', () => {
     expect(await screen.findByText('problems:1')).toBeInTheDocument();
     fireEvent.click(screen.getByText('loadOlder'));
     expect(await screen.findAllByText('Full task text stays visible')).toHaveLength(2);
+    fireEvent.click(screen.getByText('problems:1'));
     expect(screen.getByText(/bad\.md: bad digest/)).toBeInTheDocument();
   });
 

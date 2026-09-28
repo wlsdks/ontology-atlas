@@ -332,7 +332,8 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     // Verbatim and in one piece behind the disclosure, which stands outside the quotation.
     const fold = screen.getByTestId('acp-chat-request-full');
     expect(bubble.contains(fold)).toBe(false);
-    expect(fold.closest('details')).toHaveTextContent('Scope: {"projectSlug":"storefront"}.');
+    fireEvent.click(fold);
+    expect(document.getElementById(fold.getAttribute('aria-controls')!)).toHaveTextContent('Scope: {"projectSlug":"storefront"}.');
   });
 
   it('사람이 직접 쓴 줄바꿈은 말풍선에서도 줄바꿈으로 남는다', async () => {

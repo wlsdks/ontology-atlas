@@ -29,6 +29,7 @@ import { transientSurface } from '@/shared/ui/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Link } from '@/i18n/navigation';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
+import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
@@ -131,6 +132,7 @@ export function ArchitectureWorkbench({
   /** Whether this runtime may point at the installed app. False inside the app itself. */
   offersInstalledApp?: boolean;
 }) {
+  const vaultKey = useVaultSessionIdentityScope();
   const t = useTranslations('architecture');
   const tReview = useTranslations('analysisWorkbench');
   const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
@@ -1055,6 +1057,7 @@ export function ArchitectureWorkbench({
               >
                 <ArchitectureRoleDetail
                   roleId={activeRole}
+                  vaultKey={vaultKey}
                   index={roleIndexOf.get(activeRole) ?? 1}
                   label={roleLabel(activeRole)}
                   summary={roleSummaryOf.get(activeRole) ?? null}

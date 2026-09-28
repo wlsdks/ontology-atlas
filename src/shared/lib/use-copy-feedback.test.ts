@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useCopyFeedback } from "./use-copy-feedback";
+import { COPY_FEEDBACK_RESET_MS, useCopyFeedback } from "./use-copy-feedback";
 
 const copyMock = vi.fn<(text: string) => Promise<boolean>>();
 vi.mock("./copy-text", () => ({ copyText: (t: string) => copyMock(t) }));
@@ -74,5 +74,74 @@ describe("useCopyFeedback", () => {
       vi.advanceTimersByTime(1500);
     });
     expect(result.current.state).toBe("idle");
+  });
+
+  it("run settles done when the action resolves, including a deliberate decline", async () => {
+    const { result } = renderHook(() => useCopyFeedback());
+    let returned: string | undefined;
+    await act(async () => {
+      returned = await result.current.run(async () => "reject_once");
+    });
+    expect(returned).toBe("reject_once");
+    expect(result.current.state).toBe("done");
+    act(() => {
+      vi.advanceTimersByTime(COPY_FEEDBACK_RESET_MS);
+    });
+    expect(result.current.state).toBe("idle");
+  });
+
+  it("run settles failed when the action throws and returns undefined", async () => {
+    const { result } = renderHook(() => useCopyFeedback());
+    let returned: unknown = "unset";
+    await act(async () => {
+      returned = await result.current.run(() => {
+        throw new Error("no");
+      });
+    });
+    expect(returned).toBeUndefined();
+    expect(result.current.state).toBe("failed");
+  });
+
+  it("settle shows the outcome on the same dwell", () => {
+    const { result } = renderHook(() => useCopyFeedback());
+    act(() => {
+      result.current.settle("done");
+    });
+    expect(result.current.state).toBe("done");
+    act(() => {
+      vi.advanceTimersByTime(COPY_FEEDBACK_RESET_MS - 1);
+    });
+    expect(result.current.state).toBe("done");
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current.state).toBe("idle");
+  });
+
+  it("a repeat failure passes one idle frame so its animation restarts", () => {
+    const { result } = renderHook(() => useCopyFeedback());
+    act(() => {
+      result.current.fail();
+    });
+    expect(result.current.state).toBe("failed");
+    act(() => {
+      result.current.fail();
+    });
+    expect(result.current.state).toBe("idle");
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    expect(result.current.state).toBe("failed");
+  });
+
+  it("a different outcome replaces the current one without an idle frame", () => {
+    const { result } = renderHook(() => useCopyFeedback());
+    act(() => {
+      result.current.fail();
+    });
+    act(() => {
+      result.current.settle("done");
+    });
+    expect(result.current.state).toBe("done");
   });
 });

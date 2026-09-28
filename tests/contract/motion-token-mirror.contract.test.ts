@@ -8,6 +8,7 @@ import {
   MOTION_EASE_EXIT,
   OVERLAY_SPRING,
   OVERLAY_SPRING_REDUCED,
+  STAGGER,
 } from "../../src/shared/motion";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
@@ -79,6 +80,10 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
    * ramp first and then widened here. That order is what "the spec comes first"
    * means.
    */
+  it("--motion-stagger mirrors STAGGER", () => {
+    expect(STAGGER).toBeCloseTo(msTokenToSeconds("--motion-stagger"), 6);
+  });
+
   it("이름 집합이 램프 3단을 벗어나지 않는다 (medium/slow 부활 차단)", () => {
     expect(Object.keys(MOTION).sort()).toEqual(["base", "fast", "settle"]);
   });

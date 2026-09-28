@@ -1,12 +1,15 @@
 "use client";
 
-import { Check, Clipboard } from "lucide-react";
+import { Clipboard } from "lucide-react";
+import { useState, type HTMLAttributes } from "react";
+import type { CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
+import { FeedbackGlyph } from "@/shared/motion/feedback-glyph";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import type { HTMLAttributes } from "react";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface CompactCopyButtonProps {
   copied: boolean;
+  state?: CopyFeedbackState;
   label: string;
   ariaLabel: string;
   onClick: () => void;
@@ -16,11 +19,11 @@ export interface CompactCopyButtonProps {
 }
 
 /**
- * A compact copy pill whose icon flips to a check; shared so every copy affordance reads as one
- * control.
+ * A compact copy pill whose icon becomes the result, announced as well as drawn.
  */
 export function CompactCopyButton({
   copied,
+  state,
   label,
   ariaLabel,
   onClick,
@@ -28,22 +31,43 @@ export function CompactCopyButton({
   iconOnly = false,
   ...attrs
 }: CompactCopyButtonProps & Omit<HTMLAttributes<HTMLButtonElement>, "className" | "onClick">) {
+  const feedback: CopyFeedbackState = state ?? (copied ? "copied" : "idle");
+  const [idleText, setIdleText] = useState({ label, ariaLabel });
+  if (feedback === "idle" && (idleText.label !== label || idleText.ariaLabel !== ariaLabel)) {
+    setIdleText({ label, ariaLabel });
+  }
+  const announcement =
+    feedback === "idle"
+      ? ""
+      : ariaLabel !== idleText.ariaLabel
+        ? ariaLabel
+        : label !== idleText.label
+          ? label
+          : ariaLabel;
+
   return (
-    <button
-      {...attrs}
-      type="button"
-      onClick={onClick}
-      className={controlClass({
-        shape: 'chip',
-        size: 'md',
-        tone: 'muted',
-        className: `min-h-9 min-w-0 justify-center px-2 py-1 transition-[background-color,color,transform] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`,
-      })}
-      aria-label={ariaLabel}
-      title={label}
-    >
-      {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
-      {iconOnly ? null : <span className="min-w-0 truncate">{label}</span>}
-    </button>
+    <>
+      <button
+        {...attrs}
+        type="button"
+        onClick={onClick}
+        data-feedback={feedback}
+        data-feedback-travel={iconOnly ? "" : undefined}
+        className={controlClass({
+          shape: 'chip',
+          size: 'md',
+          tone: 'muted',
+          className: `min-h-9 min-w-0 justify-center px-2 py-1 transition-[background-color,color,translate] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-px motion-reduce:translate-none ${className}`,
+        })}
+        aria-label={ariaLabel}
+        title={label}
+      >
+        <FeedbackGlyph state={feedback} size={ICON_SIZE.sm} icon={<Clipboard size={ICON_SIZE.sm} aria-hidden />} />
+        {iconOnly ? null : <span className="min-w-0 truncate">{label}</span>}
+      </button>
+      <span role="status" className="sr-only">
+        {announcement}
+      </span>
+    </>
   );
 }

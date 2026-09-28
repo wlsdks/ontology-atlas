@@ -111,7 +111,9 @@ describe('TabBar', () => {
     expect(freshness).toHaveFocus();
 
     // The rail's active tile, not an edge stripe or an underline.
-    expect(freshness.className).toContain('bg-[color:var(--color-indigo-a14)]');
+    const surface = list.querySelector('[data-selection-indicator]');
+    expect(surface).toHaveAttribute('data-selection-indicator', 'surface-y');
+    expect(surface?.className).toContain('bg-[color:var(--color-indigo-a14)]');
     expect(freshness.className).not.toMatch(/border-b-|border-l-/);
   });
 

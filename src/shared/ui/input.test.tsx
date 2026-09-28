@@ -78,3 +78,25 @@ describe("Textarea behaviour contract", () => {
     expect(area.getAttribute("aria-describedby")).toBe(screen.getByRole("alert").id);
   });
 });
+
+describe("Input error disclosure", () => {
+  it("opens the error through the row disclosure and keeps it an alert", () => {
+    const { rerender } = render(<Input label="Slug" />);
+    const box = document.querySelector(".ai-row-disclosure");
+    expect(box?.getAttribute("data-state")).toBe("closed");
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    rerender(<Input label="Slug" error="Taken" />);
+    expect(box?.getAttribute("data-state")).toBe("open");
+    expect(screen.getByRole("alert").textContent).toBe("Taken");
+  });
+
+  it("keeps the last message while the error closes", () => {
+    const { rerender } = render(<Input label="Slug" error="Taken" />);
+    rerender(<Input label="Slug" />);
+    const box = document.querySelector(".ai-row-disclosure");
+    expect(box?.getAttribute("data-state")).toBe("closed");
+    expect(box?.textContent).toBe("Taken");
+    expect(screen.getByLabelText("Slug").getAttribute("aria-invalid")).toBeNull();
+  });
+});

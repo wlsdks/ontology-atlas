@@ -1,60 +1,73 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { copyText } from "./copy-text";
 
-export type CopyFeedbackState = "idle" | "copied" | "failed";
+export type CopyFeedbackState = "idle" | "copied" | "done" | "failed";
+
+type Outcome = Exclude<CopyFeedbackState, "idle">;
 
 /**
- * Clipboard copy plus transient state feedback (idle → copied/failed → idle).
- *
- * Consolidates logic that was hand-repeated at 16+ call sites: a `copyState` useState, a
- * reset-timer ref, unmount cleanup, and a setTimeout back to idle after `copyText`. Each site
- * keeps its own styling and shares only the state machine.
- *
- * @param resetMs how long copied/failed shows before returning to idle
- *   (default {@link COPY_FEEDBACK_RESET_MS}).
- * @returns the state and `copy(text)`; `copy` also returns a success boolean so callers can
- *   add their own feedback, such as a toast.
- */
-/**
- * **How long "copied" stays on screen — one answer.**
+ * **How long a result stays on screen — one answer.**
  *
  * The confirmation has to mean *just now*: left up permanently it becomes a lie to whoever
- * looks later. How long "just now" lasts was two answers until 2026-09-08 — this hook's
- * default at 13 call sites, and 1600 at four call sites that passed it explicitly plus three
- * that ran their own timer beside the hook. 100ms is nothing to a reader and everything to a
- * reviewer, who has to check twenty sites to learn whether the product has one dwell or two.
+ * looks later. Copy, run and settle share this dwell, so the product has one.
  */
 export const COPY_FEEDBACK_RESET_MS = 1500;
 
+/**
+ * Transient result feedback for a control: idle → copied, done or failed → idle.
+ *
+ * `run(action)` settles `done` when the action resolves and `failed` when it throws, so an
+ * action that declines on purpose (a `reject_once` answer) reads as done, never as danger.
+ * The same result twice in a row passes one idle frame first, so its animation restarts.
+ */
 export function useCopyFeedback(resetMs = COPY_FEEDBACK_RESET_MS): {
   state: CopyFeedbackState;
   copy: (text: string) => Promise<boolean>;
-  /**
-   * A copy that could not be attempted — the text itself could not be built — reads as the
-   * failed copy it is, with the same dwell, so the control that was pressed says so (2026-09-26).
-   */
   fail: () => void;
+  run: <T>(action: () => T | Promise<T>) => Promise<T | undefined>;
+  settle: (outcome: "done" | "failed") => void;
 } {
   const [state, setState] = useState<CopyFeedbackState>("idle");
+  const current = useRef<CopyFeedbackState>("idle");
   const resetTimer = useRef<number | null>(null);
+  const restartFrame = useRef<number | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (resetTimer.current !== null) {
-        window.clearTimeout(resetTimer.current);
-      }
-    };
+  const show = useCallback((next: CopyFeedbackState) => {
+    current.current = next;
+    setState(next);
   }, []);
 
-  const settle = useCallback(
-    (next: Exclude<CopyFeedbackState, "idle">) => {
-      if (resetTimer.current !== null) {
-        window.clearTimeout(resetTimer.current);
-      }
-      setState(next);
-      resetTimer.current = window.setTimeout(() => setState("idle"), resetMs);
+  const clearPending = useCallback(() => {
+    if (resetTimer.current !== null) window.clearTimeout(resetTimer.current);
+    if (restartFrame.current !== null) window.cancelAnimationFrame(restartFrame.current);
+    resetTimer.current = null;
+    restartFrame.current = null;
+  }, []);
+
+  useEffect(() => clearPending, [clearPending]);
+
+  const land = useCallback(
+    (next: Outcome) => {
+      show(next);
+      resetTimer.current = window.setTimeout(() => show("idle"), resetMs);
     },
-    [resetMs],
+    [resetMs, show],
+  );
+
+  const settle = useCallback(
+    (next: Outcome) => {
+      clearPending();
+      if (current.current !== next) {
+        land(next);
+        return;
+      }
+      show("idle");
+      restartFrame.current = window.requestAnimationFrame(() => {
+        restartFrame.current = null;
+        land(next);
+      });
+    },
+    [clearPending, land, show],
   );
 
   const copy = useCallback(
@@ -68,5 +81,19 @@ export function useCopyFeedback(resetMs = COPY_FEEDBACK_RESET_MS): {
 
   const fail = useCallback(() => settle("failed"), [settle]);
 
-  return { state, copy, fail };
+  const run = useCallback(
+    async <T>(action: () => T | Promise<T>): Promise<T | undefined> => {
+      try {
+        const result = await action();
+        settle("done");
+        return result;
+      } catch {
+        settle("failed");
+        return undefined;
+      }
+    },
+    [settle],
+  );
+
+  return { state, copy, fail, run, settle };
 }

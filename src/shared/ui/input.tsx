@@ -9,10 +9,12 @@ import {
   useId,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 
 import { cn } from "@/shared/lib/cn";
 import { fieldClass, fieldLabel, type FieldFrame, type FieldSize } from "./control-class";
+import { RowDisclosure } from "./row-disclosure";
 
 /**
  * Behaviour layer of a form field, not styling: a required accessible name, and
@@ -69,6 +71,8 @@ function FieldShell({
   children: ReactNode;
 }) {
   void labelledBy;
+  const [shownError, setShownError] = useState(error);
+  if (error != null && error !== shownError) setShownError(error);
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label != null ? (
@@ -76,12 +80,14 @@ function FieldShell({
           {label}
         </label>
       ) : null}
-      {children}
-      {error != null ? (
-        <p id={errorId} role="alert" className="text-body text-[color:var(--color-status-danger)]">
-          {error}
-        </p>
-      ) : null}
+      <div>
+        {children}
+        <RowDisclosure open={error != null} id={`${id}-error-box`} className="pt-1">
+          <p id={errorId} role="alert" className="text-body text-[color:var(--color-status-danger)]">
+            {shownError}
+          </p>
+        </RowDisclosure>
+      </div>
       {hint != null ? (
         <p id={hintId} className="text-label leading-label text-[color:var(--color-text-quaternary)]">
           {hint}
