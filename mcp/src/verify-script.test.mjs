@@ -737,17 +737,28 @@ describe('verify.mjs first-contact gates', () => {
     };
     const backlinkRowSchema = {
       type: 'object',
-      required: ['uid', 'slug', 'kind', 'title', 'mtime'],
+      required: ['slug', 'isNode', 'title', 'mtime'],
       properties: {
         uid: { type: 'string', pattern: NODE_UID_PATTERN },
         slug: nonBlankStringSchema,
         kind: nonBlankStringSchema,
+        isNode: { type: 'boolean' },
         title: nonBlankStringSchema,
-        domain: nonBlankStringSchema,
+        domain: { type: 'string' },
         mtime: { type: 'number', minimum: 0 },
         matchedKeys: { type: 'array', items: nonBlankStringSchema },
         matchedInBody: { type: 'boolean' },
       },
+      oneOf: [
+        {
+          properties: { isNode: { const: true } },
+          required: ['kind'],
+        },
+        {
+          properties: { isNode: { const: false } },
+          not: { anyOf: [{ required: ['uid'] }, { required: ['kind'] }] },
+        },
+      ],
       additionalProperties: false,
     };
     const compactProposedActionSchema = {
@@ -2675,23 +2686,7 @@ describe('verify.mjs first-contact gates', () => {
           properties: {
             target: { type: 'string' },
             total: { type: 'integer', minimum: 0 },
-            matches: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-                properties: {
-                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
-                  slug: { type: 'string' },
-                  kind: { type: 'string' },
-                  title: { type: 'string' },
-                  mtime: { type: 'number', minimum: 0 },
-                  matchedKeys: { type: 'array', items: { type: 'string' } },
-                  matchedInBody: { type: 'boolean' },
-                },
-                additionalProperties: false,
-              },
-            },
+            matches: { type: 'array', items: backlinkRowSchema },
           },
           additionalProperties: false,
         },
@@ -4797,7 +4792,29 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       ]),
-      'find_backlinks outputSchema match matchedKeys drift',
+      'find_backlinks outputSchema matches drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'find_backlinks'),
+        {
+          ...tools.find((tool) => tool.name === 'find_backlinks'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'find_backlinks').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'find_backlinks').outputSchema.properties,
+              matches: {
+                ...tools.find((tool) => tool.name === 'find_backlinks').outputSchema.properties.matches,
+                items: {
+                  ...tools.find((tool) => tool.name === 'find_backlinks').outputSchema.properties.matches.items,
+                  required: ['uid', 'slug', 'kind', 'isNode', 'title', 'mtime'],
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'find_backlinks outputSchema matches drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -7220,7 +7237,7 @@ describe('verify.mjs first-contact gates', () => {
                 wouldChange: true,
                 blockedReasons: ['1 backlink requires force:true'],
                 slug: 'gone',
-                backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
+                backlinks: [{ slug: 'ref', kind: 'capability', isNode: true, title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
                 message: 'dry-run: force:true to apply',
               }),
             },
@@ -7233,13 +7250,36 @@ describe('verify.mjs first-contact gates', () => {
             wouldChange: true,
             blockedReasons: ['1 backlink requires force:true'],
             slug: 'gone',
-            backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
+            backlinks: [{ slug: 'ref', kind: 'capability', isNode: true, title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
             message: 'dry-run: force:true to apply',
           },
         },
       }, 'delete_concept'),
       'delete_concept dry-run response backlinks[0] matchedKeys drift',
     );
+    const deletePreviewFailure = (backlinks) => {
+      const payload = {
+        ok: false,
+        dryRun: true,
+        previewReady: true,
+        canConfirm: false,
+        wouldChange: true,
+        blockedReasons: ['1 backlink requires force:true'],
+        slug: 'gone',
+        backlinks,
+        message: 'dry-run: force:true to apply',
+      };
+      return destructiveDryRunFailure({ result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }, 'delete_concept');
+    };
+    assert.equal(deletePreviewFailure([{ slug: 'wiki/notes', isNode: false, title: 'Notes', domain: '', mtime: 1, matchedInBody: true }]), null);
+    for (const row of [
+      { slug: 'wiki/notes', isNode: false, kind: 'capability', title: 'Notes', mtime: 1, matchedInBody: true },
+      { slug: 'wiki/notes', isNode: false, uid: '11111111-1111-4111-8111-111111111111', title: 'Notes', mtime: 1, matchedInBody: true },
+      { slug: 'ref', isNode: true, title: 'Ref', mtime: 1, matchedKeys: ['relates'] },
+      { slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: ['relates'] },
+    ]) {
+      assert.equal(deletePreviewFailure([row]), 'delete_concept dry-run response backlinks[0] shape drift', JSON.stringify(row));
+    }
   });
 
   it('fails missing destructive dry-run smoke responses', () => {
@@ -8846,8 +8886,12 @@ Continue.`;
     assert.equal(
       findBacklinksFailure({
         target: 'project',
-        total: 1,
-        matches: [{ ...match, slug: 'domains/core', kind: 'domain', matchedKeys: ['domains'] }],
+        total: 3,
+        matches: [
+          { ...match, slug: 'domains/core', kind: 'domain', isNode: true, matchedKeys: ['domains'] },
+          { slug: 'capabilities/handwritten', kind: 'capability', isNode: true, title: 'Handwritten', mtime: 1, matchedKeys: ['relates'] },
+          { slug: 'wiki/notes', isNode: false, title: 'Notes', mtime: 1, matchedInBody: true },
+        ],
       }, 'project'),
       null,
     );
@@ -9453,8 +9497,20 @@ Continue.`;
       'find_backlinks response target mismatch: expected project, got other',
     );
     assert.equal(
-      findBacklinksFailure({ target: 'project', total: 1, matches: [match] }, 'project'),
+      findBacklinksFailure({ target: 'project', total: 1, matches: [{ ...match, isNode: true }] }, 'project'),
       'find_backlinks response match has no backlink evidence: project',
+    );
+    assert.equal(
+      findBacklinksFailure({ target: 'project', total: 1, matches: [{ ...match, matchedInBody: true }] }, 'project'),
+      'find_backlinks response missing isNode: project',
+    );
+    assert.equal(
+      findBacklinksFailure({ target: 'project', total: 1, matches: [{ ...match, isNode: false, matchedInBody: true }] }, 'project'),
+      'find_backlinks response non-node exposes graph identity: project',
+    );
+    assert.equal(
+      findBacklinksFailure({ target: 'project', total: 1, matches: [{ slug: 'project', isNode: true, title: 'Project', mtime: 1, matchedInBody: true }] }, 'project'),
+      'find_backlinks response missing node kind: project',
     );
     assert.equal(queryConceptsFailure({ matches: [] }), 'query_concepts response missing filter');
     assert.equal(

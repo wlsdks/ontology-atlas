@@ -1562,19 +1562,12 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   return null;
 }
 
-/** Docs pointing at `targetSlug` through a frontmatter graph key or a body wikilink or markdown link. */
 export function findBacklinks(rootPath, targetSlug, options = {}) {
-  // `includeAmbiguousTailRefs` adds rows whose ambiguous ref could mean the
-  // target, marked `ambiguousTail: true`. The default stays exact-only, but
-  // delete_concept opts in, or a node referenced only by an ambiguous tail would
-  // be deleted without force or warning.
   const includeAmbiguous = options.includeAmbiguousTailRefs === true;
   const docs = loadVaultDocs(rootPath);
   const { resolve: resolveRef, resolveCandidates } = buildRefIndex(docs);
   const resolvedTarget = resolveRef(targetSlug) || targetSlug;
   const matches = [];
-  // collectNeighborRefs reads legacy keys (`depends_on`) as canonical edges and
-  // resolves a frontmatter slug alias to the same node.
   const requestedTail = targetSlug.split('/').pop();
   const resolvedTail = resolvedTarget.split('/').pop();
   const bodyNeedles = new Set([
@@ -1602,8 +1595,6 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
         if (!matchedKeys.includes(key)) matchedKeys.push(key);
       }
     }
-    // Alias (`[[x|label]]`) and heading (`[[x#h]]`) wikilinks count too, because
-    // redirectBacklinks rewrites them.
     const bodyHit = [...bodyNeedles].some(
       (needle) =>
         doc.body.includes(`[[${needle}]]`) ||
@@ -1613,12 +1604,13 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
         doc.body.includes(`/${needle}.md`),
     );
     if (matchedKeys.length === 0 && !bodyHit) continue;
+    const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
     matches.push({
-      uid: doc.frontmatter.uid,
+      ...(isNode && nodeUidIssue(doc.frontmatter.uid) === null ? { uid: doc.frontmatter.uid } : {}),
       slug: doc.slug,
-      kind: doc.frontmatter.kind,
+      ...(isNode ? { kind: doc.frontmatter.kind } : {}),
+      isNode,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
-      // Same fields as list_concepts, so an agent handles both views alike.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
       matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,

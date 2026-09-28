@@ -78,6 +78,14 @@ describe("nextRovingId", () => {
     expect(nextRovingId(ids, "b", "End")).toBe("c");
   });
 
+  it("PageDown/PageUp move a page of rows and clamp at the ends", () => {
+    const rows = Array.from({ length: 25 }, (_, i) => `r${i}`);
+    expect(nextRovingId(rows, "r0", "PageDown")).toBe("r10");
+    expect(nextRovingId(rows, "r20", "PageDown")).toBe("r24");
+    expect(nextRovingId(rows, "r12", "PageUp")).toBe("r2");
+    expect(nextRovingId(rows, "r3", "PageUp")).toBe("r0");
+  });
+
   it("an out-of-list current id lands on the first row", () => {
     expect(nextRovingId(ids, "gone", "ArrowDown")).toBe("a");
     expect(nextRovingId(ids, null, "ArrowUp")).toBe("a");

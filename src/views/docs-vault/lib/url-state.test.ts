@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { replaceDocsVaultUrlState } from './url-state';
+import { replaceDocsVaultUrlState, settleDocsVaultAddress } from './url-state';
 
 // jsdom allows only same-origin replaceState.
 const ORIGINAL_HREF = `${window.location.origin}/docs/`;
@@ -111,5 +111,24 @@ describe('replaceDocsVaultUrlState', () => {
     const params = new URL(window.location.href).searchParams;
     expect(params.get('group')).toBe('docs');
     expect(params.get('sort')).toBe('recent');
+  });
+});
+
+describe('settleDocsVaultAddress', () => {
+  it('names the settled document in the address and keeps the entry the router owns', () => {
+    const routerEntry = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: ['docs'] } };
+    window.history.replaceState(routerEntry, '', `${ORIGINAL_HREF}?tab=ontology`);
+    const listener = vi.fn();
+    window.addEventListener('app:urlchange', listener);
+    settleDocsVaultAddress('/docs/', 'README');
+    window.removeEventListener('app:urlchange', listener);
+    expect(currentSearch()).toBe('?tab=ontology&slug=README');
+    expect(window.history.state).toEqual(routerEntry);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the address alone once it belongs to another route', () => {
+    settleDocsVaultAddress('/library/', 'README');
+    expect(currentSearch()).toBe('');
   });
 });

@@ -17,10 +17,12 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type RefO
  * The caller puts `onKeyDown` on the list, `tabIndexOf(i)` and `onRowFocus(i)` on each
  * row, `data-row-index` on the row's focusable, and hands over the window hook's `scrollToRow`.
  */
+export const ROVING_PAGE_ROWS = 10;
+
 export function useRovingRows({
   count,
   listRef,
-  pageSize = 10,
+  pageSize = ROVING_PAGE_ROWS,
   scrollToRow,
   rendered,
 }: {

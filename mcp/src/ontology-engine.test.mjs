@@ -3647,6 +3647,39 @@ describe('queryCompiledOntology', () => {
     assert.equal(shortDepth.totalCycles, 0);
   });
 
+  function mutuallyDependent(size) {
+    const slugs = Array.from({ length: size }, (_, index) => `capabilities/mutual-${index}`);
+    return compileOntology(slugs.map((slug) => doc(slug, {
+      kind: 'capability',
+      title: slug,
+      depends_on: slugs.filter((other) => other !== slug),
+    })));
+  }
+
+  it('counts every cycle of five mutually dependent capabilities past the list limit', () => {
+    const artifact = mutuallyDependent(5);
+
+    const result = queryCompiledOntology(artifact, { operation: 'cycles' });
+    assert.equal(result.totalCycles, 84);
+    assert.equal(result.totalCyclesExact, true);
+    assert.equal(result.exhaustive, true);
+    assert.equal(result.limited, true);
+    assert.equal(result.evidence.reason, 'limit');
+    assert.deepEqual(result.cycles.map((cycle) => cycle.length), [...Array(10).fill(2), ...Array(10).fill(3)]);
+
+    const health = queryCompiledOntology(artifact, { operation: 'health' });
+    assert.equal(health.summary.dependencyCycles, 84);
+    assert.equal(health.dependencyCycles.totalCyclesExact, true);
+  });
+
+  it('reports a count cut by the search budget as a lower bound, not an exact count', () => {
+    const result = queryCompiledOntology(mutuallyDependent(5), { operation: 'cycles', searchBudget: 6 });
+    assert.equal(result.truncatedByBudget, true);
+    assert.equal(result.totalCyclesExact, false);
+    assert.ok(result.totalCycles > 0 && result.totalCycles < 84, `found ${result.totalCycles} of 84`);
+    assert.equal(result.evidence.reason, 'search_budget');
+  });
+
   it('returns prerequisite-first topological order for dependency edges', () => {
     const ordered = compileOntology(
       [

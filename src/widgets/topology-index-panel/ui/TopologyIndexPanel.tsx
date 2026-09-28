@@ -26,9 +26,9 @@ import { treeAncestorIds } from "../lib/reveal-row";
 import { useIndexRootWindow } from "../lib/use-index-root-window";
 import {
   flattenVisibleRowIds,
+  isRovingNavKey,
   nextRovingId,
   resolveActiveRowId,
-  type RovingNavKey,
 } from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
@@ -371,9 +371,9 @@ export function TopologyIndexPanel({
 
   const handleTreeKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
     const key = event.key;
-    if (key !== "ArrowDown" && key !== "ArrowUp" && key !== "Home" && key !== "End") return;
+    if (!isRovingNavKey(key)) return;
     event.preventDefault();
-    const nextId = nextRovingId(orderedRowIds, resolvedActiveRowId, key as RovingNavKey);
+    const nextId = nextRovingId(orderedRowIds, resolvedActiveRowId, key);
     if (nextId === null) return;
     setActiveRowId(nextId);
     focusRow(nextId);

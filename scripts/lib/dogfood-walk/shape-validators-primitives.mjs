@@ -9,7 +9,7 @@ export function matchRowsFailure(label, rows) {
     if (typeof row.slug !== "string" || row.slug.length === 0) {
       return `${label} response missing row slug at index ${index}`;
     }
-    if (typeof row.kind !== "string" || row.kind.length === 0) {
+    if (row.isNode !== false && (typeof row.kind !== "string" || row.kind.length === 0)) {
       return `${label} response missing row kind: ${row.slug}`;
     }
     if (typeof row.title !== "string" || row.title.length === 0) {

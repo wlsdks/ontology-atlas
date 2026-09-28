@@ -57,8 +57,9 @@ export function LibraryConstellation({
       .then(({ mountLibraryConstellation }) => {
         if (!disposed) handle = mountLibraryConstellation(canvas, model, { reducedMotion, dim, distance });
       })
-      // A chunk that fails to load leaves the backdrop empty, as a missing GPU does.
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.error("[library-constellation] backdrop failed to draw", error);
+      });
     return () => {
       disposed = true;
       handle?.dispose();

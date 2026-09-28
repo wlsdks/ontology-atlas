@@ -74,6 +74,7 @@ import {
   MEANING_PROPOSAL_INPUT_SCHEMA,
   MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA,
   NODE_KIND_DESCRIPTION,
+  NON_BLANK_MULTILINE_TEXT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
   OUTGOING_EDGE_OUTPUT_SCHEMA,
   POST_WRITE_MAINTENANCE_GUIDANCE,
@@ -395,13 +396,13 @@ const TOOLS = [
         guide: {
           type: 'object',
           properties: {
-            card: NON_BLANK_STRING_SCHEMA,
+            card: NON_BLANK_MULTILINE_TEXT_SCHEMA,
             topics: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
           },
           required: ['card', 'topics'],
           additionalProperties: false,
         },
-        guideText: NON_BLANK_STRING_SCHEMA,
+        guideText: NON_BLANK_MULTILINE_TEXT_SCHEMA,
       },
       required: ['vaultRoot', 'repoRoot', 'vaultResolution', 'repoResolution', 'sameRoot', 'restartRequiredForRootChange', 'server', 'guide'],
       additionalProperties: false,
@@ -1494,27 +1495,7 @@ const TOOLS = [
       properties: {
         target: NON_BLANK_STRING_SCHEMA,
         total: { type: 'integer', minimum: 0 },
-        matches: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-              slug: NON_BLANK_STRING_SCHEMA,
-              kind: NON_BLANK_STRING_SCHEMA,
-              title: NON_BLANK_STRING_SCHEMA,
-              domain: { type: 'string' },
-              mtime: { type: 'number', minimum: 0 },
-              matchedKeys: {
-                type: 'array',
-                items: NON_BLANK_STRING_SCHEMA,
-              },
-              matchedInBody: { type: 'boolean' },
-            },
-            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
-            additionalProperties: false,
-          },
-        },
+        matches: { type: 'array', items: BACKLINK_ROW_OUTPUT_SCHEMA },
       },
       required: ['target', 'total', 'matches'],
       additionalProperties: false,
@@ -2325,7 +2306,7 @@ const TOOLS = [
           minimum: 1,
           maximum: 50000,
           description:
-            'all_paths, query_plan(all_paths), and cycles: maximum DFS states to expand before returning partial results. Defaults to 5000. For cycles this is the only bound that fires on an ACYCLIC graph — when truncatedByBudget is true, zero cycles does NOT mean acyclic (check totalCyclesExact).',
+            'all_paths, query_plan(all_paths), and cycles: maximum DFS states to expand before returning partial results. Defaults to 5000. For cycles, `limit` trims only the listed rows and this budget is the one bound that can cut the count short — when truncatedByBudget is true, totalCycles is a lower bound and zero cycles does NOT mean acyclic (check totalCyclesExact).',
         },
         includeExternal: {
           type: 'boolean',

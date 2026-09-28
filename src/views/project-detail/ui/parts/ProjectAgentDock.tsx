@@ -189,6 +189,7 @@ export function ProjectAgentDock({
             mcpServers={mcpServers}
             sessionEnabled={open && settled}
             resumeLatest
+            putAway={!open}
             openingRequest={openingRequest}
             knownSlugs={knownSlugs}
           />

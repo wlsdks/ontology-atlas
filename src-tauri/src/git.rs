@@ -172,7 +172,13 @@ fn collect_filter_keys(cwd: &Path, scope_args: &[&str], filters: &mut Vec<(Strin
 
 fn worktree_config_enabled(cwd: &Path) -> bool {
     let output = hardened_base_command()
-        .args(["config", "--local", "--includes", "--get", "extensions.worktreeConfig"])
+        .args([
+            "config",
+            "--local",
+            "--includes",
+            "--get",
+            "extensions.worktreeConfig",
+        ])
         .current_dir(cwd)
         .output();
     matches!(output, Ok(out) if out.status.success()
@@ -209,7 +215,9 @@ fn discover_filter_overrides(cwd: &Path) -> Vec<String> {
 }
 
 fn filter_overrides_for(cwd: &Path) -> Arc<Vec<String>> {
-    let mut cache = filter_overrides_cache().lock().unwrap_or_else(|e| e.into_inner());
+    let mut cache = filter_overrides_cache()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     if let Some(found) = cache.get(cwd) {
         return found.clone();
     }
@@ -348,7 +356,15 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
     }
     // Canonicalized to match vault_dir's pathspec base (for example /var vs /private/var).
     let root = PathBuf::from(trimmed);
-    Ok(Some(fs::canonicalize(&root).unwrap_or(root)))
+    let canonical = fs::canonicalize(&root).unwrap_or(root);
+    if !repo_toplevel_is_trustworthy(&canonical) {
+        return Ok(None);
+    }
+    Ok(Some(canonical))
+}
+
+fn repo_toplevel_is_trustworthy(toplevel: &Path) -> bool {
+    toplevel.join(".git").exists() && crate::vault_root_rejection(toplevel).is_none()
 }
 
 /// `Err` outside a repo; this never auto-inits. The `git_init` button is a separate,
@@ -2171,6 +2187,29 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
+    fn a_redirected_or_dangerous_toplevel_is_not_a_trustworthy_repo_root() {
+        let base = std::env::temp_dir().join(format!("atlas-toplevel-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let repo = base.join("repo");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        let plain = base.join("redirect-target");
+        fs::create_dir_all(&plain).unwrap();
+
+        assert!(repo_toplevel_is_trustworthy(
+            &fs::canonicalize(&repo).unwrap()
+        ));
+        assert!(
+            !repo_toplevel_is_trustworthy(&fs::canonicalize(&plain).unwrap()),
+            "a core.worktree redirect target holds no .git of its own"
+        );
+        assert!(
+            !repo_toplevel_is_trustworthy(Path::new("/")),
+            "the filesystem root is refused even if it held a .git"
+        );
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
     fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
         let root = Path::new("/repo");
         assert_eq!(vault_pathspec(root, Path::new("/repo")), ".");
@@ -3046,7 +3085,11 @@ mod tests {
         let marker = base.join("FSMON_EXECUTED");
         plain_git(
             &repo,
-            &["config", "core.fsmonitor", &format!("touch {}; false", shell_path(&marker))],
+            &[
+                "config",
+                "core.fsmonitor",
+                &format!("touch {}; false", shell_path(&marker)),
+            ],
         );
         fs::write(repo.join("note.md"), b"# two\n").unwrap();
         let status_args = [
@@ -3064,7 +3107,10 @@ mod tests {
             .current_dir(&repo)
             .output()
             .unwrap();
-        assert!(marker.exists(), "fixture precondition: fsmonitor fires unhardened");
+        assert!(
+            marker.exists(),
+            "fixture precondition: fsmonitor fires unhardened"
+        );
         fs::remove_file(&marker).unwrap();
 
         let run = run_git(&repo, &status_args).unwrap();
@@ -3108,7 +3154,11 @@ mod tests {
             .arg(&mirror)
             .output()
             .unwrap();
-        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
         // The clone carries .gitattributes but not the local filter config; recreate it.
         seed_identity(&mirror);
         plain_git(
@@ -3184,7 +3234,10 @@ mod tests {
             .current_dir(&repo)
             .output()
             .unwrap();
-        assert!(marker.exists(), "fixture: the hook fires on an unhardened checkout");
+        assert!(
+            marker.exists(),
+            "fixture: the hook fires on an unhardened checkout"
+        );
         fs::remove_file(&marker).unwrap();
 
         fs::write(repo.join("note.md"), b"# three\n").unwrap();
@@ -3213,23 +3266,33 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             let path = repo.join(".git/hooks/pre-commit");
             fs::create_dir_all(repo.join(".git/hooks")).unwrap();
-            fs::write(&path, format!("#!/bin/sh\ntouch {}\nexit 1\n", marker.display())).unwrap();
+            fs::write(
+                &path,
+                format!("#!/bin/sh\ntouch {}\nexit 1\n", marker.display()),
+            )
+            .unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
         }
         fs::write(repo.join("note.md"), b"# two\n").unwrap();
         plain_git(&repo, &["add", "-A"]);
 
         let run = run_git(&repo, &["commit", "-m", "snapshot"]).unwrap();
-        assert!(marker.exists(), "the commit must run the user's pre-commit hook");
-        assert!(!run.success, "a rejecting hook must fail the commit for classify_git_error");
+        assert!(
+            marker.exists(),
+            "the commit must run the user's pre-commit hook"
+        );
+        assert!(
+            !run.success,
+            "a rejecting hook must fail the commit for classify_git_error"
+        );
         let _ = fs::remove_dir_all(&base);
     }
 
     #[test]
     fn a_filter_hidden_behind_include_path_or_worktree_config_is_still_neutralised() {
         for scope in ["include", "worktree"] {
-            let base =
-                std::env::temp_dir().join(format!("atlas-sec-filter-{scope}-{}", std::process::id()));
+            let base = std::env::temp_dir()
+                .join(format!("atlas-sec-filter-{scope}-{}", std::process::id()));
             let _ = fs::remove_dir_all(&base);
             let repo = base.join("repo");
             fs::create_dir_all(&repo).unwrap();
@@ -3249,8 +3312,14 @@ mod tests {
                 .unwrap();
                 plain_git(&repo, &["config", "--local", "include.path", "extra.cfg"]);
             } else {
-                plain_git(&repo, &["config", "--local", "extensions.worktreeConfig", "true"]);
-                plain_git(&repo, &["config", "--worktree", "filter.hidden.clean", &clean]);
+                plain_git(
+                    &repo,
+                    &["config", "--local", "extensions.worktreeConfig", "true"],
+                );
+                plain_git(
+                    &repo,
+                    &["config", "--worktree", "filter.hidden.clean", &clean],
+                );
             }
             fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
 
@@ -3283,7 +3352,11 @@ mod tests {
         fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
 
         let run = run_git(&repo, &["add", "-A", "--", "."]).unwrap();
-        assert!(run.success, "a required filter must still let add succeed: {}", run.stderr);
+        assert!(
+            run.success,
+            "a required filter must still let add succeed: {}",
+            run.stderr
+        );
         let _ = fs::remove_dir_all(&base);
     }
 }

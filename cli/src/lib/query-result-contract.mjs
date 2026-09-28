@@ -2558,10 +2558,6 @@ function validAllPathsSuggestedQuery(query) {
   return query.operation === 'query_plan' && query.targetOperation === 'all_paths';
 }
 
-/**
- * A node, or a file with no `kind:` (spec §11), matched by `matchedKeys` or `matchedInBody: true`
- * (`mcp/src/vault.mjs`). MCP's outputSchema and `mcp/scripts/verify.mjs` still require `kind`: a deferred drift.
- */
 function validBacklinkRow(row) {
   if (!validNodeSummary(row) && !validKindlessSummary(row)) return false;
   if (row.matchedKeys !== undefined) {
