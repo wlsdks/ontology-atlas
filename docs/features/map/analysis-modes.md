@@ -35,6 +35,9 @@ The inspector presents three suggestions at a time, ordered by scope proximity
 then signal/address, with the total and omitted count. Folding is memory-only
 for this inspection/version; folding a row reveals the next available row.
 Existing graph paths are highlighted without manufacturing an edge for an import.
+Comparison switches to Flat through the existing view controller so individual
+elements and recorded paths remain visible, including when inspection began in
+Hex. The inspector stays open; the view picker and address reflect Flat.
 
 The import scan starts at the selected dependency scope's implementation-parent
 folders. Other callers and patterns outside those folders remain unmeasured;
@@ -50,6 +53,10 @@ a captured source or copying/preparing a packet rechecks it. Each source excerpt
 has real lines and a full-file SHA256. Packets carry bounded current bodies and
 explicit truncation/full-read instructions. Conversation preparation only seats
 an editable draft; sending and permission decisions retain their existing rules.
+A localized question and its concept names lead that draft; the unchanged evidence
+and request boundaries remain in the existing disclosure. Prepared drafts suppress
+starting suggestions. Their topic label retires when the draft is cleared or sent,
+and folded evidence survives the existing in-memory draft store.
 
 The initial reader caps graph input at 500 nodes/edges, expanded scope at 40
 concepts, imports at 2,000 files, code/config capture at 32 MiB and 512 KiB per file,

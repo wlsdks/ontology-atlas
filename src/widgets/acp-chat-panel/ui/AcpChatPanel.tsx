@@ -816,10 +816,11 @@ export function AcpChatPanel({
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   // The unsent sentence survives the panel being unmounted by its host (`draftStore`).
-  const [draft, setDraft] = useState(() => draftStore?.read() ?? '');
-  useEffect(() => {
-    draftStore?.write(draft);
-  }, [draftStore, draft]);
+  const [restoredDraft] = useState(() => {
+    const full=draftStore?.read()??'';
+    return {full,...splitAppRequest(full)};
+  });
+  const [draft, setDraft] = useState(restoredDraft.lead);
   const draftPresent = draft.trim().length > 0;
   useEffect(() => {
     onDraftPresenceChange?.(draftPresent);
@@ -1037,7 +1038,7 @@ export function AcpChatPanel({
    */
   const [seatedDetail, setSeatedDetail] = useState<
     { lead: string; detail: string; full: string } | null
-  >(null);
+  >(()=>restoredDraft.detail?{lead:restoredDraft.lead,detail:restoredDraft.detail,full:restoredDraft.full}:null);
   if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
     setSeenPrefillNonce(prefillNonce);
     const parts = splitAppRequest(prefillText);
@@ -1049,11 +1050,12 @@ export function AcpChatPanel({
   /**
    * A request this screen wrote is sitting unsent in the composer.
    *
-   * `seenPrefillNonce` says a seat was consumed; the draft says it is still there. Both are
-   * needed: a seat the person cleared is a blank start again, and a draft the person typed
-   * themselves was never staged by anything.
+   * A consumed seat or restored detail marks an app request; an empty draft returns to a blank start.
    */
-  const seatedRequestWaiting = seenPrefillNonce !== null && draft.trim().length > 0;
+  const seatedRequestWaiting = (seenPrefillNonce !== null || seatedDetail !== null) && draft.trim().length > 0;
+  useEffect(()=>{
+    draftStore?.write(seatedDetail ? draft===seatedDetail.lead ? seatedDetail.full : `${draft}\n\n${seatedDetail.detail}` : draft);
+  },[draftStore,draft,seatedDetail]);
   /*
    * There has to be something to draw while the exit animation runs — if the content
    * disappeared the moment `pending` went null, an **empty box** would be the thing
@@ -1846,7 +1848,7 @@ export function AcpChatPanel({
               disabled until the session is ready, so the wait shows what can be asked the moment
               it can be — and the rows are already where they will be pressed.
             */}
-            {suggestions.length > 0 && !download ? (
+            {suggestions.length > 0 && !download && !seatedRequestWaiting ? (
               <div className="agent-panel-stage-swap mt-5 w-full justify-self-stretch">
                 <StartingSuggestionPreview
                   heading={t('startingSuggestions')}
@@ -1925,7 +1927,7 @@ export function AcpChatPanel({
               suggestions are never trusted again. Which fact suggests what is owned by
               `chat-suggestions.ts`.
             */}
-            {suggestions.length > 0 ? (
+            {suggestions.length > 0 && !seatedRequestWaiting ? (
               <SuggestionRows
                 heading={t('suggest.heading')}
                 testId="acp-chat-suggestions"

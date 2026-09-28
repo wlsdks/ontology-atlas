@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { waitForAnimationsDone } from '../settle';
+import { waitForAnimationsDone, waitForMapStill } from '../settle';
 import { installGrayAreaHarness as install, openGrayAreaPreview as open, inspectGrayArea as inspect, waitForGrayAreaTop } from './harness';
 
 test.beforeEach(()=>{mkdirSync('/tmp/atlas-gray-area-proof',{recursive:true});});
@@ -39,9 +39,11 @@ test('reviews the exact folder before any scan and shows bounded actual source w
 test('prepares an editable investigation without sending a provider turn or writing',async({page})=>{
   await install(page);await inspect(page);
   await page.getByRole('button',{name:'Prepare editable draft',exact:true}).first().click();
-  const composer=page.getByRole('textbox',{name:'Write what you want done'});await expect(composer).toContainText('grayAreaInvestigation:v1');
-  await expect(composer).toContainText('Passes the request to the local write-policy decision.');
-  writeFileSync('/tmp/atlas-gray-area-proof/investigation-packet.txt',await composer.innerText());
+  const composer=page.getByRole('textbox',{name:'Write what you want done'});await expect(composer).toContainText('Retry dispatch');
+  await page.getByTestId('acp-chat-seated-detail').click();
+  const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');
+  await expect(detail).toContainText('Passes the request to the local write-policy decision.');
+  writeFileSync('/tmp/atlas-gray-area-proof/investigation-packet.txt',(await composer.innerText())+'\n\n'+(await detail.innerText()));
   const state=await page.evaluate(()=> (window as unknown as {__atlasLibraryWorkHarness:{snapshot:()=>{calls:{method:string}[];writes:unknown[]}}}).__atlasLibraryWorkHarness.snapshot());
   expect(state.calls.filter(c=>c.method==='session/prompt')).toHaveLength(0);expect(state.writes).toHaveLength(0);
 });
@@ -85,4 +87,56 @@ test('the inspector, candidate detail, scope and source open with nonempty WCAG 
   await expect(page.getByRole('region',{name:'Captured source',exact:true})).toBeFocused();
   await audit('source excerpt');
   writeFileSync('/tmp/atlas-gray-area-proof/open-surfaces-axe.json',JSON.stringify(receipts,null,2));
+});
+
+test('a comparison from the saved Hex view draws both elements on the flat recorded path',async({page})=>{
+  await page.setViewportSize({width:1512,height:949});await install(page);
+  await page.goto('/en/topology/?p=elements/retry-dispatch&view=hex&e2e=1&guides=off');
+  await expect(page.getByTestId('hex-board-map')).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('atlas.appearance.hex-board'))).toBe('on');
+  await inspect(page);
+  await page.getByRole('button',{name:'Compare concepts on map',exact:true}).click();
+  await expect(page.getByTestId('topology-view-3d')).toHaveAttribute('data-map-view','flat');
+  await expect(page.getByTestId('hex-board-map')).toHaveCount(0);
+  const map=page.getByTestId('ontology-map');
+  await expect(map).toHaveAttribute('data-map-lens','path');
+  await expect(map).toHaveAttribute('data-path-node-count','3');
+  await expect(map).toHaveAttribute('data-path-edge-count','2');
+  await waitForMapStill(page);
+  const endpoints=await page.evaluate(()=>{
+    const probe=window.__atlasMap!;const camera=probe.camera()!;
+    return probe.nodes().filter(n=>n.label==='Retry dispatch'||n.label==='Write policy').map(n=>({
+      id:n.id,label:n.label,hidden:n.hidden,visible:!n.hidden&&(n.alpha??1)>0.05&&n.x-n.radius>=0&&n.x+n.radius<=camera.width&&n.y-n.radius>=0&&n.y+n.radius<=camera.height,
+    }));
+  });
+  expect(endpoints).toHaveLength(2);expect(endpoints.every(n=>n.visible)).toBe(true);
+  await expect(page.getByTestId('gray-area-inspector')).toBeVisible();
+  await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>({view:new URLSearchParams(location.search).get('view'),saved:localStorage.getItem('atlas.appearance.hex-board')}))).toEqual({view:null,saved:'off'});
+  writeFileSync('/tmp/atlas-gray-area-proof/hex-comparison.json',JSON.stringify(endpoints,null,2));
+  await page.screenshot({path:'/tmp/atlas-gray-area-proof/hex-comparison.png'});
+});
+
+test('a prepared pair draft leads with its localized topic, retains folded evidence and retires its topic when cleared',async({page})=>{
+  await page.setViewportSize({width:1512,height:949});await install(page);await page.goto('/ko/topology/?p=elements/retry-dispatch&guides=off');
+  await page.getByTestId('map-detail-panel-more-menu-trigger').click();await page.getByTestId('map-detail-panel-action-gray-area').click();
+  await page.getByRole('button',{name:'이 폴더에서 검사',exact:true}).click();
+  await page.getByRole('button',{name:'지도에서 두 개념 보기',exact:true}).click();
+  await page.getByRole('button',{name:'수정 가능한 대화 초안',exact:true}).first().click();
+  const dock=page.getByTestId('analysis-workbench');const heading=dock.getByRole('heading',{level:2});
+  await expect(heading).toContainText('재시도 전달');await expect(heading).toContainText('쓰기 권한 규칙');
+  const composer=page.getByRole('textbox',{name:'무엇을 시킬지 적어요',exact:true});
+  await expect(composer).toContainText('재시도 전달');await expect(composer).toContainText('쓰기 권한 규칙');
+  await expect(composer).not.toContainText('grayAreaInvestigation:v1');
+  await expect(page.getByTestId('acp-chat-suggestions')).toHaveCount(0);await expect(page.getByTestId('acp-starting-suggestions')).toHaveCount(0);
+  await waitForAnimationsDone(dock);await page.screenshot({path:'/tmp/atlas-gray-area-proof/prepared-pair-ko-initial.png'});
+  await page.getByTestId('acp-chat-seated-detail').click();
+  const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');await expect(detail).toContainText('bodyDigest');await expect(detail).toContainText('requestedMode');
+  await page.screenshot({path:'/tmp/atlas-gray-area-proof/prepared-pair-ko.png'});
+  await dock.getByRole('tab',{name:'의미',exact:true}).click();await expect(heading).not.toContainText('재시도 전달');
+  await dock.getByRole('tab',{name:'대화',exact:true}).click();await expect(heading).toContainText('재시도 전달');
+  await composer.fill('');await expect(heading).not.toContainText('재시도 전달');
+  await composer.fill('다른 질문을 준비해요');await expect(heading).not.toContainText('재시도 전달');
+  const state=await page.evaluate(()=> (window as unknown as {__atlasLibraryWorkHarness:{snapshot:()=>{calls:{method:string}[];writes:unknown[]}}}).__atlasLibraryWorkHarness.snapshot());
+  expect(state.calls.filter(c=>c.method==='session/prompt')).toHaveLength(0);expect(state.writes).toHaveLength(0);
 });

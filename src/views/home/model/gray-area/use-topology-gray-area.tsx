@@ -5,6 +5,7 @@ import { focusMapCanvasWhenReady } from '@/shared/lib/focus-map-canvas';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectTopologyPathRouteState, type HomeRouteState } from '../url-state';
+import { applyMapView } from '../use-map-view-sync';
 
 interface Options {
   docs: VaultDoc[];
@@ -16,7 +17,7 @@ interface Options {
   routeState: HomeRouteState;
   setRouteState: (updater: Partial<HomeRouteState> | ((current:HomeRouteState)=>HomeRouteState))=>void;
   onOpen:()=>void;
-  onPrepare:(packet:string)=>void;
+  onPrepare:(packet:string,contextLabel:string)=>void;
 }
 function routeKey(route:HomeRouteState){return JSON.stringify([route.selectedSlug,route.pathSourceSlug,route.pathTargetSlug]);}
 export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPath,locale,routeState,setRouteState,onOpen,onPrepare}:Options){
@@ -68,9 +69,11 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
     setActive({...selected,key:JSON.stringify([selected.key,inspectionEpoch.current])});setOpen(true);onOpen();
   },[selected,onOpen]);
   const focus=useCallback((candidate:GrayAreaCandidate)=>{
+    applyMapView(null);
     setRouteState(current=>{
       const path=candidate.kind==='missing-link'&&candidate.relatedSlug?[candidate.slug,candidate.relatedSlug]:candidate.path;
-      const next=path.length>1?selectTopologyPathRouteState(current,{sourceSlug:idBySlug.get(path[0])??path[0],targetSlug:idBySlug.get(path.at(-1)!)??path.at(-1)!}):{...current,selectedSlug:idBySlug.get(path[0]??candidate.slug)??candidate.slug,analysisMode:'overview' as const,pathSourceSlug:null,pathTargetSlug:null};
+      const flat={...current,mapView:null};
+      const next=path.length>1?selectTopologyPathRouteState(flat,{sourceSlug:idBySlug.get(path[0])??path[0],targetSlug:idBySlug.get(path.at(-1)!)??path.at(-1)!}):{...flat,selectedSlug:idBySlug.get(path[0]??candidate.slug)??candidate.slug,analysisMode:'overview' as const,pathSourceSlug:null,pathTargetSlug:null};
       expectedFocus.current=routeKey(next);return next;
     });
   },[idBySlug,setRouteState]);
@@ -78,6 +81,12 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
   return {
     open,
     action:selected?{label:t('entry'),onOpen:launch}:undefined,
-    inspector:selection?<GrayAreaInspector open={open} vaultPath={vaultPath} selection={selection} onClose={close} onFocus={focus} onPrepare={packet=>{setOpen(false);onPrepare(packet);}} onExited={()=>{if(trigger.current?.isConnected)trigger.current.focus();else {const entry=document.querySelector<HTMLElement>('[data-testid="map-detail-panel-more-menu-trigger"]');if(entry)entry.focus();else focusMapCanvasWhenReady();}}}/>:null,
+    inspector:selection?<GrayAreaInspector open={open} vaultPath={vaultPath} selection={selection} onClose={close} onFocus={focus} onPrepare={(packet,candidate)=>{
+      const subject=[candidate.slug,candidate.relatedSlug].filter((slug):slug is string=>Boolean(slug)).map(slug=>{
+        const doc=docs.find(d=>d.slug===slug);return String(doc?.frontmatter[`display_${locale}`]??doc?.title??slug);
+      }).join(' · ');
+      const question=t(candidate.kind==='missing-link'?'readImport':candidate.kind==='changed-source'?'readDrift':'readGap');
+      setOpen(false);onPrepare(`${t('draftLead',{subject,question})}\n\nScope:\n\n${packet}`,t('draftContext',{subject}));
+    }} onExited={()=>{if(trigger.current?.isConnected)trigger.current.focus();else {const entry=document.querySelector<HTMLElement>('[data-testid="map-detail-panel-more-menu-trigger"]');if(entry)entry.focus();else focusMapCanvasWhenReady();}}}/>:null,
   };
 }

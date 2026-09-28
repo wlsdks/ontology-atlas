@@ -22,7 +22,7 @@ interface Props {
   selection: GrayAreaSelection;
   onClose: () => void;
   onFocus: (candidate: GrayAreaCandidate) => void;
-  onPrepare: (packet: string) => void;
+  onPrepare: (packet: string, candidate: GrayAreaCandidate) => void;
   onExited?: () => void;
 }
 
@@ -154,7 +154,7 @@ function Findings({ snapshot,vaultPath,onFocus,onPrepare,onRefresh,escapeFirstRe
           </div>
           <SourceExcerpt source={witness?.candidateId===candidate.id?witness.source:null} measuredAt={snapshot.measuredAt} onClose={()=>setWitness(null)} onExited={()=>{if(sourceReturn.current?.isConnected)sourceReturn.current.focus();}}/>
           <div className="space-y-2"><RowButton tone="accentOnTint" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onFocus(candidate))}><span className="min-w-0 flex-1 break-words">{t(candidate.kind==='missing-link'?'compareConcepts':'showPath')}</span><ArrowRight size={14} className="shrink-0"/></RowButton><RowButton tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(async()=>{const copied=await copyText(buildGrayAreaInvestigation(snapshot,candidate));setNotice(t(copied?'copied':'copyFailed'));})}><Copy size={14} className="shrink-0"/><span className="min-w-0 break-words">{t('copy')}</span></RowButton></div>
-          <RowButton tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onPrepare(buildGrayAreaInvestigation(snapshot,candidate)))}>{t('prepare')}</RowButton>
+          <RowButton tone="secondary" hoverSurface="lift" disabled={stale||busy} onClick={()=>void guarded(()=>onPrepare(buildGrayAreaInvestigation(snapshot,candidate),candidate))}>{t('prepare')}</RowButton>
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t('draftOnly')}</p>
           <RowButton tone="secondary" hoverSurface="lift" onClick={()=>{const next=new Set([...dismissed,candidate.id]);setDismissed(next);setExpanded(grayAreaCandidatePage(snapshot,next).candidates[0]?.id??null);setWitness(null);}}>{t('dismiss')}</RowButton>
         </Surface>
