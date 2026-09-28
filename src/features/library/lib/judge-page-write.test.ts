@@ -30,12 +30,12 @@ describe("which writes are judged", () => {
 describe("the text that is judged is the text that would land", () => {
   it("a whole-file write is judged as given", () => {
     const verdict = judgePageWrite({ request: request(`${ROOT}/wiki/plan.md`, { content: GOOD }), vaultRoot: ROOT, currentText: () => null, knownSources: KNOWN });
-    expect(verdict).toMatchObject({ path: "wiki/plan.md", ok: true, problems: [] });
+    expect(verdict).toMatchObject({ path: "wiki/plan.md", ok: true, problems: [], text: GOOD });
   });
 
   it("an edit is applied to the page on disk before judging", () => {
     const broken = judgePageWrite({
-      request: request(`${ROOT}/wiki/plan.md`, { old_string: "[[src:sources/plan.pdf#p1]]", new_string: "" }),
+      request: request(`${ROOT}/wiki/plan.md`, { old_string: " [[src:sources/plan.pdf#p1]]", new_string: "." }),
       vaultRoot: ROOT,
       currentText: () => GOOD,
       knownSources: KNOWN,
@@ -48,9 +48,30 @@ describe("the text that is judged is the text that would land", () => {
     expect(proposedPageText({ old_string: "not there", new_string: "x" }, GOOD)).toBeNull();
   });
 
-  it("replace_all replaces every occurrence", () => {
+  it("replace_all replaces every occurrence, and a single edit needs its anchor exactly once, as the edit tool does", () => {
     expect(proposedPageText({ old_string: "a", new_string: "b", replace_all: true }, "a-a")).toBe("b-b");
-    expect(proposedPageText({ old_string: "a", new_string: "b" }, "a-a")).toBe("b-a");
+    expect(proposedPageText({ old_string: "a", new_string: "b" }, "a-a")).toBeNull();
+    expect(proposedPageText({ old_string: "a", new_string: "b" }, "x-a")).toBe("x-b");
+  });
+
+  it("applies the new text literally, so replacement patterns such as $& and $' are never expanded", () => {
+    expect(proposedPageText({ old_string: "a", new_string: "$&$'$`$$" }, "xay")).toBe("x$&$'$`$$y");
+    expect(proposedPageText({ old_string: "a", new_string: "[$&]", replace_all: true }, "a-a")).toBe("[$&]-[$&]");
+    const verdict = judgePageWrite({
+      request: request(`${ROOT}/wiki/plan.md`, { old_string: "status: draft", new_string: "status: reviewed\n$&" }),
+      vaultRoot: ROOT,
+      currentText: () => GOOD,
+      knownSources: KNOWN,
+    });
+    expect(verdict?.text).toContain("status: reviewed\n$&");
+  });
+
+  it("an empty new_string also takes the newline after old_string, as the edit tool does", () => {
+    expect(proposedPageText({ old_string: " JOIN", new_string: "" }, "a JOIN\nb\n")).toBe("ab\n");
+    expect(proposedPageText({ old_string: "x", new_string: "", replace_all: true }, "x\nyx\n x")).toBe("y x");
+    expect(proposedPageText({ old_string: "a\n", new_string: "" }, "a\n\nb")).toBe("\nb");
+    expect(proposedPageText({ old_string: "a", new_string: "" }, "xay")).toBe("xy");
+    expect(proposedPageText({ old_string: " JOIN", new_string: "X" }, "a JOIN\nb")).toBe("aX\nb");
   });
 
   it("a page carrying kind: is refused at the gate, which is the one problem that changes what the file is", () => {

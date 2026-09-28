@@ -11,8 +11,9 @@ routes: [/library]
 ### Library — Check history: the Library keeps itself current while nobody is looking (2026-09-17)
 
 A fifth Library tab, **Check history**, in the installed app. Automations owns the
-round's creation, pause, run-now, and removal controls; Library shows its pass history
-and links to the same document schedule in Automations. A round is a rule the Library
+round's creation, edit, pause, run-now, and removal controls; Library shows its pass history
+and links to the same document schedule in Automations, and a link from that schedule opens
+Check history with the round selected. A round is a rule the Library
 keeps on its own while Ontology Atlas is open on this Mac: what to check, how often,
 and what it may write. Two kinds ship. **Pages still match their sources** hashes every
 cited source on this Mac and runs the page check with no agent turn, hourly, every six
@@ -24,7 +25,11 @@ pages that changed. Registration is one sheet whose primary press reads **Allow 
 save** above the exact scope granted, with the daily agent-turn bill in words; during a
 pass the standing scope answers every permission request itself and refuses anything
 outside `sources/` and `wiki/` pages that fit the template, naming the refusal in the
-ledger. The stage opens on **Since you left**: the span the window was away, the pages
+ledger. A page the pass's own write left that does not read as a draft is put back as the
+pass found it, or removed if the pass created it, and the pass's card names the page, why, and
+where the text it took out is saved, in amber. A page that changed after the pass wrote it is
+left as it is, and the card says so; if it no longer reads as a draft, the pass fails and the
+card names it. The stage opens on **Since you left**: the span the window was away, the pages
 that went stale, the redrafts waiting, the refusals, and the passes that held, each page
 a press into Wiki. Below it the **ledger** draws passes on a time axis, newest first: a
 held pass is one quiet line, a change is a card, and a sleep gap is a hatched band with

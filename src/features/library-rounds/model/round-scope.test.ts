@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
+
 import { type ScopeInput, type ScopeRequest, judgeRoundScope, scopeNoteEffect } from './round-scope';
 
 const VAULT = '/Users/probe/Ontology Atlas/launch';
+const DRAFT = WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf');
 
 function request(overrides: Partial<ScopeRequest> = {}): ScopeRequest {
   return {
@@ -27,7 +30,7 @@ function judge(overrides: Partial<ScopeInput> & { request: ScopeRequest }) {
     judgeWrite: (req) => {
       const path = req.filePath?.startsWith(`${VAULT}/wiki/`) ? req.filePath.slice(VAULT.length + 1) : null;
       if (!path) return null;
-      return { path, ok: req.rawInput.content !== 'broken' };
+      return { path, ok: req.rawInput.content !== 'broken', text: String(req.rawInput.content ?? '') };
     },
     ...overrides,
   });
@@ -39,7 +42,7 @@ const ontology = { kind: 'ontology' as const };
 describe('round scope', () => {
   it('never lets a round write the ontology', () => {
     expect(judge({ request: request({ reviewKind: 'ontology-write', toolName: 'mcp__atlas-vault__add_concept' }) }))
-      .toEqual({ decision: 'reject', reason: 'ontology-write' });
+      .toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concept' });
     expect(judge({ request: request({ toolName: 'mcp__atlas-vault__add_concept' }) }))
       .toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concept' });
   });
@@ -88,18 +91,48 @@ describe('round scope', () => {
   });
 
   it('writes a wiki page only when the page judge accepts it, for either kind', () => {
-    const fits = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
-    expect(judge({ request: fits })).toEqual({ decision: 'allow', note: 'write wiki/plan.md' });
+    const fits = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: DRAFT } });
+    expect(judge({ request: fits })).toEqual({ decision: 'allow', note: 'write wiki/plan.md', wrote: { path: 'wiki/plan.md', text: DRAFT } });
     expect(judge({ request: fits, round: service }).decision).toBe('allow');
     const broken = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'broken' } });
     expect(judge({ request: broken })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
   });
 
-  it('never writes retained answers or the wiki\'s furniture', () => {
-    const answer = request({ filePath: `${VAULT}/wiki/answers/q-1.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
-    expect(judge({ request: answer, round: service }).decision).toBe('reject');
-    const log = request({ filePath: `${VAULT}/wiki/_log.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
-    expect(judge({ request: log, round: service }).decision).toBe('reject');
+  it('writes a page only as a draft, because no person reviewed what a pass wrote', () => {
+    const page = (content: string) => request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content } });
+    const reviewed = page(DRAFT.replace('status: draft', 'status: reviewed'));
+    expect(judge({ request: reviewed })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+    expect(judge({ request: reviewed, round: service })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+    expect(judge({ request: page(DRAFT.replace('status: draft\n', '')) }).decision).toBe('reject');
+    expect(judge({ request: page(DRAFT.replace('title:', 'status: reviewed\ntitle:')) }).decision).toBe('reject');
+    expect(judge({ request: page(DRAFT.replace('status: draft', 'status: draft\ndescribes: [capabilities/checkout]')) }).decision).toBe('reject');
+  });
+
+  it('never writes a path that belongs to an ontology node, under wiki/ or sources/', () => {
+    const node = (relative: string) => relative === 'wiki/checkout.md' || relative === 'sources/pricing.md';
+    for (const path of ['wiki/checkout.md', 'sources/pricing.md']) {
+      const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });
+      expect(judge({ request: write, round: service, node })).toEqual({ decision: 'reject', reason: path });
+    }
+    const notes = request({ filePath: `${VAULT}/sources/notes.md`, toolKind: 'edit', rawInput: { content: '# Notes' } });
+    expect(judge({ request: notes, round: service, node }).decision).toBe('allow');
+  });
+
+  it('never writes through a link or into a folder the pass did not find as a real folder, under wiki/ or sources/', () => {
+    const unsafe = (relative: string) => relative.startsWith('wiki/escape') || relative.startsWith('sources/unseen/');
+    for (const path of ['wiki/escape.md', 'sources/unseen/notes.md']) {
+      const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });
+      expect(judge({ request: write, round: service, unsafe })).toEqual({ decision: 'reject', reason: path });
+    }
+    const notes = request({ filePath: `${VAULT}/sources/notes.md`, toolKind: 'edit', rawInput: { content: '# Notes' } });
+    expect(judge({ request: notes, round: service, unsafe }).decision).toBe('allow');
+  });
+
+  it('never writes retained answers or the wiki\'s furniture, under any spelling of their names', () => {
+    for (const path of ['wiki/answers/q-1.md', 'wiki/Answers/q-1.md', 'wiki/_log.md', 'wiki/notes/_draft.md', 'Wiki/plan.md']) {
+      const write = request({ filePath: `${VAULT}/${path}`, toolKind: 'edit', rawInput: { content: DRAFT } });
+      expect(judge({ request: write, round: service })).toEqual({ decision: 'reject', reason: path });
+    }
   });
 
   it('lets an ontology review read the folder but refuses every file write', () => {
@@ -123,7 +156,7 @@ describe('round scope', () => {
 
   it('lets only a service round touch sources/, and never delete or move there', () => {
     const write = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'edit', rawInput: { content: '# Plan' } });
-    expect(judge({ request: write, round: service })).toEqual({ decision: 'allow', note: 'write sources/plan.md' });
+    expect(judge({ request: write, round: service })).toEqual({ decision: 'allow', note: 'write sources/plan.md', wrote: { path: 'sources/plan.md', text: null } });
     expect(judge({ request: write })).toEqual({ decision: 'reject', reason: 'sources/plan.md' });
     const remove = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'delete' });
     expect(judge({ request: remove, round: service }).decision).toBe('reject');

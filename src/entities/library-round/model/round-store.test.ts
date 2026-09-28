@@ -27,6 +27,8 @@ describe('round store', () => {
 
     const patched = await store.patch('r1', { enabled: false, lastPassAt: '2026-09-17T01:00:00.000Z' });
     expect(patched.state.rounds[0]).toMatchObject({ enabled: false, lastPassAt: '2026-09-17T01:00:00.000Z' });
+    const fromStored = await store.patch('r1', (current) => ({ name: `${current.name} (seen ${current.lastPassAt})` }));
+    expect(fromStored.state.rounds[0].name).toContain('(seen 2026-09-17T01:00:00.000Z)');
 
     const replaced = await store.upsert(round({ name: 'renamed' }));
     expect(replaced.state.rounds).toHaveLength(1);

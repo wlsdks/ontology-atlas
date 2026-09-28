@@ -1,7 +1,7 @@
 "use client";
 
 import { Cable, Check, Folder, Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 
 import {
@@ -12,10 +12,15 @@ import {
   type RoundPlaceService,
   type RoundRecord,
   cadenceFromMinutes,
+  cadenceMinutes,
   deriveRoundKind,
   isValidClockTime,
   nextDueAt,
+  roundPlaces,
+  roundWidens,
+  servicePlaces,
   turnsPerDay,
+  vaultPlace,
 } from "@/entities/library-round";
 import { cn } from "@/shared/lib/cn";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
@@ -76,6 +81,8 @@ export interface NewRoundSheetProps {
   existingNames: readonly string[];
   /** A pass is in flight, so this round's first one waits for its due time rather than starting now. */
   passRunning: boolean;
+  round?: RoundRecord | null;
+  allowedHere?: boolean;
 }
 
 /** A service place while it is being edited: the key keeps React rows stable as fields change. */
@@ -107,28 +114,43 @@ export function NewRoundSheet({
   onSave,
   existingNames,
   passRunning,
+  round = null,
+  allowedHere = true,
 }: NewRoundSheetProps) {
   const t = useTranslations("library.rounds");
+  const locale = useLocale();
   const titleId = useId();
   const placesId = useId();
   const staleId = useId();
 
   const enabledConnectors = useMemo(() => connectors.filter((connector) => connector.enabled), [connectors]);
 
-  const [vaultPaths, setVaultPaths] = useState<string[]>([]);
-  const [ownDocumentsOnly, setOwnDocumentsOnly] = useState(false);
-  const [services, setServices] = useState<ServiceDraft[]>([]);
-  /*
-   * Hours at one hour is the cadence every round had before the rail existed, and it is the
-   * one the minute rail cannot say — its detents stop at 30 — so opening on Minutes would put
-   * the thumb somewhere the value is not.
-   */
-  const [unit, setUnit] = useState<CadenceUnit>("hours");
-  const [minutes, setMinutes] = useState(60);
-  const [time, setTime] = useState("09:00");
-  const [weekdaysOnly, setWeekdaysOnly] = useState(false);
-  const [onStale, setOnStale] = useState<RoundOnStale>("redraft");
-  const [nameEdited, setNameEdited] = useState<string | null>(null);
+  const [start] = useState(() => {
+    const placesNow = round ? roundPlaces(round) : [];
+    const everyMinutes = round ? cadenceMinutes(round.cadence) : 60;
+    return {
+      vault: vaultPlace(placesNow),
+      services: servicePlaces(placesNow).map<ServiceDraft>((place) => ({
+        key: newId(),
+        connectorId: place.connectorId,
+        connectorName: place.connectorName,
+        location: place.location ?? "",
+        query: place.query ?? "",
+      })),
+      unit: (everyMinutes === null ? "day" : everyMinutes < 60 ? "minutes" : "hours") as CadenceUnit,
+      minutes: everyMinutes ?? 60,
+      daily: round && "daily" in round.cadence ? round.cadence : null,
+    };
+  });
+  const [vaultPaths, setVaultPaths] = useState<string[]>(() => [...start.vault.paths]);
+  const [ownDocumentsOnly, setOwnDocumentsOnly] = useState(start.vault.ownDocumentsOnly === true);
+  const [services, setServices] = useState<ServiceDraft[]>(start.services);
+  const [unit, setUnit] = useState<CadenceUnit>(start.unit);
+  const [minutes, setMinutes] = useState(start.minutes);
+  const [time, setTime] = useState(start.daily?.daily ?? "09:00");
+  const [weekdaysOnly, setWeekdaysOnly] = useState(start.daily?.weekdaysOnly ?? false);
+  const [onStale, setOnStale] = useState<RoundOnStale>(round?.onStale ?? "redraft");
+  const [nameEdited, setNameEdited] = useState<string | null>(round?.name ?? null);
   const [renaming, setRenaming] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [folderMenuOpen, setFolderMenuOpen] = useState(false);
@@ -189,33 +211,36 @@ export function NewRoundSheet({
     if (!saving) onClose();
   };
 
+  const limit = services.length > 0 ? round?.limit ?? DEFAULT_SERVICE_ROUND_LIMIT : undefined;
+  const widened = round !== null && roundWidens(round, { ...round, kind, cadence, places, onStale, limit });
+  const asksToAllow = round === null || !allowedHere || widened;
+  const nextRunLabel = round
+    ? new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }).format(nextDueAt(cadence, new Date()))
+    : null;
+
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
     setFailure(null);
     const now = new Date();
     const record: RoundRecord = {
-      id: newId(),
+      id: round?.id ?? newId(),
       name: name.trim(),
       kind,
       cadence,
-      enabled: true,
+      enabled: round?.enabled ?? true,
       places,
-      createdAt: now.toISOString(),
+      createdAt: round?.createdAt ?? now.toISOString(),
       nextDueAt: nextDueAt(cadence, now).toISOString(),
     };
     record.onStale = onStale;
-    /*
-     * The legacy fields are written from the **first** service place (spec §3.2): a build
-     * before 2026-09-21 knows only one connector per round, and a record it cannot read is a
-     * round that silently stops running after a downgrade.
-     */
+    if (round?.lastPassAt) record.lastPassAt = round.lastPassAt;
     const first = services[0];
     if (first) {
       record.connectorId = first.connectorId;
       record.connectorName = first.connectorName;
       record.query = first.query.trim();
-      record.limit = DEFAULT_SERVICE_ROUND_LIMIT;
+      record.limit = limit;
     }
     let saved = false;
     try {
@@ -317,7 +342,7 @@ export function NewRoundSheet({
           event.currentTarget.querySelector<HTMLButtonElement>(`[data-testid="${trigger}"]`)?.focus();
         }}>
       <header className="shrink-0">
-      <p className="mb-2 text-body text-[color:var(--color-text-tertiary)]">{t("sheet.title")}</p>
+      <p className="mb-2 text-body text-[color:var(--color-text-tertiary)]">{round ? t("sheet.editTitle") : t("sheet.title")}</p>
       {renaming ? (
         <div className="min-w-0">
           <h2 id={titleId} className="sr-only">
@@ -399,9 +424,12 @@ export function NewRoundSheet({
         {t.rich(onStale === "redraft" ? "sheet.readbackStaleRedraft" : "sheet.readbackStaleMark", { em })}
         {kind === "service"
           ? t("sheet.readbackTurn")
-          : passRunning
-            ? t("sheet.readbackQueued")
-            : t("sheet.readbackNow")}
+          : round
+            ? null
+            : passRunning
+              ? t("sheet.readbackQueued")
+              : t("sheet.readbackNow")}
+        {nextRunLabel ? t("sheet.readbackEditNext", { time: nextRunLabel }) : null}
       </p>
 
       {/* ---- What to look at ------------------------------------------------------------- */}
@@ -676,6 +704,9 @@ export function NewRoundSheet({
         >
           {cost}
         </p>
+        {round && widened ? (
+          <p data-testid="library-rounds-widens" className="mt-3 text-body leading-body text-[color:var(--color-amber-source-a90)]">{t("sheet.editWidens")}</p>
+        ) : null}
       </div>
 
       {failure ? <p role="alert" className="text-body leading-body text-[color:var(--color-danger-text)]">{failure}</p> : null}
@@ -687,7 +718,9 @@ export function NewRoundSheet({
           {t("sheet.cancel")}
         </Button>
         <Button onClick={() => void save()} disabled={!canSave} data-testid="library-rounds-allow" className="atlas-touch-floor atlas-touch-floor-wide">
-          {saving ? t("sheet.saving") : t("sheet.allowAndSave")}
+          {saving
+            ? round ? t("sheet.savingChanges") : t("sheet.saving")
+            : !round ? t("sheet.allowAndSave") : asksToAllow ? t("sheet.allowAndSaveEdit") : t("sheet.saveChanges")}
         </Button>
       </DialogFooter>
     </Dialog>

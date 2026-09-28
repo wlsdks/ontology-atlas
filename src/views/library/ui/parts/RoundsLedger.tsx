@@ -5,8 +5,12 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import type { RoundPassEntry, RoundPassOutcome } from "@/entities/library-round";
+import { undoneReasonKey } from "@/features/library-rounds";
+import { Link } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
+import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Chip } from "@/shared/ui";
 
@@ -294,9 +298,20 @@ export function RoundsLedger({
                         </span>
                       </div>
                       <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                        {t("ledger.checked", { count: entry.checked })}
-                        {entry.summary ? ` · ${entry.summary}` : null}
+                        {entry.outcome === "failed" && entry.summary
+                          ? entry.summary === "no-manifest" ? t("ledger.failedFolderNotRead") : t("ledger.failedError", { detail: entry.summary })
+                          : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
                       </p>
+                      {entry.undone?.length ? (
+                        <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
+                          {entry.undone.map((item) => `${item.action === "left" ? t("ledger.leftAsIs", { page: item.path }) : t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
+                        </p>
+                      ) : null}
+                      {entry.leftAsIs?.length ? (
+                        <p data-testid="library-rounds-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                          {entry.leftAsIs.map((page) => t("ledger.leftAsIs", { page })).join(" ")}
+                        </p>
+                      ) : null}
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {staleNotRedrafted(entry).map((slug) => (
@@ -315,7 +330,10 @@ export function RoundsLedger({
                         </p>
                       ) : null}
                       {entry.note === "no-agent" ? (
-                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">{t("ledger.noAgent")}</p>
+                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">
+                          {t("ledger.noAgent")}{" "}
+                          <Link href={DESTINATION_HREF.agents} className={controlClass({ shape: "link", size: "md", tone: "accent" })}>{t("ledger.openAgents")}</Link>
+                        </p>
                       ) : null}
                       {entry.note === "stopped" ? (
                         <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>
