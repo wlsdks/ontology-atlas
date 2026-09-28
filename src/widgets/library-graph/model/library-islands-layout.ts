@@ -1,4 +1,5 @@
 import type { LibraryGraph, LibraryGraphNode, LibraryGraphNodeKind } from "./build-library-graph";
+import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
 
 /**
@@ -50,8 +51,8 @@ export interface IslandsLayout {
   extent: { width: number; height: number };
 }
 
-function byLabel(a: { label: string }, b: { label: string }): number {
-  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" });
+function byLabelThenId(a: { id: string; label: string }, b: { id: string; label: string }): number {
+  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** `wiki/payments/fees` → `payments`; a page at the wiki's root has no folder. */
@@ -71,8 +72,8 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   const aspect = Math.min(2, Math.max(1, Math.max(1, world.width) / Math.max(1, world.height)));
   const byKind = new Map<LibraryGraphNodeKind, LibraryGraphNode[]>([["source", []], ["page", []], ["concept", []]]);
   for (const node of graph.nodes) byKind.get(node.kind)?.push(node);
-  const pages = [...(byKind.get("page") ?? [])].sort(byLabel);
-  const concepts = [...(byKind.get("concept") ?? [])].sort(byLabel);
+  const pages = [...(byKind.get("page") ?? [])].sort(byLabelThenId);
+  const concepts = [...(byKind.get("concept") ?? [])].sort(byLabelThenId);
   const conceptRank = new Map(concepts.map((node, rank) => [node.id, rank]));
   const conceptById = new Map(concepts.map((node) => [node.id, node]));
 
@@ -120,7 +121,7 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
       members.get(key)!.sources.push(source);
     }
   }
-  for (const source of [...(byKind.get("source") ?? [])].sort(byLabel)) {
+  for (const source of [...(byKind.get("source") ?? [])].sort(byLabelThenId)) {
     if (islandOfSource.has(source.id)) continue;
     claim("unread", "unread", labels.unread, null).sources.push(source.id);
   }
@@ -131,8 +132,8 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   // A page's dot grows with the files it read, 0.85 to 1.25 page radii, scaled within the folder.
   const reads = new Map<string, number>();
   for (const page of pages) reads.set(page.id, (cites.get(page.id) ?? []).length);
-  const mostRead = Math.max(1, ...reads.values());
-  const leastRead = Math.min(mostRead, ...reads.values());
+  const mostRead = maxOf(reads.values(), 1);
+  const leastRead = minOf(reads.values(), mostRead);
   const pageRadius = (id: string): number => {
     const t = mostRead > leastRead ? ((reads.get(id) ?? 0) - leastRead) / (mostRead - leastRead) : 0.5;
     return ISLAND_PAGE_RADIUS * (ISLAND_PAGE_GRAIN_MIN + (ISLAND_PAGE_GRAIN_MAX - ISLAND_PAGE_GRAIN_MIN) * t);

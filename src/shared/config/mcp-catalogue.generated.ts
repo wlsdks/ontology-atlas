@@ -34,9 +34,10 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = [
         "transport": "stdio",
         "runtime": "npx",
         "packageId": "@notionhq/notion-mcp-server",
+        "version": "2.5.1",
         "args": [
           "-y",
-          "@notionhq/notion-mcp-server"
+          "@notionhq/notion-mcp-server@2.5.1"
         ],
         "env": [
           {
@@ -65,13 +66,14 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = [
         "transport": "stdio",
         "runtime": "docker",
         "packageId": "ghcr.io/github/github-mcp-server",
+        "version": "1.12.0",
         "args": [
           "run",
           "-i",
           "--rm",
           "-e",
           "GITHUB_PERSONAL_ACCESS_TOKEN",
-          "ghcr.io/github/github-mcp-server"
+          "ghcr.io/github/github-mcp-server:1.12.0@sha256:46cdbbd810faf6f7aed1745ea04057443f5cb9fcadc15c7308add18cf9a83e33"
         ],
         "env": [
           {
@@ -100,9 +102,10 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = [
         "transport": "stdio",
         "runtime": "npx",
         "packageId": "@playwright/mcp",
+        "version": "0.0.80",
         "args": [
           "-y",
-          "@playwright/mcp"
+          "@playwright/mcp@0.0.80"
         ],
         "env": [],
         "source": "registry"
@@ -132,9 +135,10 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = [
         "transport": "stdio",
         "runtime": "npx",
         "packageId": "@upstash/context7-mcp",
+        "version": "4.0.5",
         "args": [
           "-y",
-          "@upstash/context7-mcp"
+          "@upstash/context7-mcp@4.0.5"
         ],
         "env": [
           {

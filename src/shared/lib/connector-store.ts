@@ -195,7 +195,7 @@ export function createVaultFileConnectorStore(
   });
 }
 
-/** The connectors the person actually turned on — the only ones a session ever sees. */
+/** On in the folder; a session also needs this Mac's allowance (`connectorAcpServers`). */
 export function enabledConnectors(
   connectors: readonly ConnectorRecord[],
 ): ConnectorRecord[] {

@@ -33,11 +33,13 @@
 
 set -e
 
+# Prefer the checkout's CLI, from the project root, to whatever `ontology-atlas` is on PATH.
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 CLI_ARGS=()
-if command -v ontology-atlas >/dev/null 2>&1; then
+if [ -f "$ROOT/cli/src/index.mjs" ]; then
+  CLI_ARGS=(node "$ROOT/cli/src/index.mjs")
+elif command -v ontology-atlas >/dev/null 2>&1; then
   CLI_ARGS=(ontology-atlas)
-elif [ -f "$(pwd)/cli/src/index.mjs" ]; then
-  CLI_ARGS=(node "$(pwd)/cli/src/index.mjs")
 fi
 
 if [ "${#CLI_ARGS[@]}" -eq 0 ]; then

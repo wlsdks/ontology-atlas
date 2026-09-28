@@ -38,6 +38,7 @@ import {
   inspectMergedUids,
   rawSourceSlugIssue,
   nodeUidIssue,
+  unwritableSlugIssue,
 } from './schema.mjs';
 import {
   STARTER_EXAMPLE_SLUGS,
@@ -467,6 +468,18 @@ export function slugToPath(rootPath, slug) {
   // writeFileSync follows a link, so the real path must stay inside too.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+/** `slugToPath` for a file a write tool will create, change or delete; refuses what `unwritableSlugIssue` names, as typed or where it resolves. */
+export function slugToWritePath(rootPath, slug) {
+  const issue = unwritableSlugIssue(slug);
+  if (issue) throw new Error(issue);
+  const filePath = slugToPath(rootPath, slug);
+  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
+  const resolved = real ? segmentsToSlug(real) : slug;
+  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
+  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
+  return filePath;
 }
 
 /**
@@ -1283,7 +1296,7 @@ function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
 
 /** Writes a new doc, creating directories; throws if it exists, so an overwrite is always explicit. */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(
       `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add: that loses backlinks.`,
@@ -1308,7 +1321,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
  * state read just before the delete, throws when absent, honours `expectedMtime`.
  */
 export function deleteDoc(rootPath, slug, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1327,7 +1340,7 @@ export function deleteDoc(rootPath, slug, options = {}) {
  * identity, and the caller must tell the person.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -1366,7 +1379,7 @@ export function updateDoc(rootPath, slug, {
   expectedMtime,
   beforeCommit,
 }) {
-  const filePath = slugToPath(rootPath, slug);
+  const filePath = slugToWritePath(rootPath, slug);
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
@@ -2015,7 +2028,7 @@ export function applyAllOrNothing(plan, options = {}) {
  * referrer's kind keeps one (`containmentKeyFor`, spec §5), else it stays and is
  * listed in `keptInPlace`; then `targetSlug === nextSlug` is a kind change in place.
  *
- * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace }`.
+ * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace, unwritableReferrers }`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
@@ -2059,6 +2072,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
 
   const updates = [];
   const keptInPlace = [];
+  const unwritableReferrers = [];
   /** Applied in one go once the loop ends. */
   const plan = [];
   for (const doc of docs) {
@@ -2241,6 +2255,10 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     }
 
     if (!fmChanged && !bodyChanged) continue;
+    if (unwritableSlugIssue(doc.slug) !== null) {
+      unwritableReferrers.push(doc.slug);
+      continue;
+    }
 
     updates.push({
       slug: doc.slug,
@@ -2267,6 +2285,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     updates,
     totalUpdated: updates.length,
     keptInPlace,
+    unwritableReferrers,
     ...(deferWrite ? { plan } : {}),
   };
 }

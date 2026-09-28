@@ -44,7 +44,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
       // The vault first: claude-agent-acp lets a later same-named entry win, and the instructions
       // name the vault server.
       // Atlas runs none of these; the agent spawns them (`connector-servers.ts`).
-      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId, vaultConnectors.allowedHere),
     ];
   }, [
     agentServer.launch,
@@ -52,6 +52,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
     acpRuntimeId,
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
+    vaultConnectors.allowedHere,
     vaultConnectors.connectors,
   ]);
 
