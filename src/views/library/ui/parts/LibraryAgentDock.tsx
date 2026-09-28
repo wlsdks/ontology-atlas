@@ -8,7 +8,7 @@ import type { PageWriteRequest, PageWriteVerdict } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { usePanelPresence } from "@/shared/lib/use-presence";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip, Surface, Tooltip } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Chip, Surface, Tooltip } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";
 
 import { LIBRARY_HANDOFF_APPENDIX } from "../../lib/library-handoff";
@@ -367,9 +367,7 @@ export function LibraryAgentDock({
       style={
         {
           "--library-agent-chat-width": `${chatWidth.width}px`,
-          transitionProperty: "width",
-          transitionDuration: "var(--agent-panel-reflow-duration)",
-          transitionTimingFunction: "var(--topology-motion-ease-out)",
+          ...agentDockReflowStyle("width"),
         } as React.CSSProperties
       }
       className={cn(

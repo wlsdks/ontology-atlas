@@ -7,7 +7,7 @@ import { AnalysisWorkbench } from '@/widgets/analysis-workbench';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { usePanelPresence } from '@/shared/lib/use-presence';
-import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from '@/shared/ui';
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface } from '@/shared/ui';
 import {
   AcpChatPanel,
   AcpChatResizeHandle,
@@ -101,9 +101,7 @@ export function InsightsAgentDock({
       }}
       style={{
         '--insights-agent-chat-width': `${chatWidth.width}px`,
-        transitionProperty: 'width',
-        transitionDuration: 'var(--agent-panel-reflow-duration)',
-        transitionTimingFunction: 'var(--topology-motion-ease-out)',
+        ...agentDockReflowStyle("width"),
       } as React.CSSProperties}
       className={cn(
         'absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]',
