@@ -346,6 +346,7 @@ function capabilityLabelAt(x: number, y: number, r: number, angle: number, text:
 interface Attempt {
   layout: TerritoryLayout;
   complete: boolean;
+  titleOrPillHits: boolean;
 }
 
 type NameRule = "keepEvery" | "foldWithoutPlace" | "yieldToDiscs";
@@ -413,12 +414,15 @@ function attempt(
   /* Titles on the outward-vertical side, reading outward. */
   const domains: TerritoryDomain[] = [];
   const markOf = new Map<Territory, { x: number; y: number }>();
+  let titleOrPillHits = false;
   for (const s of sectors) {
     const m = s.t.domain || territories.length > 1 ? onArc(0, 0, ring, s.mid) : { x: 0, y: 0 };
     markOf.set(s.t, m);
     if (!s.t.domain) continue;
     const half = G.domainHalf;
-    grid.add(s.t.id, "mark", { x: m.x - half, y: m.y - half, w: 2 * half, h: 2 * half });
+    const markBox = { x: m.x - half, y: m.y - half, w: 2 * half, h: 2 * half };
+    titleOrPillHits ||= grid.hits(markBox, 0);
+    grid.add(s.t.id, "mark", markBox);
     const elementCount = tree.domainElementCount.get(s.t.id) ?? 0;
     const statsText = options.domainStats({
       id: s.t.id,
@@ -436,7 +440,9 @@ function attempt(
     const ty = up ? m.y - half - 18 : m.y + half + 24;
     const align = right ? ("left" as const) : ("right" as const);
     const left = right ? tx : tx - w;
-    grid.add(s.t.id, "label", { x: left, y: ty - 16, w, h: 32 });
+    const titleBox = { x: left, y: ty - 16, w, h: 32 };
+    titleOrPillHits ||= grid.hits(titleBox, 0);
+    grid.add(s.t.id, "label", titleBox);
     domains.push({
       id: s.t.id,
       name: s.t.name,
@@ -519,6 +525,7 @@ function attempt(
       }
     }
     if (!chip) {
+      titleOrPillHits = true;
       const pt = at(0.5);
       chip = { text, x: pt.x, y: pt.y + 3.5, align: "center", box: { x: pt.x - w / 2, y: pt.y - h / 2, w, h } };
     }
@@ -656,6 +663,7 @@ function attempt(
 
   return {
     complete,
+    titleOrPillHits,
     layout: {
       project,
       domains,
@@ -684,12 +692,15 @@ export function computeTerritoryLayout(
     // Inside the room with every name, then names folded, then yielding to discs, then unbounded
     // (the camera pans), then dense. Every name at any spacing beats some names folded.
     if (options.room) {
+      let fitWithHits: TerritoryLayout | null = null;
       for (const names of ["keepEvery", "foldWithoutPlace", "yieldToDiscs"] as const) {
         for (const spread of TERRITORY_GEOMETRY.roomSpreads) {
           const inRoom = attempt(tree, dependencies, options, options.room, false, names, spread);
-          if (inRoom.complete) return inRoom.layout;
+          if (inRoom.complete && !inRoom.titleOrPillHits) return inRoom.layout;
+          if (inRoom.complete) fitWithHits ??= inRoom.layout;
         }
       }
+      if (fitWithHits) return fitWithHits;
     }
     const open = attempt(tree, dependencies, options, null, false);
     if (open.complete) return open.layout;

@@ -181,6 +181,14 @@ describe("computeTerritoryLayout", () => {
     expect(overlaps(layout)).toEqual([]);
   });
 
+  it("folds a name rather than set a title or pill on another box or outside the room", () => {
+    const { nodes, edges } = synthetic(14, 3);
+    const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1280 });
+    expect(layout.fitsRoom).toBe(true);
+    expect(overlaps(layout)).toEqual([]);
+    expect(layout.boxes.filter(({ box }) => !inside(ROOM_1280, box))).toEqual([]);
+  });
+
   it("folds names before a disc would leave the room", () => {
     const { nodes, edges } = synthetic(34, 4);
     const layout = computeTerritoryLayout(nodes, edges, { ...options, room: ROOM_1040 });
