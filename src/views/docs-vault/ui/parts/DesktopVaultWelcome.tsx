@@ -188,6 +188,8 @@ export function DesktopVaultWelcome({
 
           {choosing ? null : (
           <StaggeredFadeIn
+            vaultKey={currentVaultKey ?? "none"}
+            scopeKey="desktop-welcome:contract"
             as="section"
             ariaLabel={t("desktopWelcome.contractAriaLabel")}
             className="grid overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:grid-cols-3"

@@ -2287,8 +2287,13 @@ are not used.
 
 `useStaggerOnce` in `src/shared/motion/stagger.ts`, CSS in `motion-stagger.css`.
 Every list staggers on its first arrival, once per session, keyed by vault and
-list, capped at three steps (105ms) on `--motion-base`. Dense rows fade only;
-later arrivals get one unstaggered `motion-arrive`.
+list, one `--motion-stagger` (35ms, mirrored by `STAGGER`) per step, capped at
+three steps (105ms) on `--motion-base`. Items rise by `--overlay-enter-translate`
+(`motion-stagger-in`); dense rows fade only (`motion-stagger-fade`). The class
+exists only for the entrance window (105ms + `--motion-base`), so a re-render,
+a remount, a tab switch or a scroll never replays it, and ids that arrive later
+appear still. A new vault replays. Reduced motion: `panelCrossfadeIn` on
+`--motion-fast` with no delay.
 
 ### Count-up
 
