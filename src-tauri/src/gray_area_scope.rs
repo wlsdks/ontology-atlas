@@ -423,7 +423,9 @@ fn capture_directory(
                         return Err("source_changed_during_read".into());
                     }
                     result.text_bytes += bytes.len();
-                    text = String::from_utf8(bytes).ok();
+                    if !bytes.contains(&0) {
+                        text = String::from_utf8(bytes).ok();
+                    }
                 }
             }
             result.files.push(path.to_string_lossy().into_owned());
@@ -448,16 +450,66 @@ fn capture_directory(
     }
     Ok(())
 }
+pub(crate) fn source_witness(root: &Path, source: &SourceObservation, path: &str) -> Value {
+    use serde_json::json;
+    if !excerpt_source_path(Path::new(path)) {
+        return json!({"path":path,"status":"refused","reason":"source_path_refused"});
+    }
+    let entry = source.entries.iter().find(|e| e.path == *path);
+    if !entry.is_some_and(|e| e.kind == "file" && e.size <= 256 * 1024) {
+        return json!({"path":path,"status":"refused","reason":"source_file_unavailable"});
+    }
+    let captured = entry
+        .and_then(|e| e.text.clone())
+        .or_else(|| read_text(root, Path::new(path)).ok());
+    let Some(text) = captured else {
+        return json!({"path":path,"status":"refused","reason":"source_bytes_unavailable"});
+    };
+    if text.as_bytes().contains(&0) {
+        return json!({"path":path,"status":"refused","reason":"binary_source"});
+    }
+    if text.is_empty() || text.len() > 256 * 1024 {
+        return json!({"path":path,"status":"refused","reason":"source_file_limit"});
+    }
+    let lines: Vec<_> = text.lines().collect();
+    let end = lines.len().min(80);
+    let excerpt = lines[..end].join("\n");
+    if excerpt.len() > 8 * 1024 {
+        return json!({"path":path,"status":"refused","reason":"source_range_limit"});
+    }
+    json!({"path":path,"status":"read","text":excerpt,"actualRange":{"startLine":1,"endLine":end},"fullFileSha256":digest(text.as_bytes()).trim_start_matches("sha256:"),"citation":format!("{path}:1-{end}"),"fileComplete":lines.len()<=80})
+}
 pub(crate) fn safe_source_path(path: &Path) -> bool {
-    path.components().all(|component| {
-        let Component::Normal(name) = component else {
-            return false;
-        };
-        let name = name.to_string_lossy();
-        if name.starts_with('.') {
+    // Preserve the literal selector; Path::components normalizes repeated and
+    // dot separators that must not become an ambiguous source citation.
+    let Some(literal) = path.to_str() else {
+        return false;
+    };
+    if literal.chars().count() > 1024
+        || literal
+            .chars()
+            .any(|c| c.is_control() || matches!(c, '\\' | ':' | '#'))
+    {
+        return false;
+    }
+    literal.split('/').all(|name| {
+        if name.is_empty()
+            || name.starts_with('.')
+            || matches!(
+                name,
+                "node_modules"
+                    | "out"
+                    | "dist"
+                    | "build"
+                    | "target"
+                    | "coverage"
+                    | "__pycache__"
+                    | "venv"
+            )
+        {
             return false;
         }
-        let part = Path::new(name.as_ref());
+        let part = Path::new(name);
         let stem = part
             .file_stem()
             .and_then(|x| x.to_str())
@@ -471,13 +523,72 @@ pub(crate) fn safe_source_path(path: &Path) -> bool {
                 | "secrets"
                 | "private-key"
                 | "private_key"
+                | "privatekey"
                 | "id_rsa"
                 | "id_ed25519"
         ) && !matches!(
-            part.extension().and_then(|x| x.to_str()),
-            Some("pem" | "key" | "p12" | "pfx" | "jks" | "keystore")
+            part.extension()
+                .and_then(|x| x.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase()
+                .as_str(),
+            "pem" | "key" | "p12" | "pfx" | "jks" | "keystore"
         )
     })
+}
+pub(crate) fn excerpt_source_path(path: &Path) -> bool {
+    // Keep the native replacement at least as restrictive as source-evidence.mjs
+    // pathRefusal. Resolver-only configs can be captured without being excerpts.
+    safe_source_path(path)
+        && (matches!(
+            path.extension()
+                .and_then(|x| x.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase()
+                .as_str(),
+            "c" | "cc"
+                | "cpp"
+                | "cs"
+                | "css"
+                | "go"
+                | "h"
+                | "hpp"
+                | "html"
+                | "java"
+                | "js"
+                | "jsx"
+                | "kt"
+                | "kts"
+                | "mjs"
+                | "mts"
+                | "php"
+                | "py"
+                | "rb"
+                | "rs"
+                | "scss"
+                | "sh"
+                | "swift"
+                | "ts"
+                | "tsx"
+                | "vue"
+                | "zig"
+                | "markdown"
+                | "md"
+                | "rst"
+                | "txt"
+        ) || matches!(
+            path.file_name().and_then(|x| x.to_str()),
+            Some(
+                "Cargo.toml"
+                    | "Gemfile"
+                    | "go.mod"
+                    | "package.json"
+                    | "pyproject.toml"
+                    | "requirements.txt"
+                    | "setup.cfg"
+                    | "setup.py"
+            )
+        ))
 }
 pub(crate) fn verify_identity(binding: &BoundSource) -> Result<(), String> {
     let git_root = crate::git::find_repo_root(&binding.root)?;

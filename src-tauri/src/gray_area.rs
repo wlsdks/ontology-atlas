@@ -1,7 +1,7 @@
 use crate::gray_area_rpc::EvidenceReader;
 use crate::gray_area_scope::{
-    digest, observe_scoped_source, read_text, resolve_binding, safe_source_path, vault_digest,
-    verify_identity,
+    digest, excerpt_source_path, observe_scoped_source, read_text, resolve_binding,
+    safe_source_path, source_witness, vault_digest, verify_identity,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -145,10 +145,8 @@ pub fn read_gray_area_evidence(
         return Err("binding_changed".into());
     }
     let body_digest = vault_digest(&vault)?;
-    let mut reader = EvidenceReader::start(
-        &vault,
-        &crate::gray_area_scope::SourceObservation::empty(),
-    )?;
+    let mut reader =
+        EvidenceReader::start(&vault, &crate::gray_area_scope::SourceObservation::empty())?;
     let graph = reader.call(
         "compile_ontology",
         json!({"nodesLimit":500,"edgesLimit":500}),
@@ -264,17 +262,10 @@ pub fn read_gray_area_evidence(
     source_paths.dedup();
     let witnesses_limited = source_paths.len() > 16;
     source_paths.truncate(16);
-    let witnesses:Vec<Value>=source_paths.iter().map(|path|{
-        if !safe_source_path(Path::new(path)){return json!({"path":path,"status":"refused","reason":"source_path_refused"});}
-        let entry=source.entries.iter().find(|e|e.path==*path);
-        if !entry.is_some_and(|e|e.kind=="file"&&e.size<=256*1024){return json!({"path":path,"status":"refused","reason":"source_file_unavailable"});}
-        let captured=entry.and_then(|e|e.text.clone()).or_else(||read_text(&binding.root,Path::new(path)).ok());
-        let Some(text)=captured else{return json!({"path":path,"status":"refused","reason":"source_bytes_unavailable"});};
-        if text.is_empty()||text.len()>256*1024{return json!({"path":path,"status":"refused","reason":"source_file_limit"});}
-        let lines:Vec<_>=text.lines().collect();let end=lines.len().min(80);let excerpt=lines[..end].join("\n");
-        if excerpt.len()>8*1024{return json!({"path":path,"status":"refused","reason":"source_range_limit"});}
-        json!({"path":path,"status":"read","text":excerpt,"actualRange":{"startLine":1,"endLine":end},"fullFileSha256":digest(text.as_bytes()).trim_start_matches("sha256:"),"citation":format!("{path}:1-{end}"),"fileComplete":lines.len()<=80})
-    }).collect();
+    let witnesses: Vec<Value> = source_paths
+        .iter()
+        .map(|path| source_witness(&binding.root, &source, path))
+        .collect();
     let drift = read_drift(&vault_path, &binding.root.to_string_lossy(), &documents);
     let basis = EvidenceBasis {
         project_slug,
@@ -375,12 +366,14 @@ fn check_basis(
     }
     for witness in witnesses.iter().filter(|w| string(w, "status") == "read") {
         let path = string(witness, "path");
-        if !safe_source_path(Path::new(path)) {
+        if !excerpt_source_path(Path::new(path)) {
             return Ok(false);
         }
         let text = read_text(&binding.root, Path::new(path))?;
-        if digest(text.as_bytes()).trim_start_matches("sha256:")
-            != string(witness, "fullFileSha256")
+        if text.as_bytes().contains(&0)
+            || text.len() > 256 * 1024
+            || digest(text.as_bytes()).trim_start_matches("sha256:")
+                != string(witness, "fullFileSha256")
         {
             return Ok(false);
         }
@@ -582,6 +575,70 @@ mod tests {
         assert_eq!(before.fingerprint, after.fingerprint);
         assert!(after.ignored_names.contains(&"secrets.ts".into()));
         assert!(!after.files.iter().any(|p| p.contains("secrets")));
+    }
+    #[test]
+    fn unavailable_import_scan_does_not_capture_or_publish_sensitive_authored_paths() {
+        let f = Fixture::new();
+        fs::create_dir(f.code.join("certs")).unwrap();
+        fs::write(f.code.join("src/large.ts"), vec![b'x'; 512 * 1024 + 1]).unwrap();
+        for path in [
+            "certs/private.PEM",
+            "src/privatekey.ts",
+            "src/PRIVATEKEY.ts",
+        ] {
+            fs::write(f.code.join(path), "sensitive sentinel").unwrap();
+        }
+        let source = observe_source(&f.code).unwrap();
+        assert!(source.limited);
+        assert!(!source
+            .entries
+            .iter()
+            .any(|entry| entry.text.as_deref() == Some("sensitive sentinel")));
+        for path in [
+            "certs/private.PEM",
+            "src/privatekey.ts",
+            "src/PRIVATEKEY.ts",
+        ] {
+            let witness = source_witness(&f.code, &source, path);
+            assert_eq!(witness["status"], "refused", "{path}");
+            assert!(witness.get("text").is_none());
+        }
+        assert_eq!(
+            source_witness(&f.code, &source, "src/a.ts")["status"],
+            "read"
+        );
+    }
+    #[test]
+    fn source_witnesses_refuse_ambiguous_paths_unsupported_types_and_binary_bytes() {
+        let f = Fixture::new();
+        let paths = [
+            "src/a#note.ts",
+            "src/a:note.ts",
+            "src/a\\note.ts",
+            "src/a\n.ts",
+            "src/data.json",
+            "src/a.exe",
+            "src/binary.ts",
+            "src/invalid.ts",
+        ];
+        for path in paths {
+            fs::write(f.code.join(path), b"ordinary text").unwrap();
+        }
+        fs::write(f.code.join("src/binary.ts"), b"sentinel\0binary").unwrap();
+        fs::write(f.code.join("src/invalid.ts"), [0xff, 0xff]).unwrap();
+        let source = observe_source(&f.code).unwrap();
+        for path in paths
+            .into_iter()
+            .chain(["src//a.ts", "src/./a.ts", "src/../src/a.ts"])
+        {
+            let witness = source_witness(&f.code, &source, path);
+            assert_eq!(witness["status"], "refused", "{path}");
+            assert!(witness.get("text").is_none());
+        }
+        assert!(source
+            .entries
+            .iter()
+            .all(|e| e.text.as_ref().is_none_or(|t| !t.contains('\0'))));
     }
     #[cfg(unix)]
     #[test]
