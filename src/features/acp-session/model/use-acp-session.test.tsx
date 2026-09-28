@@ -871,6 +871,30 @@ describe('관문을 못 세웠으면 화면이 말한다', () => {
   });
 });
 
+describe('a tool call reaching its end', () => {
+  it('is reported once it completes, fails or is cancelled, and not while it is pending or refined', async () => {
+    const settled = vi.fn();
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', onToolSettled: settled }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await starting;
+    });
+    const send = (update: Record<string, unknown>) =>
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update } }));
+    act(() => {
+      send({ sessionUpdate: 'tool_call', toolCallId: 'edit-1', title: 'Edit', kind: 'edit', status: 'pending' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', rawInput: { file_path: '/vault/wiki/plan.md' } });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', status: 'in_progress' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'edit-1', status: 'completed' });
+      send({ sessionUpdate: 'tool_call', toolCallId: 'read-1', title: 'Read', kind: 'read', status: 'completed' });
+      send({ sessionUpdate: 'tool_call_update', toolCallId: 'write-1', status: 'cancelled' });
+    });
+    expect(settled.mock.calls).toEqual([['edit-1', 'completed'], ['read-1', 'completed'], ['write-1', 'cancelled']]);
+  });
+});
+
 describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
   it('status 없는 tool_call_update가 뒤늦게 보낸 rawInput을 기존 도구 행에 합친다', async () => {
     const { result } = renderHook(() =>
@@ -1418,6 +1442,51 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
       detail: 'call mcp__atlas-vault__get_concept',
     }));
 
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('lets an unattended round refuse an Atlas write during its turn, and never lets it allow one', async () => {
+    bridge.holdPrompt = true;
+    let verdict: string | { reject: string } = { reject: 'mcp__atlas-vault__add_concept' };
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault' }],
+        autoDecide: () => verdict,
+      }),
+    );
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    void result.current.send('Review the ontology without changing it.');
+    await waitFor(() => expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true));
+    const atlasWrite = (id: number) => JSON.stringify({
+      jsonrpc: '2.0',
+      id,
+      method: 'session/request_permission',
+      params: {
+        sessionId: 's-1',
+        options: [
+          { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+          { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+        ],
+        toolCall: { toolCallId: `write-${id}`, title: 'mcp__atlas-vault__add_concept', kind: 'edit', rawInput: { slug: 'capabilities/x' } },
+      },
+    });
+
+    await act(async () => { bridge.listener?.(atlasWrite(301)); });
+    await waitFor(() => expect(bridge.sent.some((message) => message.id === 301 && 'result' in message)).toBe(true));
+    const refused = bridge.sent.find((message) => message.id === 301) as { result: { outcome: { optionId: string } } };
+    expect(refused.result.outcome.optionId).toBe('reject');
+    expect(result.current.pending).toBeNull();
+    expect(result.current.events).toContainEqual(expect.objectContaining({ kind: 'notice', text: 'auto-refused', detail: 'mcp__atlas-vault__add_concept' }));
+
+    verdict = 'call mcp__atlas-vault__add_concept';
+    await act(async () => { bridge.listener?.(atlasWrite(302)); });
+    await waitFor(() => expect(result.current.pending?.request.reviewKind).toBe('ontology-write'));
+    expect(bridge.sent.some((message) => message.id === 302 && 'result' in message)).toBe(false);
+    await act(async () => { result.current.pending?.resolve('reject'); });
     await act(async () => { await result.current.stop(); });
   });
 });

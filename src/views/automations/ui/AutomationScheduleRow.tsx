@@ -12,17 +12,21 @@ import { AutomationScheduleActions } from './AutomationScheduleActions';
 import { AutomationRunHistory } from './AutomationRunHistory';
 import { automationDate } from './automation-date';
 
-export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
+export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdit }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
   expanded: boolean;
   onToggle: () => void;
+  onEdit: () => void;
 }) {
   const t = useTranslations('automations');
   const cadenceText = useTranslations('library.rounds.cadence');
+  const ledgerText = useTranslations('library.rounds.ledger');
   const locale = useLocale();
   const entries = runner.ledger.filter((entry) => entry.roundId === round.id);
-  const last = entries.at(-1);
+  const unrecorded = runner.unrecorded.get(round.id);
+  const recorded = entries.at(-1);
+  const last = unrecorded && (!recorded || Date.parse(unrecorded.endedAt) >= Date.parse(recorded.endedAt)) ? unrecorded : recorded;
   const running = runner.running?.roundId === round.id;
   const key = cadenceKey(round.cadence);
   const time = 'daily' in round.cadence ? round.cadence.daily : '09:00';
@@ -51,7 +55,8 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
           <span className="col-span-2 min-w-0 md:col-span-1">
             <span className="block break-words text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>
             <span className="mt-1 block text-body text-[color:var(--color-text-tertiary)]">
-              {running ? t('state.running') : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
+              {running ? `${t('state.running')} · ${ledgerText(runner.running?.phase === 'agent' ? 'phaseAgent' : 'phaseChecking')}`
+                : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
             </span>
           </span>
           <span className="min-w-0 text-body text-[color:var(--color-text-secondary)]">
@@ -63,6 +68,7 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
           <span className="min-w-0 text-body text-[color:var(--color-text-secondary)] md:text-right">
             <span className="block">{last ? t(`outcome.${last.outcome}`) : t('outcome.none')}</span>
             {last ? <time dateTime={last.endedAt} className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">{automationDate(locale, last.endedAt)}</time> : null}
+            {last && last === unrecorded ? <span className="mt-1 block text-label text-[color:var(--color-amber-source-a90)]">{t('unrecorded.short')}</span> : null}
           </span>
         </span>
         <ChevronDown size={ICON_SIZE.lg} aria-hidden className={cn('flex-none self-center text-[color:var(--color-text-tertiary)] transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
@@ -77,8 +83,8 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle }: {
       <RowDisclosure id={detailId} open={expanded} className="pb-5 pl-11 pr-4">
         <div className="space-y-5 border-t border-[color:var(--color-divider)] pt-4">
         {'query' in round && round.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]"><span className="text-[color:var(--color-text-tertiary)]">{t('scopeLabel')} · </span>{round.query}</p> : null}
-        <AutomationRunHistory entries={entries} />
-        <AutomationScheduleActions round={round} runner={runner} notAllowedSentenceId={notHere ? allowSentenceId : null} />
+        <AutomationRunHistory entries={entries} unrecorded={unrecorded} />
+        <AutomationScheduleActions round={round} runner={runner} notAllowedSentenceId={notHere ? allowSentenceId : null} onEdit={onEdit} />
         </div>
       </RowDisclosure>
     </li>

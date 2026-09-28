@@ -1,11 +1,15 @@
-import { render, screen } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import { NextIntlClientProvider, createTranslator } from 'next-intl';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { RoundPassEntry } from '@/entities/library-round';
 
 import en from '../../../../../messages/en.json';
 import { RoundsLedger, type RunningPass } from './RoundsLedger';
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
+}));
 
 function entry(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
   return {
@@ -45,6 +49,21 @@ function draw(props: Partial<Parameters<typeof RoundsLedger>[0]> = {}) {
 }
 
 describe('the ledger', () => {
+  it('says what stopped a failed pass and what to do next, instead of the raw error', () => {
+    draw({ entries: [entry({ id: 'err', outcome: 'failed', checked: 0, stale: [], summary: 'No such file or directory (os error 2)' })] });
+    const card = screen.getByTestId('library-rounds-pass-err');
+    const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
+    expect(card).toHaveTextContent(ledger('failedError', { detail: 'No such file or directory (os error 2)' }));
+    expect(card).not.toHaveTextContent(ledger('checked', { count: 0 }));
+  });
+
+  it('gives a pass that had no agent the way to the Agents screen its note names', () => {
+    draw({ entries: [entry({ id: 'solo', note: 'no-agent' })] });
+    const card = screen.getByTestId('library-rounds-pass-solo');
+    expect(card).toHaveTextContent(en.library.rounds.ledger.noAgent);
+    expect(within(card).getByRole('link', { name: en.library.rounds.ledger.openAgents })).toHaveAttribute('href', '/agents/');
+  });
+
   it('draws the pass in flight and drops the empty sentence that contradicted it', () => {
     /*
      * Measured in the browser, 2026-09-21: the header said "running now · <name>" while this
@@ -84,6 +103,22 @@ describe('the ledger', () => {
 
   it('says a pass was cut short by a press rather than by a fault', () => {
     draw({ entries: [entry({ outcome: 'failed', note: 'stopped' })] });
-    expect(screen.getByTestId('library-rounds-ledger')).toHaveTextContent('You removed or paused this round while it was running');
+    expect(screen.getByTestId('library-rounds-ledger')).toHaveTextContent(en.library.rounds.ledger.stopped);
+  });
+
+  it('names each page a pass left outside its scope, why, and what Atlas did about it', () => {
+    const copy = '.ontology-atlas/undone/undo/wiki/plan.md';
+    draw({ entries: [entry({ id: 'undo', outcome: 'failed', stale: [], leftAsIs: ['wiki/notes.md'], undone: [
+      { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored', copy },
+      { path: 'wiki/new.md', reason: 'forbidden-key', key: 'describes', action: 'removed' },
+      { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
+    ] })] });
+    const ledger = createTranslator({ locale: 'en', messages: en, namespace: 'library.rounds.ledger' });
+    const card = within(screen.getByTestId('library-rounds-pass-undo'));
+    const line = card.getByTestId('library-rounds-undone');
+    expect(line).toHaveTextContent(`${ledger('undone.restored', { page: 'wiki/plan.md' })} ${ledger('undoneReason.duplicateKey', { key: 'status' })} ${ledger('undoneCopy', { copy })}`);
+    expect(line).toHaveTextContent(`${ledger('undone.removed', { page: 'wiki/new.md' })} ${ledger('undoneReason.forbiddenKey', { key: 'describes' })}`);
+    expect(line).toHaveTextContent(`${ledger('leftAsIs', { page: 'wiki/theirs.md' })} ${ledger('undoneReason.notDraft')}`);
+    expect(card.getByTestId('library-rounds-left-as-is')).toHaveTextContent(ledger('leftAsIs', { page: 'wiki/notes.md' }));
   });
 });

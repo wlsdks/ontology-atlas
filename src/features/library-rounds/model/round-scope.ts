@@ -1,4 +1,7 @@
 import type { RoundKind } from '@/entities/library-round';
+import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+
+import { pageIdentity, roundDraftProblem } from './pass-pages';
 
 /**
  * What one unattended pass may do: allow or reject, never ask, and fail closed on anything
@@ -33,12 +36,14 @@ export interface ScopeInput {
   /** `'read' | 'write' | null` for the vault server's own tools; `null` when it is not one. */
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
   /** The Library's page judge: a verdict for a `wiki/` page write, `null` for anything else. */
-  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean } | null;
+  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; text: string } | null;
+  node?: (relative: string) => boolean;
+  unsafe?: (relative: string) => boolean;
 }
 
 /** The note the ledger records: `read <path>`, `write <path>` or `call <tool>`. */
 export type ScopeVerdict =
-  | { decision: 'allow'; note: string }
+  | { decision: 'allow'; note: string; wrote?: { path: string; text: string | null } }
   | { decision: 'reject'; reason: string };
 
 export function scopeNoteEffect(note: string): { effect: 'read' | 'write' | 'call'; target: string } | null {
@@ -84,9 +89,11 @@ export function judgeRoundScope({
   vaultServerName,
   atlasToolMode,
   judgeWrite,
+  node,
+  unsafe,
 }: ScopeInput): ScopeVerdict {
   if (request.reviewKind === 'ontology-write') {
-    return { decision: 'reject', reason: 'ontology-write' };
+    return { decision: 'reject', reason: request.toolName ?? 'ontology-write' };
   }
 
   if (request.toolName?.startsWith('mcp__')) {
@@ -118,23 +125,24 @@ export function judgeRoundScope({
   }
 
   // Ontology rounds are read-only reviews: they may inspect source evidence but never edit the vault.
-  if (round.kind === 'ontology') {
+  if (round.kind === 'ontology' || node?.(relative) || unsafe?.(relative)) {
     return { decision: 'reject', reason: relative || request.toolName || 'ontology review is read-only' };
   }
 
-  if (relative.startsWith('wiki/') && relative.endsWith('.md')) {
-    if (relative.startsWith('wiki/answers/') || relative.startsWith('wiki/_')) {
+  const folded = pageIdentity(relative);
+  if (folded.startsWith('wiki/') && folded.endsWith('.md')) {
+    if (!relative.startsWith('wiki/') || folded.startsWith('wiki/answers/') || folded.startsWith('wiki/_') || isWikiFurnitureSlug(folded)) {
       return { decision: 'reject', reason: relative };
     }
     const verdict = judgeWrite(request);
-    return verdict?.ok
-      ? { decision: 'allow', note: `write ${relative}` }
+    return verdict?.ok && roundDraftProblem(verdict.text) === null
+      ? { decision: 'allow', note: `write ${relative}`, wrote: { path: relative, text: verdict.text } }
       : { decision: 'reject', reason: relative };
   }
 
   if (relative.startsWith('sources/') && relative !== 'sources/') {
     return round.kind === 'service'
-      ? { decision: 'allow', note: `write ${relative}` }
+      ? { decision: 'allow', note: `write ${relative}`, wrote: { path: relative, text: null } }
       : { decision: 'reject', reason: relative };
   }
 

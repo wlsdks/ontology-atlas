@@ -140,29 +140,35 @@ function isWeekend(date: Date): boolean {
   return day === 0 || day === 6;
 }
 
+const MINUTE_MS = 60_000;
+
+const minuteOfDay = (at: Date) => at.getHours() * 60 + at.getMinutes();
+
+function jumpsOverGrid(before: Date, after: Date, minutes: number): boolean {
+  const skipped = before.getTimezoneOffset() - after.getTimezoneOffset();
+  for (let step = 1; step <= skipped; step += 1) {
+    if (((minuteOfDay(before) + step) % MAX_INTERVAL_MINUTES) % minutes === 0) return true;
+  }
+  return false;
+}
+
+function nextOnClockGrid(minutes: number, from: Date): Date {
+  const start = Math.floor(from.getTime() / MINUTE_MS) * MINUTE_MS + MINUTE_MS;
+  if (!Number.isFinite(start)) return new Date(Number.NaN);
+  let before = new Date(start - MINUTE_MS);
+  for (let step = 0; step < 3 * MAX_INTERVAL_MINUTES; step += 1) {
+    const clock = new Date(start + step * MINUTE_MS);
+    if (minuteOfDay(clock) % minutes === 0 || jumpsOverGrid(before, clock, minutes)) return clock;
+    before = clock;
+  }
+  return new Date(Number.NaN);
+}
+
 /** The first scheduled time strictly after `from`, so a missed window catches up once. */
 export function nextDueAt(cadence: RoundCadence, from: Date): Date {
   const minutes = cadenceMinutes(cadence);
-  if (minutes !== null && minutes > 0) {
-    const next = new Date(from);
-    if (minutes < 60 && 60 % minutes === 0) {
-      // Under an hour: aligned to the hour so equal cadences share a ledger column.
-      next.setSeconds(0, 0);
-      next.setMinutes(Math.floor(next.getMinutes() / minutes) * minutes);
-      while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
-      return next;
-    }
-    /* An hour or longer: aligned to local midnight; `setMinutes` walks wall time across DST. */
-    next.setHours(0, 0, 0, 0);
-    const elapsed = Math.floor((from.getTime() - next.getTime()) / 60_000);
-    next.setMinutes(Math.max(0, Math.floor(elapsed / minutes)) * minutes);
-    while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
-    return next;
-  }
-  if (!('daily' in cadence)) {
-    // A non-positive interval falls back to hourly rather than looping.
-    return nextDueAt({ every: 'hour' }, from);
-  }
+  if (minutes !== null) return nextOnClockGrid(minutes > 0 ? minutes : 60, from);
+  if (!('daily' in cadence)) return nextOnClockGrid(60, from);
   const [clockHours, clockMinutes] = cadence.daily.split(':').map(Number);
   const next = new Date(from);
   next.setHours(clockHours, clockMinutes, 0, 0);
@@ -171,6 +177,13 @@ export function nextDueAt(cadence: RoundCadence, from: Date): Date {
     next.setHours(clockHours, clockMinutes, 0, 0);
   }
   return next;
+}
+
+export function dueOnThisClock(round: RoundRecord, now: Date): string {
+  const stored = Date.parse(round.nextDueAt);
+  if (!Number.isFinite(stored) || stored <= now.getTime()) return round.nextDueAt;
+  if (nextDueAt(round.cadence, new Date(stored - 1)).getTime() === stored) return round.nextDueAt;
+  return nextDueAt(round.cadence, now).toISOString();
 }
 
 export function isRoundDue(round: RoundRecord, now: Date): boolean {
@@ -289,6 +302,30 @@ export function roundFingerprint(round: RoundRecord): string {
     query: round.query ?? null,
     limit: round.limit ?? null,
   });
+}
+
+const isUnderFolder = (path: string, folder: string) => {
+  const clean = folder.replace(/\/+$/, '');
+  return path === clean || path.startsWith(`${clean}/`);
+};
+
+const turnsPerWeek = (cadence: RoundCadence) => ('daily' in cadence ? (cadence.weekdaysOnly ? 5 : 7) : 7 * turnsPerDay(cadence));
+
+export function roundWidens(before: RoundRecord, after: RoundRecord): boolean {
+  if (turnsPerWeek(after.cadence) > turnsPerWeek(before.cadence)) return true;
+  if (before.kind !== 'service' && after.kind === 'service') return true;
+  if (before.kind === 'consistency' && after.kind === 'consistency' && before.onStale === 'mark' && after.onStale !== 'mark') return true;
+  if (after.kind === 'service' && (after.limit ?? DEFAULT_SERVICE_ROUND_LIMIT) > (before.limit ?? DEFAULT_SERVICE_ROUND_LIMIT)) return true;
+  const beforePlaces = roundPlaces(before);
+  const afterPlaces = roundPlaces(after);
+  const was = vaultPlace(beforePlaces);
+  const now = vaultPlace(afterPlaces);
+  if (was.paths.length > 0 && (now.paths.length === 0 || now.paths.some((path) => !was.paths.some((folder) => isUnderFolder(path, folder))))) return true;
+  if (was.ownDocumentsOnly && !now.ownDocumentsOnly) return true;
+  const reach = (place: RoundPlaceService) => `${place.connectorId}\u0000${place.location?.trim() ?? ''}`;
+  const allowed = new Set(servicePlaces(beforePlaces).map(reach));
+  const anywhere = new Set(servicePlaces(beforePlaces).filter((place) => !place.location?.trim()).map((place) => place.connectorId));
+  return servicePlaces(afterPlaces).some((place) => !anywhere.has(place.connectorId) && !allowed.has(reach(place)));
 }
 
 /** Labels naming a pass's places. */
