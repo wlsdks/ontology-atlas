@@ -20,7 +20,7 @@ import {
   ephemeralUpdaterKey,
   localCommandFor,
   parseAdmitReleaseSteps,
-  parseBuildMacosSteps,
+  parseMacosReleaseSteps,
   PROBE_TIMEOUT_MS,
   probeTool,
 } from "../../scripts/release-rehearsal.mjs";
@@ -163,7 +163,7 @@ describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () =>
 
 describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   const admissionSteps = parseAdmitReleaseSteps(workflow);
-  const steps = parseBuildMacosSteps(workflow);
+  const steps = parseMacosReleaseSteps(workflow);
 
   it("admit-release 잡의 태그 검증과 source admission 단계를 실제로 읽어 온다", () => {
     expect(admissionSteps.map((step) => step.name)).toContain("Verify requested release version");
@@ -235,11 +235,12 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
     );
   });
 
-  it("build-macos 잡의 단계를 실제로 읽어 온다", () => {
-    // If the parser silently returns 0 steps, the rehearsal does nothing and goes green.
+  it("reads the steps of the build, sign and verify macOS jobs", () => {
     expect(steps.length).toBeGreaterThan(10);
-    expect(steps.map((step) => step.name)).toContain("Build bundled MCP sidecar");
-    expect(steps.map((step) => step.name)).toContain("Stage release assets");
+    const where = (name: string) => steps.find((step: { name: string; job: string }) => step.name === name)?.job;
+    expect(where("Build bundled MCP sidecar")).toBe("build-macos");
+    expect(where("Stage release assets")).toBe("sign-macos");
+    expect(where("Verify installed app")).toBe("verify-macos");
   });
 
   /**

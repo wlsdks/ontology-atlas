@@ -912,9 +912,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Operator-side release workflow readiness
 
 **Run**: `pnpm desktop:release-github`
-**Proves**: The release workflow is active, main-only signing/review gates hold, the required environment and repository secrets are present without over-scoped copies, and tag/version alignment plus release slots stay clean.
+**Proves**: The release workflow is active, main-only signing/review gates hold, every signing secret is present in `release-signing` with no repository copy, and tag/version alignment plus release slots stay clean.
 **Escalate**: none.
-**Fix**: `--allow-obsolete-repository-secrets` permits only unused legacy Apple ID/password/team names through one proof release.
+**Fix**: `--allow-obsolete-repository-secrets` permits the legacy Apple ID/password/team names and the repository copies of the certificate and updater secrets through one proof release.
 
 ### Packaged app launch smoke
 

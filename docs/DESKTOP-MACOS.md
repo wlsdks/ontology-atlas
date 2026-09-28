@@ -89,9 +89,13 @@ pnpm desktop:release-preflight            # local pre-tag gate; its steps are th
   route-smoke, sign the `.app`, repack the updater archive, package the DMG,
   sign the DMG (`desktop:sign:dmg`), notarize and staple,
   `desktop:verify-release-dmg`, then install-smoke the final DMG. The release
-  workflow runs it as `--phase=build`, imports the certificate, then runs
-  `--phase=sign`, so the build phase runs before the certificate is imported and
-  with no credential in its environment.
+  workflow runs those phases in three jobs per architecture. `build-macos` runs
+  `--phase=build` with no secret and hands the unsigned app and its dSYM on as a
+  tarball. `sign-macos`, the only job in `release-signing`, starts from a fresh
+  checkout, validates the credentials, installs dependencies without lifecycle
+  scripts, imports the certificate, runs `--phase=sign`, and deletes the
+  keychain. `verify-macos` runs `desktop:verify-install` on the notarized DMG,
+  again with no secret.
 
 ## Installed-app log
 
@@ -147,7 +151,10 @@ pnpm desktop:release-github -- --tag=<tag>
 ```
 
 The legacy names `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and
-`APPLE_TEAM_ID` are refused at repository scope; delete any that reappear.
+`APPLE_TEAM_ID` are refused at repository scope, and so is a repository copy of
+any signing secret; delete any that reappear. For the one release that proves the
+`release-signing` copies of the certificate and updater secrets before their
+repository copies are deleted, pass `--allow-obsolete-repository-secrets`.
 
 **2. Prove locally, then tag at `main` head.** Merge everything first: the tag
 must equal `main` head.
@@ -168,8 +175,9 @@ exact `workflow_dispatch` run for the admitted commit, and runs
 pnpm desktop:release-run -- --tag=<tag> --ref=main
 ```
 
-The run builds, signs, notarizes, and install-smokes both macOS architectures
-and builds the Windows x64 installer. Each lane writes DMG filename, size, and
+For each macOS architecture the run builds in a job with no secret, signs and
+notarizes in the `release-signing` job, and install-smokes the notarized DMG in
+a third job with no secret; it also builds the Windows x64 installer. Each lane writes DMG filename, size, and
 SHA-256 to the step summary. The run also ships the MCP bundle and lists the
 server in the official MCP Registry (the `list-mcp-registry` job), so a
 dispatch publishes outside GitHub Releases. `scripts/check-macos-release-slot.mjs` refuses a
@@ -219,26 +227,28 @@ check it with `pnpm desktop:verify-hosted`.
 Public downloads are Developer ID direct-download artifacts (not App Store).
 The workflow fails closed unless seven hosted secrets are present and
 structurally valid; `desktop:release-github` checks their scopes before
-dispatch:
+dispatch. All seven live in the `release-signing` environment, and only the
+`sign-macos` job reads them:
 
 | Secret | Scope | Value |
 |---|---|---|
-| `APPLE_CERTIFICATE_P12_BASE64` | repository | base64 Developer ID Application `.p12` |
-| `APPLE_CERTIFICATE_PASSWORD` | repository | password for that `.p12` |
+| `APPLE_CERTIFICATE_P12_BASE64` | `release-signing` env | base64 Developer ID Application `.p12` |
+| `APPLE_CERTIFICATE_PASSWORD` | `release-signing` env | password for that `.p12` |
 | `APPLE_API_KEY_P8_BASE64` | `release-signing` env | base64 of the whole App Store Connect `.p8` |
 | `APPLE_API_KEY_ID` | `release-signing` env | App Store Connect API key ID |
 | `APPLE_API_ISSUER_ID` | `release-signing` env | App Store Connect issuer UUID |
-| `TAURI_SIGNING_PRIVATE_KEY` | repository | `~/.ontology-atlas-signing/tauri-updater.key` |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | repository | password chosen for the updater key |
+| `TAURI_SIGNING_PRIVATE_KEY` | `release-signing` env | `~/.ontology-atlas-signing/tauri-updater.key` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | `release-signing` env | password chosen for the updater key |
 
 `APPLE_KEYCHAIN_PASSWORD` and `APPLE_SIGNING_IDENTITY` are never hosted
 secrets: the job generates the keychain password with `openssl rand -base64 24`
 and masks it with `::add-mask::`, and derives the identity from the imported
 certificate. An `always()` step deletes the temporary keychain and decoded
-`.p12` after the per-arch handoff, even on failure.
+`.p12` at the end of the signing job, even on failure.
 `scripts/check-macos-release-secrets.mjs` rejects a missing, blank, or
-structurally unusable secret (including base64 that is not PKCS#12 DER) before
-build. The `.p8` is written to a `0600` temporary file only for notarization.
+structurally unusable secret (including base64 that is not PKCS#12 DER) as the
+signing job's first step, before anything is installed or imported. The `.p8`
+is written to a `0600` temporary file only for notarization.
 
 In the workflow, `scripts/sign-macos-app.mjs` deep-signs the `.app` with
 hardened runtime and verifies with strict deep `codesign`, and with `--dmg`
@@ -315,13 +325,13 @@ App Store Connect API key `.p8` once.
    with input masked.
 
    ```bash
-   gh secret set APPLE_CERTIFICATE_P12_BASE64 < /path/to/APPLE_CERTIFICATE_P12_BASE64
-   gh secret set APPLE_CERTIFICATE_PASSWORD < /path/to/APPLE_CERTIFICATE_PASSWORD
+   gh secret set APPLE_CERTIFICATE_P12_BASE64 --env release-signing < /path/to/APPLE_CERTIFICATE_P12_BASE64
+   gh secret set APPLE_CERTIFICATE_PASSWORD --env release-signing < /path/to/APPLE_CERTIFICATE_PASSWORD
    gh secret set APPLE_API_KEY_P8_BASE64 --env release-signing
    gh secret set APPLE_API_KEY_ID --env release-signing
    gh secret set APPLE_API_ISSUER_ID --env release-signing
-   gh secret set TAURI_SIGNING_PRIVATE_KEY
-   gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+   gh secret set TAURI_SIGNING_PRIVATE_KEY --env release-signing
+   gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release-signing
    ```
 
 5. **Verify.**

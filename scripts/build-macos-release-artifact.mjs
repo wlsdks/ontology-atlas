@@ -21,10 +21,6 @@ const NOTARY_CREDENTIALS = [
   "APPLE_API_ISSUER_ID",
 ];
 
-/**
- * `build` runs third-party build code with no credential, and CI imports the signing
- * certificate only after it; `sign` follows. No `--phase` walks every step locally.
- */
 export const RELEASE_ARTIFACT_STEPS = Object.freeze([
   { phase: "validate", label: "validate release credentials", command: "pnpm", args: ["desktop:release-secrets"], allow: CURRENT_RELEASE_SECRET_NAMES },
   { phase: "build", label: "build static application", command: "pnpm", args: ["build"], allow: [] },
@@ -36,10 +32,10 @@ export const RELEASE_ARTIFACT_STEPS = Object.freeze([
   { phase: "sign", label: "sign DMG", command: "pnpm", args: ["desktop:sign:dmg"], allow: [] },
   { phase: "sign", label: "notarize DMG", command: "pnpm", args: ["desktop:notarize"], allow: NOTARY_CREDENTIALS },
   { phase: "sign", label: "verify release DMG", command: "pnpm", args: ["desktop:verify-release-dmg"], allow: [] },
-  { phase: "sign", label: "verify installed app", command: "pnpm", args: ["desktop:verify-install"], allow: [] },
+  { phase: "verify", label: "verify installed app", command: "pnpm", args: ["desktop:verify-install"], allow: [] },
 ]);
 
-export const RELEASE_ARTIFACT_PHASES = Object.freeze(["build", "sign"]);
+export const RELEASE_ARTIFACT_PHASES = Object.freeze(["build", "sign", "verify"]);
 
 export function releaseArtifactSteps(phase) {
   if (phase === undefined) return RELEASE_ARTIFACT_STEPS;

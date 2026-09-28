@@ -54,10 +54,12 @@ The contribution model is what keeps them out of reach:
 - **Workflows triggered by `pull_request` reference no secrets at all** — enforced
   by the same contract, which also makes every workflow name each secret it reads:
   no `toJSON(secrets)`, no `secrets[...]`, no `secrets: inherit`.
-- **Signing credentials are referenced only by the release workflow**, which
+- **Signing credentials are referenced only by the release workflow's signing
+  job**, the one job in the main-only `release-signing` environment. The workflow
   starts only from a manual dispatch on `main`. Its first job holds no secrets: it
   requires the dispatch to come from `main` and the requested tag to point at
-  `main`'s current head before any signing job starts.
+  `main`'s current head before any signing job starts. The job that builds the app
+  and the job that installs the signed DMG hold no secrets either.
 - **Untrusted strings never reach a shell.** Pull request titles, bodies, and
   branch names are chosen by whoever opened the fork; interpolating them into a
   `run:` block is remote code execution. The contract test blocks the known
@@ -70,8 +72,11 @@ The contribution model is what keeps them out of reach:
   approval before they run.
 
 **The remaining risk is write access.** Anyone who can push a branch can change a
-workflow that runs on push, and therefore can reach the secrets. This is why
-external contributions stay on forks. If maintainers are added later, that
+workflow that runs on push, and therefore can reach repository-level secrets. The
+signing secrets live in `release-signing`, which admits only `main`, and
+`pnpm desktop:release-github` refuses a repository copy of any of them outside
+the one release that proves the environment copies. This is why external
+contributions stay on forks. If maintainers are added later, that
 assumption changes and this document should change with it.
 
 ## Supported versions

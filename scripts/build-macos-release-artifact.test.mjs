@@ -70,9 +70,9 @@ test("the release pipeline exposes each credential only to the step that needs i
   assert.equal(notarize.env.TAURI_SIGNING_PRIVATE_KEY, undefined);
 });
 
-test("the build phase runs before any signing material and receives no credential", () => {
+test("the build and verify phases receive no credential, and signing sits between them", () => {
   const phases = {};
-  for (const phase of ["build", "sign"]) {
+  for (const phase of ["build", "sign", "verify"]) {
     const calls = [];
     runReleaseArtifactPipeline({
       env: { PATH: "/usr/bin:/bin", NOTARYTOOL_KEY_PATH: "/private/tmp/notary/AuthKey.p8", ...ALL_SECRETS },
@@ -86,7 +86,8 @@ test("the build phase runs before any signing material and receives no credentia
   }
 
   assert.deepEqual(phases.build.map((call) => call.script), ["build", "desktop:smoke", "desktop:build:app"]);
-  for (const call of phases.build) {
+  assert.deepEqual(phases.verify.map((call) => call.script), ["desktop:verify-install"]);
+  for (const call of [...phases.build, ...phases.verify]) {
     for (const name of [...Object.keys(ALL_SECRETS), "NOTARYTOOL_KEY_PATH"]) {
       assert.equal(call.env[name], undefined, `${call.script} inherited ${name}`);
     }
@@ -98,9 +99,11 @@ test("the build phase runs before any signing material and receives no credentia
     "desktop:sign:dmg",
     "desktop:notarize",
     "desktop:verify-release-dmg",
-    "desktop:verify-install",
   ]);
-  assert.equal(releaseArtifactSteps().length, phases.build.length + phases.sign.length + 1);
+  assert.equal(
+    releaseArtifactSteps().length,
+    phases.build.length + phases.sign.length + phases.verify.length + 1,
+  );
 });
 
 test("an unknown phase runs nothing", () => {
