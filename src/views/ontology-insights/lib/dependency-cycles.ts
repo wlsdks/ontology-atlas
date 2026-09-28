@@ -5,8 +5,8 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
  * MCP `query_ontology({operation:"cycles"})`: dependency, not containment. Both `depends_on` and `dependencies`
  * are accepted, since the storage key may precede canonicalization. A depth-limited DFS from each node with a
  * Johnson-style minimum-vertex rule finds each simple cycle once, at its minimum node. Worst case is exponential in the
- * depth limit `maxHops`. `STEP_BUDGET` caps DFS calls, not the cycles recorded or their sort: ten nodes that all
- * depend on one another record 500,000 cycles in seconds (measured), with `limited` set.
+ * depth limit `maxHops`, so `STEP_BUDGET` caps DFS calls. Every cycle found is counted, but only the shortest
+ * `MAX_KEPT_CYCLES` are held, re-sorted whenever twice that many pile up: O(C log K) for C found and K kept.
  */
 
 /** Directed dependency edge types, not containment; the same meaning as MCP cycles. */
@@ -34,9 +34,9 @@ export interface DependencyCyclesResult {
   totalCycles: number;
   /** The value totalCycles - cycles.length; above 0 it prints as "N more". */
   hiddenCycles: number;
-  /** Every current cycle id regardless of the display cap, for the exact review verdict. */
+  /** Every kept cycle id regardless of the display cap, for the review verdict. */
   activeCycleIds: string[];
-  /** Whether the depth limit or the work budget cut the search, so longer cycles may be missing. */
+  /** Whether the depth limit or the work budget cut the search, or more cycles were found than kept. */
   limited: boolean;
 }
 
@@ -52,6 +52,12 @@ export interface FindDependencyCyclesOptions {
 
 /** A hard guard against runaway search on a pathologically dense graph. */
 const STEP_BUDGET = 500_000;
+export const MAX_KEPT_CYCLES = 1_000;
+
+type KeptCycle = [id: string, nodeIds: string[]];
+
+const shortestThenById = ([aId, a]: KeptCycle, [bId, b]: KeptCycle) =>
+  a.length - b.length || (aId < bId ? -1 : aId > bId ? 1 : 0);
 
 export function findDependencyCycles(
   graphNodes: readonly KnowledgeGraphNode[],
@@ -83,14 +89,27 @@ export function findDependencyCycles(
     outs.add(edge.to);
   }
 
-  const foundPaths = new Map<string, string[]>();
+  const kept: KeptCycle[] = [];
+  let totalCycles = 0;
+  let longestKept = Number.POSITIVE_INFINITY;
   let someBranchHitMaxHops = false;
   let budgetExhausted = false;
   let steps = 0;
 
-  for (const id of [...selfLoops].sort()) {
-    foundPaths.set(id, [id]);
+  function keepShortest(): void {
+    kept.sort(shortestThenById);
+    kept.splice(MAX_KEPT_CYCLES);
+    if (kept.length === MAX_KEPT_CYCLES) longestKept = kept[MAX_KEPT_CYCLES - 1][1].length;
   }
+
+  function record(cycle: readonly string[]): void {
+    totalCycles += 1;
+    if (cycle.length > longestKept) return;
+    kept.push([cycle.join(" "), [...cycle]]);
+    if (kept.length === 2 * MAX_KEPT_CYCLES) keepShortest();
+  }
+
+  for (const id of [...selfLoops].sort()) record([id]);
 
   const path: string[] = [];
   const inPath = new Set<string>();
@@ -106,7 +125,7 @@ export function findDependencyCycles(
       budgetExhausted = true;
       return;
     }
-  // A per-branch prune, so sibling branches with shorter cycles keep being searched.
+    // A per-branch prune, so sibling branches with shorter cycles keep being searched.
     if (path.length >= maxHops) {
       someBranchHitMaxHops = true;
       return;
@@ -115,31 +134,21 @@ export function findDependencyCycles(
     inPath.add(current);
     for (const next of adjacency.get(current) ?? []) {
       if (next === start) {
-        if (path.length > 1) {
-          const key = path.join(" ");
-          if (!foundPaths.has(key)) foundPaths.set(key, [...path]);
-        }
-        continue;
+        if (path.length > 1) record(path);
+      } else if (next > start && !inPath.has(next)) {
+        dfs(start, next);
+        if (budgetExhausted) break;
       }
-  // Johnson's minimum-vertex rule: advance only to ids above the start, so each cycle is found once, at its minimum node.
-      if (next < start) continue;
-      if (inPath.has(next)) continue;
-      dfs(start, next);
-      if (budgetExhausted) break;
     }
     path.pop();
     inPath.delete(current);
   }
 
-  const allCycles = [...foundPaths.values()].sort(
-    (a, b) => a.length - b.length || a.join(" ").localeCompare(b.join(" ")),
-  );
-
-  const totalCycles = allCycles.length;
-  const cycles: DependencyCycle[] = allCycles.slice(0, maxCycles).map((nodeIdsFull) => {
+  keepShortest();
+  const cycles: DependencyCycle[] = kept.slice(0, maxCycles).map(([id, nodeIdsFull]) => {
     const shown = nodeIdsFull.slice(0, maxPathNodes);
     return {
-      id: nodeIdsFull.join(" "),
+      id,
       length: nodeIdsFull.length,
       nodeIds: shown,
       hiddenNodeCount: nodeIdsFull.length - shown.length,
@@ -150,7 +159,7 @@ export function findDependencyCycles(
     cycles,
     totalCycles,
     hiddenCycles: Math.max(0, totalCycles - cycles.length),
-    activeCycleIds: allCycles.map((nodeIds) => nodeIds.join(" ")),
-    limited: someBranchHitMaxHops || budgetExhausted,
+    activeCycleIds: kept.map(([id]) => id),
+    limited: someBranchHitMaxHops || budgetExhausted || totalCycles > kept.length,
   };
 }

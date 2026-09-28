@@ -22,8 +22,10 @@ import {
   deriveTaskNotifications,
   filterNotifications,
   mergeNotifications,
+  risenVaultProblems,
   type AgentNotification,
   type AgentNotificationKind,
+  type VaultProblemCounts,
 } from '@/shared/lib/agent-notifications';
 import {
   diffVaultShape,
@@ -184,7 +186,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
 
   const idleSnapshotRef = useRef<VaultShapeSnapshot | null>(null);
   const taskStartSnapshotRef = useRef<VaultShapeSnapshot | null>(null);
-  const healthBaselineRef = useRef<{ unresolvedEdges: number; dependencyCycles: number } | null>(null);
+  const healthBaselineRef = useRef<VaultProblemCounts | null>(null);
   const reportedSessionRef = useRef<string | null>(null);
 
   // While work is running it **freezes the snapshot from just before** — the current manifest already
@@ -207,10 +209,7 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
 
     const health = computeVaultHealth(docs).summary;
     const baseline = healthBaselineRef.current;
-    healthBaselineRef.current = {
-      unresolvedEdges: health.unresolvedEdges,
-      dependencyCycles: health.dependencyCycles,
-    };
+    healthBaselineRef.current = health;
 
     const produced: AgentNotification[] = [];
     if (before) {
@@ -240,21 +239,9 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     }
     // "It got sicker" is stated **only when the count rose.** Scolding an already-unhealthy vault at
     // the end of every piece of work is nagging, not notification.
-    if (baseline) {
-      const unresolvedEdges = health.unresolvedEdges - baseline.unresolvedEdges;
-      const dependencyCycles = health.dependencyCycles - baseline.dependencyCycles;
-      if (unresolvedEdges > 0 || dependencyCycles > 0) {
-        produced.push({
-          id: `${settledId}:problem`,
-          kind: 'vault-problem',
-          at: settledEndAt,
-          node: null,
-          problems: {
-            unresolvedEdges: Math.max(0, unresolvedEdges),
-            dependencyCycles: Math.max(0, dependencyCycles),
-          },
-        });
-      }
+    const problems = baseline ? risenVaultProblems(baseline, health) : null;
+    if (problems) {
+      produced.push({ id: `${settledId}:problem`, kind: 'vault-problem', at: settledEndAt, node: null, problems });
     }
     if (produced.length > 0) {
       // This effect is precisely "external system (the vault on disk) → React state" synchronization.

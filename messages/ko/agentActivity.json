@@ -56,6 +56,7 @@
   "summaryJoin": " · ",
   "problemUnresolved": "끊어진 연결 {count}개",
   "problemCycles": "서로 되짚는 연결 {count}쌍",
+  "problemCyclesAtLeast": "서로 되짚는 연결 {count}쌍 이상",
   "bridgeChildren": "하위 개념 {count}개를 새 중간 개념 밑으로 옮김",
   "event": {
     "taskStart": "작업 시작",
