@@ -36,7 +36,28 @@ const CASES: Record<string, string> = {
   'a footnote': 'Claim.[^1]\n\nMore.\n\n[^1]: The source.\n',
   'a reference link': 'See [the spec][spec].\n\nMore.\n\n[spec]: https://example.com\n',
   'an HTML comment across a blank line': 'Intro.\n\n<!-- one\n\ntwo -->\n\nAfter.\n',
+  'CRLF line endings around a fence with a blank line inside':
+    'Intro.\r\n\r\n```ts\r\nconst a = 1;\r\n\r\nconst b = 2;\r\n```\r\n\r\nAfter.\r\n',
+  'a fence opened on a list-marker line, then a bare fence later':
+    '- ```\n  a\n  ```\n\nThen:\n\n```\nx = 1\n\ny = 2\n```\n\nAfter.\n',
+  'a fence inside a list item whose code is not indented':
+    '1. Install:\n   ```bash\npnpm install\n   ```\n\nText.\n\nMore text.\n',
+  'a definition inside a quote, used earlier': 'See [the spec][spec].\n\nMore.\n\n> [spec]: https://example.com\n',
+  'a definition inside a list item, used earlier': 'See [the spec][spec].\n\nMore.\n\n- [spec]: https://example.com\n',
+  'an ideographic-space line between two lines': '첫 문단입니다.\n\u3000\n둘째 줄입니다.\n',
+  'a closing fence followed by an ideographic space':
+    'Intro.\n\n```\ncode\n```\u3000\n\nstill code?\n\n```\n\nAfter.\n',
+  'a properly indented fence in a list, then more text':
+    'Intro.\n\nSteps follow.\n\n1. Install:\n\n   ```bash\n   pnpm install\n\n   pnpm build\n   ```\n\n2. Run.\n\nDone.\n\nMore after.\n',
 };
+
+const COLLAPSING = new Set([
+  'a footnote',
+  'a reference link',
+  'an HTML comment across a blank line',
+  'a definition inside a quote, used earlier',
+  'a definition inside a list item, used earlier',
+]);
 
 describe('splitMarkdownBlocks', () => {
   it.each(Object.entries(CASES))('renders %s the same apart as together', (_, text) => {
@@ -54,13 +75,31 @@ describe('splitMarkdownBlocks', () => {
     expect(splitMarkdownBlocks(CASES['a reference link'])).toEqual([CASES['a reference link']]);
   });
 
-  it('never changes an earlier block as the text grows', () => {
-    const text = Object.values(CASES).slice(0, 15).join('\n');
-    const final = splitMarkdownBlocks(text);
-    for (let length = 0; length <= text.length; length += 7) {
-      const blocks = splitMarkdownBlocks(text.slice(0, length));
-      expect(blocks.slice(0, -1)).toEqual(final.slice(0, blocks.length - 1));
+  it('never changes an earlier block as the text grows, except when a later line collapses it whole', () => {
+    for (const [name, text] of Object.entries(CASES)) {
+      const final = splitMarkdownBlocks(text);
+      if (COLLAPSING.has(name)) {
+        expect(final, name).toEqual([text]);
+        continue;
+      }
+      for (let length = 0; length <= text.length; length += 1) {
+        const blocks = splitMarkdownBlocks(text.slice(0, length));
+        expect(blocks.slice(0, -1), `${name} at ${length}`).toEqual(final.slice(0, blocks.length - 1));
+      }
     }
+  });
+
+  it('keeps splitting before a list with an embedded fence, and not after it', () => {
+    const blocks = splitMarkdownBlocks(CASES['a properly indented fence in a list, then more text']);
+    expect(blocks[0]).toBe('Intro.\n\n');
+    expect(blocks).toHaveLength(2);
+  });
+
+  it('splits a CRLF text where the same LF text splits', () => {
+    const crlf = CASES['CRLF line endings around a fence with a blank line inside'];
+    const blocks = splitMarkdownBlocks(crlf);
+    expect(blocks.length).toBeGreaterThan(1);
+    expect(blocks.length).toBe(splitMarkdownBlocks(crlf.replaceAll('\r\n', '\n')).length);
   });
 
   it('decides nothing on a line that is still being written', () => {

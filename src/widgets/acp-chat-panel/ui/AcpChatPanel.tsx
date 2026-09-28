@@ -31,6 +31,7 @@ import { useTranslations } from 'next-intl';
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
 import { copyText } from '@/shared/lib/copy-text';
+import { detachedCopy } from '@/shared/lib/detached-copy';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
@@ -1624,7 +1625,6 @@ export function AcpChatPanel({
         : historyEdge.top
           ? `linear-gradient(to bottom, transparent 0, black ${historyFade})`
           : undefined;
-  // Grouping reads every stored tool answer, so a keystroke must not regroup.
   const transcriptItems = useMemo(() => groupEvents(withoutErrorEcho(events, error)), [events, error]);
   // Stable renderers: a new function per render is a new component type, which remounts every row.
   const markdownComponents = useMemo(
@@ -1722,13 +1722,7 @@ export function AcpChatPanel({
           const scrolled = event.currentTarget.scrollTop > 1;
           setTranscriptScrolled((previous) => (previous === scrolled ? previous : scrolled));
         }}
-        /*
-         * **The top edge fades instead of cutting** (2026-09-06). The transcript is the panel's
-         * own scroll box, so a line leaving the top left half a row of glyphs sliced across the
-         * boundary — a chopped letter reads as a rendering fault, not as "there is more above".
-         * The width is `--tabbar-edge-fade`, the same 22px the tab strips already fade by; a
-         * second number for one affordance is how two edges drift apart.
-         */
+        // The top edge fades rather than slicing glyphs, by the tab strips' own width.
         style={
           transcriptScrolled
             ? {
@@ -2079,7 +2073,7 @@ export function AcpChatPanel({
       <Surface
         open={transcriptFollow.jumpVisible && !presentationVisible}
         origin="bottom center"
-        className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center"
+        className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-2"
       >
         <ChromeChip
           data-testid="acp-chat-jump-latest"
@@ -2088,7 +2082,7 @@ export function AcpChatPanel({
             transcriptFollow.follow();
             requestComposerFocus();
           }}
-          className="pointer-events-auto"
+          className="pointer-events-auto max-w-full"
         >
           {t('jumpToLatest')}
         </ChromeChip>
@@ -3338,6 +3332,16 @@ const MarkdownBlock = memo(function MarkdownBlock({
   );
 });
 
+/**
+ * Every block is a copy, reused while unchanged: a memoized block keeps its first props when the
+ * text is equal, and a slice there would pin the whole frame it was cut from.
+ */
+function settleBlocks(text: string, previous: readonly string[]): readonly string[] {
+  return splitMarkdownBlocks(text).map((piece, index) =>
+    previous[index] === piece ? previous[index] : detachedCopy(piece),
+  );
+}
+
 /** A block is parsed once its text stops changing, so a streamed answer re-parses its last block only. */
 const ChatMarkdown = memo(function ChatMarkdown({
   text,
@@ -3346,7 +3350,12 @@ const ChatMarkdown = memo(function ChatMarkdown({
   text: string;
   components: Components;
 }) {
-  const blocks = useMemo(() => splitMarkdownBlocks(text), [text]);
+  const [settled, setSettled] = useState(() => ({ text, blocks: settleBlocks(text, []) }));
+  let blocks = settled.blocks;
+  if (settled.text !== text) {
+    blocks = settleBlocks(text, settled.blocks);
+    setSettled({ text, blocks });
+  }
   return blocks.map((block, index) => (
     <MarkdownBlock key={index} text={block} components={components} />
   ));
