@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import en from "../../messages/en.json";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { useDogfoodSample } from "./sample-source";
 
@@ -89,7 +90,7 @@ test.describe("ontology-map smoke", () => {
 
   test("a missing bare slug shows a visible not-found toast", async ({ page }) => {
     await gotoAndSettle(page, "/en/topology/?p=missing-xyz");
-    await expect(page.getByText("Node not found: missing-xyz")).toBeVisible({
+    await expect(page.getByText(en.topology.deeplinkNotFound.replace("{query}", "missing-xyz"))).toBeVisible({
       timeout: 10_000,
     });
   });

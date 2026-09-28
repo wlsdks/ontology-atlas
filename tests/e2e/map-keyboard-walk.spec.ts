@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import ko from "../../messages/ko.json";
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../src/features/first-run-starter/model/first-run-starter-dismiss";
 import { seedFirstRunSeen } from "./first-run-seed";
 // The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
@@ -318,7 +319,7 @@ test.describe("지도 키보드 걷기", () => {
 
     // It says so, rather than staying silent.
     await expect(
-      page.getByText(/이어진 노드가 없어요/).first(),
+      page.getByText(ko.topologyWidgets.keyboardWalk.deadEnd).first(),
       "막다른 길인데 아무 말도 없다",
     ).toBeVisible({ timeout: 4_000 });
 
