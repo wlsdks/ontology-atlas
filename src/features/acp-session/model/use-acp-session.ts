@@ -466,9 +466,9 @@ export function useAcpSession({
    * interruption left a half-built npx cache that made it never start again (self-healing lives on
    * the Rust side, `acp.rs`). So this indicator is not decoration; it removes that accident's trigger.
    *
-   * `mb` is the measured size the cache directory has grown to (`npx-download-progress:<mb>` on
-   * `acp://notice`). The total size is unknown, so a percentage is **not invented** — it states only
-   * what has been received. While only the first notice has arrived, `mb` is `null`.
+   * `mb` is the measured size the cache directory has grown to (the `npx-download-progress:<mb>`
+   * notice). The total size is unknown, so a percentage is **not invented** — it states only what
+   * has been received. While only the first notice has arrived, `mb` is `null`.
    */
   const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
@@ -984,10 +984,8 @@ export function useAcpSession({
            * - `npx-download-done` — download finished; from here it is an ordinary "starting".
            */
           if (message.startsWith('npx-download-progress:')) {
-            // Builds the indicator here even if the first notice was missed — Rust assumes the first
-            // notice can go out before the subscription attaches and uses the progress notice as
-            // that safety net. The screen does not draw it outside "starting" (a render condition),
-            // so a late notice is harmless.
+            // The progress notice builds the indicator on its own, so a missed first notice costs
+            // nothing; it is drawn only while starting, so a late one is harmless.
             const mb = Number(message.slice('npx-download-progress:'.length));
             setDownload({ mb: Number.isFinite(mb) ? mb : null });
             /*
