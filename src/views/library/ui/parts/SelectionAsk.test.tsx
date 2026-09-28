@@ -37,8 +37,8 @@ async function selectPassage() {
   selection.removeAllRanges();
   selection.addRange(range);
   fireEvent.mouseUp(screen.getByTestId("body"));
-  // The component reads the selection on the next task; wait for the bar it draws.
   await screen.findByRole("complementary");
+  await waitFor(() => expect(screen.getByTestId("body").dataset.selecting).toBe("true"));
 }
 
 describe("select a passage, ask the agent about it", () => {
@@ -57,8 +57,7 @@ describe("select a passage, ask the agent about it", () => {
     const body = screen.getByTestId("body");
     expect(body.dataset.selecting).toBeUndefined();
     await selectPassage();
-    // The dimming is set by an effect after the bar draws; wait for that state, not a clock.
-    await waitFor(() => expect(body.dataset.selecting).toBe("true"));
+    expect(body.dataset.selecting).toBe("true");
     fireEvent.click(screen.getByTestId("library-ask-evidence"));
     await waitFor(() => expect(body.dataset.selecting).toBeUndefined());
   });
@@ -97,7 +96,6 @@ describe("select a passage, ask the agent about it", () => {
     const onAsk = vi.fn();
     mount(onAsk);
     await selectPassage();
-    // The person's own question opens an input in the same row.
     expect(screen.queryByTestId("library-ask-custom")).toBeNull();
     fireEvent.click(screen.getByTestId("library-ask-own"));
     const input = screen.getByTestId("library-ask-custom");
@@ -108,7 +106,6 @@ describe("select a passage, ask the agent about it", () => {
     await selectPassage();
     expect(screen.getByRole("complementary")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
-    // The surface keeps its exit window before it unmounts, so the assertion waits for it.
     await waitFor(() => expect(screen.queryByRole("complementary")).toBeNull());
   });
 });

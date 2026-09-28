@@ -94,6 +94,7 @@ describe("pre-commit 훅 배선", () => {
       cpSync(join(ROOT, "scripts", "build-docs-vault.mjs"), join(repo, "scripts", "build-docs-vault.mjs"));
       cpSync(join(ROOT, "scripts", "lib"), join(repo, "scripts", "lib"), { recursive: true });
       execFileSync("git", ["init", "-q"], { cwd: repo, env: FIXTURE_ENV });
+      execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: repo, env: FIXTURE_ENV });
       execFileSync("git", ["config", "user.name", "Atlas Test"], { cwd: repo, env: FIXTURE_ENV });
       execFileSync("git", ["config", "user.email", "atlas@example.invalid"], { cwd: repo, env: FIXTURE_ENV });
       execFileSync("git", ["add", "."], { cwd: repo, env: FIXTURE_ENV });
@@ -102,14 +103,12 @@ describe("pre-commit 훅 배선", () => {
       const validPolicy = readFileSync(policyPath, "utf8");
       const run = () => spawnSync(HOOK, [], { cwd: repo, encoding: "utf8", env: FIXTURE_ENV });
 
-      // A harmless staged formatting change is valid; the broken working copy must be invisible.
       writeFileSync(policyPath, `${validPolicy.trimEnd()}\n\n`);
       execFileSync("git", ["add", "docs/records/legacy.json"], { cwd: repo, env: FIXTURE_ENV });
       writeFileSync(policyPath, "{ broken working-copy policy\n");
       const stagedGood = run();
       expect(stagedGood.status, `${stagedGood.stdout}\n${stagedGood.stderr}`).toBe(0);
 
-      // Now the malformed policy is staged and the working copy is repaired: schema parsing blocks.
       execFileSync("git", ["add", "docs/records/legacy.json"], { cwd: repo, env: FIXTURE_ENV });
       writeFileSync(policyPath, validPolicy);
       const blocked = run();
