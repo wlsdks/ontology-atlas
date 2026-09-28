@@ -198,6 +198,21 @@ describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => 
     expect(store.putLocalFsHandle).not.toHaveBeenCalled();
   });
 
+  it('a present-but-ungranted vault after the access-scope update is grant-needed, not path-missing', async () => {
+    // The desktop refuses a real folder the user has not re-granted with this code; the
+    // folder is there, so the person must re-confirm access, not be told it is gone.
+    tauri.tauriVaultPathExists.mockRejectedValue('vault-root-not-granted');
+    const hook = await mountHook();
+
+    await act(async () => {
+      await hook.result.current.openRecent(desktopRecord());
+    });
+
+    expect(hook.result.current.status).toBe('error');
+    expect(hook.result.current.errorCode).toBe('grant-needed');
+    expect(docsVault.buildLocalManifestWithEntries).not.toHaveBeenCalled();
+  });
+
   it('폴더는 있으나 빌드가 문자열로 reject(=Tauri Err(String))하면 그 원인을 errorMessage 로 살린다', async () => {
     tauri.tauriVaultPathExists.mockResolvedValue(true);
     docsVault.buildLocalManifestWithEntries.mockRejectedValue(

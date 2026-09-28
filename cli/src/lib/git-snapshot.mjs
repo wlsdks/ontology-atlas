@@ -6,12 +6,18 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { parseFrontmatter } from './parse-frontmatter.mjs';
+import { hardenedGitArgs } from './hardened-git.mjs';
 
 // Pipe every stdio stream explicitly, so git's own stderr on an expected failure
 // path (`rev-parse` outside a repository, `@{u}` on a branch with no upstream)
-// does not print over our error message and clutter the user's terminal.
+// does not print over our error message and clutter the user's terminal. The args
+// carry the shared hardening so a hostile vault repo cannot run code via its config.
 function defaultRun(args, cwd) {
-  return execFileSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync('git', hardenedGitArgs(cwd, args), {
+    cwd,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
 
 /** Top level of the git repository containing the vault; null outside a repository. */
