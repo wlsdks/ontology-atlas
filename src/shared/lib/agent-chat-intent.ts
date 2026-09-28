@@ -30,9 +30,9 @@ interface AgentChatIntentDetail {
    * ⚠️ **Why a door may carry a sentence** (decision, 2026-08-24). The first-run card had no route
    * from an existing codebase to a map of it: opening a folder with no Markdown gives an empty map,
    * and the only real path was a folded terminal row whose own copy told app users it excluded
-   * them. The app cannot run the analysis itself — it never calls MCP, that being the agents'
-   * surface — so the door hands the work to the agent, which is the shape this product argues for
-   * anyway: the agent works through MCP and the person approves each write.
+   * them. Construction is handed to the agent and the person approves writes. The separate
+   * gray-area inspector may call a fixed read-only local MCP child to collect bounded evidence;
+   * it never constructs or accepts ontology meaning.
    *
    * The sentence arrives as **the person's own turn**, visible in the transcript, and every write
    * it leads to still stops at the permission card. Nothing here bypasses a checkpoint; it saves a

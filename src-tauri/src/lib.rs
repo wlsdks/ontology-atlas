@@ -24,6 +24,9 @@ mod errors;
 mod git;
 mod jev;
 mod library;
+mod gray_area;
+mod gray_area_rpc;
+mod gray_area_scope;
 mod llm;
 mod llm_audit;
 mod managed_node;
@@ -3709,6 +3712,9 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             library::hash_vault_files,
+            gray_area::read_gray_area_evidence,
+            gray_area::preview_gray_area_scope,
+            gray_area::check_gray_area_evidence,
             library::pick_source_files,
             library::import_source_files,
             library::discover_source_candidates,

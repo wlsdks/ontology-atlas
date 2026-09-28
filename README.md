@@ -208,6 +208,10 @@ with scripts disabled. Copy is edited in `messages/<locale>/<Namespace>.json`.
 - **Saved constellations keep a task's concept set together** — name a set in
   Galaxy, record its purpose, reopen the whole set on the map, inspect its real
   members in Library, or recover the same read-only context through MCP and CLI.
+- **Explore overlooked areas from a selected concept or Concept set** — the macOS
+  app previews the bound code folder, then gathers a few versioned local
+  observations with source excerpts, explicit unknowns and an editable investigation
+  packet. An absent graph edge or changed file is not accepted meaning.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
   maintainability score. [Analysis records](docs/contracts/analysis-records.md).
