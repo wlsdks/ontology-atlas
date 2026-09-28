@@ -292,6 +292,15 @@ that evidence. Source excerpts are native reads, not an analysis tool call. The
 inspector previews that folder before an explicit inspection, then binds the
 result to source bytes, complete Markdown bytes, graph identity and the binding.
 It exposes no generic tool or command invoker and changes no ontology record.
+
+Native excerpt selectors preserve literal path components (no normalization of
+repeated or dot separators) and retain the source-evidence reader's sensitive-name,
+source-type and binary refusal policy. Resolver-only inputs may be bound for
+inference without becoming excerpts. Group scope uses O(VE) containment closure
+within the 500-node/edge cap; dependency traversal is O(V + E), a two-hop BFS. The inspector uses
+the bottom navigation's rem breakpoint for map-sheet clearance, including enlarged
+browser text; global map tokens use pixel breakpoints.
+
 `features/gray-area` owns candidate interpretation and session folding; Home owns
 selection and the existing map path/conversation actions. An investigation action
 prepares an editable draft and does not enforce a new ACP execution mode.

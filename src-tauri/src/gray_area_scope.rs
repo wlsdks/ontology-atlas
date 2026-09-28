@@ -480,8 +480,6 @@ pub(crate) fn source_witness(root: &Path, source: &SourceObservation, path: &str
     json!({"path":path,"status":"read","text":excerpt,"actualRange":{"startLine":1,"endLine":end},"fullFileSha256":digest(text.as_bytes()).trim_start_matches("sha256:"),"citation":format!("{path}:1-{end}"),"fileComplete":lines.len()<=80})
 }
 pub(crate) fn safe_source_path(path: &Path) -> bool {
-    // Preserve the literal selector; Path::components normalizes repeated and
-    // dot separators that must not become an ambiguous source citation.
     let Some(literal) = path.to_str() else {
         return false;
     };
@@ -537,8 +535,6 @@ pub(crate) fn safe_source_path(path: &Path) -> bool {
     })
 }
 pub(crate) fn excerpt_source_path(path: &Path) -> bool {
-    // Keep the native replacement at least as restrictive as source-evidence.mjs
-    // pathRefusal. Resolver-only configs can be captured without being excerpts.
     safe_source_path(path)
         && (matches!(
             path.extension()

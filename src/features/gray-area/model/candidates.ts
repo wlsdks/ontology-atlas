@@ -13,7 +13,6 @@ export interface GrayAreaCandidate {
 const DEPENDENCIES = new Set(['dependencies', 'depends_on']);
 const STATIC_IMPORTS = new Set(['static', 'require', 'reexport', 'side']);
 
-// Containment closure is O(VE) within the 500-node/edge input cap; dependency BFS is O(V + E), two hops.
 function selectedPaths(snapshot: GrayAreaSnapshot): Map<string, string[]> {
   const selected = new Set(snapshot.basis.selectedUids);
   const paths = new Map(snapshot.nodes.filter(n => selected.has(n.uid)).map(n => [n.slug, [n.slug]]));
