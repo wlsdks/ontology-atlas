@@ -173,7 +173,7 @@ describe('HarnessAnatomyView', () => {
     mount(report());
     fireEvent.click(screen.getByTestId('harness-anatomy-copy-tools'));
     expect(writeText).toHaveBeenCalledWith('.mcp.json');
-    expect(await screen.findByText('복사함')).toBeInTheDocument();
+    expect(await within(screen.getByTestId('harness-anatomy-copy-tools')).findByText('복사함')).toBeInTheDocument();
   });
 
   it('prints what a turn costs beside the count that cannot say it', () => {

@@ -2340,10 +2340,25 @@ first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
 
 ### Success and failure
 
-`useCopyFeedback` gains `run`, `settle` and a `done` state on one dwell;
-`FeedbackGlyph` in `src/shared/motion/feedback-glyph.tsx`, CSS in
-`motion-feedback.css`. Only icon-only controls with `data-feedback-travel`
-shake, by the 3px refusal travel.
+`useCopyFeedback` holds `idle`, `copied`, `done` and `failed` on one 1500ms
+dwell (`COPY_FEEDBACK_RESET_MS`). `run(action)` settles `done` when the action
+resolves and `failed` when it throws, so a successful `reject_once` answer reads
+as done, never as danger; `settle(outcome)` sets one directly. The same result
+twice passes one idle frame so its animation restarts.
+
+`FeedbackGlyph` in `src/shared/motion/feedback-glyph.tsx` crossfades the icon,
+a `DrawnCheck` in success ink drawn on `--motion-settle`, or an X in danger ink.
+The consumer sets `data-feedback={state}`. Only icon-only controls also carry
+`data-feedback-travel`, and only they shake on failure: `motionRefuse` over
+`--motion-base`, travelling `--motion-refuse-travel` (3px). Labelled buttons
+change glyph and ink with no travel. CSS lives in `motion-feedback.css`.
+
+Every result is announced as well as drawn: `CompactCopyButton` keeps a
+`role="status"` region beside the button that reads the label or accessible
+name the consumer changed for the result. Under reduced motion the check fades
+in on `--motion-fast` and the shake does not run.
+`action-feedback-adoption-ratchet` keeps hand-swapped `Check` conditionals from
+growing.
 
 ### Direction
 

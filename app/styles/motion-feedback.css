@@ -1,2 +1,64 @@
 @layer base {
+  :root {
+    --motion-refuse-travel: 3px;
+  }
+
+  @keyframes motionCheckDraw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes motionCheckFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes motionRefuse {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    20%,
+    60% {
+      translate: calc(var(--motion-refuse-travel) * -1) 0;
+    }
+    40%,
+    80% {
+      translate: var(--motion-refuse-travel) 0;
+    }
+  }
+
+  .motion-check-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: motionCheckDraw var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .motion-check-draw-settle {
+    animation-duration: var(--motion-settle);
+  }
+
+  [data-feedback="failed"][data-feedback-travel] {
+    animation: motionRefuse var(--motion-base) var(--motion-ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-check-draw,
+    .motion-check-draw-settle {
+      animation-name: motionCheckFadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    [data-feedback="failed"][data-feedback-travel] {
+      animation-name: none !important;
+    }
+  }
 }
