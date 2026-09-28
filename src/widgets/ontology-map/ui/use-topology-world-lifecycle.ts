@@ -10,6 +10,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import {
   type SpringOffset,
 } from "../expressive/release-offsets";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, settleTierAssembly } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
 import { type HomeSpringState } from "../model/relayout-home";
@@ -228,12 +229,10 @@ export function useTopologyWorldLifecycle({
       galaxyFlatReturnPositionsRef.current = null;
       galaxyLayoutHandoffRef.current = null;
     }
+    const previousWorld = worldRef.current;
     worldRef.current = world;
-    // Seed the new-node appearance ramp. On the first build (no previous set)
-    // everything is 1, so nothing animates and this cannot collide with the
-    // initial-load choreography. Later builds seed only previously unseen ids
-    // at 0 and leave existing nodes at 1; vanished ids are pruned. Convergence
-    // itself belongs to the frame loop (`stepTopologyPhysics`).
+    // Later builds seed unseen ids at 0; the first build belongs to the tier assembly.
+    let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
     {
       const prevIds = prevNodeIdsRef.current;
       const appear = appearRef.current;
@@ -308,11 +307,38 @@ export function useTopologyWorldLifecycle({
       galaxyModeCameraRef.current = { flat: null, galaxy: null };
       pendingFlatCameraRef.current = null;
       hasInitializedRef.current = false;
+      armAssembly = true;
+    }
+    if (!galaxyRef.current) {
+      if (armAssembly) {
+        armTierAssembly(world, dataSourceKey, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      } else {
+        carryTierAssembly(previousWorld, world);
+      }
     }
     trySnapInitialCamera(tokens);
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, expand.structure]);
+  useEffect(() => {
+    if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
+  }, [dataSourceKey, worldRef]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const settle = () => {
+      if (worldRef.current) settleTierAssembly(worldRef.current);
+    };
+    const events = ["pointerdown", "wheel", "touchstart"] as const;
+    for (const type of events) container.addEventListener(type, settle, { capture: true, passive: true });
+    window.addEventListener("keydown", settle, { capture: true });
+    return () => {
+      for (const type of events) container.removeEventListener(type, settle, { capture: true });
+      window.removeEventListener("keydown", settle, { capture: true });
+    };
+  }, [containerRef, worldRef]);
+
   return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
 }

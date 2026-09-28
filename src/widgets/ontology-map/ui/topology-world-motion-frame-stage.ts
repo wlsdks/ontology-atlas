@@ -37,6 +37,7 @@ import {
   stepHomeSpring,
   type HomeSpringState,
 } from "../model/relayout-home";
+import { holdTierAssemblyBounds, isTierAssembling, settleTierAssembly, stepTierAssembly } from "../morph/tier-assembly";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeOverviewFitScale } from "./topology-camera-math";
@@ -637,6 +638,14 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
           finishGalaxyLayoutHandoff();
         }
       }
+    }
+
+    if (view3dRef.current || realmTransitionRef.current.phase !== "idle") settleTierAssembly(world);
+    if (isTierAssembling(world)) {
+      const running = stepTierAssembly(world, now);
+      recomputeWorldGeometry(world, tokens);
+      holdTierAssemblyBounds(world);
+      homingActiveRef.current = running || homeSpringsRef.current.size > 0;
     }
 
     // --- Realm coordinate step: FLIP the inside nodes, fling the outside
