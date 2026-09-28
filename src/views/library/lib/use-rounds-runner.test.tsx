@@ -16,6 +16,7 @@ import {
   roundFingerprint,
 } from '@/entities/library-round';
 import { recordApproval } from '@/shared/lib/machine-approvals';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 
 import { useRoundsRunner } from './use-rounds-runner';
 
@@ -48,6 +49,8 @@ const h = vi.hoisted(() => ({
   },
   agentServer: { launch: { command: '/Applications/Ontology Atlas.app/mcp', args: [] } },
   connectors: { connectors: [], allowedHere: () => false, isOnHere: () => false },
+  pages: [] as { slug: string }[],
+  files: {} as Record<string, string>,
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -62,7 +65,7 @@ vi.mock('@/entities/library-round', async (importOriginal) => ({
 vi.mock('@/entities/docs-vault', () => ({
   buildLibraryModel: vi.fn(() => ({ sources: [], wikiPages: [], notCompiledCount: 0 })),
   isWikiPage: () => false,
-  selectWikiPages: () => [],
+  selectWikiPages: () => h.pages,
 }));
 vi.mock('@/features/acp-session', async () => ({
   VAULT_MCP_SERVER_NAME: 'atlas-vault',
@@ -77,10 +80,10 @@ vi.mock('@/features/acp-session', async () => ({
   vaultMcpServers: () => [],
   vaultSelfReadSlot: () => null,
 }));
-vi.mock('@/features/library', () => ({
+vi.mock('@/features/library', async () => ({
   appendWikiLog: vi.fn(async () => undefined),
   buildCompileBrief: () => 'compile brief',
-  judgePageWrite: () => ({ decision: 'refuse' }),
+  judgePageWrite: (await import('@/features/library/lib/judge-page-write')).judgePageWrite,
 }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => h.connectors }));
 vi.mock('@/shared/lib/tauri-acp', () => ({
@@ -90,7 +93,7 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
-  readTauriVaultText: async () => null,
+  readTauriVaultText: async (_root: string, path: string) => h.files[path] ?? null,
 }));
 
 const READY_CLAUDE = { id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true };
@@ -475,6 +478,69 @@ describe('the clock, the lock and the folder', () => {
       outcome: 'refused',
       written: [],
       refused: ['capabilities/checkout.md', 'wiki/checkout.md', 'mcp__atlas-vault__add_concept', 'Bash'],
+    });
+  });
+
+  describe('a document pass judges each write against the page as its earlier writes left it', () => {
+    const PAGE = '/vault/wiki/plan.md';
+    const onDisk = WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf');
+    const lead = '<Two or three sentences. What a reader needs before the facts.>';
+    const serviceRound = at('svc', {
+      kind: 'service',
+      connectorId: 'c1',
+      connectorName: 'confluence',
+      nextDueAt: '2099-01-01T00:00:00.000Z',
+      places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }],
+    });
+    const write = (path: string, content: string) => ({ filePath: path, toolName: 'Write', toolKind: 'edit', rawInput: { file_path: path, content }, reviewKind: 'permission' });
+    const edit = (path: string, oldString: string, newString: string) => ({ filePath: path, toolName: 'Edit', toolKind: 'edit', rawInput: { file_path: path, old_string: oldString, new_string: newString }, reviewKind: 'permission' });
+
+    async function pass(requests: Record<string, unknown>[]) {
+      h.pages = [{ slug: 'wiki/plan' }];
+      h.files = { 'wiki/plan.md': onDisk };
+      h.vault = { status: 'loaded', handle: { name: 'vault' }, manifest: { docs: [], sources: [{ path: 'sources/plan.pdf' }] }, agentConfigStatus: null };
+      h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [serviceRound] }));
+      h.runtimes = [READY_CLAUDE];
+      allowHere(serviceRound);
+      const decisions: Decision[] = [];
+      h.session = scriptedSession(requests, decisions);
+      const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+      await flush();
+      await flush();
+      act(() => result.current.runNow('svc'));
+      await flush();
+      await advance(6_000);
+      return decisions;
+    }
+
+    afterEach(() => {
+      h.pages = [];
+      h.files = {};
+    });
+
+    it('refuses an edit that would make the page an earlier write left in this pass read as reviewed', async () => {
+      const moved = onDisk.replace('summary: <one sentence about what this page is about>', `summary: ${lead}`).replace(`\n${lead}\n`, '\nA reader needs this first.\n');
+      const decisions = await pass([
+        write(PAGE, moved),
+        edit(PAGE, lead, `${lead}\nstatus: reviewed\ndescribes: [capabilities/checkout]`),
+      ]);
+      expect(decisions).toEqual(['write wiki/plan.md', { reject: 'wiki/plan.md' }]);
+    });
+
+    it('still allows a later edit that keeps the page a draft', async () => {
+      const decisions = await pass([
+        write(PAGE, onDisk.replace('<Anything you could not ground in a source. It goes here and nowhere else.>', 'Nothing yet.')),
+        edit(PAGE, 'Nothing yet.', 'Pricing is not in the sources.'),
+      ]);
+      expect(decisions).toEqual(['write wiki/plan.md', 'write wiki/plan.md']);
+    });
+
+    it('counts a document the pass brought in as a known source for the page that cites it', async () => {
+      const decisions = await pass([
+        write('/vault/sources/refunds.md', '---\nsource_url: https://example.atlassian.net/wiki/9\n---\n# Refunds\n'),
+        write('/vault/wiki/refunds.md', WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/refunds.md')),
+      ]);
+      expect(decisions).toEqual(['write sources/refunds.md', 'write wiki/refunds.md']);
     });
   });
 });

@@ -92,6 +92,7 @@ interface PassData {
   docs: readonly VaultDoc[];
   hashes: Map<string, string>;
   pageTexts: Map<string, string>;
+  knownSources: Set<string>;
 }
 
 function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
@@ -235,8 +236,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
         kind: active.round.kind,
         onStale: active.round.onStale,
         connectorName: active.round.connectorName,
-        // Every connector the round's places name, so a pass that watches Slack and
-        // Confluence is not refused halfway through its one turn (spec §3.2).
         connectorNames: servicePlaces(roundPlaces(active.round)).map((place) => place.connectorName),
       },
       vaultRoot: rootPath,
@@ -247,10 +246,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
           request: req,
           vaultRoot: rootPath,
           currentText: (slug) => active.data.pageTexts.get(slug) ?? null,
-          knownSources: active.data.sources.map((source) => source.path),
+          knownSources: active.data.knownSources,
         }),
     });
-    return verdict.decision === "allow" ? verdict.note : { reject: verdict.reason };
+    if (verdict.decision !== "allow") return { reject: verdict.reason };
+    if (verdict.wrote?.text != null) active.data.pageTexts.set(verdict.wrote.path.replace(/\.md$/, ""), verdict.wrote.text);
+    else if (verdict.wrote) active.data.knownSources.add(verdict.wrote.path);
+    return verdict.note;
   }, [rootPath]);
 
   const onTurnStarted = useCallback((_turn: AcpTurnStart) => {
@@ -352,7 +354,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         /* An unreadable page has no verdict this pass; the next one may read it. */
       }
     }
-    return { sources, docs, hashes, pageTexts };
+    return { sources, docs, hashes, pageTexts, knownSources: new Set(sources.map((source) => source.path)) };
   }, [manifestRef, rootPath]);
 
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
@@ -386,7 +388,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
        * opens with an empty pass set: nothing local to hash, nothing local to compile.
        */
       const data: PassData | null = round.kind === "ontology"
-        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>() }
+        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), knownSources: new Set<string>() }
         : await readPassData();
       if (!data) throw new Error("no-manifest");
       /*

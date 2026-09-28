@@ -27,7 +27,7 @@ function judge(overrides: Partial<ScopeInput> & { request: ScopeRequest }) {
     judgeWrite: (req) => {
       const path = req.filePath?.startsWith(`${VAULT}/wiki/`) ? req.filePath.slice(VAULT.length + 1) : null;
       if (!path) return null;
-      return { path, ok: req.rawInput.content !== 'broken', status: typeof req.rawInput.status === 'string' ? req.rawInput.status : 'draft' };
+      return { path, ok: req.rawInput.content !== 'broken', status: typeof req.rawInput.status === 'string' ? req.rawInput.status : 'draft', text: String(req.rawInput.content ?? '') };
     },
     ...overrides,
   });
@@ -89,7 +89,7 @@ describe('round scope', () => {
 
   it('writes a wiki page only when the page judge accepts it, for either kind', () => {
     const fits = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
-    expect(judge({ request: fits })).toEqual({ decision: 'allow', note: 'write wiki/plan.md' });
+    expect(judge({ request: fits })).toEqual({ decision: 'allow', note: 'write wiki/plan.md', wrote: { path: 'wiki/plan.md', text: 'ok' } });
     expect(judge({ request: fits, round: service }).decision).toBe('allow');
     const broken = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'broken' } });
     expect(judge({ request: broken })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
@@ -131,7 +131,7 @@ describe('round scope', () => {
 
   it('lets only a service round touch sources/, and never delete or move there', () => {
     const write = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'edit', rawInput: { content: '# Plan' } });
-    expect(judge({ request: write, round: service })).toEqual({ decision: 'allow', note: 'write sources/plan.md' });
+    expect(judge({ request: write, round: service })).toEqual({ decision: 'allow', note: 'write sources/plan.md', wrote: { path: 'sources/plan.md', text: null } });
     expect(judge({ request: write })).toEqual({ decision: 'reject', reason: 'sources/plan.md' });
     const remove = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'delete' });
     expect(judge({ request: remove, round: service }).decision).toBe('reject');

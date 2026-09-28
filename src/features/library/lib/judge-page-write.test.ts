@@ -50,9 +50,23 @@ describe("the text that is judged is the text that would land", () => {
     expect(proposedPageText({ old_string: "not there", new_string: "x" }, GOOD)).toBeNull();
   });
 
-  it("replace_all replaces every occurrence", () => {
+  it("replace_all replaces every occurrence, and a single edit needs its anchor exactly once, as the edit tool does", () => {
     expect(proposedPageText({ old_string: "a", new_string: "b", replace_all: true }, "a-a")).toBe("b-b");
-    expect(proposedPageText({ old_string: "a", new_string: "b" }, "a-a")).toBe("b-a");
+    expect(proposedPageText({ old_string: "a", new_string: "b" }, "a-a")).toBeNull();
+    expect(proposedPageText({ old_string: "a", new_string: "b" }, "x-a")).toBe("x-b");
+  });
+
+  it("applies the new text literally, so replacement patterns such as $& and $' are never expanded", () => {
+    expect(proposedPageText({ old_string: "a", new_string: "$&$'$`$$" }, "xay")).toBe("x$&$'$`$$y");
+    expect(proposedPageText({ old_string: "a", new_string: "[$&]", replace_all: true }, "a-a")).toBe("[$&]-[$&]");
+    const verdict = judgePageWrite({
+      request: request(`${ROOT}/wiki/plan.md`, { old_string: "status: draft", new_string: "status: reviewed\n$&" }),
+      vaultRoot: ROOT,
+      currentText: () => GOOD,
+      knownSources: KNOWN,
+    });
+    expect(verdict?.status).toBe("reviewed");
+    expect(verdict?.text).toContain("status: reviewed\n$&");
   });
 
   it("a page carrying kind: is refused at the gate, which is the one problem that changes what the file is", () => {

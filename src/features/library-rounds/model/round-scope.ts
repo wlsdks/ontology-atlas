@@ -33,12 +33,12 @@ export interface ScopeInput {
   /** `'read' | 'write' | null` for the vault server's own tools; `null` when it is not one. */
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
   /** The Library's page judge: a verdict for a `wiki/` page write, `null` for anything else. */
-  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; status: string | null } | null;
+  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; status: string | null; text: string } | null;
 }
 
 /** The note the ledger records: `read <path>`, `write <path>` or `call <tool>`. */
 export type ScopeVerdict =
-  | { decision: 'allow'; note: string }
+  | { decision: 'allow'; note: string; wrote?: { path: string; text: string | null } }
   | { decision: 'reject'; reason: string };
 
 export function scopeNoteEffect(note: string): { effect: 'read' | 'write' | 'call'; target: string } | null {
@@ -128,13 +128,13 @@ export function judgeRoundScope({
     }
     const verdict = judgeWrite(request);
     return verdict?.ok && verdict.status === 'draft'
-      ? { decision: 'allow', note: `write ${relative}` }
+      ? { decision: 'allow', note: `write ${relative}`, wrote: { path: relative, text: verdict.text } }
       : { decision: 'reject', reason: relative };
   }
 
   if (relative.startsWith('sources/') && relative !== 'sources/') {
     return round.kind === 'service'
-      ? { decision: 'allow', note: `write ${relative}` }
+      ? { decision: 'allow', note: `write ${relative}`, wrote: { path: relative, text: null } }
       : { decision: 'reject', reason: relative };
   }
 
