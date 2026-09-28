@@ -30,7 +30,9 @@ describe("which writes are judged", () => {
 describe("the text that is judged is the text that would land", () => {
   it("a whole-file write is judged as given", () => {
     const verdict = judgePageWrite({ request: request(`${ROOT}/wiki/plan.md`, { content: GOOD }), vaultRoot: ROOT, currentText: () => null, knownSources: KNOWN });
-    expect(verdict).toMatchObject({ path: "wiki/plan.md", ok: true, problems: [] });
+    expect(verdict).toMatchObject({ path: "wiki/plan.md", ok: true, problems: [], status: "draft" });
+    const reviewed = judgePageWrite({ request: request(`${ROOT}/wiki/plan.md`, { content: GOOD.replace("status: draft", "status: reviewed") }), vaultRoot: ROOT, currentText: () => null, knownSources: KNOWN });
+    expect(reviewed).toMatchObject({ ok: true, status: "reviewed" });
   });
 
   it("an edit is applied to the page on disk before judging", () => {

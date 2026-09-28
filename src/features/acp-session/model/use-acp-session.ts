@@ -834,15 +834,13 @@ export function useAcpSession({
         resolve(null);
         return;
       }
-      // The screen may already know the answer: a wiki page that fits its contract lands
-      // without a card, and the transcript says so where the card would have stood.
-      const decided = request.reviewKind === 'permission' ? (autoDecideRef.current?.(request) ?? null) : null;
+      const decided = autoDecideRef.current?.(request) ?? null;
       if (decided !== null && typeof decided === 'object') {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-refused', detail: decided.reject });
         resolve(null);
         return;
       }
-      const note = decided;
+      const note = request.reviewKind === 'permission' ? decided : null;
       const allow = note !== null ? request.options.find((option) => option.kind === 'allow_once') : undefined;
       if (note !== null && allow) {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });

@@ -27,7 +27,7 @@ function judge(overrides: Partial<ScopeInput> & { request: ScopeRequest }) {
     judgeWrite: (req) => {
       const path = req.filePath?.startsWith(`${VAULT}/wiki/`) ? req.filePath.slice(VAULT.length + 1) : null;
       if (!path) return null;
-      return { path, ok: req.rawInput.content !== 'broken' };
+      return { path, ok: req.rawInput.content !== 'broken', status: typeof req.rawInput.status === 'string' ? req.rawInput.status : 'draft' };
     },
     ...overrides,
   });
@@ -39,7 +39,7 @@ const ontology = { kind: 'ontology' as const };
 describe('round scope', () => {
   it('never lets a round write the ontology', () => {
     expect(judge({ request: request({ reviewKind: 'ontology-write', toolName: 'mcp__atlas-vault__add_concept' }) }))
-      .toEqual({ decision: 'reject', reason: 'ontology-write' });
+      .toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concept' });
     expect(judge({ request: request({ toolName: 'mcp__atlas-vault__add_concept' }) }))
       .toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concept' });
   });
@@ -93,6 +93,14 @@ describe('round scope', () => {
     expect(judge({ request: fits, round: service }).decision).toBe('allow');
     const broken = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'broken' } });
     expect(judge({ request: broken })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+  });
+
+  it('writes a page only as a draft, because no person reviewed what a pass wrote', () => {
+    const reviewed = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'ok', status: 'reviewed' } });
+    expect(judge({ request: reviewed })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+    expect(judge({ request: reviewed, round: service })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+    const unstated = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'ok', status: '' } });
+    expect(judge({ request: unstated }).decision).toBe('reject');
   });
 
   it('never writes retained answers or the wiki\'s furniture', () => {

@@ -33,7 +33,7 @@ export interface ScopeInput {
   /** `'read' | 'write' | null` for the vault server's own tools; `null` when it is not one. */
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
   /** The Library's page judge: a verdict for a `wiki/` page write, `null` for anything else. */
-  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean } | null;
+  judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; status: string | null } | null;
 }
 
 /** The note the ledger records: `read <path>`, `write <path>` or `call <tool>`. */
@@ -86,7 +86,7 @@ export function judgeRoundScope({
   judgeWrite,
 }: ScopeInput): ScopeVerdict {
   if (request.reviewKind === 'ontology-write') {
-    return { decision: 'reject', reason: 'ontology-write' };
+    return { decision: 'reject', reason: request.toolName ?? 'ontology-write' };
   }
 
   if (request.toolName?.startsWith('mcp__')) {
@@ -127,7 +127,7 @@ export function judgeRoundScope({
       return { decision: 'reject', reason: relative };
     }
     const verdict = judgeWrite(request);
-    return verdict?.ok
+    return verdict?.ok && verdict.status === 'draft'
       ? { decision: 'allow', note: `write ${relative}` }
       : { decision: 'reject', reason: relative };
   }

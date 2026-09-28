@@ -1,3 +1,4 @@
+import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { WIKI_DIR, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
@@ -13,6 +14,7 @@ export interface PageWriteVerdict {
   ok: boolean;
   /** Findings with `detail`, so the card can say them in the reader's language. */
   problems: ReadonlyArray<WikiTemplateProblem>;
+  status: string | null;
 }
 
 /** The three facts of a permission request this judgement reads; the card owns the rest. */
@@ -77,5 +79,6 @@ export function judgePageWrite({
   const proposed = proposedPageText(request.rawInput, currentText(slug));
   if (proposed === null) return null;
   const { ok, problems } = validateWikiPage(proposed, { knownSources });
-  return { path, ok, problems };
+  const status = parseFrontmatter(proposed).frontmatter.status;
+  return { path, ok, problems, status: typeof status === "string" ? status.trim() : null };
 }
