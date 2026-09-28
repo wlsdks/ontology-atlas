@@ -283,6 +283,13 @@ export async function installDesktopRailRuntime(
             stamped.set(body, 8);
             return slow(stamped.buffer);
           }
+          case "read_vault_text_tail": {
+            const path = relative(args.relativePath);
+            if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
+            const lines = files[path].split(/\r?\n/);
+            if (lines.at(-1) === "") lines.pop();
+            return slow(lines.slice(Math.max(0, lines.length - Number(args.maxLines))).join("\n"));
+          }
           // The native answer for a vault that never saved a constellation is `null`
           // (`read_library_collections` returns `Ok(None)` for an absent sidecar or file).
           // Left unstubbed it rejected, and every capture through this harness showed the
