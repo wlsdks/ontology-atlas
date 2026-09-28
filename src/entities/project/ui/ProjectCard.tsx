@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { badgeClass } from "@/shared/ui/badge-class";
 import { cn } from '@/shared/lib/cn';
-import { MOTION, OVERLAY_RISE, STAGGER } from '@/shared/motion';
+import { MOTION, OVERLAY_RISE } from '@/shared/motion';
+import { staggerDelaySeconds } from '@/shared/motion/stagger';
 import type { Project } from '../model/types';
 
 /** The category facts a card needs; callers map `Category` → `CardCategoryMeta`. */
@@ -112,8 +113,8 @@ export function ProjectCard({
           preview
             ? undefined
             : {
-                opacity: { ...MOTION.base, delay: index * STAGGER },
-                y: { ...MOTION.base, delay: index * STAGGER },
+                opacity: { ...MOTION.base, delay: staggerDelaySeconds(index) },
+                y: { ...MOTION.base, delay: staggerDelaySeconds(index) },
               }
         }
         className={cn(
@@ -124,7 +125,7 @@ export function ProjectCard({
       >
         <div
           className={cn(
-            'relative flex items-center justify-center rounded-full border shadow-[var(--shadow-elevation-1)] transition-[transform,background-color,border-color,box-shadow] duration-[var(--motion-fast)] group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevation-1)]',
+            'relative flex items-center justify-center rounded-full border shadow-[var(--shadow-elevation-1)] transition-[translate,background-color,border-color,box-shadow] duration-[var(--motion-fast)] group-hover:-translate-y-0.5 motion-reduce:translate-none group-hover:shadow-[var(--shadow-elevation-1)]',
             isHub
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-text-soft)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
@@ -182,8 +183,8 @@ export function ProjectCard({
         preview
           ? undefined
           : {
-              opacity: { ...MOTION.base, delay: index * STAGGER },
-              y: { ...MOTION.base, delay: index * STAGGER },
+              opacity: { ...MOTION.base, delay: staggerDelaySeconds(index) },
+              y: { ...MOTION.base, delay: staggerDelaySeconds(index) },
             }
       }
       className={cn(
