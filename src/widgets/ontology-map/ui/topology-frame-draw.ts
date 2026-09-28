@@ -123,6 +123,7 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldEdge, type Wo
 import { pressResponse } from "../expressive/mass-spring";
 import { beginEdgeGlow, drawNodeBloom, endEdgeGlow } from "../expressive/ego-light";
 import { drawNeuralBloom } from "../expressive/neural-bloom";
+import { edgeRevealProgress } from "../expressive/edge-reveal";
 
 /**
  * Dashed aura ring that tells an expanded parent apart from a collapsed one. The
@@ -393,6 +394,11 @@ function hexToRgbOrNull(hex: string): readonly [number, number, number] | null {
  */
 let drawnLabelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number }[] = [];
 let drawnRelationCaptions: PlacedRelationCaption[] = [];
+let mapCometsOn = true;
+export function setMapComets(on: boolean): void {
+  mapCometsOn = on;
+}
+const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return drawnRelationCaptions; }
 
 export function lastDrawnLabelBoxes(): readonly {
@@ -1846,6 +1852,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     edgeAlphaReused = new Float64Array(world.edges.length);
     edgeAlphaByEdges.set(world.edges, edgeAlphaReused);
   }
+  let edgeLiftReused = edgeLiftByEdges.get(world.edges);
+  if (edgeLiftReused === undefined) {
+    edgeLiftReused = new Float64Array(world.edges.length);
+    edgeLiftByEdges.set(world.edges, edgeLiftReused);
+  }
+  const focusRampId = trailLensActive ? null : focusedNodeId ?? selectedEdge?.sourceId ?? null;
+  const edgeFocusRamp = focusRampId !== null ? Math.min(1, Math.max(0, focusRampById.get(focusRampId) ?? 0)) : 1;
+  const edgeRevealAt =
+    focusedNodeId !== null && !trailLensActive
+      ? edgeRevealProgress(egoRevealById.get(focusedNodeId) ?? 1, reducedMotion)
+      : 1;
   const captionCandidates: RelationCaption[] = [];
   drawnRelationCaptions = [];
   const isSpineEndpoint = (id: string): boolean => {
@@ -2223,6 +2240,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           : 0;
       const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
       const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
+      if (focusedNodeId === null) edgeLiftReused[edgeOrigIndex] = hoverLift;
+      const directional = isDirectionalRelation(edge.relationType);
       const hoverRecede =
         hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
       // In 3D the hovered node's lines also climb out of the depth fog on the
@@ -2338,8 +2357,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           // The binary `kind` lumps everything that is not containment into
           // `depends`. Whether a directional taper may be drawn is decided by the
           // **original relation type**, not by `kind`.
-          directional: isDirectionalRelation(edge.relationType),
+          directional,
           egoState: edgeEgoState,
+          reveal:
+            touches && edgeRevealAt < 1
+              ? {
+                  progress: edgeRevealAt,
+                  from: directional || edge.sourceId === focusedNodeId ? "a" : "b",
+                  baseLift: edgeLiftReused[edgeOrigIndex],
+                }
+              : null,
+          dimRamp: edgeFocusRamp,
           selected: (isSelectedEdge || isPathEdge) && !trailLensActive,
           trailWalked: walkedTrail,
           trailDirection,
@@ -2365,8 +2393,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           // so the 2D↔3D morph cannot step a stroke.
           minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
-          containsCometEligible: kind === "contains" ? egoCometEdges.has(edge) : undefined,
-          dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
+          containsCometEligible: kind === "contains" ? mapCometsOn && egoCometEdges.has(edge) : undefined,
+          dependsCometEligible: kind === "depends" ? mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
         },
         traceTokensFrame,
       );
