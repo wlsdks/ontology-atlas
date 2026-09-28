@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import { detachText } from './parser.mjs';
 import { nodeUidIssue } from './schema.mjs';
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault.mjs';
 
@@ -11,7 +12,8 @@ const COMPILER_VERSION = 2;
  * / `nodesOffset` (and the edge pair) slice an array and add `nodesPagination:
  * { offset, limit, total, hasMore, nextOffset }`. `summary` wins over both.
  */
-export function compileOntology(docs, options = {}) {
+export function compileOntology(loadedDocs, options = {}) {
+  const docs = loadedDocs.map(detachedDocument);
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
   const summary = optionalBoolean(options.summary, 'summary') ?? false;
   const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit', { max: 500 });
@@ -311,6 +313,15 @@ export function compileOntology(docs, options = {}) {
           mergedUidToSlug,
         }
       : undefined,
+  };
+}
+
+function detachedDocument(doc) {
+  return {
+    slug: doc?.slug,
+    mtime: doc?.mtime,
+    frontmatter: detachText(doc?.frontmatter),
+    diagnostics: detachText(doc?.diagnostics),
   };
 }
 

@@ -14,9 +14,14 @@ import {
   snapshotVaultGit,
   collectPathLastChanges,
 } from './git-tools.mjs';
+import { revisionClocks } from './stale-parent.mjs';
 
 function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+}
+
+function membershipOf(children) {
+  return revisionClocks({ children }).membershipDigest;
 }
 
 function referenceNodeRevisions(root, filePath, maxRevisions = 40) {
@@ -40,7 +45,7 @@ function referenceNodeRevisions(root, filePath, maxRevisions = 40) {
         if (cleaned) children.push(cleaned);
       }
     }
-    return { changedAt, body, children: [...new Set(children)] };
+    return { changedAt, ...revisionClocks({ body, children: [...new Set(children)] }) };
   });
 }
 
@@ -297,18 +302,21 @@ test('collectNodeRevisions batches immutable history, returns clones, and invali
     assert.equal(first.ok, true);
     assert.equal(first.revisionsBySlug.get('project').length, 2);
     assert.equal(first.revisionsBySlug.get('domains/core').length, 2);
-    assert.deepEqual(first.revisionsBySlug.get('domains/core')[0].children, [
-      'capabilities/run',
-      'capabilities/review',
-    ]);
+    assert.equal(
+      first.revisionsBySlug.get('domains/core')[0].membershipDigest,
+      membershipOf(['capabilities/run', 'capabilities/review']),
+    );
 
-    first.revisionsBySlug.get('domains/core')[0].children.push('cache-poison');
+    first.revisionsBySlug.get('domains/core')[0].membershipDigest = 'cache-poison';
     const cached = collectNodeRevisions({
       repoRoot: root,
       vaultRoot: vault,
       slugs: ['project', 'domains/core'],
     });
-    assert.equal(cached.revisionsBySlug.get('domains/core')[0].children.includes('cache-poison'), false);
+    assert.equal(
+      cached.revisionsBySlug.get('domains/core')[0].membershipDigest,
+      membershipOf(['capabilities/run', 'capabilities/review']),
+    );
 
     writeFileSync(
       join(vault, 'project.md'),
@@ -322,10 +330,10 @@ test('collectNodeRevisions batches immutable history, returns clones, and invali
       slugs: ['project', 'domains/core'],
     });
     assert.equal(afterHeadChange.revisionsBySlug.get('project').length, 3);
-    assert.deepEqual(afterHeadChange.revisionsBySlug.get('project')[0].children, [
-      'domains/core',
-      'domains/next',
-    ]);
+    assert.equal(
+      afterHeadChange.revisionsBySlug.get('project')[0].membershipDigest,
+      membershipOf(['domains/core', 'domains/next']),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -358,9 +366,10 @@ test('collectNodeRevisions falls back for a quiet path hidden behind the union b
     });
     assert.equal(result.revisionsBySlug.get('project').length, 2);
     assert.equal(result.revisionsBySlug.get('domains/quiet').length, 1);
-    assert.deepEqual(result.revisionsBySlug.get('domains/quiet')[0].children, [
-      'capabilities/quiet',
-    ]);
+    assert.equal(
+      result.revisionsBySlug.get('domains/quiet')[0].membershipDigest,
+      membershipOf(['capabilities/quiet']),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -407,6 +416,75 @@ test('collectNodeRevisions matches the former per-file result across a merge', (
       result.revisionsBySlug.get('domains/core'),
       referenceNodeRevisions(root, 'vault/domains/core.md'),
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function makeDeepHistory(count, bodyOf) {
+  const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-git-deep-'));
+  mkdirSync(join(root, 'vault'));
+  git(root, 'init', '-b', 'main');
+  const bodies = [];
+  const stream = [];
+  for (let index = 0; index < count; index += 1) {
+    const body = bodyOf(index);
+    bodies.push(body);
+    const file = `---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run-${index % 3}]\n---\n${body}`;
+    const message = `revision ${index}`;
+    stream.push(
+      'commit refs/heads/main',
+      `committer Atlas Test <atlas@example.test> ${1_700_000_000 + index * 60} +0000`,
+      `data ${Buffer.byteLength(message)}`,
+      message,
+      'M 100644 inline vault/domains/core.md',
+      `data ${Buffer.byteLength(file)}`,
+      file,
+      '',
+    );
+  }
+  execFileSync('git', ['-C', root, 'fast-import', '--quiet'], { input: `${stream.join('\n')}\n` });
+  return { root, vault: join(root, 'vault'), bodies };
+}
+
+test('collectNodeRevisions keeps digests, not the revision text it read', () => {
+  const bodyOf = (index) => `Core meaning ${index}.\n${'x'.repeat(64 * 1024)}\n`;
+  const { root, vault, bodies } = makeDeepHistory(5, bodyOf);
+  try {
+    const result = collectNodeRevisions({ repoRoot: root, vaultRoot: vault, slugs: ['domains/core'] });
+    const revisions = result.revisionsBySlug.get('domains/core');
+    assert.equal(revisions.length, 5);
+    assert.deepEqual(
+      revisions.map((revision) => revision.bodyDigest),
+      [...bodies].reverse().map((body) => revisionClocks({ body }).bodyDigest),
+    );
+    const storedBytes = bodies.reduce((total, body) => total + Buffer.byteLength(body), 0);
+    const keptBytes = Buffer.byteLength(JSON.stringify(revisions));
+    assert.ok(keptBytes < storedBytes / 100, `${keptBytes} bytes kept for ${storedBytes} bytes of history`);
+    const longest = Math.max(...revisions.flatMap((revision) => Object.values(revision).map((value) => String(value).length)));
+    assert.ok(longest <= 64, `a revision keeps a ${longest}-character string`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectNodeRevisions reads a history longer than one cat-file batch in order', () => {
+  const { root, vault, bodies } = makeDeepHistory(300, (index) => `Core meaning ${index}.\n`);
+  try {
+    const result = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['domains/core'],
+      maxRevisions: 300,
+    });
+    const revisions = result.revisionsBySlug.get('domains/core');
+    assert.equal(revisions.length, 300);
+    assert.deepEqual(
+      revisions.map((revision) => revision.bodyDigest),
+      [...bodies].reverse().map((body) => revisionClocks({ body }).bodyDigest),
+    );
+    assert.equal(revisions[0].membershipDigest, membershipOf(['capabilities/run-2']));
+    assert.equal(revisions.at(-1).membershipDigest, membershipOf(['capabilities/run-0']));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

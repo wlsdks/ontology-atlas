@@ -10,8 +10,10 @@
 // containment array is the wrong proxy and the check should be withdrawn.
 // Revisions are injected, so the caller decides where history comes from.
 
+import { createHash } from 'node:crypto';
+
 /** Frontmatter arrays through which a parent holds what is below it. Mirrors `CONTAINMENT_KEYS` in `validate.mjs`. */
-const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
+export const CONTAINMENT_KEYS = Object.freeze(['contains', 'capabilities', 'elements', 'domains']);
 
 /**
  * Kinds whose body aggregates their membership. An element's prose describes
@@ -45,6 +47,17 @@ export function containedSlugs(frontmatter) {
   return [...new Set(slugs)];
 }
 
+function digest(text) {
+  return createHash('sha256').update(text).digest('base64url');
+}
+
+export function revisionClocks({ body, children } = {}) {
+  return {
+    bodyDigest: digest(String(body ?? '')),
+    membershipDigest: digest(membershipKey(children)),
+  };
+}
+
 function toTime(value) {
   if (value == null) return null;
   const time = value instanceof Date ? value.getTime() : Date.parse(value);
@@ -52,9 +65,9 @@ function toTime(value) {
 }
 
 /**
- * Walks revisions (`{ changedAt, body, children }`, newest first, the first is
- * current) and reports when each clock last moved. A value unchanged back to the
- * oldest revision is `null`: unknown, not "never".
+ * Walks revisions (`{ changedAt, bodyDigest, membershipDigest }`, newest first,
+ * the first is current) and reports when each clock last moved. A value
+ * unchanged back to the oldest revision is `null`: unknown, not "never".
  */
 export function lastMovementOf(revisions) {
   const list = Array.isArray(revisions) ? revisions.filter(Boolean) : [];
@@ -66,13 +79,10 @@ export function lastMovementOf(revisions) {
   for (let index = 0; index < list.length - 1; index += 1) {
     const newer = list[index];
     const older = list[index + 1];
-    if (bodyChangedAt == null && String(newer.body ?? '') !== String(older.body ?? '')) {
+    if (bodyChangedAt == null && newer.bodyDigest !== older.bodyDigest) {
       bodyChangedAt = newer.changedAt ?? null;
     }
-    if (
-      membershipChangedAt == null &&
-      membershipKey(newer.children) !== membershipKey(older.children)
-    ) {
+    if (membershipChangedAt == null && newer.membershipDigest !== older.membershipDigest) {
       membershipChangedAt = newer.changedAt ?? null;
     }
     if (bodyChangedAt != null && membershipChangedAt != null) break;
@@ -93,8 +103,8 @@ export function lastMovementOf(revisions) {
  * Summary nodes whose membership changed after their description last did.
  *
  * @param docs `{ slug, frontmatter }` documents.
- * @param revisionsOf `(slug) => [{ changedAt, body, children }]`, newest first; a
- *   slug with no revisions is skipped, never guessed.
+ * @param revisionsOf `(slug) => [{ changedAt, bodyDigest, membershipDigest }]`,
+ *   newest first; a slug with no revisions is skipped, never guessed.
  * @returns Rows by lag, then slug, stable across runs.
  */
 export function findStaleParentSummaries({ docs, revisionsOf } = {}) {

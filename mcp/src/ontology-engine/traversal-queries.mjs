@@ -270,10 +270,12 @@ export function createTraversalQueries({
         candidates.push({ next: edge.from, edge });
       }
     }
-    candidates.sort((a, b) =>
-      `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`),
-    );
-    return candidates;
+    const keyed = candidates.map((candidate) => ({
+      candidate,
+      key: `${candidate.next}:${edgeSortKey(candidate.edge)}`,
+    }));
+    keyed.sort((left, right) => left.key.localeCompare(right.key));
+    return keyed.map(({ candidate }) => candidate);
   }
   
   

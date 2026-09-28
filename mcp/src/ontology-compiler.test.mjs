@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
 import { compileOntology } from './ontology-compiler.mjs';
@@ -586,5 +587,52 @@ describe('compileOntology', () => {
     assert.equal(result.nodes.length, 2);
     assert.equal(result.nodesPagination, undefined);
     assert.equal(result.edgesPagination, undefined);
+  });
+});
+
+describe('compileOntology retention', () => {
+  it('keeps no document text alive once the documents are dropped', () => {
+    const script = `
+      import { compileOntology } from ${JSON.stringify(new URL('./ontology-compiler.mjs', import.meta.url).href)};
+      import { parseFrontmatter } from ${JSON.stringify(new URL('./parser.mjs', import.meta.url).href)};
+      const COUNT = 200;
+      const body = '한국어 본문과 English prose together. '.repeat(1900);
+      const heapAfterCollection = () => { globalThis.gc(); globalThis.gc(); return process.memoryUsage().heapUsed; };
+      const before = heapAfterCollection();
+      let docs = [];
+      let rawBytes = 0;
+      for (let index = 0; index < COUNT; index += 1) {
+        const next = (index + 1) % COUNT;
+        const uid = '00000000-0000-4000-8000-' + String(index).padStart(12, '0');
+        const raw = [
+          '---',
+          'uid: ' + uid,
+          'slug: capabilities/node-' + index,
+          'kind: capability',
+          'title: 기능 ' + index + ' keeps a title',
+          'domain: domains/core',
+          'path: src/features/node-' + index + '.ts',
+          'depends_on: [capabilities/node-' + next + ', capabilities/missing-' + index + ']',
+          'relation_notes: { capabilities/node-' + next + ': "근거 ' + index + ' says why this edge exists" }',
+          '---',
+          body,
+        ].join('\\n');
+        rawBytes += raw.length * 2;
+        docs.push({ slug: 'capabilities/node-' + index, mtime: index, raw, ...parseFrontmatter(raw) });
+      }
+      globalThis.artifact = compileOntology(docs, { includeIndexes: true });
+      docs = null;
+      const retained = heapAfterCollection() - before;
+      console.log(JSON.stringify({ retained, rawBytes, nodes: globalThis.artifact.nodeCount }));
+    `;
+    const measured = JSON.parse(execFileSync(process.execPath, ['--expose-gc', '--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }));
+    assert.equal(measured.nodes, 200);
+    assert.ok(measured.rawBytes > 20 * 1024 * 1024, `fixture text must dominate the heap: ${measured.rawBytes}`);
+    assert.ok(
+      measured.retained < measured.rawBytes / 10,
+      `the artifact retained ${measured.retained} bytes for ${measured.rawBytes} bytes of document text`,
+    );
   });
 });
