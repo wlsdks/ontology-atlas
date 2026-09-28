@@ -161,96 +161,138 @@ fn collect_markdown(
     Ok(())
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SnapshotEntry {
+    pub path: String,
+    pub kind: String,
+    pub size: u64,
+    pub identity: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub children: Option<Vec<String>>,
+}
 pub(crate) struct SourceObservation {
     pub fingerprint: String,
     pub files: Vec<String>,
     pub limited: bool,
     pub ignored_names: Vec<String>,
+    pub entries: Vec<SnapshotEntry>,
+    pub excluded: Vec<String>,
+    text_bytes: usize,
+    code_roots: Vec<String>,
 }
+impl SourceObservation {
+    pub(crate) fn empty() -> Self {
+        Self {
+            fingerprint: String::new(),
+            files: Vec::new(),
+            limited: false,
+            ignored_names: vec!["target".into()],
+            entries: Vec::new(),
+            excluded: Vec::new(),
+            text_bytes: 0,
+            code_roots: Vec::new(),
+        }
+    }
+}
+#[cfg(test)]
 pub(crate) fn observe_source(root: &Path) -> Result<SourceObservation, String> {
+    observe_scoped_source(root, &[".".into()])
+}
+pub(crate) fn observe_scoped_source(
+    root: &Path,
+    code_roots: &[String],
+) -> Result<SourceObservation, String> {
     let mut result = SourceObservation {
         fingerprint: String::new(),
         files: Vec::new(),
         limited: false,
         ignored_names: vec!["target".into()],
+        entries: Vec::new(),
+        excluded: Vec::new(),
+        text_bytes: 0,
+        code_roots: code_roots.to_vec(),
     };
-    let mut paths = Vec::new();
-    collect_code(root, root, 0, &mut paths, &mut result)?;
-    paths.sort();
-    let mut hash = Sha256::new();
-    let mut bytes = 0;
-    for path in paths {
-        let relative = path.to_string_lossy();
-        let text = read_text(root, &path)?;
-        bytes += text.len();
-        if text.len() > 512 * 1024 || bytes > 32 * 1024 * 1024 {
-            result.limited = true;
-            break;
-        }
-        hash.update(relative.as_bytes());
-        hash.update([0]);
-        hash.update(text.as_bytes());
-        hash.update([0]);
-        result.files.push(relative.into_owned());
+    #[cfg(unix)]
+    {
+        let handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
+        capture_directory(&handle, Path::new(""), 0, &mut result)?;
     }
+    #[cfg(not(unix))]
+    return Err("unsupported_platform".into());
+    result.entries.sort_by(|a, b| a.path.cmp(&b.path));
+    result.files.sort();
+    result.excluded.sort();
     result.ignored_names.sort();
     result.ignored_names.dedup();
+    let mut hash = Sha256::new();
+    hash.update(serde_json::to_vec(code_roots).map_err(|_| "source_unavailable")?);
+    for entry in &result.entries {
+        hash.update(serde_json::to_vec(entry).map_err(|_| "source_unavailable")?);
+        hash.update([0]);
+    }
     if let Some(repo) = crate::git::find_repo_root(root)? {
         hash.update(crate::run_source_git(&repo, &["rev-parse", "HEAD"])?);
     }
+    hash.update(serde_json::to_vec(&result.excluded).map_err(|_| "source_unavailable")?);
     hash.update([u8::from(result.limited)]);
     hash.update(serde_json::to_vec(&result.ignored_names).map_err(|_| "source_unavailable")?);
     result.fingerprint = format!("sha256:{:x}", hash.finalize());
     Ok(result)
 }
-pub(crate) fn safe_source_path(path: &Path) -> bool {
-    if path
-        .components()
-        .any(|c| !matches!(c,Component::Normal(v) if !v.to_string_lossy().starts_with('.')))
-    {
-        return false;
-    }
-    let stem = path
-        .file_stem()
-        .and_then(|x| x.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    !matches!(
-        stem.as_str(),
-        "credential"
-            | "credentials"
-            | "secret"
-            | "secrets"
-            | "private-key"
-            | "private_key"
-            | "id_rsa"
-            | "id_ed25519"
-    ) && !matches!(
+fn text_input(path: &Path, code_roots: &[String]) -> bool {
+    let file = path.to_string_lossy();
+    (matches!(
         path.extension().and_then(|x| x.to_str()),
-        Some("pem" | "key" | "p12" | "pfx" | "jks" | "keystore")
-    )
+        Some("ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs" | "mts" | "cts" | "py" | "rs" | "go")
+    ) && code_roots
+        .iter()
+        .any(|root| root == "." || file == *root || file.starts_with(&format!("{root}/"))))
+        || matches!(
+            path.file_name().and_then(|x| x.to_str()),
+            Some(
+                "tsconfig.json" | "package.json" | "pnpm-workspace.yaml" | "Cargo.toml" | "go.mod"
+            )
+        )
 }
-fn collect_code(
-    root: &Path,
-    dir: &Path,
+#[cfg(unix)]
+fn capture_directory(
+    handle: &fs::File,
+    relative: &Path,
     depth: usize,
-    paths: &mut Vec<PathBuf>,
     result: &mut SourceObservation,
 ) -> Result<(), String> {
-    if depth > 12 || paths.len() > 2000 {
+    use std::io::Read;
+    use std::os::fd::{AsRawFd, FromRawFd};
+    use std::os::unix::fs::MetadataExt;
+    if depth > 12 || result.entries.len() >= 12000 {
         result.limited = true;
         return Ok(());
     }
-    let mut entries: Vec<_> = fs::read_dir(dir)
-        .map_err(|_| "source_unavailable")?
-        .collect::<Result<_, _>>()
-        .map_err(|_| "source_unavailable")?;
-    entries.sort_by_key(|e| e.file_name());
-    for entry in entries {
-        let name = entry.file_name().to_string_lossy().into_owned();
+    let meta = handle.metadata().map_err(|_| "source_unavailable")?;
+    let mut names = Vec::new();
+    let stream = unsafe { libc::fdopendir(libc::dup(handle.as_raw_fd())) };
+    if stream.is_null() {
+        return Err("source_unavailable".into());
+    }
+    loop {
+        let entry = unsafe { libc::readdir(stream) };
+        if entry.is_null() {
+            break;
+        }
+        let raw = unsafe { std::ffi::CStr::from_ptr((*entry).d_name.as_ptr()) };
+        let Ok(name) = raw.to_str() else {
+            unsafe { libc::closedir(stream) };
+            return Err("source_filename_unsupported".into());
+        };
+        if name == "." || name == ".." {
+            continue;
+        }
         if name.starts_with('.')
             || matches!(
-                name.as_str(),
+                name,
                 "node_modules"
                     | "out"
                     | "dist"
@@ -261,39 +303,181 @@ fn collect_code(
                     | "venv"
             )
         {
+            result
+                .excluded
+                .push(relative.join(name).to_string_lossy().into_owned());
             continue;
         }
-        let kind = entry.file_type().map_err(|_| "source_unavailable")?;
-        if kind.is_symlink() {
+        if !safe_source_path(Path::new(name)) {
+            result.ignored_names.push(name.into());
+            result
+                .excluded
+                .push(relative.join(name).to_string_lossy().into_owned());
             continue;
         }
-        if kind.is_dir() {
-            collect_code(root, &entry.path(), depth + 1, paths, result)?;
-            continue;
-        }
-        let path = entry.path();
-        let relative = path.strip_prefix(root).map_err(|_| "unsafe_path")?;
-        if !safe_source_path(relative) {
-            result.ignored_names.push(name);
-            continue;
-        }
-        if !matches!(
-            path.extension().and_then(|x| x.to_str()),
-            Some("ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs" | "mts" | "cts" | "py" | "rs" | "go")
-        ) {
-            continue;
-        }
-        if entry.metadata().map_err(|_| "source_unavailable")?.len() > 512 * 1024 {
+        names.push(name.to_string());
+        if names.len() > 12000 {
             result.limited = true;
+            break;
+        }
+    }
+    unsafe { libc::closedir(stream) };
+    names.sort();
+    result.entries.push(SnapshotEntry {
+        path: if relative.as_os_str().is_empty() {
+            ".".into()
+        } else {
+            relative.to_string_lossy().into_owned()
+        },
+        kind: "directory".into(),
+        size: 0,
+        identity: format!("{}:{}", meta.dev(), meta.ino()),
+        text: None,
+        children: Some(names.clone()),
+    });
+    for name in names {
+        if result.entries.len() >= 12000 {
+            result.limited = true;
+            break;
+        }
+        let name_c = std::ffi::CString::new(name.as_bytes()).map_err(|_| "unsafe_path")?;
+        let mut info = std::mem::MaybeUninit::<libc::stat>::uninit();
+        if unsafe {
+            libc::fstatat(
+                handle.as_raw_fd(),
+                name_c.as_ptr(),
+                info.as_mut_ptr(),
+                libc::AT_SYMLINK_NOFOLLOW,
+            )
+        } != 0
+        {
+            return Err("source_changed_during_read".into());
+        }
+        let info = unsafe { info.assume_init() };
+        let mode = info.st_mode & libc::S_IFMT;
+        let kind = if mode == libc::S_IFDIR {
+            "directory"
+        } else if mode == libc::S_IFREG {
+            "file"
+        } else if mode == libc::S_IFLNK {
+            "symlink"
+        } else {
+            "other"
+        };
+        let path = relative.join(&name);
+        if kind == "file" && !text_input(&path, &result.code_roots) {
+            result.files.push(path.to_string_lossy().into_owned());
+            result.entries.push(SnapshotEntry {
+                path: path.to_string_lossy().into_owned(),
+                kind: kind.into(),
+                size: info.st_size.max(0) as u64,
+                identity: format!("{}:{}", info.st_dev, info.st_ino),
+                text: None,
+                children: None,
+            });
             continue;
         }
-        paths.push(relative.to_path_buf());
-        if paths.len() > 2000 {
-            result.limited = true;
-            return Ok(());
+        if kind == "directory" || kind == "file" {
+            let flags = libc::O_RDONLY
+                | libc::O_NOFOLLOW
+                | libc::O_NONBLOCK
+                | libc::O_CLOEXEC
+                | if kind == "directory" {
+                    libc::O_DIRECTORY
+                } else {
+                    0
+                };
+            let fd = unsafe { libc::openat(handle.as_raw_fd(), name_c.as_ptr(), flags) };
+            if fd < 0 {
+                return Err("source_changed_during_read".into());
+            }
+            let file = unsafe { fs::File::from_raw_fd(fd) };
+            let opened = file.metadata().map_err(|_| "source_unavailable")?;
+            if opened.dev() != info.st_dev as u64 || opened.ino() != info.st_ino as u64 {
+                return Err("source_changed_during_read".into());
+            }
+            if kind == "directory" {
+                capture_directory(&file, &path, depth + 1, result)?;
+                continue;
+            }
+            let mut text = None;
+            if text_input(&path, &result.code_roots) {
+                if opened.len() > 512 * 1024
+                    || result.text_bytes + opened.len() as usize > 32 * 1024 * 1024
+                {
+                    result.limited = true;
+                } else {
+                    let mut bytes = Vec::new();
+                    (&file)
+                        .take(512 * 1024 + 1)
+                        .read_to_end(&mut bytes)
+                        .map_err(|_| "source_unavailable")?;
+                    let after = file.metadata().map_err(|_| "source_unavailable")?;
+                    if bytes.len() != opened.len() as usize
+                        || after.len() != opened.len()
+                        || after.mtime() != opened.mtime()
+                        || after.mtime_nsec() != opened.mtime_nsec()
+                        || after.ctime() != opened.ctime()
+                        || after.ctime_nsec() != opened.ctime_nsec()
+                    {
+                        return Err("source_changed_during_read".into());
+                    }
+                    result.text_bytes += bytes.len();
+                    text = String::from_utf8(bytes).ok();
+                }
+            }
+            result.files.push(path.to_string_lossy().into_owned());
+            result.entries.push(SnapshotEntry {
+                path: path.to_string_lossy().into_owned(),
+                kind: kind.into(),
+                size: opened.len(),
+                identity: format!("{}:{}", opened.dev(), opened.ino()),
+                text,
+                children: None,
+            });
+        } else {
+            result.entries.push(SnapshotEntry {
+                path: path.to_string_lossy().into_owned(),
+                kind: kind.into(),
+                size: info.st_size.max(0) as u64,
+                identity: format!("{}:{}", info.st_dev, info.st_ino),
+                text: None,
+                children: None,
+            });
         }
     }
     Ok(())
+}
+pub(crate) fn safe_source_path(path: &Path) -> bool {
+    path.components().all(|component| {
+        let Component::Normal(name) = component else {
+            return false;
+        };
+        let name = name.to_string_lossy();
+        if name.starts_with('.') {
+            return false;
+        }
+        let part = Path::new(name.as_ref());
+        let stem = part
+            .file_stem()
+            .and_then(|x| x.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        !matches!(
+            stem.as_str(),
+            "credential"
+                | "credentials"
+                | "secret"
+                | "secrets"
+                | "private-key"
+                | "private_key"
+                | "id_rsa"
+                | "id_ed25519"
+        ) && !matches!(
+            part.extension().and_then(|x| x.to_str()),
+            Some("pem" | "key" | "p12" | "pfx" | "jks" | "keystore")
+        )
+    })
 }
 pub(crate) fn verify_identity(binding: &BoundSource) -> Result<(), String> {
     let git_root = crate::git::find_repo_root(&binding.root)?;

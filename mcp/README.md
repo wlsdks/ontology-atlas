@@ -2077,3 +2077,22 @@ cannot boot.
 - **Tools don't show up**: Restart the agent. Validate `.mcp.json` syntax with `jq . .mcp.json`; for Codex, inspect `.codex/config.toml` or `codex mcp list`.
 - **Vault appears empty**: Try an absolute path for `OATLAS_VAULT`, or run `pwd` to confirm the actual working directory.
 - **`Doc already exists`**: `add_concept` won't overwrite an existing file. Edit the file directly, or use `patch_concept` to update frontmatter or body in place.
+
+### App-local confined source input
+
+The macOS gray-area inspector uses the existing read tools through a fixed
+read-only bundled child. Its private process context receives a native-collected,
+immutable source snapshot over an inherited read-only descriptor. The import
+scanner's six filesystem operations use that input only; absent, excluded,
+symlinked or unavailable inputs cannot silently become successful fallback
+observations. The child has an empty private source namespace, including when
+an older bundled server lacks this mode. Ordinary MCP and CLI import requests
+keep their existing filesystem path and argument contracts.
+
+No public tool accepts a caller-supplied snapshot or gains write authority.
+`readBoundary` in this app context describes reads from supplied immutable input,
+not a server assertion that those bytes are current disk truth. Native capture
+and recheck bind the actual source, resolver inputs, metadata and document
+bodies. App scans stay inside explicit implementation-parent folders; workspace
+metadata resolves names without expanding that scan. Other callers/patterns
+remain unmeasured.

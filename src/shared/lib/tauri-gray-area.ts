@@ -25,6 +25,7 @@ export interface GrayAreaBasis {
   selectedUids: string[];
   sourceId: string;
   sourceFingerprint: string;
+  sourceRoots?: string[];
   graphDigest: string;
   bodyDigest: string;
   bindingDigest: string;

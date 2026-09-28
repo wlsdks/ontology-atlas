@@ -1,6 +1,6 @@
 use crate::gray_area_rpc::EvidenceReader;
 use crate::gray_area_scope::{
-    digest, observe_source, read_text, resolve_binding, safe_source_path, vault_digest,
+    digest, observe_scoped_source, read_text, resolve_binding, safe_source_path, vault_digest,
     verify_identity,
 };
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ pub struct EvidenceBasis {
     selected_uids: Vec<String>,
     source_id: String,
     source_fingerprint: String,
+    source_roots: Vec<String>,
     graph_digest: String,
     body_digest: String,
     binding_digest: String,
@@ -143,9 +144,11 @@ pub fn read_gray_area_evidence(
     if binding.binding_digest != expected_binding_digest {
         return Err("binding_changed".into());
     }
-    let source = observe_source(&binding.root)?;
     let body_digest = vault_digest(&vault)?;
-    let mut reader = EvidenceReader::start(&vault, &binding.root)?;
+    let mut reader = EvidenceReader::start(
+        &vault,
+        &crate::gray_area_scope::SourceObservation::empty(),
+    )?;
     let graph = reader.call(
         "compile_ontology",
         json!({"nodesLimit":500,"edgesLimit":500}),
@@ -164,27 +167,44 @@ pub fn read_gray_area_evidence(
     let nodes = rows(&graph, "nodes");
     let edges = rows(&graph, "edges");
     let (mut scope, contained) = selected_scope(&nodes, &edges, &project_slug, &selected_uids)?;
-    let imports_available = !source.limited;
     let mut source_folders: Vec<_> = nodes
         .iter()
-        .filter(|n| contained.contains(string(n, "slug")))
+        .filter(|n| scope.iter().any(|s| s == string(n, "slug")))
         .filter_map(|n| {
-            string(n, "path")
-                .split_once('/')
-                .map(|(folder, _)| folder.to_string())
+            let path = Path::new(string(n, "path"));
+            if string(n, "path").is_empty() || !safe_source_path(path) {
+                return None;
+            }
+            let parent = path.parent()?.to_string_lossy();
+            Some(if parent.is_empty() {
+                ".".into()
+            } else {
+                parent.into_owned()
+            })
         })
-        .filter(|p| !p.starts_with('.'))
         .collect();
     source_folders.sort();
     source_folders.dedup();
-    if source_folders.len() > 16 {
+    if source_folders.is_empty() || source_folders.len() > 16 {
         return Err("scope_limit".into());
     }
+    drop(reader);
+    let source = observe_scoped_source(&binding.root, &source_folders)?;
+    let imports_available = !source.limited;
+    let mut reader = EvidenceReader::start(&vault, &source)?;
     let import_result = if imports_available {
         reader.call("infer_imports", json!({"maxFiles":MAX_FILES,"sourceFolders":source_folders,"ignore":source.ignored_names,"reconcile":false,"reviewMode":"full","allowLargeResponse":true}))?
     } else {
         json!({})
     };
+    if imports_available
+        && import_result
+            .pointer("/readBoundary/contract")
+            .and_then(Value::as_str)
+            != Some("confinedSourceReads:v1")
+    {
+        return Err("reader_boundary_unavailable".into());
+    }
     let imports = rows(&import_result, "edges");
     let scope_paths: HashSet<_> = nodes
         .iter()
@@ -244,30 +264,24 @@ pub fn read_gray_area_evidence(
     source_paths.dedup();
     let witnesses_limited = source_paths.len() > 16;
     source_paths.truncate(16);
-    let mut witnesses = Vec::new();
-    for chunk in source_paths.chunks(8) {
-        let selectors: Vec<_> = chunk
-            .iter()
-            .map(|path| json!({"path":path,"startLine":1,"maxLines":80}))
-            .collect();
-        let result = reader.call(
-            "analyze_repo_structure",
-            json!({"maxDepth":0,"sourceReads":selectors}),
-        )?;
-        witnesses.extend(
-            result
-                .pointer("/sourceEvidence/rows")
-                .and_then(Value::as_array)
-                .cloned()
-                .ok_or("source_unavailable")?,
-        );
-    }
+    let witnesses:Vec<Value>=source_paths.iter().map(|path|{
+        if !safe_source_path(Path::new(path)){return json!({"path":path,"status":"refused","reason":"source_path_refused"});}
+        let entry=source.entries.iter().find(|e|e.path==*path);
+        if !entry.is_some_and(|e|e.kind=="file"&&e.size<=256*1024){return json!({"path":path,"status":"refused","reason":"source_file_unavailable"});}
+        let captured=entry.and_then(|e|e.text.clone()).or_else(||read_text(&binding.root,Path::new(path)).ok());
+        let Some(text)=captured else{return json!({"path":path,"status":"refused","reason":"source_bytes_unavailable"});};
+        if text.is_empty()||text.len()>256*1024{return json!({"path":path,"status":"refused","reason":"source_file_limit"});}
+        let lines:Vec<_>=text.lines().collect();let end=lines.len().min(80);let excerpt=lines[..end].join("\n");
+        if excerpt.len()>8*1024{return json!({"path":path,"status":"refused","reason":"source_range_limit"});}
+        json!({"path":path,"status":"read","text":excerpt,"actualRange":{"startLine":1,"endLine":end},"fullFileSha256":digest(text.as_bytes()).trim_start_matches("sha256:"),"citation":format!("{path}:1-{end}"),"fileComplete":lines.len()<=80})
+    }).collect();
     let drift = read_drift(&vault_path, &binding.root.to_string_lossy(), &documents);
     let basis = EvidenceBasis {
         project_slug,
         selected_uids,
         source_id: binding.source_id,
         source_fingerprint: source.fingerprint,
+        source_roots: source_folders.clone(),
         graph_digest: string(&graph, "graphHash").into(),
         body_digest,
         binding_digest: binding.binding_digest,
@@ -277,6 +291,7 @@ pub fn read_gray_area_evidence(
     }
     let mut limits = vec![
         "static_imports_only",
+        "implementation_parent_folders_only_other_callers_unmeasured",
         "two_recorded_dependency_hops",
         "source_ranges_only",
         "historical_gaps_unverified",
@@ -351,7 +366,10 @@ fn check_basis(
         return Ok(false);
     }
     verify_identity(&binding)?;
-    let source = observe_source(&binding.root)?;
+    if basis.source_roots.is_empty() {
+        return Ok(false);
+    }
+    let source = observe_scoped_source(&binding.root, &basis.source_roots)?;
     if source.fingerprint != basis.source_fingerprint {
         return Ok(false);
     }
@@ -391,6 +409,7 @@ pub fn preview_gray_area_scope(vault_path: String, project_slug: String) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gray_area_scope::observe_source;
     use std::fs;
     use std::path::PathBuf;
     struct Fixture {
@@ -405,8 +424,13 @@ mod tests {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos();
-            let root =
-                std::env::temp_dir().join(format!("atlas-gray-{}-{nonce}", std::process::id()));
+            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+            let serial = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let root = std::env::temp_dir().join(format!(
+                "atlas-gray-{}-{nonce}-{serial}",
+                std::process::id()
+            ));
+            fs::create_dir(&root).unwrap();
             let vault = root.join("vault");
             let code = root.join("code");
             fs::create_dir_all(vault.join(".ontology-atlas")).unwrap();
@@ -432,6 +456,7 @@ mod tests {
                 selected_uids: vec!["node".into()],
                 source_id,
                 source_fingerprint: observe_source(&code).unwrap().fingerprint,
+                source_roots: vec![".".into()],
                 graph_digest: "unchanged-graph".into(),
                 body_digest: vault_digest(&vault).unwrap(),
                 binding_digest: bound.binding_digest,
@@ -484,6 +509,42 @@ mod tests {
         assert!(!g.current());
     }
     #[test]
+    fn resolver_only_edits_and_negative_candidate_additions_invalidate_currentness() {
+        let mut f = Fixture::new();
+        let config = f.code.join("tsconfig.json");
+        fs::write(
+            &config,
+            r#"{"compilerOptions":{"paths":{"policy":["src/old.ts"]}}}"#,
+        )
+        .unwrap();
+        f.basis.source_fingerprint = observe_source(&f.code).unwrap().fingerprint;
+        let time = fs::metadata(&config).unwrap().modified().unwrap();
+        fs::write(
+            &config,
+            r#"{"compilerOptions":{"paths":{"policy":["src/new.ts"]}}}"#,
+        )
+        .unwrap();
+        fs::File::open(config)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(time))
+            .unwrap();
+        assert!(!f.current());
+        let g = Fixture::new();
+        fs::write(g.code.join("src/policy.ts"), "export const policy=true;").unwrap();
+        assert!(!g.current());
+    }
+    #[test]
+    fn replacing_a_directory_with_identical_names_and_bytes_invalidates_its_identity() {
+        let f = Fixture::new();
+        let original = f.code.join("src");
+        let moved = f.code.join("previous");
+        fs::rename(&original, &moved).unwrap();
+        fs::create_dir(&original).unwrap();
+        fs::copy(moved.join("a.ts"), original.join("a.ts")).unwrap();
+        fs::remove_dir_all(moved).unwrap();
+        assert!(!f.current());
+    }
+    #[test]
     fn a_rebound_root_is_not_the_same_evidence_even_with_identical_code() {
         let f = Fixture::new();
         let path = f.vault.join(".ontology-atlas/project-sources.json");
@@ -529,7 +590,12 @@ mod tests {
         let outside = f.root.join("outside");
         fs::write(&outside, "private").unwrap();
         std::os::unix::fs::symlink(&outside, f.code.join("src/link.ts")).unwrap();
-        assert!(f.current());
+        assert!(!f.current());
+        assert!(observe_source(&f.code)
+            .unwrap()
+            .entries
+            .iter()
+            .any(|e| e.path == "src/link.ts" && e.kind == "symlink" && e.text.is_none()));
         let sidecar = f.vault.join(".ontology-atlas/project-sources.json");
         fs::remove_file(&sidecar).unwrap();
         std::os::unix::fs::symlink(outside, sidecar).unwrap();

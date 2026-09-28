@@ -272,7 +272,14 @@ ability. The canonical roster is the bridge table in
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts` | No keychain in a browser → degraded card |
 
 The gray-area reader is a fixed local read-only MCP client, using only the bundled
-executable and a source root resolved from one existing project binding. The
+executable and a source root resolved from one existing project binding. Native
+no-follow handles capture a bounded immutable input: implementation-parent code,
+resolver configs, file/directory identities and presence/absence metadata. An
+unlinked read-only descriptor carries it to the child; the child receives a
+private empty filesystem namespace and cannot independently read the original
+source through the import scanner. The server labels this as supplied input,
+not a disk observation or meaning acceptance. Native collection/recheck owns
+that evidence. Source excerpts are native reads, not an analysis tool call. The
 inspector previews that folder before an explicit inspection, then binds the
 result to source bytes, complete Markdown bytes, graph identity and the binding.
 It exposes no generic tool or command invoker and changes no ontology record.

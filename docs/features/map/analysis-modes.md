@@ -36,6 +36,14 @@ then signal/address, with the total and omitted count. Folding is memory-only
 for this inspection/version; folding a row reveals the next available row.
 Existing graph paths are highlighted without manufacturing an edge for an import.
 
+The import scan starts at the selected dependency scope's implementation-parent
+folders. Other callers and patterns outside those folders remain unmeasured;
+workspace metadata may resolve a package without expanding the scan. The native
+collector binds all resolver bytes and complete bounded metadata, including
+missing preferred paths and directory identity. The child scanner reads only
+that immutable input through its fixed app context. There is no public snapshot
+argument or new MCP write authority.
+
 A snapshot binds the source-content fingerprint, graph digest, full Markdown
 digest and exact project binding. Collection checks the version again; opening
 a captured source or copying/preparing a packet rechecks it. Each source excerpt
@@ -44,9 +52,9 @@ explicit truncation/full-read instructions. Conversation preparation only seats
 an editable draft; sending and permission decisions retain their existing rules.
 
 The initial reader caps graph input at 500 nodes/edges, expanded scope at 40
-concepts, imports at 2,000 files, source hashing at 32 MiB and 512 KiB per code
-file, and source excerpts at 16 files in batches of eight with the existing
-source-evidence limits. Unsupported, excluded, oversized and limited work remains
+concepts, imports at 2,000 files, code/config capture at 32 MiB and 512 KiB per file,
+metadata at 12,000 entries, and native source excerpts at 16 files, 80 lines and
+8 KiB per excerpt (256 KiB per full source file). Unsupported, excluded, oversized and limited work remains
 unknown. Zero candidates is not proof of completeness or safety. Windows secure
 reads currently refuse; the web explains the native boundary and retains map
 and document reading.
