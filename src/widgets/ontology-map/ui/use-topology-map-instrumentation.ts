@@ -22,6 +22,7 @@ import {
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
   lastLitStateCounts,
+  setMapComets,
 } from "./topology-frame-draw";
 import type {
   NodeDragState,
@@ -510,6 +511,7 @@ export function useTopologyMapInstrumentation({
        * substitute: a frame measured **zero** disc overlaps while names visibly
        * crossed (2026-08-22). Names collide long before discs do.
        */
+      setComets: (on: boolean) => setMapComets(on),
       labels: () => lastDrawnLabelBoxes(),
       relationCaptions: () => lastDrawnRelationCaptions(),
       /** Strata's planes as the last frame drew them — what the tier names are placed against. */

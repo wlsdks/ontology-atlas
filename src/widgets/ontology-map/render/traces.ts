@@ -16,10 +16,9 @@
  * without a canvas).
  */
 
-export interface Point {
-  x: number;
-  y: number;
-}
+import { type EdgeReveal, partialQuadratic, type Point, revealSpan } from "../expressive/edge-reveal";
+
+export type { Point };
 
 function polarOf(p: Point): { r: number; angle: number } {
   return { r: Math.hypot(p.x, p.y), angle: Math.atan2(p.y, p.x) };
@@ -239,6 +238,8 @@ export interface TraceDrawState {
    * the walk is somewhere else in its lap. See `model/footprint-steps.ts#buildTrailGlintLegs`.
    */
   trailGlint?: number | null;
+  reveal?: EdgeReveal | null;
+  dimRamp?: number;
 }
 
 export interface TraceTokens {
@@ -283,6 +284,146 @@ function mixHex(from: string, to: string, t: number): string {
   const k = clamp01(t);
   const ch = (i: 0 | 1 | 2) => Math.round(a[i] + (b[i] - a[i]) * k);
   return `rgb(${ch(0)}, ${ch(1)}, ${ch(2)})`;
+}
+
+function normalInk(
+  state: TraceDrawState,
+  tokens: TraceTokens,
+  isDepends: boolean,
+  hoverLift: number,
+): { stroke: string; width: number } {
+  const { farT } = state;
+  let stroke: string;
+  let width: number;
+  if (isDepends) {
+    stroke = state.galaxyInk ?? tokens.edgeDepends;
+    width = 1.3 + (0.6 - 1.3) * farT;
+  } else {
+    const level = state.level ?? 1;
+    stroke = state.galaxyInk ?? (
+      level === 0
+        ? tokens.edgeContainsL0 ?? tokens.edgeContains
+        : level === 2
+          ? tokens.edgeContainsL2 ?? tokens.edgeContains
+          : tokens.edgeContains
+    );
+    width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
+  }
+  if (hoverLift > 0.01) {
+    stroke = mixHex(stroke, isDepends ? tokens.indigoBright : tokens.indigo, hoverLift);
+    width += HOVER_LIFT_WIDTH_PX * hoverLift;
+  }
+  return { stroke, width };
+}
+
+function finishWidth(state: TraceDrawState, raw: number, trailWalked: number): number {
+  let width = raw;
+  if (state.galaxyInk && trailWalked <= 0.01) width *= 0.82;
+  width *= state.widthScale ?? 1;
+  const minWidthPx = state.minWidthPx ?? 0;
+  return minWidthPx > width ? minWidthPx : width;
+}
+
+function quadAt(a: Point, c: Point, b: Point, t: number, axis: "x" | "y"): number {
+  const u = 1 - t;
+  return u * u * a[axis] + 2 * u * t * c[axis] + t * t * b[axis];
+}
+
+function curveLength(a: Point, c: Point, b: Point, upTo: number): number {
+  let length = 0;
+  let px = a.x;
+  let py = a.y;
+  for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
+    const t = (upTo * i) / DEPENDS_TAPER_SEGMENTS;
+    const x = quadAt(a, c, b, t, "x");
+    const y = quadAt(a, c, b, t, "y");
+    length += Math.hypot(x - px, y - py);
+    px = x;
+    py = y;
+  }
+  return length;
+}
+
+function strokeBody(
+  ctx: CanvasRenderingContext2D,
+  state: TraceDrawState,
+  stroke: string,
+  width: number,
+  lo: number,
+  hi: number,
+): void {
+  if (hi - lo <= 0.0005) return;
+  const { a, b, control } = state;
+  const isDepends = state.relationType === "depends";
+  const part =
+    lo <= 0 && hi >= 1
+      ? null
+      : lo <= 0
+        ? partialQuadratic(a, control, b, hi, "a")
+        : partialQuadratic(a, control, b, 1 - lo, "b");
+  const pa = part ? part.a : a;
+  const pc = part ? part.control : control;
+  const pb = part ? part.b : b;
+  ctx.strokeStyle = stroke;
+  const tapered = isDepends && state.directional !== false;
+  if (isDepends && !tapered) {
+    ctx.beginPath();
+    ctx.setLineDash(DEPENDS_DASH);
+    if (lo > 0) ctx.lineDashOffset = -curveLength(a, control, b, lo);
+    ctx.moveTo(pa.x, pa.y);
+    ctx.quadraticCurveTo(pc.x, pc.y, pb.x, pb.y);
+    ctx.lineWidth = Math.max(0.35, width);
+    ctx.stroke();
+    ctx.lineDashOffset = 0;
+    ctx.setLineDash([]);
+  } else if (tapered) {
+    // Width thins source to target; the dash offset carries the length walked so far, so a
+    // partial span meets the rest of the line without a seam.
+    ctx.setLineDash(DEPENDS_DASH);
+    const prevCap = ctx.lineCap;
+    const prevJoin = ctx.lineJoin;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    let prevX = a.x;
+    let prevY = a.y;
+    let prevT = 0;
+    let acc = 0;
+    for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
+      const t = i / DEPENDS_TAPER_SEGMENTS;
+      const uu = 1 - t;
+      const pointX = uu * uu * a.x + 2 * uu * t * control.x + t * t * b.x;
+      const pointY = uu * uu * a.y + 2 * uu * t * control.y + t * t * b.y;
+      const from = prevT < lo ? lo : prevT;
+      const to = t > hi ? hi : t;
+      if (to > from) {
+        const sx = from > prevT ? quadAt(a, control, b, from, "x") : prevX;
+        const sy = from > prevT ? quadAt(a, control, b, from, "y") : prevY;
+        const ex = to < t ? quadAt(a, control, b, to, "x") : pointX;
+        const ey = to < t ? quadAt(a, control, b, to, "y") : pointY;
+        const u = (i - 0.5) / DEPENDS_TAPER_SEGMENTS;
+        ctx.beginPath();
+        ctx.lineWidth = Math.max(0.35, width * dependsTaperFactor(u));
+        ctx.lineDashOffset = -(acc + Math.hypot(sx - prevX, sy - prevY));
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+      }
+      acc += Math.hypot(pointX - prevX, pointY - prevY);
+      prevX = pointX;
+      prevY = pointY;
+      prevT = t;
+    }
+    ctx.lineCap = prevCap;
+    ctx.lineJoin = prevJoin;
+    ctx.lineDashOffset = 0;
+    ctx.setLineDash([]);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.quadraticCurveTo(pc.x, pc.y, pb.x, pb.y);
+    ctx.lineWidth = Math.max(0.35, width);
+    ctx.stroke();
+  }
 }
 
 /**
@@ -343,67 +484,36 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   let width: number;
   /** Strength of the travelling light; 0 everywhere except a walked relation. */
   let glint = 0;
-  // "The walked path" wins over every other state. While the lens
-  // is on this edge is neither selected nor ego — the caller turns both off —
-  // yet it is the only thing the user is trying to read. Width goes from dim (1)
-  // to at most 1.6: any thicker and the line beats the footprint marks, and the
-  // picture reads as "an emphasised relation" instead of "a path".
   const trailWalked = clamp01(state.trailWalked ?? 0);
   if (trailWalked > 0.01 && tokens.edgeTrail) {
     stroke = mixHex(tokens.edgeDim, tokens.edgeTrail, trailWalked);
     width = 1 + 0.6 * trailWalked;
     glint = trailWalked;
   } else if (state.selected === true) {
-    // The subject of the pair focus — pale indigo, the top ink.
     stroke = tokens.edgeSelected ?? tokens.indigoBright;
-    // Toned down — owner: "The colour is too strong." Thin and
-    // pale so it reads as light rather than ink over a dim scene; the liveliness
-    // keeps coming from the depends comet tail.
     width = (isDepends ? 1.7 : 1.5) - farT * 0.4;
   } else if (egoState === "dim") {
     stroke = state.galaxyInk ? mixHex(state.galaxyInk, tokens.edgeDim, 0.45) : tokens.edgeDim;
     width = 1;
+    const dimRamp = clamp01(state.dimRamp ?? 1);
+    if (dimRamp < 1) {
+      const from = normalInk(state, tokens, isDepends, 0);
+      stroke = mixHex(from.stroke, stroke, dimRamp);
+      width = from.width + (width - from.width) * dimRamp;
+    }
   } else if (egoState === "ego") {
-    // Panel-linked ripple: brightest indigo + thicker; otherwise the standard
-    // ego brightening (depends bright, contains indigo).
     stroke = emphasized || isDepends ? tokens.indigoBright : tokens.indigo;
     width = (isDepends ? 1.8 : 1.5) - farT * 0.5 + (emphasized ? 0.9 : 0);
   } else {
-    if (isDepends) {
-      stroke = state.galaxyInk ?? tokens.edgeDepends;
-      width = 1.3 + (0.6 - 1.3) * farT;
-    } else {
-      // Ink ramp: L0 darker and thicker (trunk), L2 slightly receded (twig).
-      const level = state.level ?? 1;
-      stroke = state.galaxyInk ?? (
-        level === 0
-          ? tokens.edgeContainsL0 ?? tokens.edgeContains
-          : level === 2
-            ? tokens.edgeContainsL2 ?? tokens.edgeContains
-            : tokens.edgeContains
-      );
-      width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
-    }
-    const hoverLift = clamp01(state.hoverLift ?? 0);
-    if (hoverLift > 0.01) {
-      // The same ink the ego state uses, blended by the ramp: at 1 the line is
-      // exactly what a click would make it, so hover reads as "this is what you
-      // would get" rather than a third colour.
-      stroke = mixHex(stroke, isDepends ? tokens.indigoBright : tokens.indigo, hoverLift);
-      width += HOVER_LIFT_WIDTH_PX * hoverLift;
-    }
+    ({ stroke, width } = normalInk(state, tokens, isDepends, clamp01(state.hoverLift ?? 0)));
   }
 
-  if (state.galaxyInk && trailWalked <= 0.01) width *= 0.82;
-
-  // 3D view — hairline falloff by depth. The caller (`topology-frame-draw.ts`)
-  // computes it from the dome falloff × depth; 2D passes 1.
-  width *= state.widthScale ?? 1;
-  // …then the device-pixel floor under a resting 3D line (`minWidthPx`). Applied
-  // to the base width only, so the taper below still modulates around it.
-  const minWidthPx = state.minWidthPx ?? 0;
-  if (minWidthPx > width) width = minWidthPx;
-
+  const reveal =
+    egoState === "ego" && trailWalked <= 0.01 && state.selected !== true && state.reveal && state.reveal.progress < 1
+      ? state.reveal
+      : null;
+  const span = reveal ? revealSpan(reveal) : null;
+  width = finishWidth(state, width, trailWalked);
   /*
    * Depth halo — goes down **before** the ink. This one stroke is what creates
    * front-to-back in 3D: edges are painted far-to-near this frame (painter order
@@ -437,66 +547,18 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     ctx.lineJoin = prevJoin;
   }
 
-  ctx.strokeStyle = stroke;
-  // Symmetric relations (`related_to`) keep the dash but get **no taper** —
-  // uniform width encodes that both ends are equals. The width used is the
-  // taper's **mean** (1.0): matching the start width (1.4) would add 49% ink to
-  // the screen, whereas the mean lands within 0.02% of the tapered line's total
-  // ink (measured in the browser 2026-07-31).
-  const tapered = isDepends && state.directional !== false;
-  if (isDepends && !tapered) {
-    ctx.beginPath();
-    ctx.setLineDash(DEPENDS_DASH);
-    ctx.moveTo(a.x, a.y);
-    ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
-    ctx.lineWidth = Math.max(0.35, width);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  } else if (tapered) {
-    // Directional taper: a variable-width polyline thinning source→target. Dash
-    // continuity is kept by advancing `lineDashOffset` by the accumulated length
-    // per segment; round cap/join hide the seams. No arrowhead — width is the
-    // direction cue.
-    // perf 2026-08-19 — segment points are computed inline into locals instead
-    // of via `bezierPoint`: identical formula (u², 2ut, t²) so the coordinates
-    // match, and the 14 temporary objects born per edge become 0.
-    ctx.setLineDash(DEPENDS_DASH);
-    const prevCap = ctx.lineCap;
-    const prevJoin = ctx.lineJoin;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    let prevX = a.x;
-    let prevY = a.y;
-    let acc = 0;
-    for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
-      const t = i / DEPENDS_TAPER_SEGMENTS;
-      const uu = 1 - t;
-      const pointX = uu * uu * a.x + 2 * uu * t * control.x + t * t * b.x;
-      const pointY = uu * uu * a.y + 2 * uu * t * control.y + t * t * b.y;
-      const u = (i - 0.5) / DEPENDS_TAPER_SEGMENTS;
-      ctx.beginPath();
-      ctx.lineWidth = Math.max(0.35, width * dependsTaperFactor(u));
-      ctx.lineDashOffset = -acc;
-      ctx.moveTo(prevX, prevY);
-      ctx.lineTo(pointX, pointY);
-      ctx.stroke();
-      acc += Math.hypot(pointX - prevX, pointY - prevY);
-      prevX = pointX;
-      prevY = pointY;
+  if (reveal && span) {
+    const base = normalInk(state, tokens, isDepends, clamp01(reveal.baseLift));
+    const baseWidth = finishWidth(state, base.width, trailWalked);
+    if (reveal.from === "a") {
+      strokeBody(ctx, state, stroke, width, 0, span.hi);
+      strokeBody(ctx, state, base.stroke, baseWidth, span.hi, 1);
+    } else {
+      strokeBody(ctx, state, base.stroke, baseWidth, 0, span.lo);
+      strokeBody(ctx, state, stroke, width, span.lo, 1);
     }
-    ctx.lineCap = prevCap;
-    ctx.lineJoin = prevJoin;
-    ctx.lineDashOffset = 0;
-    ctx.setLineDash([]);
   } else {
-    // The dash state on entry is always [] (see the halo comment above), so this
-    // path makes no dash call at all — the two `setLineDash([])` per frame that
-    // every contains edge used to issue are now zero.
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
-    ctx.lineWidth = Math.max(0.35, width);
-    ctx.stroke();
+    strokeBody(ctx, state, stroke, width, 0, 1);
   }
 
   /*
@@ -542,7 +604,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     glint <= 0.01 &&
     state.reducedMotion !== true &&
     state.galaxyInk &&
-    (state.galaxyGlint ?? 0) > 0.01
+    (state.galaxyGlint ?? 0) > 0.01 &&
+    (!span || (t >= span.lo && t <= span.hi))
   ) {
     const phase = clamp01(t);
     const at = bezierPoint(a, control, b, phase);
@@ -646,6 +709,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
       let tt = t - COMET_TAIL_STEPS[i];
       if (tt < 0) tt += 1;
+      if (span && (tt < span.lo || tt > span.hi)) continue;
       const uu = 1 - tt;
       const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
       const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
@@ -674,6 +738,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
     let tt = t - COMET_TAIL_STEPS[i];
     if (tt < 0) tt += 1;
+    if (span && (tt < span.lo || tt > span.hi)) continue;
     const uu = 1 - tt;
     const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
     const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
