@@ -3,6 +3,7 @@
 import type { AcpTurnStart, AcpTurnCompletion, TaskBaselineCaptureResult } from '@/features/acp-session';
 
 import {
+  ArrowDown,
   ArrowUp,
   ChevronRight,
   History,
@@ -16,6 +17,7 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   createElement,
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -27,7 +29,9 @@ import {
 import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { ChromeChip } from '@/shared/ui/chrome-chip';
 import { copyText } from '@/shared/lib/copy-text';
+import { detachedCopy } from '@/shared/lib/detached-copy';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
@@ -94,6 +98,8 @@ import { isVaultTool, labelWithoutRepeatedPath, toolLabel, withKindFallback } fr
 import { composerStatusLive, toolRowPhase, workingShimmer } from './working-ink';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
+import { useTranscriptFollow } from '../model/use-transcript-follow';
+import { splitMarkdownBlocks } from '../model/markdown-blocks';
 
 /**
  * Markdown inside the conversation — one set of values tuned to **chat density**.
@@ -927,25 +933,19 @@ export function AcpChatPanel({
   /** Is the hand in the composer? The shortcut hint appears only then. */
   const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
-  /** Whether new transcript content should keep following the tail. Updated before content grows. */
-  const transcriptPinnedToBottomRef = useRef(true);
-  /**
-   * **The first follow after this panel appears is a restore, not a movement** — arriving at a
-   * conversation already several screens long and watching it scroll past is the panel replaying
-   * somebody else's reading. Only the follows after that one glide.
-   */
-  const transcriptRestoredRef = useRef(false);
+  /** The transcript's one child; its height is what the follow observes. */
+  const transcriptContentRef = useRef<HTMLDivElement | null>(null);
+  const transcriptFollow = useTranscriptFollow({
+    scrollerRef: listRef,
+    contentRef: transcriptContentRef,
+    reducedMotion,
+  });
   /**
    * Is the transcript away from its own top? The top fade is drawn only then. Painted
    * unconditionally it would blur the first line of a conversation that has nothing above it,
    * which states the opposite of the fact it exists to state.
    */
   const [transcriptScrolled, setTranscriptScrolled] = useState(false);
-  const postTurnSuggestionRef = useCallback((node: HTMLElement | null) => {
-    if (!node || !transcriptPinnedToBottomRef.current) return;
-    const list = listRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
-  }, []);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   /**
    * An **off-screen mirror** for measuring growth. The common trick of resetting the
@@ -1197,59 +1197,16 @@ export function AcpChatPanel({
       postTurnSuggestionKey,
     ) ?? [];
 
-  /**
-   * Follow new messages down only when the person was already following the tail.
-   * Measuring "near bottom" after a large chunk arrives mistakes the new height for
-   * a deliberate scroll-up, so `onScroll` records intent before the DOM grows.
-   *
-   * ⚠️ **How it travels is the whole complaint** (owner, 2026-09-06: *"it should just move down
-   * smoothly"*). A jump is correct for a restore and wrong for an arrival: when one more paragraph
-   * lands, an instant `scrollTop` change gives the reader no thread between the line they were on
-   * and the line that is now at the bottom, and the transcript reads as replaced rather than
-   * extended. So the distance decides:
-   *
-   * | remaining distance | behaviour | why |
-   * |---|---|---|
-   * | first follow after mount / tab return | `auto` | a restore is where the reading already was, not a movement |
-   * | ≤ one viewport | `smooth` | one arrival, and the eye can carry the line across it |
-   * | > one viewport | `auto` | animating several screens is travel nobody asked for, and WCAG 2.3.3 counts it as motion |
-   *
-   * Reduced motion needs nothing here: the global base-layer rule in `app/globals.css` sets
-   * `scroll-behavior: auto !important`, which outranks this inline value in both directions.
-   */
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    if (!transcriptPinnedToBottomRef.current) return;
-    const remaining = list.scrollHeight - list.scrollTop - list.clientHeight;
-    const glide =
-      transcriptRestoredRef.current && remaining > 0 && remaining <= list.clientHeight;
-    transcriptRestoredRef.current = true;
-    list.style.scrollBehavior = glide ? 'smooth' : 'auto';
-    list.scrollTop = list.scrollHeight;
-  }, [events, pending, postTurnSuggestionKey, showPostTurnSuggestions]);
-  /*
-   * **The tail stays in view when the transcript is squeezed from below.** The follow above runs
-   * when content arrives, but a permission card growing in under the transcript shrinks it after
-   * that, and a shrinking box keeps its `scrollTop` — so the rows at the bottom, including the call
-   * the card is asking about, slid out of view (measured 2026-09-25 at 1040×720). A person who was
-   * following the tail is kept on it; one who had scrolled up is left where they were.
-   */
+  // Only the person's own send moves a reader who left the end; every other arrival leaves them.
+  const lastUserEventId = lastUserEventIndex >= 0 ? events[lastUserEventIndex]?.id ?? null : null;
+  const { follow: followTranscript, restore: restoreTranscript } = transcriptFollow;
   useEffect(() => {
-    const list = listRef.current;
-    if (!list || typeof ResizeObserver === 'undefined') return;
-    let last = list.clientHeight;
-    const observer = new ResizeObserver(() => {
-      const height = list.clientHeight;
-      if (height < last && transcriptPinnedToBottomRef.current) {
-        list.style.scrollBehavior = 'auto';
-        list.scrollTop = list.scrollHeight;
-      }
-      last = height;
-    });
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, []);
+    if (lastUserEventId) followTranscript();
+  }, [followTranscript, lastUserEventId]);
+  const firstEventId = events[0]?.id ?? null;
+  useEffect(() => {
+    restoreTranscript();
+  }, [firstEventId, restoreTranscript]);
 
   /**
    * The composer **grows with the text** (owner instruction 2026-08-16: *"It should also lengthen like this after
@@ -1671,7 +1628,12 @@ export function AcpChatPanel({
         : historyEdge.top
           ? `linear-gradient(to bottom, transparent 0, black ${historyFade})`
           : undefined;
-  const transcriptItems = groupEvents(withoutErrorEcho(events, error));
+  const transcriptItems = useMemo(() => groupEvents(withoutErrorEcho(events, error)), [events, error]);
+  // Stable renderers: a new function per render is a new component type, which remounts every row.
+  const markdownComponents = useMemo(
+    () => chatMarkdownComponents(knownSlugs, onHoverSlug),
+    [knownSlugs, onHoverSlug],
+  );
   /*
    * Agent messages inside the folded turn, by event id. Walked in transcript order: a user
    * message opens a turn, and the fold applies until the next one. Computed from the
@@ -1694,9 +1656,10 @@ export function AcpChatPanel({
     }
     return ids;
   }, [answerFold, transcriptItems]);
-  const lastWorkGroupId = [...transcriptItems]
-    .reverse()
-    .find((item) => item.kind === 'workGroup')?.id;
+  const lastWorkGroupId = useMemo(
+    () => [...transcriptItems].reverse().find((item) => item.kind === 'workGroup')?.id,
+    [transcriptItems],
+  );
   /**
    * **The tool calls that are actually still running.**
    *
@@ -1752,24 +1715,17 @@ export function AcpChatPanel({
         {t('openingScopeChanged')}
       </Surface>
 
+      {/* One frame for the transcript and the door that floats over its lower edge. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
         inert={presentationVisible ? true : undefined}
         onScroll={(event) => {
-          const list = event.currentTarget;
-          transcriptPinnedToBottomRef.current =
-            list.scrollHeight - list.scrollTop - list.clientHeight < 120;
-          const scrolled = list.scrollTop > 1;
+          const scrolled = event.currentTarget.scrollTop > 1;
           setTranscriptScrolled((previous) => (previous === scrolled ? previous : scrolled));
         }}
-        /*
-         * **The top edge fades instead of cutting** (2026-09-06). The transcript is the panel's
-         * own scroll box, so a line leaving the top left half a row of glyphs sliced across the
-         * boundary — a chopped letter reads as a rendering fault, not as "there is more above".
-         * The width is `--tabbar-edge-fade`, the same 22px the tab strips already fade by; a
-         * second number for one affordance is how two edges drift apart.
-         */
+        // The top edge fades rather than slicing glyphs, by the tab strips' own width.
         style={
           transcriptScrolled
             ? {
@@ -1780,14 +1736,13 @@ export function AcpChatPanel({
               }
             : undefined
         }
-        /*
-         * The transcript's spacing is **one step larger** (whitespace audit,
-         * 2026-08-16). The reading text went from 12.5 to 14px while the gap stayed at
-         * 8px, so messages clumped together. When the text grows the space between has
-         * to grow with it — spacing reads as **a ratio to the text**, not an absolute.
-         */
-        className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+        className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
+        {/*
+          Filling a short conversation's box keeps the wait centred; `gap-3` scales with the 14px
+          reading text, or messages clump.
+        */}
+        <div ref={transcriptContentRef} className="flex flex-1 flex-col gap-3">
         {/*
           A 「Starting」 (starting) chip alone is not enough for the first download (owner's
           real machine, 2026-08-19). During the several minutes npx spends fetching tens
@@ -1972,10 +1927,11 @@ export function AcpChatPanel({
                     repeat={row.repeat}
                     knownSlugs={knownSlugs}
                     onHoverSlug={onHoverSlug}
+                    markdownComponents={markdownComponents}
                     noticeActions={noticeActions}
-                    liveToolIds={liveToolIds}
-                    awaitingToolId={awaitingToolId}
-                    declinedToolIds={declinedToolIds}
+                    live={liveToolIds.has(row.event.id)}
+                    awaiting={row.event.id === awaitingToolId}
+                    declined={declinedToolIds.has(row.event.id)}
                   />
                 ))}
               </div>
@@ -1988,9 +1944,7 @@ export function AcpChatPanel({
                 active={busy && item.id === lastWorkGroupId}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
-                liveToolIds={liveToolIds}
-                awaitingToolId={awaitingToolId}
-                declinedToolIds={declinedToolIds}
+                markdownComponents={markdownComponents}
               />
             );
           /*
@@ -2013,6 +1967,7 @@ export function AcpChatPanel({
                 event={item.event}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
+                markdownComponents={markdownComponents}
                 noticeActions={noticeActions}
                 fold={answerFold && foldedAnswerIds.has(item.event.id) ? answerFold : null}
                 /*
@@ -2021,9 +1976,9 @@ export function AcpChatPanel({
                  * after the turn ends would leave a completed conversation half drawn.
                  */
                 streaming={busy && index === transcriptItems.length - 1}
-                liveToolIds={liveToolIds}
-                awaitingToolId={awaitingToolId}
-                declinedToolIds={declinedToolIds}
+                live={false}
+                awaiting={false}
+                declined={false}
               />
             </div>
           );
@@ -2096,7 +2051,6 @@ export function AcpChatPanel({
           </p>
         </Surface>
         <Surface
-          ref={postTurnSuggestionRef}
           as="section"
           open={showPostTurnSuggestions}
           origin="top center"
@@ -2116,6 +2070,26 @@ export function AcpChatPanel({
             onSelect={(suggestion) => chooseSuggestion(suggestion, false)}
           />
         </Surface>
+        </div>
+      </div>
+      {/* A chrome chip, so its surface and shadow lift it off the text it floats over. */}
+      <Surface
+        open={transcriptFollow.jumpVisible && !presentationVisible}
+        origin="bottom center"
+        className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-2"
+      >
+        <ChromeChip
+          data-testid="acp-chat-jump-latest"
+          icon={<ArrowDown aria-hidden className="text-[color:var(--color-indigo-accent)]" />}
+          onClick={() => {
+            transcriptFollow.follow();
+            requestComposerFocus();
+          }}
+          className="pointer-events-auto max-w-full"
+        >
+          {t('jumpToLatest')}
+        </ChromeChip>
+      </Surface>
       </div>
 
       {/*
@@ -3003,35 +2977,37 @@ export function AcpChatPanel({
   );
 }
 
+interface WorkGroupProps {
+  events: readonly Extract<AcpEvent, { kind: 'thought' }>[];
+  active: boolean;
+  knownSlugs?: ReadonlySet<string>;
+  onHoverSlug?: (slug: string | null) => void;
+  markdownComponents: Components;
+}
+
+/** Regrouping makes new arrays of the same thoughts, so they compare by item. */
+function sameWorkGroup(previous: WorkGroupProps, next: WorkGroupProps): boolean {
+  return (
+    previous.active === next.active
+    && previous.knownSlugs === next.knownSlugs
+    && previous.onHoverSlug === next.onHoverSlug
+    && previous.markdownComponents === next.markdownComponents
+    && previous.events.length === next.events.length
+    && previous.events.every((event, index) => event === next.events[index])
+  );
+}
+
 /**
- * One turn's thinking and tool calls, separated from the answer as a work trace.
- *
- * It is one line by default. While running, only the dots and the step count update
- * to say "still alive", and the raw text expands only on request. This is in-flow
- * collapsing, so it uses the existing `.ai-row-disclosure` plus `useRowDisclosure`
- * rather than `Surface`, letting the answer below yield its place continuously. No
- * new tokens, no new keyframes.
+ * A stretch of thinking folded to one line, opened on request. It collapses in flow
+ * (`.ai-row-disclosure`, not `Surface`) so the answer below yields its place continuously.
  */
-function WorkGroup({
+const WorkGroup = memo(function WorkGroup({
   events,
   active,
   knownSlugs,
   onHoverSlug,
-  liveToolIds,
-  awaitingToolId,
-  declinedToolIds,
-}: {
-  events: Extract<AcpEvent, { kind: 'thought' | 'tool' }>[];
-  active: boolean;
-  knownSlugs?: ReadonlySet<string>;
-  onHoverSlug?: (slug: string | null) => void;
-  /** The tool calls still running; see `TranscriptEntry`. */
-  liveToolIds: ReadonlySet<string>;
-  /** The call waiting on the person's permission; see `TranscriptEntry`. */
-  awaitingToolId: string | null;
-  /** The calls the person declined at the permission card; their rows say so, not 「failed」. */
-  declinedToolIds: ReadonlySet<string>;
-}) {
+  markdownComponents,
+}: WorkGroupProps) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
   const bodyId = `acp-work-${events[0].id}`;
@@ -3101,9 +3077,10 @@ function WorkGroup({
                 event={event}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
-                liveToolIds={liveToolIds}
-                awaitingToolId={awaitingToolId}
-                declinedToolIds={declinedToolIds}
+                markdownComponents={markdownComponents}
+                live={false}
+                awaiting={false}
+                declined={false}
               />
             ))}
           </div>
@@ -3111,7 +3088,7 @@ function WorkGroup({
       </div>
     </div>
   );
-}
+}, sameWorkGroup);
 
 /**
  * Mark **node names that actually exist** in the agent's answer, and make the map
@@ -3342,34 +3319,78 @@ function ChatTableFrame({ children }: { children?: ReactNode }) {
   );
 }
 
-function TranscriptEntry({
+const REMARK_PLUGINS = [remarkGfm];
+
+const MarkdownBlock = memo(function MarkdownBlock({
+  text,
+  components,
+}: {
+  text: string;
+  components: Components;
+}) {
+  return (
+    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={components}>
+      {text}
+    </ReactMarkdown>
+  );
+});
+
+/**
+ * Every block is a copy, reused while unchanged: a memoized block keeps its first props when the
+ * text is equal, and a slice there would pin the whole frame it was cut from.
+ */
+function settleBlocks(text: string, previous: readonly string[]): readonly string[] {
+  return splitMarkdownBlocks(text).map((piece, index) =>
+    previous[index] === piece ? previous[index] : detachedCopy(piece),
+  );
+}
+
+/** A block is parsed once its text stops changing, so a streamed answer re-parses its last block only. */
+const ChatMarkdown = memo(function ChatMarkdown({
+  text,
+  components,
+}: {
+  text: string;
+  components: Components;
+}) {
+  const [settled, setSettled] = useState(() => ({ text, blocks: settleBlocks(text, []) }));
+  let blocks = settled.blocks;
+  if (settled.text !== text) {
+    blocks = settleBlocks(text, settled.blocks);
+    setSettled({ text, blocks });
+  }
+  return blocks.map((block, index) => (
+    <MarkdownBlock key={index} text={block} components={components} />
+  ));
+});
+
+/** Every prop holds still between chunks, so only the row that changed redraws. */
+const TranscriptEntry = memo(function TranscriptEntry({
   event,
   knownSlugs,
   onHoverSlug,
+  markdownComponents,
   noticeActions = null,
   streaming = false,
   repeat = 1,
   fold = null,
-  liveToolIds,
-  awaitingToolId,
-  declinedToolIds,
+  live,
+  awaiting,
+  declined,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
+  markdownComponents: Components;
   /**
-   * The tool calls that are still running. ⚠️ Required and never defaulted: a row reads its own
-   * status from the adapter, which stops reporting the moment a turn ends, so only the panel
-   * knows whether an open call is still open or was simply abandoned there.
+   * The call is still running. ⚠️ Never defaulted: the adapter stops reporting when a turn ends,
+   * so only the panel knows an open call from an abandoned one.
    */
-  liveToolIds: ReadonlySet<string>;
-  /**
-   * The call blocked on the person's permission answer, if any. Required for the same reason as
-   * `liveToolIds`: only the panel holds the pending request.
-   */
-  awaitingToolId: string | null;
-  /** The calls the person declined at the permission card; their rows say so, not 「failed」. */
-  declinedToolIds: ReadonlySet<string>;
+  live: boolean;
+  /** The call waits on the person's permission answer, which only the panel holds. */
+  awaiting: boolean;
+  /** The person declined the call at the permission card; its row says so, not 「failed」. */
+  declined: boolean;
   /** The two doors an `auto-allowed` notice may carry; see `AcpChatPanelProps.noticeActions`. */
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
@@ -3483,12 +3504,7 @@ function TranscriptEntry({
             summary={t('checkAnswerFull')}
           >
             <div className={CHAT_MARKDOWN}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
-              >
-                {event.text}
-              </ReactMarkdown>
+              <ChatMarkdown text={event.text} components={markdownComponents} />
             </div>
           </Disclosure>
         </div>
@@ -3496,24 +3512,14 @@ function TranscriptEntry({
     }
     return (
       <div data-acp-entry="agent" data-acp-streaming={streaming ? 'true' : undefined} className={CHAT_MARKDOWN}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
-        >
-          {revealedText}
-        </ReactMarkdown>
+        <ChatMarkdown text={revealedText} components={markdownComponents} />
       </div>
     );
   }
   if (event.kind === 'thought') {
     return (
       <div data-acp-entry="thought" className={WORK_MARKDOWN}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
-        >
-          {event.text}
-        </ReactMarkdown>
+        <ChatMarkdown text={event.text} components={markdownComponents} />
       </div>
     );
   }
@@ -3534,18 +3540,18 @@ function TranscriptEntry({
       event.rawOutput,
       event.status,
       isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
-      liveToolIds.has(event.id),
+      live,
     );
     /*
      * The person's own 「no」 outranks what the adapter reports afterwards, which is `failed`,
      * and it stops the row claiming the call is still running while the agent reads the answer.
      * Only a call that did not complete: a declined id that later lands has landed.
      */
-    const outcome = declinedToolIds.has(event.id) && read.kind === 'status' && read.status !== 'done'
+    const outcome = declined && read.kind === 'status' && read.status !== 'done'
       ? ({ kind: 'status', status: 'declined' } as const)
       : read;
     const running = outcome.kind === 'status' && outcome.status === 'running';
-    const phase = toolRowPhase(running, event.id === awaitingToolId);
+    const phase = toolRowPhase(running, awaiting);
     const broke =
       outcome.kind === 'status' && (outcome.status === 'failed' || outcome.status === 'cancelled');
     const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
@@ -3826,4 +3832,4 @@ function TranscriptEntry({
       ) : null}
     </p>
   );
-}
+});

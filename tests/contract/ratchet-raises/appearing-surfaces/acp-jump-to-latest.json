@@ -1,0 +1,1 @@
+{ "gate": "appearing-surfaces", "raise": 1, "why": "The ACP transcript's jump-to-latest chip appears while a reader has scrolled up from new text; its open path needs a streaming turn, so tests/e2e/chat-transcript-free-scroll.spec.ts opens and presses it, as does the AcpChatPanel component test, rather than a static OPENERS entry." }

@@ -66,10 +66,17 @@ interface HarnessWindow extends Window {
     emitWrite(): void;
     finish(): void;
     answer(text: string): void;
+    stream(chunks: string[], perSecond: number, endTurn: boolean): void;
+    streamed(): LibraryWorkStreamProgress;
     think(text: string): void;
     mutateSource(path: string, text: string): void;
     snapshot(): LibraryWorkHarnessSnapshot;
   };
+}
+
+export interface LibraryWorkStreamProgress {
+  emitted: number;
+  total: number;
 }
 
 export type LibraryWorkScenario = "successful-write" | "failed-unknown-target";
@@ -89,6 +96,12 @@ export interface LibraryWorkHarness {
   write(page: Page): Promise<void>;
   finish(page: Page): Promise<void>;
   answer(page: Page, text: string): Promise<void>;
+  /**
+   * One `agent_message_chunk` task per chunk on a wall-clock schedule, as the bridge delivers them;
+   * a page that falls behind gets the backlog at once. The turn stays open unless `endTurn`.
+   */
+  stream(page: Page, chunks: readonly string[], options: { perSecond: number; endTurn?: boolean }): Promise<void>;
+  streamed(page: Page): Promise<LibraryWorkStreamProgress>;
   /** Emit one chunk of the agent's thinking, which the transcript folds into its work trace. */
   think(page: Page, text: string): Promise<void>;
   mutateSource(page: Page, path: string, text: string): Promise<void>;
@@ -264,18 +277,33 @@ export async function installLibraryWorkHarness(
         result(promptId, { stopReason: "end_turn" });
         promptId = null;
       };
+      let streamProgress = { emitted: 0, total: 0 };
+      const stream = (chunks: string[], perSecond: number, endTurn: boolean) => {
+        if (promptId === null || chunks.length === 0) return;
+        const interval = 1000 / perSecond;
+        const startedAt = performance.now();
+        const progress = { emitted: 0, total: chunks.length };
+        streamProgress = progress;
+        const tick = () => {
+          if (promptId === null || streamProgress !== progress) return;
+          update({ sessionUpdate: "agent_message_chunk", content: { type: "text", text: chunks[progress.emitted] } });
+          progress.emitted += 1;
+          if (progress.emitted < chunks.length) {
+            window.setTimeout(tick, Math.max(0, startedAt + progress.emitted * interval - performance.now()));
+            return;
+          }
+          if (!endTurn) return;
+          phase = "finished";
+          result(promptId, { stopReason: "end_turn" });
+          promptId = null;
+        };
+        window.setTimeout(tick, 0);
+      };
       const handleClientMessage = (message: JsonRecord) => {
         const method = typeof message.method === "string" ? message.method : undefined;
         const id = jsonRpcId(message.id);
         calls.push({ method: method ?? "response", params: message });
-        /*
-         * ⚠️ Three surfaces of this panel had no way to be driven at all — the past-conversation
-         * list, the slash-command menu and the agent's thinking — so nothing in the suite had ever
-         * rendered them. They are not exotic states: every one of them is something the adapter
-         * sends in an ordinary session. A harness that cannot reach a surface is the reason a
-         * surface goes unlooked-at, so the shapes below are the ones the client already parses,
-         * not new ones invented here.
-         */
+        // History, slash commands and thinking use the shapes the client already parses.
         if (method === "initialize" && id !== null) return result(id, { protocolVersion: 1, agentCapabilities: { loadSession: pastSessions.length > 0, promptCapabilities: {} } });
         if (method === "session/list" && id !== null) {
           // A row whose folder is unknown is discarded by the client, so the harness fills it in.
@@ -409,7 +437,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
     { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
   );
@@ -431,16 +459,21 @@ export async function installLibraryWorkHarness(
     await call(currentPage, "emitWrite");
   }, finish: (currentPage) => call(currentPage, "finish"),
   answer: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.answer(text), text),
+  stream: (currentPage, chunks, { perSecond, endTurn = false }) => currentPage.evaluate(
+    ({ chunks, perSecond, endTurn }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.stream(chunks, perSecond, endTurn),
+    { chunks: [...chunks], perSecond, endTurn },
+  ),
+  streamed: (currentPage) => currentPage.evaluate(() => {
+    const harness = (window as unknown as HarnessWindow).__atlasLibraryWorkHarness;
+    if (!harness) throw new Error("Library work harness is not installed");
+    return harness.streamed();
+  }),
   think: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.think(text), text),
   mutateSource: (currentPage, path, text) => currentPage.evaluate(({ path, text }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.mutateSource(path, text), { path, text }),
   };
 }
 
-/**
- * ⚠️ It takes the **same options** the harness does, rather than a hand-picked two. Narrowed to
- * `scenario` and `permissionKind`, every other option was unavailable through this door without
- * saying so, which is the same silence that let `permissionText` be dropped inside the harness.
- */
+/** Takes every harness option, so none is silently unreachable through this door. */
 export async function openLibraryWorkScenario(
   page: Page,
   options: Parameters<typeof installLibraryWorkHarness>[1] = {},
