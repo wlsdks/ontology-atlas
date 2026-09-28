@@ -2809,6 +2809,13 @@ mod tests {
         plain_git(dir, &["config", "core.autocrlf", "false"]);
     }
 
+    /// A path for a git-config value or shell command, forward-slashed so it parses
+    /// and runs under git's bundled `sh` on Windows as well as unix; a backslash
+    /// Windows path is a bad config line and a mangled shell argument.
+    fn shell_path(path: &Path) -> String {
+        path.to_string_lossy().replace('\\', "/")
+    }
+
     #[test]
     fn a_hostile_embedded_repo_config_does_not_execute_on_status() {
         let base = std::env::temp_dir().join(format!("atlas-sec-embedded-{}", std::process::id()));
@@ -2826,7 +2833,7 @@ mod tests {
         let marker = base.join("EMBEDDED_EXECUTED");
         let config = format!(
             "[core]\n\trepositoryformatversion = 0\n\tbare = false\n\tworktree = .\n\tfsmonitor = \"touch {}; false\"\n",
-            marker.display()
+            shell_path(&marker)
         );
         fs::write(upstream.join("atlas/config"), config).unwrap();
         plain_git(&upstream, &["init", "-q"]);
@@ -2894,7 +2901,7 @@ mod tests {
         let marker = base.join("FSMON_EXECUTED");
         plain_git(
             &repo,
-            &["config", "core.fsmonitor", &format!("touch {}; false", marker.display())],
+            &["config", "core.fsmonitor", &format!("touch {}; false", shell_path(&marker))],
         );
         fs::write(repo.join("note.md"), b"# two\n").unwrap();
         let status_args = [
@@ -2942,7 +2949,7 @@ mod tests {
             &[
                 "config",
                 "filter.evil.clean",
-                &format!("sh -c 'touch {}; cat'", marker.display()),
+                &format!("sh -c 'touch {}; cat'", shell_path(&marker)),
             ],
         );
         fs::write(repo.join("note.md"), b"# two changed\n").unwrap();
@@ -2964,7 +2971,7 @@ mod tests {
             &[
                 "config",
                 "filter.evil.clean",
-                &format!("sh -c 'touch {}; cat'", marker.display()),
+                &format!("sh -c 'touch {}; cat'", shell_path(&marker)),
             ],
         );
         fs::write(mirror.join("note.md"), b"# two changed\n").unwrap();
@@ -3088,7 +3095,7 @@ mod tests {
             plain_git(&repo, &["add", "-A"]);
             plain_git(&repo, &["commit", "-qm", "one"]);
             let marker = base.join("HIDDEN_FILTER");
-            let clean = format!("sh -c 'touch {}; cat'", marker.display());
+            let clean = format!("sh -c 'touch {}; cat'", shell_path(&marker));
             if scope == "include" {
                 fs::write(
                     repo.join(".git/extra.cfg"),

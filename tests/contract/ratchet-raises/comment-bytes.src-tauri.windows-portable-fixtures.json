@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-tauri", "raise": 224, "why": "The hostile-repo fixtures embed a marker path into a git-config value and a shell command; a native Windows path is a bad config line and a mangled shell argument, so a shell_path helper forward-slashes it and the comment explains why, so the protections are proven on Windows and nobody reverts to Path::display." }
