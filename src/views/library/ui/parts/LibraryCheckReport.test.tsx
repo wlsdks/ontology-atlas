@@ -296,6 +296,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     // Nothing is taken away: the code, its line anchor and the English message the CLI
     // prints are under the same disclosure the wiki page beside it uses.
     expect(screen.getByTestId("library-structural-technical-uncited-fact")).not.toBeNull();
+    fireEvent.click(screen.getByTestId("library-structural-technical-uncited-fact"));
     const codes = [...uncited.querySelectorAll('[data-testid="library-structural-code"]')].map(
       (node) => node.textContent ?? "",
     );
