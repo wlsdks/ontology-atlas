@@ -22,11 +22,10 @@ const TooltipContent = forwardRef<
   <TooltipPrimitive.Content
     ref={ref}
     sideOffset={sideOffset}
-    // A panel flipped or slid by the window edge keeps a gap from it.
     collisionPadding={collisionPadding}
     className={cn(
       className ??
-        "z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] data-[state=delayed-open]:animate-in data-[state=closed]:animate-out",
+        "atlas-tooltip data-[state=closed]:pointer-events-none z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]",
       panelClassName,
     )}
     {...props}
