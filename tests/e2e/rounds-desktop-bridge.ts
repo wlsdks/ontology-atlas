@@ -145,6 +145,13 @@ export async function installDesktopBridge(
     ({ files, runtime, rootPath, seed, definitions, allowances }) => {
       const MTIME = 1_757_000_000_000;
       const encoder = new TextEncoder();
+      const stampedBytes = (text: string) => {
+        const body = encoder.encode(text);
+        const stamped = new Uint8Array(8 + body.length);
+        new DataView(stamped.buffer).setBigUint64(0, BigInt(MTIME), true);
+        stamped.set(body, 8);
+        return stamped.buffer;
+      };
       if (seed) {
         new Function("files", "definitions", seed)(files, definitions);
       }
@@ -181,7 +188,7 @@ export async function installDesktopBridge(
             return { text: files[relative], lastModified: MTIME };
           case "read_vault_binary_file":
             if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { bytes: [...encoder.encode(files[relative])], lastModified: MTIME };
+            return stampedBytes(files[relative]);
           case "write_vault_text_file":
             files[relative] = String(args.content ?? "");
             return null;
