@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import ts from 'typescript';
 
-import { AGENT_DOCK_INSET_SURFACE_CLASS } from "../../src/shared/ui/agent-dock-surface";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle } from "../../src/shared/ui/agent-dock-surface";
 
 const home = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
 const dock = readFileSync("src/views/home/ui/TopologyAgentDock.tsx", "utf8");
@@ -57,6 +57,26 @@ describe("agent dock inset surface", () => {
       expect(source).toContain('data-agent-dock-surface="inset"');
       expect(source).toContain("var(--chrome-inset)");
     }
+  });
+
+  it("gives all five agent docks one reflow and one overlay grammar", () => {
+    const docks = [
+      "src/views/home/ui/TopologyAgentDock.tsx",
+      "src/views/project-detail/ui/parts/ProjectAgentDock.tsx",
+      "src/views/architecture/ui/ArchitectureAgentDock.tsx",
+      "src/views/library/ui/parts/LibraryAgentDock.tsx",
+      "src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx",
+    ].map((path) => [path, readFileSync(path, "utf8")] as const);
+    for (const [path, source] of docks) {
+      expect(source, path).toMatch(/\.\.\.agentDockReflowStyle\(/);
+      expect(source, path).not.toMatch(/transitionDuration:\s*["']var\(--agent-panel-reflow-duration\)/);
+      expect(source, path).toContain('motion="overlay"');
+    }
+    expect(agentDockReflowStyle("width")).toEqual({
+      transitionProperty: "width",
+      transitionDuration: "var(--agent-panel-reflow-duration)",
+      transitionTimingFunction: "var(--topology-motion-ease-out)",
+    });
   });
 
   it("mounts the ACP scaffold with the dock, and starts only after reflow settles", () => {

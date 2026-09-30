@@ -2279,16 +2279,28 @@ their behaviour.
 ### Shared-element morph
 
 `runMorph` and `morphName` in `src/shared/motion/shared-element.ts`, CSS in
-`motion-morph.css`. The first target is concept popover to full detail. Names
-exist only while a transition runs; React `ViewTransition` and `transitionTypes`
-are not used.
+`motion-morph.css`. The first target is concept popover to full detail: the
+popover title and the full-detail heading carry `morphTargetProps(morphName(...))`,
+and `runMorph` names the source, commits the update with `flushSync` inside
+`document.startViewTransition`, then names the target. Names and
+`html.morph-transition` exist only while a transition runs. Groups and images move
+on `--motion-base` `--motion-ease`; under reduced motion the group does not travel
+and the images crossfade on `--motion-fast`. It runs only once the full-detail
+chunk is loaded; otherwise the overlay fade opens it. The full-detail heading
+takes focus on mount. React `ViewTransition` and `transitionTypes` are not used;
+`view-transition-engine.contract.test.ts` holds all three rules.
 
 ### Staggered entrance
 
 `useStaggerOnce` in `src/shared/motion/stagger.ts`, CSS in `motion-stagger.css`.
 Every list staggers on its first arrival, once per session, keyed by vault and
-list, capped at three steps (105ms) on `--motion-base`. Dense rows fade only;
-later arrivals get one unstaggered `motion-arrive`.
+list, one `--motion-stagger` (35ms, mirrored by `STAGGER`) per step, capped at
+three steps (105ms) on `--motion-base`. Items rise by `--overlay-enter-translate`
+(`motion-stagger-in`); dense rows fade only (`motion-stagger-fade`). The class
+exists only for the entrance window (105ms + `--motion-base`), so a re-render,
+a remount, a tab switch or a scroll never replays it, and ids that arrive later
+appear still. A new vault replays. Reduced motion: `panelCrossfadeIn` on
+`--motion-fast` with no delay.
 
 ### Count-up
 
@@ -2304,17 +2316,27 @@ source to target; comets and pulses stay inside the drawn span.
 
 `WorkStatus` in `src/shared/motion/work-status.tsx`, CSS in `motion-work.css`:
 one glyph (ring, arc, check or X) and a crossfading label. It carries no live
-region; a status mounted as done draws no check.
+region; the consumer's own region announces. A status mounted as done shows a
+static check (`data-drawn="static"`); only a transition into done draws it.
+The arc spins without a real total. Under reduced motion the spin stops, the
+check is whole, and the label fade stays on `--motion-fast`.
 
 ### Expand and collapse
 
-`Disclosure` animates through `RowDisclosure`; `Input` error text opens through
-`RowDisclosure` and stays `role="alert"`.
+`Disclosure` animates through `RowDisclosure`: a link-shaped button with a
+turning `ChevronRight` over a body that is unmounted and inert while closed.
+`Input` and `Textarea` error text opens through `RowDisclosure`, keeps its last
+message while closing, and stays `role="alert"`. Height moves on `--motion-base`
+and content on `--motion-fast`; under reduced motion the height is instant and
+only the fade remains. `details-adoption-ratchet` keeps raw `<details>` elements
+outside `Disclosure` from growing.
 
 ### Progress to done
 
 `WorkProgress` in `src/shared/motion/work-progress.tsx`, CSS in
-`motion-work.css`: a scaleX fill, an indeterminate sweep only without a total.
+`motion-work.css`: a scaleX fill on `--motion-base`, never width, and an
+indeterminate sweep only without a total. Done fills in success ink. Under
+reduced motion the fill steps and the sweep parks at a third of the track.
 
 ### Press
 
@@ -2339,22 +2361,46 @@ from growing.
 
 ### Toggle and checkbox draw
 
-`DrawnCheck` in `src/shared/motion/drawn-check.tsx`, CSS in
-`motion-checkbox.css`: the check draws on `--motion-fast`.
+`Checkbox` keeps the native input as `peer appearance-none` with a token
+border (`--color-text-quaternary`, at least 3:1 against its ground) and a
+brand fill. A static `DrawnCheck` sits beside it, and `motion-checkbox.css`
+draws it with `motionCheckDraw` on `--motion-fast` whenever the peer becomes
+checked. Under reduced motion the check appears whole.
 
 ### Selection indicator
 
 `useSlidingIndicator` in `src/shared/motion/use-sliding-indicator.ts`, CSS in
 `motion-indicator.css`: one indicator per group, placed without a transition
 first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
-`--motion-fast`.
+`--motion-fast`. The indicator carries `motion-indicator`,
+`data-selection-indicator` (its shape) and `data-animated`; the transition
+runs only while `data-animated="true"`, and reduced motion drops it, so the
+indicator jumps. Until `placed`, the active item keeps its static style.
+Underlines move by translateX + scaleX of a 1px bar; surfaces by translate +
+width/height. TabBar, the SegmentedControl well and the rail use it; a new
+`role="tab"` outside TabBar is held by `tab-adoption-ratchet`.
 
 ### Success and failure
 
-`useCopyFeedback` gains `run`, `settle` and a `done` state on one dwell;
-`FeedbackGlyph` in `src/shared/motion/feedback-glyph.tsx`, CSS in
-`motion-feedback.css`. Only icon-only controls with `data-feedback-travel`
-shake, by the 3px refusal travel.
+`useCopyFeedback` holds `idle`, `copied`, `done` and `failed` on one 1500ms
+dwell (`COPY_FEEDBACK_RESET_MS`). `run(action)` settles `done` when the action
+resolves and `failed` when it throws, so a successful `reject_once` answer reads
+as done, never as danger; `settle(outcome)` sets one directly. The same result
+twice passes one idle frame so its animation restarts.
+
+`FeedbackGlyph` in `src/shared/motion/feedback-glyph.tsx` crossfades the icon,
+a `DrawnCheck` in success ink drawn on `--motion-settle`, or an X in danger ink.
+The consumer sets `data-feedback={state}`. Only icon-only controls also carry
+`data-feedback-travel`, and only they shake on failure: `motionRefuse` over
+`--motion-base`, travelling `--motion-refuse-travel` (3px). Labelled buttons
+change glyph and ink with no travel. CSS lives in `motion-feedback.css`.
+
+Every result is announced as well as drawn: `CompactCopyButton` keeps a
+`role="status"` region beside the button that reads the label or accessible
+name the consumer changed for the result. Under reduced motion the check fades
+in on `--motion-fast` and the shake does not run.
+`action-feedback-adoption-ratchet` keeps hand-swapped `Check` conditionals from
+growing.
 
 ### Direction
 
@@ -2362,6 +2408,13 @@ Pages crossfade with a 6px rise on `--motion-base` and
 fade only under reduced motion. Anchored popovers grow from their trigger,
 agent docks share one reflow grammar, drawers slide from their edge, modals
 rise; each leaves the way it came. CSS in `motion-surface.css`.
+
+- Tooltips carry `atlas-tooltip`: they fade in on `--motion-fast` and out on
+  two thirds of it under `overlayFadeOut`, keeping both fades under reduced
+  motion. A closing tooltip takes no pointer.
+- All five agent docks spread `agentDockReflowStyle()` onto their frame and
+  wrap the conversation in `Surface motion="overlay"`; only the project dock
+  also reflows `margin-left`.
 
 ## Page header — English caption + Korean h1
 

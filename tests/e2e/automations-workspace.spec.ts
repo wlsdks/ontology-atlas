@@ -236,3 +236,40 @@ test('a round and a connector a cloned folder switched on wait for this Mac, and
   await expect(connector).toHaveAttribute('data-connector-enabled', 'true');
   await expect(connector.getByTestId('connectors-item-waiting')).toHaveCount(0);
 });
+
+test('a document round is edited in place: same id, its history kept, the new cadence on the row', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents&round=r-consistency');
+  const row = page.getByTestId('automation-r-consistency');
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  const item = page.locator('li', { has: row });
+  await item.getByTestId('automations-edit').click();
+  const sheet = page.getByTestId('library-rounds-sheet');
+  await expect(sheet).toContainText('Edit the document review');
+  await expect(page.getByTestId('library-rounds-rename')).toContainText('Pages still match');
+  await page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Day', exact: true }).click();
+  await expect(page.getByTestId('library-rounds-allow')).toHaveText('Save changes');
+  await page.getByTestId('library-rounds-allow').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(row).toContainText('Daily at 09:00');
+  await expect(item.getByText('Earlier runs · 3', { exact: true })).toBeVisible();
+  const rounds = await page.evaluate(() => JSON.parse((window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']).rounds);
+  expect(rounds.map((round: { id: string }) => round.id)).toEqual(['r-consistency', 'r-confluence']);
+  expect(rounds[0]).toMatchObject({ id: 'r-consistency', name: 'Pages still match', cadence: { daily: '09:00', weekdaysOnly: false } });
+  await expect(row).toContainText('Scheduled');
+});
+
+test('the door to Library check history opens with the schedule it came from selected', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents&round=r-confluence');
+  await expect(page.getByTestId('automation-r-confluence')).toHaveAttribute('aria-expanded', 'true');
+  await page.getByTestId('automations-open-library-rounds').click();
+  await expect(page.getByTestId('library-round-r-confluence')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('library-round-r-consistency')).toHaveAttribute('aria-pressed', 'false');
+});

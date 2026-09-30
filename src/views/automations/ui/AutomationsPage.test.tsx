@@ -36,8 +36,10 @@ function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
     revision: 1,
     notAllowedHere: new Set(),
     changedSinceAllowed: new Set(),
+    unrecorded: new Map(),
     allow: vi.fn(() => true),
     save: vi.fn(async () => ({ ok: true, startedNow: false })),
+    update: vi.fn(async () => true),
     remove: vi.fn(async () => true),
     setEnabled: vi.fn(async () => true),
     runNow: vi.fn(),
@@ -46,10 +48,10 @@ function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
   };
 }
 
-function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSchedule = vi.fn()) {
+function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSchedule = vi.fn(), onEditDocumentSchedule = vi.fn()) {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <AutomationsPage runner={value} onOpenDocumentSchedule={onOpenDocumentSchedule} />
+      <AutomationsPage runner={value} onOpenDocumentSchedule={onOpenDocumentSchedule} onEditDocumentSchedule={onEditDocumentSchedule} />
     </NextIntlClientProvider>,
   );
 }
@@ -192,6 +194,130 @@ describe('Automations manager', () => {
     renderPage(failed);
     fireEvent.click(screen.getByRole('button', { name: en.automations.retry }));
     expect(failed.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the folder cannot be reached, not that the file needs fixing, when reading it failed', () => {
+    const unreachable = runner({ storeStatus: 'unavailable' });
+    renderPage(unreachable);
+    expect(screen.getByTestId('automations')).toHaveAttribute('data-automations-state', 'unavailable');
+    expect(screen.getByText(en.automations.unavailableTitle)).toBeInTheDocument();
+    expect(screen.queryByText(en.automations.malformedTitle)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: en.automations.retry }));
+    expect(unreachable.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the schedule a link names, not the first one in the lane, and links back to that round in the Library', () => {
+    search = 'kind=documents&round=second';
+    const first: RoundRecord = { id: 'first', kind: 'consistency', name: 'First check', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
+    renderPage(runner({ rounds: [first, { ...first, id: 'second', name: 'Second check' }] }));
+    expect(screen.getByTestId('automation-second')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('automations-open-library-rounds')).toHaveAttribute('href', '/library/?tab=rounds&round=second');
+  });
+
+  it('says what stopped a failed pass and what to do next, instead of the raw error', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const failed: RoundPassEntry = { v: 1, id: 'err', roundId: round.id, roundName: round.name, kind: 'consistency',
+      startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'failed', checked: 0, stale: [],
+      written: [], refused: [], called: [], agentTurns: 0, summary: 'No such file or directory (os error 2)', trigger: 'clock' };
+    const view = renderPage(runner({ rounds: [round], ledger: [failed] }));
+    expect(screen.getByTestId('automations-last-run'))
+      .toHaveTextContent(en.automations.failedError.replace('{detail}', 'No such file or directory (os error 2)'));
+    view.unmount();
+    renderPage(runner({ rounds: [round], ledger: [{ ...failed, summary: 'no-manifest' }] }));
+    expect(screen.getByTestId('automations-last-run')).toHaveTextContent(en.automations.failedFolderNotRead);
+  });
+
+  it('names the page a run put back and why, instead of a failure with no result', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'redraft',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const putBack: RoundPassEntry = { v: 1, id: 'undo', roundId: round.id, roundName: round.name, kind: 'consistency',
+      startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:09:00Z', outcome: 'failed', checked: 3, stale: [],
+      written: [], refused: [], called: [], agentTurns: 1, summary: '', trigger: 'clock', leftAsIs: ['wiki/notes.md'],
+      undone: [
+        { path: 'wiki/plan.md', reason: 'not-draft', action: 'restored', copy: '.ontology-atlas/undone/undo/wiki/plan.md' },
+        { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
+      ] };
+    renderPage(runner({ rounds: [round], ledger: [putBack] }));
+    const last = screen.getByTestId('automations-last-run');
+    expect(last).toHaveTextContent([
+      en.automations.undone.restored.replace('{page}', 'wiki/plan.md'),
+      en.library.rounds.ledger.undoneReason.notDraft,
+      en.library.rounds.ledger.undoneCopy.replace('{copy}', '.ontology-atlas/undone/undo/wiki/plan.md'),
+    ].join(' '));
+    expect(last).toHaveTextContent(`${en.automations.leftAsIs.replace('{page}', 'wiki/theirs.md')} ${en.library.rounds.ledger.undoneReason.notDraft}`);
+    expect(last).not.toHaveTextContent(en.automations.failedNoResult);
+    expect(screen.getByTestId('automations-left-as-is')).toHaveTextContent(en.automations.leftAsIs.replace('{page}', 'wiki/notes.md'));
+  });
+
+  it('says on the row when a run could not be written, and which file refused it', () => {
+    search = 'kind=documents';
+    const round: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const unrecorded = new Map([['docs', { endedAt: '2026-09-25T15:08:01Z', outcome: 'stale' as const, files: ['.ontology-atlas/rounds-ledger.jsonl'] }]]);
+    renderPage(runner({ rounds: [round], unrecorded }));
+    expect(screen.getByTestId('automation-docs')).toHaveTextContent(en.automations.outcome.stale);
+    expect(screen.getByTestId('automation-docs')).toHaveTextContent(en.automations.unrecorded.short);
+    expect(screen.getByTestId('automations-unrecorded')).toHaveTextContent('.ontology-atlas/rounds-ledger.jsonl');
+  });
+
+  it('edits an ontology review in place and keeps this Mac allowing it when the edit does not widen it', async () => {
+    const review: RoundRecord = { id: 'rev', kind: 'ontology', name: 'Source gaps', enabled: true, query: 'source binding gaps',
+      cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', lastPassAt: '2026-09-21T06:00:00Z', nextDueAt: '2026-09-21T12:00:00Z' };
+    const value = runner({ rounds: [review] });
+    renderPage(value);
+    fireEvent.click(screen.getByRole('button', { name: en.automations.editNamed.replace('{name}', 'Source gaps') }));
+    expect(screen.getByRole('heading', { name: en.automations.ontology.sheet.editTitle })).toBeInTheDocument();
+    expect(screen.getByTestId('ontology-automation-name')).toHaveValue('Source gaps');
+    expect(screen.getByTestId('ontology-automation-focus')).toHaveValue('source binding gaps');
+    fireEvent.change(screen.getByTestId('ontology-automation-name'), { target: { value: 'Relation evidence' } });
+    expect(screen.getByTestId('ontology-automation-allow')).toHaveTextContent(en.automations.saveChanges);
+    fireEvent.click(screen.getByTestId('ontology-automation-allow'));
+    await waitFor(() => expect(value.update).toHaveBeenCalledTimes(1));
+    expect(value.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'rev', name: 'Relation evidence', createdAt: review.createdAt, lastPassAt: review.lastPassAt, cadence: { every: '6h' } }));
+    expect(value.save).not.toHaveBeenCalled();
+  });
+
+  it('asks this Mac again when an edit makes a review run more often', () => {
+    const review: RoundRecord = { id: 'rev', kind: 'ontology', name: 'Source gaps', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T12:00:00Z' };
+    renderPage(runner({ rounds: [review] }));
+    fireEvent.click(screen.getByTestId('automations-edit'));
+    fireEvent.click(screen.getByRole('radio', { name: 'Minutes' }));
+    expect(screen.getByTestId('ontology-automation-allow')).toHaveTextContent(en.automations.allowAndSave);
+    expect(screen.getByTestId('ontology-automation-widens')).toHaveTextContent(en.automations.editWidens);
+  });
+
+  it('hands a document round to its own sheet to edit', () => {
+    search = 'kind=documents';
+    const check: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const onEdit = vi.fn();
+    renderPage(runner({ rounds: [check] }), vi.fn(), onEdit);
+    fireEvent.click(screen.getByTestId('automations-edit'));
+    expect(onEdit).toHaveBeenCalledWith(check);
+  });
+
+  it('names the step a running pass is on', () => {
+    const round: RoundRecord = { id: 'live', kind: 'ontology', name: 'Live review', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T06:00:00Z' };
+    renderPage(runner({ rounds: [round], running: { roundId: 'live', roundName: 'Live review', startedAt: '2026-09-25T10:00:00Z', phase: 'agent' } }));
+    expect(screen.getByTestId('automation-live')).toHaveTextContent(`${en.automations.state.running} · ${en.library.rounds.ledger.phaseAgent}`);
+  });
+
+  it('gives a review that had no agent the way to the Agents screen it names', () => {
+    const round: RoundRecord = { id: 'review', kind: 'ontology', name: 'Ontology refinement', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T06:00:00Z' };
+    const entry: RoundPassEntry = { v: 1, id: 'no-agent', roundId: round.id, roundName: round.name, kind: 'ontology',
+      startedAt: '2026-09-25T10:00:00Z', endedAt: '2026-09-25T10:00:00Z', outcome: 'failed', checked: 0, stale: [],
+      written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' };
+    renderPage(runner({ rounds: [round], ledger: [entry] }));
+    expect(within(screen.getByTestId('automations-last-run')).getByRole('link', { name: en.automations.openAgents }))
+      .toHaveAttribute('href', '/agents/');
   });
 
   it('selects and collapses schedule details, and targets actions to the selected schedule', () => {

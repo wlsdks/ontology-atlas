@@ -1,2 +1,21 @@
 @layer base {
+  .atlas-tooltip[data-state='delayed-open'],
+  .atlas-tooltip[data-state='instant-open'] {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .atlas-tooltip[data-state='closed'] {
+    animation: overlayFadeOut calc(var(--motion-fast) * 0.67) var(--motion-ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .atlas-tooltip[data-state='delayed-open'],
+    .atlas-tooltip[data-state='instant-open'] {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .atlas-tooltip[data-state='closed'] {
+      animation-duration: calc(var(--motion-fast) * 0.67) !important;
+    }
+  }
 }

@@ -1631,6 +1631,7 @@ fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, 
 fn list_vault_directory(
     root_path: String,
     relative_path: String,
+    include_links: Option<bool>,
 ) -> Result<Vec<TauriVaultEntry>, String> {
     let dir = resolve_existing_inside(&root_path, &relative_path)?;
     let entries = fs::read_dir(dir).map_err(|err| err.to_string())?;
@@ -1638,7 +1639,12 @@ fn list_vault_directory(
     for entry in entries {
         let entry = entry.map_err(|err| err.to_string())?;
         let file_type = entry.file_type().map_err(|err| err.to_string())?;
-        let kind = if file_type.is_dir() {
+        let kind = if file_type.is_symlink() {
+            if include_links != Some(true) {
+                continue;
+            }
+            "symlink"
+        } else if file_type.is_dir() {
             "directory"
         } else if file_type.is_file() {
             "file"
@@ -4660,6 +4666,44 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn list_vault_directory_reports_symbolic_links_only_when_asked_and_never_follows_them() {
+        use std::os::unix::fs::symlink;
+
+        let nonce = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("ontology-atlas-list-links-{nonce}"));
+        let outside = std::env::temp_dir().join(format!("ontology-atlas-list-links-outside-{nonce}"));
+        fs::create_dir_all(root.join("wiki/team")).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(root.join("wiki/plan.md"), "plan").unwrap();
+        fs::write(outside.join("secret.md"), "secret").unwrap();
+        symlink(outside.join("secret.md"), root.join("wiki/escape.md")).unwrap();
+        symlink(&outside, root.join("wiki/elsewhere")).unwrap();
+        let root_path = root.to_string_lossy().to_string();
+
+        let named = |entries: Vec<TauriVaultEntry>| {
+            entries
+                .into_iter()
+                .map(|entry| format!("{}:{}", entry.name, entry.kind))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            named(list_vault_directory(root_path.clone(), "wiki".into(), None).unwrap()),
+            vec!["plan.md:file", "team:directory"]
+        );
+        assert_eq!(
+            named(list_vault_directory(root_path.clone(), "wiki".into(), Some(true)).unwrap()),
+            vec!["elsewhere:symlink", "escape.md:symlink", "plan.md:file", "team:directory"]
+        );
+
+        fs::remove_dir_all(root).ok();
+        fs::remove_dir_all(outside).ok();
+    }
+
     #[test]
     fn inspect_project_source_returns_a_deterministic_bounded_folder_inventory() {
         let root = std::env::temp_dir().join(format!(
@@ -5773,7 +5817,7 @@ mod vault_scope_tests {
             ".ssh/id_rsa".into(),
             None,
         ));
-        refused(list_vault_directory(home_path.clone(), String::new()).map(|_| ()));
+        refused(list_vault_directory(home_path.clone(), String::new(), None).map(|_| ()));
         refused(crate::git::validate_vault_dir(&home_path).map(|_| ()));
         refused(canonical_root(&base.to_string_lossy()).map(|_| ()));
         assert!(!home.join("planted.md").exists());

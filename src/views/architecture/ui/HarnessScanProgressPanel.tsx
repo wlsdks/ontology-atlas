@@ -4,12 +4,9 @@ import { useTranslations } from 'next-intl';
 
 import type { HarnessScanProgress } from '@/entities/agent-files';
 import { cn } from '@/shared/lib/cn';
+import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkStatus } from '@/shared/motion/work-status';
 
-/**
- * The wait shows the work: each pass names itself, a bar fills only with a known denominator, and an
- * unknown length sweeps. Under reduced motion the sweep rests at a third of the track while the
- * React-driven stage, count and route keep changing.
- */
 const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
   roots: 'loadingStageRoots',
   nested: 'loadingStageNested',
@@ -36,7 +33,6 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
   const t = useTranslations('harness');
   const activeIndex = progress ? STAGE_ORDER.indexOf(progress.stage) : -1;
   const determinate = progress?.total != null && progress.total > 0;
-  const ratio = determinate ? Math.min(1, progress!.done / progress!.total!) : 0;
 
   return (
     <div
@@ -64,25 +60,12 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
               : t('loadingCounting')}
           </span>
         </div>
-        {/* Both marks stay mounted and cross on opacity at `--motion-fast`; swapping one node's class caused hard cuts. */}
-        <div
-          aria-hidden
-          className="relative mt-2 h-1.5 w-full overflow-hidden rounded-micro bg-[color:var(--color-overlay-2)]"
-        >
-          <div
-            className={cn(
-              'absolute inset-0 rounded-micro bg-[color:var(--color-indigo-a60)]',
-              'transition-[transform,opacity] duration-[var(--motion-fast)] ease-[var(--motion-ease)]',
-              determinate ? 'opacity-100' : 'opacity-0',
-            )}
-            style={{ transform: `translateX(${Math.round(ratio * 100) - 100}%)` }}
-          />
-          <div
-            className={cn(
-              'harness-scan-sweep absolute inset-y-0 left-0 w-1/3 rounded-micro bg-[color:var(--color-indigo-a60)]',
-              'transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]',
-              determinate ? 'opacity-0' : 'opacity-100',
-            )}
+        <div className="mt-2" aria-hidden>
+          <WorkProgress
+            phase="running"
+            done={progress?.done ?? 0}
+            total={determinate ? progress!.total! : null}
+            label={t('loadingTitle')}
           />
         </div>
       </div>
@@ -104,7 +87,10 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
                   : 'text-[color:var(--color-text-quaternary)]',
             )}
           >
-            {t(STAGE_LABEL[stage])}
+            <WorkStatus
+              phase={index < activeIndex ? 'done' : index === activeIndex ? 'running' : 'waiting'}
+              label={t(STAGE_LABEL[stage])}
+            />
           </li>
         ))}
       </ol>

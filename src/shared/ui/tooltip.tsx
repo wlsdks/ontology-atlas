@@ -4,6 +4,7 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
   forwardRef,
+  useState,
 } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
@@ -22,11 +23,10 @@ const TooltipContent = forwardRef<
   <TooltipPrimitive.Content
     ref={ref}
     sideOffset={sideOffset}
-    // A panel flipped or slid by the window edge keeps a gap from it.
     collisionPadding={collisionPadding}
     className={cn(
       className ??
-        "z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)] data-[state=delayed-open]:animate-in data-[state=closed]:animate-out",
+        "atlas-tooltip data-[state=closed]:pointer-events-none z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]",
       panelClassName,
     )}
     {...props}
@@ -67,11 +67,12 @@ export function Tooltip({
   delayMs = 300,
   panelClassName,
 }: TooltipProps) {
+  const [open, setOpen] = useState(false);
   const inner = (
-    <TooltipPrimitive.Root delayDuration={delayMs}>
+    <TooltipPrimitive.Root delayDuration={delayMs} open={open} onOpenChange={setOpen}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipContent side={side} align={align} panelClassName={panelClassName}>
+        <TooltipContent side={side} align={align} panelClassName={panelClassName} aria-hidden={open ? undefined : true}>
           {content}
         </TooltipContent>
       </TooltipPrimitive.Portal>
