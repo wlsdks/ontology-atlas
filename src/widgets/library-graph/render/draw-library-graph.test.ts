@@ -846,3 +846,13 @@ it("keeps the name below a large mark whose centre is above a crowded viewport",
   expect(rec.texts.map(entry => entry.text)).toContain("Large outside");
   expect(rec.texts.find(entry => entry.text === "Large outside")!.y).toBeGreaterThan(0);
 });
+
+it("keeps a focused ring visible when its small mark lies outside the canvas", () => {
+  const node = { id: "edge", kind: "page" as const, label: "Edge", ref: "edge", href: null };
+  const rec = recorder();
+  drawLibraryGraph(rec.ctx, frame({
+    nodes: [node], edges: [], positions: new Map([["edge", { x: -5, y: 40 }]]),
+    radii: new Map([["edge", 1]]), focusedId: "edge",
+  }));
+  expect(rec.arcs.some(arc => arc.x === -5 && arc.r === 7 && arc.style === INK.selectedRing)).toBe(true);
+});

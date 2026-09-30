@@ -958,6 +958,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     }
     ctx.globalAlpha = 1;
   }
+  const markPadding = Math.max(libraryEdgeWidth("cites") * MARK_HALO_RATIO,
+    SELECTION_RING_GAP + 0.5, FOCUS_RING_GAP + 1) + 2;
   for (const node of frame.nodes) {
     if (quietOverview) break;
     if (batched.has(node.id)) continue;
@@ -966,6 +968,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     const radius = radiusOf(frame, node);
     // A zero radius is a concept standing for its island: the island is drawn, not it.
     if (radius <= 0) continue;
+    const extent = radius + markPadding;
+    if (centre.x + extent < 0 || centre.x - extent > frame.width ||
+      centre.y + extent < 0 || centre.y - extent > frame.height) continue;
     const isSelected = node.id === frame.selectedId;
     const isHovered = node.id === frame.hoveredId;
     const isFocused = node.id === frame.focusedId;
