@@ -16,6 +16,7 @@ import { type GalaxyLayout } from "../model/galaxy-layout";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
+import { landTierAssembly } from "../morph/tier-assembly";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import {
@@ -88,6 +89,7 @@ export function useTopologyOverviewNavigation({
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
+    landTierAssembly(world);
     // Warding invariant (owner bug report 2026-07-23): inside a realm, fit and
     // relayout return to the **realm's content bbox**, not the global spine.
     // Tweening to the global overview takes the camera out of the realm and

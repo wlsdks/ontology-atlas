@@ -13,7 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
-import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
+import { CONTROL_DISABLED_CLASS, CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from "@/shared/ui/control-class";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import {
   listboxBottomIsHidden,
@@ -467,11 +467,13 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-chip border px-3 text-left text-[color:var(--color-text-secondary)] outline-none transition-colors focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          "flex w-full items-center gap-2 rounded-chip border px-3 text-left text-[color:var(--color-text-secondary)] outline-none focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
           quiet
             ? "border-transparent bg-transparent hover:bg-[color:var(--color-overlay-1)] data-[state=open]:bg-[color:var(--color-overlay-1)]"
             : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-border-strong)]",
           // The value layer's disabled set also suppresses hover, which hand-written sets miss.
+          CONTROL_TRANSITION,
+          CONTROL_PRESS_TRAVEL,
           CONTROL_DISABLED_CLASS,
           size === "sm"
             ? cn("h-[var(--control-h-sm)] text-label", quiet ? "gap-1 px-1.5" : "px-2")
@@ -494,7 +496,7 @@ export function Select({
           */}
         <ChevronDown
           aria-hidden
-          className="select-chevron size-4 flex-none text-[color:var(--color-text-quaternary)] data-[open=true]:rotate-180"
+          className="select-chevron size-4 flex-none text-[color:var(--color-text-quaternary)] data-[open=true]:[transform:rotate(180deg)]"
           data-open={open}
         />
       </button>

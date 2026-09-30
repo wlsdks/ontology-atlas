@@ -38,6 +38,7 @@ export interface TopologyMapRendererProps {
   localGraphRoot: string | null;
   mapEntryTicket: number | null;
   expandAllActive: boolean;
+  mapAssemblesOnOpen: boolean;
   combinedFitToken: number;
   growthReplayToken: number;
   setGrowthReplaying: React.Dispatch<React.SetStateAction<boolean>>;
@@ -109,7 +110,7 @@ export interface TopologyMapRendererProps {
 }
 
 export function TopologyMapRenderer({
-  localGraphRoot, mapEntryTicket, expandAllActive, combinedFitToken, growthReplayToken, setGrowthReplaying,
+  localGraphRoot, mapEntryTicket, expandAllActive, mapAssemblesOnOpen, combinedFitToken, growthReplayToken, setGrowthReplaying,
   topologyRelayoutToken, setTopologyVisibleCount, setMapZoomTier, footprintVisitedIds, footprintLensActiveRef,
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
@@ -231,11 +232,8 @@ export function TopologyMapRenderer({
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
             focus={{ selectedSlug: canvasSelectedSlug }}
-            // The same vault identity signal as the deep-link cleanup, so a vault switch
-            // resets the camera.
-            // Gated on `deeplinkSourceReady`, or a live refresh's transient `sample:` identity
-            // jumps the camera on save.
             dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+            assembleOnOpen={mapAssemblesOnOpen}
             overviewFit={overviewFit}
             fitViewToken={combinedFitToken}
             growthReplayToken={growthReplayToken}
