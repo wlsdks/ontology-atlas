@@ -204,9 +204,7 @@ test.describe("first-open map assembly", () => {
   test("a ?p= arrival opens assembled", async ({ page }) => {
     await page.goto("/ko/topology/?p=capability%3Acheckout&guides=off&e2e=1");
     await waitPastAssembly(page);
-    const d = displacement((await readFrames(page)).frames);
-    const moving = d.findIndex((v) => v > 0.5);
-    expect(moving === -1 ? [] : d.slice(moving + 2).filter((v) => v >= 0.5)).toEqual([]);
+    expect(Math.max(...displacement((await readFrames(page)).frames))).toBeLessThan(0.5);
   });
 
   test("reduced motion places every concept on the first frame", async ({ page }) => {

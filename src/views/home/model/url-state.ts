@@ -170,6 +170,20 @@ export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteSt
   };
 }
 
+export function isDeeplinkRouteState(state: HomeRouteState): boolean {
+  return Boolean(
+    state.selectedSlug ||
+      state.activeCategory ||
+      state.focusedHubSlug ||
+      state.pathSourceSlug ||
+      state.pathTargetSlug ||
+      state.expandedParents.length > 0 ||
+      state.realmSlug ||
+      state.constellationIntent ||
+      state.meaningEditParam,
+  );
+}
+
 const VALID_IMPACT: ProjectImpactMode[] = [
   "none",
   "upstream",

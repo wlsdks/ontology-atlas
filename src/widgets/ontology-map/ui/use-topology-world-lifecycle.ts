@@ -69,6 +69,7 @@ interface Dependencies {
   onVisibleCountChange: ((visible: number) => void) | undefined;
   onGraphStatsChange: ((stats: { nodes: number; relations: number; }) => void) | undefined;
   dataSourceKey: string | null;
+  assembleOnOpen: boolean;
   fittedDataSourceKeyRef: RefObject<string | null>;
   galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
@@ -118,6 +119,7 @@ export function useTopologyWorldLifecycle({
   onVisibleCountChange,
   onGraphStatsChange,
   dataSourceKey,
+  assembleOnOpen,
   fittedDataSourceKeyRef,
   galaxyModeCameraRef,
   pendingFlatCameraRef,
@@ -231,7 +233,6 @@ export function useTopologyWorldLifecycle({
     }
     const previousWorld = worldRef.current;
     worldRef.current = world;
-    // Later builds seed unseen ids at 0; the first build belongs to the tier assembly.
     let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
     {
       const prevIds = prevNodeIdsRef.current;
@@ -312,6 +313,7 @@ export function useTopologyWorldLifecycle({
     if (!galaxyRef.current) {
       if (armAssembly) {
         armTierAssembly(world, dataSourceKey, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        if (!assembleOnOpen) settleTierAssembly(world);
       } else {
         carryTierAssembly(previousWorld, world);
       }
