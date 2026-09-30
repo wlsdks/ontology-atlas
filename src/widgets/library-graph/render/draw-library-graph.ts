@@ -1,3 +1,4 @@
+import { LibraryLabelCoverage } from "./library-label-coverage";
 import { LibraryLabelMarkIndex } from "./library-label-mark-index";
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
@@ -1087,15 +1088,23 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (node.id === frame.selectedId || node.id === active) return true;
       return focus !== null && focus.has(node.id);
     };
-    const named: Array<{ node: LibraryGraphNode; index: number }> = [];
+    const named: Array<{ node: LibraryGraphNode; index: number; priority: number; radius: number; x: number; y: number }> = [];
     for (let index = 0; index < frame.nodes.length; index += 1) {
       const node = frame.nodes[index];
-      if (node.id !== active && carriesName(node)) named.push({ node, index });
+      if (node.id === active || !carriesName(node)) continue;
+      const centre = nodeCentre(frame, node.id);
+      if (!centre) continue;
+      const radius = radiusOf(frame, node);
+      const lineHeight = Math.round(labelFontPx(ink, node.kind) * 1.35);
+      const reach = Math.abs(radius) + STANDING_LABEL_GAP + Math.abs(lineHeight);
+      if (frame.nodes.length > LEADER_MAX_MARKS &&
+        (centre.y + reach < 2 || centre.y - reach > frame.height - 2)) continue;
+      named.push({ node, index, priority: rank(node), radius, x: centre.x, y: centre.y });
     }
     named.sort(
       (first, second) =>
-        rank(first.node) - rank(second.node) ||
-        radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
+        first.priority - second.priority ||
+        second.radius - first.radius ||
         first.index - second.index,
     );
     const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
@@ -1134,13 +1143,34 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
       });
     };
-    for (const { node } of named) {
-      const centre = nodeCentre(frame, node.id);
-      if (!centre) continue;
-      // Font per kind before measuring, so the tested box matches the drawn step.
+    const coverage = named.length > 256 ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
+    if (coverage) {
+      for (const { node, radius, x, y } of named) {
+        const left = x - radius, top = y - radius, size = radius * 2;
+        coverage.add(node.id, left - NAME_GAP_X, top - NAME_GAP_Y,
+          left + size + NAME_GAP_X, top + size + NAME_GAP_Y);
+      }
+    }
+    const openLine = (x: number, y: number, height: number, own: string): boolean => {
+      if (x < 2 || x > frame.width - 2 || y < 2 || y + height > frame.height - 2) return false;
+      if (coverage?.blocksLine(x, y, height)) return false;
+      const box = { x, y, width: 0, height };
+      return !taken.some(other => other.of !== own && overlaps(box, other)) && !hitsMark(box, own);
+    };
+    for (const { node, radius: half, x, y } of named) {
+      const centre = { x, y };
       const fontPx = labelFontPx(ink, node.kind);
-      ctx.font = `${fontPx}px ${ink.fontFamily}`;
       const lineHeight = Math.round(fontPx * 1.35);
+      if (named.length > 256 && frame.nodes.length > LEADER_MAX_MARKS) {
+        const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
+        const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
+          openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||
+          openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id) ||
+          openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id);
+        if (!possible) continue;
+      }
+      // Font per kind before measuring, so the tested box matches the drawn step.
+      ctx.font = `${fontPx}px ${ink.fontFamily}`;
       // The column's room, else the flat budget; the canvas is still the outer bound.
       const roomCap = frame.flowLabelRoom?.[node.kind] ?? STANDING_LABEL_MAX_WIDTH;
       let text = truncateToWidth(
@@ -1155,7 +1185,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
        * left; one place alone named 8 of 60 pages on the 372-mark fixture. A name near an
        * edge slides back inside, since the fit puts marks against both edges by design.
        */
-      const half = radiusOf(frame, node);
       /*
        * In the flow picture a page's or concept's name shortens to the room before the next
        * box on its line rather than leave its side, where it would cover the rows below;
@@ -1222,7 +1251,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
         if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
         if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
-        if (hitsMark(tried, node.id) || taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
+        if (taken.some((other) => other.of !== node.id && overlaps(tried, other)) || hitsMark(tried, node.id)) continue;
         box = tried;
         placement = index;
         break;

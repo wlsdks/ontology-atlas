@@ -832,3 +832,17 @@ describe("island names keep off neighbouring islands", () => {
     expect(name!.y).toBeGreaterThan(lone.y + lone.r);
   });
 });
+
+it("keeps the name below a large mark whose centre is above a crowded viewport", () => {
+  const marks = Array.from({ length: 121 }, (_, i) => ({
+    id: String(i), kind: "page" as const, label: i === 0 ? "Large outside" : "Missing",
+    ref: String(i), href: null,
+  }));
+  const rec = recorder();
+  drawLibraryGraph(rec.ctx, frame({
+    nodes: marks, edges: [], positions: new Map([["0", { x: 100, y: -50 }]]),
+    radii: new Map([["0", 60]]), standingLabels: true,
+  }));
+  expect(rec.texts.map(entry => entry.text)).toContain("Large outside");
+  expect(rec.texts.find(entry => entry.text === "Large outside")!.y).toBeGreaterThan(0);
+});
