@@ -233,7 +233,7 @@ export function TopologyMapRenderer({
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
             focus={{ selectedSlug: canvasSelectedSlug }}
             dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-            assembleOnOpen={mapAssemblesOnOpen}
+            assembleOnOpen={mapAssemblesOnOpen && !morph.arrivedByMorph}
             overviewFit={overviewFit}
             fitViewToken={combinedFitToken}
             growthReplayToken={growthReplayToken}

@@ -170,12 +170,12 @@ routes: [/topology]
   A pick that leaves or enters Territories or the Hex board carries each concept
   from where the old view drew it to where the new one draws it, on the camera's
   clock (200–420 ms by distance). A concept one view does not draw leaves into, or
-  rises out of, its nearest drawn ancestor, and an arriving Territories or Hex
-  board takes over without replaying its own entrance. A press, a wheel, a key, a
-  resize, a display change or a hidden tab lands the travel at once. Into Strata
-  or Neural, out of Neural, and into Flat or Galaxy past 6,500 or 6,300 concepts,
-  the old picture crossfades instead, as every pick does under reduced motion; a
-  view reached by address or from another tab switches without motion. Gate:
+  rises out of, its nearest drawn ancestor, and the arriving view takes over
+  without replaying its own entrance. A press, a wheel, a key, a resize, a display
+  change or a hidden tab lands the travel at once. Into Strata or Neural, out of
+  Neural, and into Flat or Galaxy past 6,500 or 6,300 concepts, the old picture
+  crossfades instead, as every pick does under reduced motion; a view reached by
+  address or from another tab switches without motion. Gate:
   `tests/e2e/map-layout-morph.spec.ts`.
   The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
   Galaxy gives every real concept a stable

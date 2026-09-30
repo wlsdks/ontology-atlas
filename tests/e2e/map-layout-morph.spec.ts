@@ -18,6 +18,7 @@ interface Frame {
   ghosts: number;
   camera: string | null;
   arrived: boolean | null;
+  positions: Record<string, [number, number]> | null;
 }
 
 interface MorphRecord {
@@ -54,6 +55,7 @@ const FIRST_SHARE_CEILING = 0.2;
 const MAX_SHARE_CEILING = 0.25;
 const INCOMING_STALL_MS = 150;
 const FADE_STEP_CEILING = 0.5;
+const ARRIVAL_DRIFT_CEILING_PX = 2;
 
 async function installSampler(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -123,7 +125,14 @@ async function installSampler(page: Page): Promise<void> {
       const live = probe?.live() ?? null;
       const overlay = document.querySelector('[data-testid="map-layout-morph"]');
       const traveling = live?.mode === "ghost" && probe;
-      const map = (window as unknown as { __atlasMap?: { camera: () => { x: number; y: number; scale: number } | null } }).__atlasMap;
+      const map = (
+        window as unknown as {
+          __atlasMap?: {
+            camera: () => { x: number; y: number; scale: number } | null;
+            nodes: () => Array<{ id: string; x: number; y: number; hidden: boolean }>;
+          };
+        }
+      ).__atlasMap;
       const camera = document.querySelector('[data-testid="ontology-map"]') ? (map?.camera() ?? null) : null;
       const stats = document.querySelector<HTMLCanvasElement>('[data-testid="topology-map-view"] canvas')?.dataset.frame;
       const drawn = stats ? (JSON.parse(stats) as { arrived?: boolean; arrivalT?: number }) : null;
@@ -142,6 +151,14 @@ async function installSampler(page: Page): Promise<void> {
             ? JSON.stringify((JSON.parse(stats) as { offset?: unknown; R?: unknown }).offset ?? null)
             : null,
         arrived: drawn?.arrived ?? (drawn?.arrivalT === undefined ? null : drawn.arrivalT >= 1),
+        positions: camera
+          ? Object.fromEntries(
+              (map?.nodes() ?? [])
+                .filter((n) => !n.hidden)
+                .slice(0, 60)
+                .map((n) => [n.id, [n.x, n.y] as [number, number]]),
+            )
+          : null,
       });
     };
     const raf = window.requestAnimationFrame.bind(window);
@@ -240,6 +257,7 @@ test.describe("map layout morph", () => {
     ["hex", "territories"],
     ["territories", "galaxy"],
     ["strata", "territories"],
+    ["hex", "flat"],
   ];
 
   for (const [from, to] of DIRECTIONS) {
@@ -285,6 +303,11 @@ test.describe("map layout morph", () => {
       const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
       expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
       expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
+      const landed = frames.at(-1)!.positions ?? {};
+      const drift = frames
+        .slice(handoff)
+        .flatMap((f) => Object.entries(f.positions ?? {}).map(([id, [x, y]]) => (landed[id] ? Math.hypot(x - landed[id][0], y - landed[id][1]) : 0)));
+      expect(Math.max(0, ...drift), "the incoming map moved its concepts after the handoff").toBeLessThanOrEqual(ARRIVAL_DRIFT_CEILING_PX);
       const replayed = frames.slice(handoff).filter((f) => f.arrived === false).map((f) => Math.round(f.t - run.travelStartMs));
       expect(replayed, "the incoming view replayed its own arrival after the handoff").toEqual([]);
     });
