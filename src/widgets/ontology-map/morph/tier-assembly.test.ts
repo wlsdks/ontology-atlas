@@ -4,6 +4,7 @@ import {
   carryTierAssembly,
   claimTierAssembly,
   isTierAssembling,
+  landTierAssembly,
   settleTierAssembly,
   stepTierAssembly,
   tierAssemblyAppear,
@@ -67,6 +68,18 @@ describe("tier assembly", () => {
     expect(tierAssemblyAppear(world, "capability", 1)).toBe(1);
     expect(stepTierAssembly(world, 16)).toBe(false);
     expect(world.nodes.map((n) => n.x)).toEqual([0, 100, 200]);
+  });
+
+  it("lands every node before the next frame, so a fit read in between frames the final layout", () => {
+    const world = makeWorld();
+    armTierAssembly(world, key(), false);
+    stepTierAssembly(world, 0);
+    expect(world.nodes.map((n) => n.x)).toEqual([0, 0, 0]);
+    landTierAssembly(world);
+    expect(world.nodes.map((n) => [n.x, n.y])).toEqual([[0, 0], [100, 0], [200, 50]]);
+    expect(tierAssemblyAppear(world, "capability", 1)).toBe(1);
+    expect(stepTierAssembly(world, 16)).toBe(false);
+    expect(isTierAssembling(world)).toBe(false);
   });
 
   it("under reduced motion places finals on frame one and only fades", () => {

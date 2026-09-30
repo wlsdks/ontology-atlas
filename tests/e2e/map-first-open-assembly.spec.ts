@@ -97,6 +97,16 @@ async function waitPastAssembly(page: Page): Promise<void> {
   await waitForMapSettled(page, { frames: STILL_THROUGH_TIER_HOLD });
 }
 
+async function waitForAssemblyMotion(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const frames = (window as unknown as SamplerWindow).__assembly.frames;
+    const first = frames[0]?.pos;
+    const last = frames.at(-1)?.pos;
+    if (!first || !last) return false;
+    return Object.keys(first).some((id) => last[id] && Math.hypot(last[id][0] - first[id][0], last[id][1] - first[id][1]) > 2);
+  });
+}
+
 test.describe("first-open map assembly", () => {
   test.beforeEach(async ({ page }) => {
     await seedFirstRunSeen(page);
@@ -161,13 +171,7 @@ test.describe("first-open map assembly", () => {
     await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
     const canvas = page.getByTestId("ontology-map-canvas");
     await canvas.waitFor();
-    await page.waitForFunction(() => {
-      const frames = (window as unknown as SamplerWindow).__assembly.frames;
-      const first = frames[0]?.pos;
-      const last = frames.at(-1)?.pos;
-      if (!first || !last) return false;
-      return Object.keys(first).some((id) => last[id] && Math.hypot(last[id][0] - first[id][0], last[id][1] - first[id][1]) > 2);
-    });
+    await waitForAssemblyMotion(page);
     const box = (await canvas.boundingBox())!;
     await page.mouse.move(box.x + 12, box.y + box.height - 12);
     await page.mouse.down();
@@ -179,6 +183,23 @@ test.describe("first-open map assembly", () => {
     const after = frames.map((f, i) => ({ t: f.t, d: d[i] })).filter((f) => f.t > pressedAt!);
     expect(Math.max(...d)).toBeGreaterThan(0.5);
     expect(after.slice(2).every((f) => f.d < 0.5)).toBe(true);
+  });
+
+  test("a fit pressed mid-assembly frames the assembled map", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto("/ko/topology/?synth=300&guides=off&e2e=1");
+    await waitForAssemblyMotion(page);
+    const arrange = page.getByTestId("topology-auto-arrange");
+    await arrange.click();
+    await waitPastAssembly(page);
+    const { frames, pressedAt } = await readFrames(page);
+    const d = displacement(frames);
+    expect(d[frames.findLastIndex((f) => f.t < pressedAt!)]).toBeGreaterThan(0.5);
+    const midAssembly = await page.evaluate(() => (window as unknown as SamplerWindow).__atlasMap?.camera()?.scale ?? 0);
+    await arrange.click();
+    await waitPastAssembly(page);
+    const assembled = await page.evaluate(() => (window as unknown as SamplerWindow).__atlasMap?.camera()?.scale ?? 0);
+    expect(Math.abs(midAssembly - assembled)).toBeLessThan(0.01);
   });
 
   test("a second visit in the same session opens assembled", async ({ page }) => {

@@ -117,6 +117,16 @@ export function settleTierAssembly(world: object): void {
   if (schedule) schedule.settled = true;
 }
 
+export function landTierAssembly(world: object): void {
+  const schedule = schedules.get(world);
+  if (!schedule) return;
+  schedule.settled = true;
+  for (const { node, fx, fy } of schedule.entries) {
+    node.x = fx;
+    node.y = fy;
+  }
+}
+
 export function isTierAssembling(world: object): boolean {
   return schedules.has(world);
 }
