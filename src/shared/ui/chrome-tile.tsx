@@ -1,6 +1,7 @@
 import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
+import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
 
 /**
  * The square icon button of the chrome system (mockup
@@ -45,7 +46,8 @@ export type ChromeTileProps = ChromeTileButtonProps | ChromeTileLinkProps;
  * The `- 1px` in the padding is the tile's own border (width is shrink-to-fit).
  */
 const TILE_CLASS =
-  'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
+  'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]' +
+  ` ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`;
 
 /**
  * What cannot be pressed must not look pressable; same values as `ChromeChip`

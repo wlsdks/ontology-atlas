@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/lib/cn';
+import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
 
 const buttonVariants = cva(
   [
@@ -9,16 +10,11 @@ const buttonVariants = cva(
     'font-[var(--font-weight-signature)]',
     'border border-transparent',
     'select-none',
-    /*
-     * No duration class: hover acknowledges a changed state, so it takes Tailwind's default
-     * (`--motion-fast`), and so does the press feedback (`.claude/rules/design.md`).
-     */
-    'transition-[background-color,border-color,color,box-shadow,transform]',
+    CONTROL_TRANSITION,
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
-    'active:translate-y-[1px]',
-    'motion-reduce:transition-none motion-reduce:transform-none',
+    CONTROL_PRESS_TRAVEL,
     // Disabled keeps pointer events so hovering still answers "why won't this press".
-    'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:bg-inherit disabled:hover:border-inherit disabled:active:translate-y-0',
+    'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:bg-inherit disabled:hover:border-inherit',
   ].join(' '),
   {
     variants: {
