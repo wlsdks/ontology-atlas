@@ -1086,18 +1086,18 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (node.id === frame.selectedId || node.id === active) return true;
       return focus !== null && focus.has(node.id);
     };
-    const named = frame.nodes
-      .map((node, index) => ({ node, index }))
-      .sort(
-        (first, second) =>
-          rank(first.node) - rank(second.node) ||
-          radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
-          first.index - second.index,
-      );
+    const named: Array<{ node: LibraryGraphNode; index: number }> = [];
+    for (let index = 0; index < frame.nodes.length; index += 1) {
+      const node = frame.nodes[index];
+      if (node.id !== active && carriesName(node)) named.push({ node, index });
+    }
+    named.sort(
+      (first, second) =>
+        rank(first.node) - rank(second.node) ||
+        radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
+        first.index - second.index,
+    );
     for (const { node } of named) {
-      // The pointed-at node has its own box; a second name would duplicate it.
-      if (node.id === active) continue;
-      if (!carriesName(node)) continue;
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
       // Font per kind before measuring, so the tested box matches the drawn step.
