@@ -124,3 +124,42 @@ it("counts descendants through a hundred thousand nested domains without recursi
   expect(rows).toHaveLength(size - 1);
   expect(rows.every(row => row.elementCount === 1 && row.capabilityCount === 0)).toBe(true);
 });
+
+it.each([false, true])("lists the terminal capability across a hundred thousand nodes with cycle=%s", (cycle) => {
+  const size = 100_000;
+  const nodes = Array.from({ length: size }, (_, i) =>
+    node(String(i), i === size - 1 ? "capability" : "domain"));
+  const edges = Array.from({ length: size - 1 }, (_, i) =>
+    edge(String(i), String(i + 1), "contains"));
+  if (cycle) edges.push(edge(String(size - 1), "0", "contains"));
+  const rows = computeDomainCensusRows(nodes, edges, undefined, { collectCapabilityIds: true });
+  expect(rows).toHaveLength(size - 1);
+  expect(rows.every(row => row.capabilityCount === 1 &&
+    row.capabilityIds?.length === 1 && row.capabilityIds[0] === String(size - 1))).toBe(true);
+});
+
+it("orders equal-depth capabilities after paths of different lengths", () => {
+  const nodes = [node("root", "domain"), node("a", "domain"), node("b", "domain"),
+    node("middle", "domain"), node("first", "capability"), node("second", "capability"),
+    node("last", "capability")];
+  const edges = [edge("root", "a", "contains"), edge("root", "b", "contains"),
+    edge("a", "middle", "contains"), edge("middle", "first", "contains"),
+    edge("b", "second", "contains"), edge("second", "last", "contains")];
+  expect(computeDomainCensusRows(nodes, edges, undefined, { collectCapabilityIds: true })
+    .find(row => row.id === "root")?.capabilityIds).toEqual(["second", "first", "last"]);
+});
+
+it("preserves breadth-first ties across long paths and nested capabilities", () => {
+  const nodes = [node("root", "domain")];
+  const edges: KnowledgeGraphEdge[] = [];
+  for (const branch of ["a", "c", "b"]) {
+    for (let depth = 1; depth <= 64; depth += 1) {
+      const id = `${branch}-${depth}`;
+      nodes.push(node(id, depth === 64 || (branch === "c" && depth === 63)
+        ? "capability" : "domain"));
+      edges.push(edge(depth === 1 ? "root" : `${branch}-${depth - 1}`, id, "contains"));
+    }
+  }
+  expect(computeDomainCensusRows(nodes, edges, undefined, { collectCapabilityIds: true })
+    .find(row => row.id === "root")?.capabilityIds).toEqual(["c-63", "a-64", "c-64", "b-64"]);
+});
