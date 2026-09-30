@@ -22,7 +22,7 @@ export interface DomainCensusOptions {
   collectCapabilityIds?: boolean;
 }
 
-// One containment search per target over adjacency lists: O(T·(V + E)).
+// Aggregate counts once; optional member ids retain deterministic breadth-first order.
 export function computeDomainCensusRows(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -49,32 +49,79 @@ export function computeDomainCensusRows(
     else childrenOf.set(parent, [child]);
   }
 
+  const totals = new Map<string, { capabilities: number; elements: number }>();
+  const remainingChildren = new Map<string, number>();
+  const leaves: string[] = [];
+  for (const [id, node] of nodeById) {
+    totals.set(id, {
+      capabilities: Number(node.kind === "capability"),
+      elements: Number(node.kind === "element"),
+    });
+    const count = childrenOf.get(id)?.length ?? 0;
+    remainingChildren.set(id, count);
+    if (count === 0) leaves.push(id);
+  }
+  // Peeling leaves aggregates trees without recursion, including trees attached to cycles.
+  for (let head = 0; head < leaves.length; head += 1) {
+    const id = leaves[head];
+    const parent = ownerOf.get(id);
+    if (parent === undefined) continue;
+    const childTotal = totals.get(id)!;
+    const parentTotal = totals.get(parent)!;
+    parentTotal.capabilities += childTotal.capabilities;
+    parentTotal.elements += childTotal.elements;
+    const count = remainingChildren.get(parent)! - 1;
+    remainingChildren.set(parent, count);
+    if (count === 0) leaves.push(parent);
+  }
+  const resolvedCycles = new Set<string>();
+  for (const [id, count] of remainingChildren) {
+    if (count === 0 || resolvedCycles.has(id)) continue;
+    const members: string[] = [];
+    let current = id;
+    let capabilities = 0;
+    let elements = 0;
+    do {
+      members.push(current);
+      resolvedCycles.add(current);
+      const total = totals.get(current)!;
+      capabilities += total.capabilities;
+      elements += total.elements;
+      current = ownerOf.get(current)!;
+    } while (current !== id);
+    for (const member of members) totals.set(member, { capabilities, elements });
+  }
+
   const targets = new Set(targetKinds);
   const rows: DomainCensusRow[] = [];
 
   for (const node of nodes) {
     if (!targets.has(node.kind)) continue;
 
-    let capabilityCount = 0;
-    let elementCount = 0;
+    const total = totals.get(node.id)!;
+    const ownKind = nodeById.get(node.id)!.kind;
+    const capabilityCount = total.capabilities - Number(ownKind === "capability");
+    const elementCount = total.elements - Number(ownKind === "element");
     const capabilityIds: string[] | null = options.collectCapabilityIds ? [] : null;
-    const visited = new Set<string>([node.id]);
-    const queue: string[] = [node.id];
-    let head = 0;
-    while (head < queue.length) {
-      const current = queue[head++];
-      const children = childrenOf.get(current);
-      if (!children) continue;
-      for (const child of children) {
-        if (visited.has(child)) continue;
-        visited.add(child);
-        queue.push(child);
-        const childNode = nodeById.get(child);
-        if (childNode?.kind === "capability") {
-          capabilityCount += 1;
-          capabilityIds?.push(child);
-        } else if (childNode?.kind === "element") elementCount += 1;
+    if (capabilityIds && capabilityCount > 0) {
+      const visited = new Set<string>([node.id]);
+      const queue: string[] = [node.id];
+      let head = 0;
+      while (head < queue.length) {
+        const current = queue[head++];
+        const children = childrenOf.get(current);
+        if (!children) continue;
+        for (const child of children) {
+          if (visited.has(child)) continue;
+          visited.add(child);
+          queue.push(child);
+          const childNode = nodeById.get(child);
+          if (childNode?.kind === "capability") {
+            capabilityIds.push(child);
+          }
+        }
       }
+
     }
 
     rows.push({

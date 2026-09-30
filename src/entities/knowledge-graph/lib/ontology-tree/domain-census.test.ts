@@ -97,3 +97,30 @@ describe("computeDomainCensusRows", () => {
     expect(rows.map((r) => r.title)).toEqual(["A", "B"]);
   });
 });
+
+it('keeps capability IDs in breadth-first ownership order across branches', () => {
+  const nodes = [node('d', 'domain'), node('branch', 'domain'), node('direct', 'capability'), node('nested-a', 'capability'), node('nested-b', 'capability')];
+  const edges = [edge('d', 'branch', 'contains'), edge('branch', 'nested-b', 'contains'), edge('d', 'direct', 'contains'), edge('branch', 'nested-a', 'contains')];
+  expect(computeDomainCensusRows(nodes, edges, ['domain'], { collectCapabilityIds: true }).find((r) => r.id === 'd')?.capabilityIds)
+    .toEqual(['direct', 'nested-b', 'nested-a']);
+});
+
+it('keeps cycle-relative breadth-first order and excludes the starting capability', () => {
+  const nodes = [node('a', 'capability'), node('b', 'domain'), node('c', 'domain'), node('x', 'capability'), node('y', 'capability')];
+  const edges = [edge('a', 'x', 'contains'), edge('a', 'b', 'contains'), edge('b', 'c', 'contains'), edge('b', 'y', 'contains'), edge('c', 'a', 'contains')];
+  const rows = computeDomainCensusRows(nodes, edges, ['domain', 'capability'], { collectCapabilityIds: true });
+  expect(rows.find((r) => r.id === 'a')?.capabilityIds).toEqual(['x', 'y']);
+  expect(rows.find((r) => r.id === 'b')?.capabilityIds).toEqual(['y', 'a', 'x']);
+});
+
+
+it("counts descendants through a hundred thousand nested domains without recursion", () => {
+  const size = 100_000;
+  const nodes = Array.from({ length: size }, (_, i) =>
+    node(String(i), i === size - 1 ? "element" : "domain"));
+  const edges = Array.from({ length: size - 1 }, (_, i) =>
+    edge(String(i), String(i + 1), "contains"));
+  const rows = computeDomainCensusRows(nodes, edges);
+  expect(rows).toHaveLength(size - 1);
+  expect(rows.every(row => row.elementCount === 1 && row.capabilityCount === 0)).toBe(true);
+});
