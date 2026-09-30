@@ -44,3 +44,30 @@ describe('computeVaultHealth dependency cycles', () => {
     expect(checks.find((check) => check.id === 'dependency_cycles')?.status).toBe('fail');
   });
 });
+
+describe('computeVaultHealth domain containment', () => {
+  it('accepts aliases and generic containment without accepting the wrong relation kind', () => {
+    const { missingContainment } = computeVaultHealth([
+      { slug: 'domains/핵심', frontmatter: { kind: 'domain', capabilities: ['결제', '결제'], contains: ['저장'], elements: ['capabilities/wrong'] } },
+      { slug: 'capabilities/결제', frontmatter: { kind: 'capability', domain: '핵심' } },
+      { slug: 'elements/저장', frontmatter: { kind: 'element', domain: 'domains/핵심' } },
+      { slug: 'capabilities/wrong', frontmatter: { kind: 'capability', domain: '핵심' } },
+      { slug: 'elements/unlinked', frontmatter: { kind: 'element', domain: '핵심' } },
+    ]);
+    expect(missingContainment).toEqual([
+      { slug: 'capabilities/wrong', domain: 'domains/핵심' },
+      { slug: 'elements/unlinked', domain: 'domains/핵심' },
+    ]);
+  });
+
+  it('keeps every member of a large domain linked', () => {
+    const slugs = Array.from({ length: 10_000 }, (_, i) => `elements/e${i}`);
+    const { missingContainment, summary } = computeVaultHealth([
+      { slug: 'domains/core', frontmatter: { kind: 'domain', elements: slugs } },
+      ...slugs.map((slug) => ({ slug, frontmatter: { kind: 'element', domain: 'core' } })),
+    ]);
+    expect(missingContainment).toEqual([]);
+    expect(summary.relationRecommendations).toBe(0);
+    expect(summary.nodes).toBe(10_001);
+  });
+});

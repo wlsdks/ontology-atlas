@@ -169,7 +169,6 @@ interface CompiledGraph {
   nodes: CompiledNode[];
   edges: CompiledEdge[];
   issueCount: number;
-  outgoing: Map<string, CompiledEdge[]>;
   aliasToSlug: Map<string, string>;
 }
 
@@ -179,7 +178,6 @@ function malformedFrontmatterCount(doc: VaultHealthDoc): number {
   ).length;
 }
 
-// The parts of `compileOntology` the health verdict needs.
 /** A document without `kind:` is plain markdown, not a node, as in the MCP compiler. */
 function isOntologyNode(doc: VaultHealthDoc): boolean {
   const kind = doc.frontmatter?.kind;
@@ -234,12 +232,6 @@ function compileHealthGraph(input: readonly VaultHealthDoc[]): CompiledGraph {
     path: doc.frontmatter?.path,
   }));
 
-  const outgoing = new Map<string, CompiledEdge[]>();
-  for (const edge of edges) {
-    if (!outgoing.has(edge.from)) outgoing.set(edge.from, []);
-    outgoing.get(edge.from)!.push(edge);
-  }
-
   const malformedCount = docs.reduce(
     (count, doc) => count + malformedFrontmatterCount(doc),
     0,
@@ -248,7 +240,6 @@ function compileHealthGraph(input: readonly VaultHealthDoc[]): CompiledGraph {
     nodes,
     edges,
     issueCount: ambiguousCount + danglingCount + malformedCount,
-    outgoing,
     aliasToSlug,
   };
 }
@@ -321,10 +312,16 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
     if (slugSet.has(candidate)) return candidate;
     return graph.aliasToSlug.get(candidate) ?? null;
   };
-  const hasResolvedEdge = (from: string, to: string, via: string) =>
-    (graph.outgoing.get(from) ?? []).some(
-      (edge) => edge.resolved && edge.to === to && edge.via === via,
-    );
+  // O(E) index replaces repeated domain-edge scans.
+  const membersByDomain = new Map<string, Map<string, Set<string>>>();
+  for (const edge of graph.edges) {
+    if (!edge.resolved || !['capabilities', 'elements', 'contains'].includes(edge.via)) continue;
+    let relations = membersByDomain.get(edge.from);
+    if (!relations) membersByDomain.set(edge.from, (relations = new Map()));
+    let members = relations.get(edge.via);
+    if (!members) relations.set(edge.via, (members = new Set()));
+    members.add(edge.to);
+  }
 
   const targets: MissingContainmentTarget[] = [];
   for (const node of [...graph.nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
@@ -333,8 +330,8 @@ function missingDomainContainment(graph: CompiledGraph): MissingContainmentTarge
     if (!domainSlug) continue;
     const relation = node.kind === 'capability' ? 'capabilities' : 'elements';
     if (
-      hasResolvedEdge(domainSlug, node.slug, relation) ||
-      hasResolvedEdge(domainSlug, node.slug, 'contains')
+      membersByDomain.get(domainSlug)?.get(relation)?.has(node.slug) ||
+      membersByDomain.get(domainSlug)?.get('contains')?.has(node.slug)
     ) {
       continue;
     }
