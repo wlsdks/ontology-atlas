@@ -3,6 +3,7 @@ import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
+import { armMapLayoutMorph } from "@/shared/lib/map-layout-morph-store";
 import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
 import { withBasePath } from "@/shared/lib/base-path";
 import { cn } from "@/shared/lib/cn";
@@ -288,6 +289,7 @@ export function TopologyCommandChrome({
                 intent={routeState.constellationIntent}
                 activeId={routedConstellation?.id ?? null}
                 onFocus={(id, memberSlugs) => {
+                  armMapLayoutMorph();
                   writeView3d(false);
                   writeGalaxy(true);
                   setActiveConstellation({ id, memberSlugs });

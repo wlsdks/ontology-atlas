@@ -24,6 +24,7 @@ export function TopologyHexBoardSurface({
   onPaneClick,
   onDrawnCountChange,
   reducedMotion,
+  arrivedByMorph,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -34,6 +35,7 @@ export function TopologyHexBoardSurface({
   onPaneClick: () => void;
   onDrawnCountChange?: (drawn: number) => void;
   reducedMotion: boolean;
+  arrivedByMorph: boolean;
 }) {
   const t = useTranslations("topology.hexBoard");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
@@ -162,6 +164,7 @@ export function TopologyHexBoardSurface({
       listLabel={t("listLabel")}
       legend={legend}
       reducedMotion={reducedMotion}
+      arrivedByMorph={arrivedByMorph}
     />
   );
 }

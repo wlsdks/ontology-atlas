@@ -2,24 +2,31 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
-import { collectCanvasObstacles, computeFreeArea, measureEdgeFitObstacle, type Rect } from "../interaction/free-area";
+import type { Rect } from "../interaction/free-area";
+import { VIEW_CAMERA_MS, VIEW_DIM_MS } from "../model/motion-physics";
 import {
-  computeTerritoryLayout,
   placeTerritoryCluster,
   territoryClusterAvoid,
   type Box,
   type TerritoryLayout,
-  type TerritoryTextRole,
 } from "../model/territories-layout";
+import {
+  layoutTerritories,
+  measureTerritoryText,
+  readTerritoryInks,
+  readTerritoryRoom,
+  territoryFreeArea as freeAreaOf,
+  territoryMarks,
+  territoryRestOffset,
+} from "../morph/territories-marks";
 import {
   drawTerritories,
   focusCapability as focusCapabilityOf,
-  TERRITORY_FONTS,
   territoryElementNameWidth,
   type TerritoryEvidenceState,
-  type TerritoryInks,
 } from "../render/territories";
 
 /**
@@ -66,68 +73,11 @@ export interface OntologyTerritoriesMapProps {
    * wrapper's size alone does not move when a panel slides over it.
    */
   chromeKey?: string;
+  arrivedByMorph?: boolean;
 }
 
-const DIM_MS = 160;
-const CAMERA_MS = 280;
 /** How much of the drawing must stay on screen however far it is dragged. */
 const PAN_KEEP = 160;
-/** Room the chrome leaves free at rest: below the tool lane, above the legend, beside the tiles. */
-const ROOM_TOP = 96;
-const ROOM_BOTTOM = 64;
-/** Air kept between the drawing and the legend above it. */
-const LEGEND_GAP = 8;
-const ROOM_RIGHT = 80;
-const ROOM_LEFT_PAD = 16;
-
-let measureContext: CanvasRenderingContext2D | null = null;
-function measureText(text: string, role: TerritoryTextRole): number {
-  if (typeof document === "undefined") return text.length * 7;
-  measureContext ??= document.createElement("canvas").getContext("2d");
-  if (!measureContext) return text.length * 7;
-  measureContext.font = TERRITORY_FONTS[role];
-  return measureContext.measureText(text).width;
-}
-
-/**
- * The `--map-territory-*` family, read from the stylesheet like every map token. Stale wears the
- * product's one warning hue, the same amber the insights brief marks stale with. A missing token
- * draws nothing rather than guessing a colour.
- */
-function readTerritoryInks(): TerritoryInks | null {
-  if (typeof window === "undefined") return null;
-  const style = getComputedStyle(document.documentElement);
-  const read = (name: string) => style.getPropertyValue(name).trim();
-  const title = read("--map-territory-title");
-  const count = read("--map-territory-count");
-  const stale = read("--map-territory-stale");
-  const staleFill = read("--map-territory-stale-fill");
-  const rimLight = read("--map-territory-rim-light");
-  const rollupAlpha = Number.parseFloat(read("--map-territory-rollup-alpha"));
-  const glowAlpha = Number.parseFloat(read("--map-territory-glow-alpha"));
-  const arrival = read("--map-territory-arrival");
-  const arrivalMs = arrival.endsWith("ms") ? Number.parseFloat(arrival) : Number.parseFloat(arrival) * 1000;
-  if (!title || !count || !stale || !staleFill || !rimLight || !Number.isFinite(rollupAlpha) || !Number.isFinite(glowAlpha) || !Number.isFinite(arrivalMs)) {
-    return null;
-  }
-  return { title, count, stale, staleFill, rimLight, rollupAlpha, glowAlpha, arrivalMs };
-}
-
-/**
- * The map's free area in canvas px: the canvas minus the chrome standing on it (INDEX, the
- * inspector), and minus the legend along the bottom. The legend is the view's own and too short
- * to count as a panel, but a name drawn under it is just as unreadable.
- */
-function freeAreaOf(canvas: HTMLCanvasElement | null, legend: Element | null = null): Rect | null {
-  if (!canvas) return null;
-  const r = canvas.getBoundingClientRect();
-  const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
-  const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
-  let bottom = free.y + free.height;
-  const legendBox = legend?.getBoundingClientRect();
-  if (legendBox && legendBox.height > 0 && legendBox.top > free.y) bottom = Math.min(bottom, legendBox.top - LEGEND_GAP);
-  return { x: free.x - r.x, y: free.y - r.y, width: free.width, height: bottom - free.y };
-}
 
 /** The legend's visible pill, the part that takes room. */
 const legendOf = (wrap: HTMLElement | null) => wrap?.querySelector('[data-territories-legend-pill]') ?? null;
@@ -162,6 +112,7 @@ export function OntologyTerritoriesMap({
   reducedMotion = false,
   inspectorOpen = true,
   chromeKey = "",
+  arrivedByMorph = false,
 }: OntologyTerritoriesMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -201,32 +152,22 @@ export function OntologyTerritoriesMap({
   }, [inspectorOpen]);
 
   /* ── layout ─────────────────────────────────────────────────────────── */
-  const hub = useMemo(() => (room ? { x: room.x + room.width / 2 - 10, y: room.y + room.height / 2 + 10 } : null), [room]);
   const { layout, staleDomains } = useMemo(() => {
     const stale = new Set<string>();
-    const roomRel = room && hub ? { x: room.x - hub.x, y: room.y - hub.y, w: room.width, h: room.height } : null;
-    const result: TerritoryLayout = computeTerritoryLayout(
-      nodes.map((n) => ({ id: n.id, label: n.label, kind: n.kind })),
-      edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType })),
-      {
-        measure: measureText,
-        domainStats: ({ id, capabilityIds, capabilityCount, elementCount }) => {
-          const staleCount = evidenceMeasured ? capabilityIds.filter((c) => evidence.get(c) === "stale").length : null;
-          const { text, staleSuffix } = domainStats({ capabilityCount, elementCount, staleCount });
-          if (staleSuffix) stale.add(id);
-          return text;
-        },
-        room: roomRel,
-      },
-    );
+    const result = layoutTerritories(nodes, edges, room, ({ id, capabilityIds, capabilityCount, elementCount }) => {
+      const staleCount = evidenceMeasured ? capabilityIds.filter((c) => evidence.get(c) === "stale").length : null;
+      const { text, staleSuffix } = domainStats({ capabilityCount, elementCount, staleCount });
+      if (staleSuffix) stale.add(id);
+      return text;
+    });
     return { layout: result, staleDomains: stale as ReadonlySet<string> };
-  }, [nodes, edges, domainStats, evidence, evidenceMeasured, room, hub]);
+  }, [nodes, edges, domainStats, evidence, evidenceMeasured, room]);
   const projectCount = useMemo(() => nodes.find((n) => n.kind === "project")?.descendantCount ?? null, [nodes]);
   const elementNames = useMemo(() => new Map(nodes.filter((n) => n.kind === "element").map((n) => [n.id, n.label])), [nodes]);
   /** The element list's widest name, set in the font the paint uses, so hit test and paint agree. */
   const clusterWidest = useCallback(
     (cap: Pick<TerritoryLayout["capabilities"][number], "elementIds">) =>
-      territoryElementNameWidth(cap, elementNames, (text) => measureText(text, "element")),
+      territoryElementNameWidth(cap, elementNames, (text) => measureTerritoryText(text, "element")),
     [elementNames],
   );
 
@@ -301,18 +242,18 @@ export function OntologyTerritoriesMap({
       let again = false;
       const anim = animRef.current;
       if (anim) {
-        const t = Math.min(1, (now - anim.start) / CAMERA_MS);
+        const t = Math.min(1, (now - anim.start) / VIEW_CAMERA_MS);
         const e = 1 - Math.pow(1 - t, 3);
         offsetRef.current = { x: anim.from.x + (anim.to.x - anim.from.x) * e, y: anim.from.y + (anim.to.y - anim.from.y) * e };
         if (t < 1) again = true;
         else animRef.current = null;
       }
-      arrivalStartRef.current ??= now;
+      arrivalStartRef.current ??= arrivedByMorph ? now - inks.arrivalMs : now;
       const arrivalT = reducedMotion ? 1 : Math.min(1, (now - arrivalStartRef.current) / Math.max(1, inks.arrivalMs));
       if (arrivalT < 1) again = true;
       const dim = dimRef.current;
       if (dim.t !== dim.target) {
-        const step = reducedMotion ? 1 : 16 / DIM_MS;
+        const step = reducedMotion ? 1 : 16 / VIEW_DIM_MS;
         dim.t = dim.target > dim.t ? Math.min(dim.target, dim.t + step) : Math.max(dim.target, dim.t - step);
         if (dim.t !== dim.target) again = true;
       }
@@ -346,7 +287,7 @@ export function OntologyTerritoriesMap({
       if (!again) writeMirror(offsetRef.current);
       return again;
     },
-    [size, layout, selectedId, lit, evidence, staleDomains, elementNames, projectCount, reducedMotion, writeMirror],
+    [size, layout, selectedId, lit, evidence, staleDomains, elementNames, projectCount, reducedMotion, arrivedByMorph, writeMirror],
   );
 
   /*
@@ -382,26 +323,10 @@ export function OntologyTerritoriesMap({
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       publishFreeEdges(wrap, freeAreaOf(canvasRef.current));
       if (selectedRef.current) return;
-      const free = freeAreaOf(canvasRef.current, legendOf(wrap)) ?? { x: 0, y: 0, width: r.width, height: r.height };
-      const x = free.x + ROOM_LEFT_PAD;
-      const y = Math.max(free.y, ROOM_TOP);
-      const right = Math.min(free.x + free.width, r.width - ROOM_RIGHT);
-      const bottom = Math.min(free.y + free.height, r.height - ROOM_BOTTOM);
-      const next = { x: Math.round(x), y: Math.round(y), width: Math.round(right - x), height: Math.round(bottom - y) };
+      const { room: next, restCentreX: centreX } = readTerritoryRoom(canvasRef.current, r.width, r.height, legendOf(wrap));
       setRoom((prev) =>
         prev && prev.x === next.x && prev.y === next.y && prev.width === next.width && prev.height === next.height ? prev : next,
       );
-      /*
-       * The room is laid out with the tiles' allowance baked in, and the drawing rested with
-       * its project where the room's centre put it — not with the drawing centred. Its names
-       * hang unevenly around that project, so the drawing stood 12.5 px right of the free
-       * map's centre at 1512×949 (measured 2026-09-26). The centre is read from the chrome
-       * that stands there: INDEX or its folded tab on the left, the rail's column on the right.
-       */
-      const canvas = canvasRef.current;
-      const leftEdge = Math.max(free.x, canvas ? (measureEdgeFitObstacle(canvas, "left")?.reach ?? 0) : 0);
-      const rightEdge = Math.min(free.x + free.width, r.width - (canvas ? (measureEdgeFitObstacle(canvas, "right")?.reach ?? 0) : 0));
-      const centreX = Math.round((leftEdge + rightEdge) / 2 * 2) / 2;
       setRestCentreX((prev) => (prev === centreX ? prev : centreX));
     };
     read();
@@ -437,22 +362,13 @@ export function OntologyTerritoriesMap({
     [size, layout.bounds],
   );
 
-  // Rest position: the drawing centred across the free map, between the panels and the rail.
-  // Down the page, the project where the room put it — or, when the vault does not fit the
-  // room, the drawing centred in it, its top in view if it is taller.
   useEffect(() => {
     if (!size) return;
-    const free = room ?? { x: 0, y: 0, width: size.w, height: size.h };
-    const b = layout.bounds;
-    const x = (restCentreX ?? free.x + free.width / 2) - (b.x + b.w / 2);
-    const rest =
-      layout.fitsRoom && hub
-        ? { x, y: hub.y }
-        : { x, y: b.h > free.height ? free.y + 8 - b.y : free.y + free.height / 2 - (b.y + b.h / 2) };
+    const rest = territoryRestOffset(layout, size, room, restCentreX);
     restRef.current = rest;
     if (!selectedRef.current || !offsetRef.current) offsetRef.current = rest;
     requestDraw();
-  }, [size, room, hub, layout, restCentreX, requestDraw]);
+  }, [size, room, layout, restCentreX, requestDraw]);
 
   const moveCamera = useCallback(
     (to: { x: number; y: number }) => {
@@ -606,6 +522,23 @@ export function OntologyTerritoriesMap({
       // cancelled frame left in the ref would make every later request look already pending.
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+    },
+    [],
+  );
+
+  const snapshotRef = useRef<() => void>(() => {});
+  useLayoutEffect(() => {
+    snapshotRef.current = () => {
+      const tokens = readOntologyMapTokensOrNull();
+      if (!tokens || !offsetRef.current) return;
+      const rest = 1 - dimRef.current.t * (1 - tokens.egoRestAlpha);
+      const marks = territoryMarks(layout, offsetRef.current, tokens, (id) => (lit && !lit.has(id) ? rest : 1));
+      publishMapLayoutSnapshot({ marks, bitmap: copyCanvasAtCssSize(canvasRef.current), ground: tokens.canvasBgNear });
+    };
+  }, [layout, lit]);
+  useLayoutEffect(
+    () => () => {
+      if (isMapLayoutMorphArmed()) snapshotRef.current();
     },
     [],
   );
