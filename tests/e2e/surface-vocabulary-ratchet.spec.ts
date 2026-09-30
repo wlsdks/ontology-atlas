@@ -54,30 +54,6 @@ import { waitForAnimationsDone } from "./settle";
  * side lets new combinations hide on the control side. Controls are owned by the value
  * layer so their ceiling is looser, but it is not unbounded.
  */
-/*
- * 2026-08-18 — the gateway remake brought this from 14 to **12**. Boxes stacked into
- * one panel unfolded into a section-by-section narrative, removing two one-off
- * surfaces. Per the ratchet's discipline **the ceiling drops with the count** —
- * otherwise the reduction becomes slack again and the next person spends it on a new
- * combination.
- */
-/*
- * 2026-09-05 — 12 → 11 → **10**. MCP left `/agents` for its own destination, and the pane that
- * moved took one surface combination off the routes this spec walks with it. Per this ratchet's
- * own discipline the ceiling drops with the count: leaving it at 11 hands the reduction back as
- * slack for whoever adds the next combination.
- *
- * ⚠️ `/ko/mcp/` is deliberately **not** added to `ROUTES` here. This list is a sample of the
- * screens, not a mirror of `audited-routes`, and the connectors card reuses the same
- * `border-soft + overlay-1` panel the routes below already contribute — adding it would grow the
- * walk without growing what is measured.
- *
- * 2026-09-18 — 9 → **10**, the mirror of the 2026-09-05 drop. MCP folded back into `/agents`
- * as a section of that page (`/mcp/` now redirects there), so the one combination its pane took
- * away when it left is on the walked routes again. Nothing new was assembled: the same pane,
- * the same boxes, walked once more because the route that carries it is in the sample.
- */
-// Chart marks encode data, not card appearances; the actual surface vocabulary is ten.
 const BASELINE_SURFACE_COMBOS = 8;
 const BASELINE_CONTROL_COMBOS = 17;
 
@@ -96,11 +72,9 @@ const ROUTES = [
 function collectSurfaceVocabulary() {
   const out: { key: string; interactive: boolean; detail: unknown }[] = [];
   for (const el of document.querySelectorAll("main *")) {
-    // Keep a chart frame eligible, but exclude the marks inside graphics.
     if (el.parentElement?.closest('svg, [role="img"]')) continue;
     const style = getComputedStyle(el);
     const box = el.getBoundingClientRect();
-    // Small fragments and invisible elements are not surfaces.
     if (box.width < 40 || box.height < 24) continue;
     if (style.visibility === "hidden" || style.display === "none") continue;
     if (Number(style.opacity) < 0.05) continue;
@@ -111,11 +85,11 @@ function collectSurfaceVocabulary() {
     const radius = style.borderTopLeftRadius;
     if (radius === "0px" || (!hasBorder && !hasBackground)) continue;
 
-    // Is it something you press? Then it belongs to the layer `controlClass` owns.
     const tag = el.tagName.toLowerCase();
     const interactive =
       ["button", "a", "input", "textarea", "select", "summary", "label"].includes(tag) ||
       el.getAttribute("role") === "button" ||
+      el.hasAttribute("data-selection-indicator") ||
       el.closest("button,a[href]") !== null;
 
     out.push({
