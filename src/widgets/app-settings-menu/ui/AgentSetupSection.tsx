@@ -53,8 +53,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         <div className="mt-3">
           <OpenVaultCta
             testId="agents-open-vault"
-            tone="accentOnTint"
-            className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
+            variant="outline"
           />
         </div>
         <div

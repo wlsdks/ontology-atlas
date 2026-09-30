@@ -78,6 +78,17 @@ test.describe("Library rounds", () => {
     await expect(ledger.locator("[data-outcome='redrafted']")).toHaveCount(1);
   });
 
+  test("the door from a selected round opens that round's schedule in Automations", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: true });
+    await openRounds(page);
+    await page.getByTestId("library-round-r-confluence").click();
+    await page.getByTestId("library-rounds-new").click();
+    await expect(page.getByTestId("automations")).toHaveAttribute("data-automations-lane", "documents");
+    await expect(page.getByTestId("automation-r-confluence")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByTestId("automation-r-consistency")).toHaveAttribute("aria-expanded", "false");
+  });
+
   test("a new round is registered under a stated scope and lands in rounds.json", async ({ page }) => {
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });

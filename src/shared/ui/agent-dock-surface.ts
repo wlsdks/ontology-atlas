@@ -9,3 +9,11 @@ export const AGENT_DOCK_INSET_SURFACE_CLASS = [
   "border border-[color:var(--map-panel-border)]",
   "bg-[color:var(--color-panel)] shadow-[var(--map-panel-shadow)]",
 ].join(" ");
+
+export function agentDockReflowStyle(properties: "width" | "width, margin-left") {
+  return {
+    transitionProperty: properties,
+    transitionDuration: "var(--agent-panel-reflow-duration)",
+    transitionTimingFunction: "var(--topology-motion-ease-out)",
+  } as const;
+}

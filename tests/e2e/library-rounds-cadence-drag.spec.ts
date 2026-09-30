@@ -43,7 +43,7 @@ test.describe("Library rounds — the cadence rail", () => {
 
     // It opens on the cadence every round had before the rail existed.
     await expect(readback).toContainText("Every hour");
-    await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 hours");
+    await expect(thumb).toHaveAttribute("aria-valuetext", "every hour");
 
     /*
      * Minutes, then a real drag. Five detents sit at 0 / 25 / 50 / 75 / 100 percent, so 40%
@@ -75,7 +75,7 @@ test.describe("Library rounds — the cadence rail", () => {
 
     // Switching the unit carries the value onto the rail the new unit can say.
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Hours" }).click();
-    await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 hours");
+    await expect(thumb).toHaveAttribute("aria-valuetext", "every hour");
     await expect.poll(() => offsetFrom(60)).toBeLessThan(2);
 
     // Back to ten minutes for the round that is actually saved.
@@ -141,7 +141,7 @@ test.describe("Library rounds — the cadence rail", () => {
     const thumb = page.getByTestId("library-rounds-cadence-thumb");
     await thumb.focus();
     await page.keyboard.press("Home");
-    await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 minutes");
+    await expect(thumb).toHaveAttribute("aria-valuetext", "every minute");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 10 minutes");

@@ -35,7 +35,7 @@ export interface RoundStore {
   upsert(round: RoundRecord): Promise<RoundWriteResult>;
   remove(id: string): Promise<RoundWriteResult>;
   /** Re-reads first; an unknown id saves unchanged. */
-  patch(id: string, change: Partial<RoundRecord>): Promise<RoundWriteResult>;
+  patch(id: string, change: Partial<RoundRecord> | ((current: RoundRecord) => Partial<RoundRecord>)): Promise<RoundWriteResult>;
   /** Records when the window went hidden, unless an absence is open. */
   markAway(at: string): Promise<RoundWriteResult>;
   /** Closes the open absence into `lastAway`; none open saves unchanged. */
@@ -119,7 +119,7 @@ export function createRoundStore(medium: RoundMedium): RoundStore {
     patch: (id, change) =>
       mutate((state) => ({
         ...state,
-        rounds: state.rounds.map((entry) => (entry.id === id ? { ...entry, ...change, id } : entry)),
+        rounds: state.rounds.map((entry) => (entry.id === id ? { ...entry, ...(typeof change === 'function' ? change(entry) : change), id } : entry)),
       })),
     markAway: (at) =>
       mutate((state) => {

@@ -13,6 +13,7 @@ any canvas graph.
 | `mass-spring.ts` | mass from degree, the release spring per mass, a damped-spring step, the press step response, the drop velocity cap | none directly |
 | `release-offsets.ts` | one `SpringOffset` per node: lag while dragging, spring home on release, the drop seed, velocity smoothing | `stepLagOffset` · `stepHomeOffset` · `seedDropOffset` · `smoothVelocity` · `isOffsetAtRest` |
 | `ego-light.ts` | the bloom under a node, the glow on ego lines | `drawNodeBloom` · `beginEdgeGlow`/`endEdgeGlow` |
+| `edge-reveal.ts` | a selection's lines drawn from their current ink, source to target (symmetric ones from the selected end), on the centre's ego-reveal ramp; comets stay inside the drawn span | `edgeRevealProgress` (traces split the curve with `partialQuadratic`) |
 
 ## Tokens
 

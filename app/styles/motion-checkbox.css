@@ -1,0 +1,36 @@
+@layer base {
+  .motion-checkbox-box {
+    transition:
+      background-color var(--motion-fast) var(--motion-ease),
+      border-color var(--motion-fast) var(--motion-ease);
+  }
+
+  .motion-checkbox-mark {
+    opacity: 0;
+    transition: opacity var(--motion-fast) var(--motion-ease);
+  }
+
+  .motion-checkbox-mark path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .peer:checked ~ .motion-checkbox-mark {
+    opacity: 1;
+  }
+
+  .peer:checked ~ .motion-checkbox-mark path {
+    stroke-dashoffset: 0;
+    animation: motionCheckDraw var(--motion-fast) var(--motion-ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .peer:checked ~ .motion-checkbox-mark path {
+      animation: none !important;
+    }
+
+    .motion-checkbox-mark {
+      transition-duration: var(--motion-fast) !important;
+    }
+  }
+}

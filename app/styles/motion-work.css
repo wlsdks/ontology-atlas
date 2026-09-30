@@ -1,0 +1,73 @@
+@layer base {
+  @keyframes motionWorkSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes motionWorkSweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+
+  .motion-work-spin {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: motionWorkSpin calc(var(--motion-settle) * 4) linear infinite;
+  }
+
+  .motion-work-arc {
+    transition: stroke-dashoffset var(--motion-base) var(--motion-ease);
+  }
+
+  .motion-work-ring {
+    transition: stroke var(--motion-fast) var(--motion-ease);
+  }
+
+  .motion-work-mark {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .motion-swap-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .motion-swap-out {
+    animation: overlayFadeOut var(--motion-fast) var(--motion-ease) both;
+  }
+
+  .motion-work-fill {
+    transform-origin: left center;
+    transition:
+      transform var(--motion-base) var(--motion-ease),
+      background-color var(--motion-fast) var(--motion-ease),
+      opacity var(--motion-fast) var(--motion-ease);
+  }
+
+  .motion-work-sweep {
+    animation: motionWorkSweep calc(var(--motion-settle) * 4) linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-work-spin,
+    .motion-work-sweep {
+      animation: none !important;
+      transform: none !important;
+    }
+
+    .motion-work-mark,
+    .motion-swap-in,
+    .motion-swap-out {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .motion-work-fill {
+      transition-property: background-color, opacity !important;
+      transition-duration: var(--motion-fast) !important;
+    }
+  }
+}

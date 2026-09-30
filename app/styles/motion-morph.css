@@ -1,0 +1,23 @@
+@layer base {
+  html.morph-transition {
+    view-transition-name: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*) {
+      animation: none;
+    }
+
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation-duration: var(--motion-fast);
+    }
+  }
+}

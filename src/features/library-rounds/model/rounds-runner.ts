@@ -1,6 +1,12 @@
-import type { RoundPassEntry, RoundRecord, RoundState } from '@/entities/library-round';
+import type { RoundPassEntry, RoundPassOutcome, RoundRecord, RoundState } from '@/entities/library-round';
 
 export type RoundsStoreStatus = 'no-vault' | 'loading' | 'ok' | 'missing' | 'malformed' | 'unavailable';
+
+export interface RoundUnrecorded {
+  endedAt: string;
+  outcome: RoundPassOutcome;
+  files: string[];
+}
 
 export interface RoundsRunnerValue {
   /** Native folder only. `no-vault` in the browser and before a folder is open. */
@@ -20,9 +26,11 @@ export interface RoundsRunnerValue {
   /** None of these runs here, by the clock or by "Run now", whatever the folder's switch says. */
   notAllowedHere: ReadonlySet<string>;
   changedSinceAllowed: ReadonlySet<string>;
+  unrecorded: ReadonlyMap<string, RoundUnrecorded>;
   allow(id: string): boolean;
   /** `startedNow` is false when another pass is running, so the screen must not promise an immediate pass. */
   save(round: RoundRecord): Promise<{ ok: boolean; startedNow: boolean }>;
+  update(round: RoundRecord): Promise<boolean>;
   remove(id: string): Promise<boolean>;
   setEnabled(id: string, enabled: boolean): Promise<boolean>;
   runNow(id: string): void;

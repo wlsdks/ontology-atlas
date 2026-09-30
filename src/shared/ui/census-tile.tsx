@@ -75,10 +75,6 @@ export function CensusBigNumber({
   tone?: 'numeral' | 'warning' | 'primary';
   testId?: string;
 }) {
-  /*
-   * Counts up once on mount; `tabular-nums` keeps the width stable and `useCountUp` snaps under
-   * reduced motion.
-   */
   const isNumeric = typeof value === 'number';
   const counted = useCountUp(isNumeric ? value : 0);
   const display = isNumeric ? counted : value;

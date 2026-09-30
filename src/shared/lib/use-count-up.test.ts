@@ -3,6 +3,8 @@ import { act, renderHook } from "@testing-library/react";
 import { createElement } from "react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
+import { easeMotion } from "@/shared/motion/ease";
+import { MOTION } from "@/shared/motion/tokens";
 import { useCountUp } from "./use-count-up";
 
 function mockReducedMotion(matches: boolean) {
@@ -33,8 +35,6 @@ describe("useCountUp — insights count-up (#3)", () => {
     }
 
     try {
-      // Model the real split: the export renderer has no rAF, while the hydrating
-      // browser does. A client-only 0 used to disagree with the server's 42.
       vi.stubGlobal("requestAnimationFrame", undefined);
       const serverHtml = renderToString(createElement(CountText, { target: 42 }));
       expect(serverHtml).toContain(">42<");
@@ -69,46 +69,16 @@ describe("useCountUp — insights count-up (#3)", () => {
   it("motion enabled → starts counting from 0 on mount", () => {
     mockReducedMotion(false);
     const { result } = renderHook(() => useCountUp(42));
-    // First committed value is the animation floor; it climbs to target via rAF.
     expect(result.current).toBe(0);
   });
 
-  /**
-   * ⚠️ **A number with nothing to count renders itself, not a zero.**
-   *
-   * `easeOutCubic` crosses the first rounding boundary at p = 0.2063, so counting 0 → 1 over the
-   * 400ms default shows `0` for **82.5ms** — long enough to be read as the answer. The Harness
-   * coverage cards paint that numeral in the amber this product reserves for *nothing is here*, so
-   * the intro spent 82.5ms asserting "nothing" over a value that means the opposite, on the screen
-   * whose whole repair was deleting marks that said nothing (design-motion, 2026-09-13).
-   *
-   * The floor is 3, so the two cases below reading (37ms and 23.8ms) go with it. Without this
-   * assertion the floor could be set to 0 and every other test in this file would still pass.
-   */
   it("a target too small to count renders its own value on the first frame", () => {
     mockReducedMotion(false);
     expect(renderHook(() => useCountUp(1)).result.current).toBe(1);
     expect(renderHook(() => useCountUp(2)).result.current).toBe(2);
-    /* The floor itself still counts, so the gate is a floor and not a blanket exemption. */
     expect(renderHook(() => useCountUp(3)).result.current).toBe(0);
   });
 
-  /**
-   * **A target changing mid-intro must land on the new target** (regression measured
-   * 2026-08-12).
-   *
-   * The insights screen first renders from the built-in sample (125 nodes) and the
-   * intro starts counting 0→125. Within those 400ms the user's vault (5 nodes)
-   * arrives: the sync effect snaps to 5, but **the intro rAF loop keeps running
-   * toward the 125 it captured in a closure at mount**, overwrites that 5, and
-   * settles at 125. The target never changes again, so the screen stayed at 125
-   * forever.
-   *
-   * Measured (composition tab, a 5-node user vault): +400ms showed 116, +900ms
-   * settled at 125, while the kind distribution and the top chip on the same screen
-   * said 5 — **one screen contradicting itself**, under a subtitle promising that
-   * every number is computed from the documents.
-   */
   it("인트로 도중 target 이 바뀌면 새 target 에서 끝난다 — 견본이 사용자 폴더를 덮으면 안 된다", () => {
     mockReducedMotion(false);
     const frames: FrameRequestCallback[] = [];
@@ -125,15 +95,12 @@ describe("useCountUp — insights count-up (#3)", () => {
         initialProps: { target: 125 },
       });
 
-      // Halfway through the intro —
       clock = 200;
       act(() => frames.shift()!(clock));
       expect(result.current).toBeGreaterThan(0);
 
-      // — the user's vault arrives.
       rerender({ target: 5 });
 
-      // Run the rest of the intro to completion.
       clock = 1_000;
       while (frames.length > 0) {
         act(() => frames.shift()!(clock));
@@ -146,11 +113,6 @@ describe("useCountUp — insights count-up (#3)", () => {
     }
   });
 
-  /*
-   * The brief's band answers "Seen up to here" by letting its numbers fall (owner direction C,
-   * 2026-09-23). Every other caller keeps the snap: they swap one folder's numbers for another's,
-   * and counting across that swap would animate a meaningless difference.
-   */
   it("animates a later change only when asked, and snaps otherwise", () => {
     mockReducedMotion(false);
     const frames: FrameRequestCallback[] = [];
@@ -167,12 +129,12 @@ describe("useCountUp — insights count-up (#3)", () => {
       return result.current;
     };
     try {
-      const animated = renderHook(({ target }) => useCountUp(target, 400, { animateChanges: true }), {
+      const animated = renderHook(({ target }) => useCountUp(target, undefined, { animateChanges: true }), {
         initialProps: { target: 20 },
       });
       expect(settle(animated.result)).toBe(20);
       animated.rerender({ target: 0 });
-      clock += 200;
+      clock += MOTION.settle.duration * 250;
       act(() => frames.shift()!(clock));
       expect(animated.result.current, "a marked visit should fall, not jump").toBeGreaterThan(0);
       expect(animated.result.current).toBeLessThan(20);
@@ -182,6 +144,35 @@ describe("useCountUp — insights count-up (#3)", () => {
       expect(settle(snapped.result)).toBe(20);
       snapped.rerender({ target: 0 });
       expect(snapped.result.current).toBe(0);
+    } finally {
+      nowSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("useCountUp on the settle clock", () => {
+  it("reaches the target exactly at MOTION.settle and not a frame before", () => {
+    mockReducedMotion(false);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    let clock = 0;
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => clock);
+    const settleMs = MOTION.settle.duration * 1000;
+    try {
+      const { result } = renderHook(() => useCountUp(1000));
+      clock = settleMs - 1;
+      act(() => frames.shift()!(clock));
+      expect(result.current).toBe(Math.round(1000 * easeMotion((settleMs - 1) / settleMs)));
+      expect(frames).toHaveLength(1);
+      clock = settleMs;
+      act(() => frames.shift()!(clock));
+      expect(result.current).toBe(1000);
+      expect(frames).toHaveLength(0);
     } finally {
       nowSpy.mockRestore();
       vi.unstubAllGlobals();
