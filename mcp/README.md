@@ -22,7 +22,10 @@ The vault is still plain markdown. The graph-database-like behavior comes from
 runtime graph artifact without introducing a backend database. During one MCP
 server session, repeated `query_ontology` calls reuse the compiled artifact
 while the vault document signature is unchanged, so agent run orders avoid
-recompiling the same graph over and over.
+recompiling the same graph over and over. Every lookup still loads current document
+bytes. The cache fingerprint uses SHA-256 over length-prefixed slug, modification
+time and lossless string content, preserving document order independence without
+confusing changed bytes at the same modification time.
 
 Kind selection and relation meaning are not redefined in this tool manual. The
 single public contract is
