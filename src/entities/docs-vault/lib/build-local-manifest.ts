@@ -188,6 +188,7 @@ async function walk(
 
 /** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
 const KO_COLLATOR = new Intl.Collator('ko');
+const METADATA_STRING_POOL_LIMIT = 1024;
 
 /** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
 function insertIntoTree(
@@ -344,11 +345,22 @@ export interface BuiltVaultEntry {
   linkContexts?: LinkContext[];
 }
 
+function createMetadataStringPool() {
+  const strings = new Map<string, string>();
+  return (value: string) => {
+    const held = strings.get(value);
+    if (held !== undefined) return held;
+    if (strings.size < METADATA_STRING_POOL_LIMIT) strings.set(value, value);
+    return value;
+  };
+}
+
 /** Pure: one `.md` body to a BuiltVaultEntry. */
 function buildMdEntry(
   entry: WalkEntry,
   raw: string,
   lastModified: number,
+  internMetadata: (value: string) => string,
 ): BuiltVaultEntry {
   const slug = entry.relativePath.replace(/\.md$/, '');
   const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
@@ -400,6 +412,14 @@ function buildMdEntry(
     linksOut,
     mtime: lastModified,
   };
+  const detachedDoc = structuredClone(doc);
+  if (typeof detachedDoc.frontmatter.kind === 'string') detachedDoc.frontmatter.kind = internMetadata(detachedDoc.frontmatter.kind);
+  if (typeof detachedDoc.frontmatter.domain === 'string') detachedDoc.frontmatter.domain = internMetadata(detachedDoc.frontmatter.domain);
+  if (detachedDoc.frontmatter.slug === detachedDoc.slug) detachedDoc.frontmatter.slug = detachedDoc.slug;
+  for (const heading of detachedDoc.headings) {
+    heading.text = internMetadata(heading.text);
+    heading.slug = internMetadata(heading.slug);
+  }
   return {
     relativePath: entry.relativePath,
     lastModified,
@@ -407,7 +427,7 @@ function buildMdEntry(
     kind: 'md',
     /* Fresh copies: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
      * excerpt, display names and link text would pin every file's full text (58 MB at 12k). */
-    doc: structuredClone(doc),
+    doc: detachedDoc,
     linkContexts: structuredClone(linkContexts),
   };
 }
@@ -584,6 +604,7 @@ async function collectEntries(
     walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
+  const internMetadata = createMetadataStringPool();
   /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
    * transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind !== 'md')
@@ -612,7 +633,7 @@ async function collectEntries(
     }
     const file = await entry.handle.getFile();
     const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified);
+    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
   };
   return mapPooled(files, concurrency, readOne);
 }
@@ -660,6 +681,7 @@ export async function rebuildLocalManifestIncremental(
    * `sourceFileCount`, and its absence reorders the card while it is on screen. */
   const walked = await walkVault(root);
   const files = walked.entries;
+  const internMetadata = createMetadataStringPool();
   const walkInfo = {
     truncated: walked.truncated,
     prunedDirs: walked.prunedDirs,
@@ -723,7 +745,7 @@ export async function rebuildLocalManifestIncremental(
       };
     }
     const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified);
+    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
   };
   const entries = await mapPooled(files, readConcurrency, readOne);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };

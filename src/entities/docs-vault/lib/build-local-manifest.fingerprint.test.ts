@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildLocalManifest,
+  buildLocalManifestWithEntries,
+  rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint,
   walkVault,
 } from './build-local-manifest';
@@ -155,4 +157,35 @@ it.each([100_000, 100_001])('keeps the first 100,000 entries and reports truncat
   const result = await walkVault(root);
   expect(result.entries).toHaveLength(100_000);
   expect(result.truncated).toBe(size > 100_000);
+});
+
+it('shares repeated metadata values without sharing mutable headings or adding node fields', async () => {
+  const root = makeRoot({
+    'a.md': { text: '---\ntitle: A\nkind: element\ndomain: shared\n---\n\n## Includes\n\nA.', lastModified: 1 },
+    'b.md': { text: '---\ntitle: B\nkind: element\ndomain: shared\n---\n\n## Includes\n\nB.', lastModified: 1 },
+    'wiki/plain.md': { text: '---\ntitle: Plain\n---\n\n## Includes\n\nPlain.', lastModified: 1 },
+  });
+  const { manifest } = await buildLocalManifest(root);
+  const a = manifest.docs.find((doc) => doc.slug === 'a')!;
+  const b = manifest.docs.find((doc) => doc.slug === 'b')!;
+  const plain = manifest.docs.find((doc) => doc.slug === 'wiki/plain')!;
+  expect(Object.keys(plain.frontmatter)).toEqual(['title']);
+  expect(a.frontmatter.domain).toBe('shared');
+  expect(b.frontmatter.domain).toBe('shared');
+  expect(a.headings[0]).not.toBe(b.headings[0]);
+  a.headings[0].text = 'Changed';
+  expect(b.headings[0].text).toBe('Includes');
+});
+
+it('reuses frozen unchanged documents without mutating an earlier build', async () => {
+  const root = makeRoot({ 'a.md': { text: '---\ntitle: A\nkind: element\ndomain: shared\n---\n\n## Includes\n\nA.', lastModified: 1 } });
+  const first = await buildLocalManifestWithEntries(root);
+  const doc = first.build.manifest.docs[0];
+  Object.freeze(doc.frontmatter);
+  for (const heading of doc.headings) Object.freeze(heading);
+  Object.freeze(doc.headings);
+  Object.freeze(doc);
+  const next = await rebuildLocalManifestIncremental(root, first.entries);
+  expect(next.entries[0].doc).toBe(doc);
+  expect(next.build.manifest.docs[0]).toBe(doc);
 });
