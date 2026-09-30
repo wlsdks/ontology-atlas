@@ -225,3 +225,18 @@ describe("the wiki head with no coding agent", () => {
     expect(screen.getByTestId("library-actions-blocked")).toBeInTheDocument();
   });
 });
+
+it("updates the folded source summary when current source states change", () => {
+  const original = { ...BASE, sources: [...Array.from({ length: 13 }, (_, i) => source(i, "stale")), source(13, "not-compiled")] } as unknown as LibraryUiModel;
+  const result = mount(original, "sources");
+  expect(screen.getByTestId("library-source-states")).toHaveAttribute("data-folded-state", "stale");
+  const current = { ...original, sources: Array.from({ length: 14 }, (_, i) => source(i, "not-compiled")) } as unknown as LibraryUiModel;
+  result.rerender(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <Harness model={current} segment="sources" />
+    </NextIntlClientProvider>,
+  );
+  expect(screen.getByTestId("library-source-states")).toHaveAttribute("data-folded-state", "not-compiled");
+  expect(screen.getByTestId("library-source-states-not-compiled")).toHaveTextContent(/\b14\b/);
+  expect(screen.queryByTestId("library-source-states-stale")).toBeNull();
+});
