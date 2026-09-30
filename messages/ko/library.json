@@ -818,6 +818,8 @@
     "loadingTitle": "이 폴더의 자동 점검을 읽는 중",
     "malformedTitle": "자동 점검 파일을 봐야 해요",
     "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었어요. 고치거나 지운 뒤 다시 읽으세요.",
+    "unavailableTitle": "이 폴더의 자동 점검을 읽지 못했어요",
+    "unavailableDescription": "Atlas가 이 폴더의 .ontology-atlas/rounds.json을 읽지 못해 자동 점검을 보여 주거나 실행할 수 없어요. 폴더가 Atlas가 연 자리에 그대로 있는지 확인한 뒤 다시 읽으세요.",
     "retry": "다시 읽기",
     "emptyTitle": "첫 문서 점검을 예약하세요",
     "emptyDescription": "예약한 점검이 돌 때마다 결과가 여기에 최신순으로 쌓여요.",
@@ -922,10 +924,27 @@
       "durationMinutes": "{minutes, number}분",
       "heldLine": "{name} · {checked} · 바뀐 것 없음",
       "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했어요. 에이전트 화면에서 로그인한 뒤 자동 점검을 다시 돌리세요.",
+      "openAgents": "에이전트 화면 열기",
+      "failedError": "이번 점검은 오류로 멈췄어요: {detail}. 다시 돌리고, 같은 오류가 또 나면 폴더를 다시 여세요.",
+      "failedFolderNotRead": "Atlas가 이 폴더를 아직 다 읽지 못해 이번 점검은 아무것도 보지 못했어요. 잠시 뒤 다시 돌리세요.",
       "runningNow": "{name} · {phase} · {seconds, number}초",
       "phaseChecking": "문서 확인 중",
       "phaseAgent": "에이전트 턴 진행 중",
-      "stopped": "도는 중에 이 자동 점검을 빼거나 멈춰서 실행이 거기서 끝났어요."
+      "stopped": "도는 중에 이 자동 점검을 바꾸거나 빼거나 멈춰서 실행이 거기서 끝났어요.",
+      "undone": {
+        "restored": "{page} 문서를 이번 점검 전 상태로 되돌렸어요.",
+        "removed": "이번 점검이 새로 만든 {page} 문서를 지웠어요.",
+        "failed": "이번 점검 뒤 {page} 문서를 되돌리지 못했어요. 믿고 쓰기 전에 문서를 열어 확인하세요."
+      },
+      "undoneReason": {
+        "notDraft": "status: draft로 남지 않았어요. 예약 작업은 초안만 써요.",
+        "duplicateKey": "파일 맨 위 정보칸(frontmatter)에 {key}: 항목이 두 번 있어 읽는 쪽마다 다르게 읽을 수 있었어요.",
+        "forbiddenKey": "{key}: 항목이 있었어요. 이 항목은 사람만 넣을 수 있어요.",
+        "noFrontmatter": "파일 맨 위 정보칸(frontmatter)이 없어 초안으로 읽을 수 없었어요.",
+        "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
+      },
+      "undoneCopy": "Atlas가 빼낸 글은 {copy}에 보관했어요.",
+      "leftAsIs": "{page} 문서는 이번 점검이 쓴 뒤에 바뀌어 Atlas가 그대로 두었어요."
     },
     "sheet": {
       "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돌아요.",
@@ -938,6 +957,12 @@
       "readbackDaily": "매일 {time}에",
       "readbackWeekdays": "평일 {time}에",
       "title": "문서 점검 예약",
+      "editTitle": "문서 점검 예약 편집",
+      "saveChanges": "변경 저장",
+      "allowAndSaveEdit": "허용하고 저장",
+      "savingChanges": "저장 중…",
+      "editWidens": "이 변경으로 이 맥에서 허용한 것보다 더 많은 일을 해요. 저장하면 바뀐 내용을 이 맥에서 허용해요.",
+      "readbackEditNext": " 다음 실행은 {time}이에요.",
       "what": "무엇을 확인할지",
       "how": "실행 주기",
       "time": "시각",

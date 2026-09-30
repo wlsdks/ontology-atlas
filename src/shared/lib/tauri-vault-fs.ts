@@ -518,6 +518,13 @@ export async function listTauriVaultEntries(
   return invoke<TauriVaultEntry[]>('list_vault_directory', { rootPath, relativePath });
 }
 
+export async function listTauriVaultLinks(rootPath: string, relativePath: string): Promise<string[]> {
+  const invoke = getInvoke();
+  if (!invoke) throw new Error('Listing links requires the installed app.');
+  const entries = await invoke<Array<{ name: string; kind: string }>>('list_vault_directory', { rootPath, relativePath, includeLinks: true });
+  return entries.filter((entry) => entry.kind === 'symlink').map((entry) => entry.name);
+}
+
 /** Reads a text file at a relative path under `rootPath`; `null` when the bridge is absent. */
 export async function readTauriVaultText(
   rootPath: string,

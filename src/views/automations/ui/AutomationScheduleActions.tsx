@@ -1,18 +1,19 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Pause, Play, Trash2 } from 'lucide-react';
+import { Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
-export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null }: {
+export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null, onEdit }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
   /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
   notAllowedSentenceId?: string | null;
+  onEdit: () => void;
 }) {
   const t = useTranslations('automations');
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -85,6 +86,10 @@ export function AutomationScheduleActions({ round, runner, notAllowedSentenceId 
             aria-describedby={notAllowedSentenceId ?? (runner.running ? `${detailId}-busy` : undefined)}
             data-testid="automations-run-now" className="atlas-touch-floor">
             <Play size={ICON_SIZE.sm} aria-hidden />{t('runNow')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={onEdit} disabled={pending} aria-label={t('editNamed', { name: round.name })}
+            data-testid="automations-edit" className="atlas-touch-floor">
+            <Pencil size={ICON_SIZE.sm} aria-hidden />{t('edit')}
           </Button>
           <Button variant="outline" size="sm" disabled={pending}
             onClick={() => void change(() => runner.setEnabled(round.id, !round.enabled))}

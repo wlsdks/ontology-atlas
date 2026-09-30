@@ -2316,7 +2316,10 @@ source to target; comets and pulses stay inside the drawn span.
 
 `WorkStatus` in `src/shared/motion/work-status.tsx`, CSS in `motion-work.css`:
 one glyph (ring, arc, check or X) and a crossfading label. It carries no live
-region; a status mounted as done draws no check.
+region; the consumer's own region announces. A status mounted as done shows a
+static check (`data-drawn="static"`); only a transition into done draws it.
+The arc spins without a real total. Under reduced motion the spin stops, the
+check is whole, and the label fade stays on `--motion-fast`.
 
 ### Expand and collapse
 
@@ -2331,7 +2334,9 @@ outside `Disclosure` from growing.
 ### Progress to done
 
 `WorkProgress` in `src/shared/motion/work-progress.tsx`, CSS in
-`motion-work.css`: a scaleX fill, an indeterminate sweep only without a total.
+`motion-work.css`: a scaleX fill on `--motion-base`, never width, and an
+indeterminate sweep only without a total. Done fills in success ink. Under
+reduced motion the fill steps and the sweep parks at a third of the track.
 
 ### Press
 
@@ -2345,8 +2350,11 @@ Hover changes ink, surface or border on `--motion-fast`, never position.
 
 ### Toggle and checkbox draw
 
-`DrawnCheck` in `src/shared/motion/drawn-check.tsx`, CSS in
-`motion-checkbox.css`: the check draws on `--motion-fast`.
+`Checkbox` keeps the native input as `peer appearance-none` with a token
+border (`--color-text-quaternary`, at least 3:1 against its ground) and a
+brand fill. A static `DrawnCheck` sits beside it, and `motion-checkbox.css`
+draws it with `motionCheckDraw` on `--motion-fast` whenever the peer becomes
+checked. Under reduced motion the check appears whole.
 
 ### Selection indicator
 
@@ -2389,6 +2397,13 @@ Pages crossfade with a 6px rise on `--motion-base` and
 fade only under reduced motion. Anchored popovers grow from their trigger,
 agent docks share one reflow grammar, drawers slide from their edge, modals
 rise; each leaves the way it came. CSS in `motion-surface.css`.
+
+- Tooltips carry `atlas-tooltip`: they fade in on `--motion-fast` and out on
+  two thirds of it under `overlayFadeOut`, keeping both fades under reduced
+  motion. A closing tooltip takes no pointer.
+- All five agent docks spread `agentDockReflowStyle()` onto their frame and
+  wrap the conversation in `Surface motion="overlay"`; only the project dock
+  also reflows `margin-left`.
 
 ## Page header — English caption + Korean h1
 

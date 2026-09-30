@@ -818,6 +818,8 @@
     "loadingTitle": "Reading this folder's rounds",
     "malformedTitle": "The rounds file needs attention",
     "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
+    "unavailableTitle": "Atlas could not read this folder's rounds",
+    "unavailableDescription": "Atlas could not read .ontology-atlas/rounds.json in this folder, so its rounds cannot be shown or run. Check the folder is where Atlas opened it, then read again.",
     "retry": "Read again",
     "emptyTitle": "Schedule the first document check",
     "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
@@ -851,8 +853,8 @@
       "6hShort": "every 6 h",
       "dailyChip": "Daily",
       "weekdaysChip": "Weekdays",
-      "everyMinutes": "Every {count, number} minutes",
-      "everyHours": "Every {count, number} hours",
+      "everyMinutes": "{count, plural, one {Every minute} other {Every # minutes}}",
+      "everyHours": "{count, plural, one {Every hour} other {Every # hours}}",
       "everyMinutesShort": "every {count, number} min",
       "everyHoursShort": "every {count, number} h"
     },
@@ -922,10 +924,27 @@
       "durationMinutes": "{minutes, number} min",
       "heldLine": "{name} · {checked} · no change",
       "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
+      "openAgents": "Open Agents",
+      "failedError": "This pass stopped on an error: {detail}. Run it again; if the same error comes back, open the folder again.",
+      "failedFolderNotRead": "Atlas had not finished reading this folder, so this pass checked nothing. Run it again in a moment.",
       "runningNow": "{name} · {phase} · {seconds, number} s",
       "phaseChecking": "Checking documents",
       "phaseAgent": "Agent turn in progress",
-      "stopped": "You removed or paused this round while it was running, so the pass stopped there."
+      "stopped": "You changed, paused or removed this round while it was running, so the pass stopped there.",
+      "undone": {
+        "restored": "Atlas put {page} back as it was before this pass.",
+        "removed": "Atlas removed {page}, which this pass had created.",
+        "failed": "Atlas could not put {page} back after this pass. Open it and check it before you rely on it."
+      },
+      "undoneReason": {
+        "notDraft": "It did not read status: draft, and a schedule writes drafts only.",
+        "duplicateKey": "The info block at the top of the page had two {key}: lines, so readers could disagree about it.",
+        "forbiddenKey": "It carried a {key}: line, which only a person may add.",
+        "noFrontmatter": "It had no info block at the top, so it could not be read as a draft.",
+        "unreadable": "Atlas could not read it back to check it."
+      },
+      "undoneCopy": "The text Atlas took out is saved in {copy}.",
+      "leftAsIs": "{page} changed after this pass wrote it; Atlas left it as is."
     },
     "sheet": {
       "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",
@@ -938,6 +957,12 @@
       "readbackDaily": "Every day at {time}",
       "readbackWeekdays": "On weekdays at {time}",
       "title": "Schedule a document review",
+      "editTitle": "Edit the document review",
+      "saveChanges": "Save changes",
+      "allowAndSaveEdit": "Allow and save",
+      "savingChanges": "Saving…",
+      "editWidens": "This change lets the round do more than this Mac allowed. Saving allows the new version on this Mac.",
+      "readbackEditNext": " Its next run is {time}.",
       "what": "What to check",
       "how": "Schedule",
       "time": "At",
@@ -1011,8 +1036,8 @@
       "unitDay": "Day",
       "railAria": "How often · drag, or use the arrow keys",
       "dayAria": "Which days",
-      "valueMinutes": "every {count, number} minutes",
-      "valueHours": "every {count, number} hours"
+      "valueMinutes": "{count, plural, one {every minute} other {every # minutes}}",
+      "valueHours": "{count, plural, one {every hour} other {every # hours}}"
     },
     "index": {
       "title": "Scheduled checks",

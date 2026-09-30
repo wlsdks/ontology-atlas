@@ -1529,7 +1529,7 @@ export function ProjectForm({
                   <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                     {t("preview.completenessLabel")}
                   </p>
-                  <p className="mt-2 text-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  <p className="mt-2 text-title font-[var(--font-weight-signature)] tabular-nums text-[color:var(--color-text-primary)]">
                     {completenessInsight.score}%
                   </p>
                 </div>

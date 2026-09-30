@@ -101,6 +101,18 @@ describe('round ledger', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ kind: 'service', summary: filler })))?.summary).toBe(filler);
   });
 
+  it('keeps each page a pass left out of scope with the reason and what Atlas did, and drops an item it cannot read', () => {
+    const undone = [
+      { path: 'wiki/plan.md', reason: 'duplicate-key', key: 'status', action: 'restored', copy: '.ontology-atlas/undone/p1/wiki/plan.md' },
+      { path: 'wiki/new.md', reason: 'not-draft', action: 'removed' },
+      { path: 'wiki/theirs.md', reason: 'not-draft', action: 'left' },
+    ];
+    const line = JSON.stringify({ ...pass({ outcome: 'failed' }), leftAsIs: ['wiki/notes.md', 3], undone: [...undone, { path: 'wiki/x.md', reason: 'sunspots', action: 'restored' }, 'wiki/y.md'] });
+    expect(parseRoundPassEntry(line)).toMatchObject({ undone, leftAsIs: ['wiki/notes.md'] });
+    expect(parseRoundPassEntry(JSON.stringify(pass()))).not.toHaveProperty('undone');
+    expect(parseRoundPassEntry(JSON.stringify(pass()))).not.toHaveProperty('leftAsIs');
+  });
+
   it('rejects an entry with an outcome it does not know', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ outcome: 'exploded' as RoundPassEntry['outcome'] })))).toBeNull();
   });

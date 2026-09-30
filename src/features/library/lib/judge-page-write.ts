@@ -13,6 +13,7 @@ export interface PageWriteVerdict {
   ok: boolean;
   /** Findings with `detail`, so the card can say them in the reader's language. */
   problems: ReadonlyArray<WikiTemplateProblem>;
+  text: string;
 }
 
 /** The three facts of a permission request this judgement reads; the card owns the rest. */
@@ -58,10 +59,11 @@ export function proposedPageText(
   if (oldString === null || newString === null) return null;
   if (current === null) return null;
   if (oldString === "") return current === "" ? newString : null;
-  if (!current.includes(oldString)) return null;
-  return rawInput.replace_all === true
-    ? current.split(oldString).join(newString)
-    : current.replace(oldString, newString);
+  const matches = current.split(oldString).length - 1;
+  const replaceAll = rawInput.replace_all === true;
+  if (matches === 0 || (matches > 1 && !replaceAll)) return null;
+  const target = newString === "" && !oldString.endsWith("\n") && current.includes(`${oldString}\n`) ? `${oldString}\n` : oldString;
+  return replaceAll ? current.split(target).join(newString) : current.replace(target, () => newString);
 }
 
 export function judgePageWrite({
@@ -77,5 +79,5 @@ export function judgePageWrite({
   const proposed = proposedPageText(request.rawInput, currentText(slug));
   if (proposed === null) return null;
   const { ok, problems } = validateWikiPage(proposed, { knownSources });
-  return { path, ok, problems };
+  return { path, ok, problems, text: proposed };
 }
