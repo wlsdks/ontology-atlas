@@ -1268,10 +1268,6 @@ function createCouplingCloudRelaxer(
   };
 }
 
-/**
- * Headroom under the 50 ms long-task threshold while keeping total time near a single
- * synchronous build; lower delays the start of assembly visibly, higher hitches again.
- */
 export const DOME_BUILD_SLICE_MS = 28;
 
 export interface DomeModelBuild {
@@ -2230,6 +2226,11 @@ export interface DomeRuntime {
   orbiting: boolean;
   /** Survives `released` until the spring settles, keeping velocity continuous. */
   drag: { nodeId: string; spring: DomeDragSpring; targetPx: number; targetPz: number; released?: boolean } | null;
+  /**
+   * The layout on screen is still relaxing and rewrites every coordinate as iterations finish,
+   * so no node drag starts and `flyRequest` waits until it is final.
+   */
+  settling: boolean;
 }
 
 export function createDomeRuntime(model: DomeModel): DomeRuntime {
@@ -2277,5 +2278,6 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     active: false,
     orbiting: false,
     drag: null,
+    settling: false,
   };
 }

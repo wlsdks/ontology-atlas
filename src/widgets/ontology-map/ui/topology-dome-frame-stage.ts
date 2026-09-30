@@ -166,7 +166,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           domeModelBuildRef.current = null;
           domeWorldSourceRef.current = world;
         }
-        if (dome === null || domeWorldSourceRef.current !== world) {
+        if (domeTargetOn && (dome === null || domeWorldSourceRef.current !== world)) {
           let pending = domeModelBuildRef.current;
           if (
             pending !== null &&
@@ -211,14 +211,14 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               dome.drawnBounds = null;
               dome.drag = null;
             }
+            if (dome !== null) dome.settling = settlesOnScreen;
           }
           const complete =
             pending.build.step === null || (!(begun && pending.settlesOnScreen) && pending.build.step(DOME_BUILD_SLICE_MS));
           if (!complete) {
             lastActiveMsRef.current = now;
-            if (dome === null) return true;
             // Held rather than redrawn: an unchanged model's draw would stack on every slice.
-            if (!pending.settlesOnScreen) return false;
+            if (dome !== null && !pending.settlesOnScreen) return false;
           } else {
             domeModelBuildRef.current = null;
             domeWorldSourceRef.current = world;
@@ -233,6 +233,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
               }
             } else {
+              dome.settling = false;
               const arrangementChanged = pending.settlesOnScreen || pending.build.model.arrangement !== dome.model.arrangement;
               if (!pending.settlesOnScreen) {
                 /*
@@ -268,6 +269,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             }
           }
         }
+        // A reduced-motion first entry keeps the flat map until its layout is final.
+        if (dome === null) return true;
         dome.active = domeTargetOn;
         // Once, right after turning on: fit the camera so the cone fills the
         // free canvas (`domeFitTarget`). It used to reserve the hero's "object
@@ -482,6 +485,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         if (
           dome.flyRequest !== null &&
           domeTargetOn &&
+          !dome.settling &&
           !dome.orbiting &&
           pointerMachineRef.current.phase !== "dragging"
         ) {
@@ -835,7 +839,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         // fold (see `settleDomeRuntimeOffscreen` — before this, a single 3D
         // visit kept the 2D map awake at 120 frames/s for the whole session).
         settleDomeRuntimeOffscreen(dome);
-        domeModelBuildRef.current = null;
         domeFocusPendingRef.current = null;
         if (dome.frame.size > 0) {
           dome.frame.clear();

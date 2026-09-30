@@ -91,8 +91,9 @@ export function useTopologyDomeState({
   const domeWorldSourceRef = useRef<unknown>(null);
 
   /**
-   * The **in-progress, time-sliced** dome model build: each frame advances only
-   * `DOME_BUILD_SLICE_MS`, and one that settles on screen is drawn meanwhile.
+   * The **in-progress, time-sliced** dome model build: each frame with 3D on advances
+   * only `DOME_BUILD_SLICE_MS`, it waits while 3D is off, and one that settles on screen
+   * is drawn meanwhile.
    * `world`/`arrangement` are recorded alongside: a world swap or arrangement
    * change mid-slice makes this build stale input, and it is restarted.
    */

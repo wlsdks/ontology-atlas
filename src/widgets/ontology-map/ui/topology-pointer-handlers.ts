@@ -1064,6 +1064,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const sim = simRef.current;
       const { width, height } = viewportRef.current;
       const dome = domeInteractive();
+      // A settling layout rewrites every coordinate, so a drag begun on one of its nodes drags the dome.
+      const grabbedNodeId = dome?.settling ? null : pressedNodeId;
 
       // 3D in-plane node drag — the node vs empty-space decision (pressedNodeId) was
       // already made by the same hit test as 2D. One screen point corresponds to
@@ -1071,11 +1073,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // (`solveDomePlanePoint`) — preserving z's typed fact (the kind tier). The force
       // simulation belongs to the 2D layout and is untouched here (only the dome
       // coordinates move — session only, the 2D arrangement is unchanged).
-      if (dome && nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
-        const grabNode = world.nodeById.get(pressedNodeId);
-        const coord = dome.model.coords.get(pressedNodeId);
+      if (dome && nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+        const grabNode = world.nodeById.get(grabbedNodeId);
+        const coord = dome.model.coords.get(grabbedNodeId);
         if (grabNode && coord) {
-          const grabFrame = dome.frame.get(pressedNodeId);
+          const grabFrame = dome.frame.get(grabbedNodeId);
           const renderedX = grabNode.x + (grabFrame?.dx ?? 0);
           const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
@@ -1083,9 +1085,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           // Grabbing a node is intervention — release the attention spin (①).
           dome.spinArmed = false;
           commitDomeEntrySweep(dome);
-          nodeDragRef.current = { nodeId: pressedNodeId, offset };
+          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           dome.drag = {
-            nodeId: pressedNodeId,
+            nodeId: grabbedNodeId,
             spring: { px: coord.px, pz: coord.pz, vx: 0, vz: 0 },
             targetPx: coord.px,
             targetPz: coord.pz,
@@ -1111,18 +1113,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       }
 
       // Start a node pin-drag the moment we cross into dragging on a node.
-      if (nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
-        const grabNode = world.nodeById.get(pressedNodeId);
+      if (nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+        const grabNode = world.nodeById.get(grabbedNodeId);
         if (grabNode) {
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
-          sim.pin(pressedNodeId, grabNode.x, grabNode.y);
-          nodeDragRef.current = { nodeId: pressedNodeId, offset };
+          sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
+          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           heatRef.current = NODE_DRAG_HEAT_MS;
           // C1 B1/B2 — capture the tug/settle-restriction set + start position
           // once, at grab time (not recomputed per frame).
-          const tugSets = computeDragTugSets(world.neighborMap, pressedNodeId);
-          dragAffectedSetRef.current = { draggedId: pressedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
+          const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
+          dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
           dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
         }
       }

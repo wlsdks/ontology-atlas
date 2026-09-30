@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CameraAxes } from "../engine/camera";
 import { worldToScreen } from "../ui/topology-camera-math";
+import { findCouplingGroups } from "./coupling-groups";
 import {
   DOME_EDGE_DEVICE_WIDTH_FLOOR,
   domeEdgeMinWidthPx,
@@ -1135,6 +1136,7 @@ describe("the cloud past the exact pair ceiling", () => {
     ...Array.from({ length: 12 }, (_, i) => ({ id: `d${i}`, kind: "domain" as const, x: i, y: 0, parentId: "p" })),
     ...Array.from({ length: 150 }, (_, i) => ({ id: `c${i}`, kind: "capability" as const, x: i, y: 1, parentId: `d${i % 12}` })),
     ...Array.from({ length: 800 }, (_, i) => ({ id: `e${i}`, kind: "element" as const, x: i, y: 2, parentId: `c${(i * 37) % 150}` })),
+    ...Array.from({ length: 450 }, (_, i) => ({ id: `h${i}`, kind: "element" as const, x: i, y: 3, parentId: "c0" })),
   ];
   const edges = [
     ...nodes.flatMap((node) => (node.parentId === null ? [] : [{ sourceId: node.parentId, targetId: node.id }])),
@@ -1142,6 +1144,9 @@ describe("the cloud past the exact pair ceiling", () => {
   ];
 
   it("gives the same bytes on every run and however finely it is sliced", () => {
+    const members = new Map<number, number>();
+    for (const group of findCouplingGroups(nodes.map((node) => node.id), edges)) members.set(group, (members.get(group) ?? 0) + 1);
+    expect(Math.max(...members.values()), "a community past the exact ceiling repels on its own octree").toBeGreaterThan(400);
     const whole = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const again = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const build = beginDomeModelBuild(nodes, { arrangement: "coupling", edges });

@@ -60,7 +60,7 @@ function stageSources(arrangement: MapArrangement, reducedMotion = false) {
     scale: { value: 1, velocity: 0 },
   };
   return {
-    view3dRef: { current: true },
+    view3dRef: { current: true as boolean },
     realmTransitionRef: { current: { phase: "idle", rootId: null, startMs: 0 } as unknown as RealmTransitionState },
     domeRuntimeRef: { current: null as DomeRuntime | null },
     domeWorldSourceRef: { current: null as unknown },
@@ -159,6 +159,47 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     expect(dome.model.arrangement).toBe("coupling");
     expect(dome.morph?.fromCoords).toBe(strata.coords);
     expect(sources.domeModelBuildRef.current?.build.model).toBe(dome.model);
+  });
+
+  it("holds a fly-to while the layout settles and flies once it is final", () => {
+    const world = neuralWorld();
+    const sources = stageSources("coupling");
+    const run = createDomeFrameStage(sources);
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    const dome = sources.domeRuntimeRef.current!;
+    expect(dome.settling).toBe(true);
+    dome.flyRequest = { slug: "c3" };
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    expect(dome.flyRequest).toEqual({ slug: "c3" });
+    expect(dome.flight).toBeNull();
+    while (sources.domeModelBuildRef.current !== null) run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    expect(dome.settling).toBe(false);
+    expect(dome.flyRequest).toBeNull();
+    expect(dome.flight?.slug).toBe("c3");
+  });
+
+  it("pauses the layout while 3D is off and resumes the same settle on return", () => {
+    const world = neuralWorld();
+    const sources = stageSources("coupling");
+    const run = createDomeFrameStage(sources);
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    const dome = sources.domeRuntimeRef.current!;
+    const build = sources.domeModelBuildRef.current!.build;
+    const held = new Map([...dome.model.coords].map(([id, coord]) => [id, { ...coord }]));
+    sources.view3dRef.current = false;
+    for (let frames = 0; frames < 200 && (frames < 5 || dome.rampClock > 0); frames += 1) {
+      run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    }
+    expect(dome.rampClock).toBe(0);
+    expect(dome.model.coords).toEqual(held);
+    expect(sources.domeModelBuildRef.current?.build).toBe(build);
+    sources.view3dRef.current = true;
+    while (sources.domeModelBuildRef.current !== null) {
+      expect(sources.domeModelBuildRef.current.build).toBe(build);
+      run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    }
+    for (const [id, coord] of pureCloud(world).coords) expect(dome.model.coords.get(id)).toEqual(coord);
   });
 
   it("keeps its layout through a world rebuilt from the same concepts and relations", () => {

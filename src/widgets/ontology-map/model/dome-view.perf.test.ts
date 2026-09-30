@@ -32,9 +32,15 @@ describe("the Neural cloud's layout cost", () => {
   it("stays well below quadratic: four times the concepts cost two to ten times as long, where every pair costs sixteen", () => {
     const small = vault(2000);
     const large = vault(8000);
-    let smallMs = layoutMs(small);
-    for (let run = 0; run < 3; run += 1) smallMs = Math.min(smallMs, layoutMs(small));
-    const largeMs = layoutMs(large);
+    // One warm-up each, then the fastest of three, to remove GC and scheduling noise.
+    layoutMs(small);
+    layoutMs(large);
+    let smallMs = Infinity;
+    let largeMs = Infinity;
+    for (let run = 0; run < 3; run += 1) {
+      smallMs = Math.min(smallMs, layoutMs(small));
+      largeMs = Math.min(largeMs, layoutMs(large));
+    }
     const ratio = largeMs / smallMs;
     console.log(`[coupling-cloud] 2,000 concepts ${smallMs.toFixed(0)} ms, 8,000 concepts ${largeMs.toFixed(0)} ms, ratio ${ratio.toFixed(2)}`);
     expect(ratio).toBeGreaterThan(2);
