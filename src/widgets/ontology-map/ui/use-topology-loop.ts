@@ -974,6 +974,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       clusterChipsRef,
       previewEdgeHeldRef,
       domeRuntimeRef,
+      domeModelBuildRef,
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
