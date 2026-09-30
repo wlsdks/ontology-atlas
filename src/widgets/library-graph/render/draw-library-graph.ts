@@ -1,3 +1,4 @@
+import { LibraryLabelMarkIndex } from "./library-label-mark-index";
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { LibraryPositionLookup } from "../model/library-graph-view";
@@ -616,6 +617,20 @@ function roundedRect(
   ctx.closePath();
 }
 
+const overviewMarkIndices = new WeakMap<LibraryGraphGeometry, {
+  nodes: readonly LibraryGraphNode[];
+  index: LibraryLabelMarkIndex;
+}>();
+
+function overviewMarkIndex(frame: LibraryGraphFrame): LibraryLabelMarkIndex {
+  const geometry = frame.overview!.geometry;
+  const cached = overviewMarkIndices.get(geometry);
+  if (cached?.nodes === frame.nodes) return cached.index;
+  const index = new LibraryLabelMarkIndex(frame.nodes, geometry.positions);
+  overviewMarkIndices.set(geometry, { nodes: frame.nodes, index });
+  return index;
+}
+
 const overviewPaths = new WeakMap<LibraryGraphGeometry, {
   nodes: readonly LibraryGraphNode[];
   edges: readonly LibraryGraphEdge[];
@@ -1055,20 +1070,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   if (frame.standingLabels || frame.layout === "flow") {
     ctx.textBaseline = "top";
     ctx.textAlign = "center";
-    const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
-    for (const node of frame.nodes) {
-      const centre = nodeCentre(frame, node.id);
-      if (!centre) continue;
-      const half = radiusOf(frame, node);
-      taken.push({
-        x: centre.x - half,
-        y: centre.y - half,
-        width: half * 2,
-        height: half * 2,
-        // Only a name's own mark never blocks it.
-        of: node.id,
-      });
-    }
     /*
      * Asked in order of focus, then kind (page, source, concept), then size largest first,
      * then graph order. The greedy pass gives the room to whoever asks first, so without the
@@ -1097,6 +1098,42 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
         first.index - second.index,
     );
+    const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
+    const overview = frame.overview;
+    const indexed = named.length > 0 && overview && frame.layout !== "flow" &&
+      Number.isFinite(overview.view.x) && Number.isFinite(overview.view.y) &&
+      Number.isFinite(overview.view.scale) && overview.view.scale > 0 && frame.nodes.length > 256
+      ? overviewMarkIndex(frame) : null;
+    let maxRadius = Math.max(...Object.values(NODE_RADIUS));
+    if (indexed) {
+      for (const radius of frame.radii?.values() ?? []) maxRadius = Math.max(maxRadius, Math.abs(radius));
+    } else if (named.length > 0) {
+      for (const node of frame.nodes) {
+        const centre = nodeCentre(frame, node.id);
+        if (!centre) continue;
+        const half = radiusOf(frame, node);
+        taken.push({ x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2, of: node.id });
+      }
+    }
+    const hitsMark = (box: { x: number; y: number; width: number; height: number }, own: string): boolean => {
+      if (!indexed || !overview) return false;
+      const view = overview.view;
+      const marginX = NAME_GAP_X + maxRadius;
+      const marginY = NAME_GAP_Y + maxRadius;
+      const left = view.x + (box.x - marginX - frame.width / 2) / view.scale;
+      const right = view.x + (box.x + box.width + marginX - frame.width / 2) / view.scale;
+      const top = view.y + (box.y - marginY - frame.height / 2) / view.scale;
+      const bottom = view.y + (box.y + box.height + marginY - frame.height / 2) / view.scale;
+      const tolerance = Math.max(1e-7, Math.max(Math.abs(left), Math.abs(right), Math.abs(top), Math.abs(bottom)) * Number.EPSILON * 16);
+      return indexed.some(left - tolerance, top - tolerance, right + tolerance, bottom + tolerance, (node) => {
+        const id = node.id;
+        if (id === own) return false;
+        const centre = nodeCentre(frame, id);
+        if (!centre) return false;
+        const half = radiusOf(frame, node);
+        return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
+      });
+    };
     for (const { node } of named) {
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
@@ -1185,7 +1222,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
         if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
         if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
-        if (taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
+        if (hitsMark(tried, node.id) || taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
         box = tried;
         placement = index;
         break;
