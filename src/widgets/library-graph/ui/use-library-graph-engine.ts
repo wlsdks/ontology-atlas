@@ -509,14 +509,16 @@ export function useLibraryGraphEngine({
   const inkRef = useRef<LibraryGraphInk | null>(null);
   /** Screen-space positions of the last painted frame — what the pointer is tested against. */
   const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
+  const worldPositionsRef = useRef<Map<string, LayoutPoint>>(new Map());
   const radiiRef = useRef<Map<string, number>>(new Map());
   /**
    * This folder's zoom ceiling (`libraryZoomMax`): a cap on the drawn widest mark, so it
    * depends on the folder. Rebuilt beside `radiiRef`.
    */
   const zoomMaxRef = useRef(LIBRARY_ZOOM_MAX);
-  /** The radii in canvas pixels, rebuilt per painted frame, for the hit test and the `e2e` probe. */
+  /** Screen-space radii for paint, hit testing and probes at the last drawn scale. */
   const screenRadiiRef = useRef<Map<string, number>>(new Map());
+  const screenRadiusSourceRef = useRef<{ radii: Map<string, number>; scale: number } | null>(null);
   /** The last frame's placed names, armed only by the `e2e` probe; null otherwise, so nothing is allocated. */
   const labelReportRef = useRef<LibraryGraphLabelBox[] | null>(null);
   const boxRef = useRef({ width: 0, height: 0, dpr: 1 });
@@ -749,7 +751,7 @@ export function useLibraryGraphEngine({
       const view = viewRef.current;
       publishFramed(isSameView(view, fitTarget));
 
-      const world = libraryPositions(sim);
+      const world = libraryPositions(sim, worldPositionsRef.current);
       const travel = travelRef.current;
       if (travel) {
         const t = (now - travel.since) / Math.max(1, motionRef.current.settle);
@@ -762,12 +764,19 @@ export function useLibraryGraphEngine({
           }
         }
       }
-      const screen = new Map<string, LayoutPoint>();
-      for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box));
+      const screen = screenRef.current;
+      for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box, screen.get(id)));
+      if (screen.size > world.size) for (const id of screen.keys()) if (!world.has(id)) screen.delete(id);
       // Radii go through the same camera as positions, so a zoom grows dots by the same factor.
       const screenRadii = screenRadiiRef.current;
-      screenRadii.clear();
-      for (const [id, radius] of radiiRef.current) screenRadii.set(id, radius * view.scale);
+      const radiusSource = screenRadiusSourceRef.current;
+      if (radiusSource?.radii !== radiiRef.current || radiusSource.scale !== view.scale) {
+        for (const [id, radius] of radiiRef.current) screenRadii.set(id, radius * view.scale);
+        if (screenRadii.size > radiiRef.current.size) {
+          for (const id of screenRadii.keys()) if (!radiiRef.current.has(id)) screenRadii.delete(id);
+        }
+        screenRadiusSourceRef.current = { radii: radiiRef.current, scale: view.scale };
+      }
 
       /*
        * The dim ramp runs one `--motion-fast` under reduced motion too: it changes ink, not
@@ -802,8 +811,8 @@ export function useLibraryGraphEngine({
           }
         }
       }
-      const nodes: LibraryGraphNode[] = [...graphRef.current.nodes];
       const ghosts = ghostsRef.current;
+      const nodes: LibraryGraphNode[] = ghosts.size > 0 ? [...graphRef.current.nodes] : graphRef.current.nodes;
       if (ghosts.size > 0) {
         for (const [id, ghost] of ghosts) {
           const gone = (now - ghost.since) / Math.max(1, motionRef.current.base);

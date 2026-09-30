@@ -60,3 +60,31 @@ describe("windowRows", () => {
     expect(w).toEqual({ start: 0, end: 3, before: 0, after: 0 });
   });
 });
+
+it('bounds the first committed row set before measuring a large scrollable list', async () => {
+  const { createElement } = await import('react');
+  const { render, cleanup } = await import('@testing-library/react');
+  const { vi } = await import('vitest');
+  const { useWindowedRows } = await import('./use-windowed-rows');
+  let firstMeasuredCount: number | null = null;
+  const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(360);
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    if (this.tagName === 'LI' && firstMeasuredCount === null) firstMeasuredCount = this.parentElement!.children.length;
+    return { x: 0, y: 0, top: 0, left: 0, bottom: 36, right: 100, width: 100, height: 36, toJSON: () => ({}) };
+  });
+  function List() {
+    const [range, ref] = useWindowedRows({ count: 10_000, estimate: 36 });
+    return createElement('div', { style: { overflowY: 'auto' } }, createElement('ul', { ref },
+      Array.from({ length: range.end - range.start }, (_, i) => createElement('li', { key: range.start + i }, `Row ${range.start + i}`))));
+  }
+  try {
+    const result = render(createElement(List));
+    expect(firstMeasuredCount).not.toBeNull();
+    expect(firstMeasuredCount).toBeLessThan(200);
+    expect(result.container.querySelectorAll('li').length).toBeLessThan(200);
+  } finally {
+    cleanup();
+    height.mockRestore();
+    rect.mockRestore();
+  }
+});

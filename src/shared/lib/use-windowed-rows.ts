@@ -88,6 +88,8 @@ function scrollParent(node: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
+const INITIAL_ROWS = 64;
+
 const EVERYTHING = (count: number): WindowedRows => ({ start: 0, end: count, before: 0, after: 0 });
 
 function sameWindow(a: WindowedRows, b: WindowedRows): boolean {
@@ -104,7 +106,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   /** A row's height in px before it has been measured. */
   estimate: number;
   overscan?: number;
-  /** Rows before the first measurement; omitted, every row. */
+  /** First viewport seed; defaults to 64 rows. */
   initialRows?: number;
 }): [WindowedRows, RefObject<E | null>, (index: number) => void] {
   const listRef = useRef<E | null>(null);
@@ -120,7 +122,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
    */
   const pendingRef = useRef<{ index: number; tries: number } | null>(null);
   const [range, setRange] = useState<WindowedRows>(() => {
-    const end = Math.min(count, initialRows ?? count);
+    const end = Math.min(count, initialRows ?? INITIAL_ROWS);
     return { start: 0, end, before: 0, after: (count - end) * estimate };
   });
 

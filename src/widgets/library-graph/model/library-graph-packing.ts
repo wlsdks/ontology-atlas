@@ -22,11 +22,7 @@ export interface PackSlot {
   halfHeight: number;
 }
 
-/**
- * Above this many groups the tangent search gives way to a golden-angle spiral: each placement
- * tests O(k²) tangent candidates against every placed circle, O(k⁴) over the packing; at 48
- * equal groups that measured about 580,000 distance computations, once, on mount.
- */
+/** Above 48 groups, spatial spiral queries replace O(k⁴) tangent search. */
 const TANGENT_SEARCH_MAX_GROUPS = 48;
 
 /** Candidate angles tried around each placed circle when no pair yet exists. */
@@ -36,6 +32,53 @@ interface Circle {
   cx: number;
   cy: number;
   r: number;
+}
+
+interface CircleLevel {
+  size: number;
+  rows: Map<number, Map<number, Circle[]>>;
+}
+
+class CircleIndex {
+  private levels: CircleLevel[] = [];
+  private levelBySize = new Map<number, CircleLevel>();
+
+  add(circle: Circle): void {
+    const size = 2 ** Math.ceil(Math.log2(Math.max(1, circle.r * 2)));
+    let level = this.levelBySize.get(size);
+    if (!level) {
+      level = { size, rows: new Map() };
+      this.levelBySize.set(size, level);
+      this.levels.push(level);
+    }
+    const rows = level.rows;
+    const x = Math.floor(circle.cx / size);
+    const y = Math.floor(circle.cy / size);
+    let row = rows.get(x);
+    if (!row) rows.set(x, (row = new Map()));
+    const cell = row.get(y);
+    if (cell) cell.push(circle);
+    else row.set(y, [circle]);
+  }
+
+  collisionAt(cx: number, cy: number, radius: number): Circle | null {
+    // Descending radii keep each level's query within at most nine cells.
+    for (const { size, rows } of this.levels) {
+      const reach = radius + size / 2;
+      const maxX = Math.floor((cx + reach) / size);
+      const maxY = Math.floor((cy + reach) / size);
+      for (let x = Math.floor((cx - reach) / size); x <= maxX; x += 1) {
+        const row = rows.get(x);
+        if (!row) continue;
+        for (let y = Math.floor((cy - reach) / size); y <= maxY; y += 1) {
+          for (const circle of row.get(y) ?? []) {
+            if (Math.hypot(cx - circle.cx, cy - circle.cy) < circle.r + radius - 1e-6) return circle;
+          }
+        }
+      }
+    }
+    return null;
+  }
 }
 
 /** The radius of the circle that holds a footprint, plus its share of the clear space. */
@@ -65,18 +108,23 @@ export function packGroupsAroundCentre(boxes: readonly PackBox[], gutter: number
   const placed: Circle[] = [];
   const out = new Array<PackSlot>(boxes.length);
   const spiral = order.length > TANGENT_SEARCH_MAX_GROUPS;
+  const index = spiral ? new CircleIndex() : null;
+  let halfReach = 0;
 
   order.forEach((entry, position) => {
     let cx = 0;
     let cy = 0;
     if (position > 0) {
       const found = spiral
-        ? spiralPosition(entry.r, placed, position)
+        ? spiralPosition(entry.r, halfReach, position, index!)
         : nearestFreePosition(entry.r, placed);
       cx = found.cx;
       cy = found.cy;
     }
-    placed.push({ cx, cy, r: entry.r });
+    const circle = { cx, cy, r: entry.r };
+    placed.push(circle);
+    index?.add(circle);
+    halfReach = Math.max(halfReach, Math.hypot(cx, cy) * 0.5);
     out[entry.index] = slotFor(entry.box, cx, cy);
   });
 
@@ -160,25 +208,35 @@ function nearestFreePosition(radius: number, placed: readonly Circle[]): { cx: n
  */
 function spiralPosition(
   radius: number,
-  placed: readonly Circle[],
+  halfReach: number,
   position: number,
+  index: CircleIndex,
 ): { cx: number; cy: number } {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const angle = position * golden;
-  let reach = radius;
-  for (const circle of placed) reach = Math.max(reach, Math.hypot(circle.cx, circle.cy) * 0.5);
-  for (let attempt = 0; attempt < 400; attempt += 1) {
+  let reach = Math.max(radius, halfReach);
+  const step = radius * 0.25;
+  for (let attempt = 0; attempt < 400;) {
     const cx = Math.cos(angle) * reach;
     const cy = Math.sin(angle) * reach;
-    let clear = true;
-    for (const circle of placed) {
-      if (Math.hypot(cx - circle.cx, cy - circle.cy) < circle.r + radius - 1e-6) {
-        clear = false;
-        break;
-      }
-    }
-    if (clear) return { cx, cy };
-    reach += radius * 0.25;
+    const collision = index.collisionAt(cx, cy, radius);
+    if (!collision) return { cx, cy };
+    const margin = collision.r + radius - 1e-6 - Math.hypot(cx - collision.cx, cy - collision.cy);
+    const skip = Math.min(400 - attempt, Math.max(1, Math.floor(margin / step)));
+    // Every skipped step remains inside this circle; repeated additions preserve the seed geometry.
+    for (let i = 0; i < skip; i += 1) reach += step;
+    attempt += skip;
   }
-  return { cx: Math.cos(angle) * reach, cy: Math.sin(angle) * reach };
+  const fallbackX = Math.cos(angle) * reach;
+  const fallbackY = Math.sin(angle) * reach;
+  if (!index.collisionAt(fallbackX, fallbackY, radius)) return { cx: fallbackX, cy: fallbackY };
+  reach = Math.max(reach, 2 * radius * Math.sqrt(position));
+  for (;;) {
+    const cx = Math.cos(angle) * reach;
+    const cy = Math.sin(angle) * reach;
+    const collision = index.collisionAt(cx, cy, radius);
+    if (!collision) return { cx, cy };
+    const margin = collision.r + radius - 1e-6 - Math.hypot(cx - collision.cx, cy - collision.cy);
+    reach += step * Math.max(1, Math.floor(margin / step));
+  }
 }

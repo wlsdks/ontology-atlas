@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildLocalManifest,
   computeLocalVaultFingerprint,
+  walkVault,
 } from './build-local-manifest';
 
 interface FakeFile {
@@ -112,4 +113,46 @@ describe('computeLocalVaultFingerprint', () => {
     const standalone = await computeLocalVaultFingerprint(root2);
     expect(built.fingerprint).toBe(standalone);
   });
+});
+
+it('bounds concurrent metadata reads while keeping every fingerprint entry', async () => {
+  let active = 0;
+  let peak = 0;
+  const root = {
+    kind: 'directory', name: 'Pooled',
+    entries: async function* () {
+      for (let i = 0; i < 96; i += 1) {
+        const name = `n${i}.md`;
+        yield [name, {
+          kind: 'file', name,
+          getFile: async () => {
+            active += 1;
+            peak = Math.max(peak, active);
+            await Promise.resolve();
+            active -= 1;
+            return { lastModified: i };
+          },
+        }];
+      }
+    },
+  } as unknown as FileSystemDirectoryHandle;
+  const fingerprint = await computeLocalVaultFingerprint(root);
+  expect(fingerprint.split('\n')).toHaveLength(96);
+  expect(peak).toBeGreaterThan(1);
+  expect(peak).toBeLessThanOrEqual(16);
+});
+
+it.each([100_000, 100_001])('keeps the first 100,000 entries and reports truncation for %i files', async (size) => {
+  const root = {
+    kind: 'directory', name: 'Large',
+    entries: async function* () {
+      for (let i = 0; i < size; i += 1) {
+        const name = `n${i}.md`;
+        yield [name, { kind: 'file', name }];
+      }
+    },
+  } as unknown as FileSystemDirectoryHandle;
+  const result = await walkVault(root);
+  expect(result.entries).toHaveLength(100_000);
+  expect(result.truncated).toBe(size > 100_000);
 });

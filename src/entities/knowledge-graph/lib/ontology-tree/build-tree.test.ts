@@ -251,3 +251,17 @@ describe("compareNodes — sorting", () => {
     expect(result.roots[1]!.node.id).toBe("p1");
   });
 });
+
+it('builds and traverses a deep hierarchy without exhausting the call stack', () => {
+  const size = 100_000;
+  const nodes = Array.from({ length: size }, (_, i) => makeNode(`n${i}`, 'element'));
+  const edges = Array.from({ length: size - 1 }, (_, i) => makeEdge(`e${i}`, `n${i}`, `n${i + 1}`, 'contains'));
+  const result = buildOntologyTree(nodes, edges);
+  expect(result.warnings).toEqual([]);
+  expect(result.orphans).toEqual([]);
+  expect(countTreeNodes(result.roots)).toBe(size);
+  const flat = flattenTree(result.roots);
+  expect(flat).toHaveLength(size);
+  expect(flat.at(-1)?.depth).toBe(size - 1);
+  expect(flat.at(-1)?.node.id).toBe(`n${size - 1}`);
+});

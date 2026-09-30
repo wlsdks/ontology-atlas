@@ -1,9 +1,4 @@
-/**
- * Builds the ontology tree from `contains`/`belongs_to`, excluding document and readme nodes.
- * A cycle or a second parent promotes or drops the edge with a warning; each node appears once.
- * Deterministic order: kind, then displayed name. Parent map and child lists; the cycle check
- * walks each ancestor chain, O(V·d) for tree depth d.
- */
+/** First-parent, cycle-safe trees excluding documents/readmes. O(V + E) traversal plus sibling sorting. */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeBuildResult, OntologyTreeNode } from "./types";
@@ -65,28 +60,31 @@ export function buildOntologyTree(
     parentOf.set(childId, parentId);
   }
 
-  function ancestorChainHasCycle(startId: string): boolean {
-    const visited = new Set<string>();
-    let curr: string | undefined = startId;
-    while (curr) {
-      if (visited.has(curr)) return true;
-      visited.add(curr);
-      curr = parentOf.get(curr);
-    }
-    return false;
-  }
-
-  for (const childId of [...parentOf.keys()]) {
-    if (ancestorChainHasCycle(childId)) {
-      warnings.push(`cycle detected at "${childId}" — promoted to root`);
-      parentOf.delete(childId);
-    }
-  }
-
   const childrenOf = new Map<string, string[]>();
   for (const [childId, parentId] of parentOf) {
-    if (!childrenOf.has(parentId)) childrenOf.set(parentId, []);
-    childrenOf.get(parentId)!.push(childId);
+    const children = childrenOf.get(parentId);
+    if (children) children.push(childId);
+    else childrenOf.set(parentId, [childId]);
+  }
+  const rooted = new Set<string>();
+  const markRooted = (rootId: string) => {
+    const pending = [rootId];
+    while (pending.length > 0) {
+      const id = pending.pop()!;
+      if (rooted.has(id)) continue;
+      rooted.add(id);
+      for (const child of childrenOf.get(id) ?? []) pending.push(child);
+    }
+  };
+  for (const node of treeNodes) {
+    if (!parentOf.has(node.id)) markRooted(node.id);
+  }
+  // Unrooted nodes reach a cycle. Preserve first-edge promotion order and mark each node once.
+  for (const childId of parentOf.keys()) {
+    if (rooted.has(childId)) continue;
+    warnings.push(`cycle detected at "${childId}" — promoted to root`);
+    parentOf.delete(childId);
+    markRooted(childId);
   }
 
   const visited = new Set<string>();
@@ -95,17 +93,25 @@ export function buildOntologyTree(
       warnings.push(`node "${nodeId}" reached twice in tree — second occurrence skipped`);
       return null;
     }
+    const rootNode = nodeById.get(nodeId);
+    if (!rootNode) return null;
+    const root: OntologyTreeNode = { node: rootNode, depth, children: [] };
     visited.add(nodeId);
-    const node = nodeById.get(nodeId);
-    if (!node) return null;
-    const childIds = (childrenOf.get(nodeId) ?? []).slice();
-    const children: OntologyTreeNode[] = [];
-    for (const childId of childIds) {
-      const child = buildSubtree(childId, depth + 1);
-      if (child) children.push(child);
+    const pending = [root];
+    while (pending.length > 0) {
+      const tree = pending.pop()!;
+      for (const childId of childrenOf.get(tree.node.id) ?? []) {
+        if (parentOf.get(childId) !== tree.node.id) continue;
+        const childNode = nodeById.get(childId);
+        if (!childNode) continue;
+        const child: OntologyTreeNode = { node: childNode, depth: tree.depth + 1, children: [] };
+        visited.add(childId);
+        tree.children.push(child);
+        pending.push(child);
+      }
+      tree.children.sort((a, b) => compareNodes(a.node, b.node));
     }
-    children.sort((a, b) => compareNodes(a.node, b.node));
-    return { node, depth, children };
+    return root;
   }
 
   // Roots are nodes without a parent; projects sort first.
@@ -126,24 +132,26 @@ export function buildOntologyTree(
   return { roots, orphans, warnings };
 }
 
-/** Total node count, recursive. */
+/** Total node count with an explicit stack, O(V). */
 export function countTreeNodes(roots: OntologyTreeNode[]): number {
   let count = 0;
-  function visit(node: OntologyTreeNode) {
-    count++;
-    for (const child of node.children) visit(child);
+  const pending = roots.slice();
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    count += 1;
+    for (const child of node.children) pending.push(child);
   }
-  for (const root of roots) visit(root);
   return count;
 }
 
-/** Flattened in display order; `depth` drives indentation. */
+/** Flattened in display order; `depth` drives indentation. O(V), independent of call-stack depth. */
 export function flattenTree(roots: OntologyTreeNode[]): OntologyTreeNode[] {
   const out: OntologyTreeNode[] = [];
-  function visit(node: OntologyTreeNode) {
+  const pending = roots.slice().reverse();
+  while (pending.length > 0) {
+    const node = pending.pop()!;
     out.push(node);
-    for (const child of node.children) visit(child);
+    for (let i = node.children.length - 1; i >= 0; i -= 1) pending.push(node.children[i]);
   }
-  for (const root of roots) visit(root);
   return out;
 }

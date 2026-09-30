@@ -2177,7 +2177,7 @@ fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, 
 /// Must equal TS `VAULT_WALK_MAX_DEPTH`; a contract test watches it.
 const VAULT_WALK_MAX_DEPTH: usize = 12;
 /// Same value as TS `VAULT_WALK_MAX_ENTRIES`.
-const VAULT_WALK_MAX_ENTRIES: usize = 50000;
+const VAULT_WALK_MAX_ENTRIES: usize = 100000;
 /// Same list as TS `PRUNE_BY_NAME`.
 const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
 /// Same value as TS `CACHE_DIR_TAG`.
@@ -3893,6 +3893,32 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn vault_walk_keeps_the_last_entry_at_the_ceiling_and_reports_overflow() {
+        let dir = std::env::temp_dir().join(format!("atlas-walk-boundary-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.md"), "# A").unwrap();
+        let mut acc = super::VaultFingerprint {
+            entries: (0..super::VAULT_WALK_MAX_ENTRIES - 1)
+                .map(|i| super::VaultStamp {
+                    relative_path: format!("n{i}.md"),
+                    last_modified: 0,
+                    size: 0,
+                })
+                .collect(),
+            truncated: false,
+            pruned_dirs: Vec::new(),
+        };
+        super::walk_vault_stamps(&dir, "", 0, &mut acc).unwrap();
+        assert_eq!(acc.entries.len(), 100000);
+        assert_eq!(acc.entries.last().unwrap().relative_path, "a.md");
+        assert!(!acc.truncated);
+        super::walk_vault_stamps(&dir, "", 0, &mut acc).unwrap();
+        assert!(acc.truncated);
+        assert_eq!(acc.entries.len(), 100000);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
     #[test]
     fn the_adapter_launches_from_app_data_not_the_vault() {
         use std::path::{Path, PathBuf};

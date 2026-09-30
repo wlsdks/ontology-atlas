@@ -157,3 +157,12 @@ describe("the library graph's view", () => {
     expect(wheelZoomFactor(120) * wheelZoomFactor(-120)).toBeCloseTo(1, 9);
   });
 });
+
+it('projects into a reusable point without changing the world point', () => {
+  const world = { x: 7, y: -3 };
+  const target = { x: -1, y: -1 };
+  const view = { x: 2, y: 4, scale: 3 };
+  expect(worldToScreen(world, view, BOX, target)).toBe(target);
+  expect(target).toEqual(worldToScreen(world, view, BOX));
+  expect(world).toEqual({ x: 7, y: -3 });
+});

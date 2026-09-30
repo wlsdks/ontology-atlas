@@ -88,11 +88,15 @@ export interface ViewBox {
   height: number;
 }
 
-export function worldToScreen(point: LayoutPoint, view: LibraryGraphView, box: ViewBox): LayoutPoint {
-  return {
-    x: box.width / 2 + (point.x - view.x) * view.scale,
-    y: box.height / 2 + (point.y - view.y) * view.scale,
-  };
+export function worldToScreen(
+  point: LayoutPoint,
+  view: LibraryGraphView,
+  box: ViewBox,
+  out: LayoutPoint = { x: 0, y: 0 },
+): LayoutPoint {
+  out.x = box.width / 2 + (point.x - view.x) * view.scale;
+  out.y = box.height / 2 + (point.y - view.y) * view.scale;
+  return out;
 }
 
 export function screenToWorld(point: LayoutPoint, view: LibraryGraphView, box: ViewBox): LayoutPoint {

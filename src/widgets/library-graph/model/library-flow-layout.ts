@@ -48,8 +48,10 @@ const FLOW_COLUMN_GAP_MAX = 260;
 
 const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
 
+const LABEL_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 function byLabelThenId(a: { id: string; label: string }, b: { id: string; label: string }): number {
-  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return LABEL_COLLATOR.compare(a.label, b.label) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** Mean row index of a node's neighbours in `reference`, or +Infinity when it has none. */

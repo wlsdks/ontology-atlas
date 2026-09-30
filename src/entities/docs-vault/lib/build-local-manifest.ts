@@ -108,7 +108,7 @@ const PRUNE_BY_NAME = new Set(['node_modules']);
 const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
 /** Far above any document folder; past it the walk truncates and the manifest says so. */
-export const VAULT_WALK_MAX_ENTRIES = 50000;
+export const VAULT_WALK_MAX_ENTRIES = 100000;
 /** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
 export const VAULT_WALK_MAX_DEPTH = 12;
 
@@ -316,14 +316,16 @@ export async function computeLocalVaultFingerprint(
   }
 
   const files = await walk(root);
-  const stamps = await Promise.all(
-    files.map(async (entry) => {
+  const stamps = await mapPooled(
+    files,
+    VAULT_READ_CONCURRENCY,
+    async (entry) => {
       const file = await entry.handle.getFile();
       return {
         relativePath: entry.relativePath,
         lastModified: file.lastModified,
       };
-    }),
+    },
   );
   return fingerprintFromEntries(stamps);
 }
