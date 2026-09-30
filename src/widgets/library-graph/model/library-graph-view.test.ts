@@ -1,7 +1,8 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  createProjectedPositions,
   fitView,
   isSameView,
   isWheelZoomIntent,
@@ -165,4 +166,26 @@ it('projects into a reusable point without changing the world point', () => {
   expect(worldToScreen(world, view, BOX, target)).toBe(target);
   expect(target).toEqual(worldToScreen(world, view, BOX));
   expect(world).toEqual({ x: 7, y: -3 });
+});
+
+it('projects only requested coordinates from a large position set', () => {
+  const world = new Map(Array.from({ length: 100_000 }, (_, i) => [`n${i}`, { x: i, y: -i }]));
+  const get = vi.fn((id: string) => world.get(id));
+  const view = { x: 5, y: 7, scale: 2 };
+  const projected = createProjectedPositions({ get }, view, BOX);
+  expect(get).not.toHaveBeenCalled();
+  expect(projected.get('n99999')).toEqual(worldToScreen(world.get('n99999')!, view, BOX));
+  expect(get).toHaveBeenCalledTimes(1);
+});
+
+it('refreshes projected buffers and does not expose removed world coordinates', () => {
+  const world = new Map([['a', { x: 1, y: 2 }]]);
+  const buffer = new Map<string, { x: number; y: number }>();
+  const first = createProjectedPositions(world, { x: 0, y: 0, scale: 1 }, BOX, buffer);
+  const held = first.get('a');
+  const second = createProjectedPositions(world, { x: 4, y: 5, scale: 2 }, BOX, buffer);
+  expect(second.get('a')).toBe(held);
+  expect(second.get('a')).toEqual({ x: 494, y: 294 });
+  world.delete('a');
+  expect(second.get('a')).toBeUndefined();
 });

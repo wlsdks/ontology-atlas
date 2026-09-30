@@ -99,6 +99,26 @@ export function worldToScreen(
   return out;
 }
 
+export type LibraryPositionLookup = Pick<ReadonlyMap<string, LayoutPoint>, "get">;
+
+export function createProjectedPositions(
+  positions: LibraryPositionLookup,
+  view: LibraryGraphView,
+  box: ViewBox,
+  buffer = new Map<string, LayoutPoint>(),
+): LibraryPositionLookup {
+  return {
+    get(id) {
+      const point = positions.get(id);
+      if (!point) return undefined;
+      const held = buffer.get(id);
+      const projected = worldToScreen(point, view, box, held);
+      if (!held) buffer.set(id, projected);
+      return projected;
+    },
+  };
+}
+
 export function screenToWorld(point: LayoutPoint, view: LibraryGraphView, box: ViewBox): LayoutPoint {
   return {
     x: view.x + (point.x - box.width / 2) / view.scale,

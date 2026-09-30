@@ -1,5 +1,6 @@
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
+import type { LibraryPositionLookup } from "../model/library-graph-view";
 import type { LibraryGraphInk } from "./library-graph-ink";
 
 /**
@@ -24,6 +25,11 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * outside the pointed-at neighbourhood dims, and each mark carries a halo of ground one
  * citation width wide (`MARK_HALO_RATIO`), not a glow.
  */
+
+export interface LibraryGraphGeometry {
+  positions: ReadonlyMap<string, LayoutPoint>;
+  radii: ReadonlyMap<string, number>;
+}
 
 interface LibraryGraphIsland {
   id: string;
@@ -56,7 +62,8 @@ function islandPath(ctx: CanvasRenderingContext2D, island: LibraryGraphIsland, i
 export interface LibraryGraphFrame {
   nodes: readonly LibraryGraphNode[];
   edges: readonly LibraryGraphEdge[];
-  positions: ReadonlyMap<string, LayoutPoint>;
+  positions: LibraryPositionLookup;
+  overview?: { geometry: LibraryGraphGeometry; view: { x: number; y: number; scale: number } };
   /** CSS pixels; the caller has already applied the device-pixel transform. */
   width: number;
   height: number;
@@ -609,6 +616,32 @@ function roundedRect(
   ctx.closePath();
 }
 
+const overviewPaths = new WeakMap<LibraryGraphGeometry, {
+  nodes: readonly LibraryGraphNode[];
+  edges: readonly LibraryGraphEdge[];
+  paths: Path2D[];
+}>();
+
+function cachedOverviewPaths(frame: LibraryGraphFrame, stalePages: ReadonlySet<string>): Path2D[] {
+  const geometry = frame.overview!.geometry;
+  const cached = overviewPaths.get(geometry);
+  if (cached?.nodes === frame.nodes && cached.edges === frame.edges) return cached.paths;
+  const paths = [new Path2D(), new Path2D(), new Path2D()];
+  for (const node of frame.nodes) {
+    const point = geometry.positions.get(node.id);
+    const radius = geometry.radii.get(node.id) ?? NODE_RADIUS[node.kind];
+    if (!point || radius <= 0 || node.kind === "concept") continue;
+    const path = paths[node.kind === "source" ? 0 : stalePages.has(node.id) ? 2 : 1];
+    if (node.kind === "source") path.rect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+    else {
+      path.moveTo(point.x + radius, point.y);
+      path.arc(point.x, point.y, radius, 0, Math.PI * 2);
+    }
+  }
+  overviewPaths.set(geometry, { nodes: frame.nodes, edges: frame.edges, paths });
+  return paths;
+}
+
 export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   const { ink } = frame;
   const dim = frame.dim ?? 0;
@@ -826,7 +859,20 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     frame.hoveredId === null &&
     frame.focusedId === null &&
     (flow === null || (flow.arrived.size === 0 && flow.edges.size === 0));
-  if (quietOverview) {
+  if (quietOverview && frame.overview && (opacity?.size ?? 0) === 0 && typeof Path2D !== "undefined") {
+    const paths = cachedOverviewPaths(frame, stalePages);
+    const { view } = frame.overview;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.translate(frame.width / 2 - view.x * view.scale, frame.height / 2 - view.y * view.scale);
+    ctx.scale(view.scale, view.scale);
+    const inks = [ink.source, ink.page, ink.stale];
+    for (let i = 0; i < paths.length; i += 1) {
+      ctx.fillStyle = inks[i];
+      ctx.fill(paths[i]);
+    }
+    ctx.restore();
+  } else if (quietOverview) {
     ctx.globalAlpha = 1;
     const groups: Array<{ ink: string; square: boolean; test: (node: LibraryGraphNode) => boolean }> = [
       { ink: ink.source, square: true, test: (node) => node.kind === "source" },

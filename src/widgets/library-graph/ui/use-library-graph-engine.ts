@@ -47,6 +47,7 @@ import {
   type LibrarySimulation,
 } from "../model/library-force-simulation";
 import {
+  createProjectedPositions,
   fitView,
   isSameView,
   isWheelZoomIntent,
@@ -63,6 +64,7 @@ import {
   worldToScreen,
   zoomViewAbout,
   type LibraryGraphView,
+  type LibraryPositionLookup,
 } from "../model/library-graph-view";
 import {
   drawLibraryGraph,
@@ -70,6 +72,7 @@ import {
   type LibraryGraphActivityMark,
   type LibraryGraphFlow,
   type LibraryGraphLabelBox,
+  type LibraryGraphGeometry,
 } from "../render/draw-library-graph";
 import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
 
@@ -508,8 +511,19 @@ export function useLibraryGraphEngine({
   const autoFitRef = useRef({ on: true, converged: false });
   const inkRef = useRef<LibraryGraphInk | null>(null);
   /** Screen-space positions of the last painted frame — what the pointer is tested against. */
-  const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
+  const screenRef = useRef<LibraryPositionLookup>(new Map());
+  const screenPointsRef = useRef<Map<string, LayoutPoint>>(new Map());
   const worldPositionsRef = useRef<Map<string, LayoutPoint>>(new Map());
+  const overviewGeometryRef = useRef<{
+    nodes: LibrarySimulation["nodes"];
+    ticks: number;
+    radii: Map<string, number>;
+    columns: FlowLayout | null;
+    islands: IslandsLayout | null;
+    moving: boolean;
+    bounds: ReturnType<typeof librarySimulationBounds>;
+    geometry: LibraryGraphGeometry;
+  } | null>(null);
   const radiiRef = useRef<Map<string, number>>(new Map());
   /**
    * This folder's zoom ceiling (`libraryZoomMax`): a cap on the drawn widest mark, so it
@@ -718,8 +732,17 @@ export function useLibraryGraphEngine({
       if (canvas.height !== backingHeight) canvas.height = backingHeight;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      const moving = travelRef.current !== null || ghostsRef.current.size > 0 ||
+        (islandFieldRef.current !== null && isIslandFieldMoving(islandFieldRef.current));
+      let overviewGeometry = overviewGeometryRef.current;
+      const geometryChanged = !overviewGeometry || overviewGeometry.nodes !== sim.nodes ||
+        overviewGeometry.ticks !== sim.ticks || overviewGeometry.radii !== radiiRef.current ||
+        overviewGeometry.columns !== columnsRef.current || overviewGeometry.islands !== islandsRef.current ||
+        overviewGeometry.moving || moving;
       const box = { width, height };
-      const bounds = librarySimulationBounds(sim);
+      const bounds = pictureRef.current !== "islands" || geometryChanged
+        ? librarySimulationBounds(sim)
+        : overviewGeometry?.bounds ?? null;
       // Where the fit tile would take the camera, every frame, so the tile stops offering a no-op press.
       const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
       fitScaleRef.current = fitTarget.scale;
@@ -751,7 +774,9 @@ export function useLibraryGraphEngine({
       const view = viewRef.current;
       publishFramed(isSameView(view, fitTarget));
 
-      const world = libraryPositions(sim, worldPositionsRef.current);
+      const world = pictureRef.current !== "islands" || geometryChanged
+        ? libraryPositions(sim, worldPositionsRef.current)
+        : worldPositionsRef.current;
       const travel = travelRef.current;
       if (travel) {
         const t = (now - travel.since) / Math.max(1, motionRef.current.settle);
@@ -764,9 +789,12 @@ export function useLibraryGraphEngine({
           }
         }
       }
-      const screen = screenRef.current;
-      for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box, screen.get(id)));
-      if (screen.size > world.size) for (const id of screen.keys()) if (!world.has(id)) screen.delete(id);
+      const ghosts = ghostsRef.current;
+      const screenPoints = screenPointsRef.current;
+      if (geometryChanged) {
+        for (const id of screenPoints.keys()) if (!world.has(id) && !ghosts.has(id)) screenPoints.delete(id);
+      }
+      const screen = createProjectedPositions({ get: (id) => world.get(id) ?? ghosts.get(id) }, view, box, screenPoints);
       // Radii go through the same camera as positions, so a zoom grows dots by the same factor.
       const screenRadii = screenRadiiRef.current;
       const radiusSource = screenRadiusSourceRef.current;
@@ -811,7 +839,6 @@ export function useLibraryGraphEngine({
           }
         }
       }
-      const ghosts = ghostsRef.current;
       const nodes: LibraryGraphNode[] = ghosts.size > 0 ? [...graphRef.current.nodes] : graphRef.current.nodes;
       if (ghosts.size > 0) {
         for (const [id, ghost] of ghosts) {
@@ -821,7 +848,6 @@ export function useLibraryGraphEngine({
             continue;
           }
           nodes.push(ghost.node);
-          screen.set(id, worldToScreen({ x: ghost.x, y: ghost.y }, view, box));
           opacity.set(id, 1 - easeMotion(gone));
         }
       }
@@ -959,10 +985,19 @@ export function useLibraryGraphEngine({
           onPressIslandRef.current(pick(source));
         }
       }
+      if (pictureRef.current === "islands" && geometryChanged) {
+        overviewGeometry = {
+          nodes: sim.nodes, ticks: sim.ticks, radii: radiiRef.current,
+          columns: columnsRef.current, islands: islandsRef.current, moving, bounds,
+          geometry: { positions: world, radii: radiiRef.current },
+        };
+        overviewGeometryRef.current = overviewGeometry;
+      }
       drawLibraryGraph(context, {
         nodes,
         edges: graphRef.current.edges,
         positions: screen,
+        overview: pictureRef.current === "islands" && overviewGeometry ? { geometry: overviewGeometry.geometry, view } : undefined,
         width,
         height,
         ink: inkRef.current,
