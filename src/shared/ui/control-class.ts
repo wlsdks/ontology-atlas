@@ -837,7 +837,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * **after** the `border-[…divider]` compounds above, so it wins in
      * tailwind-merge.
      */
-    { tone: 'onAccent', class: 'border-transparent active:bg-[color:var(--color-indigo-brand)] active:shadow-[var(--shadow-control-press)]' },
+    { tone: 'onAccent', class: 'border-transparent active:bg-[color:var(--color-indigo-brand)] active:text-[color:var(--color-text-on-accent)] active:shadow-[var(--shadow-control-press)]' },
   ],
   defaultVariants: {
     shape: 'chip',

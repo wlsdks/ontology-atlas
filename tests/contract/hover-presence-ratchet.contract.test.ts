@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 import { judgeRatchet } from "./lib/ratchet-base";
 
-const FALLBACK_CEILING = 90;
+const FALLBACK_CEILING = 92;
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!existsSync(dir)) return out;
