@@ -19,8 +19,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
  * could shrink is a section that can cut a row in half). Heights are read off the rows that
  * are rendered and remembered per index, so rows of different heights (a two-line title,
  * a folded caption) stay exact once seen; the unseen use the estimate. Without a scroller,
- * or in a box with no height (jsdom, a hidden tab), every row renders — the list degrades to
- * what it was, never to nothing.
+ * every row renders. A zero-height scroller retains a bounded seed until resized.
  *
  * The caller applies `before` and `after` as the list's top and bottom padding (adding its
  * own base padding back), renders `rows.slice(start, end)`, and puts the ref on the list.
@@ -138,18 +137,24 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
       heightIndexRef.current = new RowHeightIndex(heightsRef.current);
     }
     let next: WindowedRows;
-    if (!list || !scroller || scroller.clientHeight === 0) {
+    if (!list || !scroller) {
       next = EVERYTHING(count);
     } else {
       const style = getComputedStyle(list);
       const gap = Number.parseFloat(style.rowGap) || 0;
-      const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
-      // The first row's top in the scroller's content coordinates.
-      const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
-      next = heightIndexRef.current!.window(gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
+      if (scroller.clientHeight === 0) {
+        const end = Math.min(count, initialRows ?? INITIAL_ROWS);
+        next = { start: 0, end, before: 0,
+          after: heightIndexRef.current!.top(count, gap) - heightIndexRef.current!.top(end, gap) };
+      } else {
+        const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
+        // The first row's top in the scroller's content coordinates.
+        const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
+        next = heightIndexRef.current!.window(gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
+      }
     }
     setRange((previous) => (sameWindow(previous, next) ? previous : next));
-  }, [count, estimate, overscan]);
+  }, [count, estimate, overscan, initialRows]);
 
   /**
    * Bring row `index` into the scroller, the way `scrollIntoView({ block: "nearest" })`

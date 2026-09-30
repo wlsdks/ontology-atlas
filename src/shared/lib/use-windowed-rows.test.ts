@@ -88,3 +88,44 @@ it('bounds the first committed row set before measuring a large scrollable list'
     rect.mockRestore();
   }
 });
+
+it("keeps a zero-height scroller bounded and recomputes when it becomes visible", async () => {
+  const { createElement } = await import("react");
+  const { render, cleanup, act } = await import("@testing-library/react");
+  const { vi } = await import("vitest");
+  const { useWindowedRows } = await import("./use-windowed-rows");
+  let viewportHeight = 0;
+  let resize: (() => void) | undefined;
+  const height = vi.spyOn(HTMLElement.prototype, "clientHeight", "get")
+    .mockImplementation(() => viewportHeight);
+  vi.stubGlobal("ResizeObserver", class {
+    constructor(callback: () => void) { resize = callback; }
+    observe() {}
+    disconnect() {}
+  });
+  function List({ count }: { count: number }) {
+    const [range, ref] = useWindowedRows({ count, estimate: 36 });
+    return createElement("div", { style: { overflowY: "auto" } },
+      createElement("ul", { ref, "data-window": `${range.start}-${range.end}` },
+        Array.from({ length: range.end - range.start }, (_, i) =>
+          createElement("li", { key: range.start + i }, `Row ${range.start + i}`))));
+  }
+  try {
+    const result = render(createElement(List, { count: 1000 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    result.rerender(createElement(List, { count: 100_000 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    expect(resize).toBeDefined();
+    act(() => { viewportHeight = 360; resize!(); });
+    expect(result.container.querySelector("ul")?.getAttribute("data-window")).toBe("0-18");
+    expect(result.container.querySelectorAll("li")).toHaveLength(18);
+    act(() => { viewportHeight = 0; resize!(); });
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    result.rerender(createElement(List, { count: 3 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(3);
+  } finally {
+    cleanup();
+    height.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
