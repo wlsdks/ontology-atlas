@@ -1,5 +1,7 @@
 "use client";
 
+import { RowHeightIndex } from "./row-height-index";
+
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /**
@@ -112,6 +114,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   const listRef = useRef<E | null>(null);
   /** Every row's height, measured where it has been rendered, the estimate elsewhere. */
   const heightsRef = useRef<number[]>([]);
+  const heightIndexRef = useRef<RowHeightIndex | null>(null);
   /** The `before` pad the list is currently drawn with, so its own top can be found under it. */
   const appliedBeforeRef = useRef(0);
   /**
@@ -129,9 +132,10 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   const compute = useCallback(() => {
     const list = listRef.current;
     const scroller = scrollParent(list);
-    if (heightsRef.current.length !== count) {
+    if (heightsRef.current.length !== count || !heightIndexRef.current) {
       const held = heightsRef.current;
       heightsRef.current = Array.from({ length: count }, (_, i) => held[i] ?? estimate);
+      heightIndexRef.current = new RowHeightIndex(heightsRef.current);
     }
     let next: WindowedRows;
     if (!list || !scroller || scroller.clientHeight === 0) {
@@ -142,7 +146,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
       const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
       // The first row's top in the scroller's content coordinates.
       const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
-      next = windowRows(heightsRef.current, gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
+      next = heightIndexRef.current!.window(gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
     }
     setRange((previous) => (sameWindow(previous, next) ? previous : next));
   }, [count, estimate, overscan]);
@@ -173,7 +177,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
       const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
       const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
       const heights = heightsRef.current;
-      const top = rowsTop + rowTop(heights, gap, index);
+      const top = rowsTop + (heightIndexRef.current?.top(index, gap) ?? rowTop(heights, gap, index));
       const bottom = top + (heights[index] ?? estimate);
       if (top < scroller.scrollTop) scroller.scrollTop = top;
       else if (bottom > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = bottom - scroller.clientHeight;
@@ -208,6 +212,7 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
       if (index >= count) break;
       const height = (rows[i] as HTMLElement).getBoundingClientRect().height;
       if (height > 0 && Math.abs((heightsRef.current[index] ?? estimate) - height) > 0.5) {
+        heightIndexRef.current?.update(index, heightsRef.current[index] ?? estimate, height);
         heightsRef.current[index] = height;
         changed = true;
       }
