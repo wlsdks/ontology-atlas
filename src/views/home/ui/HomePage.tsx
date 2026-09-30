@@ -51,6 +51,7 @@ import { useMapViewSync } from "../model/use-map-view-sync";
 import { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
 import { useNodeDatasheetModel } from "../model/use-node-datasheet-model";
 import { useTopologyGraphProjection } from "../model/use-topology-graph-projection";
+import { isDeeplinkRouteState } from "../model/url-state";
 
 import { useGuidedTourAutoStartReady } from "@/features/guided-tour";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
@@ -623,6 +624,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             router={router}
             mapEntryTicket={mapEntryTicket}
             expandAllActive={expandAllActive}
+            mapAssemblesOnOpen={!isDeeplinkRouteState(routeState)}
             combinedFitToken={combinedFitToken}
             growthReplayToken={growthReplayToken}
             setGrowthReplaying={setGrowthReplaying}

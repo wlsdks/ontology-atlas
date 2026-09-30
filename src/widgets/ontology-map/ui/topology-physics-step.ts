@@ -11,6 +11,7 @@
 import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
+import { settleTierAssembly, tierAssemblyAppear } from "../morph/tier-assembly";
 import { selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
@@ -345,6 +346,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // edge-pair is selected. One shared gate so node-click and edge-click drive
   // the same normal↔dim color ramp (owner headline motion).
   const focusActive = focusedNodeId !== null || pairFocusActive;
+  if (focusActive || isDragging) settleTierAssembly(world);
   for (const node of world.nodes) {
     if (clusteredIds?.has(node.id)) {
       // Collapsed, so not on screen — the ramp is not run and **the leftover value is
@@ -401,9 +403,11 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     // (seed 0 for fresh nodes / 1 for existing set upstream). Reuses the ego
     // reveal's rise τ so a new node resolves with the same cadence content does.
     const previousAppear = appearById.get(node.id) ?? 1;
+    const assemblyAppear = tierAssemblyAppear(world, node.kind, now);
     appearById.set(
       node.id,
-      reducedMotion ? 1 : stepEmphasis(previousAppear, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau),
+      assemblyAppear ??
+        (reducedMotion ? 1 : stepEmphasis(previousAppear, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau)),
     );
   }
 
