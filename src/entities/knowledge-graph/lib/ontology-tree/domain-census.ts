@@ -96,25 +96,22 @@ export function domainCensusById(rows: readonly DomainCensusRow[]): ReadonlyMap<
   return new Map(rows.map((row) => [row.id, row]));
 }
 
-/** Documents joined by any edge to a member, since documents attach only through `relates:`. */
+/** One-hop document count via any relation, O(V + E). */
 export function countConnectedDocuments(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   memberIds: ReadonlySet<string>,
 ): number {
+  const documents = nodes.filter((node) => node.kind === "document");
+  if (documents.length === 0 || memberIds.size === 0) return 0;
+  const connectedIds = new Set<string>();
+  for (const edge of edges) {
+    if (memberIds.has(edge.from)) connectedIds.add(edge.to);
+    if (memberIds.has(edge.to)) connectedIds.add(edge.from);
+  }
   let count = 0;
-  for (const node of nodes) {
-    if (node.kind !== "document") continue;
-    if (memberIds.has(node.id)) {
-      count += 1;
-      continue;
-    }
-    const connected = edges.some(
-      (edge) =>
-        (edge.from === node.id && memberIds.has(edge.to)) ||
-        (edge.to === node.id && memberIds.has(edge.from)),
-    );
-    if (connected) count += 1;
+  for (const node of documents) {
+    if (memberIds.has(node.id) || connectedIds.has(node.id)) count += 1;
   }
   return count;
 }

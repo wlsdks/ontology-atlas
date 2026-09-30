@@ -199,7 +199,7 @@ export function buildLibraryModel({
     partialCount: rows.filter((row) => row.state === 'partial').length,
     // `checking` rows are exactly the paths worth hashing; an mtime change drops a cached hash.
     pathsNeedingHash: rows.filter((row) => row.state === 'checking').map((row) => row.path),
-    pairing: buildLibraryPairing({ docs, sources, hashes }),
+    pairing: buildLibraryPairing({ docs, sources, hashes, citations }),
   };
 }
 
@@ -256,13 +256,14 @@ function buildLibraryPairing({
   docs,
   sources,
   hashes,
+  citations,
 }: {
   docs: readonly VaultDoc[];
   sources: readonly VaultSourceFile[] | undefined;
   hashes: ReadonlyMap<string, string>;
+  citations: ReadonlyMap<string, WikiCitation[]>;
 }): LibraryPairing {
   const present = new Map((sources ?? []).map((source) => [source.path, source] as const));
-  const citations = collectWikiCitations(docs);
   const titles = new Map<string, string>();
   const originalsByWiki = new Map<string, LibraryOriginalLink[]>();
 

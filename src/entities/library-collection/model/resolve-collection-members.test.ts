@@ -29,3 +29,35 @@ describe('collection member identity resolution', () => {
     ]);
   });
 });
+
+it('counts duplicate UID claims within one document only once and keeps input order', () => {
+  const documents = [{ slug: 'capabilities/결제', title: '결제', frontmatter: { uid: CURRENT, merged_uids: [CURRENT, MERGED, MERGED, 42, null] } }];
+  const targets = [item(MERGED), item(CURRENT), item(MERGED)];
+  const results = resolveCollectionMembers(targets, documents);
+  expect(results.map((result) => result.item)).toEqual(targets);
+  expect(results.map((result) => result.status === 'resolved' ? result.identityResolution : result.reason))
+    .toEqual(['merged', 'current', 'merged']);
+});
+
+it('leaves merged-only documents unresolved when their current UID is invalid', () => {
+  const documents = [{ slug: 'capabilities/broken', title: 'Broken', frontmatter: { uid: 42, merged_uids: [MERGED] } }];
+  expect(resolveCollectionMembers([item(MERGED)], documents)).toMatchObject([{ status: 'unresolved', reason: 'ambiguous' }]);
+});
+
+it('treats repeated document rows as multiple claimants', () => {
+  const document = { slug: 'capabilities/a', title: 'A', frontmatter: { uid: CURRENT } };
+  expect(resolveCollectionMembers([item(CURRENT)], [document, document]))
+    .toMatchObject([{ status: 'unresolved', reason: 'ambiguous' }]);
+});
+
+it('omits source and wiki members and handles an empty document set', () => {
+  const ontologyItem = item(CURRENT);
+  const otherItems: LibraryCollectionItem[] = [
+    { ...item(CURRENT), target: { kind: 'source', path: 'sources/a.txt' } },
+    { ...item(CURRENT), target: { kind: 'wiki', path: 'wiki/a' } },
+  ];
+  expect(resolveCollectionMembers(otherItems, [])).toEqual([]);
+  expect(resolveCollectionMembers([ontologyItem, ...otherItems], []))
+    .toEqual([{ status: 'unresolved', reason: 'missing', item: ontologyItem }]);
+  expect(resolveCollectionMembers([], [])).toEqual([]);
+});
