@@ -47,6 +47,7 @@ export interface TopologyMapInstrumentationSources {
     clusterChipsRef: SourceRef<readonly ClusterChip[]>;
     previewEdgeHeldRef: SourceRef<OntologyMapProps["previewEdge"]>;
     domeRuntimeRef: SourceRef<DomeRuntime | null>;
+    domeModelBuildRef: SourceRef<unknown>;
     galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
@@ -99,6 +100,7 @@ export function useTopologyMapInstrumentation({
     clusterChipsRef,
     previewEdgeHeldRef,
     domeRuntimeRef,
+    domeModelBuildRef,
     galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
@@ -469,6 +471,7 @@ export function useTopologyMapInstrumentation({
            * state; the idle gate already reads this flag for the same reason.
            */
           entryArmed: d.entryArmed,
+          settling: domeModelBuildRef.current !== null,
           /*
            * Lit 3D (2026-09-25) — the fly-to in effect (the node it framed) and how many
            * drawn nodes wore each evidence light in the last frame. What the frame
@@ -557,6 +560,7 @@ export function useTopologyMapInstrumentation({
     canvasRef,
     clusterChipsRef,
     clusteredIdsRef,
+    domeModelBuildRef,
     domeRuntimeRef,
     drawnFarTRef,
     drawnHoveredNodeIdRef,

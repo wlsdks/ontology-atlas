@@ -76,7 +76,6 @@ test('Escape in the map composer keeps the dock and the draft; an empty composer
   await expect(chip).toHaveAttribute('aria-expanded', 'true');
   await expect(composer(page)).toHaveValue('초안 문장');
 
-  // Put away by the X with the draft still there; the chip brings the same sentence back.
   await page.getByTestId('analysis-workbench-close').click();
   await expect(chip).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByTestId('acp-chat-panel')).toBeHidden();
@@ -84,6 +83,10 @@ test('Escape in the map composer keeps the dock and the draft; an empty composer
   await expect(composer(page), 'the draft did not survive putting the dock away').toHaveValue('초안 문장');
 
   await composer(page).fill('');
+  await expect(
+    page.locator('[role="tooltip"]'),
+    'the chip tooltip that focus return opened never finished closing, and a closing tooltip takes Escape',
+  ).toHaveCount(0);
   await composer(page).press('Escape');
   await expect(chip).toHaveAttribute('aria-expanded', 'false');
 });

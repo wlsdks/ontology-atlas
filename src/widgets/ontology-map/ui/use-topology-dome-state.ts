@@ -91,18 +91,9 @@ export function useTopologyDomeState({
   const domeWorldSourceRef = useRef<unknown>(null);
 
   /**
-   * The **in-progress, time-sliced** dome model build for the first 3D frame
-   * (measured 2026-08-19).
-   *
-   * Relaxing the coupled cloud placement is O(n²) × iterations, ~350 ms at
-   * 2,000 nodes, and running `buildDomeModel` synchronously started boot with a
-   * **single-frame hitch of 346–368 ms**. Now each frame advances only
-   * `DOME_BUILD_SLICE_MS` and resumes on the next. Nothing is drawn until the
-   * build completes, so the screen shows what the synchronous hitch showed
-   * anyway (an empty canvas on boot, the last 2D frame on a mid-session toggle)
-   * while input and timers stay alive. Slicing preserves the floating-point
-   * operation order, so the result is **bit-identical**.
-   *
+   * The **in-progress, time-sliced** dome model build: each frame with 3D on advances
+   * only `DOME_BUILD_SLICE_MS`, it waits while 3D is off, and one that settles on screen
+   * is drawn meanwhile.
    * `world`/`arrangement` are recorded alongside: a world swap or arrangement
    * change mid-slice makes this build stale input, and it is restarted.
    */
@@ -110,6 +101,7 @@ export function useTopologyDomeState({
     world: unknown;
     arrangement: string;
     build: DomeModelBuild;
+    settlesOnScreen: boolean;
   } | null>(null);
 
   /**
