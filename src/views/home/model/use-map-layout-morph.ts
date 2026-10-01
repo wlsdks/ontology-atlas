@@ -34,6 +34,8 @@ export function useMapLayoutMorph({
   conceptCount,
   vaultKey,
   parentOf,
+  anchorId,
+  degreeOf,
   targetFor,
   frameRef,
 }: {
@@ -42,6 +44,8 @@ export function useMapLayoutMorph({
   conceptCount: number;
   vaultKey: string;
   parentOf: () => ReadonlyMap<string, string>;
+  anchorId: string | null;
+  degreeOf: () => ReadonlyMap<string, number>;
   targetFor: (view: MapLayoutView) => MapLayoutMorphJob["target"];
   frameRef: RefObject<HTMLElement | null>;
 }): MapLayoutMorph {
@@ -63,6 +67,8 @@ export function useMapLayoutMorph({
         mode: kind,
         reducedMotion,
         parentOf,
+        anchorId,
+        degreeOf,
         target: kind === "ghost" ? targetFor(view) : null,
         source: swapsSurface ? null : () => frameRef.current?.querySelector("canvas") ?? null,
       };

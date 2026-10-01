@@ -23,6 +23,7 @@ import {
   MapLayoutMorphOverlay,
   OntologyMap,
   PLAIN_TIER_REVEAL,
+  conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
@@ -154,6 +155,8 @@ export function TopologyMapRenderer({
     conceptCount: nodes.length,
     vaultKey: vaultIdentity,
     parentOf: () => containmentParents(nodes, edges),
+    anchorId: canvasSelectedSlug ?? null,
+    degreeOf: () => conceptDegrees(edges),
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
