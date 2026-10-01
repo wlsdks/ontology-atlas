@@ -276,13 +276,13 @@ test.describe("map layout morph", () => {
       expect(run.mode).toBe("ghost");
       expect(run.count).toBeGreaterThan(0);
 
-      const frameMs = medianFrameMs(frames);
-      const travelMs = run.travelEndMs! - run.travelStartMs;
-      expect(travelMs).toBeGreaterThanOrEqual(CAMERA_TWEEN_MIN_MS - 2 * frameMs);
-      expect(travelMs).toBeLessThanOrEqual(CAMERA_TWEEN_MAX_MS + 2 * frameMs);
-      expect(Math.abs(travelMs - run.plannedMs), `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeLessThanOrEqual(2 * frameMs);
-
+      expect(run.plannedMs).toBeGreaterThanOrEqual(CAMERA_TWEEN_MIN_MS);
+      expect(run.plannedMs).toBeLessThanOrEqual(CAMERA_TWEEN_MAX_MS);
       const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null && f.at !== null);
+      const travelMs = run.travelEndMs! - run.travelStartMs;
+      expect(travelMs, `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(run.plannedMs);
+      expect(Math.max(0, ...travel.map((f) => f.at! - run.travelStartMs)), `travel still running past its plan of ${run.plannedMs} ms`).toBeLessThan(run.plannedMs);
+
       const shares: number[] = [];
       let previous = { at: run.travelStartMs, remaining: 1 };
       for (const f of travel) {
