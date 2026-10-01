@@ -7,6 +7,7 @@ import {
   parseFrontmatter,
   type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
+import { countWhitespaceWords } from '@/shared/lib/count-whitespace-words';
 import { meaningFindings } from '@/shared/lib/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
 import { nativeVaultFingerprint, readTauriVaultTextFile, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
@@ -407,7 +408,7 @@ function buildMdEntry(
           ),
         }
       : {}),
-    wordCount: body.split(/\s+/).filter(Boolean).length,
+    wordCount: countWhitespaceWords(body),
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,
     mtime: lastModified,
