@@ -13,8 +13,6 @@
 
   .motion-indicator[data-animated="true"] {
     transition-property: transform, width, height;
-    transition-duration: var(--motion-base);
-    transition-timing-function: var(--motion-ease);
   }
 
   @media (prefers-reduced-motion: reduce) {
