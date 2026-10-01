@@ -13,7 +13,16 @@ import {
 } from "./strata-lod";
 
 function recordingContext() {
-  const calls = { fill: 0, stroke: 0, arc: 0, gradients: [] as number[][], fillStyles: [] as string[], strokeStyles: [] as string[] };
+  const calls = {
+    fill: 0,
+    stroke: 0,
+    arc: 0,
+    arcs: [] as { r: number; anticlockwise: boolean }[],
+    moves: [] as [number, number][],
+    gradients: [] as number[][],
+    fillStyles: [] as string[],
+    strokeStyles: [] as string[],
+  };
   const ctx = {
     globalAlpha: 1,
     lineCap: "butt",
@@ -22,11 +31,14 @@ function recordingContext() {
     fillStyle: "" as unknown,
     quadraticCurveTo() {},
     beginPath() {},
-    moveTo() {},
+    moveTo(x: number, y: number) {
+      calls.moves.push([x, y]);
+    },
     lineTo() {},
     closePath() {},
-    arc() {
+    arc(_x: number, _y: number, r: number, _start: number, _end: number, anticlockwise = false) {
       calls.arc += 1;
+      calls.arcs.push({ r, anticlockwise });
     },
     fill() {
       calls.fill += 1;
@@ -54,21 +66,48 @@ describe("drawStrataLodDust", () => {
     const fillsFor = (count: number) => {
       const dust = createStrataLodDust();
       resetStrataLodDust(dust);
+      let rings = 0;
       for (let i = 0; i < count; i += 1) {
         const plane = i % 3 === 0 ? "capability" : "element";
-        const state = i % 7 === 0 ? "stale" : "unknown";
+        const state = i % 7 === 0 ? "stale" : i % 5 === 0 ? "current" : "unknown";
+        if (state !== "current") rings += 1;
         addStrataLodDust(dust, plane, state, (i % 100) / 100, 1, i % 1440, i % 900);
       }
       const { ctx, calls } = recordingContext();
       const drawn = drawStrataLodDust(ctx, dust, inks, () => 1, 1);
-      return { fills: calls.fill, arcs: calls.arc, drawn };
+      return { fills: calls.fill, arcs: calls.arc, rings, drawn };
     };
     const small = fillsFor(1_000);
     const large = fillsFor(10_000);
     expect(large.drawn).toBe(10_000);
-    expect(large.arcs).toBe(10_000);
+    expect(large.arcs).toBe(10_000 + large.rings);
     expect(large.fills).toBe(small.fills);
     expect(large.fills).toBeLessThanOrEqual(2 * 3 * 8);
+  });
+
+  it("marks evidence by shape: current a filled dot, stale an amber ring, unknown a ring in its kind colour", () => {
+    const marks = {} as Record<string, { arcs: { r: number; anticlockwise: boolean }[]; style: string }>;
+    for (const state of ["current", "stale", "unknown"] as const) {
+      const dust = createStrataLodDust();
+      addStrataLodDust(dust, "element", state, 0.1, 1, 10, 10);
+      const { ctx, calls } = recordingContext();
+      const byState = { current: 0, stale: 0, unknown: 0 };
+      drawStrataLodDust(ctx, dust, inks, () => 1, 1, byState);
+      expect(byState[state]).toBe(1);
+      marks[state] = { arcs: calls.arcs, style: calls.fillStyles[0] };
+    }
+    expect(marks.current.arcs).toHaveLength(1);
+    expect(marks.current.style.startsWith("rgba(148,182,162,")).toBe(true);
+    for (const state of ["stale", "unknown"]) {
+      const [outer, inner] = marks[state].arcs;
+      expect(marks[state].arcs).toHaveLength(2);
+      expect(outer.anticlockwise).toBe(false);
+      expect(inner.anticlockwise).toBe(true);
+      expect(inner.r).toBeLessThan(outer.r);
+      expect(outer.r).toBeGreaterThan(marks.current.arcs[0].r);
+    }
+    expect(marks.stale.style.startsWith("rgba(220,170,60,")).toBe(true);
+    expect(marks.unknown.style.startsWith("rgba(124,166,141,")).toBe(true);
   });
 
   it("follows a crossfading weight continuously instead of in steps", () => {
@@ -84,8 +123,8 @@ describe("drawStrataLodDust", () => {
     for (let frame = 1; frame <= 15; frame += 1) {
       const weight = Math.max(0, 1 - frame / 15);
       const alpha = alphaFor(weight);
-      expect(Math.abs(alpha - 0.7 * weight)).toBeLessThanOrEqual(0.7 / 128 + 0.001);
-      expect(previous - alpha).toBeLessThanOrEqual(0.7 / 15 + 0.01);
+      expect(Math.abs(alpha - 0.85 * weight)).toBeLessThanOrEqual(0.85 / 128 + 0.001);
+      expect(previous - alpha).toBeLessThanOrEqual(0.85 / 15 + 0.01);
       previous = alpha;
     }
   });
@@ -100,24 +139,31 @@ describe("drawStrataLodDust", () => {
 });
 
 describe("drawStrataLodChords", () => {
-  const chord = (count: number, weight: number, depth: number): StrataLodChordDraw => ({
+  const chord = (count: number, weight: number, depth: number, lift: number): StrataLodChordDraw => ({
     ax: 0,
     ay: 0,
+    ar: 8,
     bx: 100,
     by: 0,
+    br: 8,
     cx: 50,
     cy: 20,
     count,
     weight,
     depth,
-    lifted: false,
+    lift,
   });
 
-  it("strokes one counted chord per domain pair, wider for more dependencies, and none for a chord fully resolved", () => {
+  it("draws only the chords of a pointed or focused domain, each tapering to an arrowhead at the domain it depends on", () => {
     const { ctx, calls } = recordingContext();
-    const drawn = drawStrataLodChords(ctx, [chord(1, 1, 0.2), chord(40, 40, 0.6), chord(5, 0, 0.4)], 3, [102, 102, 133], () => 1, 1);
+    const chords = [chord(1, 1, 0.2, 1), chord(40, 40, 0.6, 1), chord(5, 0, 0.4, 1), chord(9, 9, 0.3, 0)];
+    const drawn = drawStrataLodChords(ctx, chords, chords.length, [102, 102, 133], () => 1, 1);
     expect(drawn).toBe(2);
-    expect(calls.stroke).toBe(2);
+    expect(calls.fill).toBe(4);
+    expect(calls.stroke).toBe(0);
+    const endAngle = Math.atan2(0 - 20, 100 - 50);
+    const tip = [100 - 11 * Math.cos(endAngle), 0 - 11 * Math.sin(endAngle)];
+    expect(calls.moves.some(([x, y]) => Math.abs(x - tip[0]) < 1e-6 && Math.abs(y - tip[1]) < 1e-6)).toBe(true);
     expect(strataLodChordWidth(40)).toBeGreaterThan(strataLodChordWidth(1));
     expect(strataLodChordWidth(100_000)).toBeLessThanOrEqual(3.5);
   });

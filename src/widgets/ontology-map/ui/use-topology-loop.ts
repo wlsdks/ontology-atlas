@@ -294,6 +294,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeEvidenceRef.current = args.domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
   }, [args.domeEvidence, lastActiveMsRef]);
+  const onHiddenDependenciesChangeRef = useRef(args.onHiddenDependenciesChange);
+  const hiddenDependenciesSentRef = useRef(-1);
+  useEffect(() => {
+    onHiddenDependenciesChangeRef.current = args.onHiddenDependenciesChange;
+  }, [args.onHiddenDependenciesChange]);
   useTopologyClusterExpansion({
     prevExpandedParentsRef,
     expandedParents,
@@ -902,6 +907,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeFitInsetsRef,
       domeEvidenceRef,
       domeLodRef,
+      onHiddenDependenciesChangeRef,
+      hiddenDependenciesSentRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({

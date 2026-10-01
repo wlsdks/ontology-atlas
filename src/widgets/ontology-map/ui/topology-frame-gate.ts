@@ -347,6 +347,7 @@ export function createFrameGate({
             domeRt.morph !== null ||
             domeRt.entryArmed ||
             domeLodRef.current.settling ||
+            (domeLodRef.current.pointerSlot >= 0 && bgPointerRef.current === null) ||
             domeFocusPendingRef.current !== null ||
             Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
             domeRt.pitch !== clampDomePitch(domeRt.pitch) ||

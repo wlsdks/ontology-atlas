@@ -31,6 +31,7 @@ import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-para
 import {
   DOME_HALO_ALPHA_CAP,
   DOME_HALO_ALPHA_GAIN,
+  DOME_NODE_PX,
   DOME_RING_ALPHA,
   DOME_RING_WIDTH_PX,
   domeDetailFactor,
@@ -238,8 +239,24 @@ const domeEdgeFrameBReused: DomeNodeFrame[] = [];
 let lodPresenceReused = new Float32Array(0);
 let lodDustDrawn = 0;
 let lodChordsDrawn = 0;
-export function lastDrawnLod(): { dust: number; chords: number; represented: number; hidden: number } {
-  return { dust: lodDustDrawn, chords: lodChordsDrawn, represented: lodChords.represented, hidden: lodChords.hidden };
+const lodDustByState: Record<EvidenceLight, number> = { current: 0, stale: 0, unknown: 0 };
+export function lastDrawnLod(): {
+  dust: number;
+  dustStates: Readonly<Record<EvidenceLight, number>>;
+  chords: number;
+  represented: number;
+  hidden: number;
+} {
+  return {
+    dust: lodDustDrawn,
+    dustStates: { ...lodDustByState },
+    chords: lodChordsDrawn,
+    represented: lodChords.represented,
+    hidden: lodChords.hidden,
+  };
+}
+export function lastHiddenDependencies(): number {
+  return lodChords.hidden;
 }
 const lodDust = createStrataLodDust();
 const lodChords = createStrataLodChords();
@@ -2108,6 +2125,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       edgeEnds.target,
       (i) => lodPresenceReused[i],
       (i) => domeNodeFrameReused[i].a,
+      (slot) => lod.ramps[slot] ?? 0,
     );
     let chordCount = 0;
     for (let key = 0; key < slots * slots; key += 1) {
@@ -2115,6 +2133,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (count === 0) continue;
       const from = Math.floor(key / slots);
       const to = key - from * slots;
+      const lift = Math.max(lod.ramps[from] ?? 0, lod.ramps[to] ?? 0);
+      if (lift <= 0.004) continue;
       const ia = index.domains[from].nodeIndex;
       const ib = index.domains[to].nodeIndex;
       if (ia < 0 || ib < 0) continue;
@@ -2130,25 +2150,30 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const bow = Math.min(length * 0.12, 40);
       let chord = lodChordPool[chordCount];
       if (!chord) {
-        chord = { ax: 0, ay: 0, bx: 0, by: 0, cx: 0, cy: 0, count: 0, weight: 0, depth: 0, lifted: false };
+        chord = { ax: 0, ay: 0, ar: 0, bx: 0, by: 0, br: 0, cx: 0, cy: 0, count: 0, weight: 0, depth: 0, lift: 0 };
         lodChordPool[chordCount] = chord;
       }
       chord.ax = ax;
       chord.ay = ay;
+      chord.ar = drawnScreenRadiusByIdReused.get(world.nodes[ia].id) ?? DOME_NODE_PX.domain;
       chord.bx = bx;
       chord.by = by;
+      chord.br = drawnScreenRadiusByIdReused.get(world.nodes[ib].id) ?? DOME_NODE_PX.domain;
       chord.cx = mx + (lod.hub.x - mx) * 0.3 - ((by - ay) / length) * bow;
       chord.cy = my + (lod.hub.y - my) * 0.3 + ((bx - ax) / length) * bow;
       chord.count = count;
       chord.weight = lodChords.weight[key];
       chord.depth = (fa.u + fb.u) / 2;
-      chord.lifted = from === lod.hoverSlot || to === lod.hoverSlot || from === lod.focusSlot || to === lod.focusSlot;
+      chord.lift = lift;
       chordCount += 1;
     }
     if (lodDependsInk === null || lodDependsInk.hex !== tokens.edgeDepends) {
       lodDependsInk = { hex: tokens.edgeDepends, rgb: hexToRgb(tokens.edgeDepends) ?? [102, 102, 133] };
     }
     lodChordsDrawn = drawStrataLodChords(ctx, lodChordPool, chordCount, lodDependsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
+  } else {
+    lodChords.represented = 0;
+    lodChords.hidden = 0;
   }
   const trailKeysLive =
     (walkedEdgeKeys?.size ?? 0) > 0 ||
@@ -2633,9 +2658,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // mechanism the chip reservations use).
   const nodeDiscReservations: ReservedBox[] = [];
 
+  lodDustByState.current = 0;
+  lodDustByState.stale = 0;
+  lodDustByState.unknown = 0;
   if (lod !== null && domeLight !== null) {
     resetStrataLodDust(lodDust);
-    const evidence = domeLight.evidence;
+    const shown = lod.evidence;
+    const was = lod.evidenceWas;
+    const evidenceRamp = lod.evidenceRamp;
     for (let i = 0; i < world.nodes.length; i += 1) {
       const node = world.nodes[i];
       if (node.kind !== "capability" && node.kind !== "element") continue;
@@ -2647,7 +2677,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const x = (node.x + frame.dx - camX) * camScale + halfW;
       const y = (node.y + frame.dy - camY) * camScale + halfH;
       if (x < -4 || y < -4 || x > viewportWidth + 4 || y > viewportHeight + 4) continue;
-      addStrataLodDust(lodDust, node.kind, evidence?.get(node.id) ?? "unknown", frame.u, weight, x, y);
+      const to = shown?.get(node.id) ?? "unknown";
+      const from = evidenceRamp >= 1 ? to : (was?.get(node.id) ?? "unknown");
+      if (from === to) {
+        addStrataLodDust(lodDust, node.kind, to, frame.u, weight, x, y);
+      } else {
+        addStrataLodDust(lodDust, node.kind, from, frame.u, weight * (1 - evidenceRamp), x, y);
+        addStrataLodDust(lodDust, node.kind, to, frame.u, weight * evidenceRamp, x, y);
+      }
     }
     lodDustDrawn = drawStrataLodDust(
       ctx,
@@ -2655,6 +2692,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb },
       domeFogAlpha,
       1 - 0.55 * litFocusRamp,
+      lodDustByState,
     );
   } else {
     lodDustDrawn = 0;

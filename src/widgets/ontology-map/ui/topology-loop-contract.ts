@@ -255,6 +255,7 @@ export interface UseTopologyLoopArgs {
    * measured, so every node is unknown. It decides how much each node emits.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  onHiddenDependenciesChange?: (count: number) => void;
   /** 3D reframe input: is the detail panel covering the viewport (`OntologyMap` JSDoc). */
   detailPanelVisible?: boolean;
   /** Footprint appearance settings. Omitted or `null` draws no footprints. */

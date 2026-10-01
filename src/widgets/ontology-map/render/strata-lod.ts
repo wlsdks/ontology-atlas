@@ -1,4 +1,5 @@
 import type { EvidenceLight, Rgb } from "./dome-light";
+import { arrowHead, taperedCurve } from "./tapered-arrow";
 
 type StrataLodSheetKind = "fan" | "curtain" | "direct";
 
@@ -25,9 +26,11 @@ const SHEET_ALPHA: Readonly<Record<StrataLodSheetKind, { near: number; far: numb
 
 const sheetOrder: number[] = [];
 
-function rgba(rgb: Rgb, alpha: number): string {
+function rgba(rgb: Rgb, alpha: number, lift = 0): string {
   const a = alpha <= 0 ? 0 : alpha >= 1 ? 1 : alpha;
-  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
+  if (lift === 0) return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a.toFixed(3)})`;
+  const up = (v: number) => Math.round(v + (255 - v) * lift);
+  return `rgba(${up(rgb[0])},${up(rgb[1])},${up(rgb[2])},${a.toFixed(3)})`;
 }
 
 export function drawStrataLodSheets(
@@ -70,8 +73,14 @@ const DUST_STATES: readonly EvidenceLight[] = ["current", "stale", "unknown"];
 const DUST_FOG_BUCKETS = 8;
 const DUST_WEIGHT_STEPS = 128;
 const DUST_RADIUS: Readonly<Record<StrataLodDustPlane, number>> = { capability: 1.7, element: 1.3 };
-const DUST_EMISSION: Readonly<Record<EvidenceLight, number>> = { current: 1, stale: 0.85, unknown: 0.72 };
-const DUST_DOT_ALPHA = 0.7;
+const DUST_MARK: Readonly<Record<EvidenceLight, { alpha: number; ring: boolean; lift: number }>> = {
+  current: { alpha: 0.85, ring: false, lift: 0.18 },
+  stale: { alpha: 0.9, ring: true, lift: 0 },
+  unknown: { alpha: 0.5, ring: true, lift: 0 },
+};
+const DUST_RING_SCALE = 1.3;
+const DUST_RING_WIDTH = 0.45;
+const TAU = Math.PI * 2;
 
 interface DustBucket {
   plane: StrataLodDustPlane;
@@ -147,6 +156,7 @@ export function drawStrataLodDust(
   inks: { kindRgb: Readonly<Record<string, Rgb>>; warningRgb: Rgb },
   fog: (u: number) => number,
   presence: number,
+  drawnByState?: Record<EvidenceLight, number>,
 ): number {
   if (presence <= 0.01) return 0;
   bucketOrder.length = 0;
@@ -158,20 +168,35 @@ export function drawStrataLodDust(
   for (const bucket of bucketOrder) {
     const rgb = bucket.state === "stale" ? inks.warningRgb : inks.kindRgb[bucket.plane];
     if (!rgb) continue;
+    const mark = DUST_MARK[bucket.state];
     const u = (bucket.fog + 0.5) / DUST_FOG_BUCKETS;
-    const alpha = DUST_DOT_ALPHA * DUST_EMISSION[bucket.state] * fog(u) * (bucket.weight / DUST_WEIGHT_STEPS) * presence;
+    const alpha = mark.alpha * fog(u) * (bucket.weight / DUST_WEIGHT_STEPS) * presence;
     if (alpha <= 0.002) continue;
     const radius = DUST_RADIUS[bucket.plane] * (1.15 - 0.3 * u);
-    ctx.fillStyle = rgba(rgb, alpha);
+    ctx.fillStyle = rgba(rgb, alpha, mark.lift);
     ctx.beginPath();
-    for (let i = 0; i < bucket.count; i += 1) {
-      const x = bucket.xs[i];
-      const y = bucket.ys[i];
-      ctx.moveTo(x + radius, y);
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
+    if (mark.ring) {
+      const outer = radius * DUST_RING_SCALE;
+      const inner = outer * (1 - DUST_RING_WIDTH);
+      for (let i = 0; i < bucket.count; i += 1) {
+        const x = bucket.xs[i];
+        const y = bucket.ys[i];
+        ctx.moveTo(x + outer, y);
+        ctx.arc(x, y, outer, 0, TAU);
+        ctx.moveTo(x + inner, y);
+        ctx.arc(x, y, inner, TAU, 0, true);
+      }
+    } else {
+      for (let i = 0; i < bucket.count; i += 1) {
+        const x = bucket.xs[i];
+        const y = bucket.ys[i];
+        ctx.moveTo(x + radius, y);
+        ctx.arc(x, y, radius, 0, TAU);
+      }
     }
     ctx.fill();
     drawn += bucket.count;
+    if (drawnByState) drawnByState[bucket.state] += bucket.count;
   }
   ctx.globalAlpha = prevAlpha;
   return drawn;
@@ -180,14 +205,16 @@ export function drawStrataLodDust(
 export interface StrataLodChordDraw {
   ax: number;
   ay: number;
+  ar: number;
   bx: number;
   by: number;
+  br: number;
   cx: number;
   cy: number;
   count: number;
   weight: number;
   depth: number;
-  lifted: boolean;
+  lift: number;
 }
 
 const chordOrder: number[] = [];
@@ -200,6 +227,10 @@ function strataLodChordAlpha(count: number): number {
   return Math.min(0.75, 0.22 + 0.09 * Math.log2(1 + count));
 }
 
+function strataLodChordHead(count: number): number {
+  return Math.min(8, 4.5 + 0.6 * Math.log2(1 + count));
+}
+
 export function drawStrataLodChords(
   ctx: CanvasRenderingContext2D,
   chords: readonly StrataLodChordDraw[],
@@ -210,27 +241,29 @@ export function drawStrataLodChords(
 ): number {
   if (presence <= 0.01) return 0;
   chordOrder.length = 0;
-  for (let i = 0; i < count; i += 1) if (chords[i].weight > 0.004) chordOrder.push(i);
+  for (let i = 0; i < count; i += 1) if (chords[i].weight > 0.004 && chords[i].lift > 0.004) chordOrder.push(i);
   chordOrder.sort((a, b) => chords[b].depth - chords[a].depth);
   const prevAlpha = ctx.globalAlpha;
-  const prevCap = ctx.lineCap;
   ctx.globalAlpha = 1;
-  ctx.lineCap = "round";
   let drawn = 0;
   for (const i of chordOrder) {
     const chord = chords[i];
     const share = chord.weight / chord.count;
-    const alpha = Math.min(1, strataLodChordAlpha(chord.count) * (chord.lifted ? 1.6 : 1)) * share * fog(chord.depth) * presence;
+    const alpha = strataLodChordAlpha(chord.count) * chord.lift * share * fog(chord.depth) * presence;
     if (alpha <= 0.003) continue;
-    ctx.strokeStyle = rgba(ink, alpha);
-    ctx.lineWidth = strataLodChordWidth(chord.count);
-    ctx.beginPath();
-    ctx.moveTo(chord.ax, chord.ay);
-    ctx.quadraticCurveTo(chord.cx, chord.cy, chord.bx, chord.by);
-    ctx.stroke();
+    const startA = Math.atan2(chord.cy - chord.ay, chord.cx - chord.ax);
+    const endA = Math.atan2(chord.by - chord.cy, chord.bx - chord.cx);
+    const sx = chord.ax + (chord.ar + 2) * Math.cos(startA);
+    const sy = chord.ay + (chord.ar + 2) * Math.sin(startA);
+    const ex = chord.bx - (chord.br + 3) * Math.cos(endA);
+    const ey = chord.by - (chord.br + 3) * Math.sin(endA);
+    const head = strataLodChordHead(chord.count);
+    const width = strataLodChordWidth(chord.count);
+    ctx.fillStyle = rgba(ink, alpha);
+    taperedCurve(ctx, sx, sy, chord.cx, chord.cy, ex - head * 0.8 * Math.cos(endA), ey - head * 0.8 * Math.sin(endA), width, Math.max(0.6, width * 0.45));
+    arrowHead(ctx, ex, ey, endA, head);
     drawn += 1;
   }
   ctx.globalAlpha = prevAlpha;
-  ctx.lineCap = prevCap;
   return drawn;
 }

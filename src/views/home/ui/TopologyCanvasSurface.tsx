@@ -105,6 +105,7 @@ interface TopologyCanvasSurfaceProps {
     | "resolvedRealmSlug"
     | "localGraphProjects"
     | "resolvedSelectionSlug"
+    | "synthEvidence"
   >;
   topologyPreferences: Pick<
     ReturnType<typeof useTopologyPreferences>,
@@ -238,7 +239,9 @@ export function TopologyCanvasSurface({
     recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
   } = topologyVaultReadModel;
   const view3dOn = topologyPreferences.view3d;
-  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
+  const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
+  const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
   const [hexFailed, setHexFailed] = useState(false);
@@ -509,13 +512,8 @@ export function TopologyCanvasSurface({
                       galaxy={galaxy}
                       mapArrangement={mapArrangement}
                       domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
-                      domeLightLegend={
-                        <TopologyLightLegend
-                          evidence={mapEvidence}
-                          nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
-                          kindLabels={domeTierLabels}
-                        />
-                      }
+                      onHiddenDependenciesChange={setHiddenDependencyCount}
+                      domeLightLegend={<TopologyLightLegend evidence={mapEvidence} nodeIds={ontologyMapGraph.nodes.map((node) => node.id)} kindLabels={domeTierLabels} hiddenDependencies={hiddenDependencyCount} />}
                       detailPanelVisible={nodePanelMounted}
                       footprint={footprint}
                       expand={expand}

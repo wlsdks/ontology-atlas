@@ -497,6 +497,8 @@ export function useTopologyMapInstrumentation({
             focusSlot: domeLodRef.current.focusSlot,
             sheets: domeLodRef.current.shapeCount,
             dust: lastDrawnLod().dust,
+            dustStates: lastDrawnLod().dustStates,
+            evidenceRamp: domeLodRef.current.evidenceRamp,
             chords: lastDrawnLod().chords,
             chordEdges: lastDrawnLod().represented,
             hiddenEdges: lastDrawnLod().hidden,

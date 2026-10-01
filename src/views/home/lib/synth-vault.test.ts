@@ -5,6 +5,9 @@ import {
   computeSynthCounts,
   SYNTH_MAX,
   SYNTH_MIN,
+  SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE,
+  SYNTH_UNKNOWN_EVIDENCE_SHARE,
+  synthesizeEvidenceStates,
   synthesizeVaultGraph,
 } from "./synth-vault";
 
@@ -128,5 +131,33 @@ describe("synthesizeVaultGraph dependencies", () => {
     for (const edge of dependencies) {
       expect(ids.has(edge.from) && ids.has(edge.to) && edge.from !== edge.to).toBe(true);
     }
+  });
+
+  it.each([2000, 10000])("keeps about three in four dependencies inside one domain at %i concepts, as a measured vault does", (size) => {
+    const graph = synthesizeVaultGraph(size, { dependencies: true });
+    const kindOf = new Map(graph.nodes.map((node) => [node.id, node.kind]));
+    const parentOf = new Map(graph.edges.filter((edge) => edge.type === "contains").map((edge) => [edge.to, edge.from]));
+    const domainOf = (id: string): string | null => {
+      let cursor: string | undefined = id;
+      while (cursor !== undefined && kindOf.get(cursor) !== "domain") cursor = parentOf.get(cursor);
+      return cursor ?? null;
+    };
+    const dependencies = graph.edges.filter((edge) => edge.type === "depends_on");
+    const inside = dependencies.filter((edge) => domainOf(edge.from) !== null && domainOf(edge.from) === domainOf(edge.to));
+    expect(inside.length / dependencies.length).toBeGreaterThan(SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE - 0.03);
+    expect(inside.length / dependencies.length).toBeLessThan(SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE + 0.03);
+  });
+});
+
+describe("synthesizeEvidenceStates", () => {
+  it("marks the asked share stale, leaves a few unknown, and is deterministic", () => {
+    const ids = synthesizeVaultGraph(10000).nodes.map((node) => node.id);
+    const states = synthesizeEvidenceStates(ids, 0.85);
+    let stale = 0;
+    for (const state of states.values()) if (state === "stale") stale += 1;
+    expect(stale / ids.length).toBeGreaterThan(0.83);
+    expect(stale / ids.length).toBeLessThan(0.87);
+    expect((ids.length - states.size) / ids.length).toBeCloseTo(SYNTH_UNKNOWN_EVIDENCE_SHARE, 1);
+    expect(synthesizeEvidenceStates(ids, 0.85)).toEqual(states);
   });
 });

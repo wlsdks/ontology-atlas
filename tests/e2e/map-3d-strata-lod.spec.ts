@@ -9,6 +9,9 @@ interface StrataLodProbe {
   element: number;
   sheets: number;
   dust: number;
+  dustStates: { current: number; stale: number; unknown: number };
+  hoverSlot: number;
+  hoverRamp: number;
   chords: number;
   chordEdges: number;
   hiddenEdges: number;
@@ -17,6 +20,9 @@ interface StrataLodProbe {
 interface WakeProbe {
   wake: () => void;
   dome: () => { lod: StrataLodProbe };
+  idleDebug: () => { lastActiveMs: number };
+  nodes: () => { kind: string; x: number; y: number }[];
+  camera: () => { width: number };
 }
 
 test.use({ viewport: { width: 1512, height: 982 } });
@@ -31,6 +37,7 @@ async function openStrata(page: Page, query: string): Promise<void> {
   });
   await page.goto(`/en/topology/?${query}guides=off&e2e=1`);
   await waitForDomeEntered(page);
+  await page.waitForFunction(() => !(window as unknown as { __atlasMap: { dome: () => { lod: { settling: boolean } } } }).__atlasMap.dome().lod.settling);
 }
 
 async function drawCallsPerFrame(page: Page): Promise<number> {
@@ -75,6 +82,33 @@ async function lod(page: Page): Promise<StrataLodProbe> {
   return page.evaluate(() => (window as unknown as { __atlasMap: WakeProbe }).__atlasMap.dome().lod);
 }
 
+async function pointAtBand(page: Page): Promise<void> {
+  const box = await page.getByTestId("ontology-map-canvas").boundingBox();
+  if (box === null) throw new Error("the map canvas has no box");
+  const at = await page.evaluate(() => {
+    const probe = (window as unknown as { __atlasMap: WakeProbe }).__atlasMap;
+    const width = probe.camera().width;
+    let best: { x: number; y: number } | null = null;
+    for (const node of probe.nodes()) {
+      if (node.kind !== "capability" || node.x < width * 0.45 || node.x > width * 0.8) continue;
+      if (best === null || node.y > best.y) best = node;
+    }
+    return best;
+  });
+  if (at === null) throw new Error("no capability dust in the band to point at");
+  await page.mouse.move(box.x + at.x, box.y + at.y + 1);
+  await page.waitForFunction(() => {
+    const state = (window as unknown as { __atlasMap: WakeProbe }).__atlasMap.dome().lod;
+    return state.hoverSlot >= 0 && state.hoverRamp === 1;
+  });
+}
+
+async function hiddenDependencyLine(page: Page): Promise<number> {
+  const line = page.getByTestId("topology-light-legend-hidden-dependencies");
+  await expect(line).toBeVisible();
+  return Number(await line.getAttribute("data-hidden-dependencies"));
+}
+
 test("Strata's per-frame draw calls stay flat from 2,000 to 10,000 concepts", async ({ page }) => {
   test.setTimeout(120_000);
   await openStrata(page, "synth=2000&");
@@ -90,20 +124,65 @@ test("Strata's per-frame draw calls stay flat from 2,000 to 10,000 concepts", as
   expect(state.sheets).toBeGreaterThan(0);
 });
 
-test("dependencies with a dust end ride counted domain chords within the same budget", async ({ page }) => {
+test("a measured vault that is 85% stale keeps its stale concepts in the dust, marked, within the same budget", async ({ page }) => {
   test.setTimeout(120_000);
-  await openStrata(page, "synth=10000&synthDeps=1&");
-  const calls = await drawCallsPerFrame(page);
+  await openStrata(page, "synth=10000&");
+  const unmeasured = await drawCallsPerFrame(page);
+  await openStrata(page, "synth=10000&synthEvidence=85&");
+  const measured = await drawCallsPerFrame(page);
   const state = await lod(page);
   console.log(
-    `[strata-lod] 10,000 concepts with dependencies: ${calls} draw calls, ${state.chords} chords carrying ${state.chordEdges} dependencies, ${state.hiddenEdges} hidden inside one domain or outside every domain`,
+    `[strata-lod] 10,000 concepts, 85% stale: ${measured} draw calls (${unmeasured} unmeasured); dust ${JSON.stringify(state.dustStates)}`,
   );
-  expect(calls).toBeLessThan(5_000);
-  expect(state.chords).toBeGreaterThan(0);
-  expect(state.chordEdges).toBeGreaterThan(1_000);
+  expect(measured, "measured evidence draws no more than 1.5x the unmeasured calls").toBeLessThan(unmeasured * 1.5);
+  expect(state.dust).toBeGreaterThan(5_000);
+  expect(state.dustStates.stale).toBeGreaterThan(state.dust * 0.8);
+  expect(state.dustStates.current).toBeGreaterThan(0);
+  await expect(page.getByTestId("topology-light-legend")).toHaveAttribute("data-evidence-availability", "measured");
+});
+
+test("dependencies with a dust end are counted on screen and ride directional chords for the pointed domain", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openStrata(page, "synth=10000&synthDeps=1&");
+  const rest = await lod(page);
+  expect(rest.chords).toBe(0);
+  expect(rest.hiddenEdges).toBeGreaterThan(5_000);
+  await expect.poll(() => hiddenDependencyLine(page)).toBe(rest.hiddenEdges);
+  await pointAtBand(page);
+  const calls = await drawCallsPerFrame(page);
+  const pointed = await lod(page);
+  console.log(
+    `[strata-lod] 10,000 concepts with dependencies: ${rest.hiddenEdges} hidden at rest; pointing at a domain draws ${pointed.chords} chords carrying ${pointed.chordEdges} in ${calls} draw calls, ${pointed.hiddenEdges} still hidden`,
+  );
+  expect(pointed.chords).toBeGreaterThan(0);
+  expect(pointed.chordEdges).toBeGreaterThan(0);
+  expect(pointed.hiddenEdges).toBeLessThan(rest.hiddenEdges);
+  expect(calls, "pointing at one domain draws its slice, not the vault").toBeLessThan(8_000);
+  await expect.poll(() => hiddenDependencyLine(page)).toBe(pointed.hiddenEdges);
+});
+
+test("leaving the canvas releases a pointed slice even after the map has gone to sleep", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openStrata(page, "synth=10000&");
+  await pointAtBand(page);
+  await page.waitForFunction(
+    () => performance.now() - (window as unknown as { __atlasMap: WakeProbe }).__atlasMap.idleDebug().lastActiveMs > 1_500,
+  );
+  const box = await page.getByTestId("ontology-map-canvas").boundingBox();
+  if (box === null) throw new Error("the map canvas has no box");
+  await page.mouse.move(box.x / 2, box.y + box.height / 2);
+  await page.waitForFunction(
+    () => {
+      const state = (window as unknown as { __atlasMap: WakeProbe }).__atlasMap.dome().lod;
+      return state.hoverSlot === -1 && state.hoverRamp === 0;
+    },
+    undefined,
+    { timeout: 5_000 },
+  );
 });
 
 test("a small vault never leaves the detailed Strata drawing", async ({ page }) => {
   await openStrata(page, "");
-  expect(await lod(page)).toMatchObject({ active: false, capability: 1, element: 1, sheets: 0, dust: 0, chords: 0 });
+  expect(await lod(page)).toMatchObject({ active: false, capability: 1, element: 1, sheets: 0, dust: 0, chords: 0, hiddenEdges: 0 });
+  await expect(page.getByTestId("topology-light-legend-hidden-dependencies")).toHaveCount(0);
 });

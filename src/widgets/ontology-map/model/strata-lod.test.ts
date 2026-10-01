@@ -250,6 +250,25 @@ describe("stepStrataLod", () => {
     expect(state.settling).toBe(false);
   });
 
+  it("re-reads the held slice once the dome comes to rest under a still pointer", () => {
+    const nodes = vault(10000);
+    const { runtime, scale, state } = settled(nodes);
+    const pointer = { x: W / 2 + 180, y: H / 2 + 230 };
+    for (let i = 0; i < 40; i += 1) step(state, runtime, nodes, scale, { pointer });
+    const held = state.hoverSlot;
+    expect(held).toBeGreaterThanOrEqual(0);
+    for (let frame = 0; frame < 240; frame += 1) {
+      runtime.yaw += (0.5 * Math.PI) / 180;
+      runtime.yawVel = 0.001;
+      step(state, runtime, nodes, scale, { pointer });
+      expect(state.hoverSlot).toBe(held);
+    }
+    runtime.yawVel = 0;
+    step(state, runtime, nodes, scale, { pointer });
+    expect(state.hoverSlot).toBe(pickStrataLodSlot(state, pointer.x, pointer.y));
+    expect(state.hoverSlot).not.toBe(held);
+  });
+
   it("releases the slice the moment the pointer leaves the canvas", () => {
     const nodes = vault(6000);
     const { runtime, scale, state, camera } = settled(nodes);
@@ -274,21 +293,31 @@ describe("stepStrataLod", () => {
     expect(state.settling).toBe(false);
   });
 
-  it("keeps stale and unknown concepts as discs when evidence was measured, and aggregates the current ones", () => {
-    const nodes = vault(6000);
+  it("aggregates stale and unknown concepts like current ones and crossfades their marks when the walk arrives", () => {
+    const nodes = vault(10000);
     const { runtime, scale, state } = settled(nodes);
-    const elements = nodes.filter((n) => n.kind === "element");
+    const lower = nodes.flatMap((node, i) => (node.kind === "capability" || node.kind === "element" ? [i] : []));
     const evidence = new Map<string, "current" | "stale" | "unknown">();
-    elements.forEach((n, i) => evidence.set(n.id, i % 3 === 0 ? "stale" : i % 3 === 1 ? "unknown" : "current"));
+    lower.forEach((i, k) => evidence.set(nodes[i].id, k % 100 < 85 ? "stale" : k % 100 < 90 ? "unknown" : "current"));
     step(state, runtime, nodes, scale, { evidence });
-    nodes.forEach((node, i) => {
-      if (node.kind !== "element") return;
-      expect(state.presence[i]).toBe(evidence.get(node.id) === "current" ? 0 : 1);
-    });
-    step(state, runtime, nodes, scale, { evidence: null });
-    nodes.forEach((node, i) => {
-      if (node.kind === "element") expect(state.presence[i]).toBe(0);
-    });
+    expect(lower.filter((i) => state.presence[i] > 0)).toEqual([]);
+    expect(state.evidence).toBe(evidence);
+    expect(state.evidenceWas).toBeNull();
+    expect(state.evidenceRamp).toBeCloseTo(8 / 120, 6);
+    expect(state.settling).toBe(true);
+    for (let i = 0; i < 20; i += 1) step(state, runtime, nodes, scale, { evidence });
+    expect(state.evidenceRamp).toBe(1);
+    expect(state.settling).toBe(false);
+  });
+
+  it("takes evidence that is already measured at once when the planes first aggregate", () => {
+    const nodes = vault(6000);
+    const runtime = assembled(nodes);
+    const state = createStrataLodState();
+    const evidence = new Map<string, "current" | "stale" | "unknown">([[nodes[40].id, "stale"]]);
+    step(state, runtime, nodes, fitScale(runtime, nodes), { evidence });
+    expect(state.evidenceRamp).toBe(1);
+    expect(state.evidenceWas).toBe(evidence);
   });
 
   it("crossfades a zoom across the threshold instead of switching levels at once", () => {
@@ -345,14 +374,17 @@ describe("rollUpStrataDependencies", () => {
     const target = Int32Array.from([2, 3, 0, 1, 2, 2]);
     const presence = [0, 0, 0, 0, 1];
     const chords = createStrataLodChords();
-    rollUpStrataDependencies(chords, 2, domainSlotOf, edges, source, target, (i) => presence[i], () => 1);
+    rollUpStrataDependencies(chords, 2, domainSlotOf, edges, source, target, (i) => presence[i], () => 1, () => 0);
     expect(chords.count[0 * 2 + 1]).toBe(2);
     expect(chords.count[1 * 2 + 0]).toBe(1);
+    expect(chords.represented).toBe(0);
+    expect(chords.hidden).toBe(5);
+    rollUpStrataDependencies(chords, 2, domainSlotOf, edges, source, target, (i) => presence[i], () => 1, (slot) => (slot === 0 ? 1 : 0));
     expect(chords.represented).toBe(3);
     expect(chords.hidden).toBe(2);
     presence[2] = 1;
     presence[0] = 1;
-    rollUpStrataDependencies(chords, 2, domainSlotOf, edges, source, target, (i) => presence[i], () => 1);
+    rollUpStrataDependencies(chords, 2, domainSlotOf, edges, source, target, (i) => presence[i], () => 1, () => 1);
     expect(chords.count[0 * 2 + 1]).toBe(1);
     expect(chords.weight[0 * 2 + 1]).toBeCloseTo(1, 6);
   });

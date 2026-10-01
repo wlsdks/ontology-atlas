@@ -12,6 +12,8 @@ import {
 
 export type StrataLodPlane = "capability" | "element";
 
+export type StrataLodEvidence = ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+
 const STRATA_LOD_PLANES: readonly StrataLodPlane[] = ["capability", "element"];
 
 export const STRATA_LOD_AGGREGATE_RATIO = 0.5;
@@ -106,7 +108,11 @@ export interface StrataLodState {
   hoverSlot: number;
   pointerSlot: number;
   pickedAt: { x: number; y: number } | null;
+  pickStale: boolean;
   focusSlot: number;
+  evidence: StrataLodEvidence;
+  evidenceWas: StrataLodEvidence;
+  evidenceRamp: number;
   settling: boolean;
   active: boolean;
   primed: boolean;
@@ -133,7 +139,11 @@ export function createStrataLodState(): StrataLodState {
     hoverSlot: -1,
     pointerSlot: -1,
     pickedAt: null,
+    pickStale: false,
     focusSlot: -1,
+    evidence: null,
+    evidenceWas: null,
+    evidenceRamp: 1,
     settling: false,
     active: false,
     primed: false,
@@ -373,7 +383,7 @@ export interface StrataLodInput {
   hoveredId: string | null;
   focusedId: string | null;
   pointer: { x: number; y: number } | null;
-  evidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  evidence?: StrataLodEvidence;
   dtMs: number;
   fadeMs: number;
 }
@@ -411,6 +421,16 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
     if (next !== target) settling = true;
     state.spacingPx[plane] = index.planeGap[plane] * pxPerUnit;
   }
+  const evidence = input.evidence ?? null;
+  if (evidence !== state.evidence) {
+    state.evidenceWas = state.primed && state.active ? state.evidence : evidence;
+    state.evidenceRamp = state.primed && state.active ? 0 : 1;
+    state.evidence = evidence;
+  }
+  if (state.evidenceRamp < 1) {
+    state.evidenceRamp = Math.min(1, state.evidenceRamp + step);
+    if (state.evidenceRamp < 1) settling = true;
+  }
   state.primed = true;
   state.active = state.planeResolve.capability < 1 || state.planeResolve.element < 1;
   projectDomePlanePoint(runtime, "domain", 0, 0, sample);
@@ -441,12 +461,13 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
   if (pointer === null || !state.active) {
     state.pointerSlot = -1;
     state.pickedAt = null;
-  } else {
-    const moved = state.pickedAt === null || state.pickedAt.x !== pointer.x || state.pickedAt.y !== pointer.y;
-    if (moved && !domeMoving && !cameraMoved) {
-      state.pointerSlot = pickStrataLodSlot(state, pointer.x, pointer.y);
-      state.pickedAt = { x: pointer.x, y: pointer.y };
-    }
+    state.pickStale = false;
+  } else if (domeMoving || cameraMoved) {
+    state.pickStale = true;
+  } else if (state.pickStale || state.pickedAt === null || state.pickedAt.x !== pointer.x || state.pickedAt.y !== pointer.y) {
+    state.pointerSlot = pickStrataLodSlot(state, pointer.x, pointer.y);
+    state.pickedAt = { x: pointer.x, y: pointer.y };
+    state.pickStale = false;
   }
   const hovered = slotOf(input.hoveredId);
   state.hoverSlot = state.active ? (hovered >= 0 ? hovered : state.pointerSlot) : -1;
@@ -462,27 +483,18 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
   }
   state.settling = settling;
 
-  writePresence(state, index, input.evidence ?? null);
+  writePresence(state, index);
   buildShapes(state, index, runtime, world, camera);
   return state;
 }
 
-function writePresence(
-  state: StrataLodState,
-  index: StrataLodIndex,
-  evidence: ReadonlyMap<string, "current" | "stale" | "unknown"> | null,
-): void {
+function writePresence(state: StrataLodState, index: StrataLodIndex): void {
   const presence = state.presence;
   const resolveCap = state.planeResolve.capability;
   const resolveEl = state.planeResolve.element;
-  const nodes = (index.world as { nodes: readonly LodNode[] }).nodes;
   for (let i = 0; i < presence.length; i += 1) {
     const kind = index.kindOf[i];
     if (kind !== "capability" && kind !== "element") {
-      presence[i] = 1;
-      continue;
-    }
-    if (evidence !== null && evidence.get(nodes[i].id) !== "current") {
       presence[i] = 1;
       continue;
     }
@@ -497,7 +509,7 @@ export function fadeStrataLodOut(
   world: { nodes: readonly LodNode[] },
   dtMs: number,
   fadeMs: number,
-  evidence: ReadonlyMap<string, "current" | "stale" | "unknown"> | null = null,
+  evidence: StrataLodEvidence = null,
 ): boolean {
   const index = state.index;
   if (!state.active || index === null || !sameNodes(index, world.nodes) || state.presence.length !== world.nodes.length) {
@@ -510,7 +522,11 @@ export function fadeStrataLodOut(
   state.hoverSlot = -1;
   state.pointerSlot = -1;
   state.pickedAt = null;
+  state.pickStale = false;
   state.focusSlot = -1;
+  state.evidence = evidence;
+  state.evidenceWas = evidence;
+  state.evidenceRamp = 1;
   state.shapeCount = 0;
   state.regionCount = 0;
   state.active = state.planeResolve.capability < 1 || state.planeResolve.element < 1;
@@ -519,7 +535,7 @@ export function fadeStrataLodOut(
     restStrataLod(state);
     return false;
   }
-  writePresence(state, index, evidence);
+  writePresence(state, index);
   return true;
 }
 
@@ -705,9 +721,12 @@ export function restStrataLod(state: StrataLodState): void {
   state.hoverSlot = -1;
   state.pointerSlot = -1;
   state.pickedAt = null;
+  state.pickStale = false;
   state.lastCamera = null;
   state.view = null;
   state.focusSlot = -1;
+  state.evidenceWas = state.evidence;
+  state.evidenceRamp = 1;
   state.shapeCount = 0;
   state.regionCount = 0;
   state.ramps.fill(0);
@@ -734,6 +753,7 @@ export function rollUpStrataDependencies(
   targetIndex: Int32Array,
   presenceOf: (nodeIndex: number) => number,
   rampOf: (nodeIndex: number) => number,
+  liftOf: (slot: number) => number,
 ): void {
   if (chords.slots !== slots) {
     chords.slots = slots;
@@ -761,6 +781,7 @@ export function rollUpStrataDependencies(
     const key = from * slots + to;
     chords.weight[key] += weight;
     chords.count[key] += 1;
-    chords.represented += 1;
+    if (Math.max(liftOf(from), liftOf(to)) >= 0.5) chords.represented += 1;
+    else chords.hidden += 1;
   }
 }

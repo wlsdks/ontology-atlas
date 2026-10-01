@@ -121,12 +121,79 @@ function makeDependsEdge(from: string, to: string): KnowledgeGraphEdge {
   };
 }
 
-function knuthHash(value: number): number {
-  return (Math.imul(value + 1, 2654435761) >>> 0) / 4294967296;
+function unitHash(value: number): number {
+  let h = Math.imul(value | 0, 0x9e3779b1) ^ 0x6a09e667;
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
 }
+
+export const SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE = 0.76;
+const SYNTH_NEIGHBOUR_DOMAIN_STEPS = [1, 2, 5] as const;
+export const SYNTH_UNKNOWN_EVIDENCE_SHARE = 0.05;
 
 export interface SynthVaultOptions {
   dependencies?: boolean;
+}
+
+function synthElementDomain(e: number, counts: SynthVaultCounts): number {
+  const r = e % 20;
+  if (r === 0) return -1;
+  if (r === 4 || r === 8 || r === 12 || r === 16) return e % counts.domain;
+  return skewedCapabilityIndex(e, counts.capability) % counts.domain;
+}
+
+function synthDependencies(counts: SynthVaultCounts): KnowledgeGraphEdge[] {
+  const capabilitiesOf: number[][] = Array.from({ length: counts.domain }, () => []);
+  const elementsOf: number[][] = Array.from({ length: counts.domain }, () => []);
+  for (let c = 0; c < counts.capability; c += 1) capabilitiesOf[c % counts.domain].push(c);
+  for (let e = 0; e < counts.element; e += 1) {
+    const domain = synthElementDomain(e, counts);
+    if (domain >= 0) elementsOf[domain].push(e);
+  }
+  const targetDomain = (domain: number, seed: number): number => {
+    if (counts.domain === 1 || unitHash(seed * 3) < SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE) return domain;
+    const step = SYNTH_NEIGHBOUR_DOMAIN_STEPS[Math.floor(unitHash(seed * 3 + 1) * SYNTH_NEIGHBOUR_DOMAIN_STEPS.length)];
+    return (domain + step) % counts.domain;
+  };
+  const pick = (list: readonly number[], seed: number): number | undefined =>
+    list[Math.floor(unitHash(seed * 3 + 2) * list.length)];
+  const edges: KnowledgeGraphEdge[] = [];
+  const seen = new Set<string>();
+  const add = (from: string, to: string) => {
+    const edge = makeDependsEdge(from, to);
+    if (from === to || seen.has(edge.id)) return;
+    seen.add(edge.id);
+    edges.push(edge);
+  };
+  for (let c = 0; c < counts.capability; c += 1) {
+    for (let k = 0; k < 2; k += 1) {
+      const seed = c * 2 + k;
+      const target = pick(capabilitiesOf[targetDomain(c % counts.domain, seed)], seed);
+      if (target !== undefined) add(`synth-cap-${c}`, `synth-cap-${target}`);
+    }
+  }
+  for (let e = 0; e < counts.element; e += 1) {
+    const domain = synthElementDomain(e, counts);
+    if (domain < 0 || e % 10 >= 7) continue;
+    const seed = counts.capability * 2 + e;
+    const target = pick(elementsOf[targetDomain(domain, seed)], seed);
+    if (target !== undefined) add(`synth-el-${e}`, `synth-el-${target}`);
+  }
+  return edges;
+}
+
+export function synthesizeEvidenceStates(ids: readonly string[], staleShare: number): Map<string, "current" | "stale"> {
+  const states = new Map<string, "current" | "stale">();
+  ids.forEach((id, i) => {
+    const u = unitHash(i * 7 + 5);
+    if (u < staleShare) states.set(id, "stale");
+    else if (u >= staleShare + SYNTH_UNKNOWN_EVIDENCE_SHARE) states.set(id, "current");
+  });
+  return states;
 }
 
 /** Same `total`, byte-identical node and edge order. */
@@ -172,19 +239,7 @@ export function synthesizeVaultGraph(total: number, options: SynthVaultOptions =
     edges.push(makeContainsEdge(parentCap, id));
   }
 
-  if (options.dependencies === true) {
-    for (let c = 0; c < counts.capability; c += 1) {
-      const sibling = (c + counts.domain) % counts.capability;
-      if (sibling !== c) edges.push(makeDependsEdge(`synth-cap-${c}`, `synth-cap-${sibling}`));
-      const far = Math.floor(knuthHash(c) * counts.capability);
-      if (far !== c && far !== sibling) edges.push(makeDependsEdge(`synth-cap-${c}`, `synth-cap-${far}`));
-    }
-    for (let e = 0; e < counts.element; e += 1) {
-      if (e % 10 >= 7) continue;
-      const target = Math.floor(knuthHash(e + counts.capability) * counts.element);
-      if (target !== e) edges.push(makeDependsEdge(`synth-el-${e}`, `synth-el-${target}`));
-    }
-  }
+  if (options.dependencies === true) edges.push(...synthDependencies(counts));
 
   return { nodes, edges, counts };
 }

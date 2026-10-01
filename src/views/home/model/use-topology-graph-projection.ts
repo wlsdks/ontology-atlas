@@ -3,7 +3,8 @@ import type { Project } from "@/entities/project";
 import { useMemo, useState } from "react";
 import { buildOntologyMapGraph } from "../lib/map-adapter";
 import { resolveCanvasSelectedSlug } from "../lib/resolve-canvas-selection";
-import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
+import { clampSynthSize, synthesizeEvidenceStates, synthesizeVaultGraph } from "../lib/synth-vault";
+import type { MapEvidence } from "./use-map-evidence-states";
 import { resolveRealmNodeId } from "./url-state";
 
 export function useTopologyGraphProjection({
@@ -95,6 +96,16 @@ export function useTopologyGraphProjection({
       return false;
     }
   });
+  const [synthStaleShare] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = new URLSearchParams(window.location.search).get("synthEvidence");
+      const percent = raw === null ? Number.NaN : Number(raw);
+      return Number.isFinite(percent) ? Math.min(1, Math.max(0, percent / 100)) : null;
+    } catch {
+      return null;
+    }
+  });
   const spotlightIds = spotlightOn ? recentNodeIds : null;
   const freshChannelSlugs = spotlightOn ? recentNodeIds : changedSlugs;
   const graph = useMemo(() => {
@@ -106,6 +117,14 @@ export function useTopologyGraphProjection({
       ? buildOntologyMapGraph(insight.nodes, insight.edges, { changedSlugs: freshChannelSlugs, dustySlugs })
       : { nodes: [], edges: [] };
   }, [dustySlugs, freshChannelSlugs, insight, synthDependencies, synthSize]);
+  const synthEvidence = useMemo<MapEvidence | null>(() => {
+    if (synthSize === null || synthStaleShare === null) return null;
+    return {
+      availability: "measured",
+      states: synthesizeEvidenceStates(graph.nodes.map((node) => node.id), synthStaleShare),
+      movedPaths: new Map(),
+    };
+  }, [graph.nodes, synthSize, synthStaleShare]);
   const selectedProjectNodeId = useMemo(() => {
     if (!selectedProject) return null;
     const nodeId = `project:${selectedProject.slug}`;
@@ -139,6 +158,7 @@ export function useTopologyGraphProjection({
     localGraphProjects,
     spotlightIds,
     ontologyMapGraph: graph,
+    synthEvidence,
     resolvedSelectionSlug,
     canvasSelectedSlug,
     canvasSelectedGraphNode,
