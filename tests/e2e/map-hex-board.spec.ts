@@ -314,6 +314,37 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
   });
 }
 
+type HexPaint = { t: number; arrived: boolean };
+
+async function recordHexPaints(page: Page, key: string) {
+  await page.evaluate((slot) => {
+    const w = window as unknown as Record<string, HexPaint[]>;
+    const paints: HexPaint[] = (w[slot] = []);
+    let last = "";
+    const tick = (t: number) => {
+      const f = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')?.dataset.frame;
+      if (f && f !== last) {
+        last = f;
+        paints.push({ t, arrived: (JSON.parse(f) as { arrived: boolean }).arrived });
+      }
+      if (paints.length < 400) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, key);
+}
+
+async function readHexPaints(page: Page, key: string): Promise<HexPaint[]> {
+  return page.evaluate((slot) => (window as unknown as Record<string, HexPaint[]>)[slot]!, key);
+}
+
+async function switchViewWithoutPick(page: Page, hex: boolean) {
+  await page.evaluate((on) => {
+    const value = on ? "on" : "off";
+    window.localStorage.setItem("atlas.appearance.hex-board", value);
+    window.dispatchEvent(new StorageEvent("storage", { key: "atlas.appearance.hex-board", newValue: value }));
+  }, hex);
+}
+
 test("hex board assembles once per folder, ring by ring, settled within 600 ms", async ({ page }) => {
   test.setTimeout(240_000);
   const vault = dogfoodEvidenceVault();
@@ -322,39 +353,23 @@ test("hex board assembles once per folder, ring by ring, settled within 600 ms",
   await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await page.getByTestId("first-run-open").click();
   await expect(page.getByTestId("topology-view-3d")).toBeVisible({ timeout: 90_000 });
-  await page.getByTestId("topology-view-3d").click();
-  // A frame sampler in the page, started before the board mounts: every painted frame's
-  // arrival flag and time (the canvas writes its frame stats on every paint).
-  await page.evaluate(() => {
-    const w = window as unknown as { __hexFrames: { t: number; arrived: boolean }[] };
-    w.__hexFrames = [];
-    let last = "";
-    const tick = (t: number) => {
-      const f = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')?.dataset.frame;
-      if (f && f !== last) {
-        last = f;
-        w.__hexFrames.push({ t, arrived: (JSON.parse(f) as { arrived: boolean }).arrived });
-      }
-      if (w.__hexFrames.length < 400) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  });
-  await page.getByTestId("topology-view-3d-choice-hex").click();
+  await recordHexPaints(page, "__hexFirstVisit");
+  await switchViewWithoutPick(page, true);
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
-  const frames = await page.evaluate(() => (window as unknown as { __hexFrames: { t: number; arrived: boolean }[] }).__hexFrames);
+  const frames = await readHexPaints(page, "__hexFirstVisit");
   const moving = frames.filter((f) => !f.arrived);
   const settledAt = frames.find((f, i) => f.arrived && i > 0 && !frames[i - 1]!.arrived);
   console.log(`[hex arrival] frames=${frames.length} moving=${moving.length} span=${moving.length ? Math.round(moving[moving.length - 1]!.t - moving[0]!.t) : 0}ms`);
   expect(moving.length, "the board never assembled").toBeGreaterThan(3);
   expect(settledAt!.t - moving[0]!.t).toBeLessThanOrEqual(600 + 60);
-  // Once per folder: a second visit to the view arrives still.
-  await page.getByTestId("topology-view-3d").click();
-  await page.getByTestId("topology-view-3d-choice-flat").click();
-  await page.getByTestId("topology-view-3d").click();
-  await page.getByTestId("topology-view-3d-choice-hex").click();
+  await switchViewWithoutPick(page, false);
+  await expect(page.getByTestId("hex-board-map")).toHaveCount(0);
+  await recordHexPaints(page, "__hexSecondVisit");
+  await switchViewWithoutPick(page, true);
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
-  const again = JSON.parse((await page.locator('[data-testid="hex-board-map"] canvas').getAttribute("data-frame")) ?? "{}") as { arrived?: boolean };
-  expect(again.arrived).toBe(true);
+  const again = await readHexPaints(page, "__hexSecondVisit");
+  expect(again.length, "the second visit painted nothing").toBeGreaterThan(0);
+  expect(again.filter((f) => !f.arrived), "the second visit to the view assembled again").toEqual([]);
 });
 
 test("hex board at 300 capabilities opens on region nameplates, none over a tile or another plate", async ({ page }) => {

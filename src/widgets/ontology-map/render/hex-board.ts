@@ -214,11 +214,12 @@ function smoothPath(ctx: CanvasRenderingContext2D, pts: readonly { x: number; y:
   ctx.lineTo(e.x, e.y);
 }
 
-let hatchCache: { key: string; canvas: HTMLCanvasElement } | null = null;
+const hatchTiles = new Map<string, HTMLCanvasElement>();
 function hatchPattern(ctx: CanvasRenderingContext2D, base: string, line: string): CanvasPattern | string {
   if (typeof document === "undefined") return base;
   const key = `${base}|${line}`;
-  if (!hatchCache || hatchCache.key !== key) {
+  let tile = hatchTiles.get(key);
+  if (!tile) {
     const c = document.createElement("canvas");
     c.width = 6;
     c.height = 6;
@@ -237,9 +238,10 @@ function hatchPattern(ctx: CanvasRenderingContext2D, base: string, line: string)
     g.moveTo(5, 7);
     g.lineTo(7, 5);
     g.stroke();
-    hatchCache = { key, canvas: c };
+    hatchTiles.set(key, c);
+    tile = c;
   }
-  return ctx.createPattern(hatchCache.canvas, "repeat") ?? base;
+  return ctx.createPattern(tile, "repeat") ?? base;
 }
 
 /** cubic-bezier(.2,.7,.2,1), solved numerically once per call (cheap at this size). */
