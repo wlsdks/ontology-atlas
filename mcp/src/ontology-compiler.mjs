@@ -225,6 +225,18 @@ export function compileOntology(loadedDocs, options = {}) {
   const byKind = buildIndexes ? groupNodes(nodes, 'kind') : undefined;
   const byDomain = buildIndexes ? groupNodes(nodes, 'domain') : undefined;
   const aliasToSlugIndex = buildIndexes ? Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug])) : undefined;
+  // O(I log I); code-unit ordering avoids filesystem and host-locale order.
+  const orderedIssues = issues.map(issue => ({
+    issue,
+    priority: issue.code === 'ambiguous-alias' ? 0 : issue.severity === 'error' ? 1 : 2,
+    location: String(issue.slug ?? issue.alias ?? ''),
+    line: typeof issue.line === 'number' ? issue.line : Number.POSITIVE_INFINITY,
+    key: JSON.stringify(issue),
+  }));
+  const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+  orderedIssues.sort((left, right) => left.priority - right.priority ||
+    compareText(left.location, right.location) || left.line - right.line || compareText(left.key, right.key));
+  for (let index = 0; index < orderedIssues.length; index += 1) issues[index] = orderedIssues[index].issue;
   const graphHash = hashGraph({
     version: COMPILER_VERSION,
     nodes: nodes.map(({ uid, merged_uids, slug, kind, title, domain, outDegree, inDegree }) => ({
@@ -258,8 +270,7 @@ export function compileOntology(loadedDocs, options = {}) {
     edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
   ).size;
 
-  // Summary mode: counts and aggregates only (byKind and byDomain become counts),
-  // so a large vault stays under the token limit.
+  // Summary omits bulk arrays to keep delivery bounded.
   if (summary) {
     return {
       version: COMPILER_VERSION,

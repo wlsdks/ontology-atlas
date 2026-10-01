@@ -639,3 +639,21 @@ describe('compileOntology retention', () => {
     );
   });
 });
+
+it('keeps diagnostics and graphHash stable when document enumeration order changes', () => {
+  const docs = [
+    doc('elements/z', { kind: 'element', dependencies: ['missing-z'] }),
+    doc('elements/a', { kind: 'element', dependencies: ['missing-a'] }),
+    { ...doc('elements/error', { kind: 'element', contains: 'bad-array' }), diagnostics: [
+      { code: 'malformed-frontmatter-line', line: 3, message: 'Invalid array.' },
+    ] },
+  ];
+  const first = compileOntology(docs, { includeIndexes: true });
+  const second = compileOntology([...docs].reverse(), { includeIndexes: true });
+  assert.equal(first.graphHash, second.graphHash);
+  assert.deepEqual(first.issues, second.issues);
+  const changed = docs.map(row => row.slug === 'elements/error'
+    ? { ...row, diagnostics: [{ code: 'malformed-frontmatter-line', line: 3, message: 'Different error.' }] }
+    : row);
+  assert.notEqual(compileOntology(changed).graphHash, first.graphHash);
+});
