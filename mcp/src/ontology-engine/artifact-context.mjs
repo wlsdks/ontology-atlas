@@ -63,18 +63,27 @@ function buildArtifactIndexes(artifact) {
   }
   for (const list of [...outgoing.values(), ...incoming.values()]) Object.freeze(list);
 
-  // Keep unresolved names queryable as evidence even though they are not nodes.
+  // Index unresolved evidence in O(E); sort unique pairs once per reference.
   const referencedOnlyByRef = new Map();
+  const sourcesByRefAndRelation = new Map();
   for (const edge of edges) {
     if (edge.resolved) continue;
-    const list = referencedOnlyByRef.get(edge.ref);
-    if (list) {
-      if (!list.some((hit) => hit.slug === edge.from && hit.via === edge.via)) {
-        list.push(Object.freeze({ slug: edge.from, via: edge.via }));
-      }
-    } else {
-      referencedOnlyByRef.set(edge.ref, [Object.freeze({ slug: edge.from, via: edge.via })]);
+    let byRelation = sourcesByRefAndRelation.get(edge.ref);
+    if (!byRelation) {
+      byRelation = new Map();
+      sourcesByRefAndRelation.set(edge.ref, byRelation);
     }
+    let sources = byRelation.get(edge.via);
+    if (!sources) {
+      sources = new Set();
+      byRelation.set(edge.via, sources);
+    }
+    if (!Number.isNaN(edge.from) && !Number.isNaN(edge.via) && sources.has(edge.from)) continue;
+    sources.add(edge.from);
+    const hit = Object.freeze({ slug: edge.from, via: edge.via });
+    const list = referencedOnlyByRef.get(edge.ref);
+    if (list) list.push(hit);
+    else referencedOnlyByRef.set(edge.ref, [hit]);
   }
   for (const list of referencedOnlyByRef.values()) {
     list.sort((left, right) => left.slug.localeCompare(right.slug) || left.via.localeCompare(right.via));
