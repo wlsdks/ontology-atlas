@@ -297,7 +297,6 @@ describe('runTurn', () => {
     });
     expect(result.turn.status).toBe('aborted');
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'aborted' });
-    // No new round trip occurs after an abort — nothing continues in the background.
     expect(send).toHaveBeenCalledTimes(1);
   });
 
