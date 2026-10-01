@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { clearSignalledLines, markSignalledLine } from "../light/signal-plan";
 import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, dependsTaperFactor, DEPENDS_TAPER_END, DEPENDS_TAPER_START, draw, HOVER_LIFT_WIDTH_PX, type Point, type TraceDrawState } from "./traces";
 
 describe("computeBowControlPoint", () => {
@@ -621,5 +622,81 @@ describe("draw — relation reveal on selection", () => {
   it("mixes a dimming line from its resting ink on the focus ramp", () => {
     expect(record({ ...contains, egoState: "dim", dimRamp: 0 }).strokes[0].style).toBe("rgb(58, 58, 66)");
     expect(record({ ...contains, egoState: "dim" }).strokes[0].style).toBe(TOKENS.edgeDim);
+  });
+});
+
+describe("draw — one light per line", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+
+  function countDots(state: TraceDrawState): number {
+    let arcs = 0;
+    const ctx = {
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {},
+      stroke() {},
+      fill() {},
+      setLineDash() {},
+      arc() {
+        arcs += 1;
+      },
+      strokeStyle: "",
+      fillStyle: "",
+      shadowColor: "",
+      shadowBlur: 0,
+      globalAlpha: 1,
+      lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, state, TOKENS);
+    return arcs;
+  }
+
+  const depends: TraceDrawState = {
+    a: { x: 0, y: 0 },
+    b: { x: 100, y: 0 },
+    control: { x: 50, y: 20 },
+    relationType: "depends",
+    egoState: "ego",
+    farT: 0,
+    t: 0.5,
+  };
+
+  afterEach(() => {
+    clearSignalledLines();
+  });
+
+  it("stands the ambient comet down on a line whose signal is running", () => {
+    markSignalledLine(depends.a, depends.control, depends.b);
+    expect(countDots(depends)).toBe(0);
+    clearSignalledLines();
+    expect(countDots(depends)).toBe(3);
+  });
+
+  it("stands the ego containment comet down on a signalled line", () => {
+    const contains: TraceDrawState = { ...depends, relationType: "contains", containsCometEligible: true };
+    markSignalledLine(contains.a, contains.control, contains.b);
+    expect(countDots(contains)).toBe(0);
+  });
+
+  it("stands the galaxy glint down on a signalled line", () => {
+    const galaxy: TraceDrawState = { ...depends, galaxyInk: "#8890e0", galaxyGlint: 0.8 };
+    expect(countDots(galaxy)).toBe(1);
+    markSignalledLine(galaxy.a, galaxy.control, galaxy.b);
+    expect(countDots(galaxy)).toBe(0);
+  });
+
+  it("leaves a second relation between the same two concepts its comet", () => {
+    markSignalledLine(depends.a, depends.control, depends.b);
+    expect(countDots({ ...depends, control: { x: 50, y: -20 } })).toBe(3);
   });
 });

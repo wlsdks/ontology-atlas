@@ -116,6 +116,10 @@ One accurate word per thing. Canonical spellings live in
   star/meteor atmosphere. Restore the previous operation in the same function;
   a node carries at most one diffraction cross per frame. Gate:
   `tests/contract/canvas-composite-license.contract.test.ts`.
+- The WebGL2 light layer (`light/`) is light by construction: it draws no mark
+  with identity, composites `plus-lighter` (licensed only there), and runs only
+  for an event in Flat and Galaxy. Gates: the composite licence and
+  `webgl-context-census`.
 
 ## Absolute rules point to one source
 

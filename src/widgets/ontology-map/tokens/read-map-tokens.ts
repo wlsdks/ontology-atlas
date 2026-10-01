@@ -292,6 +292,15 @@ export interface OntologyMapTokens {
   pressAngFreq: number;
   /** `--map-press-zeta` — ζ of the hover press (below 1 overshoots). */
   pressZeta: number;
+  lightSpeed: number;
+  lightHopMinMs: number;
+  lightHopMaxMs: number;
+  lightPathMaxMs: number;
+  lightTail: number;
+  lightCorePx: number;
+  lightHaloPx: number;
+  lightIntensity: number;
+  lightBloomTau: number;
   /** `--map-select-pulse-scale-delta` — commit-pulse max ring growth as a fraction of the ring radius (A3: 0.15 was sub-perceptual on element nodes). */
   selectPulseScaleDelta: number;
   /** `--map-node-release-settle-ms` — drag-release settle budget in ms, replacing the refresh-rate-dependent 90-frame countdown (A4). */
@@ -470,6 +479,15 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "nodeBloomAlpha", cssVar: "--map-node-bloom-alpha", kind: "number" },
   { key: "pressAngFreq", cssVar: "--map-press-angfreq", kind: "number" },
   { key: "pressZeta", cssVar: "--map-press-zeta", kind: "number" },
+  { key: "lightSpeed", cssVar: "--map-light-speed", kind: "number" },
+  { key: "lightHopMinMs", cssVar: "--map-light-hop-min-ms", kind: "number" },
+  { key: "lightHopMaxMs", cssVar: "--map-light-hop-max-ms", kind: "number" },
+  { key: "lightPathMaxMs", cssVar: "--map-light-path-max-ms", kind: "number" },
+  { key: "lightTail", cssVar: "--map-light-tail", kind: "number" },
+  { key: "lightCorePx", cssVar: "--map-light-core-px", kind: "number" },
+  { key: "lightHaloPx", cssVar: "--map-light-halo-px", kind: "number" },
+  { key: "lightIntensity", cssVar: "--map-light-intensity", kind: "number" },
+  { key: "lightBloomTau", cssVar: "--map-light-bloom-tau", kind: "number" },
   { key: "selectPulseScaleDelta", cssVar: "--map-select-pulse-scale-delta", kind: "number" },
   { key: "nodeReleaseSettleMs", cssVar: "--map-node-release-settle-ms", kind: "number" },
   { key: "nodeHomeSpringAngFreq", cssVar: "--map-node-home-spring-angfreq", kind: "number" },

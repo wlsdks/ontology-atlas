@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { edgeRevealProgress, partialQuadratic, revealSpan } from "./edge-reveal";
+import { edgeRevealProgress, partialQuadratic, revealEnd, revealSpan } from "./edge-reveal";
 
 const A = { x: 0, y: 0 };
 const C = { x: 50, y: 40 };
@@ -58,6 +58,18 @@ describe("edgeRevealProgress", () => {
 
   it("moves less than the ramp does on its first step, so the first frame is not a cut", () => {
     expect(edgeRevealProgress(0.27, false)).toBeLessThan(0.2);
+  });
+});
+
+describe("revealEnd", () => {
+  it("runs a directional relation from its source whichever end is attended", () => {
+    expect(revealEnd(true, "src", "src")).toBe("a");
+    expect(revealEnd(true, "src", "dst")).toBe("a");
+  });
+
+  it("runs a symmetric relation from the attended end", () => {
+    expect(revealEnd(false, "src", "src")).toBe("a");
+    expect(revealEnd(false, "src", "dst")).toBe("b");
   });
 });
 

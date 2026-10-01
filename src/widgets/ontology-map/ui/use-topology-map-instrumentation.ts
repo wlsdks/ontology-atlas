@@ -523,6 +523,12 @@ export function useTopologyMapInstrumentation({
         nodeId: focusedSlugRef.current,
         edge: selectedEdgeRef.current,
       }),
+      select: (id: string | null) => {
+        focusedSlugRef.current = id;
+        hoveredNodeIdRef.current = null;
+        lastInputMsRef.current = performance.now();
+        lastActiveMsRef.current = lastInputMsRef.current;
+      },
       /**
        * Density-gate chips — where "+24 really reveals 24" is verified. A chip
        * once claimed 24 while exactly 1 was drawn, because the tier gate did

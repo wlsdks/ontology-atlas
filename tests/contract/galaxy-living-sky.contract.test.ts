@@ -44,7 +44,7 @@ describe("Galaxy living-sky paint contract", () => {
     const frame = readCode("src/widgets/ontology-map/ui/topology-frame-draw.ts");
     const loop = readCode("src/widgets/ontology-map/ui/topology-frame-gate.ts");
     const scheduler = readCode("src/widgets/ontology-map/ui/use-topology-frame-loop.ts");
-    expect(scheduler).toContain("createFrameGate(configuration.frameGate)");
+    expect(scheduler).toContain("createFrameGate({ ...configuration.frameGate, lightActiveRef })");
     expect(scheduler).toContain("runFrameGate(now)");
 
     expect(frame).toMatch(/galaxyAtmosphereOn\s*&&\s*!reducedMotion[\s\S]*drawGalaxyMeteor/);

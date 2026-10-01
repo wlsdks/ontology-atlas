@@ -90,6 +90,7 @@ interface Dependencies {
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   idleDebugEnabledRef: RefObject<boolean>;
   lastActiveCausesRef: RefObject<{ t: number; causes: string[]; } | null>;
+  lightActiveRef: RefObject<boolean>;
   domeLodRef: RefObject<StrataLodState>;
 }
 interface FrameResult {
@@ -167,6 +168,7 @@ export function createFrameGate({
   spotlightIdsRef,
   idleDebugEnabledRef,
   lastActiveCausesRef,
+  lightActiveRef,
   domeLodRef,
 }: Dependencies) {
   const result = {} as FrameResult;
@@ -466,6 +468,7 @@ export function createFrameGate({
         // only inside the frame body.
         spotlightSettling:
           Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
+        lightActive: lightActiveRef.current,
       };
       const active =
         isCanvasActive(idleFlags) ||

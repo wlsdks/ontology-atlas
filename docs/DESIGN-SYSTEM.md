@@ -542,7 +542,7 @@ Reference anchors for this bar:
 
 ## Design tokens
 
-Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, and `--map-*` in `app/styles/base-map-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
+Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, `--map-*` in `app/styles/base-map-tokens.css`, and the light layer's `--map-light-*` in `app/styles/map-light-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
 
 ### Scale fixed contract (2026-07-24, owner confirmed — "fixed as is now")
 
@@ -2511,7 +2511,24 @@ Specified with the map's layout morph.
 
 ### Light tokens
 
-Specified with the map's light layer.
+The map's WebGL2 light layer (`src/widgets/ontology-map/light/`) reads these
+from `app/styles/map-light-tokens.css` through `tokens/read-map-tokens.ts`. Its
+ink is `--map-indigo-bright`; it adds no hue. It draws light only, in Flat and
+Galaxy, for an event, and nothing under reduced motion.
+
+| Token | Value | Meaning |
+|---|---|---|
+| `--map-light-speed` | 1100 | screen px per second a light travels along its relation |
+| `--map-light-hop-min-ms` · `--map-light-hop-max-ms` | 180 · 420 | the clamp on one relation's travel |
+| `--map-light-path-max-ms` | 1200 | a whole path's travel; hops scale to fit |
+| `--map-light-tail` | 0.35 | the tail's length behind the head, as a share of the curve |
+| `--map-light-core-px` · `--map-light-halo-px` | 1.6 · 6 | the Gaussian core and halo across the line, CSS px |
+| `--map-light-intensity` | 0.9 | peak strength of a light and of a bloom |
+| `--map-light-bloom-tau` | 0.28 | the arrival bloom's decay time constant, seconds |
+
+A focus light rides the front of the relation's reveal, so it never runs ahead
+of the ink; a bloom peaks 60ms after its light arrives and decays on
+`--map-light-bloom-tau`.
 
 ### Glass
 

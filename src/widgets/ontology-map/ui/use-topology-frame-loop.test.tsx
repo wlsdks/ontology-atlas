@@ -15,7 +15,10 @@ const pipeline = vi.hoisted(() => {
   const realm = run("realm", { frameClusteredIds: new Set(), frameChips: [] });
   const reveal = run("reveal");
   const presentation = run("presentation");
-  return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation };
+  const lightPrepare = run("light-prepare");
+  const lightRender = run("light-render");
+  const lightDispose = vi.fn();
+  return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation, lightPrepare, lightRender, lightDispose };
 });
 
 vi.mock("./topology-frame-gate", async (importOriginal) => ({
@@ -29,7 +32,11 @@ vi.mock("./topology-cluster-frame-stage", () => ({ createClusterFrameStage: vi.f
 vi.mock("./topology-realm-frame-stage", () => ({ createRealmFrameStage: vi.fn(() => pipeline.realm) }));
 vi.mock("./topology-reveal-frame-stage", () => ({ createRevealFrameStage: vi.fn(() => pipeline.reveal) }));
 vi.mock("./topology-presentation-frame-stage", () => ({ createPresentationFrameStage: vi.fn(() => pipeline.presentation) }));
+vi.mock("../light/light-frame-stage", () => ({
+  createLightFrameStage: vi.fn(() => ({ prepare: pipeline.lightPrepare, render: pipeline.lightRender, dispose: pipeline.lightDispose })),
+}));
 
+import { createLightFrameStage } from "../light/light-frame-stage";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createFrameGate, FRAME_ASLEEP, FRAME_NOT_READY } from "./topology-frame-gate";
 import { useTopologyActivityState } from "./use-topology-activity-state";
@@ -75,8 +82,9 @@ describe("topology frame scheduling", () => {
   it("runs stages in dependency order and passes the same frame clock to reveal", () => {
     const { unmount, rerender } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     act(() => nextFrame(1234));
-    expect(pipeline.order).toEqual(["gate", "dome", "motion", "camera", "clusters", "realm", "reveal", "presentation"]);
+    expect(pipeline.order).toEqual(["gate", "dome", "motion", "camera", "clusters", "realm", "reveal", "light-prepare", "presentation", "light-render"]);
     expect(pipeline.reveal.mock.calls[0]?.slice(0, 2)).toEqual([1234, 0.016]);
+    expect(pipeline.lightPrepare.mock.calls[0]?.[0]).toBe(1234);
     expect(pipeline.presentation).toHaveBeenCalledOnce();
     expect(canvas.getContext).toHaveBeenCalledWith("2d", { alpha: false });
     rerender();
@@ -84,6 +92,16 @@ describe("topology frame scheduling", () => {
     expect(request).toHaveBeenCalledTimes(2);
     unmount();
     expect(cancel).toHaveBeenCalledWith(17);
+    expect(pipeline.lightDispose).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the gate awake on the same light flag the light stage writes", () => {
+    const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
+    const gateFlag = vi.mocked(createFrameGate).mock.calls[0]?.[0].lightActiveRef;
+    const stageFlag = vi.mocked(createLightFrameStage).mock.calls[0]?.[0].lightActiveRef;
+    expect(gateFlag).toBeDefined();
+    expect(gateFlag).toBe(stageFlag);
+    unmount();
   });
 
   it.each(["gate", "dome"] as const)("reschedules after a %s yield without drawing a partial frame", (stage) => {

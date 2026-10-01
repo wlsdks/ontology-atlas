@@ -17,6 +17,7 @@
  */
 
 import { type EdgeReveal, partialQuadratic, type Point, revealSpan } from "../expressive/edge-reveal";
+import { isEdgeSignalled } from "../light/signal-plan";
 
 export type { Point };
 
@@ -605,7 +606,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     state.reducedMotion !== true &&
     state.galaxyInk &&
     (state.galaxyGlint ?? 0) > 0.01 &&
-    (!span || (t >= span.lo && t <= span.hi))
+    (!span || (t >= span.lo && t <= span.hi)) &&
+    !isEdgeSignalled(a, control, b)
   ) {
     const phase = clamp01(t);
     const at = bezierPoint(a, control, b, phase);
@@ -676,35 +678,13 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   if (isDepends) {
     if (egoState === "dim") return;
-    /*
-     * ⚠️ **One line carries one travelling light.** A walked `depends` relation was drawing
-     * its ambient blue comet *and* the trail's white glint at once — two lights on one line,
-     * in two inks, meaning two different things (measured on the built map, 2026-09-10).
-     * This block's own header already says the walked path wins over every other state; the
-     * comet stands down for as long as the lens is on it, and comes back when the ramp does.
-     */
     if (glint > 0.01 || state.galaxyInk) return;
-    // Always-on comets, restored on owner instruction "Bring the old one back", reversing the earlier demotion to "comet tail = focus
-    // signal": the tail flows on every non-dim depends edge regardless of focus
-    // (prototype §13 `drawEdge`, `state !== "dim"`). Phase advance is owned by
-    // `updateParticles`, which stops under reduced-motion, so those users get
-    // nothing here either and the canvas stays fully still.
     if (state.reducedMotion === true) return;
-    // Edges outside the cap keep the dashed body and draw no particles: the
-    // always-on behaviour, the speed, and the focus-independence are unchanged —
-    // only the number of dots flowing at once becomes bounded.
     if (state.dependsCometEligible === false) return;
-
-    // comet tail — three shrinking dots trailing the live pulse position,
-    // thinning toward hairline dust as altitude rises rather than fading via
-    // alpha (forbidden.md bans glow/alpha-based "signal" motifs). ego/selected
-    // edges get a larger tail plus bright indigo; normal gets pale indigo, the
-    // prototype's symmetry.
+    if (isEdgeSignalled(a, control, b)) return;
     const ego = egoState === "ego" || state.selected === true;
     const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
     const tailColor = ego ? tokens.indigoBright : tokens.indigo;
-    // perf 2026-08-19 — the forEach closure and the bezierPoint allocation are
-    // gone; the same formula is inlined.
     ctx.fillStyle = tailColor;
     for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
       let tt = t - COMET_TAIL_STEPS[i];
@@ -721,19 +701,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     return;
   }
 
-  // Design Guardian-approved: contains edges incident to the selection (ego)
-  // also carry comet flow — a continuous phase owned by `updateParticles`, not a
-  // one-shot burst. Direction stays source→target (the parent→child typed fact;
-  // no reversal or radiation as in depends), which holds automatically because
-  // a/b are already the source/target screen coordinates and the call is the
-  // same `bezierPoint(a, control, b, t)`. The tail is always the NORMAL tier
-  // ([2.1, 1.5, 0.9] — one step below the depends-ego [2.9, 2.1, 1.3], preserving
-  // the ink hierarchy) in standard indigo, never bright: no ego/emphasized
-  // promotion. When `containsCometEligible` is false, only the body stroke drawn
-  // above remains. Deselecting takes egoState out of "ego", so the particles
-  // disappear on the next frame with no separate exit animation.
   if (egoState !== "ego" || state.containsCometEligible !== true) return;
   if (state.reducedMotion === true) return;
+  if (isEdgeSignalled(a, control, b)) return;
   ctx.fillStyle = tokens.indigo;
   for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
     let tt = t - COMET_TAIL_STEPS[i];
