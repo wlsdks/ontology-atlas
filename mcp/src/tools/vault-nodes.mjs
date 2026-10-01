@@ -579,8 +579,55 @@ function findDuplicateUidIssues(docs, includeSlugs, includeMessages) {
   }
   return issues;
 }
+function indexedBatchReadContext(docs, selectors, hasUids) {
+  let resolveUid;
+  if (hasUids) {
+    const requestedUids = new Set(selectors.filter(selector => typeof selector === 'string' && !nodeUidIssue(selector)));
+    const docsByUid = new Map();
+    const append = (uid, doc) => {
+      if (!requestedUids.has(uid)) return;
+      if (!docsByUid.has(uid)) docsByUid.set(uid, []);
+      docsByUid.get(uid).push(doc);
+    };
+    for (const doc of docs) {
+      append(doc.frontmatter.uid, doc);
+      if (Array.isArray(doc.frontmatter.merged_uids)) {
+        for (const uid of new Set(doc.frontmatter.merged_uids)) {
+          if (uid !== doc.frontmatter.uid) append(uid, doc);
+        }
+      }
+    }
+    resolveUid = uid => resolveExistingVaultUid(uid, requestedUids.has(uid) ? docsByUid.get(uid) ?? [] : docs);
+  }
+  const includedSlugs = new Set();
+  for (const selector of selectors) {
+    if (typeof selector !== 'string' || !selector.trim()) continue;
+    if (hasUids && nodeUidIssue(selector)) continue;
+    try {
+      const resolved = hasUids
+        ? resolveUid(selector)
+        : resolveExistingVaultSlug(selector, docs);
+      if (resolved) includedSlugs.add(resolved);
+    } catch {
+      continue;
+    }
+  }
+  const warningRows = groupDanglingIssuesBySlug(docs, includedSlugs);
+  const danglingIssuesBySlug = {
+    get(slug) {
+      if (!includedSlugs.has(slug)) {
+        const issues = groupDanglingIssuesBySlug(docs, new Set([slug])).get(slug);
+        includedSlugs.add(slug);
+        if (issues) warningRows.set(slug, issues);
+      }
+      return warningRows.get(slug);
+    },
+  };
+  return { docs, danglingIssuesBySlug, resolveUid };
+}
 
 export {
+  indexedBatchReadContext,
   groupDanglingIssuesBySlug,
   listVaultSourcePaths,
   buildSummaryFreshness,

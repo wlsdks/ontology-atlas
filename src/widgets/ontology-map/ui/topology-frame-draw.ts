@@ -3781,8 +3781,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       for (const id of childIds) expandedDiscChildIds.add(id);
       rankedByDisc.push(rankedDiscChildren(world, chip.parentId));
     }
-    // The budget comes from the preference (expand → label attempts); the constant
-    // is only its default.
     return selectDiscLabelEligible(rankedByDisc, expand.labelAttempts);
   })();
   // Label-overlap LOD for the children of a focused domain. `neighborsOfFocused`

@@ -23,7 +23,6 @@ import {
 } from '../growth-hint.mjs';
 import { NODE_KIND_VALUES } from '../ontology-engine.mjs';
 import { parseFilter } from '../query.mjs';
-import { nodeUidIssue } from '../schema.mjs';
 import { SERVER_VERSION } from '../server-version.mjs';
 import {
   WORKFLOWS_SECTION_EN,
@@ -83,6 +82,7 @@ import {
   describeReview,
   docNotFoundError,
   groupDanglingIssuesBySlug,
+  indexedBatchReadContext,
   resolveExistingVaultSlug,
   resolveExistingVaultUid,
   uidNotFoundError,
@@ -307,9 +307,6 @@ function getConcept({ slug, uid, body }, context = {}) {
   };
 }
 
-// Batch get_concept: input order is preserved and a missing slug becomes an
-// `{ ok: false, error }` row instead of aborting the batch. The cap of 50 keeps the
-// payload bounded; larger vaults chunk the call.
 function getConceptsBatch({ slugs, uids, body }) {
   const hasSlugs = slugs !== undefined;
   const hasUids = uids !== undefined;
@@ -330,63 +327,19 @@ function getConceptsBatch({ slugs, uids, body }) {
       `Too many ${selectorName}: ${selectors.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
-  // Full bodies grow the per-row payload by an order of magnitude. 50 rows × full
-  // body is not one response — it is several calls, so the cap drops and says so.
   if (bodyMode === 'full' && selectors.length > GET_CONCEPTS_FULL_BODY_MAX) {
     throw new Error(
       `Too many ${selectorName} for body:"full": ${selectors.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${selectors.length} excerpts at once.`
     );
   }
   const docs = loadVaultDocs(VAULT_ROOT);
-  let resolveUid;
-  if (hasUids) {
-    const requestedUids = new Set(selectors.filter(selector => typeof selector === 'string' && !nodeUidIssue(selector)));
-    const docsByUid = new Map();
-    const append = (uid, doc) => {
-      if (!requestedUids.has(uid)) return;
-      if (!docsByUid.has(uid)) docsByUid.set(uid, []);
-      docsByUid.get(uid).push(doc);
-    };
-    for (const doc of docs) {
-      append(doc.frontmatter.uid, doc);
-      if (Array.isArray(doc.frontmatter.merged_uids)) {
-        for (const uid of new Set(doc.frontmatter.merged_uids)) {
-          if (uid !== doc.frontmatter.uid) append(uid, doc);
-        }
-      }
-    }
-    resolveUid = uid => resolveExistingVaultUid(uid, requestedUids.has(uid) ? docsByUid.get(uid) ?? [] : docs);
-  }
-  const includedSlugs = new Set();
-  for (const selector of selectors) {
-    if (typeof selector !== 'string' || !selector.trim()) continue;
-    if (hasUids && nodeUidIssue(selector)) continue;
-    try {
-      const resolved = hasUids
-        ? resolveUid(selector)
-        : resolveExistingVaultSlug(selector, docs);
-      if (resolved) includedSlugs.add(resolved);
-    } catch {
-      continue;
-    }
-  }
-  const warningRows = groupDanglingIssuesBySlug(docs, includedSlugs);
-  const danglingIssuesBySlug = {
-    get(slug) {
-      if (!includedSlugs.has(slug)) {
-        const issues = groupDanglingIssuesBySlug(docs, new Set([slug])).get(slug);
-        includedSlugs.add(slug);
-        if (issues) warningRows.set(slug, issues);
-      }
-      return warningRows.get(slug);
-    },
-  };
+  const context = indexedBatchReadContext(docs, selectors, hasUids);
   const concepts = selectors.map((selector) => {
     try {
       requireNonBlankString(selector, hasUids ? 'uid' : 'slug');
       const result = getConcept(
         hasUids ? { uid: selector, body: bodyMode } : { slug: selector, body: bodyMode },
-        { docs, danglingIssuesBySlug, resolveUid },
+        context,
       );
       return { ok: true, ...result };
     } catch (err) {
