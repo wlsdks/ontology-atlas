@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import { badgeClass } from "@/shared/ui/badge-class";
 import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
+import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { IconButton, controlClass, useToast } from "@/shared/ui";
+import { CloseButton, controlClass, useToast } from "@/shared/ui";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
@@ -231,14 +231,12 @@ export function DocsVaultAuditModal({
                   {t("sourceContract.modalSubtitle")}
                 </p>
               </div>
-              <IconButton
+              <CloseButton
                 label={t("header.contractToggleHide")}
                 onClick={onClose}
                 title={t("sourceContract.closeTitle")}
-                className="flex-none hover:text-[color:var(--color-text-primary)]"
-              >
-                <X size={ICON_SIZE.md} aria-hidden />
-              </IconButton>
+                className="flex-none"
+              />
             </div>
 
             {cells.map((cell) => {

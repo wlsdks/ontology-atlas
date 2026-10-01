@@ -108,7 +108,7 @@ export function PendingDocumentPane({
               >
                 <StatusGlyph status={doc.entry.status} />
                 {doc.kind ? <OntologyMapKindGlyph kind={doc.kind} size={12} /> : null}
-                <span className={cn(!doc.kind && "font-mono text-caption")}>{doc.label}</span>
+                <span className={cn(!doc.kind && "font-mono")}>{doc.label}</span>
               </button>
             ))}
           </div>

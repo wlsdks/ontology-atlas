@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import {
   Checkbox,
   Chip,
+  CloseButton,
   Dialog,
   IconButton,
   ServiceMark,
@@ -439,16 +440,12 @@ export function AddConnectorDialog({
         >
           {t('addTitle')}
         </h2>
-        <IconButton
+        <CloseButton
           label={t('close')}
-          size="sm"
-          tone="muted"
           data-testid={`${testIdPrefix}-add-close`}
-          className="-mr-1 -mt-1 shrink-0"
+          className="-mr-2 -mt-1 shrink-0"
           onClick={onClose}
-        >
-          <X size={ICON_SIZE.lg} aria-hidden />
-        </IconButton>
+        />
       </div>
 
       {/*

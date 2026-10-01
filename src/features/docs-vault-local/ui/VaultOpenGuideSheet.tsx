@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { useHydrated } from "@/shared/lib/use-hydrated";
-import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
+import { FolderOpen, HardDrive, ShieldCheck, Sparkles } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import {
@@ -18,7 +18,7 @@ import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 import { controlClass } from "@/shared/ui/control-class";
-import { IconButton } from "@/shared/ui/controls";
+import { CloseButton } from "@/shared/ui/close-button";
 
 /**
  * The pre-flight sheet before the OS folder picker: three reassurance lines and one
@@ -121,16 +121,11 @@ export function VaultOpenGuideSheet({
                     : t("subtitle", { count: bullets.length })}
                 </p>
               </div>
-              <IconButton
+              <CloseButton
                 label={t("actionCancel")}
                 onClick={onClose}
                 data-testid="vault-guide-close"
-                size="sm"
-                tone="muted"
-                className="hover:text-[color:var(--color-text-primary)]"
-              >
-                <X size={ICON_SIZE.md} aria-hidden />
-              </IconButton>
+              />
             </header>
 
             {/* Unsupported: these bullets describe the browser picker flow, so one notice and one

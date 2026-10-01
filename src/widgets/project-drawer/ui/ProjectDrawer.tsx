@@ -20,10 +20,10 @@ import {
   useExitLockout,
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, ChevronDown } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
-import { Chip, controlClass, IconButton } from "@/shared/ui";
+import { Chip, CloseButton, controlClass } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
 import { useStaticVaultSource } from "@/entities/vault-session";
 import { formatDate } from "@/shared/lib/format-date";
@@ -420,14 +420,7 @@ export function ProjectDrawer({
                   </span>
                 )}
               </div>
-              <IconButton
-                onClick={onClose}
-                size="lg"
-                className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-                label={t("closeAriaLabel")}
-              >
-                <X size={ICON_SIZE.lg} />
-              </IconButton>
+              <CloseButton onClick={onClose} label={t("closeAriaLabel")} />
             </div>
           </header>
 

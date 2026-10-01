@@ -2043,7 +2043,7 @@ function DocsVaultContent({
             className={controlClass({
               shape: 'chip',
               size: 'lg',
-              className: 'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+              className: 'min-h-[var(--chrome-tile-size)] flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
             })}
           >
             <ArrowLeft size={ICON_SIZE.md} aria-hidden />
@@ -2059,12 +2059,11 @@ function DocsVaultContent({
         <Link
           href={workspaceHref}
           aria-label={t('header.backToReviewAriaLabel')}
-          // Not a `<button>`, so the ratchet does not see it, but it must match the chip height.
           className={controlClass({
             shape: 'chip',
             size: 'lg',
             className:
-              'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+              'min-h-[var(--chrome-tile-size)] flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
           })}
         >
           <ArrowLeft size={ICON_SIZE.md} aria-hidden />
@@ -2074,7 +2073,7 @@ function DocsVaultContent({
       <Chip
         size="lg"
         onClick={() => setSourceTreeOpen(true)}
-        className="flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+        className="min-h-[var(--chrome-tile-size)] flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
         aria-label={t('header.openTreeAriaLabel')}
         title={t('header.openTreeTitle')}
       >
@@ -2417,7 +2416,7 @@ function DocsVaultContent({
                   <div
                     role="tablist"
                     aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
-                    className="inline-flex flex-none items-stretch gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+                    className="inline-flex flex-none items-stretch gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-px shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
                   >
                     <Chip
                       role="tab"

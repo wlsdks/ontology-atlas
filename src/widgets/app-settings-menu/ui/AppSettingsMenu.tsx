@@ -706,7 +706,7 @@ export function AppSettingsMenu({
                             closePanel(false);
                             replayGuide();
                           }}
-                          className={DETAIL_TOGGLE_CHIP}
+                          className={cn(DETAIL_TOGGLE_CHIP, 'min-h-9')}
                         >
                           {t('replayGuideAction')}
                         </Chip>
