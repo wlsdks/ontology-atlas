@@ -112,7 +112,7 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     const report = validateVaultDocument(doc.raw);
     if (report.issues.length > 0) issuesBySlugForCount.set(doc.slug, [...report.issues]);
   }
-  for (const [slug, issues] of groupDanglingIssuesBySlug(docs)) {
+  for (const [slug, issues] of groupDanglingIssuesBySlug(docs, undefined, false)) {
     issuesBySlugForCount.set(slug, [...(issuesBySlugForCount.get(slug) ?? []), ...issues]);
   }
   suppressParentedExpectedFieldIssues(issuesBySlugForCount, docs);
@@ -255,7 +255,7 @@ function getConcept({ slug, uid, body }, context = {}) {
   }
   const danglingIssuesBySlug =
     context.danglingIssuesBySlug ??
-    groupDanglingIssuesBySlug(docs);
+    groupDanglingIssuesBySlug(docs, new Set([doc.slug]));
   warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
   // `rationale` is the document's own `relation_notes` sentence for that target,
   // present only when one is stored — the same optional field `find_path` and

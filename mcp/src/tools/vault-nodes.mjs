@@ -433,7 +433,7 @@ function isPathLikeGraphRef(ref) {
   );
 }
 
-function findDanglingGraphReferenceIssues(docs) {
+function findDanglingGraphReferenceIssues(docs, includeSlugs, includeMessages) {
   const slugs = new Set(docs.map((d) => d.slug));
   const tailToFull = new Map();
   const frontmatterSlugToFull = new Map();
@@ -472,6 +472,7 @@ function findDanglingGraphReferenceIssues(docs) {
   };
   const issues = [];
   for (const doc of docs) {
+    if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
     for (const { key, ref } of collectNeighborRefs(doc)) {
       if (typeof ref !== 'string' || ref.trim() === '') continue;
       if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
@@ -481,7 +482,7 @@ function findDanglingGraphReferenceIssues(docs) {
         issue: {
           code: 'dangling-graph-reference',
           severity: 'warning',
-          message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.`,
+          ...(includeMessages ? { message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.` } : {}),
         },
       });
     }
@@ -489,19 +490,19 @@ function findDanglingGraphReferenceIssues(docs) {
   return issues;
 }
 
-function groupDanglingIssuesBySlug(docs) {
+function groupDanglingIssuesBySlug(docs, includeSlugs, includeMessages = true) {
   const bySlug = new Map();
-  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
+  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
   // Duplicate slugs ride the same whole-vault pass: both are the kind of defect
   // that looks fine one file at a time, so this is the only place that can see them.
-  for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
+  for (const { slug, issue } of findDuplicateSlugIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
-  for (const { slug, issue } of findDuplicateUidIssues(docs)) {
+  for (const { slug, issue } of findDuplicateUidIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
@@ -512,7 +513,7 @@ function groupDanglingIssuesBySlug(docs) {
  * Two documents claiming the same canonical slug. Either file alone looks fine, so
  * only a whole-vault pass sees it; no relation naming that slug resolves to one side.
  */
-function findDuplicateSlugIssues(docs) {
+function findDuplicateSlugIssues(docs, includeSlugs, includeMessages) {
   const byDeclared = new Map();
   for (const doc of docs ?? []) {
     const declared = doc?.frontmatter?.slug;
@@ -524,17 +525,18 @@ function findDuplicateSlugIssues(docs) {
   const issues = [];
   for (const [declared, group] of byDeclared) {
     if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
+    const all = includeMessages ? group.map((doc) => doc.slug) : null;
     for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
+      if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
+      const rest = includeMessages ? all.filter((slug) => slug !== doc.slug) : null;
       issues.push({
         slug: doc.slug,
         issue: {
           code: 'duplicate-slug',
           severity: 'error',
-          message:
+          ...(includeMessages ? { message:
             `\`slug: ${declared}\` is also claimed by ${rest.join(', ')}. ` +
-            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.`,
+            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.` } : {}),
         },
       });
     }
@@ -542,7 +544,7 @@ function findDuplicateSlugIssues(docs) {
   return issues;
 }
 
-function findDuplicateUidIssues(docs) {
+function findDuplicateUidIssues(docs, includeSlugs, includeMessages) {
   const claimsByUid = new Map();
   for (const doc of docs ?? []) {
     const claims = new Set([
@@ -559,17 +561,18 @@ function findDuplicateUidIssues(docs) {
   const issues = [];
   for (const [uid, group] of claimsByUid) {
     if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
+    const all = includeMessages ? group.map((doc) => doc.slug) : null;
     for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
+      if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
+      const rest = includeMessages ? all.filter((slug) => slug !== doc.slug) : null;
       issues.push({
         slug: doc.slug,
         issue: {
           code: 'duplicate-uid',
           severity: 'error',
-          message:
+          ...(includeMessages ? { message:
             `UID ${uid} is also claimed by ${rest.join(', ')} as a primary or merged identity. ` +
-            'Permanent identity must resolve to exactly one surviving node.',
+            'Permanent identity must resolve to exactly one surviving node.' } : {}),
         },
       });
     }

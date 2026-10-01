@@ -343,3 +343,42 @@ test('unresolved graph references do not rescan every slug for each missing targ
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('scoped graph warnings retain all peer identities without constructing other rows', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-scoped-warnings-')));
+  try {
+    const script = `
+      const { groupDanglingIssuesBySlug } = await import(${JSON.stringify(new URL('./tools/vault-nodes.mjs', import.meta.url).href)});
+      const docs = Array.from({ length: 100 }, (_, i) => ({ slug: 'root/n' + i,
+        frontmatter: { uid: '00000000-0000-4000-8000-000000000001', slug: 'shared', dependencies: ['missing-' + i] } }));
+      const full = groupDanglingIssuesBySlug(docs);
+      const expected = full.get('root/n0');
+      const original = Array.prototype.filter; let candidateChecks = 0;
+      Array.prototype.filter = function(callback, receiver) {
+        const tracked = this.length === docs.length && this[0] === 'root/n0';
+        return original.call(this, (value, index, array) => {
+          if (tracked) candidateChecks++;
+          return callback.call(receiver, value, index, array);
+        });
+      };
+      let result, counts;
+      try {
+        result = groupDanglingIssuesBySlug(docs, new Set(['root/n0']));
+        counts = groupDanglingIssuesBySlug(docs, undefined, false);
+      }
+      finally { Array.prototype.filter = original; }
+      console.log(JSON.stringify({ size: result.size, candidateChecks, expected, actual: result.get('root/n0'), counts: [...counts], expectedCounts: [...full].map(([slug, issues]) => [slug, issues.map(({ message, ...issue }) => issue)]) }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.equal(result.size, 1);
+    assert.deepEqual(result.actual, result.expected);
+    assert.deepEqual(result.counts, result.expectedCounts);
+    assert.ok(result.candidateChecks <= 1000, `peer filtering visited ${result.candidateChecks} candidates`);
+    assert.deepEqual(result.actual.map(issue => issue.code), ['dangling-graph-reference', 'duplicate-slug', 'duplicate-uid']);
+    assert.ok(result.actual[2].message.includes('root/n99'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
