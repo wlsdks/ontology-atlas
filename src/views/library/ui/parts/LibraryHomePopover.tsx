@@ -11,12 +11,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
-import { X } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
-import { Surface } from "@/shared/ui";
-import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { CloseButton, Surface } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
@@ -301,15 +298,7 @@ export function LibraryHomePopover({
           <h2 className="min-w-0 flex-1 truncate text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
             {title}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            data-testid={`${testId}-close`}
-            aria-label={t("stage.close")}
-            className={controlClass({ shape: "icon", tone: "muted", hoverInk: "strong" })}
-          >
-            <X size={ICON_SIZE.sm} aria-hidden />
-          </button>
+          <CloseButton onClick={onClose} data-testid={`${testId}-close`} label={t("stage.close")} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </Surface>

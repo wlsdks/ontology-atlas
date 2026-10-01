@@ -52,6 +52,8 @@ import { createStrataLodState, type StrataLodState } from "../model/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
 import { type TopologyPointerHandlers } from "./topology-pointer-handlers";
 
+import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
+import { readOntologyMapMarks } from "../morph/map-marks";
 import { useTopologyMapInstrumentation } from "./use-topology-map-instrumentation";
 import {
   useTopologyViewportLifecycle
@@ -69,11 +71,12 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
   raiseDomeTier: (kind: DomeViewKind | null) => void;
   /** The tier names' rendered widths by kind, as they measured themselves; `{}` places none. */
   setDomeTierNameWidths: (widths: Readonly<Record<string, number>>) => void;
+  readLayoutMarks: () => MapLayoutMark[];
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
   const {
-    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine",
+    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
@@ -408,6 +411,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onVisibleCountChange,
     onGraphStatsChange,
     dataSourceKey,
+    assembleOnOpen,
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
@@ -1041,5 +1045,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastActiveMsRef.current = performance.now();
   }, [domeTierNameWidthsRef, lastActiveMsRef]);
 
-  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, ...handlers, ...wrappedHandlers };
+  const readLayoutMarks = useCallback(
+    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef, domeRuntimeRef, galaxyRampRef }),
+    [cameraRef, domeRuntimeRef, galaxyRampRef, viewportRef, worldRef],
+  );
+
+  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, ...handlers, ...wrappedHandlers };
 }

@@ -21,6 +21,7 @@ export interface UseTopologyLoopArgs {
   emphasizedNeighborSlug?: string | null;
   /** Identity of this graph's source; a change refits the overview. See the same name on `OntologyMapProps`. */
   dataSourceKey?: string | null;
+  assembleOnOpen?: boolean;
   /**
    * What the overview camera fits: `"spine"` (default) is the project/domain/
    * hub bbox, `"full"` is every node's bbox. See the same name on

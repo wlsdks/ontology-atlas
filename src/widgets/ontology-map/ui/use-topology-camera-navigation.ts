@@ -19,6 +19,7 @@ import {
   type RealmTransitionState
 } from "../model/realm-transition";
 import { resolveViewportReframeMode } from "../model/viewport-reframe";
+import { landTierAssembly } from "../morph/tier-assembly";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import {
@@ -153,6 +154,7 @@ export function useTopologyCameraNavigation({
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return false;
+    landTierAssembly(world);
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let hit = 0;

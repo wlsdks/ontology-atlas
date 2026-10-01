@@ -268,7 +268,7 @@ export function CadencePicker({
           <div
             key={unit}
             data-testid={`${testId}-detents`}
-            className="relative mt-0.5 h-5 motion-safe:animate-[atlasStatusIn_var(--motion-base)_var(--motion-ease)_both]"
+            className="relative mt-0.5 h-6 motion-safe:animate-[atlasStatusIn_var(--motion-base)_var(--motion-ease)_both]"
           >
             {detents.map((value, tick) => (
               <button
@@ -282,7 +282,7 @@ export function CadencePicker({
                   size: "xs",
                   hoverInk: "strong",
                   className: cn(
-                    "absolute top-0 min-h-0 -translate-x-1/2 border-transparent px-1 text-label leading-label tabular-nums",
+                    "absolute top-0 min-w-6 -translate-x-1/2 justify-center border-transparent px-1 text-label leading-label tabular-nums",
                     tick === index
                       ? "font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]"
                       : "text-[color:var(--color-text-quaternary)]",

@@ -6,9 +6,14 @@
  * camera's `--map-camera-spring-angfreq-*` tokens are tuned specialisations of the same grammar.
  */
 
+import { MOTION } from "@/shared/motion/tokens";
+
 /** Bounds of the distance-proportional programmatic camera tween (`model/camera-easing.ts`). */
 export const CAMERA_TWEEN_MIN_MS = 200;
 export const CAMERA_TWEEN_MAX_MS = 420;
+
+export const VIEW_DIM_MS = MOTION.base.duration * 1000;
+export const VIEW_CAMERA_MS = MOTION.settle.duration * 1000;
 
 export interface Spring {
   damping: number;

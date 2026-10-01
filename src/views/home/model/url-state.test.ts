@@ -15,6 +15,7 @@ import {
   parseExpandedParentsParam,
   MAX_EXPANDED_PARENTS,
   clearVaultScopedRouteState,
+  isDeeplinkRouteState,
   VAULT_SCOPED_HOME_QUERY_KEYS,
   HOME_QUERY_KEYS,
 } from "./url-state";
@@ -957,6 +958,21 @@ describe("clearVaultScopedRouteState", () => {
   it("an untouched mode stays unless it is path", () => {
     const current = parseHomeRouteState(new URLSearchParams("mode=health&p=x"));
     expect(clearVaultScopedRouteState(current).analysisMode).toBe("health");
+  });
+});
+
+describe("isDeeplinkRouteState", () => {
+  it("counts an address naming anything in the vault as a deep link", () => {
+    for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
+      const params = new URLSearchParams({ workbench: "edit", [key]: "capability:alpha" });
+      expect(isDeeplinkRouteState(parseHomeRouteState(params)), key).toBe(true);
+    }
+  });
+
+  it("leaves enum keys and empty names to the plain open", () => {
+    const params = new URLSearchParams("p=&realm=&mode=health&impact=upstream&pulse=7d&recent=7&view=hex&workbench=edit");
+    expect(isDeeplinkRouteState(parseHomeRouteState(params))).toBe(false);
+    expect(isDeeplinkRouteState(DEFAULT_HOME_ROUTE_STATE)).toBe(false);
   });
 });
 

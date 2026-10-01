@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { X } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
@@ -23,7 +21,7 @@ import {
   type LocalEndpointSettings,
 } from '@/shared/lib/local-endpoint';
 import { useHeldValue } from '@/shared/lib/use-presence';
-import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from '@/shared/ui';
+import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton, Surface } from '@/shared/ui';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { useRouter } from '@/i18n/navigation';
@@ -597,15 +595,7 @@ export function VaultAgentPanel({
                 : t('subtitle')}
             </p>
           </div>
-          <button
-            type="button"
-            data-testid="vault-agent-panel-close"
-            onClick={onClose}
-            aria-label={t('close')}
-            className={controlClass({ shape: "icon", tone: "muted", className: "size-[var(--overlay-close-size)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]" })}
-          >
-            <X aria-hidden="true" size={ICON_SIZE.lg} />
-          </button>
+          <CloseButton data-testid="vault-agent-panel-close" onClick={onClose} label={t('close')} />
         </header>
 
         <div

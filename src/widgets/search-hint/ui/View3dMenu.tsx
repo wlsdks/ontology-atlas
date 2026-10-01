@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { armMapLayoutMorph } from '@/shared/lib/map-layout-morph-store';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { useTranslations } from 'next-intl';
@@ -73,7 +74,7 @@ export function View3dMenu({
   const reducedMotion = usePrefersReducedMotion();
 
   const write = (next: View3dChoice) => {
-    // At most one view flag is on; each row writes all of them.
+    if (next !== value) armMapLayoutMorph();
     writeTerritories(next === 'territories');
     writeHexBoard(next === 'hex');
     if (next === 'flat' || next === 'galaxy' || next === 'territories' || next === 'hex') {
@@ -157,6 +158,7 @@ export function View3dMenu({
       ref={boxRef}
       {...transientSurface('menu')}
       data-testid="topology-view-3d-menu"
+      data-map-layout-pick=""
       data-state={presence.exiting ? 'closed' : 'open'}
       className={cn(
         reducedMotion ? 'overlay-fade-only' : 'overlay-spring-surface',

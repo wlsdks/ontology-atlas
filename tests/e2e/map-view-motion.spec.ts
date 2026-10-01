@@ -3,24 +3,23 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForMapStill } from "./settle";
 
-type ViewFrame = { view: string | null; leaving: boolean; animation: string };
+type ViewFrame = { views: string[]; overlay: number | null };
 
 function sampleViewFrames(page: Page, to: string) {
   return page.evaluate(
     (arriving) =>
-      new Promise<ViewFrame[][]>((resolve) => {
-        const frames: ViewFrame[][] = [];
-        const start = performance.now();
+      new Promise<ViewFrame[]>((resolve) => {
+        const frames: ViewFrame[] = [];
         let settled = 0;
         const tick = () => {
-          const frame = [...document.querySelectorAll('[data-testid="topology-map-view"]')].map((el) => ({
-            view: el.getAttribute("data-map-view"),
-            leaving: el.hasAttribute("data-map-view-leaving"),
-            animation: getComputedStyle(el).animationName,
-          }));
+          const overlay = document.querySelector('[data-testid="map-layout-morph"]');
+          const frame = {
+            views: [...document.querySelectorAll('[data-testid="topology-map-view"]')].map((el) => el.getAttribute("data-map-view") ?? ""),
+            overlay: overlay ? Number(getComputedStyle(overlay).opacity) : null,
+          };
           frames.push(frame);
-          settled = frame.length === 1 && frame[0].view === arriving ? settled + 1 : 0;
-          if (settled < 6 && performance.now() - start < 5000) requestAnimationFrame(tick);
+          settled = frame.overlay === null && frame.views.length === 1 && frame.views[0] === arriving ? settled + 1 : 0;
+          if (settled < 6) requestAnimationFrame(tick);
           else resolve(frames);
         };
         requestAnimationFrame(tick);
@@ -49,18 +48,13 @@ test.beforeEach(async ({ page }) => {
   await waitForMapStill(page);
 });
 
-test("a view switch keeps the leaving view on screen while the arriving one fades in", async ({ page }) => {
+test("a view switch never shows a frame without a picture of the map", async ({ page }) => {
   for (const [from, to] of [["map", "territories"], ["territories", "map"]] as const) {
     const frames = await chooseView(page, to === "map" ? "flat" : to, to);
-    const arrival = frames.find((frame) => frame.some((view) => view.view === to));
-    expect(arrival, `${from} → ${to}: the new view never arrived`).toBeDefined();
-    expect(arrival, `${from} → ${to}: the old view was cut in the frame the new one arrived`).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ view: from, leaving: true, animation: "overlayFadeOut" }),
-        expect.objectContaining({ view: to, leaving: false, animation: "panelCrossfadeIn" }),
-      ]),
-    );
-    expect(frames.at(-1)).toEqual([expect.objectContaining({ view: to, leaving: false })]);
+    const bare = frames.filter((frame) => frame.views.length === 0 && !(frame.overlay && frame.overlay > 0));
+    expect(bare, `${from} → ${to}: frames with neither a view nor the overlay`).toEqual([]);
+    expect(frames.some((frame) => frame.overlay !== null), `${from} → ${to}: the switch cut without the overlay`).toBe(true);
+    expect(frames.at(-1)).toEqual({ views: [to], overlay: null });
   }
 });
 

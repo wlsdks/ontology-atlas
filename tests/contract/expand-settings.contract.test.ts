@@ -833,13 +833,13 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
   it("지도 화면이 세 문구를 번역해 캔버스로 넘긴다", () => {
     const source = readFileSync("src/views/home/model/use-topology-scene-controls.tsx", "utf8");
     const composition = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
-    const surface = readFileSync("src/views/home/ui/TopologyCanvasSurface.tsx", "utf8");
+    const renderer = readFileSync("src/views/home/ui/TopologyMapRenderer.tsx", "utf8");
     expect(composition).toContain("useTopologySceneControls({");
     expect(composition).toContain("topologySceneControls={topologySceneControls}");
     expect(source).toContain('t("cluster.barExpand")');
     expect(source).toContain('t("cluster.barExpandCount"');
     expect(source).toContain('t("cluster.barCollapse")');
-    expect(surface).toContain("clusterBarLabels={clusterBarLabels}");
+    expect(renderer).toContain("clusterBarLabels={clusterBarLabels}");
     for (const locale of ["ko", "en"] as const) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")) as {
         topology: { cluster: Record<string, string> };

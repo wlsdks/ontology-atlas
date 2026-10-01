@@ -2,6 +2,7 @@ import { resolveNodeDocument, type KnowledgeGraphNode } from '@/entities/knowled
 import type { VaultDoc } from '@/entities/docs-vault';
 import { GrayAreaInspector, type GrayAreaCandidate, type GrayAreaSelection } from '@/features/gray-area';
 import { focusMapCanvasWhenReady } from '@/shared/lib/focus-map-canvas';
+import { armMapLayoutMorph } from '@/shared/lib/map-layout-morph-store';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectTopologyPathRouteState, type HomeRouteState } from '../url-state';
@@ -69,6 +70,7 @@ export function useTopologyGrayArea({docs,nodes,selectedSlug,memberSlugs,vaultPa
     setActive({...selected,key:JSON.stringify([selected.key,inspectionEpoch.current])});setOpen(true);onOpen();
   },[selected,onOpen]);
   const focus=useCallback((candidate:GrayAreaCandidate)=>{
+    armMapLayoutMorph();
     applyMapView(null);
     setRouteState(current=>{
       const path=candidate.kind==='missing-link'&&candidate.relatedSlug?[candidate.slug,candidate.relatedSlug]:candidate.path;
