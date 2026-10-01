@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MapLayoutMark, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
-import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS } from "../model/motion-physics";
+import { SPRING, springSettleMs } from "@/shared/motion/spring";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
 const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "galaxy", "strata", "coupling"];
@@ -18,7 +18,12 @@ const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = 
   ...extra,
 });
 
-const at = (marks: readonly MapLayoutMark[], id: string) => marks.find((m) => m.id === id);
+const END = 2000;
+
+const at = (marks: readonly MapLayoutMark[], id: string) => {
+  const hit = marks.find((m) => m.id === id);
+  return hit && { ...hit, x: Math.round(hit.x * 1e6) / 1e6, y: Math.round(hit.y * 1e6) / 1e6 };
+};
 
 describe("chooseLayoutSwitch", () => {
   const base = { armed: true, reducedMotion: false, conceptCount: 2000 };
@@ -80,7 +85,7 @@ describe("planLayoutMorph", () => {
   it("moves a concept drawn in both views from its old place to its new one", () => {
     const plan = planLayoutMorph([mark("domain:a", 10, 20)], [mark("domain:a", 110, 220)], parents);
     expect(at(sampleLayoutMorph(plan, 0), "domain:a")).toMatchObject({ x: 10, y: 20 });
-    expect(at(sampleLayoutMorph(plan, 1), "domain:a")).toMatchObject({ x: 110, y: 220 });
+    expect(at(sampleLayoutMorph(plan, END), "domain:a")).toMatchObject({ x: 110, y: 220 });
   });
 
   it("sends a concept missing from the target into its nearest drawn ancestor, fading out", () => {
@@ -89,29 +94,29 @@ describe("planLayoutMorph", () => {
       [mark("domain:a", 300, 100)],
       parents,
     );
-    const middle = at(sampleLayoutMorph(plan, 0.5), "element:a1x")!;
+    const middle = at(sampleLayoutMorph(plan, 120), "element:a1x")!;
     expect(middle.x).toBeGreaterThan(50);
     expect(middle.alpha).toBeLessThan(1);
-    expect(at(sampleLayoutMorph(plan, 1), "element:a1x")).toBeUndefined();
+    expect(at(sampleLayoutMorph(plan, END), "element:a1x")).toBeUndefined();
   });
 
   it("raises a concept missing from the source out of its nearest drawn ancestor", () => {
     const plan = planLayoutMorph([mark("domain:a", 40, 60)], [mark("domain:a", 40, 60), mark("capability:a1", 200, 60)], parents);
     const i = plan.ids.indexOf("capability:a1");
     expect([plan.x0[i], plan.y0[i]]).toEqual([40, 60]);
-    expect(at(sampleLayoutMorph(plan, 0.5), "capability:a1")!.alpha).toBeLessThan(1);
-    expect(at(sampleLayoutMorph(plan, 1), "capability:a1")).toMatchObject({ x: 200, y: 60, alpha: 1 });
+    expect(at(sampleLayoutMorph(plan, 120), "capability:a1")!.alpha).toBeLessThan(1);
+    expect(at(sampleLayoutMorph(plan, END), "capability:a1")).toMatchObject({ x: 200, y: 60, alpha: 1 });
   });
 
   it("fades an orphan in place", () => {
     const plan = planLayoutMorph([], [mark("element:loose", 70, 80)], parents);
-    for (const p of [0.25, 0.5, 1]) expect(at(sampleLayoutMorph(plan, p), "element:loose")).toMatchObject({ x: 70, y: 80 });
+    for (const p of [60, 120, END]) expect(at(sampleLayoutMorph(plan, p), "element:loose")).toMatchObject({ x: 70, y: 80 });
   });
 
   it("plans nothing for empty views and one travel for a single concept", () => {
     const empty = planLayoutMorph([], [], parents);
     expect(empty.ids).toEqual([]);
-    expect(empty.durationMs).toBe(CAMERA_TWEEN_MIN_MS);
+    expect(empty.durationMs).toBe(springSettleMs(SPRING.canvas));
     expect(planLayoutMorph([mark("project:p", 0, 0)], [mark("project:p", 9, 9)], parents).ids).toEqual(["project:p"]);
   });
 
@@ -131,28 +136,24 @@ describe("planLayoutMorph", () => {
       ["capability:y", "capability:x"],
     ]);
     const plan = planLayoutMorph([mark("capability:x", 5, 5)], [mark("domain:z", 500, 500)], cyclic);
-    expect(at(sampleLayoutMorph(plan, 0.5), "capability:x")).toMatchObject({ x: 5, y: 5 });
+    expect(at(sampleLayoutMorph(plan, 120), "capability:x")).toMatchObject({ x: 5, y: 5 });
   });
 
-  it("clamps the travel to the camera tween's bounds and lengthens it with distance", () => {
-    const near = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 4, 0)], parents).durationMs;
-    const mid = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 600, 0)], parents).durationMs;
-    const far = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 9000, 0)], parents).durationMs;
-    expect(near).toBeGreaterThanOrEqual(CAMERA_TWEEN_MIN_MS);
-    expect(mid).toBeGreaterThan(near);
-    expect(far).toBe(CAMERA_TWEEN_MAX_MS);
+  it("ends the travel when the slowest, most delayed concept has settled", () => {
+    const plan = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 600, 0)], parents);
+    expect(plan.durationMs).toBe(springSettleMs(SPRING.canvas));
   });
 
   it("decelerates into the target", () => {
     const plan = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 1000, 0)], parents);
-    const x = (p: number) => at(sampleLayoutMorph(plan, p), "domain:a")!.x;
-    expect(x(0.05)).toBeGreaterThan(0);
-    expect(x(1) - x(0.95)).toBeLessThan(x(0.55) - x(0.5));
+    const x = (ms: number) => at(sampleLayoutMorph(plan, ms), "domain:a")!.x;
+    expect(x(30)).toBeGreaterThan(0);
+    expect(Math.abs(x(END) - x(END - 30))).toBeLessThan(x(130) - x(100));
   });
 
   it("reverses from where the concepts are, not from where they started", () => {
     const outbound = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 400, 0)], parents);
-    const midway = sampleLayoutMorph(outbound, 0.4);
+    const midway = sampleLayoutMorph(outbound, 120);
     const back = planLayoutMorph(midway, [mark("domain:a", 0, 0)], parents);
     expect(at(sampleLayoutMorph(back, 0), "domain:a")!.x).toBeCloseTo(at(midway, "domain:a")!.x, 6);
   });

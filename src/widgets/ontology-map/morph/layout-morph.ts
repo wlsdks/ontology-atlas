@@ -1,7 +1,8 @@
 import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
 import { easeMotion } from "@/shared/motion/ease";
-import { cameraTransitionDurationMs } from "../model/camera-easing";
+import { MOTION } from "@/shared/motion/tokens";
 import { readTree, type TerritoryInputEdge, type TerritoryInputNode } from "../model/territories-layout";
+import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, type GlideOptions } from "./glide";
 
 export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
 
@@ -75,11 +76,13 @@ export interface LayoutMorphPlan {
   y1: Float64Array;
   s1: Float64Array;
   groups: readonly GhostGroup[];
+  glide: Glide;
   durationMs: number;
 }
 
 const ANCESTOR_WALK_DEPTH = 16;
 const ALPHA_STEPS = 8;
+const EFFECT_MS = MOTION.base.duration * 1000;
 
 function drawnById(marks: readonly MapLayoutMark[]): Map<string, MapLayoutMark> {
   const byId = new Map<string, MapLayoutMark>();
@@ -148,23 +151,15 @@ function tracksBetween(
   return tracks;
 }
 
-function travelDurationMs(tracks: readonly Track[]): number {
-  const shared = tracks.filter((track) => track.shared);
-  const measured = shared.length > 0 ? shared : tracks;
-  let total = 0;
-  for (const track of measured) total += Math.hypot(track.x1 - track.x0, track.y1 - track.y0);
-  const meanPx = measured.length > 0 ? total / measured.length : 0;
-  return cameraTransitionDurationMs({ x: 0, y: 0, scale: 1 }, { x: meanPx, y: 0, scale: 1 });
-}
-
 export function planLayoutMorph(
   source: readonly MapLayoutMark[],
   target: readonly MapLayoutMark[],
   parentOf: ReadonlyMap<string, string>,
+  options: Omit<GlideOptions, "parentOf"> = {},
 ): LayoutMorphPlan {
   const tracks = tracksBetween(drawnById(source), drawnById(target), parentOf);
   const n = tracks.length;
-  const plan: LayoutMorphPlan = {
+  const plan: Omit<LayoutMorphPlan, "glide" | "durationMs"> = {
     ids: tracks.map((track) => track.id),
     x0: new Float64Array(n),
     y0: new Float64Array(n),
@@ -173,7 +168,6 @@ export function planLayoutMorph(
     y1: new Float64Array(n),
     s1: new Float64Array(n),
     groups: [],
-    durationMs: travelDurationMs(tracks),
   };
   const groups = new Map<string, { from: GhostStyle; to: GhostStyle; alphaFrom: number; alphaTo: number; members: number[] }>();
   tracks.forEach((track, i) => {
@@ -190,15 +184,21 @@ export function planLayoutMorph(
     if (group) group.members.push(i);
     else groups.set(key, { from: track.from, to: track.to, alphaFrom, alphaTo, members: [i] });
   });
-  return { ...plan, groups: [...groups.values()] };
+  const glide = planGlide(plan, { ...options, parentOf });
+  return { ...plan, groups: [...groups.values()], glide, durationMs: glide.durationMs };
 }
 
-export function layoutMorphEase(progress: number): number {
-  return easeMotion(Math.min(1, Math.max(0, progress)));
+export function layoutMorphEffect(atMs: number): number {
+  return easeMotion(Math.min(1, Math.max(0, atMs / EFFECT_MS)));
 }
 
-export function sampleLayoutMorph(plan: LayoutMorphPlan, progress: number): MapLayoutMark[] {
-  const e = layoutMorphEase(progress);
+export function sampleLayoutMorphFrame(plan: LayoutMorphPlan, atMs: number, frame?: GlideFrame): GlideFrame {
+  return sampleGlide(plan.glide, plan, atMs, frame ?? createGlideFrame(plan.ids.length));
+}
+
+export function sampleLayoutMorph(plan: LayoutMorphPlan, atMs: number): MapLayoutMark[] {
+  const e = layoutMorphEffect(atMs);
+  const frame = sampleLayoutMorphFrame(plan, atMs);
   const marks: MapLayoutMark[] = [];
   for (const group of plan.groups) {
     const style = e < 0.5 ? group.from : group.to;
@@ -207,9 +207,9 @@ export function sampleLayoutMorph(plan: LayoutMorphPlan, progress: number): MapL
     for (const i of group.members) {
       marks.push({
         id: plan.ids[i]!,
-        x: plan.x0[i]! + (plan.x1[i]! - plan.x0[i]!) * e,
-        y: plan.y0[i]! + (plan.y1[i]! - plan.y0[i]!) * e,
-        size: plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * e,
+        x: frame.x[i]!,
+        y: frame.y[i]!,
+        size: plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * Math.min(1, frame.p[i]!),
         shape: style.shape,
         fill: style.fill,
         stroke: style.stroke,

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { MOTION } from "../../src/shared/motion/tokens";
-import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS } from "../../src/widgets/ontology-map/model/motion-physics";
+import { SPRING, springSettleMs } from "../../src/shared/motion/spring";
+import { MOTION, STAGGER } from "../../src/shared/motion/tokens";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForDomeEntered, waitForMapSettled, waitForTerritoriesStill } from "./settle";
 
@@ -35,8 +35,8 @@ interface MorphRecord {
 
 interface MorphProbe {
   records: () => MorphRecord[];
-  live: () => { mode: string; phase: string; progress: number; at: number } | null;
-  marks: (progress?: number) => Array<{ id: string; x: number; y: number }>;
+  live: () => { mode: string; phase: string; progress: number; elapsedMs: number; durationMs: number; at: number } | null;
+  marks: (atMs?: number) => Array<{ id: string; x: number; y: number }>;
   publishes: () => number;
 }
 
@@ -58,6 +58,11 @@ const INCOMING_STALL_MS = 150;
 const FADE_STEP_CEILING = 0.5;
 const PICK_STALL_MS = 150;
 const ARRIVAL_DRIFT_CEILING_PX = 2;
+const GLIDE_MIN_MS = springSettleMs(SPRING.canvas);
+const GLIDE_MAX_MS = 3 * STAGGER * 1000 + springSettleMs(SPRING.canvas, 2);
+const NINETY_BY_MS = 540;
+const SETTLED_BY_MS = 950;
+const SETTLE_BAND = 0.005;
 
 async function installSampler(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -102,7 +107,7 @@ async function installSampler(page: Page): Promise<void> {
         const start = new Map(probe.marks(0).map((m) => [m.id, [m.x, m.y] as [number, number]]));
         s.finals = new Map();
         s.span = 0;
-        for (const m of probe.marks(1)) {
+        for (const m of probe.marks(probe.live()!.durationMs)) {
           const from = start.get(m.id);
           if (!from) continue;
           s.finals.set(m.id, [m.x, m.y]);
@@ -276,8 +281,8 @@ test.describe("map layout morph", () => {
       expect(run.mode).toBe("ghost");
       expect(run.count).toBeGreaterThan(0);
 
-      expect(run.plannedMs).toBeGreaterThanOrEqual(CAMERA_TWEEN_MIN_MS);
-      expect(run.plannedMs).toBeLessThanOrEqual(CAMERA_TWEEN_MAX_MS);
+      expect(run.plannedMs).toBeGreaterThanOrEqual(GLIDE_MIN_MS);
+      expect(run.plannedMs).toBeLessThanOrEqual(GLIDE_MAX_MS + 1);
       const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null && f.at !== null);
       const travelMs = run.travelEndMs! - run.travelStartMs;
       expect(travelMs, `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(run.plannedMs);
@@ -315,6 +320,39 @@ test.describe("map layout morph", () => {
       expect(replayed, "the incoming view replayed its own arrival after the handoff").toEqual([]);
     });
   }
+
+  test("the glide covers ninety percent of the travel by 540 ms and settles every concept by 950 ms", async ({ page }) => {
+    await openAt(page, "flat");
+    const before = await startRecording(page, false);
+    await pick(page, "hex");
+    await inTravel(page);
+    const glide = await page.evaluate(
+      ({ ninety, settled }) => {
+        const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+        const end = new Map(probe.marks(probe.live()!.durationMs + 2000).map((m) => [m.id, [m.x, m.y] as const]));
+        const start = new Map(probe.marks(0).map((m) => [m.id, [m.x, m.y] as const]));
+        const gaps = (ms: number) =>
+          probe.marks(ms).flatMap((m) => {
+            const [a, b] = [start.get(m.id), end.get(m.id)];
+            return a && b ? [{ left: Math.hypot(m.x - b[0], m.y - b[1]), span: Math.hypot(b[0] - a[0], b[1] - a[1]) }] : [];
+          });
+        const sum = (rows: Array<{ left: number; span: number }>, key: "left" | "span") => rows.reduce((total, row) => total + row[key], 0);
+        const atNinety = gaps(ninety);
+        const atSettled = gaps(settled).filter((row) => row.span > 1);
+        return {
+          covered: 1 - sum(atNinety, "left") / sum(atNinety, "span"),
+          worst: Math.max(0, ...atSettled.map((row) => row.left / row.span)),
+          tracks: atSettled.length,
+        };
+      },
+      { ninety: NINETY_BY_MS, settled: SETTLED_BY_MS },
+    );
+    await morphDone(page, before);
+    await stopRecording(page);
+    expect(glide.tracks).toBeGreaterThan(0);
+    expect(glide.covered).toBeGreaterThanOrEqual(0.9);
+    expect(glide.worst).toBeLessThanOrEqual(SETTLE_BAND);
+  });
 
   test("a pick whose commit stalls still travels the planned time once frames resume", async ({ page }) => {
     await openAt(page, "flat");
@@ -447,8 +485,8 @@ test.describe("map layout morph", () => {
     await inTravel(page);
     const outbound = await page.evaluate(() => {
       const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      const at = (p: number) => Object.fromEntries(probe.marks(p).map((m) => [m.id, [m.x, m.y] as [number, number]]));
-      return { from: at(0), to: at(1) };
+      const at = (ms: number) => Object.fromEntries(probe.marks(ms).map((m) => [m.id, [m.x, m.y] as [number, number]]));
+      return { from: at(0), to: at(probe.live()!.durationMs) };
     });
     await page.keyboard.press("ArrowDown");
     await page.waitForFunction(

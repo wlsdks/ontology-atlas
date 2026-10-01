@@ -168,8 +168,11 @@ routes: [/topology]
   names from 28 px, and below that each region is one nameplate; "⬡ Region names
   only" holds that band. The address carries `?view=hex`.
   A pick that leaves or enters Territories or the Hex board carries each concept
-  from where the old view drew it to where the new one draws it, on the camera's
-  clock (200–420 ms by distance). A concept one view does not draw leaves into, or
+  from where the old view drew it to where the new one draws it on the canvas
+  spring: the selected concept (else the project) moves first, the rest follow
+  their containment parents 35 ms per step, and hubs travel slower; every concept
+  settles by 950 ms, and a second pick turns them around without losing speed.
+  A concept one view does not draw leaves into, or
   rises out of, its nearest drawn ancestor, and the arriving view takes over
   without replaying its own entrance. A press, a wheel, a key, a resize, a display
   change or a hidden tab lands the travel at once. Into Strata or Neural, out of
