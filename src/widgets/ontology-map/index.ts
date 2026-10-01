@@ -1,6 +1,10 @@
 export { OntologyMap } from './ui/OntologyMap';
 export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
 export { OntologyHexBoardMap } from './ui/OntologyHexBoardMap';
+export { MapLayoutMorphOverlay, installMapLayoutMorphProbe } from './morph/MapLayoutMorphOverlay';
+export type { MapLayoutMorphJob } from './morph/MapLayoutMorphOverlay';
+export { chooseLayoutSwitch, containmentParents } from './morph/layout-morph';
+export { predictMapLayoutTarget } from './morph/map-marks';
 export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
 export type { HexPlacementRecord } from './model/hex-board';
 export type {

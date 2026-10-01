@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
+import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import { OntologyMapTierLegend } from "./OntologyMapTierLegend";
@@ -543,7 +545,7 @@ export function OntologyMap(props: OntologyMapProps) {
   }, []);
   const tierNamesActive = view3d && mapArrangement === "strata" && domeTierLabels !== null;
 
-  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
+  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -606,6 +608,15 @@ export function OntologyMap(props: OntologyMapProps) {
       footprint,
       expand,
     });
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    return () => {
+      if (!isMapLayoutMorphArmed()) return;
+      const ground = readOntologyMapTokensOrNull()?.canvasBgNear ?? "transparent";
+      publishMapLayoutSnapshot({ marks: readLayoutMarks(), bitmap: copyCanvasAtCssSize(canvas), ground });
+    };
+  }, [canvasRef, readLayoutMarks]);
 
   /*
    * **What the open panels really cover, for the chrome drawn on the map** (interaction

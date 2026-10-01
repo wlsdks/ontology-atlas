@@ -3,12 +3,14 @@ import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
+import { armMapLayoutMorph } from "@/shared/lib/map-layout-morph-store";
 import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
 import { withBasePath } from "@/shared/lib/base-path";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import type { useToast } from "@/shared/ui";
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, Tooltip } from "@/shared/ui";
+import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from "@/shared/ui/control-class";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { SavedConstellationsControl } from "@/widgets/saved-constellations";
 import { SearchHint } from "@/widgets/search-hint";
@@ -288,6 +290,7 @@ export function TopologyCommandChrome({
                 intent={routeState.constellationIntent}
                 activeId={routedConstellation?.id ?? null}
                 onFocus={(id, memberSlugs) => {
+                  armMapLayoutMorph();
                   writeView3d(false);
                   writeGalaxy(true);
                   setActiveConstellation({ id, memberSlugs });
@@ -619,7 +622,7 @@ export function TopologyCommandChrome({
                       aria-label={tAtlasGit('tileLabel')}
                       title={tAtlasGit('tileLabel')}
                       data-testid="topology-git-lg-tile"
-                      className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+                      className={`relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`}
                     >
                       <HistoryIcon className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
                       {ontologyChangeset.touchedNodeIds.size > 0 ? (
