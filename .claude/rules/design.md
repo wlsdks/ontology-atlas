@@ -116,6 +116,10 @@ One accurate word per thing. Canonical spellings live in
   star/meteor atmosphere. Restore the previous operation in the same function;
   a node carries at most one diffraction cross per frame. Gate:
   `tests/contract/canvas-composite-license.contract.test.ts`.
+- The WebGL2 light layer (`light/`) is light by construction: it draws no mark
+  with identity, composites `plus-lighter` (licensed only there), and runs only
+  for an event in Flat and Galaxy. Gates: the composite licence and
+  `webgl-context-census`.
 
 ## Absolute rules point to one source
 
@@ -195,6 +199,9 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
   completed change. Camera and drag values of 420/720ms are canvas-only.
   Duration and easing move as one family.
 - Overshoot, bounce and spring settle need a named token and a stated meaning.
+- Spatial travel uses the house springs (`SPRING` in `src/shared/motion/spring.ts`);
+  opacity, colour and light stay on the `--motion-*` ramp. DOM gets
+  `springEasing()` at runtime; never type a `linear()` by hand.
 - Exits accelerate on `--motion-ease-exit` (JS `EXIT_TRANSITION`) under their own
   animation name; entries keep `--motion-ease`. Only `-out` /
   `[data-state="closed"]` rules on a `*Out` keyframe may use the exit token,

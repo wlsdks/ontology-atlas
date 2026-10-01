@@ -16,8 +16,9 @@ meaning to source evidence. Structural health is not accepted meaning.
   also run from source. There is no npm package.
 - `src/` follows app → views → widgets → features → entities → shared; root
   `app/` is thin Next routing.
-- The renderer is custom canvas-2D `ontology-map`; Graphology supplies
-  ForceAtlas2 only. Another renderer needs a decision.
+- The renderer is custom canvas-2D `ontology-map`; one WebGL2 light layer
+  draws light only; Graphology supplies ForceAtlas2 only. Another renderer
+  needs a decision.
 - State is React/URL/in-memory; IndexedDB stores only the vault handle.
   App and web share parser/data contracts, not identical screens.
 

@@ -70,6 +70,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
           ramp: number;
           poseTween: boolean;
           orbiting: boolean;
+          settling: boolean;
         } | null;
       };
       const probe = (window as unknown as { __atlasMap?: Probe }).__atlasMap;
@@ -77,6 +78,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
       /** Tenths of a pixel: below the width of the thinnest thing the map draws. */
       const tenth = (value: number) => Math.round(value * 10);
       let signature = "";
+      let settling = false;
       if (argument.what === "camera" || argument.what === "layout") {
         const camera = probe.camera?.() ?? null;
         if (!camera || camera.width <= 0) return false;
@@ -99,11 +101,12 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         signature = `${Math.round(dome.yaw * 1e3)},${Math.round(dome.pitch * 1e3)},${Math.round(
           dome.ramp * 1e3,
         )},${dome.poseTween},${dome.orbiting}`;
+        settling = dome.settling;
       }
       const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
         .__atlasStill ??= {});
       const seen = store[argument.key];
-      if (!seen || seen.signature !== signature) {
+      if (settling || !seen || seen.signature !== signature) {
         store[argument.key] = { signature, count: 1 };
         return false;
       }
@@ -293,7 +296,7 @@ export async function waitForFlatMap(page: Page, timeout = HANG_TIMEOUT_MS): Pro
 }
 
 /**
- * Resolve once the 3D dome has both assembled **and** finished its entry sweep.
+ * Resolve once the 3D dome has assembled, swept in **and** settled its layout.
  *
  * The two have separate clocks — the sweep outlives the assembly by 380 ms
  * (`model/dome-view.ts`) — so "arrived in 3D" is both flags, and while the sweep
@@ -307,9 +310,9 @@ export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS):
   await page.waitForFunction(
     () => {
       const dome = (
-        window as unknown as { __atlasMap?: { dome?: () => { ramp: number; entryArmed: boolean } | null } }
+        window as unknown as { __atlasMap?: { dome?: () => { ramp: number; entryArmed: boolean; settling: boolean } | null } }
       ).__atlasMap?.dome?.();
-      return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed;
+      return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed && !dome.settling;
     },
     undefined,
     { polling: "raf", timeout },

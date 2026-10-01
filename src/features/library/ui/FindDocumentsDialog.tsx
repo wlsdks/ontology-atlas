@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FilePlus2, SearchX, X } from "lucide-react";
+import { FilePlus2, SearchX } from "lucide-react";
 
 import { candidateKey, formatSourceBytes, type SourceCandidate } from "@/entities/docs-vault";
-import { Button, Checkbox, Chip, Dialog, EmptyState, IconButton, controlClass } from "@/shared/ui";
+import { Button, Checkbox, Chip, CloseButton, Dialog, EmptyState, controlClass } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 
@@ -88,16 +88,12 @@ export function FindDocumentsDialog({
         >
           {t("title")}
         </h2>
-        <IconButton
+        <CloseButton
           label={t("close")}
-          size="sm"
-          tone="muted"
           data-testid="find-documents-close"
-          className="-mr-1 -mt-1 shrink-0"
+          className="-mr-2 -mt-1 shrink-0"
           onClick={onClose}
-        >
-          <X size={ICON_SIZE.lg} aria-hidden />
-        </IconButton>
+        />
       </div>
       <p className="mt-2 text-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
         {t("preamble")}

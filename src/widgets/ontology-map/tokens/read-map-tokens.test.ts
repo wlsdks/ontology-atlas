@@ -106,6 +106,15 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-node-bloom-alpha": "0.35",
   "--map-press-angfreq": "16",
   "--map-press-zeta": "0.35",
+  "--map-light-speed": "1100",
+  "--map-light-hop-min-ms": "180",
+  "--map-light-hop-max-ms": "420",
+  "--map-light-path-max-ms": "1200",
+  "--map-light-tail": "0.35",
+  "--map-light-core-px": "1.6",
+  "--map-light-halo-px": "6",
+  "--map-light-intensity": "0.9",
+  "--map-light-bloom-tau": "0.28",
 
   "--map-camera-spring-angfreq-interactive": "12",
   "--map-camera-spring-angfreq-transition": "4.7",
@@ -237,6 +246,7 @@ describe("resolveOntologyMapTokens", () => {
     const tokens = resolveOntologyMapTokens(fixtureReader());
     expect(typeof tokens.vignetteBaseAlpha).toBe("number");
     expect(typeof tokens.dustAreaPerPoint).toBe("number");
+    expect(typeof tokens.lightHopMaxMs).toBe("number");
     expect(typeof tokens.nodeFillProject).toBe("string");
   });
 

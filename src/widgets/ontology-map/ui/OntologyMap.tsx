@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
+import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import { OntologyMapTierLegend } from "./OntologyMapTierLegend";
@@ -124,6 +126,7 @@ export interface OntologyMapProps {
    * switch. Omitted, it fits once at first as before.
    */
   dataSourceKey?: string | null;
+  assembleOnOpen?: boolean;
   /** Increment to re-run fit-to-bounds (HomePage's "fit the map" — fit the map). */
   fitViewToken: number;
   /**
@@ -381,6 +384,7 @@ export interface OntologyMapProps {
    * much light each node emits; an absent id, or null, is unknown and emits none.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  onHiddenDependenciesChange?: (count: number) => void;
   /**
    * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
    * shown only while 3D is on. The widget places it; it owns no copy.
@@ -427,7 +431,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -542,7 +546,7 @@ export function OntologyMap(props: OntologyMapProps) {
   }, []);
   const tierNamesActive = view3d && mapArrangement === "strata" && domeTierLabels !== null;
 
-  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
+  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -554,6 +558,7 @@ export function OntologyMap(props: OntologyMapProps) {
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
       dataSourceKey,
+      assembleOnOpen,
       fitViewToken,
       growthReplayToken,
       onGrowthReplayingChange,
@@ -600,10 +605,20 @@ export function OntologyMap(props: OntologyMapProps) {
       galaxy,
       mapArrangement,
       domeEvidence: props.domeEvidence ?? null,
+      onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       detailPanelVisible,
       footprint,
       expand,
     });
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    return () => {
+      if (!isMapLayoutMorphArmed()) return;
+      const ground = readOntologyMapTokensOrNull()?.canvasBgNear ?? "transparent";
+      publishMapLayoutSnapshot({ marks: readLayoutMarks(), bitmap: copyCanvasAtCssSize(canvas), ground });
+    };
+  }, [canvasRef, readLayoutMarks]);
 
   /*
    * **What the open panels really cover, for the chrome drawn on the map** (interaction

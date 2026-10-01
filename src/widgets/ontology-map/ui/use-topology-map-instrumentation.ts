@@ -17,8 +17,10 @@ import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import type { OntologyMapProps } from "./OntologyMap";
+import type { StrataLodState } from "../model/strata-lod";
 import {
   lastDrawnLabelBoxes,
+  lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
   lastLitStateCounts,
@@ -29,6 +31,7 @@ import type {
   TopologyPointerHandlers,
 } from "./topology-pointer-handlers";
 import { lastTierPlanes } from "./topology-presentation-frame-stage";
+import { requestOntologyMapFrame } from "./use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import {
   radiusForKind,
@@ -47,6 +50,8 @@ export interface TopologyMapInstrumentationSources {
     clusterChipsRef: SourceRef<readonly ClusterChip[]>;
     previewEdgeHeldRef: SourceRef<OntologyMapProps["previewEdge"]>;
     domeRuntimeRef: SourceRef<DomeRuntime | null>;
+    domeModelBuildRef: SourceRef<unknown>;
+    domeLodRef: SourceRef<StrataLodState>;
     galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
@@ -99,6 +104,8 @@ export function useTopologyMapInstrumentation({
     clusterChipsRef,
     previewEdgeHeldRef,
     domeRuntimeRef,
+    domeModelBuildRef,
+    domeLodRef,
     galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
@@ -469,6 +476,7 @@ export function useTopologyMapInstrumentation({
            * state; the idle gate already reads this flag for the same reason.
            */
           entryArmed: d.entryArmed,
+          settling: domeModelBuildRef.current !== null,
           /*
            * Lit 3D (2026-09-25) — the fly-to in effect (the node it framed) and how many
            * drawn nodes wore each evidence light in the last frame. What the frame
@@ -477,6 +485,25 @@ export function useTopologyMapInstrumentation({
           flight: d.flight?.slug ?? null,
           flyPending: d.flyRequest !== null,
           light: lastLitStateCounts(),
+          lod: {
+            active: domeLodRef.current.active,
+            capability: domeLodRef.current.planeResolve.capability,
+            element: domeLodRef.current.planeResolve.element,
+            spacingPx: { ...domeLodRef.current.spacingPx },
+            gap: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeGap },
+            count: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeCount },
+            hoverSlot: domeLodRef.current.hoverSlot,
+            hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
+            focusSlot: domeLodRef.current.focusSlot,
+            sheets: domeLodRef.current.shapeCount,
+            dust: lastDrawnLod().dust,
+            dustStates: lastDrawnLod().dustStates,
+            evidenceRamp: domeLodRef.current.evidenceRamp,
+            chords: lastDrawnLod().chords,
+            chordEdges: lastDrawnLod().represented,
+            hiddenEdges: lastDrawnLod().hidden,
+            settling: domeLodRef.current.settling,
+          },
         };
       },
       /**
@@ -496,6 +523,12 @@ export function useTopologyMapInstrumentation({
         nodeId: focusedSlugRef.current,
         edge: selectedEdgeRef.current,
       }),
+      select: (id: string | null) => {
+        focusedSlugRef.current = id;
+        hoveredNodeIdRef.current = null;
+        lastInputMsRef.current = performance.now();
+        lastActiveMsRef.current = lastInputMsRef.current;
+      },
       /**
        * Density-gate chips — where "+24 really reveals 24" is verified. A chip
        * once claimed 24 while exactly 1 was drawn, because the tier gate did
@@ -512,6 +545,10 @@ export function useTopologyMapInstrumentation({
        * crossed (2026-08-22). Names collide long before discs do.
        */
       setComets: (on: boolean) => setMapComets(on),
+      wake: () => {
+        lastActiveMsRef.current = performance.now();
+        requestOntologyMapFrame();
+      },
       labels: () => lastDrawnLabelBoxes(),
       relationCaptions: () => lastDrawnRelationCaptions(),
       /** Strata's planes as the last frame drew them — what the tier names are placed against. */
@@ -557,6 +594,8 @@ export function useTopologyMapInstrumentation({
     canvasRef,
     clusterChipsRef,
     clusteredIdsRef,
+    domeLodRef,
+    domeModelBuildRef,
     domeRuntimeRef,
     drawnFarTRef,
     drawnHoveredNodeIdRef,

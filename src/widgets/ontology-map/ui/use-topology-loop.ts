@@ -48,9 +48,12 @@ import {
 import {
   type DomeViewKind
 } from "../model/dome-view";
+import { createStrataLodState, type StrataLodState } from "../model/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
 import { type TopologyPointerHandlers } from "./topology-pointer-handlers";
 
+import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
+import { readOntologyMapMarks } from "../morph/map-marks";
 import { useTopologyMapInstrumentation } from "./use-topology-map-instrumentation";
 import {
   useTopologyViewportLifecycle
@@ -68,11 +71,12 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
   raiseDomeTier: (kind: DomeViewKind | null) => void;
   /** The tier names' rendered widths by kind, as they measured themselves; `{}` places none. */
   setDomeTierNameWidths: (widths: Readonly<Record<string, number>>) => void;
+  readLayoutMarks: () => MapLayoutMark[];
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
   const {
-    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine",
+    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
@@ -288,10 +292,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * state change, so it wakes the idle gate for one more frame the way a selection does.
    */
   const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(args.domeEvidence ?? null);
+  const domeLodRef = useRef<StrataLodState>(createStrataLodState());
   useEffect(() => {
     domeEvidenceRef.current = args.domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
   }, [args.domeEvidence, lastActiveMsRef]);
+  const onHiddenDependenciesChangeRef = useRef(args.onHiddenDependenciesChange);
+  const hiddenDependenciesSentRef = useRef(-1);
+  useEffect(() => {
+    onHiddenDependenciesChangeRef.current = args.onHiddenDependenciesChange;
+  }, [args.onHiddenDependenciesChange]);
   useTopologyClusterExpansion({
     prevExpandedParentsRef,
     expandedParents,
@@ -401,6 +411,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onVisibleCountChange,
     onGraphStatsChange,
     dataSourceKey,
+    assembleOnOpen,
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
@@ -820,6 +831,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       spotlightIdsRef,
       idleDebugEnabledRef,
       lastActiveCausesRef,
+      domeLodRef,
     },
     presentationFrameStage: {
       galaxyRef,
@@ -898,6 +910,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeTierNameWidthsRef,
       domeFitInsetsRef,
       domeEvidenceRef,
+      domeLodRef,
+      onHiddenDependenciesChangeRef,
+      hiddenDependenciesSentRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
@@ -974,6 +989,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       clusterChipsRef,
       previewEdgeHeldRef,
       domeRuntimeRef,
+      domeModelBuildRef,
+      domeLodRef,
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
@@ -1028,5 +1045,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastActiveMsRef.current = performance.now();
   }, [domeTierNameWidthsRef, lastActiveMsRef]);
 
-  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, ...handlers, ...wrappedHandlers };
+  const readLayoutMarks = useCallback(
+    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef, domeRuntimeRef, galaxyRampRef }),
+    [cameraRef, domeRuntimeRef, galaxyRampRef, viewportRef, worldRef],
+  );
+
+  return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, ...handlers, ...wrappedHandlers };
 }

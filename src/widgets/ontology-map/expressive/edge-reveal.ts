@@ -34,6 +34,10 @@ export function partialQuadratic(
   return { a: lerp(lerp(a, c, s), cb, s), control: cb, b };
 }
 
+export function revealEnd(directional: boolean, sourceId: string, attendedId: string | null): RevealEnd {
+  return directional || sourceId === attendedId ? "a" : "b";
+}
+
 export function edgeRevealProgress(egoReveal: number, reducedMotion: boolean): number {
   if (reducedMotion || !(egoReveal < REVEAL_DONE)) return 1;
   const r = egoReveal > 0 ? egoReveal : 0;

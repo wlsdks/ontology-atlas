@@ -408,7 +408,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     allScoped((cls, label) => {
       for (const c of cls.split(' ')) {
         if (!c.includes('--map-panel-text-')) continue;
-        if (!/^text-\[color:/.test(c)) offenders.push(`${label}: ${c}`);
+        if (!/^(?:[a-z-]+:)*text-\[color:/.test(c)) offenders.push(`${label}: ${c}`);
       }
     });
     expect(offenders, `패널 램프가 잉크 밖으로 샜다:\n${offenders.join('\n')}`).toEqual([]);

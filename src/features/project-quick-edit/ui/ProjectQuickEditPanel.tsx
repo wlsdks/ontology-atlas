@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import type { FailureCopy } from "@/shared/lib/use-failure-sentence";
-import { PencilLine, X } from "lucide-react";
+import { PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { type Project } from "@/entities/project";
 import { isStarterProjectDescription } from "@/entities/docs-vault";
@@ -16,7 +16,7 @@ import {
 } from "@/features/project-data-source";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
-import { Button, Surface, controlClass } from "@/shared/ui";
+import { Button, CloseButton, Surface, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
@@ -291,16 +291,7 @@ export function ProjectQuickEditPanel({
                 {t("headerSubtitle")}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label={t("closeLabel")}
-              className="h-9 w-9 px-0"
-              onClick={() => setOpen(false)}
-            >
-              <X size={ICON_SIZE.lg} aria-hidden="true" />
-            </Button>
+            <CloseButton label={t("closeLabel")} onClick={() => setOpen(false)} />
           </div>
 
           <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">

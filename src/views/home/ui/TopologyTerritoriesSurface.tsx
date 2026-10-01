@@ -6,6 +6,19 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { OntologyTerritoriesMap, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 
+export function useTerritoryDomainStats() {
+  const t = useTranslations("topology.territories");
+  return useCallback(
+    ({ capabilityCount, elementCount, staleCount }: { capabilityCount: number; elementCount: number; staleCount: number | null }) => {
+      const base = t("domainStats", { capabilities: capabilityCount, elements: elementCount });
+      if (staleCount == null || staleCount === 0) return { text: base, staleSuffix: "" };
+      const staleSuffix = ` · ${t("domainStale", { stale: staleCount })}`;
+      return { text: base + staleSuffix, staleSuffix };
+    },
+    [t],
+  );
+}
+
 /**
  * Composes the canvas words and names what the evidence ring stands on (Git, still reading, or
  * unreadable); unknown is never shown as current.
@@ -21,6 +34,7 @@ export function TopologyTerritoriesSurface({
   reducedMotion,
   inspectorOpen,
   indexExpanded,
+  arrivedByMorph,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -32,19 +46,12 @@ export function TopologyTerritoriesSurface({
   reducedMotion: boolean;
   inspectorOpen: boolean;
   indexExpanded: boolean;
+  arrivedByMorph: boolean;
 }) {
   const t = useTranslations("topology.territories");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
   const measured = evidence.availability === "measured";
-  const domainStats = useCallback(
-    ({ capabilityCount, elementCount, staleCount }: { capabilityCount: number; elementCount: number; staleCount: number | null }) => {
-      const base = t("domainStats", { capabilities: capabilityCount, elements: elementCount });
-      if (staleCount == null || staleCount === 0) return { text: base, staleSuffix: "" };
-      const staleSuffix = ` · ${t("domainStale", { stale: staleCount })}`;
-      return { text: base + staleSuffix, staleSuffix };
-    },
-    [t],
-  );
+  const domainStats = useTerritoryDomainStats();
   const capabilityIds = useMemo(() => nodes.filter((n) => n.kind === "capability").map((n) => n.id), [nodes]);
   const staleTotal = measured ? capabilityIds.filter((id) => evidence.states.get(id) === "stale").length : 0;
   const note: Record<MapEvidenceAvailability, string> = {
@@ -108,6 +115,7 @@ export function TopologyTerritoriesSurface({
       reducedMotion={reducedMotion}
       inspectorOpen={inspectorOpen}
       chromeKey={`${indexExpanded ? "index" : "rail"}:${inspectorOpen ? "inspector" : "free"}`}
+      arrivedByMorph={arrivedByMorph}
     />
   );
 }

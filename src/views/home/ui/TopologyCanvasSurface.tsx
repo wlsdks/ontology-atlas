@@ -1,18 +1,15 @@
 import type { useRouter } from "@/i18n/navigation";
 import type { useAcpRuntimeController } from "../model/use-acp-runtime-controller";
 import type { useTopologyAgentOrchestration } from "../model/use-topology-agent-orchestration";
-import type { useTopologyAnalysisReview } from "../model/use-topology-analysis-review";
 import type { useTopologyAuthoring } from "../model/use-topology-authoring";
 import type { useTopologyCanvasFocus } from "../model/use-topology-canvas-focus";
 import type { useTopologyCreateIntent } from "../model/use-topology-create-intent";
-import type { useTopologyExplorationLenses } from "../model/use-topology-exploration-lenses";
 import type { useTopologyGraphProjection } from "../model/use-topology-graph-projection";
 import type { useTopologyIndexPresentation } from "../model/use-topology-index-presentation";
 import type { useTopologyInspectorState } from "../model/use-topology-inspector-state";
 import type { useTopologyKeyboardTour } from "../model/use-topology-keyboard-tour";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyPreferences } from "../model/use-topology-preferences";
-import type { useTopologyRouteControls } from "../model/use-topology-route-controls";
 import type { useTopologySceneControls } from "../model/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
@@ -21,21 +18,13 @@ import { FirstRunReadout, SampleNodeHint } from "@/features/first-run-starter";
 import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
-import { cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
-import { useSurfaceSwap } from "@/shared/lib/use-presence";
-import { ChromeTile, Surface, Tooltip, WidgetErrorFallback, controlClass } from "@/shared/ui";
-import { ErrorBoundary } from "@/shared/ui/error-boundary";
+import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/frame-meter";
-import { OntologyMap, PLAIN_TIER_REVEAL } from "@/widgets/ontology-map";
 import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
+import { TopologyMapRenderer, type TopologyMapRendererProps } from "./TopologyMapRenderer";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
-import { TopologyLightLegend } from "./TopologyLightLegend";
-import { useMapEvidenceStates } from "../model/use-map-evidence-states";
-import { TopologyTerritoriesSurface } from "./TopologyTerritoriesSurface";
-import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 const VaultStartSteps = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
   { ssr: false },
@@ -53,24 +42,9 @@ const HubRail = dynamic(
   { ssr: false },
 );
 
-type MapSurfaceView = "map" | "territories" | "hex";
-
-interface TopologyCanvasSurfaceProps {
-  localGraphRoot: string | null;
+type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   acpRuntimeLabel: string | null;
   router: ReturnType<typeof useRouter>;
-  mapEntryTicket: number | null;
-  expandAllActive: boolean;
-  combinedFitToken: number;
-  growthReplayToken: number;
-  setGrowthReplaying: React.Dispatch<React.SetStateAction<boolean>>;
-  topologyRelayoutToken: number;
-  setTopologyVisibleCount: React.Dispatch<React.SetStateAction<number | null>>;
-  setMapZoomTier: React.Dispatch<React.SetStateAction<"circuit" | "element" | "spine">>;
-  footprintVisitedIds: string[];
-  footprintLensActiveRef: React.RefObject<boolean>;
-  footprintBrushNodeIdRef: React.RefObject<string | null>;
-  ontologySearchOpen: boolean;
   setFitViewToken: React.Dispatch<React.SetStateAction<number>>;
   setShortcutsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   analysisMode: import("@/views/home/model/url-state").TopologyAnalysisMode;
@@ -89,71 +63,21 @@ interface TopologyCanvasSurfaceProps {
   requestVaultOpen: () => void;
   topologyInspectorState: Pick<
     ReturnType<typeof useTopologyInspectorState>,
-    | "nodePanelMounted"
-    | "selectedEdgeOwnsRightRail"
-    | "selectedNodeFocusActive"
-    | "topologyUtilityChromeCompact"
+    "selectedEdgeOwnsRightRail" | "selectedNodeFocusActive" | "topologyUtilityChromeCompact"
   >;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "tourAnchorNodeId" | "tourAnchorRef" | "openGuidedTour" | "tour">;
-  topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "expandedParentSet" | "handleToggleCluster" | "handleEnterRealm">;
+  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "openGuidedTour" | "tour">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
-  topologyAnalysisReview: Pick<ReturnType<typeof useTopologyAnalysisReview>, "mapRelationCaptions" | "mapReviewQuestionIds">;
-  topologyGraphProjection: Pick<
-    ReturnType<typeof useTopologyGraphProjection>,
-    | "ontologyMapGraph"
-    | "canvasSelectedSlug"
-    | "resolvedRealmSlug"
-    | "localGraphProjects"
-    | "resolvedSelectionSlug"
-  >;
-  topologyPreferences: Pick<
-    ReturnType<typeof useTopologyPreferences>,
-    | "t"
-    | "tTopologyKeyboardWalk"
-    | "galaxy"
-    | "territories"
-    | "hexBoard"
-    | "reducedMotion"
-    | "audiencePlain"
-    | "glyphSet"
-    | "canvasBackground"
-    | "view3d"
-    | "mapArrangement"
-    | "footprint"
-    | "expand"
-  >;
+  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
-    | "vault"
-    | "deeplinkSourceReady"
-    | "vaultIdentity"
-    | "spotlightFitToken"
-    | "selectedOntologyNode"
-    | "changedSlugs"
-    | "recentNeedsVaultOpen"
-    | "setRecentNeedsVaultOpen"
-    | "needsVaultReason"
-    | "setNeedsVaultReason"
-    | "ontologyInsight"
+    "vault" | "changedSlugs" | "recentNeedsVaultOpen" | "setRecentNeedsVaultOpen" | "needsVaultReason" | "setNeedsVaultReason"
   >;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntime">;
   topologyAuthoring: Pick<
     ReturnType<typeof useTopologyAuthoring>,
-    | "createNodeOpen"
-    | "agentConnect"
-    | "bootstrapPlan"
-    | "setBootstrapOpen"
-    | "canCreateNode"
-    | "mapRevealToken"
-    | "setHoverEdge"
-    | "setSelectedEdge"
-    | "handleHoverEdge"
-    | "selectedEdge"
-    | "mapRelationPreview"
-    | "setMeaningEditorState"
-    | "agentFocusNodeId"
-    | "handleHoverCluster"
+    "createNodeOpen" | "agentConnect" | "bootstrapPlan" | "setBootstrapOpen" | "canCreateNode"
   >;
   topologySceneControls: Pick<
     ReturnType<typeof useTopologySceneControls>,
@@ -164,31 +88,12 @@ interface TopologyCanvasSurfaceProps {
     | "clearTopologyFilters"
     | "topologyRenderState"
     | "mapMountTaskReady"
-    | "handleExpandRequest"
-    | "handleMapFrameDrawn"
-    | "handleTopologyGraphStatsChange"
-    | "mapLensIds"
-    | "mapLensKind"
-    | "pathLensEdgeIds"
-    | "pathExpandedParents"
-    | "allExpandedParentIds"
-    | "realmCaption"
-    | "clusterBarLabels"
-    | "domeTierLabels"
     | "drawerOpen"
     | "drawnConceptCount"
     | "totalConceptCount"
     | "indexDomainCount"
   >;
-  topologyCanvasFocus: Pick<
-    ReturnType<typeof useTopologyCanvasFocus>,
-    | "handleCanvasPointerDownCapture"
-    | "setFullDetailSlug"
-    | "handleContextMenuNode"
-    | "panelHoverNodeIdRef"
-    | "nodePopoverDismissed"
-  >;
-  topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "constellationFitToken" | "routedConstellation" | "spotlightExpandedParents">;
+  topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "handleCanvasPointerDownCapture" | "nodePopoverDismissed">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "startStepsVisible" | "renderedIndexState" | "dismissStartSteps" | "readoutStackRef">;
   topologyCreateIntent: Pick<
     ReturnType<typeof useTopologyCreateIntent>,
@@ -198,61 +103,40 @@ interface TopologyCanvasSurfaceProps {
     | "topologyBlockingOverlayActive"
     | "topologyShortcutHelpPhoneVisible"
   >;
-}
+};
 
-export function TopologyCanvasSurface({
-  localGraphRoot, acpRuntimeLabel, router, mapEntryTicket, expandAllActive, combinedFitToken,
-  growthReplayToken, setGrowthReplaying, topologyRelayoutToken, setTopologyVisibleCount, setMapZoomTier,
-  footprintVisitedIds, footprintLensActiveRef, footprintBrushNodeIdRef, ontologySearchOpen, setFitViewToken,
-  setShortcutsOpen, analysisMode, growthReplaying, setGrowthReplayToken, renderProjects, leftPanelCollapsed,
-  localGraphStack, setLocalGraphStack, heldLocalGraphStack, topologyVisibleCount, readoutStepsAside,
-  mapZoomTier, unsupportedGuideOpen, setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus,
-  topologySceneControls, topologyAuthoring, acpRuntimeController, topologyVaultReadModel,
-  topologyAgentOrchestration, topologyPreferences, topologyGraphProjection, topologyAnalysisReview,
-  topologyNavigationActions, topologyRouteControls, topologyKeyboardTour, topologyInspectorState,
-  topologyCreateIntent, topologyIndexPresentation, topologyExplorationLenses
-}: TopologyCanvasSurfaceProps) {
+export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
+  const {
+    localGraphRoot, acpRuntimeLabel, router, setFitViewToken, setShortcutsOpen, analysisMode, growthReplaying,
+    setGrowthReplayToken, renderProjects, leftPanelCollapsed, localGraphStack, setLocalGraphStack,
+    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, mapZoomTier, unsupportedGuideOpen,
+    setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
+    acpRuntimeController, topologyVaultReadModel, topologyAgentOrchestration, topologyPreferences,
+    topologyGraphProjection, topologyNavigationActions, topologyKeyboardTour, topologyInspectorState,
+    topologyCreateIntent, topologyIndexPresentation,
+  } = props;
   const {
     topologyCreateNodeBlockingActive, openCreateNodeWithKind, openCreateNode, topologyBlockingOverlayActive,
     topologyShortcutHelpPhoneVisible
   } = topologyCreateIntent;
   const { startStepsVisible, renderedIndexState, dismissStartSteps, readoutStackRef } = topologyIndexPresentation;
-  const { constellationFitToken, routedConstellation, spotlightExpandedParents } = topologyExplorationLenses;
-
-  const { handleCanvasPointerDownCapture, setFullDetailSlug, handleContextMenuNode, panelHoverNodeIdRef, nodePopoverDismissed } = topologyCanvasFocus;
+  const { handleCanvasPointerDownCapture, nodePopoverDismissed } = topologyCanvasFocus;
   const {
     topologyOverlayState, handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount,
-    clearTopologyFilters, topologyRenderState, mapMountTaskReady, handleExpandRequest, handleMapFrameDrawn,
-    handleTopologyGraphStatsChange, mapLensIds, mapLensKind, pathLensEdgeIds, pathExpandedParents,
-    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, drawerOpen, drawnConceptCount,
+    clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, drawnConceptCount,
     totalConceptCount, indexDomainCount
   } = topologySceneControls;
-  const {
-    createNodeOpen, agentConnect, bootstrapPlan, setBootstrapOpen, canCreateNode, mapRevealToken,
-    setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge, mapRelationPreview, setMeaningEditorState,
-    agentFocusNodeId, handleHoverCluster
-  } = topologyAuthoring;
+  const { createNodeOpen, agentConnect, bootstrapPlan, setBootstrapOpen, canCreateNode } = topologyAuthoring;
   const { acpRuntime } = acpRuntimeController;
   const {
-    vault, deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, changedSlugs,
-    recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason, ontologyInsight
+    vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
-  const view3dOn = topologyPreferences.view3d;
-  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3dOn });
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
-  const [hexFailed, setHexFailed] = useState(false);
-  const mapView: MapSurfaceView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : "map";
-  const { leaving: leavingMapView } = useSurfaceSwap(mapView);
-  const [mapViewSwapped, setMapViewSwapped] = useState(false);
-  if (leavingMapView !== null && !mapViewSwapped) setMapViewSwapped(true);
-  const mapViewFrames: MapSurfaceView[] = leavingMapView === null ? [mapView] : [leavingMapView, mapView];
-  const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
-  const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
+  const { t, audiencePlain, view3d } = topologyPreferences;
+  const { canvasSelectedSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
-  const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
-  const { tourAnchorNodeId, tourAnchorRef, openGuidedTour, tour } = topologyKeyboardTour;
-  const { nodePanelMounted, selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
+  const { openGuidedTour, tour } = topologyKeyboardTour;
+  const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
 
   return (<>
     <div
@@ -353,188 +237,7 @@ export function TopologyCanvasSurface({
               variant="sparse"
             />
           ) : null}
-          {topologyRenderState.renderCanvas && mapMountTaskReady ? (
-            <ErrorBoundary
-              onError={() => cancelMapNavigation(mapEntryTicket)}
-              fallback={({ error, reset }) => (
-                <WidgetErrorFallback
-                  error={error}
-                  onReset={reset}
-                  title={t('widgetError.mapTitle')}
-                  body={t('widgetError.body')}
-                  retryLabel={t('widgetError.retry')}
-                  className="h-full w-full"
-                />
-              )}
-            >
-              {mapViewFrames.map((view) => {
-                const frameLeaving = view === leavingMapView;
-                return (
-                  <div
-                    key={view}
-                    data-testid="topology-map-view"
-                    data-map-view={view}
-                    data-map-view-leaving={frameLeaving || undefined}
-                    inert={frameLeaving || undefined}
-                    aria-hidden={frameLeaving || undefined}
-                    className={cn(
-                      "absolute inset-0",
-                      frameLeaving ? "map-overlay-out" : mapViewSwapped ? "map-overlay-in" : undefined,
-                    )}
-                  >
-                    {view === "territories" ? (
-                      <TopologyTerritoriesSurface
-                        nodes={ontologyMapGraph.nodes}
-                        edges={ontologyMapGraph.edges}
-                        insightNodes={ontologyInsight?.nodes}
-                        selectedId={canvasSelectedSlug}
-                        onSelect={(slug) => {
-                          setMeaningEditorState(null);
-                          setSelectedEdge(null);
-                          handleSelect(slug);
-                        }}
-                        onPaneClick={() => {
-                          setMeaningEditorState(null);
-                          setSelectedEdge(null);
-                          handleClose();
-                        }}
-                        onDrawnCountChange={handleMapFrameDrawn}
-                        reducedMotion={reducedMotion}
-                        inspectorOpen={nodePanelMounted}
-                        indexExpanded={renderedIndexState === "expanded"}
-                      />
-                    ) : view === "hex" ? (
-                      <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
-                      <TopologyHexBoardSurface
-                        nodes={ontologyMapGraph.nodes}
-                        edges={ontologyMapGraph.edges}
-                        insightNodes={ontologyInsight?.nodes}
-                        vaultKey={vaultIdentity}
-                        selectedId={canvasSelectedSlug}
-                        onSelect={(slug) => {
-                          setMeaningEditorState(null);
-                          setSelectedEdge(null);
-                          handleSelect(slug);
-                        }}
-                        onPaneClick={() => {
-                          setMeaningEditorState(null);
-                          setSelectedEdge(null);
-                          handleClose();
-                        }}
-                        onDrawnCountChange={handleMapFrameDrawn}
-                        reducedMotion={reducedMotion}
-                      />
-                      </ErrorBoundary>
-                    ) : (
-                    <OntologyMap
-                      nodes={ontologyMapGraph.nodes}
-                      edges={ontologyMapGraph.edges}
-                      relationCaptions={mapRelationCaptions}
-                      reviewQuestionIds={mapReviewQuestionIds}
-                      walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
-                      focus={{ selectedSlug: canvasSelectedSlug }}
-                      // The same vault identity signal as the deep-link cleanup, so a vault switch
-                      // resets the camera.
-                      // Gated on `deeplinkSourceReady`, or a live refresh's transient `sample:` identity
-                      // jumps the camera on save.
-                      dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-                      overviewFit={expandAllActive ? "full" : "spine"}
-                      fitViewToken={combinedFitToken}
-                      growthReplayToken={growthReplayToken}
-                      onGrowthReplayingChange={setGrowthReplaying}
-                      spotlightFitToken={spotlightFitToken + constellationFitToken}
-                      constellationFocusId={routedConstellation?.id ?? null}
-                      relayoutToken={topologyRelayoutToken}
-                      revealToken={mapRevealToken}
-                      onSelectEdge={(edge) => {
-                        setFullDetailSlug(null);
-                        setHoverEdge(null);
-                        if (selectedOntologyNode) handleClose();
-                        setSelectedEdge(edge);
-                      }}
-                      onHoverEdge={handleHoverEdge}
-                      selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId, relationType: selectedEdge.relationType } : null}
-                      previewEdge={mapRelationPreview}
-                      onSelect={(slug) => {
-                        setMeaningEditorState(null);
-                        setSelectedEdge(null);
-                        handleSelect(slug);
-                      }}
-                      onOpen={handleExpandRequest}
-                      onPaneClick={() => {
-                        setMeaningEditorState(null);
-                        setSelectedEdge(null);
-                        handleClose();
-                      }}
-                      onVisibleCountChange={setTopologyVisibleCount}
-                      onDrawnCountChange={handleMapFrameDrawn}
-                      onGraphStatsChange={handleTopologyGraphStatsChange}
-                      onZoomTierChange={setMapZoomTier}
-                      onContextMenuNode={handleContextMenuNode}
-                      onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
-                      minimal={localGraphRoot !== null}
-                      agentFocusNodeId={agentFocusNodeId}
-                      spotlightIds={mapLensIds}
-                      mapLensKind={mapLensKind}
-                      pathEdgeIds={pathLensEdgeIds}
-                      expandedParents={
-                        pathExpandedParents ??
-                        (expandAllActive ? allExpandedParentIds : null) ??
-                        spotlightExpandedParents ??
-                        expandedParentSet
-                      }
-                      onToggleCluster={handleToggleCluster}
-                      onHoverCluster={handleHoverCluster}
-                      clusterHint={galaxy ? undefined : t('cluster.hint')}
-                      realmRootId={resolvedRealmSlug}
-                      onEnterRealm={handleEnterRealm}
-                      indexExpanded={renderedIndexState === "expanded"}
-                      realmEnterLabel={t('realm.enterAction')}
-                      realmEnterTooltip={t('realm.enterTooltip')}
-                      realmCaption={realmCaption}
-                      clusterBarLabels={clusterBarLabels}
-                      domeTierLabels={domeTierLabels}
-                      canvasLabel={t('canvas.ariaLabel')}
-                      visitedTrail={footprintVisitedIds}
-                      trailLensActiveRef={footprintLensActiveRef}
-                      trailHoverNodeIdRef={footprintBrushNodeIdRef}
-                      panelHoverNodeIdRef={panelHoverNodeIdRef}
-                      tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-                      tourAnchorNodeId={tourAnchorNodeId}
-                      tourAnchorRef={tourAnchorRef}
-                      overlayOpen={!createNodeOpen && ontologySearchOpen}
-                      glyphSet={glyphSet}
-                      canvasBackground={canvasBackground}
-                      view3d={view3d}
-                      galaxy={galaxy}
-                      mapArrangement={mapArrangement}
-                      domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
-                      domeLightLegend={
-                        <TopologyLightLegend
-                          evidence={mapEvidence}
-                          nodeIds={ontologyMapGraph.nodes.map((node) => node.id)}
-                          kindLabels={domeTierLabels}
-                        />
-                      }
-                      detailPanelVisible={nodePanelMounted}
-                      footprint={footprint}
-                      expand={expand}
-                    />
-                    )}
-                  </div>
-                );
-              })}
-              {hexBoard && hexFailed ? (
-                <p
-                  role="status"
-                  data-testid="hex-board-failed-note"
-                  className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
-                >
-                  {t("hexBoard.failed")}
-                </p>
-              ) : null}
-            </ErrorBoundary>
-          ) : null}
+          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} /> : null}
           {topologyRenderState.renderCanvas ? (
             <TopologyChangeAnnouncement
               touchedCount={changedSlugs.size}

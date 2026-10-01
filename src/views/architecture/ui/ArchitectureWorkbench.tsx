@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, Check, ChevronDown, PanelRight, X } from 'lucide-react';
+import { Bot, Boxes, Check, ChevronDown, PanelRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import {
@@ -34,7 +34,7 @@ import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, Chip, EmptyState, IconButton, RowButton, Surface } from '@/shared/ui';
+import { Button, Chip, CloseButton, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
@@ -156,6 +156,7 @@ export function ArchitectureWorkbench({
   });
   const inspectorOpen = inspector !== null && !contextDockOpen;
   const rightDockOpen = inspectorOpen || evidenceOpen;
+  const railCompact = rightDockOpen || contextDockOpen;
   const stackedGutter = embedded ? HARNESS_GUTTER_X : 'px-5 md:px-8';
   const columnLayout = contextDockOpen ? 'context' : evidenceOpen ? 'evidence' : inspectorOpen ? 'inspector' : 'closed';
   const flowHostRef = useRef<HTMLDivElement | null>(null);
@@ -640,8 +641,7 @@ export function ArchitectureWorkbench({
             {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
             {!embedded && onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
-          {/* The rail keeps the three authorities visible; the full provenance plane opens on demand. */}
-          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
+          <div className={cn('mb-3 flex min-w-0 flex-wrap items-center gap-2', !railCompact && 'md:flex-nowrap')}>
               {embedded ? (
                 /* The profile's name and the door to its history are one group, the name a label, not a control. */
                 <div className="flex min-w-0 shrink-0 items-center gap-2">
@@ -685,7 +685,7 @@ export function ArchitectureWorkbench({
                 observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
                 deltaCompactTitle={deltaCompactTitle}
                 deltaStatus={deltaStatus}
-                compact={rightDockOpen}
+                compact={railCompact}
               />
               <div
                 ref={taskMenuRef}
@@ -831,11 +831,10 @@ export function ArchitectureWorkbench({
                     ? t('copyHandoffError')
                   : ''}
               </span>
-              {/* Present at every width: below `xl` it scrolls to the rules section and folds to its icon. */}
               <Button
                 variant="outline"
                 size="md"
-                className="atlas-touch-floor shrink-0 max-xl:w-10 max-xl:px-0"
+                className={cn('atlas-touch-floor shrink-0 max-xl:w-10 max-xl:px-0', railCompact && 'w-10 px-0')}
                 onClick={(event) => {
                   if (!window.matchMedia('(min-width: 1280px)').matches) {
                     rulesSectionRef.current?.scrollIntoView({ block: 'start' });
@@ -850,7 +849,7 @@ export function ArchitectureWorkbench({
                 data-testid="architecture-inspector-toggle"
               >
                 <PanelRight size={ICON_SIZE.sm} aria-hidden />
-                <span className="max-xl:sr-only">{t('inspectorTitle')}</span>
+                <span className={cn('max-xl:sr-only', railCompact && 'sr-only')}>{t('inspectorTitle')}</span>
               </Button>
           </div>
           <div ref={flowHostRef} className="relative flex min-h-0 flex-1">
@@ -947,19 +946,15 @@ export function ArchitectureWorkbench({
                 <span>{t('deltaLabel')}</span>
               </p>
             </div>
-            {/* One close for the three sibling panels: the same `IconButton`, with the Esc hint beside it. */}
             <div className="flex shrink-0 items-center gap-1">
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
               </span>
-              <IconButton
-                className="atlas-touch-floor"
+              <CloseButton
                 onClick={closeEvidence}
                 label={t('evidenceClose')}
                 data-testid="architecture-evidence-close"
-              >
-                <X size={ICON_SIZE.sm} aria-hidden />
-              </IconButton>
+              />
             </div>
           </div>
           <div className={cn('min-w-0 py-3 xl:flex-1', stackedGutter, 'xl:p-4')}>
@@ -1011,14 +1006,11 @@ export function ArchitectureWorkbench({
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
               </span>
-              <IconButton
-                className="atlas-touch-floor"
+              <CloseButton
                 onClick={closeInspector}
                 label={t('inspectorClose')}
                 data-testid="architecture-inspector-close"
-              >
-                <X size={ICON_SIZE.sm} aria-hidden />
-              </IconButton>
+              />
             </div>
           </div>
 

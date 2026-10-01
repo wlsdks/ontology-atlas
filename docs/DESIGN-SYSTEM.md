@@ -61,6 +61,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [The Library's ground — an object, and a field (2026-09-09)](#the-librarys-ground--an-object-and-a-field-2026-09-09)
 - [Contextual ontology writing; Studio surface retired 2026-08-21](#contextual-ontology-writing-studio-surface-retired-2026-08-21)
 - [Motion primitives](#motion-primitives)
+- [Signature motion](#signature-motion)
 - [Page header — English caption + Korean h1](#page-header--english-caption--korean-h1)
 - [Geometry & Type Codex (R5, 2026-07)](#geometry--type-codex-r5-2026-07)
 - [Chrome Syntax (feat/chrome-system)](#chrome-syntax-featchrome-system)
@@ -541,7 +542,7 @@ Reference anchors for this bar:
 
 ## Design tokens
 
-Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, and `--map-*` in `app/styles/base-map-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
+Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, `--map-*` in `app/styles/base-map-tokens.css`, and the light layer's `--map-light-*` in `app/styles/map-light-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
 
 ### Scale fixed contract (2026-07-24, owner confirmed — "fixed as is now")
 
@@ -2266,8 +2267,9 @@ this surface too. Full history + KEEP/KILL/BUILD: session memory
 
 Every surface moves through one of these thirteen primitives. Durations and
 easings come from `--motion-*` or `MOTION`/`STAGGER` only; no primitive adds a
-duration or an easing. Three named values arrive with their primitives: a 35ms
-stagger step, a 3px refusal travel and a 6px page rise. Each primitive's
+duration or an easing, except the selection indicator, which rides the house
+`control` spring ("Signature motion"). Two named values arrive with their
+primitives: a 35ms stagger step and a 3px refusal travel. Each primitive's
 CSS lives in its own `app/styles/motion-*.css` part inside `@layer base`, with
 its reduced-motion equivalent; the OS preference is the only switch.
 
@@ -2340,13 +2342,24 @@ reduced motion the fill steps and the sweep parks at a third of the track.
 
 ### Press
 
-`CONTROL_TRANSITION` includes `translate`; detached shapes and `Button` travel
-`active:translate-y-px`, flush shapes press with one surface or ink step, and
-reduced motion uses `motion-reduce:translate-none`.
+`CONTROL_TRANSITION` transitions colour, background, border, shadow and
+`translate`: Tailwind v4 compiles `translate-*` to the `translate` property, so a
+`transform` transition never animates it. Detached shapes (`chip`, `pill`, `icon`,
+`tile`), `Button`, `ChromeTile`, `ChromeChip` and the `Select` trigger add
+`CONTROL_PRESS_TRAVEL` (`active:translate-y-px`) and one surface step. Flush shapes
+(`row`, `link`, `segment`, `card`) press with one surface or ink step and no travel;
+`onAccent` presses with `--shadow-control-press`; a selected control keeps travel
+only. Reduced motion uses `motion-reduce:active:translate-none`: an unqualified
+`translate-none` loses to `.x:active` on specificity. `.select-chevron` rotates
+through `transform`, which its CSS transition animates.
+`press-feedback-presence` holds the value layer;
+`registered-press-ratchet` and `transform-property-mismatch-ratchet` only fall.
 
 ### Hover
 
-Hover changes ink, surface or border on `--motion-fast`, never position.
+Hover changes ink, surface or border on `--motion-fast`, never position. The axes
+stay opt-in; `hover-presence-ratchet` keeps `controlClass` calls without hover
+from growing.
 
 ### Toggle and checkbox draw
 
@@ -2360,8 +2373,9 @@ checked. Under reduced motion the check appears whole.
 
 `useSlidingIndicator` in `src/shared/motion/use-sliding-indicator.ts`, CSS in
 `motion-indicator.css`: one indicator per group, placed without a transition
-first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
-`--motion-fast`. The indicator carries `motion-indicator`,
+first. Tabs, segments, rail and LNB move on the `control` spring: the hook
+sets `springEasing(SPRING.control)` over `springSettleMs` (239ms) inline;
+palette rows stay on `--motion-fast`. The indicator carries `motion-indicator`,
 `data-selection-indicator` (its shape) and `data-animated`; the transition
 runs only while `data-animated="true"`, and reduced motion drops it, so the
 indicator jumps. Until `placed`, the active item keeps its static style.
@@ -2393,8 +2407,8 @@ growing.
 
 ### Direction
 
-Pages crossfade with a 6px rise on `--motion-base` and
-fade only under reduced motion. Anchored popovers grow from their trigger,
+Pages crossfade on `--motion-base` with no travel (`base-motion.css`,
+`::view-transition-*(app-pane)`), and keep the crossfade under reduced motion. Anchored popovers grow from their trigger,
 agent docks share one reflow grammar, drawers slide from their edge, modals
 rise; each leaves the way it came. CSS in `motion-surface.css`.
 
@@ -2404,6 +2418,121 @@ rise; each leaves the way it came. CSS in `motion-surface.css`.
 - All five agent docks spread `agentDockReflowStyle()` onto their frame and
   wrap the conversation in `Surface motion="overlay"`; only the project dock
   also reflows `margin-left`.
+
+## Signature motion
+
+**Identity: Conduction — one spring, one light.** Meaning moves through Atlas
+along real connections, from where it starts, lit only while it is happening,
+with a weight that depends on the structure. Every signature moment names at
+least one principle, and the decoration rule above still applies.
+
+1. **Meaning travels along relations.** Motion caused by a relation runs along
+   that relation's own line, in its direction; nothing crosses empty space.
+2. **Everything arrives from its origin and leaves toward it.**
+3. **One light: only what is happening now glows**, for as long as the act
+   lasts. Nothing at rest glows or moves. One line carries one light.
+4. **One spring: weight follows structure.** Every spatial move uses one house
+   damping character. Speed depends on scale (control < surface < canvas) and,
+   on the map, on mass (a concept's degree). Heavy concepts arrive later but
+   never bounce more.
+
+### Spending rule
+
+| Tier | Events | Allowed | Cap |
+|---|---|---|---|
+| 0 constant | hover, focus ring, typing, scroll | ink only, `--motion-fast` | no travel, no light |
+| 1 frequent | press, tab, route change, popover, row select, palette navigation | house springs for travel; effects ramp for ink | one `SPRING.control` settle (239ms); no light |
+| 2 answered question | focus a concept, find a path, open detail, finish an action, switch layout, camera flight | spring travel plus one light event | light ends by `CAMERA_TWEEN_MAX_MS` (420) plus bloom decay; travel 90% by 540ms |
+| 3 rare event | first open, a change lands, agent proposes or writes, commit, compile, connection passes, release film | full choreography | 1.2s, once per event, any input settles it, never replays |
+
+Route change stays at tier 1.
+
+### House springs
+
+`SPRING` in `src/shared/motion/spring.ts`. Grammar: stiffness k and damping
+ratio ζ, mass 1; ω = √k. One house ratio, `HOUSE_DAMPING_RATIO` 0.85, gives
+0.63% overshoot everywhere. Visual time is within 2% of the travel, settle
+time within 0.5%.
+
+| Member | k | ζ | visual | settle | Moves |
+|---|---|---|---|---|---|
+| `control` | 800 | 0.85 | 148ms | 239ms | a control's own parts: selection indicators, segment fills, digit rolls |
+| `surface` | 300 | 0.85 | 242ms | 391ms | a surface or row changing place: shared elements, rows folding, DOM flights |
+| `canvas` | 140 | 0.85 | 354ms | 571ms | concepts and the camera on the map |
+| `canvas`, mass 2 | 140/2 | 0.85 | 501ms | 808ms | a fully heavy concept |
+
+`springState(spring, tSec, {x0, v0}, mass)` is the closed form: frame-rate
+independent, stable at any frame time, and retargetable from the current
+position and velocity. DOM consumers receive `springEasing(spring)`, a CSS
+`linear()` of 33 stops (error ≤ 0.005) over `springSettleMs`, applied inline
+by the primitive that runs the motion. There is no static CSS spring token;
+JS is the single source, and no `linear()` is typed by hand.
+
+Specialisations keep their values and recorded reasons: `OVERLAY_SPRING`
+(ζ 1, overlays have no inbound momentum), the map camera's interactive spring
+(ω 15), the mass, press and home springs, `--motion-ease-place` and
+`--motion-ease-drag-release`. A new specialisation needs a decision record.
+
+### Springs and effects
+
+A spring moves position, size, rotation or scale of something that travels.
+Opacity, colour, blur and light intensity never overshoot and stay on the
+`--motion-*` ramp (`MOTION`, `EXIT_TRANSITION`). When a surface both travels
+and fades, the travel takes the spring and the fade takes the ramp.
+
+### Reduced motion
+
+The OS preference is the only switch. Springs do not travel: the final state
+lands on the first frame, with a `--motion-fast` crossfade where content
+changes. The light layer is never created. Under
+`prefers-reduced-transparency`, glass is a solid tint.
+
+### Budgets
+
+Per motion window at synth 2k: drop ratio ≤ 10%, max frame interval ≤ 50ms,
+no long task. At synth 10k: drop ratio ≤ 25%, max interval ≤ 100ms. Measured
+headed on the static export, median of 3. DOM springs animate
+`translate`/`scale`/`transform` only, except the indicator's `width`/`height`.
+At rest the map sleeps (0 frames).
+
+### Light
+
+Light marks only the thing a hand or an agent is acting on, for as long as the
+act lasts, then settles into the static state. Light lives on the map's WebGL2
+light layer and never on a mark with identity.
+
+### Film
+
+The release film is rendered offline and never ships in the app bundle.
+
+### Layout glide
+
+Specified with the map's layout morph.
+
+### Light tokens
+
+The map's WebGL2 light layer (`src/widgets/ontology-map/light/`) reads these
+from `app/styles/map-light-tokens.css` through `tokens/read-map-tokens.ts`. Its
+ink is `--map-indigo-bright`; it adds no hue. It draws light only, in Flat and
+Galaxy, for an event, and nothing under reduced motion.
+
+| Token | Value | Meaning |
+|---|---|---|
+| `--map-light-speed` | 1100 | screen px per second a light travels along its relation |
+| `--map-light-hop-min-ms` · `--map-light-hop-max-ms` | 180 · 420 | the clamp on one relation's travel |
+| `--map-light-path-max-ms` | 1200 | a whole path's travel; hops scale to fit |
+| `--map-light-tail` | 0.35 | the tail's length behind the head, as a share of the curve |
+| `--map-light-core-px` · `--map-light-halo-px` | 1.6 · 6 | the Gaussian core and halo across the line, CSS px |
+| `--map-light-intensity` | 0.9 | peak strength of a light and of a bloom |
+| `--map-light-bloom-tau` | 0.28 | the arrival bloom's decay time constant, seconds |
+
+A focus light rides the front of the relation's reveal, so it never runs ahead
+of the ink; a bloom peaks 60ms after its light arrives and decays on
+`--map-light-bloom-tau`.
+
+### Glass
+
+Specified with its first consumer.
 
 ## Page header — English caption + Korean h1
 
@@ -3079,7 +3208,7 @@ Chrome surfaces (tiles/chips) must only be created via `ChromeTile` / `ChromeChi
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | Chrome tiles/chips (see separate "Chrome Syntax" section) |
 | `controlClass()` | `src/shared/ui/control-class.ts` | **Value Layer** — single source of classes for interactive elements (see section below) |
 | `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **Action Layer** — defaults to `type="button"` · enforces accessible names · button semantics |
-| `CloseButton` | `src/shared/ui/close-button.tsx` | **The one close control** for overlays, sheets, palettes and the toast: an `IconButton` in `--overlay-close-size` (32px, 44px under a coarse pointer) around `X` at `ICON_SIZE.md`, hover from the value axes. The toast cannot render a component (sonner owns its button), so it reads the same `OVERLAY_CLOSE_BOX` and `OVERLAY_CLOSE_ICON_SIZE`. Before 2026-09-29 four surfaces drew four closes: 28px, 32px, 28px with a 12px glyph, and a bordered chip that squeezed its glyph to 10px. Gate: `src/shared/ui/close-button.test.tsx` |
+| `CloseButton` | `src/shared/ui/close-button.tsx` | **The one close control** for overlays, sheets, palettes and the toast: an `IconButton` in `--overlay-close-size` (32px, 44px under a coarse pointer) around `X` at `ICON_SIZE.md`, hover from the value axes. The toast cannot render a component (sonner owns its button), so it reads the same `OVERLAY_CLOSE_BOX` and `OVERLAY_CLOSE_ICON_SIZE`. Before 2026-09-29 four surfaces drew four closes: 28px, 32px, 28px with a 12px glyph, and a bordered chip that squeezed its glyph to 10px. On 2026-10-01 the map panels, docks, dialogs and popovers joined it; they had drawn 24/16, 24/12, 28/12, 28/14, 32/16 and 36/16. Gate: `src/shared/ui/close-button.test.tsx` lists every consumer |
 | `Surface` | `src/shared/ui/surface.tsx` | Appearance/disappearance of conditional surfaces — **not a modal** |
 | `Dialog` | `src/shared/ui/dialog.tsx` | **Blocking center dialog** — comes with scrim (`--overlay-scrim`), trap, Esc, return, scroll lock, `--z-dialog`, and two-step width (`--dialog-w-sm/md`) by default. No `modal={false}` (non-modals are consumers of Surface). Gate: `tests/contract/dialog-adoption-ratchet.contract.test.ts` — raw `role="dialog"` markup outside primitives cannot pass the ledger |
 | `Input` / `Textarea` | `src/shared/ui/input.tsx` | **Action Layer** for form fields — enforces accessible names (label/aria-label/labelledBy pick one) + auto-wires `error`/`hint` to `aria-invalid`·`aria-describedby`·`role="alert"`. Styles are **byte-identical** to the result of `fieldClass` calls (contract assertion — values exist in only one place in the value layer). Gate: `tests/contract/field-adoption-ratchet.contract.test.ts` — raw text fields in new files must be 0 |
@@ -3220,7 +3349,7 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
 | **24** | (No token — spec constant) | `chip`/`pill`/`icon` `sm`, `segment` `sm`·`md`, **all sizes of `link` (`min-h-6`, 2026-08-04)** | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — the floor of the ladder. Below this is a spec violation, not "small unit" |
 | **28** | `--control-h-sm` | `row` `sm`, `icon` `md` (`h-7 w-7`) | Single-line list row and 28px square icon |
 | **32** | `--control-h-md` | `chip`/`pill` `md`·`lg`, `segment` `lg`, `card` `sm`, `icon` `lg`, `--app-nav-rail-tile-height` | **The app's default control height.** The value layer stands on this value via `min-h-8` |
-| **36** | `--chrome-tile-size` | Chrome field/tile, **document header tile**, `row` `md`, `card` `md` | Workbench chrome dimensions nailed by the "scale fixed contract" |
+| **36** | `--chrome-tile-size` | Chrome field/tile, **document header tile and chips**, `row` `md`, `card` `md`, a control standing beside a `SegmentedControl` `lg` well | Workbench chrome dimensions nailed by the "scale fixed contract" |
 | **40** | `--control-h-lg` | Select, large form controls, `card` `lg` | Box for entering text |
 | **44** | `--touch-target-min` | `row` `lg`, `pointer: coarse` promotion (token override + `.touch-hit-expand`) | Touch value from Apple HIG / Material / WCAG **2.5.5(AAA)** — **coarse single source**. The fine front of `link` was reset to 44 (`min-h-11`) on 2026-08-04, then back to 24 below (see "link floor" section) |
 

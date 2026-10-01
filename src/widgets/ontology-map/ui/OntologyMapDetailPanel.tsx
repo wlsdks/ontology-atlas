@@ -26,7 +26,6 @@ import {
   Orbit,
   Plus,
   ScanSearch,
-  X,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
@@ -46,7 +45,7 @@ import {
   type V2DatasheetConnection,
   type V2EvidenceRow,
 } from "./map-datasheet";
-import { Button, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { Button, CloseButton, controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -1522,16 +1521,13 @@ export function OntologyMapDetailPanel({
               <OntologyMapKindGlyph kind={kind} size={12} />
               {labels.kindLabel}
             </span>
-            <IconButton
+            <CloseButton
               ref={closeButtonRef}
               label={labels.close}
-              size="lg"
               onClick={onClose}
               data-testid="map-detail-panel-close"
-              className="atlas-touch-floor atlas-touch-floor-wide text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
-            >
-              <X size={ICON_SIZE.lg} />
-            </IconButton>
+              className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
+            />
           </div>
           {showSourcePath && sourceTitle && sourceTitle !== title ? (
             <div

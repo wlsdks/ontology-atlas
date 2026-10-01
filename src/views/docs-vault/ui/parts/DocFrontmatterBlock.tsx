@@ -852,12 +852,12 @@ export function DocFrontmatterBlock({
       <details
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
-        className="group rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-body leading-prose text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+        className="group rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 font-mono text-body leading-prose text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
       >
         <summary
           data-testid="doc-frontmatter-summary"
           aria-label={open ? t("collapseAria") : t("expandAria")}
-          className="flex list-none items-center gap-2 font-sans text-body leading-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+          className="flex min-h-6 list-none items-center gap-2 font-sans text-body leading-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
         >
           <ChevronRight
             size={ICON_SIZE.sm}

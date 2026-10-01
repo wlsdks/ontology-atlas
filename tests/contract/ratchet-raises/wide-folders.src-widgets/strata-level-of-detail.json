@@ -1,0 +1,5 @@
+{
+  "gate": "wide-folders.src-widgets",
+  "raise": 1,
+  "why": "Strata's level of detail adds its dust, sheet and chord renderer and that renderer's test to render/, beside the dome light it extends, and moves the tapered dependency arrow Territories already drew into render/tapered-arrow.ts so both views draw the same arrow; that takes the ontology-map render folder from 30 to 33 files, and regrouping that folder is a refactor of its own."
+}

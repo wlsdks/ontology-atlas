@@ -102,6 +102,7 @@ export interface WorldEdge {
   relationType: string;
   /** P3b — the vault document slug that declared this relation (shown as the source in the edge popover). */
   declaredBySlug: string | null;
+  evidenceCount?: number;
 }
 
 /**
@@ -704,6 +705,7 @@ export function buildTopologyWorld(
       level: containmentLevelFor(a.kind, b.kind),
       relationType: edge.relationType,
       declaredBySlug: edge.declaredBySlug ?? null,
+      evidenceCount: edge.evidenceCount,
     });
   }
 

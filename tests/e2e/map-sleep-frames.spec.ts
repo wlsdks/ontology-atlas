@@ -1,10 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForMapSettled } from "./settle";
+import { waitForAnimationsDone, waitForMapSettled } from "./settle";
 
-test("a resting map schedules no animation frame until input wakes it", async ({ page }) => {
-  test.setTimeout(120_000);
+async function countFrames(page: Page): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     const w = window as unknown as { __rafTimes?: number[] };
@@ -16,11 +15,9 @@ test("a resting map schedules no animation frame until input wakes it", async ({
         callback(time);
       });
   });
-  await page.goto("/ko/topology?synth=300&guides=off&e2e=1");
-  await expect(page.getByTestId("ontology-map-canvas")).toBeVisible();
-  await waitForMapSettled(page);
+}
 
-  // rAF polling would itself schedule frames.
+async function waitForNoFrames(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
       const times = (window as unknown as { __rafTimes: number[] }).__rafTimes;
@@ -29,6 +26,34 @@ test("a resting map schedules no animation frame until input wakes it", async ({
     undefined,
     { polling: 250, timeout: 90_000 },
   );
+}
+
+test("a layout morph stops its own frames once the new view has landed", async ({ page }) => {
+  test.setTimeout(120_000);
+  await countFrames(page);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("atlas.appearance.territories", "off");
+    window.localStorage.setItem("atlas.appearance.hex-board", "off");
+    window.localStorage.setItem("atlas.appearance.galaxy", "off");
+    window.localStorage.setItem("atlas.appearance.view3d", "off");
+  });
+  await page.goto("/ko/topology?synth=300&guides=off&e2e=1");
+  await waitForMapSettled(page);
+  await page.getByTestId("topology-view-3d").click();
+  await waitForAnimationsDone(page.getByTestId("topology-view-3d-menu"));
+  await page.getByTestId("topology-view-3d-choice-hex").click();
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
+  await expect(page.getByTestId("map-layout-morph")).toHaveCount(0);
+  await waitForNoFrames(page);
+});
+
+test("a resting map schedules no animation frame until input wakes it", async ({ page }) => {
+  test.setTimeout(120_000);
+  await countFrames(page);
+  await page.goto("/ko/topology?synth=300&guides=off&e2e=1");
+  await expect(page.getByTestId("ontology-map-canvas")).toBeVisible();
+  await waitForMapSettled(page);
+  await waitForNoFrames(page);
 
   const box = await page.getByTestId("ontology-map-canvas").boundingBox();
   const wokenAt = await page.evaluate(() => performance.now());

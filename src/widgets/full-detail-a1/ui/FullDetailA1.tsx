@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Clipboard, Link2, TriangleAlert, X } from "lucide-react";
+import { Check, Clipboard, Link2, TriangleAlert } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
@@ -20,7 +20,7 @@ import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
 } from "@/shared/lib/project-source-receipt";
-import { controlClass, LastEditSubjectRow, useToast } from "@/shared/ui";
+import { CloseButton, controlClass, LastEditSubjectRow, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
@@ -333,7 +333,7 @@ export function FullDetailA1({
             data-testid="full-detail-a1-copy-link"
             className={controlClass({
               shape: "icon",
-              size: "sm",
+              size: "lg",
               scope: "panel",
               className:
                 "hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]",
@@ -341,21 +341,12 @@ export function FullDetailA1({
           >
             <Link2 size={ICON_SIZE.md} />
           </button>
-          <button
-            type="button"
+          <CloseButton
             onClick={onClose}
-            aria-label={t("close")}
+            label={t("close")}
             data-testid="full-detail-a1-close"
-            className={controlClass({
-              shape: "icon",
-              size: "sm",
-              scope: "panel",
-              className:
-                "hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]",
-            })}
-          >
-            <X size={ICON_SIZE.lg} />
-          </button>
+            className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
+          />
         </div>
       </header>
 
@@ -503,7 +494,7 @@ export function FullDetailA1({
           type="button"
           onClick={handleCopyHandoff}
           data-testid="full-detail-a1-handoff-copy"
-          className={controlClass({ shape: "chip", className: "shrink-0 border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] px-3 py-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:bg-[color:var(--map-panel-row-hover)] hover:border-[color:var(--map-indigo)]" })}
+          className={controlClass({ shape: "chip", size: "lg", className: "shrink-0 border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:bg-[color:var(--map-panel-row-hover)] hover:border-[color:var(--map-indigo)]" })}
         >
           {t("handoff.copy")}
         </button>

@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
 import { Chip } from "@/shared/ui/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
-import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
+import type { Rect } from "../interaction/free-area";
 import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
+import { VIEW_CAMERA_MS, VIEW_DIM_MS } from "../model/motion-physics";
+import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, type HexCamera as Camera } from "../morph/hex-marks";
 import {
   computeHexBoard,
-  fitHexRadius,
   hexBandFor,
   hexLineSpills,
   hexNeighborInDirection,
@@ -89,19 +91,11 @@ export interface OntologyHexBoardMapProps {
   /** The legend, composed by the page for the state the board is in. */
   legend?: (state: { staleOnly: boolean; focused: boolean }) => ReactNode;
   reducedMotion?: boolean;
+  arrivedByMorph?: boolean;
 }
 
-const DIM_MS = 180;
-const CAMERA_MS = 240;
 const SWEEP_MS = 420;
 const PAN_KEEP = 160;
-/** Room the chrome leaves free at rest: below the tool lane, above the legend. */
-const ROOM_TOP = 96;
-/** The board's top edge keeps at least this much air under the tool lane's real bottom. */
-const ROOM_UNDER_TOOLBAR = 24;
-const ROOM_BOTTOM = 96;
-const ROOM_RIGHT = 72;
-const ROOM_LEFT_PAD = 16;
 /** Chrome that moves with a selection (INDEX folding or opening, the inspector) has settled by then. */
 const CHROME_SETTLE_MS = 450;
 /** Canals shown in the far band (spec §7). */
@@ -142,66 +136,6 @@ function useHexMeasure(): HexMeasure {
 
 /** A route keeps this far (CSS px) from the free map's edges and from every piece of chrome. */
 const ROUTE_CLEAR = 10;
-/** Chrome whose top is this close to the canvas's top edge belongs to the top lane. */
-const TOP_LANE_REACH = 48;
-/** Chrome whose left is this close to the free map's left edge is attached to it (the INDEX tab). */
-const EDGE_REACH = 8;
-
-interface MapChrome {
-  /** The free map, canvas-relative. */
-  free: Rect;
-  /** Every other piece of chrome over the canvas, canvas-relative. */
-  blocks: Rect[];
-}
-
-/**
- * The free map and the chrome over it, measured from the DOM (`interaction/free-area`).
- *
- * `computeFreeArea` subtracts panels and bars: INDEX open, the inspector, the dock, the footer.
- * The pieces too small to count as a panel still cover the map, and a route must not run
- * under them: the tool lane is a bar only while it spans 60 % of the canvas (with INDEX open
- * it may not), and the folded INDEX tab is 26 px wide. So the top edge also comes down to the
- * lowest chrome in the top lane, the left edge moves right of chrome attached to it, and every
- * piece of chrome is returned as a block for the router to keep out of.
- *
- * A panel that declares itself one (`data-topology-camera-obstacle="side-panel"`: INDEX open,
- * the inspector) is not top-lane chrome, although its top edge stands in that lane:
- * `computeFreeArea` has already taken it off its side. Read as the lowest chrome in the lane, a
- * panel shorter than 60% of the canvas pushed the free map's top down to its own bottom edge,
- * and the board fitted the strip left beneath it. INDEX is one while it fades in — its
- * full-height slot does not count yet, and the panel inside ends under its last row — and the
- * board opened by its address read its room just then (measured 2026-09-25 at 1512x949: a room
- * 277 px tall, the board in the bottom third). The inspector is one whenever its content is short.
- */
-function mapChromeOf(canvas: HTMLCanvasElement | null): MapChrome | null {
-  if (!canvas) return null;
-  const r = canvas.getBoundingClientRect();
-  const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
-  const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
-  const small = collectCanvasObstacles(canvas, canvasRect, { minSide: 12 });
-  const lane = small.filter(
-    (b) => b.cameraObstacle !== "side-panel" && b.height < canvasRect.height * 0.6 && b.width < canvasRect.width * 0.6,
-  );
-  let left = free.x;
-  let top = free.y;
-  const right = free.x + free.width;
-  const bottom = free.y + free.height;
-  for (const b of lane) {
-    if (b.y <= canvasRect.y + TOP_LANE_REACH) top = Math.max(top, b.y + b.height);
-  }
-  for (const b of lane) {
-    if (b.y + b.height <= top) continue;
-    if (b.x <= left + EDGE_REACH && b.x + b.width > left) left = Math.max(left, b.x + b.width);
-  }
-  const rel = (b: Rect): Rect => ({ x: b.x - r.x, y: b.y - r.y, width: b.width, height: b.height });
-  const out =
-    right - left > 80 && bottom - top > 80 ? { x: left, y: top, width: right - left, height: bottom - top } : free;
-  return { free: rel(out), blocks: small.map(rel) };
-}
-
-function freeAreaOf(canvas: HTMLCanvasElement | null): Rect | null {
-  return mapChromeOf(canvas)?.free ?? null;
-}
 
 /** Where routes may run, in the board's unit space, for one camera. */
 interface RouteFrame {
@@ -234,12 +168,6 @@ function routeFrameOf(canvas: HTMLCanvasElement | null, cam: Camera): RouteFrame
   return { key, ...frame };
 }
 
-interface Camera {
-  R: number;
-  ox: number;
-  oy: number;
-}
-
 export function OntologyHexBoardMap({
   nodes,
   edges,
@@ -258,6 +186,7 @@ export function OntologyHexBoardMap({
   listLabel,
   legend,
   reducedMotion = false,
+  arrivedByMorph = false,
 }: OntologyHexBoardMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -471,16 +400,7 @@ export function OntologyHexBoardMap({
   }, [layout, lattice, blocked, selectedId, hoverId, staleOnly, evidence]);
 
   /* ── camera ─────────────────────────────────────────────────────────── */
-  const restCamera = useCallback((): Camera | null => {
-    if (!layout || !room) return null;
-    const b = layout.bounds;
-    const R = fitHexRadius(b, { width: room.width, height: room.height });
-    return {
-      R,
-      ox: room.x + room.width / 2 - ((b.minX + b.maxX) / 2) * R,
-      oy: room.y + room.height / 2 - ((b.minY + b.maxY) / 2) * R,
-    };
-  }, [layout, room]);
+  const restCamera = useCallback((): Camera | null => (layout && room ? hexRestCamera(layout, room) : null), [layout, room]);
 
   const clampCamera = useCallback(
     (c: Camera): Camera => {
@@ -534,7 +454,7 @@ export function OntologyHexBoardMap({
       if (anim) {
         // The frame's timestamp can precede the moment the move was asked for in the same
         // frame; below 0 the ease runs backwards and the board steps the wrong way first.
-        const t = Math.max(0, Math.min(1, (now - anim.start) / CAMERA_MS));
+        const t = Math.max(0, Math.min(1, (now - anim.start) / VIEW_CAMERA_MS));
         const e = 1 - Math.pow(1 - t, 3);
         camRef.current = {
           R: anim.from.R + (anim.to.R - anim.from.R) * e,
@@ -546,12 +466,11 @@ export function OntologyHexBoardMap({
       }
       const dim = dimRef.current;
       if (dim.t !== dim.target) {
-        const step = reducedMotion ? 1 : 16 / DIM_MS;
+        const step = reducedMotion ? 1 : 16 / VIEW_DIM_MS;
         dim.t = dim.target > dim.t ? Math.min(dim.target, dim.t + step) : Math.max(dim.target, dim.t - step);
         if (dim.t !== dim.target) again = true;
       }
-      // Reduced motion: the board is simply there — no assembly, no fade.
-      if (reducedMotion && arrivalKey != null) arrivedKeys.add(arrivalKey);
+      if ((reducedMotion || arrivedByMorph) && arrivalKey != null) arrivedKeys.add(arrivalKey);
       if (arrivalRef.current == null && arrivalKey != null && !arrivedKeys.has(arrivalKey)) arrivalRef.current = now;
       const maxRing = layout.tiles.reduce((m, t) => Math.max(m, t.ring), 0);
       let arrivalMs: number | null = null;
@@ -635,7 +554,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, lattice, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivalKey, band, drawnR, writeMirror],
+    [size, layout, lattice, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror],
   );
 
   const paintRef = useRef(paint);
@@ -673,13 +592,7 @@ export function OntologyHexBoardMap({
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: r.width, height: r.height };
-      const x = free.x + ROOM_LEFT_PAD;
-      // `free.y` is the tool lane's real bottom (it wraps to two lines on a narrow free map).
-      const y = Math.max(free.y + ROOM_UNDER_TOOLBAR, ROOM_TOP);
-      const right = Math.min(free.x + free.width, r.width - ROOM_RIGHT);
-      const bottom = Math.min(free.y + free.height, r.height - ROOM_BOTTOM);
-      const next = { x: Math.round(x), y: Math.round(y), width: Math.max(80, Math.round(right - x)), height: Math.max(80, Math.round(bottom - y)) };
+      const next = readHexRoom(canvasRef.current, r.width, r.height);
       setRoom((prev) => (prev && prev.x === next.x && prev.y === next.y && prev.width === next.width && prev.height === next.height ? prev : next));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
@@ -825,6 +738,24 @@ export function OntologyHexBoardMap({
     () => () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+    },
+    [],
+  );
+
+  const snapshotRef = useRef<() => void>(() => {});
+  useLayoutEffect(() => {
+    snapshotRef.current = () => {
+      const T = readHexBoardTokensOrNull();
+      const cam = camRef.current;
+      if (!T || !cam || !layout) return;
+      const rest = 1 - dimRef.current.t * (1 - (staleOnly ? T.dimFarAlpha : T.dimAlpha));
+      const marks = hexMarks(layout, cam, T, (id) => (!focus.lit || focus.lit.has(id) ? 1 : rest));
+      publishMapLayoutSnapshot({ marks, bitmap: copyCanvasAtCssSize(canvasRef.current), ground: T.ground });
+    };
+  }, [layout, focus.lit, staleOnly]);
+  useLayoutEffect(
+    () => () => {
+      if (isMapLayoutMorphArmed()) snapshotRef.current();
     },
     [],
   );

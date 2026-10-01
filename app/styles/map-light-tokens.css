@@ -1,0 +1,13 @@
+@layer base {
+  :root {
+    --map-light-speed: 1100;
+    --map-light-hop-min-ms: 180;
+    --map-light-hop-max-ms: 420;
+    --map-light-path-max-ms: 1200;
+    --map-light-tail: 0.35;
+    --map-light-core-px: 1.6;
+    --map-light-halo-px: 6;
+    --map-light-intensity: 0.9;
+    --map-light-bloom-tau: 0.28;
+  }
+}

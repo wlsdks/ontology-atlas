@@ -277,8 +277,7 @@ export function TopologyTrailChip({
             shape: "link",
             tone: "strong",
             truncate: true,
-            // Under 12px from the clear button, touch-hit-expand would steal the tap.
-            className: "min-w-0 font-[var(--font-weight-signature)]",
+            className: "min-w-6 text-center font-[var(--font-weight-signature)]",
           })}
         >
           {compactLabel ? (

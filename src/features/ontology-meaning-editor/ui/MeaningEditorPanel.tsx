@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { GitBranch, X } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -12,7 +12,7 @@ import {
   type MeaningEditRelation,
 } from '@/entities/knowledge-graph';
 import { OntologyChangeReview } from '@/features/ontology-change-review';
-import { Button, IconButton, Select, Surface, Textarea } from '@/shared/ui';
+import { Button, CloseButton, Select, Surface, Textarea } from '@/shared/ui';
 import { fieldLabel } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
@@ -215,9 +215,7 @@ export function MeaningEditorPanel({
               {plan ? t('reviewBody') : t('editBody')}
             </p>
           </span>
-          <IconButton label={t('close')} size="sm" onClick={onClose} disabled={saving}>
-            <X size={ICON_SIZE.lg} aria-hidden />
-          </IconButton>
+          <CloseButton label={t('close')} onClick={onClose} disabled={saving} />
         </header>
 
         <div className="grid gap-3 border-t border-[color:var(--map-panel-divider)] px-[var(--map-panel-pad)] py-4">

@@ -1467,25 +1467,16 @@ function RemoteActionButton({
         </span>
       }
     >
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="sm"
       data-testid={`atlas-git-remote-${id}`}
       disabled={disabled}
       onClick={() => onClick(id)}
-      /*
-       * Visibly pressable, since these reach the remote and are the hardest to undo; `lg`
-       * matches the commit confirm pair Push opens.
-       */
-      className={controlClass({
-        shape: "chip",
-        size: "lg",
-        tone: "secondary",
-        className:
-          "justify-center max-sm:w-full font-[var(--font-weight-signature)] border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
-      })}
+      className="max-sm:w-full"
     >
       {busy ? "…" : label}
-    </button>
+    </Button>
     </Tooltip>
   );
 }
@@ -1628,22 +1619,15 @@ function LocationLine({
           <span data-testid="atlas-git-remote-state" data-remote-state={remoteState}>
             {t("noUpstream")}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             data-testid="atlas-git-remote-toggle"
             aria-expanded={remoteOpen}
             onClick={() => setRemoteOpen(!remoteOpen)}
-            className={controlClass({
-              // `lg`, the size of the remote actions that take this slot in the other states:
-              // one type size in the row.
-              shape: "chip",
-              size: "lg",
-              className:
-                "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
-            })}
           >
             {remoteOpen ? t("remoteToggleClose") : t("remoteToggle")}
-          </button>
+          </Button>
         </Fragment>
       ) : remoteState === "never-sent" ? (
         <Fragment key="never-sent">

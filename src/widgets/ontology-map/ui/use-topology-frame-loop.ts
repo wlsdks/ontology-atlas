@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useEffectEvent, type RefObject } from "react";
 import type { CameraAxes } from "../engine/camera";
+import { createLightFrameStage } from "../light/light-frame-stage";
 import { projectDomeEdgeControl } from '../model/dome-edge';
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createClusterFrameStage } from "./topology-cluster-frame-stage";
@@ -24,32 +25,20 @@ interface Configuration {
   clusterFrameStage: Parameters<typeof createClusterFrameStage>[0];
   realmFrameStage: Parameters<typeof createRealmFrameStage>[0];
   revealFrameStage: Parameters<typeof createRevealFrameStage>[0];
-  frameGate: Parameters<typeof createFrameGate>[0];
+  frameGate: Omit<Parameters<typeof createFrameGate>[0], "lightActiveRef">;
   presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "domeEdgeControlForFrame">;
 }
 
-/** Every mounted map loop's frame request, for `requestOntologyMapFrame`. */
 const frameRequests = new Set<() => void>();
 
-/**
- * Asks every mounted map for a frame. For state a map reads through a ref it does not own, such as
- * a side panel's hover or the trail lens, which reaches it without a render.
- */
 export function requestOntologyMapFrame(): void {
   for (const requestFrame of frameRequests) requestFrame();
 }
 
-/** Configure stages once, then own scheduling, early yields, and context recovery.
- * Configuration consists solely of stable state refs and camera policy callbacks.
- * The effect event reads the mounted configuration without making render-created
- * grouping objects a reason to tear down and restart the animation loop.
- * The original four policy callback dependencies still restart it if replaced.
- */
 export function useTopologyFrameLoop(configuration: Configuration) {
   const getConfiguration = useEffectEvent(() => configuration);
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
-  // A render carries new props into the refs the gate reads, so it earns one look.
   useEffect(() => {
     getConfiguration().recovery.wakeFrameLoopRef.current();
   });
@@ -60,14 +49,6 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef } = recovery;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    /*
-     * 3D meridian control point — the draw calls this **per edge**, so it is
-     * created once in the effect body. Creating it inside the frame would be a
-     * per-frame allocation; lifting it to a `useCallback` in the component body
-     * would add another name to this effect's dependency list (hooks lint would
-     * demand it) and tie the draw loop to that identity. Here matches its real
-     * lifetime — the function reads only refs.
-     */
     const domeEdgeControlForFrame = (edge: WorldEdge) => {
       const dome = domeRuntimeRef.current;
       return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
@@ -78,40 +59,20 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const runClusterFrameStage = createClusterFrameStage(configuration.clusterFrameStage);
     const runRealmFrameStage = createRealmFrameStage(configuration.realmFrameStage);
     const runRevealFrameStage = createRevealFrameStage(configuration.revealFrameStage);
-    /**
-     * **`alpha: false` — this map never needs to show what is behind it.**
-     *
-     * Per the WHATWG canvas spec this pins every pixel's alpha to 1.0, which
-     * lets **the compositor skip blending against the page content behind the
-     * canvas**. Blink sets `cc_layer_->SetContentsOpaque()` from it in
-     * `html_canvas_element.cc`, and `cc/layers/layer.h` defines that as a hint
-     * that blending may be omitted.
-     *
-     * ★ The win lands in **the composite stage, not JS frame time**, so it does
-     * not appear in a `performance.mark` profile — without knowing that you
-     * wrongly conclude "measured it, no difference".
-     *
-     * The preconditions hold here: one dark theme, background fully painted
-     * every frame. Unpainted regions become black rather than transparent,
-     * which is moot when everything is painted.
-     *
-     * ⚠️ **Main canvas only.** The offscreens in `render/grid.ts` and
-     * `render/animated-background.ts` composite **on top of** this one and need
-     * alpha; setting it there makes the background tiles occlude each other.
-     */
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
-    /** The scheduled frame's id, 0 while none is scheduled. */
     let handle = 0;
     let cancelled = false;
     const requestFrame = () => {
       if (handle === 0 && !cancelled) handle = requestAnimationFrame(frame);
     };
 
-    const runFrameGate = createFrameGate(configuration.frameGate);
+    const lightActiveRef = { current: false };
+    const runFrameGate = createFrameGate({ ...configuration.frameGate, lightActiveRef });
 
     const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame });
+    const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame });
 
     const frame = (now: number) => {
       handle = 0;
@@ -175,34 +136,17 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         frameChips,
         batchAppearVisible,
       );
+      light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
       runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById);
+      light.render();
 
       requestFrame();
     };
 
-    /**
-     * ★ **If the GPU reclaims the canvas the map goes blank** — and nobody is
-     * told.
-     *
-     * An accelerated canvas's backing store can be reclaimed by the browser (a
-     * GPU process crash, a driver reset, memory pressure on a backgrounded
-     * tab). `contextlost` fires and **drawing silently becomes a no-op** — no
-     * exception, no console error. The rAF loop keeps running while the screen
-     * stays empty, so the user sees "the map disappeared" and we see nothing at
-     * all.
-     *
-     * The spec's contract is simple: `preventDefault()` on `contextlost` makes
-     * the browser attempt recovery and fire `contextrestored`. The next frame
-     * redraws everything, so all we have to do is **prevent, and wake** — this
-     * loop is a full redraw every frame, so no restore procedure is needed.
-     * (`developer.chrome.com/blog/canvas2d`: "receive a callback and redraw".)
-     */
     const onContextLost = (event: Event) => {
-      event.preventDefault(); // Without this the browser does not attempt recovery.
+      event.preventDefault();
     };
     const onContextRestored = () => {
-      // The loop may be asleep, so mark the moment after recovery as activity
-      // to guarantee the next frame is drawn.
       viewportRebuildPendingRef.current = true;
       lastActiveMsRef.current = performance.now();
     };
@@ -219,6 +163,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       if (wakeFrameLoopRef.current === requestFrame) wakeFrameLoopRef.current = () => {};
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
+      light.dispose();
     };
 
   }, [beginCameraTween, cameraTokens, domeFitTarget, endGrowthReplay]);

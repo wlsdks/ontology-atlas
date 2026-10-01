@@ -62,7 +62,7 @@ export function DocsVaultVaultChip({
         aria-label={t("vaultChip.menuAriaLabel")}
         // A locale-independent handle for e2e specs.
         data-testid="vault-chip-menu-trigger"
-        className="min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="min-h-[var(--chrome-tile-size)] min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         {/* The icon states the source. */}
         {isSample ? (
