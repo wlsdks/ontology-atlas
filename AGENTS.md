@@ -30,8 +30,8 @@ authority is needed, and name the decision and rule that cause the pause. If a
 better approach exists, say so in one sentence and continue as asked. Reuse
 decisions and approval while their content and conditions still hold.
 
-Check `git status`; preserve unrelated changes and active processes. An existing
-`.codegraph/` index may help with cross-file impact; never create one.
+Check `git status`; preserve unrelated changes and active processes. Use native
+search and targeted file reads for source and change-impact questions.
 
 Finish with `pnpm checks:changed -- --run` and complete every recommendation.
 Stop after success unless a new edit, failure, or named risk requires more; do
