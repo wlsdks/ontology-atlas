@@ -765,8 +765,8 @@ function queryConceptsTool({ filter, limit }) {
   // (byKind/byDomain) for whether the filter aimed at a kind or domain that does
   // not exist.
   if (total === 0) {
-    const byKind = {};
-    const byDomain = {};
+    const byKind = Object.create(null);
+    const byDomain = Object.create(null);
     for (const doc of docs) {
       const kind = doc.frontmatter?.kind;
       if (kind) byKind[kind] = (byKind[kind] ?? 0) + 1;
