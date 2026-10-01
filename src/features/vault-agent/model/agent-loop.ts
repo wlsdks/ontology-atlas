@@ -147,6 +147,12 @@ export async function runTurn(
   });
 
   const emit = () => options.onProgress?.(snapshot());
+  const finishAborted = () => {
+    status = 'aborted';
+    events.push({ kind: 'notice', code: 'aborted', text: deps.notices.aborted });
+    emit();
+    return { turn: snapshot(), readSlugs, writeIntents };
+  };
   emit();
 
   const assemble = (tools: AgentLoopDeps['tools']) => ({
@@ -166,12 +172,7 @@ export async function runTurn(
   });
 
   while (rounds < roundCap) {
-    if (options.signal.aborted) {
-      status = 'aborted';
-      events.push({ kind: 'notice', code: 'aborted', text: deps.notices.aborted });
-      emit();
-      return { turn: snapshot(), readSlugs, writeIntents };
-    }
+    if (options.signal.aborted) return finishAborted();
 
     const assembly = assemble(deps.tools);
     const payload = deps.adapter.buildBody(assembly);
@@ -185,13 +186,9 @@ export async function runTurn(
         scope: sendScope(payload),
       });
     } catch (error) {
-      if (options.signal.aborted) {
-        status = 'aborted';
-        events.push({ kind: 'notice', code: 'aborted', text: deps.notices.aborted });
-      } else {
-        status = 'failed';
-        events.push(noticeFor(deps, null, String(error)));
-      }
+      if (options.signal.aborted) return finishAborted();
+      status = 'failed';
+      events.push(noticeFor(deps, null, String(error)));
       emit();
       return { turn: snapshot(), readSlugs, writeIntents };
     }
@@ -199,6 +196,7 @@ export async function runTurn(
     rounds += 1;
     sentChars += payload.length;
     auditCount += 1;
+    if (options.signal.aborted) return finishAborted();
 
     if (echo.status < 200 || echo.status >= 300) {
       status = 'failed';
@@ -295,12 +293,7 @@ export async function runTurn(
 
     exchanges.push({ assistant: parsed.raw, toolResults: results });
 
-    if (options.signal.aborted) {
-      status = 'aborted';
-      events.push({ kind: 'notice', code: 'aborted', text: deps.notices.aborted });
-      emit();
-      return { turn: snapshot(), readSlugs, writeIntents };
-    }
+    if (options.signal.aborted) return finishAborted();
 
     if (vaultChars > AGENT_TURN_VAULT_CHAR_CAP) {
       status = 'done';
@@ -323,6 +316,7 @@ export async function runTurn(
       });
       sentChars += closingBody.length;
       auditCount += 1;
+      if (options.signal.aborted) return finishAborted();
       const parsed = deps.adapter.parseResponse(echo.body);
       const review =
         deps.adapter.reviewResponse?.(closingAssembly, parsed) ?? { action: 'accept' as const };
@@ -338,9 +332,11 @@ export async function runTurn(
       }
       if (parsed.text.trim()) pushAssistant(parsed.text);
     } catch {
+      if (options.signal.aborted) return finishAborted();
     // A failed wrap-up is not a failure of the turn — what was read is already on screen.
     }
   }
+  if (options.signal.aborted) return finishAborted();
   status = 'done';
   events.push({ kind: 'notice', code: 'round-cap', text: deps.notices.roundCap });
   emit();

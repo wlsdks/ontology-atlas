@@ -241,10 +241,10 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
         setTurns((current) =>
           current.map((existing) => (existing.id === result.turn.id ? result.turn : existing)),
         );
+        if (controller.signal.aborted || abortRef.current !== controller) return;
         setRunning(false);
         setElapsedSeconds(null);
         setRunStartedAt(null);
-        abortRef.current = null;
 
         if (result.writeIntents.length > 0) {
           const built = await buildProposal({
@@ -259,33 +259,32 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
             // audit log already records is passed straight through.
             agentName: provider,
           });
-          if (built) setProposal(built);
+          if (built && !controller.signal.aborted && abortRef.current === controller) setProposal(built);
         }
       } catch (error) {
-        // Not swallowed: the console keeps the stack, the panel gets a sentence.
-        console.error('[vault-agent] turn failed', error);
+        const cancelled = controller.signal.aborted;
+        if (!cancelled) console.error('[vault-agent] turn failed', error);
         setTurns((current) =>
           current.map((existing) =>
             existing.id === turn.id
               ? {
                   ...existing,
-                  status: 'failed',
+                  status: cancelled ? 'aborted' : 'failed',
                   events: [
                     ...existing.events,
-                    { kind: 'notice', code: 'failed', text: args.notices.failed },
+                    { kind: 'notice', code: cancelled ? 'aborted' : 'failed', text: cancelled ? args.notices.aborted : args.notices.failed },
                   ],
                 }
               : existing,
           ),
         );
       } finally {
-        // Idempotent on the success path, where these already ran before the proposal
-        // was built — repeating them keeps that ordering identical while guaranteeing
-        // the running flag and the elapsed timer are released on every exit.
-        setRunning(false);
-        setElapsedSeconds(null);
-        setRunStartedAt(null);
-        abortRef.current = null;
+        if (abortRef.current === controller) {
+          setRunning(false);
+          setElapsedSeconds(null);
+          setRunStartedAt(null);
+          abortRef.current = null;
+        }
       }
     },
     [args, port, systemPrompt],

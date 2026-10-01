@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 
 const runTurn = vi.hoisted(() => vi.fn());
+const buildProposal = vi.hoisted(() => vi.fn());
 
 vi.mock('@/features/vault-agent', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   runTurn,
+  buildProposal,
 }));
 
 vi.mock('@/entities/vault-session', () => ({
@@ -27,6 +29,9 @@ vi.mock('@/shared/lib/tauri-llm', () => ({
 }));
 
 import { useVaultAgent, type UseVaultAgentArgs } from './use-vault-agent';
+import type { AgentTurn } from '@/features/vault-agent';
+
+type TurnResult = Awaited<ReturnType<typeof import('@/features/vault-agent').runTurn>>;
 
 function args(): UseVaultAgentArgs {
   return {
@@ -69,6 +74,7 @@ function args(): UseVaultAgentArgs {
 describe('useVaultAgent — send when the turn rejects', () => {
   beforeEach(() => {
     runTurn.mockReset();
+    buildProposal.mockReset().mockResolvedValue(null);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -122,5 +128,54 @@ describe('useVaultAgent — send when the turn rejects', () => {
 
     expect(result.current.running).toBe(false);
     expect(result.current.turns.at(-1)?.status).toBe('done');
+  });
+
+  it('keeps a newer request active when a cancelled request completes', async () => {
+    const first = Promise.withResolvers<TurnResult>();
+    const second = Promise.withResolvers<TurnResult>();
+    const started: AgentTurn[] = [];
+    const signals: AbortSignal[] = [];
+    runTurn.mockImplementation((_deps, turn: AgentTurn, options: { signal: AbortSignal }) => {
+      started.push(turn);
+      signals.push(options.signal);
+      return started.length === 1 ? first.promise : second.promise;
+    });
+    const { result } = renderHook(() => useVaultAgent(args()));
+    let firstSend!: Promise<void>;
+    let secondSend!: Promise<void>;
+    act(() => { firstSend = result.current.send('first'); });
+    act(() => { result.current.stop(); });
+    act(() => { secondSend = result.current.send('second'); });
+    await act(async () => {
+      first.resolve({ turn: { ...started[0], status: 'aborted' }, readSlugs: [], writeIntents: [{ name: 'create_concept', args: {} }] });
+      await firstSend;
+    });
+    expect(result.current.running).toBe(true);
+    expect(buildProposal).not.toHaveBeenCalled();
+    act(() => { result.current.stop(); });
+    expect(signals[1].aborted).toBe(true);
+    await act(async () => {
+      second.resolve({ turn: { ...started[1], status: 'aborted' }, readSlugs: [], writeIntents: [] });
+      await secondSend;
+    });
+    expect(result.current.running).toBe(false);
+  });
+
+  it('does not publish a proposal prepared after cancellation', async () => {
+    const prepared = Promise.withResolvers<unknown>();
+    buildProposal.mockReturnValue(prepared.promise);
+    runTurn.mockImplementation(async (_deps, turn: AgentTurn) => ({
+      turn: { ...turn, status: 'done' }, readSlugs: [], writeIntents: [{ name: 'create_concept', args: {} }],
+    }));
+    const { result } = renderHook(() => useVaultAgent(args()));
+    let pending!: Promise<void>;
+    await act(async () => { pending = result.current.send('prepare'); });
+    expect(buildProposal).toHaveBeenCalledTimes(1);
+    act(() => { result.current.stop(); });
+    await act(async () => {
+      prepared.resolve({ id: 'late-proposal', status: 'pending', changes: [] });
+      await pending;
+    });
+    expect(result.current.proposal).toBeNull();
   });
 });
