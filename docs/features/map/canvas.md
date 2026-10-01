@@ -238,15 +238,34 @@ routes: [/topology]
 - **Strata at scale** (2026-10-01) — once a capability or element plane is too
   dense to read as discs (median lane gap under 0.9 disc diameters, or more than
   1,500 of its discs on screen), it crossfades to **dust**: one dot per concept
-  in its kind colour, dimmer for unknown evidence and amber for stale, and each
-  domain's containment into that plane becomes **one light sheet** down to its
-  slice instead of a line per child. Hovering a domain or the band under the
-  pointer, or focusing a concept, resolves that domain's slice back to discs and
-  lines; zooming in resolves a whole plane. Every change of level is a 120 ms
-  opacity crossfade, the same under reduced motion. Measured on the static export
-  at 1512x982 @2x: 10,000 concepts went from 59 ms of script and 46,809 draw
-  calls per frame (15 fps) to 10 ms and 1,024 (95 fps idle, 78 fps orbiting); the
-  sample vault and anything below the threshold draw pixel-identically. Model:
+  at its own place in its kind colour, and each domain's containment into that
+  plane becomes **one light sheet** down to its slice instead of a line per
+  child. Only a concept whose evidence was measured current becomes dust. A
+  stale or unknown concept keeps its disc and evidence ring, because a dot cannot
+  carry the ring: over the lit floor a stale ring stands 1.7-2.0:1 from current
+  dust (4.7-6.7:1 from the floor) and an unknown disc's dark body 3.5-4.3:1,
+  where the same states as dust stood 1.02-1.12:1 and 1.32-1.42:1. The web
+  measures no evidence, so its dust is drawn as unmeasured. A **dependency**
+  with a dust end is carried by one counted chord per ordered pair of domains,
+  drawn between the domain discs and wider and brighter as the count grows. A
+  dependency inside one domain, or with an end outside every domain, has no
+  chord and stays hidden until both ends resolve; the synthetic vault at 10,000
+  concepts hides 1,671 and 693 of its 8,925 that way, and the map instrument
+  counts them. The concept nearest the pointer (within 6 px, else the sheet under
+  it), a hovered domain, or the focused concept's domain resolves that slice back
+  to discs and lines. The pick is re-read only when the pointer moves over a
+  still dome, held while the dome orbits or coasts, and released when the
+  pointer leaves the map. Zoom resolves a plane once its lanes open past 0.9
+  disc diameters with fewer than 1,500 of its discs on screen. At 10,000
+  concepts the element plane reaches only 0.44 of the disc level at the closest
+  zoom, so a slice is opened by hover or focus. Every change of level is a
+  120 ms opacity crossfade that advances at most one 60 Hz frame per drawn
+  frame, so the first frame after an idle wake cannot jump. It is the same under
+  reduced motion. Measured on the static export at 1512x982 @2x, 10,000
+  concepts went from 59 ms of script and 46,809 draw calls per frame (15 fps) to
+  9.5 ms and 1,031 (97 fps idle, 95 fps orbiting). With 8,925 dependencies it
+  takes 11.8 ms and 2,087 calls (78 fps idle, 77 fps orbiting). The sample vault
+  and anything below the threshold draw pixel-identically. Model:
   `src/widgets/ontology-map/model/strata-lod.ts`; gate:
   `tests/e2e/map-3d-strata-lod.spec.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic

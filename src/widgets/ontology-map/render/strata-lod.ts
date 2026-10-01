@@ -66,39 +66,38 @@ export function drawStrataLodSheets(
 
 export type StrataLodDustPlane = "capability" | "element";
 
-const DUST_PLANES: readonly StrataLodDustPlane[] = ["capability", "element"];
 const DUST_STATES: readonly EvidenceLight[] = ["current", "stale", "unknown"];
-const DUST_FOG_BUCKETS = 4;
-const DUST_WEIGHT_BUCKETS = 3;
+const DUST_FOG_BUCKETS = 8;
+const DUST_WEIGHT_STEPS = 128;
 const DUST_RADIUS: Readonly<Record<StrataLodDustPlane, number>> = { capability: 1.7, element: 1.3 };
 const DUST_EMISSION: Readonly<Record<EvidenceLight, number>> = { current: 1, stale: 0.85, unknown: 0.72 };
 const DUST_DOT_ALPHA = 0.7;
-const DUST_SPREAD_GAIN = 1.6;
-const DUST_SPREAD_MAX_PX = 4.5;
 
 interface DustBucket {
+  plane: StrataLodDustPlane;
+  state: EvidenceLight;
+  fog: number;
+  weight: number;
   xs: Float32Array;
   ys: Float32Array;
   count: number;
 }
 
 export interface StrataLodDust {
-  buckets: DustBucket[];
-}
-
-function bucketIndex(plane: number, state: number, fog: number, weight: number): number {
-  return ((plane * DUST_STATES.length + state) * DUST_FOG_BUCKETS + fog) * DUST_WEIGHT_BUCKETS + weight;
+  buckets: Map<number, DustBucket>;
+  pool: DustBucket[];
 }
 
 export function createStrataLodDust(): StrataLodDust {
-  const buckets: DustBucket[] = [];
-  const total = DUST_PLANES.length * DUST_STATES.length * DUST_FOG_BUCKETS * DUST_WEIGHT_BUCKETS;
-  for (let i = 0; i < total; i += 1) buckets.push({ xs: new Float32Array(64), ys: new Float32Array(64), count: 0 });
-  return { buckets };
+  return { buckets: new Map(), pool: [] };
 }
 
 export function resetStrataLodDust(dust: StrataLodDust): void {
-  for (const bucket of dust.buckets) bucket.count = 0;
+  for (const bucket of dust.buckets.values()) {
+    bucket.count = 0;
+    dust.pool.push(bucket);
+  }
+  dust.buckets.clear();
 }
 
 export function addStrataLodDust(
@@ -111,8 +110,22 @@ export function addStrataLodDust(
   y: number,
 ): void {
   const fog = Math.min(DUST_FOG_BUCKETS - 1, Math.max(0, Math.floor(u * DUST_FOG_BUCKETS)));
-  const w = Math.min(DUST_WEIGHT_BUCKETS - 1, Math.floor(weight * DUST_WEIGHT_BUCKETS - 1e-9));
-  const bucket = dust.buckets[bucketIndex(plane === "capability" ? 0 : 1, DUST_STATES.indexOf(state), fog, Math.max(0, w))];
+  const w = Math.round(Math.min(1, Math.max(0, weight)) * DUST_WEIGHT_STEPS);
+  if (w === 0) return;
+  const key =
+    (((plane === "capability" ? 0 : 1) * DUST_STATES.length + DUST_STATES.indexOf(state)) * DUST_FOG_BUCKETS + fog) *
+      (DUST_WEIGHT_STEPS + 1) +
+    w;
+  let bucket = dust.buckets.get(key);
+  if (bucket === undefined) {
+    bucket = dust.pool.pop() ?? { plane, state, fog, weight: w, xs: new Float32Array(64), ys: new Float32Array(64), count: 0 };
+    bucket.plane = plane;
+    bucket.state = state;
+    bucket.fog = fog;
+    bucket.weight = w;
+    bucket.count = 0;
+    dust.buckets.set(key, bucket);
+  }
   if (bucket.count === bucket.xs.length) {
     const xs = new Float32Array(bucket.xs.length * 2);
     const ys = new Float32Array(bucket.ys.length * 2);
@@ -126,11 +139,7 @@ export function addStrataLodDust(
   bucket.count += 1;
 }
 
-export function strataLodDustSpreadPx(plane: StrataLodDustPlane, spacingPx: number): number {
-  const diameter = DUST_RADIUS[plane] * 2;
-  if (!(spacingPx >= 0) || spacingPx >= diameter) return 0;
-  return Math.min(DUST_SPREAD_MAX_PX, diameter * (1 - spacingPx / diameter) * DUST_SPREAD_GAIN);
-}
+const bucketOrder: DustBucket[] = [];
 
 export function drawStrataLodDust(
   ctx: CanvasRenderingContext2D,
@@ -140,38 +149,88 @@ export function drawStrataLodDust(
   presence: number,
 ): number {
   if (presence <= 0.01) return 0;
+  bucketOrder.length = 0;
+  for (const bucket of dust.buckets.values()) if (bucket.count > 0) bucketOrder.push(bucket);
+  bucketOrder.sort((a, b) => b.fog - a.fog);
   const prevAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   let drawn = 0;
-  for (let p = 0; p < DUST_PLANES.length; p += 1) {
-    const plane = DUST_PLANES[p];
-    for (let s = 0; s < DUST_STATES.length; s += 1) {
-      const state = DUST_STATES[s];
-      const rgb = state === "stale" ? inks.warningRgb : inks.kindRgb[plane];
-      if (!rgb) continue;
-      for (let f = 0; f < DUST_FOG_BUCKETS; f += 1) {
-        const u = (f + 0.5) / DUST_FOG_BUCKETS;
-        const radius = DUST_RADIUS[plane] * (1.15 - 0.3 * u);
-        for (let w = 0; w < DUST_WEIGHT_BUCKETS; w += 1) {
-          const bucket = dust.buckets[bucketIndex(p, s, f, w)];
-          if (bucket.count === 0) continue;
-          const weight = (w + 1) / DUST_WEIGHT_BUCKETS;
-          const alpha = DUST_DOT_ALPHA * DUST_EMISSION[state] * fog(u) * weight * presence;
-          if (alpha <= 0.004) continue;
-          ctx.fillStyle = rgba(rgb, alpha);
-          ctx.beginPath();
-          for (let i = 0; i < bucket.count; i += 1) {
-            const x = bucket.xs[i];
-            const y = bucket.ys[i];
-            ctx.moveTo(x + radius, y);
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-          }
-          ctx.fill();
-          drawn += bucket.count;
-        }
-      }
+  for (const bucket of bucketOrder) {
+    const rgb = bucket.state === "stale" ? inks.warningRgb : inks.kindRgb[bucket.plane];
+    if (!rgb) continue;
+    const u = (bucket.fog + 0.5) / DUST_FOG_BUCKETS;
+    const alpha = DUST_DOT_ALPHA * DUST_EMISSION[bucket.state] * fog(u) * (bucket.weight / DUST_WEIGHT_STEPS) * presence;
+    if (alpha <= 0.002) continue;
+    const radius = DUST_RADIUS[bucket.plane] * (1.15 - 0.3 * u);
+    ctx.fillStyle = rgba(rgb, alpha);
+    ctx.beginPath();
+    for (let i = 0; i < bucket.count; i += 1) {
+      const x = bucket.xs[i];
+      const y = bucket.ys[i];
+      ctx.moveTo(x + radius, y);
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
     }
+    ctx.fill();
+    drawn += bucket.count;
   }
   ctx.globalAlpha = prevAlpha;
+  return drawn;
+}
+
+export interface StrataLodChordDraw {
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+  cx: number;
+  cy: number;
+  count: number;
+  weight: number;
+  depth: number;
+  lifted: boolean;
+}
+
+const chordOrder: number[] = [];
+
+export function strataLodChordWidth(count: number): number {
+  return Math.min(3.5, 0.8 + 0.55 * Math.log2(1 + count));
+}
+
+function strataLodChordAlpha(count: number): number {
+  return Math.min(0.75, 0.22 + 0.09 * Math.log2(1 + count));
+}
+
+export function drawStrataLodChords(
+  ctx: CanvasRenderingContext2D,
+  chords: readonly StrataLodChordDraw[],
+  count: number,
+  ink: Rgb,
+  fog: (u: number) => number,
+  presence: number,
+): number {
+  if (presence <= 0.01) return 0;
+  chordOrder.length = 0;
+  for (let i = 0; i < count; i += 1) if (chords[i].weight > 0.004) chordOrder.push(i);
+  chordOrder.sort((a, b) => chords[b].depth - chords[a].depth);
+  const prevAlpha = ctx.globalAlpha;
+  const prevCap = ctx.lineCap;
+  ctx.globalAlpha = 1;
+  ctx.lineCap = "round";
+  let drawn = 0;
+  for (const i of chordOrder) {
+    const chord = chords[i];
+    const share = chord.weight / chord.count;
+    const alpha = Math.min(1, strataLodChordAlpha(chord.count) * (chord.lifted ? 1.6 : 1)) * share * fog(chord.depth) * presence;
+    if (alpha <= 0.003) continue;
+    ctx.strokeStyle = rgba(ink, alpha);
+    ctx.lineWidth = strataLodChordWidth(chord.count);
+    ctx.beginPath();
+    ctx.moveTo(chord.ax, chord.ay);
+    ctx.quadraticCurveTo(chord.cx, chord.cy, chord.bx, chord.by);
+    ctx.stroke();
+    drawn += 1;
+  }
+  ctx.globalAlpha = prevAlpha;
+  ctx.lineCap = prevCap;
   return drawn;
 }

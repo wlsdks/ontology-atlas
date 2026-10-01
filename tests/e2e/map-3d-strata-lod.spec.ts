@@ -9,11 +9,20 @@ interface StrataLodProbe {
   element: number;
   sheets: number;
   dust: number;
+  chords: number;
+  chordEdges: number;
+  hiddenEdges: number;
+}
+
+interface WakeProbe {
+  wake: () => void;
+  dome: () => { lod: StrataLodProbe };
 }
 
 test.use({ viewport: { width: 1512, height: 982 } });
 
 async function openStrata(page: Page, query: string): Promise<void> {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     localStorage.setItem("atlas.appearance.galaxy", "off");
@@ -27,7 +36,8 @@ async function openStrata(page: Page, query: string): Promise<void> {
 async function drawCallsPerFrame(page: Page): Promise<number> {
   return page.evaluate(
     () =>
-      new Promise<number>((resolve) => {
+      new Promise<number>((resolve, reject) => {
+        const probe = (window as unknown as { __atlasMap: WakeProbe }).__atlasMap;
         const proto = CanvasRenderingContext2D.prototype as unknown as Record<string, (...args: unknown[]) => unknown>;
         let calls = 0;
         for (const name of ["stroke", "fill", "drawImage", "fillText", "strokeText", "fillRect", "strokeRect"]) {
@@ -37,27 +47,32 @@ async function drawCallsPerFrame(page: Page): Promise<number> {
             return original.apply(this, args);
           };
         }
+        const deadline = performance.now() + 30_000;
         const perFrame: number[] = [];
         let last = calls;
         const sample = () => {
           if (calls > last) perFrame.push(calls - last);
           last = calls;
-          if (perFrame.length < 24) {
-            requestAnimationFrame(sample);
+          if (perFrame.length >= 24) {
+            perFrame.sort((a, b) => a - b);
+            resolve(perFrame[perFrame.length >> 1]);
             return;
           }
-          perFrame.sort((a, b) => a - b);
-          resolve(perFrame[perFrame.length >> 1]);
+          if (performance.now() > deadline) {
+            reject(new Error(`the map drew ${perFrame.length} frames before the deadline`));
+            return;
+          }
+          probe.wake();
+          requestAnimationFrame(sample);
         };
+        probe.wake();
         requestAnimationFrame(sample);
       }),
   );
 }
 
 async function lod(page: Page): Promise<StrataLodProbe> {
-  return page.evaluate(
-    () => (window as unknown as { __atlasMap: { dome: () => { lod: StrataLodProbe } } }).__atlasMap.dome().lod,
-  );
+  return page.evaluate(() => (window as unknown as { __atlasMap: WakeProbe }).__atlasMap.dome().lod);
 }
 
 test("Strata's per-frame draw calls stay flat from 2,000 to 10,000 concepts", async ({ page }) => {
@@ -75,7 +90,20 @@ test("Strata's per-frame draw calls stay flat from 2,000 to 10,000 concepts", as
   expect(state.sheets).toBeGreaterThan(0);
 });
 
+test("dependencies with a dust end ride counted domain chords within the same budget", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openStrata(page, "synth=10000&synthDeps=1&");
+  const calls = await drawCallsPerFrame(page);
+  const state = await lod(page);
+  console.log(
+    `[strata-lod] 10,000 concepts with dependencies: ${calls} draw calls, ${state.chords} chords carrying ${state.chordEdges} dependencies, ${state.hiddenEdges} hidden inside one domain or outside every domain`,
+  );
+  expect(calls).toBeLessThan(5_000);
+  expect(state.chords).toBeGreaterThan(0);
+  expect(state.chordEdges).toBeGreaterThan(1_000);
+});
+
 test("a small vault never leaves the detailed Strata drawing", async ({ page }) => {
   await openStrata(page, "");
-  expect(await lod(page)).toMatchObject({ active: false, capability: 1, element: 1, sheets: 0 });
+  expect(await lod(page)).toMatchObject({ active: false, capability: 1, element: 1, sheets: 0, dust: 0, chords: 0 });
 });

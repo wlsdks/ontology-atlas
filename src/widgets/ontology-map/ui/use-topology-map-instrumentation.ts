@@ -20,7 +20,7 @@ import type { OntologyMapProps } from "./OntologyMap";
 import type { StrataLodState } from "../model/strata-lod";
 import {
   lastDrawnLabelBoxes,
-  lastDrawnLodDust,
+  lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
   lastLitStateCounts,
@@ -31,6 +31,7 @@ import type {
   TopologyPointerHandlers,
 } from "./topology-pointer-handlers";
 import { lastTierPlanes } from "./topology-presentation-frame-stage";
+import { requestOntologyMapFrame } from "./use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import {
   radiusForKind,
@@ -495,7 +496,10 @@ export function useTopologyMapInstrumentation({
             hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
             focusSlot: domeLodRef.current.focusSlot,
             sheets: domeLodRef.current.shapeCount,
-            dust: lastDrawnLodDust(),
+            dust: lastDrawnLod().dust,
+            chords: lastDrawnLod().chords,
+            chordEdges: lastDrawnLod().represented,
+            hiddenEdges: lastDrawnLod().hidden,
             settling: domeLodRef.current.settling,
           },
         };
@@ -533,6 +537,10 @@ export function useTopologyMapInstrumentation({
        * crossed (2026-08-22). Names collide long before discs do.
        */
       setComets: (on: boolean) => setMapComets(on),
+      wake: () => {
+        lastActiveMsRef.current = performance.now();
+        requestOntologyMapFrame();
+      },
       labels: () => lastDrawnLabelBoxes(),
       relationCaptions: () => lastDrawnRelationCaptions(),
       /** Strata's planes as the last frame drew them — what the tier names are placed against. */

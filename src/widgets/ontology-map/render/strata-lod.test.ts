@@ -3,18 +3,24 @@ import { describe, expect, it } from "vitest";
 import {
   addStrataLodDust,
   createStrataLodDust,
+  drawStrataLodChords,
   drawStrataLodDust,
   drawStrataLodSheets,
   resetStrataLodDust,
-  strataLodDustSpreadPx,
+  strataLodChordWidth,
+  type StrataLodChordDraw,
   type StrataLodSheetDraw,
 } from "./strata-lod";
 
 function recordingContext() {
-  const calls = { fill: 0, stroke: 0, arc: 0, gradients: [] as number[][] };
+  const calls = { fill: 0, stroke: 0, arc: 0, gradients: [] as number[][], fillStyles: [] as string[], strokeStyles: [] as string[] };
   const ctx = {
     globalAlpha: 1,
+    lineCap: "butt",
+    lineWidth: 1,
+    strokeStyle: "" as unknown,
     fillStyle: "" as unknown,
+    quadraticCurveTo() {},
     beginPath() {},
     moveTo() {},
     lineTo() {},
@@ -24,9 +30,11 @@ function recordingContext() {
     },
     fill() {
       calls.fill += 1;
+      calls.fillStyles.push(String(this.fillStyle));
     },
     stroke() {
       calls.stroke += 1;
+      calls.strokeStyles.push(String(this.strokeStyle));
     },
     createLinearGradient(x0: number, y0: number, x1: number, y1: number) {
       calls.gradients.push([x0, y0, x1, y1]);
@@ -60,7 +68,26 @@ describe("drawStrataLodDust", () => {
     expect(large.drawn).toBe(10_000);
     expect(large.arcs).toBe(10_000);
     expect(large.fills).toBe(small.fills);
-    expect(large.fills).toBeLessThanOrEqual(16);
+    expect(large.fills).toBeLessThanOrEqual(2 * 3 * 8);
+  });
+
+  it("follows a crossfading weight continuously instead of in steps", () => {
+    const alphaFor = (weight: number) => {
+      const dust = createStrataLodDust();
+      addStrataLodDust(dust, "element", "current", 0.1, weight, 10, 10);
+      const { ctx, calls } = recordingContext();
+      drawStrataLodDust(ctx, dust, inks, () => 1, 1);
+      const match = calls.fillStyles[0]?.match(/,([\d.]+)\)$/);
+      return match ? Number(match[1]) : 0;
+    };
+    let previous = alphaFor(1);
+    for (let frame = 1; frame <= 15; frame += 1) {
+      const weight = Math.max(0, 1 - frame / 15);
+      const alpha = alphaFor(weight);
+      expect(Math.abs(alpha - 0.7 * weight)).toBeLessThanOrEqual(0.7 / 128 + 0.001);
+      expect(previous - alpha).toBeLessThanOrEqual(0.7 / 15 + 0.01);
+      previous = alpha;
+    }
   });
 
   it("draws nothing while the structure is hidden", () => {
@@ -72,15 +99,27 @@ describe("drawStrataLodDust", () => {
   });
 });
 
-describe("strataLodDustSpreadPx", () => {
-  it("keeps dust on its lane while neighbours stand apart, and spreads it only when they pile up", () => {
-    expect(strataLodDustSpreadPx("element", 3)).toBe(0);
-    expect(strataLodDustSpreadPx("element", 2.6)).toBe(0);
-    const loose = strataLodDustSpreadPx("element", 1.5);
-    const dense = strataLodDustSpreadPx("element", 0.3);
-    expect(loose).toBeGreaterThan(0);
-    expect(dense).toBeGreaterThan(loose);
-    expect(strataLodDustSpreadPx("element", 0)).toBeLessThanOrEqual(4.5);
+describe("drawStrataLodChords", () => {
+  const chord = (count: number, weight: number, depth: number): StrataLodChordDraw => ({
+    ax: 0,
+    ay: 0,
+    bx: 100,
+    by: 0,
+    cx: 50,
+    cy: 20,
+    count,
+    weight,
+    depth,
+    lifted: false,
+  });
+
+  it("strokes one counted chord per domain pair, wider for more dependencies, and none for a chord fully resolved", () => {
+    const { ctx, calls } = recordingContext();
+    const drawn = drawStrataLodChords(ctx, [chord(1, 1, 0.2), chord(40, 40, 0.6), chord(5, 0, 0.4)], 3, [102, 102, 133], () => 1, 1);
+    expect(drawn).toBe(2);
+    expect(calls.stroke).toBe(2);
+    expect(strataLodChordWidth(40)).toBeGreaterThan(strataLodChordWidth(1));
+    expect(strataLodChordWidth(100_000)).toBeLessThanOrEqual(3.5);
   });
 });
 

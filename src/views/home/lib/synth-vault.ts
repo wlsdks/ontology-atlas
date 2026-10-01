@@ -108,8 +108,29 @@ function makeContainsEdge(from: string, to: string): KnowledgeGraphEdge {
   };
 }
 
+function makeDependsEdge(from: string, to: string): KnowledgeGraphEdge {
+  return {
+    id: `${from}~>${to}`,
+    from,
+    to,
+    type: "depends_on",
+    projectIds: [PROJECT_ID],
+    evidenceIds: [],
+    lastApprovedAt: FIXED_TS,
+    lastApprovedBy: APPROVED_BY,
+  };
+}
+
+function knuthHash(value: number): number {
+  return (Math.imul(value + 1, 2654435761) >>> 0) / 4294967296;
+}
+
+export interface SynthVaultOptions {
+  dependencies?: boolean;
+}
+
 /** Same `total`, byte-identical node and edge order. */
-export function synthesizeVaultGraph(total: number): SynthVaultGraph {
+export function synthesizeVaultGraph(total: number, options: SynthVaultOptions = {}): SynthVaultGraph {
   const n = clampSynthSize(total) ?? SYNTH_MIN;
   const counts = computeSynthCounts(n);
   const nodes: KnowledgeGraphNode[] = [];
@@ -149,6 +170,20 @@ export function synthesizeVaultGraph(total: number): SynthVaultGraph {
     const parentCap = `synth-cap-${skewedCapabilityIndex(e, counts.capability)}`;
     nodes.push(makeNode(id, `Element ${e}`, "element", [PROJECT_ID]));
     edges.push(makeContainsEdge(parentCap, id));
+  }
+
+  if (options.dependencies === true) {
+    for (let c = 0; c < counts.capability; c += 1) {
+      const sibling = (c + counts.domain) % counts.capability;
+      if (sibling !== c) edges.push(makeDependsEdge(`synth-cap-${c}`, `synth-cap-${sibling}`));
+      const far = Math.floor(knuthHash(c) * counts.capability);
+      if (far !== c && far !== sibling) edges.push(makeDependsEdge(`synth-cap-${c}`, `synth-cap-${far}`));
+    }
+    for (let e = 0; e < counts.element; e += 1) {
+      if (e % 10 >= 7) continue;
+      const target = Math.floor(knuthHash(e + counts.capability) * counts.element);
+      if (target !== e) edges.push(makeDependsEdge(`synth-el-${e}`, `synth-el-${target}`));
+    }
   }
 
   return { nodes, edges, counts };

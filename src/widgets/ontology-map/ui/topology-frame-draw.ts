@@ -59,11 +59,13 @@ import {
 import {
   addStrataLodDust,
   createStrataLodDust,
+  drawStrataLodChords,
   drawStrataLodDust,
   drawStrataLodSheets,
   resetStrataLodDust,
-  strataLodDustSpreadPx,
+  type StrataLodChordDraw,
 } from "../render/strata-lod";
+import { createStrataLodChords, rollUpStrataDependencies } from "../model/strata-lod";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -233,15 +235,18 @@ const domeNodeDepthReused: number[] = [];
 const domeNodeIndexReused: number[] = [];
 const domeEdgeFrameAReused: DomeNodeFrame[] = [];
 const domeEdgeFrameBReused: DomeNodeFrame[] = [];
-const STRATA_LOD_FLOOR_BAND_REST = 0.35;
 let lodPresenceReused = new Float32Array(0);
 let lodDustDrawn = 0;
-export function lastDrawnLodDust(): number {
-  return lodDustDrawn;
+let lodChordsDrawn = 0;
+export function lastDrawnLod(): { dust: number; chords: number; represented: number; hidden: number } {
+  return { dust: lodDustDrawn, chords: lodChordsDrawn, represented: lodChords.represented, hidden: lodChords.hidden };
 }
 const lodDust = createStrataLodDust();
+const lodChords = createStrataLodChords();
+const lodChordPool: StrataLodChordDraw[] = [];
 const lodHoverEgoReused = new Set<string>();
 let lodContainsInk: { hex: string; rgb: readonly [number, number, number] } | null = null;
+let lodDependsInk: { hex: string; rgb: readonly [number, number, number] } | null = null;
 /** The radius the node pass actually drew — reused each frame via `.clear()`. */
 const drawnScreenRadiusByIdReused = new Map<string, number>();
 const ambientDependsCometsReused = new Set<string>();
@@ -2030,12 +2035,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       project,
       domeFogAlpha,
       1 - 0.55 * litFocusRamp,
-      lod === null
-        ? undefined
-        : {
-            capability: STRATA_LOD_FLOOR_BAND_REST + (1 - STRATA_LOD_FLOOR_BAND_REST) * lod.planeResolve.capability,
-            element: STRATA_LOD_FLOOR_BAND_REST + (1 - STRATA_LOD_FLOOR_BAND_REST) * lod.planeResolve.element,
-          },
     );
   }
 
@@ -2095,6 +2094,61 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       lodContainsInk = { hex: tokens.edgeContains, rgb: hexToRgb(tokens.edgeContains) ?? [128, 128, 140] };
     }
     drawStrataLodSheets(ctx, lod.shapes, lod.shapeCount, lodContainsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
+  }
+  lodChordsDrawn = 0;
+  if (lod !== null && lod.index !== null) {
+    const index = lod.index;
+    const slots = index.domainIds.length;
+    rollUpStrataDependencies(
+      lodChords,
+      slots,
+      index.domainSlotOf,
+      world.edges,
+      edgeEnds.source,
+      edgeEnds.target,
+      (i) => lodPresenceReused[i],
+      (i) => domeNodeFrameReused[i].a,
+    );
+    let chordCount = 0;
+    for (let key = 0; key < slots * slots; key += 1) {
+      const count = lodChords.count[key];
+      if (count === 0) continue;
+      const from = Math.floor(key / slots);
+      const to = key - from * slots;
+      const ia = index.domains[from].nodeIndex;
+      const ib = index.domains[to].nodeIndex;
+      if (ia < 0 || ib < 0) continue;
+      const fa = domeNodeFrameReused[ia];
+      const fb = domeNodeFrameReused[ib];
+      const ax = (world.nodes[ia].x + fa.dx - camX) * camScale + halfW;
+      const ay = (world.nodes[ia].y + fa.dy - camY) * camScale + halfH;
+      const bx = (world.nodes[ib].x + fb.dx - camX) * camScale + halfW;
+      const by = (world.nodes[ib].y + fb.dy - camY) * camScale + halfH;
+      const mx = (ax + bx) / 2;
+      const my = (ay + by) / 2;
+      const length = Math.hypot(bx - ax, by - ay) || 1;
+      const bow = Math.min(length * 0.12, 40);
+      let chord = lodChordPool[chordCount];
+      if (!chord) {
+        chord = { ax: 0, ay: 0, bx: 0, by: 0, cx: 0, cy: 0, count: 0, weight: 0, depth: 0, lifted: false };
+        lodChordPool[chordCount] = chord;
+      }
+      chord.ax = ax;
+      chord.ay = ay;
+      chord.bx = bx;
+      chord.by = by;
+      chord.cx = mx + (lod.hub.x - mx) * 0.3 - ((by - ay) / length) * bow;
+      chord.cy = my + (lod.hub.y - my) * 0.3 + ((bx - ax) / length) * bow;
+      chord.count = count;
+      chord.weight = lodChords.weight[key];
+      chord.depth = (fa.u + fb.u) / 2;
+      chord.lifted = from === lod.hoverSlot || to === lod.hoverSlot || from === lod.focusSlot || to === lod.focusSlot;
+      chordCount += 1;
+    }
+    if (lodDependsInk === null || lodDependsInk.hex !== tokens.edgeDepends) {
+      lodDependsInk = { hex: tokens.edgeDepends, rgb: hexToRgb(tokens.edgeDepends) ?? [102, 102, 133] };
+    }
+    lodChordsDrawn = drawStrataLodChords(ctx, lodChordPool, chordCount, lodDependsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
   }
   const trailKeysLive =
     (walkedEdgeKeys?.size ?? 0) > 0 ||
@@ -2582,9 +2636,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (lod !== null && domeLight !== null) {
     resetStrataLodDust(lodDust);
     const evidence = domeLight.evidence;
-    const spreadCap = strataLodDustSpreadPx("capability", lod.spacingPx.capability);
-    const spreadEl = strataLodDustSpreadPx("element", lod.spacingPx.element);
-    const spreadOf = lod.index?.dustSpread ?? null;
     for (let i = 0; i < world.nodes.length; i += 1) {
       const node = world.nodes[i];
       if (node.kind !== "capability" && node.kind !== "element") continue;
@@ -2593,20 +2644,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const weight = frame.a * (1 - lodPresenceReused[i]);
       if (weight <= 0.01) continue;
       if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
-      let x = (node.x + frame.dx - camX) * camScale + halfW;
-      let y = (node.y + frame.dy - camY) * camScale + halfH;
-      const spread = node.kind === "capability" ? spreadCap : spreadEl;
-      if (spread > 0 && spreadOf !== null) {
-        const center = lod.center[node.kind];
-        const vx = x - center.x;
-        const vy = y - center.y;
-        const d = Math.hypot(vx, vy);
-        if (d > 1) {
-          const k = (spreadOf[i] * spread) / d;
-          x += vx * k;
-          y += vy * k;
-        }
-      }
+      const x = (node.x + frame.dx - camX) * camScale + halfW;
+      const y = (node.y + frame.dy - camY) * camScale + halfH;
       if (x < -4 || y < -4 || x > viewportWidth + 4 || y > viewportHeight + 4) continue;
       addStrataLodDust(lodDust, node.kind, evidence?.get(node.id) ?? "unknown", frame.u, weight, x, y);
     }

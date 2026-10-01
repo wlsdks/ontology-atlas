@@ -259,7 +259,7 @@ export function createPresentationFrameStage({
       return null;
     }
     if (dome.model.arrangement !== "strata") {
-      return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs) ? state : null;
+      return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs, domeEvidenceRef.current) ? state : null;
     }
     return stepStrataLod(state, {
       runtime: dome,
@@ -268,6 +268,7 @@ export function createPresentationFrameStage({
       hoveredId: hoveredNodeId,
       focusedId: colorFocusRef.current?.focusedNodeId ?? null,
       pointer: bgPointerRef.current,
+      evidence: domeEvidenceRef.current,
       dtMs: dt * 1000,
       fadeMs: tokens.tipFadeMs,
     });

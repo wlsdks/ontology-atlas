@@ -4,6 +4,7 @@ import {
   DOME_PLANE,
   projectDomePlanePoint,
   type DomeModel,
+  type DomeNodeFrame,
   type DomePlaneSample,
   type DomeRuntime,
   type DomeViewKind,
@@ -17,6 +18,8 @@ export const STRATA_LOD_AGGREGATE_RATIO = 0.5;
 export const STRATA_LOD_RESOLVE_RATIO = 0.9;
 export const STRATA_LOD_DISC_BUDGET_LOW = 1500;
 export const STRATA_LOD_DISC_BUDGET_HIGH = 3000;
+const STRATA_LOD_PICK_RADIUS_PX = 6;
+export const STRATA_LOD_MAX_STEP_MS = 1000 / 60;
 
 const TAU = Math.PI * 2;
 const ARC_SAMPLES_PER_TURN = 96;
@@ -59,7 +62,6 @@ export interface StrataLodIndex {
   domains: readonly StrataLodDomain[];
   planeCount: Readonly<Record<StrataLodPlane, number>>;
   planeGap: Readonly<Record<StrataLodPlane, number>>;
-  dustSpread: Float32Array;
 }
 
 type StrataLodShapeKind = "fan" | "curtain" | "direct";
@@ -88,18 +90,32 @@ interface StrataLodRegion {
   depth: number;
 }
 
+interface StrataLodView {
+  runtime: DomeRuntime;
+  world: { nodes: readonly (LodNode & { x: number; y: number })[] };
+  camera: StrataLodCamera;
+}
+
 export interface StrataLodState {
   index: StrataLodIndex | null;
   ramps: Float32Array;
   planeResolve: Record<StrataLodPlane, number>;
   spacingPx: Record<StrataLodPlane, number>;
-  center: Record<StrataLodPlane, { x: number; y: number }>;
+  hub: { x: number; y: number };
   presence: Float32Array;
   hoverSlot: number;
+  pointerSlot: number;
+  pickedAt: { x: number; y: number } | null;
   focusSlot: number;
   settling: boolean;
   active: boolean;
   primed: boolean;
+  view: StrataLodView | null;
+  lastCamera: { x: number; y: number; scale: number } | null;
+  frames: (DomeNodeFrame | undefined)[];
+  framesOf: unknown;
+  framesNodes: unknown;
+  framesSize: number;
   shapes: StrataLodShape[];
   shapeCount: number;
   regions: StrataLodRegion[];
@@ -112,27 +128,26 @@ export function createStrataLodState(): StrataLodState {
     ramps: new Float32Array(0),
     planeResolve: { capability: 1, element: 1 },
     spacingPx: { capability: Infinity, element: Infinity },
-    center: { capability: { x: 0, y: 0 }, element: { x: 0, y: 0 } },
+    hub: { x: 0, y: 0 },
     presence: new Float32Array(0),
     hoverSlot: -1,
+    pointerSlot: -1,
+    pickedAt: null,
     focusSlot: -1,
     settling: false,
     active: false,
     primed: false,
+    view: null,
+    lastCamera: null,
+    frames: [],
+    framesOf: null,
+    framesNodes: null,
+    framesSize: -1,
     shapes: [],
     shapeCount: 0,
     regions: [],
     regionCount: 0,
   };
-}
-
-function hash01(text: string, seed: number): number {
-  let h = seed >>> 0;
-  for (let i = 0; i < text.length; i += 1) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) / 4294967296;
 }
 
 function unwrapFrom(angle: number, from: number): number {
@@ -237,18 +252,11 @@ export function buildStrataLodIndex(world: { nodes: readonly LodNode[] }, model:
     }
   }
 
-  const dustSpread = new Float32Array(nodes.length);
-  for (let i = 0; i < nodes.length; i += 1) {
-    const id = nodes[i].id;
-    dustSpread[i] = hash01(id, 0x9e3779b1) + hash01(id, 0x85ebca77) - 1;
-  }
-
   return {
     world,
     model,
     domainIds,
     indexOf,
-    dustSpread,
     kindOf,
     domainSlotOf,
     domains,
@@ -311,16 +319,43 @@ function pointInPolygon(xs: readonly number[], ys: readonly number[], length: nu
   return inside;
 }
 
-export function pickStrataLodSlot(state: StrataLodState, x: number, y: number): number {
-  let best = -1;
-  let bestDepth = Infinity;
-  for (let i = 0; i < state.regionCount; i += 1) {
-    const region = state.regions[i];
-    if (region.depth >= bestDepth) continue;
-    if (!pointInPolygon(region.xs, region.ys, region.length, x, y)) continue;
-    best = region.slot;
-    bestDepth = region.depth;
+function framesFor(state: StrataLodState, runtime: DomeRuntime, world: { nodes: readonly LodNode[] }): (DomeNodeFrame | undefined)[] {
+  if (state.framesOf !== runtime.frame || state.framesNodes !== world.nodes || state.framesSize !== runtime.frame.size) {
+    state.frames.length = world.nodes.length;
+    for (let i = 0; i < world.nodes.length; i += 1) state.frames[i] = runtime.frame.get(world.nodes[i].id);
+    state.framesOf = runtime.frame;
+    state.framesNodes = world.nodes;
+    state.framesSize = runtime.frame.size;
   }
+  return state.frames;
+}
+
+export function pickStrataLodSlot(state: StrataLodState, x: number, y: number): number {
+  const index = state.index;
+  const view = state.view;
+  if (index === null || view === null || !state.active) return -1;
+  const { world, camera } = view;
+  const frames = framesFor(state, view.runtime, world);
+  let best = -1;
+  let bestD2 = STRATA_LOD_PICK_RADIUS_PX * STRATA_LOD_PICK_RADIUS_PX;
+  for (let i = 0; i < world.nodes.length; i += 1) {
+    const slot = index.domainSlotOf[i];
+    if (slot < 0) continue;
+    const kind = index.kindOf[i];
+    if (kind !== "capability" && kind !== "element") continue;
+    const frame = frames[i];
+    if (frame === undefined || frame.a <= 0.01) continue;
+    const node = world.nodes[i];
+    const dx = toScreenX(camera, node.x + frame.dx) - x;
+    const dy = toScreenY(camera, node.y + frame.dy) - y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      best = slot;
+    }
+  }
+  if (best >= 0) return best;
+  let bestDepth = Infinity;
   for (let i = 0; i < state.shapeCount; i += 1) {
     const shape = state.shapes[i];
     if (shape.depth >= bestDepth) continue;
@@ -338,6 +373,7 @@ export interface StrataLodInput {
   hoveredId: string | null;
   focusedId: string | null;
   pointer: { x: number; y: number } | null;
+  evidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
   dtMs: number;
   fadeMs: number;
 }
@@ -358,8 +394,10 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
     index.world = world;
   }
   if (state.presence.length !== world.nodes.length) state.presence = new Float32Array(world.nodes.length);
+  state.view = { runtime, world, camera };
 
-  const step = input.fadeMs > 0 ? input.dtMs / input.fadeMs : 1;
+  const dtMs = Math.min(Math.max(0, input.dtMs), STRATA_LOD_MAX_STEP_MS);
+  const step = input.fadeMs > 0 ? dtMs / input.fadeMs : 1;
   let settling = false;
   const pxPerUnit = runtime.model.unit * camera.scale;
   const assembled = runtime.kindRamp.capability >= 1 && runtime.kindRamp.element >= 1;
@@ -372,23 +410,46 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
     state.planeResolve[plane] = next;
     if (next !== target) settling = true;
     state.spacingPx[plane] = index.planeGap[plane] * pxPerUnit;
-    projectDomePlanePoint(runtime, plane, 0, 0, sample);
-    state.center[plane].x = toScreenX(camera, sample.wx);
-    state.center[plane].y = toScreenY(camera, sample.wy);
   }
   state.primed = true;
   state.active = state.planeResolve.capability < 1 || state.planeResolve.element < 1;
+  projectDomePlanePoint(runtime, "domain", 0, 0, sample);
+  state.hub.x = toScreenX(camera, sample.wx);
+  state.hub.y = toScreenY(camera, sample.wy);
 
   const slotOf = (id: string | null): number => {
     if (id === null) return -1;
     const at = index!.indexOf.get(id);
     return at === undefined ? -1 : index!.domainSlotOf[at];
   };
-  let hoverSlot = slotOf(input.hoveredId);
-  if (hoverSlot < 0 && state.active && input.pointer !== null) {
-    hoverSlot = pickStrataLodSlot(state, input.pointer.x, input.pointer.y);
+  const pointer = input.pointer;
+  const last = state.lastCamera;
+  const cameraMoved =
+    last === null ||
+    Math.abs(last.x - camera.x) * camera.scale > 0.25 ||
+    Math.abs(last.y - camera.y) * camera.scale > 0.25 ||
+    Math.abs(last.scale - camera.scale) > camera.scale * 1e-3;
+  state.lastCamera = { x: camera.x, y: camera.y, scale: camera.scale };
+  const domeMoving =
+    runtime.orbiting ||
+    runtime.drag !== null ||
+    runtime.yawVel !== 0 ||
+    runtime.pitchVel !== 0 ||
+    runtime.yawSnap !== null ||
+    runtime.poseTween !== null ||
+    runtime.morph !== null;
+  if (pointer === null || !state.active) {
+    state.pointerSlot = -1;
+    state.pickedAt = null;
+  } else {
+    const moved = state.pickedAt === null || state.pickedAt.x !== pointer.x || state.pickedAt.y !== pointer.y;
+    if (moved && !domeMoving && !cameraMoved) {
+      state.pointerSlot = pickStrataLodSlot(state, pointer.x, pointer.y);
+      state.pickedAt = { x: pointer.x, y: pointer.y };
+    }
   }
-  state.hoverSlot = state.active ? hoverSlot : -1;
+  const hovered = slotOf(input.hoveredId);
+  state.hoverSlot = state.active ? (hovered >= 0 ? hovered : state.pointerSlot) : -1;
   state.focusSlot = state.active ? slotOf(input.focusedId) : -1;
 
   for (let slot = 0; slot < state.ramps.length; slot += 1) {
@@ -401,18 +462,27 @@ export function stepStrataLod(state: StrataLodState, input: StrataLodInput): Str
   }
   state.settling = settling;
 
-  writePresence(state, index);
+  writePresence(state, index, input.evidence ?? null);
   buildShapes(state, index, runtime, world, camera);
   return state;
 }
 
-function writePresence(state: StrataLodState, index: StrataLodIndex): void {
+function writePresence(
+  state: StrataLodState,
+  index: StrataLodIndex,
+  evidence: ReadonlyMap<string, "current" | "stale" | "unknown"> | null,
+): void {
   const presence = state.presence;
   const resolveCap = state.planeResolve.capability;
   const resolveEl = state.planeResolve.element;
+  const nodes = (index.world as { nodes: readonly LodNode[] }).nodes;
   for (let i = 0; i < presence.length; i += 1) {
     const kind = index.kindOf[i];
     if (kind !== "capability" && kind !== "element") {
+      presence[i] = 1;
+      continue;
+    }
+    if (evidence !== null && evidence.get(nodes[i].id) !== "current") {
       presence[i] = 1;
       continue;
     }
@@ -427,16 +497,19 @@ export function fadeStrataLodOut(
   world: { nodes: readonly LodNode[] },
   dtMs: number,
   fadeMs: number,
+  evidence: ReadonlyMap<string, "current" | "stale" | "unknown"> | null = null,
 ): boolean {
   const index = state.index;
   if (!state.active || index === null || !sameNodes(index, world.nodes) || state.presence.length !== world.nodes.length) {
     restStrataLod(state);
     return false;
   }
-  const step = fadeMs > 0 ? dtMs / fadeMs : 1;
+  const step = fadeMs > 0 ? Math.min(Math.max(0, dtMs), STRATA_LOD_MAX_STEP_MS) / fadeMs : 1;
   for (const plane of STRATA_LOD_PLANES) state.planeResolve[plane] = Math.min(1, state.planeResolve[plane] + step);
   for (let slot = 0; slot < state.ramps.length; slot += 1) state.ramps[slot] = Math.max(0, state.ramps[slot] - step);
   state.hoverSlot = -1;
+  state.pointerSlot = -1;
+  state.pickedAt = null;
   state.focusSlot = -1;
   state.shapeCount = 0;
   state.regionCount = 0;
@@ -446,7 +519,7 @@ export function fadeStrataLodOut(
     restStrataLod(state);
     return false;
   }
-  writePresence(state, index);
+  writePresence(state, index, evidence);
   return true;
 }
 
@@ -630,8 +703,64 @@ export function restStrataLod(state: StrataLodState): void {
   state.settling = false;
   state.primed = false;
   state.hoverSlot = -1;
+  state.pointerSlot = -1;
+  state.pickedAt = null;
+  state.lastCamera = null;
+  state.view = null;
   state.focusSlot = -1;
   state.shapeCount = 0;
   state.regionCount = 0;
   state.ramps.fill(0);
+}
+
+export interface StrataLodChords {
+  slots: number;
+  weight: Float64Array;
+  count: Int32Array;
+  represented: number;
+  hidden: number;
+}
+
+export function createStrataLodChords(): StrataLodChords {
+  return { slots: 0, weight: new Float64Array(0), count: new Int32Array(0), represented: 0, hidden: 0 };
+}
+
+export function rollUpStrataDependencies(
+  chords: StrataLodChords,
+  slots: number,
+  domainSlotOf: Int32Array,
+  edges: readonly { kind: string }[],
+  sourceIndex: Int32Array,
+  targetIndex: Int32Array,
+  presenceOf: (nodeIndex: number) => number,
+  rampOf: (nodeIndex: number) => number,
+): void {
+  if (chords.slots !== slots) {
+    chords.slots = slots;
+    chords.weight = new Float64Array(slots * slots);
+    chords.count = new Int32Array(slots * slots);
+  } else {
+    chords.weight.fill(0);
+    chords.count.fill(0);
+  }
+  chords.represented = 0;
+  chords.hidden = 0;
+  for (let e = 0; e < edges.length; e += 1) {
+    if (edges[e].kind !== "depends") continue;
+    const a = sourceIndex[e];
+    const b = targetIndex[e];
+    if (a < 0 || b < 0) continue;
+    const weight = Math.min(rampOf(a), rampOf(b)) * (1 - Math.min(presenceOf(a), presenceOf(b)));
+    if (weight <= 0.004) continue;
+    const from = domainSlotOf[a];
+    const to = domainSlotOf[b];
+    if (from < 0 || to < 0 || from === to) {
+      chords.hidden += 1;
+      continue;
+    }
+    const key = from * slots + to;
+    chords.weight[key] += weight;
+    chords.count[key] += 1;
+    chords.represented += 1;
+  }
 }

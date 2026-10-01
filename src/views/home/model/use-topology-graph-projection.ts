@@ -87,17 +87,25 @@ export function useTopologyGraphProjection({
       return null;
     }
   });
+  const [synthDependencies] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return new URLSearchParams(window.location.search).get("synthDeps") === "1";
+    } catch {
+      return false;
+    }
+  });
   const spotlightIds = spotlightOn ? recentNodeIds : null;
   const freshChannelSlugs = spotlightOn ? recentNodeIds : changedSlugs;
   const graph = useMemo(() => {
     if (synthSize !== null) {
-      const synth = synthesizeVaultGraph(synthSize);
+      const synth = synthesizeVaultGraph(synthSize, { dependencies: synthDependencies });
       return buildOntologyMapGraph(synth.nodes, synth.edges, { changedSlugs: freshChannelSlugs });
     }
     return insight
       ? buildOntologyMapGraph(insight.nodes, insight.edges, { changedSlugs: freshChannelSlugs, dustySlugs })
       : { nodes: [], edges: [] };
-  }, [dustySlugs, freshChannelSlugs, insight, synthSize]);
+  }, [dustySlugs, freshChannelSlugs, insight, synthDependencies, synthSize]);
   const selectedProjectNodeId = useMemo(() => {
     if (!selectedProject) return null;
     const nodeId = `project:${selectedProject.slug}`;

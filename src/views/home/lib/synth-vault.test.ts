@@ -113,3 +113,20 @@ describe("synthesizeVaultGraph distribution contract", () => {
     }
   });
 });
+
+describe("synthesizeVaultGraph dependencies", () => {
+  it("adds deterministic dependencies only when asked, keeping the containment graph byte-identical", () => {
+    const plain = synthesizeVaultGraph(2000);
+    const withDeps = synthesizeVaultGraph(2000, { dependencies: true });
+    const again = synthesizeVaultGraph(2000, { dependencies: true });
+    const dependencies = withDeps.edges.filter((edge) => edge.type === "depends_on");
+    expect(withDeps.edges.filter((edge) => edge.type === "contains")).toEqual(plain.edges);
+    expect(withDeps.nodes).toEqual(plain.nodes);
+    expect(again.edges).toEqual(withDeps.edges);
+    expect(dependencies.length).toBeGreaterThan(withDeps.nodes.length * 0.5);
+    const ids = new Set(withDeps.nodes.map((node) => node.id));
+    for (const edge of dependencies) {
+      expect(ids.has(edge.from) && ids.has(edge.to) && edge.from !== edge.to).toBe(true);
+    }
+  });
+});

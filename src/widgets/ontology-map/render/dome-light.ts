@@ -139,7 +139,6 @@ export function drawStrataStage(
   project: (wx: number, wy: number) => { x: number; y: number },
   fog: (u: number) => number,
   presence: number,
-  bandPresence?: Readonly<Record<string, number>>,
 ): void {
   if (presence <= 0.01) return;
   const prevAlpha = ctx.globalAlpha;
@@ -168,7 +167,7 @@ export function drawStrataStage(
     const alpha = band.lit ? STAGE_LIT_BAND_ALPHA : band.alt ? STAGE_BAND_ALT_ALPHA : STAGE_BAND_ALPHA;
     // A lit band is the one thing on the floor the focus asks you to look at, so it keeps its
     // strength while the rest of the floor sinks.
-    ctx.fillStyle = rgba(rgb, alpha * band.a * (band.lit ? 1 : presence * (bandPresence?.[band.kind] ?? 1)));
+    ctx.fillStyle = rgba(rgb, alpha * band.a * (band.lit ? 1 : presence));
     ctx.beginPath();
     for (let i = 0; i < band.length; i += 1) {
       const p = project(band.xs[i], band.ys[i]);
