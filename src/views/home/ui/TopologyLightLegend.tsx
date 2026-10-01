@@ -16,11 +16,13 @@ export function TopologyLightLegend({
   evidence,
   nodeIds,
   kindLabels,
+  hiddenDependencies = 0,
 }: {
   evidence: MapEvidence;
   /** The counts are over these. */
   nodeIds: readonly string[];
   kindLabels: Readonly<Partial<Record<Kind, string>>> | null;
+  hiddenDependencies?: number;
 }) {
   const t = useTranslations("topology.light3d");
   let current = 0;
@@ -91,6 +93,21 @@ export function TopologyLightLegend({
           />
           {t("unknown", { count: unknown })}
         </span>
+        {hiddenDependencies > 0 ? (
+          <>
+            {sep}
+            <span
+              data-testid="topology-light-legend-hidden-dependencies"
+              data-hidden-dependencies={hiddenDependencies}
+              className="whitespace-nowrap"
+            >
+              {t("dependenciesHidden", { count: hiddenDependencies })}
+            </span>
+            <span className="sr-only text-[color:var(--map-panel-text-tertiary)] xl:not-sr-only">
+              {t("dependenciesHiddenHint")}
+            </span>
+          </>
+        ) : null}
         {evidence.availability !== "measured" ? (
           <span
             data-testid="topology-light-legend-note"

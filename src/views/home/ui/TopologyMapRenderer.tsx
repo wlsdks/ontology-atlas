@@ -54,7 +54,7 @@ export interface TopologyMapRendererProps {
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "expandedParentSet" | "handleToggleCluster" | "handleEnterRealm">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyAnalysisReview: Pick<ReturnType<typeof useTopologyAnalysisReview>, "mapRelationCaptions" | "mapReviewQuestionIds">;
-  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "canvasSelectedSlug" | "resolvedRealmSlug">;
+  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "canvasSelectedSlug" | "resolvedRealmSlug" | "synthEvidence">;
   topologyPreferences: Pick<
     ReturnType<typeof useTopologyPreferences>,
     | "t"
@@ -137,7 +137,9 @@ export function TopologyMapRenderer({
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
   const { tourAnchorNodeId, tourAnchorRef } = topologyKeyboardTour;
   const { nodePanelMounted } = topologyInspectorState;
-  const mapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3d });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3d });
+  const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
+  const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
   const layoutView: MapLayoutView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : galaxy ? "galaxy" : "flat";
@@ -292,11 +294,13 @@ export function TopologyMapRenderer({
             galaxy={galaxy}
             mapArrangement={mapArrangement}
             domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+            onHiddenDependenciesChange={setHiddenDependencyCount}
             domeLightLegend={
               <TopologyLightLegend
                 evidence={mapEvidence}
                 nodeIds={nodes.map((node) => node.id)}
                 kindLabels={domeTierLabels}
+                hiddenDependencies={hiddenDependencyCount}
               />
             }
             detailPanelVisible={nodePanelMounted}

@@ -216,7 +216,9 @@
     "noteReading": "Git 기록을 읽는 중이에요. 다 읽기 전까지는 모두 모름이에요.",
     "noteAppOnly": "근거는 앱에서 Git 기록으로 재요. 여기서는 모두 모름이에요.",
     "noteUnreadable": "Git 기록을 읽지 못해 모두 모름이에요.",
-    "noteNoPaths": "코드 경로를 적은 개념이 없어 모두 모름이에요."
+    "noteNoPaths": "코드 경로를 적은 개념이 없어 모두 모름이에요.",
+    "dependenciesHidden": "의존 {count, number}개 숨김",
+    "dependenciesHiddenHint": "도메인을 가리키면 그 도메인의 의존이 보여요."
   },
   "analysis": {
     "healthStale": "오래된 근거",

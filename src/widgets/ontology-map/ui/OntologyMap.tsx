@@ -384,6 +384,7 @@ export interface OntologyMapProps {
    * much light each node emits; an absent id, or null, is unknown and emits none.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  onHiddenDependenciesChange?: (count: number) => void;
   /**
    * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
    * shown only while 3D is on. The widget places it; it owns no copy.
@@ -604,6 +605,7 @@ export function OntologyMap(props: OntologyMapProps) {
       galaxy,
       mapArrangement,
       domeEvidence: props.domeEvidence ?? null,
+      onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       detailPanelVisible,
       footprint,
       expand,

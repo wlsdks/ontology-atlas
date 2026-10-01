@@ -14,6 +14,7 @@ import {
   type DomeRuntime
 } from "../model/dome-view";
 import { stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
+import type { StrataLodState } from "../model/strata-lod";
 import { isCameraUnsettled, isCanvasActive, isDomeSpinAnimating, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
 import {
   type RealmTransitionState
@@ -90,6 +91,7 @@ interface Dependencies {
   idleDebugEnabledRef: RefObject<boolean>;
   lastActiveCausesRef: RefObject<{ t: number; causes: string[]; } | null>;
   lightActiveRef: RefObject<boolean>;
+  domeLodRef: RefObject<StrataLodState>;
 }
 interface FrameResult {
   tokens: OntologyMapTokens;
@@ -167,6 +169,7 @@ export function createFrameGate({
   idleDebugEnabledRef,
   lastActiveCausesRef,
   lightActiveRef,
+  domeLodRef,
 }: Dependencies) {
   const result = {} as FrameResult;
   return function runFrameGate(
@@ -345,6 +348,8 @@ export function createFrameGate({
             domeRt.yawSnap !== null ||
             domeRt.morph !== null ||
             domeRt.entryArmed ||
+            domeLodRef.current.settling ||
+            (domeLodRef.current.pointerSlot >= 0 && bgPointerRef.current === null) ||
             domeFocusPendingRef.current !== null ||
             Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
             domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
