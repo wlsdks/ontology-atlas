@@ -82,6 +82,13 @@ function call(name: string, args: unknown = {}): NormalizedToolCall {
   return { id: 't1', name, args, argsInvalid: false };
 }
 
+function pathPort(slugs: string[], links: Array<[string, string]>): VaultReadPort {
+  return makePort({
+    nodes: slugs.map((slug) => node(`capability:${slug}`, { title: slug, evidenceIds: [slug] })),
+    edges: Object.freeze(links.map(([from, to]) => Object.freeze(edge(`capability:${from}`, `capability:${to}`)))),
+  });
+}
+
 describe('tool-executor never writes', () => {
   it('the port type has no write method', () => {
     // A write name in this port would let the executor reach disk.
@@ -416,6 +423,47 @@ describe('tool-executor reads', () => {
     const payload = JSON.parse(result.content) as { found: boolean; hops: string[] };
     expect(payload.found).toBe(true);
     expect(payload.hops).toEqual(['capabilities/payment', 'src/lib/ghost.ts']);
+  });
+
+  it.each([
+    { name: 'disconnected endpoints', links: [], from: 'a', to: 'c', maxHops: 5, expected: [] },
+    { name: 'the same endpoint with no hops', links: [], from: 'a', to: 'a', maxHops: 0, expected: ['a'] },
+    { name: 'distinct endpoints with no hops', links: [['a', 'c']], from: 'a', to: 'c', maxHops: 0, expected: [] },
+    { name: 'a path at the hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+    { name: 'a path beyond the hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 1, expected: [] },
+    { name: 'a fractional hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 1.5, expected: [] },
+    { name: 'reverse traversal', links: [['a', 'b'], ['b', 'c']], from: 'c', to: 'a', maxHops: 2, expected: ['c', 'b', 'a'] },
+    { name: 'self loops and repeated edges in a cycle', links: [['a', 'a'], ['a', 'b'], ['a', 'b'], ['b', 'a'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+    { name: 'a shorter path after a longer branch', links: [['a', 'b'], ['b', 'd'], ['d', 'c'], ['a', 'c']], from: 'a', to: 'c', maxHops: 3, expected: ['a', 'c'] },
+    { name: 'input edge order across incoming and outgoing ties', links: [['b', 'a'], ['a', 'd'], ['d', 'c'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+  ])('find_path preserves $name', async ({ links, from, to, maxHops, expected }) => {
+    const prefix = (slug: string) => `capabilities/${slug}`;
+    const execute = createToolExecutor(pathPort(
+      ['a', 'b', 'c', 'd'].map(prefix),
+      links.map(([source, target]) => [prefix(source), prefix(target)]),
+    ));
+    const result = await execute(call('find_path', { from: prefix(from), to: prefix(to), maxHops }));
+    expect(JSON.parse(result.content)).toEqual({
+      from: prefix(from), to: prefix(to), found: expected.length > 0, hops: expected.map(prefix),
+    });
+    expect(result.readSlugs).toEqual([prefix(from), prefix(to)]);
+    expect(result.outcome).toBe('ok');
+  });
+
+  it('find_path keeps exact Unicode slugs', async () => {
+    const slugs = ['capabilities/시작', 'capabilities/중간', 'capabilities/끝'];
+    const execute = createToolExecutor(pathPort(slugs, [[slugs[0], slugs[1]], [slugs[1], slugs[2]]]));
+    const result = await execute(call('find_path', { from: slugs[0], to: slugs[2] }));
+    expect(JSON.parse(result.content).hops).toEqual(slugs);
+  });
+
+  it('find_path caps traversal at twenty hops', async () => {
+    const slugs = Array.from({ length: 22 }, (_, index) => `capabilities/step-${index}`);
+    const execute = createToolExecutor(pathPort(slugs, slugs.slice(1).map((slug, index) => [slugs[index], slug])));
+    const atBound = await execute(call('find_path', { from: slugs[0], to: slugs[20], maxHops: 100 }));
+    const beyondBound = await execute(call('find_path', { from: slugs[0], to: slugs[21], maxHops: 100 }));
+    expect(JSON.parse(atBound.content).hops).toEqual(slugs.slice(0, 21));
+    expect(JSON.parse(beyondBound.content)).toEqual({ from: slugs[0], to: slugs[21], found: false, hops: [] });
   });
 
   it('find_orphans counts only concepts that have a document', async () => {
