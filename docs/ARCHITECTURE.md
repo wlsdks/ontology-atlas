@@ -349,14 +349,20 @@ the other. Where such links work, treat it as a convenience, not a promise.
 ### In-app coding agents over ACP (2026-08-16)
 
 ACP turn observers capture start/completion identity before a later selection
-can change the context. The framework-free `entities/analysis-record` codec
-owns diagnostic Markdown; `features/acp-session` captures actual full-body
+can change the context. The framework-free `mcp/src/analysis-record.mts` codec
+owns diagnostic Markdown and `entities/analysis-record` re-exports it for the app;
+`features/acp-session` captures actual full-body
 results and architecture measurements; `widgets/analysis-workbench` renders
 meaning, immutable history, and the still-mounted conversation. The native
 `analysis_archive` module exclusively appends inside the captured vault's
 `.ontology-atlas/analyses/`. MCP/CLI read the same format without compiling it
 into ontology nodes. The Architecture view may reconstruct a dated observation
 only against its matching profile snapshot. [Contract and boundaries](contracts/analysis-records.md).
+
+History page selection shares a pure bounded filename collector from
+`mcp/src/analysis-history/name-page.mjs`. MCP streams directory entries; the app
+uses its file-handle iterator. Both preserve lexical ordering, strict cursors,
+and scanned-file totals before filtering parsed records.
 
 Queued permission requests preserve the JSON-RPC request ID without coercing
 numeric and string IDs together. `use-acp-session` snapshots the request, guards
