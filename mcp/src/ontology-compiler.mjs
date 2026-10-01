@@ -16,6 +16,7 @@ export function compileOntology(loadedDocs, options = {}) {
   const docs = loadedDocs.map(detachedDocument);
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
   const summary = optionalBoolean(options.summary, 'summary') ?? false;
+  const buildIndexes = includeIndexes && !summary;
   const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit', { max: 500 });
   const nodesOffset = optionalNonNegativeInt(options.nodesOffset, 'nodesOffset') ?? 0;
   const edgesLimit = optionalPositiveInt(options.edgesLimit, 'edgesLimit', { max: 500 });
@@ -197,23 +198,33 @@ export function compileOntology(loadedDocs, options = {}) {
   const out = {};
   const incoming = {};
   const edgeById = {};
-  for (const edge of edges) {
-    edgeById[edge.id] = edge;
-    if (!out[edge.from]) out[edge.from] = [];
-    out[edge.from].push(edge.id);
-    const fromNode = nodeBySlug.get(edge.from);
-    if (fromNode) fromNode.outDegree += 1;
-    if (!edge.resolved) continue;
-    if (!incoming[edge.to]) incoming[edge.to] = [];
-    incoming[edge.to].push(edge.id);
-    const toNode = nodeBySlug.get(edge.to);
-    if (toNode) toNode.inDegree += 1;
+  if (buildIndexes) {
+    for (const edge of edges) {
+      edgeById[edge.id] = edge;
+      if (!out[edge.from]) out[edge.from] = [];
+      out[edge.from].push(edge.id);
+      const fromNode = nodeBySlug.get(edge.from);
+      if (fromNode) fromNode.outDegree += 1;
+      if (!edge.resolved) continue;
+      if (!incoming[edge.to]) incoming[edge.to] = [];
+      incoming[edge.to].push(edge.id);
+      const toNode = nodeBySlug.get(edge.to);
+      if (toNode) toNode.inDegree += 1;
+    }
+  } else {
+    for (const edge of edges) {
+      const fromNode = nodeBySlug.get(edge.from);
+      if (fromNode) fromNode.outDegree += 1;
+      if (!edge.resolved) continue;
+      const toNode = nodeBySlug.get(edge.to);
+      if (toNode) toNode.inDegree += 1;
+    }
   }
   for (const edgeIds of Object.values(out)) edgeIds.sort();
   for (const edgeIds of Object.values(incoming)) edgeIds.sort();
-  const byKind = groupNodes(nodes, 'kind');
-  const byDomain = groupNodes(nodes, 'domain');
-  const aliasToSlugIndex = Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug]));
+  const byKind = buildIndexes ? groupNodes(nodes, 'kind') : undefined;
+  const byDomain = buildIndexes ? groupNodes(nodes, 'domain') : undefined;
+  const aliasToSlugIndex = buildIndexes ? Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug])) : undefined;
   const graphHash = hashGraph({
     version: COMPILER_VERSION,
     nodes: nodes.map(({ uid, merged_uids, slug, kind, title, domain, outDegree, inDegree }) => ({

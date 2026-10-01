@@ -469,6 +469,9 @@ describe('compileOntology', () => {
     ];
     const full = compileOntology(docs);
     const summary = compileOntology(docs, { summary: true });
+    const indexed = compileOntology(docs, { includeIndexes: true });
+    assert.equal(indexed.graphHash, full.graphHash);
+    assert.deepEqual(compileOntology(docs, { summary: true, includeIndexes: true }), summary);
     assert.equal(summary.graphHash, full.graphHash);
     assert.equal(summary.nodeCount, full.nodeCount);
     assert.equal(summary.edgeCount, full.edgeCount);
