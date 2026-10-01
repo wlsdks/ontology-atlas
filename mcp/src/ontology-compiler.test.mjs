@@ -682,3 +682,41 @@ describe('canonical relation ordering', () => {
     assert.equal(page.graphHash, full.graphHash);
   });
 });
+
+describe('large graph summary aggregation', () => {
+  it('compiles 100000 nodes without passing them as function arguments', () => {
+    const script = `
+      import { compileOntology } from ${JSON.stringify(new URL('./ontology-compiler.mjs', import.meta.url).href)};
+      const docs = Array.from({ length: 100000 }, (_, index) => ({
+        slug: 'elements/n' + index,
+        mtime: index,
+        frontmatter: { kind: 'element', uid: '00000000-0000-4000-8000-' + index.toString(16).padStart(12, '0') },
+      }));
+      const result = compileOntology(docs, { summary: true });
+      console.log(JSON.stringify({ count: result.nodeCount, maxMtime: result.maxMtime }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--stack-size=512', '--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }));
+    assert.deepEqual(result, { count: 100000, maxMtime: 99999 });
+  });
+
+  it('preserves numeric timestamp coercion and counts mixed relation targets', () => {
+    for (const [times, expected] of [
+      [[-10, -0, '', '42', undefined, 'invalid'], 42],
+      [[-Infinity, NaN, null, -2], 0],
+      [[1, Infinity], Infinity],
+    ]) {
+      const docs = times.map((mtime, index) => timedDoc(`elements/n${index}`, {
+        kind: 'element', dependencies: ['elements/n0', 'missing'], elements: ['src/file.ts'],
+      }, mtime));
+      const result = compileOntology(docs);
+      assert.equal(result.maxMtime, expected);
+      assert.equal(result.resolvedEdgeCount, docs.length);
+      assert.equal(result.externalEdgeCount, docs.length);
+      assert.equal(result.unresolvedEdgeCount, docs.length);
+      assert.equal(result.referencedOnlyCount, 2);
+    }
+    assert.equal(compileOntology([]).maxMtime, 0);
+  });
+});

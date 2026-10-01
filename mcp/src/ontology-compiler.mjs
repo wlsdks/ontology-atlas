@@ -255,18 +255,24 @@ export function compileOntology(loadedDocs, options = {}) {
 
   const nodeCount = nodes.length;
   const edgeCount = edges.length;
-  const resolvedEdgeCount = edges.filter((edge) => edge.resolved).length;
-  const externalEdgeCount = edges.filter((edge) => edge.external).length;
-  const unresolvedEdgeCount = edges.filter(
-    (edge) => !edge.resolved && !edge.external,
-  ).length;
-  const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
+  let resolvedEdgeCount = 0;
+  let externalEdgeCount = 0;
+  let unresolvedEdgeCount = 0;
+  const referencedOnly = new Set();
+  for (const edge of edges) {
+    if (edge.resolved) resolvedEdgeCount += 1;
+    if (edge.external) externalEdgeCount += 1;
+    if (!edge.resolved) {
+      referencedOnly.add(edge.ref);
+      if (!edge.external) unresolvedEdgeCount += 1;
+    }
+  }
+  let maxMtime = 0;
+  for (const node of nodes) maxMtime = Math.max(maxMtime, Number(node.mtime) || 0);
   // Concepts named only in relations, with no document. The map and insights draw
   // them, so without this number the screen and the CLI disagree unexplained.
   // They are not nodes: inventory, centrality and health ignore them.
-  const referencedOnlyCount = new Set(
-    edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
-  ).size;
+  const referencedOnlyCount = referencedOnly.size;
 
   // Summary omits bulk arrays to keep delivery bounded.
   if (summary) {
