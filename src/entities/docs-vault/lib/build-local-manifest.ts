@@ -9,7 +9,7 @@ import {
 } from '@/shared/lib/parse-frontmatter';
 import { meaningFindings } from '@/shared/lib/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
-import { nativeVaultFingerprint, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
+import { nativeVaultFingerprint, readTauriVaultTextFile, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
@@ -592,6 +592,14 @@ async function mapPooled<T, R>(
   return results;
 }
 
+async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
+  if (entry.kind === 'md' && nativeRoot) {
+    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
+    if (native) return { lastModified: native.lastModified, text: async () => native.text };
+  }
+  return entry.handle.getFile();
+}
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
@@ -604,6 +612,7 @@ async function collectEntries(
     walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
+  const nativeRoot = nativeRootPath(root);
   const internMetadata = createMetadataStringPool();
   /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
    * transfers the whole file). On the web a directory `File` is metadata only. */
@@ -631,7 +640,7 @@ async function collectEntries(
         : (await entry.handle.getFile()).lastModified;
       return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
     }
-    const file = await entry.handle.getFile();
+    const file = await manifestFile(entry, nativeRoot);
     const raw = await file.text();
     return buildMdEntry(entry, raw, file.lastModified, internMetadata);
   };
@@ -687,6 +696,7 @@ export async function rebuildLocalManifestIncremental(
     prunedDirs: walked.prunedDirs,
     sourceFileCount: walked.sourceFileCount,
   };
+  const nativeRoot = nativeRootPath(root);
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
   /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
    * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
@@ -726,7 +736,7 @@ export async function rebuildLocalManifestIncremental(
         kind: 'image',
       };
     }
-    const file = await entry.handle.getFile();
+    const file = await manifestFile(entry, nativeRoot);
     const prev = prevByPath.get(entry.relativePath);
     if (
       prev &&
