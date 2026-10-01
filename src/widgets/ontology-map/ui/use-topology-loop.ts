@@ -48,6 +48,7 @@ import {
 import {
   type DomeViewKind
 } from "../model/dome-view";
+import { createStrataLodState, type StrataLodState } from "../model/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
 import { type TopologyPointerHandlers } from "./topology-pointer-handlers";
 
@@ -288,6 +289,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * state change, so it wakes the idle gate for one more frame the way a selection does.
    */
   const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(args.domeEvidence ?? null);
+  const domeLodRef = useRef<StrataLodState>(createStrataLodState());
   useEffect(() => {
     domeEvidenceRef.current = args.domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
@@ -820,6 +822,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       spotlightIdsRef,
       idleDebugEnabledRef,
       lastActiveCausesRef,
+      domeLodRef,
     },
     presentationFrameStage: {
       galaxyRef,
@@ -898,6 +901,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeTierNameWidthsRef,
       domeFitInsetsRef,
       domeEvidenceRef,
+      domeLodRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
@@ -975,6 +979,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       previewEdgeHeldRef,
       domeRuntimeRef,
       domeModelBuildRef,
+      domeLodRef,
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,

@@ -56,6 +56,14 @@ import {
   type DomeLightFrame,
   type EvidenceLight,
 } from "../render/dome-light";
+import {
+  addStrataLodDust,
+  createStrataLodDust,
+  drawStrataLodDust,
+  drawStrataLodSheets,
+  resetStrataLodDust,
+  strataLodDustSpreadPx,
+} from "../render/strata-lod";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -225,6 +233,15 @@ const domeNodeDepthReused: number[] = [];
 const domeNodeIndexReused: number[] = [];
 const domeEdgeFrameAReused: DomeNodeFrame[] = [];
 const domeEdgeFrameBReused: DomeNodeFrame[] = [];
+const STRATA_LOD_FLOOR_BAND_REST = 0.35;
+let lodPresenceReused = new Float32Array(0);
+let lodDustDrawn = 0;
+export function lastDrawnLodDust(): number {
+  return lodDustDrawn;
+}
+const lodDust = createStrataLodDust();
+const lodHoverEgoReused = new Set<string>();
+let lodContainsInk: { hex: string; rgb: readonly [number, number, number] } | null = null;
 /** The radius the node pass actually drew — reused each frame via `.clear()`. */
 const drawnScreenRadiusByIdReused = new Map<string, number>();
 const ambientDependsCometsReused = new Set<string>();
@@ -259,6 +276,20 @@ let sheenTopCacheBlend = -1;
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 /** Each edge's alpha by edge index, written once per frame; -1 marks an edge folded away. */
 const edgeAlphaByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
+const edgeEndsByWorld = new WeakMap<TopologyWorld, { source: Int32Array; target: Int32Array }>();
+function edgeEndsFor(world: TopologyWorld): { source: Int32Array; target: Int32Array } {
+  const known = edgeEndsByWorld.get(world);
+  if (known !== undefined && known.source.length === world.edges.length) return known;
+  const indexOf = new Map<string, number>();
+  world.nodes.forEach((node, i) => indexOf.set(node.id, i));
+  const ends = {
+    source: Int32Array.from(world.edges, (edge) => indexOf.get(edge.sourceId) ?? -1),
+    target: Int32Array.from(world.edges, (edge) => indexOf.get(edge.targetId) ?? -1),
+  };
+  edgeEndsByWorld.set(world, ends);
+  return ends;
+}
+let effectiveAlphaByIndexReused = new Float64Array(0);
 /**
  * perf 2026-08-19 — `NodeVisual` cache for focus-free frames.
  *
@@ -1639,10 +1670,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       cursor = parentOf(cursor);
     }
   }
-  // perf 2026-08-19 — on a frame with no focus, pair, or lens (the usual rotating
-  // or idle state) every node's ego classification is fixed at "normal"
-  // (`resolveNodeEgoState`'s first branch). Deciding that once keeps the node and
-  // label loops from re-calling the classifier per node — same values, same pixels.
+  const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
+  if (lod !== null) {
+    if (lodPresenceReused.length < world.nodes.length) lodPresenceReused = new Float32Array(world.nodes.length);
+    lodHoverEgoReused.clear();
+    if (hoveredNodeId !== null) {
+      lodHoverEgoReused.add(hoveredNodeId);
+      for (const id of world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET) lodHoverEgoReused.add(id);
+    }
+  }
   const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
   // perf 2026-08-19 — invalidate the focus-free `NodeVisual` cache when tokens or
@@ -1709,18 +1745,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     effectiveAlphaWorld = new WeakRef(world);
   }
   const effectiveAlphaById = effectiveAlphaByIdReused;
+  if (effectiveAlphaByIndexReused.length < world.nodes.length) {
+    effectiveAlphaByIndexReused = new Float64Array(world.nodes.length);
+  }
+  const effectiveAlphaByIndex = effectiveAlphaByIndexReused;
   for (let nodeIndex = 0; nodeIndex < world.nodes.length; nodeIndex += 1) {
     const node = world.nodes[nodeIndex];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
-    // **A collapsed node has no reason to carry an alpha** — one chip stands in
-    // for it and it is not drawn this frame (measured at synth=3000: 2,820 of
-    // 3,000). All four consumers filter collapse *before* this lookup: both edge
-    // loops `continue` when either endpoint is collapsed, the node and label loops
-    // guard on the same first line, and hit testing (`isNodeHittable`) returns
-    // false on collapse before it reads the alpha map. A chip's parent is by
-    // definition not collapsed, and even it falls back to `?? 1`.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) {
       effectiveAlphaById.delete(node.id);
+      effectiveAlphaByIndex[nodeIndex] = 1;
       continue;
     }
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
@@ -1786,15 +1820,26 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if ((focusedNodeId !== null || selectedEdge !== null) && !isEgoMember && !trailLensActive) {
       outAlpha *= egoRestSink(focusRampById.get(node.id) ?? 0, tokens.egoRestAlpha);
     }
-    // 3D — on the dome **every tier takes part in the form**: capabilities and
-    // elements the semantic-zoom condition hides still rise on their tier's
-    // assembly ramp. At ramp 0 the value is unchanged (2D), at ramp 1 fully
-    // revealed. Depth darkening is NOT applied here but carried by the node/edge
-    // fog: this map is the single source for hit testing, and mixing fog in would
-    // make distant nodes unclickable.
     if (domeOn) {
       const domeA = domeNodeFrameReused[nodeIndex].a;
-      if (domeA > 0) outAlpha = outAlpha + (1 - outAlpha) * domeA;
+      let presence = 1;
+      if (lod !== null) {
+        presence = lod.presence[nodeIndex] ?? 1;
+        if (presence < 1) {
+          const attended = Math.max(
+            isPairMember || trailKept || previewEndpoint || node.id === agentFocusNodeId ? 1 : 0,
+            focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocusedRaw.has(node.id))
+              ? (egoRevealById.get(node.id) ?? 0)
+              : 0,
+            lodHoverEgoReused.has(node.id) ? (emphasisById.get(node.id) ?? 0) : 0,
+            spotlightReveal,
+            bornReveal,
+          );
+          if (attended > presence) presence = attended;
+        }
+        lodPresenceReused[nodeIndex] = presence;
+      }
+      if (domeA > 0) outAlpha = outAlpha + (presence - outAlpha) * domeA;
     }
     // Galaxy's overview is the complete star field. The mode ramp reveals
     // every real concept while Flat keeps its semantic-zoom tiers unchanged.
@@ -1803,6 +1848,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       outAlpha = outAlpha + (1 - outAlpha) * reveal;
     }
     effectiveAlphaById.set(node.id, outAlpha);
+    effectiveAlphaByIndex[nodeIndex] = outAlpha;
   }
 
   // Expanded parents (which carry the dashed aura) and their discs (the parent
@@ -1869,12 +1915,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const node = world.nodeById.get(id);
     return node !== undefined && isSpineNode(node);
   };
+  const edgeEnds = edgeEndsFor(world);
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
+    const sourceIndex = edgeEnds.source[i];
+    const targetIndex = edgeEnds.target[i];
     edgeAlphaReused[i] =
       clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)
         ? -1
-        : edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
+        : edgeTierAlpha(
+            sourceIndex >= 0 ? effectiveAlphaByIndex[sourceIndex] : 1,
+            targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1,
+          );
   }
   /*
    * Lit 3D (2026-09-25): particles run **only along the focused subtree's dependency edges**
@@ -1939,20 +1991,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const edges = world.edges;
     domeEdgeDepthReused.length = 0;
     domeEdgeIndexReused.length = 0;
-    // perf 2026-08-19 — endpoint frames are fetched once here too, keyed by
-    // original index. The draw loop's fog computation and `projectEdgePoints` read
-    // these two arrays instead of re-fetching — same objects, same values, same
-    // pixels.
     domeEdgeFrameAReused.length = 0;
     domeEdgeFrameBReused.length = 0;
     for (let i = 0; i < edges.length; i += 1) {
-      const edge = edges[i];
-      const fA = domeFrameFor(edge.sourceId);
-      const fB = domeFrameFor(edge.targetId);
+      const sourceIndex = edgeEnds.source[i];
+      const targetIndex = edgeEnds.target[i];
+      const fA = sourceIndex >= 0 ? domeNodeFrameReused[sourceIndex] : ZERO_DOME_FRAME;
+      const fB = targetIndex >= 0 ? domeNodeFrameReused[targetIndex] : ZERO_DOME_FRAME;
       domeEdgeFrameAReused.push(fA);
       domeEdgeFrameBReused.push(fB);
       domeEdgeDepthReused.push((fA.u + fB.u) / 2);
-      domeEdgeIndexReused.push(i);
+      if (edgeAlphaReused[i] > 0.02) domeEdgeIndexReused.push(i);
     }
     domeEdgeIndexReused.sort((x, y) => domeEdgeDepthReused[y] - domeEdgeDepthReused[x]);
     domeEdgeOrderReused.length = 0;
@@ -1981,6 +2030,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       project,
       domeFogAlpha,
       1 - 0.55 * litFocusRamp,
+      lod === null
+        ? undefined
+        : {
+            capability: STRATA_LOD_FLOOR_BAND_REST + (1 - STRATA_LOD_FLOOR_BAND_REST) * lod.planeResolve.capability,
+            element: STRATA_LOD_FLOOR_BAND_REST + (1 - STRATA_LOD_FLOOR_BAND_REST) * lod.planeResolve.element,
+          },
     );
   }
 
@@ -2035,12 +2090,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeRingsDraw(ctx, domeRingsState, domeRingsTokens);
   }
 
+  if (lod !== null) {
+    if (lodContainsInk === null || lodContainsInk.hex !== tokens.edgeContains) {
+      lodContainsInk = { hex: tokens.edgeContains, rgb: hexToRgb(tokens.edgeContains) ?? [128, 128, 140] };
+    }
+    drawStrataLodSheets(ctx, lod.shapes, lod.shapeCount, lodContainsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
+  }
+  const trailKeysLive =
+    (walkedEdgeKeys?.size ?? 0) > 0 ||
+    (walkedEdgeDirections?.size ?? 0) > 0 ||
+    (walkedEdgeArrivalStep?.size ?? 0) > 0 ||
+    trailGlintLegs !== null;
   for (const kind of EDGE_KIND_PASSES) {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
-      const sourceNode = world.nodeById.get(edge.sourceId);
-      const targetNode = world.nodeById.get(edge.targetId);
+      const sourceNode = galaxyOn ? world.nodeById.get(edge.sourceId) : undefined;
+      const targetNode = galaxyOn ? world.nodeById.get(edge.targetId) : undefined;
       const galaxyFilamentInk =
         galaxyOn && sourceNode && targetNode
           ? galaxySelectionInk(
@@ -2166,12 +2232,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               spotlightIds.has(edge.sourceId) &&
               spotlightIds.has(edge.targetId),
       );
-      // Trail — only for a consecutively walked pair that is also a **real
-      // relation line**. The latter is structurally guaranteed because this loop
-      // iterates `world.edges`, the same contract the footprints already rely on.
-      // With the lens off the ramp is 0 and the value is unchanged.
-      const walkedKey =
-        edge.sourceId < edge.targetId
+      const walkedKey = !trailKeysLive
+        ? ""
+        : edge.sourceId < edge.targetId
           ? `${edge.sourceId} ${edge.targetId}`
           : `${edge.targetId} ${edge.sourceId}`;
       /*
@@ -2516,22 +2579,57 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // mechanism the chip reservations use).
   const nodeDiscReservations: ReservedBox[] = [];
 
-  // 3D painter's algorithm: draw far nodes (large `u`) first so near ones land on
-  // top. Hit testing (`hitTestWorld`'s depth preference) resolves as "the nearer
-  // node wins", so the draw order must follow the same rule for what is seen and
-  // what is grabbed to agree. In 2D the original array order stands — zero
-  // allocation.
+  if (lod !== null && domeLight !== null) {
+    resetStrataLodDust(lodDust);
+    const evidence = domeLight.evidence;
+    const spreadCap = strataLodDustSpreadPx("capability", lod.spacingPx.capability);
+    const spreadEl = strataLodDustSpreadPx("element", lod.spacingPx.element);
+    const spreadOf = lod.index?.dustSpread ?? null;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      const node = world.nodes[i];
+      if (node.kind !== "capability" && node.kind !== "element") continue;
+      const frame = domeNodeFrameReused[i];
+      if (frame.a <= 0.01) continue;
+      const weight = frame.a * (1 - lodPresenceReused[i]);
+      if (weight <= 0.01) continue;
+      if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
+      let x = (node.x + frame.dx - camX) * camScale + halfW;
+      let y = (node.y + frame.dy - camY) * camScale + halfH;
+      const spread = node.kind === "capability" ? spreadCap : spreadEl;
+      if (spread > 0 && spreadOf !== null) {
+        const center = lod.center[node.kind];
+        const vx = x - center.x;
+        const vy = y - center.y;
+        const d = Math.hypot(vx, vy);
+        if (d > 1) {
+          const k = (spreadOf[i] * spread) / d;
+          x += vx * k;
+          y += vy * k;
+        }
+      }
+      if (x < -4 || y < -4 || x > viewportWidth + 4 || y > viewportHeight + 4) continue;
+      addStrataLodDust(lodDust, node.kind, evidence?.get(node.id) ?? "unknown", frame.u, weight, x, y);
+    }
+    lodDustDrawn = drawStrataLodDust(
+      ctx,
+      lodDust,
+      { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb },
+      domeFogAlpha,
+      1 - 0.55 * litFocusRamp,
+    );
+  } else {
+    lodDustDrawn = 0;
+  }
+
   let nodeDrawOrder: readonly WorldNode[] = world.nodes;
   if (domeOn) {
-    // perf 2026-08-19 — the same index-sort idiom as the edge sort (see the
-    // `edgeDrawOrder` doc-block). The old comparator called `domeFrameFor` twice
-    // per invocation, making O(n log n) map lookups. Depth is now read once per
-    // node from the already-buffered frame and the comparator does two array
-    // reads — stable sort plus identical key, so the order is unchanged.
     domeNodeDepthReused.length = 0;
     domeNodeIndexReused.length = 0;
     for (let i = 0; i < world.nodes.length; i += 1) {
       domeNodeDepthReused.push(domeNodeFrameReused[i].u);
+      if (effectiveAlphaByIndex[i] <= HITTABLE_MIN_TIER_ALPHA) continue;
+      const id = world.nodes[i].id;
+      if (isPreviewEndpointHidden(clusteredIds.has(id), previewEdge, id)) continue;
       domeNodeIndexReused.push(i);
     }
     domeNodeIndexReused.sort((x, y) => domeNodeDepthReused[y] - domeNodeDepthReused[x]);

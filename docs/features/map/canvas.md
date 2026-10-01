@@ -235,6 +235,20 @@ routes: [/topology]
   that subtree's dependency edges. Pitch stays between 0.15 and 0.95 rad, so the
   floors are always seen from above. Reduced motion: no spin, no particles, the
   fly-to arrives at once. Gate: `tests/e2e/map-3d-lit-strata.spec.ts`.
+- **Strata at scale** (2026-10-01) — once a capability or element plane is too
+  dense to read as discs (median lane gap under 0.9 disc diameters, or more than
+  1,500 of its discs on screen), it crossfades to **dust**: one dot per concept
+  in its kind colour, dimmer for unknown evidence and amber for stale, and each
+  domain's containment into that plane becomes **one light sheet** down to its
+  slice instead of a line per child. Hovering a domain or the band under the
+  pointer, or focusing a concept, resolves that domain's slice back to discs and
+  lines; zooming in resolves a whole plane. Every change of level is a 120 ms
+  opacity crossfade, the same under reduced motion. Measured on the static export
+  at 1512x982 @2x: 10,000 concepts went from 59 ms of script and 46,809 draw
+  calls per frame (15 fps) to 10 ms and 1,024 (95 fps idle, 78 fps orbiting); the
+  sample vault and anything below the threshold draw pixel-identically. Model:
+  `src/widgets/ontology-map/model/strata-lod.ts`; gate:
+  `tests/e2e/map-3d-strata-lod.spec.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic
   relation communities as a layout aid, with tighter local groups, lit cell bodies,
   and shallow connection arcs. Group proximity is inferred layout, not a new domain

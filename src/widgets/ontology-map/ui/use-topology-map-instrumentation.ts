@@ -17,8 +17,10 @@ import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import type { OntologyMapProps } from "./OntologyMap";
+import type { StrataLodState } from "../model/strata-lod";
 import {
   lastDrawnLabelBoxes,
+  lastDrawnLodDust,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
   lastLitStateCounts,
@@ -48,6 +50,7 @@ export interface TopologyMapInstrumentationSources {
     previewEdgeHeldRef: SourceRef<OntologyMapProps["previewEdge"]>;
     domeRuntimeRef: SourceRef<DomeRuntime | null>;
     domeModelBuildRef: SourceRef<unknown>;
+    domeLodRef: SourceRef<StrataLodState>;
     galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
@@ -101,6 +104,7 @@ export function useTopologyMapInstrumentation({
     previewEdgeHeldRef,
     domeRuntimeRef,
     domeModelBuildRef,
+    domeLodRef,
     galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
@@ -480,6 +484,20 @@ export function useTopologyMapInstrumentation({
           flight: d.flight?.slug ?? null,
           flyPending: d.flyRequest !== null,
           light: lastLitStateCounts(),
+          lod: {
+            active: domeLodRef.current.active,
+            capability: domeLodRef.current.planeResolve.capability,
+            element: domeLodRef.current.planeResolve.element,
+            spacingPx: { ...domeLodRef.current.spacingPx },
+            gap: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeGap },
+            count: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeCount },
+            hoverSlot: domeLodRef.current.hoverSlot,
+            hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
+            focusSlot: domeLodRef.current.focusSlot,
+            sheets: domeLodRef.current.shapeCount,
+            dust: lastDrawnLodDust(),
+            settling: domeLodRef.current.settling,
+          },
         };
       },
       /**
@@ -560,6 +578,7 @@ export function useTopologyMapInstrumentation({
     canvasRef,
     clusterChipsRef,
     clusteredIdsRef,
+    domeLodRef,
     domeModelBuildRef,
     domeRuntimeRef,
     drawnFarTRef,
