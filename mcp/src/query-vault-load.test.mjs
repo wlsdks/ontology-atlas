@@ -382,3 +382,103 @@ test('scoped graph warnings retain all peer identities without constructing othe
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('batch warnings cover rows discovered during reads without expanding unused peers', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-batch-warning-scope-')));
+  try {
+    for (let i = 0; i < 100; i++) {
+      writeFileSync(join(root, `n${i}.md`), `---\nuid: 00000000-0000-4000-8000-000000000001\nkind: element\ntitle: N${i}\n---\nDefinition.`);
+    }
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      const { getConceptsBatch } = await import(${JSON.stringify(new URL('./tools/read.mjs', import.meta.url).href)});
+      const choices = ['n0', 'n0']; let selectedReads = 0, candidateChecks = 0;
+      const originalOpen = fs.openSync;
+      fs.openSync = function(path, ...args) {
+        if (path === process.env.OATLAS_VAULT + '/n0.md' && ++selectedReads === 2) choices[1] = 'n1';
+        return originalOpen.call(this, path, ...args);
+      };
+      syncBuiltinESMExports();
+      const originalFilter = Array.prototype.filter;
+      Array.prototype.filter = function(callback, receiver) {
+        const tracked = this.length === 100 && typeof this[0] === 'string' && /^n\\d+$/.test(this[0]);
+        return originalFilter.call(this, (value, index, array) => {
+          if (tracked) candidateChecks++;
+          return callback.call(receiver, value, index, array);
+        });
+      };
+      let result;
+      try { result = getConceptsBatch({ slugs: choices }); }
+      finally { Array.prototype.filter = originalFilter; fs.openSync = originalOpen; syncBuiltinESMExports(); }
+      console.log(JSON.stringify({ result, candidateChecks }));
+    `;
+    const value = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.deepEqual(value.result.concepts.map(row => row.slug), ['n0', 'n1']);
+    for (const row of value.result.concepts) {
+      assert.equal(row.ok, true);
+      assert.ok(row.warnings.some(issue => issue.code === 'duplicate-uid' && issue.message.includes('n99')));
+    }
+    assert.ok(value.candidateChecks <= 1000, `batch peer filtering visited ${value.candidateChecks} candidates`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('UID batches avoid repeated full-inventory filtering while preserving row order', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-batch-uid-index-')));
+  const uid = i => `00000000-0000-4000-8000-${i.toString(16).padStart(12, '0')}`;
+  try {
+    for (let i = 0; i < 1000; i++) {
+      writeFileSync(join(root, `n${i}.md`), `---\nuid: ${uid(i)}\nkind: element\ntitle: N${i}\n---\nDefinition.`);
+    }
+    const script = `
+      const { getConceptsBatch } = await import(${JSON.stringify(new URL('./tools/read.mjs', import.meta.url).href)});
+      const uid = i => '00000000-0000-4000-8000-' + i.toString(16).padStart(12, '0');
+      const original = Array.prototype.filter; let candidateChecks = 0;
+      Array.prototype.filter = function(callback, receiver) {
+        const tracked = this.length === 1000 && this[0]?.frontmatter;
+        return original.call(this, (value, index, array) => {
+          if (tracked) candidateChecks++;
+          return callback.call(receiver, value, index, array);
+        });
+      };
+      let result;
+      try { result = getConceptsBatch({ uids: Array.from({ length: 50 }, (_, i) => uid(49 - i)) }); }
+      finally { Array.prototype.filter = original; }
+      console.log(JSON.stringify({ candidateChecks, rows: result.concepts.map(row => ({ ok: row.ok, uid: row.uid, slug: row.slug })) }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.ok(result.candidateChecks <= 2000, `UID selection visited ${result.candidateChecks} candidates`);
+    assert.deepEqual(result.rows, Array.from({ length: 50 }, (_, i) => ({ ok: true, uid: uid(49 - i), slug: `n${49 - i}` })));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('indexed UID batches preserve primary priority and merged-identity ambiguity', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-batch-uid-lineage-')));
+  const uid = i => `00000000-0000-4000-8000-${i.toString(16).padStart(12, '0')}`;
+  try {
+    for (const [name, primary, merged] of [['a', 1, [1, 1, 3]], ['b', 2, [1, 3]], ['c', 5, [5, 5]]]) {
+      writeFileSync(join(root, `${name}.md`), `---\nuid: ${uid(primary)}\nkind: element\ntitle: ${name}\nmerged_uids: ${JSON.stringify(merged.map(uid))}\n---\nDefinition.`);
+    }
+    const request = { uids: [uid(1), uid(2), uid(3), uid(5), uid(4)] };
+    const script = `
+      const { getConceptsBatch } = await import(${JSON.stringify(new URL('./tools/read.mjs', import.meta.url).href)});
+      console.log(JSON.stringify(getConceptsBatch(${JSON.stringify(request)})));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.deepEqual(result.concepts.map(row => row.ok ? row.slug : 'error'), ['a', 'b', 'error', 'c', 'error']);
+    assert.match(result.concepts[2].error, /Ambiguous merged uid/);
+    assert.equal(result.concepts[4].missingUid, uid(4));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
