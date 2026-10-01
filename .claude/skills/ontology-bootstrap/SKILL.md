@@ -12,7 +12,7 @@ heading, or model-generated phrase into a business concept without a definition
 and source-backed justification.
 
 Use only ontology-atlas MCP tools for the core workflow. Do not depend on
-CodeGraph, another skill, shell search, or an AST index. Those may exist, but a
+other skills, shell search, or an AST index. Those may exist, but a
 plain agent connected only to Atlas must still succeed at the meaning model.
 The optional, bounded task-navigation enrichment in the construction guide is
 the sole exception: after meaning selects a stable element, a source-aware
