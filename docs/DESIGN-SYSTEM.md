@@ -61,6 +61,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [The Library's ground — an object, and a field (2026-09-09)](#the-librarys-ground--an-object-and-a-field-2026-09-09)
 - [Contextual ontology writing; Studio surface retired 2026-08-21](#contextual-ontology-writing-studio-surface-retired-2026-08-21)
 - [Motion primitives](#motion-primitives)
+- [Signature motion](#signature-motion)
 - [Page header — English caption + Korean h1](#page-header--english-caption--korean-h1)
 - [Geometry & Type Codex (R5, 2026-07)](#geometry--type-codex-r5-2026-07)
 - [Chrome Syntax (feat/chrome-system)](#chrome-syntax-featchrome-system)
@@ -2266,8 +2267,9 @@ this surface too. Full history + KEEP/KILL/BUILD: session memory
 
 Every surface moves through one of these thirteen primitives. Durations and
 easings come from `--motion-*` or `MOTION`/`STAGGER` only; no primitive adds a
-duration or an easing. Three named values arrive with their primitives: a 35ms
-stagger step, a 3px refusal travel and a 6px page rise. Each primitive's
+duration or an easing, except the selection indicator, which rides the house
+`control` spring ("Signature motion"). Two named values arrive with their
+primitives: a 35ms stagger step and a 3px refusal travel. Each primitive's
 CSS lives in its own `app/styles/motion-*.css` part inside `@layer base`, with
 its reduced-motion equivalent; the OS preference is the only switch.
 
@@ -2371,8 +2373,9 @@ checked. Under reduced motion the check appears whole.
 
 `useSlidingIndicator` in `src/shared/motion/use-sliding-indicator.ts`, CSS in
 `motion-indicator.css`: one indicator per group, placed without a transition
-first. Tabs, segments, rail and LNB move on `--motion-base`; palette rows on
-`--motion-fast`. The indicator carries `motion-indicator`,
+first. Tabs, segments, rail and LNB move on the `control` spring: the hook
+sets `springEasing(SPRING.control)` over `springSettleMs` (239ms) inline;
+palette rows stay on `--motion-fast`. The indicator carries `motion-indicator`,
 `data-selection-indicator` (its shape) and `data-animated`; the transition
 runs only while `data-animated="true"`, and reduced motion drops it, so the
 indicator jumps. Until `placed`, the active item keeps its static style.
@@ -2404,8 +2407,8 @@ growing.
 
 ### Direction
 
-Pages crossfade with a 6px rise on `--motion-base` and
-fade only under reduced motion. Anchored popovers grow from their trigger,
+Pages crossfade on `--motion-base` with no travel (`base-motion.css`,
+`::view-transition-*(app-pane)`), and keep the crossfade under reduced motion. Anchored popovers grow from their trigger,
 agent docks share one reflow grammar, drawers slide from their edge, modals
 rise; each leaves the way it came. CSS in `motion-surface.css`.
 
@@ -2415,6 +2418,104 @@ rise; each leaves the way it came. CSS in `motion-surface.css`.
 - All five agent docks spread `agentDockReflowStyle()` onto their frame and
   wrap the conversation in `Surface motion="overlay"`; only the project dock
   also reflows `margin-left`.
+
+## Signature motion
+
+**Identity: Conduction — one spring, one light.** Meaning moves through Atlas
+along real connections, from where it starts, lit only while it is happening,
+with a weight that depends on the structure. Every signature moment names at
+least one principle, and the decoration rule above still applies.
+
+1. **Meaning travels along relations.** Motion caused by a relation runs along
+   that relation's own line, in its direction; nothing crosses empty space.
+2. **Everything arrives from its origin and leaves toward it.**
+3. **One light: only what is happening now glows**, for as long as the act
+   lasts. Nothing at rest glows or moves. One line carries one light.
+4. **One spring: weight follows structure.** Every spatial move uses one house
+   damping character. Speed depends on scale (control < surface < canvas) and,
+   on the map, on mass (a concept's degree). Heavy concepts arrive later but
+   never bounce more.
+
+### Spending rule
+
+| Tier | Events | Allowed | Cap |
+|---|---|---|---|
+| 0 constant | hover, focus ring, typing, scroll | ink only, `--motion-fast` | no travel, no light |
+| 1 frequent | press, tab, route change, popover, row select, palette navigation | house springs for travel; effects ramp for ink | one `SPRING.control` settle (239ms); no light |
+| 2 answered question | focus a concept, find a path, open detail, finish an action, switch layout, camera flight | spring travel plus one light event | light ends by `CAMERA_TWEEN_MAX_MS` (420) plus bloom decay; travel 90% by 540ms |
+| 3 rare event | first open, a change lands, agent proposes or writes, commit, compile, connection passes, release film | full choreography | 1.2s, once per event, any input settles it, never replays |
+
+Route change stays at tier 1.
+
+### House springs
+
+`SPRING` in `src/shared/motion/spring.ts`. Grammar: stiffness k and damping
+ratio ζ, mass 1; ω = √k. One house ratio, `HOUSE_DAMPING_RATIO` 0.85, gives
+0.63% overshoot everywhere. Visual time is within 2% of the travel, settle
+time within 0.5%.
+
+| Member | k | ζ | visual | settle | Moves |
+|---|---|---|---|---|---|
+| `control` | 800 | 0.85 | 148ms | 239ms | a control's own parts: selection indicators, segment fills, digit rolls |
+| `surface` | 300 | 0.85 | 242ms | 391ms | a surface or row changing place: shared elements, rows folding, DOM flights |
+| `canvas` | 140 | 0.85 | 354ms | 571ms | concepts and the camera on the map |
+| `canvas`, mass 2 | 140/2 | 0.85 | 501ms | 808ms | a fully heavy concept |
+
+`springState(spring, tSec, {x0, v0}, mass)` is the closed form: frame-rate
+independent, stable at any frame time, and retargetable from the current
+position and velocity. DOM consumers receive `springEasing(spring)`, a CSS
+`linear()` of 33 stops (error ≤ 0.005) over `springSettleMs`, applied inline
+by the primitive that runs the motion. There is no static CSS spring token;
+JS is the single source, and no `linear()` is typed by hand.
+
+Specialisations keep their values and recorded reasons: `OVERLAY_SPRING`
+(ζ 1, overlays have no inbound momentum), the map camera's interactive spring
+(ω 15), the mass, press and home springs, `--motion-ease-place` and
+`--motion-ease-drag-release`. A new specialisation needs a decision record.
+
+### Springs and effects
+
+A spring moves position, size, rotation or scale of something that travels.
+Opacity, colour, blur and light intensity never overshoot and stay on the
+`--motion-*` ramp (`MOTION`, `EXIT_TRANSITION`). When a surface both travels
+and fades, the travel takes the spring and the fade takes the ramp.
+
+### Reduced motion
+
+The OS preference is the only switch. Springs do not travel: the final state
+lands on the first frame, with a `--motion-fast` crossfade where content
+changes. The light layer is never created. Under
+`prefers-reduced-transparency`, glass is a solid tint.
+
+### Budgets
+
+Per motion window at synth 2k: drop ratio ≤ 10%, max frame interval ≤ 50ms,
+no long task. At synth 10k: drop ratio ≤ 25%, max interval ≤ 100ms. Measured
+headed on the static export, median of 3. DOM springs animate
+`translate`/`scale`/`transform` only, except the indicator's `width`/`height`.
+At rest the map sleeps (0 frames).
+
+### Light
+
+Light marks only the thing a hand or an agent is acting on, for as long as the
+act lasts, then settles into the static state. Light lives on the map's WebGL2
+light layer and never on a mark with identity.
+
+### Film
+
+The release film is rendered offline and never ships in the app bundle.
+
+### Layout glide
+
+Specified with the map's layout morph.
+
+### Light tokens
+
+Specified with the map's light layer.
+
+### Glass
+
+Specified with its first consumer.
 
 ## Page header — English caption + Korean h1
 

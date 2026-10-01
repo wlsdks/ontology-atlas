@@ -195,6 +195,9 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
   completed change. Camera and drag values of 420/720ms are canvas-only.
   Duration and easing move as one family.
 - Overshoot, bounce and spring settle need a named token and a stated meaning.
+- Spatial travel uses the house springs (`SPRING` in `src/shared/motion/spring.ts`);
+  opacity, colour and light stay on the `--motion-*` ramp. DOM gets
+  `springEasing()` at runtime; never type a `linear()` by hand.
 - Exits accelerate on `--motion-ease-exit` (JS `EXIT_TRANSITION`) under their own
   animation name; entries keep `--motion-ease`. Only `-out` /
   `[data-state="closed"]` rules on a `*Out` keyframe may use the exit token,
