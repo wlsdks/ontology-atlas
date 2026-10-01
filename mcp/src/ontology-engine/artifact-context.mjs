@@ -18,7 +18,6 @@ function deepFreeze(value) {
   return value;
 }
 
-/** Build the immutable indexes shared by ontology query families. */
 export function createArtifactContext(artifact, options = {}) {
   const sourceDocBySlug = new Map(
     (Array.isArray(options.sourceDocs) ? options.sourceDocs : []).map((doc) => [doc.slug, doc]),
@@ -26,13 +25,13 @@ export function createArtifactContext(artifact, options = {}) {
   const shared = sharedArtifacts.has(artifact);
   let indexes = shared ? indexesByArtifact.get(artifact) : undefined;
   if (!indexes) {
-    indexes = buildArtifactIndexes(artifact);
+    indexes = buildArtifactIndexes(artifact, shared);
     if (shared) indexesByArtifact.set(artifact, indexes);
   }
   return { artifact, ...indexes, sourceDocBySlug };
 }
 
-function buildArtifactIndexes(artifact) {
+function buildArtifactIndexes(artifact, shared) {
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
@@ -90,6 +89,26 @@ function buildArtifactIndexes(artifact) {
     Object.freeze(list);
   }
 
+  // Frozen alias index: O(A log A) build; O(result) reads.
+  let aliasesBySlug;
+  function aliasesFor(slug) {
+    if (!shared) {
+      return (Array.isArray(artifact?.aliases) ? artifact.aliases : [])
+        .filter(entry => entry.slug === slug).map(entry => entry.alias).sort();
+    }
+    if (!aliasesBySlug) {
+      aliasesBySlug = new Map();
+      for (const entry of Array.isArray(artifact?.aliases) ? artifact.aliases : []) {
+        if (Number.isNaN(entry.slug)) continue;
+        const list = aliasesBySlug.get(entry.slug);
+        if (list) list.push(entry.alias);
+        else aliasesBySlug.set(entry.slug, [entry.alias]);
+      }
+      for (const [slug, list] of aliasesBySlug) aliasesBySlug.set(slug, Object.freeze(list.sort().slice()));
+    }
+    return [...(aliasesBySlug.get(slug) ?? [])];
+  }
+
   function resolve(input, fieldName = 'slug') {
     if (typeof input !== 'string' || !input.trim()) {
       throw new Error(`${fieldName} (string) is required.`);
@@ -141,6 +160,7 @@ function buildArtifactIndexes(artifact) {
     edges,
     nodeBySlug,
     aliasToSlug,
+    aliasesFor,
     ambiguousAliasByName,
     outgoing,
     incoming,

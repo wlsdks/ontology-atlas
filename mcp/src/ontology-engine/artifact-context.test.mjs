@@ -25,3 +25,25 @@ it('keeps all evidence for a hundred thousand sources without suppressing distin
   assert.equal(context.referencedOnlyByRef.get('missing').length, 100_000);
   assert.equal(context.referencedOnlyByRef.get('missing')[0].slug, 'nodes/n0');
 });
+
+it('keeps mutable alias arrays live within a context', () => {
+  const artifact = { nodes: [], edges: [], aliases: [{ alias: 'z', slug: 'a' }] };
+  const context = createArtifactContext(artifact);
+  assert.deepEqual(context.aliasesFor('a'), ['z']);
+  artifact.aliases.push({ alias: 'a', slug: 'a' });
+  assert.deepEqual(context.aliasesFor('a'), ['a', 'z']);
+});
+
+it('preserves sorted duplicates and protects shared alias lists from caller mutation', async () => {
+  const { shareArtifact } = await import('./artifact-context.mjs');
+  const artifact = shareArtifact({ nodes: [], edges: [], aliases: [
+    { alias: 'z', slug: '__proto__' }, { alias: 'a', slug: '__proto__' }, { alias: 'a', slug: '__proto__' },
+    { alias: 'other', slug: 'b' },
+  ] });
+  const context = createArtifactContext(artifact);
+  const aliases = context.aliasesFor('__proto__');
+  assert.deepEqual(aliases, ['a', 'a', 'z']);
+  aliases.push('poison');
+  assert.deepEqual(createArtifactContext(artifact).aliasesFor('__proto__'), ['a', 'a', 'z']);
+  assert.deepEqual(context.aliasesFor('missing'), []);
+});

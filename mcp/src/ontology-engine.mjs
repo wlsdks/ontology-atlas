@@ -334,6 +334,7 @@ export function createOntologyEngine(artifact, options = {}) {
     sourceDocBySlug,
     nodeBySlug,
     aliasToSlug,
+    aliasesFor: indexedAliasesFor,
     referencedOnlyByRef,
     outgoing,
     incoming,
@@ -343,7 +344,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
   let traversalEdges;
   const contextOperations = createContextOperations({
-    artifact, edges, nodeBySlug, aliasToSlug, outgoing, incoming,
+    artifact, edges, nodeBySlug, aliasToSlug, outgoing, incoming, indexedAliasesFor,
     traversalEdges: (...args) => traversalEdges(...args), formatCompiledEdge, compareEdges,
     publicRelationCountObject, downwardContainmentTypes: DOWNWARD_CONTAINMENT_TYPES,
     upwardContainmentTypes: UPWARD_CONTAINMENT_TYPES,
