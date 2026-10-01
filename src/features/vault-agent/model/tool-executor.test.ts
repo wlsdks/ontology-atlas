@@ -425,6 +425,93 @@ describe('tool-executor reads', () => {
     expect(payload.hops).toEqual(['capabilities/payment', 'src/lib/ghost.ts']);
   });
 
+  it('find_neighbors reads only the requested page without repeated node scans', async () => {
+    let idReads = 0;
+    let edgeReads = 0;
+    const nodes = Array.from({ length: 1001 }, (_, index) => {
+      const id = `capability:n${index}`;
+      const value = node(id);
+      Object.defineProperty(value, 'id', { get: () => { idReads += 1; return id; } });
+      return value;
+    });
+    const ordered = [...nodes.slice(-5), ...nodes.slice(1, -5)];
+    const edges = ordered.map((target) => edge(nodes[0].id, target.id));
+    const tracked = new Proxy(edges, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/.test(key)) edgeReads += 1;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const execute = createToolExecutor(makePort({ nodes, edges: tracked }));
+    idReads = 0;
+    edgeReads = 0;
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/n0', limit: 5 }));
+    expect(JSON.parse(result.content).edges.map((row: { to: string }) => row.to)).toEqual(
+      ordered.slice(0, 5).map((target) => target.evidenceIds[0]),
+    );
+    expect(edgeReads).toBeLessThanOrEqual(5);
+    expect(idReads).toBeLessThanOrEqual(20);
+  });
+
+  it('find_neighbors keeps first-ID lookup separate from alias priority', async () => {
+    const root = node('capability:root');
+    const alias = node('capability:alias', { title: 'capability:target' });
+    const first = node('capability:target', { agentSlug: 'capabilities/first' });
+    const duplicate = node('capability:target', { agentSlug: 'capabilities/duplicate' });
+    const execute = createToolExecutor(makePort({ nodes: [root, alias, first, duplicate], edges: [edge(root.id, first.id)] }));
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/root' }));
+    expect(JSON.parse(result.content).edges).toEqual([
+      { from: 'capabilities/root', to: 'capabilities/first', type: 'depends_on' },
+    ]);
+  });
+
+  it('find_neighbors filters before limiting and retains edge order and rationale', async () => {
+    const nodes = ['a', 'b', 'c'].map((id) => node(`capability:${id}`));
+    const edges = [edge(nodes[0].id, nodes[1].id, 'contains'), { ...edge(nodes[2].id, nodes[0].id), label: 'Recorded reason' }, edge(nodes[0].id, nodes[2].id)];
+    const execute = createToolExecutor(makePort({ nodes, edges }));
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/a', types: ['depends_on'], limit: 1.5 }));
+    expect(JSON.parse(result.content).edges).toEqual([
+      { from: 'capabilities/c', to: 'capabilities/a', type: 'depends_on', why: 'Recorded reason' },
+    ]);
+    const outgoing = await execute(call('find_neighbors', { slug: 'capabilities/a', direction: 'outgoing' }));
+    expect(JSON.parse(outgoing.content).edges.map((row: { to: string }) => row.to)).toEqual(['capabilities/b', 'capabilities/c']);
+  });
+
+  it('separate executors keep their own node snapshot', async () => {
+    const root = node('capability:root');
+    const oldTarget = node('capability:target', { agentSlug: 'capabilities/old' });
+    const newTarget = { ...oldTarget, agentSlug: 'capabilities/new' };
+    const edges = [edge(root.id, oldTarget.id)];
+    const oldExecute = createToolExecutor(makePort({ nodes: [root, oldTarget], edges }));
+    const newExecute = createToolExecutor(makePort({ nodes: [root, newTarget], edges }));
+    for (const [execute, expected] of [[oldExecute, 'capabilities/old'], [newExecute, 'capabilities/new'], [oldExecute, 'capabilities/old']] as const) {
+      const result = await execute(call('find_neighbors', { slug: 'capabilities/root' }));
+      expect(JSON.parse(result.content).edges[0].to).toBe(expected);
+    }
+  });
+
+  it('get_concept preserves the first forty neighbors', async () => {
+    const nodes = Array.from({ length: 61 }, (_, index) => node(`capability:n${index}`));
+    const edges = nodes.slice(1).map((target) => edge(nodes[0].id, target.id));
+    const execute = createToolExecutor(makePort({ nodes, edges }));
+    const result = await execute(call('get_concept', { slug: 'capabilities/n0' }));
+    expect(JSON.parse(result.content).neighbors.map((row: { to: string }) => row.to)).toEqual(
+      nodes.slice(1, 41).map((target) => target.evidenceIds[0]),
+    );
+  });
+
+  it('reference-only reads keep twenty valid names in edge order including duplicates', async () => {
+    const ghost = node('capability:ghost', { hasOwnDocument: false, ref: 'capabilities/ghost' });
+    const unnamed = node('capability:unnamed', { hasOwnDocument: false });
+    const parents = Array.from({ length: 25 }, (_, index) => node(`capability:parent${index}`));
+    const edges = [edge(ghost.id, 'missing'), edge(ghost.id, unnamed.id), edge(ghost.id, parents[0].id), ...parents.map((parent) => edge(parent.id, ghost.id))];
+    const execute = createToolExecutor(makePort({ nodes: [ghost, unnamed, ...parents], edges }));
+    const result = await execute(call('get_concept', { slug: 'capabilities/ghost' }));
+    expect(JSON.parse(result.content).referencedBy).toEqual([
+      parents[0].evidenceIds[0], ...parents.slice(0, 19).map((parent) => parent.evidenceIds[0]),
+    ]);
+  });
+
   it.each([
     { name: 'disconnected endpoints', links: [], from: 'a', to: 'c', maxHops: 5, expected: [] },
     { name: 'the same endpoint with no hops', links: [], from: 'a', to: 'a', maxHops: 0, expected: ['a'] },

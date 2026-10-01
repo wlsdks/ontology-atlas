@@ -89,24 +89,30 @@ function pack(payload: unknown): { content: string; truncated: boolean } {
   };
 }
 
-/** slug alias → node. Accepts the doc slug, its last segment, and a derived node's verbatim reference. */
-function buildResolver(port: VaultReadPort) {
+/** O(V) exact-ID and alias indexes, local to one executor snapshot. */
+function buildNodeIndex(port: VaultReadPort) {
   const index = new Map<string, KnowledgeGraphNode>();
+  const nodeById = new Map<string, KnowledgeGraphNode>();
   const add = (key: string | null | undefined, node: KnowledgeGraphNode) => {
     const trimmed = key?.trim();
     if (!trimmed) return;
     if (!index.has(trimmed)) index.set(trimmed, node);
   };
   for (const node of port.nodes) {
+    const id = node.id;
+    if (!nodeById.has(id)) nodeById.set(id, node);
     const target = resolveNodeAgentTarget(node);
     add(target.ref, node);
     if (target.ref) add(lastSegment(target.ref), node);
-    add(node.id, node);
+    add(id, node);
     add(node.title, node);
   }
-  return (input: string): KnowledgeGraphNode | null => {
-    const trimmed = input.trim().replace(/\.md$/, '');
-    return index.get(trimmed) ?? index.get(lastSegment(trimmed)) ?? null;
+  return {
+    nodeById,
+    resolve(input: string): KnowledgeGraphNode | null {
+      const trimmed = input.trim().replace(/\.md$/, '');
+      return index.get(trimmed) ?? index.get(lastSegment(trimmed)) ?? null;
+    },
   };
 }
 
@@ -136,10 +142,11 @@ function nodeRow(node: KnowledgeGraphNode) {
 }
 
 export function createToolExecutor(port: VaultReadPort) {
-  const resolve = buildResolver(port);
+  const { resolve, nodeById } = buildNodeIndex(port);
   const docBySlug = new Map<string, VaultReadDoc>(port.docs.map((doc) => [doc.slug, doc]));
 
-  function neighborsOf(node: KnowledgeGraphNode, direction: string) {
+  function neighborsOf(node: KnowledgeGraphNode, direction: string, limit: number, types: ReadonlySet<string> | null = null) {
+    // O(E + K) after indexing; retain only the requested rows.
     const rows: Array<{ from: string; to: string; type: string; why?: string }> = [];
     for (const edge of port.edges) {
       const outgoing = edge.from === node.id;
@@ -147,14 +154,16 @@ export function createToolExecutor(port: VaultReadPort) {
       if (!outgoing && !incoming) continue;
       if (direction === 'outgoing' && !outgoing) continue;
       if (direction === 'incoming' && !incoming) continue;
-      const fromNode = port.nodes.find((candidate) => candidate.id === edge.from);
-      const toNode = port.nodes.find((candidate) => candidate.id === edge.to);
+      if (types && !types.has(edge.type)) continue;
+      const fromNode = nodeById.get(edge.from);
+      const toNode = nodeById.get(edge.to);
       rows.push({
         from: fromNode ? (resolveNodeAgentTarget(fromNode).ref ?? edge.from) : edge.from,
         to: toNode ? (resolveNodeAgentTarget(toNode).ref ?? edge.to) : edge.to,
         type: edge.type,
         ...(edge.label ? { why: edge.label } : {}),
       });
+      if (rows.length >= limit) break;
     }
     return rows;
   }
@@ -174,13 +183,15 @@ export function createToolExecutor(port: VaultReadPort) {
     const target = resolveNodeAgentTarget(node);
     if (!target.documented) {
       // A merely named concept gets its referrers and the path to creating its document, never a typo guess.
-      const referencedBy = port.edges
-        .filter((edge) => edge.to === node.id || edge.from === node.id)
-        .map((edge) => (edge.to === node.id ? edge.from : edge.to))
-        .map((id) => port.nodes.find((candidate) => candidate.id === id))
-        .map((candidate) => (candidate ? (resolveNodeAgentTarget(candidate).ref ?? '') : ''))
-        .filter(Boolean)
-        .slice(0, 20);
+      const referencedBy: string[] = [];
+      for (const edge of port.edges) {
+        if (edge.to !== node.id && edge.from !== node.id) continue;
+        const candidate = nodeById.get(edge.to === node.id ? edge.from : edge.to);
+        const ref = resolveNodeAgentTarget(candidate).ref;
+        if (!ref) continue;
+        referencedBy.push(ref);
+        if (referencedBy.length === 20) break;
+      }
       return {
         found: true as const,
         slug: target.ref ?? node.id,
@@ -198,7 +209,6 @@ export function createToolExecutor(port: VaultReadPort) {
     const slug = target.ref as string;
     const doc = docBySlug.get(slug);
     const fullBody = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
-    // The full body by default, since this reads local disk; `body: 'excerpt'` is an explicit skim.
     const body = bodyMode === 'excerpt' ? (doc?.excerpt ?? fullBody) : fullBody;
     return {
       found: true as const,
@@ -219,7 +229,7 @@ export function createToolExecutor(port: VaultReadPort) {
           returnedChars: body.length,
           truncated: body.length < fullBody.length,
         },
-        neighbors: neighborsOf(node, 'both').slice(0, 40),
+        neighbors: neighborsOf(node, 'both', 40),
       },
       vaultChars: body.length,
     };
@@ -480,10 +490,8 @@ export function createToolExecutor(port: VaultReadPort) {
         const types = Array.isArray(args.types)
           ? new Set((args.types as unknown[]).map((value) => String(value)))
           : null;
-        const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
-        const edges = neighborsOf(node, direction)
-          .filter((edge) => (types ? types.has(edge.type) : true))
-          .slice(0, limit);
+        const limit = Math.floor(Math.min(Math.max(num(args.limit) ?? 100, 1), 500));
+        const edges = neighborsOf(node, direction, limit, types);
         const packed = pack({ slug, edges });
         return {
           content: packed.content,
@@ -508,7 +516,7 @@ export function createToolExecutor(port: VaultReadPort) {
         const maxHops = Math.min(Math.max(num(args.maxHops) ?? 5, 0), 20);
         const path = breadthFirstPath(port.edges, fromNode.id, toNode.id, maxHops);
         const hops = path?.map((id) => {
-          const node = port.nodes.find((candidate) => candidate.id === id);
+          const node = nodeById.get(id);
           return node ? (resolveNodeAgentTarget(node).ref ?? id) : id;
         });
         const packed = pack({ from, to, found: Boolean(path), hops: hops ?? [] });
