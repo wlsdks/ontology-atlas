@@ -261,3 +261,85 @@ test('find_neighbors lists each vault directory once however many references it 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('single concept reads reuse the request inventory and refresh it on the next request', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-concept-load-')));
+  const uid = randomUUID();
+  const raw = (dependency) => `---\nuid: ${uid}\nkind: capability\ntitle: A\ndependencies: [${dependency}]\n---\nDefinition.`;
+  try {
+    writeFileSync(join(root, 'a.md'), raw('missing'));
+    utimesSync(join(root, 'a.md'), 1, 1);
+    writeFileSync(join(root, 'b.md'), `---\nuid: ${randomUUID()}\nkind: element\ntitle: B\n---\nTarget.`);
+    const script = `
+      import fs from 'node:fs';
+      import { syncBuiltinESMExports } from 'node:module';
+      import { relative } from 'node:path';
+      const root = process.env.OATLAS_VAULT, originalOpen = fs.openSync, counts = new Map();
+      fs.openSync = function(path, ...args) {
+        if (typeof path === 'string' && path.startsWith(root + '/') && path.endsWith('.md')) {
+          const name = relative(root, path); counts.set(name, (counts.get(name) ?? 0) + 1);
+        }
+        return originalOpen.call(this, path, ...args);
+      };
+      syncBuiltinESMExports();
+      const { getConcept } = await import(${JSON.stringify(new URL('./tools/read.mjs', import.meta.url).href)});
+      const observe = () => {
+        counts.clear(); const result = getConcept({ slug: 'a', body: 'full' });
+        return { counts: Object.fromEntries(counts), warnings: result.warnings ?? [], body: result.body };
+      };
+      const before = observe(), previous = fs.statSync(root + '/a.md');
+      fs.writeFileSync(root + '/a.md', ${JSON.stringify(raw('b'))});
+      fs.utimesSync(root + '/a.md', previous.atime, previous.mtime);
+      const after = observe();
+      console.log(JSON.stringify({ before, after }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    for (const value of [result.before, result.after]) {
+      assert.deepEqual(value.counts, { 'a.md': 2, 'b.md': 1 });
+      assert.equal(value.body.trim(), 'Definition.');
+    }
+    assert.ok(result.before.warnings.some(issue => issue.code === 'dangling-graph-reference'));
+    assert.ok(!result.after.warnings.some(issue => issue.code === 'dangling-graph-reference'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('unresolved graph references do not rescan every slug for each missing target', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-reference-index-')));
+  try {
+    const script = `
+      const { groupDanglingIssuesBySlug } = await import(${JSON.stringify(new URL('./tools/vault-nodes.mjs', import.meta.url).href)});
+      const docs = Array.from({ length: 1000 }, (_, i) => ({ slug: 'domain/part/n' + i,
+        frontmatter: { dependencies: ['missing-' + i] } }));
+      const original = String.prototype.endsWith; let candidateChecks = 0;
+      String.prototype.endsWith = function(search, ...args) {
+        if (typeof search === 'string' && search.startsWith('/missing-')) candidateChecks++;
+        return original.call(this, search, ...args);
+      };
+      let issues;
+      try { issues = groupDanglingIssuesBySlug(docs); }
+      finally { String.prototype.endsWith = original; }
+      const examples = groupDanglingIssuesBySlug([
+        { slug: 'caller', frontmatter: { dependencies: ['domain/target', 'target', 'alias', 'unknown', 'omain/target', 'src/file.ts'], elements: ['src/file.ts'] } },
+        { slug: 'first/domain/target', frontmatter: { slug: 'alias' } },
+        { slug: 'second/domain/target', frontmatter: {} },
+      ]);
+      console.log(JSON.stringify({ candidateChecks, issueCount: [...issues.values()].reduce((n, list) => n + list.length, 0), examples: [...examples.values()].flat() }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8', env: { ...process.env, OATLAS_VAULT: root, OATLAS_REPO_ROOT: root },
+    }));
+    assert.equal(result.issueCount, 1000);
+    assert.ok(result.candidateChecks <= 20_000, `missing targets caused ${result.candidateChecks} candidate checks`);
+    assert.equal(result.examples.length, 3);
+    assert.ok(result.examples.every(issue => issue.code === 'dangling-graph-reference'));
+    for (const ref of ['unknown', 'omain/target', 'src/file.ts']) {
+      assert.ok(result.examples.some(issue => issue.message.includes(`"${ref}"`)));
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

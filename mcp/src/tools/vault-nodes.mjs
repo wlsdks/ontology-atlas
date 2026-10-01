@@ -449,6 +449,7 @@ function findDanglingGraphReferenceIssues(docs) {
       frontmatterSlugToFull.set(fmSlug, doc.slug);
     }
   }
+  let suffixToFull;
   const resolveRef = (rawRef) => {
     if (typeof rawRef !== 'string') return null;
     // Normalise references to NFC as well — slugs are already NFC via
@@ -458,10 +459,16 @@ function findDanglingGraphReferenceIssues(docs) {
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
     if (tailToFull.has(ref)) return tailToFull.get(ref);
-    for (const slug of slugs) {
-      if (slug.endsWith(`/${ref}`)) return slug;
+    if (!suffixToFull) {
+      suffixToFull = new Map();
+      for (const slug of slugs) {
+        for (let slash = slug.indexOf('/'); slash !== -1; slash = slug.indexOf('/', slash + 1)) {
+          const suffix = slug.slice(slash + 1);
+          if (!suffixToFull.has(suffix)) suffixToFull.set(suffix, slug);
+        }
+      }
     }
-    return null;
+    return suffixToFull.get(ref) ?? null;
   };
   const issues = [];
   for (const doc of docs) {

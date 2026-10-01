@@ -255,7 +255,7 @@ function getConcept({ slug, uid, body }, context = {}) {
   }
   const danglingIssuesBySlug =
     context.danglingIssuesBySlug ??
-    groupDanglingIssuesBySlug(context.docs ?? loadVaultDocs(VAULT_ROOT));
+    groupDanglingIssuesBySlug(docs);
   warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
   // `rationale` is the document's own `relation_notes` sentence for that target,
   // present only when one is stored — the same optional field `find_path` and
