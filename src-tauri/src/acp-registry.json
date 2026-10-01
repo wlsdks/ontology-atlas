@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-09-28T14:58:29.443Z",
+  "npmDependencyCutoff": "2026-10-01T20:17:31.103Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.82.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.85.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@1.13.1",
+        "package": "@agentclientprotocol/codex-acp@2.1.1",
         "args": []
       }
     },
@@ -115,7 +115,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.65",
+        "package": "cline@3.0.67",
         "args": [
           "--acp"
         ]
@@ -133,7 +133,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.159.0",
+        "package": "@tencent-ai/codebuddy-code@2.161.0",
         "args": [
           "--acp"
         ]
@@ -256,7 +256,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.12",
+        "package": "dimcode@0.5.16",
         "args": [
           "acp"
         ]
@@ -274,7 +274,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.16",
+        "package": "dirac-cli@0.5.17",
         "args": [
           "--acp"
         ]
@@ -292,7 +292,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.228.0",
+        "package": "droid@0.231.0",
         "args": [
           "exec",
           "--output-format",
@@ -330,7 +330,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.61.0",
+        "package": "@google/gemini-cli@0.62.0",
         "args": [
           "--acp"
         ]
@@ -348,7 +348,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.88",
+        "package": "@github/copilot@1.0.90",
         "args": [
           "--acp"
         ]
@@ -366,7 +366,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.12.0",
+        "package": "glm-acp-agent@1.13.0",
         "args": []
       }
     },
@@ -416,7 +416,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.43",
+        "package": "@xai-official/grok@1.0.46",
         "args": [
           "agent",
           "stdio"
@@ -472,7 +472,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.8.1",
+        "package": "@kilocode/cli@7.8.3",
         "args": [
           "acp"
         ]
@@ -579,7 +579,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.47",
+        "package": "@compass-ai/nova@1.1.49",
         "args": [
           "acp"
         ]
@@ -667,7 +667,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.24.6",
+        "package": "@qwen-code/qwen-code@0.24.7",
         "args": [
           "--acp",
           "--experimental-skills"
@@ -686,7 +686,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@smbcloud/sigit@1.5.10",
+        "package": "@smbcloud/sigit@1.5.12",
         "args": []
       }
     },

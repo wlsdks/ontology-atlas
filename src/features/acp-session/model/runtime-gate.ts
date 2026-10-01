@@ -1,32 +1,6 @@
 /**
- * **How the permission gate is raised** per runtime — the method differs by tool.
- *
- * ## Two methods, and what works differs per tool (measured 2026-08-16)
- *
- * | | Claude | Codex |
- * |---|---|---|
- * | config isolation (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`) | **works** | read, but per-turn mode is authoritative |
- * | session mode (`session/set_mode`) | has no read-only | 1.6.2 `read-only` makes direct writes ask; MCP uses the server gate |
- *
- * The codex measurement was the surprise. codex-acp 1.8.0 called its mode `read-only` while sending
- * `workspaceWrite`, and an installed session created an inside-vault file with zero requests. The
- * launch snapshot is deliberately pinned to 1.6.2, whose same mode id sends a real `readOnly`
- * sandbox. In the installed app a direct write stopped at an ordinary permission card, rejection
- * preserved absence, one-time approval wrote once, and the next write asked again. We set the mode
- * both at process start and here before the conversation becomes usable.
- *
- * ⚠️ **This named 1.8.0 alone until 2026-09-05, and that read like one bad release.** 1.9.0 ships
- * the same shape: `AgentMode.ReadOnly` keeps the id `read-only` and the name "Ask for approval"
- * while its `sandboxPolicy` is `workspaceWrite`. The id is the only part that held still. The pin
- * is retained on the reviewed 1.6.2, and `src-tauri/src/acp.rs` carries the same note beside the
- * config it writes — including the fact that the pinned adapter depends on `@openai/codex`
- * `^0.148.0`, so the CLI an app-opened session actually runs is 0.148, not the 0.153 named in the
- * `approval_policy` history there.
- *
- * The earlier conclusion that this made Codex guarded was overturned by installed-app acceptance
- * on 2026-08-24. A self-registered Atlas `add_relation` produced no `session/request_permission`, no review
- * card, and changed the vault immediately. A mode can be called read-only while an MCP child still
- * mutates disk; the app must own the MCP write checkpoint before Codex is eligible for in-app chat.
+ * In-app runtimes need app-owned isolation and the MCP write checkpoint.
+ * Codex also enters read-only before use; a filesystem sandbox cannot guard an MCP child's writes.
  */
 
 /**

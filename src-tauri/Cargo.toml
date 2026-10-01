@@ -24,6 +24,7 @@ serde_json = "1"
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
+tokio = { version = "1.52.3", features = ["io-util", "process", "rt", "time"] }
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 # A packaged `.app` has nowhere to print. Every `println!` in this crate is inside `#[cfg(test)]`,
@@ -41,12 +42,8 @@ tauri-plugin-window-state = "2.4.1"
 # directly adds zero new supply-chain surface (same rationale as objc2).
 log = "0.4"
 
-# libc is also a transitive dep already pulled by tauri (0.2, single version in Cargo.lock) —
-# declaring it directly adds zero new supply-chain surface (same rationale as objc2).
-#
-# It is used in one place: terminating the ACP harness **by process group**. The adapter spawns
-# its own children (real CLI · MCP server), so `Child::kill()` alone leaves grandchildren
-# orphaned. The standard library provides no way to send signals to a process group.
+# Unix process-group termination also clears descendants of failed ACP probes.
+# libc is already in the resolved dependency graph.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
