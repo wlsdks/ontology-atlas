@@ -34,5 +34,14 @@ there when the map opened, such as a deep link, does not light.
 
 When a path between two concepts is found, its relations light hop by hop in
 the walk's order, each stop blooms, and the whole path finishes within 1.2
-seconds. The path's static ink remains afterwards. A path that was already
-there when the map opened does not light.
+seconds. The path's static ink remains afterwards. Each relation lights in its
+own direction, as it does for a selection: when the walk crosses a directional
+relation backwards, that hop keeps its place in the sequence and still lights
+from the relation's source to its target, and the stop it leads to blooms when
+the hop is due. A travelling light on a directional relation means one thing
+everywhere: from its source to its target.
+
+The path lights on the frame it appears, so picking a source and then a target
+lights it at once. A path that appears while a concept is selected, or while
+the trail lens is on, is held back and does not light later, and neither does a
+path that was already there when the map opened.

@@ -127,7 +127,6 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
   canvas.dataset.testid = "map-light";
   canvas.style.position = "absolute";
   canvas.style.pointerEvents = "none";
-  canvas.style.mixBlendMode = options.blend;
   canvas.style.visibility = "hidden";
   const gl = canvas.getContext("webgl2", CONTEXT_ATTRIBUTES);
   if (!gl) return null;
@@ -140,6 +139,9 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
   let bloom: Program;
   let lost = false;
   let disposed = false;
+  let visible = false;
+  let fitWidth = -1;
+  let fitHeight = -1;
 
   const run = (program: Program, data: Float32Array, stride: number, count: number, vertices: number, width: number, height: number, batch: LightBatch) => {
     if (count <= 0) return;
@@ -192,6 +194,7 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
     try {
       build();
       warm();
+      fitWidth = -1;
       lost = false;
       options.onRestored();
     } catch {
@@ -203,19 +206,24 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
   host.insertAdjacentElement("afterend", canvas);
 
   const fit = (width: number, height: number) => {
+    if (width === fitWidth && height === fitHeight) return;
+    fitWidth = width;
+    fitHeight = height;
     const w = Math.max(1, Math.round(width));
     const h = Math.max(1, Math.round(height));
     if (canvas.width !== w) canvas.width = w;
     if (canvas.height !== h) canvas.height = h;
-    const left = `${host.offsetLeft}px`;
-    const top = `${host.offsetTop}px`;
-    if (canvas.style.left !== left) canvas.style.left = left;
-    if (canvas.style.top !== top) canvas.style.top = top;
-    const cssWidth = `${width}px`;
-    const cssHeight = `${height}px`;
-    if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
-    if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight;
+    canvas.style.left = `${host.offsetLeft}px`;
+    canvas.style.top = `${host.offsetTop}px`;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     gl.viewport(0, 0, w, h);
+  };
+  const show = (on: boolean) => {
+    if (visible === on) return;
+    visible = on;
+    canvas.style.mixBlendMode = on ? options.blend : "";
+    canvas.style.visibility = on ? "visible" : "hidden";
   };
   fit(host.clientWidth, host.clientHeight);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -229,13 +237,13 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
       run(signal, batch.signals, SIGNAL_STRIDE, Math.min(batch.signalCount, SIGNAL_CAPACITY), SIGNAL_VERTICES, width, height, batch);
       run(bloom, batch.blooms, BLOOM_STRIDE, Math.min(batch.bloomCount, BLOOM_CAPACITY), BLOOM_VERTICES, width, height, batch);
       gl.bindVertexArray(null);
-      if (canvas.style.visibility !== "visible") canvas.style.visibility = "visible";
+      show(true);
     },
     clear(width, height) {
       if (lost || disposed) return;
       fit(width, height);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      canvas.style.visibility = "hidden";
+      show(false);
     },
     read(left, top, width, height) {
       const rows = new Uint8Array(width * height * 4);

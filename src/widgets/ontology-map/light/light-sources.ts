@@ -34,7 +34,6 @@ export interface LightSourceInput {
   reducedMotion: boolean;
   revealProgress: number;
   clusteredIds: ReadonlySet<string>;
-  colorFocused: boolean;
   mapLensKind: TopologyMapLensKind;
   pathEdgeIds: ReadonlySet<string> | null;
   pathNodeIds: ReadonlySet<string> | null;
@@ -130,9 +129,9 @@ function createPlanRunner(id: string) {
     for (const signal of plan.signals) {
       const frame = signalFrame(signal, input.now, reveal, kinematics);
       if (!frame.started) continue;
-      if (signal.blooms && frame.arrived) {
-        const first = bloomed.get(signal.toId);
-        if (first === undefined || first === signal.arrivedMs) bloomed.set(signal.toId, signal.arrivedMs);
+      if (signal.bloomId !== null && frame.arrived) {
+        const first = bloomed.get(signal.bloomId);
+        if (first === undefined || first === signal.arrivedMs) bloomed.set(signal.bloomId, signal.arrivedMs);
       }
       if (frame.done) continue;
       projectEdge(signal.edge, camera, width, height, screen);
@@ -304,8 +303,11 @@ function createPathSource(): LightSource {
         runner.reset();
         return false;
       }
-      if (open === null) lit = null;
-      if (open === null || input.colorFocused) {
+      if (open === null) {
+        lit = null;
+        current = null;
+      } else if (input.focusedNodeId !== null || input.trailLensActive) {
+        lit = open;
         current = null;
       } else if (open !== lit) {
         lit = open;

@@ -55,8 +55,8 @@ describe("planFocusSignal", () => {
       false,
     );
     const byKey = new Map(plan.signals.map((signal) => [signal.key, signal]));
-    expect(byKey.get("out")).toMatchObject({ from: "a", fromId: "focus", toId: "n1", blooms: true });
-    expect(byKey.get("in")).toMatchObject({ from: "a", fromId: "n2", toId: "focus", blooms: false });
+    expect(byKey.get("out")).toMatchObject({ from: "a", fromId: "focus", toId: "n1", bloomId: "n1" });
+    expect(byKey.get("in")).toMatchObject({ from: "a", fromId: "n2", toId: "focus", bloomId: null });
   });
 
   it("runs a symmetric relation from the focused end", () => {
@@ -128,12 +128,32 @@ describe("planPathSignal", () => {
     const [first, second] = plan.signals;
     expect(first!.startMs).toBe(100);
     expect(second!.startMs).toBeCloseTo(first!.startMs + first!.durationMs, 9);
-    expect(plan.signals.every((signal) => signal.blooms && !signal.revealBound)).toBe(true);
+    expect(plan.signals.map((signal) => signal.bloomId)).toEqual(["b", "c"]);
+    expect(plan.signals.every((signal) => !signal.revealBound)).toBe(true);
   });
 
-  it("runs a hop against its relation's direction when the walk crosses it backwards", () => {
-    const plan = planPathSignal("b", [{ ...candidate({ key: "ab", sourceId: "a", targetId: "b" }), fromId: "b", toId: "a" }], 0, KINEMATICS, false);
-    expect(plan.signals[0]).toMatchObject({ from: "b", fromId: "b", toId: "a" });
+  it("lights a hop the walk crosses backwards source to target, in its place in the walk", () => {
+    const walk: PathHop<string>[] = [
+      hop("ab", "a", "b", 300),
+      { ...candidate({ key: "cb", sourceId: "c", targetId: "b", lengthPx: 300 }), fromId: "b", toId: "c" },
+      hop("cd", "c", "d", 300),
+    ];
+    const plan = planPathSignal("a", walk, 0, KINEMATICS, false);
+    const [first, reversed, last] = plan.signals;
+    expect(reversed).toMatchObject({ from: "a", fromId: "c", toId: "b", bloomId: "c" });
+    expect(reversed!.startMs).toBeCloseTo(first!.startMs + first!.durationMs, 9);
+    expect(last!.startMs).toBeCloseTo(reversed!.startMs + reversed!.durationMs, 9);
+  });
+
+  it("lights a symmetric hop from the end the walk arrives at", () => {
+    const plan = planPathSignal(
+      "b",
+      [{ ...candidate({ key: "ab", sourceId: "a", targetId: "b", directional: false }), fromId: "b", toId: "a" }],
+      0,
+      KINEMATICS,
+      false,
+    );
+    expect(plan.signals[0]).toMatchObject({ from: "b", fromId: "b", toId: "a", bloomId: "a" });
   });
 
   it("scales a long path into the path budget", () => {

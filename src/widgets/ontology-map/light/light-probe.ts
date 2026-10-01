@@ -7,6 +7,12 @@ export interface LightProbeBloom {
   strength: number;
 }
 
+interface Camera {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 interface LightProbeFrame {
   now: number;
   lightMs: number;
@@ -16,13 +22,17 @@ interface LightProbeFrame {
   reveal: number;
   standDowns: number;
   drew: boolean;
-  camera: { x: number; y: number; scale: number };
+  camera: Camera;
+  width: number;
+  height: number;
+  pathOpen: boolean;
   heads: LightHead[];
   blooms: LightProbeBloom[];
   glue: {
     key: string;
     t: number;
     ambiguous: boolean;
+    cameraShiftPx: number;
     offsetPx: number;
     lineContrast: number;
     lightPeak: number;
@@ -127,7 +137,27 @@ function curveLength(curve: LightHead["curve"]): number {
   return length;
 }
 
-function measureGlue(heads: readonly LightHead[], layer: LightLayer, mapCanvas: HTMLCanvasElement): LightProbeFrame["glue"] {
+function cameraShiftAcross(
+  point: { x: number; y: number; tx: number; ty: number },
+  frame: Pick<LightProbeFrame, "camera" | "width" | "height">,
+  previous: Camera | null,
+): number {
+  if (previous === null) return 0;
+  const { camera, width, height } = frame;
+  const worldX = (point.x - width / 2) / camera.scale + camera.x;
+  const worldY = (point.y - height / 2) / camera.scale + camera.y;
+  const shiftX = (worldX - previous.x) * previous.scale + width / 2 - point.x;
+  const shiftY = (worldY - previous.y) * previous.scale + height / 2 - point.y;
+  return Math.abs(shiftY * point.tx - shiftX * point.ty);
+}
+
+function measureGlue(
+  frame: Omit<LightProbeFrame, "glue">,
+  previous: Camera | null,
+  layer: LightLayer,
+  mapCanvas: HTMLCanvasElement,
+): LightProbeFrame["glue"] {
+  const { heads } = frame;
   const context = mapCanvas.getContext("2d");
   const box = mapCanvas.getBoundingClientRect();
   if (!context || box.width <= 0) return [];
@@ -170,6 +200,7 @@ function measureGlue(heads: readonly LightHead[], layer: LightLayer, mapCanvas: 
       key: head.key,
       t: head.t,
       ambiguous: !singlePeak(line) || !isolated(light),
+      cameraShiftPx: cameraShiftAcross(slices[0]!, frame, previous),
       offsetPx: Math.abs(peakAt(light, across) - peakAt(line, across)),
       lineContrast: Math.max(...line) - Math.min(...line),
       lightPeak: Math.max(...light),
@@ -187,6 +218,7 @@ export function installLightProbe(source: LightProbeSource): LightProbe {
   const pending: { points: Point[]; resolve: (pixels: number[][]) => void }[] = [];
   let recording = false;
   let glue = false;
+  let previousCamera: Camera | null = null;
 
   const hook = {
     state: () => source.state(),
@@ -201,15 +233,16 @@ export function installLightProbe(source: LightProbeSource): LightProbe {
               createdMs: plan.createdMs,
               signals: plan.signals.map((signal) => ({
                 key: signal.key,
+                directional: signal.directional,
                 fromId: signal.fromId,
                 toId: signal.toId,
+                bloomId: signal.bloomId,
                 from: signal.from,
                 startMs: signal.startMs,
                 durationMs: signal.durationMs,
                 departAt: signal.departAt,
                 arriveAt: signal.arriveAt,
                 revealBound: signal.revealBound,
-                blooms: signal.blooms,
                 arrivedMs: signal.arrivedMs,
               })),
             }],
@@ -244,8 +277,10 @@ export function installLightProbe(source: LightProbeSource): LightProbe {
           );
         }
       }
+      const previous = previousCamera;
+      previousCamera = frame.camera;
       if (!recording) return;
-      records.push({ ...frame, glue: glue && layer && mapCanvas && frame.drew ? measureGlue(frame.heads, layer, mapCanvas) : [] });
+      records.push({ ...frame, glue: glue && layer && mapCanvas && frame.drew ? measureGlue(frame, previous, layer, mapCanvas) : [] });
       if (records.length > RECORD_LIMIT) records.shift();
     },
     dispose() {

@@ -27,19 +27,26 @@ once it is spent the layer clears once and makes no further call.
 ## Geometry
 
 A signal is drawn on the line's own screen curve: the same projection as
-`projectEdgePoints` in the 2D draw. A focus light leaves the focused concept's
-rim, runs in the reveal's direction (`revealEnd`), never ahead of the drawn
-reveal span, and arrives at the rim of the concept it reaches. A path light runs
-hop by hop in the walk's order.
+`projectEdgePoints` in the 2D draw. Every light runs in its relation's direction
+(`revealEnd`): a directional relation from its source to its target, whichever
+end is focused or walked from, and a symmetric one from the attended end. It
+leaves the rim of the concept it starts at and arrives at the rim of the concept
+it reaches. A focus light never runs ahead of the drawn reveal span. A path
+lights hop by hop in the walk's order; a hop the walk crosses backwards keeps
+its place and lights source to target, and the stop it leads to blooms when the
+hop is due. A path that appears while a concept is focused, or under the trail
+lens, is held back and does not light later.
 
 ## Contracts the layer keeps
 
 - Light only: two programs (a Gaussian strip along a quadratic, and radial
   blooms), additive inside the layer, `plus-lighter` against the map (`screen`
-  where unsupported), premultiplied output.
+  where unsupported) set only while the canvas is visible, premultiplied output.
+  The ink is `--map-indigo-bright`; there is no colour literal.
 - One context per mounted map, created in an idle callback after the first 2D
   frame, 1 backing pixel per CSS pixel, released with `WEBGL_lose_context` on
-  unmount. A software renderer gets no light unless the page asks with
+  unmount. The host canvas's offsets are read when the size changes, not per
+  frame. A software renderer gets no light unless the page asks with
   `?light=force`.
 - An idle map draws 0 frames: nothing here runs without an event.
 - Reduced motion: no canvas and no context; the reveal's snapped ink and the

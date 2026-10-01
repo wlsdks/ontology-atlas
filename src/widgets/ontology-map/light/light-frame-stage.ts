@@ -4,6 +4,7 @@ import type { CameraAxes } from "../engine/camera";
 import { edgeRevealProgress, type Point } from "../expressive/edge-reveal";
 import type { DomeRuntime } from "../model/dome-view";
 import type { TopologyMapLensKind } from "../model/path-lens";
+import { hexToRgb } from "../render/dome-light";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { TopologyWorld } from "../ui/topology-world";
 import type { LightBatch, LightLayer } from "./light-layer";
@@ -23,7 +24,6 @@ interface LightStageRefs {
   mapLensKindRef: RefObject<TopologyMapLensKind>;
   pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
-  colorFocusRef: RefObject<unknown>;
 }
 
 export interface LightStageDependencies {
@@ -72,12 +72,9 @@ async function loadLightLayer(): Promise<LightLayerModule> {
   return { createLightLayer, lightBlendMode, SIGNAL_STRIDE, BLOOM_STRIDE, SIGNAL_CAPACITY, BLOOM_CAPACITY };
 }
 
-function parseInk(hex: string, out: Float32Array, slot: number): void {
-  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  const value = match ? Number.parseInt(match[1]!, 16) : 0x8890e0;
-  out[slot * 3] = ((value >> 16) & 255) / 255;
-  out[slot * 3 + 1] = ((value >> 8) & 255) / 255;
-  out[slot * 3 + 2] = (value & 255) / 255;
+function writeInk(token: string, out: Float32Array, slot: number): void {
+  const rgb = hexToRgb(token);
+  for (let channel = 0; channel < 3; channel += 1) out[slot * 3 + channel] = rgb ? rgb[channel]! / 255 : 0;
 }
 
 export function createLightFrameStage(dependencies: LightStageDependencies, options: LightStageOptions = {}): LightFrameStage {
@@ -107,6 +104,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
   let frameFocus: string | null = null;
   let frameReveal = 1;
   let frameCamera = { x: 0, y: 0, scale: 1 };
+  let framePathOpen = false;
   let prepareMs = 0;
   let prepareStart = 0;
 
@@ -135,7 +133,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       data[at + 6] = tailStart;
       data[at + 7] = drawnEnd;
       data[at + 8] = head;
-      data[at + 9] = kinematics?.tail ?? 0.35;
+      data[at + 9] = kinematics?.tail ?? 0;
       data[at + 10] = strength;
       data[at + 11] = 0;
       batch.signalCount += 1;
@@ -217,8 +215,8 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         blooms: new Float32Array(loaded.BLOOM_CAPACITY * loaded.BLOOM_STRIDE),
         bloomCount: 0,
         inks,
-        corePx: 1.6,
-        haloPx: 6,
+        corePx: 0,
+        haloPx: 0,
       };
       state = "ready";
       requestFrame();
@@ -250,7 +248,10 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       frameNow = now;
       frameFocus = focusedNodeId;
       frameReveal = 1;
-      if (probe) frameCamera = { x: camera.x.value, y: camera.y.value, scale: camera.scale.value };
+      if (probe) {
+        frameCamera = { x: camera.x.value, y: camera.y.value, scale: camera.scale.value };
+        framePathOpen = refs.mapLensKindRef.current === "path" && (refs.pathEdgeIdsRef.current?.size ?? 0) > 0;
+      }
       const reducedMotion = refs.reducedMotionRef.current;
       if (reducedMotion) {
         if (state !== "idle" && state !== "off") {
@@ -278,7 +279,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
           intensity: tokens.lightIntensity,
           bloomTauMs: tokens.lightBloomTau * 1000,
         };
-        parseInk(tokens.indigoBright, inks, 0);
+        writeInk(tokens.indigoBright, inks, 0);
         batch.corePx = tokens.lightCorePx;
         batch.haloPx = tokens.lightHaloPx;
       }
@@ -299,7 +300,6 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         reducedMotion,
         revealProgress: frameReveal,
         clusteredIds: refs.galaxyRef.current ? EMPTY_IDS : clusteredIds,
-        colorFocused: refs.colorFocusRef.current !== null,
         mapLensKind: refs.mapLensKindRef.current,
         pathEdgeIds: refs.pathEdgeIdsRef.current,
         pathNodeIds: refs.spotlightIdsRef.current,
@@ -340,6 +340,9 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
           standDowns: signalledStandDowns(),
           drew,
           camera: frameCamera,
+          width: frameWidth,
+          height: frameHeight,
+          pathOpen: framePathOpen,
           heads: heads.map((head) => ({ ...head })),
           blooms: probeBlooms.slice(),
         },

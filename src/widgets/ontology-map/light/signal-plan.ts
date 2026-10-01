@@ -38,15 +38,16 @@ export interface PathHop<E> extends SignalEdge<E> {
 export interface LightSignal<E> {
   key: string;
   edge: E;
+  directional: boolean;
   from: RevealEnd;
   fromId: string;
   toId: string;
+  bloomId: string | null;
   startMs: number;
   durationMs: number;
   departAt: number;
   arriveAt: number;
   revealBound: boolean;
-  blooms: boolean;
   arrivedMs: number;
 }
 
@@ -90,7 +91,7 @@ function signalFor<E>(
   from: RevealEnd,
   startMs: number,
   kinematics: LightKinematics,
-  options: { revealBound: boolean; blooms: (toId: string) => boolean },
+  options: { revealBound: boolean; bloom: (toId: string) => string | null },
 ): LightSignal<E> {
   const fromA = from === "a";
   const fromId = fromA ? candidate.sourceId : candidate.targetId;
@@ -103,15 +104,16 @@ function signalFor<E>(
   return {
     key: candidate.key,
     edge: candidate.edge,
+    directional: candidate.directional,
     from,
     fromId,
     toId,
+    bloomId: options.bloom(toId),
     startMs,
     durationMs: hopDurationMs((arriveAt - departAt) * candidate.lengthPx, kinematics),
     departAt,
     arriveAt,
     revealBound: options.revealBound,
-    blooms: options.blooms(toId),
     arrivedMs: Number.NaN,
   };
 }
@@ -130,7 +132,7 @@ export function planFocusSignal<E>(
       signals.push(
         signalFor(candidate, revealEnd(candidate.directional, candidate.sourceId, focusId), nowMs, kinematics, {
           revealBound: true,
-          blooms: (toId) => toId !== focusId,
+          bloom: (toId) => (toId === focusId ? null : toId),
         }),
       );
     }
@@ -149,7 +151,7 @@ export function planPathSignal<E>(
   if (!reducedMotion) {
     for (const hop of hops.slice(0, PATH_HOP_CAP)) {
       signals.push(
-        signalFor(hop, hop.fromId === hop.sourceId ? "a" : "b", nowMs, kinematics, { revealBound: false, blooms: () => true }),
+        signalFor(hop, revealEnd(hop.directional, hop.sourceId, hop.fromId), nowMs, kinematics, { revealBound: false, bloom: () => hop.toId }),
       );
     }
     const total = signals.reduce((sum, signal) => sum + signal.durationMs, 0);
@@ -207,7 +209,7 @@ export function isPlanAlive<E>(plan: LightPlan<E> | null, nowMs: number, revealP
   if (plan === null) return false;
   for (const signal of plan.signals) {
     if (!signalFrame(signal, nowMs, revealProgress, kinematics).done) return true;
-    if (signal.blooms && bloomAt(nowMs - signal.arrivedMs, kinematics) > LIGHT_FLOOR) return true;
+    if (signal.bloomId !== null && bloomAt(nowMs - signal.arrivedMs, kinematics) > LIGHT_FLOOR) return true;
   }
   return false;
 }

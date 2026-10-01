@@ -142,12 +142,11 @@ interface Harness {
     mapLensKindRef: { current: TopologyMapLensKind };
     pathEdgeIdsRef: { current: ReadonlySet<string> | null };
     spotlightIdsRef: { current: ReadonlySet<string> | null };
-    colorFocusRef: { current: unknown };
   };
   lightActiveRef: { current: boolean };
   world: TopologyWorld;
   runIdle: () => void;
-  frame: (now: number, focus: string | null) => void;
+  frame: (now: number, focus: string | null, trailLensActive?: boolean) => void;
   light: () => HTMLCanvasElement | null;
 }
 
@@ -164,7 +163,6 @@ function harness(options: Partial<LightStageOptions> = {}): Harness {
     mapLensKindRef: { current: "recent" },
     pathEdgeIdsRef: { current: null },
     spotlightIdsRef: { current: null },
-    colorFocusRef: { current: null },
   };
   const lightActiveRef = { current: false };
   const idle: (() => void)[] = [];
@@ -193,9 +191,8 @@ function harness(options: Partial<LightStageOptions> = {}): Harness {
     runIdle: () => {
       for (const callback of idle.splice(0)) callback();
     },
-    frame: (now, focus) => {
-      refs.colorFocusRef.current = focus === null ? null : { focusedNodeId: focus, selectedEdge: null };
-      stage.prepare(now, TOKENS, built, CAMERA, 800, 600, focus, false, new Set());
+    frame: (now, focus, trailLensActive = false) => {
+      stage.prepare(now, TOKENS, built, CAMERA, 800, 600, focus, trailLensActive, new Set());
       stage.render();
     },
     light: () => container.querySelector<HTMLCanvasElement>('[data-testid="map-light"]'),
@@ -239,7 +236,7 @@ describe("light frame stage", () => {
     expect(light.getAttribute("aria-hidden")).toBe("true");
     expect(light.style.pointerEvents).toBe("none");
     expect(light.style.visibility).toBe("hidden");
-    expect(["plus-lighter", "screen"]).toContain(light.style.mixBlendMode);
+    expect(light.style.mixBlendMode).toBe("");
     h.stage.dispose();
   });
 
@@ -253,11 +250,27 @@ describe("light frame stage", () => {
     expect(h.lightActiveRef.current).toBe(true);
     expect(fake.count("drawArraysInstanced")).toBe(2);
     expect(h.light()!.style.visibility).toBe("visible");
+    expect(["plus-lighter", "screen"]).toContain(h.light()!.style.mixBlendMode);
     fake.reset();
     h.frame(3 * FRAME_MS, "d0");
     expect(fake.count("drawArraysInstanced")).toBe(2);
     expect(fake.count("bufferSubData")).toBe(2);
     expect(fake.count("bufferData")).toBe(0);
+    h.stage.dispose();
+  });
+
+  it("reads the map canvas's offsets when its size changes, not every frame", async () => {
+    const h = harness();
+    await ready(h);
+    const offsetLeft = vi.spyOn(HTMLElement.prototype, "offsetLeft", "get");
+    h.frame(2 * FRAME_MS, "d0");
+    h.frame(3 * FRAME_MS, "d0");
+    h.frame(4 * FRAME_MS, "d0");
+    const steady = offsetLeft.mock.calls.length;
+    h.stage.prepare(5 * FRAME_MS, TOKENS, h.world, CAMERA, 900, 600, "d0", false, new Set());
+    h.stage.render();
+    expect(steady).toBeLessThanOrEqual(1);
+    expect(offsetLeft.mock.calls.length).toBe(steady + 1);
     h.stage.dispose();
   });
 
@@ -268,6 +281,7 @@ describe("light frame stage", () => {
     for (let now = 3 * FRAME_MS; now < SPENT_MS; now += FRAME_MS) h.frame(now, "d0");
     expect(h.lightActiveRef.current).toBe(false);
     expect(h.light()!.style.visibility).toBe("hidden");
+    expect(h.light()!.style.mixBlendMode).toBe("");
     fake.reset();
     h.frame(SPENT_MS, "d0");
     h.frame(SPENT_MS + FRAME_MS, "d0");
@@ -325,6 +339,34 @@ describe("light frame stage", () => {
     h.refs.spotlightIdsRef.current = new Set(["p", "d1"]);
     h.frame((now += FRAME_MS), null);
     expect(h.lightActiveRef.current).toBe(true);
+    h.stage.dispose();
+  });
+
+  it("holds a path back while a concept is focused or the trail lens is on, and does not light it afterwards", async () => {
+    const h = harness({ search: "?e2e=1" });
+    await ready(h);
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string }[] } }).__atlasMapLight;
+    const pathLit = () => probe.plan().some((plan) => plan.kind === "path");
+    const open = (edge: string, nodes: string[]) => {
+      h.refs.pathEdgeIdsRef.current = new Set([edge]);
+      h.refs.spotlightIdsRef.current = new Set(nodes);
+    };
+    h.refs.mapLensKindRef.current = "path";
+    let now = 2 * FRAME_MS;
+    open("e0", ["p", "d0"]);
+    h.frame(now, "d2");
+    expect(pathLit()).toBe(false);
+    h.frame((now += FRAME_MS), null);
+    h.frame((now += FRAME_MS), null);
+    expect(pathLit()).toBe(false);
+    open("e1", ["p", "d1"]);
+    h.frame((now += FRAME_MS), null, true);
+    expect(pathLit()).toBe(false);
+    h.frame((now += FRAME_MS), null);
+    expect(pathLit()).toBe(false);
+    open("e2", ["p", "d2"]);
+    h.frame((now += FRAME_MS), null);
+    expect(pathLit()).toBe(true);
     h.stage.dispose();
   });
 
