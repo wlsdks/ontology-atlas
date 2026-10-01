@@ -297,7 +297,6 @@ describe('runTurn', () => {
     });
     expect(result.turn.status).toBe('aborted');
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'aborted' });
-    // No new round trip occurs after an abort — nothing continues in the background.
     expect(send).toHaveBeenCalledTimes(1);
   });
 
@@ -310,6 +309,43 @@ describe('runTurn', () => {
     });
     expect(d.send).not.toHaveBeenCalled();
     expect(result.turn.status).toBe('aborted');
+  });
+
+  it.each([200, 429])('ignores a response with HTTP %i received after cancellation', async (httpStatus) => {
+    const controller = new AbortController();
+    const send = vi.fn<Send>(async () => {
+      controller.abort();
+      return echo(TEXT_ONLY, httpStatus);
+    });
+    const d = deps({ send });
+    const result = await runTurn(d, startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
+      signal: controller.signal,
+    });
+    expect(result.turn.status).toBe('aborted');
+    expect(result.turn.events.at(-1)).toMatchObject({ code: 'aborted' });
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
+    expect(result.turn.auditCount).toBe(1);
+    expect(result.turn.sentChars).toBe(send.mock.calls[0]![0].body.length);
+    expect(d.execute).not.toHaveBeenCalled();
+  });
+
+  it.each(['answer', 'rejection'])('cancels a closing call before its late %s arrives', async (outcome) => {
+    const controller = new AbortController();
+    let calls = 0;
+    const send = vi.fn<Send>(async () => {
+      if (++calls === 1) return echo(TOOL_CALL);
+      controller.abort();
+      if (outcome === 'rejection') throw new Error('closed bridge');
+      return echo(TEXT_ONLY);
+    });
+    const result = await runTurn(deps({ send, roundCap: 1 }), startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }), {
+      signal: controller.signal,
+    });
+    expect(result.turn.status).toBe('aborted');
+    expect(result.turn.events.at(-1)).toMatchObject({ code: 'aborted' });
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
+    expect(result.readSlugs).toEqual(['capabilities/payment']);
+    expect(send).toHaveBeenCalledTimes(2);
   });
 
   it('settles tool rows only after the round trip ends', async () => {
