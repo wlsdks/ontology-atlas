@@ -187,3 +187,14 @@ test('still falls back to untitled when no slug character remains', () => {
   const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '!!! ???' });
   assert.equal(hint.exampleCall.args.slug, 'untitled');
 });
+
+test('zero-row census treats inherited dictionary names as absent', () => {
+  for (const domain of ['constructor', 'toString', 'hasOwnProperty']) {
+    const missing = buildQueryConceptsZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: {} });
+    assert.ok(missing.reason.includes(`domain="${domain}" has 0 nodes`));
+    const present = buildQueryConceptsZeroRowsGrowthHint({ filter: `domain="${domain}"`, byDomain: Object.fromEntries([[domain, 1]]) });
+    assert.ok(!present.reason.includes('has 0 nodes'));
+  }
+  const missingKind = buildQueryConceptsZeroRowsGrowthHint({ filter: 'kind="constructor"', byKind: {} });
+  assert.ok(missingKind.reason.includes('kind="constructor" has 0 nodes'));
+});

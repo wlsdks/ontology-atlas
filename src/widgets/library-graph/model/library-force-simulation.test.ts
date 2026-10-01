@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { packGroupsAroundCentre } from './library-graph-packing';
 import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph, LibraryGraphEdge, LibraryGraphNode } from "./build-library-graph";
@@ -662,4 +663,43 @@ describe("the unattached group's own index", () => {
       expect(radial, `${node.id} is not on the ring`).toBeLessThan(1.1);
     }
   });
+});
+
+it('keeps a large set of packed footprints separated after the spiral search budget', () => {
+  const slots = packGroupsAroundCentre(Array.from({ length: 50_000 }, () => ({ width: 20, height: 20 })), 8);
+  const diameter = Math.hypot(20, 20) + 8;
+  const ordered = slots.slice().sort((a, b) => a.cx - b.cx);
+  let overlap = false;
+  for (let i = 0; i < ordered.length && !overlap; i += 1) {
+    const a = ordered[i];
+    for (let j = i + 1; j < ordered.length && ordered[j].cx - a.cx < diameter; j += 1) {
+      const b = ordered[j];
+      if (Math.hypot(a.cx - b.cx, a.cy - b.cy) < diameter - 1e-6) {
+        overlap = true;
+        break;
+      }
+    }
+  }
+  expect(slots).toHaveLength(50_000);
+  expect(overlap).toBe(false);
+});
+
+it('refreshes reusable positions without retaining removed nodes or mutating an earlier snapshot', () => {
+  const graph: LibraryGraph = {
+    nodes: [{ id: 'a', kind: 'source', label: 'A', ref: 'sources/a', href: null }],
+    edges: [], counts: { sources: 1, pages: 0, concepts: 0, cites: 0, mentions: 0 },
+  };
+  const sim = createLibrarySimulation({ graph, box: { width: 800, height: 600 } });
+  const snapshot = libraryPositions(sim);
+  const original = { ...snapshot.get('a')! };
+  const buffer = new Map([['gone', { x: 0, y: 0 }]]);
+  expect(libraryPositions(sim, buffer)).toBe(buffer);
+  expect(buffer.has('gone')).toBe(false);
+  const held = buffer.get('a');
+  sim.nodes[0].x = 42;
+  sim.nodes[0].y = -12;
+  libraryPositions(sim, buffer);
+  expect(buffer.get('a')).toBe(held);
+  expect(buffer.get('a')).toEqual({ x: 42, y: -12 });
+  expect(snapshot.get('a')).toEqual(original);
 });

@@ -88,10 +88,34 @@ export interface ViewBox {
   height: number;
 }
 
-export function worldToScreen(point: LayoutPoint, view: LibraryGraphView, box: ViewBox): LayoutPoint {
+export function worldToScreen(
+  point: LayoutPoint,
+  view: LibraryGraphView,
+  box: ViewBox,
+  out: LayoutPoint = { x: 0, y: 0 },
+): LayoutPoint {
+  out.x = box.width / 2 + (point.x - view.x) * view.scale;
+  out.y = box.height / 2 + (point.y - view.y) * view.scale;
+  return out;
+}
+
+export type LibraryPositionLookup = Pick<ReadonlyMap<string, LayoutPoint>, "get">;
+
+export function createProjectedPositions(
+  positions: LibraryPositionLookup,
+  view: LibraryGraphView,
+  box: ViewBox,
+  buffer = new Map<string, LayoutPoint>(),
+): LibraryPositionLookup {
   return {
-    x: box.width / 2 + (point.x - view.x) * view.scale,
-    y: box.height / 2 + (point.y - view.y) * view.scale,
+    get(id) {
+      const point = positions.get(id);
+      if (!point) return undefined;
+      const held = buffer.get(id);
+      const projected = worldToScreen(point, view, box, held);
+      if (!held) buffer.set(id, projected);
+      return projected;
+    },
   };
 }
 

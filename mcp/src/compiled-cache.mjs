@@ -1,3 +1,6 @@
+import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
+
 /**
  * In-process compiled graph cache for one MCP session's repeated query_ontology
  * calls. The vault stays the truth: the artifact is reused only while the docs
@@ -48,16 +51,22 @@ export function createCompiledOntologyCache({ loadDocs, compile }) {
 }
 
 function docsSignature(docs) {
-  return docs
-    .map((doc) => `${doc.slug}\0${doc.mtime ?? ''}\0${hashString(doc.raw ?? '')}`)
-    .sort()
-    .join('\0');
-}
-
-function hashString(value) {
-  let hash = 5381;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = ((hash << 5) + hash) ^ value.charCodeAt(index);
+  const fields = docs.map((doc) => [doc.slug, String(doc.mtime ?? ''), doc.raw ?? '']);
+  fields.sort((left, right) => {
+    for (let i = 0; i < left.length; i += 1) {
+      if (left[i] < right[i]) return -1;
+      if (left[i] > right[i]) return 1;
+    }
+    return 0;
+  });
+  const digest = createHash('sha256');
+  const length = Buffer.allocUnsafe(4);
+  for (const row of fields) {
+    for (const value of row) {
+      length.writeUInt32LE(value.length);
+      digest.update(length);
+      digest.update(value, 'utf16le');
+    }
   }
-  return hash >>> 0;
+  return digest.digest('hex');
 }

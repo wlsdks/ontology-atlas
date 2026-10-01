@@ -8,8 +8,10 @@ import type { VaultManifest } from '../model/types';
  */
 
 const nativeVaultFingerprint = vi.fn();
+const readTauriVaultTextFile = vi.fn();
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
+  readTauriVaultTextFile: (rootPath: string, path: string) => readTauriVaultTextFile(rootPath, path),
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =
@@ -107,6 +109,7 @@ const stampsFor = (files: Record<string, FakeFile>) => ({
 
 beforeEach(() => {
   nativeVaultFingerprint.mockReset();
+  readTauriVaultTextFile.mockReset().mockResolvedValue(null);
 });
 
 describe('incremental rebuild with native stamps skips unchanged files', () => {
@@ -192,4 +195,22 @@ describe('incremental rebuild with native stamps skips unchanged files', () => {
     expect(opens.size, 'a native failure falls back to the per-file path').toBe(5);
     expect(result.build.manifest.docs.length).toBe(5);
   });
+});
+
+
+it('builds native Markdown directly from stamped text and retains incremental reuse', async () => {
+  readTauriVaultTextFile.mockImplementation(async (_root: string, path: string) => ({
+    text: FILES[path].text, lastModified: FILES[path].lastModified,
+  }));
+  const opens = new Map<string, number>();
+  const native = await buildLocalManifestWithEntries(makeRoot(FILES, opens, '/vault'));
+  expect(opens.size).toBe(0);
+  expect(readTauriVaultTextFile).toHaveBeenCalledTimes(5);
+  const web = await buildLocalManifest(makeRoot(FILES, new Map()));
+  expect(stripGenerated(native.build.manifest)).toEqual(stripGenerated(web.manifest));
+  nativeVaultFingerprint.mockResolvedValue(stampsFor(FILES));
+  readTauriVaultTextFile.mockClear();
+  await rebuildLocalManifestIncremental(makeRoot(FILES, opens, '/vault'), native.entries);
+  expect(readTauriVaultTextFile).not.toHaveBeenCalled();
+  expect(opens.size).toBe(0);
 });

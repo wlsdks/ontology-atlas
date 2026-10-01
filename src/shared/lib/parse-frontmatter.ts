@@ -391,6 +391,20 @@ function splitTopLevel(input: string, separator: string): string[] {
   return parts;
 }
 
+function* bodyLines(body: string, stripCr = false): Generator<string> {
+  let start = 0;
+  while (start <= body.length) {
+    const newline = body.indexOf('\n', start);
+    if (newline < 0) {
+      yield body.slice(start);
+      return;
+    }
+    const end = stripCr && newline > start && body.charCodeAt(newline - 1) === 13 ? newline - 1 : newline;
+    yield body.slice(start, end);
+    start = newline + 1;
+  }
+}
+
 export function firstHeading(body: string): string | null {
   // Fence-aware like extractHeadings (bug sweep 2026-09-01): a titleless doc
   // whose body opens with a fenced shell block containing `# comment` used to
@@ -453,17 +467,17 @@ export function buildDefinitionPreview(
   const titles = Object.entries(frontmatter)
     .filter(([key, value]) => (key === 'title' || key.startsWith('display_')) && typeof value === 'string')
     .map(([, value]) => (value as string).trim());
-  const lines = body.split(/\r?\n/);
-  let index = 0;
-  while (index < lines.length && !lines[index].trim()) index += 1;
-  const heading = lines[index]?.match(/^ {0,3}#\s+(.+?)(?:\s+#+)?\s*$/);
+  const lines = bodyLines(body, true);
+  let current = lines.next();
+  while (!current.done && !current.value.trim()) current = lines.next();
+  const heading = current.value?.match(/^ {0,3}#\s+(.+?)(?:\s+#+)?\s*$/);
   if (heading && titles.includes(heading[1].trim())) {
-    index += 1;
-    while (index < lines.length && !lines[index].trim()) index += 1;
+    current = lines.next();
+    while (!current.done && !current.value.trim()) current = lines.next();
   }
   const paragraph: string[] = [];
-  for (; index < lines.length; index += 1) {
-    const line = lines[index];
+  for (; !current.done; current = lines.next()) {
+    const line = current.value;
     const trimmed = line.trim();
     if (!trimmed) break;
     if (/^(?:=+|-+)\s*$/.test(trimmed) || /^\|?\s*:?-{3,}/.test(trimmed)) return undefined;

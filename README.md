@@ -36,6 +36,9 @@
 
 <p align="center"><sub>Every screenshot reads <a href="samples/storefront"><code>samples/storefront</code></a>, an online store described by Markdown files in this repository.</sub></p>
 
+Folder walks admit up to 100,000 tracked entries and report truncation beyond that
+ceiling or depth 12; this is a capacity bound, not a frame-rate guarantee.
+
 ## In 30 seconds
 
 | | |

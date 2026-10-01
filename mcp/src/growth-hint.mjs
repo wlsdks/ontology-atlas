@@ -137,8 +137,8 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
     (m) => m[1],
   );
 
-  const missingKinds = [...new Set(kindRefs)].filter((kind) => !byKind[kind]);
-  const missingDomains = [...new Set(domainRefs)].filter((domain) => !byDomain[domain]);
+  const missingKinds = [...new Set(kindRefs)].filter((kind) => !Object.hasOwn(byKind, kind) || !byKind[kind]);
+  const missingDomains = [...new Set(domainRefs)].filter((domain) => !Object.hasOwn(byDomain, domain) || !byDomain[domain]);
 
   if (missingKinds.length > 0 || missingDomains.length > 0) {
     const facts = [

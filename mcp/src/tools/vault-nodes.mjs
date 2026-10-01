@@ -433,7 +433,7 @@ function isPathLikeGraphRef(ref) {
   );
 }
 
-function findDanglingGraphReferenceIssues(docs) {
+function findDanglingGraphReferenceIssues(docs, includeSlugs, includeMessages) {
   const slugs = new Set(docs.map((d) => d.slug));
   const tailToFull = new Map();
   const frontmatterSlugToFull = new Map();
@@ -449,6 +449,7 @@ function findDanglingGraphReferenceIssues(docs) {
       frontmatterSlugToFull.set(fmSlug, doc.slug);
     }
   }
+  let suffixToFull;
   const resolveRef = (rawRef) => {
     if (typeof rawRef !== 'string') return null;
     // Normalise references to NFC as well — slugs are already NFC via
@@ -458,13 +459,20 @@ function findDanglingGraphReferenceIssues(docs) {
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
     if (tailToFull.has(ref)) return tailToFull.get(ref);
-    for (const slug of slugs) {
-      if (slug.endsWith(`/${ref}`)) return slug;
+    if (!suffixToFull) {
+      suffixToFull = new Map();
+      for (const slug of slugs) {
+        for (let slash = slug.indexOf('/'); slash !== -1; slash = slug.indexOf('/', slash + 1)) {
+          const suffix = slug.slice(slash + 1);
+          if (!suffixToFull.has(suffix)) suffixToFull.set(suffix, slug);
+        }
+      }
     }
-    return null;
+    return suffixToFull.get(ref) ?? null;
   };
   const issues = [];
   for (const doc of docs) {
+    if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
     for (const { key, ref } of collectNeighborRefs(doc)) {
       if (typeof ref !== 'string' || ref.trim() === '') continue;
       if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
@@ -474,7 +482,7 @@ function findDanglingGraphReferenceIssues(docs) {
         issue: {
           code: 'dangling-graph-reference',
           severity: 'warning',
-          message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.`,
+          ...(includeMessages ? { message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.` } : {}),
         },
       });
     }
@@ -482,19 +490,19 @@ function findDanglingGraphReferenceIssues(docs) {
   return issues;
 }
 
-function groupDanglingIssuesBySlug(docs) {
+function groupDanglingIssuesBySlug(docs, includeSlugs, includeMessages = true) {
   const bySlug = new Map();
-  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
+  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
   // Duplicate slugs ride the same whole-vault pass: both are the kind of defect
   // that looks fine one file at a time, so this is the only place that can see them.
-  for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
+  for (const { slug, issue } of findDuplicateSlugIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
-  for (const { slug, issue } of findDuplicateUidIssues(docs)) {
+  for (const { slug, issue } of findDuplicateUidIssues(docs, includeSlugs, includeMessages)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
@@ -505,7 +513,7 @@ function groupDanglingIssuesBySlug(docs) {
  * Two documents claiming the same canonical slug. Either file alone looks fine, so
  * only a whole-vault pass sees it; no relation naming that slug resolves to one side.
  */
-function findDuplicateSlugIssues(docs) {
+function findDuplicateSlugIssues(docs, includeSlugs, includeMessages) {
   const byDeclared = new Map();
   for (const doc of docs ?? []) {
     const declared = doc?.frontmatter?.slug;
@@ -517,17 +525,18 @@ function findDuplicateSlugIssues(docs) {
   const issues = [];
   for (const [declared, group] of byDeclared) {
     if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
+    const all = includeMessages ? group.map((doc) => doc.slug) : null;
     for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
+      if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
+      const rest = includeMessages ? all.filter((slug) => slug !== doc.slug) : null;
       issues.push({
         slug: doc.slug,
         issue: {
           code: 'duplicate-slug',
           severity: 'error',
-          message:
+          ...(includeMessages ? { message:
             `\`slug: ${declared}\` is also claimed by ${rest.join(', ')}. ` +
-            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.`,
+            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.` } : {}),
         },
       });
     }
@@ -535,7 +544,7 @@ function findDuplicateSlugIssues(docs) {
   return issues;
 }
 
-function findDuplicateUidIssues(docs) {
+function findDuplicateUidIssues(docs, includeSlugs, includeMessages) {
   const claimsByUid = new Map();
   for (const doc of docs ?? []) {
     const claims = new Set([
@@ -552,25 +561,73 @@ function findDuplicateUidIssues(docs) {
   const issues = [];
   for (const [uid, group] of claimsByUid) {
     if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
+    const all = includeMessages ? group.map((doc) => doc.slug) : null;
     for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
+      if (includeSlugs && !includeSlugs.has(doc.slug)) continue;
+      const rest = includeMessages ? all.filter((slug) => slug !== doc.slug) : null;
       issues.push({
         slug: doc.slug,
         issue: {
           code: 'duplicate-uid',
           severity: 'error',
-          message:
+          ...(includeMessages ? { message:
             `UID ${uid} is also claimed by ${rest.join(', ')} as a primary or merged identity. ` +
-            'Permanent identity must resolve to exactly one surviving node.',
+            'Permanent identity must resolve to exactly one surviving node.' } : {}),
         },
       });
     }
   }
   return issues;
 }
+function indexedBatchReadContext(docs, selectors, hasUids) {
+  let resolveUid;
+  if (hasUids) {
+    const requestedUids = new Set(selectors.filter(selector => typeof selector === 'string' && !nodeUidIssue(selector)));
+    const docsByUid = new Map();
+    const append = (uid, doc) => {
+      if (!requestedUids.has(uid)) return;
+      if (!docsByUid.has(uid)) docsByUid.set(uid, []);
+      docsByUid.get(uid).push(doc);
+    };
+    for (const doc of docs) {
+      append(doc.frontmatter.uid, doc);
+      if (Array.isArray(doc.frontmatter.merged_uids)) {
+        for (const uid of new Set(doc.frontmatter.merged_uids)) {
+          if (uid !== doc.frontmatter.uid) append(uid, doc);
+        }
+      }
+    }
+    resolveUid = uid => resolveExistingVaultUid(uid, requestedUids.has(uid) ? docsByUid.get(uid) ?? [] : docs);
+  }
+  const includedSlugs = new Set();
+  for (const selector of selectors) {
+    if (typeof selector !== 'string' || !selector.trim()) continue;
+    if (hasUids && nodeUidIssue(selector)) continue;
+    try {
+      const resolved = hasUids
+        ? resolveUid(selector)
+        : resolveExistingVaultSlug(selector, docs);
+      if (resolved) includedSlugs.add(resolved);
+    } catch {
+      continue;
+    }
+  }
+  const warningRows = groupDanglingIssuesBySlug(docs, includedSlugs);
+  const danglingIssuesBySlug = {
+    get(slug) {
+      if (!includedSlugs.has(slug)) {
+        const issues = groupDanglingIssuesBySlug(docs, new Set([slug])).get(slug);
+        includedSlugs.add(slug);
+        if (issues) warningRows.set(slug, issues);
+      }
+      return warningRows.get(slug);
+    },
+  };
+  return { docs, danglingIssuesBySlug, resolveUid };
+}
 
 export {
+  indexedBatchReadContext,
   groupDanglingIssuesBySlug,
   listVaultSourcePaths,
   buildSummaryFreshness,

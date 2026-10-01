@@ -1081,9 +1081,20 @@ function existingCell(
 }
 
 /** Where each node is, in the simulation's own units. */
-export function libraryPositions(sim: LibrarySimulation): Map<string, LayoutPoint> {
-  const out = new Map<string, LayoutPoint>();
-  for (const node of sim.nodes) out.set(node.id, { x: node.x, y: node.y });
+export function libraryPositions(
+  sim: LibrarySimulation,
+  out = new Map<string, LayoutPoint>(),
+): Map<string, LayoutPoint> {
+  for (const node of sim.nodes) {
+    const point = out.get(node.id);
+    if (point) {
+      point.x = node.x;
+      point.y = node.y;
+    } else out.set(node.id, { x: node.x, y: node.y });
+  }
+  if (out.size > sim.index.size) {
+    for (const id of out.keys()) if (!sim.index.has(id)) out.delete(id);
+  }
   return out;
 }
 

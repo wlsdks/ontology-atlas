@@ -51,8 +51,10 @@ export interface IslandsLayout {
   extent: { width: number; height: number };
 }
 
+const LABEL_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 function byLabelThenId(a: { id: string; label: string }, b: { id: string; label: string }): number {
-  return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: "base" }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return LABEL_COLLATOR.compare(a.label, b.label) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /** `wiki/payments/fees` → `payments`; a page at the wiki's root has no folder. */
@@ -282,8 +284,9 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   }
   // A concept stands at its island's centre with no radius, so a press on the island opens
   // it; a concept no page names stands at the map's centre.
+  const islandByConcept = new Map(out.map((island) => [island.conceptId, island]));
   for (const concept of concepts) {
-    const island = out.find((candidate) => candidate.conceptId === concept.id);
+    const island = islandByConcept.get(concept.id);
     positions.set(concept.id, island ? { x: island.x, y: island.y } : { x: world.width / 2, y: world.height / 2 });
     radii.set(concept.id, 0);
   }

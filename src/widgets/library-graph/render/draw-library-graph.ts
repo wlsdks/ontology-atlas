@@ -1,5 +1,8 @@
+import { LibraryLabelCoverage } from "./library-label-coverage";
+import { LibraryLabelMarkIndex } from "./library-label-mark-index";
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
+import type { LibraryPositionLookup } from "../model/library-graph-view";
 import type { LibraryGraphInk } from "./library-graph-ink";
 
 /**
@@ -24,6 +27,11 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * outside the pointed-at neighbourhood dims, and each mark carries a halo of ground one
  * citation width wide (`MARK_HALO_RATIO`), not a glow.
  */
+
+export interface LibraryGraphGeometry {
+  positions: ReadonlyMap<string, LayoutPoint>;
+  radii: ReadonlyMap<string, number>;
+}
 
 interface LibraryGraphIsland {
   id: string;
@@ -56,7 +64,8 @@ function islandPath(ctx: CanvasRenderingContext2D, island: LibraryGraphIsland, i
 export interface LibraryGraphFrame {
   nodes: readonly LibraryGraphNode[];
   edges: readonly LibraryGraphEdge[];
-  positions: ReadonlyMap<string, LayoutPoint>;
+  positions: LibraryPositionLookup;
+  overview?: { geometry: LibraryGraphGeometry; view: { x: number; y: number; scale: number } };
   /** CSS pixels; the caller has already applied the device-pixel transform. */
   width: number;
   height: number;
@@ -609,6 +618,46 @@ function roundedRect(
   ctx.closePath();
 }
 
+const overviewMarkIndices = new WeakMap<LibraryGraphGeometry, {
+  nodes: readonly LibraryGraphNode[];
+  index: LibraryLabelMarkIndex;
+}>();
+
+function overviewMarkIndex(frame: LibraryGraphFrame): LibraryLabelMarkIndex {
+  const geometry = frame.overview!.geometry;
+  const cached = overviewMarkIndices.get(geometry);
+  if (cached?.nodes === frame.nodes) return cached.index;
+  const index = new LibraryLabelMarkIndex(frame.nodes, geometry.positions);
+  overviewMarkIndices.set(geometry, { nodes: frame.nodes, index });
+  return index;
+}
+
+const overviewPaths = new WeakMap<LibraryGraphGeometry, {
+  nodes: readonly LibraryGraphNode[];
+  edges: readonly LibraryGraphEdge[];
+  paths: Path2D[];
+}>();
+
+function cachedOverviewPaths(frame: LibraryGraphFrame, stalePages: ReadonlySet<string>): Path2D[] {
+  const geometry = frame.overview!.geometry;
+  const cached = overviewPaths.get(geometry);
+  if (cached?.nodes === frame.nodes && cached.edges === frame.edges) return cached.paths;
+  const paths = [new Path2D(), new Path2D(), new Path2D()];
+  for (const node of frame.nodes) {
+    const point = geometry.positions.get(node.id);
+    const radius = geometry.radii.get(node.id) ?? NODE_RADIUS[node.kind];
+    if (!point || radius <= 0 || node.kind === "concept") continue;
+    const path = paths[node.kind === "source" ? 0 : stalePages.has(node.id) ? 2 : 1];
+    if (node.kind === "source") path.rect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+    else {
+      path.moveTo(point.x + radius, point.y);
+      path.arc(point.x, point.y, radius, 0, Math.PI * 2);
+    }
+  }
+  overviewPaths.set(geometry, { nodes: frame.nodes, edges: frame.edges, paths });
+  return paths;
+}
+
 export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   const { ink } = frame;
   const dim = frame.dim ?? 0;
@@ -826,7 +875,20 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     frame.hoveredId === null &&
     frame.focusedId === null &&
     (flow === null || (flow.arrived.size === 0 && flow.edges.size === 0));
-  if (quietOverview) {
+  if (quietOverview && frame.overview && (opacity?.size ?? 0) === 0 && typeof Path2D !== "undefined") {
+    const paths = cachedOverviewPaths(frame, stalePages);
+    const { view } = frame.overview;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.translate(frame.width / 2 - view.x * view.scale, frame.height / 2 - view.y * view.scale);
+    ctx.scale(view.scale, view.scale);
+    const inks = [ink.source, ink.page, ink.stale];
+    for (let i = 0; i < paths.length; i += 1) {
+      ctx.fillStyle = inks[i];
+      ctx.fill(paths[i]);
+    }
+    ctx.restore();
+  } else if (quietOverview) {
     ctx.globalAlpha = 1;
     const groups: Array<{ ink: string; square: boolean; test: (node: LibraryGraphNode) => boolean }> = [
       { ink: ink.source, square: true, test: (node) => node.kind === "source" },
@@ -896,6 +958,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     }
     ctx.globalAlpha = 1;
   }
+  const markPadding = Math.max(libraryEdgeWidth("cites") * MARK_HALO_RATIO,
+    SELECTION_RING_GAP + 0.5, FOCUS_RING_GAP + 1) + 2;
   for (const node of frame.nodes) {
     if (quietOverview) break;
     if (batched.has(node.id)) continue;
@@ -904,6 +968,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     const radius = radiusOf(frame, node);
     // A zero radius is a concept standing for its island: the island is drawn, not it.
     if (radius <= 0) continue;
+    const extent = radius + markPadding;
+    if (centre.x + extent < 0 || centre.x - extent > frame.width ||
+      centre.y + extent < 0 || centre.y - extent > frame.height) continue;
     const isSelected = node.id === frame.selectedId;
     const isHovered = node.id === frame.hoveredId;
     const isFocused = node.id === frame.focusedId;
@@ -1009,20 +1076,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   if (frame.standingLabels || frame.layout === "flow") {
     ctx.textBaseline = "top";
     ctx.textAlign = "center";
-    const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
-    for (const node of frame.nodes) {
-      const centre = nodeCentre(frame, node.id);
-      if (!centre) continue;
-      const half = radiusOf(frame, node);
-      taken.push({
-        x: centre.x - half,
-        y: centre.y - half,
-        width: half * 2,
-        height: half * 2,
-        // Only a name's own mark never blocks it.
-        of: node.id,
-      });
-    }
     /*
      * Asked in order of focus, then kind (page, source, concept), then size largest first,
      * then graph order. The greedy pass gives the room to whoever asks first, so without the
@@ -1040,24 +1093,89 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (node.id === frame.selectedId || node.id === active) return true;
       return focus !== null && focus.has(node.id);
     };
-    const named = frame.nodes
-      .map((node, index) => ({ node, index }))
-      .sort(
-        (first, second) =>
-          rank(first.node) - rank(second.node) ||
-          radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
-          first.index - second.index,
-      );
-    for (const { node } of named) {
-      // The pointed-at node has its own box; a second name would duplicate it.
-      if (node.id === active) continue;
-      if (!carriesName(node)) continue;
+    const named: Array<{ node: LibraryGraphNode; index: number; priority: number; radius: number; x: number; y: number }> = [];
+    for (let index = 0; index < frame.nodes.length; index += 1) {
+      const node = frame.nodes[index];
+      if (node.id === active || !carriesName(node)) continue;
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
-      // Font per kind before measuring, so the tested box matches the drawn step.
+      const radius = radiusOf(frame, node);
+      const lineHeight = Math.round(labelFontPx(ink, node.kind) * 1.35);
+      const reach = Math.abs(radius) + STANDING_LABEL_GAP + Math.abs(lineHeight);
+      if (frame.nodes.length > LEADER_MAX_MARKS &&
+        (centre.y + reach < 2 || centre.y - reach > frame.height - 2)) continue;
+      named.push({ node, index, priority: rank(node), radius, x: centre.x, y: centre.y });
+    }
+    named.sort(
+      (first, second) =>
+        first.priority - second.priority ||
+        second.radius - first.radius ||
+        first.index - second.index,
+    );
+    const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
+    const overview = frame.overview;
+    const indexed = named.length > 0 && overview && frame.layout !== "flow" &&
+      Number.isFinite(overview.view.x) && Number.isFinite(overview.view.y) &&
+      Number.isFinite(overview.view.scale) && overview.view.scale > 0 && frame.nodes.length > 256
+      ? overviewMarkIndex(frame) : null;
+    let maxRadius = Math.max(...Object.values(NODE_RADIUS));
+    if (indexed) {
+      for (const radius of frame.radii?.values() ?? []) maxRadius = Math.max(maxRadius, Math.abs(radius));
+    } else if (named.length > 0) {
+      for (const node of frame.nodes) {
+        const centre = nodeCentre(frame, node.id);
+        if (!centre) continue;
+        const half = radiusOf(frame, node);
+        taken.push({ x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2, of: node.id });
+      }
+    }
+    const hitsMark = (box: { x: number; y: number; width: number; height: number }, own: string): boolean => {
+      if (!indexed || !overview) return false;
+      const view = overview.view;
+      const marginX = NAME_GAP_X + maxRadius;
+      const marginY = NAME_GAP_Y + maxRadius;
+      const left = view.x + (box.x - marginX - frame.width / 2) / view.scale;
+      const right = view.x + (box.x + box.width + marginX - frame.width / 2) / view.scale;
+      const top = view.y + (box.y - marginY - frame.height / 2) / view.scale;
+      const bottom = view.y + (box.y + box.height + marginY - frame.height / 2) / view.scale;
+      const tolerance = Math.max(1e-7, Math.max(Math.abs(left), Math.abs(right), Math.abs(top), Math.abs(bottom)) * Number.EPSILON * 16);
+      return indexed.some(left - tolerance, top - tolerance, right + tolerance, bottom + tolerance, (node) => {
+        const id = node.id;
+        if (id === own) return false;
+        const centre = nodeCentre(frame, id);
+        if (!centre) return false;
+        const half = radiusOf(frame, node);
+        return overlaps(box, { x: centre.x - half, y: centre.y - half, width: half * 2, height: half * 2 });
+      });
+    };
+    const coverage = named.length > 256 ? LibraryLabelCoverage.create(frame.width, frame.height) : null;
+    if (coverage) {
+      for (const { node, radius, x, y } of named) {
+        const left = x - radius, top = y - radius, size = radius * 2;
+        coverage.add(node.id, left - NAME_GAP_X, top - NAME_GAP_Y,
+          left + size + NAME_GAP_X, top + size + NAME_GAP_Y);
+      }
+    }
+    const openLine = (x: number, y: number, height: number, own: string): boolean => {
+      if (x < 2 || x > frame.width - 2 || y < 2 || y + height > frame.height - 2) return false;
+      if (coverage?.blocksLine(x, y, height)) return false;
+      const box = { x, y, width: 0, height };
+      return !taken.some(other => other.of !== own && overlaps(box, other)) && !hitsMark(box, own);
+    };
+    for (const { node, radius: half, x, y } of named) {
+      const centre = { x, y };
       const fontPx = labelFontPx(ink, node.kind);
-      ctx.font = `${fontPx}px ${ink.fontFamily}`;
       const lineHeight = Math.round(fontPx * 1.35);
+      if (named.length > 256 && frame.nodes.length > LEADER_MAX_MARKS) {
+        const middle = Math.min(Math.max(2, centre.x), Math.max(2, frame.width - 2));
+        const possible = openLine(middle, centre.y + half + STANDING_LABEL_GAP, lineHeight, node.id) ||
+          openLine(middle, centre.y - half - STANDING_LABEL_GAP - lineHeight, lineHeight, node.id) ||
+          openLine(centre.x + half + STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id) ||
+          openLine(centre.x - half - STANDING_LABEL_GAP, centre.y - lineHeight / 2, lineHeight, node.id);
+        if (!possible) continue;
+      }
+      // Font per kind before measuring, so the tested box matches the drawn step.
+      ctx.font = `${fontPx}px ${ink.fontFamily}`;
       // The column's room, else the flat budget; the canvas is still the outer bound.
       const roomCap = frame.flowLabelRoom?.[node.kind] ?? STANDING_LABEL_MAX_WIDTH;
       let text = truncateToWidth(
@@ -1072,7 +1190,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
        * left; one place alone named 8 of 60 pages on the 372-mark fixture. A name near an
        * edge slides back inside, since the fit puts marks against both edges by design.
        */
-      const half = radiusOf(frame, node);
       /*
        * In the flow picture a page's or concept's name shortens to the room before the next
        * box on its line rather than leave its side, where it would cover the rows below;
@@ -1139,7 +1256,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
         if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
         if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
-        if (taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
+        if (taken.some((other) => other.of !== node.id && overlaps(tried, other)) || hitsMark(tried, node.id)) continue;
         box = tried;
         placement = index;
         break;

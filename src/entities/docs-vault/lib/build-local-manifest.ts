@@ -7,9 +7,10 @@ import {
   parseFrontmatter,
   type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
+import { countWhitespaceWords } from '@/shared/lib/count-whitespace-words';
 import { meaningFindings } from '@/shared/lib/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
-import { nativeVaultFingerprint, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
+import { nativeVaultFingerprint, readTauriVaultTextFile, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
@@ -108,7 +109,7 @@ const PRUNE_BY_NAME = new Set(['node_modules']);
 const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
 /** Far above any document folder; past it the walk truncates and the manifest says so. */
-export const VAULT_WALK_MAX_ENTRIES = 50000;
+export const VAULT_WALK_MAX_ENTRIES = 100000;
 /** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
 export const VAULT_WALK_MAX_DEPTH = 12;
 
@@ -188,6 +189,7 @@ async function walk(
 
 /** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
 const KO_COLLATOR = new Intl.Collator('ko');
+const METADATA_STRING_POOL_LIMIT = 1024;
 
 /** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
 function insertIntoTree(
@@ -316,14 +318,16 @@ export async function computeLocalVaultFingerprint(
   }
 
   const files = await walk(root);
-  const stamps = await Promise.all(
-    files.map(async (entry) => {
+  const stamps = await mapPooled(
+    files,
+    VAULT_READ_CONCURRENCY,
+    async (entry) => {
       const file = await entry.handle.getFile();
       return {
         relativePath: entry.relativePath,
         lastModified: file.lastModified,
       };
-    }),
+    },
   );
   return fingerprintFromEntries(stamps);
 }
@@ -342,11 +346,22 @@ export interface BuiltVaultEntry {
   linkContexts?: LinkContext[];
 }
 
+function createMetadataStringPool() {
+  const strings = new Map<string, string>();
+  return (value: string) => {
+    const held = strings.get(value);
+    if (held !== undefined) return held;
+    if (strings.size < METADATA_STRING_POOL_LIMIT) strings.set(value, value);
+    return value;
+  };
+}
+
 /** Pure: one `.md` body to a BuiltVaultEntry. */
 function buildMdEntry(
   entry: WalkEntry,
   raw: string,
   lastModified: number,
+  internMetadata: (value: string) => string,
 ): BuiltVaultEntry {
   const slug = entry.relativePath.replace(/\.md$/, '');
   const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
@@ -393,11 +408,19 @@ function buildMdEntry(
           ),
         }
       : {}),
-    wordCount: body.split(/\s+/).filter(Boolean).length,
+    wordCount: countWhitespaceWords(body),
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,
     mtime: lastModified,
   };
+  const detachedDoc = structuredClone(doc);
+  if (typeof detachedDoc.frontmatter.kind === 'string') detachedDoc.frontmatter.kind = internMetadata(detachedDoc.frontmatter.kind);
+  if (typeof detachedDoc.frontmatter.domain === 'string') detachedDoc.frontmatter.domain = internMetadata(detachedDoc.frontmatter.domain);
+  if (detachedDoc.frontmatter.slug === detachedDoc.slug) detachedDoc.frontmatter.slug = detachedDoc.slug;
+  for (const heading of detachedDoc.headings) {
+    heading.text = internMetadata(heading.text);
+    heading.slug = internMetadata(heading.slug);
+  }
   return {
     relativePath: entry.relativePath,
     lastModified,
@@ -405,7 +428,7 @@ function buildMdEntry(
     kind: 'md',
     /* Fresh copies: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
      * excerpt, display names and link text would pin every file's full text (58 MB at 12k). */
-    doc: structuredClone(doc),
+    doc: detachedDoc,
     linkContexts: structuredClone(linkContexts),
   };
 }
@@ -570,6 +593,14 @@ async function mapPooled<T, R>(
   return results;
 }
 
+async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
+  if (entry.kind === 'md' && nativeRoot) {
+    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
+    if (native) return { lastModified: native.lastModified, text: async () => native.text };
+  }
+  return entry.handle.getFile();
+}
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
@@ -582,6 +613,8 @@ async function collectEntries(
     walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
+  const nativeRoot = nativeRootPath(root);
+  const internMetadata = createMetadataStringPool();
   /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
    * transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind !== 'md')
@@ -608,9 +641,9 @@ async function collectEntries(
         : (await entry.handle.getFile()).lastModified;
       return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
     }
-    const file = await entry.handle.getFile();
+    const file = await manifestFile(entry, nativeRoot);
     const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified);
+    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
   };
   return mapPooled(files, concurrency, readOne);
 }
@@ -658,11 +691,13 @@ export async function rebuildLocalManifestIncremental(
    * `sourceFileCount`, and its absence reorders the card while it is on screen. */
   const walked = await walkVault(root);
   const files = walked.entries;
+  const internMetadata = createMetadataStringPool();
   const walkInfo = {
     truncated: walked.truncated,
     prunedDirs: walked.prunedDirs,
     sourceFileCount: walked.sourceFileCount,
   };
+  const nativeRoot = nativeRootPath(root);
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
   /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
    * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
@@ -702,7 +737,7 @@ export async function rebuildLocalManifestIncremental(
         kind: 'image',
       };
     }
-    const file = await entry.handle.getFile();
+    const file = await manifestFile(entry, nativeRoot);
     const prev = prevByPath.get(entry.relativePath);
     if (
       prev &&
@@ -721,7 +756,7 @@ export async function rebuildLocalManifestIncremental(
       };
     }
     const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified);
+    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
   };
   const entries = await mapPooled(files, readConcurrency, readOne);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };

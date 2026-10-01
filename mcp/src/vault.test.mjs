@@ -3,6 +3,8 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { defaultBody, nodeUidIssue } from './schema.mjs';
 
 import {
@@ -331,6 +333,18 @@ describe('suggestSimilarSlugs (R+)', () => {
   it('an exact tail match ranks first', () => {
     const r = suggestSimilarSlugs(suggestRoot, 'mcp-server');
     assert.deepEqual(r[0], 'capabilities/mcp-server');
+  });
+
+  it('suggests disk slugs without opening unrelated document contents', () => {
+    const original = fs.openSync;
+    fs.openSync = () => { throw new Error('Suggestion must not open document contents'); };
+    syncBuiltinESMExports();
+    try {
+      assert.deepEqual(suggestSimilarSlugs(suggestRoot, 'mcp-server'), ['capabilities/mcp-server']);
+    } finally {
+      fs.openSync = original;
+      syncBuiltinESMExports();
+    }
   });
 
   it('a substring match covers a partial slug', () => {

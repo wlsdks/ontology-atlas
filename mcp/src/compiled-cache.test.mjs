@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
+import { parseFrontmatter } from './parser.mjs';
+import { compileOntology } from './ontology-compiler.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 
 function doc(slug, mtime = 1, raw = '---\nkind: capability\n---\n') {
@@ -108,4 +110,46 @@ describe('createCompiledOntologyCache', () => {
     assert.equal(compileCount, 2);
     assert.deepEqual(cache.stats(), { hits: 0, misses: 2, cached: true });
   });
+});
+
+it('recompiles changed titles whose previous fingerprints collide at the same mtime', () => {
+  const rawFor = (title) => `---\nuid: 11111111-1111-4111-8111-111111111111\nkind: capability\ntitle: ${title}\n---\n\nFixture.\n`;
+  let raw = rawFor('AAf');
+  const cache = createCompiledOntologyCache({
+    loadDocs: () => {
+      const parsed = parseFrontmatter(raw);
+      return [{ slug: 'capabilities/change', mtime: 1, raw, frontmatter: parsed.frontmatter, body: parsed.body }];
+    },
+    compile: compileOntology,
+  });
+  const before = cache.get();
+  assert.equal(before.nodes[0].title, 'AAf');
+  raw = rawFor('AFA');
+  const after = cache.get();
+  assert.equal(after.nodes[0].title, 'AFA');
+  assert.notEqual(after, before);
+});
+
+it('distinguishes every JavaScript code unit in explicitly supplied raw documents', () => {
+  const cache = createCompiledOntologyCache({ loadDocs: () => [], compile: (docs) => ({ raw: docs[0].raw }) });
+  const before = cache.get({ docs: [doc('capabilities/a', 1, '\ud800')] });
+  const after = cache.get({ docs: [doc('capabilities/a', 1, '\ufffd')] });
+  assert.notEqual(after, before);
+  assert.equal(after.raw, '\ufffd');
+});
+
+it('keeps document boundaries distinct even when supplied keys contain separators', () => {
+  const cache = createCompiledOntologyCache({ loadDocs: () => [], compile: (docs) => ({ slug: docs[0].slug }) });
+  const first = cache.get({ docs: [doc('a\0b', 'c', 'd')] });
+  const second = cache.get({ docs: [doc('a', 'b\0c', 'd')] });
+  assert.notEqual(second, first);
+  assert.equal(second.slug, 'a');
+});
+
+it('reuses reordered document sets without confusing duplicate slug claims', () => {
+  const cache = createCompiledOntologyCache({ loadDocs: () => [], compile: (docs) => ({ count: docs.length }) });
+  const docs = [doc('a', 1, 'first'), doc('a', 1, 'second'), doc('b', 2, 'third')];
+  const first = cache.get({ docs });
+  assert.equal(cache.get({ docs: [...docs].reverse() }), first);
+  assert.notEqual(cache.get({ docs: [docs[0], docs[0], docs[2]] }), first);
 });

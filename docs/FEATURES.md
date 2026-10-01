@@ -63,7 +63,7 @@ work here, and where it can.
 | Capability | Web (Chromium) | Desktop app (macOS · Windows x64 beta) | Why they differ |
 |---|---|---|---|
 | Open the map with no install | ✅ | ✅ | the web's first job — gateway |
-| Open your own markdown folder | ✅ File System Access API | ✅ absolute path | Firefox and non-FSA browsers degrade to a notice + download link |
+| Open your own markdown folder | ✅ File System Access API | ✅ absolute path | up to 100,000 tracked entries, with truncation reported beyond the entry or depth limit; Firefox and non-FSA browsers degrade to a notice + download link |
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |

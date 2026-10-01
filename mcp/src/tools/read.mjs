@@ -83,6 +83,7 @@ import {
   describeReview,
   docNotFoundError,
   groupDanglingIssuesBySlug,
+  indexedBatchReadContext,
   resolveExistingVaultSlug,
   resolveExistingVaultUid,
   uidNotFoundError,
@@ -109,10 +110,10 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   const issuesBySlugForCount = new Map();
   for (const doc of docs) {
     if (!doc.raw) continue;
-    const report = validateVaultDocument(doc.raw);
+    const report = validateVaultDocument(doc.raw, { parsed: doc });
     if (report.issues.length > 0) issuesBySlugForCount.set(doc.slug, [...report.issues]);
   }
-  for (const [slug, issues] of groupDanglingIssuesBySlug(docs)) {
+  for (const [slug, issues] of groupDanglingIssuesBySlug(docs, undefined, false)) {
     issuesBySlugForCount.set(slug, [...(issuesBySlugForCount.get(slug) ?? []), ...issues]);
   }
   suppressParentedExpectedFieldIssues(issuesBySlugForCount, docs);
@@ -216,7 +217,7 @@ function getConcept({ slug, uid, body }, context = {}) {
   const bodyMode = requireBodyMode(body);
   const docs = context.docs ?? loadVaultDocs(VAULT_ROOT);
   const canonicalSlug = hasUid
-    ? resolveExistingVaultUid(uid, docs)
+    ? (context.resolveUid ? context.resolveUid(uid) : resolveExistingVaultUid(uid, docs))
     : resolveExistingVaultSlug(slug, docs);
   if (!canonicalSlug) {
     if (hasUid) throw uidNotFoundError(uid);
@@ -255,7 +256,7 @@ function getConcept({ slug, uid, body }, context = {}) {
   }
   const danglingIssuesBySlug =
     context.danglingIssuesBySlug ??
-    groupDanglingIssuesBySlug(context.docs ?? loadVaultDocs(VAULT_ROOT));
+    groupDanglingIssuesBySlug(docs, new Set([doc.slug]));
   warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
   // `rationale` is the document's own `relation_notes` sentence for that target,
   // present only when one is stored — the same optional field `find_path` and
@@ -307,9 +308,6 @@ function getConcept({ slug, uid, body }, context = {}) {
   };
 }
 
-// Batch get_concept: input order is preserved and a missing slug becomes an
-// `{ ok: false, error }` row instead of aborting the batch. The cap of 50 keeps the
-// payload bounded; larger vaults chunk the call.
 function getConceptsBatch({ slugs, uids, body }) {
   const hasSlugs = slugs !== undefined;
   const hasUids = uids !== undefined;
@@ -330,21 +328,19 @@ function getConceptsBatch({ slugs, uids, body }) {
       `Too many ${selectorName}: ${selectors.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
-  // Full bodies grow the per-row payload by an order of magnitude. 50 rows × full
-  // body is not one response — it is several calls, so the cap drops and says so.
   if (bodyMode === 'full' && selectors.length > GET_CONCEPTS_FULL_BODY_MAX) {
     throw new Error(
       `Too many ${selectorName} for body:"full": ${selectors.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${selectors.length} excerpts at once.`
     );
   }
   const docs = loadVaultDocs(VAULT_ROOT);
-  const danglingIssuesBySlug = groupDanglingIssuesBySlug(docs);
+  const context = indexedBatchReadContext(docs, selectors, hasUids);
   const concepts = selectors.map((selector) => {
     try {
       requireNonBlankString(selector, hasUids ? 'uid' : 'slug');
       const result = getConcept(
         hasUids ? { uid: selector, body: bodyMode } : { slug: selector, body: bodyMode },
-        { docs, danglingIssuesBySlug },
+        context,
       );
       return { ok: true, ...result };
     } catch (err) {
@@ -368,7 +364,6 @@ function getConceptsBatch({ slugs, uids, body }) {
 }
 
 const FIND_EVIDENCE_DEFAULT_LIMIT = 50;
-
 function findEvidence({ title, limit = FIND_EVIDENCE_DEFAULT_LIMIT, nodesOnly = false } = {}) {
   requireNonBlankString(title, 'title');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
@@ -723,8 +718,8 @@ function queryConceptsTool({ filter, limit }) {
   // (byKind/byDomain) for whether the filter aimed at a kind or domain that does
   // not exist.
   if (total === 0) {
-    const byKind = {};
-    const byDomain = {};
+    const byKind = Object.create(null);
+    const byDomain = Object.create(null);
     for (const doc of docs) {
       const kind = doc.frontmatter?.kind;
       if (kind) byKind[kind] = (byKind[kind] ?? 0) + 1;

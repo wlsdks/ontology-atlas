@@ -16,6 +16,7 @@ export function compileOntology(loadedDocs, options = {}) {
   const docs = loadedDocs.map(detachedDocument);
   const includeIndexes = optionalBoolean(options.includeIndexes, 'includeIndexes') ?? false;
   const summary = optionalBoolean(options.summary, 'summary') ?? false;
+  const buildIndexes = includeIndexes && !summary;
   const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit', { max: 500 });
   const nodesOffset = optionalNonNegativeInt(options.nodesOffset, 'nodesOffset') ?? 0;
   const edgesLimit = optionalPositiveInt(options.edgesLimit, 'edgesLimit', { max: 500 });
@@ -169,9 +170,7 @@ export function compileOntology(loadedDocs, options = {}) {
       }
     }
   }
-  edges.sort((a, b) =>
-    `${a.from}:${a.via}:${a.to}:${a.ref}`.localeCompare(`${b.from}:${b.via}:${b.to}:${b.ref}`),
-  );
+  sortEdges(edges);
 
   const nodes = [...graphDocs]
     .map((doc) => {
@@ -197,23 +196,45 @@ export function compileOntology(loadedDocs, options = {}) {
   const out = {};
   const incoming = {};
   const edgeById = {};
-  for (const edge of edges) {
-    edgeById[edge.id] = edge;
-    if (!out[edge.from]) out[edge.from] = [];
-    out[edge.from].push(edge.id);
-    const fromNode = nodeBySlug.get(edge.from);
-    if (fromNode) fromNode.outDegree += 1;
-    if (!edge.resolved) continue;
-    if (!incoming[edge.to]) incoming[edge.to] = [];
-    incoming[edge.to].push(edge.id);
-    const toNode = nodeBySlug.get(edge.to);
-    if (toNode) toNode.inDegree += 1;
+  if (buildIndexes) {
+    for (const edge of edges) {
+      edgeById[edge.id] = edge;
+      if (!Object.hasOwn(out, edge.from)) setDictionaryValue(out, edge.from, []);
+      out[edge.from].push(edge.id);
+      const fromNode = nodeBySlug.get(edge.from);
+      if (fromNode) fromNode.outDegree += 1;
+      if (!edge.resolved) continue;
+      if (!Object.hasOwn(incoming, edge.to)) setDictionaryValue(incoming, edge.to, []);
+      incoming[edge.to].push(edge.id);
+      const toNode = nodeBySlug.get(edge.to);
+      if (toNode) toNode.inDegree += 1;
+    }
+  } else {
+    for (const edge of edges) {
+      const fromNode = nodeBySlug.get(edge.from);
+      if (fromNode) fromNode.outDegree += 1;
+      if (!edge.resolved) continue;
+      const toNode = nodeBySlug.get(edge.to);
+      if (toNode) toNode.inDegree += 1;
+    }
   }
   for (const edgeIds of Object.values(out)) edgeIds.sort();
   for (const edgeIds of Object.values(incoming)) edgeIds.sort();
-  const byKind = groupNodes(nodes, 'kind');
-  const byDomain = groupNodes(nodes, 'domain');
-  const aliasToSlugIndex = Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug]));
+  const byKind = buildIndexes ? groupNodes(nodes, 'kind') : undefined;
+  const byDomain = buildIndexes ? groupNodes(nodes, 'domain') : undefined;
+  const aliasToSlugIndex = buildIndexes ? Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug])) : undefined;
+  // O(I log I); code-unit ordering avoids filesystem and host-locale order.
+  const orderedIssues = issues.map(issue => ({
+    issue,
+    priority: issue.code === 'ambiguous-alias' ? 0 : issue.severity === 'error' ? 1 : 2,
+    location: String(issue.slug ?? issue.alias ?? ''),
+    line: typeof issue.line === 'number' ? issue.line : Number.POSITIVE_INFINITY,
+    key: JSON.stringify(issue),
+  }));
+  const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+  orderedIssues.sort((left, right) => left.priority - right.priority ||
+    compareText(left.location, right.location) || left.line - right.line || compareText(left.key, right.key));
+  for (let index = 0; index < orderedIssues.length; index += 1) issues[index] = orderedIssues[index].issue;
   const graphHash = hashGraph({
     version: COMPILER_VERSION,
     nodes: nodes.map(({ uid, merged_uids, slug, kind, title, domain, outDegree, inDegree }) => ({
@@ -234,21 +255,26 @@ export function compileOntology(loadedDocs, options = {}) {
 
   const nodeCount = nodes.length;
   const edgeCount = edges.length;
-  const resolvedEdgeCount = edges.filter((edge) => edge.resolved).length;
-  const externalEdgeCount = edges.filter((edge) => edge.external).length;
-  const unresolvedEdgeCount = edges.filter(
-    (edge) => !edge.resolved && !edge.external,
-  ).length;
-  const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
+  let resolvedEdgeCount = 0;
+  let externalEdgeCount = 0;
+  let unresolvedEdgeCount = 0;
+  const referencedOnly = new Set();
+  for (const edge of edges) {
+    if (edge.resolved) resolvedEdgeCount += 1;
+    if (edge.external) externalEdgeCount += 1;
+    if (!edge.resolved) {
+      referencedOnly.add(edge.ref);
+      if (!edge.external) unresolvedEdgeCount += 1;
+    }
+  }
+  let maxMtime = 0;
+  for (const node of nodes) maxMtime = Math.max(maxMtime, Number(node.mtime) || 0);
   // Concepts named only in relations, with no document. The map and insights draw
   // them, so without this number the screen and the CLI disagree unexplained.
   // They are not nodes: inventory, centrality and health ignore them.
-  const referencedOnlyCount = new Set(
-    edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
-  ).size;
+  const referencedOnlyCount = referencedOnly.size;
 
-  // Summary mode: counts and aggregates only (byKind and byDomain become counts),
-  // so a large vault stays under the token limit.
+  // Summary omits bulk arrays to keep delivery bounded.
   if (summary) {
     return {
       version: COMPILER_VERSION,
@@ -351,8 +377,22 @@ function optionalBoolean(value, name) {
   return value;
 }
 
+function sortEdges(edges) {
+  const ordered = edges.map(edge => ({ edge, key: `${edge.from}:${edge.via}:${edge.to}:${edge.ref}` }));
+  ordered.sort((a, b) => a.key.localeCompare(b.key));
+  for (let index = 0; index < ordered.length; index += 1) edges[index] = ordered[index].edge;
+}
+
+function setDictionaryValue(dictionary, key, value) {
+  if (key === '__proto__') {
+    Object.defineProperty(dictionary, key, { value, writable: true, enumerable: true, configurable: true });
+  } else {
+    dictionary[key] = value;
+  }
+}
+
 function countByGroup(nodes, key) {
-  const counts = {};
+  const counts = Object.create(null);
   for (const node of nodes) {
     const value = node[key];
     if (typeof value !== 'string' || !value.trim()) continue;
@@ -387,7 +427,7 @@ function sliceWithMeta(items, offset, limit) {
 }
 
 function groupNodes(nodes, key) {
-  const grouped = {};
+  const grouped = Object.create(null);
   for (const node of nodes) {
     const value = node[key];
     if (typeof value !== 'string' || !value.trim()) continue;
@@ -472,7 +512,7 @@ function validateGraphIdentity(graphDocs) {
       continue;
     }
     uidToSlug[uid] = slugs[0];
-    slugToUid[slugs[0]] = uid;
+    setDictionaryValue(slugToUid, slugs[0], uid);
   }
 
   for (const doc of graphDocs) {

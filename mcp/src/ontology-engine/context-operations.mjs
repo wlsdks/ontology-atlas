@@ -13,6 +13,7 @@ export function createContextOperations({
   edges,
   nodeBySlug,
   aliasToSlug,
+  indexedAliasesFor,
   outgoing,
   incoming,
   traversalEdges,
@@ -294,6 +295,7 @@ export function createContextOperations({
   }
 
   function aliasesFor(slug) {
+    if (indexedAliasesFor) return indexedAliasesFor(slug);
     return (Array.isArray(artifact?.aliases) ? artifact.aliases : [])
       .filter((entry) => entry.slug === slug)
       .map((entry) => entry.alias)

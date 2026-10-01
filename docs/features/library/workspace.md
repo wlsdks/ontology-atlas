@@ -406,9 +406,10 @@ left, rows aligned, so no citation crosses another stack's names. Measured in Ch
 3,424 marks in 26 islands at a 2.5 ms frame; 11,240 marks in 42 islands at 4.8 ms, every
 island named — the quiet overview paints in four fills, one per ink. The layout itself
 takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
-What the measurement had to raise locally is the folder walk's own cap,
-`VAULT_WALK_MAX_ENTRIES` (50,000 since 2026-09-18, mirrored in Rust; 4,000 before): past it the walk truncates and says so,
-so a folder of ten thousand files is not yet a folder the Library sees whole. Gates:
+The folder walk admits up to 100,000 tracked entries in both web and native paths.
+Beyond that ceiling or depth 12 it reports truncation. Browser metadata reads are pooled
+at 16 in flight. This capacity bound does not promise a frame rate or an opening time
+for every 100,000-file folder. Gates:
 `tests/e2e/library-graph-islands.spec.ts`. Decision:
 `docs/records/decisions/2026-09-18-library-islands-map-*.md`.
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { sourceSearchPrefix } from './source-search-prefix';
 
 import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from '@/shared/lib/source-passage';
 
@@ -51,7 +52,7 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
  * crosses into the WebView (`read_vault_binary_file` in the app), so a search must not
  * pull a whole folder of scans into memory.
  *
- * This is **not** the folder walk's own cap (`VAULT_WALK_MAX_ENTRIES`, 50,000 entries),
+ * This is **not** the folder walk's own cap (`VAULT_WALK_MAX_ENTRIES`, 100,000 entries),
  * which decides what the folder is; this one decides what a search read. Both say so on
  * screen rather than truncating in silence.
  */
@@ -168,7 +169,7 @@ export function useSourceSearch({
    * happened to return first.
    */
   const { planned, capped } = useMemo(() => {
-    const ordered = [...sources].sort((left, right) => left.path.localeCompare(right.path));
+    const ordered = sourceSearchPrefix(sources, SOURCE_SEARCH_MAX_FILES + 1);
     const planned: PlannedRead[] = [];
     let bytes = 0;
     let capped = false;
@@ -224,9 +225,8 @@ export function useSourceSearch({
         }
         if (cancelled) return;
         /*
-         * Published per file rather than per batch: the rows fill while the rest arrive,
-         * which is what lets the field stay responsive on a folder that takes 143–180 ms
-         * to read whole. Each publish is a new Map because the value is read by a memo.
+         * Publish each result to keep progress visible. A new Map updates matching without
+         * restarting this reader or rereading its next in-flight file.
          */
         setUnitsByStamp((current) => {
           if (current.has(file.stamp)) return current;
@@ -241,7 +241,7 @@ export function useSourceSearch({
     };
     // `plannedKey` stands for `planned`: the same paths at the same mtimes are the same work.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, plannedKey, sourceHandles, unitsByStamp]);
+  }, [active, plannedKey, sourceHandles]);
 
   return useMemo(() => {
     if (!active) return IDLE;

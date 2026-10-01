@@ -93,3 +93,26 @@ describe("buildProjectOntologyMetrics", () => {
     expect(metrics.documents).toBe(1);
   });
 });
+
+it("counts one-hop documents once across incoming, outgoing, duplicate and self relations", () => {
+  const nodes = [
+    n("domain:core", "domain", ["atlas"]),
+    n("document:직접", "document", ["atlas"]),
+    n("document:incoming", "document"),
+    n("document:outgoing", "document"),
+    n("document:second-hop", "document"),
+    n("document:self", "document"),
+    n("document:other", "document"),
+    n("domain:other", "domain", ["other"]),
+  ];
+  const edges = [
+    e("1", "document:incoming", "domain:core", "related_to"),
+    e("2", "document:incoming", "domain:core", "related_to"),
+    e("3", "domain:core", "document:outgoing", "dependencies"),
+    e("4", "document:incoming", "document:second-hop", "related_to"),
+    e("5", "document:self", "document:self", "related_to"),
+    e("6", "domain:other", "document:other", "related_to"),
+    e("7", "domain:core", "document:missing", "related_to"),
+  ];
+  expect(buildProjectOntologyMetrics(nodes, edges, "atlas").documents).toBe(3);
+});

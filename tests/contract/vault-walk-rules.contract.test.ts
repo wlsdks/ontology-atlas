@@ -44,10 +44,10 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
     expect(rustSource).toMatch(/const VAULT_WALK_MAX_DEPTH: usize = 12;/);
   });
 
-  it('항목 수 상한이 같다', () => {
-    // 50,000 since 2026-09-18: a wiki fills by the thousand and the owner asks for tens of thousands.
-    expect(VAULT_WALK_MAX_ENTRIES).toBe(50000);
-    expect(rustSource).toMatch(/const VAULT_WALK_MAX_ENTRIES: usize = 50000;/);
+  it('keeps the web and native entry ceilings aligned', () => {
+    expect(VAULT_WALK_MAX_ENTRIES).toBe(100000);
+    const nativeLimit = /const VAULT_WALK_MAX_ENTRIES: usize = (\d+);/.exec(rustSource)?.[1];
+    expect(nativeLimit).toBe(String(VAULT_WALK_MAX_ENTRIES));
   });
 
   it('가지치기 디렉터리 목록이 같다', () => {

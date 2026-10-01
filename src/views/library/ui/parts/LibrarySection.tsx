@@ -546,11 +546,11 @@ export function LibrarySection({
    * and `checking` is a moment, not a state to summarise. Below one screen of rows
    * (`SOURCE_STATE_FOLDS_FROM`) every pill is still legible and nothing folds.
    */
-  const stateCounts = (() => {
+  const stateCounts = useMemo(() => {
     const counts = new Map<LibrarySourceRow["state"], number>();
     for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
     return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
-  })();
+  }, [visibleSources]);
   const foldedState = (() => {
     if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
     const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
@@ -588,7 +588,7 @@ export function LibrarySection({
    * person is the fact (design-lead, council 2026-09-07) — so the majority writer is
    * silent and every other writer is named. Two writers tied print both.
    */
-  const majorityWriter = (() => {
+  const majorityWriter = useMemo(() => {
     const counts = new Map<string, number>();
     for (const page of model.wikiPages) counts.set(page.createdBy ?? "", (counts.get(page.createdBy ?? "") ?? 0) + 1);
     let best: string | null = null;
@@ -599,7 +599,7 @@ export function LibrarySection({
       else if (count === bestCount) tied = true;
     }
     return tied ? null : best;
-  })();
+  }, [model.wikiPages]);
   const [newPageOpen, setNewPageOpen] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState("");
   const [newPageCreating, setNewPageCreating] = useState(false);

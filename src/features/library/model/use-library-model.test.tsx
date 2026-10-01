@@ -38,4 +38,28 @@ describe('Library bodies reused by local Compile retrieval', () => {
     expect(result.current.pageTexts.get('wiki/answer')).not.toBe('Earlier text');
     await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('Updated text'));
   });
+
+  it('rereads a page after its older version has left the current folder snapshot', async () => {
+    const { result, rerender } = renderHook(({ version, text }) => useLibraryModel({
+      docs: [{ ...docs[0], mtime: version }], sources, sourceHandles,
+      fileHandles: new Map([['wiki/answer', handle(text)]]), vaultRootPath: null, vaultScope: 'local:one', enabled: true,
+    }), { initialProps: { version: 1, text: 'First revision' } });
+    await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('First revision'));
+    rerender({ version: 2, text: 'Second revision' });
+    await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('Second revision'));
+    rerender({ version: 1, text: 'Restored file bytes' });
+    await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('Restored file bytes'));
+  });
+
+  it('releases a removed page before that slug is added again', async () => {
+    const { result, rerender } = renderHook(({ present, text }) => useLibraryModel({
+      docs: present ? docs : [], sources, sourceHandles,
+      fileHandles: new Map([['wiki/answer', handle(text)]]), vaultRootPath: null, vaultScope: 'local:one', enabled: true,
+    }), { initialProps: { present: true, text: 'Removed bytes' } });
+    await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('Removed bytes'));
+    rerender({ present: false, text: '' });
+    expect(result.current.pageTexts.size).toBe(0);
+    rerender({ present: true, text: 'Replacement bytes' });
+    await waitFor(() => expect(result.current.pageTexts.get('wiki/answer')).toBe('Replacement bytes'));
+  });
 });

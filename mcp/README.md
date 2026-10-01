@@ -19,10 +19,13 @@ human-approved. [Product purpose and limits](../README.md#how-it-works).
 
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
-runtime graph artifact without introducing a backend database. During one MCP
+runtime graph artifact without introducing a backend database. Compiler diagnostics use canonical ordering, so filesystem enumeration order does not change `graphHash`. Graphs compiled previously with noncanonical diagnostics may receive a corrected hash after this fix; vault files are not rewritten. The `canonicalizationActions` array follows source document enumeration order; that action order is not part of `graphHash`. During one MCP
 server session, repeated `query_ontology` calls reuse the compiled artifact
 while the vault document signature is unchanged, so agent run orders avoid
-recompiling the same graph over and over.
+recompiling the same graph over and over. Every lookup still loads current document
+bytes. The cache fingerprint uses SHA-256 over length-prefixed slug, modification
+time and lossless string content, preserving document order independence without
+confusing changed bytes at the same modification time.
 
 Kind selection and relation meaning are not redefined in this tool manual. The
 single public contract is

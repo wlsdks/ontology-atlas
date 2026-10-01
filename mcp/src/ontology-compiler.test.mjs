@@ -469,6 +469,9 @@ describe('compileOntology', () => {
     ];
     const full = compileOntology(docs);
     const summary = compileOntology(docs, { summary: true });
+    const indexed = compileOntology(docs, { includeIndexes: true });
+    assert.equal(indexed.graphHash, full.graphHash);
+    assert.deepEqual(compileOntology(docs, { summary: true, includeIndexes: true }), summary);
     assert.equal(summary.graphHash, full.graphHash);
     assert.equal(summary.nodeCount, full.nodeCount);
     assert.equal(summary.edgeCount, full.edgeCount);
@@ -634,5 +637,108 @@ describe('compileOntology retention', () => {
       measured.retained < measured.rawBytes / 10,
       `the artifact retained ${measured.retained} bytes for ${measured.rawBytes} bytes of document text`,
     );
+  });
+});
+
+it('keeps diagnostics and graphHash stable when document enumeration order changes', () => {
+  const docs = [
+    doc('elements/z', { kind: 'element', dependencies: ['missing-z'] }),
+    doc('elements/a', { kind: 'element', dependencies: ['missing-a'] }),
+    { ...doc('elements/error', { kind: 'element', contains: 'bad-array' }), diagnostics: [
+      { code: 'malformed-frontmatter-line', line: 3, message: 'Invalid array.' },
+    ] },
+  ];
+  const first = compileOntology(docs, { includeIndexes: true });
+  const second = compileOntology([...docs].reverse(), { includeIndexes: true });
+  assert.equal(first.graphHash, second.graphHash);
+  assert.deepEqual(first.issues, second.issues);
+  const changed = docs.map(row => row.slug === 'elements/error'
+    ? { ...row, diagnostics: [{ code: 'malformed-frontmatter-line', line: 3, message: 'Different error.' }] }
+    : row);
+  assert.notEqual(compileOntology(changed).graphHash, first.graphHash);
+});
+
+describe('canonical relation ordering', () => {
+  it('preserves input order when Unicode relation keys collate equally', () => {
+    const docs = [
+      doc('elements/e\u0301', { kind: 'element', dependencies: ['missing-target'] }),
+      doc('elements/é', { kind: 'element', dependencies: ['missing-target'] }),
+    ];
+    for (const input of [docs, [...docs].reverse()]) {
+      const result = compileOntology(input);
+      assert.equal(result.edges.length, 2);
+      assert.deepEqual(result.edges.map(edge => edge.from), input.map(item => item.slug));
+    }
+  });
+  it('keeps paginated relation order consistent with the full locale-sorted result', () => {
+    const docs = ['z', 'A', 'a', '가', 'é', 'e\u0301'].map(name =>
+      doc(`elements/${name}`, { kind: 'element', dependencies: ['missing-b', 'missing-a'] }));
+    const full = compileOntology(docs, { includeIndexes: true });
+    const expected = [...full.edges].sort((a, b) =>
+      `${a.from}:${a.via}:${a.to}:${a.ref}`.localeCompare(`${b.from}:${b.via}:${b.to}:${b.ref}`));
+    assert.deepEqual(full.edges, expected);
+    const page = compileOntology(docs, { edgesOffset: 2, edgesLimit: 3 });
+    assert.deepEqual(page.edges, expected.slice(2, 5));
+    assert.equal(page.graphHash, full.graphHash);
+  });
+});
+
+describe('large graph summary aggregation', () => {
+  it('compiles 100000 nodes without passing them as function arguments', () => {
+    const script = `
+      import { compileOntology } from ${JSON.stringify(new URL('./ontology-compiler.mjs', import.meta.url).href)};
+      const docs = Array.from({ length: 100000 }, (_, index) => ({
+        slug: 'elements/n' + index,
+        mtime: index,
+        frontmatter: { kind: 'element', uid: '00000000-0000-4000-8000-' + index.toString(16).padStart(12, '0') },
+      }));
+      const result = compileOntology(docs, { summary: true });
+      console.log(JSON.stringify({ count: result.nodeCount, maxMtime: result.maxMtime }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ['--stack-size=512', '--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }));
+    assert.deepEqual(result, { count: 100000, maxMtime: 99999 });
+  });
+
+  it('preserves numeric timestamp coercion and counts mixed relation targets', () => {
+    for (const [times, expected] of [
+      [[-10, -0, '', '42', undefined, 'invalid'], 42],
+      [[-Infinity, NaN, null, -2], 0],
+      [[1, Infinity], Infinity],
+    ]) {
+      const docs = times.map((mtime, index) => timedDoc(`elements/n${index}`, {
+        kind: 'element', dependencies: ['elements/n0', 'missing'], elements: ['src/file.ts'],
+      }, mtime));
+      const result = compileOntology(docs);
+      assert.equal(result.maxMtime, expected);
+      assert.equal(result.resolvedEdgeCount, docs.length);
+      assert.equal(result.externalEdgeCount, docs.length);
+      assert.equal(result.unresolvedEdgeCount, docs.length);
+      assert.equal(result.referencedOnlyCount, 2);
+    }
+    assert.equal(compileOntology([]).maxMtime, 0);
+  });
+});
+
+describe('literal graph dictionary keys', () => {
+  it('counts and indexes prototype-named domains and slugs as own JSON properties', () => {
+    const names = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'];
+    const docs = names.map(name => doc(name, { kind: 'domain', domain: name, dependencies: names }));
+    const plain = compileOntology(docs);
+    for (const name of names) assert.equal(plain.byDomain[name], 1);
+    const indexed = compileOntology(docs, { includeIndexes: true });
+    assert.equal(indexed.graphHash, plain.graphHash);
+    const delivered = JSON.parse(JSON.stringify(indexed));
+    for (const name of names) {
+      assert.deepEqual(delivered.indexes.byDomain[name], [name]);
+      assert.equal(delivered.indexes.slugToUid[name], docs.find(item => item.slug === name).frontmatter.uid);
+      assert.equal(delivered.indexes.out[name].length, names.length + 1);
+      assert.equal(delivered.indexes.in[name].length, names.length + 1);
+      assert.ok(Object.hasOwn(delivered.indexes.out, name));
+    }
+    assert.equal(Object.getPrototypeOf(indexed.indexes.out), Object.prototype);
+    assert.equal(Object.getPrototypeOf(indexed.indexes.in), Object.prototype);
+    assert.equal(Object.getPrototypeOf(indexed.indexes.slugToUid), Object.prototype);
   });
 });

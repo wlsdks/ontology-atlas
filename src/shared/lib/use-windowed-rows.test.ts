@@ -60,3 +60,72 @@ describe("windowRows", () => {
     expect(w).toEqual({ start: 0, end: 3, before: 0, after: 0 });
   });
 });
+
+it('bounds the first committed row set before measuring a large scrollable list', async () => {
+  const { createElement } = await import('react');
+  const { render, cleanup } = await import('@testing-library/react');
+  const { vi } = await import('vitest');
+  const { useWindowedRows } = await import('./use-windowed-rows');
+  let firstMeasuredCount: number | null = null;
+  const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(360);
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    if (this.tagName === 'LI' && firstMeasuredCount === null) firstMeasuredCount = this.parentElement!.children.length;
+    return { x: 0, y: 0, top: 0, left: 0, bottom: 36, right: 100, width: 100, height: 36, toJSON: () => ({}) };
+  });
+  function List() {
+    const [range, ref] = useWindowedRows({ count: 10_000, estimate: 36 });
+    return createElement('div', { style: { overflowY: 'auto' } }, createElement('ul', { ref },
+      Array.from({ length: range.end - range.start }, (_, i) => createElement('li', { key: range.start + i }, `Row ${range.start + i}`))));
+  }
+  try {
+    const result = render(createElement(List));
+    expect(firstMeasuredCount).not.toBeNull();
+    expect(firstMeasuredCount).toBeLessThan(200);
+    expect(result.container.querySelectorAll('li').length).toBeLessThan(200);
+  } finally {
+    cleanup();
+    height.mockRestore();
+    rect.mockRestore();
+  }
+});
+
+it("keeps a zero-height scroller bounded and recomputes when it becomes visible", async () => {
+  const { createElement } = await import("react");
+  const { render, cleanup, act } = await import("@testing-library/react");
+  const { vi } = await import("vitest");
+  const { useWindowedRows } = await import("./use-windowed-rows");
+  let viewportHeight = 0;
+  let resize: (() => void) | undefined;
+  const height = vi.spyOn(HTMLElement.prototype, "clientHeight", "get")
+    .mockImplementation(() => viewportHeight);
+  vi.stubGlobal("ResizeObserver", class {
+    constructor(callback: () => void) { resize = callback; }
+    observe() {}
+    disconnect() {}
+  });
+  function List({ count }: { count: number }) {
+    const [range, ref] = useWindowedRows({ count, estimate: 36 });
+    return createElement("div", { style: { overflowY: "auto" } },
+      createElement("ul", { ref, "data-window": `${range.start}-${range.end}` },
+        Array.from({ length: range.end - range.start }, (_, i) =>
+          createElement("li", { key: range.start + i }, `Row ${range.start + i}`))));
+  }
+  try {
+    const result = render(createElement(List, { count: 1000 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    result.rerender(createElement(List, { count: 100_000 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    expect(resize).toBeDefined();
+    act(() => { viewportHeight = 360; resize!(); });
+    expect(result.container.querySelector("ul")?.getAttribute("data-window")).toBe("0-18");
+    expect(result.container.querySelectorAll("li")).toHaveLength(18);
+    act(() => { viewportHeight = 0; resize!(); });
+    expect(result.container.querySelectorAll("li")).toHaveLength(64);
+    result.rerender(createElement(List, { count: 3 }));
+    expect(result.container.querySelectorAll("li")).toHaveLength(3);
+  } finally {
+    cleanup();
+    height.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});

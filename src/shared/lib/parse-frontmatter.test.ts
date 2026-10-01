@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDefinitionPreview, buildExcerpt, extractOutLinksWithContext, parseFrontmatter } from './parse-frontmatter';
+import { buildDefinitionPreview, buildExcerpt, extractOutLinksWithContext, firstHeading, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
   it('returns empty frontmatter when no leading ---', () => {
@@ -337,6 +337,18 @@ describe('parseFrontmatter — malformed-quoted-scalar', () => {
 
 
 describe('complete opening definition previews', () => {
+  it.each(['\n', '\r\n'])('preserves opening content with line separator %j and a long remainder', (separator) => {
+    const body = ['```', '# shell comment', '```', '# Title', '', 'Definition.', '', ...Array(10_000).fill('Later content.')].join(separator);
+    expect(firstHeading(body)).toBe(separator === '\n' ? 'Title' : null);
+    const prose = ['# Title', '', 'Definition.', 'with a qualification.', '', ...Array(10_000).fill('Later content.')].join(separator);
+    expect(buildDefinitionPreview(prose, { title: 'Title' })).toBe('Definition. with a qualification.');
+    expect(buildDefinitionPreview(prose.replace('with a qualification.', '| qualification |'), { title: 'Title' })).toBeUndefined();
+  });
+  it('preserves final and consecutive carriage returns', () => {
+    expect(buildDefinitionPreview('# Title\r\r\n\r\nDefinition.\r', { title: 'Title' })).toBe('Definition.');
+    expect(buildDefinitionPreview('Definition.\r\n', {})).toBe('Definition.');
+    expect(firstHeading('```\n# hidden\n```\n')).toBeNull();
+  });
   it('preserves multiline qualifications and inline references under a recorded title', () => {
     expect(buildDefinitionPreview('\n# 재시도\n\n다시 읽지만 [[report|보고서]]는\n저장하지 않는다. See `path.ts#retry` and [policy](./policy).\n\n## Excludes\nPersisting a report.', { title: 'Retry', display_ko: '재시도' })).toBe('다시 읽지만 [[report|보고서]]는 저장하지 않는다. See `path.ts#retry` and [policy](./policy).');
   });

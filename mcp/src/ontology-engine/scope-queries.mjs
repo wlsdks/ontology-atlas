@@ -18,7 +18,7 @@ export function createScopeQueries({
   nodes,
   edges,
   nodeBySlug,
-  sourceDocBySlug,
+  sourceDocFor,
   outgoing,
   resolve,
   pathNodes,
@@ -447,7 +447,7 @@ export function createScopeQueries({
         const sameKindParent = containmentParentsFor(node.slug)
           .map(({ next }) => nodeBySlug.get(next))
           .find((parent) => parent?.kind === node.kind);
-        const doc = sourceDocBySlug.get(node.slug);
+        const doc = sourceDocFor(node.slug);
         const starterBody = doc ? bodyIsStarterTemplate(node.kind, node.title, doc.body) : false;
         return { node, sameKindParent, starterBody };
       })
@@ -773,7 +773,7 @@ export function createScopeQueries({
    */
   function nextReadCandidates(limit) {
     const docsWithBodies = nodes
-      .map((node) => ({ node, doc: sourceDocBySlug.get(node.slug) }))
+      .map((node) => ({ node, doc: sourceDocFor(node.slug) }))
       .filter((entry) => typeof entry.doc?.body === 'string');
     if (docsWithBodies.length === 0) {
       return { total: 0, limited: false, rows: [], reason: 'no_bodies' };
