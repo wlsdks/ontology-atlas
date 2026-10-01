@@ -17,6 +17,12 @@ The page's tabs are Agents, Models and MCP, in the order of
 
 Opening a conversation preserves the selected runner across the quick detection and subsequent login scan. A temporarily empty usable-runner list does not replace the requested tool with the first later result. The existing readiness and isolation checks still apply.
 
+Before the first session listener attaches, ACP retains at most 256 events and
+1,048,576 UTF-16 code units of text. Overflow refuses startup and requests native
+termination, without replaying a partial protocol queue. Explicit stop clears
+the listeners and retained startup events, so late callbacks cannot resume the
+conversation.
+
 - **List** — Tools actually verified on this device are shown first, others are collapsed.
 - **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
 - **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.

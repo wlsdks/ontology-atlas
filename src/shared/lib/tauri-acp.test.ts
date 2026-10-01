@@ -14,7 +14,7 @@ vi.mock('@tauri-apps/api/core', () => ({
   Channel: mocks.Channel,
 }));
 
-import { acpPermissionVerdict, listenToAcpSession, startAcpSession } from './tauri-acp';
+import { acpPermissionVerdict, listenToAcpSession, startAcpSession, stopAcpSession } from './tauri-acp';
 
 type SessionChannel = { onmessage: (event: unknown) => void };
 
@@ -178,5 +178,109 @@ describe('each agent session streams on its own channel', () => {
     session.channel().onmessage({ kind: 'message', line: 'after detach' });
 
     expect(heard).toEqual([]);
+  });
+
+  it('stops a session whose startup event count exceeds the retention budget', async () => {
+    const session = startWith('acp-count-overflow', (channel) => {
+      for (let i = 0; i < 257; i++) channel.onmessage({ kind: 'notice', message: 'progress' });
+    });
+
+    await expect(session.started).rejects.toThrow('acp-startup-buffer-overflow');
+    expect(mocks.invoke).toHaveBeenCalledWith('acp_stop', { sessionId: 'acp-count-overflow' });
+  });
+
+  it('stops startup when one event exceeds the text retention budget', async () => {
+    const session = startWith('acp-text-overflow', (channel) => {
+      channel.onmessage({ kind: 'message', line: 'x'.repeat(1_048_577) });
+    });
+
+    await expect(session.started).rejects.toThrow('acp-startup-buffer-overflow');
+    expect(mocks.invoke).toHaveBeenCalledWith('acp_stop', { sessionId: 'acp-text-overflow' });
+  });
+
+  it('counts text across separate startup events', async () => {
+    const session = startWith('acp-text-sum', (channel) => {
+      channel.onmessage({ kind: 'message', line: 'x'.repeat(524_289) });
+      channel.onmessage({ kind: 'stderr', line: 'y'.repeat(524_289) });
+    });
+
+    await expect(session.started).rejects.toThrow('acp-startup-buffer-overflow');
+    expect(mocks.invoke).toHaveBeenCalledWith('acp_stop', { sessionId: 'acp-text-sum' });
+  });
+
+  it('replays every startup event up to the count retention budget', async () => {
+    const lines = Array.from({ length: 256 }, (_, index) => String(index));
+    const session = startWith('acp-count-boundary', (channel) => {
+      for (const line of lines) channel.onmessage({ kind: 'message', line });
+    });
+    await session.started;
+    const heard: string[] = [];
+
+    await listenToAcpSession('acp-count-boundary', { onMessage: (line) => heard.push(line) });
+
+    expect(heard).toEqual(lines);
+  });
+
+  it('delivers a complete event exactly at the text retention budget', async () => {
+    const line = 'x'.repeat(1_048_576);
+    const session = startWith('acp-text-boundary', (channel) => {
+      channel.onmessage({ kind: 'message', line });
+    });
+    await session.started;
+    const heard = vi.fn();
+
+    await listenToAcpSession('acp-text-boundary', { onMessage: heard });
+
+    expect(heard).toHaveBeenCalledExactlyOnceWith(line);
+  });
+
+  it('refuses an overflow after start resolves without replaying a partial protocol prefix', async () => {
+    const session = startWith('acp-late-overflow');
+    await session.started;
+    session.channel().onmessage({ kind: 'message', line: '{"method":"session/request_permission"}' });
+    for (let i = 0; i < 256; i++) session.channel().onmessage({ kind: 'stderr', line: 'diagnostic' });
+    const heard = vi.fn();
+
+    await expect(listenToAcpSession('acp-late-overflow', { onMessage: heard })).rejects.toThrow('acp-startup-buffer-overflow');
+
+    expect(heard).not.toHaveBeenCalled();
+    expect(mocks.invoke).toHaveBeenCalledWith('acp_stop', { sessionId: 'acp-late-overflow' });
+  });
+
+  it('ignores channel callbacks after an explicit stop', async () => {
+    const session = startWith('acp-explicit-stop');
+    await session.started;
+    const heard = vi.fn();
+    await listenToAcpSession('acp-explicit-stop', { onMessage: heard });
+
+    await stopAcpSession('acp-explicit-stop');
+    session.channel().onmessage({ kind: 'message', line: 'late output' });
+
+    expect(heard).not.toHaveBeenCalled();
+  });
+
+  it('does not replay the remaining startup events after a listener stops the session', async () => {
+    const session = startWith('acp-stop-in-replay', (channel) => {
+      channel.onmessage({ kind: 'message', line: 'first' });
+      channel.onmessage({ kind: 'message', line: 'after stop' });
+    });
+    await session.started;
+    const heard: string[] = [];
+
+    await listenToAcpSession('acp-stop-in-replay', { onMessage: (line) => {
+      heard.push(line);
+      void stopAcpSession('acp-stop-in-replay');
+    } });
+
+    expect(heard).toEqual(['first']);
+  });
+
+  it('refuses partial startup even when native termination rejects', async () => {
+    const session = startWith('acp-stop-error');
+    await session.started;
+    for (let i = 0; i < 257; i++) session.channel().onmessage({ kind: 'notice', message: 'progress' });
+    mocks.invoke.mockRejectedValueOnce(new Error('termination-failed'));
+
+    await expect(listenToAcpSession('acp-stop-error', {})).rejects.toThrow('acp-startup-buffer-overflow');
   });
 });

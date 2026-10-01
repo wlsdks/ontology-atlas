@@ -14,10 +14,8 @@ import { Channel, invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
  * Four kinds of event come up the session's own channel: `message` (one protocol line),
  * `stderr` (diagnostics), `exit` (finished), `notice` (dropped lines and similar).
  *
- * **Web degradation contract.** A browser cannot spawn a process — not a gap, an
- * impossibility. Outside the Tauri runtime `isAcpBridgeAvailable()` is false and every
- * wrapper returns `null`. Callers must state **why it cannot work and where it can**,
- * never "coming soon" (`.claude/rules/surfaces.md`).
+ * Outside Tauri, detection/start return null, send/stop are no-ops, and path
+ * permissions return ask. Callers use the existing desktop-only explanations.
  *
  * **The verdict is not reimplemented here.** The permission policy (allow inside the
  * vault, ask outside it) lives only in Rust. A second copy means one of them drifts
@@ -147,9 +145,16 @@ export async function startAcpSession(
 ): Promise<string | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  const stream: AcpSessionStream = { early: [], listeners: new Set() };
+  const stream: AcpSessionStream = { early: [], earlyChars: 0, overflowed: false, closed: false, listeners: new Set() };
   const onEvent = new Channel<AcpStreamEvent>((event) => deliver(stream, event));
-  const sessionId = await invoke<string>('acp_start', { runtimeId, cwd, onEvent });
+  let sessionId: string;
+  try {
+    sessionId = await invoke<string>('acp_start', { runtimeId, cwd, onEvent });
+  } catch (error) {
+    closeStream(stream);
+    throw error;
+  }
+  if (stream.overflowed) return refuseOverflow(sessionId, stream);
   sessionStreams.set(sessionId, stream);
   return sessionId;
 }
@@ -163,6 +168,8 @@ export async function sendAcpLine(sessionId: string, line: string): Promise<void
 export async function stopAcpSession(sessionId: string): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) return;
+  const stream = sessionStreams.get(sessionId);
+  if (stream) closeStream(stream);
   sessionStreams.delete(sessionId);
   await invoke<void>('acp_stop', { sessionId });
 }
@@ -201,10 +208,34 @@ interface AcpSessionHandlers {
 /** Events before the first listener wait for it. */
 interface AcpSessionStream {
   early: AcpStreamEvent[] | null;
+  earlyChars: number;
+  overflowed: boolean;
+  closed: boolean;
   listeners: Set<AcpSessionHandlers>;
 }
 
 const sessionStreams = new Map<string, AcpSessionStream>();
+// O(1) per buffered event; retained startup text and event count are capped.
+const MAX_EARLY_EVENTS = 256;
+const MAX_EARLY_CHARS = 1_048_576;
+
+function closeStream(stream: AcpSessionStream): void {
+  stream.closed = true;
+  stream.early = null;
+  stream.earlyChars = 0;
+  stream.listeners.clear();
+}
+
+async function refuseOverflow(sessionId: string, stream: AcpSessionStream): Promise<never> {
+  closeStream(stream);
+  sessionStreams.delete(sessionId);
+  try {
+    await getInvoke()?.('acp_stop', { sessionId });
+  } catch {
+    // Refuse a partial replay even if stop fails.
+  }
+  throw new Error('acp-startup-buffer-overflow');
+}
 
 function dispatch(handlers: AcpSessionHandlers, event: AcpStreamEvent): void {
   if (event.kind === 'message') handlers.onMessage?.(event.line);
@@ -214,8 +245,20 @@ function dispatch(handlers: AcpSessionHandlers, event: AcpStreamEvent): void {
 }
 
 function deliver(stream: AcpSessionStream, event: AcpStreamEvent): void {
-  if (stream.early) stream.early.push(event);
-  else for (const handlers of stream.listeners) dispatch(handlers, event);
+  if (stream.closed || stream.overflowed) return;
+  if (stream.early) {
+    const chars = event.kind === 'notice' ? event.message.length : event.kind === 'exit' ? 0 : event.line.length;
+    if (stream.early.length >= MAX_EARLY_EVENTS || chars > MAX_EARLY_CHARS - stream.earlyChars) {
+      stream.early = [];
+      stream.earlyChars = 0;
+      stream.overflowed = true;
+      return;
+    }
+    stream.early.push(event);
+    stream.earlyChars += chars;
+  } else {
+    for (const handlers of stream.listeners) dispatch(handlers, event);
+  }
 }
 
 /** Listens to one session's own channel. Calling the returned function detaches. */
@@ -225,12 +268,20 @@ export async function listenToAcpSession(
 ): Promise<() => void> {
   const stream = sessionStreams.get(sessionId);
   if (!stream) return () => {};
+  if (stream.overflowed) return refuseOverflow(sessionId, stream);
   stream.listeners.add(handlers);
   const early = stream.early ?? [];
   stream.early = null;
-  for (const event of early) dispatch(handlers, event);
+  stream.earlyChars = 0;
+  for (const event of early) {
+    if (stream.closed) break;
+    dispatch(handlers, event);
+  }
   return () => {
     stream.listeners.delete(handlers);
-    if (stream.listeners.size === 0) sessionStreams.delete(sessionId);
+    if (stream.listeners.size === 0) {
+      closeStream(stream);
+      sessionStreams.delete(sessionId);
+    }
   };
 }
