@@ -48,8 +48,9 @@ interface MorphRun {
   source: HTMLCanvasElement | null;
   target: HTMLCanvasElement | null;
   ground: string;
-  startMs: number;
+  startMs: number | null;
   progress: number;
+  steppedAtMs: number;
   fadeStartMs: number;
   holdFrames: number;
   record: MorphRecord;
@@ -70,7 +71,7 @@ export function installMapLayoutMorphProbe(): void {
   if (typeof window === "undefined" || !new URLSearchParams(window.location.search).has("e2e")) return;
   (window as unknown as { __atlasMapMorph?: unknown }).__atlasMapMorph = {
     records: () => records.map((record) => ({ ...record })),
-    live: () => (liveRun ? { mode: liveRun.mode, phase: liveRun.phase, progress: liveRun.progress } : null),
+    live: () => (liveRun ? { mode: liveRun.mode, phase: liveRun.phase, progress: liveRun.progress, at: liveRun.steppedAtMs } : null),
     marks: (progress?: number) =>
       liveRun?.plan ? sampleLayoutMorph(liveRun.plan, progress ?? liveRun.progress).map(({ id, x, y }) => ({ id, x, y })) : [],
     publishes: () => mapLayoutPublishCount(),
@@ -152,7 +153,6 @@ function drawTravel(ctx: CanvasRenderingContext2D, run: MorphRun, width: number,
   ctx.fillStyle = run.ground;
   ctx.fillRect(0, 0, width, height);
   if (run.source && reveal < 1) {
-    ctx.globalAlpha = 1 - reveal;
     ctx.drawImage(run.source, 0, 0, width, height);
   }
   if (run.target && reveal > 0) {
@@ -188,6 +188,7 @@ function beginRun(canvas: HTMLCanvasElement, job: MapLayoutMorphJob, now: number
     startMs: now,
     progress: 1,
     fadeStartMs: now,
+    steppedAtMs: now,
     holdFrames: 0,
     record,
   };
@@ -200,10 +201,9 @@ function beginRun(canvas: HTMLCanvasElement, job: MapLayoutMorphJob, now: number
       run.plan = planLayoutMorph(snapshot.marks, target.marks, job.parentOf());
       run.target = bitmap;
       run.progress = 0;
-      run.startMs = performance.now();
+      run.startMs = null;
       record.count = run.plan.ids.length;
       record.plannedMs = run.plan.durationMs;
-      record.travelStartMs = run.startMs;
     } else if (bitmap) {
       bitmap.width = 0;
     }
@@ -244,7 +244,7 @@ export function MapLayoutMorphOverlay({
   const rafRef = useRef<number | null>(null);
   const holdingRef = useRef(holding);
   const callbacksRef = useRef({ onTravelEnd, onDone });
-  const stepRef = useRef<(now: number) => void>(() => {});
+  const stepRef = useRef<() => void>(() => {});
   useLayoutEffect(() => {
     holdingRef.current = holding;
     callbacksRef.current = { onTravelEnd, onDone };
@@ -296,13 +296,19 @@ export function MapLayoutMorphOverlay({
     };
     const fadeMs = (job.reducedMotion ? OVERLAY_SPRING_REDUCED.duration : EXIT_TRANSITION.duration) * 1000;
     const startDpr = window.devicePixelRatio || 1;
-    const step = (time: number) => {
+    const step = () => {
       rafRef.current = null;
+      const now = performance.now();
+      run.steppedAtMs = now;
       if ((window.devicePixelRatio || 1) !== startDpr) settle("dpr");
       if (run.phase === "done") return;
       if (run.phase === "travel") {
-        run.progress = Math.min(1, Math.max(0, (time - run.startMs) / run.plan!.durationMs));
-        if (run.progress >= 1) endTravel(null, time);
+        if (run.startMs === null) {
+          run.startMs = now;
+          run.record.travelStartMs = now;
+        }
+        run.progress = Math.min(1, Math.max(0, (now - run.startMs) / run.plan!.durationMs));
+        if (run.progress >= 1) endTravel(null, now);
         else paint();
       }
       if (run.phase === "hold") {
@@ -312,14 +318,14 @@ export function MapLayoutMorphOverlay({
           return;
         }
         run.phase = "fade";
-        run.fadeStartMs = performance.now();
+        run.fadeStartMs = now;
         run.record.fadeStartMs = run.fadeStartMs;
       }
       if (run.phase === "fade") {
-        const t = Math.min(1, Math.max(0, (time - run.fadeStartMs) / fadeMs));
+        const t = Math.min(1, Math.max(0, (now - run.fadeStartMs) / fadeMs));
         canvas.style.opacity = String(1 - (job.reducedMotion ? t : cubicBezierAt(EXIT_TRANSITION.ease, t)));
         if (t >= 1) {
-          finish(null, time);
+          finish(null, now);
           return;
         }
       }
@@ -360,7 +366,7 @@ export function MapLayoutMorphOverlay({
 
   useEffect(() => {
     if (!holding && runRef.current?.phase === "hold" && rafRef.current == null) {
-      rafRef.current = requestAnimationFrame((time) => stepRef.current(time));
+      rafRef.current = requestAnimationFrame(() => stepRef.current());
     }
   }, [holding]);
 

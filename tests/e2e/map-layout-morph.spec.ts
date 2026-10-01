@@ -10,6 +10,7 @@ type View = "flat" | "territories" | "hex" | "galaxy" | "strata" | "coupling";
 interface Frame {
   t: number;
   wall: number;
+  at: number | null;
   phase: string | null;
   opacity: number | null;
   views: string[];
@@ -34,7 +35,7 @@ interface MorphRecord {
 
 interface MorphProbe {
   records: () => MorphRecord[];
-  live: () => { mode: string; phase: string; progress: number } | null;
+  live: () => { mode: string; phase: string; progress: number; at: number } | null;
   marks: (progress?: number) => Array<{ id: string; x: number; y: number }>;
   publishes: () => number;
 }
@@ -55,6 +56,7 @@ const FIRST_SHARE_CEILING = 0.2;
 const MAX_SHARE_CEILING = 0.25;
 const INCOMING_STALL_MS = 150;
 const FADE_STEP_CEILING = 0.5;
+const PICK_STALL_MS = 150;
 const ARRIVAL_DRIFT_CEILING_PX = 2;
 
 async function installSampler(page: Page): Promise<void> {
@@ -139,6 +141,7 @@ async function installSampler(page: Page): Promise<void> {
       s.frames.push({
         t: frameTime,
         wall: performance.now(),
+        at: live?.at ?? null,
         phase: live?.phase ?? null,
         opacity: overlay ? Number(getComputedStyle(overlay).opacity) : null,
         views: [...document.querySelectorAll('[data-testid="topology-map-view"]')].map((el) => el.getAttribute("data-map-view") ?? ""),
@@ -279,13 +282,13 @@ test.describe("map layout morph", () => {
       expect(travelMs).toBeLessThanOrEqual(CAMERA_TWEEN_MAX_MS + 2 * frameMs);
       expect(Math.abs(travelMs - run.plannedMs), `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeLessThanOrEqual(2 * frameMs);
 
-      const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null);
+      const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null && f.at !== null);
       const shares: number[] = [];
-      let previous = { t: run.travelStartMs, remaining: 1 };
+      let previous = { at: run.travelStartMs, remaining: 1 };
       for (const f of travel) {
-        const interval = f.t - previous.t;
-        if (interval > 0) shares.push((previous.remaining - f.remaining!) * Math.max(1, 16.7 / interval));
-        previous = { t: f.t, remaining: f.remaining! };
+        const interval = f.at! - previous.at;
+        if (interval > 0) shares.push(((previous.remaining - f.remaining!) * 16.7) / interval);
+        previous = { at: f.at!, remaining: f.remaining! };
       }
       expect(shares.length).toBeGreaterThan(2);
       expect(shares[0]!).toBeGreaterThan(0);
@@ -313,6 +316,30 @@ test.describe("map layout morph", () => {
     });
   }
 
+  test("a pick whose commit stalls still travels the planned time once frames resume", async ({ page }) => {
+    await openAt(page, "flat");
+    await page.evaluate((stallMs) => {
+      const observer = new MutationObserver(() => {
+        if (!document.querySelector('[data-testid="map-layout-morph"]')) return;
+        observer.disconnect();
+        const until = performance.now() + stallMs;
+        while (performance.now() < until);
+        (window as unknown as { __pickStallEnd?: number }).__pickStallEnd = performance.now();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }, PICK_STALL_MS);
+    const before = await startRecording(page, false);
+    await pick(page, "hex");
+    const run = await morphDone(page, before);
+    const frames = await stopRecording(page);
+    const stallEnd = await page.evaluate(() => (window as unknown as { __pickStallEnd?: number }).__pickStallEnd);
+    expect(stallEnd, "the pick's commit never stalled").toBeDefined();
+    expect(run.mode).toBe("ghost");
+    expect(run.travelEndMs! - stallEnd!, `travel after the stall against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(
+      run.plannedMs - 2 * medianFrameMs(frames),
+    );
+  });
+
   test("an incoming view that stalls on mount still gets the whole fade once it has drawn", async ({ page }) => {
     await openAt(page, "flat");
     await page.evaluate((stallMs) => {
@@ -336,8 +363,10 @@ test.describe("map layout morph", () => {
     for (let i = 1; i < frames.length; i += 1) {
       const [a, b] = [frames[i - 1]!, frames[i]!];
       if (a.opacity === null) continue;
-      const drop = (a.opacity - (b.opacity ?? 0)) * (16.7 / Math.max(1, b.wall - a.wall));
-      if (drop > FADE_STEP_CEILING) steps.push(`${Math.round(b.wall - a.wall)} ms: ${a.opacity.toFixed(2)} → ${(b.opacity ?? 0).toFixed(2)}`);
+      const interval = a.at !== null && b.at !== null ? b.at - a.at : b.wall - a.wall;
+      if (interval <= 0) continue;
+      const drop = ((a.opacity - (b.opacity ?? 0)) * 16.7) / interval;
+      if (drop > FADE_STEP_CEILING) steps.push(`${Math.round(interval)} ms: ${a.opacity.toFixed(2)} → ${(b.opacity ?? 0).toFixed(2)}`);
     }
     expect(steps, "the fade jumped after the stall").toEqual([]);
   });
@@ -353,8 +382,10 @@ test.describe("map layout morph", () => {
       const frames = await stopRecording(page);
       expect(run.mode, `the pick of ${view}`).toBe("fade");
       expect(frames.filter((f) => f.ghosts > 0), `ghosts moved on the way to ${view}`).toEqual([]);
-      const frameMs = medianFrameMs(frames);
-      expect(Math.abs(run.doneMs! - run.fadeStartMs! - MOTION.fast.duration * 1000), `the fade into ${view}`).toBeLessThanOrEqual(2 * frameMs);
+      const fadeMs = MOTION.fast.duration * 1000;
+      const fadeSteps = frames.filter((f) => f.phase === "fade" && f.at !== null).map((f) => f.at! - run.fadeStartMs!);
+      expect(run.doneMs! - run.fadeStartMs!, `the fade into ${view} ended before --motion-fast`).toBeGreaterThanOrEqual(fadeMs);
+      expect(Math.max(0, ...fadeSteps), `the fade into ${view} was still running after --motion-fast`).toBeLessThan(fadeMs);
     }
   });
 
