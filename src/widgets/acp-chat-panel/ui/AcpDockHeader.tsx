@@ -1,10 +1,8 @@
 'use client';
 
-import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { IconButton } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { CloseButton } from '@/shared/ui';
 
 /**
  * **The host owns closing** (2026-09-06 record). The meaning workbench has a header band with
@@ -24,9 +22,7 @@ export function AcpDockHeader({ title, caption, onClose }: { title: string; capt
           {title}
         </h2>
       </div>
-      <IconButton label={t('close')} data-testid="acp-dock-close" onClick={onClose}>
-        <X size={ICON_SIZE.sm} aria-hidden />
-      </IconButton>
+      <CloseButton label={t('close')} data-testid="acp-dock-close" onClick={onClose} />
     </header>
   );
 }

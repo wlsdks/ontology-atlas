@@ -7,8 +7,8 @@ import { copyText } from '@/shared/lib/copy-text';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { Link } from '@/i18n/navigation';
 import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
-import { Button, Chip, IconButton, RowButton, Surface, controlClass } from '@/shared/ui';
-import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw, X } from 'lucide-react';
+import { Button, Chip, CloseButton, RowButton, Surface, controlClass } from '@/shared/ui';
+import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { grayAreaCandidatePage, formatRecordedPath, type GrayAreaCandidate } from '../model/candidates';
@@ -121,7 +121,7 @@ export function GrayAreaInspector({ open, vaultPath, selection, onClose, onFocus
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1"><p className="text-caption text-[color:var(--color-text-secondary)]">{t('eyebrow')}</p><p className="break-words text-body text-[color:var(--color-text-secondary)]">{selection.label}</p></div>
         <h2 id="gray-area-title" className="mt-1 text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('title')}</h2>
       </div>
-      <IconButton ref={closeRef} label={t('close')} onClick={onClose} size="sm"><X size={16}/></IconButton>
+      <CloseButton ref={closeRef} label={t('close')} onClick={onClose} />
     </header>
     <div ref={bodyRef} data-testid="gray-area-body" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[var(--card-pad)]">
       {sourceAccess ? <div className="space-y-3 text-body" data-testid="gray-area-source-access">
@@ -228,7 +228,7 @@ function SourceExcerpt({source,measuredAt,onClose,onExited}:{source:GrayAreaWitn
   const mountSource=useCallback((node:HTMLDivElement|null)=>{if(node&&source){node.focus();node.scrollIntoView({block:'nearest'});}},[source]);
   return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 rounded-card border border-[color:var(--color-divider)] p-3" data-testid="gray-area-source-witness">
     <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
-      <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-body leading-body font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><IconButton size="sm" label={t('closeSource')} onClick={onClose}><X size={14}/></IconButton></div>
+      <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-body leading-body font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><CloseButton label={t('closeSource')} onClick={onClose} /></div>
       <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
     </div>
   </Surface>;

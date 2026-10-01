@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
-import { X } from "lucide-react";
 import type { useTranslations } from "next-intl";
 
 import { formatSourceBytes } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import { Chip, Surface } from "@/shared/ui";
-import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { Chip, CloseButton, Surface } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/transient-surface";
 
 import type { LibraryGraphNode } from "../model/build-library-graph";
@@ -184,15 +181,12 @@ export function LibraryMarkPopover({
             {t(`graph.kind.${node.kind}`)}
           </span>
         </div>
-        <button
-          type="button"
+        <CloseButton
           onClick={onClose}
           data-testid="library-graph-card-close"
-          aria-label={t("graph.card.close")}
-          className={cn("flex-none", controlClass({ shape: "icon", tone: "muted", hoverInk: "strong" }))}
-        >
-          <X size={ICON_SIZE.sm} aria-hidden />
-        </button>
+          label={t("graph.card.close")}
+          className="-mt-1 flex-none"
+        />
       </div>
 
       {sentence ? (

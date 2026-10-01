@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { PackageOpen, X } from "lucide-react";
+import { PackageOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import {
@@ -20,7 +20,7 @@ import {
 } from "@/shared/lib/tauri-vault-fs";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
-import { IconButton } from "@/shared/ui/controls";
+import { CloseButton } from "@/shared/ui/close-button";
 import { useLocalVault } from "@/entities/vault-session";
 import { parseBlockManifest, type BlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
@@ -356,17 +356,14 @@ export function BlockImportModule({
                     {t("dialogSubtitle")}
                   </p>
                 </div>
-                <IconButton
+                <CloseButton
                   label={t("closeAria")}
                   disabled={busy}
                   onClick={() => {
                     if (!busy) dispatchImportUi({ type: "close-preview" });
                   }}
                   data-testid="block-import-close"
-                  className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
-                >
-                  <X size={ICON_SIZE.md} />
-                </IconButton>
+                />
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">

@@ -80,7 +80,7 @@ function FieldShell({
           {label}
         </label>
       ) : null}
-      <div>
+      <div className="flex flex-col">
         {children}
         <RowDisclosure open={error != null} id={`${id}-error-box`} className="pt-1">
           <p id={errorId} role="alert" className="text-body text-[color:var(--color-status-danger)]">

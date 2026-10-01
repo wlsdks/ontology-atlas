@@ -1,8 +1,6 @@
 "use client";
 
-import { controlClass } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { X } from "lucide-react";
+import { CloseButton, controlClass } from "@/shared/ui";
 import type { ComponentProps, KeyboardEvent, RefObject } from "react";
 import { CreateNodeForm } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
@@ -174,15 +172,10 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
             <section className="rounded-card border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p
               id="topology-create-node-unavailable-title"
               className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-text-soft)]"
-            >{t("createNode.unavailableHeading")}</p><p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t("createNode.unavailableBody")}</p></div><button
-              type="button"
+            >{t("createNode.unavailableHeading")}</p><p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t("createNode.unavailableBody")}</p></div><CloseButton
               onClick={props.closeCreateNode}
-              aria-label={t("createNode.cancel")}
-              className={controlClass({
-                shape: "icon", size: "sm", tone: "muted",
-                className: "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
-              })}
-            ><X size={ICON_SIZE.sm} aria-hidden /></button></div><button
+              label={t("createNode.cancel")}
+            /></div><button
               type="button"
               onClick={() => { props.closeCreateNode(); props.openDocsDrawer(); }}
               data-testid="topology-create-node-open-workspace"

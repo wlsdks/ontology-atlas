@@ -8,8 +8,8 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Checkbox, Chip, Disclosure, EmptyState, IconButton, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
-import { History as HistoryIcon, RotateCcw, X } from 'lucide-react';
+import { Checkbox, Chip, CloseButton, Disclosure, EmptyState, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
+import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
@@ -252,7 +252,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
           { key: 'meaning', label: t('meaning') }, { key: 'history', label: t('history') }, ...(conversation ? [{ key: 'conversation', label: t('conversation') }] : []),
         ]} />
       </div>
-      <IconButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-0 size-[var(--overlay-close-size)]" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose}><X size={ICON_SIZE.lg} /></IconButton>
+      <CloseButton ref={closeRef} data-testid="analysis-workbench-close" className="absolute right-0 top-1" label={t(tab === 'conversation' ? 'closeConversation' : 'close')} onClick={onClose} />
     </header>
     {error ? <div data-testid="analysis-workbench-error" className="flex flex-col gap-1">
       <InlineAlert>{error.sentence}</InlineAlert>

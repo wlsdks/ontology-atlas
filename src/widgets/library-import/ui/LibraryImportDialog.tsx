@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, ExternalLink, X } from 'lucide-react';
+import { Check, ExternalLink } from 'lucide-react';
 
-import { Button, Chip, Dialog, IconButton, ServiceMark, resolveServiceMark } from '@/shared/ui';
+import { Button, Chip, CloseButton, Dialog, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Input } from '@/shared/ui/input';
@@ -177,16 +177,12 @@ export function LibraryImportDialog({
         >
           {t('title')}
         </h2>
-        <IconButton
+        <CloseButton
           label={t('close')}
-          size="sm"
-          tone="muted"
           data-testid={`${testIdPrefix}-close`}
-          className="-mr-1 -mt-1 shrink-0"
+          className="-mr-2 -mt-1 shrink-0"
           onClick={close}
-        >
-          <X size={ICON_SIZE.lg} aria-hidden />
-        </IconButton>
+        />
       </div>
 
       {step === 'pick' ? (
