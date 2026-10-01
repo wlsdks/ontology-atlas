@@ -583,15 +583,6 @@
     /* Press — the hovered node swells on an underdamped unit step (peak ≈ 1.31 of the rest swell at ζ=0.35, measured on the sample vault: rest 28.1 px, peak 34.7, settled 34.2) instead of the critical hover ramp, so a hover reads as a press that gives. Reduced motion keeps the ramp. The swell crosses its own rest value at ω_d·t = π/2 → 105 ms, inside `--motion-fast`; what follows is the follow-through, which blocks no input (design council, 2026-09-08). */
     --map-press-angfreq: 16;
     --map-press-zeta: 0.35;
-    --map-light-speed: 1100;
-    --map-light-hop-min-ms: 180;
-    --map-light-hop-max-ms: 420;
-    --map-light-path-max-ms: 1200;
-    --map-light-tail: 0.35;
-    --map-light-core-px: 1.6;
-    --map-light-halo-px: 6;
-    --map-light-intensity: 0.9;
-    --map-light-bloom-tau: 0.28;
 
     /* 2.5 Safe area (fixed chrome inset — px, consumed as numbers by canvas 2D)
 Left ReaderLens analysis panel + right popover rail + top utility lane +

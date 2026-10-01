@@ -1,1 +1,0 @@
-{ "gate": "oversize-files.app", "raise": 1, "why": "The signature motion plan puts the nine light tokens beside the map's other motion tokens in app/styles/base-map-tokens.css, which takes that file from 792 to 801 lines; splitting the map token file by concern is its own structural change, not part of the light layer." }

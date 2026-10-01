@@ -542,7 +542,7 @@ Reference anchors for this bar:
 
 ## Design tokens
 
-Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, and `--map-*` in `app/styles/base-map-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
+Defined via Tailwind 4's CSS-based `@theme`. The `@theme` tokens live in `app/styles/tokens.css`, `:root` alpha values in `app/styles/base-root-alpha.css`, `--map-*` in `app/styles/base-map-tokens.css`, and the light layer's `--map-light-*` in `app/styles/map-light-tokens.css`; `app/globals.css` is only the entry that imports the `app/styles/*.css` parts in order. Gates read the joined text through `readGlobalCss()` in `scripts/lib/global-css.mjs`.
 
 ### Scale fixed contract (2026-07-24, owner confirmed — "fixed as is now")
 
@@ -2512,9 +2512,9 @@ Specified with the map's layout morph.
 ### Light tokens
 
 The map's WebGL2 light layer (`src/widgets/ontology-map/light/`) reads these
-through `tokens/read-map-tokens.ts`. Its ink is `--map-indigo-bright`; it adds
-no hue. It draws light only, in Flat and Galaxy, for an event, and nothing under
-reduced motion.
+from `app/styles/map-light-tokens.css` through `tokens/read-map-tokens.ts`. Its
+ink is `--map-indigo-bright`; it adds no hue. It draws light only, in Flat and
+Galaxy, for an event, and nothing under reduced motion.
 
 | Token | Value | Meaning |
 |---|---|---|
