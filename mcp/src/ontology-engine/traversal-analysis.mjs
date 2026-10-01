@@ -16,7 +16,7 @@ export function createTraversalAnalysis({
   nodes,
   edges,
   nodeBySlug,
-  sourceDocBySlug,
+  sourceDocFor,
   resolve,
   path,
   pathNodes,
@@ -518,7 +518,7 @@ export function createTraversalAnalysis({
     const depth = normalizeDepth(options.depth, 1);
     const slice = subgraph(focus, { ...options, direction, depth });
     const rows = slice.nodes.map((row) => {
-      const sourceDoc = sourceDocBySlug.get(row.slug);
+      const sourceDoc = sourceDocFor(row.slug);
       return {
         ...row,
         node: summarizeNode(row.node),

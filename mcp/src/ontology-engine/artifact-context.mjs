@@ -19,16 +19,19 @@ function deepFreeze(value) {
 }
 
 export function createArtifactContext(artifact, options = {}) {
-  const sourceDocBySlug = new Map(
-    (Array.isArray(options.sourceDocs) ? options.sourceDocs : []).map((doc) => [doc.slug, doc]),
-  );
+  const sourceDocs = Array.isArray(options.sourceDocs) ? options.sourceDocs : [];
+  let sourceDocBySlug;
+  const sourceDocFor = (slug) => {
+    sourceDocBySlug ??= new Map(sourceDocs.map((doc) => [doc.slug, doc]));
+    return sourceDocBySlug.get(slug);
+  };
   const shared = sharedArtifacts.has(artifact);
   let indexes = shared ? indexesByArtifact.get(artifact) : undefined;
   if (!indexes) {
     indexes = buildArtifactIndexes(artifact, shared);
     if (shared) indexesByArtifact.set(artifact, indexes);
   }
-  return { artifact, ...indexes, sourceDocBySlug };
+  return { artifact, ...indexes, sourceDocFor };
 }
 
 function buildArtifactIndexes(artifact, shared) {

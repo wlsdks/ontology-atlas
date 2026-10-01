@@ -29,7 +29,7 @@ export function createMaintenanceQueries({
   artifact,
   nodes,
   nodeBySlug,
-  sourceDocBySlug,
+  sourceDocFor,
   nodeEligibilityFindings,
   staleSummaries,
   maintenancePhases,
@@ -55,7 +55,7 @@ export function createMaintenanceQueries({
   function meaningGapCandidates(limit) {
     const rows = [];
     for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
-      const doc = sourceDocBySlug.get(node.slug);
+      const doc = sourceDocFor(node.slug);
       if (!doc || typeof doc.body !== 'string') continue;
       const input = { kind: node.kind, slug: node.slug, title: node.title, body: doc.body };
       for (const finding of bodyMeaningFindings(input)) {

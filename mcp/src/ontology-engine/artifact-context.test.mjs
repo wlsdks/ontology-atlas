@@ -47,3 +47,25 @@ it('preserves sorted duplicates and protects shared alias lists from caller muta
   assert.deepEqual(createArtifactContext(artifact).aliasesFor('__proto__'), ['a', 'a', 'z']);
   assert.deepEqual(context.aliasesFor('missing'), []);
 });
+
+it('defers source-document indexing until a source-dependent query needs it', () => {
+  let reads = 0;
+  const sourceDocs = [{ get slug() { reads += 1; return 'a'; }, body: 'Current body.' }];
+  const context = createArtifactContext({ nodes: [], edges: [] }, { sourceDocs });
+  assert.equal(reads, 0);
+  assert.equal(context.sourceDocFor('a').body, 'Current body.');
+  assert.equal(reads, 1);
+  assert.equal(context.sourceDocFor('a').body, 'Current body.');
+  assert.equal(reads, 1);
+});
+
+it('keeps source-document indexes local to each request and preserves last duplicate ownership', () => {
+  const artifact = { nodes: [], edges: [] };
+  const first = createArtifactContext(artifact, { sourceDocs: [
+    { slug: 'a', body: 'Earlier' }, { slug: 'a', body: 'Latest' },
+  ] });
+  assert.equal(first.sourceDocFor('a').body, 'Latest');
+  const second = createArtifactContext(artifact, { sourceDocs: [{ slug: 'a', body: 'Changed' }] });
+  assert.equal(second.sourceDocFor('a').body, 'Changed');
+  assert.equal(first.sourceDocFor('a').body, 'Latest');
+});

@@ -331,7 +331,7 @@ export function createOntologyEngine(artifact, options = {}) {
   const {
     nodes,
     edges,
-    sourceDocBySlug,
+    sourceDocFor,
     nodeBySlug,
     aliasToSlug,
     aliasesFor: indexedAliasesFor,
@@ -400,7 +400,7 @@ export function createOntologyEngine(artifact, options = {}) {
     nodes,
     edges,
     nodeBySlug,
-    sourceDocBySlug,
+    sourceDocFor,
     resolve,
     path,
     pathNodes,
@@ -458,7 +458,7 @@ export function createOntologyEngine(artifact, options = {}) {
     externalElementCandidates, danglingReferenceCandidates, unassignedNodeCandidates,
     emptyDomainCandidates, capabilityWithoutEvidenceCandidates, unearnedNodeCandidates,
   } = createScopeQueries({
-    cliPrefix, nodes, edges, nodeBySlug, sourceDocBySlug, outgoing, resolve, pathNodes,
+    cliPrefix, nodes, edges, nodeBySlug, sourceDocFor, outgoing, resolve, pathNodes,
     ontologyAtlasIgnorePatterns, relationTypeForKey: RELATION_TYPE_FOR_KEY,
     bodyIsStarterTemplate, compareEdges, containmentChildren, containmentParentsFor,
     containmentTraversalEdges, findNearMatchSlug, formatCompiledEdge, hasResolvedContainmentParent,
@@ -467,7 +467,7 @@ export function createOntologyEngine(artifact, options = {}) {
     topHubs, uniqueEdges,
   });
   const { maintenancePlan } = createMaintenanceQueries({
-    artifact, nodes, nodeBySlug, sourceDocBySlug, nodeEligibilityFindings, staleSummaries,
+    artifact, nodes, nodeBySlug, sourceDocFor, nodeEligibilityFindings, staleSummaries,
     maintenancePhases: MAINTENANCE_PHASES, maintenanceSeverities: MAINTENANCE_SEVERITIES,
     maintenanceKinds: MAINTENANCE_KINDS, capabilityWithoutEvidenceCandidates,
     compareMaintenanceActions, countBy, cycles, danglingReferenceCandidates, emptyDomainCandidates,
