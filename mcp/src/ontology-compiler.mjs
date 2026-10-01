@@ -170,9 +170,7 @@ export function compileOntology(loadedDocs, options = {}) {
       }
     }
   }
-  edges.sort((a, b) =>
-    `${a.from}:${a.via}:${a.to}:${a.ref}`.localeCompare(`${b.from}:${b.via}:${b.to}:${b.ref}`),
-  );
+  sortEdges(edges);
 
   const nodes = [...graphDocs]
     .map((doc) => {
@@ -371,6 +369,12 @@ function optionalBoolean(value, name) {
     throw new Error(`${name} must be a boolean`);
   }
   return value;
+}
+
+function sortEdges(edges) {
+  const ordered = edges.map(edge => ({ edge, key: `${edge.from}:${edge.via}:${edge.to}:${edge.ref}` }));
+  ordered.sort((a, b) => a.key.localeCompare(b.key));
+  for (let index = 0; index < ordered.length; index += 1) edges[index] = ordered[index].edge;
 }
 
 function countByGroup(nodes, key) {

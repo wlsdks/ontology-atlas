@@ -657,3 +657,28 @@ it('keeps diagnostics and graphHash stable when document enumeration order chang
     : row);
   assert.notEqual(compileOntology(changed).graphHash, first.graphHash);
 });
+
+describe('canonical relation ordering', () => {
+  it('preserves input order when Unicode relation keys collate equally', () => {
+    const docs = [
+      doc('elements/e\u0301', { kind: 'element', dependencies: ['missing-target'] }),
+      doc('elements/é', { kind: 'element', dependencies: ['missing-target'] }),
+    ];
+    for (const input of [docs, [...docs].reverse()]) {
+      const result = compileOntology(input);
+      assert.equal(result.edges.length, 2);
+      assert.deepEqual(result.edges.map(edge => edge.from), input.map(item => item.slug));
+    }
+  });
+  it('keeps paginated relation order consistent with the full locale-sorted result', () => {
+    const docs = ['z', 'A', 'a', '가', 'é', 'e\u0301'].map(name =>
+      doc(`elements/${name}`, { kind: 'element', dependencies: ['missing-b', 'missing-a'] }));
+    const full = compileOntology(docs, { includeIndexes: true });
+    const expected = [...full.edges].sort((a, b) =>
+      `${a.from}:${a.via}:${a.to}:${a.ref}`.localeCompare(`${b.from}:${b.via}:${b.to}:${b.ref}`));
+    assert.deepEqual(full.edges, expected);
+    const page = compileOntology(docs, { edgesOffset: 2, edgesLimit: 3 });
+    assert.deepEqual(page.edges, expected.slice(2, 5));
+    assert.equal(page.graphHash, full.graphHash);
+  });
+});
