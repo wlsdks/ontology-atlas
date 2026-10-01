@@ -1,5 +1,6 @@
 import { appendTauriAnalysisRecord, canAppendAnalysisRecords, readTauriAnalysisRecord } from '@/shared/lib/tauri-analysis-records';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { createNamePage } from './name-page.mjs';
 
 import {
   MAX_ANALYSIS_RECORD_BYTES,
@@ -43,13 +44,11 @@ export async function readAnalysisHistory(
   if (cursor !== null && !isAnalysisRecordFileName(cursor)) throw new Error('Invalid analysis history cursor.');
   const directory = await archiveDirectory(handle);
   if (!directory) return { records: [], problems: [], totalFiles: 0, scanned: 0, nextCursor: null };
-  const names: string[] = [];
+  const selection = createNamePage(limit, cursor);
   for await (const [name, entry] of (directory as DirectoryEntries).entries()) {
-    if (entry.kind === 'file' && isAnalysisRecordFileName(name)) names.push(name);
+    if (entry.kind === 'file' && isAnalysisRecordFileName(name)) selection.add(name);
   }
-  names.sort().reverse();
-  const remaining = cursor ? names.filter((name) => name < cursor) : names;
-  const page = remaining.slice(0, limit);
+  const { names: page, totalFiles, nextCursor } = selection.page();
   const records: AnalysisRecord[] = [];
   const problems: AnalysisHistoryPage['problems'] = [];
   const nativeRoot = getTauriVaultRootPath(handle);
@@ -74,7 +73,7 @@ export async function readAnalysisHistory(
       problems.push({ fileName, reason: error instanceof Error ? error.message : String(error) });
     }
   }
-  return { records, problems, totalFiles: names.length, scanned: page.length, nextCursor: remaining.length > page.length ? page.at(-1) ?? null : null };
+  return { records, problems, totalFiles, scanned: page.length, nextCursor };
 }
 
 export function analysisArchiveWritable(handle: FileSystemDirectoryHandle | null, writable: boolean): boolean {
