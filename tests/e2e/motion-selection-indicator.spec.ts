@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { SPRING, springEasing, springSettleMs } from "../../src/shared/motion/spring";
+
 const TABS = "/en/agents/?guides=off";
 
 async function installSampler(page: Page) {
@@ -56,11 +58,23 @@ async function switchAndSample(page: Page) {
 }
 
 test.describe("selection indicator", () => {
-  test("places without a layout shift, then slides between tabs on the base clock", async ({ page }) => {
+  test("places without a layout shift, then slides between tabs on the control spring", async ({ page }) => {
     await installSampler(page);
     await page.goto(TABS);
     const strip = page.getByRole("tablist").first();
     await expect(strip.locator("[data-selection-indicator]")).toHaveCount(1);
+
+    const timing = await strip.locator("[data-selection-indicator]").evaluate((el, easing) => {
+      const probe = document.createElement("div");
+      probe.style.transitionTimingFunction = easing;
+      document.body.append(probe);
+      const expected = getComputedStyle(probe).transitionTimingFunction;
+      probe.remove();
+      const style = getComputedStyle(el);
+      return { actual: style.transitionTimingFunction, expected, duration: style.transitionDuration };
+    }, springEasing(SPRING.control));
+    expect(timing.actual).toBe(timing.expected);
+    expect(timing.duration).toBe(`${springSettleMs(SPRING.control) / 1000}s`);
 
     const measured = await switchAndSample(page);
     test.info().annotations.push({ type: "indicator", description: JSON.stringify(measured) });

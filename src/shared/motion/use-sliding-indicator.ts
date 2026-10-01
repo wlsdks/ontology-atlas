@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useState, type CSSProperties } from "react";
 
+import { SPRING, springEasing, springSettleMs } from "./spring";
+
 type IndicatorShape = "underline-x" | "surface-x" | "surface-y";
 
 interface Box {
@@ -15,12 +17,21 @@ function sameBox(a: Box | null, b: Box | null): boolean {
   return !!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
 }
 
+const CONTROL_TIMING: CSSProperties = {
+  transitionDuration: `${springSettleMs(SPRING.control)}ms`,
+  transitionTimingFunction: springEasing(SPRING.control),
+};
+const FAST_TIMING: CSSProperties = {
+  transitionDuration: "var(--motion-fast)",
+  transitionTimingFunction: "var(--motion-ease)",
+};
+
 function styleFor(box: Box, shape: IndicatorShape, speed: "base" | "fast"): CSSProperties {
-  const duration = speed === "fast" ? { transitionDuration: "var(--motion-fast)" } : null;
+  const timing = speed === "fast" ? FAST_TIMING : CONTROL_TIMING;
   if (shape === "underline-x") {
-    return { ...duration, width: 1, transform: `translate(${box.x}px, ${box.y + box.h}px) scaleX(${box.w})` };
+    return { ...timing, width: 1, transform: `translate(${box.x}px, ${box.y + box.h}px) scaleX(${box.w})` };
   }
-  return { ...duration, width: box.w, height: box.h, transform: `translate(${box.x}px, ${box.y}px)` };
+  return { ...timing, width: box.w, height: box.h, transform: `translate(${box.x}px, ${box.y}px)` };
 }
 
 export function useSlidingIndicator(
