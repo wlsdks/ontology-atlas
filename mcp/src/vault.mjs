@@ -640,8 +640,7 @@ export function loadVaultDocs(rootPath) {
  */
 export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
   if (typeof badSlug !== 'string' || badSlug.length === 0) return [];
-  const docs = loadVaultDocs(rootPath);
-  const all = docs.map((d) => d.slug).filter((s) => s !== badSlug);
+  const all = walkMd(rootPath).map((filePath) => pathToSlug(rootPath, filePath)).filter((s) => s !== badSlug);
   const tail = badSlug.split('/').pop() || badSlug;
   const lowerTail = tail.toLowerCase();
   const lowerBad = badSlug.toLowerCase();
