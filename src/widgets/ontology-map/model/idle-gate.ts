@@ -39,6 +39,7 @@ export interface CanvasActivityFlags {
   /** A crossfade the person asked for; without it the ramp stutters or stops halfway. */
   galaxySettling: boolean;
   galaxyAtmosphereActive: boolean;
+  lightActive: boolean;
 }
 
 /**
@@ -108,7 +109,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.trailLensSettling ||
     flags.trailMotionActive ||
     flags.galaxySettling ||
-    flags.galaxyAtmosphereActive
+    flags.galaxyAtmosphereActive ||
+    flags.lightActive
   );
 }
 

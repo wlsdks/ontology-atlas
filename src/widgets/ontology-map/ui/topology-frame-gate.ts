@@ -89,6 +89,7 @@ interface Dependencies {
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   idleDebugEnabledRef: RefObject<boolean>;
   lastActiveCausesRef: RefObject<{ t: number; causes: string[]; } | null>;
+  lightActiveRef: RefObject<boolean>;
 }
 interface FrameResult {
   tokens: OntologyMapTokens;
@@ -165,6 +166,7 @@ export function createFrameGate({
   spotlightIdsRef,
   idleDebugEnabledRef,
   lastActiveCausesRef,
+  lightActiveRef,
 }: Dependencies) {
   const result = {} as FrameResult;
   return function runFrameGate(
@@ -461,6 +463,7 @@ export function createFrameGate({
         // only inside the frame body.
         spotlightSettling:
           Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
+        lightActive: lightActiveRef.current,
       };
       const active =
         isCanvasActive(idleFlags) ||

@@ -1,0 +1,1 @@
+{ "gate": "resident-context-bytes", "raise": 43, "why": "AGENTS.md names the one renderer and requires a decision for another; the map now carries a WebGL2 light layer that draws light only (decision 2026-10-01), so the renderer sentence must name it or the next agent reads the layer as an undeclared second renderer." }

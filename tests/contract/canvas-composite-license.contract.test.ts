@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -44,6 +45,15 @@ const LICENSED = {
 } as const;
 
 const GALAXY_ATMOSPHERE_FUNCTIONS = ["drawGalaxyNebula", "drawGalaxyMeteor"] as const;
+
+const PLUS_LIGHTER_HOME = "src/widgets/ontology-map/light/";
+
+function plusLighterUsers(): string[] {
+  return execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "src", "app"], { cwd: repoRoot, encoding: "utf8" })
+    .split("\n")
+    .filter((file) => /\.(ts|tsx|css)$/.test(file) && existsSync(join(repoRoot, file)))
+    .filter((file) => /plus-lighter/.test(readCode(file)));
+}
 
 function functionBody(source: string, name: string): string {
   const start = source.indexOf(`export function ${name}`);
@@ -97,6 +107,12 @@ describe("캔버스 합성 — 발광은 허가된 곳에서만", () => {
    * The gate therefore holds the *absence*, which is the condition the rule now rests on — if
    * the cross ever comes back to the star, "one cross per node" needs deciding again first.
    */
+  it("licenses plus-lighter only in the map's light layer, and the layer uses it", () => {
+    const users = plusLighterUsers();
+    expect(users.filter((file) => !file.startsWith(PLUS_LIGHTER_HOME))).toEqual([]);
+    expect(users.some((file) => file.startsWith(PLUS_LIGHTER_HOME))).toBe(true);
+  });
+
   it("걸어온 별은 십자를 달지 않는다 — 물러날 것이 없다", () => {
     const star = readCode("src/shared/lib/star-emission.ts");
     expect(

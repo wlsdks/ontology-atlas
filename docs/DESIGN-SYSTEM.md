@@ -2511,7 +2511,24 @@ Specified with the map's layout morph.
 
 ### Light tokens
 
-Specified with the map's light layer.
+The map's WebGL2 light layer (`src/widgets/ontology-map/light/`) reads these
+through `tokens/read-map-tokens.ts`. Its ink is `--map-indigo-bright`; it adds
+no hue. It draws light only, in Flat and Galaxy, for an event, and nothing under
+reduced motion.
+
+| Token | Value | Meaning |
+|---|---|---|
+| `--map-light-speed` | 1100 | screen px per second a light travels along its relation |
+| `--map-light-hop-min-ms` · `--map-light-hop-max-ms` | 180 · 420 | the clamp on one relation's travel |
+| `--map-light-path-max-ms` | 1200 | a whole path's travel; hops scale to fit |
+| `--map-light-tail` | 0.35 | the tail's length behind the head, as a share of the curve |
+| `--map-light-core-px` · `--map-light-halo-px` | 1.6 · 6 | the Gaussian core and halo across the line, CSS px |
+| `--map-light-intensity` | 0.9 | peak strength of a light and of a bloom |
+| `--map-light-bloom-tau` | 0.28 | the arrival bloom's decay time constant, seconds |
+
+A focus light rides the front of the relation's reveal, so it never runs ahead
+of the ink; a bloom peaks 60ms after its light arrives and decays on
+`--map-light-bloom-tau`.
 
 ### Glass
 

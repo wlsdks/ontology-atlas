@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
+import { webglAccelerated } from '@/shared/lib/webgl-probe';
 
 import type { AtlasHandle } from '../lib/hero-atlas-scene';
 import { echoFact } from '../lib/hero-echo';
@@ -28,43 +29,15 @@ const subscribePhone = (onChange: () => void): (() => void) => {
 };
 const readPhone = (): boolean => typeof matchMedia === 'function' && matchMedia(HERO_PHONE_MEDIA).matches;
 
-let acceleratedVerdict: boolean | null = null;
-
-/**
- * A software renderer starves the page (the headline typed 2.5× slower), so it gets the 2D
- * engine. `?hero=three` forces WebGL for the grid gate's measurement.
- */
-function webglAccelerated(): boolean {
+function heroWebgl(): boolean {
   try {
     if (new URLSearchParams(window.location.search).get('hero') === 'three') return true;
   } catch {
     return false;
   }
-  acceleratedVerdict ??= probeWebglAccelerated();
-  return acceleratedVerdict;
+  return webglAccelerated();
 }
 
-function probeWebglAccelerated(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl2') ?? c.getContext('webgl');
-    if (!gl) return false;
-    try {
-      const info = gl.getExtension('WEBGL_debug_renderer_info');
-      const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
-      return !/swiftshader|llvmpipe|softpipe|software/i.test(renderer);
-    } finally {
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
-    }
-  } catch {
-    return false;
-  }
-}
-
-/**
- * The three.js hero (`hero-atlas-scene.ts`), loaded on demand so the first paint pays nothing;
- * meanwhile and without WebGL, the 2D `HeroObject` draws the same graph.
- */
 export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: number; total: number }) {
   const t = useTranslations('download');
   const tKinds = useTranslations('kinds');
@@ -81,9 +54,8 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
 
   useEffect(() => {
     let cancelled = false;
-    // In a callback, off the effect body; a failed chunk load also falls back to 2D.
     Promise.resolve()
-      .then(() => (webglAccelerated() ? import('../lib/hero-atlas-scene') : Promise.reject(new Error('no webgl'))))
+      .then(() => (heroWebgl() ? import('../lib/hero-atlas-scene') : Promise.reject(new Error('no webgl'))))
       .then(
         () => {
           if (!cancelled) setMode('three');
@@ -176,7 +148,6 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
       data-hero-engine={mode === 'three' ? 'three' : 'pending'}
       className="gateway-hero-stage absolute inset-0 min-w-0 overflow-hidden"
     >
-      {/* The tree stands in a still pool of accent light, not on black. */}
       <div className={cn('gateway-hero-atlas-wash absolute inset-0', wide ? 'is-wide' : undefined)} />
       <div ref={hostRef} className="absolute inset-0" />
       <p
