@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MapLayoutMark, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
-import { SPRING, springSettleMs } from "@/shared/motion/spring";
+import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
 const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "galaxy", "strata", "coupling"];
@@ -116,7 +116,7 @@ describe("planLayoutMorph", () => {
   it("plans nothing for empty views and one travel for a single concept", () => {
     const empty = planLayoutMorph([], [], parents);
     expect(empty.ids).toEqual([]);
-    expect(empty.durationMs).toBe(springSettleMs(SPRING.canvas));
+    expect(empty.durationMs).toBe(springVisualMs(SPRING.canvas));
     expect(planLayoutMorph([mark("project:p", 0, 0)], [mark("project:p", 9, 9)], parents).ids).toEqual(["project:p"]);
   });
 
@@ -139,9 +139,9 @@ describe("planLayoutMorph", () => {
     expect(at(sampleLayoutMorph(plan, 120), "capability:x")).toMatchObject({ x: 5, y: 5 });
   });
 
-  it("ends the travel when the slowest, most delayed concept has settled", () => {
+  it("ends the travel when the slowest, most delayed concept has settled into its visual band", () => {
     const plan = planLayoutMorph([mark("domain:a", 0, 0)], [mark("domain:a", 600, 0)], parents);
-    expect(plan.durationMs).toBe(springSettleMs(SPRING.canvas));
+    expect(plan.durationMs).toBe(springVisualMs(SPRING.canvas));
   });
 
   it("decelerates into the target", () => {

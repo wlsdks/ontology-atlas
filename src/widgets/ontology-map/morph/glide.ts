@@ -1,4 +1,4 @@
-import { SPRING, springSettleMs } from "@/shared/motion/spring";
+import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { STAGGER } from "@/shared/motion/tokens";
 
 const ANCESTOR_WALK_DEPTH = 16;
@@ -6,10 +6,11 @@ const DISTANCE_CAP = 3;
 const POLAR_FLOOR_PX = 2;
 const WIDE_TURN = (150 * Math.PI) / 180;
 const VELOCITY_PROBE_MS = 2;
+const FOLLOW_SHARE = 0.5;
 const STAGGER_MS = STAGGER * 1000;
 const STIFFNESS = SPRING.canvas.stiffness;
 const ZETA = SPRING.canvas.dampingRatio;
-const SETTLE_MS_AT_UNIT_MASS = springSettleMs(SPRING.canvas);
+const VISUAL_MS_AT_UNIT_MASS = springVisualMs(SPRING.canvas);
 
 export interface GlideTracks {
   ids: readonly string[];
@@ -37,6 +38,8 @@ export interface Glide {
   r1: Float64Array;
   a0: Float64Array;
   turn: Float64Array;
+  follow: Float64Array;
+  bulge: Float64Array;
   vx: Float64Array;
   vy: Float64Array;
   durationMs: number;
@@ -139,16 +142,18 @@ export function planGlide(tracks: GlideTracks, options: GlideOptions): Glide {
     r1: new Float64Array(n),
     a0: new Float64Array(n),
     turn: new Float64Array(n),
+    follow: new Float64Array(n),
+    bulge: new Float64Array(n),
     vx: new Float64Array(n),
     vy: new Float64Array(n),
-    durationMs: n === 0 ? SETTLE_MS_AT_UNIT_MASS : 0,
+    durationMs: n === 0 ? VISUAL_MS_AT_UNIT_MASS : 0,
   };
   const turnsByParent = new Map<number, number[]>();
   for (let i = 0; i < n; i += 1) {
     const mass = Math.min(2, Math.max(1, 1 + finite(options.massOf?.(ids[i]!) ?? 0)));
     glide.delayMs[i] = Math.min(DISTANCE_CAP, distance[i]!) * STAGGER_MS;
     glide.omega[i] = Math.sqrt(STIFFNESS / mass);
-    glide.durationMs = Math.max(glide.durationMs, glide.delayMs[i]! + SETTLE_MS_AT_UNIT_MASS * Math.sqrt(mass));
+    glide.durationMs = Math.max(glide.durationMs, glide.delayMs[i]! + VISUAL_MS_AT_UNIT_MASS * Math.sqrt(mass));
     const carried = options.carried?.get(ids[i]!);
     glide.vx[i] = finite(carried?.vx ?? 0);
     glide.vy[i] = finite(carried?.vy ?? 0);
@@ -158,6 +163,11 @@ export function planGlide(tracks: GlideTracks, options: GlideOptions): Glide {
     const oy0 = y0[i]! - y0[p]!;
     const ox1 = x1[i]! - x1[p]!;
     const oy1 = y1[i]! - y1[p]!;
+    const offsetChange = Math.hypot(ox1 - ox0, oy1 - oy0);
+    const parentTravel = Math.hypot(x1[p]! - x0[p]!, y1[p]! - y0[p]!);
+    const ownTravel = Math.hypot(x1[i]! - x0[i]!, y1[i]! - y0[i]!);
+    glide.follow[i] = Math.max(0, 1 - offsetChange / (FOLLOW_SHARE * parentTravel + POLAR_FLOOR_PX));
+    glide.bulge[i] = offsetChange > 0 ? Math.min(1, ownTravel / offsetChange) : 0;
     const r0 = Math.hypot(ox0, oy0);
     const r1 = Math.hypot(ox1, oy1);
     if (!(Math.min(r0, r1) >= POLAR_FLOOR_PX)) continue;
@@ -183,8 +193,8 @@ export function planGlide(tracks: GlideTracks, options: GlideOptions): Glide {
     const at = order[i]!;
     const p = parent[at]!;
     if (p < 0) continue;
-    glide.vx[at] = glide.vx[at]! - glide.vx[p]!;
-    glide.vy[at] = glide.vy[at]! - glide.vy[p]!;
+    glide.vx[at] = glide.vx[at]! - glide.follow[at]! * glide.vx[p]!;
+    glide.vy[at] = glide.vy[at]! - glide.follow[at]! * glide.vy[p]!;
   }
   return glide;
 }
@@ -217,21 +227,21 @@ export function sampleGlide(glide: Glide, tracks: GlideTracks, atMs: number, fra
     const carry = springImpulse(omega, tSec);
     frame.p[i] = p;
     const parent = glide.parent[i]!;
-    let x: number;
-    let y: number;
-    if (parent < 0) {
-      x = x0[i]! + (x1[i]! - x0[i]!) * p;
-      y = y0[i]! + (y1[i]! - y0[i]!) * p;
-    } else if (glide.polar[i]) {
-      const r = glide.r0[i]! + (glide.r1[i]! - glide.r0[i]!) * p;
-      const a = glide.a0[i]! + glide.turn[i]! * p;
-      x = frame.x[parent]! + r * Math.cos(a);
-      y = frame.y[parent]! + r * Math.sin(a);
-    } else {
-      const ox0 = x0[i]! - x0[parent]!;
-      const oy0 = y0[i]! - y0[parent]!;
-      x = frame.x[parent]! + ox0 + (x1[i]! - x1[parent]! - ox0) * p;
-      y = frame.y[parent]! + oy0 + (y1[i]! - y1[parent]! - oy0) * p;
+    let x = x0[i]! + (x1[i]! - x0[i]!) * p;
+    let y = y0[i]! + (y1[i]! - y0[i]!) * p;
+    if (parent >= 0) {
+      const follow = glide.follow[i]!;
+      x += follow * (frame.x[parent]! - x0[parent]! - (x1[parent]! - x0[parent]!) * p);
+      y += follow * (frame.y[parent]! - y0[parent]! - (y1[parent]! - y0[parent]!) * p);
+      if (glide.polar[i]) {
+        const ox0 = x0[i]! - x0[parent]!;
+        const oy0 = y0[i]! - y0[parent]!;
+        const r = glide.r0[i]! + (glide.r1[i]! - glide.r0[i]!) * p;
+        const a = glide.a0[i]! + glide.turn[i]! * p;
+        const bulge = glide.bulge[i]!;
+        x += bulge * (r * Math.cos(a) - ox0 - (x1[i]! - x1[parent]! - ox0) * p);
+        y += bulge * (r * Math.sin(a) - oy0 - (y1[i]! - y1[parent]! - oy0) * p);
+      }
     }
     frame.x[i] = x + glide.vx[i]! * carry;
     frame.y[i] = y + glide.vy[i]! * carry;

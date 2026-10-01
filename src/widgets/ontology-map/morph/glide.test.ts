@@ -155,6 +155,52 @@ describe("planGlide", () => {
     }
   });
 
+  it("keeps a concept drawn at the same place in both views still while its container travels", () => {
+    const run = trace(
+      [
+        { id: "project:p", from: [700, 400], to: [700, 400] },
+        { id: "domain:a", from: [300, 400], to: [900, 400] },
+        { id: "capability:a1", from: [500, 300], to: [500, 300] },
+      ],
+      { parentOf: parents, anchorId: null },
+    );
+    const c = run.index("capability:a1");
+    expect(Math.max(...run.frames.map((f) => Math.hypot(f.x[c]! - 500, f.y[c]! - 300)))).toBeLessThanOrEqual(0.5);
+  });
+
+  it("keeps a still project still when a selection re-roots it under a travelling domain", () => {
+    const run = trace(
+      [
+        { id: "project:p", from: [700, 400], to: [700, 400] },
+        { id: "domain:a", from: [300, 400], to: [900, 400] },
+        { id: "capability:a1", from: [260, 380], to: [960, 420] },
+      ],
+      { parentOf: parents, anchorId: "capability:a1" },
+    );
+    const p = run.index("project:p");
+    expect(Math.max(...run.frames.map((f) => Math.hypot(f.x[p]! - 700, f.y[p]! - 400)))).toBeLessThanOrEqual(0.5);
+  });
+
+  it("bounds a child whose offset changes to its own straight path plus at most its turn's bulge", () => {
+    const run = trace(
+      [
+        { id: "domain:a", from: [0, 0], to: [400, 0] },
+        { id: "capability:a1", from: [60, 0], to: [400, 90] },
+      ],
+      { parentOf: parents, anchorId: "domain:a" },
+    );
+    const c = run.index("capability:a1");
+    const [ax, ay, bx, by] = [60, 0, 400, 90];
+    const len = Math.hypot(bx - ax, by - ay);
+    const offPath = Math.max(...run.frames.map((f) => Math.abs((f.x[c]! - ax) * (by - ay) - (f.y[c]! - ay) * (bx - ax)) / len));
+    expect(offPath).toBeLessThanOrEqual(Math.max(60, 90));
+    let travelled = 0;
+    for (let k = 1; k < run.frames.length; k += 1) {
+      travelled += Math.hypot(run.frames[k]!.x[c]! - run.frames[k - 1]!.x[c]!, run.frames[k]!.y[c]! - run.frames[k - 1]!.y[c]!);
+    }
+    expect(travelled / len).toBeLessThanOrEqual(1.6);
+  });
+
   it("guards against non-finite input", () => {
     const tracks = tracksOf([{ id: "domain:a", from: [0, 0], to: [10, 0] }]);
     const glide = planGlide(tracks, {

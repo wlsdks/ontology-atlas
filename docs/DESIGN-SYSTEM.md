@@ -2510,16 +2510,21 @@ The release film is rendered offline and never ships in the app bundle.
 A pick into or out of Territories or Hex moves each concept on
 `SPRING.canvas` (`src/widgets/ontology-map/morph/glide.ts`). The containment
 tree is re-rooted at the attended concept (the focus, else the project, else
-each other component's root one step later). A concept travels as its re-rooted
-parent's position plus a polar offset: the angle takes the shortest arc, and a
-turn past 150° follows its siblings' median sense; the radius is linear; under
-2 px the offset falls back to linear. Each concept's own motion starts
-min(3, distance) × `STAGGER` after the input. Mass is
+each other component's root one step later). A concept travels its own straight
+path, follows its re-rooted parent's lead only as far as its offset to that
+parent is unchanged, and adds the arc of a polar offset only as far as it moves
+itself: the angle takes the shortest arc, a turn past 150° follows its
+siblings' median sense, the radius is linear, and under 2 px the offset falls
+back to linear. A concept drawn at the same place in both views stays still.
+Each concept's own motion and its alpha and style start min(3, distance) ×
+`STAGGER` after the input. Mass is
 1 + `massForDegree(degree, --map-mass-heavy-degree)`, at most 2, so a hub is
 slower by √m with the same 0.63% overshoot. A pick in flight restarts from each
-concept's position and keeps its velocity. Alpha and style take `easeMotion`
-over `--motion-base`. The travel ends when the slowest concept settles
-(571 ms to 913 ms). Reduced motion crossfades on `--motion-fast`.
+concept's position on the same clock, with its velocity and its ghosts at full
+strength. Alpha and style take `easeMotion` over `--motion-base`; the arriving
+view crossfades in from the input. The travel ends when the slowest concept
+enters its 2% visual band (354 ms to 606 ms). Reduced motion crossfades on
+`--motion-fast`.
 
 ### Light tokens
 

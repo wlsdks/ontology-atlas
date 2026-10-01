@@ -171,7 +171,9 @@ routes: [/topology]
   from where the old view drew it to where the new one draws it on the canvas
   spring: the selected concept (else the project) moves first, the rest follow
   their containment parents 35 ms per step, and hubs travel slower; every concept
-  settles by 950 ms, and a second pick turns them around without losing speed.
+  lands within 2% of its place by 606 ms, a concept drawn at the same place in
+  both views stays still, and a second pick turns them around without losing
+  speed.
   A concept one view does not draw leaves into, or
   rises out of, its nearest drawn ancestor, and the arriving view takes over
   without replaying its own entrance. A press, a wheel, a key, a resize, a display

@@ -64,6 +64,7 @@ interface GhostGroup {
   to: GhostStyle;
   alphaFrom: number;
   alphaTo: number;
+  delayMs: number;
   members: readonly number[];
 }
 
@@ -169,7 +170,6 @@ export function planLayoutMorph(
     s1: new Float64Array(n),
     groups: [],
   };
-  const groups = new Map<string, { from: GhostStyle; to: GhostStyle; alphaFrom: number; alphaTo: number; members: number[] }>();
   tracks.forEach((track, i) => {
     plan.x0[i] = track.x0;
     plan.y0[i] = track.y0;
@@ -177,14 +177,18 @@ export function planLayoutMorph(
     plan.x1[i] = track.x1;
     plan.y1[i] = track.y1;
     plan.s1[i] = track.s1;
-    const alphaFrom = quantizeAlpha(track.alphaFrom);
-    const alphaTo = quantizeAlpha(track.alphaTo);
-    const key = [track.from.shape, track.from.fill, track.from.stroke, track.to.shape, track.to.fill, track.to.stroke, alphaFrom, alphaTo].join("|");
-    const group = groups.get(key);
-    if (group) group.members.push(i);
-    else groups.set(key, { from: track.from, to: track.to, alphaFrom, alphaTo, members: [i] });
   });
   const glide = planGlide(plan, { ...options, parentOf });
+  const groups = new Map<string, { from: GhostStyle; to: GhostStyle; alphaFrom: number; alphaTo: number; delayMs: number; members: number[] }>();
+  tracks.forEach((track, i) => {
+    const delayMs = glide.delayMs[i]!;
+    const alphaFrom = quantizeAlpha(track.alphaFrom);
+    const alphaTo = quantizeAlpha(track.alphaTo);
+    const key = [track.from.shape, track.from.fill, track.from.stroke, track.to.shape, track.to.fill, track.to.stroke, alphaFrom, alphaTo, delayMs].join("|");
+    const group = groups.get(key);
+    if (group) group.members.push(i);
+    else groups.set(key, { from: track.from, to: track.to, alphaFrom, alphaTo, delayMs, members: [i] });
+  });
   return { ...plan, groups: [...groups.values()], glide, durationMs: glide.durationMs };
 }
 
@@ -197,10 +201,10 @@ export function sampleLayoutMorphFrame(plan: LayoutMorphPlan, atMs: number, fram
 }
 
 export function sampleLayoutMorph(plan: LayoutMorphPlan, atMs: number): MapLayoutMark[] {
-  const e = layoutMorphEffect(atMs);
   const frame = sampleLayoutMorphFrame(plan, atMs);
   const marks: MapLayoutMark[] = [];
   for (const group of plan.groups) {
+    const e = layoutMorphEffect(atMs - group.delayMs);
     const style = e < 0.5 ? group.from : group.to;
     const alpha = group.alphaFrom + (group.alphaTo - group.alphaFrom) * e;
     if (alpha <= 0) continue;
