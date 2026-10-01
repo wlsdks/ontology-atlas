@@ -216,7 +216,9 @@
     "noteReading": "Reading the Git history. Until it is read, everything is unknown.",
     "noteAppOnly": "The app measures evidence from Git history. Here, everything is unknown.",
     "noteUnreadable": "The Git history could not be read, so everything is unknown.",
-    "noteNoPaths": "No concept names a code path, so everything is unknown."
+    "noteNoPaths": "No concept names a code path, so everything is unknown.",
+    "dependenciesHidden": "{count, plural, one {# dependency} other {# dependencies}} hidden",
+    "dependenciesHiddenHint": "Point at a domain to show its own."
   },
   "analysis": {
     "healthStale": "stale evidence",

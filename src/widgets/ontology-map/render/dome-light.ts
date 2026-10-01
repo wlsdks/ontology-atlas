@@ -24,6 +24,8 @@
  * Token-free by the `render/*` convention: every colour arrives as an `rgb` triple.
  */
 
+import type { StrataLodState } from "../model/strata-lod";
+
 export type Rgb = readonly [number, number, number];
 
 export type EvidenceLight = "current" | "stale" | "unknown";
@@ -81,6 +83,7 @@ export interface DomeLightFrame {
   sampleStage: ((litIds: ReadonlySet<string> | null) => StrataStageDraw) | null;
   /** Reduced motion: no particles. The light itself is still, so it stays. */
   reducedMotion: boolean;
+  lod: StrataLodState | null;
 }
 
 /**

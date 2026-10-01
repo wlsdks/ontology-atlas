@@ -13,6 +13,7 @@ import {
   type DomeViewKind
 } from "../model/dome-view";
 import { stepFocusRamp } from "../model/focus-state";
+import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../model/strata-lod";
 import { createStrataStage, sampleStrataStage } from "../model/strata-stage";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../render/dome-light";
 import {
@@ -37,7 +38,7 @@ import type { DustPoint } from "../render/starfield";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapProps } from "./OntologyMap";
 import { worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame, lastDrawnNodeCount } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "./topology-frame-draw";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
@@ -133,6 +134,9 @@ interface Dependencies {
   domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   /** Lit 3D — node id → evidence state from the product's one rule; null when nothing was measured. */
   domeEvidenceRef: RefObject<ReadonlyMap<string, EvidenceLight> | null>;
+  domeLodRef: RefObject<StrataLodState>;
+  onHiddenDependenciesChangeRef: RefObject<((count: number) => void) | undefined>;
+  hiddenDependenciesSentRef: RefObject<number>;
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
@@ -215,6 +219,9 @@ export function createPresentationFrameStage({
   domeTierNameWidthsRef,
   domeFitInsetsRef,
   domeEvidenceRef,
+  domeLodRef,
+  onHiddenDependenciesChangeRef,
+  hiddenDependenciesSentRef,
 }: Dependencies) {
   /*
    * Lit 3D (2026-09-25) — the stage buffers and parsed inks live for the stage's lifetime;
@@ -240,7 +247,37 @@ export function createPresentationFrameStage({
     litInkKey = key;
     return litInks;
   };
-  const domeLightFor = (tokens: OntologyMapTokens): DomeLightFrame | null => {
+  const stepDomeLod = (
+    dt: number,
+    tokens: OntologyMapTokens,
+    camera: CameraAxes,
+    width: number,
+    height: number,
+    world: TopologyWorld,
+    hoveredNodeId: string | null,
+  ): StrataLodState | null => {
+    const dome = domeRuntimeRef.current;
+    const state = domeLodRef.current;
+    if (dome === null || dome.rampClock <= 0) {
+      if (state.active || state.settling || state.primed) restStrataLod(state);
+      return null;
+    }
+    if (dome.model.arrangement !== "strata") {
+      return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs, domeEvidenceRef.current) ? state : null;
+    }
+    return stepStrataLod(state, {
+      runtime: dome,
+      world,
+      camera: { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height },
+      hoveredId: hoveredNodeId,
+      focusedId: colorFocusRef.current?.focusedNodeId ?? null,
+      pointer: bgPointerRef.current,
+      evidence: domeEvidenceRef.current,
+      dtMs: dt * 1000,
+      fadeMs: tokens.tipFadeMs,
+    });
+  };
+  const domeLightFor = (tokens: OntologyMapTokens, lod: StrataLodState | null): DomeLightFrame | null => {
     const dome = domeRuntimeRef.current;
     if (dome === null || dome.rampClock <= 0) return null;
     const inks = resolveLitInks(tokens);
@@ -252,6 +289,7 @@ export function createPresentationFrameStage({
         dome.model.arrangement === "strata"
           ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
           : null,
+      lod,
     };
   };
 
@@ -432,6 +470,8 @@ export function createPresentationFrameStage({
       }
     }
 
+    const domeLod = stepDomeLod(dt, tokens, camera, width, height, world, hoveredNodeId);
+
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, width, height);
@@ -556,7 +596,7 @@ export function createPresentationFrameStage({
         domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
           ? domeEdgeControlForFrame
           : null,
-      domeLight: domeLightFor(tokens),
+      domeLight: domeLightFor(tokens, domeLod),
       paintAnimatedBackground: animatedBgRef.current
         ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
         : null,
@@ -604,6 +644,11 @@ export function createPresentationFrameStage({
     if (painted !== drawnNodeCountRef.current) {
       drawnNodeCountRef.current = painted;
       onDrawnCountChangeRef.current?.(painted);
+    }
+    const hiddenDependencies = domeLod !== null && domeLod.active ? lastHiddenDependencies() : 0;
+    if (hiddenDependencies !== hiddenDependenciesSentRef.current) {
+      hiddenDependenciesSentRef.current = hiddenDependencies;
+      onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
     }
 
     /*

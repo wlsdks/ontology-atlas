@@ -245,6 +245,41 @@ routes: [/topology]
   that subtree's dependency edges. Pitch stays between 0.15 and 0.95 rad, so the
   floors are always seen from above. Reduced motion: no spin, no particles, the
   fly-to arrives at once. Gate: `tests/e2e/map-3d-lit-strata.spec.ts`.
+- **Strata at scale** (2026-10-01) — once a capability or element plane is too
+  dense to read as discs (median lane gap under 0.9 disc diameters, or more than
+  1,500 of its discs on screen), it crossfades to **dust**: one mark per concept
+  at its own place, and each domain's containment into that plane becomes **one
+  light sheet** down to its slice instead of a line per child. Every evidence
+  state stays in the dust with its own mark: a current concept is a dot in its
+  kind colour lifted toward white, a stale one an amber ring, and an unknown one
+  a dim ring in its kind colour. Over the lit floor a stale ring stands
+  4.7-6.7:1 from the floor and a ring's open centre 4.0-5.1:1 from a current
+  dot; an unknown ring is dim on purpose, 2.1-2.4:1 from the floor. At overview
+  density the marks merge into lanes that show only the proportions, and a
+  capability's amber sits close to the warning amber, so one concept's evidence
+  takes a hover or a zoom. The web measures no evidence, so all its dust is
+  unknown rings; a new Git walk in the app crossfades the marks over 120 ms. A
+  **dependency** with a dust end rides one counted chord per ordered pair of
+  domains, tapering to an arrowhead at the domain it depends on and wider for
+  more dependencies, drawn only for the pointed or focused domain. The legend
+  counts every dependency that is not drawn, as lines or chords, and says to
+  point at a domain to show its own. The concept nearest the pointer (within
+  6 px, else the sheet under it), a hovered domain, or the focused concept's
+  domain resolves that slice back to discs and lines. The pick is held while the
+  dome orbits, coasts or flies, read again once it rests, and released when the
+  pointer leaves the map, which wakes a sleeping map to fade the slice out. Zoom
+  resolves a plane once its lanes open past 0.9 disc diameters with fewer than
+  1,500 of its discs on screen; at 10,000 concepts the element plane reaches
+  only about 0.45 of the disc level at the closest zoom. Every change of level
+  is a 120 ms opacity crossfade that advances at most one 60 Hz frame per drawn
+  frame, the same under reduced motion. Measured on the static export at
+  1512x982 @2x, 10,000 concepts went from 59 ms of script and 46,809 draw calls
+  per frame (15 fps) to 10.3 ms and 1,031 (91 fps idle, 89 fps orbiting, 71 fps
+  pointing). With 8,422 dependencies, three in four inside a domain, and
+  evidence 85% stale, it takes 7.7 ms and 1,086 calls (119, 116 and 73 fps). The
+  sample vault and anything below the threshold draw pixel-identically. Model:
+  `src/widgets/ontology-map/model/strata-lod.ts`; gate:
+  `tests/e2e/map-3d-strata-lod.spec.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic
   relation communities as a layout aid, with tighter local groups, lit cell bodies,
   and shallow connection arcs. Group proximity is inferred layout, not a new domain
