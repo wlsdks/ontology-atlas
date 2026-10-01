@@ -18,11 +18,7 @@ import {
 
 export { GRAPH_FRONTMATTER_KEYS } from './concept-evidence-pack';
 
-/**
- * Normalized tool call to execution. A model's write never reaches disk: the executor gets only
- * a `VaultReadPort` and returns writes as `blocked-write`. Results over the cap are truncated so
- * BYOK cost cannot grow quietly.
- */
+/** Reads the vault through a read-only port; write tools return proposal intents. */
 
 export interface ToolExecution {
   /** The result string carried into the next round trip. */
@@ -628,22 +624,30 @@ function breadthFirstPath(
   maxHops: number,
 ): string[] | null {
   if (from === to) return [from];
+  // O(V + E) time and space: append adjacency, keep predecessors, dequeue by index.
   const adjacency = new Map<string, string[]>();
   for (const edge of edges) {
-    adjacency.set(edge.from, [...(adjacency.get(edge.from) ?? []), edge.to]);
-    adjacency.set(edge.to, [...(adjacency.get(edge.to) ?? []), edge.from]);
+    const outgoing = adjacency.get(edge.from) ?? [];
+    outgoing.push(edge.to);
+    adjacency.set(edge.from, outgoing);
+    const incoming = adjacency.get(edge.to) ?? [];
+    incoming.push(edge.from);
+    adjacency.set(edge.to, incoming);
   }
-  const queue: Array<{ id: string; path: string[] }> = [{ id: from, path: [from] }];
-  const seen = new Set([from]);
-  while (queue.length > 0) {
-    const current = queue.shift() as { id: string; path: string[] };
-    if (current.path.length > maxHops) continue;
+  const queue = [{ id: from, hops: 0 }];
+  const previous = new Map<string, string | null>([[from, null]]);
+  for (let head = 0; head < queue.length; head += 1) {
+    const current = queue[head];
+    if (current.hops + 1 > maxHops) continue;
     for (const next of adjacency.get(current.id) ?? []) {
-      if (seen.has(next)) continue;
-      const path = [...current.path, next];
-      if (next === to) return path;
-      seen.add(next);
-      queue.push({ id: next, path });
+      if (previous.has(next)) continue;
+      previous.set(next, current.id);
+      if (next === to) {
+        const path: string[] = [];
+        for (let id: string | null = to; id !== null; id = previous.get(id) ?? null) path.push(id);
+        return path.reverse();
+      }
+      queue.push({ id: next, hops: current.hops + 1 });
     }
   }
   return null;
