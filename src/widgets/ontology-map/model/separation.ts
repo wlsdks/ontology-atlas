@@ -71,6 +71,7 @@ export function relaxNodeSeparation(nodes: SeparationNode[], options: Separation
     const minDist = (a.r + b.r) * ratio;
     let dx = b.x - a.x;
     let dy = b.y - a.y;
+    if (Math.abs(dx) >= minDist || Math.abs(dy) >= minDist) return false;
     let dist = Math.hypot(dx, dy);
     if (dist >= minDist) return false;
     if (dist < 1e-6) {

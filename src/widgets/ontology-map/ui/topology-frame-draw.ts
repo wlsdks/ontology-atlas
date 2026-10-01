@@ -10,7 +10,7 @@ import { collectDomeAncestry, collectDomeSubtree, domeAncestryEdgeKey } from "..
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
 import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
-import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState, egoRestSink } from "../model/focus-state";
+import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState, egoRestSink } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
@@ -121,6 +121,7 @@ import {
 import { drawPulses, edgePairMeta, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { worldToScreen } from "./topology-camera-math";
+import { indexedPulseEdges, rankedDiscChildren, rankedEgoNeighbors } from "./frame-cache/structure";
 
 /**
  * Cull slack. Edges: the control hull already bounds the curve, so this only
@@ -2609,14 +2610,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // `pulses` is empty and nothing draws. The curve projects live edge coordinates,
   // so it follows dragging and a settling graph.
   if (pulses.length > 0) {
-    const pairKey = (sourceId: string, targetId: string): string => `${sourceId} ${targetId}`;
-    const edgeByPair = new Map(world.edges.map((edge): [string, typeof edge] => [pairKey(edge.sourceId, edge.targetId), edge]));
+    const edgeByPair = indexedPulseEdges(world);
     drawPulses(
       ctx,
       pulses,
       now,
       (pulse) => {
-        const edge = edgeByPair.get(pairKey(pulse.sourceId, pulse.targetId));
+        const edge = edgeByPair.get(`${pulse.sourceId} ${pulse.targetId}`);
         if (!edge) return null;
         const points = projectEdgePoints(edge);
         return { a: points.a, control: points.control, b: points.b };
@@ -3774,23 +3774,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const expandedDiscChildIds = new Set<string>();
   const discLabelEligibleIds = (() => {
     if (!applyLabelTopK) return new Set<string>();
-    const rankedByDisc: string[][] = [];
+    const rankedByDisc: (readonly string[])[] = [];
     for (const chip of clusterChips) {
       if (!chip.expanded) continue;
       const childIds = world.childrenByParent.get(chip.parentId) ?? [];
       for (const id of childIds) expandedDiscChildIds.add(id);
-      rankedByDisc.push(
-        rankEgoNeighborsByDOI(
-          childIds.map((id) => ({
-            id,
-            kind: world.nodeById.get(id)?.kind ?? "element",
-            degree: world.neighborMap.get(id)?.size ?? 0,
-            // Derived from `childrenByParent`, so every relation is `contains` —
-            // uniform weight, order unchanged.
-            relationType: "contains",
-          })),
-        ),
-      );
+      rankedByDisc.push(rankedDiscChildren(world, chip.parentId));
     }
     // The budget comes from the preference (expand → label attempts); the constant
     // is only its default.
@@ -3809,15 +3798,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const egoNeighborLabelEligibleIds: ReadonlySet<string> | null =
     applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > expand.labelAttempts
       ? selectDiscLabelEligible(
-          [
-            rankEgoNeighborsByDOI(
-              [...neighborsOfFocused].map((id) => ({
-                id,
-                kind: world.nodeById.get(id)?.kind ?? "element",
-                degree: world.neighborMap.get(id)?.size ?? 0,
-              })),
-            ),
-          ],
+          [rankedEgoNeighbors(world, neighborsOfFocused)],
           expand.labelAttempts,
         )
       : null;

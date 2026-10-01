@@ -109,7 +109,7 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
   const issuesBySlugForCount = new Map();
   for (const doc of docs) {
     if (!doc.raw) continue;
-    const report = validateVaultDocument(doc.raw);
+    const report = validateVaultDocument(doc.raw, { parsed: doc });
     if (report.issues.length > 0) issuesBySlugForCount.set(doc.slug, [...report.issues]);
   }
   for (const [slug, issues] of groupDanglingIssuesBySlug(docs, undefined, false)) {

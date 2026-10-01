@@ -14,6 +14,7 @@ import { parseWikiLog, type WikiLogEntry } from "../lib/wiki-log";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/wiki-report.mjs";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
+import { useStampedCache } from "./use-stamped-cache";
 
 /**
  * The library for one open folder. Source hashes and wiki page bytes cost a read, so both are
@@ -87,24 +88,23 @@ export function useLibraryModel({
   /** False for a read-only sample or while loading; an undrawn section must not pay for its model (`.claude/rules/architecture.md`). */
   enabled: boolean;
 }): LibraryUiModel {
-  /** Keyed by `path@mtime`, so a moved mtime simply stops matching instead of needing pruning. */
-  const [stampedHashes, setStampedHashes] = useState<Map<string, string>>(() => new Map());
-  /**
-   * Only completed reads are cached, or a cancelled effect blocks its successor's verdict. The
-   * key includes the folder identity so another vault's page cannot leak in.
-   */
-  const [rawByStamp, setRawByStamp] = useState<Map<string, string>>(() => new Map());
+  const sourceStamps = useMemo(
+    () => (enabled ? sources ?? EMPTY_SOURCES : EMPTY_SOURCES)
+      .map((source) => `${vaultScope}\u0000${source.path}@${source.mtime}`),
+    [enabled, sources, vaultScope],
+  );
+  const { values: stampedHashes, publish: cacheHashes } = useStampedCache(sourceStamps);
   const [logEntries, setLogEntries] = useState<WikiLogEntry[]>([]);
   const logStamp = useRef<string | null>(null);
 
   const hashes = useMemo(() => {
     const out = new Map<string, string>();
     for (const source of sources ?? []) {
-      const hash = stampedHashes.get(`${source.path}@${source.mtime}`);
+      const hash = stampedHashes.get(`${vaultScope}\u0000${source.path}@${source.mtime}`);
       if (hash) out.set(source.path, hash);
     }
     return out;
-  }, [sources, stampedHashes]);
+  }, [sources, stampedHashes, vaultScope]);
 
   const model = useMemo(
     () =>
@@ -150,18 +150,16 @@ export function useLibraryModel({
       }
       if (cancelled || measured.size === 0) return;
       const stamps = new Map((sources ?? []).map((source) => [source.path, source.mtime] as const));
-      setStampedHashes((current) => {
-        const next = new Map(current);
-        for (const [path, hash] of measured) next.set(`${path}@${stamps.get(path) ?? 0}`, hash);
-        return next;
-      });
+      cacheHashes(new Map([...measured].map(([path, hash]) =>
+        [`${vaultScope}\u0000${path}@${stamps.get(path) ?? 0}`, hash],
+      )));
     })();
     return () => {
       cancelled = true;
     };
     // `wantedKey` stands for `wanted`: a new array with the same paths is the same work.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, sourceHandles, sources, vaultRootPath, wantedKey]);
+  }, [cacheHashes, enabled, sourceHandles, sources, vaultRootPath, vaultScope, wantedKey]);
 
   const logDoc = docs.find((doc) => doc.slug === "wiki/_log") ?? null;
   const logMtime = logDoc?.mtime ?? null;
@@ -206,6 +204,9 @@ export function useLibraryModel({
       }));
   }, [docs, vaultScope, wikiPages]);
 
+  const pageStamps = useMemo(() => pageInputs.map(({ stamp }) => stamp), [pageInputs]);
+  const { values: rawByStamp, publish: cacheBodies } = useStampedCache(pageStamps);
+
   useEffect(() => {
     if (!enabled) return;
     const unread = pageInputs.filter(({ stamp }) => !rawByStamp.has(stamp));
@@ -226,16 +227,12 @@ export function useLibraryModel({
         }
       }
       if (cancelled || read.size === 0) return;
-      setRawByStamp((current) => {
-        const next = new Map(current);
-        for (const [stamp, raw] of read) next.set(stamp, raw);
-        return next;
-      });
+      cacheBodies(read);
     })();
     return () => {
       cancelled = true;
     };
-  }, [enabled, fileHandles, pageInputs, rawByStamp]);
+  }, [cacheBodies, enabled, fileHandles, pageInputs, rawByStamp]);
 
   const { pageTexts, verdicts } = useMemo(() => {
     const pageTexts = new Map<string, string>();
