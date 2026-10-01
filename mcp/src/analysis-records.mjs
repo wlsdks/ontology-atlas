@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
-import { lstat, open, readdir, realpath } from 'node:fs/promises';
+import { lstat, open, opendir, realpath } from 'node:fs/promises';
 import path from 'node:path';
+import { createNamePage } from './analysis-history/name-page.mts';
 
 import {
   ANALYSIS_DIRECTORY,
@@ -39,7 +40,7 @@ async function readRecord(directory, fileName) {
   try {
     const opened = await file.stat();
     if (opened.ino !== before.ino || opened.dev !== before.dev || opened.size !== before.size) throw new Error('Analysis record changed while it was opened.');
-    const buffer = Buffer.alloc(MAX_ANALYSIS_RECORD_BYTES + 1);
+    const buffer = Buffer.alloc(Math.min(opened.size + 1, MAX_ANALYSIS_RECORD_BYTES + 1));
     let total = 0;
     while (total < buffer.length) {
       const { bytesRead } = await file.read(buffer, total, buffer.length - total, total);
@@ -84,15 +85,18 @@ function summary({ fileName, record }) {
   };
 }
 
-/** Cursor pages over scanned immutable files, not a guessed match total. */
 export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null, mode = null, project = null } = {}) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Analysis history limit must be between 1 and 100.');
   if (cursor !== null && !isAnalysisRecordFileName(cursor)) throw new Error('Invalid analysis history cursor.');
   if (mode !== null && !['meaning', 'architecture'].includes(mode)) throw new Error('Invalid analysis history mode.');
   const directory = await archiveDirectory(vaultRoot);
-  const names = directory ? (await readdir(directory)).filter(isAnalysisRecordFileName).sort().reverse() : [];
-  const candidates = cursor ? names.filter((name) => name < cursor) : names;
-  const page = candidates.slice(0, limit);
+  const selection = createNamePage(limit, cursor);
+  if (directory) {
+    for await (const entry of await opendir(directory)) {
+      if (isAnalysisRecordFileName(entry.name)) selection.add(entry.name);
+    }
+  }
+  const { names: page, totalFiles, nextCursor } = selection.page();
   const records = [];
   const problems = [];
   for (const fileName of page) {
@@ -106,16 +110,16 @@ export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null
       problems.push({ fileName, reason: error.message });
     }
   }
-  const hasMore = candidates.length > page.length;
+  const hasMore = nextCursor !== null;
   return {
     contract: 'analysisHistory:v1',
     operation: 'analysis_history',
     records,
     problems,
-    totalFiles: names.length,
+    totalFiles,
     scanned: page.length,
     returned: records.length,
-    pagination: { hasMore, nextCursor: hasMore ? page.at(-1) : null },
+    pagination: { hasMore, nextCursor },
     meaningAuthority: 'diagnostic-records-only',
   };
 }
@@ -123,7 +127,13 @@ export async function listAnalysisRecords(vaultRoot, { limit = 30, cursor = null
 export async function readAnalysisRecord(vaultRoot, recordId) {
   if (typeof recordId !== 'string' || !UUID.test(recordId)) throw new Error('Analysis recordId must be a UUIDv4.');
   const directory = await archiveDirectory(vaultRoot);
-  const names = directory ? (await readdir(directory)).filter((name) => isAnalysisRecordFileName(name) && name.endsWith(`-${recordId}.md`)) : [];
+  const names = [];
+  if (directory) {
+    for await (const entry of await opendir(directory)) {
+      if (isAnalysisRecordFileName(entry.name) && entry.name.endsWith(`-${recordId}.md`)) names.push(entry.name);
+      if (names.length > 1) break;
+    }
+  }
   if (names.length !== 1) throw new Error(names.length ? 'Analysis identity is ambiguous.' : 'Analysis record was not found.');
   const result = await readRecord(directory, names[0]);
   return { contract: 'analysisRecordRead:v1', operation: 'analysis_record', ...result, meaningAuthority: 'diagnostic-records-only' };

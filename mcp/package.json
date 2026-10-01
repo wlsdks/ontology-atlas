@@ -64,6 +64,7 @@
     "src/activity-log.mjs",
     "src/analysis-record.mts",
     "src/analysis-records.mjs",
+    "src/analysis-history/name-page.mts",
     "src/vault-sidecar.mjs",
     "src/analyze.mjs",
     "src/analyze/constants.mjs",
