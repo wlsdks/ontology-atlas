@@ -40,7 +40,7 @@ interface LightSignal {
 interface LightProbe {
   state: () => string;
   active: () => boolean;
-  plan: () => { kind: string; anchorId: string; signals: LightSignal[] }[];
+  plan: () => { kind: string; anchorId: string; createdMs: number; signals: LightSignal[] }[];
   record: (on: boolean, options?: { glue?: boolean }) => void;
   records: () => LightFrame[];
 }
@@ -52,8 +52,9 @@ declare global {
 }
 
 const FOCUS = "domain:order";
-const PATH_TARGET = "domain:fulfillment";
-const BLOOM_PEAK_MS = 80;
+const PATH_FROM = "element:address-record";
+const PATH_TARGET = "capability:refund-review";
+const BLOOM_RISE_MS = 60;
 const PATH_BUDGET_MS = 1200;
 
 async function openMap(page: Page, query = "") {
@@ -77,16 +78,29 @@ async function selectBySearch(page: Page, id: string) {
   await page.keyboard.press("Enter");
 }
 
-async function lightEvent(page: Page, kind: string): Promise<{ plan: LightSignal[]; frames: LightFrame[] }> {
+async function lightEvent(page: Page, kind: string): Promise<{ plan: LightSignal[]; createdMs: number; frames: LightFrame[] }> {
   await page.waitForFunction((k) => (window.__atlasMapLight?.plan() ?? []).some((plan) => plan.kind === k), kind, { polling: "raf" });
-  const plan = await page.evaluate((k) => window.__atlasMapLight!.plan().find((p) => p.kind === k)!.signals, kind);
+  const { plan, createdMs } = await page.evaluate((k) => {
+    const found = window.__atlasMapLight!.plan().find((p) => p.kind === k)!;
+    return { plan: found.signals, createdMs: found.createdMs };
+  }, kind);
   await page.waitForFunction(() => window.__atlasMapLight?.active() === false, undefined, { polling: "raf" });
   const frames = await page.evaluate(() => window.__atlasMapLight!.records());
-  return { plan, frames };
+  return { plan, createdMs, frames };
 }
 
 function headTrack(frames: LightFrame[], key: string) {
   return frames.flatMap((frame) => frame.heads.filter((head) => head.key === key).map((head) => ({ frame, head })));
+}
+
+function arrivalIndex(frames: LightFrame[], key: string) {
+  return frames.findIndex((frame) => frame.heads.some((head) => head.key === key && head.arrived));
+}
+
+function allowedArrivalIndex(frames: LightFrame[], from: number, signal: LightSignal) {
+  return frames.findIndex(
+    (frame, i) => i >= from && frame.now >= signal.startMs + signal.durationMs - 1e-6 && (!signal.revealBound || frame.reveal >= signal.arriveAt - 1e-9),
+  );
 }
 
 test("a keyboard focus runs one light along each relation, in its direction, riding the reveal", async ({ page }) => {
@@ -100,7 +114,11 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
   expect(plan.length, "the focus lit its relations").toBeGreaterThanOrEqual(3);
   const focusIndex = frames.findIndex((frame) => frame.focus === FOCUS);
   expect(focusIndex, "the recorder saw the focus frame").toBeGreaterThanOrEqual(0);
-  const interval = Math.max(...frames.slice(focusIndex, focusIndex + 30).map((frame, i, all) => (i === 0 ? 0 : frame.now - all[i - 1]!.now)));
+  const reached = new Map<string, number>();
+  for (const signal of plan) {
+    const index = arrivalIndex(frames, signal.key);
+    if (signal.blooms && index >= 0) reached.set(signal.toId, Math.min(reached.get(signal.toId) ?? Infinity, frames[index]!.now));
+  }
 
   for (const signal of plan) {
     const track = headTrack(frames, signal.key);
@@ -115,10 +133,8 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
         expect(head.t, `${signal.key} stays inside the drawn span`).toBeLessThanOrEqual(Math.max(frame.reveal, departure) + 1e-6);
       }
     }
-    const arrivedIndex = frames.findIndex((frame) => frame.heads.some((head) => head.key === signal.key && head.arrived));
-    const allowedIndex = frames.findIndex(
-      (frame, i) => i >= focusIndex && frame.now >= signal.startMs + signal.durationMs - 1e-6 && (!signal.revealBound || frame.reveal >= signal.arriveAt - 1e-9),
-    );
+    const arrivedIndex = arrivalIndex(frames, signal.key);
+    const allowedIndex = allowedArrivalIndex(frames, focusIndex, signal);
     expect(arrivedIndex, `${signal.key} arrives`).toBeGreaterThan(focusIndex);
     expect(arrivedIndex - allowedIndex, `${signal.key} arrives on the frame its clock and the reveal allow`).toBeLessThanOrEqual(1);
     test.info().annotations.push({
@@ -126,11 +142,12 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
       description: JSON.stringify({ key: signal.key, clampMs: Math.round(signal.durationMs), arrivedMs: Math.round(frames[arrivedIndex]!.now - frames[focusIndex]!.now) }),
     });
     if (signal.blooms) {
-      const bloom = frames.filter((frame) => frame.blooms.some((b) => b.id === `node:${signal.toId}`));
-      expect(bloom.length, `${signal.toId} blooms`).toBeGreaterThan(0);
-      const strength = (frame: LightFrame) => frame.blooms.find((b) => b.id === `node:${signal.toId}`)!.strength;
-      const peak = bloom.reduce((best, frame) => (strength(frame) > strength(best) ? frame : best));
-      expect(peak.now - bloom[0]!.now, `${signal.toId} peaks soon after the light reaches it`).toBeLessThanOrEqual(BLOOM_PEAK_MS + interval);
+      const id = `node:${signal.toId}`;
+      const strength = (frame: LightFrame) => frame.blooms.find((b) => b.id === id)?.strength ?? 0;
+      const peakIndex = frames.reduce((best, frame, i) => (strength(frame) > strength(frames[best]!) ? i : best), 0);
+      expect(strength(frames[peakIndex]!), `${signal.toId} blooms`).toBeGreaterThan(0);
+      const riseEnd = frames.findIndex((frame) => frame.now >= reached.get(signal.toId)! + BLOOM_RISE_MS - 1e-6);
+      expect([riseEnd - 1, riseEnd], `${signal.toId} peaks on the frame ${BLOOM_RISE_MS} ms after the light reaches it`).toContain(peakIndex);
     }
   }
 
@@ -150,25 +167,40 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
 
 test("a path lights hop by hop, in order, inside its budget", async ({ page }) => {
   test.setTimeout(120_000);
-  await openMap(page, `&mode=path&pathFrom=${FOCUS}`);
+  await openMap(page, `&mode=path&pathFrom=${PATH_FROM}`);
   await waitForLight(page);
   await page.evaluate(() => window.__atlasMapLight!.record(true));
   await selectBySearch(page, PATH_TARGET);
   await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
-  const { plan, frames } = await lightEvent(page, "path");
+  const { plan, createdMs, frames } = await lightEvent(page, "path");
 
-  expect(plan.length, "the path has hops").toBeGreaterThanOrEqual(1);
-  expect(plan[0]!.fromId).toBe(FOCUS);
+  expect(plan.length, "the path walks several hops").toBeGreaterThanOrEqual(3);
+  expect(plan[0]!.fromId).toBe(PATH_FROM);
   expect(plan.at(-1)!.toId).toBe(PATH_TARGET);
-  const starts = plan.map((signal) => frames.findIndex((frame) => frame.heads.some((head) => head.key === signal.key)));
-  for (let i = 1; i < starts.length; i += 1) expect(starts[i], "hops light in order").toBeGreaterThanOrEqual(starts[i - 1]!);
-  const first = frames[starts[0]!]!;
-  const lastArrival = frames.findIndex((frame) => frame.heads.some((head) => head.key === plan.at(-1)!.key && head.arrived));
-  const interval = frames[starts[0]! + 1]!.now - first.now;
-  expect(frames[lastArrival]!.now - first.now, "the path finishes inside its budget").toBeLessThanOrEqual(PATH_BUDGET_MS + 2 * interval);
-  for (const signal of plan) {
+  const last = plan.at(-1)!;
+  const scheduledMs = last.startMs + last.durationMs - createdMs;
+  expect(scheduledMs, "the path is scheduled inside its budget").toBeLessThanOrEqual(PATH_BUDGET_MS + 1e-6);
+  const planIndex = frames.findIndex((frame) => frame.now >= createdMs - 1e-6);
+  let previous = -1;
+  for (const [i, signal] of plan.entries()) {
+    if (i > 0) {
+      expect(signal.fromId, `${signal.key} leaves where the last hop arrived`).toBe(plan[i - 1]!.toId);
+      expect(signal.startMs, `${signal.key} starts when the last hop is due`).toBeGreaterThanOrEqual(plan[i - 1]!.startMs + plan[i - 1]!.durationMs - 1e-6);
+    }
+    const startIndex = frames.findIndex((frame) => frame.heads.some((head) => head.key === signal.key));
+    const dueIndex = frames.findIndex((frame, index) => index >= planIndex && frame.now >= signal.startMs - 1e-6);
+    expect([dueIndex, dueIndex + 1], `${signal.key} lights on the frame it is due`).toContain(startIndex);
+    expect(startIndex, "hops light in order").toBeGreaterThan(previous);
+    previous = startIndex;
+    const arrivedIndex = arrivalIndex(frames, signal.key);
+    expect(arrivedIndex, `${signal.key} arrives`).toBeGreaterThan(planIndex);
+    expect(arrivedIndex - allowedArrivalIndex(frames, planIndex, signal), `${signal.key} arrives on the frame its clock allows`).toBeLessThanOrEqual(1);
     expect(frames.some((frame) => frame.blooms.some((b) => b.id === `node:${signal.toId}`)), `${signal.toId} blooms`).toBe(true);
   }
+  test.info().annotations.push({
+    type: "path",
+    description: JSON.stringify({ hops: plan.length, scheduledMs: Math.round(scheduledMs), arrivedMs: Math.round(frames[arrivalIndex(frames, last.key)]!.now - createdMs) }),
+  });
 });
 
 test("a spent light lets the map sleep and draws nothing more", async ({ page }) => {
