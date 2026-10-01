@@ -720,3 +720,25 @@ describe('large graph summary aggregation', () => {
     assert.equal(compileOntology([]).maxMtime, 0);
   });
 });
+
+describe('literal graph dictionary keys', () => {
+  it('counts and indexes prototype-named domains and slugs as own JSON properties', () => {
+    const names = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'];
+    const docs = names.map(name => doc(name, { kind: 'domain', domain: name, dependencies: names }));
+    const plain = compileOntology(docs);
+    for (const name of names) assert.equal(plain.byDomain[name], 1);
+    const indexed = compileOntology(docs, { includeIndexes: true });
+    assert.equal(indexed.graphHash, plain.graphHash);
+    const delivered = JSON.parse(JSON.stringify(indexed));
+    for (const name of names) {
+      assert.deepEqual(delivered.indexes.byDomain[name], [name]);
+      assert.equal(delivered.indexes.slugToUid[name], docs.find(item => item.slug === name).frontmatter.uid);
+      assert.equal(delivered.indexes.out[name].length, names.length + 1);
+      assert.equal(delivered.indexes.in[name].length, names.length + 1);
+      assert.ok(Object.hasOwn(delivered.indexes.out, name));
+    }
+    assert.equal(Object.getPrototypeOf(indexed.indexes.out), Object.prototype);
+    assert.equal(Object.getPrototypeOf(indexed.indexes.in), Object.prototype);
+    assert.equal(Object.getPrototypeOf(indexed.indexes.slugToUid), Object.prototype);
+  });
+});

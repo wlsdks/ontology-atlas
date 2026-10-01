@@ -199,12 +199,12 @@ export function compileOntology(loadedDocs, options = {}) {
   if (buildIndexes) {
     for (const edge of edges) {
       edgeById[edge.id] = edge;
-      if (!out[edge.from]) out[edge.from] = [];
+      if (!Object.hasOwn(out, edge.from)) setDictionaryValue(out, edge.from, []);
       out[edge.from].push(edge.id);
       const fromNode = nodeBySlug.get(edge.from);
       if (fromNode) fromNode.outDegree += 1;
       if (!edge.resolved) continue;
-      if (!incoming[edge.to]) incoming[edge.to] = [];
+      if (!Object.hasOwn(incoming, edge.to)) setDictionaryValue(incoming, edge.to, []);
       incoming[edge.to].push(edge.id);
       const toNode = nodeBySlug.get(edge.to);
       if (toNode) toNode.inDegree += 1;
@@ -383,8 +383,16 @@ function sortEdges(edges) {
   for (let index = 0; index < ordered.length; index += 1) edges[index] = ordered[index].edge;
 }
 
+function setDictionaryValue(dictionary, key, value) {
+  if (key === '__proto__') {
+    Object.defineProperty(dictionary, key, { value, writable: true, enumerable: true, configurable: true });
+  } else {
+    dictionary[key] = value;
+  }
+}
+
 function countByGroup(nodes, key) {
-  const counts = {};
+  const counts = Object.create(null);
   for (const node of nodes) {
     const value = node[key];
     if (typeof value !== 'string' || !value.trim()) continue;
@@ -419,7 +427,7 @@ function sliceWithMeta(items, offset, limit) {
 }
 
 function groupNodes(nodes, key) {
-  const grouped = {};
+  const grouped = Object.create(null);
   for (const node of nodes) {
     const value = node[key];
     if (typeof value !== 'string' || !value.trim()) continue;
@@ -504,7 +512,7 @@ function validateGraphIdentity(graphDocs) {
       continue;
     }
     uidToSlug[uid] = slugs[0];
-    slugToUid[slugs[0]] = uid;
+    setDictionaryValue(slugToUid, slugs[0], uid);
   }
 
   for (const doc of graphDocs) {
