@@ -2,11 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
-import { X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import { Link } from "@/i18n/navigation";
-import { Button, buttonVariants, IconButton, RowButton } from "@/shared/ui";
+import { Button, buttonVariants, CloseButton, RowButton } from "@/shared/ui";
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from "@/shared/lib/cn";
 
@@ -117,15 +115,12 @@ export function OntologyMapEdgePanel({
         <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--map-panel-text-tertiary)]">
           {labels.kicker} · {typeLabel}
         </p>
-        <IconButton
+        <CloseButton
           label={labels.close}
-          size="sm"
           onClick={onClose}
           data-testid="map-edge-panel-close"
-          className="-mr-1 -mt-1 text-[color:var(--map-panel-text-tertiary)] hover:text-[color:var(--map-panel-text-primary)]"
-        >
-          <X size={ICON_SIZE.sm} aria-hidden />
-        </IconButton>
+          className="-mr-2 -mt-2 text-[color:var(--map-panel-text-tertiary)] hover:text-[color:var(--map-panel-text-primary)]"
+        />
       </div>
 
       {/* The recorded reason is the protagonist when there is one; the templated sentence is

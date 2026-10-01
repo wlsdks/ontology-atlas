@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { FolderOpen, History, X } from 'lucide-react';
+import { FolderOpen, History } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
@@ -13,7 +13,7 @@ import {
   SHEET_SETTLED,
   useExitLockout,
 } from '@/shared/motion';
-import { Button, controlClass } from '@/shared/ui';
+import { Button, CloseButton } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
@@ -102,20 +102,11 @@ export function RecentChangesNeedsVaultDialog({
                 </p>
                 <p className="mt-1.5 text-body-lg text-[color:var(--color-text-primary)]">{t('title')}</p>
               </div>
-              <button
-                type="button"
+              <CloseButton
                 onClick={onClose}
-                aria-label={t('close')}
+                label={t('close')}
                 data-testid="recent-changes-needs-vault-close"
-                className={controlClass({
-                  shape: 'icon',
-                  size: 'sm',
-                  tone: 'muted',
-                  className: 'hover:text-[color:var(--color-text-primary)]',
-                })}
-              >
-                <X size={ICON_SIZE.lg} aria-hidden />
-              </button>
+              />
             </header>
 
             <div className="px-5 py-4">

@@ -87,7 +87,7 @@ export function FullDetailA1ReachPanel({
             value={step}
             options={STEPS.map((candidate) => ({
               value: candidate,
-              label: String(candidate),
+              label: <span className="min-w-2 text-center tabular-nums">{candidate}</span>,
               testId: `fulldetail-reach-step-${candidate}`,
             }))}
             onChange={onChangeStep}

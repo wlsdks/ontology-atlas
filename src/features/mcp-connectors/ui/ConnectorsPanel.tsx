@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { MoreHorizontal, Plus, ShieldCheck, X } from 'lucide-react';
+import { MoreHorizontal, Plus, ShieldCheck } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
@@ -11,6 +11,7 @@ import {
   Button,
   Checkbox,
   Chip,
+  CloseButton,
   Dialog,
   IconButton,
   LiveAnnouncer,
@@ -878,16 +879,12 @@ function ConnectorDetailDialog({
                 {on ? t('on') : t('off')}
               </span>
             </div>
-            <IconButton
+            <CloseButton
               label={t('close')}
-              size="sm"
-              tone="muted"
               data-testid={`${testIdPrefix}-item-close`}
-              className="-mr-1 -mt-1 shrink-0"
+              className="-mr-2 -mt-1 shrink-0"
               onClick={onClose}
-            >
-              <X size={ICON_SIZE.lg} aria-hidden />
-            </IconButton>
+            />
           </div>
 
           <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5">
