@@ -193,7 +193,9 @@ fn an_unavailable_blob_is_not_a_deleted_file_and_does_not_fetch_implicitly() {
     assert!(oid.status.success());
     let oid = String::from_utf8(oid.stdout).unwrap();
     let oid = oid.trim();
-    repo.git(&["config", "remote.origin.url", donor.path()]);
+    assert_eq!(repo.root.parent(), donor.root.parent());
+    let local_remote = format!("../{}", donor.root.file_name().unwrap().to_str().unwrap());
+    repo.git(&["config", "remote.origin.url", &local_remote]);
     repo.git(&["config", "remote.origin.promisor", "true"]);
     repo.git(&["config", "extensions.partialClone", "origin"]);
     fs::remove_file(
