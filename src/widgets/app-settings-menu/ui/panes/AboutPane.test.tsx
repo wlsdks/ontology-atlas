@@ -92,7 +92,7 @@ describe('AboutPane', () => {
     const { container } = renderPane();
     const web = ABOUT_CATALOG.filter((entry) => entry.surface === 'both').map((entry) => entry.id);
     expect(drawnIds(container).sort()).toEqual([...web].sort());
-    expect(screen.getByTestId('app-settings-about-web-version')).toHaveTextContent('Website build');
+    expect(screen.getByTestId('app-settings-about-web-version')).toHaveTextContent('Website version');
   });
 
   it('draws every catalog entry in the app', () => {
