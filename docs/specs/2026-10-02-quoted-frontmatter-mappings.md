@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: agents
 date: 2026-10-02
-decisions: []
+decisions: [0fee5483-f09d-4000-a70c-1d5b91dd7236]
 ---
 
 # Quoted Frontmatter Mappings

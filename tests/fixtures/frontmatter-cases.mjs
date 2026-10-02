@@ -12,6 +12,71 @@
 
 export const CASES = [
   {
+    name: "retains malformed map member diagnostics beside valid neighbors",
+    input: '---\nlabels: { good: yes, missing, "bad\\q": lost }\nnotes:\n  good: kept\n  # comment: preserved\n  "bad\\q": lost\n  next: "001"\n---\n',
+    expected: {
+      frontmatter: { labels: { good: 'yes' }, notes: { good: 'kept', next: '001' } },
+      body: '',
+      diagnostics: [2, 2, 6].map((line) => ({ code: 'malformed-frontmatter-line', line, message: `Frontmatter line ${line} must use key: value syntax.` })),
+    },
+  },
+  {
+    name: "diagnoses unsupported quoted keys instead of guessing their names",
+    input: '---\n"bad\\q": lost\n"": lost\n"unterminated: lost\nsafe: kept\n---\n',
+    expected: {
+      frontmatter: { safe: 'kept' }, body: '',
+      diagnostics: [2, 3, 4].map((line) => ({ code: 'malformed-frontmatter-line', line, message: `Frontmatter line ${line} must use key: value syntax.` })),
+    },
+  },
+  {
+    name: "decodes quoted mapping keys and preserves nested string types",
+    input: `---\n"title": Example\nrelation_notes: {"elements/b":"a uses b", 'owner''s: key': "001", "flag": "false"}\nlabels:\n  'ko:key': "한글"\n  "empty": ""\n---\nbody`,
+    expected: {
+      frontmatter: {
+        title: "Example",
+        relation_notes: { "elements/b": "a uses b", "owner's: key": "001", flag: "false" },
+        labels: { "ko:key": "한글", empty: "" },
+      },
+      body: "body",
+    },
+  },
+  {
+    name: "distinguishes escaped backslashes from newline and tab escapes",
+    input: String.raw`---
+value: "C:\\new\\tools, actual\nline\tend"
+labels: {"key\\name": "001", 'tail\': "false", next: true}
+---
+`,
+    expected: {
+      frontmatter: {
+        value: "C:\\new\\tools, actual\nline\tend",
+        labels: { "key\\name": "001", "tail\\": "false", next: true },
+      },
+      body: "",
+    },
+  },
+  {
+    name: "rejects decoded unsafe mapping keys",
+    input: `---\n"__proto__": wrong\nlabels: {"constructor": wrong, safe: yes}\n---\n`,
+    expected: {
+      frontmatter: { labels: { safe: "yes" } },
+      body: "",
+      diagnostics: [
+        { code: "malformed-frontmatter-line", line: 2, message: "Frontmatter line 2 uses unsafe object key `__proto__`." },
+        { code: "malformed-frontmatter-line", line: 3, message: "Frontmatter line 3 uses unsafe object key `constructor`." },
+      ],
+    },
+  },
+  {
+    name: "validates decoded graph array keys",
+    input: `---\n"dependencies": wrong\n---\n`,
+    expected: {
+      frontmatter: { dependencies: "wrong" },
+      body: "",
+      diagnostics: [{ code: "malformed-frontmatter-line", line: 2, message: "Frontmatter line 2 graph relation `dependencies:` must be an array." }],
+    },
+  },
+  {
     name: "frontmatter 없는 본문",
     input: "hello\nworld",
     expected: { frontmatter: {}, body: "hello\nworld" },

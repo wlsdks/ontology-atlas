@@ -48,6 +48,42 @@ function assignParsedKey(target, key, value, diagnostics, line) {
   return true;
 }
 
+function readFrontmatterEntry(input) {
+  const text = input.trim();
+  let key;
+  let end;
+  if (text.startsWith('"') || text.startsWith("'")) {
+    const match = text.startsWith('"')
+      ? /^"((?:[^"\\]|\\["\\nt])*)"\s*:/.exec(text)
+      : /^'((?:[^']|'')*)'\s*:/.exec(text);
+    if (!match) return null;
+    key = text[0] === "'" ? match[1].replace(/''/g, "'") : decodeDoubleQuoted(match[1]);
+    end = match[0].length;
+  } else {
+    const colon = text.indexOf(':');
+    if (colon < 0 || text.startsWith('#')) return null;
+    key = text.slice(0, colon).trim();
+    end = colon + 1;
+  }
+  return key ? { key, value: text.slice(end).trim() } : null;
+}
+
+function readMappingMember(input, diagnostics, line) {
+  const entry = readFrontmatterEntry(input);
+  if (!entry && input.trim() && !input.trim().startsWith('#')) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line', line,
+      message: `Frontmatter line ${line} must use key: value syntax.`,
+    });
+  }
+  return entry;
+}
+
+function decodeDoubleQuoted(value) {
+  return value.replace(/\\(["\\nt])/g, (_, escaped) =>
+    escaped === 'n' ? '\n' : escaped === 't' ? '\t' : escaped);
+}
+
 export function parseFrontmatter(input) {
   // Newline and encoding normalisation — **on the read path only** (measured
   // 2026-07-28).
@@ -77,8 +113,9 @@ export function parseFrontmatter(input) {
   const lines = block.split("\n");
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
-    const idx = line.indexOf(":");
-    if (idx === -1) {
+    if (line.trim().startsWith(':')) continue;
+    const entry = readFrontmatterEntry(line);
+    if (!entry) {
       const trimmed = line.trim();
       if (/^\s+-\s+/.test(line)) {
         diagnostics.push({
@@ -95,9 +132,7 @@ export function parseFrontmatter(input) {
       }
       continue;
     }
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (!key) continue;
+    const { key, value } = entry;
     // **Check for a block scalar before judging the value.** The value of
     // `definition: |` is `"|"`, not an empty string, so putting this inside the
     // empty-value branch would make it unreachable.
@@ -129,11 +164,12 @@ export function parseFrontmatter(input) {
         const obj = {};
         let j = i + 1;
         while (j < lines.length) {
-          const m = lines[j].match(/^(\s+)([^\s:][^:]*):\s*(.*)$/);
-          if (!m) break;
-          const childKey = m[2].trim();
-          if (!childKey) break;
-          assignParsedKey(obj, childKey, parseScalar(m[3].trim()), diagnostics, j + 2);
+          if (!/^\s+/.test(lines[j]) || !lines[j].trim()) break;
+          const child = readMappingMember(lines[j], diagnostics, j + 2);
+          if (child) {
+            pushQuotedScalarDiagnostic(diagnostics, child.key, j + 2, child.value);
+            assignParsedKey(obj, child.key, parseScalar(child.value), diagnostics, j + 2);
+          }
           j += 1;
         }
         assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
@@ -156,13 +192,11 @@ export function parseFrontmatter(input) {
       const inner = value.slice(1, -1).trim();
       const obj = {};
       if (inner) {
-        for (const part of splitTopLevel(inner, ",")) {
-          const cIdx = part.indexOf(":");
-          if (cIdx === -1) continue;
-          const k = part.slice(0, cIdx).trim();
-          const v = part.slice(cIdx + 1).trim();
-          if (!k) continue;
-          assignParsedKey(obj, k, parseScalar(v), diagnostics, i + 2);
+        for (const part of splitTopLevel(inner, ',', true)) {
+          const member = readMappingMember(part, diagnostics, i + 2);
+          if (!member) continue;
+          pushQuotedScalarDiagnostic(diagnostics, member.key, i + 2, member.value);
+          assignParsedKey(obj, member.key, parseScalar(member.value), diagnostics, i + 2);
         }
       }
       assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
@@ -170,7 +204,7 @@ export function parseFrontmatter(input) {
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    const topLevelScalar = parseTopLevelScalar(value);
+    const topLevelScalar = parseScalar(value);
     assignParsedKey(frontmatter, key, topLevelScalar, diagnostics, i + 2);
     pushGraphArrayDiagnostic(diagnostics, key, i + 2, topLevelScalar);
   }
@@ -248,37 +282,18 @@ function peekIndentedKind(lines, start) {
   if (start >= lines.length) return null;
   const next = lines[start];
   if (/^\s*-\s+/.test(next)) return "list";
-  if (/^\s+[^\s:][^:]*:\s*\S?/.test(next)) return "object";
+  if (/^\s+\S/.test(next) && !next.trim().startsWith('#')) return 'object';
   return null;
 }
 
 function parseScalar(value) {
+  const trimmed = value.trim();
+  if ((trimmed[0] === '"' || trimmed[0] === "'") && trimmed.length >= 2 && trimmed.at(-1) === trimmed[0]) return unquote(value);
   const v = unquote(value);
   if (v === "true") return true;
   if (v === "false") return false;
   if (v !== "" && !Number.isNaN(Number(v))) return Number(v);
   return v;
-}
-
-/*
- * Top-level scalars are typed like nested ones (2026-09-01 review). The
- * serializer writes booleans and numbers unquoted, so reading them back as
- * strings inverted any consumer branching on the field after one round trip —
- * `draft: false` came back as the truthy string 'false', with the type
- * depending on nesting depth in the same file. A quoted scalar stays a string:
- * quoting is how an author forces text.
- */
-function parseTopLevelScalar(value) {
-  const trimmed = value.trim();
-  const quote = trimmed[0];
-  if (
-    (quote === '"' || quote === "'") &&
-    trimmed.length >= 2 &&
-    trimmed[trimmed.length - 1] === quote
-  ) {
-    return unquote(value);
-  }
-  return parseScalar(value);
 }
 
 function unquote(value) {
@@ -289,10 +304,8 @@ function unquote(value) {
   // rather than escape syntax, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
-    // Inside double quotes, `\n`/`\t` are newlines and tabs the serializer folded.
-    // Single quotes stay literal with no escapes, per YAML.
-    return quote === '"' ? inner.replace(/\\n/g, "\n").replace(/\\t/g, "\t") : inner;
+    const inner = trimmed.slice(1, -1);
+    return quote === '"' ? decodeDoubleQuoted(inner) : inner.replace(/\\(['\\])/g, '$1');
   }
   return value.replace(/^["']|["']$/g, "");
 }
@@ -302,35 +315,33 @@ function unquote(value) {
 // This used to split inline lists and objects on every comma, so a comma inside a
 // value split it and the tail of `labels: { ko: "map, search" }` silently vanished.
 // A separator inside quotes is data, not a separator.
-function splitTopLevel(input, separator) {
+function splitTopLevel(input, separator, mapping = false) {
   const parts = [];
-  let current = "";
+  let start = 0;
   let quote = null;
+  let key = mapping;
   for (let i = 0; i < input.length; i += 1) {
     const ch = input[i];
     if (quote) {
-      if (ch === "\\" && i + 1 < input.length) {
-        current += ch + input[i + 1];
+      if (ch === '\\' && !(key && quote === "'") && i + 1 < input.length) {
         i += 1;
         continue;
       }
-      if (ch === quote) quote = null;
-      current += ch;
+      if (ch === quote) {
+        if (key && quote === "'" && input[i + 1] === "'") i += 1;
+        else quote = null;
+      }
       continue;
     }
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      current += ch;
-      continue;
+    if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === ':' && mapping) key = false;
+    else if (ch === separator) {
+      parts.push(input.slice(start, i));
+      start = i + 1;
+      key = mapping;
     }
-    if (ch === separator) {
-      parts.push(current);
-      current = "";
-      continue;
-    }
-    current += ch;
   }
-  parts.push(current);
+  parts.push(input.slice(start));
   return parts;
 }
 

@@ -1,5 +1,6 @@
 import {
   normalizeVaultSource,
+  readFrontmatterEntry,
   readVaultSourceShape,
   restoreVaultSourceShape,
 } from '@/shared/lib/parse-frontmatter';
@@ -42,13 +43,13 @@ export function applyFrontmatterUpdates(
       continue;
     }
     swallowingBlock = false;
-    const idx = line.indexOf(':');
-    if (idx === -1) {
+    const entry = readFrontmatterEntry(line);
+    if (!entry) {
       nextLines.push(line);
       continue;
     }
-    const key = line.slice(0, idx).trim();
-    if (!(key in updates)) {
+    const { key } = entry;
+    if (!Object.hasOwn(updates, key)) {
       nextLines.push(line);
       continue;
     }
@@ -56,12 +57,12 @@ export function applyFrontmatterUpdates(
     swallowingBlock = true;
     const value = updates[key];
     if (value === null) continue; // delete
-    nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
+    nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   for (const [key, value] of Object.entries(updates)) {
     if (updatedKeys.has(key)) continue;
     if (value === null) continue;
-    nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
+    nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   // No keys left: omit the frontmatter block.
   if (nextLines.every((l) => l.trim() === '')) {
@@ -71,6 +72,10 @@ export function applyFrontmatterUpdates(
     `---\n${nextLines.join('\n')}\n---\n\n${body}`,
     shape,
   );
+}
+
+function serializeKey(key: string): string {
+  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(key) ? `"${escapeQuoted(key)}"` : key;
 }
 
 function serializeFrontmatterValue(
@@ -88,7 +93,7 @@ function serializeFrontmatterValue(
       if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
       else if (typeof val === 'number') serialized = String(val);
       else serialized = needsQuote(val) ? `"${escapeQuoted(val)}"` : val;
-      return `${k}: ${serialized}`;
+      return `${serializeKey(k)}: ${serialized}`;
     });
     return `{ ${entries.join(', ')} }`;
   }
