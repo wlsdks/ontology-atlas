@@ -647,10 +647,22 @@ partial artifact.
    one recursive block reader/writer. Import plans conflicts before writing;
    native or browser picker cancellation has no side effect.
 7. The installed shell and any web session with a mounted vault commit destination content only
-   after one local manifest is ready. LNB route changes mount against the current provider before
-   paint; a true folder switch holds a neutral body until the new manifest arrives, while a
-   same-vault reread keeps the existing facts. Picker, recent reopen, and cold restore all resolve a
-   project root containing Markdown under `atlas/` to that child before building.
+   after one local manifest is ready, except the map. While a folder is first read, the build
+   reads the project, then `domains/`, `capabilities/` and `elements/`, then the rest; in a
+   folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived to
+   the session's arrival store, at most once a second (each finished subfolder, and quarters of a
+   large one only among the first three publishes). The vault value carries only the count,
+   `partialTotal`, so a screen that keeps an arriving vault value keeps none of its documents, and
+   the store empties once the folder settles. The first part drops the previous folder's manifest
+   and handles, and every write is refused until the folder is loaded. Only the map opts in
+   (`useArrivingOntologyInsight`, `useArrivingVaultIdentityScope`): it draws documents, never a
+   relation-only node, and the INDEX counts the documents read. `useVaultOntology`,
+   `useDataSourceMode` and every other destination, check and count wait for the whole manifest,
+   which equals a build that publishes nothing. LNB route changes mount against the
+   current provider before paint; a true folder switch holds a neutral body until the new manifest
+   (on the map, its first part) arrives, while a same-vault reread keeps the existing facts and
+   publishes no part. Picker, recent reopen, and cold restore all resolve a project root containing
+   Markdown under `atlas/` to that child before building.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
@@ -665,7 +677,7 @@ filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed a
 
 This is what a vault-less web visitor sees before choosing a folder. The installed app never uses
 this fallback: its first run offers only local create/open paths and its workbench rail stays hidden
-until a local manifest exists.
+until a local manifest, or the first part of one, exists.
 
 ## Routes
 

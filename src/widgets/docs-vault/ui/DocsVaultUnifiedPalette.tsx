@@ -23,6 +23,7 @@ import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import type { DocsBodyIndex } from '../lib/body-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 // Canonical document shortcuts offered on zero results; they live in the repo, so they open as
@@ -439,9 +440,7 @@ export function DocsVaultUnifiedPalette({
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Mid-composition keystrokes belong to the IME; a Korean syllable's commit Enter must not run
-    // the active row.
-    if (e.nativeEvent.isComposing) return;
+    if (isImeComposing(e)) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (rows.length === 0) return;

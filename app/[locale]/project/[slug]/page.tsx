@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
+import { isAppLocale, LOCALE_META } from '@/i18n/locales';
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
@@ -113,7 +114,7 @@ export default async function Page({
   // CreativeWork structured data — lets Google's rich snippets recognize the project's name,
   // description, author, and keywords. CreativeWork is more general than SoftwareApplication (a
   // portfolio entry is not necessarily runnable software).
-  const inLanguage = locale === 'ko' ? 'ko-KR' : 'en-US';
+  const inLanguage = isAppLocale(locale) ? LOCALE_META[locale].intlTag : LOCALE_META.en.intlTag;
   const creativeWorkLd = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',

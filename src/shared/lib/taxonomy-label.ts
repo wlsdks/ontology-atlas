@@ -22,14 +22,15 @@ export interface LocalizedTaxonomyLabel {
   label: string;
   /** The English label; falls back to `label` when absent, since showing the original beats inventing a translation. */
   labelEn?: string;
+  labels?: Partial<Record<string, string>>;
 }
 
-/** English label when the screen locale is `en`, Korean otherwise. */
 export function pickTaxonomyLabel(
   entry: LocalizedTaxonomyLabel | undefined,
   locale: string,
 ): string | undefined {
   if (!entry) return undefined;
+  if (locale === "ko") return entry.label;
   if (locale === "en") return entry.labelEn ?? entry.label;
-  return entry.label;
+  return entry.labels?.[locale] ?? entry.labelEn ?? entry.label;
 }

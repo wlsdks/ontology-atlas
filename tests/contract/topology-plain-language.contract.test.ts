@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import koMessages from "../../messages/ko.json";
+import { column } from "../../scripts/lib/locale-vocabulary.mjs";
 
 const topology = koMessages.topology;
 
@@ -30,15 +31,9 @@ describe("topology Korean plain-language contract", () => {
       edgeTypesPlain: koMessages.edgeTypesPlain,
       fullDetailA1: koMessages.fullDetailA1,
     });
-    for (const internalTerm of [
-      "인계문",
-      "핸드오프",
-      "담는 것",
-      "속한 곳",
-      "기대는 곳",
-      "이것만 보기",
-      "전체 상세",
-    ]) {
+    const labelTerms = column("internalTerms", "ko").terms.filter((entry: { inLabels?: boolean }) => entry.inLabels);
+    expect(labelTerms.length, "the label denylist is empty").toBeGreaterThan(0);
+    for (const { term: internalTerm } of labelTerms) {
       expect(inspected).not.toContain(internalTerm);
     }
   });

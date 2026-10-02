@@ -2,13 +2,17 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { routing } from '@/i18n/routing';
 
 export const ROUTE_MEMORY_KEY = 'ontology-atlas:last-route';
 
-export function isRestorableRoute(value: string | null | undefined): value is string {
+export function isRestorableRoute(
+  value: string | null | undefined,
+  locales: readonly string[] = routing.locales,
+): value is string {
   if (!value) return false;
-  if (!value.startsWith('/en/') && !value.startsWith('/ko/')) return false;
-  if (value === '/en/' || value === '/ko/') return false;
+  const locale = locales.find((l) => value.startsWith(`/${l}/`));
+  if (!locale || value.length === locale.length + 2) return false;
   if (value.startsWith('//') || value.includes('://')) return false;
   if (/[\s"'<>\\]/.test(value)) return false;
   return true;

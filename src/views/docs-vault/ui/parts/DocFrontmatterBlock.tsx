@@ -16,6 +16,7 @@ import {
 } from "@/shared/lib/containment-keys";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { VaultConflictError, type AgentActivityStatus } from "@/entities/vault-session";
+import { LOCALE_NAME_KEY } from "@/i18n/locales";
 import { routing } from "@/i18n/routing";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
@@ -70,10 +71,15 @@ function graphFieldKeys(frontmatter: Record<string, unknown> | undefined): strin
   return [...GRAPH_KEYS.slice(0, titleAt), ...displayKeys, ...GRAPH_KEYS.slice(titleAt)];
 }
 
-/** Reader's locale first, the order the "create concept" form asks in. */
-function nameLocalesFor(current: string): string[] {
-  const all: readonly string[] = routing.locales;
-  return all.includes(current) ? [current, ...all.filter((code) => code !== current)] : [...all];
+export function nameLocalesFor(
+  current: string,
+  frontmatter: Record<string, unknown> | undefined,
+  locales: readonly string[] = routing.locales,
+): string[] {
+  const named = locales.filter((code) => frontmatter?.[`display_${code}`] !== undefined);
+  const companion = current === "en" ? "ko" : "en";
+  const ordered = [current, ...named, companion].filter((code) => locales.includes(code));
+  return [...new Set(ordered)];
 }
 
 /**
@@ -300,6 +306,10 @@ export function DocFrontmatterBlock({
   const tProvenance = useTranslations("editProvenance");
   const tLocale = useTranslations("locale");
   const locale = useLocale();
+  const localeNameOf = (code: string): string => {
+    const nameKey = (LOCALE_NAME_KEY as Record<string, string>)[code];
+    return nameKey && tLocale.has(nameKey) ? tLocale(nameKey) : code;
+  };
   const kindLabel = useOntologyKindLabel();
   const failureSentence = useFailureSentence();
   const [open, setOpen] = useState(false);
@@ -343,7 +353,7 @@ export function DocFrontmatterBlock({
   const currentKind = formatValue(doc.frontmatter?.kind);
   const currentDomain = formatValue(doc.frontmatter?.domain) ?? "";
   const currentTitle = formatValue(doc.frontmatter?.title) ?? doc.title;
-  const nameLocales = nameLocalesFor(locale);
+  const nameLocales = nameLocalesFor(locale, doc.frontmatter);
   const currentNames = Object.fromEntries(
     nameLocales.map((code) => [code, formatValue(doc.frontmatter?.[`display_${code}`]) ?? ""]),
   );
@@ -741,7 +751,7 @@ export function DocFrontmatterBlock({
             key={code}
             size="xs"
             label={t("editDisplayNameLabel", {
-              language: code === "ko" ? tLocale("korean") : code === "en" ? tLocale("english") : code,
+              language: localeNameOf(code),
             })}
             value={draftNames[code] ?? ""}
             onChange={(event) =>

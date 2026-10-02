@@ -1,3 +1,5 @@
+import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+
 /**
  * Active-tab matching: `matchPrefixes` with startsWith first, then an exact match with or without a
  * trailing slash.
@@ -26,6 +28,3 @@ export function shouldHideBottomTabBar(pathname: string, _hasLoadedVault: boolea
   return false;
 }
 
-function stripLocalePrefix(pathname: string): string {
-  return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
-}

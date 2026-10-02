@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { fieldClass } from '@/shared/ui/control-class';
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { Plus, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Button, Select, Surface, controlClass } from "@/shared/ui";
@@ -172,7 +173,7 @@ export function CreateNodeForm({
           placeholder={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") void submit();
+            if (e.key === "Enter" && !isImeComposing(e)) void submit();
           }}
           aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           data-testid="create-node-title"
@@ -188,7 +189,7 @@ export function CreateNodeForm({
               placeholder={labels.secondaryNamePlaceholder}
               onChange={(e) => setSecondaryName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") void submit();
+                if (e.key === "Enter" && !isImeComposing(e)) void submit();
               }}
               aria-label={labels.secondaryNamePlaceholder}
               data-testid="create-node-title-secondary"

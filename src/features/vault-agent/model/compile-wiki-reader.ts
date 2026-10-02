@@ -56,6 +56,10 @@ function wikiAddress(value: unknown): string | null {
   return slug;
 }
 
+export function isCompileWikiPath(value: string): boolean {
+  return value.endsWith('.md') && wikiAddress(value) === value.slice(0, -'.md'.length);
+}
+
 /** New pages remain root pages with the strict, portable basename contract. */
 function newWikiTarget(value: unknown): CompileWikiTarget | null {
   if (typeof value !== 'string') return null;

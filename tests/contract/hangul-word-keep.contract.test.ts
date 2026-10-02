@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
+import { LOCALE_META, type AppLocale } from "../../src/i18n/locales";
 
 /**
  * Korean text breaks between words on every screen, from one rule.
@@ -73,11 +74,15 @@ describe("<html lang> is right before the first paint", () => {
     expect(body).not.toContain("${");
   });
 
-  it("knows exactly the router's locales", () => {
+  it("maps exactly the router's locales to the registry's html lang", () => {
     const locales = /locales: \[([^\]]*)\]/.exec(routing)?.[1].match(/'([a-z-]+)'/g)?.map((q) => q.slice(1, -1)) ?? [];
     expect(locales.length, "could not read routing.locales").toBeGreaterThan(0);
-    const planted = [...body.matchAll(/s\[i\]==='([a-z-]+)'/g)].map((m) => m[1]);
-    expect(planted.sort()).toEqual([...locales].sort());
+    const map = /var m=\{([^}]*)\};/.exec(body)?.[1] ?? "";
+    const planted = Object.fromEntries([...map.matchAll(/([a-z-]+):'([^']+)'/g)].map((m) => [m[1], m[2]]));
+    expect(Object.keys(planted).sort()).toEqual([...locales].sort());
+    for (const locale of locales) {
+      expect(planted[locale], `${locale} html lang`).toBe(LOCALE_META[locale as AppLocale].htmlLang);
+    }
   });
 });
 

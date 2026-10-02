@@ -32,6 +32,39 @@ test('allows the intentionally Korean vault template as locale content', () => {
   assert.equal(result.localeTemplateFiles, 1);
 });
 
+test('allows the three localized root READMEs as locale content, and no other path', () => {
+  for (const path of ['README.ko.md', 'README.ja.md', 'README.zh.md']) {
+    assert.equal(classifyMarkdownPath(path).kind, 'localized-readme', path);
+  }
+  for (const path of ['README.md', 'README.kr.md', 'docs/README.ko.md', 'cli/README.ko.md']) {
+    assert.equal(classifyMarkdownPath(path).kind, 'canonical', path);
+  }
+
+  const result = auditMarkdownEntries([
+    { path: 'README.ko.md', content: '# 온톨로지 아틀라스\n코드가 바뀌어도 시스템을 이해하세요.\n' },
+    { path: 'docs/README.ko.md', content: '# 한국어 문서\n' },
+  ]);
+  assert.equal(result.localizedReadmeFiles, 1);
+  assert.deepEqual(result.violations.map(({ path }) => path), ['docs/README.ko.md']);
+});
+
+test('allows the root README language switcher, and only its link labels', () => {
+  const switcher = '[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh.md)';
+  const allowed = auditMarkdownEntries([{ path: 'README.md', content: `${switcher}\n# Atlas\n` }]);
+  assert.equal(allowed.languageSwitcherLines, 1);
+  assert.equal(allowed.unexpectedLanguageCodePoints, 0);
+
+  const refused = auditMarkdownEntries([
+    { path: 'docs/GUIDE.md', content: `${switcher}\n` },
+    { path: 'README.md', content: '[한국어](README.ko.md) 한국어 산문\n' },
+    { path: 'README.md', content: '[한국어로 된 아주 긴 설명 문장](README.ko.md)\n' },
+    { path: 'README.md', content: '[한국어](README.kr.md)\n' },
+    { path: 'README.md', content: '---\n[한국어](README.ko.md)\n---\n' },
+  ]);
+  assert.equal(refused.languageSwitcherLines, 0);
+  assert.equal(refused.unexpectedLines, 5);
+});
+
 test('allows display_ko only inside the leading frontmatter block', () => {
   const result = auditMarkdownEntries([
     {
@@ -110,10 +143,8 @@ test('counts a Korean focused-test title quoted in an Evidence coordinate apart 
       ].join('\n'),
     },
   ]);
-  // The quoted coordinate is counted on its own ratchet, never as prose.
   assert.equal(result.quotedEvidenceLines, 1);
   assert.equal(result.scopes.current.quotedEvidenceLines, 1);
-  // Hangul outside the backticks, a non-test coordinate, and plain prose stay violations.
   assert.equal(result.unexpectedLines, 3);
   assert.deepEqual(result.violations.map((row) => row.line), [7, 8, 9]);
 });

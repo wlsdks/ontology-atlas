@@ -749,6 +749,7 @@ every relation line, 5.23:1), `--color-indigo-brand` (the selection, 4.24:1). Co
 - Primary: `Inter Variable` (OpenType `"cv01", "ss03"` applied globally)
 - Signature weight: `510` (Linear's signature)
 - Mono: `JetBrains Mono`
+- Japanese and Chinese: no CJK font file is bundled or redistributed. `app/styles/lang-cjk.css` names OS faces only (Hiragino, Yu Gothic, Meiryo, PingFang, Microsoft YaHei, Noto/Source Han as installed), and a Latin-only slice of Pretendard draws Latin and digits. Pretendard and JetBrains Mono are OFL-1.1 and listed by `pnpm notice:build`.
 
 #### Korean breaks between words, from one rule (2026-09-25)
 

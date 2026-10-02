@@ -145,7 +145,7 @@ body *::-webkit-scrollbar {
  * the `--tracking-caps-*` steps themselves, in the token block above. Only the override lives
  * here, outside every layer, so nothing in a later layer can quietly win it back.
  */
-:root:lang(ko) {
+:root:is(:lang(ko), :lang(ja), :lang(zh)) {
   --tracking-caps-08: 0em;
   --tracking-caps-10: 0em;
   --tracking-caps-12: 0em;
@@ -170,7 +170,7 @@ body *::-webkit-scrollbar {
  * code". Outside every layer, next to the tracking override, for the same reason it gives.
  * Gate: `tests/contract/caps-label-latin-only.contract.test.ts`.
  */
-:root:lang(ko) .font-mono.uppercase {
+:root:is(:lang(ko), :lang(ja), :lang(zh)) .font-mono.uppercase {
   font-family: var(--font-sans);
   text-transform: none;
 }

@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 const SCAN_DIRS = ["src", "app"];
 const ALLOWED_IMPORTER = "src/i18n/standalone-messages.ts";
-const MESSAGE_IMPORT = /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*messages\/(?:ko|en)\.json['"]/mu;
+const MESSAGE_IMPORT = /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*messages\/[a-z]{2}\.json['"]/mu;
 const PICKER_IMPORT =
   /^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*(?:i18n\/standalone-messages)['"]/mu;
 

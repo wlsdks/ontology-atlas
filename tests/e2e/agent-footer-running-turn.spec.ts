@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { FIT_LOCALES } from './locales';
 import { openFolderFromFirstRun } from './open-folder';
 import { installLibraryWorkHarness } from './library-work-harness';
 
@@ -24,7 +25,7 @@ const FITS = 400;
 async function open(
   page: Page,
   width: number,
-  locale: 'en' | 'ko',
+  locale: string,
   options: Parameters<typeof installLibraryWorkHarness>[1] = {},
 ) {
   await page.setViewportSize({ width: 1512, height: 982 });
@@ -113,7 +114,7 @@ const modeWordIsWhole = async (page: Page) => {
   });
 };
 
-for (const locale of ['en', 'ko'] as const) {
+for (const locale of FIT_LOCALES) {
   for (const width of [MIN, BELOW_FIT]) {
     test(`a running turn covers nothing at ${width} (${locale})`, async ({ page }) => {
       const harness = await open(page, width, locale);
@@ -220,7 +221,7 @@ async function expectRowClean(page: Page, state: string) {
   expect(await cutWords(page), `${state}: shown cut instead of standing down`).toEqual([]);
 }
 
-for (const locale of ['en', 'ko'] as const) {
+for (const locale of FIT_LOCALES) {
   // 480 is the width the overlap was first reported at (a 462px panel in a 1512 window); 440 sat
   // between two points that already bracket it.
   for (const width of [MIN, BELOW_FIT, 480]) {

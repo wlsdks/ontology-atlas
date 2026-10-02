@@ -3,16 +3,25 @@ import { spawn } from "node:child_process";
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
+import { listLocales } from "./build-messages.mjs";
 
 export const DEFAULT_DEV_ROUTE_TIMEOUT_MS = 30000;
-export const DEFAULT_DEV_ROUTE_PATHS = [
-  "/",
-  "/en/",
-  "/ko/",
-  "/en/docs/",
-  "/ko/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
-  "/ko/ontology/?node=capability%3Aagent-graph-readiness",
-];
+const DEFAULT_DEV_ROUTE_LOCALE = "en";
+
+export function devRoutePaths(locales = listLocales()) {
+  const others = locales.filter((locale) => locale !== DEFAULT_DEV_ROUTE_LOCALE);
+  return [
+    "/",
+    ...locales.map((locale) => `/${locale}/`),
+    `/${DEFAULT_DEV_ROUTE_LOCALE}/docs/`,
+    ...others.flatMap((locale) => [
+      `/${locale}/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness`,
+      `/${locale}/ontology/?node=capability%3Aagent-graph-readiness`,
+    ]),
+  ];
+}
+
+export const DEFAULT_DEV_ROUTE_PATHS = devRoutePaths();
 
 function printHelp() {
   console.log(`Usage: pnpm dev:route-smoke [--port=<port>] [--base-url=http://localhost:3000] [--timeout-ms=${DEFAULT_DEV_ROUTE_TIMEOUT_MS}]

@@ -19,7 +19,7 @@ import {
   openTauriVaultInFinder,
 } from '@/shared/lib/tauri-vault-fs';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
-import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
+import { vaultValidationCounts } from '../../model/vault-validation-counts';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip, RowButton } from '@/shared/ui/controls';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -113,14 +113,7 @@ export function WorkspacePane({
   const vaultRootPath = loadedHandle ? (getTauriVaultRootPath(loadedHandle) ?? null) : null;
   const showVaultManagement = localVault.status !== 'unsupported';
   const vaultBusy = localVault.status === 'opening' || localVault.status === 'loading';
-  const validation = (() => {
-    if (!isLoaded || !localVault.manifest) return null;
-    const summary = summarizeVaultValidation(
-      localVault.manifest.docs.map((doc) => ({ slug: doc.slug, frontmatter: doc.frontmatter })),
-    );
-    if (summary.errorCount === 0 && summary.warningCount === 0) return null;
-    return { errorCount: summary.errorCount, warningCount: summary.warningCount };
-  })();
+  const validation = isLoaded && localVault.manifest ? vaultValidationCounts(localVault.manifest) : null;
 
   const connectors = useVaultConnectors(loadedHandle);
   const kept = useKeptInFolder(loadedHandle, vaultRootPath, desktop);

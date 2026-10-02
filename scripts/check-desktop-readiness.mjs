@@ -7,6 +7,7 @@ import {
 } from "./lib/release-script-contract.mjs";
 import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "./lib/desktop-csp.mjs";
+import { matches, matchesAll } from "./lib/locale-vocabulary.mjs";
 import { blankComments } from "./quality/source-language/inventory.mjs";
 
 const root = process.cwd();
@@ -793,10 +794,7 @@ const desktopRoutingCopy = [
   koMessages.featuresMisc.localVaultPicker.unsupported,
 ];
 // Does each locale point at "the installed app" in its own words?
-const namesInstalledApp = (text, locale) =>
-  locale === "ko"
-    ? /설치(된|해)/.test(text) && /앱/.test(text)
-    : /installed|install the/i.test(text) && /app/i.test(text);
+const namesInstalledApp = (text, locale) => matchesAll("installedApp", locale, text);
 // Browser FSA must not be **advertised as a capability**. Naming it in an honest
 // degradation notice is fine, so only "you can do X" sentences are checked.
 const advertisesBrowserFsa = desktopRoutingCopy.some(
@@ -826,19 +824,19 @@ const advertisesBrowserFsa = desktopRoutingCopy.some(
  * it opens** (a folder) rather than a runtime. Whether FSA is advertised as a
  * capability is still checked across **all six** strings.
  */
-const namesTheFolder = (text) => /folder/i.test(text) || /폴더/.test(text);
+const namesTheFolder = (text, locale) => matches("folderWord", locale, text);
 
 if (
-  namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault) &&
-  namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault) &&
+  namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault, "en") &&
+  namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault, "ko") &&
   namesInstalledApp(enMessages.docsVault.vaultStatus.unsupportedTooltip, "en") &&
   namesInstalledApp(koMessages.docsVault.vaultStatus.unsupportedTooltip, "ko") &&
   namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
   namesInstalledApp(koMessages.featuresMisc.localVaultPicker.unsupported, "ko") &&
   !advertisesBrowserFsa &&
   // An open label must name **what it opens**. Which word it uses is not pinned.
-  /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
-  /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
+  namesTheFolder(enMessages.featuresMisc.localVaultPicker.openLabel, "en") &&
+  namesTheFolder(koMessages.featuresMisc.localVaultPicker.openLabel, "ko")
 ) {
   pass("the demotion notice names the installed app and the shortcut copy names the folder it opens — neither advertises FSA as a capability");
 } else {
@@ -874,7 +872,7 @@ if (
  * remains protected by generated-surface and referential-integrity checks.
  */
 if (
-  rootEntryPage.includes("if (vault.manifest) return <HomePage />") &&
+  rootEntryPage.includes("if (vault.manifest || vault.partialTotal) return <HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
   // Since 2026-09-13 the first-run branch is also reached when the launch deliberately

@@ -1,31 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
-import { JetBrains_Mono } from 'next/font/google';
-import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
+import { jetbrainsMono, pretendard, pretendardLatin } from '@/shared/config/fonts';
+import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
 import './globals.css';
-
-// Owner report (2026-07-23): only Inter's latin subset loaded, so Korean fell back to the system
-// font (Apple SD Gothic) — the mismatched weight and x-height against latin and digits made button
-// labels look "off". Pretendard is a Korean face designed metric-compatible with Inter, so the
-// latin look is preserved while mixed Korean/English renders as one family. Self-hosted (an npm
-// package, zero CDN — local-first).
-const pretendard = localFont({
-  src: '../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2',
-  variable: '--font-pretendard',
-  display: 'swap',
-  weight: '45 920',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -103,7 +85,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
+      className={`${pretendard.variable} ${pretendardLatin.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
       suppressHydrationWarning
     >
       <head>
@@ -132,7 +114,7 @@ export default function RootLayout({
             url: SITE_URL,
             description:
               'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
-            inLanguage: ['en', 'ko'],
+            inLanguage: Object.values(LOCALE_META).map((meta) => meta.htmlLang),
             publisher: {
               '@type': 'Organization',
               name: 'ontology-atlas contributors',

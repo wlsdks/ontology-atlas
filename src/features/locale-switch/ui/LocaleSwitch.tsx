@@ -3,15 +3,14 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { LOCALE_NAME_KEY } from '@/i18n/locales';
+import { routing } from '@/i18n/routing';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
-const LOCALES = [
-  { code: 'en', label: 'EN', nameKey: 'english' },
-  { code: 'ko', label: 'KO', nameKey: 'korean' },
-] as const;
 
 export interface LocaleSwitchProps {
+  locales?: readonly string[];
   /**
    * Runs before navigation starts. Hosts that unmount across locale segments
    * can record a focus-return intent without coupling this feature to them.
@@ -42,11 +41,11 @@ export function buildLocaleTarget(
 }
 
 /**
- * Compact two-button locale toggle. Persists choice in localStorage so the
+ * Compact locale toggle. Persists choice in localStorage so the
  * root `/` redirect picks it up next visit. Replaces `/<old>/...` with
  * `/<new>/...` while preserving query/hash task state — no full reload needed.
  */
-export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
+export function LocaleSwitch({ onSwitchStart, locales = routing.locales }: LocaleSwitchProps = {}) {
   const t = useTranslations('locale');
   const locale = useLocale();
   const pathname = usePathname();
@@ -79,11 +78,12 @@ export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
       value={locale}
       busy={isPending}
       onChange={(next) => switchTo(next)}
-      options={LOCALES.map(({ code, label, nameKey }) => ({
-        value: code as string,
-        label,
-        ariaLabel: `${label} ${t(nameKey)}`,
-      }))}
+      options={locales.flatMap((code) => {
+        const nameKey = (LOCALE_NAME_KEY as Record<string, string>)[code];
+        if (!nameKey || !t.has(nameKey)) return [];
+        const label = code.toUpperCase();
+        return [{ value: code, label, ariaLabel: `${label} ${t(nameKey)}` }];
+      })}
     />
   );
 }
