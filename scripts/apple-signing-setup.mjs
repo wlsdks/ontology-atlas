@@ -44,19 +44,12 @@ export const SIGNING_ENVIRONMENT = "release-signing";
 /** Created and discarded inside CI on each run. A local/CI value, not a GitHub secret. */
 export const LOCAL_ONLY_VALUES = ["APPLE_KEYCHAIN_PASSWORD", "APPLE_SIGNING_IDENTITY"];
 
-/**
- * The 7 that `release-macos.yml` actually reads from the protected environment.
- * Only the 5 Apple values and 2 Tauri updater values are hosted secrets;
- * local-only values never appear here.
- */
 export const ENVIRONMENT_SECRETS = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
-];
-export const REPOSITORY_SECRETS = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -65,7 +58,7 @@ export const OBSOLETE_REPOSITORY_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-export const REQUIRED_SECRETS = [...ENVIRONMENT_SECRETS, ...REPOSITORY_SECRETS];
+export const REQUIRED_SECRETS = [...ENVIRONMENT_SECRETS];
 
 /** Apple/Tauri credentials the helper does not generate are entered by a person. */
 export const OWNER_ENTERED_SECRETS = [
@@ -105,27 +98,21 @@ export function setupSecretCommand(name, repo, inputPath = `/path/to/${name}`) {
 }
 
 function repositoryCleanupCommand(name, repo) {
-  // Deliberately no --env: this removes the same-name repository copy, not the
-  // protected environment value.
   return `gh secret delete ${name} --repo ${repo}`;
 }
 
 function printEnvironmentPolicy(repo, inputPaths = {}) {
   console.log(`
 [apple-signing] GitHub was not changed. Review and run the commands below yourself.
-[apple-signing] Store the three App Store Connect API values in ${SIGNING_ENVIRONMENT}.
-[apple-signing] Retain the Developer ID certificate pair and Tauri updater pair at repository scope.
+[apple-signing] Store all ${ENVIRONMENT_SECRETS.length} signing and notarization values in ${SIGNING_ENVIRONMENT}; only the release workflow's signing job enters it.
 [apple-signing] Configure ${SIGNING_ENVIRONMENT} to admit main only, use no signing-stage reviewer, and keep admin bypass disabled.
 [apple-signing] Keep the human install approval on the separate release publication environment.
-[apple-signing] Remove repository copies of the API credentials before release. Keep obsolete Apple ID/password/team values only through the first API-key proof release, then delete them.
+[apple-signing] Delete repository copies of these names, and the obsolete Apple ID/password/team values, once one release signed from ${SIGNING_ENVIRONMENT} has passed.
 
 [apple-signing] Set protected environment secrets:
 ${ENVIRONMENT_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
 
-[apple-signing] Set retained repository secrets:
-${REPOSITORY_SECRETS.map((name) => `  ${setupSecretCommand(name, repo, inputPaths[name])}`).join("\n")}
-
-[apple-signing] Cleanup commands (API copies now; obsolete Apple values only after the proof release passes):
+[apple-signing] Cleanup commands (only after that release passes):
 ${[...ENVIRONMENT_SECRETS, ...OBSOLETE_REPOSITORY_SECRETS].map((name) => `  ${repositoryCleanupCommand(name, repo)}`).join("\n")}`);
 }
 
@@ -300,18 +287,17 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
   );
   const repositoryListed = execFileSync("gh", ["secret", "list", "--repo", repo], { encoding: "utf8" });
   const missingEnvironment = missingSecrets(environmentListed, ENVIRONMENT_SECRETS);
-  const missingRepository = missingSecrets(repositoryListed, REPOSITORY_SECRETS);
   const repositoryCopies = repositoryScopedSecrets(repositoryListed);
 
-  if (missingEnvironment.length === 0 && missingRepository.length === 0 && repositoryCopies.length === 0) {
-    console.log(`[apple-signing] all ${REQUIRED_SECRETS.length} split-scope signing secrets are registered ✓`);
+  if (missingEnvironment.length === 0 && repositoryCopies.length === 0) {
+    console.log(`[apple-signing] all ${REQUIRED_SECRETS.length} signing secrets are registered in ${SIGNING_ENVIRONMENT} ✓`);
     console.log("[apple-signing] from the next tag the workflow takes the signing path — no code change is needed.");
     console.log("[apple-signing] check with: pnpm desktop:release-github -- --tag=<next tag>");
     return;
   }
 
   if (missingEnvironment.length > 0) {
-    console.error(`[apple-signing] ${missingEnvironment.length} API secrets still missing from ${SIGNING_ENVIRONMENT}:`);
+    console.error(`[apple-signing] ${missingEnvironment.length} signing secrets still missing from ${SIGNING_ENVIRONMENT}:`);
     for (const name of missingEnvironment) {
       const who = OWNER_ENTERED_SECRETS.includes(name) ? "a person enters it" : "uses the local file the bundle command created";
       console.error(`[apple-signing]   ${name} (${who})`);
@@ -327,14 +313,10 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
         .join("\n")}`,
     );
   }
-  if (missingRepository.length > 0) {
-    console.error(`[apple-signing] ${missingRepository.length} signing secrets still missing from repository scope:`);
-    console.error(
-      missingRepository.map((name) => `  ${setupSecretCommand(name, repo, path.join(dir, name))}`).join("\n"),
-    );
-  }
   if (repositoryCopies.length > 0) {
-    console.error(`[apple-signing] repository-scope signing copies must be removed (this helper does not mutate GitHub):`);
+    console.error(
+      `[apple-signing] repository-scope copies must be removed once one release signed from ${SIGNING_ENVIRONMENT} has passed (this helper does not mutate GitHub):`,
+    );
     console.error(repositoryCopies.map((name) => `  ${repositoryCleanupCommand(name, repo)}`).join("\n"));
   }
   process.exit(1);

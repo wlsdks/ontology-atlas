@@ -7,13 +7,11 @@ const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const SIGNING_ENVIRONMENT = "release-signing";
 const PUBLICATION_ENVIRONMENT = "release";
 const ENVIRONMENT_REQUIRED_SECRETS = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
   "APPLE_API_ISSUER_ID",
-];
-const REPOSITORY_REQUIRED_SECRETS = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
   "TAURI_SIGNING_PRIVATE_KEY",
   "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
 ];
@@ -762,9 +760,6 @@ async function main() {
     const missingEnvironment = ENVIRONMENT_REQUIRED_SECRETS.filter(
       (name) => !environmentSecretNames.has(name),
     );
-    const missingRepository = REPOSITORY_REQUIRED_SECRETS.filter(
-      (name) => !repositorySecretNames.has(name),
-    );
     const forbiddenRepository = [
       ...ENVIRONMENT_REQUIRED_SECRETS,
       ...OBSOLETE_REPOSITORY_SECRETS,
@@ -773,22 +768,10 @@ async function main() {
       checks.push(blocked(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `missing ${missingEnvironment.join(", ")} from ${SIGNING_ENVIRONMENT} (App Store Connect API notarization credentials)`,
+        `missing ${missingEnvironment.join(", ")} from ${SIGNING_ENVIRONMENT} (Developer ID signing, updater and notarization credentials)`,
         secretSetHints(options.repo, missingEnvironment),
         secretSetCommands(options.repo, missingEnvironment),
         { missingSecrets: missingEnvironment },
-      ));
-    } else if (missingRepository.length > 0) {
-      const commands = missingRepository.map(
-        (name) => `gh secret set ${name} --repo ${options.repo} < /path/to/${name}`,
-      );
-      checks.push(blocked(
-        "apple_release_secrets",
-        DIRECT_DOWNLOAD_SECRET_LABEL,
-        `missing retained repository signing secrets: ${missingRepository.join(", ")}`,
-        "Restore the original Developer ID certificate or updater identity; never regenerate an updater key for an already distributed app.",
-        commands,
-        { missingSecrets: missingRepository },
       ));
     } else if (forbiddenRepository.length > 0) {
       const deleteCommands = forbiddenRepository.map((name) => `gh secret delete ${name} --repo ${options.repo}`);
@@ -796,14 +779,14 @@ async function main() {
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
         `obsolete or over-scoped repository signing secrets remain: ${forbiddenRepository.join(", ")}`,
-        `Keep API credentials in ${SIGNING_ENVIRONMENT}; delete obsolete Apple ID credentials only after the first API-key release passes, then rerun this strict completion audit.`,
+        `Keep every signing secret only in ${SIGNING_ENVIRONMENT}; delete the repository copies once a release signed from ${SIGNING_ENVIRONMENT} has passed, then rerun this strict completion audit.`,
         [environmentSecretListCommand, ...deleteCommands],
       ));
     } else {
       checks.push(ok(
         "apple_release_secrets",
         DIRECT_DOWNLOAD_SECRET_LABEL,
-        `${SIGNING_ENVIRONMENT} admits only ${defaultBranch}; API credentials are environment-scoped and certificate/updater identities are retained at repository scope`,
+        `${SIGNING_ENVIRONMENT} admits only ${defaultBranch} and holds every signing secret; no repository copy remains`,
       ));
     }
   }

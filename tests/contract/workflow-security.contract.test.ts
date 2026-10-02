@@ -336,13 +336,20 @@ describe("워크플로 보안 계약", () => {
     expect(admission).toContain("release_tag=");
     expect(admission).not.toMatch(/\$\{\{\s*secrets\./);
 
-    for (const jobName of ["build-macos", "build-windows"]) {
+    for (const jobName of ["build-macos", "sign-macos", "verify-macos", "build-windows"]) {
       const header = jobHeader(release, jobName);
       const block = jobBlock(release, jobName);
-      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*admit-release/);
-      expect(header, `${jobName} secret environment`).toMatch(/environment:\s*release-signing/);
+      expect(header, `${jobName} admission dependency`).toMatch(/needs:\s*(?:admit-release\b|\[[^\]]*\badmit-release\b[^\]]*\])/);
       expect(block, `${jobName} trusted checkout`).toContain(
         "ref: ${{ needs.admit-release.outputs.release_sha }}",
+      );
+    }
+    for (const jobName of ["sign-macos", "build-windows"]) {
+      expect(jobHeader(release, jobName), `${jobName} secret environment`).toMatch(/environment:\s*release-signing/);
+    }
+    for (const jobName of ["build-macos", "verify-macos"]) {
+      expect(jobHeader(release, jobName), `${jobName} runs build or install code, so it enters no environment`).not.toMatch(
+        /environment:/,
       );
     }
 
@@ -368,30 +375,52 @@ describe("워크플로 보안 계약", () => {
 
   it("macOS 직접 다운로드 릴리스는 서명·공증 자격증명이 없으면 실패한다", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    const build = jobBlock(release, "build-macos");
+    const macos = ["build-macos", "sign-macos", "verify-macos"].map((job) => jobBlock(release, job)).join("\n");
+    const sign = jobBlock(release, "sign-macos");
 
-    expect(build).toMatch(
+    expect(sign).toMatch(
       /- name: Require signed release credentials\n(?:        env:[\s\S]*?)?        run: pnpm desktop:release-secrets/,
     );
-    expect(build).toMatch(
+    expect(sign).toMatch(
       /- name: Sign and notarize release artifact\n        run: pnpm desktop:release-artifact -- --phase=sign\n/,
     );
-    expect(build).not.toContain("desktop:release-artifact:unsigned");
-    expect(build).not.toContain("steps.signing.outputs.signed");
-    expect(build).not.toContain("UNSIGNED build");
+    expect(jobBlock(release, "verify-macos")).toContain("- name: Verify installed app\n        run: pnpm desktop:verify-install\n");
+    expect(macos).not.toContain("desktop:release-artifact:unsigned");
+    expect(macos).not.toContain("steps.signing.outputs.signed");
+    expect(macos).not.toContain("UNSIGNED build");
   });
 
-  it("builds the macOS app before any signing identity exists, and imports it without -A", () => {
-    const build = jobBlock(all.find((w) => w.name === "release-macos.yml")!.source, "build-macos");
-    const at = (marker: string) => build.indexOf(marker);
-    expect(build).toContain("- name: Build release app bundle\n        run: pnpm desktop:release-artifact -- --phase=build\n");
-    expect(at("--phase=build")).toBeGreaterThan(at("run: pnpm desktop:release-secrets"));
-    expect(at("--phase=build"), "build code would run beside the imported identity").toBeLessThan(
-      at("- name: Import Apple Developer ID certificate"),
-    );
-    expect(at("- name: Import Apple Developer ID certificate")).toBeLessThan(at("--phase=sign"));
+  it("builds the macOS app in a job with no secret, and imports the identity only in the signing job after it", () => {
+    const release = all.find((w) => w.name === "release-macos.yml")!.source;
+    const build = jobBlock(release, "build-macos");
+    const sign = jobBlock(release, "sign-macos");
+    const verify = jobBlock(release, "verify-macos");
+    const at = (marker: string) => sign.indexOf(marker);
 
-    const importStep = build.slice(at("- name: Import Apple Developer ID certificate"), at("- name: Sign and notarize"));
+    expect(build).toContain("- name: Build release app bundle\n        run: pnpm desktop:release-artifact -- --phase=build\n");
+    for (const [jobName, block] of [["build-macos", build], ["verify-macos", verify]] as const) {
+      expect(expressions(block).filter((body) => SECRETS.test(body)), `${jobName} reads a secret`).toEqual([]);
+      expect(block, `${jobName} imports an identity`).not.toContain("security import");
+    }
+    expect(jobHeader(release, "sign-macos"), "the signing job must wait for the build").toMatch(
+      /needs:\s*\[[^\]]*\bbuild-macos\b[^\]]*\]/,
+    );
+    expect(sign, "build code would run beside the imported identity").not.toMatch(
+      /--phase=build|desktop:build|mcp:build-binary|pnpm build\b|pnpm --dir mcp install/,
+    );
+    expect(sign, "an install in the signing job runs no lifecycle script").toContain(
+      "run: pnpm install --frozen-lockfile --ignore-scripts\n",
+    );
+    expect(sign.match(/pnpm install\b/g)).toHaveLength(1);
+    expect(at("run: pnpm desktop:release-secrets"), "the validator runs first").toBeLessThan(
+      at("- name: Install dependencies without lifecycle scripts"),
+    );
+    expect(at("- name: Unpack unsigned app and symbols")).toBeLessThan(at("- name: Import Apple Developer ID certificate"));
+    expect(at("- name: Import Apple Developer ID certificate")).toBeLessThan(at("--phase=sign"));
+    expect(at("--phase=sign")).toBeLessThan(at("- name: Cleanup Apple signing keychain"));
+    expect(sign).toMatch(/- name: Cleanup Apple signing keychain\n        if: \$\{\{ always\(\) \}\}\n/);
+
+    const importStep = sign.slice(at("- name: Import Apple Developer ID certificate"), at("- name: Sign and notarize"));
     const importLine = importStep.split("\n").find((line) => line.includes("security import"))!;
     expect(importLine).toContain("-T /usr/bin/codesign");
     expect(importLine).not.toMatch(/\s-A\s/);
@@ -450,8 +479,9 @@ describe("워크플로 보안 계약", () => {
     // contents/checks write to the whole build, the checkout, install, and test actions
     // receive the same token.
     expect(release).toMatch(/^permissions:\n  contents: read\s*$/m);
-    expect(jobBlock(release, "build-macos")).not.toMatch(/^    permissions:/m);
-    expect(jobBlock(release, "build-windows")).not.toMatch(/^    permissions:/m);
+    for (const jobName of ["build-macos", "sign-macos", "verify-macos", "build-windows"]) {
+      expect(jobBlock(release, jobName), jobName).not.toMatch(/^    permissions:/m);
+    }
     expect(jobBlock(release, "audit-rust")).toMatch(
       /^    permissions:\n      contents: read\n      checks: write\s*$/m,
     );
@@ -492,7 +522,15 @@ describe("워크플로 보안 계약", () => {
 
   it("서명 secret 은 필요한 release step 에서만 보인다", () => {
     const release = all.find((w) => w.name === "release-macos.yml")!.source;
-    for (const jobName of ["admit-release", "build-macos", "build-windows", "stage-macos", "publish-macos"]) {
+    const jobs = [...release.slice(release.indexOf("\njobs:\n") + 1).matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)].map(
+      (match) => match[1],
+    );
+    expect(jobs.length, "no release job found: this scan would pass vacuously").toBeGreaterThan(8);
+    expect(
+      jobs.filter((jobName) => expressions(jobBlock(release, jobName)).some((body) => SECRETS.test(body))),
+      "only the signing job may read a secret",
+    ).toEqual(["sign-macos"]);
+    for (const jobName of jobs) {
       expect(jobHeader(release, jobName), `${jobName} job env`).not.toMatch(
         /\$\{\{\s*secrets\.(?:APPLE_|TAURI_SIGNING_)/,
       );

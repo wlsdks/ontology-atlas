@@ -1049,6 +1049,8 @@ if (
 
 const admitReleaseJob = workflowJob(releaseWorkflow, "admit-release");
 const buildMacosJob = workflowJob(releaseWorkflow, "build-macos");
+const signMacosJob = workflowJob(releaseWorkflow, "sign-macos");
+const verifyMacosJob = workflowJob(releaseWorkflow, "verify-macos");
 const buildWindowsJob = workflowJob(releaseWorkflow, "build-windows");
 const stageReleaseJob = workflowJob(releaseWorkflow, "stage-macos");
 const publishReleaseJob = workflowJob(releaseWorkflow, "publish-macos");
@@ -1090,13 +1092,15 @@ if (
 }
 
 if (
-  [buildMacosJob, buildWindowsJob].every((job) =>
-    needsAdmission(job) && /environment:\s*release-signing/.test(job) && hasAdmittedCheckout(job),
-  )
+  [buildMacosJob, signMacosJob, verifyMacosJob, buildWindowsJob].every((job) =>
+    needsAdmission(job) && hasAdmittedCheckout(job),
+  ) &&
+  [signMacosJob, buildWindowsJob].every((job) => /environment:\s*release-signing/.test(job)) &&
+  [buildMacosJob, verifyMacosJob].every((job) => !/^\s+environment:/m.test(job) && !/\$\{\{\s*secrets\./.test(job))
 ) {
-  pass("macOS and Windows signing builds consume the admitted commit from release-signing");
+  pass("macOS builds and verifies without secrets, signs from release-signing, and every build job consumes the admitted commit");
 } else {
-  fail("build-macos and build-windows must need admit-release, use release-signing, and checkout needs.admit-release.outputs.release_sha");
+  fail("build-macos, sign-macos, verify-macos and build-windows must need admit-release and checkout needs.admit-release.outputs.release_sha; only sign-macos and build-windows use release-signing, and build-macos and verify-macos read no secret");
 }
 
 if (

@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-/**
- * Walks the release workflow's `admit-release` and `build-macos` steps on this machine
- * before a tag is pushed, reading them from the workflow so a new step is never missed;
- * a step that needs Apple secrets or a real tag is listed as SKIP with its reason.
- *
- *   node scripts/release-rehearsal.mjs            # everything through the build
- *   node scripts/release-rehearsal.mjs --fast     # stop before app compile / DMG
- *   node scripts/release-rehearsal.mjs --list     # only show what would run
- *   node scripts/release-rehearsal.mjs --tag=vX.Y.Z # also admit an existing tag
- */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -36,7 +26,15 @@ export const REHEARSAL_SKIPS = {
   "Verify release tag version":
     "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   "Require signed release credentials":
-    "All five Apple secrets must be registered on the repository for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the tag workflow.",
+    "All seven signing secrets must be set in the release-signing environment for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the dispatched workflow.",
+  "Pack unsigned app and symbols":
+    "It only packs the unsigned app and its dSYM for the signing job's fresh runner. Here the substitute build leaves both in place under src-tauri/target/release.",
+  "Install dependencies without lifecycle scripts":
+    "The build job's install above already installed this lockfile on this machine; the signing job repeats it only because it starts on a fresh runner.",
+  "Unpack unsigned app and symbols":
+    "It restores the build job's tarball on the signing job's fresh runner. Here the app and its dSYM never left src-tauri/target/release.",
+  "Verify installed app":
+    "The substitute for Build release app bundle already ran desktop:verify-install on the ad-hoc signed DMG it built; the hosted job repeats it on the notarized DMG.",
   "Import Apple Developer ID certificate":
     "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":
@@ -71,14 +69,6 @@ export const REHEARSAL_SLOW_STEPS = new Set([
   "Build release app bundle",
 ]);
 
-/**
- * Extracts the `build-macos` job's `run:` steps **in the order the file lists
- * them**.
- *
- * No YAML parser is added: this workflow's step shape is fixed (`- name:` followed
- * by `run:`), and being self-explanatory beats carrying another dependency. The
- * number of steps extracted is guarded by a contract test.
- */
 /**
  * Timeout for a tool probe, in ms.
  *
@@ -163,8 +153,12 @@ export function parseAdmitReleaseSteps(workflow) {
   return parseReleaseJobSteps(workflow, "admit-release");
 }
 
-export function parseBuildMacosSteps(workflow) {
-  return parseReleaseJobSteps(workflow, "build-macos");
+const REHEARSED_MACOS_JOBS = Object.freeze(["build-macos", "sign-macos", "verify-macos"]);
+
+export function parseMacosReleaseSteps(workflow) {
+  return REHEARSED_MACOS_JOBS.flatMap((job) =>
+    parseReleaseJobSteps(workflow, job).map((step) => ({ ...step, job })),
+  );
 }
 
 /** Translates one workflow `run:` line into argv runnable on this machine. */
@@ -317,8 +311,8 @@ function main() {
       [
         "Usage: pnpm desktop:release-rehearsal [--fast] [--list] [--tag=vX.Y.Z]",
         "",
-        "Walks the release-macos.yml `admit-release` and `build-macos` jobs on this machine,",
-        "in file order. Without --tag, admission is explicitly SKIP; after creating an",
+        `Walks the release-macos.yml \`admit-release\`, ${REHEARSED_MACOS_JOBS.map((job) => `\`${job}\``).join(", ")} jobs`,
+        "on this machine, in file order. Without --tag, admission is explicitly SKIP; after creating an",
         "existing tag, --tag runs the workflow's release-tag and source-admit checks locally.",
         "",
         "  --fast   stop before the long app compile / DMG steps",
@@ -350,7 +344,7 @@ function main() {
   const root = process.cwd();
   const workflow = fs.readFileSync(path.join(root, RELEASE_WORKFLOW_PATH), "utf8");
   const admissionSteps = parseAdmitReleaseSteps(workflow);
-  const buildSteps = parseBuildMacosSteps(workflow);
+  const macosSteps = parseMacosReleaseSteps(workflow);
   const fast = argv.includes("--fast");
   let admissionCommands = new Map();
   if (tag) {
@@ -393,15 +387,14 @@ function main() {
   }
 
   let reachedSlow = false;
-  for (const step of buildSteps) {
+  for (const step of macosSteps) {
     if (REHEARSAL_SKIPS[step.name] && !REHEARSAL_SUBSTITUTES[step.name]) {
-      plan.push({ ...step, job: "build-macos", kind: "skip", reason: REHEARSAL_SKIPS[step.name] });
+      plan.push({ ...step, kind: "skip", reason: REHEARSAL_SKIPS[step.name] });
       continue;
     }
     if (step.uses) {
       plan.push({
         ...step,
-        job: "build-macos",
         kind: "skip",
         reason: `GitHub Action(${step.uses}) — a runner-only step. Whether this tool exists on this machine is answered by the tool probe below instead.`,
       });
@@ -411,7 +404,6 @@ function main() {
     if (!argvForStep) {
       plan.push({
         ...step,
-        job: "build-macos",
         kind: "skip",
         reason: "A shell step that leans on runner environment variables, so it cannot be carried over to this machine verbatim.",
       });
@@ -419,12 +411,11 @@ function main() {
     }
     if (fast && (reachedSlow || REHEARSAL_SLOW_STEPS.has(step.name))) {
       reachedSlow = true;
-      plan.push({ ...step, job: "build-macos", kind: "skip", argv: argvForStep, reason: "left out by --fast." });
+      plan.push({ ...step, kind: "skip", argv: argvForStep, reason: "left out by --fast." });
       continue;
     }
     plan.push({
       ...step,
-      job: "build-macos",
       kind: "run",
       argv: argvForStep,
       note: REHEARSAL_SUBSTITUTES[step.name]?.note,
@@ -441,7 +432,7 @@ function main() {
     ["rustc", ["--version"]],
   ];
 
-  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + build-macos — in order, on this machine"));
+  console.log(color(1, `[rehearsal] release-macos.yml · ${["admit-release", ...REHEARSED_MACOS_JOBS].join(" + ")} — in order, on this machine`));
   console.log("");
   for (const [tool, args] of tools) {
     const probe = probeTool(tool, args);

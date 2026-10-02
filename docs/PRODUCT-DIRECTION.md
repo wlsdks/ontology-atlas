@@ -513,17 +513,19 @@ install folder, opens that installed copy through LaunchServices, and requires a
 visible Ontology Atlas window plus Accessibility text before cleanup. The
 `.github/workflows/release-macos.yml` accepts only a `workflow_dispatch` tag
 input from `main`. An unprivileged admission job binds that tag to the current
-`main` SHA before the main-only `release-signing` environment exposes
-Apple/Tauri credentials. It then passes docs-vault freshness, desktop checker
-tests, and native bridge tests before importing the certificate. It builds Apple Silicon
-on `macos-14` and Intel on `macos-15-intel`, route-smokes the static desktop payload,
-runs `pnpm desktop:release-source -- --mode=pin` so the tag remains bound to the admitted SHA,
+`main` SHA. A build job with no secret then passes docs-vault freshness, desktop
+checker tests, and native bridge tests, builds Apple Silicon on `macos-14` and
+Intel on `macos-15-intel`, route-smokes the static desktop payload, runs
+`pnpm desktop:release-source -- --mode=pin` so the tag remains bound to the admitted SHA,
 runs `pnpm desktop:release-tag` so the v-prefixed tag matches package/Tauri/Cargo
-versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
-`pnpm desktop:notarize`, staples the DMG, refreshes its checksum, verifies the
-final mounted artifact with signing and notarization required, and launch-smokes
-the app copied from the DMG before attaching both architecture DMGs to a draft
-GitHub Release.
+versions before signing, and hands the unsigned app and its dSYM to a signing job.
+Only that job enters the main-only `release-signing` environment that exposes
+Apple/Tauri credentials: from a fresh checkout it validates them, imports the
+certificate, runs `pnpm desktop:sign`, packages the signed app, runs
+`pnpm desktop:notarize`, staples the DMG, refreshes its checksum, and verifies the
+final mounted artifact with signing and notarization required. A third job with no
+secret launch-smokes the app copied from that DMG before both architecture DMGs are
+attached to a draft GitHub Release.
 The publish job first checks that the tag has no existing GitHub Release, so a
 rerun or manual draft cannot mix stale DMG assets with newly signed artifacts.
 `pnpm desktop:verify-download -- --allow-draft` byte-checks those draft assets

@@ -21,10 +21,6 @@ env:
   RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
-  # `workflow_dispatch` can target another ref even though the workflow must
-  # exist on the default branch. This unprivileged job proves that the selected
-  # workflow source, event SHA, default-branch head, and requested tag are the
-  # same commit before a signing environment can be reached.
   admit-release:
     name: Admit protected release source
     runs-on: ubuntu-latest
@@ -68,22 +64,11 @@ jobs:
       - name: Verify requested release version
         run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
 
-      # The *previous* release's facts must already be on main: this token cannot push them, so
-      # a person lands the uploaded file, and a forgotten handoff leaves /download naming an older
-      # build. At admit time the newest published release is exactly what the facts must describe.
-      # **When blocked**: apply the previous run's `ontology-atlas-release-facts-*` artifact, or
-      # `pnpm download:release-facts -- --tag=<previous>`, then dispatch again.
       - name: Verify the download page names the newest published release
         run: pnpm download:release-facts:check
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # A stale ACP registry snapshot must not ship (2026-08-20: nine packages had fallen behind
-      # while the check existed but ran nowhere). It turns red when upstream deploys, so it gates
-      # releases, not pull requests, and blocks only on the runtimes Rust's `ISOLATION` table runs
-      # (narrowed 2026-08-26); other drift is reported. A compatibility-pinned runtime changes only
-      # after the installed permission matrix passes. **When blocked**: follow the diagnostic;
-      # refresh ordinary drift with `pnpm acp:registry`.
       - name: Verify bundled ACP registry is current
         run: pnpm acp:registry:check
 
@@ -102,13 +87,9 @@ jobs:
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
   build-macos:
-    name: Build macOS DMG (${{ matrix.arch }})
+    name: Build unsigned macOS app (${{ matrix.arch }})
     needs: admit-release
-    environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # The Intel runner needs 25-30 minutes for the cold release build plus
-    # notarization (v1.0.5 x64: 28m50s; v1.0.6 first attempt cancelled at 30m
-    # with rustc still running). The arm64 runner finishes in about 15 minutes.
     # budget: 2200s
     timeout-minutes: 45
     strategy:
@@ -124,9 +105,6 @@ jobs:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
 
     steps:
-      # fetch-depth: 0 is required — below `docs-vault:check` and `pnpm build` read the
-      # "last changed date" per document from git history (shallow clone groups all documents
-      # into the same date).
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -150,8 +128,6 @@ jobs:
         with:
           toolchain: stable
 
-      # `bun build --compile` bakes the sidecar and embeds this runtime; the runner does not ship
-      # bun. Toolchain installations are gathered at the top.
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -160,14 +136,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `mcp/` is not a pnpm workspace member and uses its own `node_modules`, which the root
-      # install does not populate on a runner. There is exactly one pinned dependency.
-      #
-      # Reason for `--frozen-lockfile`: the `package-lock.json` in this folder is **npm's**,
-      # and pnpm does not read it. Running without a lock file causes the runner to resolve fresh
-      # from the registry every release — meaning the sidecar's dependency tree could change without
-      # a commit, and that binary ships with the app. Commit `mcp/pnpm-lock.yaml` and freeze it,
-      # so we can answer via diff what was shipped.
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
@@ -186,11 +154,6 @@ jobs:
       - name: Desktop runtime split tests
         run: pnpm test:desktop:runtime
 
-      # After `tauri.conf.json` declares the MCP sidecar via `externalBin`,
-      # **all cargo calls** require that file — not just the bundle step but also the below
-      # `cargo test`, which checks resource paths in the build script, so the sidecar is built
-      # here first. The runner is native architecture, so the host triple default is correct.
-      # The later bundle step calls it again but produces the same output.
       - name: Build bundled MCP sidecar
         run: pnpm mcp:build-binary
 
@@ -209,10 +172,56 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${RELEASE_TAG}"
 
-      # The decision to forgo signature was overturned on the same day as certificate issuance
-      # (`docs/DECISIONS.md`, 2026-07-27). Direct download DMGs are created only when Developer ID
-      # signing and notarization are both possible. Wrapping this check in a conditional would make
-      # failure a signal to choose unsigned fallback, so the command itself is placed as a gate.
+      - name: Build release app bundle
+        run: pnpm desktop:release-artifact -- --phase=build
+
+      - name: Pack unsigned app and symbols
+        run: COPYFILE_DISABLE=1 tar -czf "$RUNNER_TEMP/unsigned-macos-app.tar.gz" -C src-tauri/target/release bundle/macos ontology-atlas.dSYM
+
+      - name: Upload unsigned app and symbols
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ontology-atlas-unsigned-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/unsigned-macos-app.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  sign-macos:
+    name: Sign and notarize macOS DMG (${{ matrix.arch }})
+    needs: [admit-release, build-macos]
+    environment: release-signing
+    runs-on: ${{ matrix.runner }}
+    # budget: 1200s
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-14
+          - arch: x64
+            runner: macos-15-intel
+    env:
+      TAURI_ARCH: ${{ matrix.arch }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
       - name: Require signed release credentials
         env:
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
@@ -224,13 +233,20 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm desktop:release-secrets
 
-      # The certificate is imported only after this step, and this step's environment holds
-      # no credential. The build makes no updater archive.
-      - name: Build release app bundle
-        run: pnpm desktop:release-artifact -- --phase=build
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # Without `-A`, only codesign may use the key unprompted; exporting it needs this step's
-      # random keychain password. `-x` was ignored for PKCS#12 on macOS 27 (2026-09-27).
+      - name: Download unsigned app and symbols
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-unsigned-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/unsigned
+
+      - name: Unpack unsigned app and symbols
+        run: |
+          mkdir -p src-tauri/target/release
+          tar -xzf "$RUNNER_TEMP/unsigned/unsigned-macos-app.tar.gz" -C src-tauri/target/release
+
       - name: Import Apple Developer ID certificate
         env:
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
@@ -251,8 +267,6 @@ jobs:
           security default-keychain -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      # The updater key signs the archive repacked from the signed app, and only that stage
-      # receives it (scripts/build-macos-release-artifact.mjs).
       - name: Sign and notarize release artifact
         run: pnpm desktop:release-artifact -- --phase=sign
         env:
@@ -277,14 +291,6 @@ jobs:
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Gather what to upload in one folder — because we define the artifact root.
-      # If multiple paths are given, the root is set to their lowest common ancestor (`bundle/`),
-      # creating an extra layer of `dmg/`·`macos/`, and the downloader has never chosen that depth,
-      # so they cannot know it. Here we also re-attach the updater archive name using the same
-      # rule as the DMG (Tauri outputs two arches with the same name + space).
-      # `--require-dsym` because the shipped binary is stripped: without the symbol bundle beside
-      # it, a crash report from this build names addresses and nothing else. A release that
-      # silently lost its symbols looks exactly like one that kept them, so it fails here instead.
       - name: Stage release assets
         run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}" --require-dsym
 
@@ -292,7 +298,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ontology-atlas-macos-${{ matrix.arch }}
-          # There is **one** path. If there are multiple, the root is set to the lowest common ancestor.
           path: release-upload
           if-no-files-found: error
           retention-days: 1
@@ -304,6 +309,50 @@ jobs:
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$CERTIFICATE_PATH"
+
+  verify-macos:
+    name: Verify installed macOS DMG (${{ matrix.arch }})
+    needs: [admit-release, sign-macos]
+    runs-on: ${{ matrix.runner }}
+    # budget: 300s
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-14
+          - arch: x64
+            runner: macos-15-intel
+    env:
+      TAURI_ARCH: ${{ matrix.arch }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ needs.admit-release.outputs.release_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Download signed release assets
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ontology-atlas-macos-${{ matrix.arch }}
+          path: src-tauri/target/release/bundle/dmg
+
+      - name: Verify installed app
+        run: pnpm desktop:verify-install
 
   build-windows:
     name: Build unsigned Windows x64 beta
@@ -350,8 +399,6 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
-      # A registry timeout (three on 2026-09-04) retries; a real advisory still fails on the
-      # last attempt. The app and the bundled MCP server have separate lockfiles.
       - name: Audit JavaScript production dependencies
         shell: pwsh
         run: |
@@ -387,8 +434,6 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="$env:RELEASE_TAG"
 
-      # No updater key: the Windows beta ships no in-app update (latest.json lists macOS only),
-      # so the build makes no updater signature for anything to publish.
       - name: Build Windows NSIS installer
         run: pnpm desktop:build:windows
 
@@ -464,8 +509,6 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # The audit's check run is the only write before staging; the checkout holds only the
-  # lockfile, so no build code runs beside that token.
   audit-rust:
     name: Audit Rust dependencies
     needs: admit-release
@@ -502,19 +545,14 @@ jobs:
           token: ${{ github.token }}
           working-directory: src-tauri
 
-      # audit-check does not fail on informational advisories. GTK3's glib advisory is
-      # Linux-only in Tauri's tree; every other unsoundness warning still fails here.
       - name: Deny unsound Rust advisories
         run: cargo audit --file src-tauri/Cargo.lock --deny unsound --ignore RUSTSEC-2024-0429
 
-  # Staging and publishing are separate jobs so a human can install the exact
-  # bytes that will go public before they do. The draft release is assembled
-  # and verified here; nothing is visible to users yet.
   stage-macos:
     name: Stage Draft Desktop Release
-    if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
+    if: ${{ always() && needs.admit-release.result == 'success' && needs.sign-macos.result == 'success' && needs.verify-macos.result == 'success' && needs.build-windows.result == 'success' && needs.audit-rust.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: [admit-release, build-macos, build-windows, audit-rust]
+    needs: [admit-release, sign-macos, verify-macos, build-windows, audit-rust]
     # budget: 120s
     timeout-minutes: 3
     permissions:
@@ -548,11 +586,6 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # Do not flatten — the manifest builder splits architectures by **folder**
-          # (`release-assets/ontology-atlas-macos-<arch>/`). Merging them mixes two
-          # architectures in one folder, making it impossible to know which archive
-          # belongs to which architecture, and incorrectly merging them causes users
-          # to receive apps for the wrong architecture.
           merge-multiple: false
 
       - name: Download Windows artifact
@@ -578,13 +611,6 @@ jobs:
             --tag="${RELEASE_TAG}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Build the MCP ecosystem bundle
-        # The MCPB artifact is what makes Atlas publishable to the official MCP
-        # Registry without an npm package: the registry verifies the release
-        # asset's URL and SHA-256 and hosts no files itself. The build boots the
-        # unpacked bundle before it writes an artifact, so a bundle that cannot
-        # start never reaches a release. Built after the updater manifest so the
-        # manifest builder, which splits architectures by folder, never sees this
-        # one.
         run: |
           pnpm --dir mcp install --frozen-lockfile
           pnpm mcp:build-bundle -- --tag="${RELEASE_TAG}"
@@ -631,10 +657,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-  # Gated on the `release` GitHub Environment. Configure it with required
-  # reviewers (repo Settings → Environments → release) so a first public
-  # release cannot happen without someone installing the draft build first —
-  # the workflow alone cannot prove the app launches on a clean machine.
   publish-macos:
     name: Publish Desktop Release
     runs-on: ubuntu-latest
@@ -643,15 +665,11 @@ jobs:
     timeout-minutes: 3
     environment: release
     permissions:
-      # Publish the verified GitHub Release. Generated download facts leave this
-      # job only as an artifact and cross protected main through a normal PR.
       contents: write
     env:
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
       RELEASE_SHA: ${{ needs.admit-release.outputs.release_sha }}
     steps:
-      # fetch-depth: 0 — the generated manifest's determinism contract needs the full history
-      # (`generated-vault-determinism.contract.test.ts`).
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -678,9 +696,6 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # It is safe to merge here — staging includes version and architecture in the file names,
-          # so all eight assets have unique names. This step only creates a summary table;
-          # there is no need to split architectures again.
           merge-multiple: true
 
       - name: Download Windows artifact
@@ -696,8 +711,6 @@ jobs:
 
       - name: Publish verified stable release
         run: |
-          # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
-          # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
           gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -714,10 +727,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      # The release token cannot bypass protected main and repository policy does not let
-      # GITHUB_TOKEN create pull requests. Preserve the admitted result as a one-file handoff.
-      # A locally authenticated operator applies this artifact in a normal PR; that PR receives
-      # the ordinary required checks, and its human-token merge triggers deploy-pages.yml.
       - name: Upload protected release facts handoff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -752,24 +761,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-  # The listing follows publication inside the same run, on purpose.
-  #
-  # This was a separate workflow on `release: [published]` until 2026-09-11, when
-  # v1.2.0 shipped and it had **zero runs**: `publish-macos` takes the release out of
-  # draft with `GITHUB_TOKEN`, and GitHub will not start a workflow from an event that
-  # token raised. The trigger could never fire for our own releases, and the entry had
-  # to be dispatched by hand — an "it is wired" claim that was not true.
-  #
-  # `needs: publish-macos` is the honest ordering: the registry fetches the asset with
-  # no credentials, so it must already be public. The called workflow keeps its own
-  # `workflow_dispatch` for re-listing a release that is already out.
   list-mcp-registry:
     name: List the MCP server entry
     needs: [admit-release, publish-macos]
     permissions:
-      # Not repository write. `id-token: write` mints the short-lived OIDC assertion
-      # `mcp-publisher login github-oidc` exchanges to prove this repository owns the
-      # `io.github.wlsdks/*` namespace; it grants nothing over this repository's contents.
       contents: read
       id-token: write
     uses: ./.github/workflows/publish-mcp-registry.yml
