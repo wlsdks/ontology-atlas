@@ -16,7 +16,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionId[] = [
   'about',
 ];
 
-export const SETTINGS_SCOPES: readonly SettingsScope[] = ['computer', 'folder', 'app'];
+const SETTINGS_SCOPES: readonly SettingsScope[] = ['computer', 'folder', 'app'];
 
 export const SETTINGS_NAV_GROUPS: readonly { scope: SettingsScope; sections: readonly SettingsSectionId[] }[] =
   SETTINGS_SCOPES.map((scope) => ({

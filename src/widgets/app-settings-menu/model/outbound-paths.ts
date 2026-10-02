@@ -1,8 +1,8 @@
-export type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
+type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
 
-export type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'provider-owned';
+type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'provider-owned';
 
-export const OUTBOUND_AUDIT_LOG = '.ontology-atlas/llm-audit.jsonl';
+const OUTBOUND_AUDIT_LOG = '.ontology-atlas/llm-audit.jsonl';
 
 export const OUTBOUND_DESTINATION_PLACEHOLDERS = [
   'your-runner-address',

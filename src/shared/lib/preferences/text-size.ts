@@ -18,10 +18,6 @@ const textSizePreference = definePreference<TextSize>({
   fallback: "default",
 });
 
-export function readTextSize(): TextSize {
-  return textSizePreference.read();
-}
-
 export function writeTextSize(value: TextSize): void {
   textSizePreference.write(value);
   if (typeof document === "undefined") return;

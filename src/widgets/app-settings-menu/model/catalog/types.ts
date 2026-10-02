@@ -23,7 +23,7 @@ export const SETTINGS_SECTION_SCOPE: Readonly<Record<SettingsSectionId, Settings
   about: 'app',
 };
 
-export type SettingsSurface = 'both' | 'desktop';
+type SettingsSurface = 'both' | 'desktop';
 
 export type SettingId = string;
 
