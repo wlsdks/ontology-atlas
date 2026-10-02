@@ -11,21 +11,16 @@ export interface CosmosLink {
   weight: number;
 }
 
-interface SettleTuning {
-  fill: number;
-  gravity: number;
-  contact: number;
-  spring: number;
-  charge: number;
-}
-
-const DEFAULT_SETTLE_TUNING: SettleTuning = { fill: 0.4, gravity: 0.03, contact: 0.32, spring: 0.016, charge: 0.35 };
+const FILL = 0.4;
+const GRAVITY = 0.03;
+const CONTACT = 0.32;
+const SPRING = 0.016;
+const CHARGE = 0.35;
 
 export interface SettleOptions {
   coreRadius: number;
   iterations?: number;
   keyframeEvery?: number;
-  tuning?: Partial<SettleTuning>;
 }
 
 export interface SettleResult {
@@ -37,6 +32,7 @@ export interface SettleResult {
 }
 
 const SOFTEN = 0.5;
+const PINNED_SLACK = 0.02;
 
 const smoothstep = (a: number, b: number, v: number) => {
   const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
@@ -49,7 +45,6 @@ export function voidGap(ra: number, rb: number, meanRadius: number): number {
 
 export function settleGalaxies(bodies: readonly CosmosBody[], links: readonly CosmosLink[], options: SettleOptions): SettleResult {
   const n = bodies.length;
-  const { fill: FILL, gravity: GRAVITY, contact: CONTACT, spring: SPRING, charge: CHARGE } = { ...DEFAULT_SETTLE_TUNING, ...options.tuning };
   const iterations = options.iterations ?? 600;
   const keyframeEvery = options.keyframeEvery ?? 15;
   const x = new Float64Array(n);
@@ -110,7 +105,7 @@ export function settleGalaxies(bodies: readonly CosmosBody[], links: readonly Co
           d2 = dx * dx + dy * dy;
         }
         const d = Math.sqrt(d2);
-        let f = (repulsion * ri * rj) / (d2 + SOFTEN * meanRadius * meanRadius) ;
+        let f = (repulsion * ri * rj) / (d2 + SOFTEN * meanRadius * meanRadius);
         const s = ri + rj + voidGap(ri, rj, meanRadius);
         if (d < s) f += (CONTACT * contactWeight * (s - d)) / d;
         fx[i] += dx * f;
@@ -181,6 +176,8 @@ function separateGalaxies(
 ): void {
   const n = x.length;
   const floor = 0.82;
+  const displaced = new Uint8Array(n);
+  const mobile = (i: number) => !fixed?.[i] || displaced[i] === 1;
   for (let pass = 0; pass < 60; pass += 1) {
     let moved = 0;
     for (let i = 0; i < n; i += 1) {
@@ -192,11 +189,13 @@ function separateGalaxies(
         const s = ri + rj + voidGap(ri, rj, meanRadius) * floor;
         const d2 = dx * dx + dy * dy;
         if (d2 >= s * s) continue;
+        const mi = mobile(i);
+        const mj = mobile(j);
+        if (!mi && !mj && d2 >= (ri + rj + voidGap(ri, rj, 0) * floor - PINNED_SLACK) ** 2) continue;
         const d = Math.sqrt(d2) || 1e-6;
         const push = (s - d) / d;
-        const pi = fixed?.[i] ?? 0;
-        const pj = fixed?.[j] ?? 0;
-        const wi = pi && !pj ? 0 : pj && !pi ? 1 : rj / (ri + rj);
+        const wi = mi === mj ? rj / (ri + rj) : mi ? 1 : 0;
+        if (!mi && !mj) displaced[i] = displaced[j] = 1;
         x[i] -= dx * push * wi;
         y[i] -= dy * push * wi;
         x[j] += dx * push * (1 - wi);
@@ -229,7 +228,6 @@ export function relaxGalaxies(
   const y = Float64Array.from(startY);
   const frames: Float32Array[] = [];
   if (n === 0) return { x, y, frames };
-  const { gravity: GRAVITY, contact: CONTACT, spring: SPRING, charge: CHARGE, fill: FILL } = { ...DEFAULT_SETTLE_TUNING, ...options.tuning };
   const radius = bodies.map((b) => b.radius);
   const meanRadius = radius.reduce((s, r) => s + r, 0) / n;
   const coreRadius = options.coreRadius;

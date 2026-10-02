@@ -5,7 +5,7 @@ import { computeCosmosLayout, type CosmosLayout, type CosmosPlacementRecord } fr
 let last: {
   nodes: readonly CosmosInputNode[];
   edges: readonly TreeInputEdge[];
-  placement: CosmosPlacementRecord | null;
+  placement: string;
   fresh: boolean;
   layout: CosmosLayout;
 } | null = null;
@@ -17,14 +17,15 @@ export function cosmosLayoutFor(
   placement: CosmosPlacementRecord | null,
   fresh: boolean,
 ): CosmosLayout {
-  if (last && last.nodes === nodes && last.edges === edges && last.placement === placement && last.fresh === fresh) return last.layout;
+  const key = JSON.stringify(placement);
+  if (last && last.nodes === nodes && last.edges === edges && last.placement === key && last.fresh === fresh) return last.layout;
   runs += 1;
   const layout = computeCosmosLayout(
     nodes.map((n) => ({ id: n.id, label: n.label, kind: n.kind, size: n.size, fullDegree: n.fullDegree })),
     edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType })),
     { placement, fresh },
   );
-  last = { nodes, edges, placement, fresh, layout };
+  last = { nodes, edges, placement: key, fresh, layout };
   return layout;
 }
 
