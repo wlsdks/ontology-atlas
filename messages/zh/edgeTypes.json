@@ -1,10 +1,10 @@
 {
-  "contains": "Contains",
-  "belongs_to": "Belongs to",
-  "depends_on": "Depends on",
-  "implements": "Implements",
-  "uses": "Uses",
-  "describes": "Describes",
-  "related_to": "Related to",
-  "is_a": "Is a kind of"
+  "contains": "包含",
+  "belongs_to": "所属",
+  "depends_on": "依赖",
+  "implements": "实现",
+  "uses": "使用",
+  "describes": "说明",
+  "related_to": "相关",
+  "is_a": "上位概念"
 }

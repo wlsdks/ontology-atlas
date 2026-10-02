@@ -1,14 +1,14 @@
 {
-  "availableTitle": "Version {version} is available",
-  "availableBody": "Install it now, or keep working and update later.",
-  "install": "Install update",
-  "downloadingTitle": "Downloading {version}",
-  "downloadingPercent": "{percent} downloaded.",
-  "downloadingUnknown": "Downloading: the size is not reported.",
-  "readyTitle": "{version} is ready",
-  "readyBody": "Restart to finish. Your open folder stays where it is.",
-  "restart": "Restart now",
-  "failedTitle": "The update could not be installed",
-  "failedBody": "You can download the latest version from the releases page instead.",
-  "dismiss": "Not now"
+  "availableTitle": "有新版本 {version}",
+  "availableBody": "可以现在安装，也可以先继续工作，稍后再更新。",
+  "install": "安装更新",
+  "downloadingTitle": "正在下载 {version}",
+  "downloadingPercent": "已下载 {percent}。",
+  "downloadingUnknown": "下载中，大小未知。",
+  "readyTitle": "{version} 已就绪",
+  "readyBody": "重启即可完成，已打开的文件夹保持不变。",
+  "restart": "立即重启",
+  "failedTitle": "无法安装更新",
+  "failedBody": "你可以改从发布页下载最新版本。",
+  "dismiss": "暂不"
 }

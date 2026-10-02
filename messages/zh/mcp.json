@@ -1,10 +1,10 @@
 {
   "title": "MCP",
-  "lede": "MCP is the wire a coding agent uses to read and write this folder. Outside services attach here too.",
-  "tablistAriaLabel": "MCP sections",
-  "shareHeading": "Share this folder",
-  "connectorsHeading": "Connectors",
-  "connectorsHeadingCount": "Connectors · {on} of {total} on",
-  "connectorsNeedFolder": "Connectors are written inside the folder. Open one above and they appear here.",
-  "connectorsCountTitle": "Connectors switched on"
+  "lede": "MCP 是编程智能体读写此文件夹的通道，外部服务也在这里接入。",
+  "tablistAriaLabel": "MCP 分区",
+  "shareHeading": "共享此文件夹",
+  "connectorsHeading": "连接器",
+  "connectorsHeadingCount": "连接器 · 已开启 {on}/{total}",
+  "connectorsNeedFolder": "连接器写在文件夹里。先在上方打开一个文件夹，它们就会出现在这里。",
+  "connectorsCountTitle": "已开启的连接器"
 }
