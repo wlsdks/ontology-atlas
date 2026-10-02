@@ -15,9 +15,11 @@ export {
   isMissingFolderError,
 } from './model/classify-vault-access-error';
 export { useDataSourceMode } from './model/use-data-source-mode';
+export { useVaultLoadProgress } from './model/vault-load-progress';
 export { useSampleSource } from './model/use-sample-source';
 export { useStaticVaultSource } from './model/use-static-vault-source';
 export {
+  useArrivingVaultIdentityScope,
   useVaultIdentityScope,
   useVaultSessionIdentityScope,
 } from './model/use-vault-identity-scope';

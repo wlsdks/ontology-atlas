@@ -26,7 +26,7 @@ export function RootEntryPage() {
   );
 
   if (!clientReady) return <DesktopVaultRedirect />;
-  if (vault.manifest) return <HomePage />;
+  if (vault.manifest || vault.partialManifest) return <HomePage />;
   /* A person choosing between their folders gets the chooser, not the web gateway. */
   if (isDesktopShell() || vault.awaitingVaultChoice) {
     // A neutral frame until the restore is attempted, or FirstRun flashes.

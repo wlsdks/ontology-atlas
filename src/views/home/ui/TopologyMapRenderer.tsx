@@ -75,7 +75,7 @@ export interface TopologyMapRendererProps {
   >;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
-    "deeplinkSourceReady" | "vaultIdentity" | "spotlightFitToken" | "selectedOntologyNode" | "ontologyInsight"
+    "deeplinkSourceReady" | "vaultIdentity" | "spotlightFitToken" | "selectedOntologyNode" | "ontologyInsight" | "vault"
   >;
   topologyAuthoring: Pick<
     ReturnType<typeof useTopologyAuthoring>,
@@ -121,7 +121,9 @@ export function TopologyMapRenderer({
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
-  const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight } = topologyVaultReadModel;
+  const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
+  const arriving = Boolean(vault.partialManifest);
+  const arrivingDocuments = arriving ? vault.partialTotal : 0;
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -241,8 +243,9 @@ export function TopologyMapRenderer({
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
             focus={{ selectedSlug: canvasSelectedSlug }}
-            dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+            dataSourceKey={deeplinkSourceReady || arriving ? vaultIdentity : null}
             assembleOnOpen={mapAssemblesOnOpen && !morph.arrivedByMorph}
+            arrivingDocuments={arrivingDocuments}
             overviewFit={overviewFit}
             fitViewToken={combinedFitToken}
             growthReplayToken={growthReplayToken}

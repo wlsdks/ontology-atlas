@@ -70,3 +70,14 @@ export function useVaultSessionIdentityScope(): VaultIdentityScope {
     sampleSource,
   });
 }
+
+export function useArrivingVaultIdentityScope(): VaultIdentityScope | null {
+  const localVault = useLocalVault();
+  const [sampleSource] = useSampleSource();
+  if (!localVault.partialManifest || !localVault.handle) return null;
+  return vaultIdentityScope({
+    isLocalLoaded: true,
+    handleName: localHandleIdentityName(localVault.handle),
+    sampleSource,
+  });
+}
