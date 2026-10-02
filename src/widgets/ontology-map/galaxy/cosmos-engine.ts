@@ -4,7 +4,7 @@ import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { readHexRoom } from "../morph/hex-marks";
 import type { OntologyMapEdge } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
-import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
+import { applyHaze, createHazeState, hazeWindowStart, stepHaze } from "./cosmos-ambient";
 import { CosmosArrivalRun } from "./cosmos-arrival";
 import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, liveBandRadius, memberBounds, posedPoint } from "./cosmos-camera";
 import { CosmosCameraRestWatch, CosmosRevealClock, relationsByConcept } from "./cosmos-engine-watch";
@@ -249,11 +249,11 @@ export class CosmosEngine {
     const dt = this.lastNow ? Math.min(64, Math.max(0, now - this.lastNow)) : 16;
     this.lastNow = now;
     let why = rig.step(now) ? 1 : 0;
-    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrival.end), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
+    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: hazeWindowStart(this.lastInput, this.arrival.end), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
     if (this.hazeAwake) why |= 4;
     const arriving = this.arrival.step(layout, now, this.poses);
     if (!arriving && this.roomHeld) this.resize(true);
-    applyHaze(layout, this.haze, this.poses, rig.camera.scale, this.options.reducedMotion);
+    applyHaze(layout, this.haze, this.poses, this.options.reducedMotion);
     if (arriving) why |= 8;
     const attended = this.selectedId ?? this.hoverId;
     const revealMs = this.reveal.revealMs(attended, now);
@@ -266,7 +266,7 @@ export class CosmosEngine {
       relationsOf: (id) => this.relations.get(id) ?? [],
       pointOf: (id) => posedPoint(layout, this.poses, id),
       record: paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null,
-      cache: this.cache, deepField: this.deepField, buildBudget: 4, frame: this.frames,
+      cache: this.cache, deepField: this.deepField, buildBudget: 4,
     });
     if (stats.pendingBuilds > 0) why |= 16;
     const rest = this.cameraRest.step(rig.camera, rig.room, rig.held() || arriving || stats.pendingBuilds > 0);
@@ -341,7 +341,7 @@ export class CosmosEngine {
       return;
     }
     const hit = this.hit(p.x, p.y);
-    if (!this.setHover(hit.id, hit.galaxy) && this.haze.mode !== "off") this.requestFrame();
+    if (!this.setHover(hit.id, hit.galaxy)) this.requestFrame();
   }
 
   private setHover(id: string | null, galaxy: number): boolean {

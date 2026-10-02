@@ -84,7 +84,7 @@ export class CosmosBitmapCache {
     this.write(coreKey(size), c, canvasBytes(c));
   }
 
-  markDrawn(key: string, _frame: number): boolean {
+  markDrawn(key: string): boolean {
     const entry = this.entries.get(key);
     if (entry) entry.used = ++this.tick;
     if (this.drawn.has(key)) return false;

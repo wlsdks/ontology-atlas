@@ -235,9 +235,9 @@ export function OntologyCosmosMap({
         ref={canvasRef}
         data-testid="ontology-map-canvas"
         data-role={MAP_CANVAS_SURFACE_ROLE}
-        role="group"
-        aria-label={canvasLabel ?? "Galaxy map"}
-        tabIndex={0}
+        role={canvasLabel ? "group" : undefined}
+        aria-label={canvasLabel}
+        tabIndex={canvasLabel ? 0 : undefined}
         className="absolute inset-0 h-full w-full touch-none cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]"
       />
       <CosmosMirror

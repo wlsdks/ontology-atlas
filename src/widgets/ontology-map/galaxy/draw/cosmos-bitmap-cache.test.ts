@@ -62,9 +62,9 @@ describe("CosmosBitmapCache", () => {
   it("reports a first draw once per bake", () => {
     const cache = new CosmosBitmapCache();
     cache.setImpostor(`g${4}`, 128, bitmap(128));
-    expect(cache.markDrawn("impostor:g4:128", 1)).toBe(true);
-    expect(cache.markDrawn("impostor:g4:128", 2)).toBe(false);
+    expect(cache.markDrawn("impostor:g4:128")).toBe(true);
+    expect(cache.markDrawn("impostor:g4:128")).toBe(false);
     cache.setImpostor(`g${4}`, 128, bitmap(128));
-    expect(cache.markDrawn("impostor:g4:128", 3)).toBe(true);
+    expect(cache.markDrawn("impostor:g4:128")).toBe(true);
   });
 });

@@ -42,7 +42,6 @@ interface CosmosFrameInput {
   cache: CosmosBitmapCache;
   deepField: HTMLCanvasElement | null;
   buildBudget: number;
-  frame?: number;
 }
 
 const patterns = new WeakMap<CanvasRenderingContext2D, { field: HTMLCanvasElement; pattern: CanvasPattern | null }>();
@@ -180,9 +179,8 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     });
   }
   const galaxyAlpha = galaxyLensAlpha(input.lens, inks, input.trail);
-  const frame = input.frame ?? 0;
   const drawn = (key: string) => {
-    if (cache.markDrawn(key, frame)) stats.firstDraws += 1;
+    if (cache.markDrawn(key)) stats.firstDraws += 1;
   };
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
