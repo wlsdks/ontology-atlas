@@ -8,7 +8,7 @@ import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
 import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
 import { VIEW_CAMERA_MS, VIEW_DIM_MS } from "../model/motion-physics";
-import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, type HexCamera as Camera } from "../morph/hex-marks";
+import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
 import {
   computeHexBoard,
   hexBandFor,
@@ -98,6 +98,7 @@ const SWEEP_MS = 420;
 const PAN_KEEP = 160;
 /** Chrome that moves with a selection (INDEX folding or opening, the inspector) has settled by then. */
 const CHROME_SETTLE_MS = 450;
+const MIRROR_REST_MS = 120;
 /** Canals shown in the far band (spec §7). */
 const FAR_CANALS = 14;
 
@@ -417,31 +418,49 @@ export function OntologyHexBoardMap({
   );
 
   /* ── paint ──────────────────────────────────────────────────────────── */
+  const mirrorTimerRef = useRef<number | null>(null);
   const writeMirror = useCallback(
     (cam: Camera, currentBand: HexBand, plateBoxes: HexTextBox[]) => {
       const list = listRef.current;
       const wrap = wrapRef.current;
       if (!list || !wrap || !layout) return;
       const key = `${Math.round(cam.ox)},${Math.round(cam.oy)},${cam.R.toFixed(2)}:${currentBand}:${textBoxesRef.current.length}:${layout.tiles.length}`;
-      if (key === mirrorKeyRef.current) return;
-      mirrorKeyRef.current = key;
-      const byId = new Map<string, HTMLElement>();
-      for (const el of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(el.dataset.hexId!, el);
-      const boxes = new Map(textBoxesRef.current.map((b) => [b.id, b] as const));
-      const plates = new Map(plateBoxes.map((b) => [b.id, b] as const));
-      const RI = cam.R - hexGutter(cam.R);
-      for (const t of layout.tiles) {
-        const el = byId.get(t.id);
-        if (!el) continue;
-        el.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(cam.oy + t.y * cam.R)},${Math.round(RI)}`;
-        const b = boxes.get(t.id);
-        el.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
-        const p = plates.get(t.id);
-        el.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
+      if (mirrorTimerRef.current != null) window.clearTimeout(mirrorTimerRef.current);
+      mirrorTimerRef.current = null;
+      if (key === mirrorKeyRef.current) {
+        if (wrap.dataset.hexReady !== "true") wrap.dataset.hexReady = "true";
+        return;
       }
-      wrap.dataset.hexReady = "true";
+      if (wrap.dataset.hexReady !== "false") wrap.dataset.hexReady = "false";
+      const textBoxes = textBoxesRef.current;
+      mirrorTimerRef.current = window.setTimeout(() => {
+        mirrorTimerRef.current = null;
+        mirrorKeyRef.current = key;
+        const byId = new Map<string, HTMLElement>();
+        for (const el of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(el.dataset.hexId!, el);
+        const boxes = new Map(textBoxes.map((b) => [b.id, b] as const));
+        const plates = new Map(plateBoxes.map((b) => [b.id, b] as const));
+        const RI = cam.R - hexGutter(cam.R);
+        for (const t of layout.tiles) {
+          const el = byId.get(t.id);
+          if (!el) continue;
+          el.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(cam.oy + t.y * cam.R)},${Math.round(RI)}`;
+          const b = boxes.get(t.id);
+          el.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
+          const p = plates.get(t.id);
+          el.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
+        }
+        wrap.dataset.hexReady = "true";
+      }, MIRROR_REST_MS);
     },
     [layout],
+  );
+  useEffect(
+    () => () => {
+      if (mirrorTimerRef.current != null) window.clearTimeout(mirrorTimerRef.current);
+      mirrorTimerRef.current = null;
+    },
+    [],
   );
 
   const paint = useCallback(
@@ -550,7 +569,7 @@ export function OntologyHexBoardMap({
         );
       if (currentBand !== band) setBand(currentBand);
       if (Math.round(cam.R) !== drawnR) setDrawnR(Math.round(cam.R));
-      if (!again) writeMirror(cam, currentBand, plateBoxes);
+      writeMirror(cam, currentBand, plateBoxes);
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
@@ -593,7 +612,7 @@ export function OntologyHexBoardMap({
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
       const next = readHexRoom(canvasRef.current, r.width, r.height);
-      setRoom((prev) => (prev && prev.x === next.x && prev.y === next.y && prev.width === next.width && prev.height === next.height ? prev : next));
+      setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
     read();

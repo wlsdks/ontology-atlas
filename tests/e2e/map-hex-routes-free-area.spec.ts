@@ -74,6 +74,7 @@ async function settled(page: Page) {
       { intervals: [300, 300, 300, 300, 300, 300] },
     )
     .toBe(true);
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
 }
 
 /** Click a tile: on the canvas when its centre is free, otherwise through its mirror button. */

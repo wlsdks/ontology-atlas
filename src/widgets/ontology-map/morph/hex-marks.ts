@@ -60,6 +60,18 @@ export function hexFreeArea(canvas: HTMLCanvasElement | null): Rect | null {
   return hexMapChrome(canvas)?.free ?? null;
 }
 
+const ROOM_REST_SLACK = 12;
+
+export function roomMovesRest(prev: Rect | null, next: Rect): boolean {
+  if (!prev) return true;
+  return (
+    Math.abs(prev.x - next.x) > ROOM_REST_SLACK ||
+    Math.abs(prev.y - next.y) > ROOM_REST_SLACK ||
+    Math.abs(prev.x + prev.width - (next.x + next.width)) > ROOM_REST_SLACK ||
+    Math.abs(prev.y + prev.height - (next.y + next.height)) > ROOM_REST_SLACK
+  );
+}
+
 export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, height: number): Rect {
   const free = hexFreeArea(canvas) ?? { x: 0, y: 0, width, height };
   const x = free.x + ROOM_LEFT_PAD;
