@@ -45,8 +45,6 @@ const runnable = (() => {
  * frontmatter `kind`, the chart counts paths. The gate is their agreement; the vault README is the node that once
  * split them.
  */
-const AUTHORABLE_KINDS = new Set(["project", "domain", "capability", "element"]);
-
 function kindOf(vaultRelativePath: string): string | null {
   const raw = readFileSync(join(VAULT, vaultRelativePath), "utf8");
   const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
@@ -59,7 +57,11 @@ describe.skipIf(!runnable)("the chart agrees with the summary card", () => {
     const paths = git("ls-tree", "-r", "--name-only", "HEAD", VAULT)
       .trim().split("\n").filter(Boolean).map(rel);
     const byPath = countVaultPaths(paths).concept;
-    const byKind = paths.filter((p) => p.endsWith(".md") && AUTHORABLE_KINDS.has(kindOf(p) ?? "")).length;
+    // The card includes document nodes too; authorable kinds are not a census of the graph.
+    const byKind = paths.filter((p) => {
+      const kind = p.endsWith(".md") ? kindOf(p) : null;
+      return Boolean(kind?.trim()) && kind !== "vault-readme";
+    }).length;
     expect(byKind).toBeGreaterThan(20);
     expect(byPath).toBe(byKind);
   });

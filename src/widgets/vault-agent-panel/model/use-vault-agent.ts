@@ -170,6 +170,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
     setRunStartedAt(null);
   }, []);
 
+  useEffect(() => () => stop(), [stop, args.vaultPath]);
+
   const send = useCallback(
     async (text: string) => {
       const provider = args.provider;
@@ -216,6 +218,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
             execute,
             async send({ body, scope, question, model }) {
               const echo = await llmChat({
+                signal: controller.signal,
                 provider,
                 vaultPath,
                 model,

@@ -13,6 +13,7 @@ import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/elapsed';
 import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
 import { AgentWorkFact } from './AgentWorkFact';
+import { AgentMascotPresence } from './AgentMascotPresence';
 import { deriveBellInbox } from '../model/bell-inbox';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
@@ -239,6 +240,7 @@ export function AgentActivityChip({
       data-testid="agent-activity-chip"
       data-work-mode={feed.work.mode}
     >
+      {!suppressed && <AgentMascotPresence feed={feed} />}
       {/*
         **The status is a segment of the activity control, not a box under it** (owner,
         2026-09-24: *"the toast at the top — the design is poor, the colour too, and the

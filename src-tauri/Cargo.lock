@@ -2647,6 +2647,7 @@ name = "ontology-atlas"
 version = "1.4.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "keyring",
  "libc",
  "log",
