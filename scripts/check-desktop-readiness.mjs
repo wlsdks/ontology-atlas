@@ -600,7 +600,7 @@ if (
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\b/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9\b/.test(pagesDeployWorkflow) &&
   /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
