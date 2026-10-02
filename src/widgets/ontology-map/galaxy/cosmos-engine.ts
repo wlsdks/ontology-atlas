@@ -1,32 +1,22 @@
 import { isDirectionalRelation } from "@/entities/knowledge-graph";
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { isImeComposing } from "@/shared/lib/ime-composition";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { readHexRoom } from "../morph/hex-marks";
 import type { OntologyMapEdge } from "../ui/OntologyMap";
-import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
-import { applyArrival, ARRIVAL_MS } from "./cosmos-arrival";
+import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
-import { galaxyFitScale, galaxyMatrix, liveBandRadius, overviewCamera, screenToWorld, worldToScreen } from "./cosmos-camera";
-import type {
-  CosmosArrivalMode,
-  CosmosBand,
-  CosmosCamera,
-  CosmosFrameStats,
-  CosmosInks,
-  CosmosLens,
-  CosmosPaintRecord,
-  CosmosPaintRecorder,
-  CosmosRelation,
-  CosmosRoom,
-  CosmosTrail,
-  GalaxyPose,
-} from "./cosmos-types";
+import { applyArrival, ARRIVAL_MS } from "./cosmos-arrival";
+import { CosmosCameraRig, CosmosHitIndex, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
+import { installCosmosProbe } from "./cosmos-probe";
+import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
 import { walkCandidates, walkTarget } from "./cosmos-walk";
 import { CosmosBitmapCache } from "./draw/cosmos-bitmap-cache";
 import { drawCosmosFrame } from "./draw/cosmos-frame";
 import { registerCosmosLabels } from "./draw/cosmos-labels";
 import { buildDeepField } from "./draw/cosmos-paint";
-import { MIN_STAR_SPACING, type CosmosLayout } from "./layout/cosmos-layout";
-import { cosmosLayoutRuns } from "./layout/cosmos-layout-cache";
+import type { CosmosLayout } from "./layout/cosmos-layout";
 
 interface CosmosEngineOptions {
   onSelect?: (id: string) => void;
@@ -41,81 +31,54 @@ interface CosmosEngineOptions {
   navigationSpeed: MapNavigationSpeed;
 }
 
-interface CosmosMark {
-  id: string;
-  x: number;
-  y: number;
-  r: number;
-  kind: "project" | "domain" | "capability" | "element";
-}
-
-const CAMERA_GLIDE_MS = 650;
-
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const progressSince = (start: number, frameTime: number, ms: number) => Math.min(1, Math.max(0, (frameTime - start) / ms));
-
-interface FrameRecord {
-  t: number;
-  ms: number;
-  builds: number;
-  firstDraws: number;
-  why: number;
-  sinceInput: number;
-}
-
 const WALK_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+const CHROME_SETTLE_MS = 450;
+const APPROACH_READS_MS = [60, 420];
 
 export class CosmosEngine {
   private readonly ctx: CanvasRenderingContext2D;
   private dpr = 1;
-  private width = 0;
-  private height = 0;
-  private room: CosmosRoom = { x: 0, y: 0, width: 1, height: 1 };
-  private camera: CosmosCamera = { x: 0, y: 0, scale: 1 };
-  private overviewScale = 1;
-  private userCamera = false;
-  private layout: CosmosLayout | null = null;
+  width = 0;
+  height = 0;
+  readonly rig = new CosmosCameraRig();
+  private readonly hits = new CosmosHitIndex();
+  layout: CosmosLayout | null = null;
   private inks: CosmosInks | null = null;
-  private poses: GalaxyPose[] = [];
-  private cache = new CosmosBitmapCache();
+  poses: GalaxyPose[] = [];
+  cache = new CosmosBitmapCache();
   private deepField: HTMLCanvasElement | null = null;
-  private raf = 0;
+  raf = 0;
   private lastNow = 0;
-  private zoom: { target: number; sx: number; sy: number; wx: number; wy: number } | null = null;
-  private tween: { from: CosmosCamera; to: CosmosCamera; start: number; ms: number } | null = null;
-  private arrival: { start: number; mode: CosmosArrivalMode } | null = null;
-  private arrivalMode: CosmosArrivalMode = "none";
-  private arrivalClock = 0;
-  private readonly haze = createHazeState();
-  private hazeAwake = false;
+  arrival: { start: number; mode: CosmosArrivalMode } | null = null;
+  arrivalMode: CosmosArrivalMode = "none";
+  arrivalClock = 0;
+  private arrivalEnd = 0;
+  readonly haze = createHazeState();
+  hazeAwake = false;
   private band: CosmosBand | null = null;
   private lens: CosmosLens | null = null;
   private trail: CosmosTrail | null = null;
-  private paintLog: CosmosPaintRecord[] | null = null;
-  private probeHandle: unknown = null;
-  private readonly probe = new URLSearchParams(window.location.search).has("e2e");
+  paintLog: CosmosPaintRecord[] | null = null;
+  private readonly probed = new URLSearchParams(window.location.search).has("e2e");
   private lastInput = 0;
-  private drag: { id: number; x: number; y: number; camX: number; camY: number; moved: boolean } | null = null;
+  private lastPointer: { x: number; y: number } | null = null;
   private hoverId: string | null = null;
   private hoverGalaxy = -1;
-  private selectedId: string | null = null;
+  selectedId: string | null = null;
   private relations = new Map<string, CosmosRelation[]>();
-  private grids = new Map<number, Map<number, number[]>>();
-  private lastStats: CosmosFrameStats | null = null;
-  private frames = 0;
-  private frameLog: FrameRecord[] = [];
+  lastStats: CosmosFrameStats | null = null;
+  frames = 0;
+  frameLog: { t: number; ms: number; builds: number; firstDraws: number; why: number; sinceInput: number }[] = [];
   private drawnReported = false;
-
-  private readonly buildBudget = 4;
-  private lastPointer: { x: number; y: number } | null = null;
+  private approachTimers: number[] = [];
+  private settleTimer = 0;
   private readonly cleanups: (() => void)[] = [];
-  private options: CosmosEngineOptions;
 
-  constructor(private readonly canvas: HTMLCanvasElement, options: CosmosEngineOptions) {
+  constructor(private readonly canvas: HTMLCanvasElement, private options: CosmosEngineOptions) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("cosmos: no 2d context");
     this.ctx = ctx;
-    this.options = options;
+    this.rig.reducedMotion = options.reducedMotion;
     const listen = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions) => {
       canvas.addEventListener(type, fn as EventListener, opts);
       this.cleanups.push(() => canvas.removeEventListener(type, fn as EventListener, opts));
@@ -123,37 +86,34 @@ export class CosmosEngine {
     listen("pointerdown", (e) => this.onPointerDown(e));
     listen("pointermove", (e) => this.onPointerMove(e));
     listen("pointerup", (e) => this.onPointerUp(e));
-    listen("pointercancel", () => (this.drag = null));
-    listen("pointerleave", () => {
-      if (this.hoverId !== null || this.hoverGalaxy !== -1) {
-        this.hoverId = null;
-        this.hoverGalaxy = -1;
-        this.requestFrame();
-      }
-    });
+    listen("pointercancel", () => this.rig.cancelDrag());
+    listen("pointerleave", () => this.setHover(null, -1));
     listen("wheel", (e) => this.onWheel(e), { passive: false });
     listen("keydown", (e) => this.onKey(e));
     listen("contextmenu", (e) => this.onContextMenu(e));
+    this.cleanups.push(listenForGesturePinch(canvas, (ratio, x, y) => this.zoomAt(this.local(x, y), ratio ** this.options.navigationSpeed.zoom, false)));
     const resize = new ResizeObserver(() => this.resize());
     resize.observe(canvas);
-    this.cleanups.push(() => resize.disconnect());
-    for (const ms of [250, 1000]) {
-      const timer = window.setTimeout(() => this.resize(), ms);
-      this.cleanups.push(() => window.clearTimeout(timer));
-    }
+    const chrome = new MutationObserver(() => this.readWhenSettled());
+    chrome.observe(document.documentElement, { attributes: true, attributeFilter: ["data-topology-index"] });
+    this.cleanups.push(() => {
+      resize.disconnect();
+      chrome.disconnect();
+      window.clearTimeout(this.settleTimer);
+      this.clearApproach();
+    });
     this.resize();
-    if (this.probe) this.installProbe();
+    if (this.probed) this.cleanups.push(installCosmosProbe(this));
   }
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
     for (const fn of this.cleanups) fn();
-    const w = window as unknown as { __atlasCosmos?: unknown };
-    if (w.__atlasCosmos && w.__atlasCosmos === this.probeHandle) delete w.__atlasCosmos;
   }
 
   setOptions(options: Partial<CosmosEngineOptions>): void {
     this.options = { ...this.options, ...options };
+    this.rig.reducedMotion = this.options.reducedMotion;
     this.requestFrame();
   }
 
@@ -169,52 +129,54 @@ export class CosmosEngine {
     registerCosmosLabels(layout, labels);
     this.relations = relationsByConcept(edges);
     this.cache.clear();
-    this.grids.clear();
+    this.hits.clear();
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
-    this.userCamera = false;
-    this.fit(false);
+    this.rig.setBounds(layout.bounds);
     this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: performance.now(), mode: arrival } : null;
     this.arrivalMode = this.arrival ? arrival : "none";
-    this.arrivalClock = 0;
+    [this.arrivalClock, this.arrivalEnd] = [0, (this.arrival?.start ?? performance.now()) + (this.arrival ? ARRIVAL_MS : 0)];
     this.drawnReported = false;
     this.requestFrame();
   }
 
   setSelected(id: string | null): void {
+    const previous = this.selectedId;
     this.selectedId = id;
+    this.clearApproach();
+    if (id === null) {
+      if (previous !== null) this.rig.releaseReturn(performance.now());
+      this.readWhenSettled();
+    } else if (id !== previous) {
+      if (previous === null) this.rig.holdReturn();
+      this.approachTimers = APPROACH_READS_MS.map((ms) => window.setTimeout(() => this.approach(id), ms));
+    }
     this.requestFrame();
   }
 
   setLens(lens: CosmosLens | null, trail: CosmosTrail | null): void {
-    this.lens = lens;
-    this.trail = trail;
+    [this.lens, this.trail] = [lens, trail];
     this.requestFrame();
   }
 
   requestFit(): void {
-    this.userCamera = false;
-    this.fit(true);
-    this.requestFrame();
+    if (!this.lens?.memberIds.size) this.overview();
+    else this.requestLensFit();
   }
 
   requestLensFit(): void {
-    this.requestFit();
+    const b = this.layout && this.lens && memberBounds(this.layout, this.poses, this.lens.memberIds);
+    if (!b) return;
+    this.rig.frame(framingCamera(b, this.rig.room, this.rig.overviewScale), performance.now());
+    this.requestFrame();
   }
 
-  marks(): CosmosMark[] {
-    const layout = this.layout;
-    if (!layout) return [];
-    const out: CosmosMark[] = [];
-    if (layout.core.id) {
-      const p = worldToScreen(this.camera, this.room, 0, 0);
-      out.push({ id: layout.core.id, x: p.x, y: p.y, r: 14, kind: "project" });
-    }
-    layout.galaxies.forEach((g, i) => {
-      const pose = this.poses[i];
-      const p = worldToScreen(this.camera, this.room, pose?.x ?? g.x, pose?.y ?? g.y);
-      out.push({ id: g.id, x: p.x, y: p.y, r: g.radius * this.camera.scale, kind: "domain" });
-    });
-    return out;
+  marks() {
+    return this.layout ? cosmosMarks(this.layout, this.poses, this.rig.camera, this.rig.room) : [];
+  }
+
+  requestFrame(): void {
+    if (this.raf) return;
+    this.raf = requestAnimationFrame((now) => this.frame(now));
   }
 
   private resize(): void {
@@ -223,425 +185,216 @@ export class CosmosEngine {
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
     if (width !== this.width || height !== this.height || dpr !== this.dpr) {
-      this.width = width;
-      this.height = height;
-      this.dpr = dpr;
+      [this.width, this.height, this.dpr] = [width, height, dpr];
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
     }
-    this.room = readHexRoom(this.canvas, width, height);
-    if (!this.userCamera) this.fit(false);
+    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height));
+    if (!this.rig.user) this.rig.fit(false, performance.now());
     this.requestFrame();
   }
 
-  private fit(glide: boolean): void {
-    const layout = this.layout;
-    if (!layout) return;
-    const { camera: to, overviewScale } = overviewCamera(layout.bounds, this.room);
-    this.overviewScale = overviewScale;
-    if (glide && !this.options.reducedMotion) this.tween = { from: { ...this.camera }, to, start: performance.now(), ms: CAMERA_GLIDE_MS };
-    else this.camera = to;
+  private readWhenSettled(): void {
+    window.clearTimeout(this.settleTimer);
+    this.settleTimer = window.setTimeout(() => this.resize(), CHROME_SETTLE_MS);
   }
 
-  private flyToGalaxy(index: number): void {
+  overview(): void {
+    this.rig.overview(performance.now());
+    this.requestFrame();
+  }
+
+  flyToGalaxy(index: number): void {
     const g = this.layout?.galaxies[index];
     if (!g) return;
-    const to = { x: this.poses[index]!.x, y: this.poses[index]!.y, scale: galaxyFitScale(g, this.room) };
-    this.userCamera = true;
-    this.zoom = null;
-    if (this.options.reducedMotion) this.camera = to;
-    else this.tween = { from: { ...this.camera }, to, start: performance.now(), ms: CAMERA_GLIDE_MS };
+    this.rig.frame({ x: this.poses[index]!.x, y: this.poses[index]!.y, scale: galaxyFitScale(g, this.rig.room) }, performance.now());
     this.requestFrame();
   }
 
-  private touch(): void {
-    this.lastInput = performance.now();
+  private approach(id: string): void {
+    const { layout } = this;
+    const point = layout && this.selectedId === id && posedPoint(layout, this.poses, id);
+    if (!point) return;
+    this.rig.approach(point, layout.galaxies[layout.galaxyOf.get(id) ?? -1] ?? null, readHexRoom(this.canvas, this.width, this.height), performance.now());
+    this.requestFrame();
   }
 
-  requestFrame(): void {
-    if (this.raf) return;
-    this.raf = requestAnimationFrame((now) => this.frame(now));
+  private clearApproach(): void {
+    for (const t of this.approachTimers) window.clearTimeout(t);
+    this.approachTimers = [];
   }
 
   private frame(now: number): void {
     this.raf = 0;
-    const layout = this.layout;
-    const inks = this.inks;
-    if (!layout || !inks || this.width <= 1) return;
+    let again = true;
+    try {
+      again = this.draw(now);
+    } finally {
+      if (again) this.requestFrame();
+    }
+  }
+
+  private draw(now: number): boolean {
+    const { layout, inks, rig } = this;
+    if (!layout || !inks || this.width <= 1) return false;
     const started = performance.now();
     const dt = this.lastNow ? Math.min(64, Math.max(0, now - this.lastNow)) : 16;
     this.lastNow = now;
-    let moving = false;
-    let why = 0;
-
-    if (this.tween) {
-      const t = progressSince(this.tween.start, now, this.tween.ms);
-      const e = easeInOut(t);
-      const { from, to } = this.tween;
-      this.camera = {
-        x: from.x + (to.x - from.x) * e,
-        y: from.y + (to.y - from.y) * e,
-        scale: from.scale * (to.scale / from.scale) ** e,
-      };
-      if (t >= 1) this.tween = null;
-      else {
-        moving = true;
-        why |= 1;
-      }
-    }
-    if (this.zoom) {
-      const k = 1 - Math.exp(-dt / 70);
-      const next = this.camera.scale + (this.zoom.target - this.camera.scale) * k;
-      const done = Math.abs(this.zoom.target - next) / this.zoom.target < 0.002;
-      const scale = done ? this.zoom.target : next;
-      this.camera = {
-        scale,
-        x: this.zoom.wx - (this.zoom.sx - this.room.x - this.room.width / 2) / scale,
-        y: this.zoom.wy - (this.zoom.sy - this.room.y - this.room.height / 2) / scale,
-      };
-      if (done) this.zoom = null;
-      else {
-        moving = true;
-        why |= 2;
-      }
-    }
-
-    const active = stepHaze(this.haze, {
-      now,
-      dt,
-      windowStart: this.lastInput,
-      reducedMotion: this.options.reducedMotion,
-      visible: document.visibilityState === "visible",
-    });
-    this.hazeAwake = active;
-    if (active) {
-      moving = true;
-      why |= 4;
-    }
+    let why = rig.step(now) ? 1 : 0;
+    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrivalEnd), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
+    if (this.hazeAwake) why |= 4;
     if (this.arrival) this.arrivalClock = Math.max(0, now - this.arrival.start);
     if (this.arrival && !applyArrival(layout, this.arrivalClock, this.arrival.mode, this.poses)) this.arrival = null;
     else if (!this.arrival) applyArrival(layout, 0, "none", this.poses);
-    applyHaze(layout, this.haze, this.poses, this.camera.scale, this.options.reducedMotion);
-    if (this.paintLog) this.paintLog = [];
-    const paintLog = this.paintLog;
-    const record: CosmosPaintRecorder = paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null;
-    if (this.arrival) {
-      moving = true;
-      why |= 8;
-    }
-
+    applyHaze(layout, this.haze, this.poses, rig.camera.scale, this.options.reducedMotion);
+    if (this.arrival) why |= 8;
+    const paintLog: CosmosPaintRecord[] | null = this.paintLog ? (this.paintLog = []) : null;
     const stats = drawCosmosFrame({
-      ctx: this.ctx,
-      width: this.width,
-      height: this.height,
-      dpr: this.dpr,
-      room: this.room,
-      camera: this.camera,
-      overviewScale: this.overviewScale,
-      layout,
-      inks,
-      poses: this.poses,
+      ctx: this.ctx, width: this.width, height: this.height, dpr: this.dpr, room: rig.room, camera: rig.camera, overviewScale: rig.overviewScale,
+      layout, inks, poses: this.poses, lens: this.lens, trail: this.trail, reducedMotion: this.options.reducedMotion,
       attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs: 0 },
       relationsOf: (id) => this.relations.get(id) ?? [],
-      pointOf: (id) => this.currentPoint(layout, id),
-      lens: this.lens,
-      trail: this.trail,
-      record,
-      reducedMotion: this.options.reducedMotion,
-      cache: this.cache,
-      deepField: this.deepField,
-      buildBudget: this.buildBudget,
+      pointOf: (id) => posedPoint(layout, this.poses, id),
+      record: paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null,
+      cache: this.cache, deepField: this.deepField, buildBudget: 4, frame: this.frames,
     });
-    if (stats.pendingBuilds > 0) {
-      moving = true;
-      why |= 16;
-    }
+    if (stats.pendingBuilds > 0) why |= 16;
     this.lastStats = stats;
     this.frames += 1;
-    const ms = performance.now() - started;
-    this.frameLog.push({ t: now, ms, builds: stats.buildsStarted, firstDraws: stats.firstDraws, why, sinceInput: now - this.lastInput });
+    this.frameLog.push({ t: now, ms: performance.now() - started, builds: stats.buildsStarted, firstDraws: stats.firstDraws, why, sinceInput: now - this.lastInput });
     if (this.frameLog.length > 600) this.frameLog.splice(0, this.frameLog.length - 600);
-    if (!this.drawnReported) {
+    if (!this.drawnReported && stats.pendingBuilds === 0) {
       this.drawnReported = true;
       this.options.onDrawn?.(layout.points.size);
     }
-    if (this.probe) {
+    if (this.probed) {
       const arrivalT = this.arrival ? Math.min(1, this.arrivalClock / ARRIVAL_MS) : 1;
-      this.canvas.dataset.frame = JSON.stringify({ arrived: !this.arrival, arrivalT, offset: [this.camera.x, this.camera.y], scale: this.camera.scale });
+      this.canvas.dataset.frame = JSON.stringify({ arrived: !this.arrival, arrivalT, offset: [rig.camera.x, rig.camera.y], scale: rig.camera.scale });
     }
-    if (stats.band !== this.band) {
-      this.band = stats.band;
-      this.options.onBand?.(stats.band);
-    }
-    if (moving) this.requestFrame();
-    else {
+    if (stats.band !== this.band) this.options.onBand?.((this.band = stats.band));
+    if (why === 0) {
       this.options.onBand?.(stats.band);
       this.options.onRest?.();
     }
+    return why !== 0;
   }
 
-  private currentPoint(layout: CosmosLayout, id: string): { x: number; y: number } | null {
-    const gi = layout.galaxyOf.get(id);
-    if (gi === undefined) return null;
-    if (gi < 0) return layout.points.get(id) ?? null;
-    const g = layout.galaxies[gi]!;
-    const pose = this.poses[gi]!;
-    const si = g.starIds.indexOf(id);
-    if (si < 0) return null;
-    const m = galaxyMatrix(g, pose, { x: 0, y: 0, scale: 1 }, { x: 0, y: 0, width: 0, height: 0 });
-    const u = g.starU[si]! * pose.condense;
-    const v = g.starV[si]! * pose.condense;
-    return { x: m.a * u + m.c * v + pose.x, y: m.b * u + m.d * v + pose.y };
-  }
-
-  private local(e: PointerEvent | WheelEvent): { x: number; y: number } {
+  private local(clientX: number, clientY: number): { x: number; y: number } {
     const r = this.canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+
+  hit(sx: number, sy: number): { id: string | null; galaxy: number } {
+    if (!this.layout) return { id: null, galaxy: -1 };
+    return this.hits.hit(this.layout, this.poses, this.rig.camera, this.rig.room, this.dpr, sx, sy);
+  }
+
+  private gesture(): void {
+    this.lastInput = performance.now();
+    this.clearApproach();
+  }
+
+  private zoomAt(screen: { x: number; y: number }, factor: number, animate: boolean): void {
+    this.gesture();
+    this.rig.zoomAt(screen, factor, animate, performance.now());
+    this.requestFrame();
   }
 
   private onWheel(e: WheelEvent): void {
     e.preventDefault();
-    const dy = normalizeWheelDeltaY(e.deltaY, e.deltaMode, this.height);
-    if (shouldIgnoreWheelGlide(dy, e.ctrlKey)) return;
-    this.touch();
-    const p = this.local(e);
-    const base = this.zoom?.target ?? this.camera.scale;
-    const target = Math.min(48 / MIN_STAR_SPACING, Math.max(this.overviewScale * 0.5, base * computeWheelZoomFactor(dy * (e.ctrlKey ? 3 : 1))));
-    const world = screenToWorld(this.camera, this.room, p.x, p.y);
-    this.zoom = { target, sx: p.x, sy: p.y, wx: world.x, wy: world.y };
-    this.tween = null;
-    this.userCamera = true;
+    if (!this.rig.wheel(e, this.local(e.clientX, e.clientY), this.height, this.options.navigationSpeed.zoom, performance.now())) return;
+    this.gesture();
     this.requestFrame();
   }
 
   private onPointerDown(e: PointerEvent): void {
     if (e.button !== 0) return;
-    this.touch();
+    this.lastInput = performance.now();
     this.canvas.focus({ preventScroll: true });
-    this.canvas.setPointerCapture(e.pointerId);
-    const p = this.local(e);
-    this.drag = { id: e.pointerId, x: p.x, y: p.y, camX: this.camera.x, camY: this.camera.y, moved: false };
-    this.tween = null;
-    this.zoom = null;
+    this.canvas.setPointerCapture?.(e.pointerId);
+    this.rig.dragStart(e.pointerId, this.local(e.clientX, e.clientY), e.timeStamp);
   }
 
   private onPointerMove(e: PointerEvent): void {
     const motionless = this.lastPointer !== null && e.clientX === this.lastPointer.x && e.clientY === this.lastPointer.y;
     this.lastPointer = { x: e.clientX, y: e.clientY };
-    if (!motionless) this.touch();
-    const p = this.local(e);
-    if (this.drag && this.drag.id === e.pointerId) {
-      const dx = p.x - this.drag.x;
-      const dy = p.y - this.drag.y;
-      if (!this.drag.moved && Math.hypot(dx, dy) > 4) this.drag.moved = true;
-      if (this.drag.moved) {
-        this.camera = { ...this.camera, x: this.drag.camX - dx / this.camera.scale, y: this.drag.camY - dy / this.camera.scale };
-        this.userCamera = true;
-        this.requestFrame();
-      }
+    if (motionless) return;
+    this.lastInput = performance.now();
+    const p = this.local(e.clientX, e.clientY);
+    const step = this.rig.dragMove(e.pointerId, p, e.timeStamp, this.options.navigationSpeed.drag);
+    if (step) {
+      if (step === "started") this.gesture();
+      if (step !== "held") this.requestFrame();
       return;
     }
-    const hit = this.hitTest(p.x, p.y);
-    if (hit.id !== this.hoverId || hit.galaxy !== this.hoverGalaxy) {
-      this.hoverId = hit.id;
-      this.hoverGalaxy = hit.galaxy;
-      this.canvas.style.cursor = hit.id || hit.galaxy >= 0 ? "pointer" : "grab";
-      this.requestFrame();
-    } else if (this.haze.mode !== "off") {
-      this.requestFrame();
-    }
+    const hit = this.hit(p.x, p.y);
+    if (!this.setHover(hit.id, hit.galaxy) && this.haze.mode !== "off") this.requestFrame();
+  }
+
+  private setHover(id: string | null, galaxy: number): boolean {
+    if (id === this.hoverId && galaxy === this.hoverGalaxy) return false;
+    this.hoverId = id;
+    this.hoverGalaxy = galaxy;
+    this.canvas.style.cursor = id || galaxy >= 0 ? "pointer" : "grab";
+    this.requestFrame();
+    return true;
   }
 
   private onPointerUp(e: PointerEvent): void {
-    const drag = this.drag;
-    this.drag = null;
-    if (!drag || drag.id !== e.pointerId) return;
-    if (drag.moved) return;
-    const p = this.local(e);
-    const hit = this.hitTest(p.x, p.y);
+    const t = readOntologyMapTokensOrNull();
+    const end = this.rig.dragEnd(e.pointerId, e.timeStamp, this.options.navigationSpeed.drag, t && { windowMs: t.cameraReleaseVelocityWindowMs, minSpeed: t.cameraFlickMinSpeed });
+    this.requestFrame();
+    if (end !== "click") return;
+    const p = this.local(e.clientX, e.clientY);
+    const hit = this.hit(p.x, p.y);
     if (hit.id) this.options.onSelect?.(hit.id);
     else if (hit.galaxy >= 0) this.flyToGalaxy(hit.galaxy);
     else this.options.onPaneClick?.();
   }
 
   private onKey(e: KeyboardEvent): void {
-    this.touch();
-    if (e.key === "Escape" || e.key === "0") {
-      this.userCamera = false;
-      this.fit(true);
-      this.requestFrame();
-      return;
+    this.lastInput = performance.now();
+    const { layout, rig } = this;
+    if (!layout || isImeComposing(e)) return;
+    const centre = { x: rig.room.x + rig.room.width / 2, y: rig.room.y + rig.room.height / 2 };
+    const intent = keyboardZoomIntent(e, this.options.navigationSpeed.zoom);
+    if (intent) {
+      e.preventDefault();
+      if (intent.kind === "zoom") return this.zoomAt(centre, intent.factor, true);
+      this.gesture();
+      rig.gesture();
+      return this.overview();
     }
-    if (WALK_KEYS.has(e.key) && this.layout) {
-      const step = walkTarget({
-        key: e.key,
-        selectedId: this.selectedId,
-        candidates: walkCandidates({ layout: this.layout, poses: this.poses, camera: this.camera, room: this.room, dpr: this.dpr }),
-        roomCentre: { x: this.room.x + this.room.width / 2, y: this.room.y + this.room.height / 2 },
-      });
-      if (step.id) this.options.onSelect?.(step.id);
-      else if (step.deadEnd) this.options.onWalkDeadEnd?.();
+    if (e.key === "Escape") return this.selectedId !== null ? this.options.onPaneClick?.() : this.overview();
+    if (e.key === "Enter") {
+      const gi = layout.galaxies.findIndex((g) => g.id === this.selectedId);
+      if (gi >= 0) e.preventDefault();
+      return this.flyToGalaxy(gi);
     }
+    if (!WALK_KEYS.has(e.key)) return;
+    const candidates = walkCandidates({ layout, poses: this.poses, camera: rig.camera, room: rig.room, dpr: this.dpr });
+    const step = walkTarget({ key: e.key, selectedId: this.selectedId, candidates, roomCentre: centre });
+    if (step.id) this.options.onSelect?.(step.id);
+    else if (step.deadEnd) this.options.onWalkDeadEnd?.();
   }
 
   private onContextMenu(e: MouseEvent): void {
-    const { onContextMenuNode, onContextMenuPane } = this.options;
-    if (!onContextMenuNode && !onContextMenuPane) return;
-    const r = this.canvas.getBoundingClientRect();
-    const hit = this.hitTest(e.clientX - r.left, e.clientY - r.top);
+    e.preventDefault();
+    const p = this.local(e.clientX, e.clientY);
+    const id = this.hit(p.x, p.y).id;
     const position = { x: e.clientX, y: e.clientY };
-    if (hit.id && onContextMenuNode) {
-      e.preventDefault();
-      onContextMenuNode(hit.id, position);
-    } else if (!hit.id && onContextMenuPane) {
-      e.preventDefault();
-      onContextMenuPane(position);
-    }
+    if (id) this.options.onContextMenuNode?.(id, position);
+    else this.options.onContextMenuPane?.(position);
   }
 
-  hitTest(sx: number, sy: number): { id: string | null; galaxy: number } {
-    const layout = this.layout;
-    if (!layout) return { id: null, galaxy: -1 };
-    const live = liveBandRadius(this.dpr);
-    let bestGalaxy = -1;
-    let bestStar: string | null = null;
-    let bestD = Infinity;
-    layout.galaxies.forEach((g, index) => {
-      const pose = this.poses[index]!;
-      const m = galaxyMatrix(g, pose, this.camera, this.room);
-      const det = m.a * m.d - m.b * m.c;
-      if (Math.abs(det) < 1e-12) return;
-      const X = sx - m.e;
-      const Y = sy - m.f;
-      const u = (m.d * X - m.c * Y) / det / pose.condense;
-      const v = (-m.b * X + m.a * Y) / det / pose.condense;
-      if (u * u + v * v > (g.radius * 1.08) ** 2) return;
-      const rho = g.radius * this.camera.scale;
-      if (rho <= live) {
-        bestGalaxy = index;
-        return;
-      }
-      const grid = this.gridFor(index);
-      const cell = 12;
-      const reachPx = 10;
-      const reach = Math.ceil(reachPx / (this.camera.scale * g.tilt * cell)) + 1;
-      const cx = Math.floor(u / cell);
-      const cy = Math.floor(v / cell);
-      for (let ox = -reach; ox <= reach; ox += 1) {
-        for (let oy = -reach; oy <= reach; oy += 1) {
-          for (const i of grid.get((cx + ox) * 92821 + (cy + oy)) ?? []) {
-            const su = g.starU[i]! * pose.condense;
-            const svv = g.starV[i]! * pose.condense;
-            const x = m.a * su + m.c * svv + m.e;
-            const y = m.b * su + m.d * svv + m.f;
-            const d = Math.hypot(x - sx, y - sy);
-            if (d < reachPx && d < bestD) {
-              bestD = d;
-              bestStar = g.starIds[i]!;
-            }
-          }
-        }
-      }
-      if (!bestStar) bestGalaxy = index;
-    });
-    if (bestStar) return { id: bestStar, galaxy: -1 };
-    if (bestGalaxy >= 0) return { id: null, galaxy: bestGalaxy };
-    const core = layout.core;
-    for (let i = 0; i < core.starIds.length; i += 1) {
-      const p = worldToScreen(this.camera, this.room, core.starX[i]!, core.starY[i]!);
-      const d = Math.hypot(p.x - sx, p.y - sy);
-      const reach = i === 0 && core.id ? 18 : 7;
-      if (d < reach && d < bestD) {
-        bestD = d;
-        bestStar = core.starIds[i]!;
-      }
-    }
-    if (bestStar) return { id: bestStar, galaxy: -1 };
-    return { id: null, galaxy: -1 };
-  }
-
-  private gridFor(index: number): Map<number, number[]> {
-    const hit = this.grids.get(index);
-    if (hit) return hit;
-    const g = this.layout!.galaxies[index]!;
-    const grid = new Map<number, number[]>();
-    for (let i = 0; i < g.starIds.length; i += 1) {
-      const key = Math.floor(g.starU[i]! / 12) * 92821 + Math.floor(g.starV[i]! / 12);
-      const list = grid.get(key);
-      if (list) list.push(i);
-      else grid.set(key, [i]);
-    }
-    this.grids.set(index, grid);
-    return grid;
-  }
-
-  private installProbe(): void {
-    const w = window as unknown as Record<string, unknown>;
-    const probe = {
-      camera: () => ({ ...this.camera, width: this.width, height: this.height, overviewScale: this.overviewScale, zoomRatio: this.camera.scale / this.overviewScale }),
-      room: () => ({ ...this.room }),
-      awake: () => this.raf !== 0,
-      frames: () => this.frames,
-      frameLog: () => this.frameLog.slice(),
-      stats: () => this.lastStats && { ...this.lastStats, labels: this.lastStats.labels.map((l) => ({ ...l })) },
-      layout: () =>
-        this.layout && {
-          timings: { ...this.layout.timings, placedGalaxies: 0 },
-          galaxies: this.layout.galaxies.map((g, i) => {
-            const s = worldToScreen(this.camera, this.room, this.poses[i]?.x ?? g.x, this.poses[i]?.y ?? g.y);
-            return { id: g.id, label: g.label, shape: g.shape, arms: g.arms, members: g.members, clusters: g.clusters.length, sx: s.x, sy: s.y, rho: g.radius * this.camera.scale };
-          }),
-          filaments: this.layout.filaments.length,
-          concepts: this.layout.points.size,
-        },
-      layoutRuns: () => cosmosLayoutRuns(),
-      marks: () => this.marks(),
-      armPaint: (on: boolean) => {
-        this.paintLog = on ? [] : null;
-        this.requestFrame();
-      },
-      painted: () => (this.paintLog ? this.paintLog.slice() : []),
-      selection: () => ({ nodeId: this.selectedId }),
-      interaction: () => ({ kind: this.drag?.moved ? ("pan" as const) : ("none" as const) }),
-      arrival: () => ({ mode: this.arrivalMode, active: this.arrival !== null, clockMs: this.arrivalClock, totalMs: ARRIVAL_MS }),
-      haze: () => ({ factor: this.hazeAwake ? 1 : 0, tau: this.haze.tau, awake: this.hazeAwake }),
-      cacheBytes: () => this.cache.bytes(),
-      dropBitmaps: () => {
-        this.cache.clear();
-        this.requestFrame();
-      },
-      hit: (x: number, y: number) => this.hitTest(x, y),
-      point: (id: string) => {
-        const p = this.layout && this.currentPoint(this.layout, id);
-        return p ? worldToScreen(this.camera, this.room, p.x, p.y) : null;
-      },
-      flyTo: (id: string) => {
-        const i = this.layout?.galaxies.findIndex((g) => g.id === id) ?? -1;
-        if (i >= 0) this.flyToGalaxy(i);
-      },
-      overview: () => this.requestFit(),
-    };
-    this.probeHandle = probe;
-    w.__atlasCosmos = probe;
-  }
 }
 
 function relationsByConcept(edges: readonly OntologyMapEdge[]): Map<string, CosmosRelation[]> {
   const out = new Map<string, CosmosRelation[]>();
   edges.forEach((e, i) => {
     if (e.kind !== "depends") return;
-    const relation: CosmosRelation = {
-      id: e.id ?? `${e.source}->${e.target}:${i}`,
-      source: e.source,
-      target: e.target,
-      relationType: e.relationType,
-      directional: isDirectionalRelation(e.relationType),
-    };
-    for (const id of [e.source, e.target]) {
-      const list = out.get(id);
-      if (list) list.push(relation);
-      else out.set(id, [relation]);
-    }
+    const relation: CosmosRelation = { id: e.id ?? `${e.source}->${e.target}:${i}`, source: e.source, target: e.target, relationType: e.relationType, directional: isDirectionalRelation(e.relationType) };
+    for (const id of [e.source, e.target]) if (!out.get(id)?.push(relation)) out.set(id, [relation]);
   });
   return out;
 }
