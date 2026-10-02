@@ -159,6 +159,7 @@ execFileSync('iconutil', ['-c', 'icns', ICONSET, '-o', 'src-tauri/icons/icon.icn
 written.push('src-tauri/icons/icon.icns');
 
 written.push(put('src-tauri/icons/icon.ico', buildIco(ICO_PLAN.map(([s, n]) => [s, read(n)]))));
+written.push(put('app/favicon.ico', readFileSync('src-tauri/icons/icon.ico')));
 for (const [path, src] of COPY_PLAN) written.push(put(path, read(src)));
 for (const [state, spec] of Object.entries(MASCOT_MOTION_ROWS)) {
   written.push(put(`public/brand/mascot-${state}-row.png`, readFileSync(spec.path)));

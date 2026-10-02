@@ -12,6 +12,7 @@
     "**/globals.css"
   ],
   "scripts": {
+    "brand:sprites": "node scripts/build-traveler-sprites.mjs",
     "prepare": "node scripts/prepare-worktree.mjs",
     "predev": "node scripts/clean-next-dev-cache.mjs && pnpm docs-vault:build && pnpm messages:build",
     "dev": "next dev",
