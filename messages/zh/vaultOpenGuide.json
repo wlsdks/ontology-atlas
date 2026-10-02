@@ -1,11 +1,11 @@
 {
-  "title": "Turn your folder into the map",
-  "subtitle": "Before the OS folder picker opens, just {count} things to know.",
-  "bulletAnyFolder": "Any markdown folder works: no special format required.",
-  "bulletLocal": "Atlas opens this folder locally and does not upload it to an Atlas backend. A coding agent you later connect may send prompts and context to its own provider.",
-  "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
-  "bulletPermission": "After you pick, the browser asks to Allow. That grants this page local file access; it is separate from any AI-provider connection.",
-  "actionPickExisting": "Choose existing folder",
-  "actionCreateNew": "Start fresh with an empty folder",
-  "actionCancel": "Not now"
+  "title": "把你的文件夹变成地图",
+  "subtitle": "在系统文件夹选择器打开之前，只需了解 {count} 件事。",
+  "bulletAnyFolder": "任何 Markdown 文件夹都可以，不需要特殊格式。",
+  "bulletLocal": "Atlas 在本地打开这个文件夹，不会上传到 Atlas 后端。之后连接的编码智能体可能会把提示词和上下文发给它自己的服务商。",
+  "bulletStarter": "选一个空文件夹，我们会为你生成起步文档。",
+  "bulletPermission": "选好后，浏览器会请求“允许”。这是授予此页面访问本地文件的权限，与任何 AI 服务商的连接无关。",
+  "actionPickExisting": "选择现有文件夹",
+  "actionCreateNew": "用空文件夹重新开始",
+  "actionCancel": "暂不"
 }
