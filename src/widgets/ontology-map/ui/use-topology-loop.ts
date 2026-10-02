@@ -1000,6 +1000,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
+      appearRef,
     },
     interaction: {
       handlersRef,

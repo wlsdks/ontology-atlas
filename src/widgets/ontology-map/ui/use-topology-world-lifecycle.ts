@@ -128,6 +128,7 @@ export function useTopologyWorldLifecycle({
   pendingFlatCameraRef,
 }: Dependencies) {
   const arrivingRef = useRef(arriving);
+  const arrivalGlideRef = useRef(false);
 
   /**
    * Safety net: if a resize or a monitor change leaves **no node on screen at
@@ -224,6 +225,7 @@ export function useTopologyWorldLifecycle({
   useEffect(() => {
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
+    const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
     // Contract point for installed-app proof: desktop WebView verification
     // reads the click-cancel hysteresis from here. Exposes the token verbatim.
     containerRef.current?.setAttribute(
@@ -338,17 +340,18 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
       armAssembly = true;
     }
+    const grew = arriving || arrivingRef.current || glidingFromArrival;
+    arrivingRef.current = arriving;
+    arrivalGlideRef.current = grew;
     if (!galaxyRef.current) {
       if (armAssembly) {
         armTierAssembly(world, dataSourceKey, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
-      } else {
+      } else if (!grew) {
         carryTierAssembly(previousWorld, world);
       }
     }
-    const grew = arriving || arrivingRef.current;
-    arrivingRef.current = arriving;
-    if (grew && previousWorld && hasInitializedRef.current && !galaxyRef.current) {
+    if (grew && !armAssembly && previousWorld && hasInitializedRef.current && !galaxyRef.current) {
       glideArrivedWorld(previousWorld, world, tokens);
     }
     trySnapInitialCamera(tokens);

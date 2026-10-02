@@ -119,6 +119,7 @@ describe('progressive manifest build', () => {
     const progress: Array<{ read: number; total: number }> = [];
     const { build } = await buildLocalManifestWithEntries(makeRoot(files), {
       partialAfterMs: 0,
+      partialIntervalMs: 0,
       onPartial: (partial) => partials.push(partial.manifest),
       onProgress: (step) => progress.push(step),
     });
@@ -134,7 +135,7 @@ describe('progressive manifest build', () => {
       expect(shown[at].length).toBeGreaterThan(shown[at - 1].length);
       expect(shown[at]).toEqual(expect.arrayContaining(shown[at - 1]));
     }
-    expect(shown.length).toBeGreaterThan(4);
+    expect(shown.map((paths) => paths.length)).toEqual([1, 5, 45, 645]);
     expect(shown.flat().some((path) => path.startsWith('notes/'))).toBe(false);
     expect(progress.at(-1)).toEqual({ read: 675, total: 675 });
     expect(progress.map((step) => step.read)).toEqual([...progress.map((step) => step.read)].sort((a, b) => a - b));
@@ -146,10 +147,44 @@ describe('progressive manifest build', () => {
     expect(onPartial).not.toHaveBeenCalled();
   });
 
+  it('publishes at most once a second and splits a folder into quarters only three times', async () => {
+    let clock = 0;
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const files = makeVault(2400);
+    const opens: string[] = [];
+    const published: Array<{ at: number; docs: number }> = [];
+    try {
+      const counting = new Proxy(opens, {
+        get(target, key, receiver) {
+          if (key === 'push') {
+            return (...items: string[]) => {
+              clock += 5;
+              return target.push(...items);
+            };
+          }
+          return Reflect.get(target, key, receiver);
+        },
+      });
+      await buildLocalManifestWithEntries(makeRoot(files, counting as string[]), {
+        partialAfterMs: 0,
+        onPartial: (partial) => published.push({ at: clock, docs: partial.manifest.docs.length }),
+      });
+    } finally {
+      now.mockRestore();
+    }
+
+    expect(published.length).toBeGreaterThan(1);
+    for (let at = 1; at < published.length; at += 1) {
+      expect(published[at].at - published[at - 1].at).toBeGreaterThanOrEqual(1000);
+    }
+    const elementsTier = published.filter((step) => step.docs > 45 && step.docs < 2475);
+    expect(elementsTier.length).toBeLessThanOrEqual(3);
+  });
+
   it('publishes nothing for a folder of fewer than 400 documents', async () => {
     const onPartial = vi.fn();
     const onProgress = vi.fn();
-    await buildLocalManifestWithEntries(makeRoot(makeVault(300)), { onPartial, onProgress, partialAfterMs: 0 });
+    await buildLocalManifestWithEntries(makeRoot(makeVault(300)), { onPartial, onProgress, partialAfterMs: 0, partialIntervalMs: 0 });
     expect(onPartial).not.toHaveBeenCalled();
     expect(onProgress).toHaveBeenLastCalledWith({ read: 375, total: 375 });
   });

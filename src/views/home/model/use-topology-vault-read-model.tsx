@@ -2,9 +2,9 @@ import type { useTopologyPreferences } from "./use-topology-preferences";
 import type { useTopologyRouteControls } from "./use-topology-route-controls";
 
 import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledge-graph";
-import { useLocalVault, useSummaryFreshness, useVaultSessionIdentityScope } from "@/entities/vault-session";
+import { useArrivingVaultIdentityScope, useLocalVault, useSummaryFreshness, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { useProjects } from "@/features/project-data-source";
-import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
+import { useAdaptiveRecentChanges, useArrivingOntologyInsight, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
 import { useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
@@ -60,7 +60,9 @@ export function useTopologyVaultReadModel({
   const llmBridgeAvailable = isLlmChatBridgeAvailable();
   /** The same fact map the panel and the insight queue read. */
   const vaultConceptFacts = useVaultConceptFacts();
-  const { insight: ontologyInsight } = useOntologyInsight();
+  const arrivingInsight = useArrivingOntologyInsight();
+  const { insight: settledInsight } = useOntologyInsight();
+  const ontologyInsight = arrivingInsight ?? settledInsight;
   // Git dates where Git knows, else the file's date (`useVaultDocDates`).
   const { index: docFreshnessIndex, reading: docDatesReading } = useVaultDocDates();
   // File dates, not commits, answer whether the document on screen changed since it opened
@@ -157,7 +159,9 @@ export function useTopologyVaultReadModel({
    * it honestly. The toast's once-only memory clears too, or returning A->B->A stays silent for a
    * truly missing slug.
    */
-  const vaultIdentity = useVaultSessionIdentityScope();
+  const arrivingIdentity = useArrivingVaultIdentityScope();
+  const sessionIdentity = useVaultSessionIdentityScope();
+  const vaultIdentity = arrivingIdentity ?? sessionIdentity;
   const vaultIdentityRef = useRef<string | null>(null);
   /**
    * The miss toast and the canvas focus read this same signal, or one focuses a ghost while the

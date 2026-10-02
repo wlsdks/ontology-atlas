@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { useDataSourceMode, useSampleSource } from '@/entities/vault-session';
+import { useDataSourceMode, useLocalVault, useSampleSource } from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
@@ -11,6 +11,7 @@ import {
   isContainmentRelation,
 } from '@/entities/knowledge-graph';
 import {
+  deriveArrivedOntology,
   deriveOntologyFromVault,
   resolveStaticVaultSource,
   type VaultOntologyDerivation,
@@ -182,4 +183,13 @@ export function useOntologyInsight(): {
       error: null,
     };
   }, [mode, vault, sampleSource, locale]);
+}
+
+export function useArrivingOntologyInsight(): KnowledgeProjectInsight | null {
+  const partialManifest = useLocalVault().partialManifest;
+  const locale = useLocale();
+  return useMemo(
+    () => (partialManifest ? localInsight(deriveArrivedOntology(partialManifest), locale) : null),
+    [partialManifest, locale],
+  );
 }

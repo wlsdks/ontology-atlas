@@ -43,6 +43,7 @@ export interface AtlasMapNode {
   radius: number;
   /** The alpha the last frame drew the node at; 0 is not on screen even when `hidden` is false. */
   alpha?: number;
+  appear?: number;
 }
 
 export interface AtlasMapProbe {

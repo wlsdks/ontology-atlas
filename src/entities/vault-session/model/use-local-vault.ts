@@ -3,7 +3,7 @@
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 import { countVaultContents, type VaultShape } from '@/shared/lib/vault-shape';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
@@ -385,6 +385,7 @@ interface State {
    * folder's graph.
    */
   manifestHandle: FileSystemDirectoryHandle | null;
+  partialManifest: VaultManifest | null;
 }
 
 export interface AgentConfigStatus {
@@ -403,6 +404,23 @@ export interface AgentConfigStatus {
   codexRegisteredCommand?: string | null;
 }
 
+function withArrivedPart(s: State, partialManifest: VaultManifest): State {
+  if (s.manifest === null && s.manifestHandle === null) return { ...s, partialManifest };
+  return {
+    ...s,
+    partialManifest,
+    manifest: null,
+    manifestHandle: null,
+    agentConfigStatus: null,
+    agentActivityStatus: emptyAgentActivityStatus(),
+    agentActivityLog: [],
+    acpWorkReceipts: [],
+    fileHandles: new Map(),
+    imageHandles: new Map(),
+    sourceHandles: new Map(),
+  };
+}
+
 function emptyState(status: Status = 'idle'): State {
   return {
     status,
@@ -419,6 +437,7 @@ function emptyState(status: Status = 'idle'): State {
     errorCode: null,
     lastLoadedAt: null,
     manifestHandle: null,
+    partialManifest: null,
   };
 }
 
@@ -1074,22 +1093,17 @@ export function useLocalVaultInternal() {
   const loadSequenceRef = useRef(0);
   const pickerSequenceRef = useRef(0);
   const mountedRef = useRef(true);
-  const [arrival, setArrival] = useState<{ handle: FileSystemDirectoryHandle; manifest: VaultManifest } | null>(null);
   const [loadProgressStore] = useState(createVaultLoadProgressStore);
-  const endArrival = useCallback(() => {
-    setArrival(null);
-    loadProgressStore.set(null);
-  }, [loadProgressStore]);
   const beginVaultReadSession = useCallback((handle: FileSystemDirectoryHandle | null) => {
     const session = { handle };
     vaultReadSessionRef.current = session;
+    loadProgressStore.set(null);
     if (!handle || lastBuildRef.current?.handle !== handle) {
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
-      endArrival();
     }
     return session;
-  }, [endArrival]);
+  }, [loadProgressStore]);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -1127,12 +1141,14 @@ export function useLocalVaultInternal() {
     const sequence = ++loadSequenceRef.current;
     const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session &&
       session.handle === handle && loadSequenceRef.current === sequence;
+    let settled = false;
+    let arrivedPart = false;
     // Any folder actually being opened ends the choosing state, whichever door it came
     // through — the chooser row, the picker, or a restore. Clearing it here rather than in
     // each caller is why a new door cannot forget to.
     setAwaitingVaultChoice(false);
     setState((s) => {
-      const cleared = { ...s, handle, errorMessage: null, errorCode: null };
+      const cleared = { ...s, handle, errorMessage: null, errorCode: null, partialManifest: null };
       /*
        * **Re-reading a folder that is already open is not opening one.**
        *
@@ -1165,10 +1181,12 @@ export function useLocalVaultInternal() {
           ? undefined
           : {
               onProgress: (progress) => {
-                if (isCurrent()) loadProgressStore.set(progress);
+                if (!settled && isCurrent()) loadProgressStore.set(progress);
               },
               onPartial: (build) => {
-                if (isCurrent()) setArrival({ handle, manifest: build.manifest });
+                if (settled || !isCurrent()) return;
+                arrivedPart = true;
+                setState((s) => withArrivedPart(s, build.manifest));
               },
             };
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
@@ -1231,8 +1249,9 @@ export function useLocalVaultInternal() {
       if (!isCurrent()) return null;
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
-      endArrival();
-      setState({
+      settled = true;
+      loadProgressStore.set(null);
+      const loaded: State = {
         status: 'loaded',
         handle,
         manifest,
@@ -1247,7 +1266,10 @@ export function useLocalVaultInternal() {
         errorCode: null,
         lastLoadedAt: Date.now(),
         manifestHandle: handle,
-      });
+        partialManifest: null,
+      };
+      if (arrivedPart) startTransition(() => setState(loaded));
+      else setState(loaded);
       /*
        * The chooser's row facts are written here, by the one path that has already paid for
        * the walk. A folder the person is *offered* cannot be counted at the moment of
@@ -1296,7 +1318,8 @@ export function useLocalVaultInternal() {
       if (!isCurrent()) return null;
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
-      endArrival();
+      settled = true;
+      loadProgressStore.set(null);
       // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
       // `invoke` rejects with a *string* rather than an Error; the previous
       // `err instanceof Error ? err.message : null` discarded it wholesale and silenced every
@@ -1320,10 +1343,11 @@ export function useLocalVaultInternal() {
           classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
+        partialManifest: null,
       });
       return null;
     }
-  }, [endArrival, loadProgressStore, stateRef]);
+  }, [loadProgressStore, stateRef]);
 
   const refreshRecentVaults = useCallback(async () => {
     setRecentVaults(await listRecentLocalFsHandles());
@@ -1743,6 +1767,7 @@ export function useLocalVaultInternal() {
   const openState = useCallback(() => {
     const live = stateRef.current;
     if (live.handle !== openFolderHandle) throw new Error('The folder this action was made for is no longer open');
+    if (!live.manifest || live.manifestHandle !== live.handle) throw new Error('The folder is still being read');
     return live;
   }, [stateRef, openFolderHandle]);
   const reloadIfOpen = useCallback(
@@ -2235,6 +2260,7 @@ export function useLocalVaultInternal() {
               errorCode: resolution === 'grant-needed' ? 'grant-needed' : 'path-missing',
               lastLoadedAt: null,
               manifestHandle: null,
+              partialManifest: null,
             });
           }
           return;
@@ -2275,6 +2301,7 @@ export function useLocalVaultInternal() {
           errorCode: null,
           lastLoadedAt: null,
           manifestHandle: null,
+          partialManifest: null,
         });
       }
     })()
@@ -2312,6 +2339,7 @@ export function useLocalVaultInternal() {
                 : 'access-failed',
           lastLoadedAt: null,
           manifestHandle: null,
+          partialManifest: null,
         });
       })
       .finally(() => {
@@ -2420,8 +2448,7 @@ export function useLocalVaultInternal() {
       state.status === 'loading' &&
       state.manifest !== null &&
       state.manifestHandle === state.handle,
-    partialManifest:
-      state.status === 'loading' && arrival?.handle === state.handle ? arrival.manifest : null,
+    partialManifest: state.status === 'loading' ? state.partialManifest : null,
     loadProgressStore,
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */

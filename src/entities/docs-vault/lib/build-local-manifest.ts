@@ -487,6 +487,8 @@ async function mapPooled<T, R>(
 const NATIVE_READ_BATCH = 64;
 const NATIVE_BATCH_CONCURRENCY = 8;
 const PARTIAL_AFTER_MS = 200;
+const PARTIAL_INTERVAL_MS = 1000;
+const PARTIAL_SPLIT_PUBLISHES = 3;
 const PARTIAL_SPLIT_MIN = 400;
 const PARTIAL_VAULT_MIN = 400;
 const READ_TIER_FOLDERS = ['projects', 'domains', 'capabilities', 'elements'];
@@ -500,6 +502,7 @@ export interface VaultBuildObserver {
   onProgress?: (progress: VaultLoadProgress) => void;
   onPartial?: (build: LocalVaultBuild, progress: VaultLoadProgress) => void;
   partialAfterMs?: number;
+  partialIntervalMs?: number;
 }
 
 interface MarkdownFile {
@@ -575,7 +578,7 @@ function createPartialPublisher(
   files: readonly WalkEntry[],
   results: ReadonlyArray<BuiltVaultEntry | undefined>,
   publish: (entries: BuiltVaultEntry[]) => void,
-  partialAfterMs: number,
+  pacing: { afterMs: number; intervalMs: number },
 ) {
   const tierCount = READ_TIER_FOLDERS.length + 3;
   const size = new Array<number>(tierCount).fill(0);
@@ -586,11 +589,14 @@ function createPartialPublisher(
     if (files[index].kind === 'md') lastMarkdownTier = Math.max(lastMarkdownTier, tier);
   });
   const startedAt = performance.now();
+  let lastPublishedAt = Number.NEGATIVE_INFINITY;
+  let publishes = 0;
   let published = -1;
   let quarter = 0;
   return (unit: readonly number[]) => {
     for (const index of unit) done[tiers[index]] += 1;
-    if (performance.now() - startedAt < partialAfterMs) return;
+    const now = performance.now();
+    if (now - startedAt < pacing.afterMs || now - lastPublishedAt < pacing.intervalMs) return;
     let complete = published;
     while (complete + 1 < tierCount && done[complete + 1] === size[complete + 1]) complete += 1;
     if (complete >= lastMarkdownTier) return;
@@ -601,7 +607,7 @@ function createPartialPublisher(
       through = complete;
     }
     const current = published + 1;
-    if (size[current] >= PARTIAL_SPLIT_MIN) {
+    if (publishes < PARTIAL_SPLIT_PUBLISHES && size[current] >= PARTIAL_SPLIT_MIN) {
       const reached = Math.floor((done[current] * 4) / size[current]);
       if (reached > quarter) {
         quarter = reached;
@@ -609,6 +615,8 @@ function createPartialPublisher(
       }
     }
     if (through < 0) return;
+    lastPublishedAt = now;
+    publishes += 1;
     publish(results.filter((entry, index): entry is BuiltVaultEntry => entry !== undefined && tiers[index] <= through));
   };
 }
@@ -653,7 +661,10 @@ async function collectEntries(
         files,
         results,
         (entries) => onPartial(aggregateBuild(entries, root.name, walkInfo), { read, total }),
-        observer.partialAfterMs ?? PARTIAL_AFTER_MS,
+        {
+          afterMs: observer.partialAfterMs ?? PARTIAL_AFTER_MS,
+          intervalMs: observer.partialIntervalMs ?? PARTIAL_INTERVAL_MS,
+        },
       )
     : null;
   const batched = nativeRoot !== null && concurrency > 1;

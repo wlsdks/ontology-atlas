@@ -23,15 +23,20 @@ routes: [/topology]
 - **A large folder is drawn while it is still being read** (2026-10-02) → opening a
   folder reads the project first, then `domains/`, `capabilities/` and `elements/`, then
   everything else. In a folder of 400 or more documents, once the read has run 0.2 s, the
-  map draws each subfolder as it finishes (and every quarter of one with 400 or more
-  documents): documents only, never a relation-only node a later file might own. Marks
-  already drawn glide to their new places on the homing spring, and the camera keeps the overview framed until a hand moves it. The
-  INDEX names the folder and says "reading N of M documents" until the last file, and the
-  finished map is the one a full read builds. The app reads 64 Markdown files per native
-  call, eight calls at a time; the browser keeps 64 reads in flight. Measured at 120 ms per
-  native answer on the static export (median of 3): a 2,000-document vault drew its first
-  frame at 0.87 s instead of 16.5 s and finished at 1.7 s; 10,000 documents drew at 0.92 s
-  instead of 77.7 s and finished at 5.3 s. In Chrome over an origin-private folder, 10,000
+  map draws what has arrived, at most once a second: each finished subfolder, and a quarter
+  of a subfolder of 400 or more only among the first three draws. It draws documents only,
+  never a relation-only node a later file might own. Marks already drawn glide to their new
+  places on the homing spring, and the camera keeps the overview framed until a hand moves
+  it. The INDEX names the folder and says "reading N of M documents" until the last file;
+  nothing else on any screen reads the part, the previous folder's documents are dropped
+  when the first part arrives, and nothing can be written until the read ends. The finished
+  map is the one a full read builds. The app reads 64 Markdown files per native call (each
+  at most 4 MiB, Markdown only, never through a link into a dot file), eight calls at a
+  time; the browser keeps 64 reads in flight. Measured at 120 ms per native answer on the
+  static export (median of 3): a 2,000-document vault drew its first frame at 0.85 s
+  instead of 16.5 s and finished at 1.9 s; 10,000 documents drew at 0.90 s instead of 77.7 s
+  and finished at 5.0 s, with no task longer than 378 ms (492 ms before) but frames up to
+  366 ms apart while documents arrive. In Chrome over an origin-private folder, 10,000
   documents drew at 0.73 s instead of 26.3 s. Gate: `tests/e2e/vault-progressive-open.spec.ts`.
 
 - **A name blocked below tries the slot above** (2026-09-20) → the greedy label

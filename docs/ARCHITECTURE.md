@@ -649,11 +649,14 @@ partial artifact.
 7. The installed shell and any web session with a mounted vault commit destination content only
    after one local manifest is ready, except the map. While a folder is first read, the build
    reads the project, then `domains/`, `capabilities/` and `elements/`, then the rest; in a
-   folder of 400 or more documents, once the read has run 0.2 s, it publishes each finished
-   subfolder (and every quarter of one with 400 or more documents) as `partialManifest`. The map
-   draws its documents, never a relation-only node, and the INDEX counts the documents read.
-   Every other destination, write, check and count waits for the whole manifest, which equals a
-   build that publishes nothing. LNB route changes mount against the
+   folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived as
+   `partialManifest`, at most once a second (each finished subfolder, and quarters of a large one
+   only among the first three publishes). The first part drops the previous folder's manifest and
+   handles, and every write is refused until the folder is loaded. Only the map opts in
+   (`useArrivingOntologyInsight`, `useArrivingVaultIdentityScope`): it draws documents, never a
+   relation-only node, and the INDEX counts the documents read. `useVaultOntology`,
+   `useDataSourceMode` and every other destination, check and count wait for the whole manifest,
+   which equals a build that publishes nothing. LNB route changes mount against the
    current provider before paint; a true folder switch holds a neutral body until the new manifest
    (on the map, its first part) arrives, while a same-vault reread keeps the existing facts and
    publishes no part. Picker, recent reopen, and cold restore all resolve a project root containing

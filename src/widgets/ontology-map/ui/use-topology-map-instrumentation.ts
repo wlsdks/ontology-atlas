@@ -56,6 +56,7 @@ export interface TopologyMapInstrumentationSources {
     galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
+    appearRef: SourceRef<Map<string, number>>;
   };
   interaction: {
     handlersRef: SourceRef<TopologyPointerHandlers | null>;
@@ -110,6 +111,7 @@ export function useTopologyMapInstrumentation({
     galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
+    appearRef,
   } = scene;
   const {
     handlersRef,
@@ -245,6 +247,7 @@ export function useTopologyMapInstrumentation({
              * only method that has agreed with the screen so far.
              */
             alpha: drawnAlphas.get(n.id) ?? 1,
+            appear: appearRef.current.get(n.id) ?? 1,
             previewEndpoint: isPreviewEndpoint(preview, n.id),
             /**
              * ★ For the graph-readability instrument: overlap cannot be counted

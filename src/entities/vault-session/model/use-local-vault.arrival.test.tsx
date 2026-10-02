@@ -54,14 +54,19 @@ function build(slugs: string[], fingerprint: string) {
   };
 }
 
-const record: LocalFsHandleRecord = {
-  id: 'current',
-  handle: { kind: 'directory', name: 'vault', rootPath: '/Users/dana/vault' } as unknown as FileSystemDirectoryHandle,
-  desktopRootPath: '/Users/dana/vault',
-  name: 'vault',
-  createdAt: 1,
-  lastAccessedAt: 1,
-};
+function folder(name: string): LocalFsHandleRecord {
+  const rootPath = `/Users/dana/${name}`;
+  return {
+    id: 'current',
+    handle: { kind: 'directory', name, rootPath } as unknown as FileSystemDirectoryHandle,
+    desktopRootPath: rootPath,
+    name,
+    createdAt: 1,
+    lastAccessedAt: 1,
+  };
+}
+
+const record = folder('vault');
 
 beforeEach(() => {
   store.getLocalFsHandle.mockResolvedValue(undefined);
@@ -123,5 +128,76 @@ describe('opening a folder whose documents arrive over time', () => {
       await hook.result.current.refresh();
     });
     expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledWith(expect.anything(), undefined);
+  });
+
+  it('drops the previous folder the moment the next one starts arriving, so nothing writes into it', async () => {
+    const written = vi.fn();
+    const orderHandle = {
+      kind: 'file',
+      name: 'order.md',
+      getFile: async () => ({ lastModified: 1, text: async () => '# order' }),
+      createWritable: async () => ({ write: written, close: async () => undefined }),
+    } as unknown as FileSystemFileHandle;
+    const first = build(['domains/order'], 'a');
+    first.build.fileHandles.set('domains/order', orderHandle);
+    docsVault.buildLocalManifestWithEntries.mockResolvedValueOnce(first);
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => {
+      await hook.result.current.openRecent(folder('a'));
+    });
+    expect(hook.result.current.fileHandles.size).toBe(1);
+
+    const partial = build(['domains/order'], 'b-part');
+    docsVault.buildLocalManifestWithEntries.mockImplementationOnce(
+      async (_handle: FileSystemDirectoryHandle, observer?: VaultBuildObserver) => {
+        observer?.onPartial?.(partial.build as never, { read: 1, total: 900 });
+        return new Promise(() => undefined);
+      },
+    );
+    act(() => {
+      void hook.result.current.openRecent(folder('b'));
+    });
+    await waitFor(() => expect(hook.result.current.partialManifest).toBe(partial.build.manifest));
+    expect(hook.result.current.manifest).toBeNull();
+    expect(hook.result.current.fileHandles.size).toBe(0);
+    expect(hook.result.current.imageHandles.size).toBe(0);
+    expect(hook.result.current.sourceHandles.size).toBe(0);
+    await expect(hook.result.current.saveDoc('domains/order', '# changed')).rejects.toThrow('still being read');
+    expect(written).not.toHaveBeenCalled();
+  });
+
+  it('never shows a count from a read that has settled or a folder that was left', async () => {
+    let lateProgress: VaultBuildObserver['onProgress'];
+    docsVault.buildLocalManifestWithEntries.mockImplementationOnce(
+      async (_handle: FileSystemDirectoryHandle, observer?: VaultBuildObserver) => {
+        lateProgress = observer?.onProgress;
+        observer?.onProgress?.({ read: 3, total: 900 });
+        throw new Error('unreadable');
+      },
+    );
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => {
+      await hook.result.current.openRecent(record);
+    });
+    expect(hook.result.current.status).toBe('error');
+    lateProgress?.({ read: 4, total: 900 });
+    expect(hook.result.current.loadProgressStore.get()).toBeNull();
+
+    docsVault.buildLocalManifestWithEntries.mockImplementationOnce(
+      async (_handle: FileSystemDirectoryHandle, observer?: VaultBuildObserver) => {
+        observer?.onProgress?.({ read: 5, total: 900 });
+        return new Promise(() => undefined);
+      },
+    );
+    act(() => {
+      void hook.result.current.openRecent(record);
+    });
+    await waitFor(() => expect(hook.result.current.loadProgressStore.get()).toEqual({ read: 5, total: 900 }));
+    await act(async () => {
+      await hook.result.current.close();
+    });
+    expect(hook.result.current.loadProgressStore.get()).toBeNull();
   });
 });

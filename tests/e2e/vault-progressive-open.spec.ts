@@ -2,14 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 
 import type { AtlasMapProbe } from "./atlas-map-probe";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
+import { seedFirstRunSeen } from "./first-run-seed";
+import { stubDirectoryPicker, writeFolderBeforePick } from "./vault-picker-stub";
 
-const DOMAINS = 15;
-const CAPABILITIES = 300;
-const ELEMENTS = 1684;
+const DOMAINS = 50;
+const CAPABILITIES = 200;
+const DIRECT_ELEMENTS = 300;
+const ELEMENTS = 1749;
 const DOCUMENTS = 1 + DOMAINS + CAPABILITIES + ELEMENTS;
 const FIRST_FRAME_BUDGET_MS = 4_500;
 const FIRST_FRAME_MEASURED =
-  "measured 2026-10-02 on the static export at 120 ms per native answer: 0.87 s, against 16.5 s with one native read per file";
+  "measured 2026-10-02 on the static export at 120 ms per native answer: 0.92 s, against 16.9 s with one native read per file";
 
 function generatedVault(): Record<string, string> {
   const pad = (n: number) => String(n).padStart(5, "0");
@@ -21,7 +24,7 @@ function generatedVault(): Record<string, string> {
   const listed: string[][] = Array.from({ length: CAPABILITIES }, () => []);
   for (let e = 0; e < ELEMENTS; e += 1) {
     const element = `elements/e-${pad(e)}`;
-    const direct = e % 5 === 4;
+    const direct = e < DIRECT_ELEMENTS;
     if (!direct) listed[(e * 7) % CAPABILITIES]!.push(element);
     files[`${element}.md`] = `---\nkind: element\ntitle: ${element}\n${direct ? `domain: ${domains[e % DOMAINS]}\n` : ""}---\n${body(element)}`;
   }
@@ -48,35 +51,55 @@ async function installArrivalSampler(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const w = window as unknown as ArrivalWindow;
     w.__arrival = { pressedAt: null, firstFrameAt: null, drawnWhileReading: null, nodes: 0, marks: {} };
-    const sample = () => {
-      const arrival = w.__arrival;
+    type Snapshot = { at: number; reading: string | null; marks: Array<[string, number, number]> };
+    const snapshot = (): Snapshot | null => {
       const probe = w.__atlasMap;
       const camera = probe?.camera();
-      const nodes = arrival.pressedAt === null || !camera ? [] : (probe?.nodes() ?? []);
-      if (nodes.length > 0) {
-        arrival.firstFrameAt ??= performance.now();
-        arrival.nodes = nodes.length;
-        const reading = document.querySelector("[data-vault-load-progress]")?.getAttribute("data-vault-load-progress");
-        if (reading) arrival.drawnWhileReading ??= reading;
-        for (const node of nodes) {
-          if (node.hidden) continue;
-          const x = (node.x - camera!.width / 2) / camera!.scale + camera!.x;
-          const y = (node.y - camera!.height / 2) / camera!.scale + camera!.y;
-          const mark = arrival.marks[node.id];
-          if (!mark) {
-            arrival.marks[node.id] = { x, y, travel: 0, step: 0 };
-            continue;
-          }
-          const step = Math.hypot(x - mark.x, y - mark.y);
-          mark.travel += step;
-          mark.step = Math.max(mark.step, step);
-          mark.x = x;
-          mark.y = y;
-        }
-      }
-      requestAnimationFrame(sample);
+      if (w.__arrival.pressedAt === null || !camera) return null;
+      const nodes = probe?.nodes() ?? [];
+      if (nodes.length === 0) return null;
+      w.__arrival.nodes = nodes.length;
+      return {
+        at: performance.now(),
+        reading: document.querySelector("[data-vault-load-progress]")?.getAttribute("data-vault-load-progress") ?? null,
+        marks: nodes
+          .filter((node) => !node.hidden && node.appear !== 0)
+          .map((node) => [
+            node.id,
+            (node.x - camera.width / 2) / camera.scale + camera.x,
+            (node.y - camera.height / 2) / camera.scale + camera.y,
+          ]),
+      };
     };
-    requestAnimationFrame(sample);
+    const commit = (drawn: Snapshot) => {
+      const arrival = w.__arrival;
+      arrival.firstFrameAt ??= drawn.at;
+      if (drawn.reading) arrival.drawnWhileReading ??= drawn.reading;
+      for (const [id, x, y] of drawn.marks) {
+        const mark = arrival.marks[id];
+        if (!mark) {
+          arrival.marks[id] = { x, y, travel: 0, step: 0 };
+          continue;
+        }
+        const step = Math.hypot(x - mark.x, y - mark.y);
+        mark.travel += step;
+        mark.step = Math.max(mark.step, step);
+        mark.x = x;
+        mark.y = y;
+      }
+    };
+    let frame = -1;
+    let lastInFrame: Snapshot | null = null;
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback: FrameRequestCallback) =>
+      raf((time) => {
+        if (time !== frame) {
+          if (lastInFrame) commit(lastInFrame);
+          frame = time;
+        }
+        callback(time);
+        lastInFrame = snapshot();
+      });
   });
 }
 
@@ -112,4 +135,29 @@ test("a 2,000-document vault draws its overview while it is still being read, an
   expect(total).toBe(DOCUMENTS);
   expect(read).toBeLessThan(DOCUMENTS);
   expect(arrival.jumped).toEqual([]);
+});
+
+test("on the web, a folder that is still arriving reaches the map and no other reader", async ({ page }) => {
+  test.setTimeout(120_000);
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, {});
+  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await writeFolderBeforePick(page, generatedVault());
+  await page.waitForFunction(() => "__atlasMap" in window);
+  await page.getByTestId("topology-switch-to-my-data").click();
+
+  const arriving = await page.waitForFunction(
+    () => {
+      const reading = document.querySelector("[data-vault-load-progress]")?.getAttribute("data-vault-load-progress");
+      const drawn = (window as unknown as ArrivalWindow).__atlasMap?.nodes().some((node) => node.id === "domain:d-00000");
+      if (!reading || !drawn) return null;
+      return { reading, mode: (window as unknown as { __ohMyOntologyMode?: string }).__ohMyOntologyMode };
+    },
+    undefined,
+    { timeout: 60_000 },
+  );
+  expect((await arriving.jsonValue())?.mode).toBe("static");
+
+  await expect(page.locator("[data-vault-load-progress]")).toHaveCount(0, { timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __ohMyOntologyMode?: string }).__ohMyOntologyMode)).toBe("local");
 });
