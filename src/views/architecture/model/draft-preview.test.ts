@@ -80,7 +80,7 @@ describe('the preview clock', () => {
   it('follows the real draft path: read, propose, name and approve, save, rules, then the check', () => {
     const arrival = c.light + c.lightRead + c.lightCarry;
     const lastGroupSettles = c.propose + (DRAFT_PREVIEW_ROLES.length - 1) * c.fast + c.spring;
-    const lastNameShown = c.name + (DRAFT_PREVIEW_ROLES.length - 1) * c.fast + c.fast / 2 + c.base;
+    const lastNameShown = c.name + (DRAFT_PREVIEW_ROLES.length - 1) * c.fast + c.fast + c.base;
     const fileSaved = c.save + Math.max(c.spring, c.fast + c.settle);
     const lastRuleDrawn = c.rules + (DRAFT_PREVIEW_ROLES.length - 2) * c.fast + c.base;
     expect(arrival).toBeLessThanOrEqual(c.propose);
@@ -113,6 +113,37 @@ describe('draftPreviewTracks', () => {
         expect(offsets[offsets.length - 1], part).toBe(1);
         expect(offsets, part).toEqual([...offsets].sort((a, b) => a - b));
       }
+    }
+  });
+
+  it('says "approved" only once the last group is named, and before the file is saved', () => {
+    const loop = DRAFT_PREVIEW_CLOCK.loop;
+    const opacityAt = (frames: Keyframe[], index: number) => Number(frames[index]!.opacity);
+    const firstFull = (frames: Keyframe[]) => frames.findIndex((frame) => Number(frame.opacity) === 1);
+    const lastNameLands = Math.max(
+      ...DRAFT_PREVIEW_ROLES.map((role) => {
+        const lane = tracks[`named:${role}`]![0]!;
+        return (lane[firstFull(lane)]!.offset as number) * loop;
+      }),
+    );
+    const heading = tracks['heading-approved']![0]!;
+    const rises = heading.findIndex((frame, index) => opacityAt(heading, index) === 0 && Number(heading[index + 1]?.opacity) > 0);
+    const approvedStarts = (heading[rises]!.offset as number) * loop;
+    expect(approvedStarts).toBeGreaterThanOrEqual(lastNameLands);
+    expect(approvedStarts).toBeLessThan(DRAFT_PREVIEW_CLOCK.save);
+    const proposed = tracks['heading-proposed']![0]!;
+    const fades = proposed.findIndex((frame, index) => opacityAt(proposed, index) === 1 && Number(proposed[index + 1]?.opacity) < 1);
+    expect((proposed[fades]!.offset as number) * loop).toBe(approvedStarts);
+  });
+
+  it('never shows a group label and its name at once', () => {
+    const loop = DRAFT_PREVIEW_CLOCK.loop;
+    for (const role of DRAFT_PREVIEW_ROLES) {
+      const group = tracks[`group:${role}`]![0]!;
+      const named = tracks[`named:${role}`]![0]!;
+      const groupGone = group.findIndex((frame, index) => index > 0 && Number(frame.opacity) === 0 && Number(group[index - 1]!.opacity) > 0);
+      const nameRises = named.findIndex((frame, index) => Number(frame.opacity) === 0 && Number(named[index + 1]?.opacity) > 0);
+      expect((named[nameRises]!.offset as number) * loop, role).toBeGreaterThanOrEqual((group[groupGone]!.offset as number) * loop);
     }
   });
 

@@ -332,6 +332,8 @@ export function draftPreviewTracks(
   const lastFace = geometry.faces.length - 1;
   const proposeAt = (index: number) => c.propose + (lastFace - index) * c.fast;
   const nameAt = (index: number) => c.name + index * c.fast;
+  const namedAt = (index: number) => nameAt(index) + c.fast;
+  const approvedAt = namedAt(lastFace) + c.base;
   const ruleAt = (index: number) => c.rules + index * c.fast;
   const caught = c.catch + c.catchDraw;
 
@@ -366,12 +368,12 @@ export function draftPreviewTracks(
       [arrival + c.fast / 2 + light.bloomTauMs * 3, { opacity: 0 }],
     ]),
     on('link-port', appear(c.propose)),
-    on('heading-proposed', hand(c.propose, c.name)),
-    on('heading-approved', appear(c.name)),
+    on('heading-proposed', hand(c.propose, approvedAt)),
+    on('heading-approved', appear(approvedAt)),
     ...geometry.faces.flatMap((face, index) => [
       on(`face:${face.role}`, appear(proposeAt(index)), rise(proposeAt(index))),
       on(`group:${face.role}`, hand(proposeAt(index), nameAt(index))),
-      on(`named:${face.role}`, appear(nameAt(index) + c.fast / 2)),
+      on(`named:${face.role}`, appear(namedAt(index))),
       on(`plane:${face.role}`, appear(nameAt(index))),
     ]),
     on('chip', appear(c.save), rise(c.save)),
