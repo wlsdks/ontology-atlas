@@ -1,8 +1,8 @@
 {
-  "label": "Search settings",
-  "placeholder": "Search settings",
-  "results": "Matching settings",
+  "label": "搜索设置",
+  "placeholder": "搜索设置",
+  "results": "匹配的设置",
   "where": "{section} · {scope}",
-  "opens": "Opens {place}",
-  "empty": "No setting matches “{query}”."
+  "opens": "打开 {place}",
+  "empty": "没有与“{query}”匹配的设置。"
 }
