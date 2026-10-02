@@ -234,7 +234,7 @@ export function useTopologyVaultReadModel({
         .map((node) => ({ slug: node.agentSlug as string, kind: node.kind })),
     [ontologyInsight],
   );
-  const summaryFreshness = useSummaryFreshness(gitVaultPath ?? undefined, summaryFreshnessCandidates);
+  const { verdicts: summaryFreshness, unavailable: summaryHistoryUnavailable } = useSummaryFreshness(gitVaultPath ?? undefined, summaryFreshnessCandidates);
   const handoffSource: "loaded-vault" | "read-only-sample" =
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   return {
@@ -242,6 +242,6 @@ export function useTopologyVaultReadModel({
     docFileDateIndex, docDatesReading, updatedAgoNowMs, spotlightOn, changedSlugs, dustySlugs, deeplinkSourceReady, handoffSource, vaultIdentity,
     llmBridgeAvailable, gitVaultPath, tAgent, vaultConceptFacts, handleToggleSpotlight, spotlightNeedsVault,
     ontologyChangeset, brokenDocCount, spotlightFitToken, recentNeedsVaultOpen, setRecentNeedsVaultOpen,
-    needsVaultReason, summaryFreshness
+    needsVaultReason, summaryFreshness, summaryHistoryUnavailable
   } as const;
 }

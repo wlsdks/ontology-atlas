@@ -58,6 +58,7 @@ interface TopologyInspectorSurfacesProps {
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
     | "summaryFreshness"
+    | "summaryHistoryUnavailable"
     | "llmBridgeAvailable"
     | "setNeedsVaultReason"
     | "selectedOntologyNode"
@@ -143,7 +144,7 @@ export function TopologyInspectorSurfaces({
     handleDatasheetHoverEvidence, setFullDetailSlug, contextMenuNode, closeContextMenu, FullDetailCard,
     fullDetailOpen
   } = topologyCanvasFocus;
-  const { summaryFreshness, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode } = topologyVaultReadModel;
+  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
     projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
@@ -240,6 +241,7 @@ export function TopologyInspectorSurfaces({
                   ? { behindByDays: daysBehind(summaryFreshness.get(panelDatasheetModel.slug)!) }
                   : null
               }
+              summaryHistoryUnavailable={summaryHistoryUnavailable.has(panelDatasheetModel.slug)}
               groups={panelDatasheetModel.groups}
               evidence={panelDatasheetModel.evidence}
               codeLocations={panelDatasheetModel.codeLocations}
@@ -287,6 +289,7 @@ export function TopologyInspectorSurfaces({
                   })
                   : undefined,
                 summaryFreshnessAction: tSummaryFreshness("action"),
+                summaryHistoryUnavailable: tSummaryFreshness("unavailable"),
                 editSubjectAgent: tEditProvenance("subjectAgent"),
                 editSubjectHuman: tEditProvenance("subjectHuman"),
                 editConflictMessage: tEditProvenance("conflictMessage"),

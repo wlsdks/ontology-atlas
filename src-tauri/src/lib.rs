@@ -20,6 +20,7 @@ mod acp_doctor;
 mod agent_setup;
 mod analysis_archive;
 mod connector_secrets;
+mod command_output;
 mod connectors;
 mod deep_link;
 mod errors;
@@ -3854,6 +3855,7 @@ pub fn run() {
             git::git_snapshot,
             git::git_history,
             git::vault_node_revisions,
+            git::vault_node_revision_content,
             git::git_paths_last_change,
             git::git_diff,
             git::git_commit_diff,

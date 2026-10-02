@@ -11,6 +11,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::errors::coded;
 
+mod history;
+
 // The path comes from the WebView; canonicalized as git's cwd so relative
 // pathspecs cannot reach outside the vault.
 pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
@@ -90,11 +92,9 @@ fn subcommand_of<'a>(args: &[&'a str]) -> Option<&'a str> {
     None
 }
 
-/// Diff, log, and show honour `diff.external` and per-driver `textconv`, both of
-/// which run a config-supplied command; `--no-ext-diff --no-textconv` right after
-/// the subcommand disables them without affecting other verbs.
+/// Read commands must not run repository-controlled diff, textconv or signature programs.
 fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
-    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 2);
+    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 3);
     let mut guarded = false;
     let mut skip_value = false;
     for arg in args {
@@ -117,6 +117,9 @@ fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
         if matches!(*arg, "diff" | "log" | "show") {
             out.push("--no-ext-diff");
             out.push("--no-textconv");
+        }
+        if matches!(*arg, "log" | "show") {
+            out.push("--no-show-signature");
         }
         guarded = true;
     }
@@ -357,7 +360,7 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
     // Canonicalized to match vault_dir's pathspec base (for example /var vs /private/var).
     let root = PathBuf::from(trimmed);
     let canonical = fs::canonicalize(&root).unwrap_or(root);
-    if !repo_toplevel_is_trustworthy(&canonical) {
+    if !repo_toplevel_is_trustworthy(&canonical) || !vault_dir.starts_with(&canonical) {
         return Ok(None);
     }
     Ok(Some(canonical))
@@ -1941,13 +1944,13 @@ fn host_platform() -> &'static str {
     }
 }
 
-/// One historical version of one vault file: when it landed and what it said.
+/// A historical version address; bodies are read separately when needed.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NodeRevision {
+pub struct NodeRevisionRef {
     slug: String,
     iso_time: String,
-    content: String,
+    revision: String,
 }
 
 /// Revisions newest first for the summary-freshness check. Git plumbing only; the
@@ -1958,55 +1961,13 @@ pub fn vault_node_revisions(
     vault_path: String,
     slugs: Vec<String>,
     max_revisions: Option<u32>,
-) -> Result<Vec<NodeRevision>, String> {
-    let vault_dir = validate_vault_dir(&vault_path)?;
-    let repo_root = require_repo_root(&vault_dir)?;
-    let pathspec = vault_pathspec(&repo_root, &vault_dir);
-    let prefix = if pathspec == "." {
-        String::new()
-    } else {
-        format!("{pathspec}/")
-    };
-    let max_count = max_revisions.unwrap_or(40).clamp(1, 200).to_string();
+) -> Result<Vec<NodeRevisionRef>, String> {
+    history::list(&vault_path, &slugs, max_revisions)
+}
 
-    let mut revisions = Vec::new();
-    for slug in slugs.iter().take(MAX_FRESHNESS_SLUGS) {
-        // Dropped rather than escaped, since the slug reaches a `git show` argument.
-        if slug.is_empty() || slug.contains("..") || slug.starts_with('/') || slug.contains('\\') {
-            continue;
-        }
-        let file_path = format!("{prefix}{slug}.md");
-        let log = run_git(
-            &repo_root,
-            &[
-                "log",
-                &format!("--max-count={max_count}"),
-                "--pretty=format:%H %cI",
-                "--no-renames",
-                "--",
-                &file_path,
-            ],
-        )?;
-        if !log.success {
-            continue;
-        }
-        for line in log.stdout.lines() {
-            let line = line.trim();
-            let Some((hash, iso_time)) = line.split_once(' ') else {
-                continue;
-            };
-            let show = run_git(&repo_root, &["show", &format!("{hash}:{file_path}")])?;
-            if !show.success {
-                continue;
-            }
-            revisions.push(NodeRevision {
-                slug: slug.clone(),
-                iso_time: iso_time.trim().to_string(),
-                content: show.stdout,
-            });
-        }
-    }
-    Ok(revisions)
+#[tauri::command(async)]
+pub fn vault_node_revision_content(vault_path: String, slug: String, revision: String) -> Result<Option<String>, String> {
+    history::content(&vault_path, &slug, &revision)
 }
 
 #[derive(Debug, Serialize)]

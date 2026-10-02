@@ -206,6 +206,7 @@ interface OntologyMapDetailPanelLabels {
   summaryFreshnessPrefix?: string;
   summaryFreshnessLag?: string;
   summaryFreshnessAction?: string;
+  summaryHistoryUnavailable?: string;
   /** Project-only source receipt copy, preformatted by the caller. */
   sourceHeading?: string;
   /** The status line while the receipt is still being read (`projectSourceLoading`). */
@@ -256,12 +257,13 @@ export interface OntologyMapDetailPanelProps {
   domain: { id: string; title: string } | null;
   /**
    * Set when this node is a `domain` or `project` whose containment list changed after
-   * its description was last written — the caller derives it from `summaryStalenessOf`
+   * its description was last written — the caller derives it from the summary clock scan
    * over `vault_node_revisions`. Null for every other node, and null everywhere in the
    * browser, where there is no Git history to read. Advisory: it mounts one plain row
    * and offers no fix, because the body is a human judgement.
    */
   summaryStaleness?: { behindByDays: number } | null;
+  summaryHistoryUnavailable?: boolean;
   /** "Power" (power) — powered (recently updated, fresh) versus unpowered (quiet). */
   powered: boolean;
   /**
@@ -975,6 +977,7 @@ export function OntologyMapDetailPanel({
   kind,
   domain,
   summaryStaleness = null,
+  summaryHistoryUnavailable = false,
   powered,
   groups,
   evidence,
@@ -1610,11 +1613,11 @@ export function OntologyMapDetailPanel({
             />
           ) : null}
           {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
-          {/* Direction B (2026-08-25 design-directions) — the map confirms staleness on
-              arrival; discovery stays with `maintenance_plan` and the insights Do-Next
-              tab. Sits beside the last-edit row because both answer "how current is
-              this", and renders only with a real verdict. */}
-          {summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (
+          {summaryHistoryUnavailable && labels.summaryHistoryUnavailable ? (
+            <p role="status" data-testid="summary-history-unavailable" className="text-label text-[color:var(--color-text-tertiary)]">
+              {labels.summaryHistoryUnavailable}
+            </p>
+          ) : summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (
             <SummaryFreshnessRow
               prefixLabel={labels.summaryFreshnessPrefix}
               lagLabel={labels.summaryFreshnessLag}
