@@ -4,9 +4,11 @@
   "outbound": {
     "title": "What can leave this computer",
     "keywords": "network internet send upload outbound transfer audit log update check provider",
-    "line": "{trigger} · {destinations} · {carries}",
-    "recorded": "Recorded in {file}",
-    "notRecorded": "Not recorded by Atlas"
+    "recorded": "Recorded",
+    "recordedIn": "Recorded in {file}",
+    "notRecorded": "Not recorded",
+    "unseen": "Atlas does not see it",
+    "recordedNote": "Recorded: each send is written to <file>{file}</file> in this folder."
   },
   "trigger": {
     "automatic": "Automatic",
@@ -14,18 +16,18 @@
     "agent-use": "When an agent uses it"
   },
   "carries": {
-    "no-folder-content": "no folder content",
-    "what-you-send": "what you send",
-    "provider-owned": "between the tool and its provider; Atlas does not see it",
-    "agent-sends": "what the agent sends; Atlas does not see it"
+    "no-folder-content": "No folder content",
+    "what-you-send": "What you send",
+    "provider-owned": "Between tool and provider",
+    "agent-sends": "What the agent sends"
   },
   "destinations": {
-    "your-runner-address": "the runner address you entered",
-    "npm-registry": "the npm package registry",
-    "python-package-index": "the Python Package Index (PyPI)",
-    "your-connector-urls": "the connectors in this folder, by address or as programs on this computer",
-    "your-git-remote": "your Git remote",
-    "your-coding-tool-provider": "your coding tool's own provider"
+    "your-runner-address": "Runner address you entered",
+    "npm-registry": "npm package registry",
+    "python-package-index": "Python Package Index (PyPI)",
+    "your-connector-urls": "This folder's connectors, by address or as programs on this computer",
+    "your-git-remote": "Your Git remote",
+    "your-coding-tool-provider": "Your coding tool's own provider"
   },
   "paths": {
     "update-check": "Update check",
@@ -40,8 +42,8 @@
     "coding-tools": "Coding tools",
     "website-files": "Website files"
   },
-  "updateOn": "On",
-  "updateOff": "Off",
+  "updateOn": "Automatic check on",
+  "updateOff": "Automatic check off",
   "updateChange": "Change",
   "updateChangeAria": "Change the automatic update check in About",
   "allowances": {

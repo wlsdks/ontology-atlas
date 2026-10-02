@@ -21,15 +21,21 @@ routes: []
   Each pane head ends with where its values live ("Saved on this computer; every folder uses
   it", or "Files in `.ontology-atlas/` move with the folder; Git leaves them out by default").
   Search results carry the same scope word. Retired pane ids map forward (`background` → `map`,
-  `update` → `about`).
+  `update` → `about`). Group labels in the left list use secondary ink at weight 510 above a
+  hairline, so they read apart from the rows they head.
+- Every pane keeps one start line: the head (title and sentence), group labels, card edges and
+  any caption outside a card share the card's left edge; row text sits inside the card
+  (`tests/e2e/settings-reading.spec.ts`, at 1040 and 1440).
 - **Panes** (`ui/panes/`): Screen · language (language, view mode on every screen, text size
   Default / Large / Larger, concept icons, Motion status, screen guides); Map (background,
   drag and zoom speed, INDEX default only where the map injects it, frame meter On · Off);
   Agents (When an agent writes a wiki page, app only; door rows to Coding tools, Models · API
-  keys with the Keychain key count, and MCP); Privacy · data (what can leave this computer,
+  keys with the Keychain key count, and MCP); Privacy · data (what can leave this computer
+  as aligned columns: when it happens, whether it carries folder content, whether Atlas records
+  it, and every destination host as a chip, with the audit log path once below the list;
   allowances on this computer, recent folders, each forget behind a two-press `ArmedChip`);
   Ontology folder (folder, path, shape, documents, import, and what the folder keeps: agent
-  connections (MCP), schedules, Git, project sources); About (running or website build,
+  connections (MCP), schedules, Git, project sources); About (current app or website version,
   automatic update check On · Off, what's new, keyboard shortcuts, source, licences, copy
   diagnostics, show log folder).
 - **Search** sits at the head of the left list. Typing replaces the pane with results grouped

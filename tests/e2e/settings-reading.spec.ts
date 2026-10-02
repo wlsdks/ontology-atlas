@@ -38,6 +38,46 @@ function rowTextStarts(): { id: string; left: number }[] {
     });
 }
 
+function paneColumnStarts(): { what: string; left: number }[] {
+  const pane = document.querySelector('[data-testid^="app-settings-pane-"]')!;
+  const round = (value: number) => Math.round(value * 10) / 10;
+  const isCard = (el: Element) => {
+    const style = getComputedStyle(el);
+    return (
+      parseFloat(style.borderLeftWidth) > 0 &&
+      parseFloat(style.borderTopLeftRadius) > 0 &&
+      el.getBoundingClientRect().width > pane.clientWidth / 2
+    );
+  };
+  const insideCard = (el: Element) => {
+    for (let node = el.parentElement; node && node !== pane; node = node.parentElement) {
+      if (isCard(node)) return true;
+    }
+    return false;
+  };
+  const textLeft = (el: Element) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!node.textContent?.trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rect = range.getBoundingClientRect();
+      if (rect.width > 0) return rect.left;
+    }
+    return null;
+  };
+  const cards = [...pane.querySelectorAll('*')]
+    .filter((el) => isCard(el) && !insideCard(el))
+    .map((el) => ({ what: `card ${el.tagName.toLowerCase()}`, left: round(el.getBoundingClientRect().left) }));
+  const texts = [...pane.querySelectorAll('h3, p')]
+    .filter((el) => !insideCard(el) && !isCard(el))
+    .flatMap((el) => {
+      const left = textLeft(el);
+      return left === null ? [] : [{ what: el.textContent!.trim().slice(0, 24), left: round(left) }];
+    });
+  return [...texts, ...cards];
+}
+
 // The app's window floor and a common desktop window; phone and tablet widths are not a
 // target (owner direction, 2026-09-27).
 for (const [width, height] of [[1040, 720], [1440, 900]] as const) {
@@ -96,6 +136,20 @@ for (const [width, height] of [[1040, 720], [1440, 900]] as const) {
         await expect(page.getByTestId(`app-settings-pane-${section}`)).toBeVisible();
         const starts = await page.evaluate(rowTextStarts);
         expect(starts.length, `${section} anchors no row`).toBeGreaterThan(0);
+        const lefts = starts.map((start) => start.left);
+        expect(Math.max(...lefts) - Math.min(...lefts), `${section}: ${JSON.stringify(starts)}`).toBeLessThanOrEqual(1);
+      }
+    });
+
+    test('every pane starts its head, group labels and card edges on one line', async ({ page }) => {
+      await openSettings(page, 'ko');
+      for (const section of SECTIONS) {
+        await page.getByTestId(`app-settings-nav-${section}`).click();
+        await expect(page.getByTestId('app-settings-pane-head')).toContainText(
+          await page.getByTestId(`app-settings-nav-${section}`).innerText(),
+        );
+        const starts = await page.evaluate(paneColumnStarts);
+        expect(starts.some((start) => start.what.startsWith('card')), `${section} measured no card`).toBe(true);
         const lefts = starts.map((start) => start.left);
         expect(Math.max(...lefts) - Math.min(...lefts), `${section}: ${JSON.stringify(starts)}`).toBeLessThanOrEqual(1);
       }
