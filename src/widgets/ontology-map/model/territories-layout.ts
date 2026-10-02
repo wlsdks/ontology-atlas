@@ -10,21 +10,14 @@
  * drawing grow past it. CSS px at a fixed label scale; the view pans, never zooms.
  */
 
-type TerritoryKind = "project" | "domain" | "capability" | "element";
-
-export interface TerritoryInputNode {
-  id: string;
-  label: string;
-  kind: TerritoryKind;
-}
-
-export interface TerritoryInputEdge {
-  source: string;
-  target: string;
-  /** `belongs_to` states containment from the child's side. */
-  kind: "contains" | "depends";
-  relationType: string;
-}
+import {
+  readContainmentTree,
+  rollDependencies,
+  type CapabilityDependency,
+  type ContainmentTree,
+  type TreeInputEdge,
+  type TreeInputNode,
+} from "./containment-tree";
 
 /** So the renderer can answer with its real fonts. */
 export type TerritoryTextRole = "project" | "domain" | "domainStats" | "capability" | "element" | "chip";
@@ -113,14 +106,6 @@ interface TerritoryShelf {
   to: number;
 }
 
-export interface TerritoryDependency {
-  /** An element's dependency rolls up to its capability. */
-  from: string;
-  to: string;
-  sourceId: string;
-  targetId: string;
-}
-
 interface TerritoryRollup {
   fromDomain: string;
   toDomain: string;
@@ -141,7 +126,7 @@ export interface TerritoryLayout {
   shelves: TerritoryShelf[];
   /** The domain when no capability lists the element. */
   elementParent: Map<string, string>;
-  dependencies: TerritoryDependency[];
+  dependencies: CapabilityDependency[];
   rollups: TerritoryRollup[];
   dense: boolean;
   /** Always false without a room. */
@@ -250,83 +235,9 @@ export function boxesOverlap(a: Box, b: Box): boolean {
 }
 
 
-export interface Tree {
-  project: TerritoryInputNode | null;
-  domains: TerritoryInputNode[];
-  capabilityDomain: Map<string, string | null>;
-  capabilities: TerritoryInputNode[];
-  elementParent: Map<string, string>;
-  capabilityElements: Map<string, string[]>;
-  domainElementCount: Map<string, number>;
-}
-
 const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const byLabel = (a: { label: string; id: string }, b: { label: string; id: string }) =>
   a.label < b.label ? -1 : a.label > b.label ? 1 : byId(a, b);
-
-export function readTree(nodes: readonly TerritoryInputNode[], edges: readonly TerritoryInputEdge[]): Tree {
-  const kindOf = new Map(nodes.map((n) => [n.id, n.kind] as const));
-  const parents = new Map<string, string[]>();
-  for (const e of edges) {
-    if (e.kind !== "contains") continue;
-    if (!kindOf.has(e.source) || !kindOf.has(e.target)) continue;
-    const [parent, child] = e.relationType === "belongs_to" ? [e.target, e.source] : [e.source, e.target];
-    const list = parents.get(child);
-    if (list) list.push(parent);
-    else parents.set(child, [parent]);
-  }
-  for (const list of parents.values()) list.sort();
-  const firstParentOfKind = (id: string, kind: TerritoryKind) =>
-    (parents.get(id) ?? []).find((p) => kindOf.get(p) === kind) ?? null;
-
-  const project = nodes.filter((n) => n.kind === "project").sort(byId)[0] ?? null;
-  const domains = nodes.filter((n) => n.kind === "domain").sort(byId);
-  const capabilities = nodes.filter((n) => n.kind === "capability").sort(byId);
-
-  const capabilityDomain = new Map<string, string | null>();
-  for (const c of capabilities) capabilityDomain.set(c.id, firstParentOfKind(c.id, "domain"));
-
-  // A capability that lists the element wins over a domain that also does.
-  const elementParent = new Map<string, string>();
-  const capabilityElements = new Map<string, string[]>();
-  const domainElementCount = new Map<string, number>();
-  for (const el of nodes.filter((n) => n.kind === "element").sort(byId)) {
-    const cap = firstParentOfKind(el.id, "capability");
-    const dom = cap ? capabilityDomain.get(cap) ?? null : firstParentOfKind(el.id, "domain");
-    const owner = cap ?? dom;
-    if (owner) elementParent.set(el.id, owner);
-    if (cap) {
-      const list = capabilityElements.get(cap);
-      if (list) list.push(el.id);
-      else capabilityElements.set(cap, [el.id]);
-    }
-    if (dom) domainElementCount.set(dom, (domainElementCount.get(dom) ?? 0) + 1);
-  }
-  return { project, domains, capabilityDomain, capabilities, elementParent, capabilityElements, domainElementCount };
-}
-
-export function rollDependencies(tree: Tree, edges: readonly TerritoryInputEdge[]): TerritoryDependency[] {
-  const isCapability = new Set(tree.capabilities.map((c) => c.id));
-  const toCapability = (id: string): string | null => {
-    if (isCapability.has(id)) return id;
-    const owner = tree.elementParent.get(id);
-    return owner && isCapability.has(owner) ? owner : null;
-  };
-  const out: TerritoryDependency[] = [];
-  const seen = new Set<string>();
-  for (const e of edges) {
-    if (e.kind === "contains" || e.relationType !== "depends_on") continue;
-    const from = toCapability(e.source);
-    const to = toCapability(e.target);
-    if (!from || !to || from === to) continue;
-    const key = `${e.source}\0${e.target}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ from, to, sourceId: e.source, targetId: e.target });
-  }
-  return out.sort((a, b) => (a.sourceId + a.targetId < b.sourceId + b.targetId ? -1 : 1));
-}
-
 
 function onArc(cx: number, cy: number, radius: number, angle: number): { x: number; y: number } {
   return { x: cx + radius * Math.cos(angle), y: cy + radius * TERRITORY_GEOMETRY.squash * Math.sin(angle) };
@@ -358,8 +269,8 @@ interface Attempt {
 type NameRule = "keepEvery" | "foldWithoutPlace" | "yieldToDiscs";
 
 function attempt(
-  tree: Tree,
-  dependencies: readonly TerritoryDependency[],
+  tree: ContainmentTree,
+  dependencies: readonly CapabilityDependency[],
   options: TerritoryLayoutOptions,
   room: Box | null,
   dense: boolean,
@@ -391,7 +302,7 @@ function attempt(
     id: string;
     name: string;
     domain: boolean;
-    caps: TerritoryInputNode[];
+    caps: TreeInputNode[];
   }
   const territories: Territory[] = tree.domains.map((d) => ({ id: d.id, name: d.label, domain: true, caps: [] }));
   const byDomain = new Map(territories.map((t) => [t.id, t]));
@@ -690,11 +601,11 @@ function attempt(
 }
 
 export function computeTerritoryLayout(
-  nodes: readonly TerritoryInputNode[],
-  edges: readonly TerritoryInputEdge[],
+  nodes: readonly TreeInputNode[],
+  edges: readonly TreeInputEdge[],
   options: TerritoryLayoutOptions,
 ): TerritoryLayout {
-  const tree = readTree(nodes, edges);
+  const tree = readContainmentTree(nodes, edges);
   const dependencies = rollDependencies(tree, edges);
   const forcedDense = tree.domains.length > TERRITORY_GEOMETRY.denseDomainCount;
   if (!forcedDense) {

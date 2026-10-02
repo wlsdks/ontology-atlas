@@ -8,11 +8,10 @@ import {
   territorySatellites,
   TERRITORY_GEOMETRY,
   type TerritoryCapability,
-  type TerritoryInputEdge,
-  type TerritoryInputNode,
   type TerritoryLayout,
   type TerritoryTextRole,
 } from "./territories-layout";
+import type { TreeInputEdge, TreeInputNode } from "./containment-tree";
 
 const FONT_PX: Record<TerritoryTextRole, number> = {
   project: TERRITORY_GEOMETRY.projectFontPx,
@@ -42,7 +41,7 @@ const options = {
     `역량 ${capabilityCount} · 요소 ${elementCount} · 낡음 0`,
 };
 
-function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdge[] } {
+function dogfoodGraph(): { nodes: TreeInputNode[]; edges: TreeInputEdge[] } {
   const derivation = deriveOntologyFromVault(resolveStaticVaultSource("dogfood").manifest);
   const kinds = new Set(["project", "domain", "capability", "element"]);
   const nodes = derivation.nodes
@@ -50,7 +49,7 @@ function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdg
     .map((n) => ({
       id: n.id,
       label: n.displayLocales?.ko ?? n.display ?? n.title,
-      kind: n.kind as TerritoryInputNode["kind"],
+      kind: n.kind as TreeInputNode["kind"],
     }));
   const ids = new Set(nodes.map((n) => n.id));
   const edges = derivation.edges
@@ -58,15 +57,15 @@ function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdg
     .map((e) => ({
       source: e.from,
       target: e.to,
-      kind: (e.type === "contains" ? "contains" : "depends") as TerritoryInputEdge["kind"],
+      kind: (e.type === "contains" ? "contains" : "depends") as TreeInputEdge["kind"],
       relationType: e.type,
     }));
   return { nodes, edges };
 }
 
-function synthetic(capabilityCount: number, domainCount: number): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdge[] } {
-  const nodes: TerritoryInputNode[] = [{ id: "project:p", label: "합성 프로젝트", kind: "project" }];
-  const edges: TerritoryInputEdge[] = [];
+function synthetic(capabilityCount: number, domainCount: number): { nodes: TreeInputNode[]; edges: TreeInputEdge[] } {
+  const nodes: TreeInputNode[] = [{ id: "project:p", label: "합성 프로젝트", kind: "project" }];
+  const edges: TreeInputEdge[] = [];
   const words = ["결제", "Checkout flow", "재고 동기화", "Search index", "알림 발송", "Shipment label printer", "권한", "보고서 생성기"];
   for (let d = 0; d < domainCount; d++) {
     nodes.push({ id: `domain:d${d}`, label: `도메인 ${d} ${words[d % words.length]}`, kind: "domain" });
@@ -255,14 +254,14 @@ describe("computeTerritoryLayout", () => {
   });
 
   it("gives an element to the capability that lists it, not also to the domain", () => {
-    const nodes: TerritoryInputNode[] = [
+    const nodes: TreeInputNode[] = [
       { id: "project:p", label: "P", kind: "project" },
       { id: "domain:a", label: "A", kind: "domain" },
       { id: "capability:x", label: "X", kind: "capability" },
       { id: "element:e", label: "E", kind: "element" },
       { id: "element:loose", label: "Loose", kind: "element" },
     ];
-    const edges: TerritoryInputEdge[] = [
+    const edges: TreeInputEdge[] = [
       { source: "project:p", target: "domain:a", kind: "contains", relationType: "contains" },
       { source: "domain:a", target: "capability:x", kind: "contains", relationType: "contains" },
       { source: "domain:a", target: "element:e", kind: "contains", relationType: "contains" },
@@ -278,7 +277,7 @@ describe("computeTerritoryLayout", () => {
   });
 
   it("rolls element dependencies up to their capability and counts them per domain pair", () => {
-    const nodes: TerritoryInputNode[] = [
+    const nodes: TreeInputNode[] = [
       { id: "project:p", label: "P", kind: "project" },
       { id: "domain:a", label: "A", kind: "domain" },
       { id: "domain:b", label: "B", kind: "domain" },
@@ -288,8 +287,8 @@ describe("computeTerritoryLayout", () => {
       { id: "element:a1e", label: "A1E", kind: "element" },
       { id: "element:b1e", label: "B1E", kind: "element" },
     ];
-    const c = (source: string, target: string): TerritoryInputEdge => ({ source, target, kind: "contains", relationType: "contains" });
-    const d = (source: string, target: string, relationType = "depends_on"): TerritoryInputEdge => ({ source, target, kind: "depends", relationType });
+    const c = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "contains", relationType: "contains" });
+    const d = (source: string, target: string, relationType = "depends_on"): TreeInputEdge => ({ source, target, kind: "depends", relationType });
     const edges = [
       c("project:p", "domain:a"),
       c("project:p", "domain:b"),
@@ -316,7 +315,7 @@ describe("computeTerritoryLayout", () => {
   });
 
   it("reads belongs_to as containment stated from the child", () => {
-    const nodes: TerritoryInputNode[] = [
+    const nodes: TreeInputNode[] = [
       { id: "domain:a", label: "A", kind: "domain" },
       { id: "capability:x", label: "X", kind: "capability" },
     ];

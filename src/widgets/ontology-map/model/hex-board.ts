@@ -1,14 +1,21 @@
 /**
  * The hex board (design spec "F2"): one capability per tile, a domain as a contiguous region
  * round its title tile, the project at the centre, and empty moat cells between regions that
- * carry every route. Elements count toward their most-specific capability (`readTree`).
+ * carry every route. Elements count toward their most-specific capability (`readContainmentTree`).
  * Placement is append-only: a kept record is honoured, a new domain takes the next spiral
  * slot and a new capability its region's first free cell; only an overflow re-seeds, and it
  * is reported (`reflowed`). A name is drawn only at cell sizes where every name fits its
  * face, never clipped. Unit space; maths in `model/hex-grid.ts`.
  */
 
-import { readTree, rollDependencies, type TerritoryInputEdge, type TerritoryInputNode } from "./territories-layout";
+import {
+  readContainmentTree,
+  rollDependencies,
+  rollDomainFlows,
+  type DomainFlow,
+  type TreeInputEdge,
+  type TreeInputNode,
+} from "./containment-tree";
 import {
   axialRound,
   axialToUnit,
@@ -80,13 +87,7 @@ interface HexDependency {
   to: string;
 }
 
-interface HexCanal {
-  fromDomain: string;
-  toDomain: string;
-  /** Both directions when the canal is two-way. */
-  count: number;
-  twoWay: boolean;
-}
+type HexCanal = DomainFlow;
 
 export interface HexBoardLayout {
   project: HexTile | null;
@@ -312,11 +313,11 @@ export interface HexBoardOptions {
 
 /** Total-ordered: the same graph and prior record always give the same board. */
 export function computeHexBoard(
-  nodes: readonly TerritoryInputNode[],
-  edges: readonly TerritoryInputEdge[],
+  nodes: readonly TreeInputNode[],
+  edges: readonly TreeInputEdge[],
   options: HexBoardOptions = {},
 ): HexBoardLayout {
-  const tree = readTree(nodes, edges);
+  const tree = readContainmentTree(nodes, edges);
   const label = new Map(nodes.map((n) => [n.id, n.label] as const));
   const domainIds = tree.domains.map((d) => d.id);
   const capsByDomain = new Map<string, string[]>();
@@ -400,26 +401,7 @@ export function computeHexBoard(
     dependencies.push({ from: d.from, to: d.to });
   }
 
-  // Ordered domain pairs; an opposite pair merges into one two-way canal (spec §3).
-  const roll = new Map<string, HexCanal>();
-  for (const dep of dependencies) {
-    const a = byId.get(dep.from)?.domainId;
-    const b = byId.get(dep.to)?.domainId;
-    if (!a || !b || a === b) continue;
-    const back = roll.get(`${b}\0${a}`);
-    if (back) {
-      back.count += 1;
-      back.twoWay = true;
-      continue;
-    }
-    const k = `${a}\0${b}`;
-    const cur = roll.get(k);
-    if (cur) cur.count += 1;
-    else roll.set(k, { fromDomain: a, toDomain: b, count: 1, twoWay: false });
-  }
-  const canals = [...roll.values()].sort(
-    (x, y) => y.count - x.count || byString(x.fromDomain + x.toDomain, y.fromDomain + y.toDomain),
-  );
+  const canals = rollDomainFlows(dependencies, (id) => byId.get(id)?.domainId);
 
   let minX = Infinity;
   let maxX = -Infinity;

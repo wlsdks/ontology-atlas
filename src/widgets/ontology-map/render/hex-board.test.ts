@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/docs-vault";
-import type { TerritoryInputEdge, TerritoryInputNode } from "../model/territories-layout";
+import type { TreeInputEdge, TreeInputNode } from "../model/containment-tree";
 import { computeHexBoard, HEX_TYPE, type HexTextRole } from "../model/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import { drawHexBoard, type HexDrawState, type HexEvidenceState } from "./hex-board";
@@ -77,11 +77,11 @@ function measure(text: string, role: HexTextRole): number {
 function dogfood() {
   const derivation = deriveOntologyFromVault(resolveStaticVaultSource("dogfood").manifest);
   const kinds = new Set(["project", "domain", "capability", "element"]);
-  const nodes: TerritoryInputNode[] = derivation.nodes
+  const nodes: TreeInputNode[] = derivation.nodes
     .filter((n) => kinds.has(n.kind))
-    .map((n) => ({ id: n.id, label: n.displayLocales?.ko ?? n.display ?? n.title, kind: n.kind as TerritoryInputNode["kind"] }));
+    .map((n) => ({ id: n.id, label: n.displayLocales?.ko ?? n.display ?? n.title, kind: n.kind as TreeInputNode["kind"] }));
   const ids = new Set(nodes.map((n) => n.id));
-  const edges: TerritoryInputEdge[] = derivation.edges
+  const edges: TreeInputEdge[] = derivation.edges
     .filter((e) => ids.has(e.from) && ids.has(e.to))
     .map((e) => ({ source: e.from, target: e.to, kind: e.type === "contains" ? "contains" : "depends", relationType: e.type }));
   return computeHexBoard(nodes, edges, { aspect: 1.6 });

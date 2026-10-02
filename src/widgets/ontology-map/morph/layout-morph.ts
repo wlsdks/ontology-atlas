@@ -1,7 +1,7 @@
 import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
 import { easeMotion } from "@/shared/motion/ease";
 import { MOTION } from "@/shared/motion/tokens";
-import { readTree, type TerritoryInputEdge, type TerritoryInputNode } from "../model/territories-layout";
+import { readContainmentTree, type TreeInputEdge, type TreeInputNode } from "../model/containment-tree";
 import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, type GlideOptions } from "./glide";
 
 export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
@@ -41,10 +41,10 @@ export function chooseLayoutSwitch({
 }
 
 export function containmentParents(
-  nodes: readonly TerritoryInputNode[],
-  edges: readonly TerritoryInputEdge[],
+  nodes: readonly TreeInputNode[],
+  edges: readonly TreeInputEdge[],
 ): ReadonlyMap<string, string> {
-  const tree = readTree(nodes, edges);
+  const tree = readContainmentTree(nodes, edges);
   const project = tree.project?.id ?? null;
   const parents = new Map<string, string>();
   for (const domain of tree.domains) if (project !== null) parents.set(domain.id, project);
