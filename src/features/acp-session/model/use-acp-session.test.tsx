@@ -200,7 +200,14 @@ describe('analysis turn capture', () => {
     let sent!: Promise<void>;
     act(() => { sent = result.current.send('Review this exact request.'); });
     await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
-    act(() => { answer('A cited '); answer('answer.'); });
+    act(() => answer('A cited '));
+    const firstFrame = result.current.events;
+    const firstAnswer = firstFrame.at(-1);
+    Object.freeze(firstFrame);
+    Object.freeze(firstAnswer);
+    act(() => answer('answer.'));
+    expect(firstAnswer).toMatchObject({ kind: 'agent', text: 'A cited ' });
+    expect(result.current.events.at(-1)).toMatchObject({ kind: 'agent', id: firstAnswer?.id, text: 'A cited answer.' });
     rerender({ observer: second });
     await act(async () => { finish(); await sent; });
     expect(firstDone).toHaveBeenCalledTimes(1);
@@ -211,6 +218,10 @@ describe('analysis turn capture', () => {
     expect(completion.stopReason).toBe('end_turn');
     expect(completion.events.filter((event: { kind: string }) => event.kind === 'agent')).toEqual([expect.objectContaining({ text: 'A cited answer.' })]);
     expect(completion.userEventId).toBe(first.mock.calls[0][0].userEventId);
+    expect(completion.events).toEqual(result.current.events);
+    completion.events.forEach((event: unknown, index: number) => {
+      expect(event).not.toBe(result.current.events[index]);
+    });
     await act(async () => { await result.current.stop(); });
   });
 
