@@ -33,7 +33,7 @@
   "profileList": "Applied scopes",
   "profileCurrent": "Current",
   "sourceCheckRequired": "Source check required",
-  "sourceCheckBody": "This rule was approved by a person. The real imports in the code are checked separately by Atlas over the agent connection (MCP) or the terminal command (CLI), and missing evidence is never shown as a pass.",
+  "sourceCheckBody": "This rule was approved by a person. The real imports in the code are checked separately by Atlas over MCP or the CLI, and missing evidence is never shown as a pass.",
   "sourceCheckNext": "Ask your connected agent from the Architecture action, or run atlas architecture --record in the repository. Inspection never changes the reviewed structure; --record only replaces one local .ontology-atlas/architecture/profile-slug.json receipt, which can be removed independently.",
   "recordStatus": {
     "conforms": "Conforms",

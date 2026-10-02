@@ -146,6 +146,10 @@ Full contracts: [what becomes a node?](docs/guide/what-becomes-a-node.md) ·
 | MCP and CLI read the folder directly, even with the app closed. | RDF/OWL/SHACL implementation ([§5.2](docs/ONTOLOGY-ATLAS-SPEC.md#52-standards-boundary)) |
 | Extensions are files a `git diff` shows you, never third-party code. | service, and not on npm |
 
+Malformed model responses, including compatible local endpoints, end the
+conversation turn with an explicit diagnostic and no tool calls from that response.
+The existing retry action remains available.
+
 **Measured, honestly:** our first benchmark mostly tested vocabulary only Atlas
 knew. Re-scored, we have not yet measured a difference in answer quality, and
 Atlas was slower. [The correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md) ·

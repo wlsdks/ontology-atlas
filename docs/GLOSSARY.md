@@ -134,6 +134,21 @@ the searchable term.
 
 One parenthesis per screen; after that, plain words only.
 
+### Terms developers say in English
+
+Decided by the owner, 2026-10-02. A term Korean developers say in English
+stays as written on both locales: `MCP`, `ACP`, `API key`, `CLI`, never an
+invented Korean phrase with the term in parentheses. Only words with settled
+Korean (settings, folder, search, map) are translated.
+
+The explanation moves into a `TermHint` (`src/shared/ui/term-hint.tsx`): an
+info icon whose tooltip shows the expansion, then one sentence in the current
+locale. Its catalogue is `src/shared/config/term-glossary.ts` with
+`messages/{en,ko}/termHints.json`. Put one at the first prominent occurrence
+on a screen (a section heading or a settings row), not on every mention.
+`tests/contract/plain-language-catalog.contract.test.ts` requires every such
+term in the catalogue to have a glossary entry and a drawn `TermHint`.
+
 ---
 
 ## 6. Comment policy

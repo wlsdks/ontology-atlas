@@ -35,7 +35,7 @@
     "jev": "외부 점검",
     "tool-downloads": "코딩 도구 설치",
     "adapter-packages": "대화 어댑터 패키지",
-    "connectors": "에이전트 연결(MCP)",
+    "connectors": "MCP 연결",
     "git-remote": "Git 보내기·받기·가져오기",
     "coding-tools": "코딩 도구",
     "website-files": "웹사이트 파일"

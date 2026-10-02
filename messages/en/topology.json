@@ -520,7 +520,7 @@
     "agent": {
       "title": "Connect an AI agent",
       "bodyFound": "Found an AI tool on this computer. Connect it and you can fill the ontology together in conversation.",
-      "bodyMissing": "If you use Claude Agent, you can open a chat here. That chat always asks first before touching anything outside this folder. Codex and other tools that speak the agent connection (MCP) can reach this folder from their own app or terminal. Everything else works without connecting.",
+      "bodyMissing": "If you use Claude Agent, you can open a chat here. That chat always asks first before touching anything outside this folder. Codex and other tools that speak MCP can reach this folder from their own app or terminal. Everything else works without connecting.",
       "cta": "Open agent settings",
       "runtimeReady": "Ready to talk to inside the app"
     },
