@@ -8,7 +8,6 @@ import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { listenForOntologyMapFrameRequests } from "../ui/use-topology-frame-loop";
 import { CosmosMirror, type CosmosMirrorLabels } from "./CosmosMirror";
-import { chooseArrival, hasArrived, markArrived } from "./cosmos-arrival";
 import { CosmosEngine } from "./cosmos-engine";
 import { publishCosmosSnapshot } from "./cosmos-marks";
 import type { CosmosBand, CosmosInks, CosmosPaintRecord } from "./cosmos-types";
@@ -118,7 +117,6 @@ export function OntologyCosmosMap({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const firstOptions = useRef({ reducedMotion, arrivalKey, arrivedByMorph, navigationSpeed });
   const engineRef = useRef<CosmosEngine | null>(null);
-  const firstOpen = useRef(true);
   const [deadEnds, setDeadEnds] = useState(0);
   const [rest, setRest] = useState<{ signal: number; marks: readonly CosmosPaintRecord[] }>({ signal: 0, marks: [] });
   const callbacks = useRef({ onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane });
@@ -147,8 +145,6 @@ export function OntologyCosmosMap({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const first = firstOptions.current;
-    firstOpen.current = first.arrivalKey === null ? true : !hasArrived(first.arrivalKey);
-    if (first.arrivalKey !== null) markArrived(first.arrivalKey);
     let inks: CosmosInks | null = null;
     const engine = new CosmosEngine(canvas, {
       onSelect: (id) => callbacks.current.onSelect?.(id),
@@ -167,6 +163,7 @@ export function OntologyCosmosMap({
       reducedMotion: first.reducedMotion,
       navigationSpeed: first.navigationSpeed,
     });
+    engine.arrival.open(first.arrivalKey);
     engineRef.current = engine;
     inks = readInks();
     if (inks) engine.setInks(inks);
@@ -189,19 +186,9 @@ export function OntologyCosmosMap({
   );
 
   useEffect(() => {
-    engineRef.current?.setLayout(
-      layout,
-      conceptLabels,
-      edges,
-      chooseArrival({
-        firstOpen: firstOpen.current,
-        arrivedByMorph: firstOptions.current.arrivedByMorph,
-        hasRecord: settled.hasRecord,
-        relayout: settled.relayout,
-        reducedMotion: firstOptions.current.reducedMotion,
-      }),
-    );
-    firstOpen.current = false;
+    const engine = engineRef.current;
+    const { arrivedByMorph, reducedMotion } = firstOptions.current;
+    engine?.setLayout(layout, conceptLabels, edges, engine.arrival.choose({ arrivedByMorph, reducedMotion, hasRecord: settled.hasRecord, relayout: settled.relayout }));
   }, [layout, conceptLabels, edges, settled.relayout, settled.hasRecord, relaid]);
 
   useEffect(() => {

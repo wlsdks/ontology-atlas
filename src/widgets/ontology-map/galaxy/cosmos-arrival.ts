@@ -11,21 +11,15 @@ const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
 const arrivedKeys = new Set<string>();
 
-export function hasArrived(key: string): boolean {
-  return arrivedKeys.has(key);
-}
-
-export function markArrived(key: string): void {
-  arrivedKeys.add(key);
-}
-
-export function chooseArrival(input: {
+interface ArrivalFacts {
   firstOpen: boolean;
   arrivedByMorph: boolean;
   hasRecord: boolean;
   relayout: boolean;
   reducedMotion: boolean;
-}): CosmosArrivalMode {
+}
+
+export function chooseArrival(input: ArrivalFacts): CosmosArrivalMode {
   if (input.reducedMotion) return "none";
   if (input.relayout) return "replay";
   if (input.arrivedByMorph) return "none";
@@ -80,12 +74,26 @@ export class CosmosArrivalRun {
   mode: CosmosArrivalMode = "none";
   clock = 0;
   end = 0;
+  private firstOpen = true;
+  private unspentKey: string | null = null;
+
+  open(key: string | null): void {
+    [this.firstOpen, this.unspentKey] = [key === null || !arrivedKeys.has(key), key];
+  }
+
+  choose(facts: Omit<ArrivalFacts, "firstOpen">): CosmosArrivalMode {
+    const mode = chooseArrival({ ...facts, firstOpen: this.firstOpen });
+    this.firstOpen = false;
+    return mode;
+  }
 
   begin(mode: CosmosArrivalMode, now: number): void {
     [this.active, this.mode, this.clock, this.end] = [{ start: -1, mode }, mode, 0, now + ARRIVAL_MS];
   }
 
   step(layout: CosmosLayout, now: number, poses: GalaxyPose[]): boolean {
+    if (this.unspentKey !== null) arrivedKeys.add(this.unspentKey);
+    this.unspentKey = null;
     const run = this.active;
     if (run && run.start < 0) [run.start, this.end] = [now, now + ARRIVAL_MS];
     if (run) this.clock = Math.max(0, now - run.start);
