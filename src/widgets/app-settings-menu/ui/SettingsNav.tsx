@@ -90,9 +90,9 @@ export function SettingsNav({
             role="group"
             aria-label={t(`scope.${group.scope}`)}
             data-testid={`app-settings-nav-group-${group.scope}`}
-            className="flex w-max shrink-0 gap-1 sm:mb-2 sm:block sm:w-auto sm:last:mb-0"
+            className="flex w-max shrink-0 gap-1 sm:mt-1.5 sm:block sm:w-auto sm:border-t sm:border-[color:var(--color-divider)] sm:pt-1.5 sm:first:mt-0 sm:first:border-t-0 sm:first:pt-0"
           >
-            <p className="hidden px-3 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
+            <p className="hidden px-3 pb-1 font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-secondary)] sm:block">
               {t(`scope.${group.scope}`)}
             </p>
             {group.sections.map((item) => {

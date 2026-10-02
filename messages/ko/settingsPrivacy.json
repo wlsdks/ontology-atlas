@@ -1,12 +1,14 @@
 {
-  "leadDesktop": "Atlas 화면은 인터넷에 닿지 않아요. 아래 길만 밖으로 나갈 수 있어요.",
+  "leadDesktop": "Atlas 화면은 인터넷에 닿지 않아요. 아래 목록에 있는 것만 밖으로 나가요.",
   "leadWeb": "이 웹사이트는 폴더를 이 컴퓨터 안에서 읽어요. 폴더는 업로드되지 않아요.",
   "outbound": {
     "title": "이 컴퓨터 밖으로 나갈 수 있는 것",
     "keywords": "네트워크 인터넷 전송 업로드 외부 기록 로그 업데이트 확인 제공자",
-    "line": "{trigger} · {destinations} · {carries}",
-    "recorded": "{file}에 기록",
-    "notRecorded": "Atlas가 기록하지 않음"
+    "recorded": "기록함",
+    "recordedIn": "{file}에 기록",
+    "notRecorded": "기록 안 함",
+    "unseen": "Atlas는 볼 수 없음",
+    "recordedNote": "기록함: 보낼 때마다 이 폴더의 <file>{file}</file>에 남아요."
   },
   "trigger": {
     "automatic": "자동",
@@ -16,8 +18,8 @@
   "carries": {
     "no-folder-content": "폴더 내용 없음",
     "what-you-send": "보내는 내용",
-    "provider-owned": "도구와 그 제공자 사이의 전송, Atlas는 보지 못함",
-    "agent-sends": "에이전트가 보내는 것, Atlas는 보지 못해요"
+    "provider-owned": "도구와 제공자 사이",
+    "agent-sends": "에이전트가 보내는 것"
   },
   "destinations": {
     "your-runner-address": "입력한 러너 주소",
@@ -40,8 +42,8 @@
     "coding-tools": "코딩 도구",
     "website-files": "웹사이트 파일"
   },
-  "updateOn": "켬",
-  "updateOff": "끔",
+  "updateOn": "자동 확인 켬",
+  "updateOff": "자동 확인 끔",
   "updateChange": "바꾸기",
   "updateChangeAria": "정보에서 자동 업데이트 확인 바꾸기",
   "allowances": {
