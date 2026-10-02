@@ -113,7 +113,9 @@ test.describe("Galaxy keyboard walk and mirror", () => {
     const left = await page.evaluate((t) => t - performance.now(), until);
     // measurement window: the live region must stay unchanged until the 1.2 s cooldown has nearly passed.
     if (left > 0) await page.waitForTimeout(left);
-    expect((await log()).notices).toHaveLength(1);
+    const final = await log();
+    expect(final.keys.filter((t) => t > lastKey && t < until).length).toBeGreaterThanOrEqual(1);
+    expect(final.notices.filter((t) => t < atDeadEnd.notices[0]! + 1_200)).toHaveLength(1);
   });
 
   test("a drag writes no data-mark until the camera rests, then one write per row", async ({ page }) => {
