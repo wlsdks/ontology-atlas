@@ -4,8 +4,6 @@ type NumericKey = Exclude<keyof DialTokens, "attendedNameInk">;
 
 export const DIAL_TOKEN_SPECS: readonly { key: NumericKey; cssVar: string }[] = [
   { key: "pitch", cssVar: "--map-dial-pitch" },
-  { key: "pitchMin", cssVar: "--map-dial-pitch-min" },
-  { key: "pitchMax", cssVar: "--map-dial-pitch-max" },
   { key: "hubClearance", cssVar: "--map-dial-hub-clearance" },
   { key: "orphanPitch", cssVar: "--map-dial-orphan-pitch" },
   { key: "flowRestBase", cssVar: "--map-dial-flow-rest-base" },

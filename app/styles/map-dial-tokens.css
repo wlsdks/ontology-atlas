@@ -1,8 +1,6 @@
 @layer base {
   :root {
     --map-dial-pitch: 34;
-    --map-dial-pitch-min: 11;
-    --map-dial-pitch-max: 33.8;
     --map-dial-hub-clearance: 78;
     --map-dial-orphan-pitch: 0.5;
     --map-dial-flow-rest-base: 0.9;
