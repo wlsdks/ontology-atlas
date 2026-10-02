@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import type { TopologyMapLensKind } from "../model/path-lens";
@@ -15,6 +15,12 @@ import { mixHex } from "./draw/cosmos-paint";
 import type { CosmosPlacementRecord } from "./layout/cosmos-layout";
 import { cosmosLayoutFor } from "./layout/cosmos-layout-cache";
 
+export interface CosmosPlacementStore {
+  current(): CosmosPlacementRecord | null;
+  write(record: CosmosPlacementRecord): void;
+  clear(): void;
+}
+
 export interface OntologyCosmosMapProps {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -28,8 +34,7 @@ export interface OntologyCosmosMapProps {
   canvasLabel?: string;
   walkNoticeLabel?: string;
   labels?: CosmosMirrorLabels | null;
-  placement?: CosmosPlacementRecord | null;
-  onPlacement?: (record: CosmosPlacementRecord) => void;
+  placement?: CosmosPlacementStore | null;
   navigationSpeed?: MapNavigationSpeed;
   relayoutToken?: number;
   fitToken?: number;
@@ -94,7 +99,6 @@ export function OntologyCosmosMap({
   walkNoticeLabel,
   labels = null,
   placement = null,
-  onPlacement,
   navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED,
   relayoutToken,
   fitToken,
@@ -115,18 +119,25 @@ export function OntologyCosmosMap({
   const engineRef = useRef<CosmosEngine | null>(null);
   const firstOpen = useRef(true);
   const [deadEnds, setDeadEnds] = useState(0);
-  const callbacks = useRef({ onSelect, onPaneClick, onDrawnCountChange, onVisibleCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane });
+  const callbacks = useRef({ onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane });
   useEffect(() => {
-    callbacks.current = { onSelect, onPaneClick, onDrawnCountChange, onVisibleCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane };
-  }, [onSelect, onPaneClick, onDrawnCountChange, onVisibleCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane]);
+    callbacks.current = { onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane };
+  }, [onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane]);
 
-  const layout = useMemo(() => cosmosLayoutFor(nodes, edges, placement, false), [nodes, edges, placement]);
+  const [relaid, setRelaid] = useState<{ nodes: readonly OntologyMapNode[]; edges: readonly OntologyMapEdge[]; token: number } | null>(null);
+  const settled = useMemo(() => {
+    const fresh = relaid !== null && relaid.nodes === nodes && relaid.edges === edges;
+    if (fresh) return { layout: cosmosLayoutFor(nodes, edges, null, true), relayout: true };
+    return { layout: cosmosLayoutFor(nodes, edges, placement?.current() ?? null, false), relayout: false };
+  }, [nodes, edges, placement, relaid]);
+  const layout = settled.layout;
   useEffect(() => {
-    onPlacement?.(layout.placement);
-  }, [layout, onPlacement]);
+    placement?.write(layout.placement);
+  }, [layout, placement, relaid]);
   useEffect(() => {
-    onGraphStatsChange?.({ nodes: nodes.length, relations: edges.filter((e) => e.kind === "depends").length });
-  }, [nodes, edges, onGraphStatsChange]);
+    onVisibleCountChange?.(nodes.length);
+    onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
+  }, [nodes, edges, onVisibleCountChange, onGraphStatsChange]);
   const conceptLabels = useMemo(() => new Map(nodes.map((n) => [n.id, n.label])), [nodes]);
 
   useEffect(() => {
@@ -141,7 +152,6 @@ export function OntologyCosmosMap({
       onPaneClick: () => callbacks.current.onPaneClick?.(),
       onDrawn: (count) => {
         callbacks.current.onDrawnCountChange?.(count);
-        callbacks.current.onVisibleCountChange?.(count);
       },
       onBand: (band) => callbacks.current.onZoomTierChange?.(band),
       onRest: () => {
@@ -167,9 +177,9 @@ export function OntologyCosmosMap({
       layout,
       conceptLabels,
       edges,
-      chooseArrival({ firstOpen: firstOpen.current, reducedMotion: firstOptions.current.reducedMotion, keyframes: layout.settle.keyframes.length }),
+      chooseArrival({ firstOpen: firstOpen.current || settled.relayout, reducedMotion: firstOptions.current.reducedMotion, keyframes: layout.settle.keyframes.length }),
     );
-  }, [layout, conceptLabels, edges]);
+  }, [layout, conceptLabels, edges, settled.relayout, relaid]);
 
   useEffect(() => {
     engineRef.current?.setSelected(selectedId);
@@ -187,7 +197,12 @@ export function OntologyCosmosMap({
 
   const fit = useMemo(() => () => engineRef.current?.requestFit(), []);
   const lensFit = useMemo(() => () => engineRef.current?.requestLensFit(), []);
-  useOnTokenChange(relayoutToken, fit);
+  const relayout = useCallback(() => {
+    placement?.clear();
+    setRelaid((prev) => ({ nodes, edges, token: (prev?.token ?? 0) + 1 }));
+    engineRef.current?.requestFit();
+  }, [placement, nodes, edges]);
+  useOnTokenChange(relayoutToken, relayout);
   useOnTokenChange(fitToken, fit);
   useOnTokenChange(lensFitToken, lensFit);
 
@@ -200,8 +215,7 @@ export function OntologyCosmosMap({
         role="img"
         aria-label={canvasLabel ?? "Galaxy map"}
         tabIndex={0}
-        className="absolute inset-0 h-full w-full touch-none outline-none"
-        style={{ cursor: "grab" }}
+        className="absolute inset-0 h-full w-full touch-none cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]"
       />
       <CosmosMirror
         layout={layout}

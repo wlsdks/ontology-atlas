@@ -28,7 +28,7 @@ import {
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
 import { useCallback, useRef, useState } from "react";
-import { readCosmosPlacement } from "../model/cosmos-placement-store";
+import { useCosmosPlacement } from "../model/use-cosmos-placement";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
@@ -154,6 +154,7 @@ export function TopologyMapRenderer({
   const overviewFit = expandAllActive ? "full" : "spine";
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
+  const cosmosPlacement = useCosmosPlacement(vaultIdentity);
   const morph = useMapLayoutMorph({
     view: layoutView,
     reducedMotion,
@@ -165,7 +166,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), cosmosPlacement: readCosmosPlacement(vaultIdentity), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents },
         host,
       ),
     frameRef,
@@ -242,6 +243,7 @@ export function TopologyMapRenderer({
               nodes={nodes}
               edges={edges}
               vaultKey={vaultIdentity}
+              placement={cosmosPlacement}
               selectedId={canvasSelectedSlug}
               onSelect={select}
               onPaneClick={clear}

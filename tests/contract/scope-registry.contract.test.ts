@@ -311,7 +311,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     scopedBy: "useVaultIdentityScope",
     file: "src/views/home/model/cosmos-placement-store.ts",
     provenBy: "src/views/home/model/cosmos-placement-store.test.ts",
-    note: "Galaxy cosmos: settled galaxy centres per folder, so placed galaxies never move — view state, never meaning",
+    note: "Galaxy placement: settled galaxy centres per folder, kept for absent domains, so placed galaxies never move — view state, never meaning",
   },
   {
     key: "atlas.agentActivity.readAt:",
