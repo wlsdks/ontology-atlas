@@ -17,9 +17,6 @@
  *   = 1/0.34 ≈ 2.941 rad/s (see `tokens/read-map-tokens.ts`).
  * - `damping` (ζ) = 1.0 is the critically-damped default (monotonic approach,
  *   no overshoot) — `--map-camera-damping-default`.
- * - `damping` = 0.82 is used only immediately after a thrown pan flick
- *   (`--map-camera-damping-flick`) — intentionally underdamped for a
- *   soft settle-bounce, per prototype `releaseDrag()`.
  *
  * This module is pure physics — no camera/DOM/token knowledge. `engine/camera.ts`
  * composes three independent instances of this (x, y, scale axes) per frame.
@@ -75,7 +72,7 @@ export type SpringStepResult = SpringAxisState;
  *   prototype uses `Math.min((now - lastT) / 1000, 0.05)` to guard against
  *   tab-backgrounding spikes; this function assumes the clamp already happened.
  * @param angularFrequency ω in rad/s — see `--map-camera-spring-angfreq`
- * @param damping ζ — 1.0 default (critically damped), 0.82 after a flick release
+ * @param damping ζ — 1.0 default (critically damped)
  */
 export function stepSpring(
   state: SpringAxisState,

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide, WHEEL_LINE_HEIGHT_PX, WHEEL_ZOOM_SENSITIVITY } from "./wheel";
+import {
+  computeWheelZoomFactor,
+  createPinchWheelStream,
+  normalizeWheelDeltaY,
+  PINCH_WHEEL_STREAM_GAP_MS,
+  readPinchWheel,
+  shouldIgnoreWheelGlide,
+  WHEEL_LINE_HEIGHT_PX,
+  WHEEL_ZOOM_SENSITIVITY,
+} from "./wheel";
 
 describe("normalizeWheelDeltaY", () => {
   it("passes pixel-mode (deltaMode 0) deltas through unchanged", () => {
@@ -30,17 +39,7 @@ describe("normalizeWheelDeltaY", () => {
   });
 });
 
-/**
- * Owner feedback — zoom in/out felt slow/sluggish. Sensitivity upped from
- * 0.0016 (~1.21x per a 120px notch) to 0.0020 (~1.27x per notch) — sits
- * between d3-zoom's convention (~1.18x/notch) and Leaflet 2.0's, per the
- * design round's spec.
- */
 describe("computeWheelZoomFactor", () => {
-  it("uses the 0.0023 sensitivity constant (0.0016→0.0020→0.0023, owner: zoom felt slow)", () => {
-    expect(WHEEL_ZOOM_SENSITIVITY).toBeCloseTo(0.0023, 6);
-  });
-
   it("yields ≈1.32x zoom-in for a standard 120px notch (scroll up = negative deltaY)", () => {
     const factor = computeWheelZoomFactor(-120);
     expect(factor).toBeCloseTo(Math.exp(120 * 0.0023), 6);
@@ -53,13 +52,58 @@ describe("computeWheelZoomFactor", () => {
     expect(zoomOut).toBeCloseTo(1 / zoomIn, 6);
   });
 
-  it("defaults to WHEEL_ZOOM_SENSITIVITY when no sensitivity override is passed", () => {
+  it("zooms a plain wheel at the wheel sensitivity by default", () => {
     expect(computeWheelZoomFactor(-100)).toBeCloseTo(Math.exp(100 * WHEEL_ZOOM_SENSITIVITY), 10);
+  });
+
+  it("keeps a trackpad pinch under the fingers: Chromium's deltaY = -100·ln(spread) zooms by exactly that spread", () => {
+    expect(computeWheelZoomFactor(-100 * Math.log(2), { pinch: true })).toBeCloseTo(2, 10);
+    expect(computeWheelZoomFactor(100 * Math.log(1.5), { pinch: true })).toBeCloseTo(1 / 1.5, 10);
+  });
+
+  it.each([0.5, 0.75, 1.5, 2])("at speed %s raises the 1x factor to that power for a notch and a pinch", (speed) => {
+    expect(computeWheelZoomFactor(-120, { speed })).toBeCloseTo(computeWheelZoomFactor(-120) ** speed, 10);
+    expect(computeWheelZoomFactor(-30, { pinch: true, speed })).toBeCloseTo(
+      computeWheelZoomFactor(-30, { pinch: true }) ** speed,
+      10,
+    );
   });
 
   it("is monotonically more extreme for a larger-magnitude delta", () => {
     expect(computeWheelZoomFactor(-240)).toBeGreaterThan(computeWheelZoomFactor(-120));
     expect(computeWheelZoomFactor(240)).toBeLessThan(computeWheelZoomFactor(120));
+  });
+});
+
+describe("readPinchWheel", () => {
+  const ctrl = (deltaY: number, timeStamp: number, deltaMode = 0) => ({ ctrlKey: true, deltaMode, deltaY, timeStamp });
+
+  function read(events: { ctrlKey: boolean; deltaMode: number; deltaY: number; timeStamp: number }[], gestureEvents = false) {
+    const stream = createPinchWheelStream(gestureEvents);
+    return events.map((event) => readPinchWheel(stream, event));
+  }
+
+  it("keeps a pinch that starts with a few pixels a pinch through a coalesced 60 px event", () => {
+    expect(read([ctrl(-10, 0), ctrl(-60, 16), ctrl(-10, 33)])).toEqual([true, true, true]);
+  });
+
+  it("keeps Ctrl + a mouse notch on the notch path for the whole stream", () => {
+    expect(read([ctrl(-100, 0), ctrl(-10, 40), ctrl(-100, 80)])).toEqual([false, false, false]);
+    expect(computeWheelZoomFactor(-100, { pinch: read([ctrl(-100, 0)])[0] })).toBeLessThanOrEqual(computeWheelZoomFactor(-100));
+  });
+
+  it("reads a line-mode Ctrl wheel as notches", () => {
+    expect(read([ctrl(-3, 0, 1), ctrl(-1, 20, 1)])).toEqual([false, false]);
+  });
+
+  it("starts a new stream after a pause or a plain wheel event", () => {
+    const pause = PINCH_WHEEL_STREAM_GAP_MS + 1;
+    expect(read([ctrl(-100, 0), ctrl(-10, pause)])).toEqual([false, true]);
+    expect(read([ctrl(-10, 0), { ctrlKey: false, deltaMode: 0, deltaY: -10, timeStamp: 10 }, ctrl(-100, 20)])).toEqual([true, false, false]);
+  });
+
+  it("never reads Ctrl + wheel as a pinch where the browser sends gesture events for one", () => {
+    expect(read([ctrl(-2, 0), ctrl(-3, 16)], true)).toEqual([false, false]);
   });
 });
 

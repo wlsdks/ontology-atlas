@@ -159,8 +159,6 @@ export interface OntologyMapTokens {
    */
   cameraSpringAngFreqTransition: number;
   cameraDampingDefault: number;
-  cameraDampingFlick: number;
-  cameraMomentumDecay: number;
   cameraReleaseVelocityWindowMs: number;
   cameraFlickMinSpeed: number;
   cameraScaleMin: number;
@@ -427,8 +425,6 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraSpringAngFreqInteractive", cssVar: "--map-camera-spring-angfreq-interactive", kind: "number" },
   { key: "cameraSpringAngFreqTransition", cssVar: "--map-camera-spring-angfreq-transition", kind: "number" },
   { key: "cameraDampingDefault", cssVar: "--map-camera-damping-default", kind: "number" },
-  { key: "cameraDampingFlick", cssVar: "--map-camera-damping-flick", kind: "number" },
-  { key: "cameraMomentumDecay", cssVar: "--map-camera-momentum-decay", kind: "number" },
   { key: "cameraReleaseVelocityWindowMs", cssVar: "--map-camera-release-velocity-window-ms", kind: "number" },
   { key: "cameraFlickMinSpeed", cssVar: "--map-camera-flick-min-speed", kind: "number" },
   { key: "cameraScaleMin", cssVar: "--map-camera-scale-min", kind: "number" },

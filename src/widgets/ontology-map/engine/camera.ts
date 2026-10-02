@@ -19,22 +19,6 @@
  * module contract forbids cross-widget engine imports anyway. Bounds are
  * threaded as explicit parameters; the old widget keeps its own values until
  * P6 deletes it.
- *
- * FIX (QA first-light pass, blocker 1 — "drag makes everything vanish"): the
- * prototype's elastic pan-bounds clamp (`updateCamera()`'s `< panBounds.minX`
- * branch, `docs/prototypes/topology-b2plus.html` lines 906-915) was left as a
- * `test.todo` when `stepCamera`/`momentum.ts` first landed — genuinely
- * undecided whether this module or a separate one should own it. Without it,
- * `momentum.ts`'s intentionally aggressive flick projection (its own test
- * pins a landing target of -14870 world units for a modest 0.5px/ms flick at
- * scale=1) is safe in the prototype ONLY because this per-frame clamp reins
- * the camera back toward the graph's own bounds every frame; the v2 port had
- * the projection but not the compensating clamp, so a single realistic
- * pan/flick release genuinely arrived at that huge target and stranded the
- * camera in blank canvas (repro: chrome-devtools pointerdown/move/up with
- * ~30ms spacing over ~220px — only "Fit to entire map"/fitViewToken recovered
- * it). `panBounds`/`isDragging` are optional so existing call sites (and the
- * pre-existing scale-only tests above) keep working unchanged when omitted.
  */
 
 import { stepSpring, type SpringAxisState } from "./spring";
@@ -64,7 +48,6 @@ export interface CameraStepInput {
   target: CameraTarget;
   /** Elapsed seconds since the last frame, already clamped by the caller (≤ 0.05s in the prototype). */
   dt: number;
-  /** ζ for x/y this frame — 1.0 normally, 0.82 right after a flick release. */
   damping: number;
   /**
    * ω, rad/s. Dive-zoom fix split the one shared token into
