@@ -46,6 +46,14 @@ describe('searchSettings', () => {
     expect(ids(searchSettings(catalog, 's'))[0]).toBe('size-guides');
   });
 
+  it('ranks a word start in the label above the label anywhere', () => {
+    const korean = [
+      item({ id: 'wiki', label: '에이전트가 위키 문서를 쓸 때', section: 'agents' }),
+      item({ id: 'door-models', label: '모델 · API 키', section: 'agents' }),
+    ];
+    expect(ids(searchSettings(korean, '키'))).toEqual(['door-models', 'wiki']);
+  });
+
   it('keeps catalog order inside a tier', () => {
     const tied = [item({ id: 'b', label: 'Map b' }), item({ id: 'a', label: 'Map a' })];
     expect(ids(searchSettings(tied, 'map'))).toEqual(['b', 'a']);
