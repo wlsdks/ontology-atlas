@@ -1390,7 +1390,7 @@ describe('focused check suggestions', () => {
   it('suggests package contracts for lockfile changes', () => {
     const rootLock = suggestFocusedChecks(['pnpm-lock.yaml']);
 
-    assert.deepEqual(domainCommands(rootLock), ['pnpm test:mcp:package']);
+    assert.deepEqual(domainCommands(rootLock), ['pnpm test:mcp:package', 'pnpm licenses:check', 'pnpm notice:check']);
     assert.deepEqual(rootLock.escalations.map((row) => row.command), ['pnpm package:check']);
 
     const mcpLock = suggestFocusedChecks(['mcp/package-lock.json']);

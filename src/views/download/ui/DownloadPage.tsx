@@ -7,6 +7,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
+import { withBasePath } from '@/shared/lib/base-path';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
@@ -45,6 +46,7 @@ import type { StageGraph } from '../lib/stage-graph';
  */
 
 const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
+const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
 
 /**
  * The CTA wraps below `sm`: its longest label overflows 320px, and neither "unsigned" nor the
@@ -124,6 +126,14 @@ export function DownloadPage() {
                 <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
                   {tFooter('license')}
                 </span>
+                <span aria-hidden>·</span>
+                <a
+                  href={THIRD_PARTY_LICENSES_HREF}
+                  data-testid="download-footer-third-party-licenses"
+                  className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' })}
+                >
+                  {tFooter('thirdPartyLicenses')}
+                </a>
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
               </div>

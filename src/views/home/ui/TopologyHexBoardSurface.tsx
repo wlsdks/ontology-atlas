@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
@@ -74,7 +74,7 @@ export function TopologyHexBoardSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
-  const legend = ({ focused }: { staleOnly: boolean; focused: boolean }) => (
+  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ staleOnly, focused, band }) => (
     <div
       data-testid="hex-board-legend"
       data-evidence-availability={evidence.availability}
@@ -125,7 +125,14 @@ export function TopologyHexBoardSurface({
             {t("legendUsers")}
           </span>
         </>
-      ) : (
+      ) : band !== "regions" ? (
+        <span className="flex items-center gap-1.5">
+          <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
+            <line x1="7" y1="7" x2="17" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-indigo-bright)" }} />
+          </svg>
+          {t("legendNotches")}
+        </span>
+      ) : !staleOnly ? (
         <span className="flex items-center gap-1.5">
           <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
             <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-hex-canal)" }} />
@@ -133,7 +140,7 @@ export function TopologyHexBoardSurface({
           </svg>
           {t("legendCanals")}
         </span>
-      )}
+      ) : null}
       <span className="flex items-center gap-1.5">
         <kbd className="rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--map-panel-text-secondary)]">←↑↓→</kbd>
         {t("legendKeys")}

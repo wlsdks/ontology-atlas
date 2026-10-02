@@ -62,7 +62,7 @@ export const rules = [
     matches: [
       /^src\/features\/mcp-connectors\/ui\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^src\/widgets\/acp-chat-panel\/(?!.*\.test\.tsx?$).+\.tsx?$/,
-      /^src\/shared\/ui\/(?:accent-boot-script|json-ld|node-explanation-edit)\.tsx$/,
+      /^src\/shared\/ui\/(?:lang-boot-script|json-ld|node-explanation-edit)\.tsx$/,
       /^src\/widgets\/docs-vault\/ui\/(?:DocsVaultBacklinks|DocsVaultEditor|DocsVaultViewer)\.tsx$/,
       /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,

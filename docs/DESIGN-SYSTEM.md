@@ -602,13 +602,11 @@ Note: Type ramp utilities must be **strictly synchronized** with registration in
 
 ### Accent (the only color)
 
-The accent is indigo. On 2026-08-18 it moved to ember (`#c14a24`, decision 69) and was reverted the same day (decision 79) by swapping palettes, not by editing a constant; this document carried the ember values for eighteen days after the revert, which is why the wiki probe of 2026-09-06 read "ember" out of it. The values below are read from `app/globals.css`.
+The accent is indigo, and it is the only one: there is no accent setting. The copper alternate (ember, `#c14a24`) was removed on 2026-10-02, and a stored choice of it opens on indigo. The values below are read from `app/globals.css`.
 
 - `--color-indigo-brand`: `#5e6ad2`
 - `--color-indigo-accent`: `#7170ff`
 - `--color-indigo-hover`: `#828fff`
-
-The ember ramp had been derived by preserving L\* and C\* of the indigo ramp while rotating hue to 44.9°, so the contrast hierarchy was the same in both; that is what made the same-day swap safe.
 
 **Accent alpha steps** (registered 2026-08-04). Not new colors but transparency steps of the above accent — brand accent (`--color-indigo-a*`) and line accent (`--color-indigo-line-a*`) have alpha ladders, but accent lacked one, so three needed places all had **hand-written** `rgba(240,137,78,·)`.
 
@@ -3272,10 +3270,10 @@ And one more — `accentOnTint` (system stone ruling, 2026-08-03). **This app ha
 
 | Tone | Token | License (empirical vs. composite) |
 |---|---|---|
-| `accent` | `--color-indigo-accent` #f0894e — 99 global lines of link/label idioms across the app | **Passes everywhere after embers replaced**: canvas 7.96 · panel 7.61 · elevated 6.97, even with tint compositing (`a24`/canvas) at **6.50**. ⚠️ During the indigo era, it fell below AA (3.5–4.4) on tints, and **that was why the two tones below were split** — that rationale disappeared on 2026-08-18 |
-| `accentOnTint` | `--color-indigo-text-soft` rgba(253,182,158,.92) — text accents already manually used in workshops/map panels | AA or above across all backgrounds × tint composites — safe everywhere |
+| `accent` | `--color-indigo-accent` #7170ff — link/label idioms on bare surfaces | **Darkest bare surfaces only**: canvas 5.18 · panel 4.96 · elevated 4.53; on a tint it falls below AA (`a24`/canvas **4.13**), which is why the second tone exists |
+| `accentOnTint` | `--color-indigo-text-soft` rgba(188,195,255,.92) — text accents on tint and hover fills | canvas 10.00 · panel 9.61 · elevated 8.87 · `a24`/canvas 8.15 — safe everywhere |
 
-> **The two tones can now be merged** (unexecuted). As the table shows, `accent` now passes AA even on tints, so there's no basis for separation. Merging requires an **axis change** in `src/shared/ui/control-class.ts`, necessitating a "system" gathering + director documentation, so it wasn't mixed into the color replacement commit. Until then, both tones remain alive; if this premise reverses, `tests/contract/accent-ink-contrast.contract.test.ts` will turn red.
+> The two tones stay split while `accent` fails AA on tints; `tests/contract/accent-ink-contrast.contract.test.ts` asserts that it still does, and turns red the day the tokens converge.
 
 Among 29 total cases, **26 carried tint fill/hover fill and were empirically below AA** (notably: all 13 indigo chips in the settings sheet — hover `line-a13`/panel 4.12). Those 26 moved to `accentOnTint`; the remaining 3 are all `link` on pure backgrounds. Three gates: ① `tests/contract/accent-ink-contrast.contract.test.ts` — calculates license from token actual values, and also asserts **that accent still actually breaks on tints** (the day tokens converge and this turns red is the day tones merge — same syntax as the scope axis gate) ② Source scan in the same file — covers pairings bypassed via file constants ③ eslint `accentTintPairingSelectors` — immediately flags literal pairings within same calls/elements in the editor.
 

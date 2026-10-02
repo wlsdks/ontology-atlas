@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 /**
  * Keeps `<html lang>` equal to the locale on a client-side switch; `LANG_BOOT`
- * in `accent-boot-script.tsx` sets it before the first paint.
+ * in `lang-boot-script.tsx` sets it before the first paint.
  */
 export function LocaleHtmlLang({ locale }: { locale: string }) {
   useEffect(() => {

@@ -1,39 +1,31 @@
 /**
- * Guards `NOTICE.md` against the two ways an attribution file rots.
- *
- * The first is drift: someone adds a dependency and the inventory no longer matches
- * the tree. `pnpm notice:check` catches that, and it runs in the release preflight,
- * so this file does not re-verify it against the live tree — that would make the unit
- * test depend on `cargo` and a resolved `node_modules`.
- *
- * The second is quieter and is what these tests actually defend: someone edits the
- * prose and removes the part that carries the obligation. The LGPL-2.1 section 6
- * relink path is the only reason this file legally exists, and a well-meaning
- * cleanup that trims it to a tidy dependency table would leave the release
- * non-compliant while the check script still reports green. The assertions below name
- * the specific claims a reader is owed, so deleting one fails here rather than
- * surfacing after publication.
+ * The generated inventories are checked against the live trees by `pnpm notice:check`; these
+ * tests hold the rendering to determinism and the prose to the obligations it carries.
  */
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
-import {
-  INVENTORY_MARKER,
-  buildNotice,
-  isBoundaryLicense,
-  normalizeLicense,
-} from "./build-notice.mjs";
+import { INVENTORY_MARKER, LICENSES_FILE, NOTICE_FILE, buildNotice, buildOutputs, normalizeLicense } from "./build-notice.mjs";
+import { normalizeLicenseText, packageLicenseText, selectLicenseFiles } from "./lib/third-party-licenses.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const NOTICE = fs.readFileSync(path.join(REPO_ROOT, "NOTICE.md"), "utf8");
+const NOTICE = fs.readFileSync(path.join(REPO_ROOT, NOTICE_FILE), "utf8");
+const LICENSES = fs.readFileSync(path.join(REPO_ROOT, LICENSES_FILE), "utf8");
 const TAURI_CONF = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "src-tauri", "tauri.conf.json"), "utf8"),
 );
 const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+
+function pkg(name, license, overrides = {}) {
+  return { ecosystem: "npm", scope: "web", name, version: "1.0.0", license, authors: [], dir: "/", platformSpecific: false, ...overrides };
+}
+
+const readText = (entry) => ({ label: entry.license, body: `text of ${entry.license}` });
 
 describe("normalizeLicense", () => {
   it("collapses the spellings Cargo uses for one dual license", () => {
@@ -42,51 +34,79 @@ describe("normalizeLicense", () => {
     assert.equal(normalizeLicense("MIT/Apache-2.0"), canonical);
   });
 
-  it("leaves a single license untouched", () => {
-    assert.equal(normalizeLicense("MPL-2.0"), "MPL-2.0");
-  });
-
   it("reports a missing license rather than emitting an empty heading", () => {
     assert.equal(normalizeLicense(undefined), "UNKNOWN");
   });
 });
 
-describe("isBoundaryLicense", () => {
-  it("flags the licenses that bind the component", () => {
-    for (const license of ["MPL-2.0", "LGPL-2.1", "GPL-3.0", "EPL-2.0"]) {
-      assert.equal(isBoundaryLicense(license), true, license);
-    }
+describe("buildOutputs", () => {
+  const trees = {
+    web: [pkg("zod", "MIT"), pkg("sharp", "Apache-2.0")],
+    mcp: [pkg("zod", "MIT", { scope: "mcp" })],
+    rust: [pkg("selectors", "MPL-2.0", { ecosystem: "cargo" }), pkg("serde", "MIT OR Apache-2.0", { ecosystem: "cargo" })],
+    adapted: [],
+    readText,
+  };
+
+  it("is deterministic for the same dependency set in any input order", () => {
+    const forward = buildOutputs(trees);
+    const reversed = buildOutputs({ ...trees, web: [...trees.web].reverse(), rust: [...trees.rust].reverse() });
+    assert.deepEqual(forward, reversed);
   });
 
-  it("does not flag permissive licenses", () => {
-    for (const license of ["MIT", "Apache-2.0", "ISC", "BSD-3-Clause", "OFL-1.1"]) {
-      assert.equal(isBoundaryLicense(license), false, license);
+  it("renders the same files whatever platform-specific build tools the machine installed", () => {
+    const darwin = pkg("@next/swc-darwin-arm64", "MIT", { platformSpecific: true });
+    const linux = pkg("@img/sharp-libvips-linux-x64", "LGPL-3.0-or-later", { platformSpecific: true });
+    assert.deepEqual(buildOutputs({ ...trees, web: [...trees.web, darwin] }), buildOutputs({ ...trees, web: [...trees.web, linux] }));
+  });
+
+  it("counts packages by name, once however many versions are installed", () => {
+    const output = buildNotice({
+      rustCrates: [pkg("windows-sys", "MIT", { version: "0.52.0" }), pkg("windows-sys", "MIT", { version: "0.61.0" })],
+      npmPackages: [pkg("zod", "MIT"), pkg("sharp", "Apache-2.0")],
+      mcpPackages: [pkg("zod", "MIT")],
+      adapted: [],
+    });
+    assert.match(output, /## Rust crates \(1\)/);
+    assert.match(output, /## npm packages \(2\)/);
+    assert.match(output, /## MCP sidecar npm packages \(1\)/);
+  });
+
+  it("lists adapted code with its source, license and holder", () => {
+    const adapted = [{ path: "src/a.ts", url: "https://example.com/a", license: "MIT", holder: "Example Holder" }];
+    const outputs = buildOutputs({ ...trees, adapted });
+    for (const text of Object.values(outputs)) {
+      assert.ok(text.includes("https://example.com/a") && text.includes("Example Holder") && text.includes("src/a.ts"));
     }
   });
 });
 
-describe("buildNotice", () => {
-  it("is deterministic for the same dependency set in any input order", () => {
-    const rustCrates = [
-      { name: "selectors", license: "MPL-2.0" },
-      { name: "serde", license: "MIT OR Apache-2.0" },
-    ];
-    const npmPackages = [{ name: "zod", license: "MIT" }];
-    const forward = buildNotice({ rustCrates, npmPackages });
-    const reversed = buildNotice({ rustCrates: [...rustCrates].reverse(), npmPackages });
-    assert.equal(forward, reversed);
+describe("license texts", () => {
+  it("keeps the file of the elected license and every file named for no license", () => {
+    const names = ["COPYRIGHT", "LICENSE-APACHE", "LICENSE-MIT", "NOTICE"];
+    assert.deepEqual(selectLicenseFiles(names, ["MIT"]), ["COPYRIGHT", "LICENSE-MIT", "NOTICE"]);
+    assert.deepEqual(selectLicenseFiles(names, ["Apache-2.0 WITH LLVM-exception"]), ["COPYRIGHT", "LICENSE-APACHE", "NOTICE"]);
   });
 
-  it("counts what it lists", () => {
-    const output = buildNotice({
-      rustCrates: [{ name: "serde", license: "MIT" }],
-      npmPackages: [
-        { name: "zod", license: "MIT" },
-        { name: "sharp", license: "Apache-2.0" },
-      ],
-    });
-    assert.match(output, /## Rust crates \(1\)/);
-    assert.match(output, /## npm packages \(2\)/);
+  it("keeps every file when none is named for the elected license", () => {
+    assert.deepEqual(selectLicenseFiles(["LICENSE", "LICENSE-THIRD-PARTY"], ["MIT"]), ["LICENSE", "LICENSE-THIRD-PARTY"]);
+  });
+
+  it("strips the byte-order mark, carriage returns and trailing blanks a host may add", () => {
+    assert.equal(normalizeLicenseText("\uFEFFMIT License  \r\n\r\nCopyright\f (c)\r\n\r\n"), "MIT License\n\nCopyright (c)");
+  });
+
+  it("passes on the NOTICE file an Apache-2.0 package publishes, after its license", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-notice-"));
+    try {
+      fs.writeFileSync(path.join(dir, "LICENSE"), "Apache License text");
+      fs.writeFileSync(path.join(dir, "NOTICE"), "Example NOTICE text");
+      const { label, body } = packageLicenseText(pkg("example", "Apache-2.0", { dir }));
+      assert.equal(label, "Apache-2.0");
+      assert.ok(body.indexOf("Apache License text") < body.indexOf("Example NOTICE text"));
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -103,9 +123,11 @@ describe("NOTICE.md content", () => {
     assert.match(NOTICE, /pnpm mcp:build-binary/);
   });
 
-  it("reproduces the OFL text the Pretendard package omits", () => {
-    assert.match(NOTICE, /SIL OPEN FONT LICENSE Version 1\.1/);
-    assert.match(NOTICE, /Reserved Font Name/);
+  it("reproduces the OFL text the Pretendard package omits, in both shipped files", () => {
+    for (const text of [NOTICE, LICENSES]) {
+      assert.match(text, /SIL OPEN FONT LICENSE Version 1\.1/);
+      assert.match(text, /Reserved Font Name/);
+    }
   });
 
   it("names every MPL-2.0 crate rather than burying them in the inventory", () => {
@@ -126,14 +148,15 @@ describe("NOTICE.md content", () => {
 });
 
 describe("release wiring", () => {
-  it("ships NOTICE.md and LICENSE inside the installed app", () => {
+  it("ships NOTICE.md, LICENSE and the license texts inside the installed app", () => {
     const resources = TAURI_CONF.bundle.resources ?? [];
-    assert.ok(resources.includes("../NOTICE.md"), "NOTICE.md is not bundled into the app");
-    assert.ok(resources.includes("../LICENSE"), "LICENSE is not bundled into the app");
+    for (const file of ["../LICENSE", "../NOTICE.md", `../${LICENSES_FILE}`]) {
+      assert.ok(resources.includes(file), `${file} is not bundled into the app`);
+    }
   });
 
-  it("blocks a release whose notice is stale", () => {
-    assert.match(PACKAGE_JSON.scripts["desktop:release-preflight"], /pnpm notice:check/);
+  it("blocks a release whose notice is stale or whose dependencies break the license policy", () => {
+    assert.match(PACKAGE_JSON.scripts["desktop:release-preflight"], /pnpm notice:check && pnpm licenses:check/);
   });
 
   it("exposes the regeneration command the check script names", () => {

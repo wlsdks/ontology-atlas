@@ -132,14 +132,10 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     const registry = JSON.parse(
       readFileSync(join(ROOT, 'src-tauri/src/acp-registry.json'), 'utf8'),
     ) as { agents: Array<{ id: string; launch?: { package?: string } }> };
-    // Newest upstream since 2026-09-07 (owner: "the version is always the newest"); its
-    // `read-only` mode is a workspace-write sandbox, and the vault's Git history is the undo.
-    // 1.13.1 (2026-09-27): `AgentMode` is byte-identical to 1.12.0's — `read-only` still carries
-    // `on-request` approvals, `workspaceWrite` with an empty `writableRoots`, `networkAccess:
-    // false`, and still honors `INITIAL_AGENT_MODE`; `sendPrompt` still sends that policy every
-    // turn. The bundled `@openai/codex` went ^0.154.0 → ^0.156.1.
+    // v2.1.1 src/AgentMode.ts: readOnly, on-request, no network; INITIAL_AGENT_MODE still applies.
+    // The separate workspace-write mode is excluded by mode-safety.ts; MCP keeps its own gate.
     expect(registry.agents.find((agent) => agent.id === 'codex-acp')?.launch?.package).toBe(
-      '@agentclientprotocol/codex-acp@1.13.1',
+      '@agentclientprotocol/codex-acp@2.1.1',
     );
     expect(readFileSync(join(ROOT, 'mcp/src/write-consent.mjs'), 'utf8')).toContain(
       'codex_approval_kind',

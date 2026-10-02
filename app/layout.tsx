@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { AccentBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
+import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
@@ -118,11 +118,7 @@ export default function RootLayout({
           (`.claude/rules/design.md`), not by body.
           Gates: document-scroll-lock.spec.ts + scroll-end-gap.spec.ts. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
-        {/* Plants the accent palette before the first paint (2026-08-18). The record of three
-            attempted placements, and why `next/script`, is in that component's comments. The server
-            does not know `data-accent`, so `<html>` needs `suppressHydrationWarning` — an
-            intentional mismatch limited to one attribute. */}
-        <AccentBootScript />
+        <LangBootScript />
         {/* Forwards a WebView script error or unhandled rejection to the app log. Inside the
             installed app nobody is watching a console, so without this a panel that dies in an
             async callback leaves no trace at all. No-op in a browser. */}

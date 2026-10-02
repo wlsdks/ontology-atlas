@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
-import { CircleAlert, MessageCircle, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { Bookmark, BookmarkPlus, CircleAlert, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
 import {
   resolveConstellationCandidate,
   constellationMemberDrafts,
@@ -436,7 +436,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
           ref={triggerRef}
           type="button"
           compact
-          icon={<Sparkles size={ICON_SIZE.lg} />}
+          icon={<Bookmark size={ICON_SIZE.lg} />}
           aria-label={t('openLabel')}
           aria-expanded={listOpen}
           aria-controls={listId}
@@ -475,14 +475,14 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
               <Tooltip content={createBlockedReason}>
                 <span className="inline-flex rounded-panel" tabIndex={0} role="note" aria-label={createBlockedReason} data-testid="saved-constellations-create-blocked">
                   <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" disabled aria-hidden="true" tabIndex={-1}>
-                    <Plus size={ICON_SIZE.sm} aria-hidden="true" />
+                    <BookmarkPlus size={ICON_SIZE.sm} aria-hidden="true" />
                     {t('create')}
                   </Button>
                 </span>
               </Tooltip>
             ) : (
               <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => openEditor(null)} data-testid="saved-constellations-create">
-                <Plus size={ICON_SIZE.sm} aria-hidden="true" />
+                <BookmarkPlus size={ICON_SIZE.sm} aria-hidden="true" />
                 {t('create')}
               </Button>
             )
@@ -510,7 +510,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
             </div>
           ) : store.constellations.length === 0 ? (
             <div className="px-3 py-8 text-center">
-              <Sparkles size={ICON_SIZE.lg} className="mx-auto text-[color:var(--color-indigo-accent)]" aria-hidden="true" />
+              <Bookmark size={ICON_SIZE.lg} className="mx-auto text-[color:var(--color-indigo-accent)]" aria-hidden="true" />
               <p className="mt-3 text-body-lg text-[color:var(--color-text-primary)]">{t('emptyTitle')}</p>
               <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{t('emptyBody')}</p>
             </div>
@@ -647,7 +647,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
                 />
               ))}
             </div>
-            {saveAttempted && memberDrafts.size === 0 ? <p role="alert" className="text-label text-[color:var(--color-status-danger)]">{t('memberRequired')}</p> : null}
+            {memberDrafts.size === 0 ? <p role={saveAttempted ? 'alert' : undefined} data-testid="saved-constellations-member-required" className={cn('text-label', saveAttempted ? 'text-[color:var(--color-status-danger)]' : 'text-[color:var(--color-text-tertiary)]')}>{t('memberRequired')}</p> : null}
           </div>
           {conflictReview?.stage === 'ready' ? (
             <section

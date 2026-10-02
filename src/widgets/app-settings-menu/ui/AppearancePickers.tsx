@@ -4,16 +4,12 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
 import {
-  ACCENTS,
   CANVAS_BACKGROUNDS,
   GLYPH_SETS,
-  useAccent,
   useCanvasBackground,
   useGlyphSet,
-  writeAccent,
   writeCanvasBackground,
   writeGlyphSet,
-  type Accent,
   type CanvasBackground,
   type GlyphSet,
 } from '@/shared/lib/appearance-preferences';
@@ -174,7 +170,6 @@ export function CanvasBackgroundPicker() {
 export function GlyphSetPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useGlyphSet();
-  /* Container in place, behaviour in the hook, for the same reason as above. */
   const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
@@ -206,68 +201,6 @@ export function GlyphSetPicker() {
                 className={cn('text-label', PICKER_LABEL_INK(active))}
               >
                 {t(`glyphSet.${set}`)}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Accent swatch. `data-accent` on the swatch itself shows each accent's real colour
- * unselected, from the same CSS block as the app-wide attribute.
- */
-function AccentSwatch({ variant }: { variant: Accent }) {
-  return (
-    <span
-      data-accent-preview={variant}
-      aria-hidden
-      className="flex items-center gap-1"
-    >
-      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-brand)]" />
-      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-accent)]" />
-      <span className="h-4 w-4 rounded-full bg-[color:var(--color-indigo-a24)]" />
-    </span>
-  );
-}
-
-/**
- * Accent picker: ember or indigo. What it cannot change (the baked icon) is explained on
- * the `Accent` type in src/shared/lib/appearance-preferences.ts, and a caption says so on screen.
- */
-export function AccentPicker() {
-  const t = useTranslations('nav.settingsMenu');
-  const value = useAccent();
-  /* Container in place, behaviour in the hook, for the same reason as the two above. */
-  const group = useRovingRadioGroup({ value, values: ACCENTS, onChange: writeAccent });
-  return (
-    <div className="px-3 py-2.5" data-testid="app-settings-accent">
-      <p className="text-body text-[color:var(--color-text-primary)]">{t('accentLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
-        {t('accentCaption')}
-      </p>
-      <div {...group.groupProps} aria-label={t('accentLabel')} className="mt-2 grid grid-cols-2 gap-2">
-        {ACCENTS.map((accent: Accent, index) => {
-          const active = accent === value;
-          return (
-            <button
-              key={accent}
-              {...group.itemProps(index)}
-              type="button"
-              data-testid={`app-settings-accent-${accent}`}
-              className={controlClass({
-                shape: 'tile',
-                size: 'md',
-                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
-              })}
-            >
-              <AccentSwatch variant={accent} />
-              <span
-                className={cn('text-label', PICKER_LABEL_INK(active))}
-              >
-                {t(`accent.${accent}`)}
               </span>
             </button>
           );
