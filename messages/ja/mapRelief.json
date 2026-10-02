@@ -1,6 +1,6 @@
 {
   "toggle": "▲ 起伏",
-  "legend": "▲ の高さと数字 = これに依存すると明記した概念の数(直接)",
+  "legend": "▲ の高さと数字 = これに依存すると明記した概念の数（直接）",
   "legendNone": "依存を明記した概念がないため、すべてのタイルが最低の高さです",
   "dependents": "これに依存すると明記した概念は{count, plural, other {#件}}",
   "regionDependents": "外部からこのドメインに依存すると明記した概念は{count, plural, other {#件}}"
