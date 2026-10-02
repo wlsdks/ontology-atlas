@@ -222,7 +222,6 @@ export function untranslatedEnglish(messages: Json, allowed: ReadonlySet<string>
  */
 const INTENTIONALLY_ENGLISH = new Set([
   'metadata.siteName', // the product's name
-  'firstRunStarter.brand', // the product's name
   'projectPages.detail.documentTitleSuffix', // the product's name
   'architecture.patternLabels.feature-sliced-design', // the architecture pattern's own name
   'footer.license', // the licence's own name

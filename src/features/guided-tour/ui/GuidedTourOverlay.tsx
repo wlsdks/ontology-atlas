@@ -161,8 +161,6 @@ export function GuidedTourOverlay({
     );
   }, [anchorKey, open, step, canvasAnchorRef]);
 
-  // testid anchors use a static rect, recomputed on step change and resize; a CSS transition
-  // (180ms) moves the cutout.
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "testid") return undefined;
     const anchorValue = step.anchor.value;
@@ -171,12 +169,16 @@ export function GuidedTourOverlay({
         current.key === anchorKey ? { ...current, testidRect: resolveAnchorRect(anchorValue) } : current,
       );
     recompute();
-    // Re-check one frame after mount: a panel that just opened may still be sliding in.
     const raf = window.requestAnimationFrame(recompute);
     window.addEventListener("resize", recompute);
+    const anchor = document.querySelector(`[data-testid="${anchorValue}"]`);
+    const observer =
+      anchor && typeof ResizeObserver !== "undefined" ? new ResizeObserver(recompute) : null;
+    if (anchor) observer?.observe(anchor);
     return () => {
       window.removeEventListener("resize", recompute);
       window.cancelAnimationFrame(raf);
+      observer?.disconnect();
     };
   }, [anchorKey, open, step]);
 

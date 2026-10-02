@@ -119,31 +119,70 @@ test("the node popover puts group headers and rows on one glyph column and one t
   }
 });
 
-test("the first-run card is the panel's own surface, with no inner box and no empty band", async ({ page }) => {
+test("the first-run card is the panel's own surface, starts its rows on one edge, and opens without an empty band", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("first-run-starter-glossary")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("first-run-starter-headline")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("first-run-starter-glossary-toggle").click();
+  await expect(page.getByTestId("first-run-starter-glossary")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .querySelector('[data-testid="first-run-starter"]')!
+            .getAnimations({ subtree: true })
+            .filter((animation) => animation.playState === "running").length,
+      ),
+    )
+    .toBe(0);
+  const bare = await Promise.all(
+    ["first-run-starter-headline", "first-run-starter-context", "first-run-starter-sample-scale"].map((id) =>
+      textStart(page, `[data-testid="${id}"]`),
+    ),
+  );
+  const glyphLed = await Promise.all(
+    ["first-run-starter-sample-line", "first-run-starter-more-toggle", "first-run-starter-glossary-toggle"].map((id) =>
+      textStart(page, `[data-testid="${id}"]`),
+    ),
+  );
   const layout = await page.evaluate(() => {
     const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
     const panel = rect('[data-testid="topology-index-panel"]');
     const card = rect('[data-testid="first-run-starter"]');
-    const glossary = document.querySelector('[data-testid="first-run-starter-glossary"]')!.parentElement!.getBoundingClientRect();
-    const actions = [...document.querySelectorAll('[data-testid="first-run-starter-dismiss"], [data-testid="first-run-plain-toggle"], [data-testid="first-run-starter-plain-mode-hint"]')]
-      .map((el) => el.getBoundingClientRect().bottom);
     const radius = (sel: string) => getComputedStyle(document.querySelector(sel)!).borderTopLeftRadius;
     return {
       insetLeft: card.left - panel.left,
       insetRight: panel.right - card.right,
-      band: glossary.top - Math.max(...actions),
+      edges: [
+        rect('[data-testid="first-run-starter-sample-line"] > span').left,
+        rect('[data-testid="first-run-starter-open"]').left,
+        rect('[data-testid="first-run-tour-cta"]').left,
+        rect('[data-testid="first-run-starter-sample-source"]').left,
+        rect('[data-testid="first-run-starter-more-toggle"] svg').left,
+        rect('[data-testid="first-run-starter-glossary-toggle"] svg').left,
+        rect('[data-testid="first-run-starter-glossary"] dt').left,
+      ],
+      band: rect('[data-testid="first-run-starter-glossary"]').top - rect('[data-testid="first-run-starter-glossary-toggle"]').bottom,
       openRadius: radius('[data-testid="first-run-starter-open"]'),
       tourRadius: radius('[data-testid="first-run-tour-cta"]'),
+      openHeight: rect('[data-testid="first-run-starter-open"]').height,
+      tourHeight: rect('[data-testid="first-run-tour-cta"]').height,
     };
   });
   expect(layout.insetLeft, "the card sits inside the panel as a second box").toBeLessThanOrEqual(1.5);
   expect(layout.insetRight, "the card sits inside the panel as a second box").toBeLessThanOrEqual(1.5);
-  expect(layout.band, "an empty band opens between the actions and the glossary").toBeLessThanOrEqual(24);
+  const edge = bare[0]!;
+  for (const x of [...bare, ...layout.edges]) {
+    expect(Math.abs(x! - edge), `a row starts at ${x}, off the card's edge at ${edge}`).toBeLessThanOrEqual(0.5);
+  }
+  for (const x of glyphLed) {
+    expect(Math.abs(x! - glyphLed[0]!), `a row's words start at ${x}, off the glyph rows' text line at ${glyphLed[0]}`).toBeLessThanOrEqual(0.5);
+  }
+  expect(layout.band, "an empty band opens between the words toggle and its definitions").toBeLessThanOrEqual(24);
   expect(layout.tourRadius).toBe(layout.openRadius);
+  expect(layout.tourHeight, "the two actions differ in height").toBe(layout.openHeight);
 });
 
 test("on a phone the expanded INDEX sheet leaves no caption underneath it", async ({ page }) => {

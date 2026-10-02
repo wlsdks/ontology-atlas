@@ -146,8 +146,12 @@ On hosted web with no vault selected, `/` shows the gateway
 (`GatewayLandingPage`, chosen by `src/views/root-entry/ui/RootEntryPage.tsx`;
 see [`gateway.md`](gateway.md)). `/topology` draws the bundled sample
 read-only, with a first-run starter module inside the INDEX panel (`FirstRunStarterModule`,
-`src/features/first-run-starter/`). Opening a folder from it first shows a
-guide sheet (`VaultOpenGuideSheet`, `src/features/docs-vault-local/`): any
+`src/features/first-run-starter/`). It leads with one line naming the sample beside a quiet
+Close, a heading, one sentence and two actions (open my markdown folder, the two-minute tour);
+the sample switch and its size sit below them, and creating a folder, the terminal command and
+the meanings of domain, capability and element wait behind two closed disclosures. Opening a
+folder from it first shows a guide sheet (`VaultOpenGuideSheet`,
+`src/features/docs-vault-local/`): any
 markdown folder is fine; Atlas opens it locally and does not upload it to an
 Atlas backend, while a connected coding agent is a separate provider boundary;
 an empty folder gets starter docs. A returning user whose vault handle restores
