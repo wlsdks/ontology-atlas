@@ -14,7 +14,7 @@
   "lastOpenBadge": "上次打开",
   "contents": "{docs} 篇文档 · {concepts} 个概念",
   "contentsUncounted": "尚未统计",
-  "openedAgo": "{when}打开",
+  "openedAgo": "{when} 打开",
   "age": {
     "justNow": "刚刚",
     "minutesAgo": "{count} 分钟前",
@@ -51,7 +51,7 @@
   },
   "locate": "重新定位",
   "locateFolder": "通过文件夹选择器重新定位 {name}",
-  "countedAgo": "{when}统计",
+  "countedAgo": "{when} 统计",
   "missing": {
     "summary": "{count} 个文件夹找不到",
     "review": "查看",
