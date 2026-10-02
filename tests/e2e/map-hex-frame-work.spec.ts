@@ -186,10 +186,12 @@ test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradien
 
 type Reads = Window & { __rects?: { counting: boolean; calls: number }; __loaf?: number[] };
 
-test("the hex board at 10,000 concepts: hover and wheel read no layout and leave no long frame", async ({ page }) => {
+for (const pose of [{ relief: false, R: 0 }, { relief: true, R: 0 }, { relief: true, R: 15 }]) {
+test(`the hex board at 10,000 concepts${pose.relief ? ` in relief at ${pose.R ? `R ${pose.R}` : "rest"}` : ""}: hover and wheel read no layout and leave no long frame`, async ({ page }) => {
   test.setTimeout(300_000);
   await installFrameWork(page);
   await seedFirstRunSeen(page);
+  await page.addInitScript((tilted: boolean) => window.localStorage.setItem("atlas.appearance.hex-relief", tilted ? "on" : "off"), pose.relief);
   await page.addInitScript(() => {
     const w = window as Reads;
     const rects = { counting: false, calls: 0 };
@@ -207,6 +209,7 @@ test("the hex board at 10,000 concepts: hover and wheel read no layout and leave
   await page.goto("/en/topology/?synth=10000&synthDeps=1&view=hex&guides=off&e2e=1");
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
   await still(page);
+  if (pose.R) await zoomTo(page, pose.R);
 
   const box = (await page.getByTestId("hex-board-map").locator("canvas").boundingBox())!;
   const targets = await page.evaluate(() => {
@@ -255,3 +258,4 @@ test("the hex board at 10,000 concepts: hover and wheel read no layout and leave
   expect(hover.rects, "layout reads while hovering").toBeLessThanOrEqual(moves * 2);
   if (bars) expect(wheel.loaf, "long animation frames while hovering and wheeling").toEqual([]);
 });
+}

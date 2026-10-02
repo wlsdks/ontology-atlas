@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "./hex-board-vaults";
+import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapSettled, waitFrames } from "./settle";
 
 type Pt = [number, number];
@@ -94,33 +95,10 @@ function rng(seed: number) {
   };
 }
 
-test("the hex board tilts into relief by chip and Shift-drag, and a click picks the prism drawn under it", async ({ page }) => {
-  test.setTimeout(300_000);
-  await openBoard(page, { reduced: true, relief: false, pick: "hex" });
-  const map = page.getByTestId("hex-board-map");
-  await still(page);
-  await expect(map).toHaveAttribute("data-hex-relief", "off");
-  await expect(map).toHaveAttribute("data-hex-relief-pitch", "0.000");
-
-  await page.evaluate(() => {
-    const root = document.querySelector<HTMLElement>('[data-testid="hex-board-map"]')!;
-    const seen: string[] = [];
-    (window as unknown as { __pitches: string[] }).__pitches = seen;
-    new MutationObserver(() => seen.push(root.dataset.hexReliefPitch ?? "")).observe(root, { attributes: true, attributeFilter: ["data-hex-relief-pitch"] });
-  });
-  await page.getByTestId("hex-board-relief").click();
-  await expect(map).toHaveAttribute("data-hex-relief-pitch", "0.750");
-  const pitches = await page.evaluate(() => (window as unknown as { __pitches: string[] }).__pitches);
-  expect(pitches[0], "reduced motion lands on the first frame").toBe("0.750");
-  await expect(map).toHaveAttribute("data-hex-relief", "on");
-  await expect(page.getByTestId("hex-board-relief")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByTestId("hex-board-relief-legend")).toHaveText(LEGEND);
-  expect(await page.evaluate(() => localStorage.getItem("atlas.appearance.hex-relief"))).toBe("on");
-  await still(page);
-
-  const canvas = map.locator("canvas");
+async function clickPass(page: Page, seed: number): Promise<string[]> {
+  const canvas = page.getByTestId("hex-board-map").locator("canvas");
   const box = (await canvas.boundingBox())!;
-  const random = rng(20261003);
+  const random = rng(seed);
   const painted = await faces(page);
   expect(painted.length).toBeGreaterThan(20);
   const onCanvas = (p: Pt) =>
@@ -159,7 +137,43 @@ test("the hex board tilts into relief by chip and Shift-drag, and a click picks 
     }
     await still(page);
   }
-  expect(misses, "clicks that picked a prism other than the one drawn under them").toEqual([]);
+  return misses;
+}
+
+
+test("the hex board tilts into relief by chip and Shift-drag, and a click picks the prism drawn under it", async ({ page }) => {
+  test.setTimeout(300_000);
+  await openBoard(page, { reduced: true, relief: false, pick: "hex" });
+  const map = page.getByTestId("hex-board-map");
+  await still(page);
+  await expect(map).toHaveAttribute("data-hex-relief", "off");
+  await expect(map).toHaveAttribute("data-hex-relief-pitch", "0.000");
+
+  await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('[data-testid="hex-board-map"]')!;
+    const seen: string[] = [];
+    (window as unknown as { __pitches: string[] }).__pitches = seen;
+    new MutationObserver(() => seen.push(root.dataset.hexReliefPitch ?? "")).observe(root, { attributes: true, attributeFilter: ["data-hex-relief-pitch"] });
+  });
+  await page.getByTestId("hex-board-relief").click();
+  await expect(map).toHaveAttribute("data-hex-relief-pitch", "0.750");
+  const pitches = await page.evaluate(() => (window as unknown as { __pitches: string[] }).__pitches);
+  expect(pitches[0], "reduced motion lands on the first frame").toBe("0.750");
+  await expect(map).toHaveAttribute("data-hex-relief", "on");
+  await expect(page.getByTestId("hex-board-relief")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("hex-board-relief-legend")).toHaveText(LEGEND);
+  expect(await page.evaluate(() => localStorage.getItem("atlas.appearance.hex-relief"))).toBe("on");
+  await still(page);
+
+  const canvas = map.locator("canvas");
+  const box = (await canvas.boundingBox())!;
+  expect(await clickPass(page, 20261003), "names band: clicks that picked a prism other than the one drawn under them").toEqual([]);
+  await page.getByTestId("hex-board-regions-only").click();
+  await expect(map).toHaveAttribute("data-hex-band", "regions");
+  await still(page);
+  expect(await clickPass(page, 20261004), "far band: clicks that picked a prism other than the one drawn under them").toEqual([]);
+  await page.getByTestId("hex-board-regions-only").click();
+  await still(page);
 
   const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const drag = async (dy: number, shift: boolean) => {
@@ -239,3 +253,42 @@ test("the glide from Flat lands on the relief's drawn tops as closely as on the 
   const worse = [...relief].filter(([id, d]) => d > 1.3 * (flat.get(id) ?? 0) + 1).map(([id, d]) => `${id}: ${d.toFixed(1)} px in relief, ${flat.get(id)?.toFixed(1)} px top-down`);
   expect(worse, "ghost final marks further from the drawn tops in relief than top-down").toEqual([]);
 });
+
+test("the glide into a 10,000-concept board lands on its raised slabs as closely as top-down", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await seedFirstRunSeen(page);
+  await page.goto("/en/topology/?synth=10000&synthDeps=1&guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await waitForMapSettled(page);
+  const flat = await landing(page);
+  await page.getByTestId("topology-view-3d").click();
+  await page.getByTestId("topology-view-3d-choice-flat").click();
+  await expect(page.getByTestId("hex-board-map")).toHaveCount(0);
+  await page.evaluate(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
+  await waitForMapSettled(page);
+  const relief = await landing(page);
+  expect((JSON.parse((await page.locator('[data-testid="hex-board-map"] canvas').getAttribute("data-frame"))!) as { slabs: boolean }).slabs).toBe(true);
+  expect(relief.size).toBeGreaterThan(1000);
+  const median = (values: number[]) => [...values].sort((x, y) => x - y)[values.length >> 1]!;
+  const reliefMedian = median([...relief.values()]);
+  const flatMedian = median([...flat.values()]);
+  console.log(`[hex-relief-slab-glide] median ${reliefMedian.toFixed(1)} px in relief, ${flatMedian.toFixed(1)} px top-down`);
+  expect(reliefMedian, "median ghost distance from the drawn slabs").toBeLessThanOrEqual(1.3 * flatMedian + 1);
+});
+
+for (const size of [{ width: 1512, height: 982 }, { width: 1040, height: 720 }]) {
+  test(`the relief legend line stays clear of the sample hint at ${size.width}`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
+    await page.goto("/en/topology/?synth=500&synthDeps=1&view=hex&guides=off&e2e=1");
+    await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
+    await expect(page.getByTestId("sample-node-hint")).toBeVisible();
+    const line = page.getByTestId("hex-board-relief-legend");
+    await expect(line).toBeVisible();
+    const b = (await line.boundingBox())!;
+    const p = (await page.getByTestId("sample-node-hint").boundingBox())!;
+    const overlap = b.x < p.x + p.width && p.x < b.x + b.width && b.y < p.y + p.height && p.y < b.y + b.height;
+    expect(overlap, `legend line ${JSON.stringify(b)} under the hint ${JSON.stringify(p)}`).toBe(false);
+  });
+}

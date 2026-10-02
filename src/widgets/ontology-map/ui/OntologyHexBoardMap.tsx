@@ -34,7 +34,7 @@ import {
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
 import { buildHexLattice, closedNodes, HexFocusRoutes, layCanals, type HexRouteJob } from "../model/hex-router";
-import { buildBoardScene } from "../board/board-scene";
+import { buildBoardScene, isSlabBand, reliefLiftPx } from "../board/board-scene";
 import { drawBoard } from "../board/board-paint";
 import type { PaintedFace } from "../board/board-geometry";
 import { declaredDependents } from "../board/relief-metric";
@@ -112,7 +112,6 @@ const NO_FOCUS: FocusPlan = { lit: null, jobs: [], region: null };
 
 const arrivedKeys = new Set<string>();
 const risenKeys = new Set<string>();
-const SLAB_BELOW = 14;
 
 let measureContext: CanvasRenderingContext2D | null = null;
 function measureText(text: string, role: HexTextRole): number {
@@ -322,8 +321,7 @@ export function OntologyHexBoardMap({
   const liftPx = useCallback(
     (t: { id: string; domainId: string | null }, R: number): number => {
       if (!scene || !layout) return 0;
-      if (R < SLAB_BELOW && bandRef.current === "regions" && t.domainId) return (scene.regionShare.get(t.domainId) ?? 0) * Math.max(1, layout.reg) * R;
-      return (scene.heightShare.get(t.id) ?? 0) * R;
+      return reliefLiftPx(scene, layout, t, R, isSlabBand(bandRef.current, R));
     },
     [scene, layout],
   );
@@ -876,7 +874,7 @@ export function OntologyHexBoardMap({
       const cam = camRef.current;
       if (!cam || !layout) return null;
       if (pose.pitch > 0 && scene) {
-        const slabs = cam.R < SLAB_BELOW && bandRef.current === "regions";
+        const slabs = isSlabBand(bandRef.current, cam.R);
         const max = slabs ? Math.max(...scene.regionShare.values(), scene.maxHeightShare) * Math.max(1, layout.reg) * cam.R : scene.maxHeightShare * cam.R;
         return pickReliefTile(px, py, scene, cam, viewOf(), (t) => liftPx(t, cam.R), max);
       }

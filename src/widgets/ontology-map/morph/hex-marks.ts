@@ -2,14 +2,17 @@ import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
 import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
 import {
   computeHexBoard,
+  hexBandFor,
+  HEX_BAND_NAMES,
   fitHexRadius,
   hexGutter,
   type HexBoardLayout,
   type HexPlacementRecord,
   type HexTile,
 } from "../model/hex-board";
+import { buildBoardScene, isSlabBand, reliefLiftPx } from "../board/board-scene";
 import { declaredDependents } from "../board/relief-metric";
-import { projectReliefPoint, reliefHeightPx, RELIEF_PITCH_REST, type ReliefView } from "../board/relief-projection";
+import { projectReliefPoint, RELIEF_PITCH_REST, type ReliefView } from "../board/relief-projection";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 
@@ -145,8 +148,8 @@ export function predictHexMarks({
   const layout = computeHexBoard(treeNodes, treeEdges, { prior, aspect: room.width / Math.max(1, room.height) });
   const cam = hexRestCamera(layout, room);
   if (!relief) return hexMarks(layout, cam, tokens, () => 1);
-  const metric = declaredDependents(treeNodes, treeEdges);
-  const heightOf = (tile: HexTile) =>
-    tile.kind === "capability" ? reliefHeightPx(metric.capability.get(tile.id) ?? 0, metric.capabilityMax, cam.R) : reliefHeightPx(0, 0, cam.R);
+  const scene = buildBoardScene(layout, declaredDependents(treeNodes, treeEdges));
+  const slabs = isSlabBand(hexBandFor(cam.R, HEX_BAND_NAMES), cam.R);
+  const heightOf = (tile: HexTile) => reliefLiftPx(scene, layout, tile, cam.R, slabs);
   return hexMarks(layout, cam, tokens, () => 1, { pitch: RELIEF_PITCH_REST, pivotY: room.y + room.height / 2, heightOf });
 }

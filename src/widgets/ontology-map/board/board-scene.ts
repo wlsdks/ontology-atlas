@@ -1,4 +1,4 @@
-import type { HexBoardLayout, HexTile } from "../model/hex-board";
+import type { HexBand, HexBoardLayout, HexTile } from "../model/hex-board";
 import { hexKey, HEX_NEIGHBORS, SQRT3 } from "../model/hex-grid";
 import type { ReliefMetric } from "./relief-metric";
 import { reliefHeightPx, reliefRiseDelayMs } from "./relief-projection";
@@ -73,6 +73,17 @@ export function buildBoardScene(layout: HexBoardLayout, metric: ReliefMetric | n
   });
   regions.sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   return { order, orderY, heightShare, maxHeightShare, regionShare, regions, metric, riseDelay };
+}
+
+export const SLAB_BELOW = 14;
+
+export function isSlabBand(band: HexBand, R: number): boolean {
+  return band === "regions" && R < SLAB_BELOW;
+}
+
+export function reliefLiftPx(scene: BoardScene, layout: HexBoardLayout, t: { id: string; domainId: string | null }, R: number, slabs: boolean): number {
+  if (slabs && t.domainId) return (scene.regionShare.get(t.domainId) ?? 0) * Math.max(1, layout.reg) * R;
+  return (scene.heightShare.get(t.id) ?? 0) * R;
 }
 
 export function lowerBound(sorted: Float64Array, value: number): number {

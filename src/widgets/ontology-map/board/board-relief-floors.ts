@@ -1,16 +1,17 @@
 import type { HexTile } from "../model/hex-board";
-import type { HexDrawState } from "../render/hex-board";
+import { hexFonts, type HexDrawState } from "../render/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import { face, FRONT_SIDES, prismPolygons, wall, type PaintedFace } from "./board-geometry";
 import type { TileRects } from "./board-plates";
 import type { BoardScene } from "./board-scene";
-import { drawNumber } from "./board-text";
 import { hatch, tileMaterial } from "./board-tones";
 
 interface FloorsFrame {
   pivot: number;
   lift: (t: HexTile) => number;
   alphaOf: (t: HexTile) => number;
+  isDimmed: (id: string) => boolean;
+  usedBy: ReadonlySet<string>;
   c: number;
   RI: number;
   FAPO: number;
@@ -20,11 +21,10 @@ interface FloorsFrame {
   counts: ReadonlyMap<string, number> | null;
   numberAlpha: number;
   record: PaintedFace[] | null | undefined;
-  rising: boolean;
 }
 
 interface Layer {
-  op: "fill" | "stroke";
+  op: "fill" | "stroke" | "glow";
   alpha: number;
   color: string;
   hatched: boolean;
@@ -33,21 +33,37 @@ interface Layer {
   path: Path2D;
 }
 
-const NUMERALS = Array.from({ length: 1000 }, (_, i) => String(i));
-const cache = new WeakMap<BoardScene, { key: string; layers: Layer[] }>();
+interface RowCache {
+  key: string;
+  rows: Map<number, { key: string; layers: Layer[] }>;
+}
 
-function layersFor(scene: BoardScene, state: HexDrawState, T: HexBoardTokens, f: FloorsFrame, key: string): Layer[] {
-  const hit = cache.get(scene);
-  if (hit && hit.key === key) return hit.layers;
+const rowStarts = new WeakMap<BoardScene, number[]>();
+const cache = new WeakMap<BoardScene, RowCache>();
+const NUMERALS = Array.from({ length: 1000 }, (_, i) => String(i));
+
+function startsOf(scene: BoardScene): number[] {
+  let starts = rowStarts.get(scene);
+  if (!starts) {
+    starts = [];
+    for (let i = 0; i < scene.orderY.length; i += 1) if (i === 0 || scene.orderY[i] !== scene.orderY[i - 1]) starts.push(i);
+    starts.push(scene.orderY.length);
+    rowStarts.set(scene, starts);
+  }
+  return starts;
+}
+
+function buildRow(tiles: readonly HexTile[], state: HexDrawState, T: HexBoardTokens, f: FloorsFrame): Layer[] {
   const { c, RI, light } = f;
   const R = state.R;
-  const byKey = new Map<string, Layer>();
-  const layer = (k: string, make: () => Omit<Layer, "path">) => {
-    let l = byKey.get(k);
-    if (!l) byKey.set(k, (l = { ...make(), path: new Path2D() }));
+  const phases = [new Map<string, Layer>(), new Map<string, Layer>(), new Map<string, Layer>(), new Map<string, Layer>(), new Map<string, Layer>()];
+  const at = (phase: number, op: Layer["op"], alpha: number, color: string, width = 0, dash = false, hatched = false) => {
+    const k = `${op}|${alpha}|${color}|${width}|${dash}|${hatched}`;
+    let l = phases[phase]!.get(k);
+    if (!l) phases[phase]!.set(k, (l = { op, alpha, color, hatched, width, dash, path: new Path2D() }));
     return l.path as unknown as CanvasRenderingContext2D;
   };
-  for (const t of scene.order) {
+  for (const t of tiles) {
     const ev = t.kind === "capability" ? (state.evidence.get(t.id) ?? "unknown") : "current";
     const isSel = t.id === state.selectedId;
     const isHov = t.id === state.hoverId || t.id === state.focusId;
@@ -57,13 +73,14 @@ function layersFor(scene: BoardScene, state: HexDrawState, T: HexBoardTokens, f:
     const x = t.x * R;
     const yb = t.y * R * c;
     const yt = yb - h;
-    if (h > 0.3)
-      for (const k of FRONT_SIDES) wall(layer(`0|${alpha}|${m.walls[k]}`, () => ({ op: "fill", alpha, color: m.walls[k]!, hatched: false, width: 0, dash: false })), x, yt, yb, RI, c, k);
-    const hatched = !isSel && t.kind === "capability" && ev === "unknown";
-    face(layer(`1|${alpha}|${hatched}|${m.topCss}`, () => ({ op: "fill", alpha, color: m.topCss, hatched, width: 0, dash: false })), x, yt, RI, c);
+    if (isSel && t.kind === "capability") face(at(0, "glow", alpha * 0.55, T.indigo), x, yt, RI + 4, c);
+    if (h > 0.3) for (const k of FRONT_SIDES) wall(at(1, "fill", alpha, m.walls[k]!), x, yt, yb, RI, c, k);
+    face(at(2, "fill", alpha, m.topCss, 0, false, !isSel && t.kind === "capability" && ev === "unknown"), x, yt, RI, c);
     const [color, width, dash] =
       t.kind === "domain"
-        ? [state.focusRegion === t.id ? T.rimSelected : T.rimDomain, 1.5, false]
+        ? state.focusRegion === t.id
+          ? [T.rimSelected, 2, false]
+          : [T.rimDomain, 1.5, false]
         : t.kind === "project"
           ? [T.hub, 1.4, false]
           : isSel
@@ -75,33 +92,26 @@ function layersFor(scene: BoardScene, state: HexDrawState, T: HexBoardTokens, f:
                 : ev === "unknown"
                   ? [T.rimUnknown, 1, true]
                   : [f.rimLit, 1, false];
-    face(layer(`2|${alpha}|${color}|${width}|${dash}`, () => ({ op: "stroke", alpha, color, hatched: false, width, dash })), x, yt, RI, c);
+    face(at(3, "stroke", alpha, color, width, dash), x, yt, RI, c);
+    if (R >= 20 && t.kind === "domain") face(at(4, "stroke", alpha * 0.35, T.rimDomain, 1), x, yt, RI - 5, c);
+    if (R >= 20 && t.kind === "project") face(at(4, "stroke", alpha, T.hubHairline, 1), x, yt, RI - 6, c);
+    if ((isSel || isHov) && ev === "stale") face(at(4, "stroke", alpha * 0.9, T.stale, 1.2), x, yt, RI - 4, c);
+    if (f.usedBy.has(t.id)) face(at(4, "stroke", 0.8 * state.dimT, T.usedBy, 1.4), x, yt, RI - 3.5, c);
   }
-  const layers = [...byKey.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([, l]) => l);
-  cache.set(scene, { key, layers });
-  return layers;
+  return phases.flatMap((p) => [...p.values()]);
 }
 
-export function drawReliefFloors(
-  ctx: CanvasRenderingContext2D,
-  scene: BoardScene,
-  visible: readonly HexTile[],
-  state: HexDrawState,
-  T: HexBoardTokens,
-  f: FloorsFrame,
-  rects: TileRects,
-): number {
-  const { c, RI, FAPO } = f;
-  const { R, ox, oy, width, height } = state;
-  const dy = f.pivot * (1 - c) + oy * c;
-  const key = [R, c, state.selectedId, state.hoverId, state.focusId, state.focusRegion, state.dimT, state.staleOnly, f.light, f.rimLit, f.rising ? performance.now() : 0].join("|");
-  const layers = layersFor(scene, state, T, f, `${key}|${identity(state.evidence)}|${identity(state.lit)}`);
-  ctx.save();
-  ctx.translate(ox, dy);
-  ctx.lineJoin = "round";
+function paintLayers(ctx: CanvasRenderingContext2D, layers: readonly Layer[], T: HexBoardTokens) {
   for (const l of layers) {
     ctx.globalAlpha = l.alpha;
-    if (l.op === "fill") {
+    if (l.op === "glow") {
+      ctx.save();
+      ctx.shadowColor = T.indigo;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = l.color;
+      ctx.fill(l.path);
+      ctx.restore();
+    } else if (l.op === "fill") {
       ctx.fillStyle = l.hatched ? hatch(ctx, l.color, T.hatch) : l.color;
       ctx.fill(l.path);
     } else {
@@ -111,23 +121,64 @@ export function drawReliefFloors(
       ctx.stroke(l.path);
     }
   }
-  ctx.restore();
-  ctx.setLineDash([]);
+}
+
+export function drawReliefFloors(
+  ctx: CanvasRenderingContext2D,
+  scene: BoardScene,
+  lo: number,
+  hi: number,
+  state: HexDrawState,
+  T: HexBoardTokens,
+  f: FloorsFrame,
+  rects: TileRects,
+): number {
+  const { c, RI, FAPO } = f;
+  const { R, ox, oy, width, height } = state;
+  const dy = f.pivot * (1 - c) + oy * c;
+  const key = [R, c, state.dimT, state.staleOnly, f.light, f.rimLit, identity(state.evidence), identity(state.lit)].join("|");
+  const marked = (t: HexTile) =>
+    t.id === state.selectedId || t.id === state.hoverId || t.id === state.focusId || t.id === state.focusRegion || f.usedBy.has(t.id);
+  let rc = cache.get(scene);
+  if (!rc || rc.key !== key) cache.set(scene, (rc = { key, rows: new Map() }));
+  const starts = startsOf(scene);
+  let row = 0;
+  while (starts[row + 1]! <= lo) row += 1;
   let drawn = 0;
-  drawNumber(ctx, 0, -1e4, -1e4, T.inkHi);
-  ctx.globalAlpha = f.numberAlpha;
-  for (const t of visible) {
-    const x = ox + t.x * R;
-    if (x < -R || x > width + R) continue;
-    const yb = dy + t.y * R * c;
-    const h = f.lift(t);
-    const yt = yb - h;
-    if (yt - FAPO * c > height + 2 || yb + FAPO * c < -2) continue;
-    const n = t.kind === "capability" ? f.counts?.get(t.id) : undefined;
-    if (n != null && R >= 14) ctx.fillText(NUMERALS[n] ?? String(n), x, yt + 4);
-    if (f.record) f.record.push({ id: t.id, ...prismPolygons(x, yt, yb, RI, c, h > 0.3) });
-    rects.add({ x0: x - RI, x1: x + RI, y0: yt - FAPO * c, y1: yb + FAPO * c });
-    drawn += 1;
+  ctx.lineJoin = "round";
+  ctx.font = hexFonts().plateMeta;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  for (; starts[row]! < hi && row < starts.length - 1; row += 1) {
+    const a = starts[row]!;
+    const b = starts[row + 1]!;
+    let rowKey = "";
+    for (let i = a; i < b; i += 1) if (marked(scene.order[i]!)) rowKey += `${scene.order[i]!.id}:${scene.order[i]!.id === state.selectedId}${scene.order[i]!.id === state.hoverId}${f.usedBy.has(scene.order[i]!.id)},`;
+    let cached = rc.rows.get(a);
+    if (!cached || cached.key !== rowKey) rc.rows.set(a, (cached = { key: rowKey, layers: buildRow(scene.order.slice(a, b), state, T, f) }));
+    const layers = cached.layers;
+    ctx.translate(ox, dy);
+    paintLayers(ctx, layers, T);
+    ctx.translate(-ox, -dy);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = f.numberAlpha;
+    for (let i = a; i < b; i += 1) {
+      const t = scene.order[i]!;
+      const x = ox + t.x * R;
+      if (x < -R || x > width + R) continue;
+      const yb = dy + t.y * R * c;
+      const h = f.lift(t);
+      const yt = yb - h;
+      if (yt - FAPO * c > height + 2 || yb + FAPO * c < -2) continue;
+      const n = t.kind === "capability" ? f.counts?.get(t.id) : undefined;
+      if (n != null) {
+        ctx.fillStyle = f.isDimmed(t.id) ? T.inkDim : T.inkHi;
+        ctx.fillText(NUMERALS[n] ?? String(n), x, yt + 4);
+      }
+      if (f.record) f.record.push({ id: t.id, ...prismPolygons(x, yt, yb, RI, c, h > 0.3) });
+      rects.add({ x0: x - RI, x1: x + RI, y0: yt - FAPO * c, y1: yb + FAPO * c });
+      drawn += 1;
+    }
   }
   ctx.globalAlpha = 1;
   return drawn;

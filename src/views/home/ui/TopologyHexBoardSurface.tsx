@@ -91,6 +91,11 @@ export function TopologyHexBoardSurface({
       data-evidence-availability={evidence.availability}
       className="pointer-events-none flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
     >
+      {tilted ? (
+        <span data-testid="hex-board-relief-legend" className="flex items-center gap-1.5">
+          {dependentsMax > 0 ? tr("legend") : tr("legendNone")}
+        </span>
+      ) : null}
       <span className="flex items-center gap-1.5">
         <svg aria-hidden width="46" height="14" viewBox="0 0 46 14">
           {[0, 1, 2, 3, 4].map((i) => (
@@ -150,11 +155,6 @@ export function TopologyHexBoardSurface({
             <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-hex-canal-head)" }} />
           </svg>
           {t("legendCanals")}
-        </span>
-      ) : null}
-      {tilted ? (
-        <span data-testid="hex-board-relief-legend" className="flex items-center gap-1.5">
-          {dependentsMax > 0 ? tr("legend") : tr("legendNone")}
         </span>
       ) : null}
       <span className="flex items-center gap-1.5">

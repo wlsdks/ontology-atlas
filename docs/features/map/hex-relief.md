@@ -30,8 +30,9 @@ column and the back-to-front order is the board's row order.
   the board opens in a remembered relief that rise is its arrival. Reduced motion
   lands on the first frame.
 - **Picking.** In relief a click picks the prism drawn under the pointer: its top
-  face, its walls or its base, the frontmost first. Flat, the board keeps its
-  hexagon hit test.
+  face, its walls or its base. Prisms paint back to front by row and picking
+  takes the frontmost row first, at every zoom and with "Region names only".
+  Flat, the board keeps its hexagon hit test.
 - **Memory.** The pose is the `atlas.appearance.hex-relief` preference (`on` or
   `off`, off by default). It is not part of the address.
 - **Morph.** A pick into the Hex board while relief is on glides each concept to
