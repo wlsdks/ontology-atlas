@@ -16,6 +16,7 @@ import {
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { createMeasureText, dialOverviewPad } from "@/widgets/ontology-map/dial/fit";
+import { namesCrossed, sampleStrips } from "@/widgets/ontology-map/dial/frame";
 import { buildFlowMarks } from "@/widgets/ontology-map/dial/flow-marks";
 import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
@@ -50,8 +51,6 @@ const LABELS: DialLabels = {
 const VIEW_W = 1512;
 const VIEW_H = 982;
 const INDEX_PX = 320;
-const CELL = 48;
-const CURVE_STEPS = 16;
 
 type Graph = { nodes: readonly { id: string; kind: string; title?: string }[]; edges: readonly { from: string; to: string; type: string }[] };
 
@@ -139,15 +138,7 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
     endRadiusPx: (id) => discs.get(id)?.r ?? chips.get(id)?.r ?? TOKENS.chipMinPx, appearOf: () => 1, measureText: measure, occupied, chords: [],
     resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
   }, marks);
-  const lines: Point[][] = marks.strips.map((s) => {
-    const pts: Point[] = [];
-    for (let k = 0; k <= CURVE_STEPS; k += 1) {
-      const t = k / CURVE_STEPS;
-      const u = 1 - t;
-      pts.push({ x: u * u * s.ax + 2 * u * t * s.cx + t * t * s.bx, y: u * u * s.ay + 2 * u * t * s.cy + t * t * s.by });
-    }
-    return pts;
-  });
+  const lines = sampleStrips(marks.strips);
   const out: LabelMarksOut = { texts: [], extraTexts: [] };
   const inkList: string[] = [];
   buildLabelMarks({
@@ -159,64 +150,6 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
   }, out);
   const texts = [...marks.texts, ...out.texts, ...out.extraTexts].map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box }));
   return { scene, flows, lines, texts, scale, fit, free };
-}
-
-function namesCrossed(lines: readonly Point[][], texts: readonly { text: string; box: Box }[]): { count: number; names: string[] } {
-  const segs: { fi: number; a: Point; b: Point }[] = [];
-  const grid = new Map<number, number[]>();
-  lines.forEach((pts, fi) => {
-    for (let k = 0; k < pts.length - 1; k += 1) {
-      const a = pts[k]!;
-      const b = pts[k + 1]!;
-      const si = segs.length;
-      segs.push({ fi, a, b });
-      for (let gx = Math.floor(Math.min(a.x, b.x) / CELL); gx <= Math.floor(Math.max(a.x, b.x) / CELL); gx += 1) {
-        for (let gy = Math.floor(Math.min(a.y, b.y) / CELL); gy <= Math.floor(Math.max(a.y, b.y) / CELL); gy += 1) {
-          const key = gx * 100003 + gy;
-          const list = grid.get(key);
-          if (list) list.push(si);
-          else grid.set(key, [si]);
-        }
-      }
-    }
-  });
-  const segBox = (a: Point, b: Point, box: Box) => {
-    let t0 = 0;
-    let t1 = 1;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    for (const [pp, qq] of [[-dx, a.x - box.minX], [dx, box.maxX - a.x], [-dy, a.y - box.minY], [dy, box.maxY - a.y]] as const) {
-      if (pp === 0) {
-        if (qq < 0) return false;
-        continue;
-      }
-      const r = qq / pp;
-      if (pp < 0) {
-        if (r > t1) return false;
-        if (r > t0) t0 = r;
-      } else {
-        if (r < t0) return false;
-        if (r < t1) t1 = r;
-      }
-    }
-    return true;
-  };
-  const crossed = new Set<string>();
-  for (const t of texts) {
-    const box = { minX: t.box.minX + 2, maxX: t.box.maxX - 2, minY: t.box.minY + 2, maxY: t.box.maxY - 2 };
-    const cand = new Set<number>();
-    for (let gx = Math.floor(box.minX / CELL); gx <= Math.floor(box.maxX / CELL); gx += 1) {
-      for (let gy = Math.floor(box.minY / CELL); gy <= Math.floor(box.maxY / CELL); gy += 1) for (const si of grid.get(gx * 100003 + gy) ?? []) cand.add(si);
-    }
-    for (const si of cand) {
-      const { a, b } = segs[si]!;
-      if (segBox(a, b, box)) {
-        crossed.add(t.text);
-        break;
-      }
-    }
-  }
-  return { count: crossed.size, names: [...crossed] };
 }
 
 function textOverlaps(texts: readonly { id: string | null; text: string; box: Box }[]): number {
