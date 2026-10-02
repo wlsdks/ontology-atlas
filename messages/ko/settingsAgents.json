@@ -10,6 +10,6 @@
   "modelsCaptionWeb": "데스크톱 앱에서",
   "modelsKeywords": "API 키 키체인 모델 제공자 로컬 러너",
   "mcpLabel": "MCP",
-  "mcpCaption": "이 폴더의 MCP 서버와 연결 도구",
+  "mcpCaption": "이 폴더의 에이전트 연결(MCP) 서버와 연결 도구",
   "mcpKeywords": "서버 커넥터 도구 연결"
 }
