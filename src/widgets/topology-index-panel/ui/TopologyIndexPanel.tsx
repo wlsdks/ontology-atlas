@@ -66,6 +66,7 @@ interface TopologyIndexPanelLabels {
   sourceDocuments: string;
   /** Hover explanation when the folder walk stopped before the end of the tree. */
   sourceDocumentsPartialTitle: string;
+  sourceDocumentsReading?: string;
   capabilitiesShort: string;
   elementsShort: string;
   /** What those two kind names mean — see `TopologyIndexTreeRowLabels.subcountsTitle`. */
@@ -208,6 +209,7 @@ export interface TopologyIndexPanelProps {
    * (`VaultManifest.walkTruncated`); `entities/docs-vault/model/types.ts` requires the count to say so in place, as `N+`.
    */
   sourceDocumentCountPartial?: boolean;
+  sourceLoadProgress?: { read: number; total: number } | null;
 }
 
 /**
@@ -237,6 +239,7 @@ export function TopologyIndexPanel({
   sourceName = null,
   sourceDocumentCount = null,
   sourceDocumentCountPartial = false,
+  sourceLoadProgress = null,
   openedInsidePickedFolder = null,
   agentAvailable = false,
   onDismissOpenedInside,
@@ -513,7 +516,17 @@ export function TopologyIndexPanel({
           >
             {sourceName}
           </span>
-          {sourceDocumentCount === null ? null : (
+          {sourceLoadProgress ? (
+            <>
+              <span aria-hidden>·</span>
+              <span
+                className="shrink-0 tabular-nums"
+                data-vault-load-progress={`${sourceLoadProgress.read}/${sourceLoadProgress.total}`}
+              >
+                {labels.sourceDocumentsReading}
+              </span>
+            </>
+          ) : sourceDocumentCount === null ? null : (
             <>
               <span aria-hidden>·</span>
               <span

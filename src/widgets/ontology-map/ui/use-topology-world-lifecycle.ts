@@ -4,16 +4,18 @@ import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
 import {
   useCallback,
   useEffect,
+  useRef,
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import {
   type SpringOffset,
 } from "../expressive/release-offsets";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, settleTierAssembly } from "../morph/tier-assembly";
+import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
-import { type HomeSpringState } from "../model/relayout-home";
+import { initHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { Pulse } from "../render/edge-fireflies";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen } from "./topology-camera-math";
@@ -70,6 +72,7 @@ interface Dependencies {
   onGraphStatsChange: ((stats: { nodes: number; relations: number; }) => void) | undefined;
   dataSourceKey: string | null;
   assembleOnOpen: boolean;
+  arrivingDocuments: number;
   fittedDataSourceKeyRef: RefObject<string | null>;
   galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
@@ -120,10 +123,15 @@ export function useTopologyWorldLifecycle({
   onGraphStatsChange,
   dataSourceKey,
   assembleOnOpen,
+  arrivingDocuments,
   fittedDataSourceKeyRef,
   galaxyModeCameraRef,
   pendingFlatCameraRef,
 }: Dependencies) {
+  const arriving = arrivingDocuments > 0;
+  const arrivingRef = useRef(arriving);
+  const arrivalStillRef = useRef(false);
+  const arrivalGlideRef = useRef(false);
 
   /**
    * Safety net: if a resize or a monitor change leaves **no node on screen at
@@ -192,10 +200,43 @@ export function useTopologyWorldLifecycle({
     }
   }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
+  const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
+    const { width, height } = viewportRef.current;
+    if (!userDrivenCameraRef.current && width > 0 && height > 0) {
+      const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+      const measuredTokens = overviewFitTokens(cameraTokens(tokens), false);
+      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+      cameraTargetRef.current = target;
+      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
+      if (still) {
+        cameraRef.current = {
+          x: { value: target.tx, velocity: 0 },
+          y: { value: target.ty, velocity: 0 },
+          scale: { value: target.tscale, velocity: 0 },
+        };
+      }
+    }
+    if (still || isTierAssembling(world)) return;
+    const springs = new Map<string, HomeSpringState>();
+    for (const node of world.nodes) {
+      const before = previousWorld.nodeById.get(node.id);
+      if (!before || (before.x === node.x && before.y === node.y)) continue;
+      springs.set(node.id, initHomeSpring(before.x, before.y));
+      node.x = before.x;
+      node.y = before.y;
+    }
+    if (springs.size === 0) return;
+    recomputeWorldGeometry(world, tokens);
+    homeSpringsRef.current = springs;
+    homeTargetOverrideRef.current = null;
+    homingActiveRef.current = true;
+  };
+
   // --- world (layout + adjacency) — rebuilt whenever the graph itself changes ---
   useEffect(() => {
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
+    const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
     // Contract point for installed-app proof: desktop WebView verification
     // reads the click-cancel hysteresis from here. Exposes the token verbatim.
     containerRef.current?.setAttribute(
@@ -310,13 +351,21 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
       armAssembly = true;
     }
+    const grew = arriving || arrivingRef.current || glidingFromArrival;
+    arrivingRef.current = arriving;
+    arrivalGlideRef.current = grew;
+    if (arriving) arrivalStillRef.current = arrivingDocuments > ARRIVAL_GLIDE_CONCEPT_CEILING;
+    const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, dataSourceKey, arrivalStill || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
-      } else {
+      } else if (!grew) {
         carryTierAssembly(previousWorld, world);
       }
+    }
+    if (grew && !armAssembly && previousWorld && hasInitializedRef.current && !galaxyRef.current) {
+      glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
     }
     trySnapInitialCamera(tokens);
     // New data is a static state change: draw it even when the map sleeps.

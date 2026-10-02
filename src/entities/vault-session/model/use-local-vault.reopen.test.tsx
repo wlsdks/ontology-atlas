@@ -138,6 +138,7 @@ describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => 
     expect(hook.result.current.status).toBe('loaded');
     expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledWith(
       expect.objectContaining({ rootPath: '/Users/dana/work/project/atlas' }),
+      expect.objectContaining({ onPartial: expect.any(Function) }),
     );
     expect(store.putLocalFsHandle).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -160,6 +161,7 @@ describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => 
     await waitFor(() => expect(hook.result.current.status).toBe('loaded'));
     expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledWith(
       expect.objectContaining({ rootPath: '/Users/dana/work/project/atlas' }),
+      expect.objectContaining({ onPartial: expect.any(Function) }),
     );
     expect(store.putLocalFsHandle).toHaveBeenCalledWith(
       expect.objectContaining({ desktopRootPath: '/Users/dana/work/project/atlas' }),

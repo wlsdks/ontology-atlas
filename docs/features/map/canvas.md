@@ -20,6 +20,28 @@ routes: [/topology]
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
 
+- **A large folder is drawn while it is still being read** (2026-10-02) → opening a
+  folder reads the project first, then `domains/`, `capabilities/` and `elements/`, then
+  everything else. In a folder of 400 or more documents, once the read has run 0.2 s, the
+  map draws what has arrived, at most once a second: each finished subfolder, and a quarter
+  of a subfolder of 400 or more only among the first three draws. It draws documents only,
+  never a relation-only node a later file might own. In a folder of up to 2,000 documents
+  (`ARRIVAL_GLIDE_CONCEPT_CEILING`), marks already drawn glide to their new places on the
+  homing spring and the camera keeps the overview framed until a hand moves it; above that,
+  arrival takes the reduced-motion path, as layout picks past 6,300 concepts crossfade: the
+  opening rise fades in place, marks land without travel and the camera refits at once. The INDEX names the folder and says "reading N of M documents" until the last file;
+  nothing else on any screen reads the part, the previous folder's documents are dropped
+  when the first part arrives, and nothing can be written until the read ends. The finished
+  map is the one a full read builds. The app reads 64 Markdown files per native call (each
+  at most 4 MiB, Markdown only, never through a link into a dot file), eight calls at a
+  time; the browser keeps 64 reads in flight. Measured at 120 ms per native answer on the
+  static export (median of 3): a 2,000-document vault drew its first frame at 0.87 s
+  instead of 16.5 s and finished at 2.0 s; 10,000 documents drew at 0.88 s instead of 77.7 s
+  and finished at 4.9 s, with no task longer than 343 ms (492 ms before), no homing spring
+  at all, and still frames up to 350 ms apart while documents are parsed. In Chrome over an origin-private folder, 10,000
+  documents drew at 0.67 s instead of 26.3 s and finished at 6.6 s. Gate:
+  `tests/e2e/vault-progressive-open.spec.ts`.
+
 - **A name blocked below tries the slot above** (2026-09-20) → the greedy label
   placer walked the candidates by priority and dropped any whose box overlapped
   one already placed, with no second attempt however much room sat beside it.

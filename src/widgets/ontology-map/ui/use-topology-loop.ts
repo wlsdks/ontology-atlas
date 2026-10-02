@@ -77,7 +77,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
   const {
-    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine",
+    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
@@ -414,6 +414,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onGraphStatsChange,
     dataSourceKey,
     assembleOnOpen,
+    arrivingDocuments,
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
@@ -999,6 +1000,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
+      appearRef,
     },
     interaction: {
       handlersRef,
@@ -1018,6 +1020,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       heatRef,
       lastInputMsRef,
       lastActiveMsRef,
+      homeSpringsRef,
     },
     lens: {
       mapLensKindRef,

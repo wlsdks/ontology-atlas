@@ -274,6 +274,15 @@ export async function installDesktopRailRuntime(
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
             return slow({ text: files[path], lastModified: mtime });
           }
+          case "read_vault_text_files":
+            return slow(
+              ((args.relativePaths as string[]) ?? []).map((relativePath) => {
+                const path = relative(relativePath);
+                return path in files
+                  ? { relativePath, text: files[path], lastModified: mtime, error: null }
+                  : { relativePath, text: null, lastModified: null, error: `missing ${path}` };
+              }),
+            );
           case "read_vault_binary_file": {
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
