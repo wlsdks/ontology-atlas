@@ -1573,6 +1573,30 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'allow' }));
   });
 
+  it('opens a queued second write as a new card with focus on its title', async () => {
+    await bootSession();
+    await startUserTurn('rename two concepts');
+    const patch = (id: number, toolCallId: string, slug: string) => {
+      const request = mcpPermissionRequest('mcp__atlas-vault__patch_concept', id, { slug, frontmatter: { title: `${slug} renamed` } });
+      return { ...request, params: { ...request.params, toolCall: { ...request.params.toolCall, toolCallId } } };
+    };
+    emit(patch(101, 'tc-first', 'capabilities/first'));
+    emit(patch(102, 'tc-second', 'capabilities/second'));
+
+    await waitFor(() => expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/first'));
+    const first = screen.getByTestId('acp-permission-card');
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    await waitFor(() => expect(answerFor(101)).toEqual({ outcome: 'selected', optionId: 'allow' }));
+
+    await waitFor(() => expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/second'));
+    const second = screen.getByTestId('acp-permission-card');
+    expect(second).not.toBe(first);
+    expect(second).not.toHaveAttribute('inert');
+    expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(second.querySelector('#acp-permission-title')));
+    expect(answerFor(102)).toBeUndefined();
+  });
+
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();
     emit(mcpPermissionRequest('mcp__atlas-vault__list_concepts'));

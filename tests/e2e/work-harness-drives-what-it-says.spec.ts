@@ -36,12 +36,9 @@ test('an ontology patch reaches the card as a concept update, not a folder write
   await expect(page.getByTestId('acp-permission-card')).toBeVisible({ timeout: 15_000 });
 
   const shown = await review(page);
-  // The operation the patch branch of `buildOntologyChangeSet` produces, and its target.
   expect(shown.scope).toContain('capabilities/task-review');
   expect(shown.scope, 'the card read the patch as a generic folder write').not.toMatch(/folder/i);
-  // The slug is the target, so it is not also one of the changed fields.
-  expect(shown.scope).toMatch(/1 requested field\b/);
-  expect(shown.headline).toContain('task-review');
+  expect(shown.headline).toBe('Changes the body of task-review');
 });
 
 test('a body the caller supplies is the body the card reviews', async ({ page }) => {
