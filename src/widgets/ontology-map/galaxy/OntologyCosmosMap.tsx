@@ -127,8 +127,9 @@ export function OntologyCosmosMap({
   const [relaid, setRelaid] = useState<{ nodes: readonly OntologyMapNode[]; edges: readonly OntologyMapEdge[]; token: number } | null>(null);
   const settled = useMemo(() => {
     const fresh = relaid !== null && relaid.nodes === nodes && relaid.edges === edges;
-    if (fresh) return { layout: cosmosLayoutFor(nodes, edges, null, true), relayout: true };
-    return { layout: cosmosLayoutFor(nodes, edges, placement?.current() ?? null, false), relayout: false };
+    if (fresh) return { layout: cosmosLayoutFor(nodes, edges, null, true), relayout: true, hasRecord: false };
+    const record = placement?.current() ?? null;
+    return { layout: cosmosLayoutFor(nodes, edges, record, false), relayout: false, hasRecord: record !== null };
   }, [nodes, edges, placement, relaid]);
   const layout = settled.layout;
   useEffect(() => {
@@ -144,7 +145,7 @@ export function OntologyCosmosMap({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const first = firstOptions.current;
-    firstOpen.current = !first.arrivedByMorph && (first.arrivalKey === null ? true : !hasArrived(first.arrivalKey));
+    firstOpen.current = first.arrivalKey === null ? true : !hasArrived(first.arrivalKey);
     if (first.arrivalKey !== null) markArrived(first.arrivalKey);
     let inks: CosmosInks | null = null;
     const engine = new CosmosEngine(canvas, {
@@ -187,9 +188,16 @@ export function OntologyCosmosMap({
       layout,
       conceptLabels,
       edges,
-      chooseArrival({ firstOpen: firstOpen.current || settled.relayout, reducedMotion: firstOptions.current.reducedMotion, keyframes: layout.settle.keyframes.length }),
+      chooseArrival({
+        firstOpen: firstOpen.current,
+        arrivedByMorph: firstOptions.current.arrivedByMorph,
+        hasRecord: settled.hasRecord,
+        relayout: settled.relayout,
+        reducedMotion: firstOptions.current.reducedMotion,
+      }),
     );
-  }, [layout, conceptLabels, edges, settled.relayout, relaid]);
+    firstOpen.current = false;
+  }, [layout, conceptLabels, edges, settled.relayout, settled.hasRecord, relaid]);
 
   useEffect(() => {
     engineRef.current?.setSelected(selectedId);
