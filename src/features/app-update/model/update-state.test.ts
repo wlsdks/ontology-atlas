@@ -3,41 +3,60 @@ import {
   CHECK_INTERVAL_MS,
   shouldCheckForUpdate,
   shouldSurfaceVersion,
+  readUpdateAutoCheck,
   summarizeNotes,
+  writeUpdateAutoCheck,
 } from './update-state';
 
 describe('shouldCheckForUpdate', () => {
   it('never checks on the web — a browser tab cannot replace itself', () => {
     // Speaking of updates on the web proposes something impossible.
     expect(
-      shouldCheckForUpdate({ isDesktop: false, now: 0, lastCheckedAt: null, manual: true }),
+      shouldCheckForUpdate({ isDesktop: false, now: 0, lastCheckedAt: null, automatic: true, manual: true }),
     ).toBe(false);
   });
 
   it('checks on first desktop launch', () => {
-    expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null })).toBe(true);
+    expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: true })).toBe(true);
   });
 
   it('stays quiet inside the interval and speaks once past it', () => {
     const lastCheckedAt = 1_000_000;
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 60_000, lastCheckedAt }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 60_000, lastCheckedAt, automatic: true }),
     ).toBe(false);
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + CHECK_INTERVAL_MS, lastCheckedAt }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + CHECK_INTERVAL_MS, lastCheckedAt, automatic: true }),
     ).toBe(true);
   });
 
   it('a manual check ignores the interval — the user asked', () => {
     const lastCheckedAt = 1_000_000;
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 1, lastCheckedAt, manual: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 1, lastCheckedAt, automatic: true, manual: true }),
     ).toBe(true);
   });
 
   it('recovers when the clock moves backwards', () => {
     // A negative elapsed time must still be due, or the next check never comes.
-    expect(shouldCheckForUpdate({ isDesktop: true, now: 500, lastCheckedAt: 1_000_000 })).toBe(true);
+    expect(shouldCheckForUpdate({ isDesktop: true, now: 500, lastCheckedAt: 1_000_000, automatic: true })).toBe(true);
+  });
+
+  it('never checks on its own when automatic checks are off, but a press still does', () => {
+    expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: false })).toBe(false);
+    expect(
+      shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: false, manual: true }),
+    ).toBe(true);
+  });
+});
+
+describe('update auto-check preference', () => {
+  it('defaults to on and remembers off', () => {
+    window.localStorage.clear();
+    expect(readUpdateAutoCheck()).toBe('on');
+    writeUpdateAutoCheck('off');
+    expect(readUpdateAutoCheck()).toBe('off');
+    window.localStorage.clear();
   });
 });
 

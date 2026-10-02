@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { forgetApproval, readMachineApprovals, recordApproval, subscribeMachineApprovals } from './machine-approvals';
+import {
+  forgetApproval,
+  forgetMachineApprovals,
+  listMachineApprovals,
+  readMachineApprovals,
+  recordApproval,
+  subscribeMachineApprovals,
+} from './machine-approvals';
 import { MACHINE_APPROVALS_STORAGE_KEY as KEY } from './machine-approvals-format';
 
 const FOLDER = '/Users/probe/cloned';
@@ -75,5 +82,44 @@ describe("this Mac's allowances", () => {
     stop();
     recordApproval('connector', FOLDER, 'c2', 'v1');
     expect(heard).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('the allowances list in Settings', () => {
+  const OTHER = '/Users/probe/other';
+
+  it('lists what was allowed without the allowed definition', () => {
+    recordApproval('connector', FOLDER, 'c1', 'secret-definition');
+    recordApproval('round', OTHER, 'r1', 'v1');
+    const list = listMachineApprovals();
+    expect(list).toEqual([
+      { subject: 'connector', folder: FOLDER, id: 'c1' },
+      { subject: 'round', folder: OTHER, id: 'r1' },
+    ]);
+    expect(JSON.stringify(list)).not.toContain('secret-definition');
+    expect(listMachineApprovals()).toBe(list);
+  });
+
+  it('forgets one folder and leaves the others allowed', () => {
+    recordApproval('connector', FOLDER, 'c1', 'v1');
+    recordApproval('round', FOLDER, 'r1', 'v1');
+    recordApproval('round', OTHER, 'r1', 'v1');
+    forgetMachineApprovals({ folder: FOLDER });
+    expect(listMachineApprovals()).toEqual([{ subject: 'round', folder: OTHER, id: 'r1' }]);
+    expect(readMachineApprovals().approves('round', OTHER, 'r1', 'v1')).toBe(true);
+  });
+
+  it('forgets every folder when no folder is named', () => {
+    recordApproval('connector', FOLDER, 'c1', 'v1');
+    recordApproval('round', OTHER, 'r1', 'v1');
+    forgetMachineApprovals();
+    expect(listMachineApprovals()).toEqual([]);
+    expect(readMachineApprovals().approves('connector', FOLDER, 'c1', 'v1')).toBe(false);
+  });
+
+  it('writes nothing when there is nothing to forget', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    forgetMachineApprovals({ folder: FOLDER });
+    expect(setItem).not.toHaveBeenCalled();
   });
 });

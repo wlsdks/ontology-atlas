@@ -21,6 +21,7 @@ const SECURITY_CONTRACTS = [
   'tests/contract/acp-session-scope.contract.test.ts',
   'tests/contract/acp-disk-disclosure.contract.test.ts',
   'tests/contract/web-csp-parity.contract.test.ts',
+  'tests/contract/outbound-inventory.contract.test.ts',
 ];
 
 const command = `pnpm exec vitest run ${SECURITY_CONTRACTS.join(' ')}`;
@@ -42,6 +43,7 @@ export const rules = [
       /^src\/shared\/lib\/(?:mcp-install-link|report-webview-error)\.ts$/,
       /^src\/shared\/lib\/(?:open-vault-file|inflate-raw)\.ts$/,
       /^src\/shared\/config\/web-content-security-policy\.ts$/,
+      /^src\/widgets\/app-settings-menu\/model\/outbound-paths\.ts$/,
       /^src\/entities\/vault-session\/model\/TauriVaultWatchBridge\.tsx$/,
       /^src\/features\/(?:acp-session|acp-doctor|mcp-connectors)\/model\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,

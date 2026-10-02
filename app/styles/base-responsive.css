@@ -37,6 +37,14 @@
     color-scheme: dark;
   }
 
+  html[data-text-size="large"] {
+    font-size: 112.5%;
+  }
+
+  html[data-text-size="larger"] {
+    font-size: 125%;
+  }
+
   /*
    * Topology chrome responsive scale — At 27"(2560px) wide resolutions, fixed px
    * chrome (header pill · analysis panel · legend · popover) looks too small. Zoom is
