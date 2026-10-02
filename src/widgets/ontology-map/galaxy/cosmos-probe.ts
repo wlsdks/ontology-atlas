@@ -22,7 +22,7 @@ export function installCosmosProbe(engine: CosmosEngine): () => void {
         const s = screenOf(engine.poses[i]?.x ?? g.x, engine.poses[i]?.y ?? g.y);
         return { id: g.id, label: g.label, shape: g.shape, arms: g.arms, members: g.members, clusters: g.clusters.length, sx: s.x, sy: s.y, rho: g.radius * rig.camera.scale };
       });
-      return { timings: { ...layout.timings, placedGalaxies: 0 }, galaxies, filaments: layout.filaments.length, concepts: layout.points.size };
+      return { timings: { ...layout.timings }, galaxies, filaments: layout.filaments.length, concepts: layout.points.size };
     },
     layoutRuns: () => cosmosLayoutRuns(),
     marks: () => engine.marks(),

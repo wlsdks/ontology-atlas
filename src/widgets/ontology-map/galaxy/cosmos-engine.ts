@@ -52,6 +52,7 @@ export class CosmosEngine {
   arrival: { start: number; mode: CosmosArrivalMode } | null = null;
   arrivalMode: CosmosArrivalMode = "none";
   arrivalClock = 0;
+  private arrivalEnd = 0;
   readonly haze = createHazeState();
   hazeAwake = false;
   private band: CosmosBand | null = null;
@@ -133,7 +134,7 @@ export class CosmosEngine {
     this.rig.setBounds(layout.bounds);
     this.arrival = arrival === "replay" && !this.options.reducedMotion && layout.settle.keyframes.length > 1 ? { start: performance.now(), mode: arrival } : null;
     this.arrivalMode = this.arrival ? arrival : "none";
-    this.arrivalClock = 0;
+    [this.arrivalClock, this.arrivalEnd] = [0, (this.arrival?.start ?? performance.now()) + (this.arrival ? ARRIVAL_MS : 0)];
     this.drawnReported = false;
     this.requestFrame();
   }
@@ -153,8 +154,7 @@ export class CosmosEngine {
   }
 
   setLens(lens: CosmosLens | null, trail: CosmosTrail | null): void {
-    this.lens = lens;
-    this.trail = trail;
+    [this.lens, this.trail] = [lens, trail];
     this.requestFrame();
   }
 
@@ -241,7 +241,7 @@ export class CosmosEngine {
     const dt = this.lastNow ? Math.min(64, Math.max(0, now - this.lastNow)) : 16;
     this.lastNow = now;
     let why = rig.step(now) ? 1 : 0;
-    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: this.lastInput, reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
+    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrivalEnd), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
     if (this.hazeAwake) why |= 4;
     if (this.arrival) this.arrivalClock = Math.max(0, now - this.arrival.start);
     if (this.arrival && !applyArrival(layout, this.arrivalClock, this.arrival.mode, this.poses)) this.arrival = null;
