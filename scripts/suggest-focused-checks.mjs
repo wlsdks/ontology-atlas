@@ -298,6 +298,10 @@ export function runSuggestFocusedChecks({
   const run = args.includes('--run');
   const pathArgs = args.filter((arg) => arg !== '--run');
   try {
+    const unsupported = pathArgs.find((arg) => arg.startsWith('-'));
+    if (unsupported) {
+      throw new Error(`unsupported option ${JSON.stringify(unsupported)}; use --run or --help, or prefix a path with ./`);
+    }
     const explicit = pathArgs.length > 0;
     let paths = explicit ? pathArgs : changedPathsFromGit({ cwd, spawn });
     let deletedPaths = explicit ? [] : deletedPathsFromGit({ cwd, spawn });
@@ -332,6 +336,8 @@ export function suggestFocusedChecksUsage() {
   pnpm checks:changed
   pnpm checks:changed -- <path...>
   pnpm checks:changed -- --run          # run every recommendation, stopping at the first failure
+
+Only --run, --help and -h are options. Prefix a path beginning with a dash with ./.
 
 Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it

@@ -84,6 +84,31 @@ describe('branch-range fallback', () => {
 });
 
 describe('focused check suggestion CLI', () => {
+  it('rejects unsupported options before planning or executing checks', () => {
+    for (const argv of [['--', '--json'], ['--', '--rnu', 'src/shared/lib/cn.ts'], ['--', '--run', '--json', 'src/shared/lib/cn.ts']]) {
+      const output = [], errors = [];
+      let spawned = 0;
+      const status = runSuggestFocusedChecks({
+        argv,
+        stdout: { write: text => output.push(text) },
+        stderr: { write: text => errors.push(text) },
+        spawn() { spawned += 1; return { status: 0, stdout: '' }; },
+      });
+      assert.equal(status, 2);
+      assert.match(errors.join(''), /unsupported option/);
+      assert.equal(spawned, 0);
+      assert.equal(output.join(''), '');
+    }
+  });
+
+  it('accepts an explicitly relative path whose basename begins with a dash', () => {
+    const output = [];
+    const status = runSuggestFocusedChecks({ argv: ['./--fixture.ts'], stdout: { write: text => output.push(text) }, spawn() { throw Error('explicit planning needs no git'); } });
+    assert.equal(status, 0);
+    assert.match(output.join(''), /--fixture\.ts/);
+    assert.match(output.join(''), /pnpm exec eslint/);
+  });
+
   it('normalizes the pnpm separator and prints help without git', () => {
     assert.deepEqual(stripLeadingSeparator(['--', '--help']), ['--help']);
 
