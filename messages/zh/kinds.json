@@ -1,0 +1,9 @@
+{
+  "project": "项目",
+  "domain": "领域",
+  "capability": "能力",
+  "element": "要素",
+  "document": "文档",
+  "vault-readme": "仓库说明",
+  "unknown": "未解析"
+}

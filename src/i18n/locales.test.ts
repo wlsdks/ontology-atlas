@@ -30,8 +30,9 @@ describe("locale registry", () => {
   it("accepts only routed locales by default", () => {
     expect(isAppLocale("en")).toBe(true);
     expect(isAppLocale("ko")).toBe(true);
-    expect(isAppLocale("ja")).toBe(false);
-    expect(isAppLocale("zh")).toBe(false);
+    expect(isAppLocale("ja")).toBe(true);
+    expect(isAppLocale("zh")).toBe(true);
+    expect(isAppLocale("fr")).toBe(false);
     expect(isAppLocale(undefined)).toBe(false);
     expect(isAppLocale("EN")).toBe(false);
   });
@@ -55,6 +56,11 @@ describe("locale registry", () => {
   });
 
   it("names each locale by a message key", () => {
-    expect(LOCALE_NAME_KEY).toEqual({ en: "english", ko: "korean" });
+    expect(LOCALE_NAME_KEY).toEqual({
+      en: "english",
+      ko: "korean",
+      ja: "japanese",
+      zh: "chinese",
+    });
   });
 });

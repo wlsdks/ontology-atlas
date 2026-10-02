@@ -1,5 +1,7 @@
 import koMessages from '@/messages/ko.json';
 import enMessages from '@/messages/en.json';
+import jaMessages from '@/messages/ja.json';
+import zhMessages from '@/messages/zh.json';
 import type { AppLocale } from '@/i18n/locales';
 
 /**
@@ -8,7 +10,7 @@ import type { AppLocale } from '@/i18n/locales';
  * ships in every page; a server component passes the picked namespaces as props. The
  * contract `tests/contract/standalone-messages-server-only.contract.test.ts` enforces this.
  */
-const ALL = { ko: koMessages, en: enMessages } as const satisfies Record<AppLocale, unknown>;
+const ALL = { ko: koMessages, en: enMessages, ja: jaMessages, zh: zhMessages } as const satisfies Record<AppLocale, unknown>;
 
 export type StandaloneLocale = AppLocale;
 export type StandaloneMessages = Record<StandaloneLocale, Record<string, unknown>>;

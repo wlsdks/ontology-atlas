@@ -21,20 +21,23 @@ export const SETTINGS_SECTION_LABEL =
 export function SettingsPaneHead({
   title,
   description,
+  note,
   testId,
 }: {
   title: string;
   description: string;
+  note?: ReactNode;
   testId?: string;
 }) {
   return (
-    <header className="grid min-w-0 gap-1 border-x border-transparent px-3" data-testid={testId}>
+    <header className="grid min-w-0 gap-1" data-testid={testId}>
       <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {title}
       </h3>
       <p className="max-w-[var(--git-setup-measure)] text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
         {description}
       </p>
+      {note}
     </header>
   );
 }
@@ -63,18 +66,28 @@ export function SettingsGroup({
   trailing,
   children,
   testId,
+  as: Card = 'div',
+  cardClassName,
 }: {
   label?: string;
   trailing?: ReactNode;
   children: ReactNode;
   testId?: string;
+  as?: 'div' | 'ul';
+  cardClassName?: string;
 }) {
   return (
     <section aria-label={label} className="min-w-0" data-testid={testId}>
       {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}
-      <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
+      <Card
+        className={cn(
+          label && 'mt-1.5',
+          'divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+          cardClassName,
+        )}
+      >
         {children}
-      </div>
+      </Card>
     </section>
   );
 }

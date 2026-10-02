@@ -1,0 +1,10 @@
+{
+  "header": "Skill 副本",
+  "copyHandoff": "复制给智能体的说明",
+  "copied": "已复制，粘贴给你的智能体。",
+  "copyFailed": "无法复制。",
+  "chip": "只读",
+  "valueDisagreeing": "{total} 个 Skill · {count} 个不同步",
+  "valueAgreed": "{total} 个 Skill · 全部一致",
+  "body": "逐个文件比较 .claude/skills 和 .agents/skills 两份副本，不会写入任何内容。"
+}

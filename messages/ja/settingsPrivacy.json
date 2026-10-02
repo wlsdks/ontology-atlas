@@ -1,0 +1,72 @@
+{
+  "leadDesktop": "Atlasの画面からインターネットには出られません。外に出られるのは、下の一覧にあるものだけです。",
+  "leadWeb": "このWebサイトは、このコンピュータ上のフォルダを読み取ります。フォルダがアップロードされることはありません。",
+  "outbound": {
+    "title": "このコンピュータから出る可能性があるもの",
+    "keywords": "ネットワーク インターネット 送信 アップロード 外部 転送 監査 ログ 更新 確認 プロバイダ　network internet send upload outbound transfer audit log update check provider",
+    "recorded": "記録あり",
+    "recordedIn": "「{file}」に記録されます",
+    "notRecorded": "記録なし",
+    "unseen": "Atlasからは見えません",
+    "recordedNote": "記録あり：送信のたびに、このフォルダの「<file>{file}</file>」に残ります。"
+  },
+  "trigger": {
+    "automatic": "自動",
+    "press": "押したとき",
+    "agent-use": "エージェントが使うとき"
+  },
+  "carries": {
+    "no-folder-content": "フォルダの内容なし",
+    "what-you-send": "送信した内容",
+    "provider-owned": "ツールとプロバイダの間",
+    "agent-sends": "エージェントが送る内容"
+  },
+  "destinations": {
+    "your-runner-address": "入力したランナーのアドレス",
+    "npm-registry": "npmパッケージレジストリ",
+    "python-package-index": "Python Package Index（PyPI）",
+    "your-connector-urls": "このフォルダのコネクタ（アドレス先、またはこのコンピュータ上のプログラム）",
+    "your-git-remote": "お使いのGitリモート",
+    "your-coding-tool-provider": "お使いのコーディングツール自身のプロバイダ"
+  },
+  "paths": {
+    "update-check": "アップデートの確認",
+    "update-download": "アップデートのダウンロード",
+    "model-providers": "モデルプロバイダ",
+    "local-runner": "ローカルランナー",
+    "jev": "外部チェック",
+    "tool-downloads": "コーディングツールのインストール",
+    "adapter-packages": "チャットアダプタのパッケージ",
+    "connectors": "MCP接続",
+    "git-remote": "Gitの送信・取得",
+    "coding-tools": "コーディングツール",
+    "website-files": "Webサイトのファイル"
+  },
+  "updateOn": "自動確認オン",
+  "updateOff": "自動確認オフ",
+  "updateChange": "変更",
+  "updateChangeAria": "アプリ情報で自動のアップデート確認を変更",
+  "allowances": {
+    "title": "このコンピュータで許可したもの",
+    "keywords": "同意 承認 許可 取り消し 忘れる コネクタ スケジュール　consent approval allow revoke forget connector schedule",
+    "empty": "まだ何も許可されていません。フォルダのコネクタとスケジュールは、許可するまで待機します。",
+    "counts": "{connectors, plural, =0 {} other {コネクタ#件}}{both, select, yes {・} other {}}{rounds, plural, =0 {} other {スケジュール#件}}",
+    "forget": "解除",
+    "forgetArmed": "もう一度押して解除",
+    "forgetAll": "すべて解除",
+    "forgetAllArmed": "もう一度押してすべて解除",
+    "caption": "解除すると、もう一度許可するまで動きません。フォルダの中身は変わりません。",
+    "forgetAria": "{name}で許可した内容を解除"
+  },
+  "recent": {
+    "title": "このコンピュータに残っているもの",
+    "keywords": "最近 フォルダ 履歴 忘れる 一覧　recent folders history forget list",
+    "label": "最近のフォルダ",
+    "count": "{count, plural, =0 {記録なし} other {フォルダ#件を記録}}",
+    "captionWeb": "このコンピュータに保存されています。履歴を消してもフォルダには影響しません。",
+    "captionDesktop": "このアプリに保存されています。履歴を消してもフォルダには影響しません。",
+    "failed": "一覧を消去できませんでした。もう一度お試しください。",
+    "forgetAll": "すべて消去",
+    "forgetAllArmed": "もう一度押してすべて消去"
+  }
+}
