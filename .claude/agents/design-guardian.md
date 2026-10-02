@@ -2,7 +2,7 @@
 name: design-guardian
 description: Senior design verdict with edits, and the only editing design agent. Use when the owner asks for a design verdict with edits, or to apply the correction the owner chose after an independent review.
 model: opus
-effort: max
+effort: xhigh
 tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_console_messages
 ---
 

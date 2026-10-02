@@ -1,8 +1,8 @@
 ---
 name: product-planner
-description: Writes the product spec for a one-way product change at max effort, after the PO pass decides to build and before its one review: the person and moment, the flow, every web and app state, exact en/ko copy, edge cases, what is out of scope, and acceptance criteria that can fail. Use when pnpm po:route returns review or the owner asks for a spec; not for slicing implementation (planner) or judging (reviewer).
+description: Writes the product spec for a one-way product change at xhigh effort, after the PO pass decides to build and before its one review: the person and moment, the flow, every web and app state, exact en/ko copy, edge cases, what is out of scope, and acceptance criteria that can fail. Use when pnpm po:route returns review or the owner asks for a spec; not for slicing implementation (planner) or judging (reviewer).
 model: opus
-effort: max
+effort: xhigh
 disallowedTools: Agent
 ---
 
