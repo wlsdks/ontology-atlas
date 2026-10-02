@@ -129,12 +129,33 @@ export interface GalaxyTwinkle {
   periodMs: number;
 }
 
+interface TwinkleSeed {
+  seed: number;
+  periodMs: number;
+  flareDurationMs: number;
+  rotation: number;
+}
+
+const TWINKLE_SEED_LIMIT = 65_536;
+const twinkleSeeds = new Map<string, TwinkleSeed>();
+
+function twinkleSeedFor(nodeId: string): TwinkleSeed {
+  const cached = twinkleSeeds.get(nodeId);
+  if (cached !== undefined) return cached;
+  if (twinkleSeeds.size >= TWINKLE_SEED_LIMIT) twinkleSeeds.clear();
+  const entry = {
+    seed: atmosphereHash(nodeId),
+    periodMs: 4000 + atmosphereHash(`${nodeId}:interval`) * 4000,
+    flareDurationMs: 700 + atmosphereHash(`${nodeId}:duration`) * 600,
+    rotation: atmosphereHash(`${nodeId}:glint`) * Math.PI,
+  };
+  twinkleSeeds.set(nodeId, entry);
+  return entry;
+}
+
 /** Deterministic; no frame changes graph meaning. */
 export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: boolean): GalaxyTwinkle {
-  const seed = atmosphereHash(nodeId);
-  const periodMs = 4000 + atmosphereHash(`${nodeId}:interval`) * 4000;
-  const flareDurationMs = 700 + atmosphereHash(`${nodeId}:duration`) * 600;
-  const rotation = atmosphereHash(`${nodeId}:glint`) * Math.PI;
+  const { seed, periodMs, flareDurationMs, rotation } = twinkleSeedFor(nodeId);
   if (reducedMotion) return { intensity: 0.9, glint: 0.32, rotation, periodMs };
   const cycleMs = ((nowMs + seed * periodMs) % periodMs + periodMs) % periodMs;
   const flareProgress = cycleMs <= flareDurationMs ? cycleMs / flareDurationMs : -1;

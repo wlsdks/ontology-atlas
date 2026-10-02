@@ -12,7 +12,10 @@ import {
   isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
-  type LabelCandidate, floorFlipBaseline } from "./label-layout";
+  ReservedBoxIndex,
+  type LabelBBox,
+  type LabelCandidate,
+  type ReservedBox, floorFlipBaseline } from "./label-layout";
 
 const RECT = { left: 344, right: 880, top: 96, bottom: 704 };
 
@@ -378,5 +381,110 @@ describe("greedyPlaceLabels — a blocked name tries the slot above", () => {
     const placed = greedyPlaceLabels([only]);
     expect(placed[0].bbox).toEqual(box(100));
     expect(placed[0].usedAlt).toBeUndefined();
+  });
+});
+
+describe("an indexed reservation answers exactly what a scan of every box answers", () => {
+  const random = (() => {
+    let seed = 0x2f6b;
+    return () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  })();
+  const randomBox = (span: number, size: number): LabelBBox => {
+    const minX = (random() - 0.2) * span;
+    const minY = (random() - 0.2) * span;
+    return { minX, minY, maxX: minX + random() * size, maxY: minY + random() * size };
+  };
+  const odd: LabelBBox[] = [
+    { minX: Number.NaN, minY: 0, maxX: 10, maxY: 10 },
+    { minX: -Infinity, minY: 40, maxX: Infinity, maxY: 44 },
+    { minX: 5000, minY: 5000, maxX: 5010, maxY: 5010 },
+    { minX: 100, minY: 100, maxX: 100, maxY: 100 },
+  ];
+
+  it("agrees on overlap with a foreign reservation, including NaN, infinite and degenerate boxes", () => {
+    const reserved: ReservedBox[] = [
+      ...Array.from({ length: 2000 }, (_, i) => ({
+        bbox: randomBox(1500, 40),
+        priority: i % 7 === 0 ? 2 : 1,
+        ownerId: i % 11 === 0 ? undefined : `n${i % 300}`,
+      })),
+      ...odd.map((bbox, i) => ({ bbox, priority: 1, ownerId: `odd${i}` })),
+    ];
+    const index = new ReservedBoxIndex(reserved);
+    for (const query of [...Array.from({ length: 3000 }, () => randomBox(1600, 120)), ...odd]) {
+      for (const priority of [0, 1, 2, 5]) {
+        const ownerId = random() < 0.5 ? `n${Math.floor(random() * 300)}` : undefined;
+        expect(index.overlapsForeign(query, ownerId, priority)).toBe(
+          overlapsForeignReserved(query, ownerId, priority, reserved),
+        );
+      }
+    }
+  });
+
+  it("places the same labels as a placer that scans every placed and reserved box", () => {
+    const reserved: ReservedBox[] = Array.from({ length: 1500 }, (_, i) => ({
+      bbox: randomBox(1200, 16),
+      priority: 1,
+      ownerId: `n${i}`,
+    }));
+    const candidates: LabelCandidate<number>[] = Array.from({ length: 1200 }, (_, i) => ({
+      priority: 1 + Math.floor(random() * 5),
+      order: Math.floor(random() * 50),
+      bbox: randomBox(1200, 90),
+      altBbox: random() < 0.6 ? randomBox(1200, 90) : undefined,
+      ownerId: `n${i}`,
+      payload: i,
+    }));
+    const preferred = new Set(candidates.filter(() => random() < 0.3).map((c) => c.payload));
+    const isPreferred = (c: LabelCandidate<number>) => preferred.has(c.payload);
+    const scanned: LabelCandidate<number>[] = [];
+    const free = (box: LabelBBox, c: LabelCandidate<number>) =>
+      !overlapsForeignReserved(box, c.ownerId, c.priority, reserved) && !scanned.some((p) => bboxesOverlap(p.bbox, box));
+    const order = [...candidates].sort(
+      (a, b) =>
+        a.priority - b.priority ||
+        (isPreferred(a) ? 0 : 1) - (isPreferred(b) ? 0 : 1) ||
+        a.order - b.order,
+    );
+    for (const c of order) {
+      if (free(c.bbox, c)) scanned.push(c);
+      else if (c.altBbox && free(c.altBbox, c)) scanned.push({ ...c, bbox: c.altBbox, usedAlt: true });
+    }
+    let preferenceReads = 0;
+    const placed = greedyPlaceLabels(candidates, (c) => {
+      preferenceReads += 1;
+      return isPreferred(c);
+    }, reserved);
+    expect(preferenceReads).toBe(candidates.length);
+    expect(placed.map((c) => [c.payload, c.usedAlt === true])).toEqual(scanned.map((c) => [c.payload, c.usedAlt === true]));
+    expect(placed.length).toBeGreaterThan(50);
+    expect(placed.length).toBeLessThan(candidates.length);
+  });
+
+  it("reads only the reservations near each label, not every reservation for every label", () => {
+    let reads = 0;
+    const reserved: ReservedBox[] = Array.from({ length: 4000 }, (_, i) => {
+      const bbox = randomBox(4000, 12);
+      return {
+        priority: 1,
+        ownerId: `n${i}`,
+        get bbox() {
+          reads += 1;
+          return bbox;
+        },
+      };
+    });
+    const candidates: LabelCandidate<number>[] = Array.from({ length: 2000 }, (_, i) => ({
+      priority: 4,
+      order: i,
+      bbox: randomBox(4000, 60),
+      ownerId: `n${i}`,
+      payload: i,
+    }));
+    greedyPlaceLabels(candidates, undefined, reserved);
+    expect(reads).toBeLessThan((reserved.length * candidates.length) / 50);
   });
 });

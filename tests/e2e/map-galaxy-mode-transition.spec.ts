@@ -147,3 +147,53 @@ test("Galaxy → Strata frames the 3D view, not the Flat camera saved before Gal
   ).toBeLessThan(0.05);
   expect(Math.abs(detour.top - direct.top), "원뿔 꼭대기가 다른 높이에 섰다").toBeLessThan(40);
 });
+
+test("a resting Galaxy paints its stars without the Flat outlines hidden under them", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("atlas.appearance.galaxy", "on");
+    window.localStorage.setItem("atlas.appearance.view3d", "off");
+    window.localStorage.setItem("atlas.appearance.territories", "off");
+    window.localStorage.setItem("atlas.appearance.hex-board", "off");
+  });
+  await page.goto("/en/topology/?synth=2000&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await expect(page.locator('[data-testid="topology-view-3d"]')).toHaveText(/Galaxy/);
+  await waitForMapStill(page);
+
+  const perFrame = await page.evaluate(
+    () =>
+      new Promise<{ strokes: number; sprites: number; stars: number }>((resolve) => {
+        const probe = (window as unknown as { __atlasMap: { wake: () => void; nodes: () => unknown[] } }).__atlasMap;
+        const proto = CanvasRenderingContext2D.prototype as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const counts = { stroke: 0, drawImage: 0 };
+        for (const name of ["stroke", "drawImage"] as const) {
+          const original = proto[name];
+          proto[name] = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
+            if ((this.canvas as HTMLCanvasElement).dataset?.testid === "ontology-map-canvas") counts[name] += 1;
+            return original.apply(this, args);
+          };
+        }
+        const strokes: number[] = [];
+        const sprites: number[] = [];
+        let last = { ...counts };
+        const sample = () => {
+          if (counts.drawImage > last.drawImage) {
+            strokes.push(counts.stroke - last.stroke);
+            sprites.push(counts.drawImage - last.drawImage);
+          }
+          last = { ...counts };
+          if (sprites.length >= 12) {
+            const median = (values: number[]) => [...values].sort((a, b) => a - b)[values.length >> 1];
+            resolve({ strokes: median(strokes), sprites: median(sprites), stars: probe.nodes().length });
+            return;
+          }
+          probe.wake();
+          requestAnimationFrame(sample);
+        };
+        probe.wake();
+        requestAnimationFrame(sample);
+      }),
+  );
+  expect(perFrame.stars).toBeGreaterThanOrEqual(2000);
+  expect(perFrame.sprites).toBeGreaterThanOrEqual(perFrame.stars);
+  expect(perFrame.strokes).toBeLessThan(perFrame.stars / 10);
+});

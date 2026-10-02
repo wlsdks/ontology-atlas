@@ -97,7 +97,7 @@ import {
   ellipsizeToWidth,
   greedyPlaceLabels,
   filterFadingLabelCollisions,
-  overlapsForeignReserved,
+  ReservedBoxIndex,
   NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
   isSafeRectProtectedLabel,
@@ -2189,6 +2189,53 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
+      const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
+      const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
+      if (edgeAlpha <= 0.02) continue;
+      const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      const isSelectedEdge =
+        selectedEdge !== null &&
+        edge.sourceId === selectedEdge.sourceId &&
+        edge.targetId === selectedEdge.targetId &&
+        (!selectedEdge.relationType || edge.relationType === selectedEdge.relationType);
+      const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
+      const isConstellationEdge =
+        constellationLensActive &&
+        spotlightIds !== null &&
+        spotlightIds.has(edge.sourceId) &&
+        spotlightIds.has(edge.targetId);
+      const walkedKey = !trailKeysLive
+        ? ""
+        : edge.sourceId < edge.targetId
+          ? `${edge.sourceId} ${edge.targetId}`
+          : `${edge.targetId} ${edge.sourceId}`;
+      const walkedSweep =
+        trailLensOpenedAtMs > 0 && footprintNewestStep > 0
+          ? igniteCurve(
+              (now -
+                trailLensOpenedAtMs -
+                trailIgniteStartMs(walkedEdgeArrivalStep?.get(walkedKey) ?? 1, footprintNewestStep)) /
+                TRAIL_IGNITE_MS,
+            )
+          : 1;
+      const walkedTrail =
+        trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
+          ? trailRamp * walkedSweep
+          : 0;
+      const galaxyEdgeReturn =
+        galaxyOn &&
+        !isGalaxyEdgeVisible(edge, {
+          focusedNodeId,
+          hoveredNodeId,
+          selected: isSelectedEdge,
+          path: isPathEdge || isConstellationEdge,
+          walked: walkedTrail > 0.01,
+        })
+          ? galaxyIdentityOn
+            ? 0
+            : bodyPresence(galaxy)
+          : 1;
+      if (galaxyEdgeReturn <= 0.001) continue;
       const sourceNode = galaxyOn ? world.nodeById.get(edge.sourceId) : undefined;
       const targetNode = galaxyOn ? world.nodeById.get(edge.targetId) : undefined;
       const galaxyFilamentInk =
@@ -2199,13 +2246,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               0.5,
             )
           : undefined;
-      // perf 2026-08-19 — read the precomputed alpha by original index (in dome
-      // mode dereference the sort index; in 2D they coincide). -1 = collapsed by
-      // the density condition, ≤0.02 = rejected by tier — both skip, as before.
-      const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
-      const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
-      if (edgeAlpha <= 0.02) continue;
-      // Endpoint frames come back by original index from the depth-sort pass.
       const edgeFrameA = domeOn ? domeEdgeFrameAReused[edgeOrigIndex] : ZERO_DOME_FRAME;
       const edgeFrameB = domeOn ? domeEdgeFrameBReused[edgeOrigIndex] : ZERO_DOME_FRAME;
       const { a, b, control } = projectEdgePoints(edge, edgeFrameA, edgeFrameB);
@@ -2248,18 +2288,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // A pass-through edge with neither endpoint on screen gets its ink lowered,
       // which is what untangles the hairball.
       const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
-      const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
-      const isSelectedEdge =
-        selectedEdge !== null &&
-        edge.sourceId === selectedEdge.sourceId &&
-        edge.targetId === selectedEdge.targetId &&
-        (!selectedEdge.relationType || edge.relationType === selectedEdge.relationType);
-      const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
-      const isConstellationEdge =
-        constellationLensActive &&
-        spotlightIds !== null &&
-        spotlightIds.has(edge.sourceId) &&
-        spotlightIds.has(edge.targetId);
       const hovered =
         hoveredEdge !== null &&
         edge.sourceId === hoveredEdge.sourceId &&
@@ -2316,44 +2344,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               spotlightIds.has(edge.sourceId) &&
               spotlightIds.has(edge.targetId),
       );
-      const walkedKey = !trailKeysLive
-        ? ""
-        : edge.sourceId < edge.targetId
-          ? `${edge.sourceId} ${edge.targetId}`
-          : `${edge.targetId} ${edge.sourceId}`;
-      /*
-       * A line waits for the star it arrives at. During the ignition sweep the path draws
-       * itself node by node, so the eye follows the walk in the order it happened instead of
-       * being handed the finished shape all at once — which is the difference between a
-       * picture of a path and a replay of one.
-       */
-      const walkedSweep =
-        trailLensOpenedAtMs > 0 && footprintNewestStep > 0
-          ? igniteCurve(
-              (now -
-                trailLensOpenedAtMs -
-                trailIgniteStartMs(walkedEdgeArrivalStep?.get(walkedKey) ?? 1, footprintNewestStep)) /
-                TRAIL_IGNITE_MS,
-            )
-          : 1;
-      const walkedTrail =
-        trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
-          ? trailRamp * walkedSweep
-          : 0;
-      const galaxyEdgeReturn =
-        galaxyOn &&
-        !isGalaxyEdgeVisible(edge, {
-          focusedNodeId,
-          hoveredNodeId,
-          selected: isSelectedEdge,
-          path: isPathEdge || isConstellationEdge,
-          walked: walkedTrail > 0.01,
-        })
-          ? galaxyIdentityOn
-            ? 0
-            : bodyPresence(galaxy)
-          : 1;
-      if (galaxyEdgeReturn <= 0.001) continue;
       /*
        * The stored direction is in key order (low id → high id); the line is drawn from
        * `edge.sourceId` to `edge.targetId`. When those disagree the light has to run the
@@ -2723,6 +2713,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   litDrawnStateCounts.current = 0;
   litDrawnStateCounts.stale = 0;
   litDrawnStateCounts.unknown = 0;
+  const nodeLoopComposite = ctx.globalCompositeOperation;
+  let starCompositeHeld = false;
+  const holdStarComposite = () => {
+    if (starCompositeHeld) return;
+    ctx.globalCompositeOperation = "lighter";
+    starCompositeHeld = true;
+  };
+  const releaseStarComposite = () => {
+    if (!starCompositeHeld) return;
+    ctx.globalCompositeOperation = nodeLoopComposite;
+    starCompositeHeld = false;
+  };
   for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
     const node = nodeDrawOrder[drawPos];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
@@ -2983,10 +2985,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
     );
     const nodeLayerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
-    // A selected Galaxy frame is a star immediately. On return, the loop keeps
-    // that identity until coordinates arrive, then this ramp reveals the Flat
-    // body while it is stationary.
-    ctx.globalAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+    const bodyAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+    if (bodyAlpha > 0) releaseStarComposite();
+    ctx.globalAlpha = bodyAlpha;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
@@ -3113,10 +3114,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, canvasDpr,
         node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
     }
-    // perf 2026-08-19 — one token argument per frame (`nodeShapeTokensFrame`). The
-    // state literals stay spelled out because the review-ring-authorship contract
-    // gate pins that wiring.
-    nodeShapesDraw(
+    if (bodyAlpha > 0 || showCount) nodeShapesDraw(
       ctx,
       {
         // 3D depth shading, cross-faded on the assembly ramp (0 in 2D, adding no
@@ -3263,12 +3261,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const luminance = nodeLayerAlpha * starLuminance(node.starMagnitude);
       const atmosphere = galaxyTwinkle(node.id, now - galaxyAtmosphereLagMs, reducedMotion);
       const atmosphericLuminance = luminance * atmosphere.intensity;
+      holdStarComposite();
       drawGalaxyNodeStar(ctx, {
         x: screen.x,
         y: screen.y,
-        // Paint expands on the existing focus ramp while canonical hit and
-        // label geometry remain unchanged. A low-magnitude selected concept
-        // must still read as the protagonist beside brighter hubs.
         radius: screenRadius * (1 + 0.32 * attention),
         ink: galaxyInk,
         lit: Math.min(
@@ -3295,6 +3291,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             : 0
         ),
         glintRotation: atmosphere.rotation,
+        compositeHeld: true,
       });
     }
 
@@ -3416,11 +3413,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           1 + TRAIL_STAR_SWELL * starSwellCurve(sweepT),
         );
       }
-      /*
-       * ⚠️ Gated on the ramp, not only on the ink. With the lens closed these survived their
-       * own stars — measured as orphan 11px numerals floating up-right of unmarked nodes
-       * (design-lead, 2026-09-10). A label outliving the thing it labels is not a label.
-       */
+      releaseStarComposite();
       if (trailRamp > 0.001) drawFootprintSteps(
         { ctx, pref: footprintPref, ink: footprintInk, scale: footprintScale },
         screen.x,
@@ -3447,6 +3440,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       expandedParentIds.has(node.id) &&
       !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
     ) {
+      releaseStarComposite();
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
       ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
@@ -3481,6 +3475,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       node.id !== hoveredNodeId &&
       !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
     ) {
+      releaseStarComposite();
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
       ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
@@ -3501,6 +3496,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Channel-separate from the dashed aura (expansion) and the amber ring; no
     // glow, and no new token (it reuses `tokens.indigo`).
     if (realmDepthById !== null && realmDepthById.get(node.id) === 0 && wardingRing !== null) {
+      releaseStarComposite();
       ctx.save();
       ctx.globalAlpha = tierAlpha * REALM_ROOT_ANCHOR_ALPHA * wardingRing.drawProgress;
       ctx.strokeStyle = tokens.indigo;
@@ -3512,6 +3508,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     ctx.globalAlpha = 1;
   }
+  releaseStarComposite();
 
   // --- Realm warding circle: the subtree's bounding circle, drawn above the nodes
   // and below the chips and labels. The drama comes from geometry and self-drawing
@@ -4082,17 +4079,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       })()
     : labelCandidates;
 
-  /*
-   * **Blocked below, flip above** — for the candidates that survived the budget.
-   * Suppressing outright would recreate the very "unlabelled shape" this
-   * mechanism removes, so a label is dropped only after a second slot has been
-   * tried. The upper slot mirrors the same offset across the node: no new
-   * spacing, no new token. It runs here rather than inside the candidate loop for
-   * the cost reason given at `labelFlipSlots`.
-   */
+  const discIndex = new ReservedBoxIndex(nodeDiscReservations);
   for (const candidate of placedLabelCandidates) {
     const nodeId = candidate.payload.nodeId;
-    if (!overlapsForeignReserved(candidate.bbox, nodeId, candidate.priority, nodeDiscReservations)) {
+    if (!discIndex.overlapsForeign(candidate.bbox, nodeId, candidate.priority)) {
       continue;
     }
     const slot = labelFlipSlots.get(nodeId);
@@ -4103,23 +4093,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       minY: slot.baselineY - slot.ascent,
       maxY: slot.baselineY + slot.descent,
     };
-    if (overlapsForeignReserved(flipped, nodeId, candidate.priority, nodeDiscReservations)) continue;
+    if (discIndex.overlapsForeign(flipped, nodeId, candidate.priority)) continue;
     candidate.bbox = flipped;
     candidate.payload.baselineY = slot.baselineY;
     labelBboxById.set(nodeId, flipped);
   }
 
-  // Greedy placement prefers what was placed on the previous frame (hysteresis),
-  // which damps LOD churn within one priority band. The resulting placed-id set
-  // becomes the next frame's preference.
   const placedResult = greedyPlaceLabels(
     placedLabelCandidates,
     (c) => prevPlacedLabelIds.has(c.payload.nodeId),
-    // A **passive** label (domain/capability/element) overlapping a chip's occupied
-    // area is dropped. Selected and hovered labels outrank chips and stay: a chip
-    // never silences the name the user is looking at. Chip occupancy and ego node
-    // discs are reserved together, and labels avoid both.
-    [...chipReservations, ...nodeDiscReservations],
+    chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations],
   );
   // A name the placer moved to its upper slot has to be drawn there too.
   for (const candidate of placedResult) {
