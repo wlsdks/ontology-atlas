@@ -23,8 +23,9 @@ vi.mock("./cosmos-web", () => ({
 vi.mock("./cosmos-relations", () => ({
   drawCosmosRelations: () => ({ rows: [], candidates: relationCandidates.splice(0), labels: [] }),
   drawCosmosHover: () => [],
-  lensAlpha: (lens: unknown) => (lens ? 0.25 : 1),
-  galaxyLensAlpha: (lens: unknown) => (lens ? 0.25 : 1),
+  lensAlpha: (lens: unknown, _id: unknown, _inks: unknown, trail: unknown) => (lens || trail ? 0.25 : 1),
+  galaxyLensAlpha: (lens: unknown, _inks: unknown, trail: unknown) => (lens || trail ? 0.25 : 1),
+  trailHolds: (_layout: unknown, _trail: unknown, galaxy: number) => galaxy === 0,
 }));
 
 interface FakeContext {
@@ -176,6 +177,38 @@ describe("drawCosmosFrame", () => {
     expect(plain.impostorAlphas.length).toBeGreaterThan(0);
     expect(plain.impostorAlphas.every((a) => a === 1)).toBe(true);
     expect(lensed.impostorAlphas.every((a) => a === 0.25)).toBe(true);
+  });
+
+  it("with only the trail active, keeps the walked galaxy and recedes the others", () => {
+    const fake = fakeContext();
+    drawCosmosFrame({
+      ctx: fake.ctx, width: 1200, height: 800, dpr: 1, room, camera: overview(), overviewScale: overview().scale, layout, inks, poses,
+      attention: { selectedId: null, hoverId: null, hoverGalaxy: -1, focusGalaxy: -1, revealMs: 0 },
+      relationsOf: () => [], pointOf: () => null, lens: null, trail: { visitedIds: ["d0"] }, record: null, reducedMotion: false,
+      cache: new CosmosBitmapCache(), deepField: null, buildBudget: 100,
+    });
+    expect(fake.impostorAlphas.filter((a) => a === 1)).toHaveLength(1);
+    expect(fake.impostorAlphas.filter((a) => a === 0.25)).toHaveLength(layout.galaxies.length - 1);
+  });
+
+  it("records the core star and the halo stars it paints, so picking covers them", () => {
+    const { nodes, edges } = synth(2, 2, 2);
+    nodes.push({ id: "halo-cap", label: "Halo", kind: "capability", size: 1, fullDegree: 1 });
+    edges.push({ source: "p", target: "halo-cap", kind: "contains", relationType: "contains" });
+    const sky = computeCosmosLayout(nodes, edges);
+    expect(sky.core.starIds).toContain("halo-cap");
+    const painted: string[] = [];
+    const b = sky.bounds;
+    const scale = Math.min(room.width / (b.maxX - b.minX), room.height / (b.maxY - b.minY)) * 0.8;
+    drawCosmosFrame({
+      ctx: fakeContext().ctx, width: 1200, height: 800, dpr: 1, room, camera: { x: 0, y: 0, scale }, overviewScale: scale, layout: sky, inks,
+      poses: sky.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 })),
+      attention: { selectedId: null, hoverId: null, hoverGalaxy: -1, focusGalaxy: -1, revealMs: 0 },
+      relationsOf: () => [], pointOf: () => null, lens: null, trail: null, record: (id) => painted.push(id), reducedMotion: false,
+      cache: new CosmosBitmapCache(), deepField: null, buildBudget: 100,
+    });
+    expect(painted).toContain("p");
+    expect(painted).toContain("halo-cap");
   });
 
   it("counts bitmaps the first time they are drawn", () => {

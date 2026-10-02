@@ -21,6 +21,21 @@ function settle(r: CosmosCameraRig, from: number, until = from + 5_000): number 
 }
 
 describe("cosmos camera", () => {
+  it("refits a changed room after arrival by gliding from the view on screen, not by snapping", () => {
+    const rig = new CosmosCameraRig();
+    rig.room = { x: 0, y: 0, width: 1441, height: 977 };
+    rig.setBounds({ minX: -500, minY: -400, maxX: 500, maxY: 400 }, true);
+    const at = worldToScreen(rig.camera, rig.room, 120, -80);
+    rig.readRoom({ x: 0, y: 0, width: 1300, height: 860 }, { final: true, keepView: true });
+    rig.fit(true, 0);
+    expect(rig.step(1)).toBe(true);
+    const first = worldToScreen(rig.camera, rig.room, 120, -80);
+    expect(Math.hypot(first.x - at.x, first.y - at.y)).toBeLessThan(1);
+    for (let t = 16; rig.step(t); t += 16);
+    const end = worldToScreen(rig.camera, rig.room, 120, -80);
+    expect(Math.hypot(end.x - at.x, end.y - at.y)).toBeGreaterThan(20);
+  });
+
   it("never approaches a star by zooming out", () => {
     const galaxy = { extent: 400 };
     const fit = galaxyFitScale(galaxy, room);

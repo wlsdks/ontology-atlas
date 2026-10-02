@@ -1,5 +1,7 @@
 import { pickInitialFocus, pickNeighborInDirection, walkDirectionForKey, type WalkNode } from "../interaction/keyboard-walk";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { galaxyMatrix, liveBandRadius, worldToScreen } from "./cosmos-camera";
+import { galaxyCentreOn } from "./cosmos-engine-watch";
 import type { CosmosLayout } from "./layout/cosmos-layout";
 import type { CosmosCamera, CosmosRoom, GalaxyPose } from "./cosmos-types";
 
@@ -57,4 +59,28 @@ export function walkTarget(input: {
   }
   const id = pickNeighborInDirection({ id: selectedId, x: at.x, y: at.y }, candidates, direction);
   return id ? { id, deadEnd: false } : { id: null, deadEnd: true };
+}
+
+export type CosmosKeyAction = { kind: "zoom"; factor: number } | { kind: "fit" } | { kind: "overview" } | { kind: "pane" } | { kind: "fly"; galaxy: number } | { kind: "select"; id: string } | { kind: "deadEnd" };
+
+export function cosmosKeyAction(
+  e: Pick<KeyboardEvent, "key" | "metaKey" | "ctrlKey" | "altKey" | "preventDefault">,
+  input: { layout: CosmosLayout; poses: readonly GalaxyPose[]; camera: CosmosCamera; room: CosmosRoom; dpr: number; selectedId: string | null; zoomSpeed: number },
+): CosmosKeyAction | null {
+  const { layout, poses, camera, room, selectedId } = input;
+  const intent = keyboardZoomIntent(e, input.zoomSpeed);
+  if (intent) e.preventDefault();
+  if (intent) return intent;
+  if (e.key === "Escape") return { kind: selectedId !== null ? "pane" : "overview" };
+  if (e.key === "Enter") {
+    const galaxy = layout.galaxies.findIndex((g) => g.id === selectedId);
+    if (galaxy >= 0) e.preventDefault();
+    return { kind: "fly", galaxy };
+  }
+  if (!walkDirectionForKey(e.key)) return null;
+  const candidates = walkCandidates(input);
+  const roomCentre = { x: room.x + room.width / 2, y: room.y + room.height / 2 };
+  const step = walkTarget({ key: e.key, selectedId, candidates, roomCentre, galaxyCentreOf: (id) => galaxyCentreOn(layout, poses, camera, room, id) });
+  if (step.id) return { kind: "select", id: step.id };
+  return step.deadEnd ? { kind: "deadEnd" } : null;
 }

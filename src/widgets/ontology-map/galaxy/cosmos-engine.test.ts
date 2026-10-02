@@ -1,14 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
-import { overviewCamera } from "./cosmos-camera";
+import { galaxyFitScale, liveBandRadius, overviewCamera, posedPoint, worldToScreen } from "./cosmos-camera";
 import { CosmosEngine } from "./cosmos-engine";
 import type { CosmosFrameStats, CosmosInks } from "./cosmos-types";
-import type { CosmosLayout } from "./layout/cosmos-layout";
+import { galaxyKey } from "./draw/cosmos-bitmap-cache";
+import { computeCosmosLayout, type CosmosLayout } from "./layout/cosmos-layout";
 
-const draw = vi.hoisted(() => ({ next: [] as (() => Partial<CosmosFrameStats>)[] }));
+const draw = vi.hoisted(() => ({ next: [] as (() => Partial<CosmosFrameStats>)[], trail: undefined as unknown }));
 
 vi.mock("./draw/cosmos-frame", () => ({
-  drawCosmosFrame: () => ({ band: "spine", pendingBuilds: 0, buildsStarted: 0, firstDraws: 0, labels: [], ...(draw.next.shift()?.() ?? {}) }),
+  drawCosmosFrame: (input: { trail: unknown }) => {
+    draw.trail = input.trail;
+    return { band: "spine", pendingBuilds: 0, buildsStarted: 0, firstDraws: 0, labels: [], ...(draw.next.shift()?.() ?? {}) };
+  },
 }));
 vi.mock("./draw/cosmos-labels", () => ({ registerCosmosLabels: () => {} }));
 vi.mock("./draw/cosmos-paint", async (importOriginal) => ({ ...(await importOriginal<object>()), buildDeepField: () => null }));
@@ -24,6 +28,20 @@ const layout = {
   placement: { version: 1, centres: {} },
   timings: { modelMs: 0, settleMs: 0, placeMs: 0, totalMs: 0 },
 } as unknown as CosmosLayout;
+
+function realSky(): CosmosLayout {
+  const nodes = [{ id: "p", label: "P", kind: "project" as const }];
+  const edges: { source: string; target: string; kind: "contains"; relationType: string }[] = [];
+  for (let d = 0; d < 3; d += 1) {
+    nodes.push({ id: `d${d}`, label: `D${d}`, kind: "domain" as never });
+    edges.push({ source: "p", target: `d${d}`, kind: "contains", relationType: "contains" });
+    for (let c = 0; c < 4; c += 1) {
+      nodes.push({ id: `d${d}c${c}`, label: `C${c}`, kind: "capability" as never });
+      edges.push({ source: `d${d}`, target: `d${d}c${c}`, kind: "contains", relationType: "contains" });
+    }
+  }
+  return computeCosmosLayout(nodes, edges);
+}
 
 let frames: FrameRequestCallback[] = [];
 
@@ -68,6 +86,31 @@ describe("cosmos engine", () => {
     runFrame(32);
     runFrame(48);
     expect(frames).toHaveLength(0);
+    engine.destroy();
+  });
+
+  it("stops asking for frames after three draws in a row throw, until the next request", () => {
+    const { engine } = mount();
+    const boom = () => {
+      throw new Error("always");
+    };
+    draw.next.push(boom, boom, boom, boom);
+    let thrown = 0;
+    for (let t = 16; frames.length > 0 && t < 1_000; t += 16) {
+      try {
+        runFrame(t);
+      } catch {
+        thrown += 1;
+      }
+    }
+    expect(thrown).toBe(3);
+    expect(frames).toHaveLength(0);
+    engine.requestFrame();
+    expect(() => runFrame(2_000)).toThrow("always");
+    expect(frames).toHaveLength(0);
+    engine.requestFrame();
+    runFrame(2_016);
+    expect(engine["failures"]).toBe(0);
     engine.destroy();
   });
 
@@ -156,6 +199,132 @@ describe("cosmos engine", () => {
     panel.dispatchEvent(new Event("animationend", { bubbles: true }));
     expect(engine.rig.room).toEqual({ ...faded, x: faded.x + 3, width: faded.width - 3 });
     expect(engine.rig.camera).toEqual(overviewCamera(layout.bounds, engine.rig.room).camera);
+    engine.destroy();
+  });
+
+  it("keeps bitmaps and sleeps when a data re-read hands it the same sky", () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    const sleepFrom = (t: number) => {
+      for (let i = 0; frames.length > 0 && i < 2_000; i += 1) runFrame((t += 16));
+      return t;
+    };
+    let t = sleepFrom(20_000);
+    for (const g of sky.galaxies) engine.cache.setImpostor(galaxyKey(g), 256, Object.assign(document.createElement("canvas"), { width: 256, height: 256 }));
+    const bytes = engine.cache.bytes();
+    expect(bytes).toBe(sky.galaxies.length * 256 * 256 * 4);
+    clock.mockReturnValue(t);
+    engine.setLayout(realSky(), new Map(), [], "none");
+    expect(engine.cache.bytes()).toBe(bytes);
+    const start = t;
+    let late = 0;
+    for (let i = 0; frames.length > 0 && i < 1_000; i += 1) {
+      runFrame((t += 16));
+      if (t - start >= 1_000) late += 1;
+    }
+    expect(late).toBe(0);
+    engine.destroy();
+  });
+
+  it("lets a second set of the same sky during the first open finish the 1,120 ms replay", () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "replay");
+    runFrame(16);
+    runFrame(400);
+    clock.mockReturnValue(400);
+    engine.setLayout(sky, new Map(), [], "none");
+    runFrame(800);
+    expect(engine.arrival.active).not.toBeNull();
+    runFrame(16 + 1_130);
+    expect(engine.arrival.active).toBeNull();
+    engine.destroy();
+  });
+
+  it("treats a click on empty space inside a live galaxy as a pane click, and flies only into a galaxy drawn as one bitmap", () => {
+    const onPaneClick = vi.fn();
+    const { engine, canvas } = mount();
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    engine.setOptions({ onPaneClick });
+    const click = (x: number, y: number) => {
+      canvas.dispatchEvent(new MouseEvent("pointerdown", { clientX: x, clientY: y }));
+      canvas.dispatchEvent(new MouseEvent("pointerup", { clientX: x, clientY: y }));
+    };
+    const g = sky.galaxies[0]!;
+    const emptyIn = () => {
+      for (let i = 0; i < 4_000; i += 1) {
+        const r = 0.6 * g.radius * engine.rig.camera.scale * Math.sqrt(((i * 0.618034) % 1));
+        const p = { x: 400 + Math.cos(i * 2.399) * r, y: 300 + Math.sin(i * 2.399) * r };
+        const hit = engine.hit(p.x, p.y);
+        if (hit.id === null && hit.galaxy === 0) return p;
+      }
+      throw new Error("no empty point");
+    };
+    engine.rig.camera = { x: g.x, y: g.y, scale: (2 * liveBandRadius(1)) / g.radius };
+    engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
+    const live = { ...engine.rig.camera };
+    const p = emptyIn();
+    click(p.x, p.y);
+    expect(onPaneClick).toHaveBeenCalledTimes(1);
+    runFrame(16);
+    runFrame(400);
+    expect(engine.rig.camera).toEqual(live);
+    engine.rig.camera = { x: g.x, y: g.y, scale: (0.5 * liveBandRadius(1)) / g.radius };
+    const q = emptyIn();
+    click(q.x, q.y);
+    expect(onPaneClick).toHaveBeenCalledTimes(1);
+    for (let t = 432; frames.length > 0 && t < 5_000; t += 16) runFrame(t);
+    expect(engine.rig.camera.scale).toBeCloseTo(galaxyFitScale(g, engine.rig.room), 6);
+    engine.destroy();
+  });
+
+  it("hits a lit lens member before the star or galaxy under it", () => {
+    const { engine } = mount();
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
+    engine.rig.camera = overviewCamera(sky.bounds, engine.rig.room).camera;
+    const member = sky.galaxies[1]!.starIds[2]!;
+    const w = posedPoint(sky, engine.poses, member)!;
+    const s = worldToScreen(engine.rig.camera, engine.rig.room, w.x, w.y);
+    expect(engine.hit(s.x + 3, s.y).id).not.toBe(member);
+    engine.setLens({ kind: "recent", memberIds: new Set([member]), edgeIds: null }, null);
+    expect(engine.hit(s.x + 3, s.y).id).toBe(member);
+    engine.destroy();
+  });
+
+  it("clears the keyboard focus mark on pointerdown and on blur", () => {
+    const { engine, canvas } = mount();
+    canvas.dataset.keyboardFocus = "true";
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { clientX: 10, clientY: 10 }));
+    expect(canvas.dataset.keyboardFocus).toBeUndefined();
+    canvas.dataset.keyboardFocus = "true";
+    canvas.dispatchEvent(new FocusEvent("blur"));
+    expect(canvas.dataset.keyboardFocus).toBeUndefined();
+    engine.destroy();
+  });
+
+  it("reads the trail lens switch on every frame", () => {
+    const { engine } = mount();
+    const trail = { visitedIds: ["a"] };
+    const active = { current: false };
+    engine.setLens(null, trail, active);
+    runFrame(16);
+    expect(draw.trail).toBeNull();
+    active.current = true;
+    engine.requestFrame();
+    runFrame(32);
+    expect(draw.trail).toBe(trail);
+    active.current = false;
+    engine.requestFrame();
+    runFrame(48);
+    expect(draw.trail).toBeNull();
     engine.destroy();
   });
 

@@ -40,6 +40,11 @@ export function requestOntologyMapFrame(): void {
   for (const requestFrame of frameRequests) requestFrame();
 }
 
+export function listenForOntologyMapFrameRequests(requestFrame: () => void): () => void {
+  frameRequests.add(requestFrame);
+  return () => frameRequests.delete(requestFrame);
+}
+
 export function useTopologyFrameLoop(configuration: Configuration) {
   const getConfiguration = useEffectEvent(() => configuration);
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;

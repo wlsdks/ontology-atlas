@@ -20,12 +20,15 @@ async function prepare(page: Page, { galaxy, withCentres }: { galaxy: boolean; w
       for (const key of ["view3d", "territories", "hex-board"]) window.localStorage.setItem(`atlas.appearance.${key}`, "off");
       const log: ArrivalSample[] = [];
       window.__arrivalLog = log;
+      let after = 0;
       const tick = () => {
         const probe = window.__atlasCosmos;
         if (probe && probe.frames() > 0) {
           const a = probe.arrival();
           const last = log[log.length - 1];
-          if (!last || last.active || a.active || last.mode !== a.mode) {
+          if (withCentres && last && !last.active && !a.active && after < 60) after += 1;
+          else if (a.active) after = 0;
+          if (!last || last.active || a.active || last.mode !== a.mode || (withCentres && after > 0 && after < 60)) {
             const centres = withCentres ? (probe.layout()?.galaxies.flatMap((g) => [g.sx, g.sy]) ?? null) : null;
             log.push({ mode: a.mode, active: a.active, clockMs: a.clockMs, frames: probe.frames(), centres });
           }
@@ -99,6 +102,8 @@ test.describe("Galaxy arrival", () => {
     await openCold(page, "", true);
     await expect.poll(() => page.evaluate(() => Object.keys(window.localStorage).some((k) => k.startsWith("atlas.map.cosmos.v1:")))).toBe(true);
     await page.reload({ waitUntil: "domcontentloaded" });
+    await expect.poll(() => page.evaluate(() => window.__atlasCosmos?.arrival().active ?? false), { intervals: [16] }).toBe(true);
+    await page.setViewportSize({ width: 1400, height: 900 });
     await settled(page);
     const log = await arrivalLog(page);
     expect(log[0]!.mode).toBe("condense");
@@ -107,6 +112,18 @@ test.describe("Galaxy arrival", () => {
     for (const sample of during) {
       sample.centres!.forEach((v, i) => expect(Math.abs(v - during[0]!.centres![i]!)).toBeLessThanOrEqual(0.01));
     }
+    await expect.poll(async () => (await arrivalLog(page)).filter((s) => !s.active && s.centres).length).toBeGreaterThanOrEqual(55);
+    const tail = (await arrivalLog(page)).filter((s) => s.centres);
+    const end = tail.findIndex((s) => !s.active);
+    let jump = 0;
+    for (let k = Math.max(1, end); k < tail.length; k += 1) {
+      tail[k]!.centres!.forEach((v, i) => (jump = Math.max(jump, Math.abs(v - tail[k - 1]!.centres![i]!))));
+    }
+    console.log(`[galaxy-arrival] largest per-frame centre step after arrival: ${jump.toFixed(2)} px`);
+    let travel = 0;
+    tail.at(-1)!.centres!.forEach((v, i) => (travel = Math.max(travel, Math.abs(v - tail[Math.max(0, end - 1)]!.centres![i]!))));
+    console.log(`[galaxy-arrival] refit travel after arrival: ${travel.toFixed(2)} px`);
+    expect(jump, "the refit after the held room glides instead of snapping").toBeLessThanOrEqual(0.5 * travel);
   });
 
   test("reduced motion arrives whole on the first frame", async ({ page }) => {

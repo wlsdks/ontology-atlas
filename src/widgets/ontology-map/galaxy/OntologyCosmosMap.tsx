@@ -6,6 +6,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
+import { listenForOntologyMapFrameRequests } from "../ui/use-topology-frame-loop";
 import { CosmosMirror, type CosmosMirrorLabels } from "./CosmosMirror";
 import { chooseArrival, hasArrived, markArrived } from "./cosmos-arrival";
 import { CosmosEngine } from "./cosmos-engine";
@@ -169,7 +170,9 @@ export function OntologyCosmosMap({
     engineRef.current = engine;
     inks = readInks();
     if (inks) engine.setInks(inks);
+    const stopListening = listenForOntologyMapFrameRequests(() => engine.requestFrame());
     return () => {
+      stopListening();
       engine.destroy();
       engineRef.current = null;
     };
@@ -211,8 +214,8 @@ export function OntologyCosmosMap({
 
   useEffect(() => {
     const lens = spotlightIds ? { kind: mapLensKind, memberIds: spotlightIds, edgeIds: mapLensKind === "path" ? pathEdgeIds : null } : null;
-    const trail = visitedTrail && visitedTrail.length > 0 && trailLensActiveRef?.current ? { visitedIds: visitedTrail } : null;
-    engineRef.current?.setLens(lens, trail);
+    const trail = visitedTrail && visitedTrail.length > 0 ? { visitedIds: visitedTrail } : null;
+    engineRef.current?.setLens(lens, trail, trailLensActiveRef ?? null);
   }, [spotlightIds, mapLensKind, pathEdgeIds, visitedTrail, trailLensActiveRef]);
 
   const fit = useMemo(() => () => engineRef.current?.requestFit(), []);
@@ -232,9 +235,9 @@ export function OntologyCosmosMap({
         ref={canvasRef}
         data-testid="ontology-map-canvas"
         data-role={MAP_CANVAS_SURFACE_ROLE}
-        role="img"
-        aria-label={canvasLabel ?? "Galaxy map"}
-        tabIndex={0}
+        role={canvasLabel ? "group" : undefined}
+        aria-label={canvasLabel}
+        tabIndex={canvasLabel ? 0 : undefined}
         className="absolute inset-0 h-full w-full touch-none cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]"
       />
       <CosmosMirror

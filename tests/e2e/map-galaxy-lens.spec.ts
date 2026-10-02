@@ -140,3 +140,32 @@ test("a three-member constellation lights three stars that the lens fit keeps in
     )
     .toBe(3);
 });
+
+test("the trail lens lights the walked stars in Galaxy while its popover is open, and draws no walk line", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await seedFirstRunSeen(page);
+  await galaxyOn(page);
+  await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await ensureGalaxy(page);
+  const walked = await page.evaluate(() => window.__atlasCosmos!.layout()!.galaxies.slice(0, 2).map((g) => g.id));
+  for (const id of walked) {
+    await page.locator(`[data-testid="cosmos-galaxy-list"] [data-cosmos-id="${id}"]`).dispatchEvent("click");
+    await expect.poll(() => page.evaluate(() => window.__atlasCosmos!.selection().nodeId)).toBe(id);
+  }
+  const lens = () => page.evaluate(() => window.__atlasCosmos!.stats()!.lens);
+  expect((await lens()).kind).toBeNull();
+  await page.getByText(/Trail · 2/).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.trailLens ?? null)).toBe("on");
+  await expect.poll(lens).toMatchObject({ kind: "trail", lit: 2 });
+  const read = await page.evaluate(() => {
+    const stats = window.__atlasCosmos!.stats()!;
+    const rest = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--map-spotlight-rest-alpha"));
+    return { restAlpha: stats.lens.restAlpha, rest, rows: stats.relations.filter((r) => r.role !== "selected").length };
+  });
+  expect(read.restAlpha).toBeCloseTo(read.rest, 6);
+  expect(read.rows).toBe(0);
+  await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.trailLens ?? null)).toBeNull();
+  await expect.poll(async () => (await lens()).kind).toBeNull();
+});

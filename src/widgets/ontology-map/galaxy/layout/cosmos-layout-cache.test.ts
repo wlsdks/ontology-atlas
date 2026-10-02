@@ -25,12 +25,19 @@ describe("cosmos layout cache", () => {
     expect(cosmosLayoutRuns()).toBe(before + 2);
   });
 
-  it("computes again when the arrays, the record or freshness change", () => {
+  it("returns the same sky for new arrays with the same content", () => {
+    const first = cosmosLayoutFor(nodes, edges, null, false);
     const before = cosmosLayoutRuns();
+    expect(cosmosLayoutFor(nodes.map((n) => ({ ...n })), [...edges], null, false)).toBe(first);
+    expect(cosmosLayoutRuns()).toBe(before);
+  });
+
+  it("computes again when the content, the record or freshness change", () => {
     cosmosLayoutFor(nodes, edges, null, false);
+    const before = cosmosLayoutRuns();
     cosmosLayoutFor(nodes, edges, null, true);
-    cosmosLayoutFor([...nodes], edges, null, true);
-    cosmosLayoutFor([...nodes], edges, { version: 1, centres: { d: [400, 0] } }, true);
-    expect(cosmosLayoutRuns()).toBe(before + 4);
+    cosmosLayoutFor(nodes.map((n) => (n.id === "e" ? { ...n, label: "E2" } : n)), edges, null, true);
+    cosmosLayoutFor(nodes, edges, { version: 1, centres: { d: [400, 0] } }, true);
+    expect(cosmosLayoutRuns()).toBe(before + 3);
   });
 });

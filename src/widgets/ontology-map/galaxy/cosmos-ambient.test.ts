@@ -27,18 +27,18 @@ describe("cosmos haze", () => {
     expect(hazeWindowStart(4_000, 1_120)).toBe(4_000);
     expect(hazeWindowStart(300, 1_120)).toBe(1_120);
     const state = createHazeState();
-    expect(stepHaze(state, { now: 12_500, dt: 16, windowStart: 0, arrivalEnd: 1_120, reducedMotion: false, visible: true })).toBe(true);
-    expect(stepHaze(state, { now: 13_200, dt: 16, windowStart: 0, arrivalEnd: 1_120, reducedMotion: false, visible: true })).toBe(false);
+    expect(stepHaze(state, { now: 12_500, dt: 16, windowStart: hazeWindowStart(0, 1_120), reducedMotion: false, visible: true })).toBe(true);
+    expect(stepHaze(state, { now: 13_200, dt: 16, windowStart: hazeWindowStart(0, 1_120), reducedMotion: false, visible: true })).toBe(false);
   });
 
   it("wakes exactly where it went to sleep", () => {
     const state = createHazeState();
     expect(run(state, 0, 13_000, 0)).toBe(false);
     const before = poses();
-    applyHaze(layout, state, before, 1);
+    applyHaze(layout, state, before);
     expect(stepHaze(state, { now: 40_000, dt: 64, windowStart: 40_000, reducedMotion: false, visible: true })).toBe(true);
     const after = poses();
-    applyHaze(layout, state, after, 1);
+    applyHaze(layout, state, after);
     after.forEach((pose, i) => {
       expect(Math.abs(pose.wispTheta - before[i]!.wispTheta)).toBeLessThan(1e-9);
       expect(Math.abs(pose.wispLight - before[i]!.wispLight)).toBeLessThan(1e-9);
@@ -46,7 +46,7 @@ describe("cosmos haze", () => {
     });
     run(state, 40_016, 41_000, 40_000);
     const moved = poses();
-    applyHaze(layout, state, moved, 1);
+    applyHaze(layout, state, moved);
     expect(moved[0]!.wispTheta).not.toBe(after[0]!.wispTheta);
   });
 
@@ -55,7 +55,7 @@ describe("cosmos haze", () => {
     expect(stepHaze(state, { now: 500, dt: 16, windowStart: 0, reducedMotion: true, visible: true })).toBe(false);
     expect(state.factor).toBe(0);
     const reduced = poses();
-    applyHaze(layout, state, reduced, 1, true);
+    applyHaze(layout, state, reduced, true);
     for (const pose of reduced) expect(pose).toMatchObject({ theta: 0, wispTheta: 0, wispLight: 1 });
   });
 });

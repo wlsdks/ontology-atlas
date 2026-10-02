@@ -210,6 +210,18 @@ describe("cosmos layout", () => {
     expect(after.placement.centres[a.id]).toEqual([Math.round(a2.x * 100) / 100, Math.round(a2.y * 100) / 100]);
   });
 
+  it("with a placement record, an unrelated large domain moves no recorded galaxy", () => {
+    const small = synth(500);
+    const record = computeCosmosLayout(small.nodes, small.edges).placement;
+    const big = Array.from({ length: 400 }, (_, n) => `big-el-${n}`);
+    const after = computeCosmosLayout(
+      [...small.nodes, { id: "big-domain", label: "Big", kind: "domain" as Kind, size: 1, fullDegree: 1 }, ...big.map((id) => ({ id, label: id, kind: "element" as Kind, size: 1, fullDegree: 1 }))],
+      [...small.edges, { source: "synth-project", target: "big-domain", kind: "contains" as const, relationType: "contains" }, ...big.map((id) => ({ source: "big-domain", target: id, kind: "contains" as const, relationType: "contains" }))],
+      { placement: record },
+    );
+    expectPinned(after, record);
+  });
+
   it("re-places only the galaxy a one-element change touches", () => {
     const k = layout.galaxies.findIndex((g) => g.starCluster.some((c, i) => c === -1 && i > 0));
     const g = layout.galaxies[k]!;
