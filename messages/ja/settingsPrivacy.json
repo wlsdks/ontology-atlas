@@ -1,70 +1,70 @@
 {
-  "leadDesktop": "Atlas screens cannot reach the internet; only the paths below can.",
-  "leadWeb": "This website reads your folder on this computer. Your folder is never uploaded.",
+  "leadDesktop": "Atlasの画面からインターネットには出られません。外に出られるのは、下の経路だけです。",
+  "leadWeb": "このWebサイトは、このコンピュータ上のフォルダを読み取ります。フォルダがアップロードされることはありません。",
   "outbound": {
-    "title": "What can leave this computer",
-    "keywords": "network internet send upload outbound transfer audit log update check provider",
-    "line": "{trigger} · {destinations} · {carries}",
-    "recorded": "Recorded in {file}",
-    "notRecorded": "Not recorded by Atlas"
+    "title": "このコンピュータから出る可能性があるもの",
+    "keywords": "ネットワーク インターネット 送信 アップロード 外部 転送 監査 ログ 更新 確認 プロバイダ　network internet send upload outbound transfer audit log update check provider",
+    "line": "{trigger}・{destinations}・{carries}",
+    "recorded": "「{file}」に記録されます",
+    "notRecorded": "Atlasは記録しません"
   },
   "trigger": {
-    "automatic": "Automatic",
-    "press": "When you press",
-    "agent-use": "When an agent uses it"
+    "automatic": "自動",
+    "press": "押したとき",
+    "agent-use": "エージェントが使うとき"
   },
   "carries": {
-    "no-folder-content": "no folder content",
-    "what-you-send": "what you send",
-    "provider-owned": "between the tool and its provider; Atlas does not see it",
-    "agent-sends": "what the agent sends; Atlas does not see it"
+    "no-folder-content": "フォルダの内容は含みません",
+    "what-you-send": "送信した内容",
+    "provider-owned": "ツールとそのプロバイダの間のやり取りで、Atlasからは見えません",
+    "agent-sends": "エージェントが送る内容で、Atlasからは見えません"
   },
   "destinations": {
-    "your-runner-address": "the runner address you entered",
-    "npm-registry": "the npm package registry",
-    "python-package-index": "the Python Package Index (PyPI)",
-    "your-connector-urls": "the connectors in this folder, by address or as programs on this computer",
-    "your-git-remote": "your Git remote",
-    "your-coding-tool-provider": "your coding tool's own provider"
+    "your-runner-address": "入力したランナーのアドレス",
+    "npm-registry": "npmパッケージレジストリ",
+    "python-package-index": "Python Package Index（PyPI）",
+    "your-connector-urls": "このフォルダのコネクタ（アドレス先、またはこのコンピュータ上のプログラム）",
+    "your-git-remote": "お使いのGitリモート",
+    "your-coding-tool-provider": "お使いのコーディングツール自身のプロバイダ"
   },
   "paths": {
-    "update-check": "Update check",
-    "update-download": "Update download",
-    "model-providers": "Model providers",
-    "local-runner": "Local runner",
-    "jev": "External check",
-    "tool-downloads": "Coding tool installs",
-    "adapter-packages": "Chat adapter packages",
-    "connectors": "MCP connections",
-    "git-remote": "Git send, pull and fetch",
-    "coding-tools": "Coding tools",
-    "website-files": "Website files"
+    "update-check": "更新の確認",
+    "update-download": "更新のダウンロード",
+    "model-providers": "モデルプロバイダ",
+    "local-runner": "ローカル実行",
+    "jev": "外部チェック",
+    "tool-downloads": "コーディングツールのインストール",
+    "adapter-packages": "チャットアダプタのパッケージ",
+    "connectors": "MCP接続",
+    "git-remote": "Gitの送信・取得",
+    "coding-tools": "コーディングツール",
+    "website-files": "Webサイトのファイル"
   },
-  "updateOn": "On",
-  "updateOff": "Off",
-  "updateChange": "Change",
-  "updateChangeAria": "Change the automatic update check in About",
+  "updateOn": "オン",
+  "updateOff": "オフ",
+  "updateChange": "変更",
+  "updateChangeAria": "アプリ情報で自動の更新確認を変更",
   "allowances": {
-    "title": "Allowed on this computer",
-    "keywords": "consent approval allow revoke forget connector schedule",
-    "empty": "Nothing is allowed yet. A folder's connectors and schedules wait until you allow them.",
-    "counts": "{connectors, plural, =0 {} one {# connector} other {# connectors}}{both, select, yes { · } other {}}{rounds, plural, =0 {} one {# schedule} other {# schedules}}",
-    "forget": "Forget",
-    "forgetArmed": "Press again to forget",
-    "forgetAll": "Forget all",
-    "forgetAllArmed": "Press again to forget all",
-    "caption": "Forgetting stops them until you allow them again; nothing in the folder changes.",
-    "forgetAria": "Forget what was allowed for {name}"
+    "title": "このコンピュータで許可したもの",
+    "keywords": "同意 承認 許可 取り消し 忘れる コネクタ スケジュール　consent approval allow revoke forget connector schedule",
+    "empty": "まだ何も許可されていません。フォルダのコネクタとスケジュールは、許可するまで待機します。",
+    "counts": "{connectors, plural, =0 {} other {コネクタ#件}}{both, select, yes {・} other {}}{rounds, plural, =0 {} other {スケジュール#件}}",
+    "forget": "解除",
+    "forgetArmed": "もう一度押して解除",
+    "forgetAll": "すべて解除",
+    "forgetAllArmed": "もう一度押してすべて解除",
+    "caption": "解除すると、もう一度許可するまで動きません。フォルダの中身は変わりません。",
+    "forgetAria": "{name}で許可した内容を解除"
   },
   "recent": {
-    "title": "Remembered on this computer",
-    "keywords": "recent folders history forget list",
-    "label": "Recent folders",
-    "count": "{count, plural, =0 {None remembered} one {# folder remembered} other {# folders remembered}}",
-    "captionWeb": "Kept on this computer. Forgetting does not touch the folders.",
-    "captionDesktop": "Kept in this app. Forgetting does not touch the folders.",
-    "failed": "Could not forget the list. Try again.",
-    "forgetAll": "Forget all",
-    "forgetAllArmed": "Press again to forget all"
+    "title": "このコンピュータに残っているもの",
+    "keywords": "最近 フォルダ 履歴 忘れる 一覧　recent folders history forget list",
+    "label": "最近のフォルダ",
+    "count": "{count, plural, =0 {記録なし} other {フォルダ#件を記録}}",
+    "captionWeb": "このコンピュータに保存されています。履歴を消してもフォルダには影響しません。",
+    "captionDesktop": "このアプリに保存されています。履歴を消してもフォルダには影響しません。",
+    "failed": "一覧を消去できませんでした。もう一度お試しください。",
+    "forgetAll": "すべて消去",
+    "forgetAllArmed": "もう一度押してすべて消去"
   }
 }

@@ -1,8 +1,8 @@
 {
-  "label": "Search settings",
-  "placeholder": "Search settings",
-  "results": "Matching settings",
-  "where": "{section} · {scope}",
-  "opens": "Opens {place}",
-  "empty": "No setting matches “{query}”."
+  "label": "設定を検索",
+  "placeholder": "設定を検索",
+  "results": "一致する設定",
+  "where": "{section}・{scope}",
+  "opens": "{place}を開く",
+  "empty": "「{query}」に一致する設定はありません。"
 }
