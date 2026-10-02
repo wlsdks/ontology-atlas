@@ -1,0 +1,12 @@
+{
+  "sectionAriaDefault": "管理项目",
+  "sectionTitle": "管理项目",
+  "infoHintLabel": "管理项目：帮助",
+  "infoHintBody": "关联说明此项目的文档，或详细编辑项目信息。",
+  "infoNewTitle": "新建项目",
+  "infoNewBody": "在当前工作区添加一个新项目。",
+  "infoEditTitle": "完整编辑",
+  "infoEditBody": "编辑项目详情：状态、标签、链接等。",
+  "buttonNew": "新建项目",
+  "buttonEdit": "完整编辑"
+}

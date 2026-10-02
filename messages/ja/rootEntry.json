@@ -1,0 +1,13 @@
+{
+  "openingLocalVaultPicker": "ローカルワークスペースの設定を開いています",
+  "redirectEyebrow": "ローカルファーストのワークスペース",
+  "redirectTitle": "ローカルワークベンチを準備しています",
+  "redirectBody": "デスクトップアプリは、ホスト型の紹介ページより先に、ローカルストアの設定から始まります。",
+  "redirectFilesProof": "Markdownファイルはローカルに残ります",
+  "redirectGraphProof": "ファイル先頭の情報ブロックがマップになります",
+  "redirectAgentProof": "このフォルダの外に触れる前に、エージェントが確認します",
+  "lostVaultMissing": "前回接続した「{name}」フォルダが見つかりません。移動または削除された可能性があります。もう一度選べば、続きから再開できます。",
+  "lostVaultUnreadable": "前回接続したフォルダを再び開けませんでした。もう一度選ぶか、サンプルで見て回ることもできます。",
+  "lostVaultAction": "フォルダを選び直す",
+  "lostVaultDismiss": "この通知を閉じる"
+}

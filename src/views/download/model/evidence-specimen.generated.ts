@@ -54,27 +54,47 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
         "display_en: MCP tool server",
         "domain: domains/agent-access",
         "path: mcp/src/server/registry.mjs"
+      ],
+      "ja": [
+        "kind: capability",
+        "title: MCP tool server",
+        "domain: domains/agent-access",
+        "path: mcp/src/server/registry.mjs"
+      ],
+      "zh": [
+        "kind: capability",
+        "title: MCP tool server",
+        "domain: domains/agent-access",
+        "path: mcp/src/server/registry.mjs"
       ]
     },
     "omittedLines": {
       "ko": 7,
-      "en": 7
+      "en": 7,
+      "ja": 8,
+      "zh": 8
     },
     "facts": {
       "name": {
         "ko": "MCP 도구 서버",
         "en": "MCP tool server",
+        "ja": "MCP tool server",
+        "zh": "MCP tool server",
         "nodeId": "capability:mcp-tool-server"
       },
       "kind": "capability",
       "domain": {
         "ko": "에이전트 접근",
         "en": "Agent access",
+        "ja": "Agent access",
+        "zh": "Agent access",
         "nodeId": "domain:agent-access"
       },
       "dependency": {
         "ko": "구축 지침",
         "en": "Construction guidance",
+        "ja": "Construction guidance",
+        "zh": "Construction guidance",
         "nodeId": "capability:construction-guidance"
       },
       "implPath": "mcp/src/server/registry.mjs"

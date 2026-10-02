@@ -86,7 +86,7 @@ describe("LocaleSwitch", () => {
   it("skips locales that have no registered name", () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
-        <LocaleSwitch locales={["en", "ko", "ja", "zh"]} />
+        <LocaleSwitch locales={["en", "ko", "fr"]} />
       </NextIntlClientProvider>,
     );
     expect(screen.getAllByRole("radio").map((node) => node.textContent)).toEqual(["EN", "KO"]);

@@ -11,6 +11,8 @@ const STORAGE_KEY = 'ontology-atlas:locale';
 const NATIVE_NAME: Record<AppLocale, string> = {
   en: 'English',
   ko: '한국어',
+  ja: '日本語',
+  zh: '简体中文',
 };
 
 function detect(): AppLocale {

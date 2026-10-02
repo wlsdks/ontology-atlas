@@ -5,9 +5,9 @@
     "trouble": "When something breaks"
   },
   "rows": {
-    "version": "Running build",
+    "version": "Current version",
     "updateCheck": "Check for updates",
-    "updateAuto": "Automatic check",
+    "updateAuto": "Check for updates automatically",
     "whatsNew": "What's new",
     "keyboardShortcuts": "Keyboard shortcuts",
     "source": "Source code",
@@ -26,11 +26,11 @@
     "diagnostics": "bug, report, debug, support, system info",
     "logs": "log, logs, crash, debug, finder"
   },
-  "webVersion": "Website build {version}",
+  "webVersion": "Website version {version}",
   "webVersionCaption": "This page is the website. The desktop app checks for its own updates.",
   "on": "On",
   "off": "Off",
-  "whatsNewCaption": "Changes in each release",
+  "whatsNewCaption": "What changed in each version",
   "shortcutsCaption": "Closes Settings and lists every key",
   "shortcutsOpen": "Show",
   "sourceCaption": "Atlas is open source on GitHub",
@@ -51,7 +51,7 @@
   "logsOpen": "Show",
   "logsFailed": "Could not open the log folder.",
   "diagnostic": {
-    "build": "Build",
+    "build": "Version",
     "buildApp": "App {version}",
     "buildWeb": "Website {version}",
     "buildUnknown": "unknown",

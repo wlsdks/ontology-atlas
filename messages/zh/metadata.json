@@ -1,0 +1,26 @@
+{
+  "siteName": "Ontology Atlas",
+  "siteTagline": "人和 AI 智能体共享的代码库语义",
+  "pages": {
+    "topology": "地图",
+    "docs": "本体 · 资料库",
+    "download": "下载",
+    "projects": "项目",
+    "ontology": "本体",
+    "ontologyInsights": "分析",
+    "projectNew": "新建项目",
+    "guide": "指南",
+    "changelog": "更新日志",
+    "agents": "智能体"
+  },
+  "descriptions": {
+    "home": "AI 智能体改动代码时，也能持续理解你的系统。共享任务上下文，查看已记录的语义和依据，并在本地 Markdown 文件夹中决定保留什么。",
+    "download": "下载 Ontology Atlas，与智能体共享代码库上下文，并查看已记录的语义、依据和未知项。macOS 应用已签名，Windows 测试版未签名，没有 Atlas 后端。",
+    "topology": "把项目的领域、能力、要素及其依赖画成一张地图。每个文件顶部的信息块就是地图，文件保留在你自己的磁盘上。",
+    "docs": "直接阅读和编辑 Markdown 文件夹。改动文件顶部的信息块，地图随之更新。",
+    "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",
+    "ontologyInsights": "按类型统计的概念数量、连线最多的枢纽，以及仍未连到任何东西的概念。扩充地图前先看这里。",
+    "guide": "从 Markdown 文件夹开始，连接你的编码智能体，学习如何在 Ontology Atlas 中查看已记录的语义、依据和未知项。",
+    "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。"
+  }
+}

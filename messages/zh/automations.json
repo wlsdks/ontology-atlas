@@ -1,0 +1,187 @@
+{
+  "blockedActions": "已拦截 {count} 个操作。",
+  "toolActivity": "工具活动",
+  "removeQuestion": "从计划中移除“{name}”？",
+  "removeConfirm": "移除计划",
+  "remove": "移除",
+  "changeFailed": "无法保存更改，请重试。",
+  "checked": "已检查 {count} 份文档。",
+  "earlierRuns": "更早的运行 · {count}",
+  "openFolderTitle": "打开文件夹以安排审阅",
+  "openFolderDescription": "计划及其运行历史保存在你打开的文件夹中。",
+  "staleLabel": "待审阅",
+  "writtenLabel": "已更新文件",
+  "scopeLabel": "审阅重点",
+  "noNextRun": "暂停期间不会运行",
+  "nextRunAt": "下次 · {time}",
+  "allowHere": {
+    "waiting": "已在此文件夹中开启，但这台 Mac 尚未允许，所以不会在这里运行。请按下面所写的内容原样允许。",
+    "changed": "已在此文件夹中开启，且在这台 Mac 允许之后有改动，需重新允许后才会在这里运行。",
+    "paused": "这台 Mac 尚未允许，所以“立即运行”也在等待。请按下面所写的内容原样允许。",
+    "state": "此 Mac 未允许",
+    "noNextRun": "允许后才会在这里运行",
+    "wholeFolder": "整个文件夹",
+    "query": "查找“{query}”",
+    "staleRedraft": "重写过时的页面",
+    "staleMark": "只标记过时的页面",
+    "limit": "每轮最多新增 {count} 份文档",
+    "button": "允许此 Mac"
+  },
+  "scheduleCount": "{count} 个定时任务",
+  "title": "自动化",
+  "lede": "安排定期审阅，再查看每次运行的发现。Atlas 打开时，它们在这台电脑上运行。",
+  "tabsAria": "自动化分类",
+  "tabs": {
+    "ontology": "本体",
+    "documents": "文档"
+  },
+  "indexAria": "此文件夹中的计划",
+  "appRequiredTitle": "自动化在桌面应用中运行",
+  "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
+  "getApp": "获取应用",
+  "loadingTitle": "正在读取此文件夹的计划",
+  "malformedTitle": "计划文件需要处理",
+  "malformedDescription": "Atlas 无法读取本地计划文件，已保持原样。请修复后重新读取。",
+  "unavailableTitle": "Atlas 无法读取此文件夹的计划",
+  "unavailableDescription": "Atlas 无法读取此文件夹中的 .ontology-atlas/rounds.json，因此无法显示或运行其中的计划。请确认文件夹仍在 Atlas 打开时的位置，然后重新读取。",
+  "unrecorded": {
+    "short": "未记录",
+    "ledger": "{time} 的运行已结束，但无法写入 {file}，所以不在此历史中。计划已转到下一次时间。请检查此文件夹是否可写。",
+    "schedule": "{time} 的运行已结束，但无法把下一次时间写入 {file}。在文件可写之前，Atlas 会在这台 Mac 上保留该时间。请检查此文件夹是否可写。"
+  },
+  "retry": "重新读取",
+  "saved": "已安排 {name}。",
+  "edited": "已保存对 {name} 的更改。",
+  "edit": "编辑",
+  "editNamed": "编辑 {name}",
+  "saveChanges": "保存更改",
+  "allowAndSave": "允许并保存",
+  "savingChanges": "正在保存…",
+  "editWidens": "这项更改让计划能做的事超出了这台 Mac 当初允许的范围。保存即在这台 Mac 上允许新版本。",
+  "cancel": "取消",
+  "allowAndSchedule": "允许并安排",
+  "sheetName": "名称",
+  "next": "下次 {time} · {name}",
+  "running": "正在运行 · {name}",
+  "runNow": "立即运行",
+  "pause": "暂停",
+  "resume": "恢复",
+  "removeNamed": "移除 {name}",
+  "historyTitle": "运行历史",
+  "noRuns": "还没有运行过。",
+  "noSummary": "本轮已结束，但没有保存摘要。",
+  "failedNoResult": "智能体这一轮没有完成，所以本次运行没有结果。",
+  "noAgentReview": "这台 Mac 上没有可用的编码智能体，所以这次审阅没有运行。请打开“智能体”登录后再运行。",
+  "openAgents": "打开智能体",
+  "failedError": "本次运行因错误停止：{detail}。请再运行一次；如果同样的错误再次出现，请重新打开文件夹。",
+  "failedFolderNotRead": "Atlas 还没读完此文件夹，所以本次运行什么也没检查。请稍后再运行。",
+  "undone": {
+    "restored": "Atlas 已把 {page} 恢复为本次运行前的样子。",
+    "removed": "Atlas 已移除本次运行创建的 {page}。",
+    "failed": "Atlas 无法在本次运行后恢复 {page}。请先打开检查，再决定是否采用。"
+  },
+  "leftAsIs": "{page} 在本次运行写入后又有改动，Atlas 保持原样。",
+  "refused": "已拒绝：{tools}",
+  "called": "已读取：{tools}",
+  "saving": "正在安排…",
+  "saveFailed": "无法保存计划，未做任何更改。",
+  "state": {
+    "on": "已安排",
+    "paused": "已暂停",
+    "running": "运行中"
+  },
+  "outcome": {
+    "none": "新计划",
+    "held": "无更改",
+    "reviewed": "审阅完成",
+    "stale": "待审阅",
+    "redrafted": "草稿已更新",
+    "refused": "已拦截",
+    "failed": "失败",
+    "asleep": "未运行"
+  },
+  "cadence": {
+    "hour": "每小时",
+    "6h": "每 6 小时",
+    "daily": "每天",
+    "weekdays": "工作日",
+    "dailyAt": "每天 {time}",
+    "weekdaysAt": "工作日 {time}",
+    "label": "频率",
+    "time": "时间"
+  },
+  "ontology": {
+    "indexTitle": "本体 · {count}",
+    "info": "只读的 ACP 轮次：检查本体和源码依据，然后留下一份有范围限制的审阅包。",
+    "new": "新建本体审阅",
+    "count": "{count, plural, =0 {无本体审阅} other {# 个本体审阅}}",
+    "title": "本体优化",
+    "guard": "只读 · 绝不修改本体",
+    "facts": {
+      "runs": {
+        "title": "做什么",
+        "body": "应用内的编码智能体读取图谱及其源码链接，然后留下一份有范围限制的改进提案。"
+      },
+      "when": {
+        "title": "何时运行",
+        "body": "按你选的频率运行，例如每小时、每 6 小时或每天。应用关闭期间错过的运行，会在下次打开时补跑一次。"
+      },
+      "writes": {
+        "title": "可更改什么",
+        "body": "什么也不改。每份提案由你审阅，并在地图上自行应用。"
+      }
+    },
+    "emptyTitle": "还没有安排本体审阅",
+    "emptyDescription": "只需名称和频率，审阅重点可不填。",
+    "preview": {
+      "title": "计划",
+      "name": "名称",
+      "cadence": "频率",
+      "next": "下次运行"
+    },
+    "defaultName": "本体优化",
+    "sheet": {
+      "title": "安排本体审阅",
+      "editTitle": "编辑本体审阅",
+      "description": "Atlas 会在选定时间开启一轮受限的 ACP 对话，检查本体和代码依据，并留下仅供审阅的审阅包。",
+      "focus": "重点（可选）",
+      "focusPlaceholder": "源码绑定缺口、过时的能力、关系依据…",
+      "focusHint": "留空则由 Atlas 根据当前依据选一个有范围限制的区域。",
+      "scopeTitle": "允许的操作",
+      "mayRead": "通过 atlas-vault 读取本体和当前源码依据。",
+      "mayPropose": "用准确的 slug、路径和不确定之处描述拟议的更改。",
+      "mayNeverWrite": "绝不写入概念、关系、文件或语义回执。"
+    }
+  },
+  "documents": {
+    "indexTitle": "文档 · {count}",
+    "info": "现有的资料库轮次会在已批准的常驻范围内刷新来源并重写 Wiki 页面。",
+    "new": "新建文档轮次",
+    "count": "{count, plural, =0 {无文档轮次} other {# 个文档轮次}}",
+    "title": "文档分析",
+    "guard": "只改已批准的资料库范围 · 绝不改本体",
+    "facts": {
+      "runs": {
+        "title": "做什么",
+        "body": "检查来源与 Wiki 页面是否仍然一致，并从已连接的服务拉取有变化的页面。"
+      },
+      "when": {
+        "title": "何时运行",
+        "body": "按你选的频率运行，例如每小时、每 6 小时或每天。应用关闭期间错过的运行，会在下次打开时补跑一次。"
+      },
+      "writes": {
+        "title": "可更改什么",
+        "body": "只改已批准的资料库范围内的来源和 Wiki 草稿，绝不改本体。"
+      }
+    },
+    "emptyTitle": "还没有安排文档轮次",
+    "emptyDescription": "逐页审阅和完整的运行记录请在资料库中继续。",
+    "preview": {
+      "title": "计划",
+      "name": "名称",
+      "cadence": "频率",
+      "next": "下次运行"
+    },
+    "openRounds": "打开资料库检查历史"
+  }
+}

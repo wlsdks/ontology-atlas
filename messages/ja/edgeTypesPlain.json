@@ -1,0 +1,10 @@
+{
+  "contains": "含む",
+  "belongs_to": "所属",
+  "depends_on": "依存",
+  "implements": "実装",
+  "uses": "利用",
+  "describes": "根拠",
+  "related_to": "関連",
+  "is_a": "の一種"
+}

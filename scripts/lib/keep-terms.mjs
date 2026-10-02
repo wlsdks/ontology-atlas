@@ -32,9 +32,10 @@ export const KEEP_TERMS = [
   'TypeScript',
   'Tauri',
   'MIT',
+  'Wiki',
 ];
 
-export const KEEP_TERM_EXEMPT = { ko: ['Markdown'] };
+export const KEEP_TERM_EXEMPT = { ko: ['Markdown', 'Wiki'] };
 
 function escapeRegExp(term) {
   return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

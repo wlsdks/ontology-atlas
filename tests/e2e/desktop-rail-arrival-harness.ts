@@ -127,6 +127,7 @@ export interface DesktopRuntimeOptions {
   writable?: boolean;
   /** The answer to `ensure_default_vault_parent_dir` ("Just start"). Unstubbed without it. */
   defaultVaultParent?: string;
+  holdReadsUntilReleased?: readonly string[];
 }
 
 export interface ModelsStubOptions {
@@ -171,8 +172,14 @@ export async function installDesktopRailRuntime(
       };
       writable?: boolean;
       defaultVaultParent?: string;
+      holdReadsUntilReleased?: string[];
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
+      const held = new Set(input.holdReadsUntilReleased ?? []);
+      const heldReads = Promise.withResolvers<void>();
+      (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads = () => heldReads.resolve();
+      const afterHeldReads = <T>(paths: string[], read: () => Promise<T>): Promise<T> =>
+        paths.some((path) => held.has(path)) ? heldReads.promise.then(read) : read();
       if (input.writable) (window as unknown as { __stubFiles: typeof files }).__stubFiles = files;
       const AUDIT = ".ontology-atlas/llm-audit.jsonl";
       const keys: Record<string, string> = { ...(input.models?.keys ?? {}) };
@@ -272,17 +279,21 @@ export async function installDesktopRailRuntime(
           case "read_vault_text_file": {
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
-            return slow({ text: files[path], lastModified: mtime });
+            return afterHeldReads([path], () => slow({ text: files[path], lastModified: mtime }));
           }
-          case "read_vault_text_files":
-            return slow(
-              ((args.relativePaths as string[]) ?? []).map((relativePath) => {
-                const path = relative(relativePath);
-                return path in files
-                  ? { relativePath, text: files[path], lastModified: mtime, error: null }
-                  : { relativePath, text: null, lastModified: null, error: `missing ${path}` };
-              }),
+          case "read_vault_text_files": {
+            const asked = (args.relativePaths as string[]) ?? [];
+            return afterHeldReads(asked.map(relative), () =>
+              slow(
+                asked.map((relativePath) => {
+                  const path = relative(relativePath);
+                  return path in files
+                    ? { relativePath, text: files[path], lastModified: mtime, error: null }
+                    : { relativePath, text: null, lastModified: null, error: `missing ${path}` };
+                }),
+              ),
             );
+          }
           case "read_vault_binary_file": {
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));
@@ -494,6 +505,7 @@ export async function installDesktopRailRuntime(
       models: options.models,
       writable: options.writable,
       defaultVaultParent: options.defaultVaultParent,
+      holdReadsUntilReleased: options.holdReadsUntilReleased ? [...options.holdReadsUntilReleased] : undefined,
     },
   );
 }

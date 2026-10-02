@@ -1,0 +1,9 @@
+{
+  "project": "プロジェクト",
+  "domain": "ドメイン",
+  "capability": "ケイパビリティ",
+  "element": "要素",
+  "document": "文書",
+  "vault-readme": "リポジトリガイド",
+  "unknown": "未分類"
+}

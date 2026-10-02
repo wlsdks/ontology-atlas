@@ -1,0 +1,15 @@
+{
+  "writesHeading": "智能体写入时",
+  "doorsHeading": "在“智能体”中管理",
+  "wikiWriteModeKeywords": "维基 页面 编译 修复 权限 询问 自动 写入 wiki",
+  "codingToolsLabel": "编码工具",
+  "codingToolsCaption": "安装并连接这台电脑上的编码智能体",
+  "codingToolsKeywords": "智能体 安装 连接 终端",
+  "modelsLabel": "模型 · API key",
+  "modelsCaptionKeys": "{count, plural, =0 {钥匙串中没有密钥} other {钥匙串中有 # 个密钥}}",
+  "modelsCaptionWeb": "在桌面应用中",
+  "modelsKeywords": "密钥 钥匙串 模型 服务商 api key",
+  "mcpLabel": "MCP",
+  "mcpCaption": "文件夹的 MCP 服务器及其连接器",
+  "mcpKeywords": "服务器 连接器 工具 mcp"
+}

@@ -242,7 +242,7 @@ mod tests {
             "{script}"
         );
         assert!(
-            script.contains(r#"const locales = ["en", "ko"];"#),
+            script.contains(r#"const locales = ["en", "ko", "ja", "zh"];"#),
             "{script}"
         );
         assert!(
