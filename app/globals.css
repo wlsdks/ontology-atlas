@@ -24,6 +24,7 @@
 @import "./styles/base-root-alpha.css";
 @import "./styles/base-map-tokens.css";
 @import "./styles/map-light-tokens.css";
+@import "./styles/map-dial-tokens.css";
 @import "./styles/base-responsive.css";
 @import "./styles/motion-indicator.css";
 @import "./styles/motion-stagger.css";
