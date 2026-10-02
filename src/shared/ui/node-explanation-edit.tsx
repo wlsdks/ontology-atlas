@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/markdown-prose";
 import { fieldClass } from '@/shared/ui/control-class';
 import { controlClass } from '@/shared/ui/control-class';
@@ -146,10 +147,10 @@ export function NodeExplanationEdit({
         placeholder={labels.placeholder}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
+          if (e.key === "Escape") e.stopPropagation();
+          if (isImeComposing(e)) return;
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void commit();
           else if (e.key === "Escape") {
-            e.stopPropagation();
-            if (e.nativeEvent.isComposing) return;
             e.preventDefault();
             cancel();
           }
