@@ -1,15 +1,15 @@
 {
-  "writesHeading": "When an agent writes",
-  "doorsHeading": "Managed in Agents",
-  "wikiWriteModeKeywords": "wiki page compile fix proposal permission ask auto write",
-  "codingToolsLabel": "Coding tools",
-  "codingToolsCaption": "Install and connect the coding agents on this computer",
-  "codingToolsKeywords": "agent install connect terminal chat",
-  "modelsLabel": "Models · API keys",
-  "modelsCaptionKeys": "{count, plural, =0 {No keys in Keychain} one {# key in Keychain} other {# keys in Keychain}}",
-  "modelsCaptionWeb": "In the desktop app",
-  "modelsKeywords": "api key keychain model provider local runner",
+  "writesHeading": "エージェントが書き込むとき",
+  "doorsHeading": "エージェントで管理",
+  "wikiWriteModeKeywords": "wiki　ページ コンパイル 修正 提案 許可 確認 自動 書き込み　wiki page compile fix proposal permission ask auto write",
+  "codingToolsLabel": "コーディングツール",
+  "codingToolsCaption": "このコンピュータのコーディングエージェントをインストールして接続します",
+  "codingToolsKeywords": "エージェント インストール 接続 ターミナル チャット　agent install connect terminal chat",
+  "modelsLabel": "モデル・API key",
+  "modelsCaptionKeys": "{count, plural, =0 {キーチェーンにキーなし} other {キーチェーンにキー#件}}",
+  "modelsCaptionWeb": "デスクトップアプリで使えます",
+  "modelsKeywords": "api key　キーチェーン モデル プロバイダ ローカル ランナー　api key keychain model provider local runner",
   "mcpLabel": "MCP",
-  "mcpCaption": "The folder's MCP server and its connectors",
-  "mcpKeywords": "server connector tools connection"
+  "mcpCaption": "フォルダのMCPサーバとそのコネクタ",
+  "mcpKeywords": "サーバ コネクタ ツール 接続　server connector tools connection"
 }
