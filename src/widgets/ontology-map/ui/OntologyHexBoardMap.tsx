@@ -29,7 +29,7 @@ import {
   hexGutter,
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
-import { buildHexLattice, closedNodes, HexRouter, pickPillSpot } from "../model/hex-router";
+import { buildHexLattice, closedNodes, HexRouter } from "../model/hex-router";
 import {
   drawHexBoard,
   hexArrivalDuration,
@@ -89,7 +89,7 @@ export interface OntologyHexBoardMapProps {
   canvasLabel?: string;
   listLabel?: string;
   /** The legend, composed by the page for the state the board is in. */
-  legend?: (state: { staleOnly: boolean; focused: boolean }) => ReactNode;
+  legend?: (state: { staleOnly: boolean; focused: boolean; band: HexBand }) => ReactNode;
   reducedMotion?: boolean;
   arrivedByMorph?: boolean;
 }
@@ -306,9 +306,8 @@ export function OntologyHexBoardMap({
     );
   }, [lattice, routeFrame]);
 
-  /** Canals at rest, routed once per board. */
   const canalRoutes = useMemo(() => {
-    if (!layout || !lattice) return [];
+    if (!layout || !lattice || band !== "regions") return [];
     const router = new HexRouter(lattice, 1.8, blocked);
     const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
     const out: HexDrawRoute[] = [];
@@ -321,7 +320,7 @@ export function OntologyHexBoardMap({
       out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay, stub: route.stub });
     }
     return out;
-  }, [layout, lattice, blocked]);
+  }, [layout, lattice, blocked, band]);
 
   /** Edge ticks: a capability's notch toward each region it relies on. */
   const ports = useMemo(() => {
@@ -516,17 +515,7 @@ export function OntologyHexBoardMap({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hovering = !selectedId && !!hoverId && !staleOnly;
       let routes: HexDrawRoute[] = [...focus.routes];
-      if (!focus.lit && !hovering) {
-        let canals = canalRoutes;
-        if (currentBand === "regions") canals = canals.slice(0, FAR_CANALS);
-        const pills: { x: number; y: number }[] = [];
-        routes = canals.map((c) => {
-          if (currentBand === "regions" || !lattice) return c;
-          const pill = pickPillSpot(layout, lattice, { nodes: c.nodes ?? [] }, pills, 34 / cam.R, 14 / cam.R);
-          if (pill) pills.push(pill);
-          return { ...c, pill };
-        });
-      }
+      if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
       const { stats, textBoxes, plateBoxes } = drawHexBoard(
         ctx,
         layout,
@@ -573,7 +562,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, lattice, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror],
+    [size, layout, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror],
   );
 
   const paintRef = useRef(paint);
@@ -1061,7 +1050,7 @@ export function OntologyHexBoardMap({
             {labels.regionsOnly}
           </Chip>
         </div>
-        {legend?.({ staleOnly, focused: !!selectedId })}
+        {legend?.({ staleOnly, focused: !!selectedId, band })}
       </div>
       {/* Every tile, in reading order, for assistive technology and measurement. Screen positions
           are written onto these after each still frame. */}

@@ -72,6 +72,9 @@ async function readBoard(page: Page) {
   });
 }
 
+const LEGEND_CANALS = "판 사이 기댐";
+const LEGEND_NOTCHES = "기대는 판 쪽";
+
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 async function openHexBoard(page: Page, files: Record<string, string>, gitPathChanges?: DesktopRuntimeOptions["gitPathChanges"]) {
@@ -209,6 +212,10 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     // The real vault opens with its names on.
     expect(board.band).toBe("names");
     expect(board.frame.spills).toBe(0);
+    expect(board.frame.canals).toBe(0);
+    expect(board.frame.pills).toBe(0);
+    await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
+    await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_NOTCHES);
 
     // Every tile is named, on screen, inside its own face; no two names overlap.
     const W = viewport.width;
@@ -312,8 +319,48 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     await expect.poll(async () => (await readBoard(page)).frame.focus).toBe(domain.id);
     await settled(page);
     await shot("b-domain-focus");
+
+    await page.keyboard.press("Escape");
+    await expect.poll(async () => (await readBoard(page)).frame.dimT).toBe(0);
+    await settled(page);
+    board = await readBoard(page);
+    const cli = board.tiles.find((t) => t.name.trim() === "CLI 명령")!;
+    await page.mouse.move(board.canvas!.x + cli.mark.x, board.canvas!.y + cli.mark.y);
+    await expect(tip).toContainText("CLI 명령");
+    await shot("g-hover-cli");
+    await page.mouse.move(2, H - 2);
+    await expect(tip).toBeHidden();
+
+    await page.getByTestId("hex-board-regions-only").click();
+    await expect.poll(async () => (await readBoard(page)).band).toBe("regions");
+    await settled(page);
+    board = await readBoard(page);
+    expect(board.frame.canals).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_CANALS);
+    await shot("h-regions-only");
+
+    await page.getByTestId("hex-board-stale-only").click();
+    await expect.poll(async () => (await readBoard(page)).frame.dimT).toBe(1);
+    await settled(page);
+    await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
+    await shot("i-regions-only-stale-only");
   });
 }
+
+test("hex board on the dogfood vault at 1040 opens on pips with notches and no rest canals", async ({ page }) => {
+  test.setTimeout(240_000);
+  const vault = dogfoodEvidenceVault();
+  await page.setViewportSize({ width: 1040, height: 760 });
+  await openHexBoard(page, vault.files, vault.changes);
+  await settled(page);
+  const board = await readBoard(page);
+  console.log(`[hex 1040] R=${board.R} band=${board.band} frame=${JSON.stringify(board.frame)}`);
+  expect(board.band).toBe("pips");
+  expect(board.frame.canals).toBe(0);
+  expect(board.frame.pills).toBe(0);
+  await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
+  await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_NOTCHES);
+});
 
 type HexPaint = { t: number; arrived: boolean };
 
@@ -382,6 +429,9 @@ test("hex board at 300 capabilities opens on region nameplates, none over a tile
   const board = await readBoard(page);
   console.log(`[hex 300] R=${board.R} band=${board.band} frame=${JSON.stringify(board.frame)}`);
   expect(board.band).toBe("regions");
+  expect(board.frame.canals).toBeGreaterThanOrEqual(1);
+  expect(board.frame.canals).toBeLessThanOrEqual(14);
+  await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_CANALS);
   const plates = board.tiles.filter((t) => t.plate).map((t) => ({ id: t.id, box: t.plate! }));
   expect(plates).toHaveLength(19);
   const hits: string[] = [];
