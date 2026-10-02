@@ -1,0 +1,68 @@
+{
+  "leadDesktop": "Atlas screens cannot reach the internet; only the paths below can.",
+  "leadWeb": "This website reads your folder in this browser. Your folder is never uploaded.",
+  "outbound": {
+    "title": "What can leave this computer",
+    "keywords": "network internet send upload outbound transfer audit log update check provider",
+    "line": "{trigger} · {destinations} · {carries}",
+    "recorded": "Recorded in {file}",
+    "notRecorded": "Not recorded by Atlas"
+  },
+  "trigger": {
+    "automatic": "Automatic",
+    "press": "When you press",
+    "agent-use": "When an agent uses it"
+  },
+  "carries": {
+    "no-folder-content": "no folder content",
+    "what-you-send": "what you send",
+    "provider-owned": "between the tool and its provider; Atlas does not see it"
+  },
+  "destinations": {
+    "your-runner-address": "the runner address you entered",
+    "npm-registry": "the npm package registry",
+    "python-package-index": "the Python Package Index (PyPI)",
+    "your-connector-urls": "the connector addresses in this folder",
+    "your-git-remote": "your Git remote",
+    "your-coding-tool-provider": "your coding tool's own provider"
+  },
+  "paths": {
+    "update-check": "Update check",
+    "model-providers": "Model providers",
+    "local-runner": "Local runner",
+    "jev": "External check",
+    "tool-downloads": "Coding tool installs",
+    "adapter-packages": "Chat adapter packages",
+    "connectors": "MCP connectors",
+    "git-remote": "Git send, pull and fetch",
+    "coding-tools": "Coding tools",
+    "website-files": "Website files"
+  },
+  "updateOn": "On",
+  "updateOff": "Off",
+  "updateChange": "Change",
+  "updateChangeAria": "Change the automatic update check in About",
+  "allowances": {
+    "title": "Allowed on this computer",
+    "keywords": "consent approval allow revoke forget connector schedule",
+    "empty": "Nothing is allowed yet. A folder's connectors and schedules wait until you allow them.",
+    "counts": "{connectors, plural, =0 {} one {# connector} other {# connectors}}{both, select, yes { · } other {}}{rounds, plural, =0 {} one {# schedule} other {# schedules}}",
+    "forget": "Forget",
+    "forgetArmed": "Press again to forget",
+    "forgetAll": "Forget all",
+    "forgetAllArmed": "Press again to forget all",
+    "caption": "Forgetting stops them until you allow them again; nothing in the folder changes.",
+    "forgetAria": "Forget what was allowed for {name}"
+  },
+  "recent": {
+    "title": "Remembered on this computer",
+    "keywords": "recent folders history forget list",
+    "label": "Recent folders",
+    "count": "{count, plural, =0 {None remembered} one {# folder remembered} other {# folders remembered}}",
+    "captionWeb": "Kept in this browser. Forgetting does not touch the folders.",
+    "captionDesktop": "Kept in this app. Forgetting does not touch the folders.",
+    "failed": "Could not forget the list. Try again.",
+    "forgetAll": "Forget all",
+    "forgetAllArmed": "Press again to forget all"
+  }
+}
