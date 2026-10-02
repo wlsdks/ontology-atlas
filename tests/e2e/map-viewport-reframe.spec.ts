@@ -110,7 +110,6 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
 
   const starter = page.getByTestId("first-run-starter");
   if (await starter.isVisible()) {
-    await page.getByTestId("first-run-starter-more-toggle").click();
     await page.getByTestId("first-run-starter-dismiss").click();
     await expect(starter).toHaveCount(0);
   }
@@ -300,7 +299,6 @@ test("노드 인스펙터를 닫으면 퇴장 중 패널 폭을 남기지 않고
 
   const starter = page.getByTestId("first-run-starter");
   if (await starter.isVisible()) {
-    await page.getByTestId("first-run-starter-more-toggle").click();
     await page.getByTestId("first-run-starter-dismiss").click();
     await expect(starter).toHaveCount(0);
   }

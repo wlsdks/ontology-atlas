@@ -169,5 +169,25 @@ test.describe("guided tour on a true first run", () => {
         { timeout: 5_000, message: "명령 블록이 카드 아래로 잘려 있다" },
       )
       .toBeLessThanOrEqual(1);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const rect = (id: string) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+            const block = rect("first-run-starter-cli-bridge");
+            const cutout = rect("guided-tour-cutout");
+            const tourCard = rect("guided-tour-card");
+            const inside =
+              block.top >= cutout.top - 1 &&
+              block.bottom <= cutout.bottom + 1 &&
+              block.left >= cutout.left - 1 &&
+              block.right <= cutout.right + 1;
+            const covered =
+              block.left < tourCard.right && block.right > tourCard.left && block.top < tourCard.bottom && block.bottom > tourCard.top;
+            return { inside, covered };
+          }),
+        { timeout: 5_000, message: "the developer step lights the card but the command sits outside the cutout or under the tour card" },
+      )
+      .toEqual({ inside: true, covered: false });
   });
 });

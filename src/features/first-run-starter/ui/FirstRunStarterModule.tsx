@@ -9,7 +9,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { ChevronRight, Eye, FolderOpen, FolderPlus } from "lucide-react";
+import { ChevronRight, FolderOpen, FolderPlus } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
@@ -280,15 +280,34 @@ export function FirstRunStarterModule({
     >
       <StaggeredFadeIn vaultKey="sample" scopeKey="first-run-starter" className="flex flex-col">
         <div key="intro">
-          <p
-            data-testid="first-run-starter-sample-line"
-            className="flex items-center gap-1 text-label leading-label text-[color:var(--map-panel-text-tertiary)] max-md:pr-12"
-          >
-            <span className="flex size-3.5 shrink-0 items-center justify-center">
-              <SampleDot />
-            </span>
-            {t(storefront ? "sampleLineStorefront" : "sampleLineDogfood")}
-          </p>
+          <div className="flex items-center gap-2 max-md:pr-12">
+            <p
+              data-testid="first-run-starter-sample-line"
+              className="flex min-w-0 items-center gap-1 text-label leading-label text-[color:var(--map-panel-text-tertiary)]"
+            >
+              <span className="flex size-3.5 shrink-0 items-center justify-center">
+                <SampleDot />
+              </span>
+              {t("sampleLine", {
+                name: t(storefront ? "sampleSourceStorefront" : "sampleSourceDogfood"),
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={dismiss}
+              aria-label={t("closeAriaLabel")}
+              data-testid="first-run-starter-dismiss"
+              className={controlClass({
+                shape: "link",
+                scope: "panel",
+                tone: "muted",
+                hoverInk: "strong",
+                className: "touch-hit-expand ml-auto shrink-0",
+              })}
+            >
+              {t("closeLabel")}
+            </button>
+          </div>
           <h2
             data-testid="first-run-starter-headline"
             className="mt-2 text-balance text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]"
@@ -299,7 +318,7 @@ export function FirstRunStarterModule({
             data-testid="first-run-starter-context"
             className="mt-1.5 text-pretty text-body leading-body text-[color:var(--map-panel-text-secondary)]"
           >
-            {t.rich("body", {
+            {t.rich(fsaUnsupported ? "bodyNoFolderAccess" : "body", {
               keep: (chunks) => <span className="whitespace-nowrap">{chunks}</span>,
             })}
           </p>
@@ -441,15 +460,6 @@ export function FirstRunStarterModule({
                   {scaffolding ? t("createBusy") : t("createLabel")}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={dismiss}
-                data-testid="first-run-starter-dismiss"
-                className={LIST_LINK_CLASS}
-              >
-                <Eye size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
-                {t("dismissLabel")}
-              </button>
               <div className="w-full">
                 <CardDisclosure
                   open={cliShown}

@@ -1,9 +1,9 @@
 {
   "sampleLabel": "지금은 샘플",
-  "sampleLineStorefront": "샘플을 보고 있어요: 온라인 쇼핑몰",
-  "sampleLineDogfood": "샘플을 보고 있어요: 이 앱의 코드",
+  "sampleLine": "샘플을 보고 있어요: {name}",
   "headline": "우리 제품을 이루는 부분과 그 연결을 한눈에 보는 지도",
-  "body": "내 폴더를 열면 그 안의 파일로 지도가 그려지고, <keep>Claude Code</keep> 같은 코딩 에이전트도 같은 파일을 읽고 써요.",
+  "body": "내 폴더를 열면 각 파일 맨 위 몇 줄로 지도가 그려지고, <keep>Claude Code</keep> 같은 코딩 에이전트도 같은 파일을 읽고 써요.",
+  "bodyNoFolderAccess": "지도는 각 마크다운 파일 맨 위 몇 줄로 그려지고, <keep>Claude Code</keep> 같은 코딩 에이전트도 같은 파일을 읽고 써요.",
   "sampleScale": "샘플 크기: 개념 {concepts} · 관계 {relations} · 도메인 {domains}",
   "sampleRelationExample": "예를 들면 「주문 → 배송」처럼 이어진 관계예요.",
   "openLabel": "내 폴더 열기",
@@ -13,8 +13,9 @@
   "buildFromCodeBusy": "폴더 여는 중…",
   "createLabel": "새 폴더 만들기",
   "createBusy": "시작 구조 작성 중…",
-  "dismissLabel": "시작 안내 닫고 둘러보기",
   "tourCta": "2분 구경하기: 지도 읽는 법",
+  "closeLabel": "닫기",
+  "closeAriaLabel": "시작 안내 닫기",
   "moreWaysToggle": "다른 방법으로 시작하기",
   "glossaryToggle": "도메인·역량·요소의 뜻",
   "plainModeHint": "더 쉬운 보기가 필요하면 왼쪽 아래 톱니에서 '일반'을 켜세요",
@@ -28,7 +29,7 @@
   "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
   "sampleSourceAria": "둘러볼 샘플 선택",
   "sampleSourceDogfood": "이 앱의 코드",
-  "sampleSourceStorefront": "쇼핑몰 예시",
+  "sampleSourceStorefront": "온라인 쇼핑몰",
   "nodeHint": {
     "action": "지도의 개념을 눌러보세요",
     "reason": "전부 진짜 문서에서 나왔어요"

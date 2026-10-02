@@ -111,6 +111,15 @@ describe("FirstRunStarterModule three-term glossary", () => {
     expect(positions[1]).toBeLessThan(positions[2]);
   });
 
+  it.each(["ko", "en"] as const)("names the sample with the switch's own word (%s)", (locale) => {
+    renderWithLocale(locale);
+    const checked = screen.getAllByRole("radio").find((radio) => radio.getAttribute("aria-checked") === "true");
+    expect(checked?.textContent).toBeTruthy();
+    expect(screen.getByTestId("first-run-starter-sample-line")).toHaveTextContent(checked!.textContent!);
+    const close = screen.getByTestId("first-run-starter-dismiss");
+    expect(close.getAttribute("aria-label")).toContain(close.textContent);
+  });
+
   it.each(["ko", "en"] as const)("keeps the product name on one line in the body sentence (%s)", (locale) => {
     renderWithLocale(locale);
     const body = screen.getByTestId("first-run-starter-context");

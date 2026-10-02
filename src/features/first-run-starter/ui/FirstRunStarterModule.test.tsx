@@ -66,7 +66,11 @@ vi.mock('framer-motion', async (importOriginal) => ({
 }));
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => Object.assign((key: string) => key, { rich: (key: string) => key }),
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: { name?: string }) => (values?.name ? `${key}:${values.name}` : key),
+      { rich: (key: string) => key },
+    ),
   useLocale: () => 'ko',
 }));
 
@@ -121,7 +125,7 @@ describe('FirstRunStarterModule', () => {
 
   it('opens with one sample line, a heading and one body sentence above the actions', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleLineStorefront');
+    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleLine:sampleSourceStorefront');
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('headline');
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('body');
     const card = screen.getByTestId('first-run-starter');
@@ -147,6 +151,7 @@ describe('FirstRunStarterModule', () => {
       .filter((button) => !button.closest('[inert]'))
       .map((button) => button.getAttribute('data-testid'));
     expect(faceButtons).toEqual([
+      'first-run-starter-dismiss',
       'first-run-starter-open',
       'first-run-tour-cta',
       'first-run-starter-sample-source-storefront',
@@ -156,7 +161,6 @@ describe('FirstRunStarterModule', () => {
     ]);
     for (const folded of [
       'first-run-starter-create',
-      'first-run-starter-dismiss',
       'first-run-starter-cli-toggle',
       'first-run-plain-toggle',
       'first-run-build-from-code',
@@ -171,7 +175,7 @@ describe('FirstRunStarterModule', () => {
   it('names the other sample in the sample line once it is chosen', () => {
     window.localStorage.setItem('demo:sample-source:v1', 'dogfood');
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
-    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleLineDogfood');
+    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleLine:sampleSourceDogfood');
     expect(screen.queryByText('sampleRelationExample')).not.toBeInTheDocument();
   });
 
@@ -285,7 +289,6 @@ describe('FirstRunStarterModule', () => {
   it('dismissing hides the module and persists for the session', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
@@ -302,7 +305,6 @@ describe('FirstRunStarterModule', () => {
 
   it('leaves a quiet reopen row after dismiss and restores the card on click', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
 
     const reopen = screen.getByTestId('first-run-starter-reopen');
@@ -316,7 +318,6 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
 
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
     expect(screen.getByTestId('first-run-starter-sample-signal')).toBeInTheDocument();
@@ -425,9 +426,11 @@ describe('FirstRunStarterModule', () => {
       'href',
       '/download/',
     );
+    expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('bodyNoFolderAccess');
+    expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
     openMoreWays();
     expect(screen.queryByTestId('first-run-starter-create')).not.toBeInTheDocument();
-    expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-cli-toggle')).toBeInTheDocument();
   });
 
   it('falls back to the plain-mode gear hint under the words disclosure without a callback', () => {
@@ -515,10 +518,10 @@ describe('FirstRunStarterModule', () => {
       'true',
     );
     expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent(
-      'sampleLineStorefront',
+      'sampleSourceStorefront',
     );
     expect(screen.getByTestId('first-run-starter-sample-line')).not.toHaveTextContent(
-      'sampleLineDogfood',
+      'sampleSourceDogfood',
     );
   });
 
@@ -564,7 +567,6 @@ describe('FirstRunStarterModule renders the guide or INDEX exclusively', () => {
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
@@ -578,7 +580,6 @@ describe('FirstRunStarterModule renders the guide or INDEX exclusively', () => {
         <div data-testid="index-body" />
       </FirstRunStarterModule>,
     );
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
     fireEvent.click(screen.getByTestId('first-run-starter-reopen'));
 
