@@ -1164,10 +1164,12 @@ export function AcpChatPanel({
     return () => window.removeEventListener('keydown', onKey, true);
   }, [historyOpen]);
 
-  const lastUserEventIndex = events.reduce(
-    (last, event, index) => (event.kind === 'user' ? index : last),
-    -1,
-  );
+  const lastUserEventIndex = useMemo(() => {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      if (events[index].kind === 'user') return index;
+    }
+    return -1;
+  }, [events]);
   const postTurnSuggestions = suggestions.filter(
     (suggestion) => suggestion.kind !== 'connectSource',
   );
@@ -1564,7 +1566,7 @@ export function AcpChatPanel({
     [events, knownRelations, knownSlugs, presentationIntent, presentationRequest, status],
   );
   const presentationTrace = presentationResult.status === 'ready' ? presentationResult : null;
-  const latestUserEvent = [...events].reverse().find((event) => event.kind === 'user');
+  const latestUserEvent = events[lastUserEventIndex];
   const currentTurnIsPresentationRequest = latestUserEvent?.kind === 'user'
     && latestUserEvent.text.trim() === presentationRequest?.trim();
   const presentationBlocked = presentationIntent !== null
@@ -1653,10 +1655,13 @@ export function AcpChatPanel({
     }
     return ids;
   }, [answerFold, transcriptItems]);
-  const lastWorkGroupId = useMemo(
-    () => [...transcriptItems].reverse().find((item) => item.kind === 'workGroup')?.id,
-    [transcriptItems],
-  );
+  const lastWorkGroupId = useMemo(() => {
+    for (let index = transcriptItems.length - 1; index >= 0; index -= 1) {
+      const item = transcriptItems[index];
+      if (item.kind === 'workGroup') return item.id;
+    }
+    return undefined;
+  }, [transcriptItems]);
   /**
    * **The tool calls that are actually still running.**
    *
