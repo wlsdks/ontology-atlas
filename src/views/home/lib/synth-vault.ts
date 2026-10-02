@@ -135,27 +135,67 @@ export const SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE = 0.76;
 const SYNTH_NEIGHBOUR_DOMAIN_STEPS = [1, 2, 5] as const;
 export const SYNTH_UNKNOWN_EVIDENCE_SHARE = 0.05;
 
+export type SynthShape = "uniform" | "layered";
+
 export interface SynthVaultOptions {
   dependencies?: boolean;
+  shape?: SynthShape;
 }
 
-function synthElementDomain(e: number, counts: SynthVaultCounts): number {
+const LAYERED_TARGET_DECAY = 1.25;
+
+function permutedDomains(count: number, salt: number): number[] {
+  return Array.from({ length: count }, (_, d) => d).sort(
+    (a, b) => unitHash(a * 13 + salt) - unitHash(b * 13 + salt) || a - b,
+  );
+}
+
+function capabilityDomains(counts: SynthVaultCounts, shape: SynthShape): number[] {
+  if (shape === "uniform") return Array.from({ length: counts.capability }, (_, c) => c % counts.domain);
+  const bySize = permutedDomains(counts.domain, 7);
+  return Array.from({ length: counts.capability }, (_, c) => {
+    if (c < counts.domain) return bySize[c];
+    const rank = Math.floor(counts.domain * Math.pow(unitHash(c * 5 + 11), CAPABILITY_SKEW));
+    return bySize[Math.min(counts.domain - 1, rank)];
+  });
+}
+
+function synthElementDomain(e: number, counts: SynthVaultCounts, capDomain: readonly number[]): number {
   const r = e % 20;
   if (r === 0) return -1;
   if (r === 4 || r === 8 || r === 12 || r === 16) return e % counts.domain;
-  return skewedCapabilityIndex(e, counts.capability) % counts.domain;
+  return capDomain[skewedCapabilityIndex(e, counts.capability)];
 }
 
-function synthDependencies(counts: SynthVaultCounts): KnowledgeGraphEdge[] {
+function layeredTargetPicker(domainCount: number): (domain: number, u: number) => number {
+  const byRank = permutedDomains(domainCount, 3);
+  const cumulative: number[] = [];
+  let total = 0;
+  for (let t = 0; t < domainCount; t += 1) {
+    total += 1 / Math.pow(1 + t, LAYERED_TARGET_DECAY);
+    cumulative.push(total);
+  }
+  return (domain, u) => {
+    const at = u * total;
+    let t = cumulative.findIndex((c) => at < c);
+    if (t < 0) t = domainCount - 1;
+    const target = byRank[t];
+    return target === domain ? byRank[(t + 1) % domainCount] : target;
+  };
+}
+
+function synthDependencies(counts: SynthVaultCounts, shape: SynthShape, capDomain: readonly number[]): KnowledgeGraphEdge[] {
   const capabilitiesOf: number[][] = Array.from({ length: counts.domain }, () => []);
   const elementsOf: number[][] = Array.from({ length: counts.domain }, () => []);
-  for (let c = 0; c < counts.capability; c += 1) capabilitiesOf[c % counts.domain].push(c);
+  for (let c = 0; c < counts.capability; c += 1) capabilitiesOf[capDomain[c]].push(c);
   for (let e = 0; e < counts.element; e += 1) {
-    const domain = synthElementDomain(e, counts);
+    const domain = synthElementDomain(e, counts, capDomain);
     if (domain >= 0) elementsOf[domain].push(e);
   }
+  const layeredTarget = shape === "layered" ? layeredTargetPicker(counts.domain) : null;
   const targetDomain = (domain: number, seed: number): number => {
     if (counts.domain === 1 || unitHash(seed * 3) < SYNTH_SAME_DOMAIN_DEPENDENCY_SHARE) return domain;
+    if (layeredTarget) return layeredTarget(domain, unitHash(seed * 3 + 1));
     const step = SYNTH_NEIGHBOUR_DOMAIN_STEPS[Math.floor(unitHash(seed * 3 + 1) * SYNTH_NEIGHBOUR_DOMAIN_STEPS.length)];
     return (domain + step) % counts.domain;
   };
@@ -172,12 +212,12 @@ function synthDependencies(counts: SynthVaultCounts): KnowledgeGraphEdge[] {
   for (let c = 0; c < counts.capability; c += 1) {
     for (let k = 0; k < 2; k += 1) {
       const seed = c * 2 + k;
-      const target = pick(capabilitiesOf[targetDomain(c % counts.domain, seed)], seed);
+      const target = pick(capabilitiesOf[targetDomain(capDomain[c], seed)], seed);
       if (target !== undefined) add(`synth-cap-${c}`, `synth-cap-${target}`);
     }
   }
   for (let e = 0; e < counts.element; e += 1) {
-    const domain = synthElementDomain(e, counts);
+    const domain = synthElementDomain(e, counts, capDomain);
     if (domain < 0 || e % 10 >= 7) continue;
     const seed = counts.capability * 2 + e;
     const target = pick(elementsOf[targetDomain(domain, seed)], seed);
@@ -196,10 +236,12 @@ export function synthesizeEvidenceStates(ids: readonly string[], staleShare: num
   return states;
 }
 
-/** Same `total`, byte-identical node and edge order. */
+/** Same `total` and options, byte-identical node and edge order. */
 export function synthesizeVaultGraph(total: number, options: SynthVaultOptions = {}): SynthVaultGraph {
   const n = clampSynthSize(total) ?? SYNTH_MIN;
   const counts = computeSynthCounts(n);
+  const shape = options.shape ?? "uniform";
+  const capDomain = capabilityDomains(counts, shape);
   const nodes: KnowledgeGraphNode[] = [];
   const edges: KnowledgeGraphEdge[] = [];
 
@@ -213,7 +255,7 @@ export function synthesizeVaultGraph(total: number, options: SynthVaultOptions =
 
   for (let c = 0; c < counts.capability; c += 1) {
     const id = `synth-cap-${c}`;
-    const parentDomain = `synth-domain-${c % counts.domain}`;
+    const parentDomain = `synth-domain-${capDomain[c]}`;
     nodes.push(makeNode(id, `Capability ${c}`, "capability", [PROJECT_ID]));
     edges.push(makeContainsEdge(parentDomain, id));
   }
@@ -222,24 +264,21 @@ export function synthesizeVaultGraph(total: number, options: SynthVaultOptions =
     const id = `synth-el-${e}`;
     const r = e % 20;
     if (r === 0) {
-      // Orphans (5%): no parent edge, empty `projectIds`.
       nodes.push(makeNode(id, `Element ${e}`, "element", []));
       continue;
     }
     if (r === 4 || r === 8 || r === 12 || r === 16) {
-      // Domain-direct (20%).
       const parentDomain = `synth-domain-${e % counts.domain}`;
       nodes.push(makeNode(id, `Element ${e}`, "element", [PROJECT_ID]));
       edges.push(makeContainsEdge(parentDomain, id));
       continue;
     }
-    // Capability-direct (75%), concentrated on low indices by the power law.
     const parentCap = `synth-cap-${skewedCapabilityIndex(e, counts.capability)}`;
     nodes.push(makeNode(id, `Element ${e}`, "element", [PROJECT_ID]));
     edges.push(makeContainsEdge(parentCap, id));
   }
 
-  if (options.dependencies === true) edges.push(...synthDependencies(counts));
+  if (options.dependencies === true) edges.push(...synthDependencies(counts, shape, capDomain));
 
   return { nodes, edges, counts };
 }
