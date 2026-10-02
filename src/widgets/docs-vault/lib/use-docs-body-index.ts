@@ -58,7 +58,7 @@ interface Options {
   startDelayMs?: number;
 }
 
-/** The palette's body index, read once enabled; a body is read again only when its key changes. */
+/** Lazily indexes changed bodies with O(1) dequeue per pending document. */
 export function useDocsBodyIndex({
   docs,
   enabled,
@@ -122,10 +122,10 @@ export function useDocsBodyIndex({
         }));
 
     const run = async () => {
-      const queue = [...stale];
+      let nextDocIndex = 0;
       const worker = async () => {
         for (;;) {
-          const doc = queue.shift();
+          const doc = stale[nextDocIndex++];
           if (!doc || cancelled) return;
           const key = docBodyCacheKey(doc);
           try {
@@ -142,7 +142,7 @@ export function useDocsBodyIndex({
       };
       await Promise.all(
         Array.from(
-          { length: Math.min(READ_CONCURRENCY, queue.length) },
+          { length: Math.min(READ_CONCURRENCY, stale.length) },
           worker,
         ),
       );
