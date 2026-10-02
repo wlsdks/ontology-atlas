@@ -1,4 +1,4 @@
-import type { Box, DialTokens } from "./types";
+import type { Box, DialScene, DialTokens, Point } from "./types";
 
 export interface LedgerDisc {
   id: string;
@@ -18,6 +18,45 @@ export interface LedgerInput {
   measureText(text: string, font: string): number;
   moreText(count: number): string;
   tokens: Pick<DialTokens, "ledgerRowPx" | "ledgerGapPx">;
+  footprint?: { x: number; y: number; r: number } | null;
+}
+
+export interface EnteredDomainInput {
+  scene: Pick<DialScene, "clusterByDomain" | "clusters">;
+  attendedDomainId: string | null;
+  capabilitiesDrawn: ReadonlySet<string>;
+  freeRect: Box;
+  toScreen(x: number, y: number): Point;
+}
+
+export function enteredDomain(input: EnteredDomainInput): string | null {
+  const { attendedDomainId, scene } = input;
+  if (attendedDomainId && scene.clusterByDomain.has(attendedDomainId)) return attendedDomainId;
+  const cx = (input.freeRect.minX + input.freeRect.maxX) / 2;
+  const cy = (input.freeRect.minY + input.freeRect.maxY) / 2;
+  let best: string | null = null;
+  let bestD = Infinity;
+  for (const cluster of scene.clusters) {
+    if (!input.capabilitiesDrawn.has(cluster.domainId)) continue;
+    const p = input.toScreen(cluster.chip.x, cluster.chip.y);
+    const d = Math.hypot(p.x - cx, p.y - cy);
+    if (d < bestD || (d === bestD && best !== null && cluster.domainId < best)) {
+      best = cluster.domainId;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+export interface LedgerTriggerInput {
+  capabilityCount: number;
+  namedInPlace: number;
+  capabilityPitchPx: number;
+  tokens: Pick<DialTokens, "reachCap">;
+}
+
+export function ledgerWanted(input: LedgerTriggerInput): boolean {
+  return input.namedInPlace < input.capabilityCount && input.capabilityPitchPx < input.tokens.reachCap;
 }
 
 export interface LedgerRow {
@@ -93,8 +132,9 @@ export function buildLedger(input: LedgerInput): LedgerPlan | null {
   const moreText = more > 0 ? input.moreText(more) : null;
   const widths = new Map(shown.map((d) => [d.id, input.measureText(d.label, input.font)]));
   const widest = Math.max(0, ...widths.values(), moreText ? input.measureText(moreText, input.font) : 0);
-  const minX = Math.min(...input.discs.map((d) => d.x - d.r));
-  const maxX = Math.max(...input.discs.map((d) => d.x + d.r));
+  const fp = input.footprint ?? null;
+  const minX = Math.min(...input.discs.map((d) => d.x - d.r), fp ? fp.x - fp.r : Infinity);
+  const maxX = Math.max(...input.discs.map((d) => d.x + d.r), fp ? fp.x + fp.r : -Infinity);
   let side: "right" | "left";
   let colX: number;
   if (maxX + tokens.ledgerGapPx + widest <= freeRect.maxX) {

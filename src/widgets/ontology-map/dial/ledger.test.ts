@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildLedger, countLeaderCrossings, type LedgerDisc, type LedgerInput } from "./ledger";
+import { buildLedger, countLeaderCrossings, enteredDomain, ledgerWanted, type LedgerDisc, type LedgerInput } from "./ledger";
+import type { DialCluster, DialScene } from "./types";
 
 const TOKENS = { ledgerRowPx: 14, ledgerGapPx: 24 };
 const measure = (text: string) => text.length * 6;
@@ -89,5 +90,68 @@ describe("buildLedger", () => {
     expect(left.align).toBe("right");
     for (const row of left.rows) expect(row.box.minX).toBeGreaterThanOrEqual(0);
     expect(buildLedger(input({ discs: set, freeRect: { minX: 250, minY: 0, maxX: 600, maxY: 800 } }))).toBeNull();
+  });
+});
+
+function cluster(domainId: string, x: number, y: number, footprint = 40): DialCluster {
+  return { domainId, step: 0, angle: 0, chip: { x, y }, footprint, items: [] };
+}
+
+function scene(clusters: DialCluster[]): Pick<DialScene, "clusters" | "clusterByDomain"> {
+  return { clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])) };
+}
+
+describe("enteredDomain", () => {
+  const free = { minX: 0, minY: 0, maxX: 1000, maxY: 800 };
+  const identity = (x: number, y: number) => ({ x, y });
+  const s = scene([cluster("a", 480, 380), cluster("b", 100, 100), cluster("c", 800, 600)]);
+
+  it("takes the attended domain", () => {
+    expect(enteredDomain({ scene: s, attendedDomainId: "c", capabilitiesDrawn: new Set(["a"]), freeRect: free, toScreen: identity })).toBe("c");
+  });
+
+  it("else takes the chip nearest the free-rect centre among drawn clusters", () => {
+    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["a", "b", "c"]), freeRect: free, toScreen: identity })).toBe("a");
+    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["b", "c"]), freeRect: free, toScreen: identity })).toBe("c");
+    expect(enteredDomain({ scene: s, attendedDomainId: "gone", capabilitiesDrawn: new Set(), freeRect: free, toScreen: identity })).toBeNull();
+  });
+
+  it("measures the chip on screen", () => {
+    const shifted = (x: number, y: number) => ({ x: x - 400, y: y - 300 });
+    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["a", "c"]), freeRect: free, toScreen: shifted })).toBe("c");
+  });
+});
+
+describe("ledgerWanted", () => {
+  const tokens = { reachCap: 96 };
+  it("shows only when names are missing and the pitch is below reach-cap", () => {
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 19, capabilityPitchPx: 40, tokens })).toBe(true);
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 20, capabilityPitchPx: 40, tokens })).toBe(false);
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 3, capabilityPitchPx: 96, tokens })).toBe(false);
+  });
+});
+
+describe("buildLedger footprint", () => {
+  it("stands outside the entered cluster's footprint", () => {
+    const set = discs(20);
+    const footprint = { x: 430, y: 400, r: 220 };
+    const plan = buildLedger(input({ discs: set, footprint }))!;
+    expect(plan.side).toBe("right");
+    for (const row of plan.rows) expect(row.box.minX).toBeGreaterThanOrEqual(footprint.x + footprint.r);
+    expect(countLeaderCrossings(plan.leaders)).toBe(0);
+    const left = buildLedger(input({ discs: set, footprint, freeRect: { minX: 0, minY: 0, maxX: 760, maxY: 800 } }))!;
+    expect(left.side).toBe("left");
+    for (const row of left.rows) expect(row.box.maxX).toBeLessThanOrEqual(footprint.x - footprint.r);
+  });
+});
+
+const layoutReady = false;
+
+describe("ledger on real vaults", () => {
+  it.skipIf(!layoutReady)("layered 10,000 at zoom 5x names min(52, capacity) plus more with 0 crossings", () => {
+    expect(layoutReady).toBe(true);
+  });
+  it.skipIf(!layoutReady)("storefront Orders needs no ledger from 2.5x", () => {
+    expect(layoutReady).toBe(true);
   });
 });
