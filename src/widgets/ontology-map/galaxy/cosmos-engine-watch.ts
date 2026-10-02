@@ -49,3 +49,12 @@ export function relationsByConcept(edges: readonly OntologyMapEdge[]): Map<strin
   });
   return out;
 }
+
+export function surfaceSize(canvas: HTMLCanvasElement): { width: number; height: number; final: boolean } {
+  const rect = canvas.getBoundingClientRect();
+  const style = getComputedStyle(canvas);
+  const width = style.width.endsWith("px") ? Number.parseFloat(style.width) : rect.width;
+  const height = style.height.endsWith("px") ? Number.parseFloat(style.height) : rect.height;
+  const final = Math.abs(rect.width - width) < 0.5 && Math.abs(rect.height - height) < 0.5;
+  return { width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)), final };
+}

@@ -8,7 +8,7 @@ import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
 import { applyArrival, ARRIVAL_MS } from "./cosmos-arrival";
 import { CosmosCameraRig, CosmosHitIndex, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
-import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept } from "./cosmos-engine-watch";
+import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept, surfaceSize } from "./cosmos-engine-watch";
 import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
 import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
 import { walkCandidates, walkTarget } from "./cosmos-walk";
@@ -84,9 +84,9 @@ export class CosmosEngine {
     if (!ctx) throw new Error("cosmos: no 2d context");
     this.ctx = ctx;
     this.rig.reducedMotion = options.reducedMotion;
-    const listen = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions) => {
-      canvas.addEventListener(type, fn as EventListener, opts);
-      this.cleanups.push(() => canvas.removeEventListener(type, fn as EventListener, opts));
+    const listen = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions, target: EventTarget = canvas) => {
+      target.addEventListener(type, fn as EventListener, opts);
+      this.cleanups.push(() => target.removeEventListener(type, fn as EventListener, opts));
     };
     listen("pointerdown", (e) => this.onPointerDown(e));
     listen("pointermove", (e) => this.onPointerMove(e));
@@ -96,6 +96,7 @@ export class CosmosEngine {
     listen("wheel", (e) => this.onWheel(e), { passive: false });
     listen("keydown", (e) => this.onKey(e));
     listen("contextmenu", (e) => this.onContextMenu(e));
+    listen("animationend", () => this.rig.roomFinal || this.resize(), undefined, document);
     this.cleanups.push(listenForGesturePinch(canvas, (ratio, x, y) => this.zoomAt(this.local(x, y), ratio ** this.options.navigationSpeed.zoom, false)));
     const resize = new ResizeObserver(() => this.resize());
     resize.observe(canvas);
@@ -185,17 +186,15 @@ export class CosmosEngine {
   }
 
   private resize(): void {
-    const rect = this.canvas.getBoundingClientRect();
+    const { width, height, final } = surfaceSize(this.canvas);
     const dpr = window.devicePixelRatio || 1;
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
     if (width !== this.width || height !== this.height || dpr !== this.dpr) {
       [this.width, this.height, this.dpr] = [width, height, dpr];
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
     }
     if ((this.roomHeld = this.arrival !== null)) return this.requestFrame();
-    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height));
+    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height), final);
     if (!this.rig.user) this.rig.fit(false, performance.now());
     this.requestFrame();
   }
