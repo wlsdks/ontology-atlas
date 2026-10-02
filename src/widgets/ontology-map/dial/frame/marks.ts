@@ -1,15 +1,15 @@
-import { scaledLabelFont } from "../render/labels";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildFlowMarks, type FlowMarksResult } from "./flow-marks";
-import { inkIndex, mixOver, type DialInks } from "./ink";
-import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "./label-marks";
-import { buildLedger, countLeaderCrossings, enteredDomain, ledgerWanted, type LedgerPlan } from "./ledger";
+import { scaledLabelFont } from "../../render/labels";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildFlowMarks, type FlowMarksResult } from "../flow-marks";
+import { inkIndex, mixOver, type DialInks } from "../ink";
+import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
+import type { DialDisclosure } from "./disclosure";
+import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerPlan } from "../ledger";
 import type {
   Box,
   DialAttention,
   DialChordLight,
   DialEvidenceView,
-  DialItem,
   DialLabels,
   DialMarks,
   DialModel,
@@ -18,18 +18,13 @@ import type {
   DialScene,
   DialTokens,
   Point,
-} from "./types";
+} from "../types";
 
 export interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
 
 export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[] }
 
-export interface DialDisclosureInput {
-  capAlpha: number;
-  plateAlpha: number;
-  elementAlphaFor(item: DialItem): number;
-  orphanAlpha: number;
-}
+export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
 
 export interface DialMarksInput {
   model: DialModel;
@@ -223,15 +218,13 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   const flowBase = {
     model, scene, tokens, inks, attention: attn, previous: input.previous, inkMix: input.inkMix, chordPresence: input.chordPresence,
     scale: s, labelScale: input.labelScale, viewportWidth: W, viewportHeight: H, freeRect: input.freeRect,
-    nodeScreen: input.nodeScreen, toScreen: input.toScreen, endRadiusPx, appearOf: input.appearOf, measureText: input.measureText,
+    nodeScreen: input.nodeScreen, toScreen: input.toScreen, endRadiusPx, appearOf: input.appearOf, measureText: input.measureText, resolution: disclosure,
   };
   const planned = { inks: [] as string[], strips: [] as DialMarks["strips"], numerals: [] as DialMarks["numerals"], texts: [] as DialMarks["texts"] };
   buildFlowMarks({ ...flowBase, occupied: [...occupied], chords: [] }, planned);
   const lines = linesOf(planned);
 
-  const capsShown = new Set<string>();
-  if (capAlpha > DRAWN_ALPHA) for (const id of chips.keys()) capsShown.add(id);
-  const entered = enteredDomain({ scene, attendedDomainId: attn.domainId, capabilitiesDrawn: capsShown, freeRect: input.freeRect, toScreen: input.toScreen });
+  const entered = disclosure.entered;
   const labelInput = {
     model, scene, labels: input.labels, evidence: input.evidence, attention: attn, tokens, inks: labelInks(inks), ink, measureText: input.measureText,
     scale: s, toScreen: input.toScreen, hub, chips, discs, capAlpha, lines, freeRect: input.freeRect, elementLabel: input.elementLabel,
@@ -332,8 +325,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
     for (const c of scene.clusters) {
       if (!chips.has(c.domainId)) continue;
-      if (attn.domainId && receded(attn, c.domainId)) continue;
+      const inEntered = c.domainId === disclosure.entered && !(attn.domainId && receded(attn, c.domainId));
       for (const it of c.items) {
+        if (!inEntered && it.id !== attn.capabilityId) continue;
         const a = disclosure.elementAlphaFor(it) * input.appearOf(c.domainId);
         if (a < ALPHA_FLOOR) continue;
         const step = Math.max(1, Math.round(a * ALPHA_STEPS)) / ALPHA_STEPS;

@@ -10,7 +10,7 @@ import {
   type TreeInputNode,
 } from "../model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "./dial-model";
-import { aggregateLinks, domainOfEnd, ownLinkCount, resolveEnteredDomain, restBudget, type DialLink } from "./links";
+import { aggregateLinks, domainOfEnd, ownLinkCount, restBudget, type DialLink } from "./links";
 import { resolveDialTokens } from "./tokens";
 import type { DialModel } from "./types";
 
@@ -102,24 +102,11 @@ describe("aggregateLinks", () => {
   });
 });
 
-describe("resolveEnteredDomain", () => {
-  const model = modelOf(4, 2, DEPS);
-  const rest = resolveDialAttention(model, null, null);
-  const near = [{ domainId: "d1", distance: 50 }, { domainId: "d0", distance: 10 }];
-
-  it("resolves only from the resolve pitch, nearest the free-rect centre unless one is attended", () => {
-    expect(resolveEnteredDomain(model, TOKENS, rest, TOKENS.resolve - 1, near)).toEqual({ entered: null, resolved: false, slide: 0 });
-    expect(resolveEnteredDomain(model, TOKENS, rest, TOKENS.resolve + 6, near)).toEqual({ entered: "d0", resolved: true, slide: 0.5 });
-    expect(resolveEnteredDomain(model, TOKENS, rest, TOKENS.resolve + 40, near).slide).toBe(1);
-    expect(resolveEnteredDomain(model, TOKENS, resolveDialAttention(model, "d1", null), TOKENS.resolve, near).entered).toBe("d1");
-  });
-
-  it("refuses when the entered domain's own links exceed the budget", () => {
+describe("ownLinkCount", () => {
+  it("counts the domain's own capability-level links", () => {
     const many: [string, string][] = [];
     for (let c = 0; c < 30; c += 1) many.push([`d0c${c}`, `d1c${c}`]);
-    const big = modelOf(2, 30, many);
-    expect(ownLinkCount(big, "d0")).toBe(30);
-    expect(resolveEnteredDomain(big, TOKENS, resolveDialAttention(big, null, null), 60, [{ domainId: "d0", distance: 0 }])).toMatchObject({ entered: "d0", resolved: false });
+    expect(ownLinkCount(modelOf(2, 30, many), "d0")).toBe(30);
   });
 });
 

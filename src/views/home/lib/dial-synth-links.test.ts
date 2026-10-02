@@ -17,6 +17,7 @@ import {
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { buildFlowMarks, type FlowMarksInput } from "@/widgets/ontology-map/dial/flow-marks";
+import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { aggregateLinks, domainOfEnd, type DialLink } from "@/widgets/ontology-map/dial/links";
@@ -131,6 +132,7 @@ function overview(model: DialModel) {
     inkMix: 1, chordPresence: 1, scale, labelScale: 1, viewportWidth: W, viewportHeight: H, freeRect: free,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     endRadiusPx: () => 10, appearOf: () => 1, measureText: (t) => t.length * 6.5, occupied: [], chords: [],
+    resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, resolveDialAttention(model, null, null), TOKENS),
   };
   const out: DialMarks = { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [] };
   return buildFlowMarks(input, out);

@@ -117,37 +117,6 @@ export function ownLinkCount(model: DialModel, domainId: string): number {
   ).length;
 }
 
-export const RESOLVE_SLIDE_PX = 12;
-
-export interface Resolution {
-  entered: string | null;
-  resolved: boolean;
-  slide: number;
-}
-
-export function resolveEnteredDomain(
-  model: DialModel,
-  tokens: DialTokens,
-  attention: DialAttention,
-  pitchPx: number,
-  candidates: readonly { domainId: string; distance: number }[],
-): Resolution {
-  if (pitchPx < tokens.resolve) return { entered: null, resolved: false, slide: 0 };
-  let entered: string | null = attention.domainId && candidates.some((c) => c.domainId === attention.domainId) ? attention.domainId : null;
-  if (!entered) {
-    let best = Infinity;
-    for (const c of candidates) {
-      if (c.distance < best || (c.distance === best && entered !== null && c.domainId < entered)) {
-        best = c.distance;
-        entered = c.domainId;
-      }
-    }
-  }
-  if (!entered) return { entered: null, resolved: false, slide: 0 };
-  if (ownLinkCount(model, entered) > tokens.resolveBudget) return { entered, resolved: false, slide: 0 };
-  return { entered, resolved: true, slide: Math.min(1, Math.max(0, (pitchPx - tokens.resolve) / RESOLVE_SLIDE_PX)) };
-}
-
 export interface RestBudget {
   keep: Set<string>;
   limit: number;

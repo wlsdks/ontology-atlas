@@ -9,16 +9,17 @@ import {
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildDialModel, resolveDialAttention } from "./dial-model";
-import { resolveDialInks } from "./ink";
-import { layoutDial } from "./layout";
-import { buildDialMarks, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
-import { circularDomainOrder } from "./order";
+} from "../../model/containment-tree";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildDialModel, resolveDialAttention } from "../dial-model";
+import { resolveDialInks } from "../ink";
+import { layoutDial } from "../layout";
+import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "./marks";
+import { circularDomainOrder } from "../order";
 import { paintDialMarks } from "./paint";
-import { resolveDialTokens } from "./tokens";
-import type { DialLabels, DialModel, DialScene } from "./types";
+import { resolveDialDisclosure } from "./disclosure";
+import { resolveDialTokens } from "../tokens";
+import type { DialLabels, DialModel } from "../types";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));
@@ -105,23 +106,6 @@ function overviewModel(domains: number, capabilities: number, elementsPer: numbe
   return buildDialModel({ tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)), elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
 }
 
-function smooth(a: number, b: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-}
-
-function stubDisclosure(scene: DialScene, scale: number): DialDisclosureInput {
-  const pitchPx = TOKENS.pitch * scale;
-  const capAlpha = smooth(TOKENS.capOnFrom, TOKENS.capOnFull, pitchPx);
-  const after = smooth(TOKENS.elementsAfterCapFrom, TOKENS.elementsAfterCapFull, pitchPx);
-  return {
-    capAlpha,
-    plateAlpha: 1 - smooth(TOKENS.capOnFrom, TOKENS.capOnFrom + 2, pitchPx),
-    elementAlphaFor: (item) => smooth(TOKENS.elementOnFrom, TOKENS.elementOnFull, item.elementPitch * scale) * capAlpha * after,
-    orphanAlpha: smooth(TOKENS.elementOnFrom, TOKENS.elementOnFull, scene.orphans.pitch * scale) * after,
-  };
-}
-
 const W = 1512;
 const H = 900;
 
@@ -139,7 +123,7 @@ function frame(model: DialModel, focusId: string | null, zoom = 1) {
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: () => 1, measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: "10k",
-    disclosure: stubDisclosure(scene, scale),
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 }, resolveDialAttention(model, null, focusId), TOKENS),
   };
   const marks = emptyDialFrameMarks();
   const result = buildDialMarks(input, marks);

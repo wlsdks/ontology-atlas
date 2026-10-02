@@ -1,7 +1,8 @@
 import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
-import { aggregateLinks, domainOfEnd, resolveEnteredDomain, restBudget, type DialLink } from "./links";
+import type { DialResolution } from "./frame/disclosure";
+import { aggregateLinks, domainOfEnd, restBudget, type DialLink } from "./links";
 import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./types";
 
 export interface FlowMarksInput {
@@ -25,6 +26,7 @@ export interface FlowMarksInput {
   measureText(text: string, font: string): number;
   occupied: Box[];
   chords: DialChordLight[];
+  resolution: DialResolution;
 }
 
 export interface FlowMarksResult {
@@ -341,16 +343,14 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   const hub = (model.projectId ? input.nodeScreen(model.projectId) : null) ?? input.toScreen(0, 0);
 
   const chips = new Map<string, Point>();
-  const onScreen: { domainId: string; distance: number }[] = [];
-  const fc = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };
+  let onScreen = 0;
   for (const c of scene.clusters) {
     const p = input.nodeScreen(c.domainId) ?? input.toScreen(c.chip.x, c.chip.y);
     chips.set(c.domainId, p);
     const fr = c.footprint * input.scale;
-    if (p.x + fr < 0 || p.x - fr > W || p.y + fr < 0 || p.y - fr > H) continue;
-    onScreen.push({ domainId: c.domainId, distance: Math.hypot(p.x - fc.x, p.y - fc.y) });
+    if (p.x + fr >= 0 && p.x - fr <= W && p.y + fr >= 0 && p.y - fr <= H) onScreen += 1;
   }
-  const resolution = resolveEnteredDomain(model, tokens, attn, tokens.pitch * input.scale, onScreen);
+  const resolution = input.resolution;
   result.entered = resolution.entered;
   result.resolved = resolution.resolved;
   const resolved = new Set(resolution.resolved && resolution.entered ? [resolution.entered] : []);
@@ -366,7 +366,7 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     if (!item || !domain) return null;
     const own = input.nodeScreen(id) ?? input.toScreen(item.x, item.y);
     const from = chips.get(domain);
-    const slide = resolved.has(domain) && id !== attn.capabilityId ? resolution.slide : 1;
+    const slide = resolved.has(domain) && id !== attn.capabilityId ? resolution.endpointSlide : 1;
     if (!from || slide >= 1) return { p: own, r };
     return { p: { x: from.x + (own.x - from.x) * slide, y: from.y + (own.y - from.y) * slide }, r };
   };
@@ -394,7 +394,7 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   const budget = restBudget(counted, ends.size, tokens);
   result.budget = { shown: 0, total: budget.total, perEndCap: budget.perEndCap };
   const maxTotal = Math.max(1, ...counted.filter((l) => budget.keep.has(l.key) || l.attended).map((l) => l.total));
-  const numberLimit = Math.max(tokens.restNumbersMin, Math.min(tokens.restNumbersMax, Math.round(tokens.restNumbersShare * onScreen.length)));
+  const numberLimit = Math.max(tokens.restNumbersMin, Math.min(tokens.restNumbersMax, Math.round(tokens.restNumbersShare * onScreen)));
   const numberKeep = new Set(counted.filter((l) => budget.keep.has(l.key) && l.total >= tokens.restNumberMinCount).slice(0, numberLimit).map((l) => l.key));
 
   const within = (p: Point) => p.x >= free.minX - FREE_SLACK_PX && p.x <= free.maxX + FREE_SLACK_PX && p.y >= free.minY - FREE_SLACK_PX && p.y <= free.maxY + FREE_SLACK_PX;
