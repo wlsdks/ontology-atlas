@@ -58,6 +58,7 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/home/ui/TopologyCanvasSurface.tsx",
     "previewEdge={mapRelationPreview}",
   );
+  writeFixture(root, "src/views/home/ui/TopologyMapRenderer.tsx", "");
   writeFixture(
     root,
     "src/views/home/ui/CreateNodeForm.tsx",
