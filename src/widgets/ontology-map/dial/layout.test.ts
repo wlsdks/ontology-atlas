@@ -192,40 +192,72 @@ describe("layoutDial", () => {
     expect(moved(before, after, marks).filter(([, d]) => d > 0)).toEqual([]);
   });
 
-  for (const name of ["storefront", "dogfood"] as const) {
+  for (const name of ["storefront", "dogfood", "crafted"] as const) {
     const graph = fixtures[name];
     const model = modelOf(graph.nodes, graph.edges);
     const before = lay(model, null);
     const stepOf = (m: DialModel, id: string) => ladderStep(m.dependents.get(id) ?? 0);
     const caps = (domainId: string) => model.domainById.get(domainId)!.capabilityIds;
-    const trial = (crosses: boolean) => {
-      for (const target of model.domains) {
-        for (const source of model.domains) {
-          if (source.id === target.id || !caps(source.id).length || !caps(target.id).length) continue;
-          const edges = [...graph.edges, { from: caps(source.id)[0]!, to: caps(target.id)[0]!, type: "depends_on" }];
-          const next = modelOf(graph.nodes, edges);
-          if (next.dependents.get(target.id) === model.dependents.get(target.id)) continue;
-          if ((stepOf(next, target.id) !== stepOf(model, target.id)) === crosses) return { next, target: target.id };
+    type Kind = "same-step" | "fits" | "larger";
+    const cases = new Map<Kind, { next: DialModel; target: string }>();
+    for (const target of model.domains) {
+      for (const source of model.domains) {
+        if (source.id === target.id || !caps(source.id).length || !caps(target.id).length) continue;
+        const edges = [...graph.edges, { from: caps(source.id)[0]!, to: caps(target.id)[0]!, type: "depends_on" }];
+        const next = modelOf(graph.nodes, edges);
+        if (next.dependents.get(target.id) === model.dependents.get(target.id)) continue;
+        const step = stepOf(next, target.id);
+        let kind: Kind = "same-step";
+        if (step !== stepOf(model, target.id)) {
+          const largest = Math.max(0, ...before.clusters.filter((c) => c.step === step).map((c) => c.footprint));
+          kind = before.clusterByDomain.get(target.id)!.footprint <= largest ? "fits" : "larger";
         }
+        if (!cases.has(kind)) cases.set(kind, { next, target: target.id });
       }
-      throw new Error(`no ${crosses ? "crossing" : "same-step"} dependency in ${name}`);
-    };
+    }
 
-    it(`${name}: a dependency that crosses no step moves no mark`, () => {
-      const { next } = trial(false);
-      const after = lay(next, before.memory);
+    it.runIf(cases.has("same-step"))(`${name}: a dependency that crosses no step moves no mark`, () => {
+      const after = lay(cases.get("same-step")!.next, before.memory);
       expect(moved(before, after, before.positions.keys()).filter(([, d]) => d > 0)).toEqual([]);
     });
 
-    it.runIf(name === "storefront")(`${name}: a dependency that crosses a step moves at most two other domains`, () => {
-      const { next, target } = trial(true);
+    it.runIf(cases.has("fits"))(`${name}: a domain that fits its new ring moves at most two other domains`, () => {
+      const { next, target } = cases.get("fits")!;
       const after = lay(next, before.memory);
       const threshold = 4 / overviewScale(before);
       const others = moved(before, after, model.domainById.keys()).filter(([id, d]) => id !== target && d > threshold);
       expect(others.length).toBeLessThanOrEqual(2);
       expect(after.clusterByDomain.get(target)!.step).not.toBe(before.clusterByDomain.get(target)!.step);
     });
+
+    it.runIf(cases.has("larger"))(`${name}: a domain larger than its new ring keeps every other ring and order`, () => {
+      const { next, target } = cases.get("larger")!;
+      const after = lay(next, before.memory);
+      const ringOrder = (scene: DialScene, step: number) => {
+        const ids = scene.clusters
+          .filter((c) => c.step === step && c.domainId !== target)
+          .sort((x, y) => x.angle - y.angle)
+          .map((c) => c.domainId);
+        const first = [...ids].sort()[0];
+        const at = first === undefined ? 0 : ids.indexOf(first);
+        return [...ids.slice(at), ...ids.slice(0, at)];
+      };
+      for (const c of before.clusters) {
+        if (c.domainId !== target) expect(after.clusterByDomain.get(c.domainId)!.step).toBe(c.step);
+      }
+      for (const ring of before.rings) expect(ringOrder(after, ring.step)).toEqual(ringOrder(before, ring.step));
+    });
   }
+
+  it("the crafted fixture has a domain larger than its new ring", () => {
+    const g = fixtures.crafted;
+    const model = modelOf(g.nodes, g.edges);
+    const before = lay(model, null);
+    const next = modelOf(g.nodes, [...g.edges, { from: "d05-c000", to: "d02-c000", type: "depends_on" }]);
+    expect(ladderStep(next.dependents.get("d02")!)).toBe(1);
+    const largest = Math.max(...before.clusters.filter((c) => c.step === 1).map((c) => c.footprint));
+    expect(before.clusterByDomain.get("d02")!.footprint).toBeGreaterThan(largest);
+  });
 
   it("returns the memory it laid out with", () => {
     const g = fixtures.crafted;

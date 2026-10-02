@@ -70,10 +70,7 @@ export function layoutDial(model: DialModel, order: readonly string[], tokens: L
   const P = tokens.pitch;
   const gap = tokens.angularGap * P;
   const directId = (domainId: string) => `${domainId}::direct`;
-  const itemsOf = (id: string) => {
-    const d = model.domainById.get(id)!;
-    return d.capabilityIds.length + (d.directElementIds.length > 0 ? 1 : 0);
-  };
+  const itemsOf = (id: string) => model.domainById.get(id)!.capabilityIds.length + 1;
   const footprint = new Map(order.map((id) => [id, footprintOf(itemsOf(id), tokens)]));
 
   const weights = order.map((id) => 2 * footprint.get(id)! + gap);
