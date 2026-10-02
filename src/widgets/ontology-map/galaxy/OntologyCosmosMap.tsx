@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import type { TopologyMapLensKind } from "../model/path-lens";
@@ -171,6 +171,16 @@ export function OntologyCosmosMap({
       engineRef.current = null;
     };
   }, []);
+
+  useLayoutEffect(
+    () => () => {
+      const engine = engineRef.current;
+      const canvas = canvasRef.current;
+      const inks = readInks();
+      if (engine && canvas && inks) publishCosmosSnapshot({ marks: engine.marks(), canvas, inks });
+    },
+    [],
+  );
 
   useEffect(() => {
     engineRef.current?.setLayout(
