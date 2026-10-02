@@ -265,25 +265,18 @@ describe('i18n message catalog', () => {
       en.atlasGit.title,
       'rail git label must match the destination title — one destination, one name',
     );
-    assert.equal(
-      ko.nav.settingsMenu.triggerTitle,
-      '화면, 언어, 작업공간, AI 에이전트 연결을 한 곳에서 조정해요',
-    );
-    assert.equal(ko.nav.settingsMenu.groupWorkspace, '작업공간');
-    assert.equal(ko.nav.settingsMenu.workspaceFolderLabel, '작업공간 폴더');
     assert.ok(
-      ko.nav.settingsMenu.vaultTitle.includes(ko.navRail.docs),
+      ko.settingsFolder.documentsTitle.includes(ko.navRail.docs),
       '설정 카드가 여는 온톨로지 섹션을 이름으로 말해야 한다',
     );
     assert.ok(
-      ko.nav.settingsMenu.vaultBodyLocal.includes(ko.navRail.docs),
+      ko.settingsFolder.documentsBodyLocal.includes(ko.navRail.docs),
       '설정 카드 설명이 여는 온톨로지 섹션을 말해야 한다',
     );
     assert.ok(
-      !ko.nav.settingsMenu.vaultTitle.includes(ko.navRail.library),
+      !ko.settingsFolder.documentsTitle.includes(ko.navRail.library),
       '온톨로지 섹션 카드가 자료실 목적지 전체를 연다고 말하면 안 된다',
     );
-    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지도');
     // The old topologyWidgets.controls shortcut/depth copy (depthHop,
     // shortcutDepthAll, shortcutDoubleClick, shortcutEsc) went with the removal of the
@@ -309,15 +302,12 @@ describe('i18n message catalog', () => {
       [
         ko.navRail.docs,
         ko.nav.settingsMenu.triggerTitle,
-        ko.nav.settingsMenu.subtitle,
-        ko.nav.settingsMenu.tabGeneralDesc,
-        ko.nav.settingsMenu.tabVault,
-        ko.nav.settingsMenu.tabVaultDesc,
-        ko.nav.settingsMenu.vaultTitle,
-        ko.nav.settingsMenu.vaultBodyLocal,
-        ko.nav.settingsMenu.vaultBodyStatic,
-        ko.nav.settingsMenu.vaultCtaLocal,
-        ko.nav.settingsMenu.vaultCtaStatic,
+        ko.settingsFolder.folderLabel,
+        ko.settingsFolder.documentsTitle,
+        ko.settingsFolder.documentsBodyLocal,
+        ko.settingsFolder.documentsBodyStatic,
+        ko.settingsFolder.documentsCtaLocal,
+        ko.settingsFolder.documentsCtaStatic,
         ko.rootEntry.openingLocalVaultPicker,
         ko.searchWidgets.hero.ontologyAriaLabel,
         ko.searchWidgets.workspaceStrip.ontologyTitle,
@@ -337,9 +327,9 @@ describe('i18n message catalog', () => {
     // sentences, this scans **the whole section-name set**.
     const visibleCopy = [
       JSON.stringify(settings.section),
-      settings.goToMcp,
-      settings.goToModels,
-      settings.goToModelsHint,
+      ko.settingsAgents.codingToolsLabel,
+      ko.settingsAgents.modelsLabel,
+      ko.settingsAgents.mcpLabel,
       settings.agentStatusNoVault,
       settings.agentNoVaultHint,
       settings.mcpProofTitle,
@@ -350,28 +340,12 @@ describe('i18n message catalog', () => {
 
     assert.equal(settings.mcpProofTitle, '실제로 연결됐는지 확인하기');
     assert.match(visibleCopy, /에이전트/);
-    /*
-     * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This used to compare the first characters
-     * of `section.agent` and `section.ai`. The `agent` section then left for the
-     * "Agent" destination — what remains in the sheet is a **signpost row** pointing
-     * there.
-     *
-     * The **locked property is unchanged**: within the connect group, can the eye
-     * separate the two rows by first character? That they cannot when both start with
-     * the same character was the basis for the rename.
-     */
-    /*
-     * ⚠️ The signpost row became `goToMcp` on 2026-09-05 (PO council) when it was re-aimed at the
-     * MCP destination. **The locked property is unchanged**: inside the connect group, can the eye
-     * separate the two rows by first character?
-     */
-    /*
-     * ⚠️ The API Key pane left for Agents → Models on 2026-09-25; the connect group now holds two
-     * pointer rows (MCP, Models) and the workspace pane. The locked property is unchanged: the
-     * rows in that group start with different characters.
-     */
-    const connectRows = [settings.goToMcp, settings.goToModels, settings.section.workspace];
-    assert.equal(new Set(connectRows.map((label) => label[0])).size, connectRows.length);
+    const doorRows = [
+      ko.settingsAgents.codingToolsLabel,
+      ko.settingsAgents.modelsLabel,
+      ko.settingsAgents.mcpLabel,
+    ];
+    assert.equal(new Set(doorRows.map((label) => label[0])).size, doorRows.length);
     assert.equal(settings.section.ai, undefined, 'the API Key pane is a pointer row now, not a section');
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
@@ -632,13 +606,12 @@ describe('i18n message catalog', () => {
       en.metadata.pages.docs,
       en.navRail.docs,
       en.nav.settingsMenu.triggerTitle,
-      en.nav.settingsMenu.groupWorkspace,
-      en.nav.settingsMenu.workspaceFolderLabel,
-      en.nav.settingsMenu.vaultTitle,
-      en.nav.settingsMenu.vaultBodyLocal,
-      en.nav.settingsMenu.vaultBodyStatic,
-      en.nav.settingsMenu.vaultCtaLocal,
-      en.nav.settingsMenu.vaultCtaStatic,
+      en.settingsFolder.folderLabel,
+      en.settingsFolder.documentsTitle,
+      en.settingsFolder.documentsBodyLocal,
+      en.settingsFolder.documentsBodyStatic,
+      en.settingsFolder.documentsCtaLocal,
+      en.settingsFolder.documentsCtaStatic,
       en.searchWidgets.shortcuts.sections.docsPalette,
       en.searchWidgets.shortcuts.sections.docsGraph,
       en.searchWidgets.shortcuts.sections.docsSource,
@@ -693,15 +666,13 @@ describe('i18n message catalog', () => {
     // The settings card keeps the compatible `/docs/` address, so it names the Ontology
     // section inside Library rather than claiming to be a second Library destination.
     assert.ok(
-      en.nav.settingsMenu.vaultTitle.includes(en.navRail.docs),
+      en.settingsFolder.documentsTitle.includes(en.navRail.docs),
       'the settings card must name the Ontology section it opens',
     );
     assert.ok(
-      !en.nav.settingsMenu.vaultTitle.includes(en.navRail.library),
+      !en.settingsFolder.documentsTitle.includes(en.navRail.library),
       'the Ontology section card must not claim to open the whole Library destination',
     );
-    assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
-    assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
     // Property, not wording — see the Korean half of this file for why.
     assert.doesNotMatch(en.docsVault.desktopWelcome.contractAriaLabel, /\bcontract\b/i);
