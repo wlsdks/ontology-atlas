@@ -370,10 +370,11 @@ export function DocsQuickDrawer({
   }, [open, onClose]);
 
   const docs: FlatDoc[] = useMemo(() => {
+    const metaBySlug = new Map(activeManifest.docs.map((d) => [d.slug, d]));
     const all = flattenDocs(activeManifest.tree as VaultTreeNode)
       .filter((n) => n.type === "doc" && n.slug)
       .map((n) => {
-        const meta = activeManifest.docs.find((d) => d.slug === n.slug);
+        const meta = metaBySlug.get(n.slug as string);
         const canonical = n.title ?? n.name;
         return {
           slug: n.slug as string,

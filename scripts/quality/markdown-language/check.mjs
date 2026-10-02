@@ -99,7 +99,8 @@ export function runMarkdownLanguageCheck({ root = process.cwd(), json = false } 
   } else {
     console.log(
       `[markdown-language] scanned ${audit.scannedFiles} canonical files · `
-      + `${audit.allowedLocaleLines} display_ko lines · ${audit.localeTemplateFiles} Korean template files`,
+      + `${audit.allowedLocaleLines} display_ko lines · ${audit.localeTemplateFiles} Korean template files · `
+      + `${audit.localizedReadmeFiles} localized READMEs · ${audit.languageSwitcherLines} language switcher lines`,
     );
     for (const [scopeName, scope] of Object.entries(audit.scopes)) {
       console.log(

@@ -19,8 +19,8 @@ mod acp;
 mod acp_doctor;
 mod agent_setup;
 mod analysis_archive;
-mod connector_secrets;
 mod command_output;
+mod connector_secrets;
 mod connectors;
 mod deep_link;
 mod errors;
@@ -399,12 +399,24 @@ fn is_safe_verify_base_url(value: &str) -> bool {
             .any(|ch| ch.is_whitespace() || matches!(ch, '"' | '\'' | '`' | '<' | '>' | '\\'))
 }
 
-fn webview_verify_locale_root(route: &str) -> &str {
-    if route.starts_with("/ko/") {
-        "/ko/"
-    } else {
-        "/en/"
-    }
+pub(crate) const APP_LOCALES: [&str; 2] = ["en", "ko"];
+const DEFAULT_APP_LOCALE: &str = "en";
+
+fn webview_verify_locale<'a>(route: &str, locales: &[&'a str]) -> &'a str {
+    locales
+        .iter()
+        .copied()
+        .find(|locale| {
+            route
+                .strip_prefix('/')
+                .and_then(|rest| rest.strip_prefix(*locale))
+                .is_some_and(|rest| rest.starts_with('/'))
+        })
+        .unwrap_or(DEFAULT_APP_LOCALE)
+}
+
+fn webview_verify_locale_root(route: &str, locales: &[&str]) -> String {
+    format!("/{}/", webview_verify_locale(route, locales))
 }
 
 fn parse_verify_window_size(value: &str) -> Option<(f64, f64)> {
@@ -441,12 +453,12 @@ fn write_verify_line(line: String) {
 }
 
 fn build_webview_verify_route_reset_script(route: &str) -> String {
-    let locale_root = js_string_literal(webview_verify_locale_root(route));
-    let locale = js_string_literal(if route.starts_with("/ko/") {
-        "ko"
-    } else {
-        "en"
-    });
+    build_webview_verify_route_reset_script_for(route, &APP_LOCALES)
+}
+
+fn build_webview_verify_route_reset_script_for(route: &str, locales: &[&str]) -> String {
+    let locale_root = js_string_literal(&webview_verify_locale_root(route, locales));
+    let locale = js_string_literal(webview_verify_locale(route, locales));
     format!(
         r#"(() => {{
   try {{
@@ -2338,6 +2350,80 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
     })
 }
 
+const VAULT_TEXT_BATCH_MAX: usize = 256;
+const VAULT_TEXT_BATCH_FILE_MAX_BYTES: u64 = 4 * 1024 * 1024;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriTextFileRead {
+    relative_path: String,
+    text: Option<String>,
+    last_modified: Option<u128>,
+    error: Option<String>,
+}
+
+#[tauri::command(async)]
+fn read_vault_text_files(
+    root_path: String,
+    relative_paths: Vec<String>,
+) -> Result<Vec<TauriTextFileRead>, String> {
+    if relative_paths.len() > VAULT_TEXT_BATCH_MAX {
+        return Err(format!(
+            "at most {VAULT_TEXT_BATCH_MAX} files are read in one batch"
+        ));
+    }
+    let root = canonical_root(&root_path)?;
+    Ok(relative_paths
+        .into_iter()
+        .map(
+            |relative_path| match read_vault_markdown(&root, &relative_path) {
+                Ok((text, last_modified)) => TauriTextFileRead {
+                    relative_path,
+                    text: Some(text),
+                    last_modified: Some(last_modified),
+                    error: None,
+                },
+                Err(error) => TauriTextFileRead {
+                    relative_path,
+                    text: None,
+                    last_modified: None,
+                    error: Some(error),
+                },
+            },
+        )
+        .collect())
+}
+
+fn is_visible_markdown(relative: &Path) -> bool {
+    relative.extension().is_some_and(|ext| ext == "md")
+        && !relative
+            .components()
+            .any(|part| part.as_os_str().to_string_lossy().starts_with('.'))
+}
+
+fn read_vault_markdown(root: &Path, relative_path: &str) -> Result<(String, u128), String> {
+    let relative = normalize_relative_path(relative_path)?;
+    if !is_visible_markdown(&relative) {
+        return Err("a batch reads only Markdown outside dot folders".into());
+    }
+    let path = fs::canonicalize(root.join(&relative)).map_err(|err| err.to_string())?;
+    let Ok(target) = path.strip_prefix(root) else {
+        return Err("resolved path must stay inside the selected vault".into());
+    };
+    if !is_visible_markdown(target) {
+        return Err("a batch reads only Markdown outside dot folders".into());
+    }
+    let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
+    if metadata.len() > VAULT_TEXT_BATCH_FILE_MAX_BYTES {
+        return Err(format!(
+            "a batch reads files up to {VAULT_TEXT_BATCH_FILE_MAX_BYTES} bytes"
+        ));
+    }
+    let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    let last_modified = metadata_mtime_ms(&path)?;
+    Ok((text, last_modified))
+}
+
 #[tauri::command(async)]
 fn read_vault_text_tail(
     root_path: String,
@@ -3066,43 +3152,72 @@ struct NativeTrayLabels {
 }
 
 #[cfg(target_os = "macos")]
-fn native_tray_labels(language_hint: &str) -> NativeTrayLabels {
-    let hint = language_hint.to_ascii_lowercase();
-    if hint.contains("ko") || hint.contains("korean") {
-        NativeTrayLabels {
+fn locale_for_language_tag<'a>(tag: &str, locales: &[&'a str]) -> Option<&'a str> {
+    let tag = tag.trim().to_ascii_lowercase().replace('_', "-");
+    let tag = tag.split('.').next().unwrap_or_default();
+    let mut parts = tag.split('-');
+    let primary = parts.next().unwrap_or_default();
+    if primary == "zh" && parts.any(|part| matches!(part, "hant" | "tw" | "hk" | "mo")) {
+        return None;
+    }
+    locales.iter().copied().find(|locale| *locale == primary)
+}
+
+#[cfg(target_os = "macos")]
+fn native_tray_locale<'a>(candidates: &[String], locales: &[&'a str]) -> &'a str {
+    candidates
+        .iter()
+        .find_map(|tag| locale_for_language_tag(tag, locales))
+        .unwrap_or(DEFAULT_APP_LOCALE)
+}
+
+#[cfg(target_os = "macos")]
+fn native_tray_labels(candidates: &[String], locales: &[&str]) -> NativeTrayLabels {
+    match native_tray_locale(candidates, locales) {
+        "ko" => NativeTrayLabels {
             open: "Ontology Atlas 열기",
             quit: "Ontology Atlas 종료",
-        }
-    } else {
-        NativeTrayLabels {
+        },
+        _ => NativeTrayLabels {
             open: "Open Ontology Atlas",
             quit: "Quit Ontology Atlas",
-        }
+        },
     }
 }
 
 #[cfg(target_os = "macos")]
-fn macos_language_hint() -> String {
-    let mut hint = ["LANG", "LC_ALL", "LC_MESSAGES"]
-        .iter()
-        .filter_map(|key| std::env::var(key).ok())
-        .collect::<Vec<_>>()
-        .join(" ");
+fn first_apple_language(defaults_output: &str) -> Option<String> {
+    defaults_output
+        .lines()
+        .map(|line| line.trim().trim_matches(|ch| ch == ',' || ch == '"'))
+        .find(|line| !line.is_empty() && *line != "(" && *line != ")")
+        .map(str::to_string)
+}
+
+#[cfg(target_os = "macos")]
+fn macos_language_candidates() -> Vec<String> {
+    let mut candidates = Vec::new();
     if let Ok(output) = Command::new("defaults")
         .args(["read", "-g", "AppleLanguages"])
         .output()
     {
-        hint.push(' ');
-        hint.push_str(&String::from_utf8_lossy(&output.stdout));
+        candidates.extend(first_apple_language(&String::from_utf8_lossy(
+            &output.stdout,
+        )));
     }
-    hint
+    candidates.extend(
+        ["LC_ALL", "LC_MESSAGES", "LANG"]
+            .iter()
+            .filter_map(|key| std::env::var(key).ok()),
+    );
+    candidates
 }
 
 /// Restores the existing window only; never a second window, never keeps the app
 /// alive after quit, and exposes no tray or menu permission to the webview.
 #[cfg(target_os = "macos")]
 fn install_native_tray(app: &mut tauri::App) -> tauri::Result<()> {
-    let labels = native_tray_labels(&macos_language_hint());
+    let labels = native_tray_labels(&macos_language_candidates(), &APP_LOCALES);
     let open =
         tauri::menu::MenuItem::with_id(app, NATIVE_TRAY_OPEN_ID, labels.open, true, None::<&str>)?;
     let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
@@ -3838,6 +3953,7 @@ pub fn run() {
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
+            read_vault_text_files,
             read_vault_text_tail,
             read_vault_binary_file,
             write_vault_text_file,
@@ -4120,21 +4236,93 @@ mod tests {
     }
     #[cfg(target_os = "macos")]
     #[test]
-    fn native_tray_labels_follow_the_system_language_hint() {
+    fn native_tray_labels_follow_the_first_system_language() {
+        let ko = crate::NativeTrayLabels {
+            open: "Ontology Atlas 열기",
+            quit: "Ontology Atlas 종료",
+        };
+        let en = crate::NativeTrayLabels {
+            open: "Open Ontology Atlas",
+            quit: "Quit Ontology Atlas",
+        };
+        let tags = |list: &[&str]| list.iter().map(|t| t.to_string()).collect::<Vec<_>>();
         assert_eq!(
-            crate::native_tray_labels("(\n    \"ko-KR\",\n    \"en-US\"\n)"),
-            crate::NativeTrayLabels {
-                open: "Ontology Atlas 열기",
-                quit: "Ontology Atlas 종료",
-            }
+            crate::native_tray_labels(&tags(&["ko-KR", "en-US"]), &crate::APP_LOCALES),
+            ko
         );
         assert_eq!(
-            crate::native_tray_labels("en_US.UTF-8"),
-            crate::NativeTrayLabels {
-                open: "Open Ontology Atlas",
-                quit: "Quit Ontology Atlas",
-            }
+            crate::native_tray_labels(&tags(&["en-US", "ko-KR"]), &crate::APP_LOCALES),
+            en
         );
+        assert_eq!(
+            crate::native_tray_labels(&tags(&["C", "ko_KR.UTF-8"]), &crate::APP_LOCALES),
+            ko
+        );
+        assert_eq!(crate::native_tray_labels(&[], &crate::APP_LOCALES), en);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn native_tray_locale_maps_any_injected_locale_list() {
+        let four = ["en", "ko", "ja", "zh"];
+        let tags = |list: &[&str]| list.iter().map(|t| t.to_string()).collect::<Vec<_>>();
+        for (tag, expected) in [
+            ("ja-JP", "ja"),
+            ("ja", "ja"),
+            ("zh-Hans-CN", "zh"),
+            ("zh-CN", "zh"),
+            ("zh_SG.UTF-8", "zh"),
+            ("zh", "zh"),
+            ("zh-Hant-TW", "en"),
+            ("zh-TW", "en"),
+            ("zh-HK", "en"),
+            ("fr-FR", "en"),
+            ("", "en"),
+        ] {
+            assert_eq!(
+                crate::native_tray_locale(&tags(&[tag]), &four),
+                expected,
+                "{tag}"
+            );
+        }
+        assert_eq!(
+            crate::native_tray_locale(&tags(&["ja-JP"]), &["en", "ko"]),
+            "en"
+        );
+        assert_eq!(
+            crate::first_apple_language("(\n    \"ja-JP\",\n    en\n)").as_deref(),
+            Some("ja-JP")
+        );
+        assert_eq!(crate::first_apple_language("(\n)"), None);
+    }
+
+    #[test]
+    fn webview_verify_locale_follows_the_injected_list() {
+        let four = ["en", "ko", "ja", "zh"];
+        for (route, expected) in [
+            ("/ja/topology/", "ja"),
+            ("/zh/", "zh"),
+            ("/ko/topology/", "ko"),
+            ("/en/topology/", "en"),
+            ("/jax/", "en"),
+            ("/ja", "en"),
+            ("", "en"),
+            ("/", "en"),
+        ] {
+            assert_eq!(
+                crate::webview_verify_locale(route, &four),
+                expected,
+                "{route}"
+            );
+        }
+        assert_eq!(
+            crate::webview_verify_locale("/ja/topology/", &crate::APP_LOCALES),
+            "en"
+        );
+        assert_eq!(crate::webview_verify_locale_root("/zh/map/", &four), "/zh/");
+        let script = crate::build_webview_verify_route_reset_script_for("/ja/topology/", &four);
+        assert!(script.contains("\"/ja/\""));
+        assert!(script.contains("\"ja\""));
     }
 
     /// The screen's address goes straight to the OS, so a bypass could open anything.
@@ -4738,7 +4926,8 @@ mod tests {
             .unwrap()
             .as_nanos();
         let root = std::env::temp_dir().join(format!("ontology-atlas-list-links-{nonce}"));
-        let outside = std::env::temp_dir().join(format!("ontology-atlas-list-links-outside-{nonce}"));
+        let outside =
+            std::env::temp_dir().join(format!("ontology-atlas-list-links-outside-{nonce}"));
         fs::create_dir_all(root.join("wiki/team")).unwrap();
         fs::create_dir_all(&outside).unwrap();
         fs::write(root.join("wiki/plan.md"), "plan").unwrap();
@@ -4759,7 +4948,12 @@ mod tests {
         );
         assert_eq!(
             named(list_vault_directory(root_path.clone(), "wiki".into(), Some(true)).unwrap()),
-            vec!["elsewhere:symlink", "escape.md:symlink", "plan.md:file", "team:directory"]
+            vec![
+                "elsewhere:symlink",
+                "escape.md:symlink",
+                "plan.md:file",
+                "team:directory"
+            ]
         );
 
         fs::remove_dir_all(root).ok();
@@ -5973,6 +6167,148 @@ mod vault_scope_tests {
         std::fs::create_dir_all(&base).unwrap();
         assert!(canonical_root(&base.to_string_lossy()).is_ok());
         assert!(canonical_root(&base.join("missing").to_string_lossy()).is_err());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+}
+
+#[cfg(test)]
+mod vault_text_batch_tests {
+    use super::{read_vault_text_files, VAULT_TEXT_BATCH_FILE_MAX_BYTES, VAULT_TEXT_BATCH_MAX};
+
+    fn vault(name: &str) -> std::path::PathBuf {
+        let base =
+            std::env::temp_dir().join(format!("atlas-text-batch-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("vault/domains")).unwrap();
+        std::fs::create_dir_all(base.join("vault/.claude")).unwrap();
+        std::fs::write(base.join("vault/project.md"), "# project").unwrap();
+        std::fs::write(base.join("vault/domains/order.md"), "# order").unwrap();
+        std::fs::write(base.join("vault/.claude/notes.md"), "hidden").unwrap();
+        std::fs::write(base.join("vault/.env.md"), "hidden").unwrap();
+        std::fs::write(base.join("vault/plan.txt"), "not markdown").unwrap();
+        std::fs::write(base.join("outside.md"), "outside").unwrap();
+        base
+    }
+
+    #[test]
+    fn reads_every_requested_markdown_file_in_the_order_asked() {
+        let base = vault("order");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root, vec!["domains/order.md".into(), "project.md".into()])
+                .unwrap();
+        let paths: Vec<&str> = read
+            .iter()
+            .map(|file| file.relative_path.as_str())
+            .collect();
+        assert_eq!(paths, ["domains/order.md", "project.md"]);
+        assert_eq!(read[0].text.as_deref(), Some("# order"));
+        assert_eq!(read[1].text.as_deref(), Some("# project"));
+        assert!(read
+            .iter()
+            .all(|file| file.error.is_none() && file.last_modified.is_some()));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_file_it_may_not_read_fails_alone_and_says_why() {
+        let base = vault("refuse");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read = read_vault_text_files(
+            root,
+            vec![
+                ".claude/notes.md".into(),
+                ".env.md".into(),
+                "plan.txt".into(),
+                "../outside.md".into(),
+                "missing.md".into(),
+                "project.md".into(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(read.len(), 6);
+        for refused in &read[..5] {
+            assert!(refused.text.is_none(), "{} was read", refused.relative_path);
+            assert!(
+                refused.error.is_some(),
+                "{} has no reason",
+                refused.relative_path
+            );
+        }
+        assert_eq!(read[5].text.as_deref(), Some("# project"));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_link_that_leaves_the_vault_is_not_followed() {
+        use std::os::unix::fs::symlink;
+        let base = vault("link");
+        symlink(base.join("outside.md"), base.join("vault/linked.md")).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read = read_vault_text_files(root, vec!["linked.md".into()]).unwrap();
+        assert!(read[0].text.is_none());
+        let reason = read[0].error.clone().unwrap_or_default();
+        assert!(reason.contains("stay inside"), "{reason}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_markdown_name_linked_to_a_dot_file_is_not_read() {
+        use std::os::unix::fs::symlink;
+        let base = vault("dotlink");
+        std::fs::write(base.join("vault/.env"), "SECRET=1").unwrap();
+        symlink(".env", base.join("vault/notes.md")).unwrap();
+        symlink(".claude/notes.md", base.join("vault/claude.md")).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root, vec!["notes.md".into(), "claude.md".into()]).unwrap();
+        for refused in &read {
+            assert!(refused.text.is_none(), "{} was read", refused.relative_path);
+            assert!(refused.error.is_some());
+        }
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_file_past_the_byte_bound_is_left_to_the_single_read() {
+        let base = vault("bytes");
+        let large = "x".repeat(VAULT_TEXT_BATCH_FILE_MAX_BYTES as usize + 1);
+        std::fs::write(base.join("vault/large.md"), &large).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root.clone(), vec!["large.md".into(), "project.md".into()])
+                .unwrap();
+        assert!(read[0].text.is_none());
+        let reason = read[0].error.clone().unwrap_or_default();
+        assert!(reason.contains("bytes"), "{reason}");
+        assert_eq!(read[1].text.as_deref(), Some("# project"));
+        assert_eq!(
+            super::read_vault_text_file(root, "large.md".into())
+                .unwrap()
+                .text
+                .len(),
+            large.len()
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn refuses_a_batch_past_the_bound_and_an_ungranted_root() {
+        let base = vault("bound");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let too_many = vec!["project.md".to_string(); VAULT_TEXT_BATCH_MAX + 1];
+        assert!(read_vault_text_files(root.clone(), too_many).is_err());
+        assert!(read_vault_text_files(root.clone(), Vec::new())
+            .unwrap()
+            .is_empty());
+
+        let granted = std::fs::canonicalize(base.join("vault/domains")).unwrap();
+        let scope = crate::vault_grants::EnforcedScope::granting(&[granted]);
+        let err = read_vault_text_files(root, vec!["project.md".into()]).unwrap_err();
+        assert!(err.contains("not-granted"), "{err}");
+        drop(scope);
         let _ = std::fs::remove_dir_all(&base);
     }
 }

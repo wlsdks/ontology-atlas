@@ -1,4 +1,5 @@
 import type { NormalizedResponse, ProviderAdapter, TurnAssembly } from './provider-adapter';
+import { isCompileWikiPath } from './compile-wiki-reader';
 import { openaiAdapter } from './providers/openai';
 
 /** How many times one turn may be told to stop answering in prose and propose the page. */
@@ -38,8 +39,7 @@ function payloadOf(result: TurnAssembly['exchanges'][number]['toolResults'][numb
 }
 
 function wikiPath(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  return /^wiki\/[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(value) ? value : null;
+  return typeof value === 'string' && isCompileWikiPath(value) ? value : null;
 }
 
 function wikiTargetsMentioned(userText: string): string[] {

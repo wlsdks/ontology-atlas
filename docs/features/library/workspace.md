@@ -407,8 +407,9 @@ left, rows aligned, so no citation crosses another stack's names. Measured in Ch
 island named — the quiet overview paints in four fills, one per ink. The layout itself
 takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
 The folder walk admits up to 100,000 tracked entries in both web and native paths.
-Beyond that ceiling or depth 12 it reports truncation. Browser metadata reads are pooled
-at 16 in flight. This capacity bound does not promise a frame rate or an opening time
+Beyond that ceiling or depth 12 it reports truncation. Folders are listed eight at a time,
+browser reads are pooled at 64 in flight, and the app reads Markdown 64 files per native call
+with eight calls in flight. This capacity bound does not promise a frame rate or an opening time
 for every 100,000-file folder. Gates:
 `tests/e2e/library-graph-islands.spec.ts`. Decision:
 `docs/records/decisions/2026-09-18-library-islands-map-*.md`.

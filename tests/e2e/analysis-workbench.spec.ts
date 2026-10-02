@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import en from '../../messages/en.json';
-import ko from '../../messages/ko.json';
+import { readFileSync } from 'node:fs';
+import { FIT_LOCALES } from './locales';
 import { seedFirstRunSeen } from './first-run-seed';
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
@@ -45,7 +46,7 @@ test('a selected concept opens meaning and draws bounded directional relation ca
   await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap?: { relationCaptions?: () => CaptionBox[] } }).__atlasMap?.relationCaptions?.().length ?? -1)).toBe(0);
 });
 
-for (const locale of ['en', 'ko'] as const) {
+for (const locale of FIT_LOCALES) {
 for (const width of [1040, 2560]) {
   test(`${locale}: meaning review and close remain reachable at ${width}px`, async ({ page }) => {
     const height = width <= 1040 ? 720 : 1080;
@@ -59,7 +60,7 @@ for (const width of [1040, 2560]) {
       const frame = document.querySelector('[data-agent-dock-frame]');
       return surface && frame && Number(getComputedStyle(surface).opacity) > 0.99 && [...surface.getAnimations(), ...frame.getAnimations()].every((animation) => animation.playState !== 'running');
     });
-    const closeLabel = (locale === 'ko' ? ko : en).analysisWorkbench.close;
+    const closeLabel = (JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as typeof en).analysisWorkbench.close;
     const proof = await panel.evaluate((element, closeLabel) => {
       const box = element.getBoundingClientRect();
       const close = [...element.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.getAttribute('aria-label') === closeLabel)!;

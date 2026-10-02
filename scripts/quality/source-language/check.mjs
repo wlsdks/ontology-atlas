@@ -84,6 +84,14 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
     allow: /\b(?:includes|startsWith|endsWith|test|some|every)\(|[=!]==/,
   }),
   Object.freeze({
+    id: 'locale-vocabulary-table',
+    path: 'scripts/lib/locale-vocabulary.mjs',
+    why:
+      'The per-locale word table the copy gates read. Each Korean entry is the word a gate '
+      + 'looks for in the Korean catalog, so translating it would stop the gate finding it.',
+    allow: 'file',
+  }),
+  Object.freeze({
     id: 'benchmark-korean-prompts',
     path: 'scripts/benchmark.mjs',
     why:

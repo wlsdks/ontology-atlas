@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildLocalManifest } from './build-local-manifest';
-import { deriveOntologyFromVault } from './derive-ontology-from-vault';
+import { deriveArrivedOntology, deriveOntologyFromVault } from './derive-ontology-from-vault';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 function makeDoc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
@@ -608,5 +608,27 @@ describe('authored definition projection through the local manifest', () => {
       expect(manifest.docs[0].excerpt).toContain('Persisting a report.');
       expect(await (await file.getFile()).text()).toContain('## Excludes\nPersisting a report.');
     }
+  });
+});
+
+describe('deriveArrivedOntology', () => {
+  it('draws only documents already read and the relations between them', () => {
+    const arrived = deriveArrivedOntology(
+      makeManifest([
+        makeDoc({ slug: 'domains/order', frontmatter: { kind: 'domain', title: 'Order' } }),
+        makeDoc({
+          slug: 'capabilities/checkout',
+          frontmatter: {
+            kind: 'capability',
+            title: 'Checkout',
+            domain: 'domains/order',
+            elements: ['elements/cart', 'elements/payment'],
+          },
+        }),
+      ]),
+    );
+
+    expect(arrived.nodes.map((node) => node.id).sort()).toEqual(['capability:checkout', 'domain:order']);
+    expect(arrived.edges.map((edge) => edge.id)).toEqual(['domain:order--contains-->capability:checkout']);
   });
 });

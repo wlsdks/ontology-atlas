@@ -4,7 +4,7 @@ import {
   VAULT_WALK_MAX_DEPTH,
   VAULT_WALK_MAX_ENTRIES,
   walkVault,
-} from './build-local-manifest';
+} from './walk-vault';
 
 /**
  * The walk's boundary: a repository root picked as a vault must not drag build trees across IPC.
@@ -126,6 +126,54 @@ describe('walkVault boundaries', () => {
     expect(result.entries.length).toBeLessThanOrEqual(VAULT_WALK_MAX_ENTRIES);
     // Truncation must be reported, never silent.
     expect(result.truncated).toBe(true);
+  });
+
+  it('lists sibling folders at the same time and keeps the depth-first order', async () => {
+    let listing = 0;
+    let peak = 0;
+    class SlowDir extends FakeDir {
+      async *entries(): AsyncGenerator<Entry> {
+        listing += 1;
+        peak = Math.max(peak, listing);
+        for (let i = 0; i < 5; i += 1) await Promise.resolve();
+        listing -= 1;
+        yield* super.entries();
+      }
+    }
+    const slow = (name: string, children: Array<FakeFile | FakeDir>) =>
+      new SlowDir(name, children.map((child) => [child.name, child] as Entry));
+    const result = await run(
+      slow('vault', [
+        file('atlas.md'),
+        slow('domains', [file('order.md'), slow('nested', [file('deep.md')])]),
+        slow('capabilities', [file('checkout.md')]),
+        slow('elements', [file('cart.md'), file('cover.png')]),
+      ]),
+    );
+
+    expect(peak).toBeGreaterThan(1);
+    expect(result.entries.map((e) => e.relativePath)).toEqual([
+      'atlas.md',
+      'domains/order.md',
+      'domains/nested/deep.md',
+      'capabilities/checkout.md',
+      'elements/cart.md',
+      'elements/cover.png',
+    ]);
+  });
+
+  it('keeps the entries a depth-first walk keeps when the entry cap cuts a deep tree', async () => {
+    const deep = dir('a', [dir('a1', [dir('a2', Array.from({ length: 10 }, (_, i) => file(`f${i}.md`)))])]);
+    const wide = dir('b', Array.from({ length: VAULT_WALK_MAX_ENTRIES }, (_, i) => file(`n${i}.md`)));
+    const result = await run(dir('vault', [deep, wide]));
+
+    expect(result.truncated).toBe(true);
+    expect(result.entries).toHaveLength(VAULT_WALK_MAX_ENTRIES);
+    expect(result.entries.slice(0, 11).map((e) => e.relativePath)).toEqual([
+      ...Array.from({ length: 10 }, (_, i) => `a/a1/a2/f${i}.md`),
+      'b/n0.md',
+    ]);
+    expect(result.entries.at(-1)?.relativePath).toBe(`b/n${VAULT_WALK_MAX_ENTRIES - 11}.md`);
   });
 
   it('stops at the depth cap and says it stopped', async () => {

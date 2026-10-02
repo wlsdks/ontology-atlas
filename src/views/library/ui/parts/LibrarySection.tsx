@@ -29,6 +29,7 @@ import { captionWindow } from "../../lib/caption-window";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/use-roving-rows";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { StateBadge } from "./StateBadge";
 import { IndexGlyph } from "./IndexGlyph";
@@ -1135,7 +1136,7 @@ export function LibrarySection({
             value={newPageTitle}
             onChange={(event) => setNewPageTitle(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (event.key === "Enter" && !isImeComposing(event)) {
                 event.preventDefault();
                 void createNewPage();
               }

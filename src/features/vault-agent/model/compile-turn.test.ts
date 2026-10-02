@@ -102,7 +102,7 @@ type CompileResponse = string | ((sent: Array<{ body: string }>) => string);
 
 async function runCompile(
   bodies: CompileResponse[],
-  options: { userText?: string; existingPage?: { text: string; mtime: number } } = {},
+  options: { userText?: string; existingPage?: { text: string; mtime: number }; wikiSlugs?: string[] } = {},
 ) {
   const sent: Array<{ body: string; vaultChars: number; tools: Array<{ name: string; target: string }> }> = [];
   const executor = createCompileExecutor({
@@ -111,6 +111,7 @@ async function runCompile(
     now: () => new Date('2027-03-04T05:06:07.089Z'),
     readExistingPage: async () => options.existingPage ?? null,
     pageCap: COMPILE_SOURCES_PER_TURN,
+    wikiSlugs: options.wikiSlugs,
   });
 
   let round = 0;
@@ -335,6 +336,34 @@ describe('one Compile turn on a mocked OpenAI-compatible runner', () => {
     expect(executor.proposals()[0]).toMatchObject({ ok: true, existing: existingPage });
     expect(executor.proposals()[0]?.page).toContain('PERSONAL-CHECK-592');
     expect(executor.proposals()[0]?.sourcesRead).toEqual(['sources/quarter-plan.md']);
+  });
+
+  it('ends after a ready revision of an existing page in a wiki subfolder, without another nudge', async () => {
+    const { result, executor, sent } = await runCompile(
+      [
+        toolCallBody([{ id: 'c1', name: 'read_source_text', args: { path: 'sources/quarter-plan.md' } }]),
+        toolCallBody([{ id: 'c2', name: 'read_wiki_page', args: { slug: 'wiki/research/quarter-plan' } }]),
+        (requests) => {
+          const body = JSON.parse(requests.at(-1)!.body) as { messages: Array<{ role: string; content?: string }> };
+          const message = [...body.messages].reverse().find((entry) => entry.role === 'tool');
+          const payload = JSON.parse(message?.content ?? '{}') as { receipt?: string };
+          return toolCallBody([
+            { id: 'c3', name: 'propose_wiki_page', args: { ...GOOD_PAGE, slug: 'wiki/research/quarter-plan', receipt: payload.receipt } },
+          ]);
+        },
+        textBody('Revised answer proposed.'),
+      ],
+      {
+        userText: 'Compile sources/quarter-plan.md and recheck wiki/research/quarter-plan.md.',
+        existingPage: { text: 'old page', mtime: 4242 },
+        wikiSlugs: ['wiki/research/quarter-plan'],
+      },
+    );
+
+    expect(executor.proposals()).toHaveLength(1);
+    expect(executor.proposals()[0]).toMatchObject({ ok: true });
+    expect(sent).toHaveLength(4);
+    expect(result.turn.status).toBe('done');
   });
 
   it('nudges a prose response toward the required Wiki read before proposing', async () => {

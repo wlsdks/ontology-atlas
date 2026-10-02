@@ -9,5 +9,6 @@ export interface Status {
   label: string;
   /** English label, falling back to `label`; defaults must fill it (`taxonomy-locale-label.contract.test.ts`). */
   labelEn?: string;
+  labels?: Partial<Record<string, string>>;
   dotColor: StatusDotColor;
 }

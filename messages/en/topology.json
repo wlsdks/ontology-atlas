@@ -352,6 +352,7 @@
     "censusConcepts": "concepts",
     "sourceDocuments": "documents",
     "sourceDocumentsPartialTitle": "The folder is larger than one read covers, so more documents may be there.",
+    "sourceDocumentsReading": "reading {read} of {total} documents",
     "censusRelations": "relations",
     "censusDomains": "domains",
     "agentSync": "Updated with AI",

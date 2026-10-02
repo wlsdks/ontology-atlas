@@ -4354,3 +4354,21 @@ describe('AcpChatPanel — a connection that never finishes starting', () => {
     expect(screen.queryByTestId('acp-connect-stopped')).toBeNull();
   });
 });
+
+describe('AcpChatPanel composer — IME composition', () => {
+  it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {
+    await bootSession();
+    const box = screen.getByRole('textbox') as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: '결제 흐름을 요약해 줘' } });
+
+    fireEvent.keyDown(box, { key: 'Enter', isComposing: true, keyCode: 229 });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 229 });
+    fireEvent.compositionEnd(box, { data: '줘' });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 13 });
+    expect(box.value).toBe('결제 흐름을 요약해 줘');
+
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 13 });
+    expect(box.value).toBe('');
+    await waitFor(() => expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true));
+  });
+});

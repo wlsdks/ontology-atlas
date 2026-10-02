@@ -86,6 +86,12 @@
       "witness": "@tailwindcss/postcss"
     },
     {
+      "key": "frontend:runtime:devDependencies:package.json:@formatjs/icu-messageformat-parser",
+      "reason": "Only the message catalog checks import the ICU parser, and the scripts scope cannot claim root manifest dependencies.",
+      "consumer": "scripts/lib/message-icu.mjs",
+      "witness": "@formatjs/icu-messageformat-parser"
+    },
+    {
       "key": "frontend:runtime:duplicates:src/shared/motion/tokens.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
       "reason": "The two reduced-motion tokens are named separately on purpose: each surface keeps its own reduced-motion equivalent even while their values coincide.",
       "consumer": "src/shared/motion/tokens.ts",

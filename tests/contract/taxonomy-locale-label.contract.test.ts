@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { DEFAULT_CATEGORIES } from "@/entities/category";
 import { DEFAULT_STATUSES } from "@/entities/status";
+import { routing } from "@/i18n/routing";
 import { pickTaxonomyLabel } from "@/shared/lib/taxonomy-label";
 
 /**
@@ -101,6 +102,18 @@ describe("분류 라벨 — 두 어권을 다 갖고, 고르는 자리는 하나
       const en = pickTaxonomyLabel(entry, "en");
       expect(HANGUL.test(en ?? ""), `${entry.id} → "${en}"`).toBe(false);
       expect(pickTaxonomyLabel(entry, "ko")).toBe(entry.label);
+    }
+  });
+
+  it("every default carries a label for every routing locale", () => {
+    for (const entry of [...DEFAULT_CATEGORIES, ...DEFAULT_STATUSES]) {
+      for (const locale of routing.locales) {
+        const picked = pickTaxonomyLabel(entry, locale);
+        expect(picked?.trim(), `${entry.id} / ${locale}`).toBeTruthy();
+        if (locale !== "ko" && locale !== "en") {
+          expect(entry.labels?.[locale]?.trim(), `${entry.id} has no ${locale} label`).toBeTruthy();
+        }
+      }
     }
   });
 

@@ -563,6 +563,25 @@ export async function readTauriVaultTextFile(
   return { text: file.text, lastModified: file.lastModified };
 }
 
+export interface NativeVaultTextRead {
+  relativePath: string;
+  text: string | null;
+  lastModified: number | null;
+  error: string | null;
+}
+
+export async function readTauriVaultTextFiles(
+  rootPath: string,
+  relativePaths: readonly string[],
+): Promise<NativeVaultTextRead[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<NativeVaultTextRead[]>('read_vault_text_files', {
+    rootPath,
+    relativePaths: [...relativePaths],
+  });
+}
+
 export interface TauriLibraryCollectionsWriteResult {
   written: boolean;
   currentContent: string | null;

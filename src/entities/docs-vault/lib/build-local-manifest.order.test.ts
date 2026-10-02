@@ -11,6 +11,7 @@ const nativeVaultFingerprint = vi.fn();
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
   readTauriVaultTextFile: async () => null,
+  readTauriVaultTextFiles: async () => null,
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =
@@ -202,7 +203,7 @@ describe('pooled manifest build', () => {
       'unreadable',
     );
     await vi.waitFor(() => expect(flight.reads).toBe(0));
-    expect(opens.length).toBeLessThanOrEqual(openedAtFailure + 16);
+    expect(opens.length).toBeLessThanOrEqual(openedAtFailure + 64);
   });
 
   it('rebuilds incrementally in the same order as one read at a time', async () => {

@@ -45,7 +45,7 @@ export function TermHint({
           type="button"
           aria-label={t('trigger', { term: name })}
           data-testid={`term-hint-${term}`}
-          className={controlClass({ shape: 'icon', tone: 'muted', hoverSurface: 'lift', className: 'h-6 w-6' })}
+          className={controlClass({ shape: 'icon', tone: 'muted', hoverInk: 'strong', hoverSurface: 'lift', className: 'h-6 w-6' })}
         >
           <Info size={ICON_SIZE.md} aria-hidden="true" />
         </button>

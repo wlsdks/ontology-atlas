@@ -3,6 +3,7 @@
 import { useCallback, useState, type KeyboardEvent, type Ref } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { controlClass } from '@/shared/ui/control-class';
 import { Input } from '@/shared/ui/input';
 
@@ -62,7 +63,7 @@ export function SettingsSearchField({
       return;
     }
     if (event.key === 'Enter') {
-      if (event.nativeEvent.isComposing || !activeId) return;
+      if (isImeComposing(event) || !activeId) return;
       event.preventDefault();
       onOpen();
       return;

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { deriveBundledProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
+import { LOCALE_META } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
 import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
 
@@ -23,6 +24,9 @@ const STATIC_ROUTES = [
   // the sitemap makes two signals say different things.
   'ontology/insights',
 ];
+
+const hreflangOf = (locale: string): string =>
+  (LOCALE_META as Record<string, { hreflang: string }>)[locale]?.hreflang ?? locale;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /**
@@ -57,7 +61,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           // are ignored.
           languages: {
             ...Object.fromEntries(
-              routing.locales.map((l) => [l, `${SITE_URL}${route ? `/${l}/${route}/` : `/${l}/`}`])
+              routing.locales.map((l) => [
+                hreflangOf(l),
+                `${SITE_URL}${route ? `/${l}/${route}/` : `/${l}/`}`,
+              ])
             ),
             'x-default': `${SITE_URL}${route ? `/${routing.defaultLocale}/${route}/` : `/${routing.defaultLocale}/`}`,
           },
@@ -76,7 +83,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           // a default language for this entry alone.
           languages: {
             ...Object.fromEntries(
-              routing.locales.map((l) => [l, `${SITE_URL}/${l}/project/${project.slug}/`])
+              routing.locales.map((l) => [
+                hreflangOf(l),
+                `${SITE_URL}/${l}/project/${project.slug}/`,
+              ])
             ),
             'x-default': `${SITE_URL}/${routing.defaultLocale}/project/${project.slug}/`,
           },
