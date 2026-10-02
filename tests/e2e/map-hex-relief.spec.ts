@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "./hex-board-vaults";
-import { waitForMapSettled } from "./settle";
+import { waitForMapSettled, waitFrames } from "./settle";
 
 type Pt = [number, number];
 interface Face {
@@ -183,9 +183,8 @@ test("the hex board tilts into relief by chip and Shift-drag, and a click picks 
   expect(JSON.parse((await canvas.getAttribute("data-frame"))!).offset).not.toEqual(JSON.parse(before!).offset);
 
   const frames = await page.evaluate(() => (window as ReliefProbe).__atlasHexRelief!.state().frames);
-  // measurement window: a board at rest paints no frame for 1.5 s
-  await page.waitForTimeout(1_500);
-  expect(await page.evaluate(() => (window as ReliefProbe).__atlasHexRelief!.state().frames), "frames painted at rest").toBe(frames);
+  await waitFrames(page, 90);
+  expect(await page.evaluate(() => (window as ReliefProbe).__atlasHexRelief!.state().frames), "frames painted in 90 animation frames at rest").toBe(frames);
 });
 
 test("a remembered relief comes back on the next visit", async ({ page }) => {
