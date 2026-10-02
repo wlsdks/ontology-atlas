@@ -92,11 +92,9 @@ fn subcommand_of<'a>(args: &[&'a str]) -> Option<&'a str> {
     None
 }
 
-/// Diff, log, and show honour `diff.external` and per-driver `textconv`, both of
-/// which run a config-supplied command; `--no-ext-diff --no-textconv` right after
-/// the subcommand disables them without affecting other verbs.
+/// Read commands must not run repository-controlled diff, textconv or signature programs.
 fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
-    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 2);
+    let mut out: Vec<&str> = Vec::with_capacity(args.len() + 3);
     let mut guarded = false;
     let mut skip_value = false;
     for arg in args {
@@ -119,6 +117,9 @@ fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
         if matches!(*arg, "diff" | "log" | "show") {
             out.push("--no-ext-diff");
             out.push("--no-textconv");
+        }
+        if matches!(*arg, "log" | "show") {
+            out.push("--no-show-signature");
         }
         guarded = true;
     }

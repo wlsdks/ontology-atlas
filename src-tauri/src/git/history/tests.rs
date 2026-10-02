@@ -220,3 +220,85 @@ fn an_unavailable_blob_is_not_a_deleted_file_and_does_not_fetch_implicitly() {
     );
     assert_eq!(control.stdout, b"local fixture blob");
 }
+
+#[test]
+fn an_unreadable_head_is_not_an_empty_history() {
+    let repo = Repo::new();
+    repo.commit("domain.md", b"valid");
+    fs::write(
+        repo.root.join(".git/HEAD"),
+        "1111111111111111111111111111111111111111\n",
+    )
+    .unwrap();
+    assert!(
+        matches!(list(repo.path(), &["domain".into()], None), Err(error) if error.starts_with("git-history-unavailable"))
+    );
+}
+
+#[test]
+fn signature_programs_are_disabled_for_both_log_and_show() {
+    for verb in ["log", "show"] {
+        assert!(with_diff_family_guard(&[verb, "HEAD"]).contains(&"--no-show-signature"));
+    }
+    assert!(!with_diff_family_guard(&["diff", "HEAD"]).contains(&"--no-show-signature"));
+}
+
+#[cfg(unix)]
+#[test]
+fn signed_history_does_not_execute_repository_programs() {
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+    use std::process::Stdio;
+    let repo = Repo::new();
+    repo.commit("domain.md", b"valid");
+    let out = Command::new("git")
+        .args(["rev-parse", "HEAD^{tree}"])
+        .current_dir(&repo.root)
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let tree = String::from_utf8(out.stdout).unwrap();
+    let object = format!("tree {}\nauthor Fixture <fixture@example.invalid> 1700000000 +0000\ncommitter Fixture <fixture@example.invalid> 1700000000 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n fixture\n -----END PGP SIGNATURE-----\n\nFixture\n", tree.trim());
+    let mut hash = Command::new("git")
+        .args(["hash-object", "-t", "commit", "-w", "--stdin"])
+        .current_dir(&repo.root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    hash.stdin
+        .take()
+        .unwrap()
+        .write_all(object.as_bytes())
+        .unwrap();
+    let out = hash.wait_with_output().unwrap();
+    assert!(out.status.success());
+    let commit = String::from_utf8(out.stdout).unwrap();
+    repo.git(&["update-ref", "HEAD", commit.trim()]);
+    let program = repo.root.join("fake-gpg");
+    let marker = repo.root.join("executed");
+    fs::write(
+        &program,
+        format!(
+            "#!/bin/sh\nprintf executed > '{}'\nexit 0\n",
+            marker.display()
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&program, fs::Permissions::from_mode(0o755)).unwrap();
+    repo.git(&["config", "log.showSignature", "true"]);
+    repo.git(&["config", "gpg.program", program.to_str().unwrap()]);
+    let refs = list(repo.path(), &["domain".into()], None).unwrap();
+    assert_eq!(refs.len(), 1);
+    assert!(!marker.exists());
+    let control = Command::new("git")
+        .args(["log", "-1", "--format=%H"])
+        .current_dir(&repo.root)
+        .output()
+        .unwrap();
+    assert!(control.status.success());
+    assert!(
+        marker.exists(),
+        "the planted program must be executable in the unguarded control"
+    );
+}

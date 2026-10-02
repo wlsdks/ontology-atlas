@@ -94,7 +94,7 @@ pub(super) fn list(
             MAX_LOG_BYTES,
         )?;
         if !success {
-            continue;
+            return Err(coded("git-history-unavailable", ""));
         }
         for line in log.lines() {
             let Some((revision, iso_time)) = line.trim().split_once(' ') else {
