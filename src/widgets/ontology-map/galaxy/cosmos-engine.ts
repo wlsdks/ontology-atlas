@@ -1,4 +1,3 @@
-import { isDirectionalRelation } from "@/entities/knowledge-graph";
 import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { isImeComposing } from "@/shared/lib/ime-composition";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
@@ -9,13 +8,15 @@ import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
 import { applyArrival, ARRIVAL_MS } from "./cosmos-arrival";
 import { CosmosCameraRig, CosmosHitIndex, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
-import { installCosmosProbe } from "./cosmos-probe";
+import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept } from "./cosmos-engine-watch";
+import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
 import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
 import { walkCandidates, walkTarget } from "./cosmos-walk";
 import { CosmosBitmapCache } from "./draw/cosmos-bitmap-cache";
 import { drawCosmosFrame } from "./draw/cosmos-frame";
 import { registerCosmosLabels } from "./draw/cosmos-labels";
 import { buildDeepField } from "./draw/cosmos-paint";
+import { RELATION_REVEAL_MS } from "./draw/cosmos-relations";
 import type { CosmosLayout } from "./layout/cosmos-layout";
 
 interface CosmosEngineOptions {
@@ -24,6 +25,7 @@ interface CosmosEngineOptions {
   onDrawn?: (count: number) => void;
   onBand?: (band: CosmosBand) => void;
   onRest?: () => void;
+  onCameraRest?: () => void;
   onWalkDeadEnd?: () => void;
   onContextMenuNode?: (id: string, position: { x: number; y: number }) => void;
   onContextMenuPane?: (position: { x: number; y: number }) => void;
@@ -70,6 +72,9 @@ export class CosmosEngine {
   frames = 0;
   frameLog: { t: number; ms: number; builds: number; firstDraws: number; why: number; sinceInput: number }[] = [];
   private drawnReported = false;
+  private roomHeld = false;
+  private readonly reveal = new CosmosRevealClock();
+  private readonly cameraRest = new CosmosCameraRestWatch();
   private approachTimers: number[] = [];
   private settleTimer = 0;
   private readonly cleanups: (() => void)[] = [];
@@ -132,9 +137,9 @@ export class CosmosEngine {
     this.hits.clear();
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
     this.rig.setBounds(layout.bounds);
-    this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: performance.now(), mode: arrival } : null;
+    this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: -1, mode: arrival } : null;
     this.arrivalMode = this.arrival ? arrival : "none";
-    [this.arrivalClock, this.arrivalEnd] = [0, (this.arrival?.start ?? performance.now()) + (this.arrival ? ARRIVAL_MS : 0)];
+    [this.arrivalClock, this.arrivalEnd] = [0, performance.now() + (this.arrival ? ARRIVAL_MS : 0)];
     this.drawnReported = false;
     this.requestFrame();
   }
@@ -189,6 +194,7 @@ export class CosmosEngine {
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
     }
+    if ((this.roomHeld = this.arrival !== null)) return this.requestFrame();
     if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height));
     if (!this.rig.user) this.rig.fit(false, performance.now());
     this.requestFrame();
@@ -243,22 +249,30 @@ export class CosmosEngine {
     let why = rig.step(now) ? 1 : 0;
     this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrivalEnd), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
     if (this.hazeAwake) why |= 4;
+    if (this.arrival && this.arrival.start < 0) [this.arrival.start, this.arrivalEnd] = [now, now + ARRIVAL_MS];
     if (this.arrival) this.arrivalClock = Math.max(0, now - this.arrival.start);
     if (this.arrival && !applyArrival(layout, this.arrivalClock, this.arrival.mode, this.poses)) this.arrival = null;
     else if (!this.arrival) applyArrival(layout, 0, "none", this.poses);
+    if (!this.arrival && this.roomHeld) this.resize();
     applyHaze(layout, this.haze, this.poses, rig.camera.scale, this.options.reducedMotion);
     if (this.arrival) why |= 8;
+    const attended = this.selectedId ?? this.hoverId;
+    const revealMs = this.reveal.revealMs(attended, now);
+    if (attended && !this.options.reducedMotion && revealMs < RELATION_REVEAL_MS) why |= 32;
     const paintLog: CosmosPaintRecord[] | null = this.paintLog ? (this.paintLog = []) : null;
     const stats = drawCosmosFrame({
       ctx: this.ctx, width: this.width, height: this.height, dpr: this.dpr, room: rig.room, camera: rig.camera, overviewScale: rig.overviewScale,
       layout, inks, poses: this.poses, lens: this.lens, trail: this.trail, reducedMotion: this.options.reducedMotion,
-      attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs: 0 },
+      attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs },
       relationsOf: (id) => this.relations.get(id) ?? [],
       pointOf: (id) => posedPoint(layout, this.poses, id),
       record: paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null,
       cache: this.cache, deepField: this.deepField, buildBudget: 4, frame: this.frames,
     });
     if (stats.pendingBuilds > 0) why |= 16;
+    const rest = this.cameraRest.step(rig.camera, rig.room, rig.held() || this.arrival !== null || stats.pendingBuilds > 0);
+    if (rest === "moving") why |= 64;
+    else if (rest === "rest") this.options.onCameraRest?.();
     this.lastStats = stats;
     this.frames += 1;
     this.frameLog.push({ t: now, ms: performance.now() - started, builds: stats.buildsStarted, firstDraws: stats.firstDraws, why, sinceInput: now - this.lastInput });
@@ -267,10 +281,7 @@ export class CosmosEngine {
       this.drawnReported = true;
       this.options.onDrawn?.(layout.points.size);
     }
-    if (this.probed) {
-      const arrivalT = this.arrival ? Math.min(1, this.arrivalClock / ARRIVAL_MS) : 1;
-      this.canvas.dataset.frame = JSON.stringify({ arrived: !this.arrival, arrivalT, offset: [rig.camera.x, rig.camera.y], scale: rig.camera.scale });
-    }
+    if (this.probed) writeProbeFrame(this.canvas, this);
     if (stats.band !== this.band) this.options.onBand?.((this.band = stats.band));
     if (why === 0) {
       this.options.onBand?.(stats.band);
@@ -280,8 +291,8 @@ export class CosmosEngine {
   }
 
   private local(clientX: number, clientY: number): { x: number; y: number } {
-    const r = this.canvas.getBoundingClientRect();
-    return { x: clientX - r.left, y: clientY - r.top };
+    const { left, top } = this.canvas.getBoundingClientRect();
+    return { x: clientX - left, y: clientY - top };
   }
 
   hit(sx: number, sy: number): { id: string | null; galaxy: number } {
@@ -373,7 +384,8 @@ export class CosmosEngine {
     }
     if (!WALK_KEYS.has(e.key)) return;
     const candidates = walkCandidates({ layout, poses: this.poses, camera: rig.camera, room: rig.room, dpr: this.dpr });
-    const step = walkTarget({ key: e.key, selectedId: this.selectedId, candidates, roomCentre: centre });
+    const galaxyCentreOf = (id: string) => galaxyCentreOn(layout, this.poses, rig.camera, rig.room, id);
+    const step = walkTarget({ key: e.key, selectedId: this.selectedId, candidates, roomCentre: centre, galaxyCentreOf });
     if (step.id) this.options.onSelect?.(step.id);
     else if (step.deadEnd) this.options.onWalkDeadEnd?.();
   }
@@ -381,20 +393,8 @@ export class CosmosEngine {
   private onContextMenu(e: MouseEvent): void {
     e.preventDefault();
     const p = this.local(e.clientX, e.clientY);
-    const id = this.hit(p.x, p.y).id;
-    const position = { x: e.clientX, y: e.clientY };
+    const [id, position] = [this.hit(p.x, p.y).id, { x: e.clientX, y: e.clientY }];
     if (id) this.options.onContextMenuNode?.(id, position);
     else this.options.onContextMenuPane?.(position);
   }
-
-}
-
-function relationsByConcept(edges: readonly OntologyMapEdge[]): Map<string, CosmosRelation[]> {
-  const out = new Map<string, CosmosRelation[]>();
-  edges.forEach((e, i) => {
-    if (e.kind !== "depends") return;
-    const relation: CosmosRelation = { id: e.id ?? `${e.source}->${e.target}:${i}`, source: e.source, target: e.target, relationType: e.relationType, directional: isDirectionalRelation(e.relationType) };
-    for (const id of [e.source, e.target]) if (!out.get(id)?.push(relation)) out.set(id, [relation]);
-  });
-  return out;
 }

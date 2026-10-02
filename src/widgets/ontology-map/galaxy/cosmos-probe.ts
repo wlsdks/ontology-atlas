@@ -5,6 +5,12 @@ import { cosmosLayoutRuns } from "./layout/cosmos-layout-cache";
 
 type ProbeWindow = { __atlasCosmos?: unknown };
 
+export function writeProbeFrame(canvas: HTMLCanvasElement, engine: CosmosEngine): void {
+  const { camera } = engine.rig;
+  const arrivalT = engine.arrival ? Math.min(1, engine.arrivalClock / ARRIVAL_MS) : 1;
+  canvas.dataset.frame = JSON.stringify({ arrived: !engine.arrival, arrivalT, offset: [camera.x, camera.y], scale: camera.scale });
+}
+
 export function installCosmosProbe(engine: CosmosEngine): () => void {
   const { rig } = engine;
   const screenOf = (x: number, y: number) => worldToScreen(rig.camera, rig.room, x, y);

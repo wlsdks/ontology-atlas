@@ -24,7 +24,7 @@ async function grabMap(page: Page) {
   await page.keyboard.press("g");
   await page.keyboard.press("m");
   await expect
-    .poll(() => page.evaluate(() => (document.activeElement?.closest("[data-testid='cosmos-map']") ? document.activeElement.getAttribute("data-surface-role") : "")))
+    .poll(() => page.evaluate(() => (document.activeElement?.closest("[data-testid='cosmos-map']") ? document.activeElement.getAttribute("data-role") : "")))
     .toBe("map-canvas");
 }
 

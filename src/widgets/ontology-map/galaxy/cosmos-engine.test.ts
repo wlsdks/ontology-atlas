@@ -65,7 +65,45 @@ describe("cosmos engine", () => {
     expect(() => runFrame(16)).toThrow("bad frame");
     expect(frames).toHaveLength(1);
     runFrame(32);
+    runFrame(48);
     expect(frames).toHaveLength(0);
+    engine.destroy();
+  });
+
+  it("signals camera rest once the camera holds still for a frame, apart from the loop sleeping", () => {
+    const onCameraRest = vi.fn();
+    const onRest = vi.fn();
+    const { engine } = mount();
+    engine.setOptions({ onCameraRest, onRest });
+    runFrame(16);
+    expect(onCameraRest).not.toHaveBeenCalled();
+    runFrame(32);
+    expect(onCameraRest).toHaveBeenCalledTimes(1);
+    engine.requestFrame();
+    runFrame(48);
+    expect(onCameraRest).toHaveBeenCalledTimes(1);
+    engine.rig.camera = { ...engine.rig.camera, x: engine.rig.camera.x + 5 };
+    engine.requestFrame();
+    runFrame(64);
+    expect(onCameraRest).toHaveBeenCalledTimes(1);
+    runFrame(80);
+    expect(onCameraRest).toHaveBeenCalledTimes(2);
+    engine.destroy();
+  });
+
+  it("asks for frames while an attended concept's relations reveal, and stops at 420 ms", () => {
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    runFrame(16);
+    engine.setSelected("a");
+    for (let now = 32; now <= 1_000; now += 16) {
+      engine.requestFrame();
+      runFrame(now);
+    }
+    const revealing = engine.frameLog.filter((f) => f.why & 32).map((f) => f.t);
+    expect(revealing[0]).toBe(32);
+    expect(revealing.at(-1)).toBeGreaterThanOrEqual(32 + 420 - 16);
+    expect(revealing.at(-1)).toBeLessThan(32 + 420);
     engine.destroy();
   });
 

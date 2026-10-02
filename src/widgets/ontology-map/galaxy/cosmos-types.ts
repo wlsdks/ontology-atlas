@@ -2,7 +2,7 @@ import type { TopologyMapLensKind } from "../model/path-lens";
 
 export interface CosmosCamera { x: number; y: number; scale: number }
 export interface CosmosRoom { x: number; y: number; width: number; height: number }
-export interface GalaxyPose { x: number; y: number; theta: number; wispTheta: number; wispLight: number; presence: number; condense: number }
+export interface GalaxyPose { x: number; y: number; theta: number; wispTheta: number; wispLight: number; presence: number; condense: number; corePresence?: number }
 export type CosmosBand = "spine" | "circuit" | "element";
 export type CosmosArrivalMode = "replay" | "condense" | "none";
 

@@ -23,7 +23,7 @@ import { starSprite } from "./cosmos-paint";
 const SELECTED_RELATION_CAP = 80;
 const HOVERED_RELATION_CAP = 24;
 const MEMBER_RELATION_CAP = 200;
-const REVEAL_MS = 420;
+export const RELATION_REVEAL_MS = 420;
 const MEMBER_LABEL_PRIORITY = 950;
 
 function lensRestAlpha(lens: CosmosLens, inks: CosmosInks): number {
@@ -41,7 +41,7 @@ export function galaxyLensAlpha(lens: CosmosLens | null, inks: CosmosInks): numb
 
 function revealProgress(revealMs: number, reducedMotion: boolean): number {
   if (reducedMotion) return 1;
-  return easeOutCubic(Math.min(1, Math.max(0, revealMs / REVEAL_MS)));
+  return easeOutCubic(Math.min(1, Math.max(0, revealMs / RELATION_REVEAL_MS)));
 }
 
 interface CosmosRelationsInput {
@@ -209,12 +209,29 @@ function drawRing(ctx: CanvasRenderingContext2D, input: CosmosRelationsInput, id
   return s;
 }
 
+export function drawCosmosHover(ctx: CanvasRenderingContext2D, input: CosmosRelationsInput): CosmosLabel[] {
+  const { hoverId, selectedId } = input.attention;
+  if (!hoverId || hoverId === selectedId) return [];
+  const s = drawRing(ctx, input, hoverId, 7, 1.5);
+  if (!s) return [];
+  const text = input.labelOf(hoverId);
+  const tw = measureLabel(ctx, input.cache, input.font, text);
+  ctx.fillStyle = input.inks.bgNear;
+  ctx.beginPath();
+  ctx.roundRect(s.x + 10, s.y - 9, tw + 10, 18, 4);
+  ctx.fill();
+  ctx.font = input.font;
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = input.inks.labelCapability;
+  ctx.fillText(text, s.x + 15, s.y + 0.5);
+  return [{ text, kind: "hover", id: hoverId, x: s.x + 10, y: s.y - 9, width: tw + 10, height: 18 }];
+}
+
 export function drawCosmosRelations(
   ctx: CanvasRenderingContext2D,
-  input: CosmosRelationsInput,
+  input: CosmosRelationsInput & { hover?: boolean },
 ): { rows: CosmosRelationRow[]; candidates: LabelCandidate[]; labels: CosmosLabel[]; lens: { kind: string | null; lit: number; restAlpha: number } } {
   const { attention, inks } = input;
-  const labels: CosmosLabel[] = [];
   const candidates: LabelCandidate[] = [];
   const rows: CosmosRelationRow[] = [];
   ctx.globalAlpha = 1;
@@ -225,23 +242,7 @@ export function drawCosmosRelations(
   }
   const lit = drawMembers(ctx, input, candidates);
   if (attention.selectedId) drawRing(ctx, input, attention.selectedId, 9, 2);
-  const { hoverId } = attention;
-  if (hoverId && hoverId !== attention.selectedId) {
-    const s = drawRing(ctx, input, hoverId, 7, 1.5);
-    if (s) {
-      const text = input.labelOf(hoverId);
-      const tw = measureLabel(ctx, input.cache, input.font, text);
-      ctx.fillStyle = inks.bgNear;
-      ctx.beginPath();
-      ctx.roundRect(s.x + 10, s.y - 9, tw + 10, 18, 4);
-      ctx.fill();
-      ctx.font = input.font;
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = inks.labelCapability;
-      ctx.fillText(text, s.x + 15, s.y + 0.5);
-      labels.push({ text, kind: "hover", id: hoverId, x: s.x + 10, y: s.y - 9, width: tw + 10, height: 18 });
-    }
-  }
+  const labels = input.hover === false ? [] : drawCosmosHover(ctx, input);
   const kind = input.lens?.kind ?? (input.trail ? "trail" : null);
   return { rows, candidates, labels, lens: { kind, lit, restAlpha: galaxyLensAlpha(input.lens, inks) } };
 }

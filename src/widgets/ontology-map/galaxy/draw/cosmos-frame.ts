@@ -18,7 +18,7 @@ import type {
 import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
 import { labelOf, placeCosmosLabels } from "./cosmos-labels";
 import { buildGalaxyGlow, buildStarImpostor, glowSizeFor, impostorSizeFor, IMPOSTOR_EXTENT, starSprite } from "./cosmos-paint";
-import { drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
+import { drawCosmosHover, drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
 import { drawCosmosWeb } from "./cosmos-web";
 
 interface CosmosFrameInput {
@@ -121,7 +121,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     focusGalaxy: attention.focusGalaxy,
     inks,
     settled,
-    lensRest: 1,
+    lensRest: galaxyLensAlpha(input.lens, inks),
     metaFont,
   });
   stats.web = { alpha: web.alpha, items: web.items };
@@ -129,15 +129,16 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
 
   const coreScreen = worldToScreen(camera, room, 0, 0);
   const coreR = layout.core.radius * camera.scale;
+  const corePresence = poses[0]?.corePresence ?? 1;
   if (coreScreen.x + coreR * 1.6 > 0 && coreScreen.x - coreR * 1.6 < width && coreScreen.y + coreR * 1.6 > 0 && coreScreen.y - coreR * 1.6 < height) {
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     const core = starSprite(inks.project);
     if (core) {
       const r = Math.max(26, coreR * 0.55);
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.5 * corePresence;
       ctx.drawImage(core, coreScreen.x - r * 2, coreScreen.y - r * 2, r * 4, r * 4);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = corePresence;
       ctx.drawImage(core, coreScreen.x - 14, coreScreen.y - 14, 28, 28);
     }
     const halo = layout.core;
@@ -148,7 +149,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       const sprite = starSprite(halo.starKind[i] === STAR_KIND_CAPABILITY ? inks.capability : inks.element);
       if (!sprite) continue;
       const r = Math.min(7, Math.max(1.2, MIN_STAR_SPACING * camera.scale * 0.45));
-      ctx.globalAlpha = 0.7 * lensAlpha(input.lens, halo.starIds[i]!, inks);
+      ctx.globalAlpha = 0.7 * corePresence * lensAlpha(input.lens, halo.starIds[i]!, inks);
       ctx.drawImage(sprite, p.x - r, p.y - r, r * 2, r * 2);
     }
     ctx.restore();
@@ -220,7 +221,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.drawImage(glow.wisps, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
       drawn(`glow:${index}:${glow.base.width}`);
     }
-    ctx.globalAlpha = pose.presence;
+    ctx.globalAlpha = pose.presence * galaxyAlpha;
     if (rho <= live) {
       const size = impostorSizeFor(extent, dpr);
       let bitmap = cache.impostor(index, size);
@@ -258,7 +259,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
         if (!sprite) continue;
         const base = kind === STAR_KIND_NUCLEUS ? 16 : kind === STAR_KIND_CAPABILITY ? 7.5 : 4.2;
         const r = Math.min(base + 3 * mag, Math.max(2.2, spacingPx * (kind === STAR_KIND_ELEMENT ? 0.8 : 1.4)));
-        ctx.globalAlpha = pose.presence * (kind === STAR_KIND_ELEMENT ? 0.6 + 0.4 * mag : 0.92);
+        ctx.globalAlpha = pose.presence * lensAlpha(input.lens, g.starIds[i]!, inks) * (kind === STAR_KIND_ELEMENT ? 0.6 + 0.4 * mag : 0.92);
         ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2);
         input.record?.(g.starIds[i]!, x, y, r);
         stats.liveStars += 1;
@@ -298,8 +299,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   stats.band = band;
 
-  const placed = placeCosmosLabels(ctx, candidates, { room, cache, inks, metaFont, labelOf: (id) => labelOf(layout, id) });
-  const relations = drawCosmosRelations(ctx, {
+  const relationsInput = {
     layout,
     camera,
     room,
@@ -312,13 +312,15 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     trail: input.trail,
     inks,
     reducedMotion: input.reducedMotion,
-    labelOf: (id) => labelOf(layout, id),
+    labelOf: (id: string) => labelOf(layout, id),
     record: input.record,
     font: clusterFont,
     cache,
-  });
+  };
+  const relations = drawCosmosRelations(ctx, { ...relationsInput, hover: false });
+  const placed = placeCosmosLabels(ctx, candidates.concat(relations.candidates), { room, cache, inks, metaFont, labelOf: (id) => labelOf(layout, id) });
   stats.relations = relations.rows;
   stats.lens = relations.lens;
-  stats.labels = placed.concat(relations.labels);
+  stats.labels = placed.concat(drawCosmosHover(ctx, relationsInput));
   return stats;
 }

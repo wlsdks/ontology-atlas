@@ -37,6 +37,17 @@ describe("chooseArrival", () => {
 });
 
 describe("applyArrival", () => {
+  it("raises the core over its own 520 ms rise", () => {
+    const poses = blankPoses();
+    applyArrival(fakeLayout(frames), 260, "replay", poses);
+    expect(poses[0]!.corePresence).toBeCloseTo(1 - 0.5 ** 3, 9);
+    expect(poses[1]!.corePresence).toBe(poses[0]!.corePresence);
+    applyArrival(fakeLayout(frames), 600, "replay", poses);
+    expect(poses[0]!.corePresence).toBe(1);
+    applyArrival(fakeLayout(frames), 100, "none", poses);
+    expect(poses[0]!.corePresence).toBe(1);
+  });
+
   it("lasts the tier assembly", () => {
     expect(ARRIVAL_MS).toBe(TIER_ASSEMBLE_TOTAL_MS);
     expect(ARRIVAL_MS).toBe(1120);
