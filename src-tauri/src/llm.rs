@@ -6,9 +6,10 @@ use crate::errors::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
 use crate::secrets;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
+
+mod http_output;
 use std::time::Instant;
 
 /// Auth check only: no model call, no billing, no body.
@@ -38,7 +39,6 @@ const AUTH_DENIED_STATUSES: &[u16] = &[401, 403];
 /// Keyless connect-by-address: any OpenAI-compatible runner (Ollama, LM Studio,
 /// vLLM) without naming vendors. No keychain and no auth header on this branch.
 pub const LOCAL_PROVIDER: &str = "local";
-/// A default the user changes.
 pub const LOCAL_DEFAULT_BASE_URL: &str = "http://localhost:11434";
 /// The OpenAI-compatible list, not Ollama's `/api/tags`, so any runner verifies the same way.
 const LOCAL_MODELS_PATH: &str = "models";
@@ -89,7 +89,6 @@ fn host_of(url: &str) -> &str {
         .unwrap_or(without_scheme)
 }
 
-/// Status and length only; the body is not recorded.
 pub struct HttpEcho {
     pub status: u16,
     pub body_chars: usize,
@@ -300,22 +299,13 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 }
 
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
-    let mut child = Command::new("curl")
-        .args(argv)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|err| coded("request-failed", err))?;
-    child
-        .stdin
-        .as_mut()
-        .ok_or_else(|| coded("request-failed", ""))?
-        .write_all(config.as_bytes())
-        .map_err(|err| coded("request-failed", err))?;
-    let output = child
-        .wait_with_output()
-        .map_err(|err| coded("no-response", err))?;
+    let mut command = Command::new("curl");
+    command.args(argv);
+    let output = http_output::capture(command, config.as_bytes())
+        .map_err(|err| match err {
+            http_output::CaptureError::Request(err) => coded("request-failed", err),
+            http_output::CaptureError::Response(err) => coded("no-response", err),
+        })?;
     interpret_curl_output(
         output.status.code(),
         output.status.success(),

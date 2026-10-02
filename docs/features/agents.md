@@ -59,6 +59,11 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
 - **Sent log** — one line with the whole count of Atlas's own transfers in
   `.ontology-atlas/llm-audit.jsonl` (coding agents talk to their providers themselves and are not
   in it), the newest five transfers, and a Finder button that selects the file once it exists.
+  Native connection checks, model replies and Jev checks capture at most 4 MiB of
+  response output and 64 KiB of diagnostics per request. Larger outputs fail;
+  a truncated reply is never returned as a successful answer. Credentials and
+  request content still travel to curl through stdin, with an audit reservation
+  before sending.
 - **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
   sample rows. Settings keeps a single "Models · API keys" pointer row, and the map dock's
   no-key button opens this tab. Every way a row closes returns focus to its opener, and results
