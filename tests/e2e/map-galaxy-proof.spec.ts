@@ -169,6 +169,7 @@ async function proveSelection(page: Page, name: string): Promise<void> {
       for (const point of plan.misses) {
         expectSameFrame(await flyInto(page, galaxy), camera, name);
         await page.mouse.click(point.x, point.y);
+        await waitForCosmosStill(page);
         missTotal += 1;
         if (await page.evaluate(() => window.__atlasCosmos!.selection().nodeId)) missSelected += 1;
       }
