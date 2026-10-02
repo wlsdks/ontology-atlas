@@ -39,7 +39,7 @@
   "vault-path-unresolvable": "无法确定该文件夹的真实位置。请检查文件夹权限后重新打开。",
   "git-not-runnable": "无法在这台电脑上运行 git。请安装 git 后重试。",
   "git-network-timeout": "git 没有及时完成。请检查远程地址和登录状态，然后重试。",
-  "git-repo-missing": "这个文件夹还没有记录历史。请在足迹页面点“开始记录历史”。",
+  "git-repo-missing": "这个文件夹还没有记录历史。请在 Git 标签页点“开始记录历史”。",
   "git-status-failed": "无法读取此文件夹的改动。请确认文件夹仍在，然后重试。",
   "git-init-repo-missing": "历史已开始记录，但找不到仓库了。请检查文件夹权限。",
   "restore-untracked": "这篇文档从未提交过，没有更早的内容可以恢复。如果不需要，请自行删除该文件。",

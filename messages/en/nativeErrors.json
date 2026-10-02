@@ -39,7 +39,7 @@
   "vault-path-unresolvable": "Could not settle where that folder really is. Check the folder's permissions and open it again.",
   "git-not-runnable": "Could not run git on this computer. Install git, then try again.",
   "git-network-timeout": "git did not finish in time. Check the remote address and your sign-in, then try again.",
-  "git-repo-missing": "This folder is not keeping a history yet. Press Start history on the footprints screen.",
+  "git-repo-missing": "This folder is not keeping a history yet. Press Start history on the Git tab.",
   "git-status-failed": "Could not read this folder's changes. Make sure the folder is still there, then try again.",
   "git-init-repo-missing": "The history started, but the repository could not be found again. Check the folder's permissions.",
   "restore-untracked": "This document has never been committed, so there is no earlier content to go back to. Delete the file yourself if you do not need it.",
