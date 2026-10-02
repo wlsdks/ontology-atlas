@@ -14,11 +14,6 @@ import {
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { controlClass } from '@/shared/ui/control-class';
 
-/**
- * "Show Work-in-Progress" and "Notifications" settings, on by default because they report
- * that the folder is being edited; this pane only turns them off. The kind picker appears
- * only while notifications are on.
- */
 export function AgentActivitySettings() {
   const t = useTranslations('nav.settingsMenu');
   const tEvent = useTranslations('agentActivity');
@@ -34,6 +29,7 @@ export function AgentActivitySettings() {
   return (
     <SettingsGroup>
       <SettingsRow
+        settingId="work-in-progress"
         testId="app-settings-agent-status"
         label={t('agentStatusLabel')}
         caption={t('agentStatusCaption')}
@@ -48,6 +44,7 @@ export function AgentActivitySettings() {
         }
       />
       <SettingsRow
+        settingId="notifications"
         testId="app-settings-agent-notifications"
         label={t('agentNotificationsLabel')}
         caption={t('agentNotificationsCaption')}
@@ -62,7 +59,7 @@ export function AgentActivitySettings() {
         }
       />
       {notificationsOn ? (
-        <div data-testid="app-settings-agent-notification-kinds" className="min-w-0 px-3 py-2">
+        <div data-testid="app-settings-agent-notification-kinds" data-setting-id="notification-kinds" className="min-w-0 px-3 py-2">
           <p className="text-body text-[color:var(--color-text-secondary)]">{t('agentNotificationKindsLabel')}</p>
           <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t('agentNotificationKindsCaption')}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -85,9 +82,10 @@ export function AgentActivitySettings() {
                       shape: 'chip',
                       size: 'md',
                       tone: on ? 'accentOnTint' : 'muted',
+                      hoverInk: on ? 'none' : 'secondary',
                       className: on
                         ? 'h-8 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body'
-                        : 'h-8 border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body hover:text-[color:var(--color-text-secondary)]',
+                        : 'h-8 border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body',
                     })}
                   >
                     {tEvent(EVENT_LABEL_KEY[kind])}
@@ -101,7 +99,6 @@ export function AgentActivitySettings() {
   );
 }
 
-/** Kind → copy key, in the notification inbox's vocabulary. */
 const EVENT_LABEL_KEY: Readonly<Record<(typeof AGENT_NOTIFICATION_KINDS)[number], string>> = {
   'task-start': 'event.taskStart',
   'task-end': 'event.taskEnd',

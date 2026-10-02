@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useTranslations } from 'next-intl';
 
@@ -7,16 +7,12 @@ import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 import { SettingsRow } from './settings-primitives';
 
-/**
- * How an agent's wiki page lands: written at once when it fits the contract, or stopped
- * at the permission card every time. It governs every Compile, Fix and proposal, so it is
- * a setting beside the folder's shape, not a Library door.
- */
 export function WikiWriteModeSettings() {
   const t = useTranslations('settings');
   const mode = useWikiWriteMode();
   return (
     <SettingsRow
+      settingId="wiki-write-mode"
       testId="app-settings-wiki-write-mode"
       label={t('wikiWriteModeLabel')}
       caption={mode === 'auto' ? t('wikiWriteModeAutoCaption') : t('wikiWriteModeAskCaption')}
