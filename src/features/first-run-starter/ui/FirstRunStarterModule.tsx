@@ -162,16 +162,11 @@ export function FirstRunStarterModule({
   const [wordsOpen, setWordsOpen] = useState(false);
   const moreShown = moreOpen || agentSpotlit;
   const cliShown = cliOpen || agentSpotlit;
-  const cardRef = useRef<HTMLDivElement | null>(null);
   const cliBridgeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!agentSpotlit) return undefined;
-    const card = cardRef.current;
-    const reveal = () => cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
-    reveal();
-    card?.addEventListener("transitionend", reveal);
-    return () => card?.removeEventListener("transitionend", reveal);
+    if (agentSpotlit) cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [agentSpotlit]);
+  const focusReopenRef = useRef(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -219,6 +214,11 @@ export function FirstRunStarterModule({
       <button
         type="button"
         data-testid="first-run-starter-reopen"
+        ref={(button) => {
+          if (!button || !focusReopenRef.current) return;
+          focusReopenRef.current = false;
+          button.focus();
+        }}
         onClick={() => {
           setCollapsed(false);
           undismiss();
@@ -274,7 +274,6 @@ export function FirstRunStarterModule({
 
   return (
     <div
-      ref={cardRef}
       data-testid="first-run-starter"
       className="relative -m-3 min-h-0 overflow-y-auto overscroll-contain rounded-[var(--map-panel-radius)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent p-3"
     >
@@ -294,7 +293,10 @@ export function FirstRunStarterModule({
             </p>
             <button
               type="button"
-              onClick={dismiss}
+              onClick={() => {
+                focusReopenRef.current = true;
+                dismiss();
+              }}
               aria-label={t("closeAriaLabel")}
               data-testid="first-run-starter-dismiss"
               className={controlClass({
@@ -434,6 +436,7 @@ export function FirstRunStarterModule({
 
         <div key="more" className="mt-3 flex flex-col gap-1">
           <CardDisclosure
+            key={agentSpotlit ? "tour-step" : "person"}
             open={moreShown}
             onToggle={() => setMoreOpen((open) => !open)}
             label={t("moreWaysToggle")}

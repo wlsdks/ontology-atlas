@@ -136,16 +136,7 @@ describe('FirstRunStarterModule', () => {
   });
 
   it('keeps one primary and one secondary action on the face and folds the rest', () => {
-    render(
-      <FirstRunStarterModule
-        concepts={1}
-        relations={1}
-        domains={1}
-        agentAvailable
-        onStartTour={vi.fn()}
-        onEnablePlainMode={vi.fn()}
-      />,
-    );
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable onStartTour={vi.fn()} onEnablePlainMode={vi.fn()} />);
     const card = screen.getByTestId('first-run-starter');
     const faceButtons = [...card.querySelectorAll('button')]
       .filter((button) => !button.closest('[inert]'))
@@ -301,6 +292,14 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+  });
+
+  it('hands focus to the reopen row when Close is pressed', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
+    const close = screen.getByTestId('first-run-starter-dismiss');
+    close.focus();
+    fireEvent.click(close);
+    expect(screen.getByTestId('first-run-starter-reopen')).toHaveFocus();
   });
 
   it('leaves a quiet reopen row after dismiss and restores the card on click', () => {
@@ -513,16 +512,9 @@ describe('FirstRunStarterModule', () => {
 
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
-    expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
-    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent(
-      'sampleSourceStorefront',
-    );
-    expect(screen.getByTestId('first-run-starter-sample-line')).not.toHaveTextContent(
-      'sampleSourceDogfood',
-    );
+    expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleSourceStorefront');
+    expect(screen.getByTestId('first-run-starter-sample-line')).not.toHaveTextContent('sampleSourceDogfood');
   });
 
   it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {
@@ -659,12 +651,17 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
 
     rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentSpotlit />);
     expect(screen.getByTestId('first-run-starter-more-toggle'), 'the tour lit the command and its group stayed shut').toHaveAttribute('aria-expanded', 'true');
+    const openBoxes = document.querySelectorAll<HTMLElement>('.ai-row-disclosure[data-state="open"]');
+    expect(openBoxes).toHaveLength(2);
+    for (const box of openBoxes) {
+      expect(box.style.height, 'the tour-opened group grew through a transition instead of arriving whole').toBe('auto');
+    }
     expect(screen.getByTestId('first-run-starter-cli-toggle'), 'the tour lit the command and the disclosure stayed shut').toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
 
     rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     expect(screen.getByTestId('first-run-starter-more-toggle')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('first-run-starter-cli-toggle')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('first-run-starter-cli-toggle')).not.toBeInTheDocument();
   });
 
   it('stays collapsed when the lens turns off', () => {

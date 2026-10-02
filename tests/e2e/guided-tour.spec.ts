@@ -154,8 +154,34 @@ test.describe("guided tour on a true first run", () => {
 
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "recent");
+    await page.evaluate(() => {
+      const samples: Array<{ left: number; top: number; opacity: number }> = [];
+      (window as unknown as { __tourCardSamples: typeof samples }).__tourCardSamples = samples;
+      const tick = () => {
+        const step = document.querySelector('[data-testid="guided-tour-overlay"]')?.getAttribute("data-tour-step");
+        const tourCard = document.querySelector<HTMLElement>('[data-testid="guided-tour-card"]');
+        if (step === "agent" && tourCard) {
+          const box = tourCard.getBoundingClientRect();
+          samples.push({ left: box.left, top: box.top, opacity: Number(getComputedStyle(tourCard).opacity) });
+        }
+        if (samples.length < 30) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
     await card.getByTestId("guided-tour-dev-branch").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "agent");
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __tourCardSamples: unknown[] }).__tourCardSamples.length))
+      .toBe(30);
+    const cardPath = await page.evaluate(
+      () => (window as unknown as { __tourCardSamples: Array<{ left: number; top: number; opacity: number }> }).__tourCardSamples,
+    );
+    const shown = cardPath.filter((sample) => sample.opacity > 0.05);
+    expect(shown.length, "the developer step's card never became visible in the sampled frames").toBeGreaterThan(10);
+    const jumps = shown.slice(1).map((sample, index) =>
+      Math.max(Math.abs(sample.left - shown[index]!.left), Math.abs(sample.top - shown[index]!.top)),
+    );
+    expect(Math.max(...jumps), `the developer step's card moved after it appeared: ${JSON.stringify(shown.map((s) => [Math.round(s.left), Math.round(s.top)]))}`).toBeLessThanOrEqual(2);
     await expect(page.getByTestId("first-run-starter-more-toggle"), "the developer step left the group holding the command folded").toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("first-run-starter-cli-toggle"), "개발자 단계인데 명령 한 줄이 접혀 있다").toHaveAttribute("aria-expanded", "true");
     await expect
