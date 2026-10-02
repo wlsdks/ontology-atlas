@@ -123,6 +123,11 @@ export const ACCEPTED = {
       'ontologyPages.insights.flow.request': 'the Korean request says Atlas tools where English says MCP',
     },
   },
+  zh: {
+    residue: {
+      'harness.title': 'owner keeps Harness as written',
+    },
+  },
 };
 
 export function acceptedFor(locale) {
