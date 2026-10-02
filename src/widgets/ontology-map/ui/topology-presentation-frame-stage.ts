@@ -119,6 +119,7 @@ interface Dependencies {
   glyphStyleRef: RefObject<"fill" | "line">;
   canvasBackgroundRef: RefObject<CanvasBackground>;
   domeEdgeControlForFrame: (edge: WorldEdge) => { x: number; y: number; } | null;
+  nodeLayerRef: RefObject<((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null>;
   depthDotPatternsRef: RefObject<(CanvasPattern | null)[]>;
   expandPrefRef: RefObject<ExpandPreference>;
   getClusterBarLabels: () => ClusterBarLabels | null;
@@ -205,6 +206,7 @@ export function createPresentationFrameStage({
   glyphStyleRef,
   canvasBackgroundRef,
   domeEdgeControlForFrame,
+  nodeLayerRef,
   depthDotPatternsRef,
   expandPrefRef,
   getClusterBarLabels,
@@ -603,6 +605,7 @@ export function createPresentationFrameStage({
       paintAnimatedBackground: animatedBgRef.current
         ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
         : null,
+      nodeLayer: nodeLayerRef.current,
       depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
       expand: expandPrefRef.current,
       clusterBarLabels: getClusterBarLabels(),

@@ -25,7 +25,7 @@ export interface HexCamera {
   oy: number;
 }
 
-interface MapChrome {
+export interface MapChrome {
   free: Rect;
   blocks: Rect[];
 }
@@ -72,8 +72,8 @@ export function roomMovesRest(prev: Rect | null, next: Rect): boolean {
   );
 }
 
-export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, height: number): Rect {
-  const free = hexFreeArea(canvas) ?? { x: 0, y: 0, width, height };
+export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, height: number, measured: Rect | null = hexFreeArea(canvas)): Rect {
+  const free = measured ?? { x: 0, y: 0, width, height };
   const x = free.x + ROOM_LEFT_PAD;
   const y = Math.max(free.y + ROOM_UNDER_TOOLBAR, ROOM_TOP);
   const right = Math.min(free.x + free.width, width - ROOM_RIGHT);
