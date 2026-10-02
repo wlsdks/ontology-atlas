@@ -1,20 +1,20 @@
 {
-  "header": "Agent files",
-  "headerHint": "Which AI tool reads which instruction file: read-only detection, nothing is rewritten",
-  "driftBadge": "mismatch",
-  "driftCount": "{count} files out of sync",
-  "listAria": "Agent instruction files",
+  "header": "エージェントのファイル",
+  "headerHint": "どのAIツールがどの指示ファイルを読むか。検出のみで、何も書き換えません",
+  "driftBadge": "不一致",
+  "driftCount": "{count}件のファイルが同期されていません",
+  "listAria": "エージェントの指示ファイル",
   "drift": {
-    "missing-agents-import": "CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions",
-    "broken-agents-import": "CLAUDE.md imports @AGENTS.md but AGENTS.md is missing",
-    "at-ref-missing": "An @referenced file was not found",
-    "agents-md-over-codex-cap": "AGENTS.md exceeds the Codex 32 KiB project-doc cap",
-    "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
-    "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees",
-    "agent-copy-diverged": "Duplicated agent briefs diverged between .claude/agents and .agents/agents",
-    "agent-copy-file-missing": "An agent brief exists in only one of the duplicated trees",
-    "non-english-agent-text": "An agent file carries non-English text, and its text is what a blocked or steered agent reads",
-    "mcp-config-unparseable": "An MCP config file exists but declares no server, so every grant beside it is undeclared",
-    "undeclared-mcp-server": "An agent brief grants tools from an MCP server its config does not declare"
+    "missing-agents-import": "「CLAUDE.md」が「@AGENTS.md」をインポートしていません。Claude Codeと「AGENTS.md」を読むツールで、見える指示が異なります",
+    "broken-agents-import": "「CLAUDE.md」は「@AGENTS.md」をインポートしていますが、「AGENTS.md」がありません",
+    "at-ref-missing": "@で参照されたファイルが見つかりません",
+    "agents-md-over-codex-cap": "「AGENTS.md」がCodexのプロジェクト文書の上限32KiBを超えています",
+    "skill-copy-diverged": "重複して置かれたSkillのコピーが、「.claude/skills」と「.agents/skills」で食い違っています",
+    "skill-copy-file-missing": "重複して置かれたSkillのツリーの片方にしか、そのSkillファイルがありません",
+    "agent-copy-diverged": "重複して置かれたエージェントのブリーフが、「.claude/agents」と「.agents/agents」で食い違っています",
+    "agent-copy-file-missing": "重複して置かれたツリーの片方にしか、そのエージェントのブリーフがありません",
+    "non-english-agent-text": "エージェントのファイルに英語以外の文章があります。ブロックされたエージェントや誘導されるエージェントが読むのは、その文章です",
+    "mcp-config-unparseable": "MCP設定ファイルはありますが、サーバが1つも宣言されていないため、隣にある許可はすべて未宣言になります",
+    "undeclared-mcp-server": "エージェントのブリーフが、設定で宣言されていないMCPサーバのツールを許可しています"
   }
 }
