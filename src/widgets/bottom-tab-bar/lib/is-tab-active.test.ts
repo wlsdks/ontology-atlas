@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { isBottomTabActive, shouldHideBottomTabBar } from "./is-tab-active";
+
+vi.mock("@/i18n/routing", () => ({
+  routing: { locales: ["en", "ko", "ja", "zh"] },
+}));
+
+describe("locale prefixes", () => {
+  it("matches tabs and hides the bar under every routable locale", () => {
+    expect(isBottomTabActive("/ja/library/", "/library", ["/library"])).toBe(true);
+    expect(isBottomTabActive("/zh/", "/", [])).toBe(true);
+    expect(shouldHideBottomTabBar("/zh/download/", false)).toBe(true);
+    expect(shouldHideBottomTabBar("/ja/library/", false)).toBe(false);
+  });
+});
 
 describe("isBottomTabActive", () => {
   it('marks the home tab active on /', () => {

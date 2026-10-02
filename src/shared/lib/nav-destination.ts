@@ -1,3 +1,5 @@
+import { routing } from '@/i18n/routing';
+
 export type AppNavDestinationId =
   | "map"
   | "architecture"
@@ -22,7 +24,7 @@ export type AppNavDestinationId =
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
   // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
-  // this strips a stray `/en`/`/ko` prefix defensively anyway (raw
+  // this strips a stray locale prefix defensively anyway (raw
   // `next/navigation` pathnames, direct unit-test input) so the ladder below
   // never silently misses on a locale-prefixed path.
   const path = stripLocalePrefix(pathname || "/");
@@ -130,8 +132,16 @@ export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean
 }
 
 /** `/ko/foo` → `/foo`, so route matching never trips over a locale prefix. */
-export function stripLocalePrefix(pathname: string): string {
-  return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
+export function stripLocalePrefix(
+  pathname: string,
+  locales: readonly string[] = routing.locales,
+): string {
+  for (const locale of locales) {
+    const prefix = `/${locale}`;
+    if (pathname === prefix) return "/";
+    if (pathname.startsWith(`${prefix}/`)) return pathname.slice(prefix.length);
+  }
+  return pathname || "/";
 }
 
 /**
