@@ -1,0 +1,7 @@
+{
+  "toggle": "▲ Relief",
+  "legend": "▲ height and number = concepts that declare they depend on this (direct)",
+  "legendNone": "No concept here declares a dependency, so every tile stays at the floor",
+  "dependents": "{count, plural, one {# concept declares} other {# concepts declare}} a dependency on this",
+  "regionDependents": "{count, plural, one {# concept outside declares} other {# concepts outside declare}} a dependency on this domain"
+}

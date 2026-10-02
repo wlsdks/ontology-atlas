@@ -175,6 +175,7 @@ export interface MapLayoutTargetInput {
   territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null }) => { text: string };
   hexPlacement: HexPlacementRecord | null;
   cosmosPlacement?: CosmosPlacementRecord | null;
+  hexRelief?: boolean;
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
@@ -186,7 +187,7 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
   const { nodes, edges } = input;
   if (view === "hex") {
     const hexTokens = readHexBoardTokensOrNull();
-    const marks = hexTokens ? predictHexMarks({ nodes, edges, prior: input.hexPlacement, host, tokens: hexTokens }) : null;
+    const marks = hexTokens ? predictHexMarks({ nodes, edges, prior: input.hexPlacement, host, tokens: hexTokens, relief: input.hexRelief }) : null;
     return marks && hexTokens ? { marks, ground: hexTokens.ground } : null;
   }
   if (view === "territories") {

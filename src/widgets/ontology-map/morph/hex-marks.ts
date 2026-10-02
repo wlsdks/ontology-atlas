@@ -2,12 +2,17 @@ import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
 import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
 import {
   computeHexBoard,
+  hexBandFor,
+  HEX_BAND_NAMES,
   fitHexRadius,
   hexGutter,
   type HexBoardLayout,
   type HexPlacementRecord,
   type HexTile,
 } from "../model/hex-board";
+import { buildBoardScene, isSlabBand, reliefLiftPx } from "../board/board-scene";
+import { declaredDependents } from "../board/relief-metric";
+import { projectReliefPoint, RELIEF_PITCH_REST, type ReliefView } from "../board/relief-projection";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 
@@ -98,17 +103,22 @@ function hexFace(tile: HexTile, T: HexBoardTokens): { fill: string; stroke: stri
   return { fill: T.face[Math.min(4, tile.bucket)] ?? T.face[0]!, stroke: T.rim };
 }
 
+export interface HexMarkRelief extends ReliefView {
+  heightOf: (tile: HexTile) => number;
+}
+
 export function hexMarks(
   layout: HexBoardLayout,
   cam: HexCamera,
   T: HexBoardTokens,
   alphaOf: (id: string) => number,
+  relief?: HexMarkRelief,
 ): MapLayoutMark[] {
   const size = cam.R - hexGutter(cam.R);
   return layout.tiles.map((tile) => ({
     id: tile.id,
     x: cam.ox + tile.x * cam.R,
-    y: cam.oy + tile.y * cam.R,
+    y: relief ? projectReliefPoint(0, cam.oy + tile.y * cam.R, relief.heightOf(tile), relief).y : cam.oy + tile.y * cam.R,
     size,
     shape: "hex" as const,
     ...hexFace(tile, T),
@@ -122,20 +132,25 @@ export function predictHexMarks({
   prior,
   host,
   tokens,
+  relief = false,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
   prior: HexPlacementRecord | null;
   host: HTMLCanvasElement;
   tokens: HexBoardTokens;
+  relief?: boolean;
 }): MapLayoutMark[] | null {
   const box = host.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0) return null;
   const room = readHexRoom(host, box.width, box.height);
-  const layout = computeHexBoard(
-    nodes.map((n) => ({ id: n.id, label: n.label, kind: n.kind })),
-    edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType })),
-    { prior, aspect: room.width / Math.max(1, room.height) },
-  );
-  return hexMarks(layout, hexRestCamera(layout, room), tokens, () => 1);
+  const treeNodes = nodes.map((n) => ({ id: n.id, label: n.label, kind: n.kind }));
+  const treeEdges = edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType }));
+  const layout = computeHexBoard(treeNodes, treeEdges, { prior, aspect: room.width / Math.max(1, room.height) });
+  const cam = hexRestCamera(layout, room);
+  if (!relief) return hexMarks(layout, cam, tokens, () => 1);
+  const scene = buildBoardScene(layout, declaredDependents(treeNodes, treeEdges));
+  const slabs = isSlabBand(hexBandFor(cam.R, HEX_BAND_NAMES), cam.R);
+  const heightOf = (tile: HexTile) => reliefLiftPx(scene, layout, tile, cam.R, slabs);
+  return hexMarks(layout, cam, tokens, () => 1, { pitch: RELIEF_PITCH_REST, pivotY: room.y + room.height / 2, heightOf });
 }

@@ -203,18 +203,19 @@ async function installSampler(page: Page): Promise<void> {
   });
 }
 
-async function openAt(page: Page, view: View, reduced = false, synth: number | null = SYNTH): Promise<void> {
+async function openAt(page: Page, view: View, reduced = false, synth: number | null = SYNTH, relief = false): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 860 });
   if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
   await seedFirstRunSeen(page);
-  await page.addInitScript((initial: View) => {
+  await page.addInitScript(({ initial, tilted }: { initial: View; tilted: boolean }) => {
     const flag = (key: string, on: boolean) => window.localStorage.setItem(`atlas.appearance.${key}`, on ? "on" : "off");
+    flag("hex-relief", tilted);
     flag("territories", initial === "territories");
     flag("hex-board", initial === "hex");
     flag("galaxy", initial === "galaxy");
     flag("view3d", initial === "strata" || initial === "coupling");
     window.localStorage.setItem("atlas.appearance.map-arrangement", initial === "coupling" ? "coupling" : "strata");
-  }, view);
+  }, { initial: view, tilted: relief });
   await installSampler(page);
   await page.goto(`/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await settled(page, view);
@@ -297,7 +298,7 @@ function medianFrameMs(frames: readonly Frame[]): number {
 }
 
 test.describe("map layout morph", () => {
-  const DIRECTIONS: Array<[View, View]> = [
+  const DIRECTIONS: Array<[View, View, boolean?]> = [
     ["flat", "hex"],
     ["hex", "territories"],
     ["territories", "galaxy"],
@@ -306,12 +307,14 @@ test.describe("map layout morph", () => {
     ["flat", "galaxy"],
     ["galaxy", "flat"],
     ["galaxy", "hex"],
+    ["flat", "hex", true],
+    ["hex", "galaxy", true],
   ];
 
-  for (const [from, to] of DIRECTIONS) {
-    test(`${from} to ${to} carries each concept on the camera clock without a blank frame`, async ({ page }) => {
+  for (const [from, to, relief = false] of DIRECTIONS) {
+    test(`${from} to ${to}${relief ? " in relief" : ""} carries each concept on the camera clock without a blank frame`, async ({ page }) => {
       test.setTimeout(120_000);
-      await openAt(page, from);
+      await openAt(page, from, false, SYNTH, relief);
       const before = await startRecording(page, true);
       await pick(page, to);
       const run = await morphDone(page, before);
