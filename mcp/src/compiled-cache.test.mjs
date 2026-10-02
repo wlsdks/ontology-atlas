@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { createHash } from 'node:crypto';
 
 import { parseFrontmatter } from './parser.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
@@ -8,6 +9,43 @@ import { createCompiledOntologyCache } from './compiled-cache.mjs';
 function doc(slug, mtime = 1, raw = '---\nkind: capability\n---\n') {
   return { slug, mtime, raw };
 }
+
+it('bounds signature encoding while preserving every framed UTF-16 code unit', (t) => {
+  const raw = `${'x'.repeat(32767)}\ud83d\ude00${'y'.repeat(32770)}\ud800`;
+  const docs = [doc('capabilities/a', 1, raw)];
+  const prototype = Object.getPrototypeOf(createHash('sha256'));
+  const original = prototype.update;
+  const encoded = [];
+  t.mock.method(prototype, 'update', function (value, encoding) {
+    encoded.push(typeof value === 'string' ? Buffer.from(value, encoding) : Buffer.from(value));
+    return original.call(this, value, encoding);
+  });
+  const cache = createCompiledOntologyCache({ loadDocs: () => docs, compile: () => ({ compiled: true }) });
+  cache.get();
+  t.mock.restoreAll();
+  const expected = [];
+  for (const value of ['capabilities/a', '1', raw]) {
+    const length = Buffer.alloc(4);
+    length.writeUInt32LE(value.length);
+    expected.push(length, Buffer.from(value, 'utf16le'));
+  }
+  assert.ok(Buffer.concat(encoded).equals(Buffer.concat(expected)));
+  assert.ok(encoded.length >= 6);
+  assert.ok(encoded.some((value) => value.length > 1000));
+  assert.ok(Math.max(...encoded.map((value) => value.length)) <= 64 * 1024);
+});
+
+it('detects same-mtime edits on both sides of large signature chunks', () => {
+  let raw = `${'a'.repeat(32767)}\ud83d\ude00${'b'.repeat(32768)}`;
+  const cache = createCompiledOntologyCache({ loadDocs: () => [doc('capabilities/a', 1, raw)], compile: () => ({ version: raw }) });
+  const first = cache.get();
+  assert.equal(cache.get(), first);
+  raw = `${raw.slice(0, 32767)}\ud83d\ude01${raw.slice(32769)}`;
+  const second = cache.get();
+  assert.notEqual(second, first);
+  raw = `${raw.slice(0, -1)}c`;
+  assert.notEqual(cache.get(), second);
+});
 
 describe('createCompiledOntologyCache', () => {
   it('returns freshly loaded documents with cached artifacts and detects changed bytes at the same mtime', () => {

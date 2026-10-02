@@ -140,18 +140,13 @@ All tool input schemas are strict: unknown arguments are rejected instead of bei
 
 ${WRITE_SAFETY_SECTION_EN}
 
-## When a tool throws — read the error suffix
+## Error recovery
 
-Every error message ends with the canonical fix tool. Examples:
-- \`Doc already exists at "X". To update fields, use **patch_concept**(...).\`
-- \`Doc not found: "Y". Use **list_concepts**() to see all slugs, or **find_evidence**({title:"Y"}) to search by title. Similar slugs in this vault: ...\`
-- \`Source slug does not exist in vault: "Z". Use list_concepts() to see all slugs, or find_evidence({title:"Z"}) to search by title. If the endpoint is real but absent, create it first with add_concept(slug, kind, title). Similar slugs in this vault: ...\`
-
-Don't retry blindly — parse the suffix and pivot to the suggested tool.
+Use \`structuredContent.errorCode\` and the repair fields described above before retrying. If the client exposes only text, read the suggested recovery call in the error. A missing node is a reason to verify its identity and meaning; a suggested \`createTool\` does not authorize creation.
 
 ## What to write back
 
-When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.
+After a meaningful code change, inspect the existing concepts and current source, then propose only supported meaning updates. A code rename or refactor does not authorize a vault rename. Obtain approval for the exact proposed changes before writing; preserve unknowns and keep meaning acceptance separate from write success. For an approved concept rename, read \`find_backlinks\`, review the \`rename_concept\` dry-run, and confirm that exact call with the captured \`expected_mtime\`; preserve the UID instead of deleting and recreating the node.
 
 ${CONSTRUCTION_RULES_EN}`;
 

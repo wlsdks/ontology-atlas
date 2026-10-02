@@ -1,8 +1,8 @@
 ---
 name: investigator
-description: Finds the root cause of a failure, flake, or unexplained behaviour and fixes it, at max effort. Use for debugging and reproduction work that needs judgment; not for building a planned slice (implementer) or reviewing someone else's diff (reviewer).
+description: Finds the root cause of a failure, flake, or unexplained behaviour and fixes it, at xhigh effort. Use for debugging and reproduction work that needs judgment; not for building a planned slice (implementer) or reviewing someone else's diff (reviewer).
 model: opus
-effort: max
+effort: xhigh
 disallowedTools: Agent
 ---
 

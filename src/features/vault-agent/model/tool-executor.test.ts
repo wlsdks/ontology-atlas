@@ -82,6 +82,13 @@ function call(name: string, args: unknown = {}): NormalizedToolCall {
   return { id: 't1', name, args, argsInvalid: false };
 }
 
+function pathPort(slugs: string[], links: Array<[string, string]>): VaultReadPort {
+  return makePort({
+    nodes: slugs.map((slug) => node(`capability:${slug}`, { title: slug, evidenceIds: [slug] })),
+    edges: Object.freeze(links.map(([from, to]) => Object.freeze(edge(`capability:${from}`, `capability:${to}`)))),
+  });
+}
+
 describe('tool-executor never writes', () => {
   it('the port type has no write method', () => {
     // A write name in this port would let the executor reach disk.
@@ -416,6 +423,134 @@ describe('tool-executor reads', () => {
     const payload = JSON.parse(result.content) as { found: boolean; hops: string[] };
     expect(payload.found).toBe(true);
     expect(payload.hops).toEqual(['capabilities/payment', 'src/lib/ghost.ts']);
+  });
+
+  it('find_neighbors reads only the requested page without repeated node scans', async () => {
+    let idReads = 0;
+    let edgeReads = 0;
+    const nodes = Array.from({ length: 1001 }, (_, index) => {
+      const id = `capability:n${index}`;
+      const value = node(id);
+      Object.defineProperty(value, 'id', { get: () => { idReads += 1; return id; } });
+      return value;
+    });
+    const ordered = [...nodes.slice(-5), ...nodes.slice(1, -5)];
+    const edges = ordered.map((target) => edge(nodes[0].id, target.id));
+    const tracked = new Proxy(edges, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/.test(key)) edgeReads += 1;
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const execute = createToolExecutor(makePort({ nodes, edges: tracked }));
+    idReads = 0;
+    edgeReads = 0;
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/n0', limit: 5 }));
+    expect(JSON.parse(result.content).edges.map((row: { to: string }) => row.to)).toEqual(
+      ordered.slice(0, 5).map((target) => target.evidenceIds[0]),
+    );
+    expect(edgeReads).toBeLessThanOrEqual(5);
+    expect(idReads).toBeLessThanOrEqual(20);
+  });
+
+  it('find_neighbors keeps first-ID lookup separate from alias priority', async () => {
+    const root = node('capability:root');
+    const alias = node('capability:alias', { title: 'capability:target' });
+    const first = node('capability:target', { agentSlug: 'capabilities/first' });
+    const duplicate = node('capability:target', { agentSlug: 'capabilities/duplicate' });
+    const execute = createToolExecutor(makePort({ nodes: [root, alias, first, duplicate], edges: [edge(root.id, first.id)] }));
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/root' }));
+    expect(JSON.parse(result.content).edges).toEqual([
+      { from: 'capabilities/root', to: 'capabilities/first', type: 'depends_on' },
+    ]);
+  });
+
+  it('find_neighbors filters before limiting and retains edge order and rationale', async () => {
+    const nodes = ['a', 'b', 'c'].map((id) => node(`capability:${id}`));
+    const edges = [edge(nodes[0].id, nodes[1].id, 'contains'), { ...edge(nodes[2].id, nodes[0].id), label: 'Recorded reason' }, edge(nodes[0].id, nodes[2].id)];
+    const execute = createToolExecutor(makePort({ nodes, edges }));
+    const result = await execute(call('find_neighbors', { slug: 'capabilities/a', types: ['depends_on'], limit: 1.5 }));
+    expect(JSON.parse(result.content).edges).toEqual([
+      { from: 'capabilities/c', to: 'capabilities/a', type: 'depends_on', why: 'Recorded reason' },
+    ]);
+    const outgoing = await execute(call('find_neighbors', { slug: 'capabilities/a', direction: 'outgoing' }));
+    expect(JSON.parse(outgoing.content).edges.map((row: { to: string }) => row.to)).toEqual(['capabilities/b', 'capabilities/c']);
+  });
+
+  it('separate executors keep their own node snapshot', async () => {
+    const root = node('capability:root');
+    const oldTarget = node('capability:target', { agentSlug: 'capabilities/old' });
+    const newTarget = { ...oldTarget, agentSlug: 'capabilities/new' };
+    const edges = [edge(root.id, oldTarget.id)];
+    const oldExecute = createToolExecutor(makePort({ nodes: [root, oldTarget], edges }));
+    const newExecute = createToolExecutor(makePort({ nodes: [root, newTarget], edges }));
+    for (const [execute, expected] of [[oldExecute, 'capabilities/old'], [newExecute, 'capabilities/new'], [oldExecute, 'capabilities/old']] as const) {
+      const result = await execute(call('find_neighbors', { slug: 'capabilities/root' }));
+      expect(JSON.parse(result.content).edges[0].to).toBe(expected);
+    }
+  });
+
+  it('get_concept preserves the first forty neighbors', async () => {
+    const nodes = Array.from({ length: 61 }, (_, index) => node(`capability:n${index}`));
+    const edges = nodes.slice(1).map((target) => edge(nodes[0].id, target.id));
+    const execute = createToolExecutor(makePort({ nodes, edges }));
+    const result = await execute(call('get_concept', { slug: 'capabilities/n0' }));
+    expect(JSON.parse(result.content).neighbors.map((row: { to: string }) => row.to)).toEqual(
+      nodes.slice(1, 41).map((target) => target.evidenceIds[0]),
+    );
+  });
+
+  it('reference-only reads keep twenty valid names in edge order including duplicates', async () => {
+    const ghost = node('capability:ghost', { hasOwnDocument: false, ref: 'capabilities/ghost' });
+    const unnamed = node('capability:unnamed', { hasOwnDocument: false });
+    const parents = Array.from({ length: 25 }, (_, index) => node(`capability:parent${index}`));
+    const edges = [edge(ghost.id, 'missing'), edge(ghost.id, unnamed.id), edge(ghost.id, parents[0].id), ...parents.map((parent) => edge(parent.id, ghost.id))];
+    const execute = createToolExecutor(makePort({ nodes: [ghost, unnamed, ...parents], edges }));
+    const result = await execute(call('get_concept', { slug: 'capabilities/ghost' }));
+    expect(JSON.parse(result.content).referencedBy).toEqual([
+      parents[0].evidenceIds[0], ...parents.slice(0, 19).map((parent) => parent.evidenceIds[0]),
+    ]);
+  });
+
+  it.each([
+    { name: 'disconnected endpoints', links: [], from: 'a', to: 'c', maxHops: 5, expected: [] },
+    { name: 'the same endpoint with no hops', links: [], from: 'a', to: 'a', maxHops: 0, expected: ['a'] },
+    { name: 'distinct endpoints with no hops', links: [['a', 'c']], from: 'a', to: 'c', maxHops: 0, expected: [] },
+    { name: 'a path at the hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+    { name: 'a path beyond the hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 1, expected: [] },
+    { name: 'a fractional hop bound', links: [['a', 'b'], ['b', 'c']], from: 'a', to: 'c', maxHops: 1.5, expected: [] },
+    { name: 'reverse traversal', links: [['a', 'b'], ['b', 'c']], from: 'c', to: 'a', maxHops: 2, expected: ['c', 'b', 'a'] },
+    { name: 'self loops and repeated edges in a cycle', links: [['a', 'a'], ['a', 'b'], ['a', 'b'], ['b', 'a'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+    { name: 'a shorter path after a longer branch', links: [['a', 'b'], ['b', 'd'], ['d', 'c'], ['a', 'c']], from: 'a', to: 'c', maxHops: 3, expected: ['a', 'c'] },
+    { name: 'input edge order across incoming and outgoing ties', links: [['b', 'a'], ['a', 'd'], ['d', 'c'], ['b', 'c']], from: 'a', to: 'c', maxHops: 2, expected: ['a', 'b', 'c'] },
+  ])('find_path preserves $name', async ({ links, from, to, maxHops, expected }) => {
+    const prefix = (slug: string) => `capabilities/${slug}`;
+    const execute = createToolExecutor(pathPort(
+      ['a', 'b', 'c', 'd'].map(prefix),
+      links.map(([source, target]) => [prefix(source), prefix(target)]),
+    ));
+    const result = await execute(call('find_path', { from: prefix(from), to: prefix(to), maxHops }));
+    expect(JSON.parse(result.content)).toEqual({
+      from: prefix(from), to: prefix(to), found: expected.length > 0, hops: expected.map(prefix),
+    });
+    expect(result.readSlugs).toEqual([prefix(from), prefix(to)]);
+    expect(result.outcome).toBe('ok');
+  });
+
+  it('find_path keeps exact Unicode slugs', async () => {
+    const slugs = ['capabilities/시작', 'capabilities/중간', 'capabilities/끝'];
+    const execute = createToolExecutor(pathPort(slugs, [[slugs[0], slugs[1]], [slugs[1], slugs[2]]]));
+    const result = await execute(call('find_path', { from: slugs[0], to: slugs[2] }));
+    expect(JSON.parse(result.content).hops).toEqual(slugs);
+  });
+
+  it('find_path caps traversal at twenty hops', async () => {
+    const slugs = Array.from({ length: 22 }, (_, index) => `capabilities/step-${index}`);
+    const execute = createToolExecutor(pathPort(slugs, slugs.slice(1).map((slug, index) => [slugs[index], slug])));
+    const atBound = await execute(call('find_path', { from: slugs[0], to: slugs[20], maxHops: 100 }));
+    const beyondBound = await execute(call('find_path', { from: slugs[0], to: slugs[21], maxHops: 100 }));
+    expect(JSON.parse(atBound.content).hops).toEqual(slugs.slice(0, 21));
+    expect(JSON.parse(beyondBound.content)).toEqual({ from: slugs[0], to: slugs[21], found: false, hops: [] });
   });
 
   it('find_orphans counts only concepts that have a document', async () => {

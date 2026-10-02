@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../src/features/first-run-starter/model/first-run-starter-dismiss";
 
 /**
  * Keyboard path contract — **the layer synthetic events cannot measure**.
@@ -29,10 +30,9 @@ test.use({ viewport: { width: 1512, height: 950 } });
 
 async function openTopology(page: import("@playwright/test").Page) {
   // `?guides=off` — the first-visit guidance intercepts the keyboard path with a scrim.
+  await page.addInitScript((key) => window.sessionStorage.setItem(key, "1"), FIRST_RUN_STARTER_DISMISSED_KEY);
   await page.goto("/ko/topology/?guides=off");
   await expect(page.getByTestId("topology-index-panel")).toBeVisible();
-  const dismiss = page.getByTestId("first-run-starter-dismiss");
-  if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
   await expect(page.getByTestId("topology-index-row").first()).toBeVisible();
 }
 

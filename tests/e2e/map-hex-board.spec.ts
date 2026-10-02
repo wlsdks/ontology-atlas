@@ -103,6 +103,7 @@ async function settled(page: Page) {
       { intervals: [250, 250, 250, 250, 250, 250] },
     )
     .toBe(true);
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
 }
 
 test("hex board writes the address only on a real change: stale-only and 20 foreign address writes stay bounded", async ({ page }) => {

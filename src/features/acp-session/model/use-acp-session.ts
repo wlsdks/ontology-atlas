@@ -606,10 +606,10 @@ export function useAcpSession({
   const push = useCallback((event: AcpEvent) => {
     updateEvents((prev) => {
       const last = prev[prev.length - 1];
-      // Text fragments are **appended** rather than becoming a new bubble per line — one sentence
-      // arrives in several fragments.
       if (last && (event.kind === 'agent' || event.kind === 'thought') && last.kind === event.kind) {
-        return [...prev.slice(0, -1), { ...last, text: last.text + event.text }];
+        const next = prev.slice();
+        next[next.length - 1] = { ...last, text: last.text + event.text };
+        return next;
       }
       return [...prev, event];
     });
@@ -620,13 +620,19 @@ export function useAcpSession({
     if (!active) return;
     activeTurnRef.current = null;
     if (!active.observer) return;
-    const index = eventsRef.current.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
+    const currentEvents = eventsRef.current;
+    const index = currentEvents.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
+    // O(current-turn events), with one preallocated snapshot array.
+    const turnEvents = new Array<AcpEvent>(index < 0 ? 0 : currentEvents.length - index);
+    for (let offset = 0; offset < turnEvents.length; offset += 1) {
+      turnEvents[offset] = { ...currentEvents[index + offset] };
+    }
     const completion: AcpTurnCompletion = {
       ...active.start,
       endedAt: new Date().toISOString(),
       outcome: active.cancelRequested ? 'cancelled' : outcome,
       stopReason,
-      events: (index < 0 ? [] : eventsRef.current.slice(index)).map((event) => ({ ...event })),
+      events: turnEvents,
     };
     if (completion.events.some((event) => event.kind === 'tool' && event.outputEvidence)) {
       updateEvents((previous) => previous.map((event) => {

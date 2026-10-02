@@ -1057,8 +1057,6 @@ export function useLocalVaultInternal() {
 
   /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
-  /** One slot for `refresh()` to hand the native stamps it just fetched to `load()`. */
-  const pendingStampsRef = useRef<VaultStampIndex | null>(null);
 
   /**
    * The reusable entries of the last successful build and the handle they came from. The
@@ -1070,6 +1068,27 @@ export function useLocalVaultInternal() {
     handle: FileSystemDirectoryHandle;
     entries: BuiltVaultEntry[];
   } | null>(null);
+  const vaultReadSessionRef = useRef<{ handle: FileSystemDirectoryHandle | null }>({ handle: null });
+  const loadSequenceRef = useRef(0);
+  const pickerSequenceRef = useRef(0);
+  const mountedRef = useRef(true);
+  const beginVaultReadSession = useCallback((handle: FileSystemDirectoryHandle | null) => {
+    const session = { handle };
+    vaultReadSessionRef.current = session;
+    if (!handle || lastBuildRef.current?.handle !== handle) {
+      lastBuildRef.current = null;
+      lastFingerprintRef.current = null;
+    }
+    return session;
+  }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      pickerSequenceRef.current += 1;
+      beginVaultReadSession(null);
+    };
+  }, [beginVaultReadSession]);
 
   /**
    * Secures readwrite permission before any write. On refusal the state moves to
@@ -1092,7 +1111,13 @@ export function useLocalVaultInternal() {
   const load = useCallback(async (
     handle: FileSystemDirectoryHandle,
     options: VaultOpenOptions = {},
+    nativeStamps: VaultStampIndex | null = null,
   ): Promise<Omit<VaultOpenResult, 'opened'> | null> => {
+    const session = vaultReadSessionRef.current;
+    if (!mountedRef.current || session.handle !== handle) return null;
+    const sequence = ++loadSequenceRef.current;
+    const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session &&
+      session.handle === handle && loadSequenceRef.current === sequence;
     // Any folder actually being opened ends the choosing state, whichever door it came
     // through — the chooser row, the picker, or a restore. Clearing it here rather than in
     // each caller is why a new door cannot forget to.
@@ -1131,13 +1156,15 @@ export function useLocalVaultInternal() {
         try {
           // Use the stamps `refresh()` just walked for, when it has them; otherwise the
           // incremental path fetches them itself (first load, other entry points).
-          result = await rebuildLocalManifestIncremental(handle, reuse, pendingStampsRef.current);
+          result = await rebuildLocalManifestIncremental(handle, reuse, nativeStamps);
         } catch {
+          if (!isCurrent()) return null;
           result = await buildLocalManifestWithEntries(handle);
         }
       } else {
         result = await buildLocalManifestWithEntries(handle);
       }
+      if (!isCurrent()) return null;
       /*
        * **A creation door's starter lands before the folder is first shown** (2026-09-25, D1).
        *
@@ -1156,7 +1183,9 @@ export function useLocalVaultInternal() {
       let starterError: unknown = null;
       if (options.starter && result.build.manifest.docs.length === 0) {
         try {
-          if ((await verifyHandlePermission(handle, 'readwrite', { ask: true })) !== 'granted') {
+          const permission = await verifyHandlePermission(handle, 'readwrite', { ask: true });
+          if (!isCurrent()) return null;
+          if (permission !== 'granted') {
             throw codedFailure('permission-denied');
           }
           const written = await writeVaultStarter(
@@ -1170,13 +1199,16 @@ export function useLocalVaultInternal() {
         } catch (error) {
           starterError = error;
         }
+        if (!isCurrent()) return null;
         // Re-read what actually landed, a partial starter included: the screen shows the disk.
         result = await buildLocalManifestWithEntries(handle);
+        if (!isCurrent()) return null;
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, sourceHandles, fingerprint } = build;
       const { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts } =
         await readVaultSidecarStatuses(handle);
+      if (!isCurrent()) return null;
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
       setState({
@@ -1240,7 +1272,9 @@ export function useLocalVaultInternal() {
       }
       return { starterWritten, starterError };
     } catch (err) {
+      if (!isCurrent()) return null;
       lastBuildRef.current = null;
+      lastFingerprintRef.current = null;
       // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
       // `invoke` rejects with a *string* rather than an Error; the previous
       // `err instanceof Error ? err.message : null` discarded it wholesale and silenced every
@@ -1290,6 +1324,10 @@ export function useLocalVaultInternal() {
     // during permission-needed wake a spurious auto-refresh that surfaces a raw OS error
     // from a stale path.
     const previousState = stateRef.current;
+    const pickerSequence = ++pickerSequenceRef.current;
+    let session = vaultReadSessionRef.current;
+    const isCurrent = () => mountedRef.current && pickerSequenceRef.current === pickerSequence &&
+      vaultReadSessionRef.current === session;
     setState((s) => ({
       ...s,
       status: 'opening',
@@ -1306,10 +1344,12 @@ export function useLocalVaultInternal() {
               }) => Promise<FileSystemDirectoryHandle>;
             }
           ).showDirectoryPicker({ mode: 'read' });
+      if (!isCurrent()) return NOT_OPENED;
       if (!handle) {
         setState(previousState);
         return NOT_OPENED;
       }
+      session = beginVaultReadSession(handle);
       /*
        * ⚠️ **A person who picks their project means their map** (owner, 2026-08-24). Since the map
        * moved to `<project>/atlas`, two folders became plausible to pick, and this path took
@@ -1318,7 +1358,9 @@ export function useLocalVaultInternal() {
        * rule is narrow and why it is never silent.
        */
       const resolvedHandle = await resolveVaultHandle(handle);
+      if (!isCurrent()) return NOT_OPENED;
       const openHandle = resolvedHandle.handle;
+      session.handle = openHandle;
       setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
       const now = Date.now();
       await putLocalFsHandle({
@@ -1328,6 +1370,7 @@ export function useLocalVaultInternal() {
         createdAt: now,
         lastAccessedAt: now,
       });
+      if (!isCurrent()) return NOT_OPENED;
       /*
        * ⚠️ **The order is the contract** (caught in review, 2026-08-16).
        *
@@ -1341,9 +1384,12 @@ export function useLocalVaultInternal() {
        * success.
        */
       const loaded = await load(openHandle, options);
+      if (!isCurrent()) return NOT_OPENED;
       await refreshRecentVaults();
+      if (!isCurrent()) return NOT_OPENED;
       return loaded ? { opened: true, ...loaded } : NOT_OPENED;
     } catch (err) {
+      if (!isCurrent()) return NOT_OPENED;
       // A cancel is not a failure — restore the state from just before the picker (see `isPickerAbort`).
       if (isPickerAbort(err)) {
         setState(previousState);
@@ -1375,7 +1421,7 @@ export function useLocalVaultInternal() {
       }));
       return NOT_OPENED;
     }
-  }, [load, refreshRecentVaults, stateRef]);
+  }, [beginVaultReadSession, load, refreshRecentVaults, stateRef]);
 
   /** Reopens a known folder; `options.starter` as in `open`. */
   const openRecent = useCallback(
@@ -1384,6 +1430,9 @@ export function useLocalVaultInternal() {
         setState(emptyState('unsupported'));
         return NOT_OPENED;
       }
+      pickerSequenceRef.current += 1;
+      const session = beginVaultReadSession(record.handle);
+      const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session;
       setState((s) => ({
         ...s,
         status: 'opening',
@@ -1397,6 +1446,7 @@ export function useLocalVaultInternal() {
         // 'path-missing' and prompts "choose the folder again". A present-but-ungranted vault
         // (first launch after the access-scope update) is 'grant-needed', not a loss.
         const resolution = await tauriVaultRecordResolves(record);
+        if (!isCurrent()) return NOT_OPENED;
         if (resolution !== 'ok') {
           setState((s) => ({
             ...s,
@@ -1407,6 +1457,8 @@ export function useLocalVaultInternal() {
           return NOT_OPENED;
         }
         const resolvedHandle = await resolveVaultHandle(record.handle);
+        if (!isCurrent()) return NOT_OPENED;
+        session.handle = resolvedHandle.handle;
         setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
         const resolvedRootPath = getTauriVaultRootPath(resolvedHandle.handle);
         const now = Date.now();
@@ -1419,10 +1471,14 @@ export function useLocalVaultInternal() {
           lastAccessedAt: now,
         };
         await putLocalFsHandle(nextRecord);
+        if (!isCurrent()) return NOT_OPENED;
         await refreshRecentVaults();
+        if (!isCurrent()) return NOT_OPENED;
         const loaded = await load(resolvedHandle.handle, options);
+        if (!isCurrent()) return NOT_OPENED;
         return loaded ? { opened: true, ...loaded } : NOT_OPENED;
       } catch (err) {
+        if (!isCurrent()) return NOT_OPENED;
         // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
           ...s,
@@ -1436,7 +1492,7 @@ export function useLocalVaultInternal() {
         return NOT_OPENED;
       }
     },
-    [load, refreshRecentVaults],
+    [beginVaultReadSession, load, refreshRecentVaults],
   );
 
   /**
@@ -1457,10 +1513,17 @@ export function useLocalVaultInternal() {
   );
 
   const close = useCallback(async () => {
-    await deleteLocalFsHandle();
-    await refreshRecentVaults();
-    setState(emptyState(isSupported() ? 'idle' : 'unsupported'));
-  }, [refreshRecentVaults]);
+    pickerSequenceRef.current += 1;
+    const session = beginVaultReadSession(null);
+    try {
+      await deleteLocalFsHandle();
+      await refreshRecentVaults();
+    } finally {
+      if (mountedRef.current && vaultReadSessionRef.current === session) {
+        setState(emptyState(isSupported() ? 'idle' : 'unsupported'));
+      }
+    }
+  }, [beginVaultReadSession, refreshRecentVaults]);
 
   /**
    * User-initiated refresh. An unchanged fingerprint (nothing changed outside) skips the full
@@ -1469,31 +1532,30 @@ export function useLocalVaultInternal() {
    */
   const refresh = useCallback(async () => {
     const handle = stateRef.current.handle;
-    if (!handle) return;
+    const session = vaultReadSessionRef.current;
+    const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session && session.handle === handle;
+    if (!handle || !isCurrent()) return;
+    let nativeStamps: VaultStampIndex | null = null;
     try {
       /*
        * Take the fingerprint **and the stamps behind it**. Previously only the fingerprint was
        * taken and the stamps discarded, so the incremental rebuild that followed walked the same
        * vault a second time — two native walks per change. Now one.
        */
-      const { fingerprint: fp, nativeStamps } =
+      const { fingerprint: fp, nativeStamps: stamps } =
         await computeLocalVaultFingerprintWithStamps(handle);
+      if (!isCurrent()) return;
       if (fp === lastFingerprintRef.current) {
         const sidecars = await readVaultSidecarStatuses(handle);
-        setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
+        if (!isCurrent()) return;
+        setState((s) => isCurrent() ? { ...s, ...sidecars, lastLoadedAt: Date.now() } : s);
         return;
       }
-      pendingStampsRef.current = nativeStamps;
+      nativeStamps = stamps;
     } catch {
       /* Fingerprint failed — fall back safely to a full rebuild. */
-      pendingStampsRef.current = null;
     }
-    try {
-      await load(handle);
-    } finally {
-      // A leftover stamp map reused by the next call would judge against a stale mtime.
-      pendingStampsRef.current = null;
-    }
+    if (isCurrent()) await load(handle, {}, nativeStamps);
   }, [stateRef, load]);
 
   // Auto-refresh when the tab regains focus, so editing in an IDE and coming back rescans
@@ -1514,15 +1576,21 @@ export function useLocalVaultInternal() {
   const syncWithDisk = useCallback(async (): Promise<boolean> => {
     if (!loadedHandle) return false;
     const handle = loadedHandle;
+    const session = vaultReadSessionRef.current;
+    const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session && session.handle === handle;
+    if (!isCurrent()) return false;
     let nativeStamps: VaultStampIndex | null = null;
     try {
       const { fingerprint: fp, nativeStamps: stamps } =
         await computeLocalVaultFingerprintWithStamps(handle);
+      if (!isCurrent()) return false;
       nativeStamps = stamps;
       if (fp === lastFingerprintRef.current) {
         const sidecars = await readVaultSidecarStatuses(handle);
+        if (!isCurrent()) return false;
         // State changes only when a sidecar did, or every check re-renders the whole app.
         setState((s) => {
+          if (!isCurrent()) return s;
           const same =
             structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
             structurallyEqualStatus(
@@ -1541,11 +1609,9 @@ export function useLocalVaultInternal() {
     } catch {
       /* Ignore a fingerprint failure — fall back safely to a full rebuild. */
     }
+    if (!isCurrent()) return false;
     // Not awaited: the poll's cadence counts only its own check.
-    pendingStampsRef.current = nativeStamps;
-    void loadRef.current(handle).finally(() => {
-      if (pendingStampsRef.current === nativeStamps) pendingStampsRef.current = null;
-    });
+    void loadRef.current(handle, {}, nativeStamps);
     return true;
   }, [loadedHandle]);
   useEffect(() => {
@@ -1609,8 +1675,11 @@ export function useLocalVaultInternal() {
 
   const requestPermission = useCallback(async () => {
     const handle = stateRef.current.handle;
-    if (!handle) return;
+    const session = vaultReadSessionRef.current;
+    const isCurrent = () => mountedRef.current && vaultReadSessionRef.current === session && session.handle === handle;
+    if (!handle || !isCurrent()) return;
     const result = await verifyRead(handle, true);
+    if (!isCurrent()) return;
     if (result === 'granted') {
       await load(handle);
     } else {
@@ -2033,6 +2102,10 @@ export function useLocalVaultInternal() {
       return;
     }
     let cancelled = false;
+    let session = vaultReadSessionRef.current;
+    const pickerSequence = pickerSequenceRef.current;
+    const isCurrent = () => !cancelled && mountedRef.current && vaultReadSessionRef.current === session &&
+      pickerSequenceRef.current === pickerSequence;
     (async () => {
       /*
        * ⚠️ **Whatever happens, this must end** (installed app, 2026-08-24).
@@ -2053,19 +2126,20 @@ export function useLocalVaultInternal() {
        * first-run screen already turns into a sentence with somewhere to go.
        */
       const record = await getLocalFsHandle();
+      if (!isCurrent()) return;
       /*
        * Read the list here rather than through `refreshRecentVaults`, because the decision
        * below needs the value and not just the state update.
        */
       const recent = await listRecentLocalFsHandles();
-      if (!cancelled) {
+      if (isCurrent()) {
         setRecentVaults(recent);
         setStoredVaultRecord(record ?? null);
       }
       if (!record) {
         return;
       }
-      if (cancelled) return;
+      if (!isCurrent()) return;
       /*
        * ⚠️ **Two or more known folders means the app stops guessing and asks.**
        *
@@ -2095,6 +2169,7 @@ export function useLocalVaultInternal() {
         return;
       }
       const storedHandle = record.handle;
+      session = beginVaultReadSession(storedHandle);
       /*
        * ⚠️ **Not awaited, and the reason is measured.** This and
        * `recordLocalFsHandleContents` both read-modify-write the single recent-list key, and
@@ -2113,15 +2188,16 @@ export function useLocalVaultInternal() {
        */
       void touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);
-      if (cancelled) return;
+      if (!isCurrent()) return;
       if (permission === 'granted') {
         // (Desktop) The common silent failure of auto-restore: the stored vault folder moved or
         // was deleted while the app was closed. Preflight first so it classifies as
         // 'path-missing' and the picker says the folder is gone and to choose again, instead of
         // a raw io error thrown from inside `load`.
         const resolution = await tauriVaultRecordResolves(record);
+        if (!isCurrent()) return;
         if (resolution !== 'ok') {
-          if (!cancelled) {
+          if (isCurrent()) {
             setState({
               status: 'error',
               handle: storedHandle,
@@ -2142,7 +2218,8 @@ export function useLocalVaultInternal() {
           return;
         }
         const resolvedHandle = await resolveVaultHandle(storedHandle);
-        if (cancelled) return;
+        if (!isCurrent()) return;
+        session.handle = resolvedHandle.handle;
         setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
         if (resolvedHandle.redirectedFrom) {
           const now = Date.now();
@@ -2155,7 +2232,9 @@ export function useLocalVaultInternal() {
               getTauriVaultRootPath(resolvedHandle.handle) ?? record.desktopRootPath,
             lastAccessedAt: now,
           });
+          if (!isCurrent()) return;
           await refreshRecentVaults();
+          if (!isCurrent()) return;
         }
         await load(resolvedHandle.handle);
       } else {
@@ -2178,7 +2257,7 @@ export function useLocalVaultInternal() {
       }
     })()
       .catch((error: unknown) => {
-        if (cancelled) return;
+        if (!isCurrent()) return;
         /*
          * ⚠️ **A folder that is gone must say so on the web too** (census, 2026-08-31). The desktop
          * preflights the stored absolute path and reports `path-missing`; a browser has no path to
@@ -2219,7 +2298,7 @@ export function useLocalVaultInternal() {
     return () => {
       cancelled = true;
     };
-  }, [load, refreshRecentVaults]);
+  }, [beginVaultReadSession, load, refreshRecentVaults]);
 
   /**
    * Writes the ontology starter into the open folder (`writeVaultStarter`) and rescans it. Config

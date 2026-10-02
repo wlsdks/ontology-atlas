@@ -86,6 +86,11 @@ MCP design contracts this package treats as release-critical:
 - Tool descriptions and initialize instructions must describe security,
   recovery, and destructive-write boundaries plainly enough for an agent to
   recover from strict-input errors without guessing.
+- Recovery uses structured error codes and repair fields first, with text
+  fallback for clients that cannot expose them. A suggested creation tool is
+  not write authority. Code renames and refactors require inspected, approved
+  meaning changes before a vault rename; use the atomic dry-run/confirm path
+  with the current mtime and preserve the node's UID.
 - Remote or HTTP transports require a separate security review for
   authentication, DNS rebinding protection, origin/host validation, and
   least-privilege tool scopes before being added.

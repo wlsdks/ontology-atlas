@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
@@ -50,6 +50,7 @@ const docsVault = vi.hoisted(() => ({
   buildLocalManifestWithEntries: vi.fn(),
   rebuildLocalManifestIncremental: vi.fn(),
   computeLocalVaultFingerprint: vi.fn(async () => 'fp'),
+  computeLocalVaultFingerprintWithStamps: vi.fn(async () => ({ fingerprint: 'changed', nativeStamps: null })),
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => tauri);
@@ -80,14 +81,14 @@ function record(name: string, docs = 0, concepts = 0): LocalFsHandleRecord {
   };
 }
 
-function successfulBuild() {
+function successfulBuild(slug = 'project') {
   return {
     build: {
       manifest: {
         version: '1',
         generatedAt: '',
         docs: [
-          { slug: 'project', path: 'project.md', frontmatter: { kind: 'project' } },
+          { slug, path: `${slug}.md`, frontmatter: { kind: 'project' } },
           { slug: 'wiki/notes', path: 'wiki/notes.md', frontmatter: {} },
         ],
         backlinksDetail: {},
@@ -110,6 +111,205 @@ beforeEach(() => {
   store.getLocalFsHandle.mockResolvedValue(undefined);
   store.listRecentLocalFsHandles.mockResolvedValue([]);
   docsVault.buildLocalManifestWithEntries.mockResolvedValue(successfulBuild());
+  docsVault.rebuildLocalManifestIncremental.mockResolvedValue(successfulBuild());
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
+}
+
+describe('obsolete vault reads', () => {
+  it.each([
+    ['replace', 'complete'], ['replace', 'fail'], ['close', 'complete'], ['close', 'fail'],
+  ] as const)('does not publish a delayed load after %s when it later %s', async (action, outcome) => {
+    const a = record('A');
+    const b = record('B');
+    const started = deferred<void>();
+    const delayed = deferred<ReturnType<typeof successfulBuild>>();
+    docsVault.buildLocalManifestWithEntries.mockImplementationOnce(() => {
+      started.resolve();
+      return delayed.promise;
+    });
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    let pending!: ReturnType<typeof hook.result.current.openRecent>;
+    await act(async () => { pending = hook.result.current.openRecent(a); await started.promise; });
+    await act(async () => {
+      if (action === 'replace') await hook.result.current.openRecent(b);
+      else await hook.result.current.close();
+    });
+    const countWrites = store.recordLocalFsHandleContents.mock.calls.length;
+    await act(async () => {
+      if (outcome === 'complete') delayed.resolve(successfulBuild());
+      else delayed.reject(new Error('Obsolete folder read failed'));
+      expect((await pending).opened).toBe(false);
+    });
+    expect(hook.result.current.handle).toBe(action === 'replace' ? b.handle : null);
+    expect(hook.result.current.status).toBe(action === 'replace' ? 'loaded' : 'idle');
+    expect(store.recordLocalFsHandleContents).toHaveBeenCalledTimes(countWrites);
+    hook.unmount();
+  });
+
+  it('does not publish counts or report an open after unmount', async () => {
+    const started = deferred<void>();
+    const delayed = deferred<ReturnType<typeof successfulBuild>>();
+    docsVault.buildLocalManifestWithEntries.mockImplementationOnce(() => {
+      started.resolve();
+      return delayed.promise;
+    });
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    let pending!: ReturnType<typeof hook.result.current.openRecent>;
+    await act(async () => { pending = hook.result.current.openRecent(record('A')); await started.promise; });
+    hook.unmount();
+    delayed.resolve(successfulBuild());
+    expect((await pending).opened).toBe(false);
+    expect(store.recordLocalFsHandleContents).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('ignores an obsolete folder preflight returning %s', async (exists) => {
+    const a = record('A');
+    const b = record('B');
+    const started = deferred<void>();
+    const delayed = deferred<boolean>();
+    tauri.tauriVaultPathExists.mockImplementationOnce(() => { started.resolve(); return delayed.promise; });
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    let pending!: ReturnType<typeof hook.result.current.openRecent>;
+    await act(async () => { pending = hook.result.current.openRecent(a); await started.promise; });
+    await act(async () => { await hook.result.current.openRecent(b); });
+    await act(async () => { delayed.resolve(exists); expect((await pending).opened).toBe(false); });
+    expect(hook.result.current.handle).toBe(b.handle);
+    expect(hook.result.current.status).toBe('loaded');
+    expect(docsVault.buildLocalManifestWithEntries.mock.calls.map(([handle]) => handle)).toEqual([b.handle]);
+    hook.unmount();
+  });
+
+  it.each(['refresh', 'syncWithDisk'] as const)('ignores an obsolete fingerprint from %s before it reloads the previous folder', async (method) => {
+    const a = record('A');
+    const b = record('B');
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { await hook.result.current.openRecent(a); });
+    const started = deferred<void>();
+    const delayed = deferred<{ fingerprint: string; nativeStamps: null }>();
+    docsVault.computeLocalVaultFingerprintWithStamps.mockImplementationOnce(() => { started.resolve(); return delayed.promise; });
+    let pending!: Promise<void | boolean>;
+    await act(async () => { pending = hook.result.current[method](); await started.promise; });
+    await act(async () => { await hook.result.current.openRecent(b); });
+    await act(async () => { delayed.resolve({ fingerprint: 'changed', nativeStamps: null }); await pending; });
+    expect(hook.result.current.handle).toBe(b.handle);
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledTimes(2);
+    hook.unmount();
+  });
+
+  it('does not let a delayed restore replace an explicitly opened folder', async () => {
+    const delayed = deferred<LocalFsHandleRecord | undefined>();
+    store.getLocalFsHandle.mockReturnValueOnce(delayed.promise);
+    const hook = renderHook(() => useLocalVaultInternal());
+    const b = record('B');
+    await act(async () => { await hook.result.current.openRecent(b); });
+    await act(async () => { delayed.resolve(record('A')); });
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    expect(hook.result.current.handle).toBe(b.handle);
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledTimes(1);
+    hook.unmount();
+  });
+
+  it('keeps the newer same-folder rebuild after an older rebuild completes', async () => {
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { await hook.result.current.openRecent(record('A')); });
+    const started = deferred<void>();
+    const delayed = deferred<ReturnType<typeof successfulBuild>>();
+    docsVault.rebuildLocalManifestIncremental
+      .mockImplementationOnce(() => { started.resolve(); return delayed.promise; })
+      .mockResolvedValueOnce(successfulBuild('newer'));
+    let pending!: Promise<void>;
+    await act(async () => { pending = hook.result.current.refresh(); await started.promise; });
+    await act(async () => { await hook.result.current.refresh(); });
+    expect(hook.result.current.manifest?.docs[0]?.slug).toBe('newer');
+    await act(async () => { delayed.resolve(successfulBuild('older')); await pending; });
+    expect(hook.result.current.manifest?.docs[0]?.slug).toBe('newer');
+    hook.unmount();
+  });
+
+  it('rebuilds a reopened folder without retaining its closed-session entries', async () => {
+    const a = record('A');
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { await hook.result.current.openRecent(a); });
+    await act(async () => { await hook.result.current.close(); });
+    await act(async () => { await hook.result.current.openRecent(a); });
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledTimes(2);
+    expect(docsVault.rebuildLocalManifestIncremental).not.toHaveBeenCalled();
+    hook.unmount();
+  });
+
+  it('lets an explicit pending picker win over a delayed boot restore', async () => {
+    const restoring = deferred<LocalFsHandleRecord | undefined>();
+    const picking = deferred<FileSystemDirectoryHandle>();
+    const started = deferred<void>();
+    store.getLocalFsHandle.mockReturnValueOnce(restoring.promise);
+    tauri.pickTauriVaultDirectory.mockImplementationOnce(() => { started.resolve(); return picking.promise; });
+    const hook = renderHook(() => useLocalVaultInternal());
+    const b = record('B');
+    let pending!: ReturnType<typeof hook.result.current.open>;
+    await act(async () => { pending = hook.result.current.open(); await started.promise; });
+    await act(async () => { restoring.resolve(record('A')); });
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { picking.resolve(b.handle); expect((await pending).opened).toBe(true); });
+    expect(hook.result.current.handle).toBe(b.handle);
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledTimes(1);
+    hook.unmount();
+  });
+
+  it.each(['open', 'openRecent'] as const)('does not report success from %s after close during recent-list readback', async (method) => {
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    const started = deferred<void>();
+    const delayed = deferred<LocalFsHandleRecord[]>();
+    store.listRecentLocalFsHandles.mockImplementationOnce(() => { started.resolve(); return delayed.promise; });
+    const a = record('A');
+    tauri.pickTauriVaultDirectory.mockResolvedValueOnce(a.handle);
+    let pending!: ReturnType<typeof hook.result.current.open>;
+    await act(async () => {
+      pending = method === 'open' ? hook.result.current.open() : hook.result.current.openRecent(a);
+      await started.promise;
+    });
+    await act(async () => { await hook.result.current.close(); });
+    await act(async () => { delayed.resolve([]); expect((await pending).opened).toBe(false); });
+    expect(hook.result.current.status).toBe('idle');
+    hook.unmount();
+  });
+
+  it('closes the read session even when deleting saved metadata fails', async () => {
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { await hook.result.current.openRecent(record('A')); });
+    store.deleteLocalFsHandle.mockRejectedValueOnce(new Error('Fixture metadata failure'));
+    await act(async () => { await expect(hook.result.current.close()).rejects.toThrow('Fixture metadata failure'); });
+    expect(hook.result.current.handle).toBeNull();
+    expect(hook.result.current.status).toBe('idle');
+    hook.unmount();
+  });
+
+  it('retries a failed rebuild even when the disk fingerprint matches the last success', async () => {
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    await act(async () => { await hook.result.current.openRecent(record('A')); });
+    docsVault.rebuildLocalManifestIncremental.mockRejectedValueOnce(new Error('Fixture incremental failure'));
+    docsVault.buildLocalManifestWithEntries.mockRejectedValueOnce(new Error('Fixture rebuild failure'));
+    await act(async () => { await hook.result.current.refresh(); });
+    expect(hook.result.current.status).toBe('error');
+    docsVault.computeLocalVaultFingerprintWithStamps.mockResolvedValueOnce({ fingerprint: 'fp', nativeStamps: null });
+    await act(async () => { await hook.result.current.refresh(); });
+    expect(hook.result.current.status).toBe('loaded');
+    hook.unmount();
+  });
 });
 
 afterEach(() => {

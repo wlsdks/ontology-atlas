@@ -187,6 +187,7 @@ for (const viewport of [
     await expect
       .poll(async () => (await readBoard(page)).tiles, { message: "the board drew no tiles", timeout: 30_000 })
       .toBe(vault.capabilities + vault.domains + 1);
+    await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
     const board = await readBoard(page);
     expect(board.inked, "the canvas is blank").toBeGreaterThan(5_000);
     expect(board.marks.find((t) => t.id === NODE)?.pressed).toBe(true);
