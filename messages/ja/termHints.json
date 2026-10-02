@@ -1,0 +1,19 @@
+{
+  "trigger": "{term}について",
+  "mcp": {
+    "expansion": "MCP (Model Context Protocol)",
+    "explanation": "AIエージェントが外部のツールやデータに共通の方法でアクセスするための、オープンな規格です。"
+  },
+  "acp": {
+    "expansion": "ACP (Agent Client Protocol)",
+    "explanation": "Atlasのようなアプリがコーディングエージェントとやり取りし、書き込みのたびに確認を取る標準の方式です。"
+  },
+  "apiKey": {
+    "expansion": "API key (Application Programming Interface key)",
+    "explanation": "サービスを利用するときに本人を確かめるための文字列です。他人に見せないでください。"
+  },
+  "cli": {
+    "expansion": "CLI (Command-Line Interface)",
+    "explanation": "ターミナルにコマンドを入力して操作する方法です。"
+  }
+}

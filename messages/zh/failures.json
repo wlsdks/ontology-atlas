@@ -1,0 +1,14 @@
+{
+  "permission-denied": "此文件夹拒绝了写入，所以没有任何改动。请在“系统设置”的“隐私与安全性”中允许 Ontology Atlas 访问该文件夹，然后重试。",
+  "target-missing": "该文件夹或文件已不存在，可能被移动或删除了。请重新打开文件夹后重试。",
+  "already-exists": "已有同名文件，所以没有覆盖。请检查现有文件或换一个名称，然后重试。",
+  "app-required": "此操作要直接在文件夹中创建文件，只有桌面应用能完成。",
+  "answer-history-unreadable": "无法读取这条回答的问题，或它与早期版本的关联。请确认文件顶部信息块里的 answer_thread 以 wiki/answers/ 开头，然后重试。",
+  "answer-path-invalid": "这条回答不在 wiki/answers/ 下。请把回答页面移到该文件夹，然后重试。",
+  "answer-sources-unmeasured": "引用的某个原文目前无法读取，所以刷新没有开始。请把原文件放回原处，然后重试。",
+  "answer-previous-changed": "准备期间，上一条回答或某个原文发生了变化，所以已停止。没有保存任何内容，请重新请求草稿。",
+  "answer-draft-mismatch": "你审阅的内容与即将保存的内容已不一致，所以没有保存。请重新打开对比，再保存。",
+  "answer-draft-invalid": "智能体的草稿无法成为新版本。请让它重新给出一份带引用的正文。",
+  "answer-revision-exists": "该地址已有页面，所以没有覆盖。请在资料库中打开查看里面的内容。",
+  "answer-turn-incomplete": "刷新没有完成，上一条回答保持不变。准备好后请再问一次。"
+}

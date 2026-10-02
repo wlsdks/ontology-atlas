@@ -15,7 +15,8 @@ describe('RouteMemory', () => {
     expect(isRestorableRoute('/ja/', locales)).toBe(false);
     expect(isRestorableRoute('/zh/', locales)).toBe(false);
     expect(isRestorableRoute('/fr/docs/', locales)).toBe(false);
-    expect(isRestorableRoute('/ja/topology/')).toBe(false);
+    expect(isRestorableRoute('/ja/topology/')).toBe(true);
+    expect(isRestorableRoute('/fr/topology/')).toBe(false);
   });
 
   it('rejects a locale root and external URL shapes', () => {

@@ -27,11 +27,27 @@ export const LOCALE_META = {
     intlTag: "ko-KR",
     script: "hangul",
   },
+  ja: {
+    htmlLang: "ja",
+    hreflang: "ja",
+    ogLocale: "ja_JP",
+    intlTag: "ja-JP",
+    script: "han-kana",
+  },
+  zh: {
+    htmlLang: "zh-Hans",
+    hreflang: "zh-Hans",
+    ogLocale: "zh_CN",
+    intlTag: "zh-CN",
+    script: "han-kana",
+  },
 } as const satisfies Record<AppLocale, LocaleMeta>;
 
 export const LOCALE_NAME_KEY = {
   en: "english",
   ko: "korean",
+  ja: "japanese",
+  zh: "chinese",
 } as const satisfies Record<AppLocale, string>;
 
 export function isAppLocale(

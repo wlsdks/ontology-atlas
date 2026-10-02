@@ -1,0 +1,65 @@
+{
+  "backToMap": "← マップ",
+  "breadcrumbSeparator": "/",
+  "census": "概念{concepts}件・つながり{relations}件",
+  "freshOn": "最近更新",
+  "freshOff": "動きなし",
+  "copyLink": "概念のリンクをコピー",
+  "copyLinkCopied": "概念のリンクをコピーしました",
+  "close": "閉じる",
+  "metric": {
+    "contains": "含む",
+    "usedBy": "利用元",
+    "dependsOn": "依存先",
+    "reach": "3ステップ到達"
+  },
+  "groups": {
+    "containsTitle": "この概念が含むもの",
+    "containsCaption": "この概念の内側にあるもの",
+    "usedByTitle": "この概念を使う場所",
+    "usedByCaption": "これを利用している側",
+    "dependsOnTitle": "この概念が頼る場所",
+    "dependsOnCaption": "これがないと動きません",
+    "belongsToTitle": "所属先",
+    "belongsToCaption": "この概念が属している概念",
+    "empty": "直接のつながりはありません。",
+    "freshDotTitle": "最近更新"
+  },
+  "reach": {
+    "leadIn": "この概念から、",
+    "stepUnit": "ステップ以内で",
+    "afterSteps": "届く概念",
+    "stepsAria": "この概念からのステップ数",
+    "ofTotal": "{count} / {total}",
+    "mostlyNone": "ほかの概念には届きません。",
+    "mostlyOne": "ほとんどが{a}（{aCount}）にあります。",
+    "mostlyTwo": "ほとんどが{a}（{aCount}）と{b}（{bCount}）にあります。",
+    "selfDomainLabel": "このドメイン",
+    "noDomainLabel": "ドメインなし",
+    "domainsHidden": "バーに表示しきれない{count}件のドメインにも届いています",
+    "domainsHiddenRoute": "ドメインの境界"
+  },
+  "handoff": {
+    "label": "エージェントへの引き継ぎ",
+    "copy": "次のアクションをコピー",
+    "copied": "エージェントへの引き継ぎ呼び出しをコピーしました",
+    "openDocument": "文書を開く",
+    "openMentionDocument": "言及する文書を開く",
+    "openMentionDocumentTip": "この概念にはまだ専用の文書がありません。この概念について書かれた別の文書を開きます",
+    "openStudio": "マップでつながりを編集"
+  },
+  "codeLocations": {
+    "heading": "コードの場所",
+    "copy": "コピー",
+    "copied": "コピーしました"
+  },
+  "body": {
+    "title": "本文",
+    "empty": "本文はまだ書かれていません。",
+    "edit": "本文を編集",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "placeholder": "この概念を説明してください…",
+    "saving": "保存中…"
+  }
+}

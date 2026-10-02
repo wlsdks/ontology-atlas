@@ -1,0 +1,1 @@
+{"gate": "wide-folders.root", "raise": 2, "why": "messages/ja and messages/zh hold one JSON file per message namespace, 68 each, exactly like messages/en and messages/ko; the layout is the catalog contract, so a locale cannot be split into fewer files."}

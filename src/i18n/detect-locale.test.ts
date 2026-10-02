@@ -22,11 +22,12 @@ describe("detectLocale", () => {
     expect(detectLocale(languages, stored, FOUR)).toBe(expected);
   });
 
-  it("answers as before while only en and ko are routable", () => {
-    expect(detectLocale(["ja-JP", "ko"], null)).toBe("ko");
-    expect(detectLocale(["zh-CN"], null)).toBe("en");
+  it("answers across the routed locales by default", () => {
+    expect(detectLocale(["ja-JP", "ko"], null)).toBe("ja");
+    expect(detectLocale(["zh-CN"], null)).toBe("zh");
+    expect(detectLocale(["zh-TW"], null)).toBe("en");
     expect(detectLocale(["ko-KR"], null)).toBe("ko");
     expect(detectLocale(["en-GB"], "ko")).toBe("ko");
-    expect(detectLocale(["ko"], "ja")).toBe("ko");
+    expect(detectLocale(["ko"], "ja")).toBe("ja");
   });
 });

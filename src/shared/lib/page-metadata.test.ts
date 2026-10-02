@@ -46,7 +46,13 @@ describe('buildPageMetadata', () => {
       languages: Record<string, string>;
     };
     expect(alternates.canonical).toMatch(/\/en\/download$/);
-    expect(Object.keys(alternates.languages).sort()).toEqual(['en', 'ko', 'x-default']);
+    expect(Object.keys(alternates.languages).sort()).toEqual([
+      'en',
+      'ja',
+      'ko',
+      'x-default',
+      'zh-Hans',
+    ]);
   });
 });
 

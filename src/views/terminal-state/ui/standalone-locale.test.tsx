@@ -25,7 +25,7 @@ describe("standalone locale over a four-locale list", () => {
   ])("%s resolves to %s and sets <html lang>", (path, locale) => {
     window.history.pushState({}, "", path);
     const { getByTestId } = render(
-      <StandaloneLocaleProvider messages={{ en: {}, ko: {} }}>
+      <StandaloneLocaleProvider messages={{ en: {}, ko: {}, ja: {}, zh: {} }}>
         <Probe />
       </StandaloneLocaleProvider>,
     );

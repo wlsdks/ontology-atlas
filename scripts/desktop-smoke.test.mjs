@@ -75,7 +75,7 @@ function makeCurrentOut() {
 }
 
 test("desktop smoke inventory covers the current packaged workbench", () => {
-  assert.deepEqual(DESKTOP_SMOKE_LOCALES, ["en", "ko"]);
+  assert.deepEqual(DESKTOP_SMOKE_LOCALES, ["en", "ja", "ko", "zh"]);
   assert.deepEqual(DESKTOP_SMOKE_ROUTES, [
     "/download",
     "/docs",
@@ -93,7 +93,7 @@ test("desktop smoke inventory covers the current packaged workbench", () => {
 });
 
 test("desktop smoke titles derive current route metadata for every locale", () => {
-  assert.equal(Object.keys(DESKTOP_SMOKE_ROUTE_TITLES).length, 10);
+  assert.equal(Object.keys(DESKTOP_SMOKE_ROUTE_TITLES).length, 20);
   assert.equal(DESKTOP_SMOKE_ROUTE_TITLE_KEYS["/ontology/edit"], undefined);
   for (const locale of DESKTOP_SMOKE_LOCALES) {
     const { metadata } = JSON.parse(fs.readFileSync(`messages/${locale}.json`, "utf8"));
@@ -134,7 +134,7 @@ test("desktop smoke download copy is read from the live message catalog", () => 
   assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT_KEYS), ["/download"]);
 
   const resolved = resolveRouteText();
-  assert.deepEqual(Object.keys(resolved).sort(), ["en:/download", "ko:/download"]);
+  assert.deepEqual(Object.keys(resolved).sort(), ["en:/download", "ja:/download", "ko:/download", "zh:/download"]);
 
   for (const locale of DESKTOP_SMOKE_LOCALES) {
     const fragments = resolved[`${locale}:/download`];

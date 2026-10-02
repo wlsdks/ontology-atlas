@@ -1,0 +1,65 @@
+{
+  "backToMap": "← 地图",
+  "breadcrumbSeparator": "/",
+  "census": "{concepts} 个概念 · {relations} 条关系",
+  "freshOn": "最近更新",
+  "freshOff": "平静",
+  "copyLink": "复制概念链接",
+  "copyLinkCopied": "已复制概念链接",
+  "close": "关闭",
+  "metric": {
+    "contains": "包含",
+    "usedBy": "被使用",
+    "dependsOn": "依赖",
+    "reach": "三步可达"
+  },
+  "groups": {
+    "containsTitle": "此概念包含",
+    "containsCaption": "位于此概念之内",
+    "usedByTitle": "使用此概念的地方",
+    "usedByCaption": "使用它的一方",
+    "dependsOnTitle": "此概念依赖的对象",
+    "dependsOnCaption": "缺了它们就无法运转",
+    "belongsToTitle": "所属",
+    "belongsToCaption": "此概念所在的上级概念",
+    "empty": "没有直接连接。",
+    "freshDotTitle": "最近更新"
+  },
+  "reach": {
+    "leadIn": "从此概念出发，",
+    "stepUnit": "步内",
+    "afterSteps": "可到达",
+    "stepsAria": "与此概念相隔的步数",
+    "ofTotal": "{count} / {total}",
+    "mostlyNone": "它到达不了其他概念。",
+    "mostlyOne": "主要在 {a}（{aCount}）。",
+    "mostlyTwo": "主要在 {a}（{aCount}）和 {b}（{bCount}）。",
+    "selfDomainLabel": "本领域",
+    "noDomainLabel": "无领域",
+    "domainsHidden": "实际到达的领域比这些条形多 {count} 个",
+    "domainsHiddenRoute": "领域边界"
+  },
+  "handoff": {
+    "label": "智能体交接",
+    "copy": "复制下一步操作",
+    "copied": "已复制智能体交接调用",
+    "openDocument": "打开文档",
+    "openMentionDocument": "打开提及它的文档",
+    "openMentionDocumentTip": "此概念还没有自己的文档，将打开另一篇写到它的文档",
+    "openStudio": "在地图上编辑关系"
+  },
+  "codeLocations": {
+    "heading": "代码位置",
+    "copy": "复制",
+    "copied": "已复制"
+  },
+  "body": {
+    "title": "正文",
+    "empty": "还没有写正文。",
+    "edit": "编辑正文",
+    "save": "保存",
+    "cancel": "取消",
+    "placeholder": "描述这个概念…",
+    "saving": "正在保存…"
+  }
+}

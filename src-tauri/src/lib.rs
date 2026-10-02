@@ -399,7 +399,7 @@ fn is_safe_verify_base_url(value: &str) -> bool {
             .any(|ch| ch.is_whitespace() || matches!(ch, '"' | '\'' | '`' | '<' | '>' | '\\'))
 }
 
-pub(crate) const APP_LOCALES: [&str; 2] = ["en", "ko"];
+pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
 fn webview_verify_locale<'a>(route: &str, locales: &[&'a str]) -> &'a str {
@@ -3178,6 +3178,14 @@ fn native_tray_labels(candidates: &[String], locales: &[&str]) -> NativeTrayLabe
             open: "Ontology Atlas 열기",
             quit: "Ontology Atlas 종료",
         },
+        "ja" => NativeTrayLabels {
+            open: "Ontology Atlasを開く",
+            quit: "Ontology Atlasを終了",
+        },
+        "zh" => NativeTrayLabels {
+            open: "打开 Ontology Atlas",
+            quit: "退出 Ontology Atlas",
+        },
         _ => NativeTrayLabels {
             open: "Open Ontology Atlas",
             quit: "Quit Ontology Atlas",
@@ -4317,7 +4325,7 @@ mod tests {
         }
         assert_eq!(
             crate::webview_verify_locale("/ja/topology/", &crate::APP_LOCALES),
-            "en"
+            "ja"
         );
         assert_eq!(crate::webview_verify_locale_root("/zh/map/", &four), "/zh/");
         let script = crate::build_webview_verify_route_reset_script_for("/ja/topology/", &four);

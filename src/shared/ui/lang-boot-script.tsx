@@ -1,7 +1,7 @@
 const LANG_BOOT = [
   "try{",
   "var s=location.pathname.split('/');",
-  "var m={en:'en',ko:'ko'};",
+  "var m={en:'en',ko:'ko',ja:'ja',zh:'zh-Hans'};",
   "for(var i=0;i<s.length;i++){if(Object.prototype.hasOwnProperty.call(m,s[i])){document.documentElement.lang=m[s[i]];break;}}",
   "}catch(e){}",
 ].join("");
