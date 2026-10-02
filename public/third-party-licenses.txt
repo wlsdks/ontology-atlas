@@ -13273,7 +13273,6 @@ License: MIT
 Used by:
   windows (Microsoft)
   windows-collections
-  windows-core
   windows-core (Microsoft)
   windows-future
   windows-implement
@@ -13282,9 +13281,7 @@ Used by:
   windows-link (Microsoft)
   windows-numerics
   windows-registry (Microsoft)
-  windows-result
   windows-result (Microsoft)
-  windows-strings
   windows-strings (Microsoft)
   windows-sys
   windows-sys (Microsoft)
