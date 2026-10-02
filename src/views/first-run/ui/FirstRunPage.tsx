@@ -18,7 +18,6 @@ import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
-import { CompanionHome } from "@/features/agent-activity";
 import styles from './first-run-chooser.module.css';
 
 /**
@@ -191,22 +190,6 @@ export function FirstRunPage() {
             </p>
           </div>
         </header>
-
-        {/* The companion wears the door cards' shape, so the column keeps one text start line. */}
-        {!choosingFor ? (
-          <div className="shrink-0">
-            {choosingFolderHome ? (
-              <CompanionHome />
-            ) : (
-              <CompanionHome
-                door={{
-                  className: `${secondaryCardBase} w-full border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`,
-                  glyphClassName: `${iconChip} overflow-hidden`,
-                }}
-              />
-            )}
-          </div>
-        ) : null}
 
         {choosingFor ? (
           <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">

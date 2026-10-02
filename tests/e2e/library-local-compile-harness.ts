@@ -498,6 +498,8 @@ export async function installLocalCompileHarness(
             cliPath: detectedRuntime === 'codex-acp' ? '/opt/homebrew/bin/codex' : '/opt/homebrew/bin/claude',
             adapterPackage: detectedRuntime === 'codex-acp' ? '@agentclientprotocol/codex-acp@1.10.0' : '@agentclientprotocol/claude-agent-acp@0.75.1',
           }] : []);
+          if (command === "llm_chat_prepare") return Promise.resolve("fixture-request");
+          if (command === "llm_chat_cancel") return Promise.resolve(false);
           if (command === "llm_chat") {
             const body = String(args.body ?? "");
             const parsed = JSON.parse(body) as JsonRecord;

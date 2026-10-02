@@ -45,8 +45,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",
-  "atlas-mascot-presence--walking":
-    "The travel axis is decorative. Reduced motion places the verified state immediately; the role=status text still carries the same fact.",
   "atlas-mascot-sprite":
     "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "acp-working-shimmer":

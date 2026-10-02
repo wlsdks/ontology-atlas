@@ -96,10 +96,9 @@ function source(file: string): string {
 }
 
 /** The attribute immediately above the definition, or null when the function is not a command. */
-function commandAttributeOf(file: string, fn: string): string | null {
-  const body = source(file);
-  const match = new RegExp(`(#\\[tauri::command[^\\]]*\\])\\n(?:pub(?:\\(crate\\))? )?fn ${fn}\\b`).exec(body);
-  return match ? match[1] : null;
+function commandAttributeOf(body: string, fn: string): string | null {
+  const match = new RegExp(`(#\\[tauri::command[^\\]]*\\])\\n(?:pub(?:\\(crate\\))? )?(async )?fn ${fn}\\b`).exec(body);
+  return match ? (match[2] ? '#[tauri::command(async)]' : match[1]) : null;
 }
 
 describe('slow Tauri commands do not hold the macOS main thread', () => {
@@ -107,7 +106,7 @@ describe('slow Tauri commands do not hold the macOS main thread', () => {
     // A renamed or deleted command must fail loudly here rather than silently dropping out of the
     // list — a rule that quietly stops covering something is worse than no rule.
     for (const { file, fn } of [...MUST_NOT_BLOCK_THE_MAIN_THREAD, ...MUST_STAY_ON_THE_MAIN_THREAD]) {
-      expect(commandAttributeOf(file, fn), `${file}::${fn} is no longer a #[tauri::command]`).not.toBe(
+      expect(commandAttributeOf(source(file), fn), `${file}::${fn} is no longer a #[tauri::command]`).not.toBe(
         null,
       );
     }
@@ -115,7 +114,7 @@ describe('slow Tauri commands do not hold the macOS main thread', () => {
 
   it('runs every waiting command off the main thread', () => {
     const blocking = MUST_NOT_BLOCK_THE_MAIN_THREAD.filter(
-      ({ file, fn }) => commandAttributeOf(file, fn) !== '#[tauri::command(async)]',
+      ({ file, fn }) => commandAttributeOf(source(file), fn) !== '#[tauri::command(async)]',
     );
 
     expect(
@@ -127,9 +126,19 @@ describe('slow Tauri commands do not hold the macOS main thread', () => {
 
   it('keeps the folder picker on the main thread', () => {
     for (const { file, fn, because } of MUST_STAY_ON_THE_MAIN_THREAD) {
-      expect(commandAttributeOf(file, fn), `${file}::${fn} must stay sync — ${because}`).toBe(
+      expect(commandAttributeOf(source(file), fn), `${file}::${fn} must stay sync — ${because}`).toBe(
         '#[tauri::command]',
       );
     }
   });
+});
+
+it.each([
+  ['#[tauri::command]\npub async fn wait()', '#[tauri::command(async)]'],
+  ['#[tauri::command(async)]\npub fn wait()', '#[tauri::command(async)]'],
+  ['#[tauri::command]\npub fn wait()', '#[tauri::command]'],
+  ['#[tauri::command]\npub(crate) async fn wait()', '#[tauri::command(async)]'],
+  ['pub async fn wait()', null],
+])('classifies native command dispatch from %s', (body, expected) => {
+  expect(commandAttributeOf(body, 'wait')).toBe(expected);
 });

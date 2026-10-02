@@ -35,13 +35,13 @@ describe('tauri-llm 웹 강등', () => {
   it('데스크톱에서는 Rust 커맨드 계약 그대로 인자를 넘긴다', async () => {
     mocks.isTauri.mockReturnValue(true);
     mocks.invoke.mockClear();
-    mocks.invoke.mockResolvedValue({
+    mocks.invoke.mockImplementation((command: string) => Promise.resolve(command === "llm_chat_prepare" ? "request-1" : command === "llm_chat_cancel" ? false : {
       status: 200,
       body: '{}',
       host: 'api.anthropic.com',
       durationMs: 12,
       loggedAt: '2026-07-26T00:00:00.000Z',
-    });
+    }));
     await llmChat({
       provider: 'anthropic',
       vaultPath: '/vault',
@@ -56,6 +56,7 @@ describe('tauri-llm 웹 강등', () => {
       },
     });
     expect(mocks.invoke).toHaveBeenCalledWith('llm_chat', {
+      requestId: 'request-1',
       provider: 'anthropic',
       vaultPath: '/vault',
       model: 'claude-opus-5',

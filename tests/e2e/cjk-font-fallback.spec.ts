@@ -37,15 +37,23 @@ test.describe('CJK font fallback', () => {
         { lang: probe.lang, text: probe.text },
       );
       const faces = async () => {
-        await page.evaluate(() => document.fonts.ready);
-        return (await platformFonts(cdp, '#cjk-probe')).join(', ');
+        // Hydration can restore the route locale; each sample owns this simulated future locale.
+        await page.evaluate(async (lang) => {
+          document.documentElement.lang = lang;
+          await document.fonts.ready;
+        }, probe.lang);
+        const fonts = await platformFonts(cdp, '#cjk-probe');
+        return {
+          lang: await page.locator('html').getAttribute('lang'),
+          hasFont: fonts.length > 0,
+          usesPretendard: fonts.some((font) => /pretendard/i.test(font)),
+        };
       };
-      if (probe.expectPretendard) {
-        await expect.poll(faces).toMatch(/pretendard/i);
-      } else {
-        await expect.poll(faces).not.toMatch(/pretendard/i);
-        expect(await faces()).not.toBe('');
-      }
+      await expect.poll(faces).toEqual({
+        lang: probe.lang,
+        hasFont: true,
+        usesPretendard: probe.expectPretendard,
+      });
     });
   }
 });

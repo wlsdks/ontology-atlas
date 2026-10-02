@@ -126,7 +126,7 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
       data-conduction-state={state}
       aria-labelledby={`${ids}-label`}
       aria-describedby={`${ids}-description`}
-      className="m-0 flex min-w-0 flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--map-canvas-bg-near)]"
+      className="m-0 flex min-w-0 flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-panel"
     >
       <div className="flex min-h-[var(--chrome-tile-size)] items-center justify-between gap-3 px-5 pt-3">
         <p
@@ -156,7 +156,7 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
           </IconButton>
         ) : null}
       </div>
-      <div ref={setHost} className="min-w-0">
+      <div ref={setHost} className="min-w-0 bg-[color:var(--map-canvas-bg-near)]">
         {available > 0 && approached ? (
           <ConductionScene
             available={available}
