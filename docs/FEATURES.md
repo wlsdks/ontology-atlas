@@ -29,6 +29,10 @@ Meaning review previews a nonblank authored description or a complete opening
 prose paragraph within 320 characters. The full-document action exposes the
 remaining sections and boundaries, including when no preview is eligible.
 
+Direct model conversations reject malformed response structures with a bounded
+`invalid-provider-response` diagnostic. No tool call from that response executes;
+the existing retry flow remains available for cloud and local endpoints.
+
 ## Destinations
 
 The desktop rail's order and hrefs come from
