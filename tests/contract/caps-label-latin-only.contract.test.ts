@@ -6,7 +6,7 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  * The caps micro-label — `font-mono` + `uppercase` + `--tracking-caps-*` — is a Latin
  * typographic device, and all three parts have to stand down in Korean, not just one.
  *
- * The tracking was already zeroed under `:root:is(:lang(ko), :lang(ja), :lang(zh))`. The other two were not, and
+ * The tracking was already zeroed under `:root:lang(ko)`. The other two were not, and
  * `font-mono` is the one that actually shows: font fallback is per glyph, so Hangul drops
  * to Pretendard while the space between words is still drawn by JetBrains Mono at a
  * monospace advance. Measured on the installed app's tool-list eyebrow: syllable gaps
