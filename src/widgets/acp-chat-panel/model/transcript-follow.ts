@@ -30,7 +30,7 @@ export function distanceFromEnd(box: ScrollBox): number {
   return Math.max(0, box.scrollHeight - box.clientHeight - box.scrollTop);
 }
 
-export function afterScroll(state: FollowState, box: ScrollBox): FollowState {
+export function afterScroll(state: FollowState, box: ScrollBox, grownPx = 0): FollowState {
   const top = box.scrollTop;
   const distance = distanceFromEnd(box);
   if (top < state.lastTop - MOVE_EPSILON_PX) {
@@ -38,7 +38,9 @@ export function afterScroll(state: FollowState, box: ScrollBox): FollowState {
     return { following: state.following && distance <= END_SLACK_PX, lastTop: top };
   }
   // Only a move down resumes: a stop's own pending scroll event lands where the box already was.
-  if (top > state.lastTop + MOVE_EPSILON_PX && distance <= RETURN_SLACK_PX) return { following: true, lastTop: top };
+  if (top > state.lastTop + MOVE_EPSILON_PX && distance <= RETURN_SLACK_PX + Math.max(0, grownPx)) {
+    return { following: true, lastTop: top };
+  }
   return { following: state.following, lastTop: top };
 }
 
