@@ -1,54 +1,54 @@
 {
-  "title": "Bring documents from a service",
-  "pickBody": "Pick where your documents already live. Atlas connects it once, then your coding agent fetches them and writes each one into this folder as an ordinary Markdown file you can read and edit.",
-  "absentNote": "Google Drive is not here yet. Google offers no connection that works with a sign-in alone, so today the quickest way is to download from Drive and use Add files.",
-  "close": "Close",
-  "back": "Back",
-  "stepOf": "Step {step} of {total}",
+  "title": "从服务导入文档",
+  "pickBody": "选择文档当前所在的位置。Atlas 只需连接一次，之后由你的编程智能体获取文档，并把每份文档写成此文件夹中可读可编辑的普通 Markdown 文件。",
+  "absentNote": "这里还没有 Google Drive。Google 没有提供仅凭登录即可使用的连接方式，目前最快的做法是从 Drive 下载，再用“添加文件”。",
+  "close": "关闭",
+  "back": "返回",
+  "stepOf": "第 {step} 步，共 {total} 步",
   "service": {
     "notion": {
       "title": "Notion",
-      "body": "Pages and databases from your Notion account.",
-      "example": "the API design pages"
+      "body": "来自你的 Notion 账号的页面和数据库。",
+      "example": "API 设计页面"
     },
     "confluence": {
       "title": "Confluence",
-      "body": "Pages from a Confluence space.",
-      "example": "everything in the Handbook space"
+      "body": "来自 Confluence 空间的页面。",
+      "example": "Handbook 空间全部内容"
     },
     "jira": {
       "title": "Jira",
-      "body": "Issues and their descriptions from Jira.",
-      "example": "open issues on the platform board"
+      "body": "来自 Jira 的问题及其描述。",
+      "example": "平台看板上未关闭的问题"
     },
     "github": {
       "title": "GitHub",
-      "body": "Issues, pull requests and wiki pages from a repository.",
-      "example": "the design discussions in this repo"
+      "body": "来自仓库的 Issue、PR 和 Wiki 页面。",
+      "example": "此仓库中的设计讨论"
     },
     "other": {
-      "title": "Another service",
-      "body": "Set one up by hand in the MCP section of Agents, where the connection details live.",
+      "title": "其他服务",
+      "body": "请在“智能体”的 MCP 部分手动设置，连接详情都在那里。",
       "example": ""
     }
   },
-  "connectBrowser": "Connect {service}. A sign-in window opens; press Allow there, and choose what {service} may share.",
-  "connectBrowserWho": "Your coding agent opens that window and keeps what comes back. Atlas never sees it, and removing this connection later does not take the access away.",
-  "connectToken": "Connect {service}. Paste the value it issues you, once.",
-  "connectTokenWho": "The value goes into this computer’s keychain and never into a file in your folder. Your coding agent, not Atlas, uses it to reach the service.",
-  "connectAction": "Connect",
-  "connectFailed": "Nothing was saved. Open a folder first, and check that this folder’s connector file can be read.",
-  "tokenLabel": "Value",
-  "tokenWhere": "Where to get this",
-  "connected": "{service} is connected.",
-  "whatLabel": "What should it bring?",
-  "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
-  "bringAction": "Start bringing them in",
-  "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else.",
-  "revokeWhere": "Where to take it back in {service}",
-  "noAgentTitle": "The fetching needs a coding tool this app can start",
-  "noAgentGetApp": "Get the app",
-  "noAgentBodyWeb": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
-  "noAgentBodyRuntime": "None is ready on this computer yet. The connection is saved and switched on, so any coding tool you point at this folder can already use it; set one up and come back to finish here.",
-  "noAgentSeeRuntimes": "See your coding tools"
+  "connectBrowser": "连接 {service}。会打开登录窗口，请在其中点击“允许”，并选择 {service} 可以共享的内容。",
+  "connectBrowserWho": "由你的编程智能体打开该窗口并保存返回的结果。Atlas 不会看到这些内容，之后移除此连接也不会撤销该访问权限。",
+  "connectToken": "连接 {service}。粘贴它给你的值，只需一次。",
+  "connectTokenWho": "该值保存在这台电脑的钥匙串中，不会写入你文件夹里的任何文件。由你的编程智能体而不是 Atlas 用它访问该服务。",
+  "connectAction": "连接",
+  "connectFailed": "未保存任何内容。请先打开一个文件夹，并确认能读取此文件夹的连接器文件。",
+  "tokenLabel": "值",
+  "tokenWhere": "在哪里获取",
+  "connected": "已连接 {service}。",
+  "whatLabel": "要导入什么？",
+  "whatNext": "接下来会打开一个对话。它会搜索，最多向你展示 {limit} 份文档并等你选择；你选的每一份都会写入 {folder}，写入前先征求你的许可。该文件夹之外的内容都不会被改动。",
+  "bringAction": "开始导入",
+  "whatRuntime": "这在 Claude 对话中可用。Codex 尚未测过，所以 Codex 对话只能访问此文件夹，别的都不行。",
+  "revokeWhere": "在 {service} 中撤销授权的位置",
+  "noAgentTitle": "获取文档需要应用能启动的编程工具",
+  "noAgentGetApp": "获取应用",
+  "noAgentBodyWeb": "浏览器无法启动编程工具。连接已保存并启用，因此你指向此文件夹的任何编程工具都可以直接使用它；请在应用中回到这个界面，由它为你获取并写入文档。",
+  "noAgentBodyRuntime": "这台电脑上还没有可用的编程工具。连接已保存并启用，因此你指向此文件夹的任何编程工具都可以直接使用它；设置好后回到这里完成即可。",
+  "noAgentSeeRuntimes": "查看你的编程工具"
 }
