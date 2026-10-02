@@ -10,6 +10,12 @@ export const WHEEL_ZOOM_SENSITIVITY = 0.0023;
 
 const PINCH_ZOOM_SENSITIVITY = 0.01;
 
+const PINCH_WHEEL_MAX_DELTA_PX = 50;
+
+export function isPinchWheel(event: Pick<WheelEvent, "ctrlKey" | "deltaMode" | "deltaY">): boolean {
+  return event.ctrlKey && event.deltaMode === 0 && Math.abs(event.deltaY) < PINCH_WHEEL_MAX_DELTA_PX;
+}
+
 export interface WheelZoomOptions {
   pinch?: boolean;
   speed?: number;

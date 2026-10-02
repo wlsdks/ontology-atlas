@@ -127,6 +127,68 @@ test("at 0.5x drag speed a 200 px drag moves the hex board 100 px", async ({ pag
   expect(moved.y).toBe(start.y);
 });
 
+async function pinchWithGestures(page: Page, selector: string, at: { x: number; y: number }, scale: number) {
+  return page.evaluate(
+    ({ selector, at, scale }) => {
+      const target = document.querySelector(selector)!;
+      const events = [
+        ["gesturestart", 1],
+        ["gesturechange", Math.sqrt(scale)],
+        ["gesturechange", scale],
+        ["gestureend", scale],
+      ].map(([type, value]) =>
+        Object.assign(new Event(type as string, { bubbles: true, cancelable: true }), { scale: value, clientX: at.x, clientY: at.y }),
+      );
+      for (const event of events) target.dispatchEvent(event);
+      return events.every((event) => event.defaultPrevented);
+    },
+    { selector, at, scale },
+  );
+}
+
+test("a WebKit gesture pinch zooms the flat map and the hex board about the fingers", async ({ page }) => {
+  await openFlatMap(page);
+  const at = await emptyCanvasPoint(page, 0);
+  const box = (await page.locator(CANVAS).boundingBox())!;
+  await waitForMapStill(page, { what: "camera" });
+  const before = await readCamera(page);
+  expect(await pinchWithGestures(page, CANVAS, at, 1.5)).toBe(true);
+  await waitForMapStill(page, { what: "camera" });
+  const after = await readCamera(page);
+  expect(after.scale / before.scale).toBeCloseTo(1.5, 3);
+  const worldUnder = (camera: typeof before) => ({
+    x: (at.x - box.x - box.width / 2) / camera.scale + camera.x,
+    y: (at.y - box.y - box.height / 2) / camera.scale + camera.y,
+  });
+  expect(worldUnder(after).x).toBeCloseTo(worldUnder(before).x, 1);
+  expect(worldUnder(after).y).toBeCloseTo(worldUnder(before).y, 1);
+
+  await page.goto("/ko/topology/?view=hex&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  const board = page.getByTestId("hex-board-map");
+  await expect(board).toHaveAttribute("data-hex-ready", "true");
+  const readTile = () =>
+    page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')!.getBoundingClientRect();
+      const tile = document.querySelector<HTMLElement>('[data-testid="hex-board-map"] [data-hex-kind="project"][data-mark]')!;
+      const [x, y, r] = tile.dataset.mark!.split(",").map(Number);
+      return { x: canvas.x + x, y: canvas.y + y, r };
+    });
+  const tile = await readTile();
+  expect(await pinchWithGestures(page, '[data-testid="hex-board-map"] canvas', tile, 1.5)).toBe(true);
+  await page.waitForFunction(
+    (r) => {
+      const mark = document.querySelector<HTMLElement>('[data-testid="hex-board-map"] [data-hex-kind="project"][data-mark]')?.dataset.mark;
+      return Number(mark?.split(",")[2]) !== r;
+    },
+    tile.r,
+    { polling: "raf" },
+  );
+  const zoomed = await readTile();
+  expect(zoomed.r / tile.r).toBeCloseTo(1.5, 1);
+  expect(Math.abs(zoomed.x - tile.x), "the mirror rounds marks to whole pixels").toBeLessThanOrEqual(1);
+  expect(Math.abs(zoomed.y - tile.y), "the mirror rounds marks to whole pixels").toBeLessThanOrEqual(1);
+});
+
 test("choosing speeds in Settings changes how far a drag and a zoom key move the map", async ({ page }) => {
   await openFlatMap(page);
   await page.locator('[data-testid="app-settings-trigger"]:visible').click();

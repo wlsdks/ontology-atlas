@@ -23,6 +23,7 @@ import {
   shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { type PointerMachineState } from "../interaction/pointer-state-machine";
 import { type CameraTween, type ZoomEase } from "../model/camera-easing";
@@ -300,7 +301,14 @@ export function useTopologyInput({
       handleWheelRef.current(e);
     };
     canvas.addEventListener("wheel", listener, { passive: false });
-    return () => canvas.removeEventListener("wheel", listener);
+    const stopGesturePinch = listenForGesturePinch(canvas, (ratio, clientX, clientY) => {
+      wheelNoteInputRef.current();
+      handlersRef.current?.handleGesturePinch(ratio, clientX, clientY);
+    });
+    return () => {
+      canvas.removeEventListener("wheel", listener);
+      stopGesturePinch();
+    };
   }, [canvasRef]);
 
   // Clicking the orbit enter button enters the realm of the slug currently

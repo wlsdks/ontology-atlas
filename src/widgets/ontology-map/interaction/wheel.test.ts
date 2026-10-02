@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide, WHEEL_LINE_HEIGHT_PX, WHEEL_ZOOM_SENSITIVITY } from "./wheel";
+import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide, WHEEL_LINE_HEIGHT_PX, WHEEL_ZOOM_SENSITIVITY } from "./wheel";
 
 describe("normalizeWheelDeltaY", () => {
   it("passes pixel-mode (deltaMode 0) deltas through unchanged", () => {
@@ -58,6 +58,21 @@ describe("computeWheelZoomFactor", () => {
       computeWheelZoomFactor(-30, { pinch: true }) ** speed,
       10,
     );
+  });
+
+  it("keeps Ctrl + a mouse notch on the notch path: deltaY -100 zooms no more than a plain notch", () => {
+    const ctrlNotch = { ctrlKey: true, deltaMode: 0, deltaY: -100 };
+    expect(isPinchWheel(ctrlNotch)).toBe(false);
+    expect(computeWheelZoomFactor(ctrlNotch.deltaY, { pinch: isPinchWheel(ctrlNotch) })).toBeLessThanOrEqual(
+      computeWheelZoomFactor(-100),
+    );
+    expect(isPinchWheel({ ctrlKey: true, deltaMode: 1, deltaY: -3 })).toBe(false);
+  });
+
+  it("reads Chromium's trackpad pinch events, a few pixels each, as a pinch", () => {
+    expect(isPinchWheel({ ctrlKey: true, deltaMode: 0, deltaY: -1.15 })).toBe(true);
+    expect(isPinchWheel({ ctrlKey: true, deltaMode: 0, deltaY: 17.9 })).toBe(true);
+    expect(isPinchWheel({ ctrlKey: false, deltaMode: 0, deltaY: -1.15 })).toBe(false);
   });
 
   it("is monotonically more extreme for a larger-magnitude delta", () => {

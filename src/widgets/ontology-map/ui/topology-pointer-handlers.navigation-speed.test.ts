@@ -19,6 +19,7 @@ vi.mock("./topology-read-tokens", () => ({
 }));
 
 import type { MapNavigationSpeed, MapSpeed } from "@/shared/lib/appearance-preferences";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { INITIAL_POINTER_MACHINE_STATE } from "../interaction/pointer-state-machine";
 import { MOMENTUM_TAU_MS } from "../model/motion-physics";
 import type { ZoomEase } from "../model/camera-easing";
@@ -122,6 +123,31 @@ describe("map drag speed", () => {
     expect(refs.cameraAngularFreqRef.current).toBeCloseTo(1000 / MOMENTUM_TAU_MS, 9);
   });
 
+  it("at 2x a grabbed node still moves exactly with the pointer and the map stays put", () => {
+    const refs = buildRefs({ drag: 2, zoom: 1 });
+    const node = { id: "c", kind: "capability", x: 120, y: 0 };
+    refs.worldRef.current = {
+      nodes: [node],
+      nodeById: new Map([[node.id, node]]),
+      neighborMap: new Map(),
+      bounds: WIDE,
+      spineBounds: WIDE,
+    } as unknown as PointerHandlerRefs["worldRef"]["current"];
+    refs.cameraRef.current = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 }, scale: { value: 2, velocity: 0 } };
+    refs.pointerMachineRef.current = { phase: "pressed", downPoint: { x: 840, y: 400 }, pressedNodeId: "c" };
+    const sim = { hasNode: () => true, pin: vi.fn(), movePin: vi.fn(), clearPin: vi.fn() };
+    refs.simRef.current = sim as unknown as PointerHandlerRefs["simRef"]["current"];
+    const { handlePointerMove } = createTopologyPointerHandlers(refs);
+    handlePointerMove(pointer(860, 410));
+    handlePointerMove(pointer(900, 430));
+    const [[grabX, grabY], [pinX, pinY]] = sim.movePin.mock.calls as [number, number][];
+    expect([grabX, grabY]).toEqual([120, 0]);
+    expect((pinX - grabX) * 2).toBeCloseTo(40, 9);
+    expect((pinY - grabY) * 2).toBeCloseTo(20, 9);
+    expect(refs.cameraRef.current.x.value).toBe(0);
+    expect(refs.cameraRef.current.y.value).toBe(0);
+  });
+
   it("a reduced-motion release holds the map where the hand left it", () => {
     let now = 0;
     vi.spyOn(performance, "now").mockImplementation(() => now);
@@ -155,12 +181,21 @@ describe("map zoom speed", () => {
     const refs = buildRefs({ drag: 1, zoom: 1 });
     const { handleWheel } = createTopologyPointerHandlers(refs);
     const before = { x: (900 - 600) / 1 + 0, y: (200 - 400) / 1 + 0 };
-    handleWheel(wheel(-100 * Math.log(2), true));
+    for (let step = 0; step < 10; step += 1) handleWheel(wheel((-100 * Math.log(2)) / 10, true));
     const camera = refs.cameraRef.current;
     expect(camera.scale.value).toBeCloseTo(2, 9);
     expect(refs.zoomEaseRef.current).toBeNull();
     expect((before.x - camera.x.value) * camera.scale.value + 600).toBeCloseTo(900, 9);
     expect((before.y - camera.y.value) * camera.scale.value + 400).toBeCloseTo(200, 9);
+  });
+
+  it("Ctrl + a mouse notch eases one plain notch instead of jumping as a pinch", () => {
+    const refs = buildRefs({ drag: 1, zoom: 1 });
+    const { handleWheel } = createTopologyPointerHandlers(refs);
+    handleWheel(wheel(-100, true));
+    expect(refs.cameraTargetRef.current.tscale).toBeCloseTo(Math.exp(100 * 0.0023), 9);
+    expect(refs.cameraRef.current.scale.value).toBe(1);
+    expect(refs.zoomEaseRef.current?.target).toBe(refs.cameraTargetRef.current);
   });
 
   it("pressing the map during a zoom step stops it where it is drawn", () => {
@@ -171,5 +206,61 @@ describe("map zoom speed", () => {
     handlePointerDown(pointer(500, 500));
     expect(refs.zoomEaseRef.current).toBeNull();
     expect(refs.cameraTargetRef.current).toEqual({ tx: 12, ty: -6, tscale: 1.1 });
+  });
+});
+
+function gesture(type: string, scale: number, clientX = 900, clientY = 200): Event {
+  return Object.assign(new Event(type, { cancelable: true }), { scale, clientX, clientY });
+}
+
+function pinchWithGestures(refs: ReturnType<typeof buildRefs>, events: Event[]): HTMLCanvasElement {
+  const element = document.createElement("canvas");
+  refs.canvasRef = ref<HTMLCanvasElement | null>(element);
+  const { handleGesturePinch } = createTopologyPointerHandlers(refs);
+  const stop = listenForGesturePinch(element, handleGesturePinch);
+  for (const event of events) element.dispatchEvent(event);
+  stop();
+  return element;
+}
+
+describe("WebKit gesture pinch", () => {
+  it("a gesture to scale 2 doubles the scale, keeps the point under the fingers still and stops the page zoom", () => {
+    const refs = buildRefs({ drag: 1, zoom: 1 });
+    const events = [gesture("gesturestart", 1), gesture("gesturechange", 1.25), gesture("gesturechange", 2), gesture("gestureend", 2)];
+    const anchor = { x: (900 - 600) / 1, y: (200 - 400) / 1 };
+    pinchWithGestures(refs, events);
+    const camera = refs.cameraRef.current;
+    expect(camera.scale.value).toBeCloseTo(2, 9);
+    expect(refs.cameraTargetRef.current.tscale).toBeCloseTo(2, 9);
+    expect((anchor.x - camera.x.value) * camera.scale.value + 600).toBeCloseTo(900, 9);
+    expect((anchor.y - camera.y.value) * camera.scale.value + 400).toBeCloseTo(200, 9);
+    expect(events.map((event) => event.defaultPrevented)).toEqual([true, true, true, true]);
+  });
+
+  it("raises the pinch to the zoom speed", () => {
+    const refs = buildRefs({ drag: 1, zoom: 2 });
+    pinchWithGestures(refs, [gesture("gesturestart", 1), gesture("gesturechange", 1.5)]);
+    expect(refs.cameraRef.current.scale.value).toBeCloseTo(2.25, 9);
+  });
+
+  it("anchors a gesture without a point at the last pointer position", () => {
+    const refs = buildRefs({ drag: 1, zoom: 1 });
+    const move = Object.assign(new Event("pointermove"), { clientX: 300, clientY: 500 });
+    pinchWithGestures(refs, [move, gesture("gesturestart", 1, 0, 0), gesture("gesturechange", 2, 0, 0)]);
+    const camera = refs.cameraRef.current;
+    expect((300 - 600 - camera.x.value) * camera.scale.value + 600).toBeCloseTo(300, 9);
+    expect((500 - 400 - camera.y.value) * camera.scale.value + 400).toBeCloseTo(500, 9);
+  });
+
+  it("leaves a two-finger touch pinch in charge of the camera", () => {
+    const refs = buildRefs({ drag: 1, zoom: 1 });
+    refs.activeTouchesRef = ref(
+      new Map([
+        [1, { x: 100, y: 100 }],
+        [2, { x: 200, y: 200 }],
+      ]),
+    );
+    pinchWithGestures(refs, [gesture("gesturestart", 1), gesture("gesturechange", 2)]);
+    expect(refs.cameraRef.current.scale.value).toBe(1);
   });
 });

@@ -39,7 +39,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
@@ -410,6 +410,7 @@ export interface TopologyPointerHandlers {
    * `{ passive: false }` listener instead of the JSX prop.
    */
   handleWheel: (e: WheelEvent) => void;
+  handleGesturePinch: (ratio: number, clientX: number, clientY: number) => void;
   /**
    * W2-B — native browser context menu is suppressed ONLY when the
    * right-click lands on a hittable node (design gate
@@ -517,6 +518,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const runtime = domeRuntimeRef?.current ?? null;
     const fit = runtime !== null && runtime.rampClock > 0 ? runtime.fitScale : null;
     return fit !== null ? Math.min(base, fit) : base;
+  };
+
+  const scaleWithinZoomBounds = (tokens: OntologyMapTokens, scale: number): number => {
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const max = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+    const min = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
+    return Math.min(max, Math.max(min, scale));
   };
 
   /**
@@ -970,25 +978,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         if (pinch.dist > 0 && dist > 0) {
-          clearEdgeHover();
-          clearClusterHover();
-          if (cameraTweenRef) cameraTweenRef.current = null;
-          zoomEaseRef.current = null;
-          {
-            const dome = domeInteractive();
-            if (dome) {
-              dome.spinArmed = false;
-              commitDomeEntrySweep(dome);
-              dome.poseTween = null;
-            }
-          }
+          releaseCameraForZoom();
           const { width, height } = viewportRef.current;
           const cam = cameraRef.current;
-          const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-          const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-          const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
           const spread = Math.pow(dist / pinch.dist, navigationSpeedRef.current.zoom);
-          const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, cam.scale.value * spread));
+          const newScale = scaleWithinZoomBounds(tokens, cam.scale.value * spread);
           const worldAtPrevMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
           const worldAtPrevMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
           const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
@@ -1613,6 +1607,48 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     pointerMachineRef.current = next;
   };
 
+  const releaseCameraForZoom = () => {
+    clearEdgeHover();
+    clearClusterHover();
+    if (cameraTweenRef) cameraTweenRef.current = null;
+    zoomEaseRef.current = null;
+    const dome = domeInteractive();
+    if (dome) {
+      dome.spinArmed = false;
+      commitDomeEntrySweep(dome);
+      dome.poseTween = null;
+    }
+  };
+
+  const zoomAtPoint = (tokens: OntologyMapTokens, sx: number, sy: number, factor: number) => {
+    const { width, height } = viewportRef.current;
+    const camera = cameraRef.current;
+    const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
+    const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
+    const scale = scaleWithinZoomBounds(tokens, camera.scale.value * factor);
+    const x = worldX - (sx - width / 2) / scale;
+    const y = worldY - (sy - height / 2) / scale;
+    cameraTargetRef.current = { tx: x, ty: y, tscale: scale };
+    cameraRef.current = {
+      x: { value: x, velocity: 0 },
+      y: { value: y, velocity: 0 },
+      scale: { value: scale, velocity: 0 },
+    };
+    noteUserCameraGesture();
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+  };
+
+  const handleGesturePinch = (ratio: number, clientX: number, clientY: number) => {
+    if (activeTouchesRef && activeTouchesRef.current.size >= 2) return;
+    const tokens = readOntologyMapTokensOrNull();
+    const canvas = canvasRef?.current;
+    if (!tokens || !canvas) return;
+    releaseCameraForZoom();
+    const rect = currentRect(canvas);
+    zoomAtPoint(tokens, clientX - rect.left, clientY - rect.top, ratio ** navigationSpeedRef.current.zoom);
+  };
+
   const handleWheel = (e: WheelEvent) => {
     if (wheelIntent === "page-scroll" && !e.ctrlKey) return;
     e.preventDefault();
@@ -1621,30 +1657,20 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const { width, height } = viewportRef.current;
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
     if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
-    clearEdgeHover();
-    clearClusterHover();
-    if (cameraTweenRef) cameraTweenRef.current = null;
-    {
-      const dome = domeInteractive();
-      if (dome) {
-        dome.spinArmed = false;
-        commitDomeEntrySweep(dome);
-        dome.poseTween = null;
-      }
-    }
+    releaseCameraForZoom();
     const rect = currentRect(e.currentTarget as HTMLCanvasElement);
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     const camera = cameraRef.current;
     const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
     const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
-    const pinch = e.ctrlKey;
+    const pinch = isPinchWheel(e);
     const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeedRef.current.zoom });
-    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-    const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
-    const baseScale = pinch ? camera.scale.value : cameraTargetRef.current.tscale;
-    const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, baseScale * factor));
+    if (pinch) {
+      zoomAtPoint(tokens, sx, sy, factor);
+      return;
+    }
+    const newScale = scaleWithinZoomBounds(tokens, cameraTargetRef.current.tscale * factor);
     const next: CameraTarget = {
       tx: worldX - (sx - width / 2) / newScale,
       ty: worldY - (sy - height / 2) / newScale,
@@ -1654,15 +1680,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     noteUserCameraGesture();
     dampingRef.current = tokens.cameraDampingDefault;
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-    if (pinch) {
-      zoomEaseRef.current = null;
-      cameraRef.current = {
-        x: { value: next.tx, velocity: 0 },
-        y: { value: next.ty, velocity: 0 },
-        scale: { value: next.tscale, velocity: 0 },
-      };
-      return;
-    }
     zoomEaseRef.current = {
       target: next,
       anchorX: sx,
@@ -1724,5 +1741,5 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
     hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleContextMenu, probeEdgeAt };
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt };
 }

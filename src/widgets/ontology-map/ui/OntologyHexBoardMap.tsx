@@ -7,8 +7,9 @@ import { Chip } from "@/shared/ui/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
 import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
 import {
@@ -953,15 +954,26 @@ export function OntologyHexBoardMap({
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800);
     if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
     const r = canvas.getBoundingClientRect();
-    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch: e.ctrlKey, speed: navigationSpeed.zoom });
-    zoomAbout(e.clientX - r.left, e.clientY - r.top, factor, !e.ctrlKey, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+    const pinch = isPinchWheel(e);
+    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeed.zoom });
+    zoomAbout(e.clientX - r.left, e.clientY - r.top, factor, !pinch, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+  });
+  const onGesturePinch = useEffectEvent((ratio: number, clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !camRef.current) return;
+    const r = canvas.getBoundingClientRect();
+    zoomAbout(clientX - r.left, clientY - r.top, ratio ** navigationSpeed.zoom, false, performance.now());
   });
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const listener = (e: WheelEvent) => onWheel(e);
     canvas.addEventListener("wheel", listener, { passive: false });
-    return () => canvas.removeEventListener("wheel", listener);
+    const stopGesturePinch = listenForGesturePinch(canvas, (ratio, clientX, clientY) => onGesturePinch(ratio, clientX, clientY));
+    return () => {
+      canvas.removeEventListener("wheel", listener);
+      stopGesturePinch();
+    };
   }, []);
   const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const hit = hitTest(local(e).x, local(e).y);
