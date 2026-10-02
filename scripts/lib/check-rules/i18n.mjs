@@ -1,9 +1,23 @@
 /** Message catalogues and locale routing. */
 
+import { readdirSync } from 'node:fs';
+
 /** An authored message part, `messages/<locale>/<Namespace>.json`. */
 const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
 /** A part, or the composite a pre-split branch still tracks. */
 const MESSAGE_CATALOGUE = /^messages\/(?:[^/]+\/)?[^/]+\.json$/;
+
+function messageLocales(dir = 'messages') {
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+    .map((entry) => entry.name)
+    .sort();
+}
+
+export function relatedMessagesCommand(locales = messageLocales()) {
+  const composites = locales.map((locale) => `messages/${locale}.json`).join(' ');
+  return `pnpm exec vitest related --run ${composites} --passWithNoTests`;
+}
 
 export const rules = [
   {
@@ -37,7 +51,7 @@ export const rules = [
     // so Vitest's `--changed` graph selects nothing for a copy edit; before the split
     // the same edit selected every test importing the catalogue. This row restores
     // that selection by naming the composites the tests do import.
-    command: 'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
+    command: relatedMessagesCommand(),
     reason: 'message part changed — run the tests that import the composed catalogue',
     matches: [MESSAGE_PART],
   },
