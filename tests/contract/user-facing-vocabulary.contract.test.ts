@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
+import { column } from '../../scripts/lib/locale-vocabulary.mjs';
 
 /**
  * **One word per thing, in the strings people read.**
@@ -75,8 +76,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
      * agent to call a tool that does not exist. The ban is on a second word for the person's folder,
      * not on identifiers that happen to contain it.
      */
-    const identifier = /(?:pnpm\s+[a-z:-]*vault[a-z:-]*|[a-z_]*vault[a-z_]*\s*\(|validate_vault|workspace_brief)/i;
-    for (const banned of ['볼트', '워크스페이스', 'vault']) {
+    const { words, identifier } = column('folderSecondNames', 'ko');
+    for (const banned of words) {
       const offenders = korean()
         .filter((entry) => entry.text.includes(banned))
         .filter((entry) => !identifier.test(entry.text))
@@ -94,7 +95,7 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * one screen's test owning one word.
    */
   it('토폴로지는 화면에 나오지 않는다 — 렌더러 이름이다', () => {
-    expect(hits('토폴로지')).toEqual([]);
+    for (const word of column('rendererName', 'ko').words) expect(hits(word)).toEqual([]);
   });
 
   /*
@@ -121,8 +122,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
      * this folder's agent, which is the use this ratchet allows. The number moves only with a
      * measurement beside it.
      */
-    const AI_BASELINE = 82;
-    const current = hits('AI').length;
+    const { word, baseline: AI_BASELINE } = column('aiWord', 'ko');
+    const current = hits(word).length;
     expect(
       current,
       `"AI" grew from ${AI_BASELINE} to ${current}. If it means what is connected to this folder, ` +
@@ -142,8 +143,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
      * ratchet exists to stop. The number moves for a translation, never for a new
      * sentence that reaches for the kind's name.
      */
-    const PROJECT_BASELINE = 144;
-    const current = hits('프로젝트').length;
+    const { word, baseline: PROJECT_BASELINE } = column('projectKindWord', 'ko');
+    const current = hits(word).length;
     expect(
       current,
       `The project-kind word grew from ${PROJECT_BASELINE} to ${current}. Where the kind is not the point, ` +
@@ -176,8 +177,7 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
      * Korean badge "experimental feature" (`agents.models.experimental`), and the Korean word
      * for feature is the counted one. It labels the app's own feature, not the capability kind.
      */
-    const SOFTENED_BASELINE = { 영역: 14, 기능: 7 } as const;
-    for (const [softened, cap] of Object.entries(SOFTENED_BASELINE)) {
+    for (const [softened, cap] of Object.entries(column('softenedKindNames', 'ko').baselines as Record<string, number>)) {
       const current = hits(softened).length;
       expect(
         current,
@@ -190,13 +190,13 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
   it('one node on the map is a concept in Korean copy', () => {
     const scanned = korean().length;
     expect(scanned, 'the Korean catalog read nothing').toBeGreaterThan(1000);
-    expect(hits('노드')).toEqual([]);
+    for (const word of column('nodeWord', 'ko').banned) expect(hits(word)).toEqual([]);
   });
 
   it('English copy does not grow the node word back', () => {
-    const NODE_BASELINE = 9;
+    const { pattern, ignore, baseline: NODE_BASELINE } = column('nodeWord', 'en');
     const survivors = strings(en)
-      .filter((entry) => /\bnodes?\b/i.test(entry.text.replace(/\{nodes\}/g, '')))
+      .filter((entry) => pattern.test(entry.text.replace(ignore, '')))
       .map((entry) => entry.path);
     expect(strings(en).length, 'the English catalog read nothing').toBeGreaterThan(1000);
     expect(
@@ -209,7 +209,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
   it('빈 지도 화면은 종류 이름으로 말하지 않는다', () => {
     // The exact sentence that started this: it described the node count as a count of projects.
     const empty = (ko as { topology: { empty: Record<string, string> } }).topology.empty;
-    expect(empty.titleNoProjects).not.toContain('프로젝트');
-    expect(empty.kicker).not.toContain('프로젝트');
+    const { word } = column('projectKindWord', 'ko');
+    expect(empty.titleNoProjects).not.toContain(word);
+    expect(empty.kicker).not.toContain(word);
   });
 });

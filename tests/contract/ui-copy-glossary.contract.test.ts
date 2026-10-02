@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { column } from "../../scripts/lib/locale-vocabulary.mjs";
+
 /**
  * Prevents code-style phrasing from seeping back into on-screen text — the canonical source is `docs/GLOSSARY.md`.
  *
@@ -59,17 +61,7 @@ const BANNED: ReadonlyArray<{
   word: RegExp;
   use: string;
   parenthesizedOk?: boolean;
-}> = [
-  { word: /frontmatter/i, use: "파일 맨 위 정보칸 / the info block at the top", parenthesizedOk: true },
-  { word: /프론트매터/, use: "파일 맨 위 정보칸" },
-  { word: /문서 상단 속성|문서 속성/, use: "파일 맨 위 정보칸 — 같은 것을 세 이름으로 부르고 있었다" },
-  { word: /엣지/, use: "연결" },
-  { word: /렌더링/, use: "화면에 그리다" },
-  { word: /파싱/, use: "읽어 들이다" },
-  { word: /쿼리/, use: "검색어" },
-  { word: /메타데이터/, use: "기본 정보" },
-  { word: /(^|[^가-힣])인덱스/, use: "검색 준비" },
-];
+}> = column("codeStyleWords", "ko").words;
 
 /** Leave only the appearance wrapped in parentheses like `…(frontmatter)…` and delete it. */
 function stripParenthesized(text: string): string {
