@@ -72,7 +72,7 @@ export function CompanionHome({ compact = false, door }: { compact?: boolean; do
     ) : door ? (
       <RowButton onClick={show} data-testid="companion-home" className={door.className}>
         <span className={door.glyphClassName} aria-hidden="true">
-          {/* The room's own resident (the fox), at the toolbar tile's half scale. */}
+          {/* The room's traveler, at the toolbar tile's half scale. */}
           <span className={styles.workPose}>
             <CompanionSprite pose="idle" />
           </span>

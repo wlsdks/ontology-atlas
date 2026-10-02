@@ -11,7 +11,7 @@ path: src/features/agent-activity/ui/CompanionHome.tsx
 created_by: "agent:unknown"
 ---
 
-A person develops a project and records its ontology and wiki, then sees those records strengthen an optional device-local fox companion in a playable pixel world.
+A person develops a project and records its ontology and wiki, then sees those records strengthen an optional device-local planet traveler companion in a playable pixel world.
 
 ## Includes
 - Existing entries open a centered world with movement, interactive furniture, and in-world inventory, skills, map, and journal panels. Only the nearest camp object receives the contextual E action; the portal opens departure. I, K, M, J, L, and N open inventory, skills, map, journal, quests, and creature guide; Escape closes the panel before the game. Long content turns pages rather than growing the game frame. A camp constellation visualizes recorded construction categories; its E interaction opens the growth ledger.
@@ -20,7 +20,7 @@ A person develops a project and records its ontology and wiki, then sees those r
 
 ## Direct sector expedition
 
-- The first fictional destination also opens a directly traversed, full-frame top-down pixel sector. WASD or arrows move the fox on collidable tiles; E talks with Curio, follows a friendly signal mote through three locations, reads at a terminal, activates the gate, and leaves through the exit. Q scans toward the next objective, while existing I, T, and L panels stay available. The other 35 destinations retain the established automatic expedition loop.
+- The first fictional destination also opens a directly traversed, full-frame top-down pixel sector. WASD or arrows move the planet traveler on collidable tiles; E talks with Curio, follows a friendly signal mote through three locations, reads at a terminal, activates the gate, and leaves through the exit. Q scans toward the next objective, while existing I, T, and L panels stay available. The other 35 destinations retain the established automatic expedition loop.
 - The gate requires those fictional interactions plus a saved reflection whose UID resolves uniquely to a current project concept. It uses the existing reflection quest claim for its personal relic reward. Historical claims, saved gate activation, or a cleared room cannot substitute for current concept identity; the check does not qualify the reflection as correct or up to date with later source changes.
 - Sector position, creature interactions, and clear have their own project-scoped versioned save. They do not change automatic combat turns, creature sightings, gold, XP, or canonical meaning. The static tile layer is drawn once; only visible camera and sprite motion redraw while the game is open. Reduced motion removes walk interpolation.
 
@@ -28,7 +28,7 @@ A person develops a project and records its ontology and wiki, then sees those r
 
 - Six fictional regions contain 36 distinct scene destinations, with route-specific rosters, guardians, difficulty, and reward or threat conditions. Their game IDs are separate from canonical ontology UIDs. Construction and reading unlock them; combat XP alone does not.
 - 108 original species, including 18 guardians, share six disclosed combat trait families: armor, fierce attacks, regeneration, siphon, double strikes, and wave resistance. The field guide records observed sightings and defeats, while maps retain individual completion counts. Archive Grove's 18 creatures use dark-woodland sprites; Clockglass Foundry's 18 use brass, glass, and steam; Inkwell Marsh's 18 use ink, reed, and parchment. The other 54 retain original art. Foundry and Marsh combat sprites align to their own transparent bounds.
-- Expedition encounters frame the fox and creature together on an original foreground platform over the destination art. Walking remains on that visible floor; attack, enemy windup, a warning above the fox, and hit response show the current automatic combat phase without changing saved rewards or ontology authority.
+- Expedition encounters frame the planet traveler and creature together on an original foreground platform over the destination art. Walking remains on that visible floor; attack, enemy windup, a warning above the planet traveler, and hit response show the current automatic combat phase without changing saved rewards or ontology authority.
 - Clicking or tapping a ready creature invokes the same saved, cooldown-bound knowledge wave as Q; a small overhead mark and action slots expose readiness and remaining turns. Pressing Space during the incoming warning starts a short sidestep immediately. These controls do not create a separate reward path or ontology write authority.
 - Legacy saves default to empty catalog records without inventing discovery. A removed domain destination returns to camp, retaining accumulated progress. Final-guardian clear rewards are banked once even when returning during the loot display.
 

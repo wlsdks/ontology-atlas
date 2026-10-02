@@ -1,7 +1,7 @@
 {
   "created": "2026-09-24",
   "method": "OpenAI image generation. Original sprite assets use lossless WebP; folio scene/map illustrations use full-resolution WebP quality 92. No third-party game assets were bundled.",
-  "scope": "Optional companion game only; the application mark and verified agent-work mascot are separate.",
+  "scope": "The owner-selected planet traveler is shared with Atlas brand and verified-work art; optional game activity remains distinct from actual agent work.",
   "assets": [
     {
       "file": "companion-workshop.webp",
@@ -22,22 +22,10 @@
       "sha256": "69df09048c76f4613625b68166b01ecd96875910f0b8b2e2fb4cb1f0f56899a7"
     },
     {
-      "file": "companion-fox-atlas.webp",
-      "generation": "exec-9f309f74-a2c4-4a78-8bbe-d1603fe148df",
-      "description": "Original fox adventurer with sixteen poses",
-      "sha256": "f55d7fd0fe3b2e8a2d12de2292fd50f61575520f1a77a5b9f3961e0ece8b6a3e"
-    },
-    {
       "file": "companion-items.webp",
       "generation": "exec-64b91cdf-5e1c-4fd2-8dec-a476b4a93f25",
       "description": "Original nine-item atlas",
       "sha256": "d69a6bc5483c7b7b4bcd1c87845d17efe2d4ccceea7d34289bb1a395fdc886dc"
-    },
-    {
-      "file": "companion-fox-walk.webp",
-      "generation": "exec-da067576-f38c-4bb9-9a39-fe8fc14c1c69",
-      "description": "Original eight-frame grounded walk cycle for the existing fox",
-      "sha256": "9444076e0b8507b8960aaaa19b9b4465af48e91df01558b0aace12692519ed97"
     },
     {
       "file": "companion-grove-monsters.webp",
@@ -113,9 +101,9 @@
     },
     {
       "file": "companion-folio-scenes.webp",
-      "generation": "exec-c66c3a45-1508-42d1-b97a-909f46a1460a",
-      "description": "Six original folio vignettes: camp, supplies, elite shrine, learning, forge, study; equal 3 by 2 atlas",
-      "sha256": "aa2210d6df5bba11079f5923efa7bfe37427fbf479da06dae479ad7796dad871",
+      "generation": "exec-7765cb9a-9c1e-4209-a6e7-276591e64b75",
+      "description": "Folio scenes with the owner-selected sleeping planet traveler",
+      "sha256": "81e27d0603697f3924633adacace136296fbc98518551c14b74c238fc69e98c1",
       "encoding": "WebP quality 92; full resolution, no art edits"
     },
     {
@@ -130,6 +118,12 @@
       "generation": "exec-d3f37807-0d51-4414-b3e5-061b76590aa9",
       "description": "Original walnut, dark cloth and brass folio frame; nine-slice edges only, no baked controls",
       "sha256": "becc94a0385eb66709ee8656a9a940549a3350b01c392ccaef5c7fa7970dbac7"
+    },
+    {
+      "file": "traveler-frames.png",
+      "generation": "exec-922d1a51-698c-46f0-bcc6-2062ba3df310 + exec-d6900b1b-ae28-4eab-b31d-352291edb13f",
+      "description": "Twenty registered native 64px planet-traveler poses derived by build-traveler-sprites.mjs",
+      "sha256": "fd43c58c10f6ec9abd92f95e3dfc406deae9a743a5bf7bc55f813fa7ed0a3cae"
     }
   ]
 }

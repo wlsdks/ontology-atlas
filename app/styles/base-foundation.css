@@ -153,7 +153,7 @@
    * The art owns a 6×64px frame row. Five frame transitions therefore end at
    * -320px rather than -384px, which would expose an empty seventh cell after a
    * finite animation. Six poses contain five transitions: the 60px walk therefore
-   * divides into five exact 12px steps, and art plus travel share one clock. The
+   * travels continuously while the six pixel poses share its clock. The
    * local 600ms sequence is five existing 120ms fast steps, not a new app-wide
    * duration token.
    */
@@ -185,7 +185,7 @@
   }
 
   .atlas-mascot-presence--walking {
-    animation: atlasMascotWalkIn var(--atlas-mascot-sequence-duration) steps(5, end) both;
+    animation: atlasMascotWalkIn var(--atlas-mascot-sequence-duration) linear both;
   }
 
   .atlas-mascot-sprite {

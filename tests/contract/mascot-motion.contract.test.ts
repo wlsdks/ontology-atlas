@@ -86,7 +86,8 @@ describe('mascot motion continuity', () => {
     expect(CSS).toMatch(
       /--atlas-mascot-sequence-duration:\s*calc\(var\(--motion-fast\) \* 5\)/,
     );
-    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(5, end\)/g)).toHaveLength(2);
+    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(5, end\)/g)).toHaveLength(1);
+    expect(CSS).toContain('atlasMascotWalkIn var(--atlas-mascot-sequence-duration) linear both');
     expect(PRESENCE).toContain(
       'right-[var(--chrome-inset)] top-[calc(50%+var(--chrome-inset)*2)]',
     );

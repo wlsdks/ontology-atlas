@@ -1,6 +1,6 @@
 .heroSprite { --companion-size:64px; display:block; position:relative; width:var(--companion-size); height:var(--companion-size); flex:none; }
 .largeSprite { --companion-size:96px; }
-.heroPixels { display:block; position:absolute; background-repeat:no-repeat; image-rendering:pixelated; }
+.heroPixels { display:block; position:absolute; inset:0; background-repeat:no-repeat; image-rendering:pixelated; }
 .heroSprite[data-playing='true'][data-pose='greet'],.heroSprite[data-playing='true'][data-pose='victory'] { animation:heroHappy calc(var(--motion-settle)*3) ease-in-out infinite alternate; }
 .heroSprite[data-playing='true'][data-pose='sleep'] { animation:heroRest calc(var(--motion-settle)*10) ease-in-out infinite alternate; }
 @keyframes heroHappy {from{transform:translateY(0)}to{transform:translateY(-4px)}}

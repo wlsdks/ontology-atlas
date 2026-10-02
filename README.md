@@ -223,3 +223,5 @@ performance, readability, contrast, and instrumentation.
 
 [MIT](LICENSE). Third-party notices are in [NOTICE.md](NOTICE.md), and the full
 license texts in [public/third-party-licenses.txt](public/third-party-licenses.txt).
+
+The planet traveler is Atlas’s shared pixel mascot across the README, website, app icons, waiting states, and optional companion. Asset sources and regeneration instructions are in [Brand](docs/design/brand.md); `pnpm brand:sprites` rebuilds its registered pixel grids before the existing brand fan-out.

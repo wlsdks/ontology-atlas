@@ -8,8 +8,7 @@ area: design-system
 # Brand — Ontology Atlas
 
 > The meaning, source contract, and usage rules for the pixel mascot identity.
-> The 2026-08-28 record in [`DECISIONS.md`](../DECISIONS.md) owns the replacement
-> decision; the committed PNG masters own the pixels.
+> The [2026-10-02 identity decision](../records/decisions/2026-10-02-planet-traveler-identity-5b4ca3c7-ae8f-4ac8-a729-3c9b721ab982.md) owns the current character; the committed PNG masters own the pixels.
 
 ## Identity Status
 
@@ -37,11 +36,7 @@ in the message catalogs rather than raster assets.
 
 ## Character
 
-The mascot is quiet, curious, reliable, precise, and collaborative. Its warm
-ivory face sits inside a compact near-black work suit. One chartreuse antenna
-pixel and one chest pixel make the identity recognizable without turning the UI
-into a second colour system. The raised-hand full mark carries one small graph
-node; the compact and micro marks remove that detail before it becomes noise.
+The mascot is a curious planet traveler: a cream parchment hood and coat, a dark navy face with two cyan eyes, a blue scarf and boots, and a floating ringed blue planet. Compact and micro forms retain the hood and eyes while simplifying the planet and removing the body. The owner supplied the reference pack on 2026-10-02.
 
 This is a character, not an ontology kind, an assistant persona, or a claim that
 work is happening. Static brand surfaces are state-free.
@@ -52,9 +47,9 @@ The source masters live under `assets/brand/mascot/`.
 
 | Tier | Source | Native use |
 |---|---|---|
-| Full | `mascot-full-64.png` | 64px and larger; raised hand and graph-node spark |
-| Compact | `mascot-compact-32.png` | 20–48px; resting arms and readable body |
-| Micro | `mascot-micro-16.png` | 16–18px; helmet, face, eyes, and antenna only |
+| Full | `mascot-full-64.png` | 64px and larger; full traveler and ringed planet |
+| Compact | `mascot-compact-32.png` | 20–48px; hood, eyes, scarf, and planet |
+| Micro | `mascot-micro-16.png` | 16–18px; hood, paired cyan eyes, and simplified planet |
 | macOS template | `mascot-tray-template-{16,32}.png` | black/clear menu-bar mask at 1×/2× |
 
 Each tier is authored separately. Do not downscale the full body to make a
@@ -65,13 +60,13 @@ scaling makes individual pixel widths inconsistent.
 
 | Role | Value |
 |---|---|
-| Suit / outline | `#0B0B0D` family |
-| Face | `#F7F5E6` |
-| Identity signal | `#C6F000` |
-| Suit highlight | `#5B5B66` |
+| Face shadow / outline | `#101025` family |
+| Hood | `#FFF0CA` |
+| Identity signal | `#65BDE9` |
+| Blue accents | `#286DD0` |
 
 These colours are licensed only inside committed mascot raster pixels and their
-brand compositions. `#C6F000` is not an application token, status colour, data
+brand compositions. `#65BDE9` is not an application token, status colour, data
 colour, control fill, or replacement for the indigo accent. Product UI continues
 to use the existing neutral-plus-indigo system.
 
@@ -94,7 +89,7 @@ This verified work sequence is finite. There is no idle loop, random map travers
 particle cloud, glow, or separate mascot event bus. Under reduced motion, travel
 and frame stepping stop while the static pose and status text preserve the fact.
 At desktop widths the 64×64 stage stays in a measured clear lane at the map's
-right edge. Six poses share five 120ms frame/travel transitions; WALK's terminal
+right edge. Six poses share five 120ms frame transitions with continuous travel; WALK's terminal
 frame equals READ's first frame, and READ's terminal frame equals SUCCESS's first,
 so a truthful state change does not teleport the character.
 
@@ -112,15 +107,9 @@ stay 64px and 16px. Unzoomed loading surfaces and portals keep their native size
 
 ## Optional adventure companion
 
-The owner’s 2026-09-24 request establishes a separate playful fox inside
-“Memories together.” It does not replace the Atlas application mark or the
-verified-work mascot in map chrome. The home and expedition use original generated
-pixel environments, a sixteen-pose fox atlas, a separate eight-frame walking atlas, item icons, six environment atlases containing 36 scenes, and six creature atlases containing 108 species under
-`public/brand/companion-*.webp`. Their raster palettes belong only to this optional
-game scene; application controls retain their existing tokens. Generation receipts and
-asset hashes are in `public/brand/companion-assets.json`. The expansion prompt set is in
-`public/brand/companion-adventure-prompts.json`. Per-creature alpha bounds are measured
-in code; generated RGBA pixels remain unchanged.
+The owner's 2026-10-02 selection replaces the separate fox with the same planet traveler used by Atlas brand surfaces. The optional adventure retains its own fictional activity and saved progress. `public/brand/traveler-frames.png` contains twenty registered 64px cells: eight walk, four reading, four casting, and idle/greet/sleep/victory. Reading returns through intermediate poses. Walking remains driven by traveled distance without React world updates for each frame; hidden documents and reduced motion stop sprite clocks. The folio camp illustration uses the same traveler.
+
+Existing environments, item art, and creatures remain under `public/brand/companion-*.webp`; they are game scenery, not replacement mascot identities. Generation receipts and hashes are in `public/brand/companion-assets.json`. The source adaptations and palette normalization are reproducible with `scripts/build-traveler-sprites.mjs`; native small eyes are registered explicitly so palette reduction cannot erase one eye.
 
 This bounded game permits ambient life and fictional combat. Its explicit activity
 labels, hidden-surface suspension, and reduced-motion equivalent do
@@ -148,6 +137,7 @@ inside that smoothly masked platform shape.
 ## Build Pipeline
 
 ```bash
+node scripts/build-traveler-sprites.mjs
 node scripts/build-brand-assets.mjs
 node scripts/build-brand-raster.mjs
 # Open the printed loopback URL once so the browser canvas bakes the PNG family.
@@ -164,9 +154,9 @@ required by the product.
 
 - Do not restore the nested-hex drawing as a logo or brand echo.
 - Do not remove project hexagons from topology data visualization.
-- Do not recolour the mascot through CSS or turn chartreuse into a UI palette.
+- Do not recolour the mascot through CSS or turn mascot colors into a UI palette.
 - Do not use the full master at 16px or fractional-scale a native grid.
-- Do not crop presentation boards into production assets.
+- Do not ship unregistered presentation boards as sprite sheets; normalize scale, alpha, cell bounds, and foot contact first.
 - Do not animate without verified state or add ambient looping travel.
 - Do not bake slogans, progress values, or English-only product copy into the art.
 - Do not infer Windows notification-area approval from a macOS capture; Windows

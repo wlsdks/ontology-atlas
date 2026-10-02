@@ -80,7 +80,7 @@ export const CompanionWorld=forwardRef<CompanionWorldHandle,Props>(function Comp
   if(game.mode==='expedition'&&(event.target as HTMLElement).closest('[data-companion-target]')){if(canStrike)callbacks.current.onStrike();return;}
   const r=event.currentTarget.getBoundingClientRect();const point={x:(event.clientX-r.left-cameraX.get())/zoom.get(),y:(event.clientY-r.top-cameraY.get())/zoom.get()};const safe=moveInWorld({x:x.get(),y:y.get()},point.x-x.get(),point.y-y.get(),game.mode==='expedition');goal.current={point:safe};begin.current();
  }}>
-  <link rel="preload" as="image" href={withBasePath('/brand/companion-fox-walk.webp')}/>
+  <link rel="preload" as="image" href={withBasePath('/brand/traveler-frames.png')}/>
   <motion.div className={styles.worldPlane} style={{width:WORLD_WIDTH,height:WORLD_HEIGHT,x:cameraX,y:cameraY,scale:zoom,transformOrigin:'0 0'}}>
    {game.mode==='expedition'&&scene?<div className={styles.adventureBackground} data-map={game.area} style={{backgroundImage:`url(${withBasePath(scene.file)})`,backgroundPosition:scene.position}}/>:<Image src={withBasePath(game.mode==='camp'?'/brand/companion-workshop.webp':'/brand/companion-expedition.webp')} alt="" fill unoptimized sizes="1200px" className={styles.worldBackground}/>}
    {game.mode==='expedition'?<div className={styles.battleStage} data-testid="companion-battle-stage" aria-hidden="true" style={{backgroundImage:`url(${withBasePath('/brand/companion-battle-stage.webp')})`}}/>:null}

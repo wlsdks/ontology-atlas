@@ -4,21 +4,16 @@ import {useTranslations} from 'next-intl';
 import {ArrowDown,ArrowLeft,ArrowRight,ArrowUp,BookOpen,DoorOpen,Package,Search} from 'lucide-react';
 import {Button,IconButton} from '@/shared/ui';
 import {ICON_SIZE} from '@/shared/ui/icon-size';
+import {withBasePath} from '@/shared/lib/base-path';
 import {moveSector,nearbySectorTarget,newSectorSave,parseSectorSave,sectorGateOpen,sectorRoute,sectorStorageKey,sectorWall,sootheSectorMote,SECTOR_CRATES,SECTOR_CURIO,SECTOR_EXIT,SECTOR_GATE,SECTOR_HEIGHT,SECTOR_MOTE_PATH,SECTOR_TERMINAL,SECTOR_WIDTH,type SectorDirection,type SectorPoint,type SectorSave,type SectorTarget} from '../model/companion-sector';
 import styles from './companion-sector.module.css';
 
 const TILE=16;
 const FLOOR='#172631',FLOOR_ALT='#1c303a',SEAM='#253c46',WALL='#345461',WALL_TOP='#719191',INK='#0c151f',CYAN='#76dbe0',AMBER='#f8bd70';
-const FOX=[
- '...O....O...', '..ORO..ORO..', '.ORRROORRRO.', '.ORRRRRRRRO.', '..RCRRRCRR..', '..RBRRRBRR..', '..RRCBCRRR..', '...RCCCR....', '..ORRRRRRO...', '.ORRRRRRRRO.', '.OPOO..OPO.', '..PP....PP..',
-];
-const FOX_STEP=[...FOX.slice(0,10),'.OP.O..PO.O.','..PP....PP..'];
-const FOX_TAIL=['...OO.','..ORRO','.ORRCO','ORRCCO','ORCCCO','.OOOO.'];
 const CURIO=[
  '.....A......', '....AAA.....', '...OBBBO....', '..OBBBBBO...', '.OBBBBBBBO..', '.OBWBBWBBBO.', '.OBBBBBBBO..', '..OBBBBBO...', '...OBBBO....', '....OOO.....',
 ];
 const MOTE=['....OOO.....','..OOLLOO....','.OLLLLLLO...','.OLWLLWLO...','.OLLLLLLO...','..OLLLLO....','...OOOO.....','....PP......'];
-const SPRITE:Record<string,string>={O:'#233a50',R:'#e89461',C:'#fff0ce',B:'#244c65',P:'#edbd87',A:'#f6ba80',W:'#e9fbf6'};
 const CURIO_PALETTE:Record<string,string>={O:'#21475c',B:'#79cbd2',W:'#f4ffff',A:'#f4ac81'};
 const MOTE_PALETTE:Record<string,string>={O:'#594366',L:'#d8a8d6',W:'#fff8e6',P:'#efbd83'};
 const DIRECTIONS:Record<string,SectorDirection>={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
@@ -108,7 +103,7 @@ export const CompanionSector=forwardRef<CompanionSectorHandle,Props>(function Co
  },[active,ready,storageError,available,reflectionCurrent,reflectionClaimed,commit,onClaimReflection,onOpenPanel,onReturn,t]);
  const scan=useCallback(()=>{const current=saveRef.current;const kind:SectorTarget=!current.curioMet?'curio':current.moteHits<3?'mote':!reflectionCurrent?'terminal':!sectorGateOpen(current,reflectionCurrent)?'gate':'exit';const target={curio:SECTOR_CURIO,mote:SECTOR_MOTE_PATH[Math.min(2,current.moteHits)],terminal:SECTOR_TERMINAL,gate:SECTOR_GATE,exit:SECTOR_EXIT}[kind];const route=sectorRoute(current,target,sectorGateOpen(current,reflectionCurrent));scanTarget.current=target;scanPath.current=route?.path??[];scanAt.current=performance.now();const name=t(`scanName.${kind}`);setMessage(!route?t('scanBlocked',{target:name}):route.direction?t('scan',{target:name,steps:route.path.length,direction:t(`direction.${route.direction}`)}):t('scanNearby',{target:name}));},[reflectionCurrent,t]);
  useImperativeHandle(ref,()=>({focus:()=>stage.current?.focus({preventScroll:true}),element:()=>stage.current?.closest<HTMLElement>('[data-testid="companion-sector"]')??null,key:(code,down)=>{const direction=DIRECTIONS[code];if(!direction)return false;if(down){if(!held.current.includes(direction)){held.current.push(direction);step(direction);}}else held.current=held.current.filter(item=>item!==direction);return true;},interact,scan}),[step,interact,scan]);
- useEffect(()=>{if(!ready||!active)return;const node=canvas.current;if(!node)return;const ctx=node.getContext('2d',{alpha:false});if(!ctx)return;bg.current??=tileLayer();let frame=0,lastDraw=-Infinity;
+ useEffect(()=>{if(!ready||!active)return;const node=canvas.current;if(!node)return;const ctx=node.getContext('2d',{alpha:false});if(!ctx)return;bg.current??=tileLayer();const traveler=new Image();traveler.src=withBasePath('/brand/traveler-frames.png');let frame=0,lastDraw=-Infinity;
   const draw=(now:number)=>{frame=0;if(document.hidden)return;frame=requestAnimationFrame(draw);const scanning=now-scanAt.current<650;const moving=held.current.length>0||now-lastMove.current.at<130;if(!moving&&!scanning&&now-lastDraw<160)return;lastDraw=now;
    const cols=size.cols,rows=size.rows;if(node.width!==cols*TILE||node.height!==rows*TILE){node.width=cols*TILE;node.height=rows*TILE;}ctx.imageSmoothingEnabled=false;
    const current=saveRef.current,reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -118,8 +113,8 @@ export const CompanionSector=forwardRef<CompanionSectorHandle,Props>(function Co
    if(now-scanAt.current<2500){ctx.fillStyle='#89d9d3';for(const point of scanPath.current){const x=(point.x-camera.x)*TILE+7,y=(point.y-camera.y)*TILE+7;ctx.fillRect(Math.round(x),Math.round(y),3,3);}const target=scanTarget.current;ctx.strokeStyle='#d8e9b7';ctx.lineWidth=1;ctx.strokeRect((target.x-camera.x)*TILE+1,(target.y-camera.y)*TILE+1,14,14);}
    const open=sectorGateOpen(current,reflectionCurrent);
    drawObject(ctx,SECTOR_TERMINAL,camera,now,'terminal',open,reduced);drawObject(ctx,SECTOR_CURIO,camera,now,'curio',open,reduced);if(current.moteHits<3)drawMote(ctx,SECTOR_MOTE_PATH[current.moteHits],camera,now,reduced);drawObject(ctx,SECTOR_GATE,camera,now,'gate',open,reduced);drawObject(ctx,SECTOR_EXIT,camera,now,'exit',open,reduced);
-   const drawFox=(point:SectorPoint,alpha:number)=>{const x=(point.x-camera.x)*TILE,y=(point.y-camera.y)*TILE,walking=!reduced&&moving&&Math.floor(now/95)%2===1,left=facing.current==='left';ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#0a1720';ctx.fillRect(Math.round(x)+1,Math.round(y)+14,16,2);pixelSprite(ctx,FOX_TAIL,SPRITE,left?x+11:x-7,y+3+(walking?1:0),1.5,left);pixelSprite(ctx,walking?FOX_STEP:FOX,SPRITE,x-1,y-5,1.5,left);ctx.restore();};
-   const fade=reduced?Math.min(1,(now-lastMove.current.at)/80):1;if(reduced&&fade<1){drawFox(lastMove.current.from,.6*(1-fade));drawFox(current,.4+.6*fade);}else drawFox({x:px,y:py},1);
+   const drawTraveler=(point:SectorPoint,alpha:number)=>{const x=(point.x-camera.x)*TILE,y=(point.y-camera.y)*TILE,index=!reduced&&moving?Math.floor(now/95)%8:16,left=facing.current==='left';ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#0a1720';ctx.fillRect(Math.round(x)+1,Math.round(y)+14,16,2);if(traveler.complete&&traveler.naturalWidth){ctx.translate(Math.round(x)+8,Math.round(y)+16);if(left)ctx.scale(-1,1);ctx.drawImage(traveler,index*64,0,64,64,-16,-32,32,32);}ctx.restore();};
+   const fade=reduced?Math.min(1,(now-lastMove.current.at)/80):1;if(reduced&&fade<1){drawTraveler(lastMove.current.from,.6*(1-fade));drawTraveler(current,.4+.6*fade);}else drawTraveler({x:px,y:py},1);
    if(nearbySectorTarget(current)){ctx.fillStyle=CYAN;ctx.fillRect((current.x-camera.x)*TILE+7,(current.y-camera.y)*TILE-2,2,2);}
   };const resume=()=>{if(!document.hidden&&!frame)frame=requestAnimationFrame(draw);};document.addEventListener('visibilitychange',resume);frame=requestAnimationFrame(draw);return()=>{cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',resume);};
  },[active,ready,size,reflectionCurrent]);

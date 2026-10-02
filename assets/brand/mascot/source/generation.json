@@ -1,0 +1,12 @@
+{
+  "created": "2026-10-02",
+  "method": "Built-in image_gen; owner-supplied Atlas character pack as identity reference. Deterministic native-grid normalization and eye registration by scripts/build-traveler-sprites.mjs.",
+  "reference": "atlas-character-pack/02_main_character.png; motion references 04_walk_sprite_sheet.png, 06_reading_sprite_sheet.png, 07_magic_cast_sprite_sheet.png",
+  "prompts": [
+    {"file":"traveler-master.png","generation":"exec-6d4474d7-44e1-47d5-bb7c-af393b5c06eb","prompt":"Preserve the cream hood and coat, navy face, cyan eyes, cobalt scarf and boots, golden embroidery and floating ringed blue planet. Centered full-body front-facing neutral mascot on alpha. Authentic 64px logical pixel grid, crisp square pixels, limited palette, no blur, text, scenery or ground shadow."},
+    {"file":"traveler-poses.png","generation":"exec-922d1a51-698c-46f0-bcc6-2062ba3df310","prompt":"Same identity, 4x4 equal cells on alpha: four walking, four parchment reading, four magic casting, then idle, greet, sleep and victory. Same camera, body scale and feet baseline. Crisp pixel clusters, no labels or overlapping cells."},
+    {"file":"traveler-walk.png","generation":"exec-d6900b1b-ae28-4eab-b31d-352291edb13f","prompt":"Eight progressive frames of one seamless walk cycle in a 4x2 transparent sheet: left contact/down/passing/up, right contact/down/passing/up, alternating legs, opposite arms, scarf follow-through. Same scale, camera and foot baseline; complete planet in every cell."},
+    {"file":"traveler-small.png","generation":"exec-a2c87853-f0a5-40ca-951e-78b91da621c8","prompt":"Two separately drawn compact and micro hood/face/planet icons for 32px and 16px use. Simplify full-body identity into a cream hood, navy interior, two cyan eyes and blue ringed planet; retain transparent padding and crisp pixel edges."}
+  ],
+  "delivery": "The source images are generation references, not runtime sheets. Shipping rasters use a fixed 24-color palette, binary alpha and registered 64/32/16px grids. The game reads one 20-cell native atlas."
+}

@@ -16,6 +16,8 @@ command and tool contracts by their READMEs. When a feature file and the code
 disagree, the code wins; a feature file's history is its Git log
 (`pnpm doc:history -- <path>`).
 
+The cream-hooded planet traveler is the shared mascot across brand and in-app surfaces. Its optional companion animation remains separate from evidence-bound agent work; see [Brand](design/brand.md).
+
 ## Surfaces
 
 | Surface | Entry | Reference |
