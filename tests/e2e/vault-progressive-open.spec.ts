@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { AtlasMapProbe } from "./atlas-map-probe";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 import { stubDirectoryPicker, writeFolderBeforePick } from "./vault-picker-stub";
 
 const DOMAINS = 50;
@@ -10,9 +11,10 @@ const CAPABILITIES = 200;
 const DIRECT_ELEMENTS = 300;
 const ELEMENTS = 1749;
 const DOCUMENTS = 1 + DOMAINS + CAPABILITIES + ELEMENTS;
-const FIRST_FRAME_BUDGET_MS = 4_500;
-const FIRST_FRAME_MEASURED =
-  "measured 2026-10-02 on the static export at 120 ms per native answer: 0.92 s, against 16.9 s with one native read per file";
+const UNREAD_UNTIL_DRAWN = Array.from(
+  { length: Math.ceil(ELEMENTS / 2) },
+  (_, at) => `elements/e-${String(ELEMENTS - 1 - at).padStart(5, "0")}.md`,
+);
 
 function generatedVault(): Record<string, string> {
   const pad = (n: number) => String(n).padStart(5, "0");
@@ -107,7 +109,10 @@ test.use({ viewport: { width: 1512, height: 982 } });
 
 test("a 2,000-document vault draws its overview while it is still being read, and ends with every concept", async ({ page }) => {
   test.setTimeout(120_000);
-  await installDesktopRailRuntime(page, generatedVault(), undefined, { replaceFixture: true });
+  await installDesktopRailRuntime(page, generatedVault(), undefined, {
+    replaceFixture: true,
+    holdReadsUntilReleased: UNREAD_UNTIL_DRAWN,
+  });
   await installArrivalSampler(page);
   await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await page.getByTestId("first-run-open").waitFor();
@@ -116,10 +121,21 @@ test("a 2,000-document vault draws its overview while it is still being read, an
     document.querySelector<HTMLElement>('[data-testid="first-run-open"]')!.click();
   });
 
-  await page.waitForFunction(() => (window as unknown as ArrivalWindow).__arrival.firstFrameAt !== null, undefined, { timeout: 60_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as ArrivalWindow).__arrival.firstFrameAt !== null), {
+      message: `the map draws what has arrived while ${UNREAD_UNTIL_DRAWN.length} documents are still unread`,
+      timeout: 60_000,
+    })
+    .toBe(true);
+  await waitForMapStill(page);
+  await page.evaluate(() => {
+    (window as unknown as ArrivalWindow).__arrival.marks = {};
+    (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads();
+  });
   await page.waitForFunction((total) => (window as unknown as ArrivalWindow).__arrival.nodes === total, DOCUMENTS, { timeout: 60_000 });
   await expect(page.locator("[data-vault-load-progress]")).toHaveCount(0);
   await expect(page.getByTestId("topology-index-source")).toContainText(String(DOCUMENTS));
+  await waitForMapStill(page);
 
   const arrival = await page.evaluate(() => {
     const { pressedAt, firstFrameAt, drawnWhileReading, marks } = (window as unknown as ArrivalWindow).__arrival;
@@ -130,7 +146,6 @@ test("a 2,000-document vault draws its overview while it is still being read, an
   });
   console.log(`[perf] first map frame ${Math.round(arrival.firstFrameMs)} ms after the press; drawn while reading ${arrival.drawnWhileReading}`);
 
-  expect(arrival.firstFrameMs, FIRST_FRAME_MEASURED).toBeLessThan(FIRST_FRAME_BUDGET_MS);
   const [read, total] = (arrival.drawnWhileReading ?? "").split("/").map(Number);
   expect(total).toBe(DOCUMENTS);
   expect(read).toBeLessThan(DOCUMENTS);
