@@ -15,7 +15,7 @@ import type {
   GalaxyPose,
   LabelCandidate,
 } from "../cosmos-types";
-import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
+import { galaxyKey, type CosmosBitmapCache } from "./cosmos-bitmap-cache";
 import { labelOf, placeCosmosLabels } from "./cosmos-labels";
 import { buildGalaxyGlow, buildStarImpostor, glowSizeFor, impostorSizeFor, IMPOSTOR_EXTENT, starSprite } from "./cosmos-paint";
 import { drawCosmosHover, drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
@@ -195,18 +195,19 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       return;
     }
     const m = galaxyMatrix(g, pose, camera, room);
+    const key = galaxyKey(g);
     const E = g.radius * IMPOSTOR_EXTENT;
     const glowSize = glowSizeFor(extent, dpr);
-    let glow = cache.glow(index, glowSize);
+    let glow = cache.glow(key, glowSize);
     if (glow === undefined) {
       if (budget > 0) {
         glow = buildGalaxyGlow(g, inks, glowSize);
-        cache.setGlow(index, glowSize, glow);
+        cache.setGlow(key, glowSize, glow);
         budget -= 1;
         stats.buildsStarted += 1;
       } else {
         stats.pendingBuilds += 1;
-        glow = cache.glow(index, glowSize === 512 ? 256 : 512) ?? null;
+        glow = cache.glow(key, glowSize === 512 ? 256 : 512) ?? null;
       }
     }
     const condense = pose.condense;
@@ -219,27 +220,27 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.setTransform(dpr * w.a, dpr * w.b, dpr * w.c, dpr * w.d, dpr * w.e, dpr * w.f);
       ctx.globalAlpha = glowAlpha * pose.wispLight;
       ctx.drawImage(glow.wisps, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
-      drawn(`glow:${index}:${glow.base.width}`);
+      drawn(`glow:${key}:${glow.base.width}`);
     }
     ctx.globalAlpha = pose.presence * galaxyAlpha;
     if (rho <= live) {
       const size = impostorSizeFor(extent, dpr);
-      let bitmap = cache.impostor(index, size);
+      let bitmap = cache.impostor(key, size);
       if (bitmap === undefined) {
         if (budget > 0) {
           bitmap = buildStarImpostor(g, size, inks);
-          cache.setImpostor(index, size, bitmap);
+          cache.setImpostor(key, size, bitmap);
           budget -= 1;
           stats.buildsStarted += 1;
         } else {
           stats.pendingBuilds += 1;
-          bitmap = cache.anyImpostor(index);
+          bitmap = cache.anyImpostor(key);
         }
       }
       if (bitmap) {
         ctx.setTransform(dpr * m.a, dpr * m.b, dpr * m.c, dpr * m.d, dpr * m.e, dpr * m.f);
         ctx.drawImage(bitmap, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
-        drawn(`impostor:${index}:${bitmap.width}`);
+        drawn(`impostor:${key}:${bitmap.width}`);
       }
       stats.impostorGalaxies += 1;
     } else {

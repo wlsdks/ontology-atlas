@@ -6,13 +6,14 @@ import { readHexRoom } from "../morph/hex-marks";
 import type { OntologyMapEdge } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
-import { applyArrival, ARRIVAL_MS } from "./cosmos-arrival";
-import { CosmosCameraRig, CosmosHitIndex, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
+import { CosmosArrivalRun } from "./cosmos-arrival";
+import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
 import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept } from "./cosmos-engine-watch";
+import { CosmosHitIndex } from "./cosmos-hit";
 import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
 import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
 import { walkCandidates, walkTarget } from "./cosmos-walk";
-import { CosmosBitmapCache } from "./draw/cosmos-bitmap-cache";
+import { CosmosBitmapCache, galaxyKey } from "./draw/cosmos-bitmap-cache";
 import { drawCosmosFrame } from "./draw/cosmos-frame";
 import { registerCosmosLabels } from "./draw/cosmos-labels";
 import { buildDeepField } from "./draw/cosmos-paint";
@@ -51,10 +52,7 @@ export class CosmosEngine {
   private deepField: HTMLCanvasElement | null = null;
   raf = 0;
   private lastNow = 0;
-  arrival: { start: number; mode: CosmosArrivalMode } | null = null;
-  arrivalMode: CosmosArrivalMode = "none";
-  arrivalClock = 0;
-  private arrivalEnd = 0;
+  readonly arrival = new CosmosArrivalRun();
   readonly haze = createHazeState();
   hazeAwake = false;
   private band: CosmosBand | null = null;
@@ -133,13 +131,13 @@ export class CosmosEngine {
     this.layout = layout;
     registerCosmosLabels(layout, labels);
     this.relations = relationsByConcept(edges);
-    this.cache.clear();
-    this.hits.clear();
+    const kept = new Set(layout.galaxies.map(galaxyKey));
+    this.cache.retain(kept);
+    this.hits.retain(kept);
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
-    this.rig.setBounds(layout.bounds, arrival !== "none");
-    this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: -1, mode: arrival } : null;
-    this.arrivalMode = this.arrival ? arrival : "none";
-    [this.arrivalClock, this.arrivalEnd] = [0, performance.now() + (this.arrival ? ARRIVAL_MS : 0)];
+    const starts = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0;
+    this.rig.setBounds(layout.bounds, arrival !== "none" || this.arrival.active !== null);
+    if (starts) this.arrival.begin(arrival, performance.now());
     this.drawnReported = false;
     this.requestFrame();
   }
@@ -194,7 +192,7 @@ export class CosmosEngine {
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
     }
-    if ((this.roomHeld = this.arrival !== null)) return this.requestFrame();
+    if ((this.roomHeld = this.arrival.active !== null)) return this.requestFrame();
     if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height));
     if (!this.rig.user) this.rig.fit(false, performance.now());
     this.requestFrame();
@@ -247,15 +245,12 @@ export class CosmosEngine {
     const dt = this.lastNow ? Math.min(64, Math.max(0, now - this.lastNow)) : 16;
     this.lastNow = now;
     let why = rig.step(now) ? 1 : 0;
-    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrivalEnd), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
+    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrival.end), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
     if (this.hazeAwake) why |= 4;
-    if (this.arrival && this.arrival.start < 0) [this.arrival.start, this.arrivalEnd] = [now, now + ARRIVAL_MS];
-    if (this.arrival) this.arrivalClock = Math.max(0, now - this.arrival.start);
-    if (this.arrival && !applyArrival(layout, this.arrivalClock, this.arrival.mode, this.poses)) this.arrival = null;
-    else if (!this.arrival) applyArrival(layout, 0, "none", this.poses);
-    if (!this.arrival && this.roomHeld) this.resize();
+    const arriving = this.arrival.step(layout, now, this.poses);
+    if (!arriving && this.roomHeld) this.resize();
     applyHaze(layout, this.haze, this.poses, rig.camera.scale, this.options.reducedMotion);
-    if (this.arrival) why |= 8;
+    if (arriving) why |= 8;
     const attended = this.selectedId ?? this.hoverId;
     const revealMs = this.reveal.revealMs(attended, now);
     if (attended && !this.options.reducedMotion && revealMs < RELATION_REVEAL_MS) why |= 32;
@@ -270,7 +265,7 @@ export class CosmosEngine {
       cache: this.cache, deepField: this.deepField, buildBudget: 4, frame: this.frames,
     });
     if (stats.pendingBuilds > 0) why |= 16;
-    const rest = this.cameraRest.step(rig.camera, rig.room, rig.held() || this.arrival !== null || stats.pendingBuilds > 0);
+    const rest = this.cameraRest.step(rig.camera, rig.room, rig.held() || arriving || stats.pendingBuilds > 0);
     if (rest === "moving") why |= 64;
     else if (rest === "rest") this.options.onCameraRest?.();
     this.lastStats = stats;

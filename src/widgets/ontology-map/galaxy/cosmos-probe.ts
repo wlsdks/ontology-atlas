@@ -7,8 +7,8 @@ type ProbeWindow = { __atlasCosmos?: unknown };
 
 export function writeProbeFrame(canvas: HTMLCanvasElement, engine: CosmosEngine): void {
   const { camera } = engine.rig;
-  const arrivalT = engine.arrival ? Math.min(1, engine.arrivalClock / ARRIVAL_MS) : 1;
-  canvas.dataset.frame = JSON.stringify({ arrived: !engine.arrival, arrivalT, offset: [camera.x, camera.y], scale: camera.scale });
+  const arrivalT = engine.arrival.active ? Math.min(1, engine.arrival.clock / ARRIVAL_MS) : 1;
+  canvas.dataset.frame = JSON.stringify({ arrived: !engine.arrival.active, arrivalT, offset: [camera.x, camera.y], scale: camera.scale });
 }
 
 export function installCosmosProbe(engine: CosmosEngine): () => void {
@@ -39,7 +39,7 @@ export function installCosmosProbe(engine: CosmosEngine): () => void {
     painted: () => (engine.paintLog ? engine.paintLog.slice() : []),
     selection: () => ({ nodeId: engine.selectedId }),
     interaction: () => ({ kind: rig.interaction() }),
-    arrival: () => ({ mode: engine.arrivalMode, active: engine.arrival !== null, clockMs: engine.arrivalClock, totalMs: ARRIVAL_MS }),
+    arrival: () => ({ mode: engine.arrival.mode, active: engine.arrival.active !== null, clockMs: engine.arrival.clock, totalMs: ARRIVAL_MS }),
     haze: () => ({ factor: engine.haze.factor, tau: engine.haze.tau, awake: engine.hazeAwake }),
     cacheBytes: () => engine.cache.bytes(),
     dropBitmaps: () => {

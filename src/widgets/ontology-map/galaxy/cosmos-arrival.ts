@@ -75,6 +75,26 @@ export function applyArrival(layout: CosmosLayout, clockMs: number, mode: Cosmos
   return active;
 }
 
+export class CosmosArrivalRun {
+  active: { start: number; mode: CosmosArrivalMode } | null = null;
+  mode: CosmosArrivalMode = "none";
+  clock = 0;
+  end = 0;
+
+  begin(mode: CosmosArrivalMode, now: number): void {
+    [this.active, this.mode, this.clock, this.end] = [{ start: -1, mode }, mode, 0, now + ARRIVAL_MS];
+  }
+
+  step(layout: CosmosLayout, now: number, poses: GalaxyPose[]): boolean {
+    const run = this.active;
+    if (run && run.start < 0) [run.start, this.end] = [now, now + ARRIVAL_MS];
+    if (run) this.clock = Math.max(0, now - run.start);
+    if (run && !applyArrival(layout, this.clock, run.mode, poses)) this.active = null;
+    else if (!run) applyArrival(layout, 0, "none", poses);
+    return this.active !== null;
+  }
+}
+
 function galaxyArrivalDelay(centre: { x: number; y: number }, reach: number): number {
   return DELAY_BASE_MS + DELAY_SPREAD_MS * Math.min(1, Math.hypot(centre.x, centre.y) / Math.max(1, reach));
 }

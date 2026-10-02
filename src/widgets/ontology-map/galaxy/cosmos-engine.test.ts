@@ -3,7 +3,8 @@ import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preference
 import { overviewCamera } from "./cosmos-camera";
 import { CosmosEngine } from "./cosmos-engine";
 import type { CosmosFrameStats, CosmosInks } from "./cosmos-types";
-import type { CosmosLayout } from "./layout/cosmos-layout";
+import { galaxyKey } from "./draw/cosmos-bitmap-cache";
+import { computeCosmosLayout, type CosmosLayout } from "./layout/cosmos-layout";
 
 const draw = vi.hoisted(() => ({ next: [] as (() => Partial<CosmosFrameStats>)[] }));
 
@@ -24,6 +25,20 @@ const layout = {
   placement: { version: 1, centres: {} },
   timings: { modelMs: 0, settleMs: 0, placeMs: 0, totalMs: 0 },
 } as unknown as CosmosLayout;
+
+function realSky(): CosmosLayout {
+  const nodes = [{ id: "p", label: "P", kind: "project" as const }];
+  const edges: { source: string; target: string; kind: "contains"; relationType: string }[] = [];
+  for (let d = 0; d < 3; d += 1) {
+    nodes.push({ id: `d${d}`, label: `D${d}`, kind: "domain" as never });
+    edges.push({ source: "p", target: `d${d}`, kind: "contains", relationType: "contains" });
+    for (let c = 0; c < 4; c += 1) {
+      nodes.push({ id: `d${d}c${c}`, label: `C${c}`, kind: "capability" as never });
+      edges.push({ source: `d${d}`, target: `d${d}c${c}`, kind: "contains", relationType: "contains" });
+    }
+  }
+  return computeCosmosLayout(nodes, edges);
+}
 
 let frames: FrameRequestCallback[] = [];
 
@@ -132,6 +147,50 @@ describe("cosmos engine", () => {
     expect(engine.rig.camera).toEqual(overviewCamera(layout.bounds, engine.rig.room).camera);
     engine.setLayout(reread, new Map(), [], "none");
     expect(engine.rig.camera).toEqual(overviewCamera(reread.bounds, engine.rig.room).camera);
+    engine.destroy();
+  });
+
+  it("keeps bitmaps and sleeps when a data re-read hands it the same sky", () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    const sleepFrom = (t: number) => {
+      for (let i = 0; frames.length > 0 && i < 2_000; i += 1) runFrame((t += 16));
+      return t;
+    };
+    let t = sleepFrom(20_000);
+    for (const g of sky.galaxies) engine.cache.setImpostor(galaxyKey(g), 256, Object.assign(document.createElement("canvas"), { width: 256, height: 256 }));
+    const bytes = engine.cache.bytes();
+    expect(bytes).toBe(sky.galaxies.length * 256 * 256 * 4);
+    clock.mockReturnValue(t);
+    engine.setLayout(realSky(), new Map(), [], "none");
+    expect(engine.cache.bytes()).toBe(bytes);
+    const start = t;
+    let late = 0;
+    for (let i = 0; frames.length > 0 && i < 1_000; i += 1) {
+      runFrame((t += 16));
+      if (t - start >= 1_000) late += 1;
+    }
+    expect(late).toBe(0);
+    engine.destroy();
+  });
+
+  it("lets a second set of the same sky during the first open finish the 1,120 ms replay", () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "replay");
+    runFrame(16);
+    runFrame(400);
+    clock.mockReturnValue(400);
+    engine.setLayout(sky, new Map(), [], "none");
+    runFrame(800);
+    expect(engine.arrival.active).not.toBeNull();
+    runFrame(16 + 1_130);
+    expect(engine.arrival.active).toBeNull();
     engine.destroy();
   });
 
