@@ -4,7 +4,7 @@
  * on `--map-layout-ring-domain`, capabilities fanned on `--map-layout-ring-capability` round
  * their domain, elements on `--map-layout-ring-element` round their capability. The same
  * radius on both axes at every ring (no aspect stretch). Positions never depend on the
- * camera. Seeding filters every node once per domain and per capability, O(N × parents);
+ * camera. Seeding groups children by parent in one pass, O(N);
  * the grid relax costs O(N × k) per iteration for k nodes in a 3×3 cell block, which is
  * O(N²) when the seed piles nodes together.
  */
@@ -133,6 +133,17 @@ export function computeConcentricLayout(
     placed.set(project.id, { x: 0, y: 0, angle: 0 });
   }
 
+  const childrenOf = new Map<string, { capability: LayoutGraphNode[]; element: LayoutGraphNode[] }>();
+  for (const n of nodes) {
+    if (n.parentId === null || (n.kind !== "capability" && n.kind !== "element")) continue;
+    let group = childrenOf.get(n.parentId);
+    if (!group) {
+      group = { capability: [], element: [] };
+      childrenOf.set(n.parentId, group);
+    }
+    group[n.kind].push(n);
+  }
+
   const domainNodes = nodes.filter((n) => n.kind === "domain");
   domainNodes.forEach((domain, i) => {
     const angle = (i / domainNodes.length) * TAU - Math.PI / 2;
@@ -146,10 +157,10 @@ export function computeConcentricLayout(
   domainNodes.forEach((domain) => {
     const domainPoint = placed.get(domain.id);
     if (!domainPoint) return;
-    const caps = nodes.filter((n) => n.kind === "capability" && n.parentId === domain.id);
+    const caps = childrenOf.get(domain.id)?.capability ?? [];
     // Elements directly under a domain join the capability fan as one arc; left out they stack
     // at (0,0) and physics drags the stack into a blob.
-    const directElements = nodes.filter((n) => n.kind === "element" && n.parentId === domain.id);
+    const directElements = childrenOf.get(domain.id)?.element ?? [];
     const fan = [...caps, ...directElements];
     if (fan.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(domainPoint, rankDiscChildren(fan), rings.capability, placed, expandStructure);
@@ -175,7 +186,7 @@ export function computeConcentricLayout(
   capabilityNodes.forEach((cap) => {
     const capPoint = placed.get(cap.id);
     if (!capPoint) return;
-    const elements = nodes.filter((n) => n.kind === "element" && n.parentId === cap.id);
+    const elements = childrenOf.get(cap.id)?.element ?? [];
     if (!elements.length) return;
     if (elements.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(capPoint, rankDiscChildren(elements), rings.element, placed, expandStructure);
