@@ -36,6 +36,9 @@ The [download page](https://ontologyatlas.com/en/download/) lists each release's
 
 **Not yet proven:** re-scored, our benchmark has not measured a difference in answer quality with Atlas, and Atlas was slower ([the correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
 
+The optional companion game and related personal-record screens are retired.
+Existing local saves remain untouched; no replacement viewer or export is provided.
+
 ## Quick start
 
 1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/), or open the [browser version](https://ontologyatlas.com/en/topology/).
@@ -116,3 +119,5 @@ Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- -
 ## License
 
 [MIT](LICENSE). Third-party notices are in [NOTICE.md](NOTICE.md), and the full license texts in [public/third-party-licenses.txt](public/third-party-licenses.txt).
+
+The planet traveler is Atlas’s shared pixel mascot across the README, website, app icons, waiting states, and verified agent-work feedback. Asset sources and regeneration instructions are in [Brand](docs/design/brand.md); `pnpm brand:sprites` rebuilds its registered pixel grids before the existing brand fan-out.

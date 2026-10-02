@@ -10,6 +10,7 @@ use std::path::Path;
 use std::process::Command;
 
 mod http_output;
+pub(crate) mod requests;
 use std::time::Instant;
 
 /// Auth check only: no model call, no billing, no body.
@@ -301,11 +302,11 @@ fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
 pub(crate) fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
     command.args(argv);
-    let output = http_output::capture(command, config.as_bytes())
-        .map_err(|err| match err {
-            http_output::CaptureError::Request(err) => coded("request-failed", err),
-            http_output::CaptureError::Response(err) => coded("no-response", err),
-        })?;
+    let output = http_output::capture(command, config.as_bytes()).map_err(|err| match err {
+        http_output::CaptureError::Request(err) => coded("request-failed", err),
+        http_output::CaptureError::Response(err) => coded("no-response", err),
+        http_output::CaptureError::Cancelled => coded("cancelled", ""),
+    })?;
     interpret_curl_output(
         output.status.code(),
         output.status.success(),
@@ -596,23 +597,31 @@ fn curl_chat_config(request: &ChatRequest) -> String {
     curl_config_for(&request.url, &request.headers, Some(&request.body))
 }
 
-fn send_chat_via_curl_with_timeout(
+fn send_chat_cancellable(
     request: &ChatRequest,
-    timeout_seconds: &'static str,
+    timeout: &'static str,
+    cancellation: &mut tokio::sync::oneshot::Receiver<()>,
 ) -> Result<ChatEcho, String> {
-    let (status, body) = run_curl(
-        curl_argv_with_timeout(timeout_seconds),
-        &curl_chat_config(request),
+    let mut command = Command::new("curl");
+    command.args(curl_argv_with_timeout(timeout));
+    let config = curl_chat_config(request);
+    let output = tauri::async_runtime::block_on(http_output::capture_cancelled(
+        command,
+        config.as_bytes(),
+        cancellation,
+    ))
+    .map_err(|error| match error {
+        http_output::CaptureError::Request(error) => coded("request-failed", error),
+        http_output::CaptureError::Response(error) => coded("no-response", error),
+        http_output::CaptureError::Cancelled => coded("cancelled", ""),
+    })?;
+    let (status, body) = interpret_curl_output(
+        output.status.code(),
+        output.status.success(),
+        &String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr).trim(),
     )?;
     Ok(ChatEcho { status, body })
-}
-
-fn send_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
-    send_chat_via_curl_with_timeout(request, CHAT_TIMEOUT_SECONDS)
-}
-
-fn send_local_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
-    send_chat_via_curl_with_timeout(request, LOCAL_CHAT_TIMEOUT_SECONDS)
 }
 
 /// Order is the contract: reserve, send only on success, finalize.
@@ -699,7 +708,9 @@ where
 
 /// Only within a turn where the user pressed [Send]; no vault path, no send.
 #[tauri::command(async)]
-pub fn llm_chat(
+pub async fn llm_chat(
+    window: tauri::WebviewWindow,
+    request_id: String,
     provider: String,
     vault_path: String,
     model: String,
@@ -708,41 +719,50 @@ pub fn llm_chat(
     scope: AuditScopeInput,
     base_url: Option<String>,
 ) -> Result<LlmChatEcho, String> {
-    let vault_dir = crate::git::validate_vault_dir(&vault_path)?;
-    if provider == LOCAL_PROVIDER {
-        let base_url = base_url.unwrap_or_else(|| LOCAL_DEFAULT_BASE_URL.to_string());
-        return chat_with(
-            LOCAL_PROVIDER,
+    let mut owned = requests::registry().claim(window.label(), &request_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let vault_dir = crate::git::validate_vault_dir(&vault_path)?;
+        if provider == LOCAL_PROVIDER {
+            let base_url = base_url.unwrap_or_else(|| LOCAL_DEFAULT_BASE_URL.to_string());
+            return chat_with(
+                LOCAL_PROVIDER,
+                &vault_dir,
+                &model,
+                question.as_deref(),
+                &Target::Address {
+                    base_url: &base_url,
+                },
+                &body,
+                scope,
+                |request| {
+                    send_chat_cancellable(request, LOCAL_CHAT_TIMEOUT_SECONDS, &mut owned.receiver)
+                },
+            );
+        }
+        if base_url.is_some() {
+            return Err(wrong_target(&provider));
+        }
+        let known = secrets::validate_provider(&provider)?;
+        let secret = secrets::read_secret(known)?;
+        chat_with(
+            known,
             &vault_dir,
             &model,
             question.as_deref(),
-            &Target::Address {
-                base_url: &base_url,
-            },
+            &Target::Vendor { secret: &secret },
             &body,
             scope,
-            send_local_chat_via_curl,
-        );
-    }
-    if base_url.is_some() {
-        return Err(wrong_target(&provider));
-    }
-    let known = secrets::validate_provider(&provider)?;
-    let secret = secrets::read_secret(known)?;
-    chat_with(
-        known,
-        &vault_dir,
-        &model,
-        question.as_deref(),
-        &Target::Vendor { secret: &secret },
-        &body,
-        scope,
-        send_chat_via_curl,
-    )
+            |request| send_chat_cancellable(request, CHAT_TIMEOUT_SECONDS, &mut owned.receiver),
+        )
+    })
+    .await
+    .map_err(|error| coded("request-failed", error))?
 }
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
+    mod cancellation;
     use super::*;
     use std::cell::Cell;
     use std::fs;
@@ -1045,10 +1065,11 @@ mod tests {
     fn no_command_here_hands_the_key_back_to_the_webview() {
         // Commands here return only types that cannot hold a key.
         let source = include_str!("llm.rs").replace("\r\n", "\n");
-        // Both spellings count: `(async)` keeps curl's wait off the macOS main thread, and a bare-form matcher would see zero commands.
         let commands: Vec<usize> = source
             .match_indices("\n#[tauri::command")
-            .filter(|(idx, _)| source[*idx..].contains("]\npub fn "))
+            .filter(|(idx, _)| {
+                source[*idx..].contains("]\npub fn ") || source[*idx..].contains("]\npub async fn ")
+            })
             .map(|(idx, _)| idx)
             .collect();
         assert_eq!(

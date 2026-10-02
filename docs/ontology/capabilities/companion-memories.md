@@ -1,15 +1,25 @@
 ---
 uid: 442d74e4-ea20-4229-8fe3-2b8a98743aa4
 slug: capabilities/companion-memories
-kind: capability
-title: Companion memories
-display_ko: 동료의 추억
-display_en: Companion memories
-domain: domains/human-workbench
-elements: []
-path: src/features/agent-activity/ui/CompanionHome.tsx
+kind: document
+title: Companion game and personal records history
+display_ko: 동료 게임과 개인 기록 이력
+display_en: Companion game and personal records history
 created_by: "agent:unknown"
 ---
+
+# Companion game and personal records history
+
+The owner retired the game and all related record screens on October 2, 2026.
+The implementation and product entries have been removed. Existing personal/game
+localStorage bytes remain untouched, without a replacement viewer or export.
+Verified agent work status and approvals remain separate, active capabilities.
+
+The following is historical evidence of the former feature, not a current
+capability or a claim that its old implementation paths remain available.
+
+## Historical record
+
 
 A person develops a project and records its ontology and wiki, then sees those records strengthen an optional device-local fox companion in a playable pixel world.
 
