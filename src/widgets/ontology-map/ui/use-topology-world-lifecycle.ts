@@ -11,6 +11,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import {
   type SpringOffset,
 } from "../expressive/release-offsets";
+import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
 import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
@@ -71,7 +72,7 @@ interface Dependencies {
   onGraphStatsChange: ((stats: { nodes: number; relations: number; }) => void) | undefined;
   dataSourceKey: string | null;
   assembleOnOpen: boolean;
-  arriving: boolean;
+  arrivingDocuments: number;
   fittedDataSourceKeyRef: RefObject<string | null>;
   galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
@@ -122,12 +123,14 @@ export function useTopologyWorldLifecycle({
   onGraphStatsChange,
   dataSourceKey,
   assembleOnOpen,
-  arriving,
+  arrivingDocuments,
   fittedDataSourceKeyRef,
   galaxyModeCameraRef,
   pendingFlatCameraRef,
 }: Dependencies) {
+  const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
+  const arrivalStillRef = useRef(false);
   const arrivalGlideRef = useRef(false);
 
   /**
@@ -197,15 +200,23 @@ export function useTopologyWorldLifecycle({
     }
   }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
-  const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens) => {
+  const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
     const { width, height } = viewportRef.current;
     if (!userDrivenCameraRef.current && width > 0 && height > 0) {
       const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
       const measuredTokens = overviewFitTokens(cameraTokens(tokens), false);
-      cameraTargetRef.current = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+      cameraTargetRef.current = target;
       overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
+      if (still) {
+        cameraRef.current = {
+          x: { value: target.tx, velocity: 0 },
+          y: { value: target.ty, velocity: 0 },
+          scale: { value: target.tscale, velocity: 0 },
+        };
+      }
     }
-    if (isTierAssembling(world)) return;
+    if (still || isTierAssembling(world)) return;
     const springs = new Map<string, HomeSpringState>();
     for (const node of world.nodes) {
       const before = previousWorld.nodeById.get(node.id);
@@ -343,16 +354,18 @@ export function useTopologyWorldLifecycle({
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
     arrivalGlideRef.current = grew;
+    if (arriving) arrivalStillRef.current = arrivingDocuments > ARRIVAL_GLIDE_CONCEPT_CEILING;
+    const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, dataSourceKey, arrivalStill || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
       }
     }
     if (grew && !armAssembly && previousWorld && hasInitializedRef.current && !galaxyRef.current) {
-      glideArrivedWorld(previousWorld, world, tokens);
+      glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
     }
     trySnapInitialCamera(tokens);
     // New data is a static state change: draw it even when the map sleeps.

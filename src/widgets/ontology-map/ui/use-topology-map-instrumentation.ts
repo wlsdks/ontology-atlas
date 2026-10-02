@@ -80,6 +80,7 @@ export interface TopologyMapInstrumentationSources {
     heatRef: SourceRef<number>;
     lastInputMsRef: SourceRef<number>;
     lastActiveMsRef: SourceRef<number>;
+    homeSpringsRef: SourceRef<ReadonlyMap<string, unknown>>;
   };
   lens: {
     mapLensKindRef: SourceRef<TopologyMapLensKind>;
@@ -131,6 +132,7 @@ export function useTopologyMapInstrumentation({
     heatRef,
     lastInputMsRef,
     lastActiveMsRef,
+    homeSpringsRef,
   } = activity;
   const {
     mapLensKindRef,
@@ -181,6 +183,7 @@ export function useTopologyMapInstrumentation({
         heat: heatRef.current,
         lastInputMs: lastInputMsRef.current,
         lastActiveMs: lastActiveMsRef.current,
+        homeSprings: homeSpringsRef.current.size,
         hovered: hoveredNodeIdRef.current,
         pointerPhase: pointerMachineRef.current.phase,
       }),
@@ -612,6 +615,7 @@ export function useTopologyMapInstrumentation({
     galaxyRampRef,
     handlersRef,
     heatRef,
+    homeSpringsRef,
     hoveredNodeIdRef,
     idleDebugEnabledRef,
     lastActiveCausesRef,

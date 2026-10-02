@@ -386,6 +386,7 @@ interface State {
    */
   manifestHandle: FileSystemDirectoryHandle | null;
   partialManifest: VaultManifest | null;
+  partialTotal?: number;
 }
 
 export interface AgentConfigStatus {
@@ -404,11 +405,12 @@ export interface AgentConfigStatus {
   codexRegisteredCommand?: string | null;
 }
 
-function withArrivedPart(s: State, partialManifest: VaultManifest): State {
-  if (s.manifest === null && s.manifestHandle === null) return { ...s, partialManifest };
+function withArrivedPart(s: State, partialManifest: VaultManifest, partialTotal: number): State {
+  if (s.manifest === null && s.manifestHandle === null) return { ...s, partialManifest, partialTotal };
   return {
     ...s,
     partialManifest,
+    partialTotal,
     manifest: null,
     manifestHandle: null,
     agentConfigStatus: null,
@@ -1183,10 +1185,10 @@ export function useLocalVaultInternal() {
               onProgress: (progress) => {
                 if (!settled && isCurrent()) loadProgressStore.set(progress);
               },
-              onPartial: (build) => {
+              onPartial: (build, progress) => {
                 if (settled || !isCurrent()) return;
                 arrivedPart = true;
-                setState((s) => withArrivedPart(s, build.manifest));
+                setState((s) => withArrivedPart(s, build.manifest, progress.total));
               },
             };
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
@@ -2449,6 +2451,7 @@ export function useLocalVaultInternal() {
       state.manifest !== null &&
       state.manifestHandle === state.handle,
     partialManifest: state.status === 'loading' ? state.partialManifest : null,
+    partialTotal: state.status === 'loading' && state.partialManifest ? (state.partialTotal ?? 0) : 0,
     loadProgressStore,
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */

@@ -27,6 +27,7 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
 }));
 
 import { useArrivingOntologyInsight, useOntologyInsight } from './use-ontology-insight';
+import { useVaultConceptFacts } from './use-vault-concept-facts';
 import { useVaultOntology } from './use-vault-ontology';
 
 const manifest = {
@@ -61,15 +62,18 @@ describe('a folder that is still arriving', () => {
       map: useArrivingOntologyInsight(),
       insights: useOntologyInsight().insight,
       ontology: useVaultOntology(),
+      facts: useVaultConceptFacts(),
     }));
 
     expect(holds(arriving.result.current.map?.nodes)).toBe(true);
     expect(holds(arriving.result.current.insights?.nodes)).toBe(false);
     expect(arriving.result.current.ontology.nodes).toEqual([]);
+    expect(arriving.result.current.facts.size).toBe(0);
 
     mocks.vault = { ...mocks.vault, status: 'loaded', manifest, partialManifest: null };
     arriving.rerender();
     expect(arriving.result.current.map).toBeNull();
     expect(holds(arriving.result.current.insights?.nodes)).toBe(true);
+    expect(arriving.result.current.facts.size).toBeGreaterThan(0);
   });
 });

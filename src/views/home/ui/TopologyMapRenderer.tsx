@@ -123,6 +123,7 @@ export function TopologyMapRenderer({
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const arriving = Boolean(vault.partialManifest);
+  const arrivingDocuments = arriving ? vault.partialTotal : 0;
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -244,7 +245,7 @@ export function TopologyMapRenderer({
             focus={{ selectedSlug: canvasSelectedSlug }}
             dataSourceKey={deeplinkSourceReady || arriving ? vaultIdentity : null}
             assembleOnOpen={mapAssemblesOnOpen && !morph.arrivedByMorph}
-            arriving={arriving}
+            arrivingDocuments={arrivingDocuments}
             overviewFit={overviewFit}
             fitViewToken={combinedFitToken}
             growthReplayToken={growthReplayToken}

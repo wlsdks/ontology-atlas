@@ -25,9 +25,11 @@ routes: [/topology]
   everything else. In a folder of 400 or more documents, once the read has run 0.2 s, the
   map draws what has arrived, at most once a second: each finished subfolder, and a quarter
   of a subfolder of 400 or more only among the first three draws. It draws documents only,
-  never a relation-only node a later file might own. Marks already drawn glide to their new
-  places on the homing spring, and the camera keeps the overview framed until a hand moves
-  it. The INDEX names the folder and says "reading N of M documents" until the last file;
+  never a relation-only node a later file might own. In a folder of up to 2,000 documents
+  (`ARRIVAL_GLIDE_CONCEPT_CEILING`), marks already drawn glide to their new places on the
+  homing spring and the camera keeps the overview framed until a hand moves it; above that,
+  arrival takes the reduced-motion path, as layout picks past 6,300 concepts crossfade: the
+  opening rise fades in place, marks land without travel and the camera refits at once. The INDEX names the folder and says "reading N of M documents" until the last file;
   nothing else on any screen reads the part, the previous folder's documents are dropped
   when the first part arrives, and nothing can be written until the read ends. The finished
   map is the one a full read builds. The app reads 64 Markdown files per native call (each
@@ -35,8 +37,8 @@ routes: [/topology]
   time; the browser keeps 64 reads in flight. Measured at 120 ms per native answer on the
   static export (median of 3): a 2,000-document vault drew its first frame at 0.87 s
   instead of 16.5 s and finished at 2.0 s; 10,000 documents drew at 0.88 s instead of 77.7 s
-  and finished at 5.0 s, with no task longer than 372 ms (492 ms before) but frames up to
-  408 ms apart while documents arrive. In Chrome over an origin-private folder, 10,000
+  and finished at 4.9 s, with no task longer than 343 ms (492 ms before), no homing spring
+  at all, and still frames up to 350 ms apart while documents are parsed. In Chrome over an origin-private folder, 10,000
   documents drew at 0.67 s instead of 26.3 s and finished at 6.6 s. Gate:
   `tests/e2e/vault-progressive-open.spec.ts`.
 
