@@ -77,13 +77,13 @@ function saved(name: string, purpose: string, items: LibraryCollectionItem[]): S
   };
 }
 
-function renderControl(concepts: readonly ConstellationCandidate[] = candidates) {
+function renderControl(concepts: readonly ConstellationCandidate[] = candidates, selectedSlug: string | null = null) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <SavedConstellationsControl
         handle={{ kind: 'directory', name: 'vault' } as FileSystemDirectoryHandle}
         candidates={concepts}
-        selectedSlug={null}
+        selectedSlug={selectedSlug}
         onFocus={vi.fn()}
         onClear={vi.fn()}
         onPrepare={vi.fn()}
@@ -104,6 +104,35 @@ async function openEditedDraft() {
 describe('SavedConstellationsControl — the member picker', () => {
   beforeEach(() => {
     mocks.constellations = [saved('이전 이름', '이전 목적', [item(UID_A, '첫 번째', 0)])];
+  });
+
+  it.each([
+    ['a selected concept', candidates, candidates[1].mapId, UID_B, '두 번째'],
+    ['the last matching map ID', [candidates[0], { ...candidates[1], mapId: candidates[0].mapId }], candidates[0].mapId, UID_B, '두 번째'],
+  ] as const)('creates a scope from %s without newer array search methods', async (_label, concepts, selectedSlug, expectedUid, expectedLabel) => {
+    mocks.save.mockReset();
+    mocks.save.mockResolvedValueOnce(FOLDER_ID);
+    const last = Object.getOwnPropertyDescriptor(Array.prototype, 'findLast')!;
+    Object.defineProperty(Array.prototype, 'findLast', { ...last, value: undefined });
+    try {
+      renderControl(concepts, selectedSlug);
+      fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.openLabel }));
+      fireEvent.click(await screen.findByTestId('saved-constellations-create'));
+      expect(await screen.findByRole('checkbox', { name: new RegExp(expectedLabel) })).toBeChecked();
+      fireEvent.change(screen.getByRole('textbox', { name: '이름' }), { target: { value: 'Legacy scope' } });
+      fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.save }));
+      await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
+      expect(mocks.save.mock.calls[0][0].members).toEqual([expect.objectContaining({ uid: expectedUid })]);
+    } finally {
+      Object.defineProperty(Array.prototype, 'findLast', last);
+    }
+  });
+
+  it.each([null, 'element:missing'])('starts with no member when selection is %s', async (selectedSlug) => {
+    renderControl(candidates, selectedSlug);
+    fireEvent.click(screen.getByRole('button', { name: koMessages.constellations.openLabel }));
+    fireEvent.click(await screen.findByTestId('saved-constellations-create'));
+    for (const checkbox of await screen.findAllByRole('checkbox')) expect(checkbox).not.toBeChecked();
   });
 
   it('builds no member row until the editor opens, then one per concept', async () => {
