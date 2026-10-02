@@ -63,6 +63,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'git.rs', fn: 'git_diff', because: 'runs git status and git diff' },
   { file: 'git.rs', fn: 'git_commit_diff', because: 'runs git show' },
   { file: 'git.rs', fn: 'vault_node_revisions', because: 'runs git' },
+  { file: 'git.rs', fn: 'vault_node_revision_content', because: 'reads a bounded historical Git body' },
   { file: 'git.rs', fn: 'git_paths_last_change', because: 'runs git' },
   { file: 'git.rs', fn: 'git_document_diff', because: 'runs git' },
   { file: 'git.rs', fn: 'git_probe', because: 'runs git' },

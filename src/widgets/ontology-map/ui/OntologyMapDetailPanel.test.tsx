@@ -53,6 +53,10 @@ const labels = {
   editSubjectAgent: "AI agent",
   editSubjectHuman: "me",
   editConflictMessage: "This document changed elsewhere — check before you overwrite",
+  summaryFreshnessPrefix: "Description lags membership",
+  summaryFreshnessLag: "1d",
+  summaryFreshnessAction: "Review description",
+  summaryHistoryUnavailable: "History could not be compared",
   noConnections: "no relations recorded yet · relations are declared in frontmatter",
   handoff: "Copy next action",
   close: "Close",
@@ -118,6 +122,8 @@ function renderPanel(
     updatedAtLabel?: string | null;
     groups?: OntologyMapDetailPanelProps["groups"];
     projectSourceLoading?: boolean;
+    summaryHistoryUnavailable?: boolean;
+    summaryStaleness?: { behindByDays: number } | null;
   } = {},
 ) {
   return render(panelElement(onOpenFullDetail, evidence, overrides));
@@ -160,6 +166,8 @@ function panelElement(
       labels={labels}
       lastEditSubject={overrides.lastEditSubject ?? null}
       mtimeConflict={overrides.mtimeConflict ?? false}
+      summaryHistoryUnavailable={overrides.summaryHistoryUnavailable}
+      summaryStaleness={overrides.summaryStaleness}
       onSelectConnection={overrides.onSelectConnection ?? (() => {})}
       onHoverConnection={overrides.onHoverConnection}
       onHoverEvidence={overrides.onHoverEvidence}
@@ -184,6 +192,18 @@ function panelElement(
     />
   );
 }
+
+describe("OntologyMapDetailPanel history availability", () => {
+  it("shows incomplete history without a stale verdict and clears it after a completed comparison", () => {
+    const props = { summaryHistoryUnavailable: true, summaryStaleness: { behindByDays: 1 } };
+    const { rerender } = renderPanel(undefined, { rows: [], total: 0 }, props);
+    expect(screen.getByTestId("summary-history-unavailable")).toHaveTextContent(labels.summaryHistoryUnavailable);
+    expect(screen.queryByTestId("summary-freshness-row")).not.toBeInTheDocument();
+    rerender(panelElement(undefined, { rows: [], total: 0 }, { ...props, summaryHistoryUnavailable: false }));
+    expect(screen.queryByTestId("summary-history-unavailable")).not.toBeInTheDocument();
+    expect(screen.getByTestId("summary-freshness-row")).toHaveTextContent(labels.summaryFreshnessLag);
+  });
+});
 
 describe("OntologyMapDetailPanel — project source receipt", () => {
   it("renders one flat, versioned receipt rail for a selected project", () => {
