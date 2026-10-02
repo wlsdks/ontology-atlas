@@ -3,6 +3,35 @@ import { describe, expect, it } from "vitest";
 import { useStampedCache } from "./use-stamped-cache";
 
 describe("current Library read cache", () => {
+  it("publishes current values without enumerating unrelated read entries", () => {
+    const { result } = renderHook(useStampedCache, { initialProps: ["body@1", "hash@1"] });
+    act(() => result.current.publish(new Map([["body@1", "Old"], ["hash@1", "Old hash"]])));
+    const read = new Map(Array.from({ length: 1000 }, (_, index) => [`stale@${index}`, "Stale"]));
+    read.set("hash@1", "");
+    read.set("body@1", "New");
+    let iterated = 0;
+    const tracked = new Proxy(read, {
+      get(target, key) {
+        if (key === Symbol.iterator) return function* () {
+          for (const entry of target) { iterated += 1; yield entry; }
+        };
+        const value = Reflect.get(target, key, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    act(() => result.current.publish(tracked));
+    expect([...result.current.values]).toEqual([["body@1", "New"], ["hash@1", ""]]);
+    expect(read.size).toBe(1002);
+    expect(iterated).toBe(0);
+  });
+
+  it("keeps old values not supplied by a later publication", () => {
+    const { result } = renderHook(useStampedCache, { initialProps: ["second", "first"] });
+    act(() => result.current.publish(new Map([["first", "One"], ["second", "Two"]])));
+    act(() => result.current.publish(new Map([["first", "Changed"]])));
+    expect([...result.current.values]).toEqual([["second", "Two"], ["first", "Changed"]]);
+  });
+
   it("accepts new input arrays with the same stamps without restarting render", () => {
     const { result, rerender } = renderHook((stamps: string[]) => useStampedCache([...stamps]), { initialProps: ["page@1"] });
     act(() => result.current.publish(new Map([["page@1", "Current"]])));

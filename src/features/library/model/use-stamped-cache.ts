@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from "react";
 
-function retainCurrent(values: ReadonlyMap<string, string>, stamps: readonly string[]): Map<string, string> {
+function retainCurrent(values: ReadonlyMap<string, string>, stamps: readonly string[], overrides?: ReadonlyMap<string, string>): Map<string, string> {
   const retained = new Map<string, string>();
   for (const stamp of stamps) {
-    const value = values.get(stamp);
+    const value = overrides?.has(stamp) ? overrides.get(stamp) : values.get(stamp);
     if (value !== undefined) retained.set(stamp, value);
   }
   return retained;
@@ -21,7 +21,7 @@ export function useStampedCache(stamps: readonly string[]) {
   const publish = useCallback((read: ReadonlyMap<string, string>) => {
     setCache((current) => ({
       stamps: current.stamps,
-      values: retainCurrent(new Map([...current.values, ...read]), current.stamps),
+      values: retainCurrent(current.values, current.stamps, read),
     }));
   }, []);
   return { values: cache.values, publish };
