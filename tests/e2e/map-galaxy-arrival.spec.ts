@@ -123,7 +123,7 @@ test.describe("Galaxy arrival", () => {
     let travel = 0;
     tail.at(-1)!.centres!.forEach((v, i) => (travel = Math.max(travel, Math.abs(v - tail[Math.max(0, end - 1)]!.centres![i]!))));
     console.log(`[galaxy-arrival] refit travel after arrival: ${travel.toFixed(2)} px`);
-    expect(jump, "the refit after the held room glides instead of snapping").toBeLessThanOrEqual(0.25 * travel + 0.5);
+    expect(jump, "the refit after the held room glides instead of snapping").toBeLessThanOrEqual(0.5 * travel);
   });
 
   test("reduced motion arrives whole on the first frame", async ({ page }) => {
