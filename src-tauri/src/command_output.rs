@@ -2,25 +2,38 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-const MAX_OUTPUT_BYTES: u64 = 1024 * 1024;
+#[derive(Debug, PartialEq)]
+pub(crate) enum CaptureError {
+    Unavailable,
+    TooLarge,
+    TimedOut,
+}
 
-pub(super) fn run(command: Command, limit: Duration) -> Option<(bool, String)> {
+pub(crate) fn run(
+    command: Command,
+    limit: Duration,
+    max_bytes: u64,
+) -> Result<(bool, String), CaptureError> {
     // Synchronous callers also occupy Tauri's workers; this runtime drives its own I/O and timer.
     std::thread::Builder::new()
-        .name("acp-probe".into())
+        .name("bounded-output".into())
         .spawn(move || {
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
-                .ok()?
-                .block_on(capture(command, limit))
+                .map_err(|_| CaptureError::Unavailable)?
+                .block_on(capture(command, limit, max_bytes))
         })
-        .ok()?
+        .map_err(|_| CaptureError::Unavailable)?
         .join()
-        .ok()?
+        .map_err(|_| CaptureError::Unavailable)?
 }
 
-async fn capture(mut command: Command, limit: Duration) -> Option<(bool, String)> {
+async fn capture(
+    mut command: Command,
+    limit: Duration,
+    max_bytes: u64,
+) -> Result<(bool, String), CaptureError> {
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -32,17 +45,19 @@ async fn capture(mut command: Command, limit: Duration) -> Option<(bool, String)
         .stderr(Stdio::null())
         .kill_on_drop(true)
         .spawn()
-        .ok()?;
+        .map_err(|_| CaptureError::Unavailable)?;
     let stdout = child.stdout.take().expect("piped stdout");
     let result = tokio::time::timeout(limit, async {
-        let text = read_pipe(stdout).await?;
-        let status = child.wait().await.ok()?;
-        Some((status.success(), text))
+        let text = read_pipe(stdout, max_bytes).await?;
+        let status = child.wait().await.map_err(|_| CaptureError::Unavailable)?;
+        Ok((status.success(), text))
     })
     .await;
-    if let Ok(Some(output)) = result {
-        return Some(output);
-    }
+    let error = match result {
+        Ok(Ok(output)) => return Ok(output),
+        Ok(Err(error)) => error,
+        Err(_) => CaptureError::TimedOut,
+    };
     #[cfg(unix)]
     if let Some(pid) = child.id() {
         // wait is polled only after EOF, so an inherited pipe cannot release this group's PID early.
@@ -52,26 +67,32 @@ async fn capture(mut command: Command, limit: Duration) -> Option<(bool, String)
     }
     let _ = child.start_kill();
     let _ = child.wait().await;
-    None
+    Err(error)
 }
 
-// O(received bytes) work and O(MAX_OUTPUT_BYTES) retained output; probe only one overflow byte.
-async fn read_pipe(reader: impl AsyncRead + Unpin) -> Option<String> {
+// O(received bytes) work and O(max_bytes) retained output; probe only one overflow byte.
+async fn read_pipe(reader: impl AsyncRead + Unpin, max_bytes: u64) -> Result<String, CaptureError> {
     let mut bytes = Vec::new();
     reader
-        .take(MAX_OUTPUT_BYTES + 1)
+        .take(max_bytes.saturating_add(1))
         .read_to_end(&mut bytes)
         .await
-        .ok()?;
-    if bytes.len() as u64 > MAX_OUTPUT_BYTES {
-        return None;
+        .map_err(|_| CaptureError::Unavailable)?;
+    if bytes.len() as u64 > max_bytes {
+        return Err(CaptureError::TooLarge);
     }
-    String::from_utf8(bytes).ok()
+    String::from_utf8(bytes).map_err(|_| CaptureError::Unavailable)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const MAX_OUTPUT_BYTES: u64 = 1024 * 1024;
+
+    fn run(command: Command, limit: Duration) -> Result<(bool, String), CaptureError> {
+        super::run(command, limit, MAX_OUTPUT_BYTES)
+    }
 
     fn node(script: &str) -> Command {
         let mut command = Command::new("node");
@@ -85,7 +106,7 @@ mod tests {
             node("process.stdout.write(Buffer.alloc(256 * 1024, 'x'));"),
             Duration::from_secs(5),
         );
-        assert!(result.is_some(), "complete output was treated as a timeout");
+        assert!(result.is_ok(), "complete output was treated as a timeout");
         let (success, stdout) = result.unwrap();
         assert!(success);
         assert_eq!(stdout.len(), 256 * 1024);
@@ -96,7 +117,7 @@ mod tests {
         // Windows workers need detachment to survive parent exit; their finite lifetime detects hangs.
         let command = node("const child = require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 2000)'], {detached: process.platform === 'win32', stdio:['ignore', process.stdout, 'ignore']}); child.unref(); process.stdout.write('parent done');");
         let result = run(command, Duration::from_millis(300));
-        assert!(result.is_none(), "inherited pipe completed inside deadline: {result:?}");
+        assert_eq!(result, Err(CaptureError::TimedOut));
     }
 
     #[test]
@@ -105,7 +126,10 @@ mod tests {
             "process.stdout.write(Buffer.alloc({}, 'x'));",
             MAX_OUTPUT_BYTES + 1
         );
-        assert!(run(node(&script), Duration::from_secs(5)).is_none());
+        assert!(matches!(
+            run(node(&script), Duration::from_secs(5)),
+            Err(CaptureError::TooLarge)
+        ));
     }
 
     #[test]
@@ -113,7 +137,10 @@ mod tests {
         tauri::async_runtime::block_on(async {
             let bytes = vec![b'x'; MAX_OUTPUT_BYTES as usize * 3];
             let mut remaining = bytes.as_slice();
-            assert!(read_pipe(&mut remaining).await.is_none());
+            assert!(matches!(
+                read_pipe(&mut remaining, MAX_OUTPUT_BYTES).await,
+                Err(CaptureError::TooLarge)
+            ));
             assert!(bytes.len() - remaining.len() <= MAX_OUTPUT_BYTES as usize + 1);
         });
     }
@@ -138,8 +165,26 @@ mod tests {
                     node("process.stdout.write('nested');"),
                     Duration::from_secs(5)
                 ),
-                Some((true, "nested".into()))
+                Ok((true, "nested".into()))
             );
         });
+    }
+
+    #[test]
+    fn invalid_utf8_is_unavailable_and_nonzero_exit_is_preserved() {
+        assert_eq!(
+            run(
+                node("process.stdout.write(Buffer.from([255]));"),
+                Duration::from_secs(5)
+            ),
+            Err(CaptureError::Unavailable)
+        );
+        assert_eq!(
+            run(
+                node("process.stdout.write('no'); process.exitCode = 7;"),
+                Duration::from_secs(5)
+            ),
+            Ok((false, "no".into()))
+        );
     }
 }

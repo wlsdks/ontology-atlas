@@ -47,7 +47,7 @@ describe('summary freshness bridge', () => {
       'the per-node revision cap is gone; one screen paint could spawn unbounded git processes',
     ).toContain('MAX_FRESHNESS_SLUGS');
     expect(
-      git,
+      read('src-tauri/src/git/history.rs'),
       'the slug traversal guard is gone — a slug reaches a `git show` argument and must not be able to climb out of the vault',
     ).toMatch(/contains\("\.\."\)/);
   });
@@ -57,13 +57,16 @@ describe('summary freshness bridge', () => {
     expect(lib, 'vault_node_revisions is not in the invoke handler').toContain(
       'git::vault_node_revisions',
     );
+    expect(lib).toContain('git::vault_node_revision_content');
   });
 
   it('keeps the client calling the command by the name Rust exports', () => {
     const hook = read('src/entities/vault-session/model/use-summary-freshness.ts');
-    expect(hook, 'the invoke name drifted from the Rust command name').toContain(
-      '"vault_node_revisions"',
+    const bridge = read('src/shared/lib/tauri-git.ts');
+    expect(bridge, 'the invoke name drifted from the Rust command name').toContain(
+      "'vault_node_revisions'",
     );
+    expect(bridge).toContain("'vault_node_revision_content'");
     expect(
       hook,
       'the runtime guard is gone — the browser would attempt a Tauri invoke that cannot exist',
@@ -75,7 +78,7 @@ describe('summary freshness bridge', () => {
     expect(
       hook,
       'the hook stopped delegating to the entity module; the rule now exists in a third place',
-    ).toContain('summaryStalenessBySlug');
+    ).toContain('createSummaryStalenessScan');
     // The client/server parity contract only protects the two copies it knows about.
     expect(read('tests/contract/summary-freshness-parity.contract.test.ts')).toContain(
       'summaryStalenessOf',
