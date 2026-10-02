@@ -772,59 +772,12 @@ is the launch chooser: when two or more folders are known the cold restore stops
 rather than guess, leaving the folder screen to own the launch. Decision:
 `docs/DECISIONS.md`, "The folder count decides the launch".
 
-The optional companion home/journal is owned by `features/agent-activity` and
-mounted in `FirstRunPage` and the topology utility lane. Its versioned localStorage
-records separately retain personal reflections, explicit reading activity, project-construction
-high-water counts, and fictional game progress. The lazy-loaded game reads the current
-manifest, never writes vault frontmatter, and receives no meaning-acceptance signal.
-Its finite catalog owns 36 fictional map IDs and 108 species IDs independently of
-canonical UIDs. Discovery and map-clear fields safely default for existing saves;
-removed destinations return to camp without resetting accumulated progress. The existing verified mascot pose
-machine is mounted inline beside work status instead of as an AppShell map overlay.
-
-The first destination additionally opens `CompanionSector.tsx`, a Canvas 2D tile
-renderer with a static offscreen floor layer and a camera sized to the visible
-game frame. `companion-sector.ts` owns collisions, contextual targets, the
-three-stop fictional creature encounter, a strict project-scoped sector save,
-and the gate invariant. The sector does not enter `CompanionGame.mode=expedition`,
-so it neither starts timer combat nor changes existing combat saves or rewards.
-The gate rechecks that reflection history still resolves to a unique current
-concept through `observeQuestEvidence` and uses the existing validated reflection
-quest claim; old claims and a previously activated gate do not substitute for
-that current identity. Later source changes are not semantic reapproval. The room and creatures
-are fictional and never supply ontology UIDs or meaning approval.
-
-Companion quest evidence is derived while open from the loaded manifest, personal
-reading history, and the vault session's existing ACP work receipts. It adds no
-receipt polling or transcript parsing. Same-root writer correlation and current
-unique target resolution govern optional ACP claims; concept creation and body
-updates are eligible, while meaning-approval operations are not. Claims and relic
-materials persist atomically in the personal game save and unlock deterministic
-equipment tiers. Historical rewards retain their original target identity without
-inventing a replacement link after deletion. The run model saves the chosen next
-path and bounded applied floor history so healing/reward effects apply once.
-Quest assistance uses the existing cancelable live agent-chat intent: the game
-closes only when the workbench acknowledges the displayed request. Queued
-cold-start handoffs retain their separate lifecycle. This changes neither agent
-permissions nor canonical meaning acceptance.
-
-Camp learning expeditions reuse that manifest derivation, the existing personal
-reading/reflection store, and a project-scoped in-memory draft. Topics use uniquely
-resolved current documents; only original direct `depends_on` declarations identify
-review candidates. Containment, association, missing links, and transitive paths do
-not establish runtime impact. The in-game source reader preserves document bodies
-and can expose the original dependency fields and rationale. Targeted file reads
-check UID, modification time, and witnessed frontmatter, including a fresh check
-before saving a reflection. Failed reads or persistence preserve the draft and do
-not announce completion. No curriculum store, mastery score, canonical writer, or
-additional polling is introduced.
-
-Learning-note recall projects existing personal reflection rows by UID. It does
-not read source files or create activity entries. Saved-note display is independent
-of current topic availability; a missing source disables re-exploration without
-discarding the historical note. Explicit re-exploration invalidates the cached
-read and re-enters the same guarded learning flow. Recording dates remain the
-original activity timestamp, including after a reflection is revised.
+The companion game and related personal-record screens are retired. First-run
+and Map retain folder/document entry without a game door. Existing personal
+localStorage bytes are left untouched; no reader, migration or deletion runs.
+`features/agent-activity` owns verified work status and the notification inbox.
+Its finite mascot consumes that same feed and appears in the status lane only
+for observed read/completion events; it adds no polling or idle simulation.
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,

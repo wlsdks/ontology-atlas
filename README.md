@@ -39,6 +39,9 @@
 Folder walks admit up to 100,000 tracked entries and report truncation beyond that
 ceiling or depth 12; this is a capacity bound, not a frame-rate guarantee.
 
+The optional companion game and related personal-record screens are retired.
+Existing local saves remain untouched; no replacement viewer or export is provided.
+
 ## In 30 seconds
 
 Quoted frontmatter keys and nested string values round-trip across app, MCP and

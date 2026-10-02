@@ -29,6 +29,9 @@ Meaning review previews a nonblank authored description or a complete opening
 prose paragraph within 320 characters. The full-document action exposes the
 remaining sections and boundaries, including when no preview is eligible.
 
+The optional companion game and related personal-record screens are retired.
+Existing local saves remain untouched; no replacement viewer or export is provided.
+
 ## Destinations
 
 The desktop rail's order and hrefs come from

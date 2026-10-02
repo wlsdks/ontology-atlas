@@ -1,4 +1,4 @@
-/** Playwright specs for the other screens: companion, architecture, docs, agents, web surface, routes, gateway. */
+/** Playwright specs for the other screens: architecture, docs, agents, web surface, routes, gateway. */
 
 export const rules = [
   {
@@ -9,13 +9,13 @@ export const rules = [
   },
   {
     order: 420,
-    // A companion screen edit ran only the spec it touched, so a new sector entry broke the
-    // growth journey's overflow and hit-area contracts in CI instead of locally (lesson 3b68fac4).
-    command: 'pnpm exec playwright test tests/e2e/companion-home.spec.ts tests/e2e/companion-growth.spec.ts tests/e2e/companion-learning.spec.ts tests/e2e/companion-progression.spec.ts tests/e2e/companion-sector.spec.ts',
-    reason: 'a companion screen or its model changed; its journeys share one surface, so all of them run',
+    command: 'pnpm exec playwright test tests/e2e/retired-game-storage.spec.ts tests/e2e/agent-mascot-presence.spec.ts',
+    reason: 'folder entry and work status must preserve personal saves and verified activity after game retirement',
     matches: [
-      /^src\/features\/agent-activity\/(?:ui|model)\/[^/]*[Cc]ompanion[^/]*$/,
-      /^tests\/e2e\/companion-[^/]+\.spec\.ts$/,
+      /^src\/views\/first-run\/ui\/FirstRunPage\.tsx$/,
+      /^src\/views\/home\/ui\/TopologyCommandChrome\.tsx$/,
+      /^src\/features\/agent-activity\/ui\/Agent(?:ActivityChip|MascotPresence)\.tsx$/,
+      /^tests\/e2e\/retired-game-storage\.spec\.ts$/,
     ],
   },
   {

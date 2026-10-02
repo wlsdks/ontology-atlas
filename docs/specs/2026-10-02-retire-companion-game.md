@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: map
 date: 2026-10-02
-decisions: []
+decisions: [e9cdf138-ef07-4464-b76c-293599c611d3]
 ---
 
 # Retire the companion game and related record screens
