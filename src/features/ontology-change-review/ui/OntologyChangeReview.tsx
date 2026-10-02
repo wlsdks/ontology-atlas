@@ -24,23 +24,33 @@ const sentenceTextId = (itemKey: string, fieldKey: string, target: string) =>
   `ontology-change-review-sentence-${itemKey}-${fieldKey}-${target}`;
 const valueTextId = (itemKey: string, fieldKey: string) => `ontology-change-review-value-${itemKey}-${fieldKey}`;
 
-/* `none` for an empty list or a deleted key: `[]` and `null` are serialization, not the change. */
-function formatValue(value: unknown, none: string): string {
-  if (value === null || value === undefined) return none;
-  if (Array.isArray(value) && value.length === 0) return none;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  // A slug list reads one per line, not as its serialization.
+export type FormattedValue =
+  | { kind: 'removed' }
+  | { kind: 'empty-list' }
+  | { kind: 'empty-text' }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'text'; text: string };
+
+export function formatValue(value: unknown): FormattedValue {
+  if (value === null || value === undefined) return { kind: 'removed' };
+  if (Array.isArray(value) && value.length === 0) return { kind: 'empty-list' };
+  if (typeof value === 'string') return value.length === 0 ? { kind: 'empty-text' } : { kind: 'text', text: value };
+  if (typeof value === 'number' || typeof value === 'boolean') return { kind: 'text', text: String(value) };
   const list = stringList(value);
-  if (list) return list.join('\n');
+  if (list) return { kind: 'list', items: list };
   try {
-    return JSON.stringify(value);
+    return { kind: 'text', text: JSON.stringify(value) ?? String(value) };
   } catch {
-    return String(value);
+    return { kind: 'text', text: String(value) };
   }
 }
 
-/** Longer values fold behind "show more" so the answer buttons stay in reach. */
+const MARKER_KEY = { removed: 'valueRemoved', 'empty-list': 'valueEmptyList', 'empty-text': 'valueEmptyText' } as const;
+
+function formattedText(value: FormattedValue): string {
+  return value.kind === 'text' ? value.text : value.kind === 'list' ? value.items.join('\n') : '';
+}
+
 const LONG_VALUE_CHARS = 320;
 const LONG_VALUE_LINES = 6;
 
@@ -48,28 +58,61 @@ function isLongValue(text: string): boolean {
   return text.length > LONG_VALUE_CHARS || text.split('\n').length > LONG_VALUE_LINES;
 }
 
-/** Change text folded when long enough to push the two answers out of reach. */
-function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: string; tone: 'value' | 'sentence'; onExpandedChange?: (expanded: boolean) => void }) {
+export function FormattedValueView({ value, folded = false, className }: { value: FormattedValue; folded?: boolean; className?: string }) {
+  const t = useTranslations('ontologyChangeReview');
+  if (value.kind === 'list') {
+    const items = folded ? value.items.slice(0, LONG_VALUE_LINES) : value.items;
+    return (
+      <ul data-value-kind="list" className={cn('grid gap-0.5', className)}>
+        {items.map((item, index) => (
+          <li key={index} className="flex min-w-0 gap-1.5">
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+            <span className="min-w-0 whitespace-pre-wrap break-words">{item}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (value.kind === 'text') {
+    return (
+      <span data-value-kind="text" className={cn('block whitespace-pre-wrap break-words', className)}>
+        {value.text}
+      </span>
+    );
+  }
+  return (
+    <span data-value-kind={value.kind} className={cn('block text-[color:var(--color-text-tertiary)]', className)}>
+      {t(MARKER_KEY[value.kind])}
+    </span>
+  );
+}
+
+function FoldedText({ id, text, value, tone, onExpandedChange }: { id: string; text?: string; value?: FormattedValue; tone: 'value' | 'sentence'; onExpandedChange?: (expanded: boolean) => void }) {
   const t = useTranslations('ontologyChangeReview');
   const [open, setOpen] = useState(false);
-  const long = isLongValue(text);
+  const long = isLongValue(value ? formattedText(value) : text ?? '');
   return (
     <>
       <span
         id={id}
-        /* The fold marker sits on the text block, since one row can carry a previous and a new value. */
         data-testid="ontology-change-review-text"
         data-long={long ? 'true' : undefined}
         data-folded={long ? String(!open) : undefined}
         className={cn(
-          'block whitespace-pre-line break-words',
+          'block break-words',
           tone === 'sentence'
-            ? 'text-body leading-prose text-[color:var(--color-text-primary)]'
+            ? 'whitespace-pre-line text-body leading-prose text-[color:var(--color-text-primary)]'
             : 'text-[color:var(--color-text-primary)]',
-          long && !open && 'line-clamp-6',
+          value?.kind !== 'list' && long && !open && 'line-clamp-6',
         )}
       >
-        {text}
+        {value ? (
+          <FormattedValueView
+            value={value}
+            folded={value.kind === 'list' && long && !open}
+            className={value.kind === 'list' ? undefined : 'inline'}
+          />
+        ) : text}
       </span>
       {long ? (
         <button
@@ -77,8 +120,8 @@ function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: st
           aria-expanded={open}
           aria-controls={id}
           data-testid="ontology-change-review-field-toggle"
-          onClick={() => setOpen((value) => {
-            const next = !value;
+          onClick={() => setOpen((current) => {
+            const next = !current;
             onExpandedChange?.(next);
             return next;
           })}
@@ -189,7 +232,7 @@ function ChangeDetails({
       return isLongValue(entry.text) ? [id] : [];
     });
     const id = valueTextId(item.key, field.key);
-    return isLongValue(formatValue(field.after, t('noValue'))) ? [id] : [];
+    return isLongValue(formattedText(formatValue(field.after))) ? [id] : [];
   });
   const fullScopeAvailable = (!hasFieldOverflow || showAllFields)
     && longValueIds.every((id) => expandedLongValues.has(id));
@@ -257,7 +300,6 @@ function ChangeDetails({
                 </div>
               );
             }
-            const afterText = formatValue(field.after, t('noValue'));
             return (
               /* In the 352px relation panel, 6rem keeps the current long keys readable;
                  minmax(0,1fr) plus break-words still lets unbroken paths wrap when needed. */
@@ -275,9 +317,9 @@ function ChangeDetails({
                   {field.before === undefined ? null : (
                     /* Before and after stacked and labelled, since multi-line values break an inline arrow. */
                     <>
-                      <span className="mb-1 block whitespace-pre-line break-words text-[color:var(--color-text-quaternary)]">
+                      <span className="mb-1 block break-words text-[color:var(--color-text-quaternary)]">
                         <span className="mr-1.5 text-caption">{t('beforeLabel')}</span>
-                        {formatValue(field.before, t('noValue'))}
+                        <FormattedValueView value={formatValue(field.before)} className="inline text-[color:var(--color-text-quaternary)]" />
                       </span>
                       <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">
                         {t('afterLabel')}
@@ -286,7 +328,7 @@ function ChangeDetails({
                   )}
                   <FoldedText
                     id={valueTextId(item.key, field.key)}
-                    text={afterText}
+                    value={formatValue(field.after)}
                     tone="value"
                     onExpandedChange={(expanded) => trackExpanded(valueTextId(item.key, field.key), expanded)}
                   />

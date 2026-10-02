@@ -41,7 +41,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
 import {
   COMPOSER_MIN_ROWS,
   composerGrowth,
@@ -1110,7 +1110,7 @@ export function AcpChatPanel({
   const [answerHold, setAnswerHold] = useState(0);
   useEffect(() => {
     if (answerHold === 0) return;
-    const id = window.setTimeout(() => setAnswerHold(0), MOTION.settle.duration * 1000);
+    const id = window.setTimeout(() => setAnswerHold(0), EXIT_WINDOW_MS + MOTION.settle.duration * 1000);
     return () => window.clearTimeout(id);
   }, [answerHold]);
   const pendingForCard = useMemo(
@@ -2262,6 +2262,7 @@ export function AcpChatPanel({
           </div>
         ) : pendingHeld ? (
           <AcpPermissionCard
+            key={`${pendingHeld.request.toolCallId ?? ''}:${String(pendingHeld.request.requestId)}`}
             vaultPath={vaultRoot}
             pending={pendingForCard ?? pendingHeld}
             taskReview={taskMeaningReview}

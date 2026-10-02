@@ -7,6 +7,9 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
 import {
   fieldNameKey,
+  formatValue,
+  FormattedValueView,
+  type FormattedValue,
   ontologyChangeHeadline,
   OntologyChangeReview,
 } from '@/features/ontology-change-review';
@@ -16,7 +19,7 @@ import {
 } from '@/entities/knowledge-graph';
 
 import { cn } from '@/shared/lib/cn';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
 import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
@@ -32,17 +35,6 @@ function formatReviewValue(value: unknown): string {
   try { return JSON.stringify(value); } catch { return String(value); }
 }
 
-function formatRequestedValue(value: unknown, none: string): string {
-  if (value === null || value === undefined) return none;
-  if (Array.isArray(value)) {
-    if (value.length === 0) return none;
-    if (value.every((entry) => typeof entry === 'string')) return value.join('\n');
-  }
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return formatReviewValue(value);
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -53,6 +45,7 @@ const VALUE_SUMMARY_LIMIT = 8;
 const VERDICT_ROWS = 4;
 
 type ReviewItem = OntologyChangeSet['items'][number];
+type MeaningUnit = { id: string; label: string; text: string; displayText: string; value?: FormattedValue };
 
 function bodySections(body: string) {
   const lines = body.split('\n');
@@ -86,9 +79,9 @@ function bodySections(body: string) {
   return { units, uncovered };
 }
 
-function proposedMeaningUnits(item: ReviewItem | null) {
+function proposedMeaningUnits(item: ReviewItem | null): { units: MeaningUnit[]; bodyUncovered: boolean } {
   if (!item) return { units: [], bodyUncovered: false };
-  const relationUnits = item.relation ? [{
+  const relationUnits: MeaningUnit[] = item.relation ? [{
     id: `relation:${item.relation.from}:${item.relation.type}:${item.relation.to}`,
     label: `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`,
     text: item.relation.why ?? '',
@@ -101,11 +94,15 @@ function proposedMeaningUnits(item: ReviewItem | null) {
     bodyUncovered = sections.uncovered;
     return sections.units;
   });
-  const relationNoteUnits = item.fields.flatMap((field) => {
+  const relationNoteUnits = item.fields.flatMap((field): MeaningUnit[] => {
     if (field.key !== 'relation_notes' || !isPlainRecord(field.after)) return [];
-    return Object.entries(field.after).flatMap(([target, value]) => (
-      typeof value === 'string' ? [{ id: `relation_notes:${target}`, label: `relation_notes · ${target}`, text: value, displayText: value }] : []
-    ));
+    return Object.entries(field.after).map(([target, value]) => ({
+      id: `relation_notes:${target}`,
+      label: `relation_notes · ${target}`,
+      text: typeof value === 'string' ? value : '',
+      displayText: typeof value === 'string' ? value : '',
+      ...(typeof value === 'string' && value.length > 0 ? {} : { value: formatValue(value) }),
+    }));
   });
   return { units: [...relationUnits, ...bodyUnits, ...relationNoteUnits], bodyUncovered };
 }
@@ -173,11 +170,18 @@ export function AcpPermissionCard({
   const handleFullScopeAvailable = useCallback((available: boolean) => {
     setDetailsAvailability({ key: reviewStateKey, available });
   }, [reviewStateKey]);
-  const feedback = useCopyFeedback();
-  const [answer, setAnswer] = useState<{ key: string; choice: Answer } | null>(null);
+  const [answer, setAnswer] = useState<{ key: string; choice: Answer; outcome: 'done' | 'failed' } | null>(null);
   const answered = answer?.key === reviewStateKey ? answer.choice : null;
-  const failed = answered !== null && feedback.state === 'failed';
-  const settled = answered !== null && !failed;
+  const outcome = answer?.key === reviewStateKey ? answer.outcome : null;
+  const failed = outcome === 'failed';
+  const settled = outcome === 'done';
+  const [receiptKey, setReceiptKey] = useState<string | null>(null);
+  const receiptReady = settled && receiptKey === reviewStateKey;
+  useEffect(() => {
+    if (!settled) return;
+    const id = window.setTimeout(() => setReceiptKey(reviewStateKey), EXIT_WINDOW_MS * 2);
+    return () => window.clearTimeout(id);
+  }, [settled, reviewStateKey]);
   const legendId = useId();
   const taskOrigin = pending.origin?.turn && pending.origin.task
     ? { ...pending.origin.turn, ...pending.origin.task, sessionGeneration: pending.origin.sessionGeneration }
@@ -221,7 +225,7 @@ export function AcpPermissionCard({
       ? t('taskReview.bodyInDetails')
       : meaningUnits.length === 0 && valueFields.length === 0
         ? t('taskReview.coverageNone')
-        : null;
+        : t('taskReview.detailsPointer');
   const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
     .filter((key) => request.rawInput[key] !== undefined)
     .map((key) => {
@@ -283,8 +287,13 @@ export function AcpPermissionCard({
 
   const answerWith = (choice: Answer, action: () => void) => {
     if (settled) return;
-    setAnswer({ key: reviewStateKey, choice });
-    void feedback.run(action);
+    try {
+      action();
+    } catch {
+      setAnswer({ key: reviewStateKey, choice, outcome: 'failed' });
+      return;
+    }
+    setAnswer({ key: reviewStateKey, choice, outcome: 'done' });
   };
   const allowDisabled = !allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked;
   const answeredText = answered === null
@@ -355,10 +364,10 @@ export function AcpPermissionCard({
       key="answered"
       data-testid="acp-permission-answered"
       data-answer={answered ?? undefined}
-      data-feedback={feedback.state}
+      data-feedback={outcome ?? 'idle'}
       className="ai-row-swap flex min-h-10 items-center gap-2 text-body leading-body text-[color:var(--color-text-secondary)]"
     >
-      <FeedbackGlyph state={feedback.state} icon={null} size={ICON_SIZE.md} />
+      <FeedbackGlyph state={outcome ?? 'idle'} icon={null} size={ICON_SIZE.md} />
       <span className="min-w-0">{answeredText}</span>
     </p>
   );
@@ -373,7 +382,7 @@ export function AcpPermissionCard({
         data-answered={settled ? answered : undefined}
         inert={settled ? true : undefined}
         className={cn(
-          'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border p-[var(--card-pad)]',
+          'ai-row-swap flex max-h-full min-h-0 flex-col gap-3 rounded-panel border p-[var(--card-pad)]',
           ontologyWrite
             ? 'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
             : locality !== 'elsewhere'
@@ -465,8 +474,8 @@ export function AcpPermissionCard({
                       {visibleValueFields.map((field) => (
                         <div key={field.key} data-testid="task-review-value" data-field-key={field.key} className="grid grid-cols-[6rem_minmax(0,1fr)] items-baseline gap-x-3">
                           <dt className="break-words text-label leading-label">{fieldLabel(field.key)}</dt>
-                          <dd className="min-w-0 whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                            {formatRequestedValue(field.after, tChange('noValue'))}
+                          <dd className="min-w-0 text-body leading-prose text-[color:var(--color-text-primary)]">
+                            <FormattedValueView value={formatValue(field.after)} />
                           </dd>
                         </div>
                       ))}
@@ -482,9 +491,13 @@ export function AcpPermissionCard({
                       {visibleMeaningUnits.map((unit, index) => (
                         <div key={unit.id} data-testid={`task-review-meaning-unit-${index}`} className="grid gap-0.5">
                           <span className="break-words font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">{unit.label}</span>
-                          <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                            {unit.displayText}
-                          </p>
+                          {unit.value ? (
+                            <FormattedValueView value={unit.value} className="text-body leading-prose" />
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                              {unit.displayText}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -539,19 +552,19 @@ export function AcpPermissionCard({
                   {visibleValueFields.map((field) => (
                     <div key={field.key} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2">
                       <span className="text-label leading-label">{fieldLabel(field.key)}</span>
-                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
-                        {formatRequestedValue(field.after, tChange('noValue'))}
-                      </p>
+                      <div className="text-body leading-prose text-[color:var(--color-text-primary)]">
+                        <span className="text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
+                        <FormattedValueView value={formatValue(field.after)} />
+                      </div>
                     </div>
                   ))}
                   {visibleMeaningUnits.map((unit) => (
                     <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2">
                       <span className="break-words font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">{unit.label}</span>
-                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
-                        {unit.displayText}
-                      </p>
+                      <div className="text-body leading-prose text-[color:var(--color-text-primary)]">
+                        <span className="text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
+                        {unit.value ? <FormattedValueView value={unit.value} /> : <p className="whitespace-pre-wrap break-words">{unit.displayText}</p>}
+                      </div>
                     </div>
                   ))}
                   {coverageLine ? (
@@ -748,7 +761,11 @@ export function AcpPermissionCard({
             </p>
           ) : null}
           {taskBound && (onRequestCorrection || onDefer) ? (
-            <div data-testid="task-review-rare-answers" className="flex flex-wrap gap-2">
+            <div
+              data-testid="task-review-rare-answers"
+              aria-hidden={settled ? true : undefined}
+              className={cn('flex flex-wrap gap-2', settled && 'map-overlay-out')}
+            >
               {onRequestCorrection ? (
                 <Button
                   variant="outline"
@@ -779,6 +796,9 @@ export function AcpPermissionCard({
           <div className="grid">
             <div
               aria-hidden={settled ? true : undefined}
+              onAnimationEnd={(event) => {
+                if (settled && event.target === event.currentTarget) setReceiptKey(reviewStateKey);
+              }}
               className={cn('col-start-1 row-start-1 grid grid-cols-2 gap-2', settled && 'map-overlay-out')}
             >
               <Button
@@ -801,7 +821,7 @@ export function AcpPermissionCard({
                 {t('allowOnce')}
               </Button>
             </div>
-            {settled ? <div className="col-start-1 row-start-1">{receipt}</div> : null}
+            {receiptReady ? <div className="col-start-1 row-start-1">{receipt}</div> : null}
           </div>
           {allowAlways && !ontologyWrite ? (
             <div className="grid gap-1">

@@ -47,10 +47,10 @@
     "allowOnce": "Allow once",
     "answered": {
       "allow": "Allowed once. The agent carries on.",
-      "allowNamed": "Allowed once. The agent runs this write to {name}.",
+      "allowNamed": "Allowed once. The agent runs this write to “{name}”.",
       "reject": "Declined. The agent does not do this.",
       "rejectWrite": "Declined. Nothing is written.",
-      "rejectNamed": "Declined. Nothing is written to {name}.",
+      "rejectNamed": "Declined. Nothing is written to “{name}”.",
       "correct": "Declined. A correction request is drafted in the composer, not sent.",
       "always": "Allowed for the rest of this chat.",
       "failed": "The answer was not sent. Press it again."
@@ -139,9 +139,10 @@
       "noSemanticDelta": "This request does not change the parsed meaning. No meaning decision record is needed.",
       "rationale": "Why accept this interpretation? (optional)",
       "bodyInDetails": "The rest of the body change is shown in full under Details.",
+      "detailsPointer": "Details shows the complete request as sent.",
       "taskRest": "Show the remaining {count, plural, one {# line} other {# lines}}",
       "allowEffect": "Runs this one write. It does not accept the meaning or verify code, merge or deployment.",
-      "allowEffectNamed": "Runs this one write to {name}. It does not accept the meaning or verify code, merge or deployment.",
+      "allowEffectNamed": "Runs this one write to “{name}”. It does not accept the meaning or verify code, merge or deployment.",
       "allowEffectBatch": "Runs all {count} writes in this batch at once. It does not accept the meaning or verify code, merge or deployment."
     },
     "deferredNotice": "This request is still pending in this conversation. It is not saved; closing or cancelling rejects it.",

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import enMessages from '../../../../messages/en.json';
+import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
@@ -761,11 +762,13 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     locale = 'ko',
     onRequestCorrection = vi.fn(),
     onDefer = vi.fn(),
+    frontmatter = { title: 'Probe delivery pipeline' },
   }: {
     resolve?: (optionId: string | null) => void;
     locale?: 'ko' | 'en';
     onRequestCorrection?: () => void;
     onDefer?: () => void;
+    frontmatter?: Record<string, unknown>;
   } = {}) {
     render(
       <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
@@ -786,7 +789,7 @@ describe('a one-field patch: the decision first, the evidence after', () => {
               rawInput: {
                 slug: 'capabilities/probe-delivery',
                 expected_mtime: 1_727_000_000_000,
-                frontmatter: { title: 'Probe delivery pipeline' },
+                frontmatter,
               },
               options: [
                 { optionId: 'reject', kind: 'reject_once', name: '거절' },
@@ -814,13 +817,13 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     expect(value.getAttribute('data-field-key')).toBe('title');
     expect(value).toHaveTextContent('이름');
     expect(value).toHaveTextContent('Probe delivery pipeline');
-    expect(screen.queryByTestId('task-review-coverage')).toBeNull();
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent(KO.taskReview.detailsPointer);
     expect(screen.queryByTestId('task-review-action-scope')).toBeNull();
     expect(screen.queryByTestId('task-review-authority-meaning')).toBeNull();
     const text = screen.getByTestId('acp-permission-card').textContent ?? '';
     expect(text).not.toContain(KO.taskReview.authority.unknown);
     expect(text).not.toContain('동작 범위');
-    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent('probe-delivery 문서에 이 쓰기 한 번만 실행해요');
+    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent(KO.taskReview.allowEffectNamed.replace('{name}', 'probe-delivery'));
   });
 
   it('shows the first paragraph of the task whole and counts the rest before unfolding it', () => {
@@ -862,7 +865,7 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     expect(order).toEqual(['task-review-correct', 'task-review-defer', 'acp-permission-reject', 'acp-permission-allow']);
     expect(document.getElementById(correct.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.correctEffect);
     expect(document.getElementById(defer.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.deferEffect);
-    expect(document.getElementById(allow.getAttribute('aria-describedby') ?? '')).toHaveTextContent('probe-delivery 문서에 이 쓰기 한 번만 실행해요');
+    expect(document.getElementById(allow.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.allowEffectNamed.replace('{name}', 'probe-delivery'));
   });
 
   it('draws a decline as done, not as danger', async () => {
@@ -882,6 +885,24 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     expect(row.className).toContain('map-overlay-out');
     expect(row.className).toContain('row-start-1');
     expect(receipt.parentElement?.className).toContain('row-start-1');
+    const rare = screen.getByTestId('task-review-rare-answers');
+    expect(rare).toHaveAttribute('aria-hidden', 'true');
+    expect(rare.className).toContain('map-overlay-out');
+  });
+
+  it('shows the receipt only once the answer row has faded out', () => {
+    vi.useFakeTimers();
+    try {
+      titlePatch();
+      fireEvent.click(screen.getByTestId('acp-permission-reject'));
+      expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+      act(() => { vi.advanceTimersByTime(EXIT_WINDOW_MS); });
+      expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+      act(() => { vi.advanceTimersByTime(EXIT_WINDOW_MS); });
+      expect(screen.getByTestId('acp-permission-answered')).toHaveAttribute('data-feedback', 'done');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('says so when the answer fails to send, and keeps the answers', async () => {
@@ -898,11 +919,57 @@ describe('a one-field patch: the decision first, the evidence after', () => {
     expect(screen.getByTestId('acp-permission-reject')).toBeInTheDocument();
   });
 
+  it('keeps a failed answer failed after the feedback dwell, never turning it into a receipt', () => {
+    vi.useFakeTimers();
+    try {
+      titlePatch({ resolve: vi.fn(() => { throw new Error('transport closed'); }) });
+      fireEvent.click(screen.getByTestId('acp-permission-allow'));
+      act(() => { vi.advanceTimersByTime(1_600); });
+      const card = screen.getByTestId('acp-permission-card');
+      expect(card).not.toHaveAttribute('inert');
+      expect(screen.getByTestId('acp-permission-answered')).toHaveAttribute('data-feedback', 'failed');
+      expect(card.textContent).toContain(KO.answered.failed);
+      expect(card.textContent).not.toContain(KO.answered.allowNamed.replace('{name}', 'probe-delivery'));
+      expect(screen.getByRole('status')).toHaveTextContent(KO.answered.failed);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps lists, line breaks, removals and empty values apart, and leaves no relation note out', () => {
+    titlePatch({
+      frontmatter: {
+        relates: ['a', 'b'],
+        depends_on: ['a\nb'],
+        status: null,
+        description: 'None',
+        domains: [],
+        display: '',
+        relation_notes: { x: 'kept', y: null, z: { nested: 1 } },
+      },
+    });
+    const value = (key: string) => screen.getAllByTestId('task-review-value').find((row) => row.getAttribute('data-field-key') === key)!;
+    expect(value('relates').querySelectorAll('li')).toHaveLength(2);
+    expect(value('depends_on').querySelectorAll('li')).toHaveLength(1);
+    expect(value('depends_on').querySelector('li')?.textContent).toContain('a\nb');
+    expect(value('status').querySelector('[data-value-kind="removed"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueRemoved);
+    expect(value('description').querySelector('[data-value-kind="text"]')).toHaveTextContent('None');
+    expect(value('domains').querySelector('[data-value-kind="empty-list"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueEmptyList);
+    expect(value('display').querySelector('[data-value-kind="empty-text"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueEmptyText);
+    const summary = screen.getByTestId('task-review-summary');
+    expect(summary).toHaveTextContent('relation_notes · x');
+    expect(summary).toHaveTextContent('kept');
+    expect(summary).toHaveTextContent('relation_notes · y');
+    expect(summary).toHaveTextContent('relation_notes · z');
+    expect(summary).toHaveTextContent('{"nested":1}');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent(KO.taskReview.detailsPointer);
+  });
+
   it('says the same facts in the same places in English', () => {
     titlePatch({ locale: 'en' });
     expect(document.getElementById('acp-permission-title')?.textContent).toBe('Changes the name of probe-delivery');
     expect(screen.getByTestId('task-review-value')).toHaveTextContent('Probe delivery pipeline');
-    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent('Runs this one write to probe-delivery.');
+    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent('Runs this one write to “probe-delivery”.');
     expect(screen.getByTestId('task-review-task-toggle')).toHaveTextContent('Show the remaining 4 lines');
   });
 });
