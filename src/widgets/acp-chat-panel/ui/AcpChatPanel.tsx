@@ -57,6 +57,7 @@ import {
   buildOntologyChangeSet,
   type OntologyChangeSet,
 } from '@/entities/knowledge-graph';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import {
   useAcpSession,
@@ -2436,11 +2437,7 @@ export function AcpChatPanel({
               setSlashDismissed(false);
             }}
             onKeyDown={(e) => {
-              /*
-               * While the list is open **the list takes the keys first** (owner report
-               * 2026-08-17: *"Keyboard movement doesn't work"* — keyboard movement doesn't work).
-               * Enter's behaviour without a list (send) is unchanged below.
-               */
+              if (e.key === 'Enter' && isImeComposing(e)) return;
               if (slashOpen) {
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
@@ -2473,10 +2470,6 @@ export function AcpChatPanel({
                 return;
               }
               if (e.key !== 'Enter') return;
-              /*
-               * Enter sends and ⇧Enter breaks the line — the chat convention, and what
-               * people already have in their hands. ⌘/Ctrl+Enter keeps working too.
-               */
               if (e.shiftKey) return;
               e.preventDefault();
               submit();

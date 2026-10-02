@@ -23,6 +23,7 @@ import {
   vaultPlace,
 } from "@/entities/library-round";
 import { cn } from "@/shared/lib/cn";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
 import { controlClass, fieldLabel } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -356,6 +357,7 @@ export function NewRoundSheet({
             onChange={(event: ChangeEvent<HTMLInputElement>) => setNameEdited(event.target.value)}
             onBlur={() => setRenaming(false)}
             onKeyDown={(event) => {
+              if (event.key === "Enter" && isImeComposing(event)) return;
               if (event.key === "Enter" || event.key === "Escape") {
                 event.preventDefault();
                 setRenaming(false);
