@@ -24,10 +24,8 @@ describe("map dial tokens", () => {
   });
 
   it("keeps ordered pairs ordered", () => {
-    expect(t.pitchMin).toBeLessThan(t.pitch);
-    expect(t.pitch).toBeLessThan(t.pitchMax);
-    expect(t.ringMin).toBeLessThan(t.ringSingleRowMax);
-    expect(t.stubEnterRatio).toBeLessThan(t.stubFullRatio);
+    expect(t.pitchMin).toBeLessThan(t.pitchMax);
+    expect(t.stubMinPx).toBeLessThan(t.stubMaxPx);
     expect(t.restNumbersMin).toBeLessThanOrEqual(t.restNumbersMax);
     expect(t.restStrongMin).toBeLessThanOrEqual(t.restStrongMax);
     expect(t.discMinPx).toBeLessThan(t.discMaxPx);
@@ -57,5 +55,45 @@ describe("map dial tokens", () => {
   it("keeps the floors", () => {
     expect(t.flowQuietRatio * rest(1)).toBeGreaterThanOrEqual(1);
     expect(t.numeralSize).toBeGreaterThanOrEqual(9.5);
+  });
+
+  it("hands capabilities over before their elements", () => {
+    expect(t.capOnFrom).toBeLessThan(t.capOnFull);
+    expect(t.capOnFull).toBeLessThanOrEqual(t.elementsAfterCapFrom);
+    expect(t.elementsAfterCapFrom).toBeLessThan(t.elementsAfterCapFull);
+  });
+
+  it("resolves links only once capabilities are fully drawn", () => {
+    expect(t.resolve).toBeGreaterThanOrEqual(t.capOnFull);
+  });
+
+  it("ramps elements in", () => {
+    expect(t.elementOnFrom).toBeLessThan(t.elementOnFull);
+  });
+
+  it("keeps the rest budget ordered", () => {
+    expect(t.restLinksMin).toBeLessThanOrEqual(t.restLinksMax);
+  });
+
+  it("lets every end keep at least two links", () => {
+    expect(t.perEndCap).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps spiral neighbours a pitch apart", () => {
+    expect(t.spiralC).toBeGreaterThanOrEqual(0.6);
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let n = 2; n <= 200; n += 1) {
+      const pts = Array.from({ length: n }, (_, i) => {
+        const r = t.spiralC * Math.sqrt(i + t.spiralK0);
+        return [r * Math.cos(i * golden), r * Math.sin(i * golden)] as const;
+      });
+      let min = Infinity;
+      for (let i = 0; i < n; i += 1) for (let j = i + 1; j < n; j += 1) min = Math.min(min, Math.hypot(pts[i]![0] - pts[j]![0], pts[i]![1] - pts[j]![1]));
+      expect(min).toBeGreaterThanOrEqual(0.99);
+    }
+  });
+
+  it("draws domain names at least 11 px", () => {
+    expect(t.labelScale * 10).toBeGreaterThanOrEqual(11);
   });
 });

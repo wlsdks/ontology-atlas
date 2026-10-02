@@ -7,24 +7,11 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number }
 export interface Pad { left: number; right: number; top: number; bottom: number }
 export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string }
 export interface DialTokens {
-  ringMin: number;
-  ringSingleRowMax: number;
-  rowGap: number;
   pitch: number;
   pitchMin: number;
   pitchMax: number;
-  rowsMax: number;
-  sectorGap: number;
-  chipSlots: number;
   hubClearance: number;
-  elementStart: number;
-  elementPitch: number;
-  orphanGap: number;
   orphanPitch: number;
-  orphanRow: number;
-  chordHubMargin: number;
-  chordDepth: number;
-  chordBow: number;
   flowRestBase: number;
   flowRestGain: number;
   flowRestMax: number;
@@ -47,18 +34,12 @@ export interface DialTokens {
   restNumberMinCount: number;
   restStrongMin: number;
   restStrongMax: number;
-  stubEnterRatio: number;
-  stubFullRatio: number;
-  namesRatio: number;
-  namePitchPx: number;
   pinMinPx: number;
   pinsMax: number;
   chordArrival: number;
   stubGapDeg: number;
   stubMinPx: number;
   stubMaxPx: number;
-  stubRingShare: number;
-  stubShortShare: number;
   discMinPx: number;
   discMaxPx: number;
   discPitchShare: number;
@@ -72,6 +53,31 @@ export interface DialTokens {
   ledgerRowPx: number;
   ledgerGapPx: number;
   attendedNameInk: string;
+  spiralC: number;
+  spiralK0: number;
+  elementRoom: number;
+  elementHole: number;
+  angularGap: number;
+  ringGap: number;
+  capOnFrom: number;
+  capOnFull: number;
+  elementsAfterCapFrom: number;
+  elementsAfterCapFull: number;
+  elementOnFrom: number;
+  elementOnFull: number;
+  resolve: number;
+  resolveBudget: number;
+  capName: number;
+  elementName: number;
+  reachCap: number;
+  reachElement: number;
+  restLinksMin: number;
+  restLinksMax: number;
+  restLinksPerEnd: number;
+  perEndCap: number;
+  perEndCapEnds: number;
+  stubFreeShare: number;
+  labelScale: number;
 }
 
 export interface DialDomain { id: string; label: string; capabilityIds: string[]; directElementIds: string[]; elementCount: number }
