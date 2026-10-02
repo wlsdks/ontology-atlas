@@ -204,7 +204,8 @@ function separateGalaxies(
       }
       const d = Math.sqrt(x[i]! * x[i]! + y[i]! * y[i]!);
       const s = ri + coreRadius + voidGap(ri, coreRadius, meanRadius) * floor;
-      if (d < s && d > 1e-6) {
+      if (d < (mobile(i) ? s : ri + coreRadius + voidGap(ri, coreRadius, 0) * floor - PINNED_SLACK) && d > 1e-6) {
+        displaced[i] = 1;
         x[i] *= s / d;
         y[i] *= s / d;
         moved += 1;
