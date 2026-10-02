@@ -95,8 +95,10 @@ for (const locale of CJK_LOCALES) {
       for (const pane of SETTINGS_PANES) {
         test(`settings ${pane} keeps its text whole`, async ({ page }) => {
           await page.goto(`/${locale}/topology/?guides=off`, { waitUntil: 'domcontentloaded' });
-          await page.getByTestId('app-settings-trigger').click();
-          await expect(page.getByTestId('app-settings-popover')).toBeVisible();
+          await expect(async () => {
+            if (!(await page.getByTestId('app-settings-popover').isVisible())) await page.getByTestId('app-settings-trigger').click();
+            await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 2000 });
+          }).toPass({ timeout: 20_000 });
           await page.getByTestId(`app-settings-nav-${pane}`).click();
           await expect(page.getByTestId(`app-settings-pane-${pane}`)).toBeVisible();
           await waitFrames(page, 20);
