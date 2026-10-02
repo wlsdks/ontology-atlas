@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { FIT_LOCALES } from './locales';
 import { openFolderFromFirstRun } from './open-folder';
 import { installLibraryWorkHarness } from './library-work-harness';
 
@@ -49,7 +50,7 @@ const NAME_HIDDEN = [CHAT_WIDTH_MIN, KOREAN_ONLY_CLIP, BELOW_THRESHOLD];
 const NAME_SHOWN = [AT_THRESHOLD, SMALLEST_WINDOW_DEFAULT];
 const EVERY_WIDTH = [...NAME_HIDDEN, ...NAME_SHOWN];
 
-async function openDockAt(page: Page, width: number, locale: 'en' | 'ko') {
+async function openDockAt(page: Page, width: number, locale: string) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
   await page.addInitScript((stored) => {
@@ -135,7 +136,7 @@ async function modeWordIsWhole(page: Page): Promise<{ whole: boolean; shown: num
   });
 }
 
-for (const locale of ['en', 'ko'] as const) {
+for (const locale of FIT_LOCALES) {
   test(`the composer footer holds its words across the drag range (${locale})`, async ({ page }) => {
     await openDockAt(page, EVERY_WIDTH[0], locale);
 

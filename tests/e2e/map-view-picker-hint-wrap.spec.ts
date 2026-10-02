@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { FIT_LOCALES, FIT_VIEWPORTS } from "./locales";
 
 /**
  * **No view description ends on a lone word** (owner review, 2026-09-26).
@@ -13,9 +14,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * so the check sees what a reader sees in both locales. The picker is the same 240px at every
  * window width, so one width is enough.
  */
-for (const locale of ["ko", "en"] as const) {
+for (const locale of FIT_LOCALES) {
   // The picker is a fixed 240px surface, so one window proves both locales' wraps.
-  for (const viewport of [{ width: 1512, height: 949 }]) {
+  for (const viewport of FIT_VIEWPORTS) {
     test(`${locale} ${viewport.width}: every view description wraps without a lone last word`, async ({ page }) => {
       test.setTimeout(120_000);
       await page.setViewportSize(viewport);
