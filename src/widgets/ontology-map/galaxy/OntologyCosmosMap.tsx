@@ -157,9 +157,9 @@ export function OntologyCosmosMap({
       },
       onBand: (band) => callbacks.current.onZoomTierChange?.(band),
       onRest: () => {
-        setRest((prev) => ({ signal: prev.signal + 1, marks: engine.marks() }));
         if (inks) publishCosmosSnapshot({ marks: engine.marks(), canvas, inks });
       },
+      onCameraRest: () => setRest((prev) => ({ signal: prev.signal + 1, marks: engine.marks() })),
       onWalkDeadEnd: () => setDeadEnds((n) => n + 1),
       onContextMenuNode: (id, position) => callbacks.current.onContextMenuNode?.(id, position),
       onContextMenuPane: (position) => callbacks.current.onContextMenuPane?.(position),

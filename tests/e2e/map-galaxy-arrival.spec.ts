@@ -3,7 +3,7 @@ import "./atlas-cosmos-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForMapSettled } from "./settle";
 
-type ArrivalSample = { mode: string; active: boolean; clockMs: number; frames: number; centres: number[] | null; view: string };
+type ArrivalSample = { mode: string; active: boolean; clockMs: number; frames: number; centres: number[] | null };
 
 declare global {
   interface Window {
@@ -27,8 +27,7 @@ async function prepare(page: Page, { galaxy, withCentres }: { galaxy: boolean; w
           const last = log[log.length - 1];
           if (!last || last.active || a.active || last.mode !== a.mode) {
             const centres = withCentres ? (probe.layout()?.galaxies.flatMap((g) => [g.sx, g.sy]) ?? null) : null;
-            const view = withCentres ? JSON.stringify([probe.camera(), probe.room()]) : "";
-            log.push({ mode: a.mode, active: a.active, clockMs: a.clockMs, frames: probe.frames(), centres, view });
+            log.push({ mode: a.mode, active: a.active, clockMs: a.clockMs, frames: probe.frames(), centres });
           }
         }
         requestAnimationFrame(tick);
@@ -103,8 +102,7 @@ test.describe("Galaxy arrival", () => {
     await settled(page);
     const log = await arrivalLog(page);
     expect(log[0]!.mode).toBe("condense");
-    const lastView = log.filter((s) => s.active).at(-1)!.view;
-    const during = log.filter((s) => s.active && s.centres && s.view === lastView);
+    const during = log.filter((s) => s.active && s.centres);
     expect(during.length).toBeGreaterThan(10);
     for (const sample of during) {
       sample.centres!.forEach((v, i) => expect(Math.abs(v - during[0]!.centres![i]!)).toBeLessThanOrEqual(0.01));

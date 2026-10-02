@@ -137,6 +137,10 @@ export class CosmosCameraRig {
     return this.drag?.moved ? "pan" : (this.motion?.kind ?? "none");
   }
 
+  held(): boolean {
+    return this.drag !== null || this.motion !== null;
+  }
+
   readRoom(next: CosmosRoom): void {
     if (roomMovesRest(this.room, next)) this.room = next;
   }
