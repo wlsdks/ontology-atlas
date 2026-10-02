@@ -254,6 +254,12 @@ export function useLocalCompile({
 
         if (controller.signal.aborted) return;
         setTurn(result.turn);
+        if (result.turn.status === "failed") {
+          const notices = result.turn.events.filter((event) => event.kind === "notice");
+          setErrorMessage(notices[notices.length - 1]?.text ?? COMPILE_NOTICES.failed);
+          setStatus("failed");
+          return;
+        }
         const built = buildCompileConsentCard(executor.proposals(), {
           // A save point belongs to the surfaces that own Git, as in `use-vault-agent.ts`; the card
           // says none was taken.
