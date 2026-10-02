@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
  * `<html lang>` says `ko`. The root layout sits above `[locale]` and ships `lang="en"`;
  * the effect in `LocaleHtmlLang` flips it only after hydration, so a `/ko/*` page used to
  * paint its first frame with syllable breaks and reflow once. The inline boot script
- * (`accent-boot-script.tsx`, `LANG_BOOT`) now plants the locale from the path before the
+ * (`lang-boot-script.tsx`, `LANG_BOOT`) now plants the locale from the path before the
  * body is parsed.
  *
  * **How this proves "before the first paint"**: every external script is aborted, so no

@@ -60,33 +60,3 @@ for (const width of [1040, 1440]) {
     });
   });
 }
-
-test('each accent preview matches its actual palette under either selected accent', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await installDesktopRailRuntime(page);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/ko/?guides=off');
-  await page.getByTestId('first-run-open').click();
-  await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-  const read = () => page.evaluate(() => {
-    const ctx = document.createElement('canvas').getContext('2d')!;
-    const normalize = (value: string) => { ctx.fillStyle = value.trim(); return ctx.fillStyle; };
-    const root = getComputedStyle(document.documentElement);
-    const swatch = (name: string) => [...document.querySelectorAll(`[data-accent-preview="${name}"] > span`)].map(el => normalize(getComputedStyle(el).backgroundColor));
-    return { root: ['brand', 'accent', 'a24'].map(name => normalize(root.getPropertyValue(`--color-indigo-${name}`))), indigo: swatch('indigo'), ember: swatch('ember') };
-  });
-  const initial = await read();
-  expect(initial.indigo).toHaveLength(3);
-  expect(initial.ember).toHaveLength(3);
-  expect(initial.indigo).toEqual(initial.root);
-  expect(initial.ember).not.toEqual(initial.indigo);
-  await page.getByTestId('app-settings-accent-ember').click();
-  await expect(page.locator('html')).toHaveAttribute('data-accent', 'ember');
-  const copper = await read();
-  expect(copper.ember).toEqual(copper.root);
-  expect(copper.indigo).toEqual(initial.indigo);
-  expect(copper.ember).toEqual(initial.ember);
-  await page.getByTestId('app-settings-accent-indigo').click();
-  await expect(page.locator('html')).not.toHaveAttribute('data-accent');
-  expect((await read()).indigo).toEqual(initial.indigo);
-});

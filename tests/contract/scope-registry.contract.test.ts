@@ -165,7 +165,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.agentActivity.tab", kind: "storage", scope: "global", note: "The bell panel's last tab — a reading preference of this machine, not a fact about any folder" },
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "캔버스 배경 선호" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "글리프 세트 선호" },
-  { key: "ontology-atlas:accent:v1", kind: "storage", scope: "global", note: "악센트 팔레트 선호(잉걸/인디고)" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "발자국 트레일 선호" },
   // Expansion affordance, structure, and three numbers. Screen preferences like the
   // footprint and the background, so vault-independent — changing folder must not

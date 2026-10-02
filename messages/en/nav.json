@@ -41,12 +41,6 @@
       "ownership": "who contains what",
       "coupling": "what attaches to what"
     },
-    "accentLabel": "Accent colour",
-    "accentCaption": "Pick the app's single colour. The app icon is baked at install time, so it stays as it is",
-    "accent": {
-      "indigo": "Indigo (default)",
-      "ember": "Copper"
-    },
     "workspaceFolderLabel": "Workspace folder",
     "workspaceFolderEmpty": "None selected",
     "workspaceFolderDocCount": "{count} concept documents",
@@ -139,7 +133,7 @@
       "update": "Updates"
     },
     "sectionPurpose": {
-      "screen": "Language, view mode, icons and accent colour. They apply to every screen.",
+      "screen": "Language, view mode and icons. They apply to every screen.",
       "background": "Choose what lies behind the map. The map shows it right away.",
       "expand": "Choose how collapsed groups open on the map. Changes apply to the map right away.",
       "footprint": "A star lights on every concept you open, numbered in the order you walked them, with light running along each line the way you went.",

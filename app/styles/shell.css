@@ -191,9 +191,9 @@ body *::-webkit-scrollbar {
  * `:lang(ko)` because `keep-all` only means "between words" for a script that puts spaces
  * between words. Outside every layer, beside the caps override, for the same reason it gives.
  * `:lang(ko)` holds from the first paint because the inline boot script sets `<html lang>` from
- * the path. It is the first script in `<body>` (`app/layout.tsx`, `<AccentBootScript />`; served
+ * the path. It is the first script in `<body>` (`app/layout.tsx`, `<LangBootScript />`; served
  * after only Next's empty hidden div) and runs before any rendered body content is parsed
- * (`accent-boot-script.tsx`, `LANG_BOOT`).
+ * (`lang-boot-script.tsx`, `LANG_BOOT`).
  * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {
@@ -352,5 +352,11 @@ html [data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast].app-toa
   color: var(--color-text-primary);
 }
 
-
-
+/* A floating panel that holds nothing to press passes the pointer through, its positioning
+ * wrapper included (2026-09-25 interaction review). `Tooltip`'s `panelClassName="pointer-events-none"`
+ * reached only the panel: Radix wraps it in a positioned box of the same size, and that box
+ * still answered `elementFromPoint` and took the clicks meant for the row the panel lay over
+ * (the Git remote hints across the "now" row, 246x34 at every width). */
+[data-radix-popper-content-wrapper]:has(> .pointer-events-none) {
+  pointer-events: none;
+}

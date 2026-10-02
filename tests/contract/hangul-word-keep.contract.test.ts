@@ -63,13 +63,13 @@ describe("Hangul keeps its words whole", () => {
  * the router's and free of interpolation (the same boundary `JsonLd` owns).
  */
 describe("<html lang> is right before the first paint", () => {
-  const boot = readFileSync(join(ROOT, "src", "shared", "ui", "accent-boot-script.tsx"), "utf8");
+  const boot = readFileSync(join(ROOT, "src", "shared", "ui", "lang-boot-script.tsx"), "utf8");
   const routing = readFileSync(join(ROOT, "src", "i18n", "routing.ts"), "utf8");
   const body = /const LANG_BOOT = \[([\s\S]*?)\]\.join/.exec(boot)?.[1] ?? "";
 
   it("the boot script plants lang from the path, and is rendered", () => {
-    expect(body, "LANG_BOOT is missing from accent-boot-script.tsx").toContain("documentElement.lang");
-    expect(boot).toMatch(/__html: ACCENT_BOOT \+ LANG_BOOT/);
+    expect(body, "LANG_BOOT is missing from lang-boot-script.tsx").toContain("documentElement.lang");
+    expect(boot).toMatch(/__html: LANG_BOOT/);
     expect(body).not.toContain("${");
   });
 
@@ -101,7 +101,7 @@ describe("<html lang> is right before the first paint", () => {
  * 356 → 342 (2026-09-25, models tab): the API Key pane moved from the settings sheet to the
  * Agents destination and was rewritten without per-element sites.
  */
-const BREAK_KEEP_CEILING = 338;
+const BREAK_KEEP_CEILING = 337;
 
 function stripComments(source: string): string {
   return source

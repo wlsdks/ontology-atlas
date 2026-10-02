@@ -44,7 +44,7 @@ import {
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
 
 import { AppUpdateSettings } from './AppUpdateSettings';
-import { AccentPicker, CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
+import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
@@ -677,8 +677,6 @@ export function AppSettingsMenu({
                 {/* The icon set applies outside the map too (INDEX, studio, detail
                     glyphs), so it stays here rather than in a map subview. */}
                 <GlyphSetPicker />
-                {/* The accent is the app's colour, not only the map's, so it stays here too. */}
-                <AccentPicker />
                 {/* Guides show once per destination, so replay lives here, and the sheet closes before
                     the guide opens. Off only stops automatic display; replay and the compass still open it. */}
                 <SettingsRow
