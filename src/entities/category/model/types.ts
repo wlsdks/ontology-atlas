@@ -18,6 +18,7 @@ export interface Category {
   /** Korean label, the UI default. */
   label: string;
   labelEn?: string;
+  labels?: Partial<Record<string, string>>;
   order: number;
   position: CategoryPosition;
   /** Nodes stay inside it. */
