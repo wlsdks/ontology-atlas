@@ -10,19 +10,19 @@ import { auditMarkdownEntries } from './inventory.mjs';
 export const MARKDOWN_LANGUAGE_BASELINES = Object.freeze({
   operational: Object.freeze({
     unexpectedFiles: 0,
-    unexpectedHangulCodePoints: 0,
+    unexpectedLanguageCodePoints: 0,
     quotedEvidenceLines: 0,
   }),
   current: Object.freeze({
     unexpectedFiles: 0,
-    unexpectedHangulCodePoints: 0,
+    unexpectedLanguageCodePoints: 0,
     // Focused-test coordinates that quote a Korean test title (see
     // inventory.mjs). Raise this only with the vault change that adds them.
     quotedEvidenceLines: 0,
   }),
   historical: Object.freeze({
     unexpectedFiles: 8,
-    unexpectedHangulCodePoints: 16_597,
+    unexpectedLanguageCodePoints: 16_597,
     quotedEvidenceLines: 0,
   }),
 });
@@ -48,7 +48,7 @@ export function evaluateMarkdownLanguageGate(audit, baselines = MARKDOWN_LANGUAG
       errors.push(`${scopeName} Markdown scope scanned zero files`);
       continue;
     }
-    for (const metric of ['unexpectedFiles', 'unexpectedHangulCodePoints', 'quotedEvidenceLines']) {
+    for (const metric of ['unexpectedFiles', 'unexpectedLanguageCodePoints', 'quotedEvidenceLines']) {
       if (actual[metric] > baseline[metric]) {
         errors.push(
           `${scopeName} Markdown ${metric} regressed: ${baseline[metric]} -> ${actual[metric]}`,
@@ -104,7 +104,7 @@ export function runMarkdownLanguageCheck({ root = process.cwd(), json = false } 
     for (const [scopeName, scope] of Object.entries(audit.scopes)) {
       console.log(
         `  ${scopeName}: ${scope.unexpectedFiles} files · `
-        + `${scope.unexpectedLines} lines · ${scope.unexpectedHangulCodePoints} Hangul code points · ${scope.quotedEvidenceLines} quoted test titles`,
+        + `${scope.unexpectedLines} lines · ${scope.unexpectedLanguageCodePoints} Han, kana and Hangul code points · ${scope.quotedEvidenceLines} quoted test titles`,
       );
     }
     console.log('[markdown-language] largest remaining authored sources:');

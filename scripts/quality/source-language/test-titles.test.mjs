@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { extractTestTitles, hangulTestTitles, isTestSourcePath } from './test-titles.mjs';
+import { extractTestTitles, nonLatinTestTitles, isTestSourcePath } from './test-titles.mjs';
 
 const texts = (source, path = 'a.test.ts') => extractTestTitles(path, source).map((e) => `${e.kind}:${e.text}`);
 
@@ -49,7 +49,7 @@ test('reads an expect.poll message from its options', () => {
   ].join('\n');
   assert.deepEqual(texts(source), ['message:poll ${label}', 'message:quoted ${n}']);
   assert.deepEqual(
-    hangulTestTitles('a.spec.ts', "await expect.poll(() => n, { timeout: 5_000, message: '한글 메시지' }).toBe(1);").map((e) => e.kind),
+    nonLatinTestTitles('a.spec.ts', "await expect.poll(() => n, { timeout: 5_000, message: '한글 메시지' }).toBe(1);").map((e) => e.kind),
     ['message'],
   );
 });
@@ -72,7 +72,7 @@ test('flags Hangul in an assembled message', () => {
     "expect(a, 'english ' + detail).toBe(1);",
   ].join('\n');
   assert.deepEqual(
-    hangulTestTitles('a.test.ts', source).map((e) => [e.kind, e.line]),
+    nonLatinTestTitles('a.test.ts', source).map((e) => [e.kind, e.line]),
     [['message', 1], ['message', 2], ['message', 4], ['message', 5]],
   );
 });
@@ -106,7 +106,7 @@ test('flags Hangul in titles and messages but not in test bodies or each tables'
     "test('steps', async () => { await test.step('한글 단계', () => {}); });",
   ].join('\n');
   assert.deepEqual(
-    hangulTestTitles('a.test.tsx', source).map((e) => [e.kind, e.line]),
+    nonLatinTestTitles('a.test.tsx', source).map((e) => [e.kind, e.line]),
     [['title', 1], ['message', 4], ['title', 5]],
   );
 });
@@ -116,4 +116,10 @@ test('recognises test and spec files only', () => {
   assert.equal(isTestSourcePath('tests/e2e/a.spec.ts'), true);
   assert.equal(isTestSourcePath('mcp/src/a.test.mjs'), true);
   assert.equal(isTestSourcePath('src/a.ts'), false);
+});
+
+test('flags Han, kana and Hangul in a title and leaves Latin alone', () => {
+  const count = (text) => nonLatinTestTitles('a.test.ts', `it('${text}', () => {});`).length;
+  for (const text of ['한글', '日本語', 'ひらがな', 'カタカナ', '简体中文']) assert.equal(count(text), 1, text);
+  assert.equal(count('plain English'), 0);
 });
