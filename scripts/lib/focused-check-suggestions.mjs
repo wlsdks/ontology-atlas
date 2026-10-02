@@ -110,7 +110,8 @@ export function composeCheckRules(modules) {
 const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await loadCheckRules();
 
 export function normalizeChangedPath(path) {
-  return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
+  const normalized = String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
+  return normalized.startsWith('-') ? `./${normalized}` : normalized;
 }
 
 export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {

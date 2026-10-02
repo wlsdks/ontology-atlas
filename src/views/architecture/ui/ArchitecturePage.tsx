@@ -45,6 +45,7 @@ import {
   type SourceDirEntry,
 } from '../model/source-modules';
 import { useArchitectureRecords } from '../model/use-architecture-record';
+import type { DraftPreviewSource } from '../model/draft-preview';
 import {
   ArchitectureWorkbench,
 } from './ArchitectureWorkbench';
@@ -108,10 +109,12 @@ async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise
 /** `embedded`: the Harness shell owns the eyebrow, `h1` and explainer, so the blueprint drops its own. */
 export function ArchitecturePage({
   embedded = false,
+  draftSource = null,
   harnessPanelId,
   harnessPanelLabelledBy,
 }: {
   embedded?: boolean;
+  draftSource?: DraftPreviewSource | null;
   harnessPanelId?: string;
   harnessPanelLabelledBy?: string;
 } = {}) {
@@ -373,6 +376,7 @@ export function ArchitecturePage({
           profileProblems={profileProblems}
           handoffContexts={handoffContexts}
           draftHandoffContext={draftHandoffContext}
+          draftSource={draftSource}
           sourceModulesByProfile={sourceModulesByProfile}
           sourceListingCapable={sourceListingCapable}
           sourceUnavailableReason={sourceUnavailableReason}

@@ -122,8 +122,8 @@ const PLANE_HEAD_ROOM = 8;
  * `stdDeviation` cannot read `var()`; its opacities are `--architecture-plane-climb-halo*` tokens.
  * Gate: `ArchitectureSketch.test.tsx`, "a violation climbs the stack".
  */
-const VIOLATION_HALO_BLUR = 2.5;
-const VIOLATION_HALO_WIDTH = 4;
+export const VIOLATION_HALO_BLUR = 2.5;
+export const VIOLATION_HALO_WIDTH = 4;
 /** Selecting the role raises its own violation off the plane; every other stroke stays put. */
 const VIOLATION_HALO_WIDTH_RAISED = 7;
 const VIOLATION_STROKE_RAISE = 1;

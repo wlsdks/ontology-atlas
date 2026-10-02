@@ -157,5 +157,17 @@
   "agentTaskCopyHint": "고르면 그 작업 문장을 복사해요.",
   "copiedTaskHandoff": "“{task}” 문장을 복사했어요. 에이전트에 붙여 넣으세요",
   "copyTaskSentence": "“{task}” 문장 복사",
-  "deltaColumnHint": "각 표시는 그 역할이 선언한 규칙에 견준 자기 나가는 의존만 말해요. 역할에 대한 판정이 아니에요."
+  "deltaColumnHint": "각 표시는 그 역할이 선언한 규칙에 견준 자기 나가는 의존만 말해요. 역할에 대한 판정이 아니에요.",
+  "draftPreview": {
+    "exampleLabel": "예시 · 내 폴더의 데이터가 아니에요",
+    "sourceLabel": "예시 · 폴더 이름만 {name}에서 가져왔어요",
+    "proposedLabel": "에이전트가 제안한 묶음",
+    "rulesLabel": "사람이 정한 의존 규칙",
+    "moreFolders": "+{count}개 더",
+    "pause": "예시 애니메이션 일시 정지",
+    "resume": "예시 애니메이션 다시 재생",
+    "replay": "예시 애니메이션 처음부터 다시 보기",
+    "descriptionExample": "예시 애니메이션이에요. 내 폴더의 데이터가 아니에요. 에이전트가 {name}의 폴더({folders})와 import를 읽고 경로 묶음 {layers}개를 제안해요. 사람이 {top}부터 {bottom}까지 이름을 붙여 승인하면 {file} 파일 하나로 저장돼요. 그다음 사람이 의존 규칙을 정하면, 검사가 {from}에서 {to}로 거꾸로 올라가는 import 하나를 규칙을 어긴 것으로 잡아요.",
+    "descriptionSource": "예시 애니메이션이에요. 폴더 이름만 연결된 소스 폴더 {name}의 실제 폴더({folders})이고, 그 뒤는 예시예요. 에이전트가 이 폴더와 import를 읽고 경로 묶음 {layers}개를 제안해요. 사람이 {top}부터 {bottom}까지 이름을 붙여 승인하면 {file} 파일 하나로 저장돼요. 그다음 사람이 의존 규칙을 정하면, 검사가 {from}에서 {to}로 거꾸로 올라가는 import 하나를 규칙을 어긴 것으로 잡아요."
+  }
 }

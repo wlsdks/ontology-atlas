@@ -15,7 +15,14 @@ import {
 } from "../model/dome-view";
 import { stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import type { StrataLodState } from "../model/strata-lod";
-import { isCameraUnsettled, isCanvasActive, isDomeSpinAnimating, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
+import {
+  isCameraUnsettled,
+  isCanvasActive,
+  isDomeSpinAnimating,
+  isEgoTailAnimating,
+  isGalaxyAtmosphereAnimating,
+  shouldSkipFrame,
+} from "../model/idle-gate";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
@@ -432,7 +439,11 @@ export function createFrameGate({
         galaxySettling:
           Math.abs(galaxyRampRef.current - (galaxyRef.current ? 1 : 0)) > 0.01 ||
           Math.abs(neuralRampRef.current - (view3dRef.current && mapArrangementRef.current === "coupling" ? 1 : 0)) > 0.01,
-        galaxyAtmosphereActive: galaxyRef.current && !reducedMotionRef.current,
+        galaxyAtmosphereActive: isGalaxyAtmosphereAnimating({
+          galaxyOn: galaxyRef.current,
+          reducedMotion: reducedMotionRef.current,
+          ambientAsleep,
+        }),
         trailLensSettling:
           (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
           Math.abs(
