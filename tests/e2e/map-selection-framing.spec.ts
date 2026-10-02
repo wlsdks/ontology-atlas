@@ -123,7 +123,10 @@ test.describe("Galaxy at device pixel ratio 2, where one notch brings stars live
     const biggest = await page.evaluate(() => window.__atlasCosmos!.layout()!.galaxies.slice().sort((a, b) => b.rho - a.rho)[0]!);
     await page.mouse.move(canvas.x + biggest.sx, canvas.y + biggest.sy);
     await page.evaluate(() => window.__atlasCosmos!.armPaint(true));
-    for (let notch = 0; notch < 8 && (await page.evaluate(() => window.__atlasCosmos!.painted().length)) === 0; notch += 1) {
+    await waitForCosmosStill(page);
+    const core = await page.evaluate(() => window.__atlasCosmos!.painted().map((p) => p.id));
+    const live = () => page.evaluate((skip) => window.__atlasCosmos!.painted().filter((p) => !skip.includes(p.id)).length, core);
+    for (let notch = 0; notch < 8 && (await live()) === 0; notch += 1) {
       await page.mouse.wheel(0, -80);
       await waitForCosmosStill(page);
     }
@@ -135,11 +138,13 @@ test.describe("Galaxy at device pixel ratio 2, where one notch brings stars live
       const canvasEl = document.querySelector('[data-testid="ontology-map-canvas"]')!;
       const box = canvasEl.getBoundingClientRect();
       const room = probe.room();
-      const domains = new Set(probe.layout()!.galaxies.map((g) => g.id));
+      const galaxies = probe.layout()!.galaxies;
+      const domains = new Set(galaxies.map((g) => g.id));
+      const inGalaxy = (p: { x: number; y: number }) => galaxies.some((g) => Math.hypot(p.x - g.sx, p.y - g.sy) < g.rho);
       return (
         probe
           .painted()
-          .filter((p) => !domains.has(p.id) && p.x > room.x + 24 && p.x < room.x + room.width - 24 && p.y > room.y + 24 && p.y < room.y + room.height - 24)
+          .filter((p) => !domains.has(p.id) && inGalaxy(p) && p.x > room.x + 24 && p.x < room.x + room.width - 24 && p.y > room.y + 24 && p.y < room.y + room.height - 24)
           .find((p) => probe.hit(p.x, p.y).id === p.id && document.elementFromPoint(box.x + p.x, box.y + p.y) === canvasEl) ?? null
       );
     });
