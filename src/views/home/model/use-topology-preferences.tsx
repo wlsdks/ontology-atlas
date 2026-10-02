@@ -1,6 +1,6 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useHexBoard, useMapArrangement, useTerritories, useView3d } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useTerritories, useView3d, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -50,6 +50,9 @@ export function useTopologyPreferences() {
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   const expand = useExpand();
+  const dragSpeed = useMapDragSpeed();
+  const zoomSpeed = useMapZoomSpeed();
+  const navigationSpeed = useMemo<MapNavigationSpeed>(() => ({ drag: dragSpeed, zoom: zoomSpeed }), [dragSpeed, zoomSpeed]);
   // Plain mode uses the datasheet's register.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   /**
@@ -64,6 +67,6 @@ export function useTopologyPreferences() {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
     relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, galaxy, territories, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
-    mapArrangement, footprint
+    mapArrangement, footprint, navigationSpeed
   };
 }

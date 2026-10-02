@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
@@ -74,6 +75,7 @@ export interface OntologyTerritoriesMapProps {
    */
   chromeKey?: string;
   arrivedByMorph?: boolean;
+  navigationSpeed?: MapNavigationSpeed;
 }
 
 /** How much of the drawing must stay on screen however far it is dragged. */
@@ -113,6 +115,7 @@ export function OntologyTerritoriesMap({
   inspectorOpen = true,
   chromeKey = "",
   arrivedByMorph = false,
+  navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED,
 }: OntologyTerritoriesMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -593,7 +596,8 @@ export function OntologyTerritoriesMap({
         e.currentTarget.setPointerCapture(e.pointerId);
       }
       if (drag.moved) {
-        offsetRef.current = clampOffset({ x: drag.ox + dx, y: drag.oy + dy });
+        const gain = navigationSpeed.drag;
+        offsetRef.current = clampOffset({ x: drag.ox + dx * gain, y: drag.oy + dy * gain });
         requestDraw();
         return;
       }
@@ -614,13 +618,22 @@ export function OntologyTerritoriesMap({
     if (hit) onSelect?.(hit);
     else onPaneClick?.();
   };
-  const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+  const onWheel = useEffectEvent((e: WheelEvent) => {
+    e.preventDefault();
     const o = offsetRef.current;
-    if (!o) return;
+    if (!o || e.ctrlKey) return;
     animRef.current = null;
-    offsetRef.current = clampOffset({ x: o.x - e.deltaX, y: o.y - e.deltaY });
+    const gain = navigationSpeed.drag;
+    offsetRef.current = clampOffset({ x: o.x - e.deltaX * gain, y: o.y - e.deltaY * gain });
     requestDraw();
-  };
+  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const listener = (e: WheelEvent) => onWheel(e);
+    canvas.addEventListener("wheel", listener, { passive: false });
+    return () => canvas.removeEventListener("wheel", listener);
+  }, []);
 
   const staleTotal = layout.capabilities.filter((c) => evidence.get(c.id) === "stale").length;
 
@@ -652,7 +665,6 @@ export function OntologyTerritoriesMap({
             requestDraw();
           }
         }}
-        onWheel={onWheel}
       />
       {/* Every mark, in the order a reader meets them, for assistive technology and measurement.
           Screen positions are written onto these after each frame that moved the camera. */}

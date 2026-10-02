@@ -31,7 +31,6 @@ import {
   domeNearestYawTurn,
   domeWorldBounds,
   DOME_FLY_MS,
-  ORBIT_SMOOTH_TAU_MS,
   ORBIT_SNAP_ARRIVE_RAD,
   orbitSnapTauMs,
   projectDomeCoord,
@@ -659,14 +658,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               const prevPoseYaw = dome.yaw;
               dome.yaw = pose.startYaw + (pose.targetYaw - pose.startYaw) * e;
               dome.pitch = pose.startPitch + (pose.targetPitch - pose.startPitch) * e;
-              /*
-               * Programmatic moves feed the tier torsion too (see the
-               * `DOME_POSE_LAG_SCALE` doc-block). Without it a click reframe
-               * turns all four rings as one rigid block, which reads as an
-               * object that does not react to its own motion. When the move
-               * ends, charging stops and the existing decay unwinds, so the
-               * settling wobble on arrival comes for free.
-               */
               chargeTierLag(dome.lag, dome.yaw - prevPoseYaw, DOME_POSE_LAG_SCALE);
             }
             dome.yawVel = 0;
@@ -678,23 +669,9 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             dome.pitchTarget = dome.pitch;
           }
         }
-        // While orbiting, follow the pointer-pushed target with τ = 45 ms,
-        // which removes the stepping when the event period is longer than the
-        // frame period (see the `ORBIT_SMOOTH_TAU_MS` JSDoc). The tier
-        // torsion must be charged from the **actual frame movement** to stay
-        // in time with that smoothing. Reduced-motion snaps, keeping 1:1
-        // direct manipulation.
         if (dome.orbiting) {
-          const prevYaw = dome.yaw;
-          if (reducedMotionRef.current) {
-            dome.yaw = dome.yawTarget;
-            dome.pitch = dome.pitchTarget;
-          } else {
-            const k = 1 - Math.exp(-dtMs / ORBIT_SMOOTH_TAU_MS);
-            dome.yaw += (dome.yawTarget - dome.yaw) * k;
-            dome.pitch += (dome.pitchTarget - dome.pitch) * k;
-            chargeTierLag(dome.lag, dome.yaw - prevYaw);
-          }
+          dome.yaw = dome.yawTarget;
+          dome.pitch = dome.pitchTarget;
         }
         if (!dome.orbiting && dome.poseTween === null) {
           /*

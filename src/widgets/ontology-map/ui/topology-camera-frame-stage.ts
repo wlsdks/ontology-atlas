@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import type { PointerMachineState } from "../interaction/pointer-state-machine";
 import { ambientSleepFactor } from "../model/ambient-sleep";
-import { easeCameraKeyframe, type CameraTween } from "../model/camera-easing";
+import { easeAnchoredZoom, easeCameraKeyframe, type CameraTween, type ZoomEase } from "../model/camera-easing";
 import type { DomeRuntime } from "../model/dome-view";
 import type { GrowthReplay } from "../model/growth-replay";
 import {
@@ -52,6 +52,7 @@ export interface CameraFrameStageSources {
   drawnHoveredNodeIdRef: SourceRef<string | null>;
   panelEmphasisNodeIdRef: SourceRef<string | null>;
   cameraTweenRef: SourceRef<CameraTween | null>;
+  zoomEaseRef: SourceRef<ZoomEase | null>;
   reducedMotionRef: SourceRef<boolean>;
   cameraRef: SourceRef<CameraAxes>;
   cameraTargetRef: SourceRef<CameraTarget>;
@@ -104,6 +105,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     drawnHoveredNodeIdRef,
     panelEmphasisNodeIdRef,
     cameraTweenRef,
+    zoomEaseRef,
     reducedMotionRef,
     cameraRef,
     cameraTargetRef,
@@ -154,6 +156,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     tokens: OntologyMapTokens,
     world: TopologyWorld,
     width: number,
+    height: number,
   ): CameraFrameResult {
     const requestedFocusId = focusedSlugRef.current;
     const focusedNodeId =
@@ -238,6 +241,23 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
             };
             freezeCamera = true;
           }
+        }
+      }
+    }
+    {
+      const zoom = zoomEaseRef.current;
+      if (zoom !== null) {
+        if (freezeCamera || zoom.target !== cameraTargetRef.current || pointerMachineRef.current.phase === "dragging") {
+          zoomEaseRef.current = null;
+        } else {
+          const eased = easeAnchoredZoom(zoom, now, width, height);
+          cameraRef.current = {
+            x: { value: eased.x, velocity: 0 },
+            y: { value: eased.y, velocity: 0 },
+            scale: { value: eased.scale, velocity: 0 },
+          };
+          if (eased.done) zoomEaseRef.current = null;
+          else freezeCamera = true;
         }
       }
     }

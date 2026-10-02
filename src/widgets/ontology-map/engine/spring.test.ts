@@ -12,7 +12,7 @@ import { stepSpring, type SpringAxisState } from "./spring";
  */
 const ANGULAR_FREQUENCY = 1 / 0.34;
 const CRITICAL_DAMPING = 1.0;
-const FLICK_DAMPING = 0.82;
+const UNDER_DAMPING = 0.82;
 const DT_60FPS = 1 / 60;
 
 describe("stepSpring", () => {
@@ -62,13 +62,13 @@ describe("stepSpring", () => {
     expect(Math.abs(state.velocity)).toBeLessThan(0.05);
   });
 
-  it("underdamped flick spring (ζ=0.82) overshoots before settling", () => {
+  it("an underdamped spring (ζ=0.82) overshoots before settling", () => {
     let state: SpringAxisState = { value: 0, velocity: 0 };
     const target = 10;
     let everOvershot = false;
 
     for (let i = 0; i < 180; i += 1) {
-      state = stepSpring(state, target, DT_60FPS, ANGULAR_FREQUENCY, FLICK_DAMPING);
+      state = stepSpring(state, target, DT_60FPS, ANGULAR_FREQUENCY, UNDER_DAMPING);
       if (state.value > target) everOvershot = true;
     }
 

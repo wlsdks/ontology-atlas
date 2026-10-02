@@ -3,6 +3,7 @@
 import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
@@ -25,6 +26,7 @@ export function TopologyHexBoardSurface({
   onDrawnCountChange,
   reducedMotion,
   arrivedByMorph,
+  navigationSpeed,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -36,6 +38,7 @@ export function TopologyHexBoardSurface({
   onDrawnCountChange?: (drawn: number) => void;
   reducedMotion: boolean;
   arrivedByMorph: boolean;
+  navigationSpeed: MapNavigationSpeed;
 }) {
   const t = useTranslations("topology.hexBoard");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
@@ -172,6 +175,7 @@ export function TopologyHexBoardSurface({
       legend={legend}
       reducedMotion={reducedMotion}
       arrivedByMorph={arrivedByMorph}
+      navigationSpeed={navigationSpeed}
     />
   );
 }

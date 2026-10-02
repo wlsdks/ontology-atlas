@@ -15,6 +15,7 @@ import {
 } from './cone-layout';
 import { findCouplingGroups } from './coupling-groups';
 import { easeOutCubic, TIER_ASSEMBLE_TOTAL_MS, tierProgress } from '../morph/tier-assembly';
+import { MOMENTUM_TAU_MS } from './motion-physics';
 
 /**
  * The opt-in 3D view: arrangements where height and bearing carry typed facts (height is
@@ -78,16 +79,7 @@ export const DOME_POSE_MS = 750;
 export const ORBIT_YAW_PER_PX = 0.0075;
 /** Lower than yaw so horizontal stays the primary axis. */
 export const ORBIT_PITCH_PER_PX = 0.005;
-/**
- * During a drag yaw and pitch chase the pointer's target by `1−exp(−dt/τ)`, so the empty
- * 8.3 ms frame a 60 Hz pointer leaves on a 120 Hz display spreads over two with about a
- * frame of lag; a wider τ trails the hand, and below the frame interval the staircase
- * returns. Reduced motion snaps to the target.
- */
-export const ORBIT_SMOOTH_TAU_MS = 14;
-
-/** The `--map-camera-momentum-decay` value, so an orbit coasts like a camera flick. */
-const ORBIT_VEL_DECAY_PER_MS = 0.998;
+const ORBIT_VEL_DECAY_PER_MS = Math.exp(-1 / MOMENTUM_TAU_MS);
 /**
  * Release projection (Designing Fluid Interfaces, WWDC18 803): compute the natural landing
  * from the release velocity, and only if it is already near a domain meridian re-aim the
@@ -95,8 +87,7 @@ const ORBIT_VEL_DECAY_PER_MS = 0.998;
  */
 export const ORBIT_SNAP_WINDOW_RAD = 0.14;
 
-/** `Σ v·d^t dt = v / (−ln d)`: release velocity × this is the angle still to turn. */
-export const ORBIT_DECAY_TRAVEL_MS = 1 / -Math.log(ORBIT_VEL_DECAY_PER_MS);
+export const ORBIT_DECAY_TRAVEL_MS = MOMENTUM_TAU_MS;
 
 export function projectOrbitLanding(yaw: number, yawVel: number): number {
   return yaw + yawVel * ORBIT_DECAY_TRAVEL_MS;
@@ -1245,10 +1236,6 @@ function projectWithTrig(
  * Dispensation List), so standardising them later means reading one file.
  */
 
-/**
- * Deeper tiers lag an orbit slightly, then spring back (follow-through). Only during a
- * drag and briefly after, decaying to 0.
- */
 export const DOME_TIER_LAG: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: -0.1,
@@ -1258,17 +1245,8 @@ export const DOME_TIER_LAG: Readonly<Record<DomeViewKind, number>> = {
 /** The hero's 0.90 per frame at 60 fps, made dt-invariant. */
 export const DOME_TIER_LAG_DECAY_PER_MS = 0.9937;
 
-/**
- * Programmatic pose moves charge torsion too, or a camera-driven turn rotates the rings as
- * one rigid lump. Scaled down because such moves are far faster than a hand; the existing
- * decay supplies the settle.
- */
 export const DOME_POSE_LAG_SCALE = 0.55;
 
-/**
- * Hand drag and programmatic moves call this one function, so they cannot diverge. `scale`
- * is 1 for the hand and `DOME_POSE_LAG_SCALE` for programmatic moves.
- */
 export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: number, scale = 1): void {
   const d = deltaYaw * scale;
   lag.project += d * DOME_TIER_LAG.project;
@@ -1966,10 +1944,6 @@ export interface DomeRuntime {
   frameEpoch: number;
   yaw: number;
   pitch: number;
-  /**
-   * Pointer events set it and the loop relaxes yaw and pitch toward it
-   * at `ORBIT_SMOOTH_TAU_MS`; outside a drag it tracks yaw.
-   */
   yawTarget: number;
   pitchTarget: number;
   /** Release momentum in rad/ms, reduced every frame by `decayOrbitVelocity`. */

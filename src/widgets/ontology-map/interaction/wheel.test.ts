@@ -30,17 +30,7 @@ describe("normalizeWheelDeltaY", () => {
   });
 });
 
-/**
- * Owner feedback — zoom in/out felt slow/sluggish. Sensitivity upped from
- * 0.0016 (~1.21x per a 120px notch) to 0.0020 (~1.27x per notch) — sits
- * between d3-zoom's convention (~1.18x/notch) and Leaflet 2.0's, per the
- * design round's spec.
- */
 describe("computeWheelZoomFactor", () => {
-  it("uses the 0.0023 sensitivity constant (0.0016→0.0020→0.0023, owner: zoom felt slow)", () => {
-    expect(WHEEL_ZOOM_SENSITIVITY).toBeCloseTo(0.0023, 6);
-  });
-
   it("yields ≈1.32x zoom-in for a standard 120px notch (scroll up = negative deltaY)", () => {
     const factor = computeWheelZoomFactor(-120);
     expect(factor).toBeCloseTo(Math.exp(120 * 0.0023), 6);
@@ -53,8 +43,21 @@ describe("computeWheelZoomFactor", () => {
     expect(zoomOut).toBeCloseTo(1 / zoomIn, 6);
   });
 
-  it("defaults to WHEEL_ZOOM_SENSITIVITY when no sensitivity override is passed", () => {
+  it("zooms a plain wheel at the wheel sensitivity by default", () => {
     expect(computeWheelZoomFactor(-100)).toBeCloseTo(Math.exp(100 * WHEEL_ZOOM_SENSITIVITY), 10);
+  });
+
+  it("keeps a trackpad pinch under the fingers: Chromium's deltaY = -100·ln(spread) zooms by exactly that spread", () => {
+    expect(computeWheelZoomFactor(-100 * Math.log(2), { pinch: true })).toBeCloseTo(2, 10);
+    expect(computeWheelZoomFactor(100 * Math.log(1.5), { pinch: true })).toBeCloseTo(1 / 1.5, 10);
+  });
+
+  it.each([0.5, 0.75, 1.5, 2])("at speed %s raises the 1x factor to that power for a notch and a pinch", (speed) => {
+    expect(computeWheelZoomFactor(-120, { speed })).toBeCloseTo(computeWheelZoomFactor(-120) ** speed, 10);
+    expect(computeWheelZoomFactor(-30, { pinch: true, speed })).toBeCloseTo(
+      computeWheelZoomFactor(-30, { pinch: true }) ** speed,
+      10,
+    );
   });
 
   it("is monotonically more extreme for a larger-magnitude delta", () => {

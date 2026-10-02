@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
 import { Chip } from "@/shared/ui/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
-import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
-import { VIEW_CAMERA_MS, VIEW_DIM_MS } from "../model/motion-physics";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
 import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
 import {
   computeHexBoard,
@@ -92,6 +94,7 @@ export interface OntologyHexBoardMapProps {
   legend?: (state: { staleOnly: boolean; focused: boolean; band: HexBand }) => ReactNode;
   reducedMotion?: boolean;
   arrivedByMorph?: boolean;
+  navigationSpeed?: MapNavigationSpeed;
 }
 
 const SWEEP_MS = 420;
@@ -188,6 +191,7 @@ export function OntologyHexBoardMap({
   legend,
   reducedMotion = false,
   arrivedByMorph = false,
+  navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED,
 }: OntologyHexBoardMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -205,6 +209,7 @@ export function OntologyHexBoardMap({
   const camRef = useRef<Camera | null>(null);
   const restRef = useRef<Camera | null>(null);
   const animRef = useRef<{ from: Camera; to: Camera; start: number } | null>(null);
+  const zoomRef = useRef<{ from: Camera; toR: number; ax: number; ay: number; startMs: number } | null>(null);
   const dimRef = useRef({ t: selectedId ? 1 : 0, target: selectedId ? 1 : 0 });
   const sweepRef = useRef<number | null>(null);
   const arrivalRef = useRef<number | null>(null);
@@ -482,6 +487,15 @@ export function OntologyHexBoardMap({
         if (t < 1) again = true;
         else animRef.current = null;
       }
+      const zoom = zoomRef.current;
+      if (zoom) {
+        const progress = zoomStepProgress(now - zoom.startMs);
+        const R = easeZoomScale(zoom.from.R, zoom.toR, progress);
+        const k = R / zoom.from.R;
+        camRef.current = clampCamera({ R, ox: zoom.ax - (zoom.ax - zoom.from.ox) * k, oy: zoom.ay - (zoom.ay - zoom.from.oy) * k });
+        if (progress < 1) again = true;
+        else zoomRef.current = null;
+      }
       const dim = dimRef.current;
       if (dim.t !== dim.target) {
         const step = reducedMotion ? 1 : 16 / VIEW_DIM_MS;
@@ -562,7 +576,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror],
+    [size, layout, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
   );
 
   const paintRef = useRef(paint);
@@ -648,6 +662,7 @@ export function OntologyHexBoardMap({
       // Routes are laid for where the camera is going, so they do not re-route on arrival.
       frameRoutes(to);
       if (Math.abs(from.ox - to.ox) < 0.5 && Math.abs(from.oy - to.oy) < 0.5 && Math.abs(from.R - to.R) < 0.01) return;
+      zoomRef.current = null;
       if (reducedMotion) camRef.current = to;
       else animRef.current = { from, to, start: performance.now() };
       requestDraw();
@@ -869,6 +884,7 @@ export function OntologyHexBoardMap({
     if (e.button !== 0 || !camRef.current) return;
     const p = local(e);
     animRef.current = null;
+    zoomRef.current = null;
     dragRef.current = { x: p.x, y: p.y, cam: camRef.current, moved: false, id: e.pointerId };
   };
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -883,7 +899,8 @@ export function OntologyHexBoardMap({
         setHoverId(null);
       }
       if (drag.moved) {
-        camRef.current = clampCamera({ R: drag.cam.R, ox: drag.cam.ox + dx, oy: drag.cam.oy + dy });
+        const gain = navigationSpeed.drag;
+        camRef.current = clampCamera({ R: drag.cam.R, ox: drag.cam.ox + dx * gain, oy: drag.cam.oy + dy * gain });
         requestDraw();
         return;
       }
@@ -904,23 +921,44 @@ export function OntologyHexBoardMap({
     if (hit) onSelect?.(hit);
     else onPaneClick?.();
   };
-  const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+  const zoomAbout = (ax: number, ay: number, factor: number, eased: boolean, startMs: number) => {
     const cam = camRef.current;
     if (!cam) return;
     animRef.current = null;
-    const p = local(e);
-    const factor = computeWheelZoomFactor(normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800));
-    const R = Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_RADIUS, cam.R * factor));
+    const pending = eased ? zoomRef.current : null;
+    const R = Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_RADIUS, (pending?.toR ?? cam.R) * factor));
     const k = R / cam.R;
-    camRef.current = clampCamera({ R, ox: p.x - (p.x - cam.ox) * k, oy: p.y - (p.y - cam.oy) * k });
+    const destination = clampCamera({ R, ox: ax - (ax - cam.ox) * k, oy: ay - (ay - cam.oy) * k });
+    if (eased) zoomRef.current = { from: cam, toR: R, ax, ay, startMs };
+    else {
+      zoomRef.current = null;
+      camRef.current = destination;
+    }
     setHoverId(null);
     requestDraw();
     if (wheelFrameRef.current != null) window.clearTimeout(wheelFrameRef.current);
     wheelFrameRef.current = window.setTimeout(() => {
       wheelFrameRef.current = null;
-      frameRoutes(camRef.current);
+      frameRoutes(destination);
     }, 160);
   };
+  const onWheel = useEffectEvent((e: WheelEvent) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas || !camRef.current) return;
+    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800);
+    if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
+    const r = canvas.getBoundingClientRect();
+    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch: e.ctrlKey, speed: navigationSpeed.zoom });
+    zoomAbout(e.clientX - r.left, e.clientY - r.top, factor, !e.ctrlKey, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const listener = (e: WheelEvent) => onWheel(e);
+    canvas.addEventListener("wheel", listener, { passive: false });
+    return () => canvas.removeEventListener("wheel", listener);
+  }, []);
   const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const hit = hitTest(local(e).x, local(e).y);
     const t = hit ? layout?.byId.get(hit) : null;
@@ -935,6 +973,16 @@ export function OntologyHexBoardMap({
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
     if (!layout) return;
+    const zoomIntent = keyboardZoomIntent(e, navigationSpeed.zoom);
+    if (zoomIntent) {
+      e.preventDefault();
+      if (zoomIntent.kind === "fit") {
+        if (restRef.current) moveCamera(restRef.current);
+        return;
+      }
+      if (size) zoomAbout(size.w / 2, size.h / 2, zoomIntent.factor, true, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+      return;
+    }
     if (e.key === "Escape") {
       rowRef.current = null;
       onPaneClick?.();
@@ -1004,7 +1052,6 @@ export function OntologyHexBoardMap({
           dragRef.current = null;
         }}
         onPointerLeave={() => setHoverId(null)}
-        onWheel={onWheel}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
       />

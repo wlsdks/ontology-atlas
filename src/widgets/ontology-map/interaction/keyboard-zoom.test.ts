@@ -27,6 +27,13 @@ describe("keyboard zoom — the three keys every reference shares", () => {
     expect(keyboardZoomIntent({ ...plain, key: "a" })).toBeNull();
   });
 
+  it.each([0.5, 0.75, 1.5, 2])("at speed %s a key step is the 1x step raised to that power", (speed) => {
+    const zoomIn = keyboardZoomIntent({ ...plain, key: "=" }, speed);
+    const zoomOut = keyboardZoomIntent({ ...plain, key: "-" }, speed);
+    expect(zoomIn?.kind === "zoom" ? zoomIn.factor : Number.NaN).toBeCloseTo(KEY_ZOOM_STEP ** speed, 12);
+    expect(zoomOut?.kind === "zoom" ? zoomOut.factor : Number.NaN).toBeCloseTo(KEY_ZOOM_STEP ** -speed, 12);
+  });
+
   it("a step is a deliberate approach, not a jump", () => {
     expect(KEY_ZOOM_STEP).toBeGreaterThan(1.1);
     expect(KEY_ZOOM_STEP).toBeLessThanOrEqual(1.5);
