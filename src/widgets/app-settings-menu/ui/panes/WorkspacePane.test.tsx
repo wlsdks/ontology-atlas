@@ -79,6 +79,8 @@ function mount(locale: 'en' | 'ko' = 'en', onClose = vi.fn()) {
 }
 
 beforeEach(() => {
+  let clock = Date.parse('2026-10-02T00:00:00Z');
+  vi.spyOn(Date, 'now').mockImplementation(() => (clock += 1000));
   env.desktop = true;
   env.push.mockReset();
   env.connectors.status = 'ready';
@@ -119,6 +121,18 @@ describe('the Ontology folder pane', () => {
     expect(env.gitStatus).toHaveBeenCalledWith('/Users/probe/atlas-vault');
     expect(screen.getByTestId('app-settings-folder-kept').textContent).toContain('This folder');
     expect(screen.getByTestId('app-settings-folder-kept-caption').textContent).toContain('.ontology-atlas/');
+  });
+
+  it("says it couldn't read instead of reading forever", async () => {
+    env.roundsRead.mockRejectedValueOnce(new Error('denied'));
+    env.gitStatus.mockRejectedValueOnce(new Error('denied'));
+    env.sourcesRead.mockRejectedValueOnce(new Error('denied'));
+    mount();
+    for (const door of ['schedules', 'git', 'projects']) {
+      await waitFor(() =>
+        expect(screen.getByTestId(`app-settings-folder-door-${door}`).textContent).toContain("Couldn't read"),
+      );
+    }
   });
 
   it('reads nothing while no folder is loaded', () => {

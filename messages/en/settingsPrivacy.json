@@ -16,18 +16,20 @@
   "carries": {
     "no-folder-content": "no folder content",
     "what-you-send": "what you send",
-    "provider-owned": "between the tool and its provider; Atlas does not see it"
+    "provider-owned": "between the tool and its provider; Atlas does not see it",
+    "agent-sends": "what the agent sends; Atlas does not see it"
   },
   "destinations": {
     "your-runner-address": "the runner address you entered",
     "npm-registry": "the npm package registry",
     "python-package-index": "the Python Package Index (PyPI)",
-    "your-connector-urls": "the connector addresses in this folder",
+    "your-connector-urls": "the connectors in this folder, by address or as programs on this computer",
     "your-git-remote": "your Git remote",
     "your-coding-tool-provider": "your coding tool's own provider"
   },
   "paths": {
     "update-check": "Update check",
+    "update-download": "Update download",
     "model-providers": "Model providers",
     "local-runner": "Local runner",
     "jev": "External check",

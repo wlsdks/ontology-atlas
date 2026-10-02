@@ -270,6 +270,7 @@ export function SegmentSwitch({
 }
 
 const ARM_MS = 3000;
+const CONFIRM_GUARD_MS = 400;
 
 export function SettingsDoorRow({
   settingId,
@@ -326,14 +327,17 @@ export function ArmedChip({
   armedLabel,
   onConfirm,
   testId,
+  ariaLabel,
 }: {
   label: string;
   armedLabel: string;
   onConfirm: () => void | Promise<void>;
   testId: string;
+  ariaLabel?: string;
 }) {
   const [armed, setArmed] = useState(false);
   const timer = useRef<number | null>(null);
+  const armedAt = useRef(0);
   useEffect(
     () => () => {
       if (timer.current !== null) window.clearTimeout(timer.current);
@@ -347,12 +351,15 @@ export function ArmedChip({
       hoverInk={armed ? 'none' : 'strong'}
       hoverBorder={armed ? 'none' : 'strong'}
       data-testid={testId}
+      aria-label={ariaLabel ? `${ariaLabel} · ${armed ? armedLabel : label}` : undefined}
       onClick={() => {
         if (!armed) {
+          armedAt.current = Date.now();
           setArmed(true);
           timer.current = window.setTimeout(() => setArmed(false), ARM_MS);
           return;
         }
+        if (Date.now() - armedAt.current < CONFIRM_GUARD_MS) return;
         if (timer.current !== null) window.clearTimeout(timer.current);
         setArmed(false);
         void onConfirm();

@@ -1,6 +1,6 @@
 type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
 
-type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'provider-owned';
+type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'agent-sends' | 'provider-owned';
 
 const OUTBOUND_AUDIT_LOG = '.ontology-atlas/llm-audit.jsonl';
 
@@ -28,6 +28,13 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     id: 'update-check',
     trigger: 'automatic',
     hosts: ['ontologyatlas.com'],
+    carries: 'no-folder-content',
+    recordedIn: null,
+  },
+  {
+    id: 'update-download',
+    trigger: 'press',
+    hosts: ['github.com'],
     carries: 'no-folder-content',
     recordedIn: null,
   },
@@ -70,7 +77,7 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     id: 'connectors',
     trigger: 'agent-use',
     hosts: ['your-connector-urls'],
-    carries: 'what-you-send',
+    carries: 'agent-sends',
     recordedIn: null,
   },
   {

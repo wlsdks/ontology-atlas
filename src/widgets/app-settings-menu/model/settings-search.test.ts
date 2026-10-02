@@ -54,6 +54,14 @@ describe('searchSettings', () => {
     expect(ids(searchSettings(korean, '키'))).toEqual(['door-models', 'wiki']);
   });
 
+  it('ranks a whole word in the label or keywords above a label prefix', () => {
+    const english = [
+      item({ id: 'door-models', label: 'Models · API keys', keywords: 'api key keychain' }),
+      item({ id: 'keyboard-shortcuts', label: 'Keyboard shortcuts', keywords: 'hotkeys, shortcuts' }),
+    ];
+    expect(ids(searchSettings(english, 'key'))).toEqual(['door-models', 'keyboard-shortcuts']);
+  });
+
   it('keeps catalog order inside a tier', () => {
     const tied = [item({ id: 'b', label: 'Map b' }), item({ id: 'a', label: 'Map a' })];
     expect(ids(searchSettings(tied, 'map'))).toEqual(['b', 'a']);

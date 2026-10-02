@@ -53,7 +53,7 @@
     const section = find("app-settings-update");
     if (!section) {
       result.step = "open-app-section";
-      const nav = find("app-settings-nav-update");
+      const nav = find("app-settings-nav-about");
       if (!nav) {
         result.reason = "settings sheet has no app/update entry";
         again();

@@ -158,6 +158,7 @@ export function PrivacyPane({
                       armedLabel={t('allowances.forgetArmed')}
                       onConfirm={() => forgetMachineApprovals({ folder: entry.folder })}
                       testId="app-settings-allowances-forget"
+                      ariaLabel={t('allowances.forgetAria', { name: folderName(entry.folder) })}
                     />
                   }
                 />

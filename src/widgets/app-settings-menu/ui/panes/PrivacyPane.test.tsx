@@ -37,6 +37,8 @@ function mount(locale: 'en' | 'ko' = 'en', onShowSection = vi.fn()) {
 }
 
 beforeEach(() => {
+  let clock = Date.parse('2026-10-02T00:00:00Z');
+  vi.spyOn(Date, 'now').mockImplementation(() => (clock += 1000));
   window.localStorage.clear();
   shell.desktop = true;
   vault.recentVaults = [];

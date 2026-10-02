@@ -37,7 +37,7 @@
   },
   "kept": {
     "title": "이 폴더에 보관하는 것",
-    "caption": "폴더 안 .ontology-atlas/에 있어 폴더와 함께 옮겨지고, Git은 기본으로 이를 제외합니다.",
+    "caption": "연결 도구, 예약, 소스 연결은 폴더 안 .ontology-atlas/에 있어 폴더와 함께 옮겨지고, Git은 기본으로 이를 제외해요. Git 기록은 .git/에 따로 있어요.",
     "connectors": "에이전트 연결(MCP)",
     "connectorsCount": "{count, plural, =0 {이 폴더에 없음} other {이 폴더에 #개}}",
     "connectorsAllowed": "이 폴더에 {total}개 · 여기서 {count}개 허용",
@@ -49,6 +49,7 @@
     "projectSources": "프로젝트 소스",
     "projectSourcesCount": "{count, plural, =0 {연결한 소스 없음} other {소스 #개 연결}}",
     "reading": "읽는 중…",
-    "noFolder": "폴더를 열면 보관하는 것이 보입니다"
+    "noFolder": "폴더를 열면 보관하는 것이 보여요",
+    "readFailed": "읽지 못했어요"
   }
 }

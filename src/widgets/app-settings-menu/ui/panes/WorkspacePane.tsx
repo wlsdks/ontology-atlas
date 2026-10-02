@@ -36,9 +36,9 @@ import {
 import { VaultShapeSettings } from '../VaultShapeSettings';
 
 interface Kept {
-  rounds: { count: number; paused: number } | null;
-  projectSources: number | null;
-  git: GitStatusResult | null | 'none';
+  rounds: { count: number; paused: number } | null | 'failed';
+  projectSources: number | null | 'failed';
+  git: GitStatusResult | null | 'none' | 'failed';
 }
 
 const NOTHING_READ: Kept = { rounds: null, projectSources: null, git: null };
@@ -62,7 +62,7 @@ function useKeptInFolder(
     void createVaultFileProjectSourceStore(handle)
       .read()
       .then((result) => merge({ projectSources: result.bindings.length }))
-      .catch(() => {});
+      .catch(() => merge({ projectSources: 'failed' }));
     if (desktop) {
       void createVaultFileRoundStore(handle)
         .read()
@@ -74,11 +74,11 @@ function useKeptInFolder(
             },
           }),
         )
-        .catch(() => {});
+        .catch(() => merge({ rounds: 'failed' }));
       if (root) {
         void gitStatus(root)
           .then((status) => merge({ git: status && status.initialized ? status : 'none' }))
-          .catch(() => {});
+          .catch(() => merge({ git: 'failed' }));
       }
     }
     return () => {
@@ -165,6 +165,7 @@ export function WorkspacePane({
           : undefined;
 
   const reading = t('kept.reading');
+  const failed = t('kept.readFailed');
   const connectorsCaption = !loadedHandle
     ? t('kept.noFolder')
     : connectors.status === 'loading'
@@ -177,12 +178,16 @@ export function WorkspacePane({
         : t('kept.connectorsCount', { count: connectors.connectors.length });
   const schedulesCaption = !loadedHandle
     ? t('kept.noFolder')
-    : kept.rounds
+    : kept.rounds === 'failed'
+      ? failed
+      : kept.rounds
       ? t('kept.schedulesCount', { count: kept.rounds.count, paused: kept.rounds.paused })
       : reading;
   const gitCaption = !loadedHandle
     ? t('kept.noFolder')
-    : kept.git === 'none'
+    : kept.git === 'failed'
+      ? failed
+      : kept.git === 'none'
       ? t('kept.gitNone')
       : kept.git
         ? t('kept.gitRepo', {
@@ -192,7 +197,9 @@ export function WorkspacePane({
         : reading;
   const projectSourcesCaption = !loadedHandle
     ? t('kept.noFolder')
-    : kept.projectSources === null
+    : kept.projectSources === 'failed'
+      ? failed
+      : kept.projectSources === null
       ? reading
       : t('kept.projectSourcesCount', { count: kept.projectSources });
 

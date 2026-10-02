@@ -77,6 +77,11 @@ describe('settings primitives', () => {
     expect(chip).toHaveTextContent('Forget');
     fireEvent.click(chip);
     fireEvent.click(chip);
+    expect(onConfirm, 'a double-click must not confirm').not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    fireEvent.click(chip);
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(chip).toHaveTextContent('Forget');
   });

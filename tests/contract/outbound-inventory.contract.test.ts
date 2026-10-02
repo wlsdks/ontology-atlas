@@ -51,7 +51,11 @@ function updaterHosts(): string[] {
   const config = JSON.parse(readFileSync(join(ROOT, 'src-tauri/tauri.conf.json'), 'utf8')) as {
     plugins?: { updater?: { endpoints?: string[] } };
   };
-  return (config.plugins?.updater?.endpoints ?? []).map((endpoint) => new URL(endpoint).hostname);
+  const endpoints = (config.plugins?.updater?.endpoints ?? []).map((endpoint) => new URL(endpoint).hostname);
+  const manifest = readFileSync(join(ROOT, 'scripts/build-updater-manifest.mjs'), 'utf8');
+  const archives = [...manifest.matchAll(HOST_PATTERN)].map((match) => match[1]!.toLowerCase());
+  expect(archives.length, 'the updater manifest names no archive host').toBeGreaterThan(0);
+  return [...new Set([...endpoints, ...archives])];
 }
 
 function scannedHosts(): Set<string> {
