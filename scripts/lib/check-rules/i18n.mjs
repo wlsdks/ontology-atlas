@@ -1,13 +1,14 @@
 /** Message catalogues and locale routing. */
 
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 
 /** An authored message part, `messages/<locale>/<Namespace>.json`. */
 const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
 /** A part, or the composite a pre-split branch still tracks. */
 const MESSAGE_CATALOGUE = /^messages\/(?:[^/]+\/)?[^/]+\.json$/;
 
-function messageLocales(dir = 'messages') {
+function messageLocales(dir = new URL('../../../messages', import.meta.url)) {
+  if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
     .map((entry) => entry.name)
