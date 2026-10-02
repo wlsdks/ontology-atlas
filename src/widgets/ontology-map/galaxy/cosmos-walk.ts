@@ -4,6 +4,7 @@ import { galaxyMatrix, liveBandRadius, worldToScreen } from "./cosmos-camera";
 import { galaxyCentreOn } from "./cosmos-engine-watch";
 import type { CosmosLayout } from "./layout/cosmos-layout";
 import type { CosmosCamera, CosmosRoom, GalaxyPose } from "./cosmos-types";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 
 const inRoom = (room: CosmosRoom, x: number, y: number) =>
   x >= room.x && x <= room.x + room.width && y >= room.y && y <= room.y + room.height;
@@ -64,7 +65,7 @@ export function walkTarget(input: {
 export type CosmosKeyAction = { kind: "zoom"; factor: number } | { kind: "fit" } | { kind: "overview" } | { kind: "pane" } | { kind: "fly"; galaxy: number } | { kind: "select"; id: string } | { kind: "deadEnd" };
 
 export function cosmosKeyAction(
-  e: Pick<KeyboardEvent, "key" | "metaKey" | "ctrlKey" | "altKey" | "preventDefault">,
+  e: KeyboardEvent,
   input: { layout: CosmosLayout; poses: readonly GalaxyPose[]; camera: CosmosCamera; room: CosmosRoom; dpr: number; selectedId: string | null; zoomSpeed: number },
 ): CosmosKeyAction | null {
   const { layout, poses, camera, room, selectedId } = input;
@@ -73,6 +74,7 @@ export function cosmosKeyAction(
   if (intent) return intent;
   if (e.key === "Escape") return { kind: selectedId !== null ? "pane" : "overview" };
   if (e.key === "Enter") {
+    if (isImeComposing(e)) return null;
     const galaxy = layout.galaxies.findIndex((g) => g.id === selectedId);
     if (galaxy >= 0) e.preventDefault();
     return { kind: "fly", galaxy };
