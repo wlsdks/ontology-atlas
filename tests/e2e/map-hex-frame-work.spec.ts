@@ -4,6 +4,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { installFrameWork, p95, startFrameWork, stopFrameWork } from "./frame-work";
 
 const PAN_MS = 3_000;
+const MIN_WORK_FRAMES = 30;
+const PAN_MIN_STEPS = 45;
 const bars = process.env.MAP_PERF_BARS === "1";
 const SCENARIOS = [
   { name: "rest", band: "regions", R: 0, bar: 4.0 },
@@ -100,7 +102,7 @@ async function pan(page: Page) {
   let last = "";
   const start = Date.now();
   let step = 0;
-  while (Date.now() - start < PAN_MS) {
+  while (Date.now() - start < PAN_MS || step < PAN_MIN_STEPS) {
     const angle = step * 0.05;
     await page.mouse.move(c.x + Math.cos(angle) * 160, c.y + Math.sin(angle) * 120);
     const frame = await page.evaluate(
@@ -168,7 +170,7 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
       maxGradients: max(gradients, `${s.name}: gradients`),
       maxDrawnShare: +max(inBand.map((f) => f.drawnTiles / f.tiles), `${s.name}: painted frames`).toFixed(3),
     };
-    expect(results[s.name]!.frames, `${s.name}: work frames`).toBeGreaterThanOrEqual(30);
+    expect(results[s.name]!.frames, `${s.name}: work frames`).toBeGreaterThanOrEqual(MIN_WORK_FRAMES);
     expect(results[s.name]!.offsets, `${s.name}: the pan moved the camera`).toBeGreaterThanOrEqual(2);
     expect(results[s.name]!.maxGradients, `${s.name}: gradients per frame`).toBeLessThanOrEqual(1);
     if (s.band !== "regions") expect(results[s.name]!.maxDrawnShare, `${s.name}: drawn tiles share`).toBeLessThan(0.25);
