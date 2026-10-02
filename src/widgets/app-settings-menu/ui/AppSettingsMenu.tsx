@@ -44,10 +44,10 @@ import {
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
 
 import { AppUpdateSettings } from './AppUpdateSettings';
-import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
+import { GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
-import { MapSpeedSettings } from './MapSpeedSettings';
+import { MapPane } from './panes/MapPane';
 import { AgentActivitySettings } from './AgentActivitySettings';
 import {
   DETAIL_TOGGLE_CHIP,
@@ -58,7 +58,6 @@ import {
 } from './settings-primitives';
 import { VaultShapeSettings } from './VaultShapeSettings';
 import { WikiWriteModeSettings } from './WikiWriteModeSettings';
-import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { BlockImportModule } from '@/features/ontology-blocks';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 import { controlClass } from '@/shared/ui/control-class';
@@ -239,7 +238,6 @@ export function AppSettingsMenu({
   // with no registration the row itself is absent (no empty rows, no dead buttons).
   const replayGuide = useGuideReplay();
   const guideAutoStart = useGuideAutoStart();
-  const frameMeter = useFrameMeter();
   const [internalOpen, setInternalOpen] = useState(false);
   const [animateSection, setAnimateSection] = useState(false);
   const isControlled = openProp !== undefined;
@@ -722,31 +720,7 @@ export function AppSettingsMenu({
                    */
                   <AgentActivitySettings />
                 ) : shownSection === 'background' ? (
-                  <>
-                  {/* The 3D layout lives in the map's `View3dMenu`, over what it changes, not here. */}
-                  <CanvasBackgroundPicker />
-                  <MapSpeedSettings />
-                  {/* Frame meter: off by default, and while off its measurement loop does not run. */}
-                  <SettingsGroup>
-                    <SettingsRow
-                      testId="app-settings-frame-meter"
-                      label={t('frameMeterLabel')}
-                      caption={t('frameMeterCaption')}
-                      control={
-                        <SegmentSwitch
-                          ariaLabel={t('frameMeterLabel')}
-                          value={frameMeter}
-                          onChange={writeFrameMeter}
-                          options={[
-                            { value: false, label: t('frameMeterOff') },
-                            { value: true, label: t('frameMeterOn') },
-                          ]}
-                          testId="app-settings-frame-meter-switch"
-                        />
-                      }
-                    />
-                  </SettingsGroup>
-                  </>
+                  <MapPane />
                 ) : shownSection === 'expand' ? (
                   <ExpandSettings />
                 ) : shownSection === 'footprint' ? (
