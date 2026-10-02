@@ -9,6 +9,15 @@ decisions: [5b4ca3c7-ae8f-4ac8-a729-3c9b721ab982]
 
 # Planet Traveler Mascot
 
+## Game retirement supersession
+
+The [game retirement specification](2026-10-02-retire-companion-game.md) and decision
+`e9cdf138-ef07-4464-b76c-293599c611d3` supersede this spec's game-only consumers,
+flows, states and acceptance criteria, including companion movement/attack tests
+and recordings. The optional game is removed, not restyled. Shared brand, waiting,
+verified read/completion artwork and its applicable verification remain in scope.
+Existing personal/game save bytes stay untouched.
+
 ## Person and moment
 
 Observed: on 2026-10-02 the owner supplied `/Users/jinan/Downloads/atlas-character-pack`, selected its character for every Atlas mascot, explicitly named README, `/ko/download/`, and occasional in-app appearances, and requested smooth pixel animation. The pack's `README.txt` selects `02_main_character.png` as identity authority and sheets 04/06/07/08 as motion references. Direct inspection of the main image shows a cream hood, dark face, cyan eyes, blue scarf and boots, and a floating ringed planet.

@@ -112,3 +112,60 @@ Game scenery and the combined game sprite strip are no longer packaged or genera
 The owner-selected traveler source art and `scripts/build-traveler-sprites.mjs`
 remain because they generate the shared identity, tray, waiting, read and completion
 artwork. Existing personal/game save bytes remain untouched.
+
+## Generated Assets
+
+| Surface | Asset |
+|---|---|
+| In-app mark | `public/brand/mascot-{full,compact,micro}.png` through `<BrandMark>` |
+| Gateway chrome and download hero | compact and full `<BrandMark>` tiers; static and state-free |
+| Browser favicon | `app/icon.png` |
+| Apple Touch | `app/apple-icon.png` |
+| PWA | `public/brand-icon-512.png` |
+| Open Graph | `public/og-image.png` (1200×630) |
+| README / presentations | `public/brand/lockup*.png` |
+| macOS / Windows / mobile package trees | `src-tauri/icons/**` |
+| macOS menu bar | `src-tauri/icons/tray-template.png` (static template image) |
+
+The OS plate is a neutral dark squircle. The character remains native pixel art
+inside that smoothly masked platform shape.
+
+## Build Pipeline
+
+```bash
+node scripts/build-traveler-sprites.mjs
+node scripts/build-brand-assets.mjs
+node scripts/build-brand-raster.mjs
+# Open the printed loopback URL once so the browser canvas bakes the PNG family.
+node scripts/install-brand-icons.mjs
+```
+
+`build-brand-assets.mjs` validates dimensions and alpha for the three masters and
+motion rows. `build-brand-raster.mjs` disables canvas image smoothing and creates
+every physical output. `install-brand-icons.mjs` owns all committed destinations,
+including `.icns` and `.ico` assembly. No build-time server or image service is
+required by the product.
+
+## Do Not
+
+- Do not restore the nested-hex drawing as a logo or brand echo.
+- Do not remove project hexagons from topology data visualization.
+- Do not recolour the mascot through CSS or turn mascot colors into a UI palette.
+- Do not use the full master at 16px or fractional-scale a native grid.
+- Do not ship unregistered presentation boards as sprite sheets; normalize scale, alpha, cell bounds, and foot contact first.
+- Do not animate without verified state or add ambient looping travel.
+- Do not bake slogans, progress values, or English-only product copy into the art.
+- Do not infer Windows notification-area approval from a macOS capture; Windows
+  owns tray visibility and overflow and requires its own observed need and proof.
+
+## Gates
+
+| Property | Gate |
+|---|---|
+| Source masters and motion rows are exact RGBA grids | `brand-asset-parity.contract.test.ts` |
+| Runtime detail ladder matches source tiers | same contract plus `brand-mark.test.tsx` |
+| Every generated/public/platform output is planned | `brand-assets-present.contract.test.ts` |
+| Reduced motion preserves static state and text | `reduced-motion-equivalent.contract.test.ts` |
+| Motion claims only verified work | `mascot-state.test.ts` and `AgentMascotPresence.test.tsx` |
+| Palette stays raster-only; motion clocks, status-lane placement, and pose boundaries stay aligned | `mascot-palette-boundary.contract.test.ts` and `mascot-motion.contract.test.ts` |
+| macOS tray template is exact RGBA 1×/2× art | brand parity/presence contracts plus native Rust test |
