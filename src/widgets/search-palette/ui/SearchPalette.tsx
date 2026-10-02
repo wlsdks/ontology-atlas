@@ -21,6 +21,7 @@ import {
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import {
   projectDisplayName,
@@ -272,10 +273,7 @@ function SearchPaletteDialog({
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      /*
-       * Mid-composition keystrokes belong to the IME, or a syllable's commit Enter selects a row.
-       */
-      if (e.isComposing) return;
+      if (isImeComposing(e)) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();

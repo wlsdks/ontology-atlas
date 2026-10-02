@@ -29,6 +29,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { BrandMark } from '@/shared/ui/brand-mark';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { useDelayedVisible, useHeldValue } from '@/shared/lib/use-presence';
 import { caretPoint, clampMenuToBox } from '../lib/caret-position';
@@ -842,10 +843,7 @@ export function DocsVaultEditor({
               }
             }}
             onKeyDown={(e) => {
-              /*
-               * Step 2 is completable from the keyboard; focus stays in the textarea, so it is
-               * handled here.
-               */
+              if (e.key === 'Enter' && isImeComposing(e)) return;
               if (pendingMention) {
                 if (e.key === 'Escape') {
                   e.preventDefault();
