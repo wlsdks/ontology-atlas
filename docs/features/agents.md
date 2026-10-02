@@ -77,7 +77,13 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   response output and 64 KiB of diagnostics per request. Larger outputs fail;
   a truncated reply is never returned as a successful answer. Credentials and
   request content still travel to curl through stdin, with an audit reservation
-  before sending.
+  before sending. Stop in direct-model chat or local Compile cancels that
+  turn's native request and reaps its owned HTTP process. Folder changes and
+  caller unmounts retire unfinished requests too. A replacement for the same
+  selected vault waits for the canceled request's audit cleanup before sending;
+  completed outcomes remain intact. The existing audit format records an
+  interrupted transfer as an error, not as unsent. Closing Atlas's connection
+  does not establish that the model server stopped inference.
 - **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
   sample rows. Settings keeps a single "Models · API keys" pointer row, and the map dock's
   no-key button opens this tab. Every way a row closes returns focus to its opener, and results

@@ -3847,6 +3847,8 @@ pub fn run() {
             jev::jev_judge,
             llm::secret_verify,
             llm::llm_chat,
+            llm::requests::llm_chat_prepare,
+            llm::requests::llm_chat_cancel,
             git::git_status,
             git::git_probe,
             git::git_init,
@@ -3883,8 +3885,12 @@ pub fn run() {
                 apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
+            RunEvent::WindowEvent { label, event: tauri::WindowEvent::Destroyed, .. } => {
+                llm::requests::cancel_owner(Some(&label));
+            }
             // Adapters and their children must not outlive the window.
             RunEvent::ExitRequested { .. } | RunEvent::Exit => {
+                llm::requests::cancel_owner(None);
                 terminate_all_acp_sessions(app_handle);
             }
             _ => {}

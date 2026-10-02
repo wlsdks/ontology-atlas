@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   scope: 'local:first#1',
+  send: null as import('./agent-loop').AgentLoopDeps['send'] | null,
   resolveRun: null as ((value: { turn: unknown }) => void) | null,
   sourceHandles: new Map<string, { getFile: () => Promise<{ arrayBuffer: () => Promise<ArrayBuffer> }> }>(),
   fileHandles: new Map<string, { getFile: () => Promise<{ text: () => Promise<string>; lastModified: number }> }>(),
@@ -37,7 +38,8 @@ vi.mock('@/shared/lib/tauri-llm', () => ({
 
 vi.mock('./agent-loop', () => ({
   startTurn: () => ({ id: 'turn-1' }),
-  runTurn: () => new Promise((resolve) => {
+  runTurn: (deps: import('./agent-loop').AgentLoopDeps) => new Promise((resolve) => {
+    mocks.send = deps.send;
     mocks.resolveRun = resolve as (value: { turn: unknown }) => void;
   }),
 }));
@@ -55,6 +57,7 @@ vi.mock('./compile-consent-card', () => ({
 }));
 
 import { useLocalCompile } from './use-local-compile';
+import { llmChat } from '@/shared/lib/tauri-llm';
 
 const args = {
   vaultRoot: '/vault',
@@ -218,8 +221,25 @@ describe('useLocalCompile vault origin', () => {
       mocks.resolveRun?.({ turn: { id: 'turn-1' } });
     });
 
-    expect(result.current.status).toBe('waiting');
-    expect(result.current.card).not.toBeNull();
+    expect(result.current.status).toBe('idle');
+    expect(result.current.card).toBeNull();
     expect(result.current.originVaultScope).toBe('local:first#1');
   });
 });
+
+for (const retirement of ['stop', 'unmount'] as const) {
+  it(`passes cancellation to both requests and retires Compile on ${retirement}`, async () => {
+    vi.mocked(llmChat).mockResolvedValue({ status: 200, body: '{}', host: 'localhost', durationMs: 0, loggedAt: 'fixture' });
+    const { result, unmount } = await start();
+    const payload = { model: 'local', body: '{}', question: 'question', scope: { nodes: [], promptChars: 0, vaultChars: 0, tools: [] } };
+    await mocks.send!(payload);
+    await mocks.send!(payload);
+    const signals = vi.mocked(llmChat).mock.calls.map(([request]) => request.signal);
+    expect(signals).toHaveLength(2);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
+    expect(signals[1]).toBe(signals[0]);
+    act(() => { if (retirement === 'stop') result.current.stop(); else unmount(); });
+    expect(signals[0]?.aborted).toBe(true);
+    await act(async () => { mocks.resolveRun?.({ turn: { id: 'rejected' } }); });
+  });
+}

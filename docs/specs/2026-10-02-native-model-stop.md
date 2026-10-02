@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: agents
 date: 2026-10-02
-decisions: []
+decisions: [db6d6efa-8686-4433-891a-8ec43d9f61f5]
 ---
 
 # Native Model Stop
