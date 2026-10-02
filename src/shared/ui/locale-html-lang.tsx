@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { htmlLangOf } from '@/i18n/locales';
 
 /**
  * Keeps `<html lang>` equal to the locale on a client-side switch; `LANG_BOOT`
@@ -9,7 +10,7 @@ import { useEffect } from 'react';
 export function LocaleHtmlLang({ locale }: { locale: string }) {
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.documentElement.lang = locale;
+    document.documentElement.lang = htmlLangOf(locale);
   }, [locale]);
   return null;
 }

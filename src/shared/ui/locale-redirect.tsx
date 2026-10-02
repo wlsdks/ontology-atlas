@@ -1,20 +1,27 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Fragment, useEffect } from 'react';
+import { detectLocale } from '@/i18n/detect-locale';
+import type { AppLocale } from '@/i18n/locales';
+import { routing } from '@/i18n/routing';
 import { withBasePath } from '../lib/base-path';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
-type Supported = 'en' | 'ko';
 
-function detect(): Supported {
+const NATIVE_NAME: Record<AppLocale, string> = {
+  en: 'English',
+  ko: '한국어',
+};
+
+function detect(): AppLocale {
+  let stored: string | null = null;
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'ko') return stored;
+    stored = window.localStorage.getItem(STORAGE_KEY);
   } catch {
-    // localStorage unavailable: fall through to the browser hint.
+    stored = null;
   }
-  const lang = (navigator.language || 'en').toLowerCase();
-  return lang.startsWith('ko') ? 'ko' : 'en';
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language || 'en'];
+  return detectLocale(languages, stored);
 }
 
 /**
@@ -51,15 +58,15 @@ export function LocaleRedirect() {
         }}
       >
         Opening Ontology Atlas…
-        {/* A raw `<a>`: this fallback must survive failed hydration. */}
-        <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/en/')}>
-          English
-        </a>
-        <span aria-hidden="true">·</span>
-        {/* A raw `<a>`: this fallback must survive failed hydration. */}
-        <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/ko/')}>
-          한국어
-        </a>
+        {routing.locales.map((locale, index) => (
+          <Fragment key={locale}>
+            {index > 0 && <span aria-hidden="true">·</span>}
+            {/* A raw `<a>`: this fallback must survive failed hydration. */}
+            <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath(`/${locale}/`)}>
+              {NATIVE_NAME[locale] ?? locale}
+            </a>
+          </Fragment>
+        ))}
         <noscript>
           JavaScript is required for automatic routing.
         </noscript>

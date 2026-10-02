@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { htmlLangOf, isAppLocale } from '@/i18n/locales';
 import type { StandaloneLocale, StandaloneMessages } from '@/i18n/standalone-messages';
 
 /**
@@ -16,7 +17,8 @@ const subscribeStatic = () => () => undefined;
 
 function detectLocale(): StandaloneLocale {
   if (typeof window === 'undefined') return 'en';
-  return window.location.pathname.split('/')[1] === 'ko' ? 'ko' : 'en';
+  const segment = window.location.pathname.split('/')[1];
+  return isAppLocale(segment) ? segment : 'en';
 }
 
 export function useStandaloneLocale(): StandaloneLocale {
@@ -63,7 +65,7 @@ export function StandaloneLocaleProvider({
   useEffect(() => {
     const root = document.documentElement;
     const previous = root.lang;
-    root.lang = locale;
+    root.lang = htmlLangOf(locale);
     return () => {
       root.lang = previous;
     };
