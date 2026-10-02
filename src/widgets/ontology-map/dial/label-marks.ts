@@ -67,6 +67,7 @@ export interface LabelMarksInput {
 const SIDE_COS = 0.4;
 const NAME_GAP_PX = 5;
 const DISC_GAP_PX = 4;
+const NAME_STEPS_PX = [0, 9, 18];
 const RING_OFFSETS = [0, 0.18, -0.18, 0.36, -0.36, 0.6, -0.6, 0.9, -0.9];
 
 export function overlaps(a: Box, b: Box): boolean {
@@ -269,9 +270,8 @@ function domainNames(ctx: Ctx): void {
     const chip = input.chips.get(cluster.domainId)!;
     const block = domainLabelBlock(cluster.domainId, input.model, input.labels, input.evidence, input.measureText, input.tokens);
     const reach = nameReach(input, cluster, chip);
-    const plans = nameCandidates(Math.atan2(chip.y - centre.y, chip.x - centre.x)).map((a) =>
-      placeBlock(block, a, chip.x + Math.cos(a) * reach, chip.y + Math.sin(a) * reach),
-    );
+    const angles = nameCandidates(Math.atan2(chip.y - centre.y, chip.x - centre.x));
+    const plans = NAME_STEPS_PX.flatMap((step) => angles.map((a) => placeBlock(block, a, chip.x + Math.cos(a) * (reach + step), chip.y + Math.sin(a) * (reach + step))));
     let chosen: PlacedBlock | null = null;
     let withUnits = false;
     for (let pass = 0; pass < 3 && !chosen; pass += 1) {
@@ -383,7 +383,7 @@ function capabilityNames(ctx: Ctx): void {
     ];
     const boxes = tries.map(([x, y, align]) => textBox(width, x, y, align, fontPx, 1.5));
     let pick = -1;
-    for (let pass = 0; pass < 2 && pick < 0; pass += 1) {
+    for (let pass = 0; pass < 1 && pick < 0; pass += 1) {
       pick = boxes.findIndex((box) => free(ctx, box) && (pass === 1 || !crossesBox(input.lines, box)));
     }
     if (pick < 0) continue;
