@@ -8,8 +8,6 @@ export interface Pad { left: number; right: number; top: number; bottom: number 
 export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string }
 export interface DialTokens {
   pitch: number;
-  pitchMin: number;
-  pitchMax: number;
   hubClearance: number;
   orphanPitch: number;
   flowRestBase: number;

@@ -24,7 +24,6 @@ describe("map dial tokens", () => {
   });
 
   it("keeps ordered pairs ordered", () => {
-    expect(t.pitchMin).toBeLessThan(t.pitchMax);
     expect(t.stubMinPx).toBeLessThan(t.stubMaxPx);
     expect(t.restNumbersMin).toBeLessThanOrEqual(t.restNumbersMax);
     expect(t.restStrongMin).toBeLessThanOrEqual(t.restStrongMax);

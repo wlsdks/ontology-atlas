@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
+import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
+import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
+import type { VaultManifest } from "@/entities/docs-vault";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
+
 import {
   readContainmentTree,
   rollDirectedDomainFlows,
@@ -9,156 +15,226 @@ import {
   type TreeInputNode,
 } from "../model/containment-tree";
 import { buildDialModel } from "./dial-model";
-import { chordControl, layoutDial } from "./layout";
-import type { DialModel, DialScene } from "./types";
+import { layoutDial } from "./layout";
+import { circularDomainOrder } from "./order";
+import { ladderStep } from "./rings";
+import type { DialMemory, DialModel, DialScene } from "./types";
 
 const tokens = {
-  ringMin: 300,
-  ringSingleRowMax: 430,
-  rowGap: 17,
-  pitch: 26,
-  pitchMin: 11,
-  pitchMax: 33.8,
-  rowsMax: 4,
-  sectorGap: 0.11,
-  chipSlots: 1.8,
-  hubClearance: 92,
-  elementStart: 18,
-  elementPitch: 9,
-  orphanGap: 160,
-  orphanPitch: 11,
-  orphanRow: 30,
-  chordHubMargin: 30,
-  chordDepth: 0.8,
-  chordBow: 1.4,
+  pitch: 34,
+  spiralC: 0.61,
+  spiralK0: 4.5,
+  elementRoom: 0.42,
+  elementHole: 0.13,
+  angularGap: 0.9,
+  ringGap: 2.1,
+  hubClearance: 78,
+  orphanPitch: 0.5,
 };
 
-function vault(domainCount: number, capsOf: (i: number) => number, elementsOf: (i: number, c: number) => number) {
-  const nodes: TreeInputNode[] = [{ id: "p", label: "P", kind: "project" }];
-  const edges: TreeInputEdge[] = [];
-  const add = (id: string, kind: TreeInputNode["kind"], parent: string) => {
-    nodes.push({ id, label: id, kind });
-    edges.push({ source: parent, target: id, kind: "contains", relationType: "contains" });
-  };
-  for (let i = 0; i < domainCount; i += 1) {
-    const d = `d${String(i).padStart(2, "0")}`;
-    add(d, "domain", "p");
-    for (let c = 0; c < capsOf(i); c += 1) {
-      const cap = `${d}-c${String(c).padStart(3, "0")}`;
-      add(cap, "capability", d);
-      for (let e = 0; e < elementsOf(i, c); e += 1) add(`${cap}-e${e}`, "element", cap);
-    }
-  }
-  add("d00-held", "element", "d00");
-  nodes.push({ id: "stray", label: "stray", kind: "element" });
-  for (let i = 0; i + 1 < domainCount; i += 1) {
-    edges.push({ source: `d${String(i).padStart(2, "0")}-c000`, target: `d${String(i + 1).padStart(2, "0")}-c000`, kind: "depends", relationType: "depends_on" });
-  }
-  const tree = readContainmentTree(nodes, edges);
-  const dependencies = rollDomainDependencies(tree, edges);
-  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges));
-  const model = buildDialModel({ tree, dependencies, flows, elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
-  return { model, nodes };
+const KINDS = new Set(["project", "domain", "capability", "element"]);
+type Node = { id: string; kind: string; title?: string };
+type Edge = { from: string; to: string; type: string };
+
+function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+  const treeNodes: TreeInputNode[] = nodes
+    .filter((n) => KINDS.has(n.kind))
+    .map((n) => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as TreeInputNode["kind"] }));
+  const treeEdges: TreeInputEdge[] = edges.map((e) => ({
+    source: e.from,
+    target: e.to,
+    kind: isContainmentRelation(e.type) ? "contains" : "depends",
+    relationType: e.type,
+  }));
+  const tree = readContainmentTree(treeNodes, treeEdges);
+  const dependencies = rollDomainDependencies(tree, treeEdges);
+  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
+  const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
+  return buildDialModel({ tree, dependencies, flows, elementIds });
 }
 
-const sorted = (model: DialModel) => model.domains.map((d) => d.id);
+function vaultGraph(manifest: unknown) {
+  const d = deriveOntologyFromVault(manifest as VaultManifest);
+  return { nodes: d.nodes as Node[], edges: d.edges as Edge[] };
+}
 
-function sameRowPairs(scene: DialScene) {
-  const petals = [...scene.petalById.values()].sort((a, b) => a.row - b.row || a.angle - b.angle);
-  const out: [number, number, number][] = [];
-  for (let k = 1; k < petals.length; k += 1) {
-    const p = petals[k - 1]!;
-    const q = petals[k]!;
-    if (p.row === q.row) out.push([p.radius, p.angle, q.angle]);
+function crafted(domains: number, capsOf: (i: number) => number, deps: readonly [number, number][]) {
+  const nodes: Node[] = [{ id: "p", kind: "project" }];
+  const edges: Edge[] = [];
+  const dom = (i: number) => `d${String(i).padStart(2, "0")}`;
+  for (let i = 0; i < domains; i += 1) {
+    nodes.push({ id: dom(i), kind: "domain" });
+    edges.push({ from: "p", to: dom(i), type: "contains" });
+    for (let c = 0; c < capsOf(i); c += 1) {
+      const cap = `${dom(i)}-c${String(c).padStart(3, "0")}`;
+      nodes.push({ id: cap, kind: "capability" });
+      edges.push({ from: dom(i), to: cap, type: "contains" });
+      for (let e = 0; e < (c + i) % 3; e += 1) {
+        nodes.push({ id: `${cap}-e${e}`, kind: "element" });
+        edges.push({ from: cap, to: `${cap}-e${e}`, type: "contains" });
+      }
+    }
+  }
+  nodes.push({ id: `${dom(0)}-held`, kind: "element" });
+  edges.push({ from: dom(0), to: `${dom(0)}-held`, type: "contains" });
+  nodes.push({ id: "stray", kind: "element" });
+  for (const [a, b] of deps) edges.push({ from: `${dom(a)}-c000`, to: `${dom(b)}-c000`, type: "depends_on" });
+  return { nodes, edges };
+}
+
+function lay(model: DialModel, memory: DialMemory | null): DialScene {
+  return layoutDial(model, circularDomainOrder(model, memory?.order ?? null).order, tokens, memory);
+}
+
+function overviewScale(scene: DialScene) {
+  const w = scene.extent.maxX - scene.extent.minX;
+  const h = scene.extent.maxY - scene.extent.minY;
+  return Math.min(1512 / w, 982 / h);
+}
+
+function moved(a: DialScene, b: DialScene, ids: Iterable<string>) {
+  const out: [string, number][] = [];
+  for (const id of ids) {
+    const p = a.positions.get(id);
+    const q = b.positions.get(id);
+    if (p && q) out.push([id, Math.hypot(p.x - q.x, p.y - q.y)]);
   }
   return out;
 }
 
+function minClusterGap(scene: DialScene) {
+  let min = Infinity;
+  for (let i = 0; i < scene.clusters.length; i += 1) {
+    for (let j = i + 1; j < scene.clusters.length; j += 1) {
+      const a = scene.clusters[i]!;
+      const b = scene.clusters[j]!;
+      min = Math.min(min, Math.hypot(a.chip.x - b.chip.x, a.chip.y - b.chip.y) - a.footprint - b.footprint);
+    }
+  }
+  return min;
+}
+
+function minItemDistance(scene: DialScene) {
+  let min = Infinity;
+  for (const c of scene.clusters) {
+    for (let i = 0; i < c.items.length; i += 1) {
+      for (let j = i + 1; j < c.items.length; j += 1) {
+        min = Math.min(min, Math.hypot(c.items[i]!.x - c.items[j]!.x, c.items[i]!.y - c.items[j]!.y));
+      }
+    }
+  }
+  return min;
+}
+
+const storefront = vaultGraph(storefrontManifest);
+const dogfood = vaultGraph(dogfoodManifest);
+const fixtures = {
+  storefront,
+  dogfood,
+  crafted: crafted(12, (i) => 1 + ((i * 7) % 23), [
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, 0],
+    [5, 1],
+    [6, 1],
+    [7, 2],
+  ]),
+};
+
 describe("layoutDial", () => {
-  const small = vault(6, (i) => 2 + i, (i, c) => (c + i) % 4);
-  const scene = layoutDial(small.model, sorted(small.model), tokens);
+  for (const [name, graph] of Object.entries(fixtures)) {
+    const model = modelOf(graph.nodes, graph.edges);
+    const scene = lay(model, null);
 
-  it("spans sectors by demand with equal gaps", () => {
-    const demand = scene.sectors.map((s) => {
-      const d = small.model.domainById.get(s.domainId)!;
-      const slots = d.capabilityIds.length + (d.directElementIds.length > 0 ? 1 : 0);
-      return Math.max(2, slots / s.rows) + tokens.chipSlots;
+    it(`${name}: is deterministic`, () => {
+      const again = lay(modelOf(graph.nodes, graph.edges), null);
+      expect([...again.positions]).toEqual([...scene.positions]);
+      expect(again.memory.order).toEqual(scene.memory.order);
     });
-    const spans = scene.sectors.map((s) => s.end - s.start);
-    for (let k = 1; k < spans.length; k += 1) expect(spans[k]! / spans[0]!).toBeCloseTo(demand[k]! / demand[0]!, 9);
-    for (let k = 1; k < scene.sectors.length; k += 1) {
-      expect(scene.sectors[k]!.start - scene.sectors[k - 1]!.end).toBeCloseTo(tokens.sectorGap, 9);
+
+    it(`${name}: keeps footprints apart by the angular gap`, () => {
+      expect(minClusterGap(scene)).toBeGreaterThanOrEqual(tokens.angularGap * tokens.pitch - 1e-6);
+    });
+
+    it(`${name}: places every concept`, () => {
+      const ids = graph.nodes.filter((n) => KINDS.has(n.kind)).map((n) => n.id);
+      expect(ids.filter((id) => !scene.positions.has(id))).toEqual([]);
+    });
+
+    it(`${name}: keeps neighbouring capabilities a pitch apart`, () => {
+      expect(minItemDistance(scene)).toBeGreaterThanOrEqual(0.99 * tokens.pitch);
+    });
+
+    it(`${name}: keeps a remembered radius that still fits`, () => {
+      const radiusByStep = new Map([...scene.memory.radiusByStep].map(([s, r]) => [s, r * 1.3 + 0.123]));
+      const next = lay(model, { ...scene.memory, radiusByStep });
+      for (const ring of next.rings) expect(ring.radius).toBe(radiusByStep.get(ring.step));
+    });
+  }
+
+  it("keeps two hundred capabilities a pitch apart in one cluster", () => {
+    const g = crafted(3, (i) => (i === 0 ? 200 : 5), [[1, 0]]);
+    expect(minItemDistance(lay(modelOf(g.nodes, g.edges), null))).toBeGreaterThanOrEqual(0.99 * tokens.pitch);
+  });
+
+  it("moves no capability and no domain when fifty elements arrive", () => {
+    const base = fixtures.crafted;
+    const model = modelOf(base.nodes, base.edges);
+    const before = lay(model, null);
+    const extra = { nodes: [...base.nodes], edges: [...base.edges] };
+    for (let e = 0; e < 50; e += 1) {
+      extra.nodes.push({ id: `extra-${e}`, kind: "element" });
+      extra.edges.push({ from: "d03-c001", to: `extra-${e}`, type: "contains" });
     }
-    const last = scene.sectors[scene.sectors.length - 1]!;
-    expect(scene.sectors[0]!.start + Math.PI * 2 - last.end).toBeCloseTo(tokens.sectorGap, 9);
+    const after = lay(modelOf(extra.nodes, extra.edges), before.memory);
+    const marks = [...model.domainById.keys(), ...model.capabilityById.keys()];
+    expect(moved(before, after, marks).filter(([, d]) => d > 0)).toEqual([]);
   });
 
-  it("centres the first domain at 12 o'clock with its chip at the arc middle", () => {
-    const first = scene.sectors[0]!;
-    expect(first.angle).toBeCloseTo(-Math.PI / 2, 9);
-    expect(first.chip.x).toBeCloseTo(0, 9);
-    expect(first.chip.y).toBeCloseTo(-scene.ringRadius, 9);
-    for (const s of scene.sectors) {
-      expect(s.angle).toBeCloseTo((s.start + s.end) / 2, 9);
-      expect(scene.positions.get(s.domainId)).toEqual(s.chip);
-    }
-  });
-
-  it("alternates petals by element weight, heaviest beside the chip", () => {
-    const sector = scene.sectorByDomain.get("d03")!;
-    const right = sector.petals.filter((p) => p.angle > sector.angle).sort((a, b) => a.angle - b.angle);
-    const left = sector.petals.filter((p) => p.angle < sector.angle).sort((a, b) => b.angle - a.angle);
-    expect(right.length - left.length).toBeGreaterThanOrEqual(0);
-    expect(right.length - left.length).toBeLessThanOrEqual(1);
-    const weights = sector.petals.map((p) => p.elementIds.length).sort((a, b) => b - a);
-    expect(right[0]!.elementIds.length).toBe(weights[0]);
-    expect(left[0]!.elementIds.length).toBe(weights[1]);
-  });
-
-  it("adds rows only past the single-row ring, and never shrinks below the minimum ring", () => {
-    expect(scene.ringRadius).toBeGreaterThanOrEqual(tokens.ringMin);
-    expect(scene.sectors.every((s) => s.rows === 1)).toBe(true);
-    const big = vault(20, () => 30, () => 1);
-    const wide = layoutDial(big.model, sorted(big.model), tokens);
-    expect(wide.sectors[0]!.rows).toBeGreaterThan(1);
-    expect(wide.ringRadius).toBeGreaterThanOrEqual(tokens.ringMin);
-    for (const [r, a, b] of sameRowPairs(wide)) expect(r * Math.abs(b - a)).toBeGreaterThanOrEqual(tokens.pitchMin - 1e-9);
-  });
-
-  it("keeps same-row neighbours at least the minimum pitch apart", () => {
-    for (const [r, a, b] of sameRowPairs(scene)) expect(r * Math.abs(b - a)).toBeGreaterThanOrEqual(tokens.pitchMin - 1e-9);
-  });
-
-  it("places every concept inside the extent", () => {
-    for (const n of small.nodes) {
-      const p = scene.positions.get(n.id);
-      expect(p, n.id).toBeDefined();
-      expect(p!.x).toBeGreaterThanOrEqual(scene.extent.minX);
-      expect(p!.x).toBeLessThanOrEqual(scene.extent.maxX);
-      expect(p!.y).toBeGreaterThanOrEqual(scene.extent.minY);
-      expect(p!.y).toBeLessThanOrEqual(scene.extent.maxY);
-    }
-    expect(scene.orphans).toEqual(["stray"]);
-    expect(scene.positions.get("stray")!.y).toBeCloseTo(scene.outerRadius + tokens.orphanGap, 9);
-    expect(scene.positions.get("p")).toEqual({ x: 0, y: 0 });
-  });
-
-  it("pulls a neighbour pair's control nearer the ring than an opposite pair's", () => {
-    const angle = (id: string) => scene.sectorByDomain.get(id)!.angle;
-    for (const flow of small.model.flows) {
-      expect(scene.controls.get(flow.key)).toEqual(chordControl(scene.ringRadius, angle(flow.a), angle(flow.b), tokens));
-    }
-    const apexDepth = (a: string, b: string) => {
-      const c = chordControl(scene.ringRadius, angle(a), angle(b), tokens);
-      const pa = scene.sectorByDomain.get(a)!.chip;
-      const pb = scene.sectorByDomain.get(b)!.chip;
-      return scene.ringRadius - Math.hypot((pa.x + 2 * c.x + pb.x) / 4, (pa.y + 2 * c.y + pb.y) / 4);
+  for (const name of ["storefront", "dogfood"] as const) {
+    const graph = fixtures[name];
+    const model = modelOf(graph.nodes, graph.edges);
+    const before = lay(model, null);
+    const stepOf = (m: DialModel, id: string) => ladderStep(m.dependents.get(id) ?? 0);
+    const caps = (domainId: string) => model.domainById.get(domainId)!.capabilityIds;
+    const trial = (crosses: boolean) => {
+      for (const target of model.domains) {
+        for (const source of model.domains) {
+          if (source.id === target.id || !caps(source.id).length || !caps(target.id).length) continue;
+          const edges = [...graph.edges, { from: caps(source.id)[0]!, to: caps(target.id)[0]!, type: "depends_on" }];
+          const next = modelOf(graph.nodes, edges);
+          if (next.dependents.get(target.id) === model.dependents.get(target.id)) continue;
+          if ((stepOf(next, target.id) !== stepOf(model, target.id)) === crosses) return { next, target: target.id };
+        }
+      }
+      throw new Error(`no ${crosses ? "crossing" : "same-step"} dependency in ${name}`);
     };
-    expect(apexDepth("d00", "d01")).toBeLessThan(apexDepth("d00", "d03"));
-  });
 
-  it("is deterministic", () => {
-    expect(layoutDial(small.model, sorted(small.model), tokens)).toEqual(scene);
+    it(`${name}: a dependency that crosses no step moves no mark`, () => {
+      const { next } = trial(false);
+      const after = lay(next, before.memory);
+      expect(moved(before, after, before.positions.keys()).filter(([, d]) => d > 0)).toEqual([]);
+    });
+
+    it.runIf(name === "storefront")(`${name}: a dependency that crosses a step moves at most two other domains`, () => {
+      const { next, target } = trial(true);
+      const after = lay(next, before.memory);
+      const threshold = 4 / overviewScale(before);
+      const others = moved(before, after, model.domainById.keys()).filter(([id, d]) => id !== target && d > threshold);
+      expect(others.length).toBeLessThanOrEqual(2);
+      expect(after.clusterByDomain.get(target)!.step).not.toBe(before.clusterByDomain.get(target)!.step);
+    });
+  }
+
+  it("returns the memory it laid out with", () => {
+    const g = fixtures.crafted;
+    const scene = lay(modelOf(g.nodes, g.edges), null);
+    for (const c of scene.clusters) {
+      expect(scene.memory.angleById.get(c.domainId)).toEqual({ step: c.step, angle: c.angle });
+      expect(scene.memory.itemOrder.get(c.domainId)).toEqual(c.items.map((i) => i.id));
+    }
+    expect(scene.rings.map((r) => scene.memory.radiusByStep.get(r.step))).toEqual(scene.rings.map((r) => r.radius));
+    expect(scene.orphans.ids).toEqual(["stray"]);
   });
 });
-
