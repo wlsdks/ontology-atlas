@@ -1592,6 +1592,17 @@ vacant slot, but it must never look like an existing schedule, result, or agent
 execution. Keep the preview visually quieter than the action. Avoid numbered
 steps unless the user must perform those steps in that order.
 
+An example illustration is the one exception (owner, 2026-10-02, the Harness
+Architecture tab before any profile exists): it may show the result a
+destination gives and animate how that result is reached, when its frame says
+"example" in words on screen and in its accessible description, and names the
+only parts drawn from the person's data. It draws in the destination's own
+grammar, plays a bounded number of loops on the house clock, then rests on its
+finished frame and requests no frames. It pauses while hidden, off-screen or on
+request, and holds that finished frame under reduced motion and while a real
+agent run is open beside it. Gate: `src/views/architecture/model/draft-preview.test.ts`,
+whose resting frame must equal the still frame.
+
 Motion is a change of *a named object*, not a property of an empty canvas. Use
 existing `--motion-*` values to connect input to result: selection reveals its
 evidence, a schedule enters the ledger, a changed path highlights its real

@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, Check, ChevronDown, PanelRight } from 'lucide-react';
+import { Bot, Check, ChevronDown, PanelRight } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import {
   buildArchitectureAgentPrompt,
-  buildArchitectureDraftPrompt,
   buildArchitectureLayout,
   type ArchitectureAgentTaskKind,
   type ArchitectureHandoffContext,
@@ -17,6 +16,7 @@ import type { ArchitectureRecord } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
+import type { DraftPreviewSource } from '../model/draft-preview';
 import type {
   ArchitectureAgentRequest,
   ArchitectureAgentRoute,
@@ -34,11 +34,12 @@ import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, Chip, CloseButton, EmptyState, RowButton, Surface } from '@/shared/ui';
+import { Button, Chip, CloseButton, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
 import { ArchitectureRules } from './ArchitectureRules';
+import { ArchitectureDraftHero } from './ArchitectureDraftHero';
 import { HARNESS_GUTTER_LEFT, HARNESS_GUTTER_X } from './harness-frame';
 import { buildArchitectureGraph } from '../model/graph-layout';
 
@@ -87,6 +88,7 @@ export function ArchitectureWorkbench({
   profileProblems = EMPTY_PROFILE_PROBLEMS,
   handoffContexts = {},
   draftHandoffContext = null,
+  draftSource = null,
   sourceModulesByProfile = {},
   sourceListingCapable = false,
   sourceUnavailableReason = 'browser',
@@ -111,6 +113,7 @@ export function ArchitectureWorkbench({
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
   /** The one unambiguous project source available before any profile exists. */
   draftHandoffContext?: ArchitectureHandoffContext | null;
+  draftSource?: DraftPreviewSource | null;
   /** Per profile slug, the read-only source-directory walk the page performed (installed app). */
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
@@ -138,7 +141,6 @@ export function ArchitectureWorkbench({
   const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
   /* The locale picks which reviewed sentence shows; `summary_<role>` stays the fact briefs, prompts and CLI lines print. */
   const locale = useLocale();
-  const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
@@ -428,83 +430,16 @@ export function ArchitectureWorkbench({
 
   if (!selected) {
     return (
-      /* Starts under the tabs rather than centred in the leftover height. */
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-start p-5 md:p-10">
-        {profileNotices ? <div className="w-full max-w-[var(--measure-stage-column)]">{profileNotices}</div> : null}
-        <EmptyState
-          title={t('noProfiles')}
-          /* Embedded, the shell already has the `h1`, so this drops to `h2`. */
-          titleAs={embedded ? 'h2' : 'h1'}
-          description={
-            agentRoute === 'clipboard'
-              ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}`
-              : t('noProfilesBody')
-          }
-          icon={<Boxes aria-hidden />}
-          tone="solid"
-          align="center"
-          /* Standalone, the `h1` takes the display step; embedded, the `h2` keeps EmptyState's own step. */
-          className="max-w-[var(--measure-stage-column)] [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display"
-          /* The clipboard door always works; the agent door needs a connected agent. The app never calls MCP tools itself (docs/DECISIONS.md, 2026-08-24 first-run door). */
-          action={(
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {agentRoute === 'agent' ? (
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="atlas-touch-floor"
-                  disabled={!onAgentRequest}
-                  data-testid="architecture-draft-with-agent"
-                  onClick={() =>
-                    onAgentRequest?.({
-                      kind: 'draft',
-                      prompt: buildArchitectureDraftPrompt(draftHandoffContext),
-                    })
-                  }
-                >
-                  <Bot size={ICON_SIZE.sm} aria-hidden />
-                  {t('draftWithAgent', { agent: agentLabel ?? t('connectedAgent') })}
-                </Button>
-              ) : agentRoute === 'checking' ? (
-                <Button className="atlas-touch-floor" variant="primary" size="md" disabled data-testid="architecture-agent-checking">
-                  <Bot size={ICON_SIZE.sm} aria-hidden />
-                  {t('checkingAgent')}
-                </Button>
-              ) : null}
-              <Button
-                variant={agentRoute === 'clipboard' ? 'primary' : 'outline'}
-                size="md"
-                className="atlas-touch-floor"
-                disabled={draftCopyState === 'pending'}
-                data-testid="architecture-copy-draft-handoff"
-                data-architecture-draft-copy-state={draftCopyState}
-                onClick={() => {
-                  setDraftCopyState('pending');
-                  navigator.clipboard
-                    .writeText(buildArchitectureDraftPrompt(draftHandoffContext))
-                    .then(() => setDraftCopyState('copied'))
-                    .catch(() => setDraftCopyState('error'));
-                }}
-              >
-                {draftCopyState === 'pending'
-                  ? t('copyingHandoff')
-                  : draftCopyState === 'copied'
-                    ? t('copiedHandoff')
-                    : draftCopyState === 'error'
-                      ? t('copyHandoffError')
-                      : t('copyHandoff')}
-              </Button>
-              <span className="sr-only" role="status" aria-live="polite">
-                {draftCopyState === 'copied'
-                  ? t('copiedHandoff')
-                  : draftCopyState === 'error'
-                    ? t('copyHandoffError')
-                    : ''}
-              </span>
-            </div>
-          )}
-        />
-      </main>
+      <ArchitectureDraftHero
+        embedded={embedded}
+        notices={profileNotices ? <div className="mb-5 w-full max-w-[var(--git-setup-measure)]">{profileNotices}</div> : null}
+        agentRoute={agentRoute}
+        agentLabel={agentLabel}
+        onAgentRequest={onAgentRequest}
+        draftHandoffContext={draftHandoffContext}
+        draftSource={draftSource}
+        agentWorking={contextDockOpen}
+      />
     );
   }
 

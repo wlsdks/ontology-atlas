@@ -157,5 +157,17 @@
   "agentTaskCopyHint": "Choosing copies that task's sentence.",
   "copiedTaskHandoff": "Copied “{task}”. Paste it into your agent",
   "copyTaskSentence": "Copy the “{task}” task",
-  "deltaColumnHint": "Each mark says what that role's own outgoing imports did against the rules it declares. It is not a verdict on the role."
+  "deltaColumnHint": "Each mark says what that role's own outgoing imports did against the rules it declares. It is not a verdict on the role.",
+  "draftPreview": {
+    "exampleLabel": "Example · not data from your folder",
+    "sourceLabel": "Example · only the folder names come from {name}",
+    "proposedLabel": "Groups an agent proposed",
+    "rulesLabel": "Rules a person set",
+    "moreFolders": "+{count} more",
+    "pause": "Pause example animation",
+    "resume": "Resume example animation",
+    "replay": "Replay example animation",
+    "descriptionExample": "Example animation, not data from your folder: an agent reads the folders of {name} ({folders}) and their imports and proposes {layers} path groups; a person names them, from {top} down to {bottom}, and approving saves one file, {file}. Only then does a person set the dependency rules, and the check catches one import that climbs from {from} to {to}.",
+    "descriptionSource": "Example animation; only the folder names are real, from your connected source folder {name} ({folders}), and what follows is an example: an agent reads these folders and their imports and proposes {layers} path groups; a person names them, from {top} down to {bottom}, and approving saves one file, {file}. Only then does a person set the dependency rules, and the check catches one import that climbs from {from} to {to}."
+  }
 }
