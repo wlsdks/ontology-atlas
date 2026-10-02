@@ -318,6 +318,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     cache,
   });
   stats.relations = relations.rows;
+  stats.lens = relations.lens;
   stats.labels = placed.concat(relations.labels);
   return stats;
 }
