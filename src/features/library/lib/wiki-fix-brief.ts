@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from "@/i18n/answer-language";
 import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
 
 /** One structural finding as the validator hands it over. */
@@ -12,7 +13,7 @@ export interface WikiShapeFinding {
  * them. The findings block is named as data because it quotes page text into a prompt that
  * authorises a write. Folder findings are out of scope; they need another page edited.
  */
-export function buildWikiShapeFixBrief({
+function composeWikiShapeFixBrief({
   page,
   findings,
   locale,
@@ -64,4 +65,8 @@ export function buildWikiShapeFixBrief({
     `- Fix this one page. Touch no file outside ${file}.`,
     "- End with one line per change, and name anything you could not fix.",
   ].join("\n");
+}
+
+export function buildWikiShapeFixBrief(input: Parameters<typeof composeWikiShapeFixBrief>[0]): string {
+  return withAnswerLanguage(composeWikiShapeFixBrief(input), input.locale);
 }
