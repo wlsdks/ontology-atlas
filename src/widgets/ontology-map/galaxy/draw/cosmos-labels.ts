@@ -3,6 +3,11 @@ import type { CosmosInks, CosmosLabel, CosmosLabelKind, CosmosRoom, LabelCandida
 import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
 
 const TALL_LABELS: ReadonlySet<CosmosLabelKind> = new Set(["galaxy", "project"]);
+const NAMED_BY_ID: ReadonlySet<CosmosLabelKind> = new Set(["element", "member"]);
+const NAME_SHIFTS: readonly (readonly [number, number])[] = [-1, -0.5, 0, 0.5, 1]
+  .flatMap((dx) => Array.from({ length: 25 }, (_, k) => [dx, k % 2 ? (k + 1) / 2 : -k / 2] as const))
+  .sort((p, q) => Math.hypot(p[0] * 3, p[1]) - Math.hypot(q[0] * 3, q[1]));
+const NO_SHIFT: readonly (readonly [number, number])[] = [[0, 0]];
 
 export function measureLabel(ctx: CanvasRenderingContext2D, cache: CosmosBitmapCache, font: string, text: string): number {
   const key = `${font}|${text}`;
@@ -39,16 +44,31 @@ export function placeCosmosLabels(
   for (const c of candidates) {
     if (c.kind === "element" && elementBudget <= 0) continue;
     if (c.kind === "cluster" && clusterBudget <= 0) continue;
-    const text = c.kind === "element" ? (options.labelOf?.(c.id) ?? c.id) : c.text;
+    const text = c.text || (NAMED_BY_ID.has(c.kind) ? (options.labelOf?.(c.id) ?? c.id) : "");
     if (!text) continue;
     const tw = measureLabel(ctx, cache, c.font, text);
     const metaW = c.meta ? measureLabel(ctx, cache, metaFont, c.meta) + 6 : 0;
     const w = tw + metaW + 10;
     const h = TALL_LABELS.has(c.kind) ? 20 : 16;
-    const x = c.align === "center" ? c.x - w / 2 : c.x;
-    const y = c.y - h / 2;
-    if (x < room.x - 4 || x + w > room.x + room.width + 4 || y < room.y - 4 || y + h > room.y + room.height + 24) continue;
-    if (overlaps(x, y, w, h)) continue;
+    let x = c.align === "center" ? c.x - w / 2 : c.x;
+    let y = c.y - h / 2;
+    const anchored = TALL_LABELS.has(c.kind);
+    if (anchored) {
+      x = Math.min(room.x + room.width - w, Math.max(room.x, x));
+      y = Math.min(room.y + room.height - h, Math.max(room.y, y));
+    }
+    const inside = (left: number, top: number) => left >= room.x && left + w <= room.x + room.width && top >= room.y && top + h <= room.y + room.height;
+    let spot: readonly [number, number] | null = null;
+    for (const [dx, dy] of anchored ? NAME_SHIFTS : NO_SHIFT) {
+      const left = x + dx * w;
+      const top = y + dy * (h + 2);
+      if (inside(left, top) && !overlaps(left, top, w, h)) {
+        spot = [left, top];
+        break;
+      }
+    }
+    if (spot === null) continue;
+    [x, y] = spot;
     placed.push({ text, kind: c.kind, id: c.id, x, y, width: w, height: h });
     if (c.kind === "element") elementBudget -= 1;
     if (c.kind === "cluster") clusterBudget -= 1;
