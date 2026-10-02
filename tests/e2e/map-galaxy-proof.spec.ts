@@ -186,7 +186,7 @@ test.describe("names at 10,000 concepts", () => {
   for (const size of [
     { width: 1512, height: 982, all: true },
     { width: 1440, height: 900, all: true },
-    { width: 1040, height: 982, all: false },
+    { width: 1040, height: 720, all: false },
   ]) {
     test(`synth 10,000 at ${size.width}x${size.height} names its galaxies`, async ({ page }) => {
       test.setTimeout(150_000);
