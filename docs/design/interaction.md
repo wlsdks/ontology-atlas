@@ -25,7 +25,7 @@ This boundary prevents the situation where "they overlap weirdly and stutter": c
 ## 1. Canvas Fluid Discipline (ontology-map)
 
 - **Respond on pointer-down**: immediate visual feedback on node press (selection ring). No feedback waiting for click(up). Click=commit contract — down is only feedback, commit (focus switch) happens on up, cancellable via drag escape (~10px hysteresis).
-- **1:1 tracking**: during drag, nodes/camera stick to the pointer. Respect offset of grab point (no center snap). Use `setPointerCapture`, calculate release velocity from position/visual history of last few frames.
+- **1:1 tracking**: during drag, a grabbed node sticks to the pointer at every drag speed, and the camera does at 1× (the drag speed setting scales a pan). Respect offset of grab point (no center snap). Use `setPointerCapture`, calculate release velocity from position/visual history of last few frames.
 - **Interruptibility (First Principle)**: never lock input during camera movement·focus switch·expand animation. New target starts **from current displayed value** (never restart from target value — causes jump). No CSS `@keyframes` for gesture-based motion.
 - **Spring defaults**: damping 1.0 (no overshoot) / response 0.3~0.4. No bounce on menu/popover appearance, and none at the end of a thrown glide either: a free glide decelerates like friction.
 - **Velocity transfer**: pass release velocity to spring initial velocity at drag→animation seam. After pan release the camera glides `v · τ` with τ = `--motion-base` (180 ms) on a critically damped spring of the same time constant, so it leaves at the hand's speed and stops without overshoot (`model/motion-physics.ts#MOMENTUM_SPRING`, decision 645411dd).
