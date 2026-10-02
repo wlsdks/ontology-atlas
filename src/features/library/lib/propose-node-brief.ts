@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from "@/i18n/answer-language";
 import type { LintNodeCandidate } from "./lint-brief";
 import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
 
@@ -19,7 +20,7 @@ const KIND_LINE: Record<string, string> = {
   element: "element",
 };
 
-export function buildProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeNodeBriefInput): string {
+function composeProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeNodeBriefInput): string {
   const pages = candidate.pages.length > 0 ? candidate.pages.map((slug) => `- ${slug}.md`).join("\n") : "- (the report named no pages)";
   if (locale === "ko") {
     return [
@@ -61,4 +62,8 @@ export function buildProposeNodeBrief({ candidate, locale, vaultRoot }: ProposeN
     "",
     "The write waits for the person's approval. What the permission card shows is the proposal.",
   ].join("\n");
+}
+
+export function buildProposeNodeBrief(input: ProposeNodeBriefInput): string {
+  return withAnswerLanguage(composeProposeNodeBrief(input), input.locale);
 }
