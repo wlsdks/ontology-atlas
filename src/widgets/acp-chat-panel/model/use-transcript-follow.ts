@@ -58,6 +58,7 @@ export function useTranscriptFollow({
     let holding = false;
     let jumpShown = false;
     let lastClientHeight = scroller.clientHeight;
+    let lastScrollHeight = scroller.scrollHeight;
     const read = (): ScrollBox => ({
       scrollTop: scroller.scrollTop,
       scrollHeight: scroller.scrollHeight,
@@ -120,7 +121,8 @@ export function useTranscriptFollow({
     };
     const onScroll = () => {
       const box = read();
-      stateRef.current = afterScroll(stateRef.current, box);
+      stateRef.current = afterScroll(stateRef.current, box, box.scrollHeight - lastScrollHeight);
+      lastScrollHeight = box.scrollHeight;
       syncJump(box);
       if (stateRef.current.following) run();
       else halt();
@@ -156,6 +158,7 @@ export function useTranscriptFollow({
     };
     const observer = new ResizeObserver(() => {
       const box = read();
+      lastScrollHeight = box.scrollHeight;
       if (box.clientHeight !== lastClientHeight) {
         // Shown again, or squeezed from below by a card: keep the tail in view at once.
         if (lastClientHeight === 0 || box.clientHeight < lastClientHeight) restoreRef.current = true;
