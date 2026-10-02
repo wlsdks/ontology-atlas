@@ -2,6 +2,7 @@ import type { MapArrangement } from "@/shared/lib/appearance-preferences";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import type { PointerMachineState } from "../interaction/pointer-state-machine";
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
+import { followOrbitTarget, startOrbitCadence, type OrbitCadence } from "../model/orbit-cadence";
 import {
   CAMERA_TRANSITION_MIN_MS,
   cameraTransitionDurationMs,
@@ -137,6 +138,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
     cameraTokens,
     domeFitTarget,
   } = sources;
+  let orbitCadence: OrbitCadence | null = null;
 
   return function runDomeFrameStage(
     now: number,
@@ -670,8 +672,10 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           }
         }
         if (dome.orbiting) {
-          dome.yaw = dome.yawTarget;
-          dome.pitch = dome.pitchTarget;
+          orbitCadence ??= startOrbitCadence(dome.yawTarget, dome.pitchTarget);
+          followOrbitTarget(dome, orbitCadence, reducedMotionRef.current);
+        } else {
+          orbitCadence = null;
         }
         if (!dome.orbiting && dome.poseTween === null) {
           /*
