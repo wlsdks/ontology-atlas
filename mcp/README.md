@@ -36,6 +36,16 @@ the public relation query/write enums. Read the node and its `mtime`, then use a
 guarded full-array `patch_concept` and `validate_vault`; do not invent
 `add_relation(type:"is_a")`.
 
+## Frontmatter fidelity
+
+Frontmatter supports nonempty quoted keys in top-level and one-level block or
+inline mappings. Quoted scalar values stay strings; escaped backslashes remain
+distinct from newline/tab escapes. Unsupported key escapes and malformed map
+members retain diagnostics. A rewrite refuses to discard those declarations
+unless the patch explicitly replaces or deletes their identifiable complete
+field. Correct an unidentifiable key in the original text. Existing write and
+currentness checks still apply; decoding a rationale does not approve it.
+
 ## SDK and protocol baseline
 
 As of 2026-07-29, this package targets the **v2 SDK** —

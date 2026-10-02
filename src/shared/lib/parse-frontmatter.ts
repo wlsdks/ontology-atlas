@@ -73,6 +73,42 @@ function assignParsedKey(
   return true;
 }
 
+export function readFrontmatterEntry(input: string): { key: string; value: string } | null {
+  const text = input.trim();
+  let key: string;
+  let end: number;
+  if (text.startsWith('"') || text.startsWith("'")) {
+    const match = text.startsWith('"')
+      ? /^"((?:[^"\\]|\\["\\nt])*)"\s*:/.exec(text)
+      : /^'((?:[^']|'')*)'\s*:/.exec(text);
+    if (!match) return null;
+    key = text[0] === "'" ? match[1].replace(/''/g, "'") : decodeDoubleQuoted(match[1]);
+    end = match[0].length;
+  } else {
+    const colon = text.indexOf(':');
+    if (colon < 0 || text.startsWith('#')) return null;
+    key = text.slice(0, colon).trim();
+    end = colon + 1;
+  }
+  return key ? { key, value: text.slice(end).trim() } : null;
+}
+
+function readMappingMember(input: string, diagnostics: FrontmatterDiagnostic[], line: number): { key: string; value: string } | null {
+  const entry = readFrontmatterEntry(input);
+  if (!entry && input.trim() && !input.trim().startsWith('#')) {
+    diagnostics.push({
+      code: 'malformed-frontmatter-line', line,
+      message: `Frontmatter line ${line} must use key: value syntax.`,
+    });
+  }
+  return entry;
+}
+
+function decodeDoubleQuoted(value: string): string {
+  return value.replace(/\\(["\\nt])/g, (_, escaped: string) =>
+    escaped === 'n' ? '\n' : escaped === 't' ? '\t' : escaped);
+}
+
 export function parseFrontmatter(input: string): ParsedFrontmatter {
   // Normalise line endings and encoding — **on the read path only**
   // (measured 2026-07-28).
@@ -102,8 +138,9 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
   const lines = block.split('\n');
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
-    const idx = line.indexOf(':');
-    if (idx === -1) {
+    if (line.trim().startsWith(':')) continue;
+    const entry = readFrontmatterEntry(line);
+    if (!entry) {
       const trimmed = line.trim();
       if (/^\s+-\s+/.test(line)) {
         diagnostics.push({
@@ -120,9 +157,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       }
       continue;
     }
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (!key) continue;
+    const { key, value } = entry;
 
     // **Check for a block scalar before classifying the value.** The value of
     // `definition: |` is `"|"`, not an empty string, so putting this inside the
@@ -156,12 +191,12 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
         const obj: Record<string, ParsedScalar> = {};
         let j = i + 1;
         while (j < lines.length) {
-          const m = lines[j].match(/^(\s+)([^\s:][^:]*):\s*(.*)$/);
-          if (!m) break;
-          const childKey = m[2].trim();
-          const childValue = m[3].trim();
-          if (!childKey) break;
-          assignParsedKey(obj, childKey, parseScalar(childValue), diagnostics, j + 2);
+          if (!/^\s+/.test(lines[j]) || !lines[j].trim()) break;
+          const child = readMappingMember(lines[j], diagnostics, j + 2);
+          if (child) {
+            pushQuotedScalarDiagnostic(diagnostics, child.key, j + 2, child.value);
+            assignParsedKey(obj, child.key, parseScalar(child.value), diagnostics, j + 2);
+          }
           j += 1;
         }
         assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
@@ -186,7 +221,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    const topLevelScalar = parseTopLevelScalar(value);
+    const topLevelScalar = parseScalar(value);
     assignParsedKey(frontmatter, key, topLevelScalar, diagnostics, i + 2);
     pushGraphArrayDiagnostic(diagnostics, key, i + 2, topLevelScalar);
   }
@@ -269,7 +304,7 @@ function peekIndentedKind(
   if (start >= lines.length) return null;
   const next = lines[start];
   if (/^\s*-\s+/.test(next)) return 'list';
-  if (/^\s+[^\s:][^:]*:\s*\S?/.test(next)) return 'object';
+  if (/^\s+\S/.test(next) && !next.trim().startsWith('#')) return 'object';
   return null;
 }
 
@@ -287,44 +322,23 @@ function parseInlineObject(
   const inner = raw.slice(1, -1).trim();
   if (!inner) return {};
   const out: Record<string, ParsedScalar> = {};
-  for (const part of splitTopLevel(inner, ',')) {
-    const cIdx = part.indexOf(':');
-    if (cIdx === -1) continue;
-    const k = part.slice(0, cIdx).trim();
-    const v = part.slice(cIdx + 1).trim();
-    if (!k) continue;
-    assignParsedKey(out, k, parseScalar(v), diagnostics, line);
+  for (const part of splitTopLevel(inner, ',', true)) {
+    const member = readMappingMember(part, diagnostics, line);
+    if (!member) continue;
+    pushQuotedScalarDiagnostic(diagnostics, member.key, line, member.value);
+    assignParsedKey(out, member.key, parseScalar(member.value), diagnostics, line);
   }
   return out;
 }
 
 function parseScalar(value: string): ParsedScalar {
+  const trimmed = value.trim();
+  if ((trimmed[0] === '"' || trimmed[0] === "'") && trimmed.length >= 2 && trimmed[trimmed.length - 1] === trimmed[0]) return unquote(value);
   const v = unquote(value);
   if (v === 'true') return true;
   if (v === 'false') return false;
   if (v !== '' && !Number.isNaN(Number(v))) return Number(v);
   return v;
-}
-
-/*
- * Top-level scalars are typed like nested ones (2026-09-01 review). The
- * serializer writes booleans and numbers unquoted, so reading them back as
- * strings inverted any consumer branching on the field after one round trip —
- * `draft: false` came back as the truthy string 'false', with the type
- * depending on nesting depth in the same file. A quoted scalar stays a string:
- * quoting is how an author forces text.
- */
-function parseTopLevelScalar(value: string): ParsedScalar {
-  const trimmed = value.trim();
-  const quote = trimmed[0];
-  if (
-    (quote === '"' || quote === "'") &&
-    trimmed.length >= 2 &&
-    trimmed[trimmed.length - 1] === quote
-  ) {
-    return unquote(value);
-  }
-  return parseScalar(value);
 }
 
 function unquote(value: string): string {
@@ -335,18 +349,8 @@ function unquote(value: string): string {
   // not escape syntax, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
-    const inner = trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
-    /*
-     * Inside double quotes, `\n` **is a newline** (2026-08-16).
-     *
-     * A literal newline emitted by the writer destroys the whole frontmatter
-     * block: the next line reads as a new key, or hits `---` and starts the body
-     * (measured: `note⏎kind: element` **changed the node's kind**). So the writer
-     * emits `\n` inside double quotes and the reader reverses it here.
-     *
-     * Single quotes are untouched — in YAML those are strings with no escapes.
-     */
-    return quote === '"' ? inner.replace(/\\n/g, '\n').replace(/\\t/g, '\t') : inner;
+    const inner = trimmed.slice(1, -1);
+    return quote === '"' ? decodeDoubleQuoted(inner) : inner.replace(/\\(['\\])/g, '$1');
   }
   return value.replace(/^["']|["']$/g, '');
 }
@@ -359,35 +363,33 @@ function unquote(value: string): string {
  * truncates data** — the tail of `labels: { ko: "Map, Search" }` disappeared. A
  * separator inside quotes is data, not a separator.
  */
-function splitTopLevel(input: string, separator: string): string[] {
+function splitTopLevel(input: string, separator: string, mapping = false): string[] {
   const parts: string[] = [];
-  let current = '';
+  let start = 0;
   let quote: string | null = null;
+  let key = mapping;
   for (let i = 0; i < input.length; i += 1) {
     const ch = input[i];
     if (quote) {
-      if (ch === '\\' && i + 1 < input.length) {
-        current += ch + input[i + 1];
+      if (ch === '\\' && !(key && quote === "'") && i + 1 < input.length) {
         i += 1;
         continue;
       }
-      if (ch === quote) quote = null;
-      current += ch;
+      if (ch === quote) {
+        if (key && quote === "'" && input[i + 1] === "'") i += 1;
+        else quote = null;
+      }
       continue;
     }
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      current += ch;
-      continue;
+    if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === ':' && mapping) key = false;
+    else if (ch === separator) {
+      parts.push(input.slice(start, i));
+      start = i + 1;
+      key = mapping;
     }
-    if (ch === separator) {
-      parts.push(current);
-      current = '';
-      continue;
-    }
-    current += ch;
   }
-  parts.push(current);
+  parts.push(input.slice(start));
   return parts;
 }
 
