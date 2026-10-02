@@ -1,5 +1,5 @@
 import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
-import type { Box, DialAttention, DialEvidenceView, DialLabels, DialMarks, DialModel, DialScene, DialSector, DialTokens, Point, TextMark } from "./types";
+import type { Box, DialAttention, DialCluster, DialEvidenceView, DialLabels, DialMarks, DialModel, DialScene, DialTokens, Point, TextMark } from "./types";
 
 export type MeasureText = (text: string, font: string) => number;
 
@@ -14,7 +14,16 @@ export interface LabelInks {
   needs: string;
   usedBy: string;
   orphans: string;
+  ring: string;
+  element: string;
+  halo: string;
 }
+
+export interface Circle { x: number; y: number; r: number }
+
+export interface ExtraTextMark extends Omit<TextMark, "role"> { role: "ring" | "element"; halo: number | null }
+
+export interface LabelMarksOut extends Pick<DialMarks, "texts"> { extraTexts: ExtraTextMark[] }
 
 export interface DomainLabelBlock {
   domainId: string;
@@ -42,25 +51,23 @@ export interface LabelMarksInput {
   inks: LabelInks;
   ink(color: string): number;
   measureText: MeasureText;
-  labelScale: number;
   scale: number;
-  zoomRatio: number;
-  nodeScreen(id: string): Point | null;
   toScreen(x: number, y: number): Point;
-  chipRadiusPx: number;
-  hubRadiusPx: number;
-  discRadiusPx: number;
-  petalBoxes: readonly Box[];
+  hub: Circle | null;
+  chips: ReadonlyMap<string, Circle>;
+  discs: ReadonlyMap<string, Circle>;
+  capAlpha: number;
+  lines: readonly (readonly Point[])[];
   occupied: Box[];
   freeRect: Box;
   ledgerIds: ReadonlySet<string>;
+  elementLabel(id: string): string | null;
 }
 
-const NAME_STEPS = 8;
-const NAME_STEP_PX = 9;
-const NAME_CLEARANCE_PX = 10;
-const SIDE_COS = 0.42;
-const CAPABILITY_LABEL_SCALE_MAX = 1.3;
+const SIDE_COS = 0.4;
+const NAME_GAP_PX = 5;
+const DISC_GAP_PX = 4;
+const RING_OFFSETS = [0, 0.18, -0.18, 0.36, -0.36, 0.6, -0.6, 0.9, -0.9];
 
 export function overlaps(a: Box, b: Box): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
@@ -79,6 +86,10 @@ function union(boxes: readonly Box[]): Box {
   };
 }
 
+function circleBox(c: Circle, pad: number): Box {
+  return { minX: c.x - c.r - pad, maxX: c.x + c.r + pad, minY: c.y - c.r - pad, maxY: c.y + c.r + pad };
+}
+
 export function textBox(width: number, x: number, y: number, align: CanvasTextAlign, fontPx: number, pad: number): Box {
   const minX = align === "center" ? x - width / 2 : align === "right" || align === "end" ? x - width : x;
   return { minX: minX - pad, maxX: minX + width + pad, minY: y - fontPx * 0.62 - pad, maxY: y + fontPx * 0.62 + pad };
@@ -87,6 +98,36 @@ export function textBox(width: number, x: number, y: number, align: CanvasTextAl
 export function sideOf(angle: number): CanvasTextAlign {
   const cos = Math.cos(angle);
   return cos > SIDE_COS ? "left" : cos < -SIDE_COS ? "right" : "center";
+}
+
+export function crossesBox(lines: readonly (readonly Point[])[], box: Box): boolean {
+  const b = { minX: box.minX + 1, maxX: box.maxX - 1, minY: box.minY + 1, maxY: box.maxY - 1 };
+  for (const pts of lines) {
+    for (let k = 0; k < pts.length - 1; k += 1) {
+      const p = pts[k]!;
+      const q = pts[k + 1]!;
+      if (Math.max(p.x, q.x) < b.minX || Math.min(p.x, q.x) > b.maxX || Math.max(p.y, q.y) < b.minY || Math.min(p.y, q.y) > b.maxY) continue;
+      const dx = q.x - p.x;
+      const dy = q.y - p.y;
+      let t0 = 0;
+      let t1 = 1;
+      let hit = true;
+      for (const [pp, qq] of [[-dx, p.x - b.minX], [dx, b.maxX - p.x], [-dy, p.y - b.minY], [dy, b.maxY - p.y]] as const) {
+        if (pp === 0) {
+          if (qq < 0) hit = false;
+          continue;
+        }
+        const r = qq / pp;
+        if (pp < 0) {
+          if (r > t1) hit = false;
+          else if (r > t0) t0 = r;
+        } else if (r < t0) hit = false;
+        else if (r < t1) t1 = r;
+      }
+      if (hit) return true;
+    }
+  }
+  return false;
 }
 
 export function wrapDialName(text: string, maxPx: number, font: string, measure: MeasureText): string[] {
@@ -102,28 +143,28 @@ export function wrapDialName(text: string, maxPx: number, font: string, measure:
 }
 
 export function domainLabelBlock(
-  sector: DialSector,
+  domainId: string,
   model: DialModel,
   labels: DialLabels | null,
   evidence: DialEvidenceView | null,
   measure: MeasureText,
-  labelScale: number,
   tokens: DialTokens,
 ): DomainLabelBlock {
-  const domain = model.domainById.get(sector.domainId);
-  const nameFont = scaledLabelFont("domain", labelScale);
-  const nameFontPx = scaledLabelFontSize("domain", labelScale);
-  const unitsFont = scaledLabelFont("element", labelScale);
-  const unitsFontPx = scaledLabelFontSize("element", labelScale);
-  const lines = wrapDialName(domain?.label ?? sector.domainId, tokens.nameMaxPx * Math.max(1, labelScale), nameFont, measure);
+  const domain = model.domainById.get(domainId);
+  const ls = tokens.labelScale;
+  const nameFont = scaledLabelFont("domain", ls);
+  const nameFontPx = scaledLabelFontSize("domain", ls);
+  const unitsFont = scaledLabelFont("element", ls);
+  const unitsFontPx = scaledLabelFontSize("element", ls);
+  const lines = wrapDialName(domain?.label ?? domainId, tokens.nameMaxPx, nameFont, measure);
   const units = labels && domain ? labels.units(domain.capabilityIds.length, domain.elementCount) : null;
-  const staleCount = evidence?.measured ? evidence.staleByDomain.get(sector.domainId) ?? 0 : 0;
+  const staleCount = evidence?.measured ? evidence.staleByDomain.get(domainId) ?? 0 : 0;
   const stale = labels && units !== null && staleCount > 0 ? ` · ${labels.stale(staleCount)}` : null;
   const lineWidths = lines.map((line) => measure(line, nameFont));
   const unitsWidth = units === null ? 0 : measure(units + (stale ?? ""), unitsFont);
   const lineGap = nameFontPx * 1.25;
   return {
-    domainId: sector.domainId,
+    domainId,
     lines,
     units,
     stale,
@@ -139,7 +180,7 @@ export function domainLabelBlock(
   };
 }
 
-interface PlacedBlock {
+export interface PlacedBlock {
   block: DomainLabelBlock;
   align: CanvasTextAlign;
   x: number;
@@ -151,154 +192,244 @@ interface PlacedBlock {
   box: Box;
 }
 
-function placeBlock(block: DomainLabelBlock, angle: number, ax: number, ay: number): PlacedBlock {
-  const align = sideOf(angle);
+export function placeBlock(block: DomainLabelBlock, angle: number, ax: number, ay: number): PlacedBlock {
+  const cos = Math.cos(angle);
   const sin = Math.sin(angle);
+  const align: CanvasTextAlign = cos > SIDE_COS ? "left" : cos < -SIDE_COS ? "right" : "center";
   const h = block.height;
-  const top = align === "center" ? (sin < 0 ? ay - h : ay) : ay - h / 2 + sin * h * 0.35;
+  const top = sin > SIDE_COS ? ay : sin < -SIDE_COS ? ay - h : ay - h / 2;
   const lineYs = block.lines.map((_, i) => top + block.lineGap * (i + 0.5));
-  const lineBoxes = block.lines.map((_, i) => textBox(block.lineWidths[i]!, ax, lineYs[i]!, align, block.nameFontPx, 3));
+  const lineBoxes = block.lines.map((_, i) => textBox(block.lineWidths[i]!, ax, lineYs[i]!, align, block.nameFontPx, 2));
   const unitsY = top + block.lineGap * (block.lines.length + 0.5);
   const unitsBox = block.units === null ? null : textBox(block.unitsWidth, ax, unitsY, align, block.unitsFontPx, 2);
   const nameBox = union(lineBoxes);
   return { block, align, x: ax, lineYs, lineBoxes, unitsY, unitsBox, nameBox, box: unitsBox ? union([nameBox, unitsBox]) : nameBox };
 }
 
+export function nameCandidates(outward: number): number[] {
+  return [outward, Math.PI / 2, 0, Math.PI, -Math.PI / 2, outward + Math.PI / 4, outward - Math.PI / 4];
+}
+
 function receded(attn: DialAttention, domainId: string): boolean {
   return attn.domainId !== null && attn.domainId !== domainId && !attn.partnerDomains.has(domainId);
 }
 
-function pushText(out: Pick<DialMarks, "texts">, mark: TextMark, input: LabelMarksInput): boolean {
-  if (!inside(mark.box, input.freeRect)) return false;
-  out.texts.push(mark);
-  return true;
+interface Ctx {
+  input: LabelMarksInput;
+  out: LabelMarksOut;
+  texts: Box[];
+  marks: Box[];
 }
 
-function projectName(input: LabelMarksInput, out: Pick<DialMarks, "texts">): void {
+function free(ctx: Ctx, box: Box): boolean {
+  return inside(box, ctx.input.freeRect) && !ctx.texts.some((o) => overlaps(o, box)) && !ctx.marks.some((o) => overlaps(o, box));
+}
+
+function claim(ctx: Ctx, box: Box): void {
+  ctx.texts.push(box);
+  ctx.input.occupied.push(box);
+}
+
+function projectName(ctx: Ctx): void {
+  const { input } = ctx;
   const { model } = input;
-  if (!model.projectId || !model.projectLabel) return;
-  const hub = input.nodeScreen(model.projectId) ?? input.toScreen(0, 0);
-  const font = scaledLabelFont("project", input.labelScale);
-  const fontPx = scaledLabelFontSize("project", input.labelScale);
-  const y = hub.y + input.hubRadiusPx + fontPx * 0.9;
-  const box = textBox(input.measureText(model.projectLabel, font), hub.x, y, "center", fontPx, 4);
-  if (pushText(out, { id: model.projectId, role: "project", text: model.projectLabel, x: hub.x, y, align: "center", font, ink: input.ink(input.inks.project), box, parts: null }, input)) {
-    input.occupied.push(box);
-  }
+  if (!model.projectId || !model.projectLabel || !input.hub) return;
+  const ls = input.tokens.labelScale * 0.9;
+  const font = scaledLabelFont("project", ls);
+  const fontPx = scaledLabelFontSize("project", ls);
+  const y = input.hub.y + input.hub.r + fontPx * 0.95;
+  const box = textBox(input.measureText(model.projectLabel, font), input.hub.x, y, "center", fontPx, 3);
+  if (!free(ctx, box)) return;
+  ctx.out.texts.push({ id: model.projectId, role: "project", text: model.projectLabel, x: input.hub.x, y, align: "center", font, ink: input.ink(input.inks.project), box, parts: null });
+  claim(ctx, box);
 }
 
-function domainNames(input: LabelMarksInput, out: Pick<DialMarks, "texts">): void {
-  const { scene, attention: attn, inks } = input;
-  const placed: PlacedBlock[] = [];
-  for (const sector of scene.sectors) {
-    const chip = input.nodeScreen(sector.domainId);
-    if (!chip) continue;
-    const block = domainLabelBlock(sector, input.model, input.labels, input.evidence, input.measureText, input.labelScale, input.tokens);
-    const cos = Math.cos(sector.angle);
-    const sin = Math.sin(sector.angle);
-    let plan: PlacedBlock | null = null;
-    for (let step = 0; step < NAME_STEPS; step += 1) {
-      const reach = (scene.outerRadius - scene.ringRadius) * input.scale + input.chipRadiusPx + NAME_CLEARANCE_PX + step * NAME_STEP_PX;
-      plan = placeBlock(block, sector.angle, chip.x + cos * reach, chip.y + sin * reach);
-      if (!input.petalBoxes.some((p) => overlaps(p, plan!.box))) break;
-    }
-    if (plan && plan.lineBoxes.every((b) => inside(b, input.freeRect))) placed.push(plan);
+function clusterOrder(input: LabelMarksInput): DialCluster[] {
+  const attended = input.attention.domainId;
+  return input.scene.clusters
+    .filter((c) => input.chips.has(c.domainId))
+    .sort((x, y) => Number(y.domainId === attended) - Number(x.domainId === attended) || x.step - y.step || y.items.length - x.items.length || (x.domainId < y.domainId ? -1 : 1));
+}
+
+function nameReach(input: LabelMarksInput, cluster: DialCluster, chip: Circle): number {
+  let reach = chip.r + NAME_GAP_PX;
+  if (input.capAlpha <= 0.3) return reach;
+  for (const item of cluster.items) {
+    const d = input.discs.get(item.id);
+    if (d) reach = Math.max(reach, Math.hypot(d.x - chip.x, d.y - chip.y) + d.r + DISC_GAP_PX);
   }
-  for (const plan of placed) {
-    const id = plan.block.domainId;
-    const isAttended = attn.domainId === id;
+  return reach;
+}
+
+function domainNames(ctx: Ctx): void {
+  const { input } = ctx;
+  const { attention: attn, inks } = input;
+  const centre = input.hub ?? input.toScreen(0, 0);
+  for (const cluster of clusterOrder(input)) {
+    const chip = input.chips.get(cluster.domainId)!;
+    const block = domainLabelBlock(cluster.domainId, input.model, input.labels, input.evidence, input.measureText, input.tokens);
+    const reach = nameReach(input, cluster, chip);
+    const plans = nameCandidates(Math.atan2(chip.y - centre.y, chip.x - centre.x)).map((a) =>
+      placeBlock(block, a, chip.x + Math.cos(a) * reach, chip.y + Math.sin(a) * reach),
+    );
+    let chosen: PlacedBlock | null = null;
+    let withUnits = false;
+    for (let pass = 0; pass < 3 && !chosen; pass += 1) {
+      for (const plan of plans) {
+        if (pass === 0 && plan.unitsBox && free(ctx, plan.box) && !crossesBox(input.lines, plan.box)) {
+          chosen = plan;
+          withUnits = true;
+        } else if (pass === 1 && free(ctx, plan.nameBox) && !crossesBox(input.lines, plan.nameBox)) chosen = plan;
+        else if (pass === 2 && free(ctx, plan.nameBox)) chosen = plan;
+        if (chosen) break;
+      }
+    }
+    if (!chosen) continue;
+    const id = cluster.domainId;
     const dim = receded(attn, id);
-    const nameInk = input.ink(dim ? inks.domainReceded : isAttended ? inks.domainAttended : inks.domain);
+    const nameInk = input.ink(dim ? inks.domainReceded : attn.domainId === id ? inks.domainAttended : inks.domain);
+    const plan = chosen;
     plan.block.lines.forEach((line, i) => {
-      out.texts.push({ id, role: "domain", text: line, x: plan.x, y: plan.lineYs[i]!, align: plan.align, font: plan.block.nameFont, ink: nameInk, box: plan.lineBoxes[i]!, parts: null });
+      ctx.out.texts.push({ id, role: "domain", text: line, x: plan.x, y: plan.lineYs[i]!, align: plan.align, font: plan.block.nameFont, ink: nameInk, box: plan.lineBoxes[i]!, parts: null });
     });
-    input.occupied.push(plan.nameBox);
-    const unitsBox = plan.unitsBox;
-    if (!unitsBox || plan.block.units === null) continue;
-    if (!inside(unitsBox, input.freeRect)) continue;
-    if (placed.some((other) => other !== plan && overlaps(other.box, unitsBox))) continue;
+    claim(ctx, plan.nameBox);
+    if (!withUnits || !plan.unitsBox || plan.block.units === null) continue;
     const unitsInk = input.ink(dim ? inks.domainReceded : inks.units);
-    const text = plan.block.units + (plan.block.stale ?? "");
     const parts = plan.block.stale
       ? [{ text: plan.block.units, ink: unitsInk }, { text: plan.block.stale, ink: input.ink(dim ? inks.domainReceded : inks.stale) }]
       : null;
-    out.texts.push({ id, role: "units", text, x: plan.x, y: plan.unitsY, align: plan.align, font: plan.block.unitsFont, ink: unitsInk, box: unitsBox, parts });
-    input.occupied.push(unitsBox);
+    ctx.out.texts.push({ id, role: "units", text: plan.block.units + (plan.block.stale ?? ""), x: plan.x, y: plan.unitsY, align: plan.align, font: plan.block.unitsFont, ink: unitsInk, box: plan.unitsBox, parts });
+    claim(ctx, plan.unitsBox);
   }
 }
 
-function orphanCaption(input: LabelMarksInput, out: Pick<DialMarks, "texts">): void {
-  const { scene, labels } = input;
-  if (!labels || scene.orphans.length === 0) return;
-  let top = Infinity;
-  for (const id of scene.orphans) {
-    const p = input.nodeScreen(id);
-    if (p) top = Math.min(top, p.y);
-  }
-  if (!Number.isFinite(top)) return;
-  const font = scaledLabelFont("element", input.labelScale);
-  const fontPx = scaledLabelFontSize("element", input.labelScale);
-  const text = labels.orphans(scene.orphans.length);
+function ringLabels(ctx: Ctx): void {
+  const { input } = ctx;
+  const { labels, scene } = input;
+  if (!labels || scene.rings.length === 0) return;
+  const ls = input.tokens.labelScale;
+  const font = scaledLabelFont("element", ls);
+  const fontPx = scaledLabelFontSize("element", ls);
   const centre = input.toScreen(0, 0);
-  const y = top - fontPx * 1.4;
-  const box = textBox(input.measureText(text, font), centre.x, y, "center", fontPx, 2);
-  if (input.occupied.some((o) => overlaps(o, box))) return;
-  if (pushText(out, { id: null, role: "orphans", text, x: centre.x, y, align: "center", font, ink: input.ink(input.inks.orphans), box, parts: null }, input)) {
-    input.occupied.push(box);
+  for (const ring of scene.rings) {
+    const text = labels.ring(ring.min, ring.max);
+    const width = input.measureText(text, font);
+    for (const da of RING_OFFSETS) {
+      const a = scene.axisAngle + da;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      const align: CanvasTextAlign = ca < -0.3 ? "right" : ca > 0.3 ? "left" : "center";
+      const x = centre.x + ca * ring.radius * input.scale + (align === "right" ? -4 : align === "left" ? 4 : 0);
+      const y = centre.y + sa * ring.radius * input.scale - fontPx * 0.9;
+      const box = textBox(width, x, y, align, fontPx, 2);
+      if (!free(ctx, box) || crossesBox(input.lines, box)) continue;
+      ctx.out.extraTexts.push({ id: null, role: "ring", text, x, y, align, font, ink: input.ink(input.inks.ring), box, parts: null, halo: input.ink(input.inks.halo) });
+      claim(ctx, box);
+      break;
+    }
   }
 }
 
-function capabilityNames(input: LabelMarksInput, out: Pick<DialMarks, "texts">): void {
+function orphanCaption(ctx: Ctx): void {
+  const { input } = ctx;
+  const { scene, labels } = input;
+  if (!labels || scene.orphans.ids.length === 0) return;
+  const ls = input.tokens.labelScale;
+  const font = scaledLabelFont("element", ls);
+  const fontPx = scaledLabelFontSize("element", ls);
+  const c = input.toScreen(scene.orphans.centre.x, scene.orphans.centre.y);
+  const rr = Math.max(4, scene.orphans.radius * input.scale);
+  const text = labels.orphans(scene.orphans.ids.length);
+  const width = input.measureText(text, font);
+  const tries: [number, number, CanvasTextAlign][] = [[c.x + rr + 8, c.y, "left"], [c.x - rr - 8, c.y, "right"], [c.x, c.y + rr + fontPx, "center"], [c.x, c.y - rr - fontPx, "center"]];
+  for (const [x, y, align] of tries) {
+    const box = textBox(width, x, y, align, fontPx, 2);
+    if (!free(ctx, box)) continue;
+    ctx.out.texts.push({ id: null, role: "orphans", text, x, y, align, font, ink: input.ink(input.inks.orphans), box, parts: null });
+    claim(ctx, box);
+    return;
+  }
+}
+
+function capabilityNames(ctx: Ctx): void {
+  const { input } = ctx;
   const { attention: attn, inks, model } = input;
-  const pitchPx = input.scene.pitch * input.scale;
-  if (pitchPx < input.tokens.namePitchPx || input.zoomRatio < input.tokens.namesRatio) return;
-  const ls = Math.min(CAPABILITY_LABEL_SCALE_MAX, input.labelScale);
+  if (input.capAlpha <= 0.5 || input.tokens.pitch * input.scale < input.tokens.capName) return;
+  const ls = input.tokens.labelScale;
   const font = scaledLabelFont("capability", ls);
   const fontPx = scaledLabelFontSize("capability", ls);
-  const blocked: Box[] = [...input.occupied, ...input.petalBoxes];
-  const pinRoom = Math.max(3, input.discRadiusPx * 0.75) + 4;
-  const out0 = input.discRadiusPx + pinRoom;
-  const ordered = [...input.scene.sectors].sort((x, y) => Number(y.domainId === attn.domainId) - Number(x.domainId === attn.domainId));
-  for (const sector of ordered) {
-    const dimSector = attn.domainId !== null && sector.domainId !== attn.domainId;
-    const petals = sector.petals.filter((p) => !p.direct).sort((a, b) => a.angle - b.angle);
-    petals.forEach((petal, index) => {
-      if (input.ledgerIds.has(petal.id)) return;
-      const p = input.nodeScreen(petal.id);
-      const cap = model.capabilityById.get(petal.id);
-      if (!p || !cap) return;
-      const isNeed = attn.needsCaps.has(cap.id);
-      const isUser = attn.usedByCaps.has(cap.id);
-      if (dimSector && !isNeed && !isUser) return;
-      const width = input.measureText(cap.label, font);
-      const cos = Math.cos(petal.angle);
-      const sin = Math.sin(petal.angle);
-      const candidates: { x: number; y: number; align: CanvasTextAlign }[] = [];
-      if (Math.abs(cos) >= 0.55) {
-        candidates.push({ x: p.x + cos * out0 + (cos > 0 ? 2 : -2), y: p.y + sin * out0, align: cos > 0 ? "left" : "right" });
-      } else {
-        const preferred = index % 3;
-        for (const row of [preferred, (preferred + 1) % 3, (preferred + 2) % 3, 3]) {
-          const lift = out0 + fontPx * 0.7 + row * fontPx * 1.35;
-          candidates.push({ x: p.x + cos * out0, y: p.y + (sin < 0 ? -lift : lift), align: "center" });
-        }
-      }
-      for (const c of candidates) {
-        const box = textBox(width, c.x, c.y, c.align, fontPx, 2);
-        if (blocked.some((o) => overlaps(o, box)) || !inside(box, input.freeRect)) continue;
-        blocked.push(box);
-        input.occupied.push(box);
-        const ink = input.ink(isNeed ? inks.needs : isUser ? inks.usedBy : inks.capability);
-        out.texts.push({ id: cap.id, role: "capability", text: cap.label, x: c.x, y: c.y, align: c.align, font, ink, box, parts: null });
-        return;
-      }
-    });
+  const items: { id: string; disc: Circle; prio: number }[] = [];
+  for (const cluster of input.scene.clusters) {
+    if (!input.chips.has(cluster.domainId)) continue;
+    const own = attn.domainId === cluster.domainId;
+    for (const item of cluster.items) {
+      if (item.direct || input.ledgerIds.has(item.id)) continue;
+      const disc = input.discs.get(item.id);
+      if (!disc || !model.capabilityById.has(item.id)) continue;
+      const lit = attn.capabilityId === item.id || attn.needsCaps.has(item.id) || attn.usedByCaps.has(item.id);
+      if (attn.domainId && !own && !lit) continue;
+      items.push({ id: item.id, disc, prio: (lit ? 1000 : 0) + (own ? 500 : 0) + item.elementIds.length });
+    }
+  }
+  items.sort((x, y) => y.prio - x.prio || (x.id < y.id ? -1 : 1));
+  for (const { id, disc: d } of items) {
+    const label = model.capabilityById.get(id)!.label;
+    const width = input.measureText(label, font);
+    const tries: [number, number, CanvasTextAlign][] = [
+      [d.x + d.r + 4, d.y, "left"],
+      [d.x - d.r - 4, d.y, "right"],
+      [d.x, d.y + d.r + fontPx * 0.75, "center"],
+      [d.x, d.y - d.r - fontPx * 0.75, "center"],
+    ];
+    const boxes = tries.map(([x, y, align]) => textBox(width, x, y, align, fontPx, 1.5));
+    let pick = -1;
+    for (let pass = 0; pass < 2 && pick < 0; pass += 1) {
+      pick = boxes.findIndex((box) => free(ctx, box) && (pass === 1 || !crossesBox(input.lines, box)));
+    }
+    if (pick < 0) continue;
+    const [x, y, align] = tries[pick]!;
+    const box = boxes[pick]!;
+    const ink = input.ink(attn.needsCaps.has(id) ? inks.needs : attn.usedByCaps.has(id) ? inks.usedBy : inks.capability);
+    ctx.out.texts.push({ id, role: "capability", text: label, x, y, align, font, ink, box, parts: null });
+    claim(ctx, box);
   }
 }
 
-export function buildLabelMarks(input: LabelMarksInput, out: Pick<DialMarks, "texts">): void {
-  projectName(input, out);
-  domainNames(input, out);
-  orphanCaption(input, out);
-  capabilityNames(input, out);
+function elementNames(ctx: Ctx): void {
+  const { input } = ctx;
+  if (input.capAlpha <= 0.5) return;
+  const ls = input.tokens.labelScale;
+  const font = scaledLabelFont("element", ls);
+  const fontPx = scaledLabelFontSize("element", ls);
+  for (const cluster of input.scene.clusters) {
+    if (!input.chips.has(cluster.domainId)) continue;
+    if (input.attention.domainId && input.attention.domainId !== cluster.domainId) continue;
+    for (const item of cluster.items) {
+      if (item.elementPitch * input.scale < input.tokens.elementName) continue;
+      for (const id of item.elementIds) {
+        const p = input.scene.positions.get(id);
+        const label = input.elementLabel(id);
+        if (!p || !label) continue;
+        const sp = input.toScreen(p.x, p.y);
+        const box = textBox(input.measureText(label, font), sp.x + 5, sp.y, "left", fontPx, 1.5);
+        if (!free(ctx, box)) continue;
+        ctx.out.extraTexts.push({ id, role: "element", text: label, x: sp.x + 5, y: sp.y, align: "left", font, ink: input.ink(input.inks.element), box, parts: null, halo: null });
+        claim(ctx, box);
+      }
+    }
+  }
+}
+
+export function buildLabelMarks(input: LabelMarksInput, out: LabelMarksOut): void {
+  const marks: Box[] = [...input.occupied];
+  if (input.hub) marks.push(circleBox(input.hub, 1));
+  for (const c of input.chips.values()) marks.push(circleBox(c, 1));
+  for (const d of input.discs.values()) marks.push(circleBox(d, 1));
+  const ctx: Ctx = { input, out, texts: [], marks };
+  projectName(ctx);
+  domainNames(ctx);
+  ringLabels(ctx);
+  orphanCaption(ctx);
+  capabilityNames(ctx);
+  elementNames(ctx);
 }
