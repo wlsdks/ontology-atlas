@@ -58,6 +58,8 @@ import {
 } from '../model/local-runners';
 import { useAiConnection, type AiConnectionState } from '../model/use-ai-connection';
 import { ArmedChip, SettingsGroupHeading } from './settings-primitives';
+import { TermHint } from '@/shared/ui/term-hint';
+import type { GlossaryTerm } from '@/shared/config/term-glossary';
 
 /**
  * The Agents destination's models tab: which model Atlas's own conversation calls, and with
@@ -260,7 +262,7 @@ export function ModelConnectionsPanel({
         ))}
       </ModelGroup>
 
-      <ModelGroup label={t('keysTitle')} hint={t('keysTitleHint')} testId="models-keys">
+      <ModelGroup label={t('keysTitle')} term="apiKey" hint={t('keysTitleHint')} testId="models-keys">
         {SECRET_PROVIDERS.map((provider) => (
           <KeyRow
             key={provider}
@@ -312,17 +314,19 @@ function ModelGroup({
   label,
   hint,
   testId,
+  term,
   children,
 }: {
   label: string;
   hint?: string;
+  term?: GlossaryTerm;
   testId: string;
   children: ReactNode;
 }) {
   return (
     <section aria-label={label} className="min-w-0" data-testid={testId}>
       <SettingsGroupHeading
-        label={label}
+        label={term ? <TermHint term={term}>{label}</TermHint> : label}
         trailing={
           hint ? <span className="text-label text-[color:var(--color-text-tertiary)]">{hint}</span> : undefined
         }

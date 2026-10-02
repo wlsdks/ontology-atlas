@@ -4,6 +4,7 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
   forwardRef,
+  useRef,
   useState,
 } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
@@ -55,6 +56,7 @@ export interface TooltipProps {
    * content mounted through its exit, so it would still catch the pointer.
    */
   panelClassName?: string;
+  toggleOnPress?: boolean;
 }
 
 /** Includes its own provider unless `withProvider={false}`. */
@@ -66,13 +68,34 @@ export function Tooltip({
   withProvider = true,
   delayMs = 300,
   panelClassName,
+  toggleOnPress = false,
 }: TooltipProps) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inner = (
     <TooltipPrimitive.Root delayDuration={delayMs} open={open} onOpenChange={setOpen}>
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Trigger
+        asChild
+        ref={triggerRef}
+        onPointerDown={toggleOnPress ? (event) => event.preventDefault() : undefined}
+        onClick={
+          toggleOnPress
+            ? (event) => {
+                event.preventDefault();
+                setOpen((wasOpen) => !wasOpen);
+              }
+            : undefined
+        }
+      >
+        {children}
+      </TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipContent side={side} align={align} panelClassName={panelClassName} aria-hidden={open ? undefined : true}>
+        <TooltipContent side={side} align={align} panelClassName={panelClassName}
+          aria-hidden={open ? undefined : true}
+          onPointerDownOutside={(event) => {
+            if (toggleOnPress && triggerRef.current?.contains(event.target as Node)) event.preventDefault();
+          }}
+        >
           {content}
         </TooltipContent>
       </TooltipPrimitive.Portal>

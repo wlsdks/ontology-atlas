@@ -38,7 +38,7 @@
   "kept": {
     "title": "Kept in this folder",
     "caption": "Connectors, schedules and project sources live in .ontology-atlas/ inside the folder; they move with the folder and Git leaves them out by default. Git keeps its own history in .git/.",
-    "connectors": "Agent connections (MCP)",
+    "connectors": "MCP connections",
     "connectorsCount": "{count, plural, =0 {None in this folder} one {# in this folder} other {# in this folder}}",
     "connectorsAllowed": "{total} in this folder · {count} allowed here",
     "schedules": "Schedules",

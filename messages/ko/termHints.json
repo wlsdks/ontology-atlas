@@ -1,0 +1,19 @@
+{
+  "trigger": "{term} 설명",
+  "mcp": {
+    "expansion": "MCP (Model Context Protocol)",
+    "explanation": "코딩 에이전트가 이 폴더 같은 바깥 도구와 자료를 읽고 쓰는 표준 방식이에요."
+  },
+  "acp": {
+    "expansion": "ACP (Agent Client Protocol)",
+    "explanation": "Atlas 같은 앱이 코딩 에이전트와 대화하고, 쓰기 전에 매번 허락을 묻는 표준 방식이에요."
+  },
+  "apiKey": {
+    "expansion": "API key (Application Programming Interface key)",
+    "explanation": "모델 제공자가 발급하는 비밀 문자열로, 프로그램이 내 계정으로 모델을 부를 수 있게 해요."
+  },
+  "cli": {
+    "expansion": "CLI (Command-Line Interface)",
+    "explanation": "창을 누르는 대신 터미널에 명령을 입력해서 실행하는 프로그램이에요."
+  }
+}

@@ -240,8 +240,8 @@
     "error": "Finder 열기 실패: {message}"
   },
   "agentSetup": {
-    "ariaLabel": "에이전트 연결(MCP)",
-    "title": "내 에이전트 연결",
+    "ariaLabel": "MCP 연결",
+    "title": "내 MCP 연결",
     "ready": "준비됨",
     "missing": "누락",
     "rootSummaryBlocked": "실행할 수 있는 서버가 없어요 · 소스 체크아웃으로만 설정할 수 있어요",
