@@ -1990,7 +1990,7 @@ describe('message catalogue related-tests rule', () => {
     );
     assert.equal(
       relatedMessagesCommand(),
-      'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
+      'pnpm exec vitest related --run messages/en.json messages/ja.json messages/ko.json messages/zh.json --passWithNoTests',
     );
   });
 });
