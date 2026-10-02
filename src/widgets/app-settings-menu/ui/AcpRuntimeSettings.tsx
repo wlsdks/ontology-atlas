@@ -13,6 +13,7 @@ import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { buttonVariants, Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
+import { TermHint } from '@/shared/ui/term-hint';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
@@ -285,7 +286,8 @@ export function AcpRuntimeSettings({
             >
               {guardedNames.length > 0
                 ? t('guardedExplainer', { names: guardedNames.join(' · ') })
-                : t('guardedExplainerNone')}
+                : t('guardedExplainerNone')}{' '}
+              <TermHint term="acp" />
             </p>
           ) : null}
         </div>

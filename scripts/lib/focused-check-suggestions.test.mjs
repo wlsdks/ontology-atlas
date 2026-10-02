@@ -1159,11 +1159,13 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('runs every companion journey when a companion screen changes, not only the spec it touched', () => {
-    const result = suggestFocusedChecks(['src/features/agent-activity/ui/CompanionMap.tsx']);
-    const row = result.commands.find((r) => r.command.includes('companion-growth.spec.ts'));
-    assert.ok(row, 'companion-growth guards the selector overflow and hit areas a map edit can break');
-    assert.match(row.command, /companion-sector\.spec\.ts/);
+  it('keeps personal-save and verified-status journeys on their entry owners', () => {
+    for (const path of ['src/views/first-run/ui/FirstRunPage.tsx', 'src/views/home/ui/TopologyCommandChrome.tsx', 'src/features/agent-activity/ui/AgentActivityChip.tsx']) {
+      const result = suggestFocusedChecks([path]);
+      const row = result.commands.find((r) => r.command.includes('retired-game-storage.spec.ts'));
+      assert.ok(row, `missing retirement journey for ${path}`);
+      assert.match(row.command, /agent-mascot-presence\.spec\.ts/);
+    }
   });
 
   it('suggests the map viewport framing E2E for the exact camera-obstacle source owners', () => {

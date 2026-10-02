@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/base-path';
-import { cn } from '@/shared/lib/cn';
-import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
+import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 import {
   isVerifiedMascotCompletion,
   isVerifiedMascotRead,
@@ -27,9 +26,8 @@ export const MASCOT_WALK_MS = 600;
  * SUCCESS only when that same observed sequence receives a terminal completion.
  * There is no idle loop and no inferred work state.
  */
-export function AgentMascotPresence({ inline = false }: { inline?: boolean }) {
+export function AgentMascotPresence({ feed }: { feed: Pick<AgentActivityFeed, 'showStatus' | 'work'> }) {
   const t = useTranslations('agentActivity.mascot');
-  const feed = useAgentActivityFeed();
   const [state, setState] = useState<AgentMascotState>('hidden');
   const [traveling, setTraveling] = useState(false);
   const readSequenceRef = useRef(false);
@@ -130,15 +128,12 @@ export function AgentMascotPresence({ inline = false }: { inline?: boolean }) {
       data-testid="agent-mascot-presence"
       data-state={state}
       data-traveling={traveling ? 'true' : undefined}
-      className={cn(
-        inline ? 'atlas-mascot-presence pointer-events-none absolute inset-0 size-16 overflow-hidden' : 'atlas-mascot-presence pointer-events-none absolute right-[var(--chrome-inset)] top-[calc(50%+var(--chrome-inset)*2)] z-10 hidden size-16 overflow-visible lg:block',
-        traveling && !inline && 'atlas-mascot-presence--walking',
-      )}
+      className="atlas-mascot-presence pointer-events-none relative size-8 shrink-0 overflow-hidden"
     >
       <div
         key={state}
         aria-hidden="true"
-        className="atlas-mascot-sprite size-16"
+        className="atlas-mascot-sprite size-16 origin-top-left scale-50"
         data-mascot-state={state}
         style={{ backgroundImage: `url(${withBasePath(ROW_SOURCE[state])})` }}
       />

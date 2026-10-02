@@ -16,6 +16,8 @@ command and tool contracts by their READMEs. When a feature file and the code
 disagree, the code wins; a feature file's history is its Git log
 (`pnpm doc:history -- <path>`).
 
+The cream-hooded planet traveler is the shared mascot across brand and in-app surfaces. Its waiting and verified-work poses remain tied to their existing activity states; see [Brand](design/brand.md).
+
 ## Surfaces
 
 | Surface | Entry | Reference |
@@ -28,6 +30,9 @@ disagree, the code wins; a feature file's history is its Git log
 Meaning review previews a nonblank authored description or a complete opening
 prose paragraph within 320 characters. The full-document action exposes the
 remaining sections and boundaries, including when no preview is eligible.
+
+The optional companion game and related personal-record screens are retired.
+Existing local saves remain untouched; no replacement viewer or export is provided.
 
 Direct model conversations reject malformed response structures with a bounded
 `invalid-provider-response` diagnostic. No tool call from that response executes;

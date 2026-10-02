@@ -2,24 +2,7 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
 
-/**
- * The vault agent's chat round trip — the Tauri IPC bridge (a typed wrapper over
- * `llm_chat` in `src-tauri/src/llm.rs`), following the conventions of
- * `tauri-secrets.ts`.
- *
- * Contract (the Rust code is the source of truth):
- * - `llm_chat(provider, vaultPath, model, question, body, scope)` → `LlmChatEcho`
- *
- * **No key passes through this file.** The WebView assembles the request body only;
- * Rust reads the key from the keychain and attaches the auth header. The response
- * body comes back because it needs normalising, but the audit log records only its
- * length — this is not a conversation store.
- *
- * Web degradation contract: outside a Tauri runtime `isLlmChatBridgeAvailable()` is
- * false and `llmChat` returns `null` without invoking. Callers then do not render the
- * input at all and explain honestly why it is desktop-only. Having no transport path
- * in the web build is the trust charter's honest degradation.
- */
+/** Native model transport keeps credentials and audit writes in Rust; the web has no transport. */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -66,11 +49,13 @@ export function isLlmChatBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
 
-/**
- * One chat round trip, **only within the turn where the user pressed send**. The
- * vault path is required because the audit log lives inside the vault: with nowhere
- * to record it, Rust does not send (log-before-send).
- */
+const cancelledRequests = new Map<string, Set<Promise<void>>>();
+
+function rejectAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw signal.reason ?? new DOMException('The request was cancelled.', 'AbortError');
+}
+
+/** A replacement waits for canceled native sends to finish their same-vault audit cleanup. */
 export async function llmChat(args: {
   provider: string;
   vaultPath: string;
@@ -86,18 +71,53 @@ export async function llmChat(args: {
    * host the screen never promised.
    */
   baseUrl?: string | null;
+  signal?: AbortSignal;
 }): Promise<LlmChatEcho | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<LlmChatEcho>('llm_chat', {
-    provider: args.provider,
-    vaultPath: args.vaultPath,
-    model: args.model,
-    question: args.question,
-    body: args.body,
-    scope: args.scope,
-    baseUrl: args.baseUrl ?? null,
-  });
+  rejectAborted(args.signal);
+  while (cancelledRequests.has(args.vaultPath)) {
+    await Promise.all(cancelledRequests.get(args.vaultPath) ?? []);
+    rejectAborted(args.signal);
+  }
+  let requestId: string | null = null;
+  let cancellation: Promise<unknown> | null = null;
+  let settle!: () => void;
+  const settled = new Promise<void>((resolve) => { settle = resolve; });
+  const cancel = () => {
+    if (requestId && !cancellation) {
+      cancellation = invoke('llm_chat_cancel', { requestId }).catch(() => undefined);
+    }
+    return cancellation;
+  };
+  const onAbort = () => {
+    const pending = cancelledRequests.get(args.vaultPath) ?? new Set<Promise<void>>();
+    pending.add(settled);
+    cancelledRequests.set(args.vaultPath, pending);
+    void cancel();
+  };
+  args.signal?.addEventListener('abort', onAbort, { once: true });
+  try {
+    requestId = await invoke<string>('llm_chat_prepare');
+    rejectAborted(args.signal);
+    return await invoke<LlmChatEcho>('llm_chat', {
+      requestId,
+      provider: args.provider,
+      vaultPath: args.vaultPath,
+      model: args.model,
+      question: args.question,
+      body: args.body,
+      scope: args.scope,
+      baseUrl: args.baseUrl ?? null,
+    });
+  } finally {
+    args.signal?.removeEventListener('abort', onAbort);
+    await cancel();
+    const pending = cancelledRequests.get(args.vaultPath);
+    pending?.delete(settled);
+    if (pending?.size === 0) cancelledRequests.delete(args.vaultPath);
+    settle();
+  }
 }
 
 /**

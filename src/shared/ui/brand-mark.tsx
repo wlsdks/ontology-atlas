@@ -26,7 +26,7 @@ export interface BrandMarkProps
   > {
   /** Square, in CSS pixels; prefer an integer multiple of the native tier. */
   size?: number;
-  /** full=64px raised-hand mascot · compact=32px body · micro=16px helmet. */
+  /** full=64px traveler · compact=32px hood and planet · micro=16px hood. */
   detail?: BrandMarkDetail;
 }
 

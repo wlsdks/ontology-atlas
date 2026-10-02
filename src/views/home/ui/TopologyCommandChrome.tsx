@@ -1,5 +1,5 @@
 import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
-import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
+import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
@@ -645,7 +645,6 @@ export function TopologyCommandChrome({
                   </div>
                   {/* Work status is the bell's left segment; one component owns both feeds, outside
                      click and Escape. */}
-                  <CompanionHome compact />
                   <AgentActivityChip
                     // Recedes for a datasheet, but not from under an open notification panel:
                     // pressing a row there focuses its node, which raises the datasheet.

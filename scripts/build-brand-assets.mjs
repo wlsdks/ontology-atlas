@@ -1,13 +1,4 @@
-/**
- * Raster-first brand source contract.
- *
- * The shipping identity is native pixel art, so its canonical source is three
- * authored PNG grids rather than duplicated SVG geometry. Browser, PWA, Open
- * Graph, macOS, and Windows outputs all derive from these exact masters through
- * `build-brand-raster.mjs`; `install-brand-icons.mjs` owns the final fan-out.
- *
- * Spec source: `docs/DECISIONS.md`, 2026-08-28 pixel mascot identity record.
- */
+/** Raster source contracts; see docs/design/brand.md for authorship and fan-out. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -16,15 +7,15 @@ export const BRAND_TAGLINE = 'Understand your codebase.';
 
 /** Fixed inside mascot pixels only; these values are not an application palette. */
 export const MASCOT_PALETTE = Object.freeze({
-  outline: '#0B0B0D',
-  face: '#F7F5E6',
-  signal: '#C6F000',
-  suitHighlight: '#5B5B66',
+  outline: '#101025',
+  face: '#FFF0CA',
+  signal: '#65BDE9',
+  suitHighlight: '#286DD0',
 });
 
 /**
  * Each small size is separately authored. Scaling the 64px figure down is a
- * regression: the body and antenna collapse before the face does.
+ * regression: the body and planet collapse before the face does.
  */
 export const MASCOT_MASTERS = Object.freeze({
   full: Object.freeze({

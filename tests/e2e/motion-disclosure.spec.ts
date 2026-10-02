@@ -9,8 +9,9 @@ type Track = { height: number[]; opacity: number[]; inertAtFirstFrame: boolean }
 const WINDOW_MS = 500;
 const MAX_HEIGHT_STEP = 0.35;
 const MAX_CONTENT_FFS = 0.25;
+const OPENING_PLAYBACK = 0.25;
 
-async function sampleToggle(page: Page, trigger: Locator, box: Locator): Promise<Track> {
+async function sampleToggle(page: Page, trigger: Locator, box: Locator, windowMs = WINDOW_MS): Promise<Track> {
   const boxHandle = await box.elementHandle();
   return trigger.evaluate(
     (triggerElement, { boxElement, windowMs }) =>
@@ -37,7 +38,7 @@ async function sampleToggle(page: Page, trigger: Locator, box: Locator): Promise
         };
         requestAnimationFrame(frame);
       }),
-    { boxElement: boxHandle, windowMs: WINDOW_MS },
+    { boxElement: boxHandle, windowMs },
   );
 }
 
@@ -70,7 +71,11 @@ test.describe("Disclosure motion", () => {
   test("provenance opens and closes on the row curve with no height jump", async ({ page }) => {
     const { trigger, box } = await openProvenance(page);
 
-    const opening = await sampleToggle(page, trigger, box);
+    const animation = await page.context().newCDPSession(page);
+    await animation.send("Animation.enable");
+    await animation.send("Animation.setPlaybackRate", { playbackRate: OPENING_PLAYBACK });
+    const opening = await sampleToggle(page, trigger, box, WINDOW_MS / OPENING_PLAYBACK);
+    await animation.send("Animation.setPlaybackRate", { playbackRate: 1 });
     expect(opening.height.at(-1)!).toBeGreaterThan(opening.height[0]!);
     expect(maxStepShare(opening.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
     expect(firstStepShare(opening.opacity)).toBeLessThanOrEqual(MAX_CONTENT_FFS);

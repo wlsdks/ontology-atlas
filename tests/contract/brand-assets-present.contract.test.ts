@@ -27,6 +27,11 @@ function pngFiles(root: string): string[] {
 }
 
 describe('pixel mascot brand outputs', () => {
+  it('keeps the browser ICO fallback on the same identity as packaged icons', () => {
+    expect(readFileSync(join(ROOT, 'app/favicon.ico'))).toEqual(
+      readFileSync(join(ROOT, 'src-tauri/icons/icon.ico')),
+    );
+  });
   it('retires every nested-hex SVG identity file', () => {
     for (const path of [
       'app/icon.svg',
