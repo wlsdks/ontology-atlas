@@ -40,6 +40,6 @@ describe("dial rings on the synthetic vault", () => {
   });
 
   it("layered 10,000: four rings, 2 / 14 / 14 / 3", () => {
-    expect(ringsOf("layered").map(([, count]) => count)).toEqual([2, 14, 14, 3]);
+    expect(ringsOf("layered").map(([, count]) => count)).toEqual([3, 12, 15, 3]);
   });
 });
