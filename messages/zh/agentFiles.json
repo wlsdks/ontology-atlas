@@ -1,20 +1,20 @@
 {
-  "header": "Agent files",
-  "headerHint": "Which AI tool reads which instruction file: read-only detection, nothing is rewritten",
-  "driftBadge": "mismatch",
-  "driftCount": "{count} files out of sync",
-  "listAria": "Agent instruction files",
+  "header": "智能体文件",
+  "headerHint": "哪个 AI 工具读取哪个指令文件：只读检测，不会改写任何内容",
+  "driftBadge": "不一致",
+  "driftCount": "{count} 个文件不同步",
+  "listAria": "智能体指令文件",
   "drift": {
-    "missing-agents-import": "CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions",
-    "broken-agents-import": "CLAUDE.md imports @AGENTS.md but AGENTS.md is missing",
-    "at-ref-missing": "An @referenced file was not found",
-    "agents-md-over-codex-cap": "AGENTS.md exceeds the Codex 32 KiB project-doc cap",
-    "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
-    "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees",
-    "agent-copy-diverged": "Duplicated agent briefs diverged between .claude/agents and .agents/agents",
-    "agent-copy-file-missing": "An agent brief exists in only one of the duplicated trees",
-    "non-english-agent-text": "An agent file carries non-English text, and its text is what a blocked or steered agent reads",
-    "mcp-config-unparseable": "An MCP config file exists but declares no server, so every grant beside it is undeclared",
-    "undeclared-mcp-server": "An agent brief grants tools from an MCP server its config does not declare"
+    "missing-agents-import": "CLAUDE.md 没有导入 @AGENTS.md：Claude Code 与读取 AGENTS.md 的工具看到的指令不同",
+    "broken-agents-import": "CLAUDE.md 导入了 @AGENTS.md，但 AGENTS.md 不存在",
+    "at-ref-missing": "找不到被 @ 引用的文件",
+    "agents-md-over-codex-cap": "AGENTS.md 超过了 Codex 32 KiB 的项目文档上限",
+    "skill-copy-diverged": ".claude/skills 与 .agents/skills 中重复的 Skill 副本已不一致",
+    "skill-copy-file-missing": "某个 Skill 文件只存在于重复的 Skill 目录树之一",
+    "agent-copy-diverged": ".claude/agents 与 .agents/agents 中重复的智能体说明已不一致",
+    "agent-copy-file-missing": "某份智能体说明只存在于重复的目录树之一",
+    "non-english-agent-text": "某个智能体文件含有非英文文本，而被拦下或被引导的智能体读到的正是这些文本",
+    "mcp-config-unparseable": "存在 MCP 配置文件，但没有声明任何服务器，因此它旁边的所有授权都是未声明的",
+    "undeclared-mcp-server": "某份智能体说明授权使用了某个 MCP 服务器的工具，而其配置并未声明该服务器"
   }
 }
