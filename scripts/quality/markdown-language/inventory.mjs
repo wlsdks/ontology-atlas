@@ -5,7 +5,7 @@ const NON_LATIN_SCRIPT = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{
  * as contributor prose. `display_ko` names a node in the reader's language; `summary_<role>_<locale>`
  * does the same for one architecture role, and the locale is matched by shape (two letters) for
  * the same reason both profile parsers match it that way: a vault file outlives the locale list
- * this build happens to ship. Anything else carrying Han, kana or Hangul is still counted as a violation.
+ * this build happens to ship. Anything else is still counted as a violation.
  */
 const TYPED_LOCALE_KEY = /^(?:display|summary_[a-z][a-z0-9-]*)_[a-z]{2}\s*:/;
 /** `- Focused test: `path#title`` on an element's Evidence list, title quoted from a test file. */
