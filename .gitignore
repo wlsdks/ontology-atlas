@@ -82,6 +82,7 @@ references/
 !app/apple-icon.png
 !app/icon.png
 !assets/brand/mascot/*.png
+!assets/brand/mascot/source/*.png
 # Gateway captures of the real app (2026-09-08): the download page's architecture and library sections.
 !public/gateway/*.png
 !public/brand/*.png

@@ -12,9 +12,6 @@ import {
 const NOW = Date.parse('2026-08-29T00:00:00.000Z');
 const mocks = vi.hoisted(() => ({ feed: {} as AgentActivityFeed }));
 
-vi.mock('../model/use-agent-activity-feed', () => ({
-  useAgentActivityFeed: () => mocks.feed,
-}));
 
 const feed = (overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed => ({
   showStatus: true,
@@ -49,7 +46,7 @@ const feed = (overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed => 
 
 const ui = () => (
   <NextIntlClientProvider locale="en" messages={enMessages}>
-    <AgentMascotPresence />
+    <AgentMascotPresence feed={mocks.feed} />
   </NextIntlClientProvider>
 );
 
