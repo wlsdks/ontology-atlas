@@ -1,24 +1,6 @@
-import { armPoint, STAR_KIND_CAPABILITY, STAR_KIND_ELEMENT, STAR_KIND_NUCLEUS, type CosmosGalaxy } from "./cosmos-layout";
-import { hash01 } from "./cosmos-morphology";
-
-export interface CosmosInks {
-  project: string;
-  domain: string;
-  capability: string;
-  element: string;
-  accent: string;
-  bgNear: string;
-  bgFar: string;
-  filament: string;
-  filamentHead: string;
-  filamentDim: string;
-  labelProject: string;
-  labelDomain: string;
-  labelCapability: string;
-  labelElement: string;
-  labelMeta: string;
-  select: string;
-}
+import { armPoint, STAR_KIND_CAPABILITY, STAR_KIND_ELEMENT, STAR_KIND_NUCLEUS, type CosmosGalaxy } from "../layout/cosmos-layout";
+import { hash01 } from "../layout/cosmos-morphology";
+import type { CosmosInks } from "../cosmos-types";
 
 const TAU = Math.PI * 2;
 
@@ -202,34 +184,4 @@ export function buildDeepField(inks: CosmosInks): HTMLCanvasElement | null {
     ctx.fillRect(x, y, s, s);
   }
   return made.canvas;
-}
-
-export function filamentGeometry(
-  a: { x: number; y: number; radius: number },
-  b: { x: number; y: number; radius: number },
-  bowShare = 0.15,
-): { x1: number; y1: number; cx: number; cy: number; x2: number; y2: number } {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const d = Math.hypot(dx, dy) || 1;
-  const ux = dx / d;
-  const uy = dy / d;
-  const x1 = a.x + ux * a.radius * 0.92;
-  const y1 = a.y + uy * a.radius * 0.92;
-  const x2 = b.x - ux * b.radius * 0.92;
-  const y2 = b.y - uy * b.radius * 0.92;
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  let px = -uy;
-  let py = ux;
-  if (px * mx + py * my < 0) {
-    px = -px;
-    py = -py;
-  }
-  const bow = Math.hypot(x2 - x1, y2 - y1) * bowShare;
-  return { x1, y1, cx: mx + px * bow, cy: my + py * bow, x2, y2 };
-}
-
-export function filamentWidth(count: number): number {
-  return Math.min(2.4, 0.5 + 0.35 * Math.log2(1 + count));
 }

@@ -1,40 +1,29 @@
+import { isDirectionalRelation } from "@/entities/knowledge-graph";
 import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { readHexRoom } from "../morph/hex-marks";
-import { MIN_STAR_SPACING, type CosmosLayout } from "./cosmos-layout";
-import { hash01 } from "./cosmos-morphology";
-import {
-  drawCosmosFrame,
-  galaxyMatrix,
-  liveBandRadius,
-  registerCosmosLabels,
-  worldToScreen,
-  type CosmosCamera,
-  type CosmosFrameCache,
-  type CosmosFrameStats,
-  type CosmosRoom,
-  type GalaxyPose,
-} from "./cosmos-frame";
-import { buildDeepField, type CosmosInks } from "./cosmos-paint";
+import type { OntologyMapEdge } from "../ui/OntologyMap";
+import { applyArrival } from "./cosmos-arrival";
+import { applyHaze, createHazeState, stepHaze, type CosmosAmbient } from "./cosmos-ambient";
+import { galaxyFitScale, galaxyMatrix, liveBandRadius, overviewCamera, worldToScreen } from "./cosmos-camera";
+import type { CosmosArrivalMode, CosmosCamera, CosmosFrameStats, CosmosInks, CosmosRelation, CosmosRoom, GalaxyPose } from "./cosmos-types";
+import { walkCandidates, walkTarget } from "./cosmos-walk";
+import { CosmosBitmapCache } from "./draw/cosmos-bitmap-cache";
+import { drawCosmosFrame } from "./draw/cosmos-frame";
+import { registerCosmosLabels } from "./draw/cosmos-labels";
+import { buildDeepField } from "./draw/cosmos-paint";
+import { MIN_STAR_SPACING, type CosmosLayout } from "./layout/cosmos-layout";
 
-export type CosmosAmbient = "off" | "haze" | "sway";
-
-export interface CosmosEngineOptions {
+interface CosmosEngineOptions {
   onSelect?: (id: string) => void;
   onPaneClick?: () => void;
   onDrawn?: (count: number) => void;
   reducedMotion: boolean;
   ambient: CosmosAmbient;
-  arrive: boolean;
 }
 
-const ACTIVE_MS = 12_000;
-const ARRIVAL_MS = 1_700;
 const CAMERA_GLIDE_MS = 650;
 
-const SWAY_RIM_PX = 6;
-
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const easeOut = (t: number) => 1 - (1 - t) ** 3;
 const progressSince = (start: number, frameTime: number, ms: number) => Math.min(1, Math.max(0, (frameTime - start) / ms));
 
 interface FrameRecord {
@@ -44,6 +33,8 @@ interface FrameRecord {
   why: number;
   sinceInput: number;
 }
+
+const WALK_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
 
 export class CosmosEngine {
   private readonly ctx: CanvasRenderingContext2D;
@@ -57,20 +48,20 @@ export class CosmosEngine {
   private layout: CosmosLayout | null = null;
   private inks: CosmosInks | null = null;
   private poses: GalaxyPose[] = [];
-  private cache: CosmosFrameCache = { glows: new Map(), impostors: new Map(), coreImpostor: new Map(), textWidth: new Map() };
+  private cache = new CosmosBitmapCache();
   private deepField: HTMLCanvasElement | null = null;
   private raf = 0;
   private lastNow = 0;
   private zoom: { target: number; sx: number; sy: number; wx: number; wy: number } | null = null;
   private tween: { from: CosmosCamera; to: CosmosCamera; start: number; ms: number } | null = null;
-  private arrival: { start: number } | null = null;
-  private tau = 0;
+  private arrival: { start: number; mode: CosmosArrivalMode } | null = null;
+  private readonly haze = createHazeState("off");
   private lastInput = 0;
   private drag: { id: number; x: number; y: number; camX: number; camY: number; moved: boolean } | null = null;
   private hoverId: string | null = null;
   private hoverGalaxy = -1;
   private selectedId: string | null = null;
-  private dependencies = new Map<string, string[]>();
+  private relations = new Map<string, CosmosRelation[]>();
   private grids = new Map<number, Map<number, number[]>>();
   private lastStats: CosmosFrameStats | null = null;
   private frames = 0;
@@ -90,6 +81,7 @@ export class CosmosEngine {
     if (!ctx) throw new Error("cosmos: no 2d context");
     this.ctx = ctx;
     this.options = options;
+    this.haze.mode = options.ambient;
     const listen = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions) => {
       canvas.addEventListener(type, fn as EventListener, opts);
       this.cleanups.push(() => canvas.removeEventListener(type, fn as EventListener, opts));
@@ -127,26 +119,27 @@ export class CosmosEngine {
 
   setOptions(options: Partial<CosmosEngineOptions>): void {
     this.options = { ...this.options, ...options };
+    this.haze.mode = this.options.ambient;
     this.requestFrame();
   }
 
   setInks(inks: CosmosInks): void {
     this.inks = inks;
     this.deepField = buildDeepField(inks);
-    this.cache = { glows: new Map(), impostors: new Map(), coreImpostor: new Map(), textWidth: new Map() };
+    this.cache = new CosmosBitmapCache();
     this.requestFrame();
   }
 
-  setLayout(layout: CosmosLayout, labels: ReadonlyMap<string, string>, dependencies: ReadonlyMap<string, string[]>): void {
+  setLayout(layout: CosmosLayout, labels: ReadonlyMap<string, string>, edges: readonly OntologyMapEdge[], arrival: CosmosArrivalMode): void {
     this.layout = layout;
     registerCosmosLabels(layout, labels);
-    this.dependencies = new Map(dependencies);
-    this.cache = { glows: new Map(), impostors: new Map(), coreImpostor: new Map(), textWidth: this.cache.textWidth };
+    this.relations = relationsByConcept(edges);
+    this.cache.clear();
     this.grids.clear();
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
     this.userCamera = false;
     this.fit(false);
-    this.arrival = this.options.arrive && !this.options.reducedMotion && layout.settle.keyframes.length > 1 ? { start: performance.now() } : null;
+    this.arrival = arrival === "replay" && !this.options.reducedMotion && layout.settle.keyframes.length > 1 ? { start: performance.now(), mode: arrival } : null;
     this.drawnReported = false;
     this.requestFrame();
   }
@@ -176,10 +169,8 @@ export class CosmosEngine {
   private fit(glide: boolean): void {
     const layout = this.layout;
     if (!layout) return;
-    const b = layout.bounds;
-    const scale = Math.min(this.room.width / (b.maxX - b.minX), (this.room.height - 36) / (b.maxY - b.minY)) * 0.97;
-    const to = { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 + 14 / Math.max(1e-6, scale), scale };
-    this.overviewScale = scale;
+    const { camera: to, overviewScale } = overviewCamera(layout.bounds, this.room);
+    this.overviewScale = overviewScale;
     if (glide && !this.options.reducedMotion) this.tween = { from: { ...this.camera }, to, start: performance.now(), ms: CAMERA_GLIDE_MS };
     else this.camera = to;
   }
@@ -187,8 +178,7 @@ export class CosmosEngine {
   private flyToGalaxy(index: number): void {
     const g = this.layout?.galaxies[index];
     if (!g) return;
-    const scale = Math.min(this.room.width, this.room.height) / (g.extent * 2 * 1.12);
-    const to = { x: this.poses[index]!.x, y: this.poses[index]!.y, scale };
+    const to = { x: this.poses[index]!.x, y: this.poses[index]!.y, scale: galaxyFitScale(g, this.room) };
     this.userCamera = true;
     this.zoom = null;
     if (this.options.reducedMotion) this.camera = to;
@@ -248,14 +238,20 @@ export class CosmosEngine {
       }
     }
 
-    const ambientOn = this.options.ambient !== "off" && !this.options.reducedMotion;
-    const active = ambientOn && now - this.lastInput < ACTIVE_MS && document.visibilityState === "visible";
+    const active = stepHaze(this.haze, {
+      now,
+      dt,
+      windowStart: this.lastInput,
+      reducedMotion: this.options.reducedMotion,
+      visible: document.visibilityState === "visible",
+    });
     if (active) {
-      this.tau += dt;
       moving = true;
       why |= 4;
     }
-    this.updatePoses(now, layout);
+    if (this.arrival && !applyArrival(layout, now - this.arrival.start, this.arrival.mode, this.poses)) this.arrival = null;
+    else if (!this.arrival) applyArrival(layout, 0, "none", this.poses);
+    applyHaze(layout, this.haze, this.poses, this.camera.scale, this.options.reducedMotion);
     if (this.arrival) {
       moving = true;
       why |= 8;
@@ -272,10 +268,13 @@ export class CosmosEngine {
       layout,
       inks,
       poses: this.poses,
-      hoverId: this.hoverId,
-      hoverGalaxy: this.hoverGalaxy,
-      selectedId: this.selectedId,
-      selectedLinks: this.selectedLinks(layout),
+      attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs: 0 },
+      relationsOf: (id) => this.relations.get(id) ?? [],
+      pointOf: (id) => this.currentPoint(layout, id),
+      lens: null,
+      trail: null,
+      record: null,
+      reducedMotion: this.options.reducedMotion,
       cache: this.cache,
       deepField: this.deepField,
       buildBudget: this.buildBudget,
@@ -294,60 +293,6 @@ export class CosmosEngine {
       this.options.onDrawn?.(layout.points.size);
     }
     if (moving) this.requestFrame();
-  }
-
-  private updatePoses(now: number, layout: CosmosLayout): void {
-    const sway = this.options.ambient === "sway" && !this.options.reducedMotion;
-    const haze = this.options.ambient === "haze" && !this.options.reducedMotion;
-    let arrivalT = 1;
-    let frameA = 0;
-    let frameB = 0;
-    let frameMix = 0;
-    const keyframes = layout.settle.keyframes;
-    if (this.arrival) {
-      arrivalT = progressSince(this.arrival.start, now, ARRIVAL_MS);
-      const f = arrivalT * (keyframes.length - 1);
-      frameA = Math.floor(f);
-      frameB = Math.min(keyframes.length - 1, frameA + 1);
-      frameMix = f - frameA;
-      if (arrivalT >= 1) this.arrival = null;
-    }
-    const reach = Math.max(1, layout.settle.targetRadius);
-    layout.galaxies.forEach((g, i) => {
-      const pose = this.poses[i]!;
-      if (arrivalT < 1) {
-        const a = keyframes[frameA]!;
-        const b = keyframes[frameB]!;
-        pose.x = a[i * 2]! + (b[i * 2]! - a[i * 2]!) * frameMix;
-        pose.y = a[i * 2 + 1]! + (b[i * 2 + 1]! - a[i * 2 + 1]!) * frameMix;
-        const delay = 0.4 * Math.min(1, Math.hypot(g.x, g.y) / reach);
-        const local = Math.min(1, Math.max(0, (arrivalT - delay) / 0.55));
-        pose.presence = easeOut(Math.min(1, local * 1.6));
-        pose.condense = 0.25 + 0.75 * easeOut(local);
-      } else {
-        pose.x = g.x;
-        pose.y = g.y;
-        pose.presence = 1;
-        pose.condense = 1;
-      }
-      const rho = g.radius * this.camera.scale;
-      const phase = hash01(g.id, "ambient-phase") * Math.PI * 2;
-      const period = 40_000 + 30_000 * hash01(g.id, "ambient-period");
-      pose.theta = sway ? g.spin * Math.min(0.1, SWAY_RIM_PX / Math.max(1, rho)) * Math.sin((this.tau / period) * Math.PI * 2 + phase) : 0;
-      pose.wispTheta = haze ? g.spin * 0.12 * Math.sin((this.tau / 18_000) * Math.PI * 2 + phase) : 0;
-      pose.wispLight = haze ? 0.94 + 0.06 * Math.sin((this.tau / 8_400) * Math.PI * 2 + phase) : 1;
-    });
-  }
-
-  private selectedLinks(layout: CosmosLayout): { x: number; y: number }[] {
-    if (!this.selectedId) return [];
-    const out: { x: number; y: number }[] = [];
-    for (const id of this.dependencies.get(this.selectedId) ?? []) {
-      const p = this.currentPoint(layout, id);
-      if (p) out.push(p);
-      if (out.length >= 80) break;
-    }
-    return out;
   }
 
   private currentPoint(layout: CosmosLayout, id: string): { x: number; y: number } | null {
@@ -419,7 +364,7 @@ export class CosmosEngine {
       this.hoverGalaxy = hit.galaxy;
       this.canvas.style.cursor = hit.id || hit.galaxy >= 0 ? "pointer" : "grab";
       this.requestFrame();
-    } else if (this.options.ambient !== "off") {
+    } else if (this.haze.mode !== "off") {
       this.requestFrame();
     }
   }
@@ -442,6 +387,16 @@ export class CosmosEngine {
       this.userCamera = false;
       this.fit(true);
       this.requestFrame();
+      return;
+    }
+    if (WALK_KEYS.has(e.key) && this.layout) {
+      const step = walkTarget({
+        key: e.key,
+        selectedId: this.selectedId,
+        candidates: walkCandidates({ layout: this.layout, poses: this.poses, camera: this.camera, room: this.room, dpr: this.dpr }),
+        roomCentre: { x: this.room.x + this.room.width / 2, y: this.room.y + this.room.height / 2 },
+      });
+      if (step.id) this.options.onSelect?.(step.id);
     }
   }
 
@@ -565,7 +520,7 @@ export class CosmosEngine {
       },
 
       dropBitmaps: () => {
-        this.cache = { glows: new Map(), impostors: new Map(), coreImpostor: new Map(), textWidth: this.cache.textWidth };
+        this.cache.clear();
         this.requestFrame();
       },
       poke: () => {
@@ -574,4 +529,24 @@ export class CosmosEngine {
       },
     };
   }
+}
+
+function relationsByConcept(edges: readonly OntologyMapEdge[]): Map<string, CosmosRelation[]> {
+  const out = new Map<string, CosmosRelation[]>();
+  edges.forEach((e, i) => {
+    if (e.kind !== "depends") return;
+    const relation: CosmosRelation = {
+      id: e.id ?? `${e.source}->${e.target}:${i}`,
+      source: e.source,
+      target: e.target,
+      relationType: e.relationType,
+      directional: isDirectionalRelation(e.relationType),
+    };
+    for (const id of [e.source, e.target]) {
+      const list = out.get(id);
+      if (list) list.push(relation);
+      else out.set(id, [relation]);
+    }
+  });
+  return out;
 }

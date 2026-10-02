@@ -5,7 +5,7 @@ import {
   type DomainFlow,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
+} from "../../model/containment-tree";
 
 export interface CosmosInputNode extends TreeInputNode {
   size?: number;

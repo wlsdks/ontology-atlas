@@ -1,7 +1,7 @@
-import type { TreeInputEdge } from "../model/containment-tree";
+import type { TreeInputEdge } from "../../model/containment-tree";
 import { buildCosmosModel, type CosmosGalaxyModel, type CosmosInputNode, type CosmosModel } from "./cosmos-model";
 import { classifyGalaxy, galaxyForm, hash01, GALAXY_RADIUS_UNIT, type GalaxyForm } from "./cosmos-morphology";
-import { relaxDiscs, relaxGalaxies, separatePoints, settleGalaxies, type CosmosLink, type SettleResult, type SettleTuning } from "./cosmos-physics";
+import { relaxDiscs, relaxGalaxies, separatePoints, settleGalaxies, type CosmosLink, type SettleResult } from "./cosmos-physics";
 
 export const STAR_KIND_NUCLEUS = 0;
 export const STAR_KIND_CAPABILITY = 1;
@@ -323,7 +323,7 @@ function chooseBow(galaxies: readonly CosmosGalaxy[], from: number, to: number, 
 export function computeCosmosLayout(
   nodes: readonly CosmosInputNode[],
   edges: readonly TreeInputEdge[],
-  options: { tuning?: Partial<SettleTuning>; placement?: CosmosPlacementRecord | null } = {},
+  options: { placement?: CosmosPlacementRecord | null; fresh?: boolean } = {},
 ): CosmosLayout {
   const t0 = performance.now();
   const model = buildCosmosModel(nodes, edges);
@@ -355,7 +355,7 @@ export function computeCosmosLayout(
   const extra = nodes.filter((n) => !placedIds.has(n.id)).map((n) => n.id).sort();
   const core = placeCore(model, extra);
   const exactBodies = model.galaxies.map((g, i) => ({ id: g.id, radius: forms[i]!.radius }));
-  const recorded = options.placement?.version === 1 ? options.placement.centres : null;
+  const recorded = !options.fresh && options.placement?.version === 1 ? options.placement.centres : null;
   const known = recorded ? model.galaxies.filter((g) => recorded[g.id]).length : 0;
   let settle: SettleResult;
   if (recorded && known > 0) {
@@ -392,7 +392,7 @@ export function computeCosmosLayout(
       startX[i] = home.x + Math.cos(angle) * forms[i]!.radius;
       startY[i] = home.y + Math.sin(angle) * forms[i]!.radius;
     });
-    const relaxed = relaxGalaxies(startX, startY, exactBodies, exactLinks, { coreRadius: core.radius, tuning: options.tuning, fixed });
+    const relaxed = relaxGalaxies(startX, startY, exactBodies, exactLinks, { coreRadius: core.radius, fixed });
     settle = { x: relaxed.x, y: relaxed.y, keyframes: relaxed.frames.slice(-1), iterations: 160, targetRadius: reach };
   } else {
     const baseBodies = model.galaxies.map((g) => {
@@ -403,8 +403,8 @@ export function computeCosmosLayout(
     });
     const haloBucket = 2 ** (Math.round(2 * Math.log2(model.halo.length + extra.length + 6)) / 2);
     const baseCore = Math.max(GALAXY_RADIUS_UNIT * 3.2, GALAXY_RADIUS_UNIT * Math.sqrt(haloBucket) * 0.9);
-    const base = settleGalaxies(baseBodies, baseLinks, { coreRadius: baseCore, tuning: options.tuning });
-    const relaxed = relaxGalaxies(base.x, base.y, exactBodies, exactLinks, { coreRadius: core.radius, tuning: options.tuning });
+    const base = settleGalaxies(baseBodies, baseLinks, { coreRadius: baseCore });
+    const relaxed = relaxGalaxies(base.x, base.y, exactBodies, exactLinks, { coreRadius: core.radius });
     settle = {
       x: relaxed.x,
       y: relaxed.y,
