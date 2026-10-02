@@ -878,3 +878,7 @@ arrival 0.85 of the way in.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
 **The wiki index uses readable horizontal rows** (2026-09-09). Titles get up to two lines, with a short freshness caption below. The selected page has an indigo edge; changed or unmeasured source evidence and invalid page format keep distinct amber markers and accessible explanations. Search remains a ranked list. Compile marks the list busy without suggesting per-page progress. The graph opens through a labelled action above the reader instead of compressing the document into a third column.
+
+A failed local model turn ends wiki compilation in the existing failure state with
+its diagnostic. It does not become an empty review card or an approval opportunity;
+retry remains explicit and no wiki file is written by the failed turn.

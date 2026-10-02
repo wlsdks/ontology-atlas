@@ -30,6 +30,8 @@ vi.mock('@/shared/lib/tauri-llm', () => ({
 
 import { useVaultAgent, type UseVaultAgentArgs } from './use-vault-agent';
 import type { AgentTurn } from '@/features/vault-agent';
+import { llmChat } from '@/shared/lib/tauri-llm';
+import { EMPTY_SCREEN_CONTEXT } from '@/features/vault-agent/model/screen-context';
 
 type TurnResult = Awaited<ReturnType<typeof import('@/features/vault-agent').runTurn>>;
 
@@ -112,6 +114,27 @@ describe('useVaultAgent — send when the turn rejects', () => {
       text: 'The request could not be completed.',
     });
     expect(console.error).toHaveBeenCalledWith('[vault-agent] turn failed', thrown);
+  });
+
+  it('keeps the malformed-response diagnosis and accepts the next send', async () => {
+    const actual = await vi.importActual<typeof import('@/features/vault-agent')>('@/features/vault-agent');
+    runTurn.mockImplementation(actual.runTurn);
+    const receipt = { status: 200, host: 'api.anthropic.com', durationMs: 1, loggedAt: '2026-10-02T00:00:00Z' };
+    vi.mocked(llmChat)
+      .mockResolvedValueOnce({ ...receipt, body: 'null' })
+      .mockResolvedValueOnce({ ...receipt, body: JSON.stringify({ content: [{ type: 'text', text: 'Ready.' }], stop_reason: 'end_turn' }) });
+    const { result } = renderHook(() => useVaultAgent({ ...args(), screenContext: EMPTY_SCREEN_CONTEXT }));
+    await act(async () => { await result.current.send('Inspect evidence'); });
+    expect(result.current.running).toBe(false);
+    expect(result.current.elapsedSeconds).toBeNull();
+    expect(result.current.turns.at(-1)?.events.at(-1)).toMatchObject({
+      kind: 'notice', code: 'failed', text: expect.stringContaining('invalid-provider-response'),
+    });
+    expect(buildProposal).not.toHaveBeenCalled();
+    await act(async () => { await result.current.send('Try again'); });
+    expect(result.current.running).toBe(false);
+    expect(result.current.turns).toHaveLength(2);
+    expect(result.current.turns.at(-1)?.status).toBe('done');
   });
 
   it('leaves the success path untouched', async () => {

@@ -7,6 +7,8 @@ import type {
 } from '../provider-adapter';
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
+import { invalidProviderResponse, isResponseObject, readResponseObject } from '../provider-response';
+
 /**
  * OpenAI adapter: string `arguments` are validated before execution, and no output token cap is
  * sent because its parameter name differs by model generation.
@@ -72,30 +74,34 @@ export const openaiAdapter: ProviderAdapter = {
   },
 
   parseResponse(body: string): NormalizedResponse {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      return { text: '', toolCalls: [], stop: 'error', raw: null };
-    }
+    const parsed = readResponseObject(body);
+    if (!parsed) return invalidProviderResponse('$');
     const vendorError = readVendorErrorMessage(parsed);
     if (vendorError) {
       return { text: '', toolCalls: [], stop: 'error', raw: null, errorMessage: vendorError };
     }
-    const choice = (parsed as { choices?: Array<Record<string, unknown>> }).choices?.[0];
-    if (!choice) {
-      return { text: '', toolCalls: [], stop: 'error', raw: null };
+    const choice = Array.isArray(parsed.choices) ? parsed.choices[0] : undefined;
+    if (!isResponseObject(choice) || !isResponseObject(choice.message)) {
+      return invalidProviderResponse('$.choices[0].message');
     }
-    const message = choice.message as
-      | { content?: unknown; tool_calls?: OpenAiToolCall[] }
-      | undefined;
+    const message = choice.message;
+    if (message.content != null && typeof message.content !== 'string') {
+      return invalidProviderResponse('$.choices[0].message.content');
+    }
+    if (message.tool_calls != null && !Array.isArray(message.tool_calls)) {
+      return invalidProviderResponse('$.choices[0].message.tool_calls');
+    }
     const text = typeof message?.content === 'string' ? message.content : '';
     const rawCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
-    const toolCalls: NormalizedToolCall[] = rawCalls.map((call, index) => {
+    if (rawCalls.some((call) => !isResponseObject(call) || !isResponseObject(call.function)
+      || typeof call.function.name !== 'string' || !call.function.name.trim())) {
+      return invalidProviderResponse('$.choices[0].message.tool_calls');
+    }
+    const toolCalls: NormalizedToolCall[] = (rawCalls as OpenAiToolCall[]).map((call, index) => {
       const name = call.function?.name ?? '';
       const rawArgs = call.function?.arguments;
       let args: unknown = {};
-      let argsInvalid = false;
+      let argsInvalid = rawArgs != null && typeof rawArgs !== 'string';
       if (typeof rawArgs === 'string' && rawArgs.trim()) {
         try {
           args = JSON.parse(rawArgs);
