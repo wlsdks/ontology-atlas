@@ -3385,7 +3385,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
        */
       const starInk = node.id === focusedNodeId ? tokens.selectionRingIndigo : trailStarInk;
       if (galaxyOn) {
-        const atmosphere = galaxyTwinkle(node.id, now - galaxyAtmosphereLagMs, reducedMotion);
+        const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
         drawGalaxyNodeStar(ctx, {
           x: screen.x,
           y: screen.y,
