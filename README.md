@@ -194,6 +194,7 @@ Start with `pnpm checks:changed -- --run`; land with `pnpm pr:land <number>`.
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens the download page shows, Korean and English (`public/gateway/<screen>.<locale>.png`), from a served `pnpm build`, against this repository's own ontology |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm lessons` · `pnpm lessons:check` | Shared harness lessons that are open or verified but not yet fixed; record and review them with `/harness-retro` ([records guide](docs/records/README.md#harness-lessons)) |
+| `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Whether every package the web export, the MCP sidecar and the desktop app ship is on the license allow-list ([rules](docs/engineering/third-party-code.md)); regenerate `NOTICE.md` and `public/third-party-licenses.txt` after a production dependency changes, and prove both current |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose the ignored `messages/<locale>.json` from one file per namespace (`messages/<locale>/<Namespace>.json`), prove it current, and carry a pre-split branch's catalogue edits onto the parts while merging main |
 | `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server keeps memory it should release: heap after two forced collections across 50 repeated calls per tool and across moved Git HEADs, on a generated vault; about a minute, kept out of pre-push |
 | `pnpm pr:ci <n>` | Fire CI on a draft now, so a green, disjoint change can take the fast path |
@@ -212,4 +213,5 @@ performance, readability, contrast, and instrumentation.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Third-party notices are in [NOTICE.md](NOTICE.md), and the full
+license texts in [public/third-party-licenses.txt](public/third-party-licenses.txt).

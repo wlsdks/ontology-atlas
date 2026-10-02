@@ -31,6 +31,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     // `package:check` runs every `cli/src/lib/*.test.mjs`, and the MCP lane's `test:mcp:unit`
     // every `mcp/src/*.test.mjs`, so their single-file wrappers are not listed again here.
     'pnpm package:check',
+    'pnpm licenses:check',
+    'pnpm notice:check',
     'pnpm test:meaning-corpus',
     'pnpm test:vault:migrate',
     'pnpm test:guide-examples',
@@ -414,7 +416,7 @@ function gatesPlan({ suggestions, full }) {
   // runs the real `growth` command, which calls the source MCP server through
   // `callMcpTool`, and PR #1801's first CI run died on exactly that.
   const needsMcp = commands.some((command) =>
-    /^pnpm (?:test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+    /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
       command,
     ),
   );
