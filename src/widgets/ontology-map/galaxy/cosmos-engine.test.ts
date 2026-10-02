@@ -89,6 +89,31 @@ describe("cosmos engine", () => {
     engine.destroy();
   });
 
+  it("stops asking for frames after three draws in a row throw, until the next request", () => {
+    const { engine } = mount();
+    const boom = () => {
+      throw new Error("always");
+    };
+    draw.next.push(boom, boom, boom, boom);
+    let thrown = 0;
+    for (let t = 16; frames.length > 0 && t < 1_000; t += 16) {
+      try {
+        runFrame(t);
+      } catch {
+        thrown += 1;
+      }
+    }
+    expect(thrown).toBe(3);
+    expect(frames).toHaveLength(0);
+    engine.requestFrame();
+    expect(() => runFrame(2_000)).toThrow("always");
+    expect(frames).toHaveLength(0);
+    engine.requestFrame();
+    runFrame(2_016);
+    expect(engine["failures"]).toBe(0);
+    engine.destroy();
+  });
+
   it("signals camera rest once the camera holds still for a frame, apart from the loop sleeping", () => {
     const onCameraRest = vi.fn();
     const onRest = vi.fn();

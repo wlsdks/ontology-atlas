@@ -37,6 +37,12 @@ export function galaxyKey(g: CosmosGalaxy): string {
 
 type Value = GalaxyGlow | HTMLCanvasElement | null;
 
+function release(value: Value): void {
+  for (const c of value && "base" in value ? [value.base, value.wisps] : [value]) {
+    if (c) c.width = c.height = 0;
+  }
+}
+
 interface Entry {
   value: Value;
   bytes: number;
@@ -116,18 +122,19 @@ export class CosmosBitmapCache {
   }
 
   private write(key: string, value: Value, bytes: number): void {
-    this.remove(key);
+    this.remove(key, value);
     this.entries.set(key, { value, bytes, used: ++this.tick });
     this.total += bytes;
     this.evict();
   }
 
-  private remove(key: string): void {
+  private remove(key: string, keep: Value = null): void {
     const entry = this.entries.get(key);
     if (!entry) return;
     this.total -= entry.bytes;
     this.entries.delete(key);
     this.drawn.delete(key);
+    if (entry.value !== keep) release(entry.value);
   }
 
   private evict(): void {

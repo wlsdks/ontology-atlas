@@ -59,6 +59,23 @@ describe("CosmosBitmapCache", () => {
     expect(cache.bytes()).toBe(2 * 64 * 64 * 4);
   });
 
+  it("empties the canvases it evicts, replaces, drops or clears", () => {
+    const real = (size: number) => Object.assign(document.createElement("canvas"), { width: size, height: size });
+    const cache = new CosmosBitmapCache(64 * 64 * 4);
+    const [a, b, c, d] = [real(64), real(64), real(64), real(64)];
+    cache.setImpostor("a", 64, a);
+    cache.setImpostor("b", 64, b);
+    expect([a.width, b.width]).toEqual([0, 64]);
+    cache.setImpostor("b", 64, c);
+    expect([b.width, c.width]).toEqual([0, 64]);
+    cache.setImpostor("b", 64, c);
+    expect(c.width).toBe(64);
+    cache.setCore(64, d);
+    cache.retain(new Set());
+    cache.clear();
+    expect([c.width, d.width]).toEqual([0, 0]);
+  });
+
   it("reports a first draw once per bake", () => {
     const cache = new CosmosBitmapCache();
     cache.setImpostor(`g${4}`, 128, bitmap(128));

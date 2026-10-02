@@ -35,6 +35,7 @@ interface CosmosEngineOptions {
 
 const CHROME_SETTLE_MS = 450;
 const APPROACH_READS_MS = [60, 420];
+const FAILED_FRAME_LIMIT = 3;
 
 export class CosmosEngine {
   private readonly ctx: CanvasRenderingContext2D;
@@ -69,6 +70,7 @@ export class CosmosEngine {
   frames = 0;
   frameLog: { t: number; ms: number; builds: number; firstDraws: number; why: number; sinceInput: number }[] = [];
   private drawnReported = false;
+  private failures = 0;
   private roomHeld = false;
   private readonly reveal = new CosmosRevealClock();
   private readonly cameraRest = new CosmosCameraRestWatch();
@@ -234,9 +236,10 @@ export class CosmosEngine {
 
   private frame(now: number): void {
     this.raf = 0;
-    let again = true;
+    let again = ++this.failures < FAILED_FRAME_LIMIT;
     try {
       again = this.draw(now);
+      this.failures = 0;
     } finally {
       if (again) this.requestFrame();
     }
