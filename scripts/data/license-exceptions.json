@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "ecosystem": "npm",
+      "package": "caniuse-lite",
+      "license": "CC-BY-4.0",
+      "reason": "Browser-support data that Next.js reads through browserslist at build time to pick compile targets; it is not code and is not bundled into the export. CC-BY-4.0 asks only for attribution, which third-party-licenses.txt gives, and carries no non-commercial or share-alike term."
+    },
+    {
+      "ecosystem": "cargo",
+      "package": "webpki-root-certs",
+      "license": "CDLA-Permissive-2.0",
+      "reason": "Mozilla's root certificates as data, in the Cargo graph only as a wasm32-target dependency of rustls-platform-verifier, so no desktop build links it. CDLA-Permissive-2.0 is a permissive data license whose one condition, that its text travel with the data, third-party-licenses.txt meets."
+    }
+  ]
+}

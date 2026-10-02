@@ -3,7 +3,9 @@ import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/do
 import type { TreeInputEdge, TreeInputNode } from "../model/containment-tree";
 import { computeHexBoard, HEX_TYPE, type HexTextRole } from "../model/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
-import { drawHexBoard, type HexDrawState, type HexEvidenceState } from "./hex-board";
+import { drawBoard } from "../board/board-paint";
+import { buildBoardScene } from "../board/board-scene";
+import type { HexDrawState, HexEvidenceState } from "./hex-board";
 
 /** A 2D context that records the text it is asked to draw and answers every other call. */
 function recordingContext() {
@@ -36,19 +38,19 @@ const T: HexBoardTokens = {
   faceSelected: ["#2a2c55", "#1b1c36"],
   faceProject: ["#262219", "#15130f"],
   riser: "#060608",
-  rim: "#5e5f6b",
+  rim: "#74768a",
   rimDomain: "#7c80d8",
   rimSelected: "#a5abff",
-  rimUnknown: "#6a6a74",
+  rimUnknown: "#7a7b88",
   hatch: "#2a2a33",
-  bevel: ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.03)", "rgba(0,0,0,0.25)"],
+  bevel: ["rgba(255,255,255,0.16)", "rgba(0,0,0,0.25)"],
   plate: "rgba(94,106,210,0.06)",
   plateFocus: "rgba(94,106,210,0.12)",
   plateStroke: "rgba(136,144,224,0.22)",
   moat: "rgba(255,255,255,0.022)",
   glow: "rgba(94,106,210,0.08)",
   accent: "#9aa0f0",
-  canal: "#4a4c62",
+  canal: "#5c5f79",
   canalHead: "#6d7090",
   inkMeta: "#a3a6ae",
   dimAlpha: 0.3,
@@ -113,11 +115,11 @@ describe("hex board stale-only paint", () => {
     it(`draws every name at R=${R} with realistic moved files, and never throws`, () => {
       const { ctx, texts } = recordingContext();
       const state: HexDrawState = {
-        width: 1512,
-        height: 982,
+        width: 4000,
+        height: 3000,
         R,
-        ox: 700,
-        oy: 480,
+        ox: 2000,
+        oy: 1500,
         band: R >= 46 ? "names" : R >= 28 ? "pips" : "regions",
         selectedId: null,
         hoverId: caps[3]!.id,
@@ -139,7 +141,7 @@ describe("hex board stale-only paint", () => {
         sweep: 0.4,
         measure,
       };
-      const { stats } = drawHexBoard(ctx, layout, state, T);
+      const { stats } = drawBoard(ctx, layout, state, T, buildBoardScene(layout, null), { pitch: 0, pivotY: 0 });
       expect(stats.spills).toBe(0);
       if (state.band === "names") {
         expect(stats.names).toBe(layout.tiles.length);

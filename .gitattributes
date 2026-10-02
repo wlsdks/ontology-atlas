@@ -4,3 +4,4 @@
 src/entities/docs-vault/data/** linguist-generated=true
 public/docs-vault/** linguist-generated=true
 src/views/download/model/dogfood-census.generated.ts linguist-generated=true
+public/third-party-licenses.txt linguist-generated=true

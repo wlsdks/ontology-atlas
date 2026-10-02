@@ -47,7 +47,8 @@
     ],
     "resources": [
       "../LICENSE",
-      "../NOTICE.md"
+      "../NOTICE.md",
+      "../public/third-party-licenses.txt"
     ],
     "icon": [
       "icons/32x32.png",

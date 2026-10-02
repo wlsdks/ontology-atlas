@@ -32,8 +32,9 @@ import {
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
 import { buildHexLattice, closedNodes, HexRouter } from "../model/hex-router";
+import { buildBoardScene } from "../board/board-scene";
+import { drawBoard } from "../board/board-paint";
 import {
-  drawHexBoard,
   hexArrivalDuration,
   hexFonts,
   type HexDrawRoute,
@@ -290,6 +291,7 @@ export function OntologyHexBoardMap({
   }, [layout, namesFrom, measure]);
 
   const lattice = useMemo(() => (layout ? buildHexLattice(layout) : null), [layout]);
+  const scene = useMemo(() => (layout ? buildBoardScene(layout, null) : null), [layout]);
   /**
    * Where routes may run for the camera the board is resting on (or moving to): the free map
    * less its chrome, in unit space. Set when the camera is decided, not on every frame, so a
@@ -471,7 +473,7 @@ export function OntologyHexBoardMap({
     (now: number): boolean => {
       const canvas = canvasRef.current;
       const T = readHexBoardTokensOrNull();
-      if (!canvas || !size || !T || !layout || !camRef.current) return false;
+      if (!canvas || !size || !T || !layout || !scene || !camRef.current) return false;
       let again = false;
       const anim = animRef.current;
       if (anim) {
@@ -530,7 +532,7 @@ export function OntologyHexBoardMap({
       const hovering = !selectedId && !!hoverId && !staleOnly;
       let routes: HexDrawRoute[] = [...focus.routes];
       if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
-      const { stats, textBoxes, plateBoxes } = drawHexBoard(
+      const { stats, textBoxes, plateBoxes } = drawBoard(
         ctx,
         layout,
         {
@@ -561,6 +563,8 @@ export function OntologyHexBoardMap({
           measure,
         },
         T,
+        scene,
+        { pitch: 0, pivotY: 0 },
       );
       textBoxesRef.current = textBoxes;
       canvas.dataset.frame = JSON.stringify({ ...stats, namesFrom, staleOnly });
@@ -576,7 +580,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
+    [size, layout, scene, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
   );
 
   const paintRef = useRef(paint);

@@ -76,3 +76,6 @@ current need requires, so the source alone carries the meaning.
 - Per area, comment bytes, files over 800 lines and folders over 30 files only
   fall against the merge base (`source-comment-bytes`, `source-shape`
   contracts); a deliberate raise is a `tests/contract/ratchet-raises/` record.
+- Dependencies, adapted code and borrowed assets follow
+  `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
+  is a required comment, never cleanup.
