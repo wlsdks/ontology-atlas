@@ -118,7 +118,7 @@ export function buildArchitectureGraph(
 /**
  * Orders boxes in each column to reduce crossings: one barycentre pass, declaration order breaking
  * ties. One pass suffices for columns of one or two, and the stable tie-break keeps renders still.
- * O(V·E): each box scans every edge for placed predecessors; slots are a Map.
+ * For unique roles, O(E + V log V): incoming edges are indexed by target.
  */
 function assignSlots(
   rows: readonly (readonly string[])[],
@@ -127,13 +127,19 @@ function assignSlots(
 ): GraphBox[] {
   const boxes: GraphBox[] = [];
   const slotOf = new Map<string, number>();
+  const incomingByTarget = new Map<string, string[]>();
+  for (const edge of edges) {
+    const predecessors = incomingByTarget.get(edge.to) ?? [];
+    predecessors.push(edge.from);
+    incomingByTarget.set(edge.to, predecessors);
+  }
 
   rows.forEach((row, column) => {
     const ordered = [...row]
       .map((id, declared) => {
-        const incoming = edges
-          .filter((edge) => edge.to === id && slotOf.has(edge.from))
-          .map((edge) => slotOf.get(edge.from) ?? 0);
+        const incoming = (incomingByTarget.get(id) ?? [])
+          .filter(from => slotOf.has(from))
+          .map(from => slotOf.get(from) ?? 0);
         return {
           id,
           declared,
