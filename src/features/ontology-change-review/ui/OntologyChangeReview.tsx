@@ -422,6 +422,7 @@ export function OntologyChangeReview({
   testId = 'acp-ontology-change-review',
   onFullScopeAvailableChange,
   valueBasis = 'after-only',
+  addressed = false,
 }: {
   changeSet: OntologyChangeSet;
   activeItemIndex?: number;
@@ -429,6 +430,7 @@ export function OntologyChangeReview({
   testId?: string;
   onFullScopeAvailableChange?: (available: boolean) => void;
   valueBasis?: 'after-only' | 'request-raw';
+  addressed?: boolean;
 }) {
   const t = useTranslations('ontologyChangeReview');
   const [localActiveIndex, setLocalActiveIndex] = useState(0);
@@ -452,8 +454,7 @@ export function OntologyChangeReview({
       data-active-item={activeIndex}
       className="grid gap-2"
     >
-      {/* The address line names the exact document, with the operation as a chip beside it. */}
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+      {addressed && !batch ? null : <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span
             data-testid="ontology-change-review-operation"
@@ -476,7 +477,7 @@ export function OntologyChangeReview({
             {t('itemCount', { count: changeSet.itemCount })}
           </span>
         ) : null}
-      </div>
+      </div>}
 
       {batch ? (
         <>
@@ -504,7 +505,7 @@ export function OntologyChangeReview({
         <div
           className={cn(
             'grid gap-2',
-            (activeItem.relation || activeItem.fields.length > 0) &&
+            !addressed && (activeItem.relation || activeItem.fields.length > 0) &&
               'border-t border-[color:var(--color-divider)] pt-2',
           )}
         >

@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
@@ -15,7 +15,10 @@ import {
   type OntologyChangeSet,
 } from '@/entities/knowledge-graph';
 
-import { Button, Checkbox, Textarea } from '@/shared/ui';
+import { cn } from '@/shared/lib/cn';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
+import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -29,89 +32,100 @@ function formatReviewValue(value: unknown): string {
   try { return JSON.stringify(value); } catch { return String(value); }
 }
 
+function formatRequestedValue(value: unknown, none: string): string {
+  if (value === null || value === undefined) return none;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return none;
+    if (value.every((entry) => typeof entry === 'string')) return value.join('\n');
+  }
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return formatReviewValue(value);
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 const MEANING_SECTIONS = new Set(['Definition', 'Includes', 'Excludes', 'Uncertainty']);
 const MEANING_SUMMARY_LIMIT = 5;
+const VALUE_SUMMARY_LIMIT = 8;
+const VERDICT_ROWS = 4;
 
-function proposedMeaningUnits(item: OntologyChangeSet['items'][number] | null) {
-  if (!item) return [];
+type ReviewItem = OntologyChangeSet['items'][number];
+
+function bodySections(body: string) {
+  const lines = body.split('\n');
+  const units: Array<{ id: string; label: string; text: string; displayText: string }> = [];
+  const covered = new Set<number>();
+  let open: { heading: string; start: number } | null = null;
+  let fence: '`' | '~' | null = null;
+  const close = (end: number) => {
+    if (!open || !MEANING_SECTIONS.has(open.heading)) return;
+    const text = lines.slice(open.start, end).join('\n').trim();
+    const displayText = lines.slice(open.start + 1, end).join('\n').trim();
+    for (let index = open.start; index < end; index += 1) covered.add(index);
+    if (text && displayText) units.push({ id: `body:${open.heading}`, label: open.heading, text, displayText });
+  };
+  for (let index = 0; index < lines.length; index += 1) {
+    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(lines[index]);
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0] as '`' | '~';
+      if (fence === null) fence = marker;
+      else if (fence === marker) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+    const heading = /^##\s+(.+?)\s*$/.exec(lines[index]);
+    if (!heading) continue;
+    close(index);
+    open = { heading: heading[1], start: index };
+  }
+  close(lines.length);
+  const uncovered = lines.some((line, index) => !covered.has(index) && line.trim().length > 0);
+  return { units, uncovered };
+}
+
+function proposedMeaningUnits(item: ReviewItem | null) {
+  if (!item) return { units: [], bodyUncovered: false };
   const relationUnits = item.relation ? [{
     id: `relation:${item.relation.from}:${item.relation.type}:${item.relation.to}`,
     label: `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`,
     text: item.relation.why ?? '',
     displayText: item.relation.why ?? '',
   }].filter((unit) => unit.text.length > 0) : [];
+  let bodyUncovered = false;
   const bodyUnits = item.fields.flatMap((field) => {
-    if (field.key === 'body' && typeof field.after === 'string') {
-      const lines = field.after.split('\n');
-      const units: Array<{ id: string; label: string; text: string; displayText: string }> = [];
-      let open: { heading: string; start: number } | null = null;
-      let fence: '`' | '~' | null = null;
-      const close = (end: number) => {
-        if (!open || !MEANING_SECTIONS.has(open.heading)) return;
-        const text = lines.slice(open.start, end).join('\n').trim();
-        const displayText = lines.slice(open.start + 1, end).join('\n').trim();
-        if (text && displayText) units.push({ id: `body:${open.heading}`, label: open.heading, text, displayText });
-      };
-      for (let index = 0; index < lines.length; index += 1) {
-        const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(lines[index]);
-        if (fenceMatch) {
-          const marker = fenceMatch[1][0] as '`' | '~';
-          if (fence === null) fence = marker;
-          else if (fence === marker) fence = null;
-          continue;
-        }
-        if (fence !== null) continue;
-        const heading = /^##\s+(.+?)\s*$/.exec(lines[index]);
-        if (!heading) continue;
-        close(index);
-        open = { heading: heading[1], start: index };
-      }
-      close(lines.length);
-      return units;
-    }
-    return [];
+    if (field.key !== 'body' || typeof field.after !== 'string') return [];
+    const sections = bodySections(field.after);
+    bodyUncovered = sections.uncovered;
+    return sections.units;
   });
   const relationNoteUnits = item.fields.flatMap((field) => {
-    if (field.key === 'relation_notes' && field.after && typeof field.after === 'object' && !Array.isArray(field.after)) {
-      return Object.entries(field.after as Record<string, unknown>).flatMap(([target, value]) => (
-        typeof value === 'string' ? [{ id: `relation_notes:${target}`, label: `relation_notes · ${target}`, text: value, displayText: value }] : []
-      ));
-    }
-    return [];
+    if (field.key !== 'relation_notes' || !isPlainRecord(field.after)) return [];
+    return Object.entries(field.after).flatMap(([target, value]) => (
+      typeof value === 'string' ? [{ id: `relation_notes:${target}`, label: `relation_notes · ${target}`, text: value, displayText: value }] : []
+    ));
   });
-  return [...relationUnits, ...bodyUnits, ...relationNoteUnits];
+  return { units: [...relationUnits, ...bodyUnits, ...relationNoteUnits], bodyUncovered };
 }
 
-/**
- * The 「May I do this?」 card — it appears whenever policy requires an explicit
- * checkpoint: for every Atlas ontology write and for outside or unresolved requests.
- *
- * ## The agent is stopped while this card is up
- *
- * That is what a permission checkpoint is. So this card has **no close X** — if it
- * could be dismissed without answering it would be a notification, not a checkpoint.
- * There is an explicit 「Don't」 (don't) instead.
- *
- * ## What it shows
- *
- * **The full path.** 「It wants to edit a file」 alone is not
- * something you can judge — *where* it wants to edit is precisely the basis for this
- * decision. So the path is not truncated, and a long one wraps so all of it shows.
- *
- * ## 「Always allow」 (always allow) is not given prominence
- *
- * Measured, that option carries a rule allowing **that entire directory for the whole
- * session**. One click widening the boundary wholesale means that, at the same weight
- * as the other two, people pick the easiest one. So it drops to a text button and
- * says what it means.
- */
-/**
- * How many findings the card lists before it counts the rest.
- *
- * Four is what fits beside the buttons without the decision leaving the first screen. The
- * number is only a budget: whatever it hides is stated as a count, never dropped.
- */
-const VERDICT_ROWS = 4;
+function requestedValueFields(item: ReviewItem | null) {
+  if (!item) return [];
+  return item.fields.filter((field) => !(
+    (field.key === 'body' && typeof field.after === 'string')
+    || (field.key === 'relation_notes' && isPlainRecord(field.after))
+  ));
+}
+
+function splitTask(outcome: string) {
+  const trimmed = outcome.trim();
+  const breakAt = /\n\s*\n/.exec(trimmed);
+  if (!breakAt) return { lead: trimmed, rest: '' };
+  return { lead: trimmed.slice(0, breakAt.index).trim(), rest: trimmed.slice(breakAt.index).trim() };
+}
+
+type Answer = 'allow' | 'reject' | 'correct' | 'always';
 
 export function AcpPermissionCard({
   pending,
@@ -125,29 +139,16 @@ export function AcpPermissionCard({
   onDefer,
 }: {
   pending: PendingPermission;
-  /**
-   * What the page would look like if this write were allowed, judged against the wiki page
-   * contract by the screen that owns the folder (the Library). Null when the write is not a
-   * wiki page or its text cannot be known; then nothing is drawn, rather than a guess.
-   */
   writeVerdict?: { ok: boolean; problems: ReadonlyArray<WikiTemplateProblem> } | null;
   taskReview?: TaskMeaningReviewController;
   onRequestCorrection?: () => void;
   onDefer?: () => void;
-  /** The open vault, so the card can tell the person's own project from somewhere else entirely. */
   vaultPath?: string | null;
-  /** The computed value comes along so the panel and the map read the same typed change. */
   changeSet?: OntologyChangeSet | null;
   activeItemIndex?: number;
   onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
-  /*
-   * The Library's own namespace, for one reason: `describeWikiProblem` rebuilds a finding's
-   * sentence from `library.wiki.problem.<key>`, and those sentences are written once for
-   * every surface that shows a finding. Copying them under `acpChat` would be a second
-   * place to fix the same sentence and one place to forget.
-   */
   const libraryT = useTranslations('library');
   const format = useFormatter();
   const tChange = useTranslations('ontologyChangeReview');
@@ -172,6 +173,12 @@ export function AcpPermissionCard({
   const handleFullScopeAvailable = useCallback((available: boolean) => {
     setDetailsAvailability({ key: reviewStateKey, available });
   }, [reviewStateKey]);
+  const feedback = useCopyFeedback();
+  const [answer, setAnswer] = useState<{ key: string; choice: Answer } | null>(null);
+  const answered = answer?.key === reviewStateKey ? answer.choice : null;
+  const failed = answered !== null && feedback.state === 'failed';
+  const settled = answered !== null && !failed;
+  const legendId = useId();
   const taskOrigin = pending.origin?.turn && pending.origin.task
     ? { ...pending.origin.turn, ...pending.origin.task, sessionGeneration: pending.origin.sessionGeneration }
     : null;
@@ -181,60 +188,16 @@ export function AcpPermissionCard({
       ? buildOntologyChangeSet(request.toolName!, request.rawInput)
       : null
     : providedChangeSet;
-  /**
-   * ⚠️ **The title says the change, not that a change exists** (owner, installed app at 1512×982,
-   * 2026-09-06: *"can this design be improved? … something is lacking"*).
-   *
-   * Every ontology write was headed 「Review the proposed change」 — a sentence that is equally true
-   * of all of them and therefore answers nothing. Underneath it sat the request itself: a slug in
-   * mono, a frontmatter key in mono, the argument beside it. To decide, a person had to compose the
-   * sentence themselves out of a debugger's dump.
-   *
-   * The facts for that sentence were already typed and already on screen. `ontologyChangeHeadline`
-   * composes them — operation, target, field, how many values it carries — and every branch of it
-   * has a variant for the fact the request did not carry, so a missing name produces 「it updates
-   * this document」 rather than a plausible one.
-   */
+  const taskBound = Boolean(changeSet && taskOrigin);
   const headline = changeSet ? ontologyChangeHeadline(changeSet) : null;
   const headlineFieldKey = headline?.fieldKey ? fieldNameKey(headline.fieldKey) : null;
-  /* Not only where but **what** — see the comment below. */
+  const targetName = typeof headline?.values.name === 'string' ? headline.values.name : null;
   const intent = permissionIntent(request.toolKind);
-  /**
-   * **A server asking the person's consent is not "something outside this folder"** (wire capture,
-   * 2026-08-24).
-   *
-   * The vault's own MCP server pauses each write by asking the client through
-   * `elicitation/create`; `codex-acp` forwards it as an ordinary
-   * `session/request_permission`. With no way to tell the two apart the card headed a change to a
-   * file **inside** the chosen folder with 「it is trying to touch something outside this folder」 —
-   * false, and false in the direction that makes a correct decision look alarming.
-   *
-   * The signal is measured, not guessed: that request arrives with
-   * `toolCallId: "elicitation-<server>"` and a `rawInput.serverName`. Both must be present, so an
-   * ordinary tool call named something similar cannot borrow this heading.
-   */
   const serverConsent =
     typeof request.toolCallId === 'string' &&
     request.toolCallId.startsWith('elicitation-') &&
     typeof request.rawInput.serverName === 'string';
-  /**
-   * The one sentence that makes this answerable. When the vault's server asked the question itself,
-   * that question is the material — not our generic heading, and never a second line repeating that
-   * we do not know.
-   */
   const askedSentence = serverConsent ? request.title : null;
-  /*
-    What 「Keep allowing」 (keep allowing) actually allows (2026-08-17).
-
-    The old copy **asserted** *"The whole folder containing the path above"* (the whole folder containing
-    the path above), but the adapter decides that scope, not us — and measured, the
-    value was not a folder but a **tool**. Writing that a folder is allowed while a
-    tool is allowed leaves the user believing they granted a permission they never
-    did, or the reverse.
-
-    So **only what the adapter declared** is stated, and with nothing given, nothing
-    is asserted.
-  */
   const scope = permissionScope(request.options);
   const locality = permissionLocality(vaultPath ?? null, request.filePath ?? null);
 
@@ -242,43 +205,23 @@ export function AcpPermissionCard({
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
   const allowAlways = request.options.find((o) => o.kind === 'allow_always');
   const activeReviewItem = changeSet?.items[activeItemIndex ?? 0] ?? changeSet?.items[0] ?? null;
-  const meaningUnits = proposedMeaningUnits(activeReviewItem);
+  const { units: meaningUnits, bodyUncovered } = proposedMeaningUnits(activeReviewItem);
   const visibleMeaningUnits = meaningUnits.slice(0, MEANING_SUMMARY_LIMIT);
   const omittedMeaningUnits = Math.max(0, meaningUnits.length - visibleMeaningUnits.length);
-  /*
-   * ⚠️ **A coverage line states what is missing, so with nothing missing it has to say that**
-   * (measured, 2026-09-19). One sentence served all three cases and produced 「Meaning review
-   * incomplete · 0 of 0 recorded meaning units shown · 0 omitted」 on an ordinary request that
-   * carries no prose sections at all — a warning assembled entirely out of zeroes, which is the
-   * same defect this repository records as 「a gate with no subjects prints a pass」 turned inside
-   * out. The one case that genuinely hides something keeps the original wording.
-   */
-  const coverageLine = meaningUnits.length === 0
-    ? t('taskReview.coverageNone')
-    : omittedMeaningUnits === 0
-      ? t('taskReview.coverageAll', { total: meaningUnits.length })
-      : t('taskReview.incomplete', {
-          inspected: visibleMeaningUnits.length,
-          total: meaningUnits.length,
-          omitted: omittedMeaningUnits,
-        });
-  /**
-   * **A write condition a person can check against the file in front of them.**
-   *
-   * Measured in the rendered Details tab (2026-09-20), directly under the row that reports the
-   * write guard as unknown:
-   *
-   * ```
-   * expected_mtime   1727000000000
-   * ```
-   *
-   * That number **is** the write condition — the file is written only if it has not changed since
-   * that moment — and thirteen digits answer nothing a person came here to ask. The question this
-   * row exists for is "is that the version I am looking at?", and a date answers it.
-   *
-   * The exact value is not replaced, only led: it stays on the row's `title`, so an agent or a
-   * terminal reader who needs the epoch still has it to the millisecond.
-   */
+  const valueFields = requestedValueFields(activeReviewItem);
+  const visibleValueFields = valueFields.slice(0, VALUE_SUMMARY_LIMIT);
+  const omittedValueFields = valueFields.length - visibleValueFields.length;
+  const coverageLine = omittedMeaningUnits > 0
+    ? t('taskReview.incomplete', {
+        inspected: visibleMeaningUnits.length,
+        total: meaningUnits.length,
+        omitted: omittedMeaningUnits,
+      })
+    : bodyUncovered
+      ? t('taskReview.bodyInDetails')
+      : meaningUnits.length === 0 && valueFields.length === 0
+        ? t('taskReview.coverageNone')
+        : null;
   const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
     .filter((key) => request.rawInput[key] !== undefined)
     .map((key) => {
@@ -298,630 +241,607 @@ export function AcpPermissionCard({
   const meaningAuthority = taskReview?.status === 'ready'
     ? taskReview.meaningStatus === 'accepted' ? 'accepted' : 'pending'
     : 'unknown';
+  const task = taskOrigin ? splitTask(taskOrigin.outcome) : null;
+  const restLines = task?.rest ? task.rest.split('\n').filter((line) => line.trim().length > 0).length : 0;
 
-  /**
-   * **Bring focus here** (caught in the 2026-08-16 review).
-   *
-   * This card declares `role="alertdialog"`. That role promises 「it interrupts the
-   * work, and focus moves inside」, and **it was doing neither** — there was no code
-   * moving focus, so for someone who cannot see the screen the moment the agent
-   * stopped was **complete silence**. They could have gone on typing in that state.
-   *
-   * Focus goes to the reject side: a hand pressing any key to move past must not land
-   * on **allow**. What this card opens is an irreversible decision.
-   */
   const rejectRef = useRef<HTMLButtonElement | null>(null);
-  const taskReviewHeadingRef = useRef<HTMLParagraphElement | null>(null);
-  const initiallyTaskBound = useRef(Boolean(taskOrigin));
+  const titleRef = useRef<HTMLParagraphElement | null>(null);
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+  const bodyContentRef = useRef<HTMLDivElement | null>(null);
+  const [bodyEdge, setBodyEdge] = useState({ top: false, bottom: false });
+  const measureBodyEdges = useCallback(() => {
+    const box = bodyScrollRef.current;
+    if (!box) return;
+    const top = box.scrollTop > 1;
+    const bottom = box.scrollTop < box.scrollHeight - box.clientHeight - 1;
+    setBodyEdge((previous) => (previous.top === top && previous.bottom === bottom ? previous : { top, bottom }));
+  }, []);
   useEffect(() => {
-    if (initiallyTaskBound.current) taskReviewHeadingRef.current?.focus({ preventScroll: true });
+    const box = bodyScrollRef.current;
+    const content = bodyContentRef.current;
+    if (!box || !content) return;
+    measureBodyEdges();
+    const observer = new ResizeObserver(measureBodyEdges);
+    observer.observe(box);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [measureBodyEdges]);
+  const bodyFade = 'var(--tabbar-edge-fade)';
+  const bodyMask =
+    bodyEdge.top && bodyEdge.bottom
+      ? `linear-gradient(to bottom, transparent 0, black ${bodyFade}, black calc(100% - ${bodyFade}), transparent 100%)`
+      : bodyEdge.bottom
+        ? `linear-gradient(to bottom, black calc(100% - ${bodyFade}), transparent 100%)`
+        : bodyEdge.top
+          ? `linear-gradient(to bottom, transparent 0, black ${bodyFade})`
+          : undefined;
+  const initiallyTaskBound = useRef(taskBound);
+  useEffect(() => {
+    if (initiallyTaskBound.current) titleRef.current?.focus({ preventScroll: true });
     else rejectRef.current?.focus();
   }, []);
 
-  return (
-    <section
-      role="alertdialog"
-      aria-labelledby="acp-permission-title"
-      aria-describedby="acp-permission-body"
-      data-testid="acp-permission-card"
-      /*
-       * The section box is `rounded-panel` plus `p-[var(--card-pad)]` — 16px is not
-       * written again by hand (the adoption ratchet caught `rounded-card` plus
-       * `px-4 py-3.5` at first). This is not one item but **one section**: title,
-       * rationale and options stand together to form a single decision.
-       */
-      /*
-       * ⚠️ **The colour has to agree with the words** (owner, 2026-08-25: *"the colours are bad and
-       * the inside layout is poor"*).
-       *
-       * Every non-write request was painted warning amber, including the one that says *this is your
-       * own project, nothing has happened yet*. A card whose frame shouts while its sentence
-       * reassures teaches people that the amber means nothing — the same cry-wolf failure the copy
-       * fix addressed, left standing in the paint.
-       *
-       * Amber is now reserved for what it means: the agent reaching somewhere that is genuinely not
-       * the person's project. Inside the project the card is neutral, and an ontology write keeps its
-       * indigo. Every one of the three still stops for an answer; only the alarm is spent where it
-       * is earned.
-       */
-      /*
-       * ⚠️ **The two answers never scroll away** (2026-09-06). This was a `grid` with no bound, so
-       * a batch ontology write — one review row per item — grew the card until 「Don't」 and
-       * 「Allow once」 sat below the bottom of a 1040×720 window. The panel caps the card's height;
-       * the card puts the scroll **around its reading matter only**, so the decision row is always
-       * the last thing in the frame. A checkpoint you cannot answer is a wall.
-       */
-      className={
+  const answerWith = (choice: Answer, action: () => void) => {
+    if (settled) return;
+    setAnswer({ key: reviewStateKey, choice });
+    void feedback.run(action);
+  };
+  const allowDisabled = !allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked;
+  const answeredText = answered === null
+    ? ''
+    : failed
+      ? t('answered.failed')
+      : answered === 'allow'
+        ? targetName && ontologyWrite ? t('answered.allowNamed', { name: targetName }) : t('answered.allow')
+        : answered === 'reject'
+          ? targetName && ontologyWrite ? t('answered.rejectNamed', { name: targetName }) : ontologyWrite ? t('answered.rejectWrite') : t('answered.reject')
+          : answered === 'correct'
+            ? t('answered.correct')
+            : t('answered.always');
+
+  const titleText = headline
+    ? tChange(`headline.${headline.key}`, {
+        ...headline.values,
+        ...(headline.fieldKey
+          ? { field: headlineFieldKey ? tChange(headlineFieldKey) : headline.fieldKey }
+          : {}),
+      })
+    : t(
         ontologyWrite
-          ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
-          : locality !== 'elsewhere'
-            ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
-            : 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
-      }
+          ? 'ontologyWriteTitle'
+          : serverConsent
+            ? 'consentTitle'
+            : locality === 'inside-folder'
+              ? 'insideFolderTitle'
+              : locality === 'inside-project'
+                ? 'insideProjectTitle'
+                : 'title',
+      );
+  const bodyText = t(
+    ontologyWrite
+      ? taskReview?.executionBlocked
+        ? 'taskReview.rootMismatchBody'
+        : taskReview?.status === 'ready'
+          ? 'ontologyWriteBody'
+          : 'ontologyWriteUnverifiedBody'
+      : serverConsent
+        ? 'consentBody'
+        : locality === 'inside-folder'
+          ? 'insideFolderBody'
+          : locality === 'inside-project'
+            ? 'insideProjectBody'
+            : 'body',
+  );
+  const allowEffect = changeSet && changeSet.itemCount > 1
+    ? t('taskReview.allowEffectBatch', { count: changeSet.itemCount })
+    : targetName
+      ? t('taskReview.allowEffectNamed', { name: targetName })
+      : t('taskReview.allowEffect');
+  const titleIcon = ontologyWrite ? (
+    <GitCompareArrows size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+  ) : locality !== 'elsewhere' ? (
+    <Eye size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
+  ) : (
+    <ShieldAlert size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-status-warning)]" />
+  );
+  const fieldLabel = (key: string) => {
+    const nameKey = fieldNameKey(key);
+    return nameKey
+      ? <span className="text-[color:var(--color-text-tertiary)]">{tChange(nameKey)}</span>
+      : <span className="font-mono text-[color:var(--color-text-tertiary)]">{key}</span>;
+  };
+  const receipt = (
+    <p
+      key="answered"
+      data-testid="acp-permission-answered"
+      data-answer={answered ?? undefined}
+      data-feedback={feedback.state}
+      className="ai-row-swap flex min-h-10 items-center gap-2 text-body leading-body text-[color:var(--color-text-secondary)]"
     >
-      <div
-        data-testid="acp-permission-body-scroll"
-        className="atlas-scroll-quiet flex min-h-0 shrink flex-col gap-3 overflow-y-auto [@media(max-width:480px)]:flex-none [@media(max-width:480px)]:overflow-visible [@media(max-height:520px)]:flex-none [@media(max-height:520px)]:overflow-visible"
-      >
-      <div className="flex items-start gap-2.5">
-        {ontologyWrite ? (
-          <GitCompareArrows
-            size={ICON_SIZE.md}
-            aria-hidden
-            className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
-          />
-        ) : locality !== 'elsewhere' ? (
-          // Inside the person's own folder or project the mark is a neutral eye, not an alarm shield.
-          <Eye
-            size={ICON_SIZE.md}
-            aria-hidden
-            className="mt-0.5 shrink-0 text-[color:var(--color-text-tertiary)]"
-          />
-        ) : (
-          <ShieldAlert
-            size={ICON_SIZE.md}
-            aria-hidden
-            className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]"
-          />
+      <FeedbackGlyph state={feedback.state} icon={null} size={ICON_SIZE.md} />
+      <span className="min-w-0">{answeredText}</span>
+    </p>
+  );
+
+  return (
+    <>
+      <section
+        role="alertdialog"
+        aria-labelledby="acp-permission-title"
+        aria-describedby="acp-permission-body"
+        data-testid="acp-permission-card"
+        data-answered={settled ? answered : undefined}
+        inert={settled ? true : undefined}
+        className={cn(
+          'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border p-[var(--card-pad)]',
+          ontologyWrite
+            ? 'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
+            : locality !== 'elsewhere'
+              ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]'
+              : 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)]',
         )}
-        <div className="min-w-0">
+      >
+        <header className="grid shrink-0 gap-2">
           <p
             id="acp-permission-title"
-            className="break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
-          >
-            {headline
-              ? tChange(`headline.${headline.key}`, {
-                  ...headline.values,
-                  ...(headline.fieldKey
-                    ? {
-                        field: headlineFieldKey
-                          ? tChange(headlineFieldKey)
-                          : headline.fieldKey,
-                      }
-                    : {}),
-                })
-              : t(
-              ontologyWrite
-                ? 'ontologyWriteTitle'
-                : serverConsent
-                  ? 'consentTitle'
-                  : /*
-                     * ⚠️ Since maps live inside projects, reading the code is *by construction*
-                     * outside the vault — so the generic "outside this folder" now fires on the
-                     * exact thing the person just asked for. A warning that cries wolf on the
-                     * intended path teaches people to click through it. Nothing is suppressed;
-                     * the card still stops for an answer, it just says which situation this is.
-                     */
-                    locality === 'inside-folder'
-                    ? 'insideFolderTitle'
-                    : locality === 'inside-project'
-                      ? 'insideProjectTitle'
-                      : 'title',
-            )}
-          </p>
-          <p
-            id="acp-permission-body"
-            className={changeSet && taskOrigin && !taskReview?.executionBlocked
-              ? 'sr-only'
-              : 'mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]'}
-          >
-            {t(
-              ontologyWrite
-                ? taskReview?.executionBlocked
-                  ? 'taskReview.rootMismatchBody'
-                  : taskReview?.status === 'ready'
-                    ? 'ontologyWriteBody'
-                    : 'ontologyWriteUnverifiedBody'
-                : serverConsent
-                  ? 'consentBody'
-                  : locality === 'inside-folder'
-                    ? 'insideFolderBody'
-                    : locality === 'inside-project'
-                      ? 'insideProjectBody'
-                      : 'body',
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/*
-        **What it is trying to do** (2026-08-17). With only the path shown, 「read」 and
-        「delete」 look identical on screen — and those are completely different
-        decisions. The value was already arriving as `toolKind`, and that field's own
-        comment already recorded it as «a typed fact for the screen to use», while the
-        screen was not reading it.
-
-        When it is unknown, it says so. Guessing 「read」 errs on the most dangerous side.
-      */}
-      {changeSet && taskOrigin ? (
-        <section data-testid="task-review" className="grid gap-1">
-          <p
-            ref={taskReviewHeadingRef}
+            ref={titleRef}
             tabIndex={-1}
-            data-testid="task-review-heading"
-            className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-quaternary)] focus-visible:outline-none"
+            className="text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] focus-visible:outline-none"
           >
-            {t('taskReview.eyebrow')}
+            <span className="mr-2 inline-flex h-[1lh] items-center align-top">{titleIcon}</span>
+            {titleText}
           </p>
-          <details data-testid="task-review-task" className="group">
-            <summary className="list-none rounded-chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
-              <span data-testid="task-review-outcome-compact" className="line-clamp-1 break-words text-body leading-prose text-[color:var(--color-text-primary)]">{taskOrigin.outcome}</span>
-            </summary>
-            <div className="mt-2 grid gap-1.5">
-              <p data-testid="task-review-outcome" className="break-words text-body leading-prose text-[color:var(--color-text-primary)]">{taskOrigin.outcome}</p>
-              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.nonGoalsUnstructured')}</p>
-            </div>
-          </details>
-
-          <SegmentedControl
-            ariaLabel={t('taskReview.depthLabel')}
-            value={reviewDepth}
-            onChange={setReviewDepth}
-            fill
-            size="md"
-            testId="task-review-depth"
-            options={([
-              ['summary', 'taskReview.summary'],
-              ['compare', 'taskReview.compare'],
-              ['details', 'taskReview.details'],
-            ] as const).map(([value, key]) => ({ value, label: t(key), testId: `task-review-depth-${value}` }))}
-          />
-
-          {reviewDepth === 'summary' ? (
-          <div data-testid="task-review-summary" className="grid gap-2">
-              {/*
-                ⚠️ **A strip of facts, not a sentence with holes in it** (measured in the
-                installed shape, 2026-09-19). It was one template —
-                `Proposed {operation} for {target} · selected item {selected} of {items} ·
-                {fields} requested fields` — and every slot it could not fill it filled anyway:
-                the missing target took `unknownTarget`, which is worded as a statement about
-                intent, so the line read 「Proposed Change your folder for Cannot tell what it
-                wants to do」. A single item still announced 「selected item 1 of 1」 and a request
-                that changes nothing still announced 「0 requested fields」.
-
-                So each clause is now **present only when it carries a fact**, joined by the
-                separator this screen already uses. Nothing is invented and nothing is lost: the
-                headline above already owns the admission that the document is unnamed (its own
-                `NoTarget` variant), so the strip simply says less rather than saying something
-                untrue.
-              */}
-              <p data-testid="task-review-scope" className="text-label leading-label text-[color:var(--color-text-secondary)]">
-                {[
-                  tChange(`operation.${changeSet.operation}`),
-                  activeReviewItem?.relation
+          {taskBound && changeSet ? (
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p
+                data-testid="task-review-scope"
+                className="min-w-0 break-words text-label leading-label text-[color:var(--color-text-secondary)]"
+              >
+                <span className="font-mono">
+                  {activeReviewItem?.relation
                     ? t('taskReview.scopeRelation', {
                         from: activeReviewItem.relation.from,
                         type: activeReviewItem.relation.type,
                         to: activeReviewItem.relation.to,
                       })
-                    : activeReviewItem?.target ?? null,
-                  changeSet.itemCount > 1
-                    ? t('taskReview.scopeItem', {
-                        selected: (activeItemIndex ?? 0) + 1,
-                        items: changeSet.itemCount,
-                      })
-                    : null,
-                  !activeReviewItem?.relation && (activeReviewItem?.fields.length ?? 0) > 0
-                    ? t('taskReview.scopeFields', { count: activeReviewItem?.fields.length ?? 0 })
-                    : null,
-                ]
-                  .filter((part): part is string => Boolean(part))
-                  .join(' · ')}
+                    : activeReviewItem?.target ?? tChange('unknownTarget')}
+                </span>
+                {changeSet.itemCount > 1
+                  ? ` · ${t('taskReview.scopeItem', {
+                      selected: (activeItemIndex ?? 0) + 1,
+                      items: changeSet.itemCount,
+                    })}`
+                  : null}
               </p>
-              {visibleMeaningUnits.length > 0 ? (
-                <div className="grid gap-1.5">
-                  {visibleMeaningUnits.map((unit, index) => (
-                    <div key={unit.id} data-testid={`task-review-meaning-unit-${index}`} className="grid gap-0.5">
-                      <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
+              <SegmentedControl
+                ariaLabel={t('taskReview.depthLabel')}
+                value={reviewDepth}
+                onChange={setReviewDepth}
+                size="md"
+                testId="task-review-depth"
+                className="shrink-0"
+                options={([
+                  ['summary', 'taskReview.summary'],
+                  ['compare', 'taskReview.compare'],
+                  ['details', 'taskReview.details'],
+                ] as const).map(([value, key]) => ({ value, label: t(key), testId: `task-review-depth-${value}` }))}
+              />
+            </div>
+          ) : null}
+          <p
+            id="acp-permission-body"
+            className={taskBound && !taskReview?.executionBlocked
+              ? 'sr-only'
+              : 'text-label leading-label text-[color:var(--color-text-secondary)]'}
+          >
+            {bodyText}
+          </p>
+        </header>
+
+        <div
+          ref={bodyScrollRef}
+          data-testid="acp-permission-body-scroll"
+          data-edge={bodyEdge.top || bodyEdge.bottom ? `${bodyEdge.top ? 'top' : ''}${bodyEdge.top && bodyEdge.bottom ? '-' : ''}${bodyEdge.bottom ? 'bottom' : ''}` : undefined}
+          onScroll={measureBodyEdges}
+          style={bodyMask ? { maskImage: bodyMask, WebkitMaskImage: bodyMask } : undefined}
+          className="atlas-scroll-quiet flex min-h-0 shrink flex-col overflow-y-auto [@media(max-width:480px)]:flex-none [@media(max-width:480px)]:overflow-visible [@media(max-height:520px)]:flex-none [@media(max-height:520px)]:overflow-visible"
+        >
+          <div ref={bodyContentRef} className="flex flex-col gap-3">
+          {taskBound && changeSet && taskOrigin ? (
+            <section data-testid="task-review" className="grid gap-4">
+              {taskReview?.executionBlocked ? (
+                <p data-testid="task-review-root-mismatch" className="break-words rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-2 text-label leading-prose text-[color:var(--color-danger-text)]">
+                  {t('taskReview.rootMismatch', {
+                    actual: taskReview.actualReportedRoot ?? t('taskReview.unknown'),
+                    expected: vaultPath ?? t('taskReview.unknown'),
+                  })}
+                </p>
+              ) : null}
+
+              {reviewDepth === 'summary' ? (
+                <div data-testid="task-review-summary" className="grid gap-3">
+                  {visibleValueFields.length > 0 ? (
+                    <dl data-testid="task-review-values" className="grid gap-2">
+                      {visibleValueFields.map((field) => (
+                        <div key={field.key} data-testid="task-review-value" data-field-key={field.key} className="grid grid-cols-[6rem_minmax(0,1fr)] items-baseline gap-x-3">
+                          <dt className="break-words text-label leading-label">{fieldLabel(field.key)}</dt>
+                          <dd className="min-w-0 whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                            {formatRequestedValue(field.after, tChange('noValue'))}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
+                  {omittedValueFields > 0 ? (
+                    <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {tChange('moreFields', { count: omittedValueFields })}
+                    </p>
+                  ) : null}
+                  {visibleMeaningUnits.length > 0 ? (
+                    <div className="grid gap-2">
+                      {visibleMeaningUnits.map((unit, index) => (
+                        <div key={unit.id} data-testid={`task-review-meaning-unit-${index}`} className="grid gap-0.5">
+                          <span className="break-words font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">{unit.label}</span>
+                          <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                            {unit.displayText}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {coverageLine ? (
+                    <p data-testid="task-review-coverage" className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {coverageLine}
+                    </p>
+                  ) : null}
+                  {changeSet.itemCount > 1 ? (
+                    <p data-testid="task-review-batch-remaining" className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {t('taskReview.batchRemaining', { count: changeSet.itemCount - 1 })}
+                    </p>
+                  ) : null}
+                </div>
+              ) : reviewDepth === 'compare' && taskReview?.status === 'ready' ? (
+                <div data-testid="task-review-compare" className="grid gap-2">
+                  <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                    {t('taskReview.comparisonCoverage', {
+                      inspected: taskReview.coverage.inspected,
+                      total: taskReview.coverage.total,
+                      omitted: taskReview.coverage.omitted,
+                    })}
+                  </p>
+                  {taskReview.items.map((item) => (
+                    <div key={item.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
+                      <div className="flex items-center justify-between gap-2 text-label leading-label">
+                        <span className="font-mono text-[color:var(--color-text-tertiary)]">{item.field}</span>
+                        <span className="text-[color:var(--color-text-tertiary)]">{t(`taskReview.delta.${item.kind}`)}</span>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-secondary)]">
+                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.before')}</span>
+                        {item.before.present ? formatReviewValue(item.before.value) : t('taskReview.absent')}
+                      </p>
                       <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                        {unit.displayText}
+                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
+                        {item.after.present ? formatReviewValue(item.after.value) : t('taskReview.absent')}
                       </p>
                     </div>
                   ))}
                 </div>
-              ) : null}
-              <p data-testid="task-review-coverage" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {coverageLine}
-              </p>
-              {changeSet.itemCount > 1 ? (
-                <p data-testid="task-review-batch-remaining" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                  {t('taskReview.batchRemaining', { count: changeSet.itemCount - 1 })}
-                </p>
-              ) : null}
-            </div>
-          ) : reviewDepth === 'compare' && taskReview?.status === 'ready' ? (
-            <div data-testid="task-review-compare" className="grid gap-2">
-              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {t('taskReview.comparisonCoverage', {
-                  inspected: taskReview.coverage.inspected,
-                  total: taskReview.coverage.total,
-                  omitted: taskReview.coverage.omitted,
-                })}
-              </p>
-              {taskReview.items.map((item) => (
-                <div key={item.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{item.field}</span>
-                    <span className="text-caption text-[color:var(--color-text-quaternary)]">{t(`taskReview.delta.${item.kind}`)}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-secondary)]">
-                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.before')}</span>
-                    {item.before.present ? formatReviewValue(item.before.value) : t('taskReview.absent')}
+              ) : reviewDepth === 'compare' ? (
+                <div data-testid="task-review-compare" className="grid gap-2">
+                  <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                    {t('taskReview.beforeUnavailable')}
                   </p>
-                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
-                    {item.after.present ? formatReviewValue(item.after.value) : t('taskReview.absent')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : reviewDepth === 'compare' ? (
-            /*
-             * **"There is no before" is said once, and the reason it is missing is the card's.**
-             *
-             * Measured on this tab (2026-09-20): with no comparison basis it stated the same fact
-             * five times on one screen — a sentence claiming no trusted snapshot, a reason line
-             * saying the request shape cannot be compared yet, and `Before · unavailable` once per
-             * meaning unit, three times. The three proposed values a person came here to read were
-             * pushed apart by three copies of a line that never changes.
-             *
-             * Worse than repetition, the first two disagreed about **why**. The generic sentence
-             * asserted a missing snapshot; the reason said the request shape is not comparable.
-             * Only one of those was true, and it was the specific one. So the standing sentence
-             * keeps the half that is always true — values are not invented — and the cause is left
-             * to the reason list, which knows it. The per-unit line goes: `After` still prefixes
-             * every value, so each one is still marked as proposed rather than current.
-             */
-            <div data-testid="task-review-compare" className="grid gap-2">
-              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {t('taskReview.beforeUnavailable')}
-              </p>
-              {taskReview?.status === 'unavailable' && taskReview.reasons.length > 0 ? (
-                <ul className="grid gap-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
-                  {taskReview.reasons.map((reason) => <li key={reason}>{t(`taskReview.reason.${reason}`)}</li>)}
-                </ul>
-              ) : null}
-              {visibleMeaningUnits.map((unit) => (
-                <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
-                  <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
-                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
-                    {unit.displayText}
-                  </p>
-                </div>
-              ))}
-              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {coverageLine}
-              </p>
-            </div>
-          ) : (
-            <div data-testid="task-review-details" className="grid gap-3">
-              <OntologyChangeReview
-                changeSet={changeSet}
-                activeItemIndex={activeItemIndex}
-                onActiveItemChange={onActiveItemChange}
-                onFullScopeAvailableChange={handleFullScopeAvailable}
-                valueBasis={taskReview?.status === 'ready' ? 'request-raw' : 'after-only'}
-              />
-              {taskReview?.status === 'ready' ? (
-                <div className="grid gap-2 border-t border-[color:var(--color-divider)] pt-2">
-                  {taskReview.canonicalPreview !== undefined ? taskReview.canonicalPreview !== null ? (
-                    <div className="space-y-2">
-                      <p className="text-caption font-[var(--font-weight-emphasis)]">{t('taskReview.canonicalPreview')}</p>
-                      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('taskReview.canonicalPreviewNote')}</p>
-                      <pre className="atlas-scroll-quiet max-h-64 overflow-auto whitespace-pre-wrap break-words text-caption">{taskReview.canonicalPreview}</pre>
+                  {taskReview?.status === 'unavailable' && taskReview.reasons.length > 0 ? (
+                    <ul className="grid gap-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {taskReview.reasons.map((reason) => <li key={reason}>{t(`taskReview.reason.${reason}`)}</li>)}
+                    </ul>
+                  ) : null}
+                  {visibleValueFields.map((field) => (
+                    <div key={field.key} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2">
+                      <span className="text-label leading-label">{fieldLabel(field.key)}</span>
+                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
+                        {formatRequestedValue(field.after, tChange('noValue'))}
+                      </p>
                     </div>
-                  ) : <p role="status" className="text-caption">{t(taskReview.previewUnavailableReason === 'no_semantic_delta' ? 'taskReview.noSemanticDelta' : 'taskReview.previewUnavailable')}</p> : null}
-                  {taskReview.canonicalPreview ? <Textarea label={t('taskReview.rationale')} rows={2}
-                    value={meaningRationale.key === reviewStateKey ? meaningRationale.value : ''}
-                    onChange={(event) => setMeaningRationale({ key: reviewStateKey, value: event.target.value })} /> : null}
-                  <Checkbox
-                    label={t('taskReview.acknowledgeFullScope', { count: changeSet.itemCount })}
-                    checked={acknowledgeFullScope}
-                    disabled={!taskReview.coverage.complete || !fullDetailsAvailable || taskReview.executionBlocked}
-                    onChange={(event) => setReviewState({
-                      key: reviewStateKey,
-                      depth: 'details',
-                      acknowledgeFullScope: event.target.checked,
-                    })}
+                  ))}
+                  {visibleMeaningUnits.map((unit) => (
+                    <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2">
+                      <span className="break-words font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">{unit.label}</span>
+                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                        <span className="mr-1.5 text-label text-[color:var(--color-text-tertiary)]">{t('taskReview.after')}</span>
+                        {unit.displayText}
+                      </p>
+                    </div>
+                  ))}
+                  {coverageLine ? (
+                    <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {coverageLine}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div data-testid="task-review-details" className="grid gap-3">
+                  <OntologyChangeReview
+                    changeSet={changeSet}
+                    activeItemIndex={activeItemIndex}
+                    onActiveItemChange={onActiveItemChange}
+                    onFullScopeAvailableChange={handleFullScopeAvailable}
+                    valueBasis={taskReview?.status === 'ready' ? 'request-raw' : 'after-only'}
+                    addressed
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="task-review-accept-meaning"
-                    disabled={!acknowledgeFullScope || !fullDetailsAvailable || acceptingMeaning || taskReview.meaningStatus === 'accepted' || taskReview.executionBlocked || taskReview.canonicalPreview === null}
-                    onClick={async () => {
-                      setAcceptingMeaning(true);
-                      try {
-                        const rationale = meaningRationale.key === reviewStateKey ? meaningRationale.value.trim() : '';
-                        await taskReview.markMeaningAccepted({ acknowledgeFullScope: true, ...(rationale ? { rationale } : {}) });
-                      }
-                      finally { setAcceptingMeaning(false); }
-                    }}
-                  >
-                    {t(taskReview.meaningStatus === 'accepted' ? 'taskReview.meaningAccepted' : acceptingMeaning ? 'taskReview.checkingBasis' : 'taskReview.acceptMeaning')}
-                  </Button>
-                  {taskReview.decisionSaveStatus ? <p role="status" className="text-caption text-[color:var(--color-text-secondary)]">{t(`taskReview.decisionSave.${taskReview.decisionSaveStatus}`)}</p> : null}
+                  {taskReview?.status === 'ready' ? (
+                    <div className="grid gap-2 border-t border-[color:var(--color-divider)] pt-2">
+                      {taskReview.canonicalPreview !== undefined ? taskReview.canonicalPreview !== null ? (
+                        <div className="space-y-2">
+                          <p className="text-label leading-label font-[var(--font-weight-emphasis)]">{t('taskReview.canonicalPreview')}</p>
+                          <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('taskReview.canonicalPreviewNote')}</p>
+                          <pre className="atlas-scroll-quiet max-h-64 overflow-auto whitespace-pre-wrap break-words text-label leading-label">{taskReview.canonicalPreview}</pre>
+                        </div>
+                      ) : <p role="status" className="text-label leading-label">{t(taskReview.previewUnavailableReason === 'no_semantic_delta' ? 'taskReview.noSemanticDelta' : 'taskReview.previewUnavailable')}</p> : null}
+                      {taskReview.canonicalPreview ? <Textarea label={t('taskReview.rationale')} rows={2}
+                        value={meaningRationale.key === reviewStateKey ? meaningRationale.value : ''}
+                        onChange={(event) => setMeaningRationale({ key: reviewStateKey, value: event.target.value })} /> : null}
+                      <Checkbox
+                        label={t('taskReview.acknowledgeFullScope', { count: changeSet.itemCount })}
+                        checked={acknowledgeFullScope}
+                        disabled={!taskReview.coverage.complete || !fullDetailsAvailable || taskReview.executionBlocked}
+                        onChange={(event) => setReviewState({
+                          key: reviewStateKey,
+                          depth: 'details',
+                          acknowledgeFullScope: event.target.checked,
+                        })}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid="task-review-accept-meaning"
+                        disabled={!acknowledgeFullScope || !fullDetailsAvailable || acceptingMeaning || taskReview.meaningStatus === 'accepted' || taskReview.executionBlocked || taskReview.canonicalPreview === null}
+                        onClick={async () => {
+                          setAcceptingMeaning(true);
+                          try {
+                            const rationale = meaningRationale.key === reviewStateKey ? meaningRationale.value.trim() : '';
+                            await taskReview.markMeaningAccepted({ acknowledgeFullScope: true, ...(rationale ? { rationale } : {}) });
+                          }
+                          finally { setAcceptingMeaning(false); }
+                        }}
+                      >
+                        {t(taskReview.meaningStatus === 'accepted' ? 'taskReview.meaningAccepted' : acceptingMeaning ? 'taskReview.checkingBasis' : 'taskReview.acceptMeaning')}
+                      </Button>
+                      {taskReview.decisionSaveStatus ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t(`taskReview.decisionSave.${taskReview.decisionSaveStatus}`)}</p> : null}
+                    </div>
+                  ) : null}
+                  <details className="border-t border-[color:var(--color-divider)] pt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">
+                    <summary>{t('taskReview.provenance')}</summary>
+                    <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 font-mono">
+                      <dt>{t('taskReview.requestId')}</dt><dd data-request-id-type={typeof request.requestId}>{String(request.requestId ?? t('taskReview.unknown'))}</dd>
+                      <dt>{t('taskReview.userEvent')}</dt><dd>{taskOrigin.userEventId}</dd>
+                      <dt>{t('taskReview.toolCall')}</dt><dd>{request.toolCallId ?? t('taskReview.unknown')}</dd>
+                      <dt>{t('taskReview.generation')}</dt><dd>{taskOrigin.sessionGeneration}</dd>
+                      {taskReview ? <><dt>{t('taskReview.guardStatus')}</dt><dd>{t(`taskReview.guard.${taskReview.guardStatus}`)}</dd></> : null}
+                      {proposalGuards.map((guard) => (
+                        <Fragment key={guard.key}><dt>{guard.key}</dt><dd title={guard.exact}>{guard.shown}</dd></Fragment>
+                      ))}
+                    </dl>
+                  </details>
+                </div>
+              )}
+
+              {task ? (
+                <div data-testid="task-review-task" className="grid gap-1">
+                  <p data-testid="task-review-heading" className="text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
+                    {t('taskReview.eyebrow')}
+                  </p>
+                  <p data-testid="task-review-outcome-compact" className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-secondary)]">
+                    {task.lead}
+                  </p>
+                  {task.rest ? (
+                    <Disclosure summary={t('taskReview.taskRest', { count: restLines })} summaryTestId="task-review-task-toggle">
+                      <div className="grid gap-1.5 pt-1">
+                        <p data-testid="task-review-outcome" className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-secondary)]">
+                          {task.rest}
+                        </p>
+                        <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('taskReview.nonGoalsUnstructured')}</p>
+                      </div>
+                    </Disclosure>
+                  ) : null}
                 </div>
               ) : null}
-              <details className="border-t border-[color:var(--color-divider)] pt-2 text-caption text-[color:var(--color-text-quaternary)]">
-                <summary>{t('taskReview.provenance')}</summary>
-                <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 font-mono">
-                  <dt>{t('taskReview.requestId')}</dt><dd data-request-id-type={typeof request.requestId}>{String(request.requestId ?? t('taskReview.unknown'))}</dd>
-                  <dt>{t('taskReview.userEvent')}</dt><dd>{taskOrigin.userEventId}</dd>
-                  <dt>{t('taskReview.toolCall')}</dt><dd>{request.toolCallId ?? t('taskReview.unknown')}</dd>
-                  <dt>{t('taskReview.generation')}</dt><dd>{taskOrigin.sessionGeneration}</dd>
-                  {taskReview ? <><dt>{t('taskReview.guardStatus')}</dt><dd>{t(`taskReview.guard.${taskReview.guardStatus}`)}</dd></> : null}
-                  {proposalGuards.map((guard) => (
-                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd title={guard.exact}>{guard.shown}</dd></Fragment>
-                  ))}
-                </dl>
-              </details>
-            </div>
+
+              <dl data-testid="task-review-answer-legend" className="grid grid-cols-[6rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-[color:var(--color-divider)] pt-3 text-label leading-label">
+                {onRequestCorrection ? (
+                  <>
+                    <dt className="text-[color:var(--color-text-tertiary)]">{t('taskReview.correct')}</dt>
+                    <dd id={`${legendId}-correct`} className="min-w-0 text-[color:var(--color-text-secondary)]">{t('taskReview.correctEffect')}</dd>
+                  </>
+                ) : null}
+                {onDefer ? (
+                  <>
+                    <dt className="text-[color:var(--color-text-tertiary)]">{t('taskReview.defer')}</dt>
+                    <dd id={`${legendId}-defer`} className="min-w-0 text-[color:var(--color-text-secondary)]">{t('taskReview.deferEffect')}</dd>
+                  </>
+                ) : null}
+                <dt className="text-[color:var(--color-text-tertiary)]">{t('allowOnce')}</dt>
+                <dd id={`${legendId}-allow`} data-testid="task-review-allow-scope" className="min-w-0 text-[color:var(--color-text-secondary)]">{allowEffect}</dd>
+              </dl>
+            </section>
+          ) : changeSet ? (
+            <OntologyChangeReview changeSet={changeSet} activeItemIndex={activeItemIndex} onActiveItemChange={onActiveItemChange} />
+          ) : askedSentence ? (
+            <p
+              data-testid="acp-permission-ask"
+              className="text-body leading-prose text-[color:var(--color-text-primary)]"
+            >
+              {askedSentence}
+            </p>
+          ) : (
+            <p
+              data-testid="acp-permission-intent"
+              data-intent={intent}
+              className="text-label leading-label text-[color:var(--color-text-primary)]"
+            >
+              {t(`intent.${intent}`)}
+            </p>
           )}
 
-          {taskReview?.executionBlocked ? (
-            <p data-testid="task-review-root-mismatch" className="break-words rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-2 text-label leading-prose text-[color:var(--color-danger-text)]">
-              {t('taskReview.rootMismatch', {
-                actual: taskReview.actualReportedRoot ?? t('taskReview.unknown'),
-                expected: vaultPath ?? t('taskReview.unknown'),
-              })}
+          {!ontologyWrite && request.filePath ? (
+            <p
+              data-testid="acp-permission-path"
+              className="break-all rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
+            >
+              {request.filePath}
+            </p>
+          ) : ontologyWrite || askedSentence ? null : (
+            <p className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
+              {request.title ?? t('unknownTarget')}
+            </p>
+          )}
+
+          {writeVerdict ? (
+            <div
+              data-testid="acp-permission-page-verdict"
+              data-ok={writeVerdict.ok ? 'true' : 'false'}
+              className={
+                writeVerdict.ok
+                  ? 'rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]'
+                  : 'rounded-chip border border-[color:var(--color-border-strong)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-secondary)]'
+              }
+            >
+              {writeVerdict.ok ? (
+                t('pageFits')
+              ) : (
+                <>
+                  <p>{t('pageFails', { count: writeVerdict.problems.length })}</p>
+                  <ul className="mt-1 flex flex-col gap-1">
+                    {writeVerdict.problems.slice(0, VERDICT_ROWS).map((problem, index) => (
+                      <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 flex-col">
+                        <span className="min-w-0 text-[color:var(--color-text-primary)]">
+                          {describeWikiProblem(problem, libraryT).sentence}
+                        </span>
+                        <code className="min-w-0 break-all font-mono text-[color:var(--color-text-tertiary)]">
+                          {problem.code}
+                          {problem.line ? `:${problem.line}` : ''}
+                        </code>
+                      </li>
+                    ))}
+                  </ul>
+                  {writeVerdict.problems.length > VERDICT_ROWS ? (
+                    <p className="mt-1 text-[color:var(--color-text-tertiary)]">
+                      {t('pageFailsRest', { count: writeVerdict.problems.length - VERDICT_ROWS })}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+          </div>
+        </div>
+
+        <div
+          data-testid="acp-permission-decisions"
+          className={cn('grid shrink-0 gap-2', (taskBound || allowAlways) && 'border-t border-[color:var(--color-divider)] pt-3')}
+        >
+          {taskBound && meaningAuthority !== 'unknown' ? (
+            <p data-testid="task-review-authority-meaning" className="flex items-center justify-between gap-2 text-label leading-label">
+              <span className="text-[color:var(--color-text-tertiary)]">{t('taskReview.authority.meaning')}</span>
+              <span className="text-[color:var(--color-text-secondary)]">{t(`taskReview.authority.${meaningAuthority}`)}</span>
             </p>
           ) : null}
-        </section>
-      ) : changeSet ? (
-        <OntologyChangeReview changeSet={changeSet} activeItemIndex={activeItemIndex} onActiveItemChange={onActiveItemChange} />
-      ) : askedSentence ? (
-        /*
-         * ⚠️ **Never say "unknown" twice** (owner's screen, 2026-08-24). The card used to print
-         * 「the tool did not say what it wants to do」 here **and** 「cannot tell what it wants to
-         * do」 below it, because a server elicitation carries `kind: "other"` (→ unknown) and no
-         * title. Two lines, two inks, no information — the shape that reads as generated filler.
-         *
-         * When the question itself arrived, it is the whole line, at reading size: this is the
-         * decision material, not a caption under it.
-         */
-        <p
-          data-testid="acp-permission-ask"
-          className="break-keep text-body leading-prose text-[color:var(--color-text-primary)]"
-        >
-          {askedSentence}
-        </p>
-      ) : (
-        <p
-          data-testid="acp-permission-intent"
-          data-intent={intent}
-          className="break-keep text-label leading-label text-[color:var(--color-text-primary)]"
-        >
-          {t(`intent.${intent}`)}
-        </p>
-      )}
-
-      {/* The path is the basis for the judgement, so it is not truncated. `break-all`
-          keeps a long path from leaving the pane, and mono here is not decoration but
-          the channel carrying «this is a file path». */}
-      {!ontologyWrite && request.filePath ? (
-        <p
-          data-testid="acp-permission-path"
-          className="break-all rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]"
-        >
-          {request.filePath}
-        </p>
-      ) : ontologyWrite || askedSentence ? null : (
-        /*
-         * The question already stands above when the server asked one; repeating it here is the
-         * duplicate line this card was criticised for. When there is neither a path nor a question,
-         * this takes the path's own slot — same box, same weight — rather than floating between the
-         * body and the buttons as a third unattached sentence.
-         */
-        <p className="break-keep rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
-          {request.title ?? t('unknownTarget')}
-        </p>
-      )}
-
-      {/*
-       * The verdict before the decision. The brief once claimed a failing page "will be
-       * rejected" and nothing rejected it; the codes showed up in the Wiki list after the
-       * page had landed. Here they show before Allow, on the same card, so the person
-       * decides with them in view. A fitting page says so in one quiet line; a failing one
-       * lists its findings and leaves both buttons where they are — the gate is the person,
-       * not the validator.
-       *
-       * **Each row says what is wrong, in the reader's language** (2026-09-20). Measured on
-       * the rendered card: the header said 8 problems, four rows followed, and nothing said
-       * the other four existed. Of those four rows only the first carried a sentence, and
-       * that sentence was the validator's English — `` `title:` is missing. The page name a
-       * person reads. `` — printed whole into a Korean card, above three bare machine codes.
-       * `describeWikiProblem` already owned the localised retelling for the Library's own
-       * surfaces; the verdict simply never carried `detail` far enough for this one to ask.
-       * The count of what is not shown is now its own line, because a header that says eight
-       * above a list of four is a header a reader stops believing.
-       */}
-      {writeVerdict ? (
-        <div
-          data-testid="acp-permission-page-verdict"
-          data-ok={writeVerdict.ok ? 'true' : 'false'}
-          className={
-            writeVerdict.ok
-              ? 'rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]'
-              : 'rounded-chip border border-[color:var(--color-border-strong)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-secondary)]'
-          }
-        >
-          {writeVerdict.ok ? (
-            t('pageFits')
-          ) : (
-            <>
-              <p className="break-keep">{t('pageFails', { count: writeVerdict.problems.length })}</p>
-              <ul className="mt-1 flex flex-col gap-1">
-                {writeVerdict.problems.slice(0, VERDICT_ROWS).map((problem, index) => (
-                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 flex-col">
-                    <span className="min-w-0 break-keep text-[color:var(--color-text-primary)]">
-                      {describeWikiProblem(problem, libraryT).sentence}
-                    </span>
-                    <code className="min-w-0 truncate font-mono text-[color:var(--color-text-quaternary)]">
-                      {problem.code}
-                      {problem.line ? `:${problem.line}` : ''}
-                    </code>
-                  </li>
-                ))}
-              </ul>
-              {writeVerdict.problems.length > VERDICT_ROWS ? (
-                <p className="mt-1 break-keep text-[color:var(--color-text-quaternary)]">
-                  {t('pageFailsRest', { count: writeVerdict.problems.length - VERDICT_ROWS })}
-                </p>
+          {taskBound && (onRequestCorrection || onDefer) ? (
+            <div data-testid="task-review-rare-answers" className="flex flex-wrap gap-2">
+              {onRequestCorrection ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="atlas-touch-floor"
+                  data-testid="task-review-correct"
+                  aria-describedby={`${legendId}-correct`}
+                  onClick={() => answerWith('correct', onRequestCorrection)}
+                >
+                  {t('taskReview.correct')}
+                </Button>
               ) : null}
-            </>
-          )}
-        </div>
-      ) : null}
-      {changeSet && taskOrigin ? (
-        <details data-testid="task-review-action-scope" className="border-t border-[color:var(--color-divider)] pt-2 text-caption text-[color:var(--color-text-quaternary)]">
-          <summary className="list-none rounded-chip font-[var(--font-weight-emphasis)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
-            {t('taskReview.actionScope')}
-          </summary>
-          <div className="mt-1 grid gap-1 leading-caption">
-            <p>{t(taskReview?.status === 'ready' ? 'ontologyWriteBody' : 'ontologyWriteUnverifiedBody')}</p>
-            <p>{t('taskReview.interventionHint')}</p>
-            <p>{t('taskReview.permissionSeparate')}</p>
-          </div>
-        </details>
-      ) : null}
-      </div>
-
-      {/*
-       * **A status row is drawn only where there is a status.**
-       *
-       * ## What this was (measured on the rendered card, 2026-09-20)
-       *
-       * Four label/value pairs in a 2x2 grid, 41px directly above the decision buttons:
-       * meaning · code · merge · deployment. The value column came back with exactly **one
-       * distinct value across all four rows** — "unknown" — and three of them could never say
-       * anything else: `code`, `merge` and `deployment` were written as the literal `'unknown'`
-       * key. Only `meaning` had a value that moves (unknown / pending / accepted).
-       *
-       * So the grid read as four facts about this write and carried one, and the three constants
-       * were not "we do not know yet" but "this screen cannot know, and never could".
-       *
-       * ## The claim they were standing in for is already a sentence
-       *
-       * Right below, unfolded, `taskReview.allowScope` names all four and says what allowing does
-       * **not** grant. That is the true claim. "Unknown" is a different and weaker one: it says the state
-       * is unavailable, when the point is that allowing here does not touch it. Nothing is lost by
-       * drawing only the row that moves.
-       */}
-      {changeSet && taskOrigin ? (
-        <div data-testid="task-review-authority" className="grid shrink-0 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
-          <div data-testid="task-review-authority-meaning" className="flex items-center justify-between gap-2 text-caption">
-            <span className="text-[color:var(--color-text-tertiary)]">{t('taskReview.authority.meaning')}</span>
-            <span className="text-[color:var(--color-text-quaternary)]">
-              {t(`taskReview.authority.${meaningAuthority}`)}
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {changeSet && taskOrigin ? (
-        <div className="grid shrink-0 gap-1 border-t border-[color:var(--color-divider)] pt-2">
-          <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.allowScope')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {onRequestCorrection ? (
-              <Button className="atlas-touch-floor" variant="outline" size="sm" data-testid="task-review-correct" onClick={onRequestCorrection}>
-                {t('taskReview.correct')}
+              {onDefer ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="atlas-touch-floor"
+                  data-testid="task-review-defer"
+                  aria-describedby={`${legendId}-defer`}
+                  onClick={onDefer}
+                >
+                  {t('taskReview.defer')}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          {failed ? receipt : null}
+          <div className="grid">
+            <div
+              aria-hidden={settled ? true : undefined}
+              className={cn('col-start-1 row-start-1 grid grid-cols-2 gap-2', settled && 'map-overlay-out')}
+            >
+              <Button
+                ref={rejectRef}
+                variant="outline"
+                className="atlas-touch-floor w-full"
+                data-testid="acp-permission-reject"
+                onClick={() => answerWith('reject', () => resolve(rejectOnce?.optionId ?? null))}
+              >
+                {t('reject')}
               </Button>
-            ) : null}
-            {onDefer ? (
-              <Button className="atlas-touch-floor" variant="ghost" size="sm" data-testid="task-review-defer" onClick={onDefer}>
-                {t('taskReview.defer')}
+              <Button
+                variant="primary"
+                className="atlas-touch-floor w-full"
+                data-testid="acp-permission-allow"
+                aria-describedby={taskBound ? `${legendId}-allow` : undefined}
+                disabled={allowDisabled}
+                onClick={() => answerWith('allow', () => resolve(allowOnce?.optionId ?? null))}
+              >
+                {t('allowOnce')}
               </Button>
-            ) : null}
-            <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" size="sm" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
-            {/*
-             * **The one button that writes may not look like the one that refuses.**
-             *
-             * Measured on the rendered card, both locales (2026-09-20): with the review open this
-             * row draws four buttons of exactly 210x32, and `Reject and edit` and `Allow once`
-             * came back byte-identical in paint — background `rgba(255,255,255,0.02)`, border
-             * `rgba(255,255,255,0.1)`, same ink, same weight. One of those refuses the write; the
-             * other performs it on the person's own files and cannot be undone from here.
-             *
-             * `primary` was already the allow in the two-button branch below; the review branch
-             * had quietly demoted it to `outline`, which is the variant `Reject and edit` wears.
-             * Promoting it back leaves exactly one filled control in the row, and it is the
-             * irreversible one. The safeguard is unchanged: focus still opens on reject, so the
-             * fill invites the eye without moving the keyboard.
-             */}
-            <Button className="atlas-touch-floor" variant="primary" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
+            </div>
+            {settled ? <div className="col-start-1 row-start-1">{receipt}</div> : null}
           </div>
+          {allowAlways && !ontologyWrite ? (
+            <div className="grid gap-1">
+              <button
+                type="button"
+                data-testid="acp-permission-allow-always"
+                onClick={() => answerWith('always', () => resolve(allowAlways.optionId))}
+                className={controlClass({
+                  shape: 'card',
+                  size: 'sm',
+                  tone: 'muted',
+                  hoverBorder: 'strong',
+                  hoverInk: 'secondary',
+                  className: 'justify-self-start',
+                })}
+              >
+                {t(
+                  scope.kind === 'tool'
+                    ? 'allowAlwaysTool'
+                    : scope.kind === 'directory'
+                      ? 'allowAlwaysDirectory'
+                      : 'allowAlwaysUnknown',
+                )}
+              </button>
+              <p
+                data-testid="acp-permission-scope"
+                data-scope={scope.kind}
+                className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                {scope.kind === 'unknown'
+                  ? t('scopeUnknownHint')
+                  : t('scopeHint', { names: scope.names.join(' · ') })}
+              </p>
+            </div>
+          ) : null}
         </div>
-      ) : (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
-          <Button className="atlas-touch-floor" variant="primary" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
-        </div>
-      )}
-
-      {/*
-        ⚠️ **One block, and the control looks like one** (owner, 2026-08-25). This used to be two
-        right-aligned strips stacked under the buttons: a real action rendered as a caption, and a
-        separate sentence about its scope. They read as trailing debris, and the action was easy to
-        mistake for a label — which is exactly what happened while driving the app.
-        The action keeps its quiet weight (it is the wider grant, not the recommended one) but sits
-        with the sentence that qualifies it, separated from the primary row by a rule.
-      */}
-      {allowAlways && !ontologyWrite ? (
-        <div className="grid shrink-0 gap-1 border-t border-[color:var(--color-border-soft)] pt-2.5">
-          <button
-            type="button"
-            data-testid="acp-permission-allow-always"
-            onClick={() => resolve(allowAlways.optionId)}
-            className={controlClass({
-              shape: 'card',
-              size: 'sm',
-              tone: 'muted',
-              hoverBorder: 'strong',
-              hoverInk: 'secondary',
-              className: 'justify-self-start',
-            })}
-          >
-            {t(
-              scope.kind === 'tool'
-                ? 'allowAlwaysTool'
-                : scope.kind === 'directory'
-                  ? 'allowAlwaysDirectory'
-                  : 'allowAlwaysUnknown',
-            )}
-          </button>
-          <p
-            data-testid="acp-permission-scope"
-            data-scope={scope.kind}
-            className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]"
-          >
-            {scope.kind === 'unknown'
-              ? t('scopeUnknownHint')
-              : t('scopeHint', { names: scope.names.join(' · ') })}
-          </p>
-        </div>
-      ) : null}
-    </section>
+      </section>
+      <span role="status" className="sr-only">
+        {answeredText}
+      </span>
+    </>
   );
 }
