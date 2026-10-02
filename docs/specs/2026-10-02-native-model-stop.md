@@ -136,6 +136,10 @@ The UI's next action is in the States table, rather than extra explanatory copy.
 | `library.localCompile.title` | Completed local Compile proposal | Ready to write |
 | `library.localCompile.failed` | Failed local Compile | Could not finish writing. {reason} |
 
+The native cancellation code uses `nativeErrors.cancelled` (English: "The request
+was stopped.") when it reaches the generic native-error boundary. Normal Stop
+continues to use the existing aborted-turn copy.
+
 ## Edge cases
 
 - Empty folder/source list: existing eligibility gates remain; Stop creates no
