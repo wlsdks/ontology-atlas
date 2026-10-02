@@ -223,3 +223,24 @@ describe('useLocalCompile vault origin', () => {
     expect(result.current.originVaultScope).toBe('local:first#1');
   });
 });
+
+describe('useLocalCompile normalized failures', () => {
+  it('keeps a failed model turn out of the approval state and allows retry', async () => {
+    const { result } = await start();
+    const text = 'invalid-provider-response: $.choices[0].message';
+    await act(async () => {
+      mocks.resolveRun?.({ turn: { id: 'failed-turn', status: 'failed', events: [{ kind: 'notice', code: 'failed', text }] } });
+    });
+    expect(result.current.status).toBe('failed');
+    expect(result.current.errorMessage).toBe(text);
+    expect(result.current.card).toBeNull();
+    await act(async () => { await result.current.allow(); });
+    expect(mocks.createDoc).not.toHaveBeenCalled();
+    expect(mocks.saveDoc).not.toHaveBeenCalled();
+    act(() => { void result.current.run('retry'); });
+    await waitFor(() => expect(result.current.status).toBe('running'));
+    await act(async () => { mocks.resolveRun?.({ turn: { id: 'retry-turn', status: 'done', events: [] } }); });
+    expect(result.current.status).toBe('waiting');
+    expect(result.current.errorMessage).toBeNull();
+  });
+});

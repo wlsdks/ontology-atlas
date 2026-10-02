@@ -5,11 +5,11 @@
   "codingToolsLabel": "코딩 도구",
   "codingToolsCaption": "이 컴퓨터의 코딩 에이전트를 설치하고 연결해요",
   "codingToolsKeywords": "에이전트 설치 연결 터미널 대화",
-  "modelsLabel": "모델 · API 키",
+  "modelsLabel": "모델 · API key",
   "modelsCaptionKeys": "{count, plural, =0 {키체인에 키 없음} other {키체인에 키 #개}}",
   "modelsCaptionWeb": "데스크톱 앱에서",
-  "modelsKeywords": "API 키 키체인 모델 제공자 로컬 러너",
+  "modelsKeywords": "API key API 키 키체인 모델 제공자 로컬 러너",
   "mcpLabel": "MCP",
-  "mcpCaption": "이 폴더의 에이전트 연결(MCP) 서버와 연결 도구",
+  "mcpCaption": "이 폴더의 MCP 서버와 연결 도구",
   "mcpKeywords": "서버 커넥터 도구 연결"
 }

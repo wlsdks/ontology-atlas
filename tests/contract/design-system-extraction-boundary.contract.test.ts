@@ -48,6 +48,7 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["route-loading-fallback.tsx", "Next.js 라우팅 로딩 표면"],
   ["route-memory.tsx", "Next.js 라우팅 기억"],
   ["locale-redirect.tsx", "로케일 라우팅 폴백"],
+  ["term-hint.tsx", "이 앱의 용어집 메시지(termHints)를 읽는다"],
   ["locale-html-lang.tsx", "로케일 html lang 동기화"],
   ["brand-mark.tsx", "Atlas 브랜드 자산"],
   ["github-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],

@@ -101,7 +101,7 @@
       "expand": "How collapsed groups open on the map. The map follows right away. Saved on this computer.",
       "footprint": "A star lights on every concept you open, numbered in the order you walked them, with light running along each line the way you went. Saved on this computer.",
       "notify": "What the app shows and tells you while an agent works. Saved on this computer.",
-      "agents": "How agent pages land, and where coding tools, models and agent connections (MCP) are set up. Saved on this computer.",
+      "agents": "How agent pages land, and where coding tools, models and MCP connections are set up. Saved on this computer.",
       "privacy": "What can leave this computer, what you allowed here, and what Atlas remembers. All of it is on this computer.",
       "workspace": "The folder you opened and what it keeps. Files in .ontology-atlas/ move with the folder; Git leaves them out by default.",
       "about": "Which build is running, what changed, and where to look when something breaks."
@@ -128,8 +128,8 @@
     "agentNotificationKindsLabel": "What to receive",
     "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
     "runtimes": {
-      "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the agent connection (MCP) setup.",
-      "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, in the MCP section below (the agent connection)",
+      "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the MCP setup.",
+      "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, in the MCP section below",
       "recheck": "Check again",
       "checking": "Looking…",
       "readyHeading": "Tools on this computer · {count} confirmed",

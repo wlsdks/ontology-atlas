@@ -83,7 +83,7 @@
     },
     "agentsWhat": {
       "title": "Connect your AI coding tools here",
-      "body": "Atlas finds the coding tools on this computer, and only a tool confirmed to ask before writing opens the in-app chat. The rest can still be set up for the agent connection (MCP), and supported installs use an app-only folder."
+      "body": "Atlas finds the coding tools on this computer, and only a tool confirmed to ask before writing opens the in-app chat. The rest can still be set up for MCP, and supported installs use an app-only folder."
     },
     "agentsCheck": {
       "title": "If nothing connects, measure it here",

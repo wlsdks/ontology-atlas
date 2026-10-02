@@ -15,6 +15,7 @@ import { OpenVaultCta } from '@/features/docs-vault-local';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { vaultValidationCounts } from '../model/vault-validation-counts';
 
+import { TermHint } from '@/shared/ui/term-hint';
 import { McpProofPacket } from './McpProofPacket';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
@@ -61,7 +62,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           className="mt-4 border-t border-[color:var(--color-divider)] pt-3"
         >
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            {t('agentTerminalTitle')}
+            <TermHint term="cli">{t('agentTerminalTitle')}</TermHint>
           </p>
           <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t('agentTerminalBody')}

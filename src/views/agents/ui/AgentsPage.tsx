@@ -11,6 +11,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import { isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import { useSwapHeight } from '@/shared/lib/use-presence';
+import { TermHint } from '@/shared/ui/term-hint';
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
@@ -101,7 +102,7 @@ export function AgentsPage({
       >
         {/* On the web the card below says a browser cannot start programs, so the app is the subject. */}
         {tab === 'mcp'
-          ? tMcp('lede')
+          ? <>{tMcp('lede')} <TermHint term="mcp" /></>
           : tab === 'models'
             ? t('models.lede')
             : isAcpBridgeAvailable()
