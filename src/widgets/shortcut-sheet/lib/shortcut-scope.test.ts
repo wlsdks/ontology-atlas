@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   sectionVisible,
@@ -6,7 +6,18 @@ import {
   surfaceForPathname,
 } from "./shortcut-scope";
 
+vi.mock("@/i18n/routing", () => ({
+  routing: { locales: ["en", "ko", "ja", "zh"] },
+}));
+
 describe("surfaceForPathname", () => {
+  it("reads the surface under every routable locale prefix", () => {
+    expect(surfaceForPathname("/ja/topology/")).toBe("topology");
+    expect(surfaceForPathname("/zh/")).toBe("topology");
+    expect(surfaceForPathname("/zh/docs/")).toBe("docs");
+    expect(surfaceForPathname("/ja/git/")).toBe("global");
+  });
+
   it('keeps ontology editor shortcuts in the Library ontology tab', () => {
     expect(surfaceForPathname('/ko/library/', 'ontology')).toBe('docs');
     expect(surfaceForPathname('/ko/library/', 'wiki')).toBe('global');
