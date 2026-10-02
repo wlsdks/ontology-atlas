@@ -1,4 +1,5 @@
 import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
+import { withAnswerLanguage } from '@/i18n/answer-language';
 
 import type { InsightsTab } from './insights-tab-state';
 
@@ -60,11 +61,11 @@ export function buildInsightsAgentPrompt({
   handoff: string;
   flowRequest: string;
 }): string {
-  if (kind === 'flow') return flowRequest;
+  if (kind === 'flow') return withAnswerLanguage(flowRequest, locale);
   const readHandoff = kind === 'unmatched'
     ? 'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → explain the unresolved names and one-sided placements with evidence; do not change the vault'
     : handoff;
-  return locale === 'ko'
+  return withAnswerLanguage(locale === 'ko'
     ? [
         '이 분석 탭을 현재 온톨로지 근거만으로 설명해줘.',
         READ_ONLY_TOOL_INSTRUCTION.ko,
@@ -80,5 +81,5 @@ export function buildInsightsAgentPrompt({
         readHandoff,
         '',
         'Explain what a person should judge first and what the ontology cannot confirm.',
-      ].join('\n');
+      ].join('\n'), locale);
 }
