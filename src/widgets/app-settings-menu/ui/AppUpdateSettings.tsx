@@ -135,7 +135,7 @@ export function AppUpdateSettings() {
         role="status"
         aria-live="polite"
         className={cn(
-          'ml-px min-w-0 px-3 text-label leading-label empty:hidden',
+          'min-w-0 text-label leading-label empty:hidden',
           phase.kind === 'failed'
             ? 'text-[color:var(--color-status-warning)]'
             : 'text-[color:var(--color-text-tertiary)]',
