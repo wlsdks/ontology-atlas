@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
+import { column } from '../../scripts/lib/locale-vocabulary.mjs';
 import { GLOSSARY_TERMS, type GlossaryTerm } from '../../src/shared/config/term-glossary';
 
 /**
@@ -75,25 +76,7 @@ const CATALOG = ko as unknown as Json;
  * paper contract is a different, longer word, is ordinary, and is not what this
  * bans, so it is excluded rather than left to be found as a false positive later.
  */
-const INTERNAL_TERMS: ReadonlyArray<{ term: string; not?: RegExp }> = [
-  { term: '인계문' },
-  { term: '핸드오프' },
-  { term: '담는 것' },
-  { term: '속한 곳' },
-  { term: '기대는 곳' },
-  { term: '이것만 보기' },
-  { term: '전체 상세' },
-  { term: '수리 큐' },
-  { term: '정본' },
-  { term: '관문' },
-  { term: '래칫' },
-  { term: '게이트' },
-  { term: '계약', not: /계약서/ },
-  { term: '영수증' },
-  { term: '위반' },
-  { term: '미분류 의존' },
-  { term: '원소' },
-];
+const INTERNAL_TERMS: ReadonlyArray<{ term: string; not?: RegExp }> = column('internalTerms', 'ko').terms;
 
 export function internalTermHits(messages: Json, term: string, not?: RegExp): string[] {
   return flatten(messages)
@@ -104,43 +87,13 @@ export function internalTermHits(messages: Json, term: string, not?: RegExp): st
 }
 
 /**
- * **What is still tolerated, and why** (counted 2026-08-31, after the 1.0.0
- * plain-language pass cleared nine of these terms to zero: repair queue,
- * canonical, contract, receipt, unmapped dependency, the chemistry word for
- * element, and the three invented relation names).
- *
- * A key listed here is a **known** occurrence, not an approved one. A term with
- * an empty list is banned outright: there is nowhere lower to ratchet.
+ * A key listed in a term's `tolerated` list (the vocabulary table) is a **known**
+ * occurrence, not an approved one. A term with an empty list is banned outright:
+ * there is nowhere lower to ratchet.
  */
-const TOLERATED: Readonly<Record<string, readonly string[]>> = {
-  인계문: [],
-  핸드오프: [],
-  '담는 것': [],
-  '속한 곳': [],
-  '기대는 곳': [],
-  '이것만 보기': [],
-  '전체 상세': [],
-  '수리 큐': [],
-  정본: [],
-  래칫: [],
-  계약: [],
-  영수증: [],
-  '미분류 의존': [],
-  원소: [],
-
-  // A real product concept: the check an agent has to pass before it may write
-  // or reach outside the folder. Seven strings lean on the word without any of
-  // them saying what it is (the gateway's own truncation note was one of eight
-  // until the severity-3 pass made it say "this list" instead). Replacing the
-  // rest needs one decision about what the concept is called everywhere, which
-  // is larger than a copy pass.
-  // Emptied on 2026-09-01: the concept once named by the internal gate words is now written as what it
-  // does ("asks before writing / before touching anything outside the folder"), and the
-  // architecture screen says which rule a connection broke instead of the bare word.
-  관문: [],
-  게이트: [],
-  위반: [],
-};
+const TOLERATED: Readonly<Record<string, readonly string[]>> = Object.fromEntries(
+  column('internalTerms', 'ko').terms.map((entry: { term: string; tolerated: string[] }) => [entry.term, entry.tolerated]),
+);
 
 describe('카탈로그 전체 — 내부에서 만든 말이 화면에 닿지 않는다', () => {
   it('검사가 헛돌고 있지 않다 — 카탈로그를 실제로 읽는다', () => {
@@ -190,7 +143,7 @@ describe('카탈로그 전체 — 내부에서 만든 말이 화면에 닿지 �
  * Gate 2 — English left untranslated in the Korean catalogue
  * ------------------------------------------------------------------------- */
 
-const HANGUL = /[가-힣]/;
+const HANGUL: RegExp = column('ownScript', 'ko').pattern;
 
 /** ICU placeholders and plural arms are the message's machinery, not its words. */
 function stripIcu(text: string): string {
@@ -225,47 +178,14 @@ export function untranslatedEnglish(messages: Json, allowed: ReadonlySet<string>
  * these sends somebody to a shell that answers "command not found" or to a
  * search for a product that does not exist under that name.
  */
-const INTENTIONALLY_ENGLISH = new Set([
-  'metadata.siteName', // the product's name
-  'projectPages.detail.documentTitleSuffix', // the product's name
-  'architecture.patternLabels.feature-sliced-design', // the architecture pattern's own name
-  'footer.license', // the licence's own name
-  'footer.stack', // technology names
-  'download.trustVerifyCommand', // a command the person types
-  'download.trustVerifyCommandWindows', // a command the person types (PowerShell)
-  'download.factSourceValue', // the repository's own name (owner/repo)
-  'projectPages.selector.nextSlotCliCommand', // a command the person types
-  'projectPages.selector.nextSlotAgentCommand', // an MCP call signature an agent runs
-  'docsVault.agentSetup.connectionClaudeCursor', // product names
-  'agentConnect.claudeCode', // a product name and a file name
-  'settings.projectForm.fields.linksPlaceholder', // example URLs
-  'settings.projectForm.fields.stackPlaceholder', // technology names
-  'settings.projectForm.fields.tagsPlaceholder', // example tags
-  'agents.models.providerGemini', // a product name
-  'agents.models.localBaseUrlPlaceholder', // a URL
-  'agents.models.runnerLmStudio', // a product name
-  'agents.models.runnerLlamaCpp', // a product name
-  'download.heroMacSilicon', // Apple's own chip name — the row beside it reads Intel
-  'library.rounds.sheet.wherePlaceholder', // example locations, spelled the way each service spells them
-  // Terms stay as developers say them; the TermHint beside each carries the Korean explanation.
-  'agents.models.keysTitle',
-  'agents.models.keyLabel',
-  'agents.models.jev.keyLabel',
-  'termHints.mcp.expansion',
-  'termHints.acp.expansion',
-  'termHints.apiKey.expansion',
-  'termHints.cli.expansion',
-]);
+const INTENTIONALLY_ENGLISH: ReadonlySet<string> = new Set(Object.keys(column('untranslatedEnglish', 'ko').intentional));
 
 /**
  * **Not translated yet.** Each of these is a real English sentence or label on a
  * Korean screen, left alone because it sits outside the inventory the 1.0.0
  * plain-language pass worked from. The list may shrink; it may not grow.
  */
-const UNTRANSLATED_BASELINE: readonly string[] = [
-  'firstRun.eyebrow', // "Local-first workbench" on the first screen
-  'settings.projectForm.fields.nameEnPlaceholder', // "English name" as a Korean field's placeholder
-];
+const UNTRANSLATED_BASELINE: readonly string[] = column('untranslatedEnglish', 'ko').baseline;
 
 describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
   it('영어로 남은 자리가 늘지 않는다', () => {

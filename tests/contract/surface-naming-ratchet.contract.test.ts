@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { column, concept } from '../../scripts/lib/locale-vocabulary.mjs';
 import { judgeRatchet } from './lib/ratchet-base';
 
 /**
@@ -45,9 +46,9 @@ import { judgeRatchet } from './lib/ratchet-base';
  * 25 is the measurement at conversion. It is never edited: it serves a clone with no merge
  * base, and is a floor for a tree compared with itself.
  */
-const SURFACE_NAMED_FALLBACK = 25;
+const SURFACE_NAMED_FALLBACK: number = concept('surfaceNaming').fallback;
 
-const NAMES_A_SURFACE = /브라우저|browser/i;
+const namesASurface = (locale: string): RegExp => column('surfaceNaming', locale).pattern;
 
 function strings(value: unknown, path = ''): [string, string][] {
   if (typeof value === 'string') return [[path, value]];
@@ -68,15 +69,15 @@ function catalogueStrings(root: string, locale: string): [string, string][] {
 }
 
 describe('copy that names the surface the reader is on', () => {
-  it.each(['ko', 'en'])('does not grow in %s', (locale) => {
+  it.each(concept('surfaceNaming').applies as string[])('does not grow in %s', (locale) => {
     const all = catalogueStrings(process.cwd(), locale);
     /* Anti-idle: an empty catalogue would pass while measuring nothing. */
     expect(all.length).toBeGreaterThan(500);
 
-    const named = all.filter(([, text]) => NAMES_A_SURFACE.test(text));
+    const named = all.filter(([, text]) => namesASurface(locale).test(text));
     const verdict = judgeRatchet({
       gate: 'surface-named-strings',
-      measure: (root) => catalogueStrings(root, locale).filter(([, text]) => NAMES_A_SURFACE.test(text)).length,
+      measure: (root) => catalogueStrings(root, locale).filter(([, text]) => namesASurface(locale).test(text)).length,
       reads: [`messages/${locale}`],
       fallback: SURFACE_NAMED_FALLBACK,
     });
@@ -92,10 +93,10 @@ describe('copy that names the surface the reader is on', () => {
     ).toBeLessThanOrEqual(verdict.ceiling);
   });
 
-  it('keeps both locales telling the same story', () => {
+  it('keeps every locale telling the same story', () => {
     /* A surface named in one language and not the other is a translation that lost a condition. */
     const count = (locale: string) =>
-      catalogueStrings(process.cwd(), locale).filter(([, text]) => NAMES_A_SURFACE.test(text)).length;
-    expect(count('ko')).toBe(count('en'));
+      catalogueStrings(process.cwd(), locale).filter(([, text]) => namesASurface(locale).test(text)).length;
+    for (const locale of concept('surfaceNaming').applies as string[]) expect(count(locale)).toBe(count('en'));
   });
 });
