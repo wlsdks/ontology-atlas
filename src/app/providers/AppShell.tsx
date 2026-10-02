@@ -200,12 +200,12 @@ function VaultRouteIdentityBoundary({
   const localReady =
     vault.status === "loaded" ||
     vault.isReloadingSameVault === true ||
-    (resolveActiveNavDestination(pathname) === "map" && Boolean(vault.partialManifest));
+    (resolveActiveNavDestination(pathname) === "map" && vault.partialTotal > 0);
   const localLoadPending =
     desktop &&
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
-  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest && !vault.partialManifest;
+  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest && !vault.partialTotal;
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
@@ -275,9 +275,9 @@ function AppNavRailSlot() {
   // In the static prerender `isDesktopShell()` is false, and hydration does not correct a
   // baked `lg:hidden`, so `useHydrated()` forces one re-render after hydration.
   const hydrated = useHydrated();
-  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialManifest;
+  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
   const gateway = isGatewaySurface(pathname, {
-    hasVault: Boolean(vault.manifest || vault.partialManifest),
+    hasVault: Boolean(vault.manifest || vault.partialTotal),
     desktop: hydrated && isDesktopShell(),
     vaultKnown: vault.restoreAttempted,
   });

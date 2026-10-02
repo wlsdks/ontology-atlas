@@ -7,7 +7,13 @@ const mocks = vi.hoisted(() => ({
   vault: {
     status: 'loading',
     manifest: null as VaultManifest | null,
-    partialManifest: null as VaultManifest | null,
+    partialTotal: 0,
+    arrivalStore: {
+      get: (): VaultManifest | null => null,
+      version: (): number => 0,
+      set: () => undefined,
+      subscribe: () => () => undefined,
+    },
     isReloadingSameVault: false,
     restoreAttempted: true,
   },
@@ -21,8 +27,8 @@ vi.mock('@/entities/vault-session/model/use-sample-source', async (importOrigina
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-sample-source')>()),
   useSampleSource: () => ['dogfood'],
 }));
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/local-vault-context', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/local-vault-context')>()),
   useLocalVault: () => mocks.vault,
 }));
 
@@ -57,7 +63,13 @@ const holds = (nodes: ReadonlyArray<{ id: string }> | undefined) =>
 
 describe('a folder that is still arriving', () => {
   it('reaches only the map: insights and every other reader wait for the whole folder', () => {
-    mocks.vault = { ...mocks.vault, status: 'loading', manifest: null, partialManifest: manifest };
+    mocks.vault = {
+      ...mocks.vault,
+      status: 'loading',
+      manifest: null,
+      partialTotal: 1,
+      arrivalStore: { ...mocks.vault.arrivalStore, get: () => manifest, version: () => 1 },
+    };
     const arriving = renderHook(() => ({
       map: useArrivingOntologyInsight(),
       insights: useOntologyInsight().insight,
@@ -70,7 +82,7 @@ describe('a folder that is still arriving', () => {
     expect(arriving.result.current.ontology.nodes).toEqual([]);
     expect(arriving.result.current.facts.size).toBe(0);
 
-    mocks.vault = { ...mocks.vault, status: 'loaded', manifest, partialManifest: null };
+    mocks.vault = { ...mocks.vault, status: 'loaded', manifest, partialTotal: 0 };
     arriving.rerender();
     expect(arriving.result.current.map).toBeNull();
     expect(holds(arriving.result.current.insights?.nodes)).toBe(true);

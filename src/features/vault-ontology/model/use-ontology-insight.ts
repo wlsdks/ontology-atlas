@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { useDataSourceMode, useLocalVault, useSampleSource } from '@/entities/vault-session';
+import { useArrivingManifest, useDataSourceMode, useSampleSource } from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
@@ -186,7 +186,7 @@ export function useOntologyInsight(): {
 }
 
 export function useArrivingOntologyInsight(): KnowledgeProjectInsight | null {
-  const partialManifest = useLocalVault().partialManifest;
+  const partialManifest = useArrivingManifest();
   const locale = useLocale();
   return useMemo(
     () => (partialManifest ? localInsight(deriveArrivedOntology(partialManifest), locale) : null),

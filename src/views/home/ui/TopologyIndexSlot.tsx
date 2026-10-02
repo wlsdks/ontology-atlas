@@ -219,9 +219,9 @@ export function TopologyIndexSlot({
                   // Names the folder the rows came from by `handle.name`; the browser has no
                   // absolute path, so neither claims one.
                   sourceName={
-                    vault.status === "loaded" || vault.partialManifest ? (vault.handle?.name ?? null) : null
+                    vault.status === "loaded" || vault.partialTotal > 0 ? (vault.handle?.name ?? null) : null
                   }
-                  sourceLoadProgress={vault.partialManifest ? loadProgress : null}
+                  sourceLoadProgress={vault.partialTotal > 0 ? loadProgress : null}
                   sourceDocumentCount={vault.manifest?.docs.length ?? null}
                   sourceDocumentCountPartial={vault.manifest?.walkTruncated ?? false}
                   // Without an agent the door would create a folder and then do nothing.

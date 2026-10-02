@@ -14,5 +14,5 @@ export function useFirstRunSampleModeSettled(): boolean {
    * Someone who opened a folder even once is past trying the product, so no sample guidance.
    */
   const neverConnected = vault.recentVaults.length === 0;
-  return vault.restoreAttempted && mode === 'static' && neverConnected && !vault.partialManifest;
+  return vault.restoreAttempted && mode === 'static' && neverConnected && !vault.partialTotal;
 }

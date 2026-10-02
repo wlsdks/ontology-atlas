@@ -98,7 +98,8 @@ describe('opening a folder whose documents arrive over time', () => {
     act(() => {
       opened = hook.result.current.openRecent(record);
     });
-    await waitFor(() => expect(hook.result.current.partialManifest).toBe(partial.build.manifest));
+    await waitFor(() => expect(hook.result.current.arrivalStore.get()).toBe(partial.build.manifest));
+    expect(hook.result.current.partialTotal).toBe(3);
     expect(hook.result.current.status).toBe('loading');
     expect(hook.result.current.manifest).toBeNull();
     expect(hook.result.current.isReloadingSameVault).toBe(false);
@@ -110,8 +111,37 @@ describe('opening a folder whose documents arrive over time', () => {
     });
     expect(hook.result.current.status).toBe('loaded');
     expect(hook.result.current.manifest).toBe(full.build.manifest);
-    expect(hook.result.current.partialManifest).toBeNull();
+    expect(hook.result.current.partialTotal).toBe(0);
     expect(hook.result.current.loadProgressStore.get()).toBeNull();
+  });
+
+  it('lets the read part go once the folder settles, even from a screen that kept the arriving value', async () => {
+    const partial = build(['atlas', 'domains/order'], 'partial');
+    let finish: () => void = () => undefined;
+    docsVault.buildLocalManifestWithEntries.mockImplementation(
+      async (_handle: FileSystemDirectoryHandle, observer?: VaultBuildObserver) => {
+        observer?.onPartial?.(partial.build as never, { read: 2, total: 3 });
+        await new Promise<void>((resolve) => {
+          finish = resolve;
+        });
+        return build(['atlas', 'domains/order', 'capabilities/checkout'], 'full');
+      },
+    );
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.restoreAttempted).toBe(true));
+    let opened: Promise<unknown> = Promise.resolve();
+    act(() => {
+      opened = hook.result.current.openRecent(record);
+    });
+    await waitFor(() => expect(hook.result.current.partialTotal).toBe(3));
+    const keptWhileArriving = hook.result.current;
+
+    await act(async () => {
+      finish();
+      await opened;
+    });
+    expect(Object.values(keptWhileArriving)).not.toContain(partial.build.manifest);
+    expect(keptWhileArriving.arrivalStore.get()).toBeNull();
   });
 
   it('re-reads an open folder without publishing a part of it', async () => {
@@ -158,7 +188,8 @@ describe('opening a folder whose documents arrive over time', () => {
     act(() => {
       void hook.result.current.openRecent(folder('b'));
     });
-    await waitFor(() => expect(hook.result.current.partialManifest).toBe(partial.build.manifest));
+    await waitFor(() => expect(hook.result.current.arrivalStore.get()).toBe(partial.build.manifest));
+    expect(hook.result.current.partialTotal).toBe(900);
     expect(hook.result.current.manifest).toBeNull();
     expect(hook.result.current.fileHandles.size).toBe(0);
     expect(hook.result.current.imageHandles.size).toBe(0);

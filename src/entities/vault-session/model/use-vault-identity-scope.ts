@@ -74,7 +74,7 @@ export function useVaultSessionIdentityScope(): VaultIdentityScope {
 export function useArrivingVaultIdentityScope(): VaultIdentityScope | null {
   const localVault = useLocalVault();
   const [sampleSource] = useSampleSource();
-  if (!localVault.partialManifest || !localVault.handle) return null;
+  if (!localVault.partialTotal || !localVault.handle) return null;
   return vaultIdentityScope({
     isLocalLoaded: true,
     handleName: localHandleIdentityName(localVault.handle),

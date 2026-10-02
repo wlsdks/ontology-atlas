@@ -874,7 +874,7 @@ if (
  * remains protected by generated-surface and referential-integrity checks.
  */
 if (
-  rootEntryPage.includes("if (vault.manifest || vault.partialManifest) return <HomePage />") &&
+  rootEntryPage.includes("if (vault.manifest || vault.partialTotal) return <HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
   // Since 2026-09-13 the first-run branch is also reached when the launch deliberately

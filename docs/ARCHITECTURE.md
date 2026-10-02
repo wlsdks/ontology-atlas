@@ -649,10 +649,12 @@ partial artifact.
 7. The installed shell and any web session with a mounted vault commit destination content only
    after one local manifest is ready, except the map. While a folder is first read, the build
    reads the project, then `domains/`, `capabilities/` and `elements/`, then the rest; in a
-   folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived as
-   `partialManifest`, at most once a second (each finished subfolder, and quarters of a large one
-   only among the first three publishes). The first part drops the previous folder's manifest and
-   handles, and every write is refused until the folder is loaded. Only the map opts in
+   folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived to
+   the session's arrival store, at most once a second (each finished subfolder, and quarters of a
+   large one only among the first three publishes). The vault value carries only the count,
+   `partialTotal`, so a screen that keeps an arriving vault value keeps none of its documents, and
+   the store empties once the folder settles. The first part drops the previous folder's manifest
+   and handles, and every write is refused until the folder is loaded. Only the map opts in
    (`useArrivingOntologyInsight`, `useArrivingVaultIdentityScope`): it draws documents, never a
    relation-only node, and the INDEX counts the documents read. `useVaultOntology`,
    `useDataSourceMode` and every other destination, check and count wait for the whole manifest,

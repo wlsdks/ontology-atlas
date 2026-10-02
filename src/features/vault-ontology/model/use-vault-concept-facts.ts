@@ -57,7 +57,7 @@ export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
   const vault = useLocalVault();
   const staticSource = useStaticVaultSource();
 
-  const arriving = Boolean(vault.partialManifest);
+  const arriving = vault.partialTotal > 0;
   return useMemo(() => {
     if (arriving) return EMPTY_FACTS;
     if (mode === 'static') return cachedFacts(staticSource.manifest);

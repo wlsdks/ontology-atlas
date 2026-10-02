@@ -79,6 +79,7 @@ import {
 } from './agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
 import { createVaultLoadProgressStore } from './vault-load-progress';
+import { createVaultArrivalStore } from './vault-arrival';
 /** Minimum interval (ms) between auto-refreshes when the tab regains focus.
  *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
@@ -385,8 +386,7 @@ interface State {
    * folder's graph.
    */
   manifestHandle: FileSystemDirectoryHandle | null;
-  partialManifest: VaultManifest | null;
-  partialTotal?: number;
+  partialTotal: number;
 }
 
 export interface AgentConfigStatus {
@@ -405,11 +405,10 @@ export interface AgentConfigStatus {
   codexRegisteredCommand?: string | null;
 }
 
-function withArrivedPart(s: State, partialManifest: VaultManifest, partialTotal: number): State {
-  if (s.manifest === null && s.manifestHandle === null) return { ...s, partialManifest, partialTotal };
+function withArrivedPart(s: State, partialTotal: number): State {
+  if (s.manifest === null && s.manifestHandle === null) return { ...s, partialTotal };
   return {
     ...s,
-    partialManifest,
     partialTotal,
     manifest: null,
     manifestHandle: null,
@@ -439,7 +438,7 @@ function emptyState(status: Status = 'idle'): State {
     errorCode: null,
     lastLoadedAt: null,
     manifestHandle: null,
-    partialManifest: null,
+    partialTotal: 0,
   };
 }
 
@@ -1096,6 +1095,11 @@ export function useLocalVaultInternal() {
   const pickerSequenceRef = useRef(0);
   const mountedRef = useRef(true);
   const [loadProgressStore] = useState(createVaultLoadProgressStore);
+  const [arrivalStore] = useState(createVaultArrivalStore<VaultManifest>);
+  const arrivingTotal = state.status === 'loading' ? state.partialTotal : 0;
+  useEffect(() => {
+    if (arrivingTotal === 0) arrivalStore.set(null);
+  }, [arrivalStore, arrivingTotal]);
   const beginVaultReadSession = useCallback((handle: FileSystemDirectoryHandle | null) => {
     const session = { handle };
     vaultReadSessionRef.current = session;
@@ -1150,7 +1154,7 @@ export function useLocalVaultInternal() {
     // each caller is why a new door cannot forget to.
     setAwaitingVaultChoice(false);
     setState((s) => {
-      const cleared = { ...s, handle, errorMessage: null, errorCode: null, partialManifest: null };
+      const cleared = { ...s, handle, errorMessage: null, errorCode: null, partialTotal: 0 };
       /*
        * **Re-reading a folder that is already open is not opening one.**
        *
@@ -1188,7 +1192,8 @@ export function useLocalVaultInternal() {
               onPartial: (build, progress) => {
                 if (settled || !isCurrent()) return;
                 arrivedPart = true;
-                setState((s) => withArrivedPart(s, build.manifest, progress.total));
+                arrivalStore.set(build.manifest);
+                setState((s) => withArrivedPart(s, progress.total));
               },
             };
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
@@ -1268,7 +1273,7 @@ export function useLocalVaultInternal() {
         errorCode: null,
         lastLoadedAt: Date.now(),
         manifestHandle: handle,
-        partialManifest: null,
+        partialTotal: 0,
       };
       if (arrivedPart) startTransition(() => setState(loaded));
       else setState(loaded);
@@ -1345,11 +1350,11 @@ export function useLocalVaultInternal() {
           classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
-        partialManifest: null,
+        partialTotal: 0,
       });
       return null;
     }
-  }, [loadProgressStore, stateRef]);
+  }, [arrivalStore, loadProgressStore, stateRef]);
 
   const refreshRecentVaults = useCallback(async () => {
     setRecentVaults(await listRecentLocalFsHandles());
@@ -2262,7 +2267,7 @@ export function useLocalVaultInternal() {
               errorCode: resolution === 'grant-needed' ? 'grant-needed' : 'path-missing',
               lastLoadedAt: null,
               manifestHandle: null,
-              partialManifest: null,
+              partialTotal: 0,
             });
           }
           return;
@@ -2303,7 +2308,7 @@ export function useLocalVaultInternal() {
           errorCode: null,
           lastLoadedAt: null,
           manifestHandle: null,
-          partialManifest: null,
+          partialTotal: 0,
         });
       }
     })()
@@ -2341,7 +2346,7 @@ export function useLocalVaultInternal() {
                 : 'access-failed',
           lastLoadedAt: null,
           manifestHandle: null,
-          partialManifest: null,
+          partialTotal: 0,
         });
       })
       .finally(() => {
@@ -2450,9 +2455,9 @@ export function useLocalVaultInternal() {
       state.status === 'loading' &&
       state.manifest !== null &&
       state.manifestHandle === state.handle,
-    partialManifest: state.status === 'loading' ? state.partialManifest : null,
-    partialTotal: state.status === 'loading' && state.partialManifest ? (state.partialTotal ?? 0) : 0,
+    partialTotal: arrivingTotal,
     loadProgressStore,
+    arrivalStore,
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
     openedInsidePickedFolder,
