@@ -1,0 +1,8 @@
+{
+  "label": "Search settings",
+  "placeholder": "Search settings",
+  "results": "Matching settings",
+  "where": "{section} · {scope}",
+  "opens": "Opens {place}",
+  "empty": "No setting matches “{query}”."
+}

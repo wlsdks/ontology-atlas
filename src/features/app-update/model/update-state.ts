@@ -1,3 +1,5 @@
+import { definePreference } from '@/shared/lib/preferences/define-preference';
+
 /**
  * The in-app update state machine, pure, so the rules of when to speak up are testable. The app
  * spoke, the user did not ask: easy to dismiss, and the dismissal is remembered.
@@ -26,10 +28,31 @@ export const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 export const DISMISSED_VERSION_KEY = 'app-update:dismissed-version';
 export const LAST_CHECK_KEY = 'app-update:last-check';
 
+export type UpdateAutoCheck = 'on' | 'off';
+
+const updateAutoCheckPreference = definePreference<UpdateAutoCheck>({
+  key: 'app-update:auto-check',
+  values: ['on', 'off'],
+  fallback: 'on',
+});
+
+export function readUpdateAutoCheck(): UpdateAutoCheck {
+  return updateAutoCheckPreference.read();
+}
+
+export function writeUpdateAutoCheck(value: UpdateAutoCheck): void {
+  updateAutoCheckPreference.write(value);
+}
+
+export function useUpdateAutoCheck(): UpdateAutoCheck {
+  return updateAutoCheckPreference.use();
+}
+
 export interface CheckPolicyInput {
   readonly isDesktop: boolean;
   readonly now: number;
   readonly lastCheckedAt: number | null;
+  readonly automatic: boolean;
   /** Did the user press it in settings themselves? Then the interval is ignored. */
   readonly manual?: boolean;
 }
@@ -39,10 +62,12 @@ export function shouldCheckForUpdate({
   isDesktop,
   now,
   lastCheckedAt,
+  automatic,
   manual = false,
 }: CheckPolicyInput): boolean {
   if (!isDesktop) return false;
   if (manual) return true;
+  if (!automatic) return false;
   if (lastCheckedAt === null) return true;
   // A clock that went backwards is also due, or the next check never comes.
   const elapsed = now - lastCheckedAt;

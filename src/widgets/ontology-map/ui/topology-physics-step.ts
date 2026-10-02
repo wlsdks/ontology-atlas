@@ -12,7 +12,7 @@ import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
 import { settleTierAssembly, tierAssemblyAppear } from "../morph/tier-assembly";
-import { selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
+import { selectEgoContainsComets, updateParticles, type ParticleEdge } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
@@ -395,9 +395,23 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
+  advanceTopologyComets(world, world.edges, dt, reducedMotion, focusedNodeId, tokens, ambientFactor);
+
+  return { camera: nextCamera, farT, zoomRatio };
+}
+
+export function advanceTopologyComets(
+  world: TopologyWorld,
+  edges: readonly ParticleEdge[],
+  dt: number,
+  reducedMotion: boolean,
+  focusedNodeId: string | null,
+  tokens: Pick<OntologyMapTokens, "edgePulseSpeed" | "edgePulseSpeedEgo">,
+  ambientFactor: number | undefined,
+): void {
   // Prescription E: the focused node's capped incident `contains` edges advance like depends
   // edges. The draw asks `selectEgoContainsComets` the same question and gets the same cached answer.
-  const egoCometEdges =
+  const egoCometEdges: ReadonlySet<ParticleEdge> | null =
     focusedNodeId === null
       ? null
       : selectEgoContainsComets(world.edges, world.edgeIndexByNode.get(focusedNodeId)).edges;
@@ -413,7 +427,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // before by a single pixel.
   const ambient = ambientFactor ?? 1;
   updateParticles(
-    world.edges,
+    edges,
     dt,
     reducedMotion,
     (edge) => {
@@ -426,6 +440,4 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     },
     egoCometEdges === null || egoCometEdges.size === 0 ? undefined : (edge) => egoCometEdges.has(edge),
   );
-
-  return { camera: nextCamera, farT, zoomRatio };
 }

@@ -1,49 +1,23 @@
-import { type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
+import { Chip } from '@/shared/ui/controls';
+import { buildRouteFocusHref } from '@/shared/ui/route-focus-manager';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { VendorMark } from '@/shared/ui/vendor-mark';
+import type { SettingId } from '../model/catalog/types';
 
-/**
- * The settings sheet's primitives (group, row, value slider, radio chips, two-segment
- * toggle), shared so every settings pane has one height, caption colour and type dialect:
- *
- * | What | Step |
- * |---|---|
- * | Row and control labels, pressable text | `text-body` (12.5px) |
- * | One-line descriptions, supporting captions, value readouts | `text-label` (11px) |
- * | `text-caption` (9.5px) | **not used** |
- *
- * The caption step is for micro labels, legends and timestamps, which a control's name is not.
- * Gate: settings-sheet-type-dialect.contract.test.ts.
- */
 
-/**
- * Ink for the Detail toggle shared by `FootprintSettings` and `ExpandSettings`: only what
- * the ramp's `Chip size="lg" tone="secondary"` does not supply (border, hover, focus, placement).
- */
 export const DETAIL_TOGGLE_CHIP =
   'justify-self-start border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
-/**
- * Ink for the Reset link, used as `link` at `size: 'md'` since `link/sm` is the forbidden
- * caption step. Only the ink is shared: the adoption ratchet sees a literal `controlClass(`
- * in an opening tag, so each site writes the ramp call inline.
- */
 export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-text-primary)]';
 
-/**
- * One style for every section name in the settings sheet, root group headers and drill-in
- * section headers alike. It stays `text-label`: an uppercase 9.5px eyebrow does nothing for
- * Hangul and would sit smaller than its own content.
- */
 export const SETTINGS_SECTION_LABEL =
   'font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
 
-/**
- * The head every pane opens with: the section's name and one sentence saying what the pane
- * decides (`docs/records/decisions/2026-09-25-settings-pane-head-ac02840d-c96d-45d0-83d4-8ebf11daa06c.md`).
- * Its transparent border and inset match the rows' start line; no bottom padding, so the
- * Screen pane fits 672; the sentence keeps the prose measure and is balanced.
- */
 export function SettingsPaneHead({
   title,
   description,
@@ -65,11 +39,6 @@ export function SettingsPaneHead({
   );
 }
 
-/**
- * A group's heading row: the eyebrow on the left and, when a group carries one, its own control
- * on the right (a hint, an opener). Exported on its own for a group whose body is not the row
- * container — the connectors card on the MCP tab draws its own frame.
- */
 export function SettingsGroupHeading({
   label,
   trailing,
@@ -80,7 +49,6 @@ export function SettingsGroupHeading({
   id?: string;
 }) {
   return (
-    /* No side inset: the heading shares the start line of the card or tiles beneath it. */
     <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h3 id={id} className={SETTINGS_SECTION_LABEL}>
         {label}
@@ -90,10 +58,6 @@ export function SettingsGroupHeading({
   );
 }
 
-/**
- * A group of settings rows. `label` is optional: a group is named only when its pane holds
- * more than one, since the LNB already names the pane.
- */
 export function SettingsGroup({
   label,
   trailing,
@@ -101,13 +65,10 @@ export function SettingsGroup({
   testId,
 }: {
   label?: string;
-  /** Controls that belong to the whole group, on the heading's right. */
   trailing?: ReactNode;
   children: ReactNode;
   testId?: string;
 }) {
-  // `min-w-0`: as a grid item it would size to its widest caption (a long folder path), and
-  // the group's `overflow-hidden` would clip the controls on the right.
   return (
     <section aria-label={label} className="min-w-0" data-testid={testId}>
       {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}
@@ -118,12 +79,7 @@ export function SettingsGroup({
   );
 }
 
-import { VendorMark } from '@/shared/ui/vendor-mark';
 
-/**
- * Initials of the first two words, so "Gemini CLI" and "Goose" get distinct tiles; a one-word
- * name keeps one letter.
- */
 function monogramOf(name: string): string {
   return name
     .trim()
@@ -134,10 +90,6 @@ function monogramOf(name: string): string {
     .join('');
 }
 
-/**
- * A product's mark in its 32px plate, or its initials on `VendorMark`'s own plate when there is
- * no drawing, so the two cannot drift. Exported for the agents tab's other-tools shelf.
- */
 export function ProductMark({
   icon,
   ink,
@@ -163,7 +115,6 @@ export function ProductMark({
   );
 }
 
-/** One row = label (plus a one-line description when needed) on the left, current value and control on the right. */
 export function SettingsRow({
   label,
   caption,
@@ -173,23 +124,19 @@ export function SettingsRow({
   icon,
   iconInk,
   monogram,
+  settingId,
 }: {
   label: string;
   caption?: string;
   captionTone?: 'neutral' | 'warning' | 'danger';
   control: ReactNode;
   testId?: string;
-  /** The product mark at the row's left, bundled image paths only; the slot is always reserved. */
   icon?: string | null;
-  /** The verified brand colour for the mark; without one it draws neutral. */
   iconInk?: string | null;
-  /** The name whose initials fill the mark slot when there is no drawing (`monogramOf`). */
   monogram?: string;
+  settingId?: SettingId;
 }) {
-  // Content sets the height: 64px with a 32px product mark, 48px without.
   const hasMarkSlot = icon !== undefined;
-  // The text claims at least 10rem; when the controls do not fit beside it they wrap to
-  // their own line, right-aligned, instead of squeezing the label to nothing.
   return (
     <div
       className={cn(
@@ -197,6 +144,7 @@ export function SettingsRow({
         hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
       )}
       data-testid={testId}
+      data-setting-id={settingId}
     >
       {hasMarkSlot ? <ProductMark icon={icon} ink={iconInk} monogram={monogram} /> : null}
       <div className="min-w-0 flex-1 basis-40">
@@ -221,10 +169,6 @@ export function SettingsRow({
   );
 }
 
-/**
- * Value slider: label, track and current value on one row. The track is painted by hand,
- * since `accent-color` alone leaves the unfilled side browser grey, brighter than its label.
- */
 export function Slider({
   label,
   value,
@@ -232,6 +176,7 @@ export function Slider({
   format,
   onChange,
   testId,
+  settingId,
 }: {
   label: string;
   value: number;
@@ -239,10 +184,11 @@ export function Slider({
   format: (v: number) => string;
   onChange: (v: number) => void;
   testId: string;
+  settingId?: SettingId;
 }) {
   const filled = ((value - range.min) / (range.max - range.min)) * 100;
   return (
-    <label className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-1 py-2 sm:flex">
+    <label className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-1 py-2 sm:flex" data-setting-id={settingId}>
       <span className="col-span-2 shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
       <input
         type="range"
@@ -264,10 +210,6 @@ export function Slider({
   );
 }
 
-/**
- * Pick one of several values in the `Slider` row grammar. `SegmentedControl` supplies the
- * radiogroup, roving and arrow keys; this adapter adds only the settings row layout.
- */
 export function Choice<T extends string | boolean>({
   label,
   value,
@@ -275,19 +217,19 @@ export function Choice<T extends string | boolean>({
   onChange,
   testId,
   optionTestId,
+  settingId,
 }: {
   label: string;
   value: T;
   options: readonly { value: T; label: string }[];
   onChange: (v: T) => void;
   testId: string;
-  /** Per-option testId — used where a contract test has to measure which value is selected. */
   optionTestId?: (value: T) => string;
+  settingId?: SettingId;
 }) {
   return (
-    <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center">
+    <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center" data-setting-id={settingId}>
       <span className="shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
-      {/* The joined `well` track, the one-of-N grammar the Screen pane's switches use. */}
       <SegmentedControl
         ariaLabel={label}
         value={value}
@@ -303,7 +245,6 @@ export function Choice<T extends string | boolean>({
   );
 }
 
-/** Two-segment boolean toggle over `SegmentedControl`, in the settings row grammar. */
 export function SegmentSwitch({
   ariaLabel,
   value,
@@ -325,5 +266,110 @@ export function SegmentSwitch({
       options={options}
       testId={testId}
     />
+  );
+}
+
+const ARM_MS = 3000;
+const CONFIRM_GUARD_MS = 400;
+
+export function SettingsDoorRow({
+  settingId,
+  label,
+  caption,
+  icon: Icon,
+  href,
+  onLeave,
+  testId,
+}: {
+  settingId: SettingId;
+  label: string;
+  caption?: string;
+  icon?: ComponentType<{ size?: number; className?: string; 'aria-hidden'?: boolean }>;
+  href: string;
+  onLeave: () => void;
+  testId?: string;
+}) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      data-setting-id={settingId}
+      data-testid={testId}
+      onClick={() => {
+        onLeave();
+        router.push(buildRouteFocusHref(href));
+      }}
+      className={controlClass({
+        shape: 'row',
+        size: 'md',
+        tone: 'muted',
+        hoverInk: 'strong',
+        hoverSurface: 'lift',
+        className: 'min-h-12 gap-3 px-3 py-2',
+      })}
+    >
+      {Icon ? <Icon size={16} aria-hidden className="shrink-0" /> : null}
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-body text-[color:var(--color-text-primary)]">{label}</span>
+        {caption ? (
+          <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
+            {caption}
+          </span>
+        ) : null}
+      </span>
+      <ChevronRight size={16} aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+    </button>
+  );
+}
+
+export function ArmedChip({
+  label,
+  armedLabel,
+  onConfirm,
+  testId,
+  ariaLabel,
+}: {
+  label: string;
+  armedLabel: string;
+  onConfirm: () => void | Promise<void>;
+  testId: string;
+  ariaLabel?: string;
+}) {
+  const [armed, setArmed] = useState(false);
+  const timer = useRef<number | null>(null);
+  const armedAt = useRef(0);
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+  return (
+    <Chip
+      size="lg"
+      tone={armed ? 'danger' : 'secondary'}
+      hoverInk={armed ? 'none' : 'strong'}
+      hoverBorder={armed ? 'none' : 'strong'}
+      data-testid={testId}
+      aria-label={ariaLabel ? `${ariaLabel} · ${armed ? armedLabel : label}` : undefined}
+      onClick={() => {
+        if (!armed) {
+          armedAt.current = Date.now();
+          setArmed(true);
+          timer.current = window.setTimeout(() => setArmed(false), ARM_MS);
+          return;
+        }
+        if (Date.now() - armedAt.current < CONFIRM_GUARD_MS) return;
+        if (timer.current !== null) window.clearTimeout(timer.current);
+        setArmed(false);
+        void onConfirm();
+      }}
+      className={cn(
+        'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset',
+        armed ? 'border-[color:var(--color-danger-a32)] hover:bg-[color:var(--color-danger-a10)]' : null,
+      )}
+    >
+      {armed ? armedLabel : label}
+    </Chip>
   );
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { requestSettingsOpen } from '@/shared/lib/surface-requests';
 import {
   AGENT_GRAPH_WORKFLOW_HREF,
   AppSettingsMenu,
@@ -118,10 +119,7 @@ vi.mock('next-intl', () => ({
 }));
 
 /** Open the sheet on a section, by clicking the LNB; defaults to the Screen section. */
-function openSheet(
-  ui?: ReactNode,
-  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace',
-) {
+function openSheet(ui?: ReactNode, section?: string) {
   const view = render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
   if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
@@ -224,10 +222,10 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     const raw =
       'A requested file or directory could not be found at the time an operation was processed.';
     for (const [code, key] of [
-      ['path-missing', 'nav.settingsMenu.workspaceFolderErrorPathMissing'],
-      ['permission-denied', 'nav.settingsMenu.workspaceFolderErrorPermissionDenied'],
-      ['root-rejected', 'nav.settingsMenu.workspaceFolderErrorRootRejected'],
-      ['access-failed', 'nav.settingsMenu.workspaceFolderErrorFallback'],
+      ['path-missing', 'settingsFolder.folderErrorPathMissing'],
+      ['permission-denied', 'settingsFolder.folderErrorPermissionDenied'],
+      ['root-rejected', 'settingsFolder.folderErrorRootRejected'],
+      ['access-failed', 'settingsFolder.folderErrorFallback'],
     ] as const) {
       mocks.vaultStatus = 'error';
       mocks.vaultErrorCode = code;
@@ -247,31 +245,27 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     openSheet(undefined, 'workspace');
     expect(screen.getByTestId('app-settings-workspace-folder')).toBeInTheDocument();
     expect(
-      screen.getByText('nav.settingsMenu.workspaceFolderEmpty'),
+      screen.getByText('settingsFolder.folderEmpty'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-open-folder')).toHaveTextContent(
-      'nav.settingsMenu.workspaceFolderOpen',
+      'settingsFolder.folderOpen',
     );
   });
 
-  it('leaves a signpost that sends a moved section to its destination', () => {
+  it('keeps doors out of the left list and draws them in the Agents pane', () => {
     openSheet();
-    // The section itself is no longer in the sheet.
-    expect(screen.queryByTestId('app-settings-nav-runtimes')).toBeNull();
-    expect(screen.queryByTestId('app-settings-pane-agent')).toBeNull();
-    // The long proof packet is not in the sheet either — the destination took it.
-    expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
-
+    expect(screen.queryByTestId('app-settings-door-mcp')).toBeNull();
+    fireEvent.click(screen.getByTestId('app-settings-nav-agents'));
     routerPush.mockClear();
-    fireEvent.click(screen.getByTestId('app-settings-nav-mcp'));
+    fireEvent.click(screen.getByTestId('app-settings-door-mcp'));
     expect(routerPush).toHaveBeenCalledTimes(1);
     expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=mcp');
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('does not paint the signpost row indigo', () => {
-    openSheet();
-    const row = screen.getByTestId('app-settings-nav-mcp');
-    // The focus ring's indigo is an app-wide specification and is not measured — what is measured is **surface and text**.
+  it('does not paint a door row indigo', () => {
+    openSheet(undefined, 'agents');
+    const row = screen.getByTestId('app-settings-door-mcp');
     expect(row.className).not.toMatch(/bg-\[color:var\(--color-indigo/);
     expect(row.className).not.toMatch(/text-\[color:var\(--color-indigo/);
   });
@@ -284,13 +278,10 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
 
 
   it('points at Agents → Models instead of drawing a key pane', () => {
-    openSheet();
-    expect(screen.queryByTestId('app-settings-nav-ai')).toBeNull();
+    openSheet(undefined, 'agents');
     expect(screen.queryByTestId('ai-connection-view')).toBeNull();
-    const row = screen.getByTestId('app-settings-nav-models');
-    // The sentence is the row's accessible name, and it contains the visible word.
-    expect(row).toHaveAccessibleName('nav.settingsMenu.goToModelsHint');
-    expect(row).toHaveTextContent('nav.settingsMenu.goToModels');
+    const row = screen.getByTestId('app-settings-door-models');
+    expect(row).toHaveTextContent('settingsAgents.modelsLabel');
     routerPush.mockClear();
     fireEvent.click(row);
     expect(routerPush).toHaveBeenCalledTimes(1);
@@ -436,7 +427,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     const spy = renderedTriggers();
     const first = render(<AppSettingsMenu mode="static" />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));
-    fireEvent.click(screen.getByTestId('app-settings-nav-background'));
+    fireEvent.click(screen.getByTestId('app-settings-nav-map'));
     fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
     fireEvent.click(screen.getByTestId('locale-switch'));
     first.unmount();
@@ -504,35 +495,22 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 });
 
-/**
- * screenControls — the screen-state rows only the map (HomePage) injects (view mode,
- * INDEX default state). On pages that do not inject them the rows do not exist.
- */
 describe('AppSettingsMenu screenControls injection', () => {
-  const controls = () => ({
-    audiencePlain: false,
-    onAudiencePlainChange: vi.fn(),
-    indexCollapsed: false,
-    onIndexCollapsedChange: vi.fn(),
-  });
-
-  it('hides view-mode and INDEX rows when screenControls is not injected', () => {
+  it('draws view mode on every screen and INDEX default only where the map injects it', () => {
     openSheet();
-    expect(screen.queryByTestId('app-settings-view-mode')).not.toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-view-mode')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('app-settings-nav-map'));
     expect(screen.queryByTestId('app-settings-index-default')).not.toBeInTheDocument();
   });
 
-  it('renders both rows and reports segment changes when injected', () => {
-    const sc = controls();
-    openSheet(<AppSettingsMenu mode="static" screenControls={sc} />);
-    fireEvent.click(
-      screen.getByRole('radio', { name: 'nav.settingsMenu.viewModePlain' }),
+  it('reports the INDEX choice to the map', () => {
+    const onIndexCollapsedChange = vi.fn();
+    openSheet(
+      <AppSettingsMenu mode="static" screenControls={{ indexCollapsed: false, onIndexCollapsedChange }} />,
+      'map',
     );
-    expect(sc.onAudiencePlainChange).toHaveBeenCalledWith(true);
-    fireEvent.click(
-      screen.getByRole('radio', { name: 'nav.settingsMenu.indexDefaultCollapsed' }),
-    );
-    expect(sc.onIndexCollapsedChange).toHaveBeenCalledWith(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'nav.settingsMenu.indexDefaultCollapsed' }));
+    expect(onIndexCollapsedChange).toHaveBeenCalledWith(true);
   });
 });
 
@@ -637,49 +615,26 @@ describe('AppSettingsMenu appearance pickers', () => {
     const baseline = sizeClasses();
     expect(baseline, 'the dialog needs a fixed height so content does not size it').toMatch(/(?:^| )h-\[var\(--dialog-h-lg\)\]/);
     expect(baseline, 'the dialog needs a fixed width').toMatch(/(?:^| )w-\[var\(--dialog-w-lg\)\]/);
-    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace']) {
+    for (const item of ['map', 'expand', 'footprint', 'notify', 'agents', 'privacy', 'workspace', 'about']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `the dialog size changes in the ${item} section`).toBe(baseline);
     }
   });
 
-  it('splits the LNB into three titled groups', () => {
-    mocks.isDesktopRuntime = true;
+  it('groups the left list by where each value lives', () => {
     openSheet();
-    const nav = screen.getByTestId('app-settings-nav');
-    // Pinned by **structure**, not copy — it must not break every time a label is refined.
-    const groups = [...nav.children];
-    expect(groups.length, 'the LNB needs three groups').toBe(3);
-    // The counts follow the sections: the Connection group is one item plus two signpost rows.
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3, 1]);
-    for (const g of groups) {
-      expect(g.querySelector('p'), 'every LNB group needs a title').not.toBeNull();
+    const groups = ['computer', 'folder', 'app'].map((scope) =>
+      screen.getByTestId(`app-settings-nav-group-${scope}`),
+    );
+    expect(groups.map((group) => group.querySelectorAll('button').length)).toEqual([7, 1, 1]);
+    for (const [index, scope] of ['computer', 'folder', 'app'].entries()) {
+      expect(groups[index]!.querySelector('p')).toHaveTextContent(`nav.settingsMenu.scope.${scope}`);
     }
-  });
-
-  it('gives every LNB item one icon', () => {
-    mocks.isDesktopRuntime = true;
-    openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
+    for (const item of ['screen', 'map', 'expand', 'footprint', 'notify', 'agents', 'privacy', 'workspace', 'about']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `the ${item} item needs one icon`).toBe(1);
     }
-  });
-
-  it('omits the app-only Updates group on the web', () => {
-    mocks.isDesktopRuntime = false;
-    openSheet();
-    expect(screen.queryByTestId('app-settings-nav-update')).toBeNull();
-    expect([...screen.getByTestId('app-settings-nav').children]).toHaveLength(2);
-  });
-
-  // The desktop shell lists all seven panes; the web drops Updates (above).
-  it('lists all seven LNB sections', () => {
-    mocks.isDesktopRuntime = true;
-    openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'update']) {
-      expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
-    }
+    expect(screen.getByTestId('app-settings-nav').querySelectorAll('[data-testid^="app-settings-door-"]')).toHaveLength(0);
   });
 
   // Pinned both ways, so a control in both sections fails too.
@@ -715,8 +670,8 @@ describe('AppSettingsMenu appearance pickers', () => {
     expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
   });
 
-  it('offers three choices in the Background section', () => {
-    openSection('background');
+  it('offers three choices in the Map section', () => {
+    openSection('map');
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
     for (const variant of ['dot', 'web', 'depth']) {
       expect(screen.getByTestId(`app-settings-canvas-bg-${variant}`)).toBeInTheDocument();
@@ -730,14 +685,14 @@ describe('AppSettingsMenu appearance pickers', () => {
   });
 
   it('defaults to dot / geometric selected', () => {
-    openSection('background');
+    openSection('map');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'true');
     fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
     expect(screen.getByTestId('app-settings-glyph-set-geometric')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('persists a canvas-background choice and reflects it in aria-checked', () => {
-    openSection('background');
+    openSection('map');
     fireEvent.click(screen.getByTestId('app-settings-canvas-bg-web'));
     expect(screen.getByTestId('app-settings-canvas-bg-web')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'false');
@@ -926,28 +881,90 @@ describe('AppSettingsMenu vault absolute path', () => {
   });
 });
 
-/**
- * Import lives in Workspace; `TopologyIndexPanel.test.tsx` pins that it is not in INDEX, so
- * together they catch it vanishing from both.
- */
 describe('AppSettingsMenu import module placement', () => {
-  it('renders the import module in the Workspace section', () => {
-    // The module is self-contained and renders itself **only with a loaded vault**,
-    // so this test's idle vault mock leaves nothing in the DOM. So it inspects **the
-    // wiring itself** rather than the render result — the way this repository handles
-    // other self-contained modules.
-    const source = readFileSync(
-      join(__dirname, 'AppSettingsMenu.tsx'),
-      'utf-8',
+  it('renders the import module in the Ontology folder pane', () => {
+    const source = readFileSync(join(__dirname, 'panes', 'WorkspacePane.tsx'), 'utf-8');
+    expect(source).toContain('<BlockImportModule');
+  });
+});
+
+describe('AppSettingsMenu search and requests', () => {
+  beforeEach(() => {
+    mocks.isDesktopRuntime = false;
+    mocks.locale = 'en';
+    window.sessionStorage.clear();
+    routerPush.mockClear();
+  });
+
+  const type = (value: string) =>
+    fireEvent.change(screen.getByTestId('app-settings-search'), { target: { value } });
+
+  it('replaces the pane with results and leaves for a door result in one press', () => {
+    openSheet();
+    type('settingsAgents.modelsLabel');
+    expect(screen.getByTestId('app-settings-pane-search')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-pane-head')).toBeNull();
+    fireEvent.keyDown(screen.getByTestId('app-settings-search'), { key: 'Enter' });
+    expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=models');
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens a setting result on its pane and focuses its control', async () => {
+    openSheet();
+    type('nav.settingsMenu.canvasBgLabel');
+    fireEvent.keyDown(screen.getByTestId('app-settings-search'), { key: 'Enter' });
+    expect(screen.getByTestId('app-settings-pane-map')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.activeElement?.closest('[data-setting-id="canvas-background"]')).not.toBeNull(),
     );
-    const workspaceBranch = source.slice(
-      source.indexOf("shownSection === 'workspace' ?"),
-      source.indexOf("shownSection === 'update' ?"),
+  });
+
+  it('offers no app-only result on the web', () => {
+    openSheet();
+    type('settingsAbout.rows.logs');
+    expect(screen.getByTestId('app-settings-search-empty')).toBeInTheDocument();
+  });
+
+  it('clears the query on Escape before the sheet closes', () => {
+    openSheet();
+    type('map');
+    fireEvent.keyDown(screen.getByTestId('app-settings-search'), { key: 'Escape' });
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
+  });
+
+  it('focuses search on ⌘, while the sheet is open', () => {
+    openSheet();
+    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), { key: ',', metaKey: true });
+    expect(screen.getByTestId('app-settings-search')).toHaveFocus();
+  });
+
+  it('opens only a visible instance on a settings request', () => {
+    render(<AppSettingsMenu mode="static" />);
+    act(() => {
+      expect(requestSettingsOpen()).toBe(false);
+    });
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'offsetParent', 'get')
+      .mockImplementation(() => document.body);
+    act(() => {
+      expect(requestSettingsOpen()).toBe(true);
+    });
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
+    spy.mockRestore();
+  });
+
+  it('reopens a retired pane id on the pane that replaced it', async () => {
+    window.sessionStorage.setItem(
+      'ontology-atlas:settings-locale-focus',
+      JSON.stringify({ locale: 'en', triggerVariant: 'header-pill', section: 'background', createdAt: Date.now() }),
     );
-    expect(workspaceBranch, 'the Workspace section branch is missing').not.toBe('');
-    expect(
-      workspaceBranch,
-      'the import module must render in the Workspace section',
-    ).toContain('<BlockImportModule');
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'offsetParent', 'get')
+      .mockImplementation(() => document.body);
+    render(<AppSettingsMenu mode="static" />);
+    await waitFor(() => expect(screen.getByTestId('app-settings-pane-map')).toBeInTheDocument());
+    spy.mockRestore();
   });
 });

@@ -7,8 +7,6 @@ import type { AppUpdateValue } from '@/features/app-update';
 import type { UpdatePhase } from '@/features/app-update';
 import { AppUpdateSettings } from './AppUpdateSettings';
 
-/** The manual check is the only way to reach a version the daily check's toast was dismissed for. */
-
 const checkNow = vi.fn();
 let contextValue: AppUpdateValue | null = null;
 let desktop = true;
@@ -18,9 +16,16 @@ let memory: { lastCheckedAt: number | null; dismissedVersion: string | null } = 
   dismissedVersion: null,
 };
 
+let autoCheck: 'on' | 'off' = 'on';
+const writeUpdateAutoCheck = vi.fn((value: 'on' | 'off') => {
+  autoCheck = value;
+});
+
 vi.mock('@/features/app-update', () => ({
   useAppUpdateContext: () => contextValue,
   readUpdateMemory: () => memory,
+  useUpdateAutoCheck: () => autoCheck,
+  writeUpdateAutoCheck: (value: 'on' | 'off') => writeUpdateAutoCheck(value),
 }));
 
 let versionRead: () => Promise<string> = () => Promise.resolve('1.2.6');
@@ -47,6 +52,8 @@ function renderAt(phase: UpdatePhase) {
 
 beforeEach(() => {
   checkNow.mockReset();
+  writeUpdateAutoCheck.mockClear();
+  autoCheck = 'on';
   desktop = true;
   contextValue = null;
   memory = { lastCheckedAt: null, dismissedVersion: null };
@@ -57,7 +64,7 @@ describe('AppUpdateSettings', () => {
   it('states only what the automatic check remembers: never checked, or a deferred version', () => {
     renderAt({ kind: 'idle' });
     const auto = screen.getByTestId('app-settings-update-auto');
-    expect(auto).toHaveTextContent(ko.nav.settingsMenu.appUpdate.autoNever);
+    expect(auto).toHaveTextContent(ko.settingsAbout.appUpdate.autoNever);
     expect(auto.textContent).not.toContain('「나중에」');
   });
 
@@ -65,7 +72,7 @@ describe('AppUpdateSettings', () => {
     memory = { lastCheckedAt: Date.UTC(2026, 8, 25, 5, 3), dismissedVersion: '1.2.7' };
     renderAt({ kind: 'idle' });
     const auto = screen.getByTestId('app-settings-update-auto');
-    expect(auto.textContent).not.toContain(ko.nav.settingsMenu.appUpdate.autoNever);
+    expect(auto.textContent).not.toContain(ko.settingsAbout.appUpdate.autoNever);
     expect(auto).toHaveTextContent('1.2.7');
   });
 
@@ -77,14 +84,12 @@ describe('AppUpdateSettings', () => {
 
   it('shows no result before the button is pressed', () => {
     renderAt({ kind: 'idle' });
-    // The live region stands empty so the first result is announced when it arrives.
     expect(screen.getByTestId('app-settings-update-result').textContent).toBe('');
   });
 
   it('disables the button while a check runs', () => {
     renderAt({ kind: 'checking' });
     const check = screen.getByTestId('app-settings-update-check');
-    // aria-disabled rather than disabled: a disabled button drops the focus it holds.
     expect(check).toHaveAttribute('aria-disabled', 'true');
     expect(check).not.toBeDisabled();
     fireEvent.click(check);
@@ -95,7 +100,7 @@ describe('AppUpdateSettings', () => {
     renderAt({ kind: 'current' });
     const result = screen.getByTestId('app-settings-update-result');
     expect(result).toHaveAttribute('data-phase', 'current');
-    expect(result.textContent).toBe(ko.nav.settingsMenu.appUpdate.resultCurrent);
+    expect(result.textContent).toBe(ko.settingsAbout.appUpdate.resultCurrent);
   });
 
   it('names an available version and points to where the update continues', () => {
@@ -137,7 +142,7 @@ describe('AppUpdateSettings', () => {
     versionRead = () => Promise.reject(new Error('ipc'));
     const view = renderAt({ kind: 'idle' });
     const row = screen.getByTestId('app-settings-update-version');
-    const copy = ko.nav.settingsMenu.appUpdate;
+    const copy = ko.settingsAbout.appUpdate;
     await screen.findByText(copy.versionUnknown);
     fireEvent.click(screen.getByTestId('app-settings-update-check'));
     contextValue = makeValue({ kind: 'failed', operation: 'check', message: 'network' });
@@ -147,9 +152,29 @@ describe('AppUpdateSettings', () => {
       </NextIntlClientProvider>,
     );
     await screen.findByText(copy.versionUnknownRetried);
-    // The row does not promise the retry that just ran, and only the result line warns.
     expect(row.textContent).not.toContain(copy.versionUnknown);
     const warnings = Array.from(view.container.querySelectorAll('[class*="status-warning"]'));
     expect(warnings.map((node) => node.textContent)).toEqual([copy.resultFailed]);
+  });
+
+  it('turns the automatic check off and still offers the manual check and the last time', () => {
+    memory = { lastCheckedAt: Date.UTC(2026, 8, 25, 5, 3), dismissedVersion: null };
+    autoCheck = 'off';
+    renderAt({ kind: 'idle' });
+    const auto = screen.getByTestId('app-settings-update-auto');
+    expect(auto).toHaveAttribute('data-setting-id', 'update-auto');
+    expect(auto).toHaveTextContent(ko.settingsAbout.appUpdate.autoOff);
+    expect(auto.textContent).not.toContain(ko.settingsAbout.appUpdate.autoNever);
+    expect(screen.getByTestId('app-settings-update-check')).toHaveAttribute('data-setting-id', 'update-check');
+    fireEvent.click(screen.getByRole('radio', { name: ko.settingsAbout.on }));
+    expect(writeUpdateAutoCheck).toHaveBeenCalledWith('on');
+  });
+
+  it('orders the switch On before Off', () => {
+    renderAt({ kind: 'idle' });
+    const labels = Array.from(
+      screen.getByTestId('app-settings-update-auto-switch').querySelectorAll('[role="radio"]'),
+    ).map((node) => node.textContent);
+    expect(labels).toEqual([ko.settingsAbout.on, ko.settingsAbout.off]);
   });
 });

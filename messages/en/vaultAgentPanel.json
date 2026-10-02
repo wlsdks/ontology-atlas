@@ -70,7 +70,7 @@
     "networkFailed": "The connection failed.",
     "timedOut": "The model did not answer within the time limit. Narrow the question or try a faster model.",
     "rateLimited": "You have hit the rate limit for now. Try again shortly.",
-    "rejected": "The key was rejected. Check it in settings.",
+    "rejected": "The key was rejected. Check it in Agents → Models.",
     "auditBlocked": "Nothing was sent, because the record could not be written.",
     "providerRefused": "This request was declined.",
     "failed": "Something went wrong.",

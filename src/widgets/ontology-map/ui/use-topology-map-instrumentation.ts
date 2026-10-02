@@ -549,7 +549,10 @@ export function useTopologyMapInstrumentation({
        * substitute: a frame measured **zero** disc overlaps while names visibly
        * crossed (2026-08-22). Names collide long before discs do.
        */
-      setComets: (on: boolean) => setMapComets(on),
+      setComets: (on: boolean) => {
+        setMapComets(on);
+        lastActiveMsRef.current = performance.now();
+      },
       wake: () => {
         lastActiveMsRef.current = performance.now();
         requestOntologyMapFrame();
