@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { relatedMessagesCommand } from './check-rules/i18n.mjs';
 import { rules as SECURITY_RULES } from './check-rules/security.mjs';
 
 import {
@@ -1976,5 +1977,18 @@ describe('security surfaces', () => {
     for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
       assert.equal(securityRow(path), undefined, path);
     }
+  });
+});
+
+describe('message catalogue related-tests rule', () => {
+  it('names the composite of every locale it is given', () => {
+    assert.equal(
+      relatedMessagesCommand(['en', 'ja', 'ko', 'zh']),
+      'pnpm exec vitest related --run messages/en.json messages/ja.json messages/ko.json messages/zh.json --passWithNoTests',
+    );
+    assert.equal(
+      relatedMessagesCommand(),
+      'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
+    );
   });
 });
