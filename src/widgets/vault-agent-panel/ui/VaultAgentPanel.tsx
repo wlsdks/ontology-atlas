@@ -46,6 +46,7 @@ import { AgentPromptText } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
 import { josa } from '@/shared/lib/ko-josa';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
 
 /**
@@ -829,7 +830,7 @@ export function VaultAgentPanel({
                 }
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
+                  if (event.key === 'Enter' && !event.shiftKey && !isImeComposing(event)) {
                     event.preventDefault();
                     submit();
                   }

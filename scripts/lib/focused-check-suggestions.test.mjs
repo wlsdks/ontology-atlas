@@ -33,6 +33,7 @@ const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-war
 const SECURITY_COMMAND = SECURITY_RULES[0].command;
 const TEST_HYGIENE_COMMAND =
   'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts';
+const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
   'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts';
 
@@ -43,6 +44,7 @@ function domainCommands(result) {
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
+      command !== IME_ENTER_GUARD_COMMAND &&
       !isScriptLint(command),
   );
 }
@@ -209,6 +211,15 @@ describe('focused check suggestions', () => {
         .filter((command) => command === DEAD_CODE_COMMAND).length;
       assert.equal(count, 1, `${path} must recommend ${DEAD_CODE_COMMAND} exactly once`);
     }
+  });
+
+  it('plans the IME Enter guard for TypeScript sources that the full contract suite misses', () => {
+    const plans = (path) => commandNames(suggestFocusedChecks([path]));
+    for (const path of ['src/shared/lib/example.ts', 'src/widgets/example/ui/use-example-keys.ts', 'app/sitemap.ts']) {
+      assert.equal(plans(path).filter((command) => command === IME_ENTER_GUARD_COMMAND).length, 1, path);
+    }
+    assert.ok(plans('src/widgets/example/ui/Example.tsx').includes('pnpm test:contracts'));
+    assert.ok(!plans('src/shared/lib/example.test.ts').includes(IME_ENTER_GUARD_COMMAND));
   });
 
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
