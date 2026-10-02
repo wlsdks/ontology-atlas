@@ -134,6 +134,7 @@
       "goTo_mcp": "Go to MCP",
       "goTo_git": "Go to git history",
       "openSearchPalette": "Open the search palette",
+      "openSettings": "Open settings",
       "toggleDocsDrawer": "Open or close the quick document preview (with edit access)",
       "showShortcuts": "Show or hide keyboard shortcuts",
       "stepCloseOverlays": "Close open panels one step at a time",
