@@ -597,6 +597,7 @@ export function useTopologyMapInstrumentation({
     };
   }, [
     agentFocusNodeIdRef,
+    appearRef,
     cameraRef,
     cameraTargetRef,
     canvasRef,
