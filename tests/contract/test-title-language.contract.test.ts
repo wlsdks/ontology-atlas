@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { areaGate, changedPaths, sourceArea } from "../../scripts/quality/source-areas.mjs";
-import { hangulTestTitles, isTestSourcePath } from "../../scripts/quality/source-language/test-titles.mjs";
+import { nonLatinTestTitles, isTestSourcePath } from "../../scripts/quality/source-language/test-titles.mjs";
 import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
 
 const base = resolveRatchetBase();
@@ -12,11 +12,11 @@ const changed = changedPaths(base).filter(isTestSourcePath);
 
 function hangulIn(root: string, path: string) {
   const file = join(root, path);
-  return existsSync(file) ? hangulTestTitles(path, readFileSync(file, "utf8")) : [];
+  return existsSync(file) ? nonLatinTestTitles(path, readFileSync(file, "utf8")) : [];
 }
 
 describe("test titles and assertion messages", () => {
-  it("add no Hangul in any area this change touches", () => {
+  it("add no Han, kana or Hangul in any area this change touches", () => {
     const areas = new Map<string, string[]>();
     for (const path of changed) {
       const area = sourceArea(path)!;

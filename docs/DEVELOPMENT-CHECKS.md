@@ -439,7 +439,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Docs Korean-language ratchet
 
 **Run**: `pnpm docs:language`
-**Proves**: Tracked and untracked Markdown carries no unexplained Hangul outside the typed display_ko field and the vault-ko template tree; a Korean test title quoted inside a `Focused test` Evidence coordinate is counted on its own ratchet, not as prose.
+**Proves**: Tracked and untracked Markdown carries no unexplained Han, kana or Hangul outside the typed display_<locale> fields and the vault-<locale> template trees; a Korean test title quoted inside a `Focused test` Evidence coordinate is counted on its own ratchet, not as prose.
 **Escalate**: `pnpm test:docs:language` for the inventory and exception contracts
 
 ### Docs vs code surface
