@@ -543,34 +543,37 @@ function ConductionAgent({ labelOf, focusDomain }: { labelOf: (id: string) => st
         className="mt-4 min-w-0 border-t border-[color:var(--color-border-soft)] pl-5 pt-3 @min-[34rem]:mt-0 @min-[34rem]:border-l @min-[34rem]:border-t-0 @min-[34rem]:pt-0"
         {...part('proposal')}
       >
-        <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-          {tDownload('acpUserLabel')}
-        </p>
+        <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('proposal')}</p>
         <p className="mt-1 text-label leading-label text-[color:var(--color-text-secondary)]">
           {tHeadline('relate', { from: labelOf(CONDUCTION_PROPOSAL.from), to: labelOf(CONDUCTION_PROPOSAL.to) })}
         </p>
-        <span
-          className={badgeClass({
-            shape: 'tag',
-            className: 'relative mt-2 h-6 gap-1.5 border border-[color:var(--color-indigo-line-a40)] text-[color:var(--color-text-primary)]',
-          })}
-          {...part('press')}
-        >
-          <span aria-hidden className="absolute inset-0 rounded-chip bg-[color:var(--color-indigo-a16)]" {...part('allowed')} />
-          <svg width={ICON_SIZE.sm} height={ICON_SIZE.sm} viewBox="0 0 24 24" fill="none" className="relative shrink-0">
-            <path
-              d="M20 6 9 17l-5-5"
-              stroke="var(--color-indigo-text-soft)"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              pathLength={1}
-              strokeDasharray="1 2"
-              {...part('check')}
-            />
-          </svg>
-          <span className="relative">{tPermission('allowOnce')}</span>
-        </span>
+        <p className="mt-2 flex min-w-0 items-center gap-2">
+          <span className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+            {tDownload('acpUserLabel')}
+          </span>
+          <span
+            className={badgeClass({
+              shape: 'tag',
+              className: 'relative h-6 gap-1.5 border border-[color:var(--color-indigo-line-a40)] text-[color:var(--color-text-primary)]',
+            })}
+            {...part('press')}
+          >
+            <span aria-hidden className="absolute inset-0 rounded-chip bg-[color:var(--color-indigo-a16)]" {...part('allowed')} />
+            <svg width={ICON_SIZE.sm} height={ICON_SIZE.sm} viewBox="0 0 24 24" fill="none" className="relative shrink-0">
+              <path
+                d="M20 6 9 17l-5-5"
+                stroke="var(--color-indigo-text-soft)"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                pathLength={1}
+                strokeDasharray="1 2"
+                {...part('check')}
+              />
+            </svg>
+            <span className="relative">{tPermission('allowOnce')}</span>
+          </span>
+        </p>
       </div>
     </div>
   );

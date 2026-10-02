@@ -67,7 +67,14 @@ test.describe("download — the conduction illustration", () => {
     await waitFrames(page, 20);
     expect(await sceneState(figure), "nothing moves at rest").toEqual(resting);
     expect(resting).toEqual(await stillState(browser));
-    await expect(page.getByRole("button", { name: "Play the illustration again" })).toBeVisible();
+    await page.getByRole("button", { name: "Play the illustration again" }).click();
+    await expect(figure).toHaveAttribute("data-conduction-state", "running");
+    expect(
+      await figure.evaluate(
+        (element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === "running").length,
+      ),
+      "Replay runs the story again",
+    ).toBeGreaterThan(60);
   });
 
   test("under reduced motion the illustration is one still, finished picture with no control", async ({ page }) => {
@@ -78,6 +85,7 @@ test.describe("download — the conduction illustration", () => {
     await expect(figure).toHaveAccessibleName(/illustration/i);
     await expect(figure).toHaveAccessibleDescription(/get_concept/);
     const scene = page.getByTestId("download-conduction-scene");
+    await expect(scene.getByText("The agent proposes")).toBeVisible();
     await expect(scene.getByText("Allow once")).toBeVisible();
     await expect(scene.locator('[data-conduction-part="ring"]')).toHaveCSS("opacity", "1");
     await expect(scene.locator('[data-conduction-part="light:query/core"]')).toHaveCSS("opacity", "0");
