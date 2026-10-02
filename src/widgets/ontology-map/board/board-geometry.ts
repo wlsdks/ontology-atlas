@@ -11,6 +11,20 @@ interface Point {
   y: number;
 }
 
+export interface PaintedFace {
+  id: string;
+  top: [number, number][];
+  walls: [number, number][][];
+}
+
+export function prismPolygons(x: number, yTop: number, yBase: number, r: number, c: number, walls: boolean): Omit<PaintedFace, "id"> {
+  const at = (i: number, y: number): [number, number] => [x + r * COS[i % 6]!, y + r * SIN[i % 6]! * c];
+  return {
+    top: [0, 1, 2, 3, 4, 5].map((i) => at(i, yTop)),
+    walls: walls ? FRONT_SIDES.map((k) => [at(k, yTop), at(k + 1, yTop), at(k + 1, yBase), at(k, yBase)]) : [],
+  };
+}
+
 export function face(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, c: number) {
   ctx.moveTo(x + r, y);
   for (let i = 1; i < 6; i += 1) ctx.lineTo(x + r * COS[i]!, y + r * SIN[i]! * c);

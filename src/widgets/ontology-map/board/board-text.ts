@@ -71,6 +71,30 @@ export function placeLines(sets: readonly HexTextLine[][], room: number): HexTex
   return null;
 }
 
+export function placeLinesWithNumber(
+  sets: readonly HexTextLine[][],
+  room: number,
+  withNumber: boolean,
+): { lines: HexTextLine[] | null; numberAt: number | null } {
+  if (withNumber) {
+    for (const set of sets) {
+      const e = extent(set);
+      if (e.bottom > room || e.top < -room) continue;
+      if (e.top - 12.5 >= -room) return { lines: set, numberAt: e.top - 3 };
+      if (e.bottom + 13.5 <= room) return { lines: set, numberAt: e.bottom + 11 };
+    }
+  }
+  return { lines: placeLines(sets, room), numberAt: null };
+}
+
+export function drawNumber(ctx: CanvasRenderingContext2D, count: number, x: number, y: number, ink: string) {
+  ctx.font = hexFonts().plateMeta;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = ink;
+  ctx.fillText(String(count), x, y);
+}
+
 export function drawLines(
   ctx: CanvasRenderingContext2D,
   id: string,

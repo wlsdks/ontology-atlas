@@ -392,6 +392,24 @@ export function useHexBoard(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
+
+const DEFAULT_HEX_RELIEF = false;
+
+export function readHexRelief(): boolean {
+  return readOnOff(HEX_RELIEF_KEY, DEFAULT_HEX_RELIEF);
+}
+
+export function writeHexRelief(value: boolean): void {
+  writeOnOff(HEX_RELIEF_KEY, value);
+}
+
+export function useHexRelief(): boolean {
+  const getSnapshot = useCallback(() => readHexRelief(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_HEX_RELIEF, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**

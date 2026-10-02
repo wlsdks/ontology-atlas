@@ -2,21 +2,24 @@ import { hexGutter, type HexBoardLayout, type HexTextLine, type HexTile } from "
 import { SQRT3 } from "../model/hex-grid";
 import { type HexDrawRoute, type HexDrawState, type HexFrameStats, type HexTextBox } from "../render/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
-import { edges, face, FRONT_SIDES, notch, pips, smooth, startDot, stubHead, ticks, wall } from "./board-geometry";
+import { edges, face, FRONT_SIDES, notch, pips, prismPolygons, smooth, startDot, stubHead, ticks, wall, type PaintedFace } from "./board-geometry";
 import { drawFloors, drawPlate, drawSlabs, TileRects } from "./board-plates";
 import { arrivalOf, BOARD_ARRIVAL, lowerBound, type BoardScene } from "./board-scene";
-import { drawLines, lineSets, placeLines } from "./board-text";
+import { drawLines, drawNumber, lineSets, placeLinesWithNumber } from "./board-text";
 import { cssOf, hatch, mix, rgbOf, solid, tileMaterial, tone, WHITE } from "./board-tones";
 
 export interface BoardPose {
   pitch: number;
   pivotY: number;
+  rise?: ((id: string) => number) | null;
+  record?: PaintedFace[] | null;
 }
 
 export interface BoardFrameStats extends HexFrameStats {
   pitch: number;
   drawnTiles: number;
   slabs: boolean;
+  numbers: number;
 }
 
 const RELIEF_PITCH_REST = 0.75;
@@ -42,6 +45,9 @@ export function drawBoard(
   const groundY = (uy: number) => pivot + (oy + uy * R - pivot) * c;
   const unitY = (py: number) => ((py - pivot) / c + pivot - oy) / R;
   const at = (t: HexTile) => ({ x: sx(t.x), y: groundY(t.y) });
+  const lift = (t: HexTile) => (scene.heightShare.get(t.id) ?? 0) * R * s * (pose.rise ? pose.rise(t.id) : 1);
+  const counts = light > 0 ? scene.metric : null;
+  const numberAlpha = Math.min(1, light * 1.5);
   const ground = rgbOf(T.ground);
   const accent = solid(T.accent, ground);
   const slabs = band === "regions" && R < SLAB_BELOW;
@@ -63,6 +69,7 @@ export function drawBoard(
     pitch: +pose.pitch.toFixed(4),
     drawnTiles: 0,
     slabs,
+    numbers: 0,
   };
   const textBoxes: HexTextBox[] = [];
   const plateBoxes: HexTextBox[] = [];
@@ -158,10 +165,12 @@ export function drawBoard(
       const d = layout.byId.get(region.domainId);
       if (!d) continue;
       const lift = (scene.regionShare.get(region.domainId) ?? 0) * Math.max(1, layout.reg) * R * s * (slabs ? 1 : 0);
+      const sub = state.plateSub.get(d.id) ?? "";
+      const n = counts?.region.get(d.id);
       drawPlate(
         ctx,
         T,
-        { id: d.id, name: d.name, sub: state.plateSub.get(d.id) ?? "", cx: sx(region.cx), top: groundY(region.minY) - APO * c - lift, bottom: groundY(region.maxY) + APO * c, warm: false, alpha: plateAlpha(d.id) },
+        { id: d.id, name: d.name, sub: n == null ? sub : sub ? `▲ ${n} · ${sub}` : `▲ ${n}`, cx: sx(region.cx), top: groundY(region.minY) - APO * c - lift, bottom: groundY(region.maxY) + APO * c, warm: false, alpha: plateAlpha(d.id) },
         rects,
         plateBoxes,
         plateStrokeCss,
@@ -170,7 +179,7 @@ export function drawBoard(
     stats.plates = plateBoxes.length;
   };
 
-  const frame = { sx, groundY, unitY, c, s, light, RI, plateTone, accent, plateStrokeCss, glow: { x: px0, y: py0, r: glowR } };
+  const frame = { sx, groundY, unitY, c, s, light, RI, rise: pose.rise ?? null, plateTone, accent, plateStrokeCss, glow: { x: px0, y: py0, r: glowR } };
   if (slabs) {
     drawCanals();
     stats.drawnTiles += drawSlabs(ctx, layout, state, T, scene, frame, rects);
@@ -192,7 +201,7 @@ export function drawBoard(
     ctx.shadowBlur = blur;
     ctx.fillStyle = color;
     ctx.beginPath();
-    face(ctx, p.x, p.y - (scene.heightShare.get(t.id) ?? 0) * R * s, RI + grow, c);
+    face(ctx, p.x, p.y - lift(t), RI + grow, c);
     ctx.fill();
     ctx.restore();
   };
@@ -239,7 +248,7 @@ export function drawBoard(
     const ev = t.kind === "capability" ? (state.evidence.get(t.id) ?? "unknown") : "current";
     const isSel = t.id === state.selectedId;
     const isHov = t.id === state.hoverId || t.id === state.focusId;
-    const h = (scene.heightShare.get(t.id) ?? 0) * R * s;
+    const h = lift(t);
     const yb = groundY(t.y) + arr.dy;
     const yt = yb - h;
     if (yt - FAPO * c > height + 2 || yb + FAPO * c < -2) continue;
@@ -326,11 +335,17 @@ export function drawBoard(
     if (band !== "regions" && t.kind === "capability" && t.elementCount > 0) {
       pips(ctx, t, x, yt + FAPO * c, R, c, alphaOf(t) * arr.a, names, (id) => state.evidence.get(id) === "stale", T);
     }
+    const count = t.kind === "capability" ? counts?.capability.get(t.id) : undefined;
+    const dimmed = isDimmed(t.id);
+    ctx.globalAlpha = arr.a * numberAlpha;
     if (names) {
-      const lines = placeLines(lineSets(layout, t, R, state), room);
+      const { lines, numberAt } = placeLinesWithNumber(lineSets(layout, t, R, state), room, count != null);
+      if (count != null && numberAt != null && lines) {
+        drawNumber(ctx, count, x, yt + numberAt, dimmed ? T.inkDim : T.accent);
+        stats.numbers += 1;
+      }
       if (!lines) stats.spills += 1;
       else if (lines.length) {
-        const dimmed = isDimmed(t.id);
         const strong = isSel || t.id === state.hoverId || (lit != null && lit.has(t.id));
         const inkOf = (line: HexTextLine) => {
           if (t.kind === "project") return line.role === "meta" ? T.inkMeta : T.hub;
@@ -345,7 +360,11 @@ export function drawBoard(
         textBoxes.push(drawLines(ctx, t.id, lines, x, yt, inkOf, state.measure));
         stats.names += 1;
       }
+    } else if (count != null && R >= SLAB_BELOW) {
+      drawNumber(ctx, count, x, band === "pips" ? yt - FAPO * c * 0.15 + 4 : yt + 4, dimmed ? T.inkDim : T.inkHi);
+      stats.numbers += 1;
     }
+    if (pose.record) pose.record.push({ id: t.id, ...prismPolygons(x, yt, yb, ri, c, h > 0.3) });
     rects.add({ x0: x - RI, x1: x + RI, y0: yt - FAPO * c, y1: yb + FAPO * c });
     stats.drawnTiles += 1;
   }
@@ -354,7 +373,7 @@ export function drawBoard(
   if (state.staleOnly && state.sweep != null && state.sweep < 1) {
     ctx.save();
     ctx.beginPath();
-    for (const t of tiles) if (t.kind === "capability" && state.evidence.get(t.id) === "stale") face(ctx, sx(t.x), groundY(t.y) - (scene.heightShare.get(t.id) ?? 0) * R * s, RI, c);
+    for (const t of tiles) if (t.kind === "capability" && state.evidence.get(t.id) === "stale") face(ctx, sx(t.x), groundY(t.y) - lift(t), RI, c);
     ctx.clip();
     const span = width * 0.6;
     const cx = -span + state.sweep * (width + 2 * span);

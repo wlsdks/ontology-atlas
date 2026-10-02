@@ -3,7 +3,7 @@
 import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { useHexRelief, writeHexRelief, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
@@ -43,6 +43,8 @@ export function TopologyHexBoardSurface({
   navigationSpeed: MapNavigationSpeed;
 }) {
   const t = useTranslations("topology.hexBoard");
+  const tr = useTranslations("mapRelief");
+  const relief = useHexRelief();
   const measuredEvidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
   const evidence = synthEvidence ?? measuredEvidence;
   const measured = evidence.availability === "measured";
@@ -60,14 +62,17 @@ export function TopologyHexBoardSurface({
       staleOnly: (count) => (measured ? t("staleOnly", { count }) : t("staleOnlyUnmeasured")),
       regionsOnly: t("regionsOnly"),
       widened: t("widened"),
-      tooltip: ({ name, stale, needs, users, elements }) =>
-        `${name}${stale ? ` · ${t("tooltipStale")}` : ""} · ${t("tooltipFacts", { needs, users, elements })}`,
+      tooltip: ({ name, stale, needs, users, elements, dependents }) =>
+        `${name}${stale ? ` · ${t("tooltipStale")}` : ""} · ${t("tooltipFacts", { needs, users, elements })}${dependents == null ? "" : ` · ${tr("dependents", { count: dependents })}`}`,
       domainMeta: ({ capabilities, elements }) => t("domainMeta", { capabilities, elements }),
       domainStale: (count) => (count == null ? null : count > 0 ? t("domainStale", { count }) : t("domainStaleNone")),
       projectMeta: projectCount != null ? t("projectMeta", { count: projectCount }) : null,
       plateSub: ({ capabilities, stale }) => (stale ? t("plateSubStale", { capabilities, stale }) : t("plateSub", { capabilities })),
+      relief: tr("toggle"),
+      dependents: (count) => tr("dependents", { count }),
+      regionDependents: (count) => tr("regionDependents", { count }),
     }),
-    [t, measured, projectCount],
+    [t, tr, measured, projectCount],
   );
 
   const capabilityCount = useMemo(() => nodes.filter((n) => n.kind === "capability").length, [nodes]);
@@ -80,7 +85,7 @@ export function TopologyHexBoardSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
-  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ staleOnly, focused, band }) => (
+  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ staleOnly, focused, band, relief: tilted, dependentsMax }) => (
     <div
       data-testid="hex-board-legend"
       data-evidence-availability={evidence.availability}
@@ -147,6 +152,11 @@ export function TopologyHexBoardSurface({
           {t("legendCanals")}
         </span>
       ) : null}
+      {tilted ? (
+        <span data-testid="hex-board-relief-legend" className="flex items-center gap-1.5">
+          {dependentsMax > 0 ? tr("legend") : tr("legendNone")}
+        </span>
+      ) : null}
       <span className="flex items-center gap-1.5">
         <kbd className="rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--map-panel-text-secondary)]">←↑↓→</kbd>
         {t("legendKeys")}
@@ -179,6 +189,8 @@ export function TopologyHexBoardSurface({
       reducedMotion={reducedMotion}
       arrivedByMorph={arrivedByMorph}
       navigationSpeed={navigationSpeed}
+      relief={relief}
+      onReliefChange={writeHexRelief}
     />
   );
 }

@@ -109,6 +109,7 @@ interface BoardFrame {
   s: number;
   light: number;
   RI: number;
+  rise: ((id: string) => number) | null;
   plateTone: RGB;
   accent: RGB;
   plateStrokeCss: string;
@@ -133,7 +134,7 @@ export function drawSlabs(
   const restAlpha = state.staleOnly ? T.dimFarAlpha : T.dimAlpha;
   let drawn = 0;
   for (const region of scene.regions) {
-    const lift = (scene.regionShare.get(region.domainId) ?? 0) * unit * s;
+    const lift = (scene.regionShare.get(region.domainId) ?? 0) * unit * s * (f.rise ? f.rise(region.domainId) : 1);
     const ring = layout.byId.get(region.domainId)?.ring ?? 0;
     const arrived = arrivalOf(ring, state.arrivalMs, state.reducedMotion).a;
     if (arrived <= 0.001) continue;

@@ -1,5 +1,7 @@
 import type { HexBoardLayout, HexTile } from "../model/hex-board";
 import { hexKey, HEX_NEIGHBORS, SQRT3 } from "../model/hex-grid";
+import type { ReliefMetric } from "./relief-metric";
+import { reliefHeightPx, reliefRiseDelayMs } from "./relief-projection";
 
 interface RegionShape {
   domainId: string;
@@ -19,20 +21,27 @@ export interface BoardScene {
   maxHeightShare: number;
   regionShare: Map<string, number>;
   regions: RegionShape[];
+  metric: ReliefMetric | null;
+  riseDelay: Map<string, number>;
 }
 
-export function buildBoardScene(layout: HexBoardLayout, heights: ReadonlyMap<string, number> | null): BoardScene {
+export function buildBoardScene(layout: HexBoardLayout, metric: ReliefMetric | null): BoardScene {
   const order = [...layout.tiles].sort((a, b) => a.y - b.y || a.x - b.x || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const orderY = Float64Array.from(order, (t) => t.y);
   const heightShare = new Map<string, number>();
   let maxHeightShare = 0;
   for (const t of layout.tiles) {
-    const share = t.kind === "domain" ? 0 : (heights?.get(t.id) ?? 0);
+    const share = !metric ? 0 : t.kind === "capability" ? reliefHeightPx(metric.capability.get(t.id) ?? 0, metric.capabilityMax, 1) : reliefHeightPx(0, 0, 1);
     heightShare.set(t.id, share);
     maxHeightShare = Math.max(maxHeightShare, share);
   }
   const regionShare = new Map<string, number>();
-  for (const region of layout.regions) regionShare.set(region.domainId, heights?.get(region.domainId) ?? 0);
+  for (const region of layout.regions) regionShare.set(region.domainId, metric ? reliefHeightPx(metric.region.get(region.domainId) ?? 0, metric.regionMax, 1) : 0);
+  const rings = layout.capabilities.map((t) => t.ring);
+  const ringMin = rings.length ? Math.min(...rings) : 0;
+  const ringMax = rings.length ? Math.max(...rings) : 0;
+  const riseDelay = new Map<string, number>();
+  for (const t of layout.tiles) riseDelay.set(t.id, reliefRiseDelayMs(t.kind, t.ring, ringMin, ringMax));
   const regionOf = new Map<string, string>();
   for (const region of layout.regions) for (const [q, r] of region.cells) regionOf.set(hexKey(q, r), region.domainId);
   const tilesOf = new Map<string, HexTile[]>();
@@ -63,7 +72,7 @@ export function buildBoardScene(layout: HexBoardLayout, heights: ReadonlyMap<str
     };
   });
   regions.sort((a, b) => a.cy - b.cy || a.cx - b.cx);
-  return { order, orderY, heightShare, maxHeightShare, regionShare, regions };
+  return { order, orderY, heightShare, maxHeightShare, regionShare, regions, metric, riseDelay };
 }
 
 export function lowerBound(sorted: Float64Array, value: number): number {
