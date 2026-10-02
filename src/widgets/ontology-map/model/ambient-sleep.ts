@@ -41,20 +41,23 @@ export interface AmbientClock {
   lostMs: number;
   lastNowMs: number;
   lastFactor: number;
+  quietUntilMs: number;
 }
 
 export function createAmbientClock(): AmbientClock {
-  return { entry: Number.NaN, lostMs: 0, lastNowMs: 0, lastFactor: 1 };
+  return { entry: Number.NaN, lostMs: 0, lastNowMs: 0, lastFactor: 1, quietUntilMs: Number.NEGATIVE_INFINITY };
 }
 
 export function stepAmbientClock(clock: AmbientClock, entry: number, nowMs: number, dtMs: number, factor: number): number {
   if (entry !== clock.entry) {
     clock.entry = entry;
     clock.lostMs = 0;
+    clock.quietUntilMs = Number.NEGATIVE_INFINITY;
   } else {
     const gap = Math.max(0, nowMs - clock.lastNowMs);
     clock.lostMs += clock.lastFactor > 0 ? gap * (1 - factor) : gap - Math.min(gap, dtMs) * factor;
   }
+  if (factor < 1) clock.quietUntilMs = nowMs - entry - clock.lostMs;
   clock.lastNowMs = nowMs;
   clock.lastFactor = factor;
   return clock.lostMs;

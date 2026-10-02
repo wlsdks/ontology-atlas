@@ -490,6 +490,7 @@ export function createPresentationFrameStage({
           : 0,
       galaxyAtmosphereLagMs: atmosphereLagMs,
       galaxyAtmosphereLive: ambientFactor,
+      galaxyMeteorQuietUntilMs: ambientFactor < 1 ? Number.NEGATIVE_INFINITY : atmosphereClock.quietUntilMs,
       galaxyAtmosphereSeed: galaxyAtmosphereSeedRef.current,
       neuralRamp: neuralRampRef.current,
       zoomRatio,

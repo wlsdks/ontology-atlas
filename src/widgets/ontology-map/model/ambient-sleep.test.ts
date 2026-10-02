@@ -126,10 +126,24 @@ describe("stepAmbientClock", () => {
     expect(woken - lost).toBeCloseTo(restedAt + 50, 6);
   });
 
+  it("marks the sky time the quiet began, so what was in flight is not replayed on waking", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    run(clock, 0, 0, 0, D);
+    expect(clock.quietUntilMs).toBe(Number.NEGATIVE_INFINITY);
+    run(clock, 0, 0, D, D + R + 4800);
+    const restedAt = D + R + 4800 - clock.lostMs;
+    expect(clock.quietUntilMs).toBeCloseTo(restedAt, 6);
+    const woken = D + R + 60_000;
+    stepAmbientClock(clock, 0, woken, 50, ambientSleepFactor(woken, woken));
+    expect(clock.quietUntilMs).toBeCloseTo(restedAt, 6);
+  });
+
   it("starts over on a new entry", () => {
     const clock = createAmbientClock();
     stepAmbientClock(clock, 0, 0, 16, 1);
     run(clock, 0, 0, 0, D + R + 1000);
     expect(stepAmbientClock(clock, 9000, 9250, 16, 1)).toBe(0);
+    expect(clock.quietUntilMs).toBe(Number.NEGATIVE_INFINITY);
   });
 });

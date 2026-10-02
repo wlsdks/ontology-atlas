@@ -701,19 +701,18 @@ export function drawGalaxyNodeStar(
     presence: number;
     glint: number;
     glintRotation: number;
-    compositeHeld?: boolean;
   },
 ): void {
-  const { x, y, radius, ink, lit, coronaLit, presence, glint, glintRotation, compositeHeld = false } = state;
+  const { x, y, radius, ink, lit, coronaLit, presence, glint, glintRotation } = state;
   if (radius <= 0 || presence <= 0.01) return;
   const sprite = galaxyLightSprite(ink);
   if (!sprite) return;
   const previousAlpha = ctx.globalAlpha;
-  const previousComposite = compositeHeld ? null : ctx.globalCompositeOperation;
+  const previousComposite = ctx.globalCompositeOperation;
   const coreRadius = Math.min(radius, Math.max(1.8, Math.min(4.2, radius * 0.18)));
   const heartRadius = coreRadius * 1.45;
   const coronaRadius = Math.max(coreRadius * 3.8, Math.min(20, radius * 0.95));
-  if (previousComposite !== null) ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation = "lighter";
   ctx.globalAlpha = Math.min(1, coronaLit);
   ctx.drawImage(sprite.corona, x - coronaRadius, y - coronaRadius, coronaRadius * 2, coronaRadius * 2);
   // Keep the point locatable at a twinkle trough; the surrounding light still breathes.
@@ -731,7 +730,7 @@ export function drawGalaxyNodeStar(
       maxLong: Math.min(20, Math.max(6, coreRadius * 4.5)),
     });
   }
-  if (previousComposite !== null) ctx.globalCompositeOperation = previousComposite;
+  ctx.globalCompositeOperation = previousComposite;
   ctx.globalAlpha = previousAlpha;
 }
 

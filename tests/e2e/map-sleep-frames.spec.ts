@@ -82,9 +82,20 @@ test("a resting Galaxy stops its frames once its sky has gone to sleep, and inpu
   await waitForMapSettled(page);
   await waitForNoFrames(page);
 
+  type SkyProbe = { __atlasMap: { skyTime: () => number } };
+  const restingSky = await page.evaluate(() => (window as unknown as SkyProbe).__atlasMap.skyTime());
   const box = await page.getByTestId("ontology-map-canvas").boundingBox();
   const wokenAt = await page.evaluate(() => performance.now());
   await page.mouse.move(box!.x + box!.width * 0.6, box!.y + box!.height * 0.6, { steps: 4 });
+  const wokenSky = await page.waitForFunction(
+    (resting) => {
+      const sky = (window as unknown as SkyProbe).__atlasMap.skyTime();
+      return sky !== resting ? sky : null;
+    },
+    restingSky,
+    { polling: "raf" },
+  );
+  expect(Number(await wokenSky.jsonValue()) - restingSky, "the sky resumes where it stopped").toBeLessThan(100);
   await expect
     .poll(() =>
       page.evaluate(

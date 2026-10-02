@@ -203,7 +203,11 @@ const METEOR_INTERVAL_BLOCK_MS = METEOR_INTERVALS_MS.reduce((sum, value) => sum 
  * A repeating interval block finds the cycle in constant time; the global cycle id keeps
  * visible paths from repeating with it.
  */
-export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteorPhase | null {
+export function galaxyMeteorPhase(
+  elapsedMs: number,
+  entrySeed = 0,
+  quietUntilMs = Number.NEGATIVE_INFINITY,
+): GalaxyMeteorPhase | null {
   if (!Number.isFinite(elapsedMs) || elapsedMs < METEOR_FIRST_AT_MS) return null;
   const sinceFirst = elapsedMs - METEOR_FIRST_AT_MS;
   const block = Math.floor(sinceFirst / METEOR_INTERVAL_BLOCK_MS);
@@ -217,7 +221,7 @@ export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteo
   const seed = `${entrySeed.toFixed(6)}:${cycle}`;
   const duration = 820 + meteorHash(`meteor-duration:${seed}`) * 620;
   const within = withinBlock;
-  if (within > duration) return null;
+  if (within > duration || elapsedMs - within <= quietUntilMs) return null;
   const direction = meteorHash(`meteor-direction:${seed}`) < 0.5 ? 1 : -1;
   const deltaX = direction * (0.28 + meteorHash(`meteor-length-x:${seed}`) * 0.34);
   const absDeltaX = Math.abs(deltaX);
