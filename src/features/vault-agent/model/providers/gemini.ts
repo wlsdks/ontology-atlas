@@ -12,6 +12,8 @@ import {
   toGeminiSchema,
 } from '../provider-adapter';
 
+import { invalidProviderResponse, isResponseObject, readResponseObject } from '../provider-response';
+
 /**
  * Gemini adapter: tool calls have no id (`g{n}` is synthesized, results pair by name), safety
  * blocks in a 200 response are demoted, and schemas keep only allowed keys.
@@ -80,12 +82,8 @@ export const geminiAdapter: ProviderAdapter = {
   },
 
   parseResponse(body: string): NormalizedResponse {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      return { text: '', toolCalls: [], stop: 'error', raw: null };
-    }
+    const parsed = readResponseObject(body);
+    if (!parsed) return invalidProviderResponse('$');
     const vendorError = readVendorErrorMessage(parsed);
     if (vendorError) {
       return { text: '', toolCalls: [], stop: 'error', raw: null, errorMessage: vendorError };
@@ -104,11 +102,19 @@ export const geminiAdapter: ProviderAdapter = {
         errorMessage: blockReason,
       };
     }
-    const candidate = root.candidates?.[0];
-    if (!candidate) {
-      return { text: '', toolCalls: [], stop: 'error', raw: null };
+    const candidate = Array.isArray(root.candidates) ? root.candidates[0] : undefined;
+    if (!isResponseObject(candidate)) return invalidProviderResponse('$.candidates[0]');
+    const content = candidate.content ?? { role: 'model', parts: [] };
+    if (!isResponseObject(content) || (content.parts != null && !Array.isArray(content.parts))) {
+      return invalidProviderResponse('$.candidates[0].content.parts');
     }
-    const parts = Array.isArray(candidate.content?.parts) ? candidate.content.parts : [];
+    const parts = (content.parts ?? []) as GeminiPart[];
+    if (parts.some((part) => !isResponseObject(part)
+      || (part.text !== undefined && typeof part.text !== 'string')
+      || (part.functionCall !== undefined && (!isResponseObject(part.functionCall)
+        || typeof part.functionCall.name !== 'string' || !part.functionCall.name.trim())))) {
+      return invalidProviderResponse('$.candidates[0].content.parts');
+    }
     const text = parts
       .filter((part) => typeof part.text === 'string')
       .map((part) => part.text as string)
@@ -126,7 +132,7 @@ export const geminiAdapter: ProviderAdapter = {
       text,
       toolCalls,
       stop,
-      raw: candidate.content ?? { role: 'model', parts: [] },
+      raw: content,
       errorMessage:
         stop === 'refusal' && typeof candidate.finishReason === 'string'
           ? candidate.finishReason

@@ -7,6 +7,8 @@ import type {
 } from '../provider-adapter';
 import { PROVIDER_DEFAULT_MODELS, readVendorErrorMessage } from '../provider-adapter';
 
+import { invalidProviderResponse, isResponseObject, readResponseObject } from '../provider-response';
+
 /** Anthropic Messages adapter; the assistant `content` array goes back verbatim or thinking blocks are lost. */
 
 /** Covers thinking plus the answer, so too tight a cap cuts the answer. */
@@ -74,18 +76,20 @@ export const anthropicAdapter: ProviderAdapter = {
   },
 
   parseResponse(body: string): NormalizedResponse {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      return { text: '', toolCalls: [], stop: 'error', raw: [], errorMessage: undefined };
-    }
+    const parsed = readResponseObject(body);
+    if (!parsed) return invalidProviderResponse('$');
     const vendorError = readVendorErrorMessage(parsed);
     if (vendorError) {
       return { text: '', toolCalls: [], stop: 'error', raw: [], errorMessage: vendorError };
     }
     const root = parsed as { content?: AnthropicBlock[]; stop_reason?: unknown };
-    const blocks = Array.isArray(root.content) ? root.content : [];
+    if (!Array.isArray(root.content) || root.content.some((block) =>
+      !isResponseObject(block) || typeof block.type !== 'string'
+      || (block.type === 'text' && typeof block.text !== 'string')
+      || (block.type === 'tool_use' && (typeof block.name !== 'string' || !block.name.trim())))) {
+      return invalidProviderResponse('$.content');
+    }
+    const blocks = root.content;
     const text = blocks
       .filter((block) => block.type === 'text' && typeof block.text === 'string')
       .map((block) => block.text as string)
