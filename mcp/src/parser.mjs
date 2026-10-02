@@ -277,7 +277,7 @@ function peekIndentedKind(lines, start) {
 
 function parseScalar(value) {
   const trimmed = value.trim();
-  if ((trimmed[0] === '"' || trimmed[0] === "'") && trimmed.length >= 2 && trimmed.at(-1) === trimmed[0]) return unquote(value);
+  if ((trimmed[0] === '"' || trimmed[0] === "'") && trimmed.length >= 2 && trimmed[trimmed.length - 1] === trimmed[0]) return unquote(value);
   const v = unquote(value);
   if (v === 'true') return true;
   if (v === 'false') return false;

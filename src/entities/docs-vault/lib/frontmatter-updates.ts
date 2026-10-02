@@ -37,6 +37,10 @@ export function applyFrontmatterUpdates(
   // A replaced or deleted key's block-style item lines (`  - a`) are dropped with it.
   let swallowingBlock = false;
   for (const line of fmLines) {
+    if (!line.trim()) {
+      if (!swallowingBlock) nextLines.push(line);
+      continue;
+    }
     if (/^\s+\S/.test(line)) {
       // A retained key keeps its block, and `  child: 1` is never taken for a top-level key.
       if (!swallowingBlock) nextLines.push(line);
@@ -49,12 +53,12 @@ export function applyFrontmatterUpdates(
       continue;
     }
     const { key } = entry;
-    if (!Object.hasOwn(updates, key)) {
+    if (!Object.prototype.hasOwnProperty.call(updates, key)) {
       nextLines.push(line);
       continue;
     }
     updatedKeys.add(key);
-    swallowingBlock = true;
+    swallowingBlock = entry.value === '' || /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.test(entry.value);
     const value = updates[key];
     if (value === null) continue; // delete
     nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
