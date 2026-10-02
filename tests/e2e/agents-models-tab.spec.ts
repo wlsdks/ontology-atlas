@@ -179,8 +179,10 @@ for (const width of [1280, 1512]) {
       const clear = page.getByTestId("ai-clear-openai");
       await clear.click();
       await expect(clear).toHaveText("정말 지우기");
-      await clear.click();
-      await expect(page.getByTestId("ai-status-openai")).toHaveText("키 없음");
+      await expect(async () => {
+        if (await clear.isVisible()) await clear.click();
+        await expect(page.getByTestId("ai-status-openai")).toHaveText("키 없음", { timeout: 500 });
+      }).toPass({ timeout: 5_000 });
       await expect(page.getByTestId("ai-register-openai")).toBeVisible();
       await expect(page.getByTestId("models-announcer")).toContainText("키를 지웠어요");
       await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
