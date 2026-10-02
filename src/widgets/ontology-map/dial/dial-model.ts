@@ -88,6 +88,11 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [] }: D
     if (to) to.usedAcross += 1;
   }
 
+  const sources = new Map<string, Set<string>>(domains.map((d) => [d.id, new Set<string>()] as const));
+  for (const dep of dependencies) {
+    if (dep.fromDomain !== dep.toDomain) sources.get(dep.toDomain)?.add(dep.fromDomain);
+  }
+
   const flowList = [...flows];
   return {
     projectId: tree.project?.id ?? null,
@@ -101,6 +106,7 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [] }: D
     flowByKey: new Map(flowList.map((f) => [f.key, f] as const)),
     capabilityDependencies,
     orphanIds: orphanIds.sort(),
+    dependents: new Map([...sources].map(([id, set]) => [id, set.size] as const)),
   };
 }
 
