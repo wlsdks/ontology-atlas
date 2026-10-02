@@ -1,11 +1,9 @@
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 
-/**
- * In-process compiled graph cache for one MCP session's repeated query_ontology
- * calls. The vault stays the truth: the artifact is reused only while the docs
- * keep the same slug, mtime and content signature.
- */
+const SIGNATURE_CHUNK_CODE_UNITS = 32 * 1024;
+
+/** Cached artifacts remain valid only while current document signatures match. */
 export function createCompiledOntologyCache({ loadDocs, compile }) {
   let cached = null;
   let hits = 0;
@@ -65,7 +63,14 @@ function docsSignature(docs) {
     for (const value of row) {
       length.writeUInt32LE(value.length);
       digest.update(length);
-      digest.update(value, 'utf16le');
+      if (typeof value !== 'string' || value.length <= SIGNATURE_CHUNK_CODE_UNITS) {
+        digest.update(value, 'utf16le');
+        continue;
+      }
+      // O(value.length) hashing with at most 64 KiB of string encoding per update.
+      for (let offset = 0; offset < value.length; offset += SIGNATURE_CHUNK_CODE_UNITS) {
+        digest.update(value.slice(offset, offset + SIGNATURE_CHUNK_CODE_UNITS), 'utf16le');
+      }
     }
   }
   return digest.digest('hex');
