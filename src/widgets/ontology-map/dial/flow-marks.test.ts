@@ -87,7 +87,7 @@ function run(model: DialModel, over: Partial<FlowMarksInput> & { focusId?: strin
     inkMix: 1, chordPresence: 1, scale, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: WIDE,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     endRadiusPx: (id) => (model.domainById.has(id) ? 12 : 4), appearOf: () => 1,
-    measureText: (text) => text.length * 6, occupied: [], chords: [],
+    measureText: (text) => text.length * 6, occupied: [], chords: [], resolution: { entered: null, resolved: false, endpointSlide: 0 },
     ...over,
   };
   const out = marks();
@@ -238,7 +238,7 @@ describe("buildFlowMarks", () => {
     const toScreen = (x: number, y: number) => ({ x: (x - 0) * scale + 500, y: (y + RING) * scale + 400 });
     const scene = sceneOf(model);
     const nodeScreen = (id: string) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; };
-    const { result, out } = run(model, { scale, toScreen, nodeScreen, freeRect: free });
+    const { result, out } = run(model, { scale, toScreen, nodeScreen, freeRect: free, resolution: { entered: "d0", resolved: true, endpointSlide: 0.5 } });
     expect(result).toMatchObject({ entered: "d0", resolved: true });
     expect(result.links.some((l) => l.u.startsWith("d0c") || l.v.startsWith("d0c"))).toBe(true);
     const chip = nodeScreen("d0")!;

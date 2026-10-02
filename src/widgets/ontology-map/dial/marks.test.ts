@@ -13,6 +13,7 @@ import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { buildDialModel, dialEvidenceView, resolveDialAttention } from "./dial-model";
 import { mixOver, resolveDialInks } from "./ink";
 import { buildDialMarks, dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
+import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "./tokens";
 import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "./types";
 
@@ -35,23 +36,6 @@ const LABELS: DialLabels = {
 const DOMAINS = 9;
 const RING = 300;
 const CAP_OFFSET = 40;
-
-function smooth(a: number, b: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-}
-
-function stubDisclosure(scene: DialScene, scale: number): DialDisclosureInput {
-  const pitchPx = TOKENS.pitch * scale;
-  const capAlpha = smooth(TOKENS.capOnFrom, TOKENS.capOnFull, pitchPx);
-  const after = smooth(TOKENS.elementsAfterCapFrom, TOKENS.elementsAfterCapFull, pitchPx);
-  return {
-    capAlpha,
-    plateAlpha: 1 - smooth(TOKENS.capOnFrom, TOKENS.capOnFrom + 2, pitchPx),
-    elementAlphaFor: (item) => smooth(TOKENS.elementOnFrom, TOKENS.elementOnFull, item.elementPitch * scale) * capAlpha * after,
-    orphanAlpha: smooth(TOKENS.elementOnFrom, TOKENS.elementOnFull, scene.orphans.pitch * scale) * after,
-  };
-}
 
 function modelOf(caps = 2): DialModel {
   const nodes: TreeInputNode[] = [{ id: "p", label: "P", kind: "project" }];
@@ -126,7 +110,7 @@ function run(o: RunOptions = {}) {
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: { ...stubDisclosure(scene, scale), ...o.disclosure },
+    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, null, o.focusId ?? null), TOKENS), ...o.disclosure },
   };
   const out = emptyDialFrameMarks();
   const result = buildDialMarks(input, out);

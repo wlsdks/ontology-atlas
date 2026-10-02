@@ -17,6 +17,7 @@ import {
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { createMeasureText, dialOverviewPad } from "@/widgets/ontology-map/dial/fit";
 import { buildFlowMarks } from "@/widgets/ontology-map/dial/flow-marks";
+import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { buildLabelMarks, type Circle, type LabelMarksOut } from "@/widgets/ontology-map/dial/label-marks";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
@@ -136,6 +137,7 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
     model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention, previous: null, inkMix: 1, chordPresence: 1,
     scale, labelScale: TOKENS.labelScale, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free, nodeScreen, toScreen,
     endRadiusPx: (id) => discs.get(id)?.r ?? chips.get(id)?.r ?? TOKENS.chipMinPx, appearOf: () => 1, measureText: measure, occupied, chords: [],
+    resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
   }, marks);
   const lines: Point[][] = marks.strips.map((s) => {
     const pts: Point[] = [];

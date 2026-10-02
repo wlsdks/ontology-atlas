@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLedger, countLeaderCrossings, enteredDomain, ledgerWanted, type LedgerDisc, type LedgerInput } from "./ledger";
-import type { DialCluster, DialScene } from "./types";
+import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerDisc, type LedgerInput } from "./ledger";
 
 const TOKENS = { ledgerRowPx: 14, ledgerGapPx: 24 };
 const measure = (text: string) => text.length * 6;
@@ -90,35 +89,6 @@ describe("buildLedger", () => {
     expect(left.align).toBe("right");
     for (const row of left.rows) expect(row.box.minX).toBeGreaterThanOrEqual(0);
     expect(buildLedger(input({ discs: set, freeRect: { minX: 250, minY: 0, maxX: 600, maxY: 800 } }))).toBeNull();
-  });
-});
-
-function cluster(domainId: string, x: number, y: number, footprint = 40): DialCluster {
-  return { domainId, step: 0, angle: 0, chip: { x, y }, footprint, items: [] };
-}
-
-function scene(clusters: DialCluster[]): Pick<DialScene, "clusters" | "clusterByDomain"> {
-  return { clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])) };
-}
-
-describe("enteredDomain", () => {
-  const free = { minX: 0, minY: 0, maxX: 1000, maxY: 800 };
-  const identity = (x: number, y: number) => ({ x, y });
-  const s = scene([cluster("a", 480, 380), cluster("b", 100, 100), cluster("c", 800, 600)]);
-
-  it("takes the attended domain", () => {
-    expect(enteredDomain({ scene: s, attendedDomainId: "c", capabilitiesDrawn: new Set(["a"]), freeRect: free, toScreen: identity })).toBe("c");
-  });
-
-  it("else takes the chip nearest the free-rect centre among drawn clusters", () => {
-    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["a", "b", "c"]), freeRect: free, toScreen: identity })).toBe("a");
-    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["b", "c"]), freeRect: free, toScreen: identity })).toBe("c");
-    expect(enteredDomain({ scene: s, attendedDomainId: "gone", capabilitiesDrawn: new Set(), freeRect: free, toScreen: identity })).toBeNull();
-  });
-
-  it("measures the chip on screen", () => {
-    const shifted = (x: number, y: number) => ({ x: x - 400, y: y - 300 });
-    expect(enteredDomain({ scene: s, attendedDomainId: null, capabilitiesDrawn: new Set(["a", "c"]), freeRect: free, toScreen: shifted })).toBe("c");
   });
 });
 
