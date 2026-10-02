@@ -434,7 +434,7 @@ test.describe('the keyboard shortcut sheet', () => {
 test.describe('settings', () => {
   test.use({ viewport: { width: 1512, height: 949 } });
 
-  test('checking for updates keeps focus and reads its result on the row line', async ({ page }) => {
+  test('checking for updates keeps focus and starts its result on the pane line', async ({ page }) => {
     test.setTimeout(120_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
@@ -447,21 +447,19 @@ test.describe('settings', () => {
     const result = page.getByTestId('app-settings-update-result');
     await expect(result).not.toHaveText('', { timeout: 20_000 });
     const lines = await page.evaluate(() => {
-      const label = document.querySelector('[data-testid="app-settings-update-version"] p')!;
-      const range = document.createRange();
-      range.selectNodeContents(label);
+      const card = document.querySelector('[data-testid="app-settings-update-version"]')!.parentElement!;
       const out = document.querySelector('[data-testid="app-settings-update-result"]')!;
       const outRange = document.createRange();
       outRange.selectNodeContents(out);
       return {
-        label: range.getBoundingClientRect().left,
+        card: card.getBoundingClientRect().left,
         result: outRange.getBoundingClientRect().left,
         phase: out.getAttribute('data-phase'),
         color: getComputedStyle(out).color,
         tertiary: getComputedStyle(document.documentElement).getPropertyValue('--color-text-tertiary'),
       };
     });
-    expect(Math.abs(lines.label - lines.result), 'result line is off the row start').toBeLessThanOrEqual(1);
+    expect(Math.abs(lines.card - lines.result), 'result line is off the card edge').toBeLessThanOrEqual(1);
   });
 
   test('an inline key form uses one control size', async ({ page }) => {

@@ -8,7 +8,7 @@ import { recordApproval, listMachineApprovals } from '@/shared/lib/machine-appro
 import { writeUpdateAutoCheck } from '@/features/app-update';
 import { OUTBOUND_DESTINATION_PLACEHOLDERS, OUTBOUND_PATHS } from '../../model/outbound-paths';
 import { PRIVACY_CATALOG } from '../../model/catalog/privacy';
-import { PrivacyPane } from './PrivacyPane';
+import { PrivacyLead, PrivacyPane } from './PrivacyPane';
 
 const shell = vi.hoisted(() => ({ desktop: true }));
 const vault = vi.hoisted(() => ({
@@ -30,6 +30,7 @@ function mount(locale: 'en' | 'ko' = 'en', onShowSection = vi.fn()) {
   const messages = locale === 'en' ? withScope(enMessages, 'This computer') : withScope(koMessages as typeof enMessages, '이 컴퓨터');
   render(
     <NextIntlClientProvider locale={locale} messages={messages}>
+      <PrivacyLead />
       <PrivacyPane onShowSection={onShowSection} onClose={vi.fn()} />
     </NextIntlClientProvider>,
   );
@@ -46,16 +47,24 @@ beforeEach(() => {
 });
 
 describe('Privacy · data says what can leave and what this computer remembers', () => {
-  it('lists every desktop path, with honest wording for each destination in both locales', () => {
+  it('lists every desktop path with its trigger, cargo, record and every destination', () => {
     mount();
     for (const path of OUTBOUND_PATHS) {
-      expect(screen.getByTestId(`app-settings-outbound-${path.id}`).getAttribute('data-setting-id')).toBe('outbound');
+      const row = screen.getByTestId(`app-settings-outbound-${path.id}`);
+      expect(row.getAttribute('data-setting-id')).toBe('outbound');
+      expect(row.querySelector(`[data-trigger="${path.trigger}"]`), path.id).not.toBeNull();
+      expect(row.querySelector(`[data-carries="${path.carries}"]`), path.id).not.toBeNull();
+      expect(row.querySelector(`[data-recorded="${path.recordedIn ? 'yes' : 'no'}"]`), path.id).not.toBeNull();
+      expect([...row.querySelectorAll('[data-host]')].map((chip) => chip.getAttribute('data-host'))).toEqual(path.hosts);
     }
     expect(screen.getByTestId('app-settings-outbound-model-providers').textContent).toContain(
       'Recorded in .ontology-atlas/llm-audit.jsonl',
     );
+    expect(screen.getByTestId('app-settings-outbound-record-note').textContent).toContain('.ontology-atlas/llm-audit.jsonl');
     expect(screen.getByTestId('app-settings-outbound-coding-tools').textContent).toContain('Atlas does not see it');
-    expect(screen.getByTestId('app-settings-privacy-outbound').textContent).toContain('This computer');
+    const cargo = (id: string, carries: string) =>
+      screen.getByTestId(`app-settings-outbound-${id}`).querySelector(`[data-carries="${carries}"]`)!.className;
+    expect(cargo('update-check', 'no-folder-content')).not.toBe(cargo('model-providers', 'what-you-send'));
     for (const locale of [enMessages, koMessages] as const) {
       const words = locale.settingsPrivacy.destinations as Record<string, string>;
       for (const placeholder of OUTBOUND_DESTINATION_PLACEHOLDERS) expect(words[placeholder]?.length).toBeGreaterThan(0);
@@ -65,7 +74,7 @@ describe('Privacy · data says what can leave and what this computer remembers',
   it('shows the update check state and sends Change to About', () => {
     writeUpdateAutoCheck('off');
     const onShowSection = mount();
-    expect(screen.getByTestId('app-settings-outbound-update-state').textContent).toBe('Off');
+    expect(screen.getByTestId('app-settings-outbound-update-state').textContent).toBe('Automatic check off');
     fireEvent.click(screen.getByTestId('app-settings-outbound-update-change'));
     expect(onShowSection).toHaveBeenCalledWith('about');
   });
