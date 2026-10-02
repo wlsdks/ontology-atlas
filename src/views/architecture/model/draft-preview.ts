@@ -31,6 +31,15 @@ export function foldFolderRows(
   return { shown: folders.slice(0, cap - 1), hidden: folders.length - (cap - 1) };
 }
 
+export const DRAFT_PREVIEW_GROUPS: Readonly<Record<DraftPreviewRole, string>> = Object.freeze({
+  routing: 'app/**',
+  views: 'src/views/**',
+  widgets: 'src/widgets/**',
+  features: 'src/features/**',
+  entities: 'src/entities/**',
+  shared: 'src/shared/**',
+});
+
 const HEAD_H = 20;
 const ROW_PITCH = 24;
 const BRANCH = 12;
@@ -56,10 +65,27 @@ const SENTENCE_GAP = 10;
 export const SENTENCE_W = 160;
 const CHIP_GAP = 18;
 const CHIP_H = 26;
+const LIGHT_DASH_PX = 14;
+const LIGHT_DASH_MAX = 0.25;
 const ROOMY_RIGHT = ARC_PAD + ARC_BULGE + SENTENCE_GAP + SENTENCE_W;
 const COMPACT_RIGHT = Math.max(PLANE_EDGE + PLANE_LEAN, ARC_PAD + ARC_BULGE + LABEL_GAP);
 
 const ROOMY_SCENE_MIN = TRUNK_X + LINK_MIN + FACE_W_MIN + ROOMY_RIGHT;
+
+interface DraftPreviewLayout {
+  sentence: boolean;
+  faceW: number;
+  link: number;
+}
+
+export function draftPreviewLayout(available: number): DraftPreviewLayout {
+  const sentence = available >= ROOMY_SCENE_MIN;
+  const right = sentence ? ROOMY_RIGHT : COMPACT_RIGHT;
+  const spare = Math.max(0, available - (TRUNK_X + LINK_MIN + FACE_W_MIN + right));
+  const faceW = FACE_W_MIN + Math.min(FACE_W_MAX - FACE_W_MIN, Math.round(spare * FACE_SHARE_OF_SPARE));
+  const link = LINK_MIN + Math.min(LINK_MAX - LINK_MIN, spare - (faceW - FACE_W_MIN));
+  return { sentence, faceW, link };
+}
 
 interface DraftPreviewGeometry {
   width: number;
@@ -69,9 +95,11 @@ interface DraftPreviewGeometry {
   rootY: number;
   rows: Array<{ y: number }>;
   branches: string[];
-  trunk: string;
-  lightPath: string;
-  lightLength: number;
+  linePath: string;
+  readPath: string;
+  readDash: number;
+  carryPath: string;
+  carryDash: number;
   rowStops: number[];
   linkPort: { x: number; y: number };
   faceX: number;
@@ -80,16 +108,14 @@ interface DraftPreviewGeometry {
   faces: Array<{ role: DraftPreviewRole; y: number }>;
   planes: Array<{ role: DraftPreviewRole; d: string; edge: { x1: number; x2: number; y: number } }>;
   arrows: Array<{ from: DraftPreviewRole; to: DraftPreviewRole; x: number; y1: number; y2: number; head: string }>;
+  rulesLabel: { x: number; y: number };
   violation: { d: string; head: string; sentence: { x: number; y: number } };
   chip: { x: number; y: number; h: number };
 }
 
-export function buildDraftPreviewGeometry(available: number, rowCount: number): DraftPreviewGeometry {
-  const sentence = available >= ROOMY_SCENE_MIN;
+export function buildDraftPreviewGeometry(layout: DraftPreviewLayout, rowCount: number): DraftPreviewGeometry {
+  const { sentence, faceW, link } = layout;
   const right = sentence ? ROOMY_RIGHT : COMPACT_RIGHT;
-  const spare = Math.max(0, available - (TRUNK_X + LINK_MIN + FACE_W_MIN + right));
-  const faceW = FACE_W_MIN + Math.min(FACE_W_MAX - FACE_W_MIN, Math.round(spare * FACE_SHARE_OF_SPARE));
-  const link = LINK_MIN + Math.min(LINK_MAX - LINK_MIN, spare - (faceW - FACE_W_MIN));
   const faceX = TRUNK_X + link;
   const width = faceX + faceW + right;
 
@@ -103,22 +129,22 @@ export function buildDraftPreviewGeometry(available: number, rowCount: number): 
   const branchStart = TRUNK_X - BRANCH;
   const branches = rows.map((row) => `M ${branchStart} ${row.y} H ${TRUNK_X}`);
   const turnY = Math.max(foundationY, (rows[rows.length - 1]?.y ?? rootY) + CORNER);
-  const trunk = `M ${TRUNK_X} ${rootY + CORNER} V ${turnY - CORNER}`;
 
   const rootRun = TRUNK_X - CORNER - branchStart;
   const quarter = (Math.PI * CORNER) / 2;
   const fall = turnY - CORNER - (rootY + CORNER);
-  const run = faceX - (TRUNK_X + CORNER);
-  const lightPath = [
+  const readLength = rootRun + quarter + fall + quarter;
+  const carryLength = faceX - (TRUNK_X + CORNER);
+  const readPath = [
     `M ${branchStart} ${rootY}`,
     `H ${TRUNK_X - CORNER}`,
     `Q ${TRUNK_X} ${rootY} ${TRUNK_X} ${rootY + CORNER}`,
     `V ${turnY - CORNER}`,
     `Q ${TRUNK_X} ${turnY} ${TRUNK_X + CORNER} ${turnY}`,
-    `H ${faceX}`,
   ].join(' ');
-  const lightLength = rootRun + quarter + fall + quarter + run;
-  const rowStops = rows.map((row) => (rootRun + quarter + (row.y - (rootY + CORNER))) / lightLength);
+  const carryPath = `M ${TRUNK_X + CORNER} ${turnY} H ${faceX}`;
+  const rowStops = rows.map((row) => (rootRun + quarter + (row.y - (rootY + CORNER))) / readLength);
+  const dash = (length: number) => Math.min(LIGHT_DASH_MAX, LIGHT_DASH_PX / Math.max(1, length));
 
   const planes = faces.map((face, index) => {
     const top = face.y - PLANE_INSET_Y;
@@ -148,12 +174,13 @@ export function buildDraftPreviewGeometry(available: number, rowCount: number): 
   });
 
   const arcX = faceX + faceW + ARC_PAD;
+  const columnX = arcX + ARC_BULGE + SENTENCE_GAP;
   const fromY = centreOf(DRAFT_PREVIEW_VIOLATION.from);
   const toY = centreOf(DRAFT_PREVIEW_VIOLATION.to);
   const violation = {
     d: `M ${arcX} ${fromY} C ${arcX + ARC_BULGE} ${fromY} ${arcX + ARC_BULGE} ${toY} ${arcX} ${toY}`,
     head: `M ${arcX + 5} ${toY - 3.5} L ${arcX + 1} ${toY} L ${arcX + 5} ${toY + 3.5}`,
-    sentence: { x: arcX + ARC_BULGE + SENTENCE_GAP, y: (fromY + toY) / 2 },
+    sentence: { x: columnX, y: (fromY + toY) / 2 },
   };
 
   const chip = { x: faceX, y: foundation.y + FACE_H + CHIP_GAP, h: CHIP_H };
@@ -165,9 +192,11 @@ export function buildDraftPreviewGeometry(available: number, rowCount: number): 
     rootY,
     rows,
     branches,
-    trunk,
-    lightPath,
-    lightLength,
+    linePath: `${readPath} H ${faceX}`,
+    readPath,
+    readDash: dash(readLength),
+    carryPath,
+    carryDash: dash(carryLength),
     rowStops,
     linkPort: { x: faceX, y: turnY },
     faceX,
@@ -176,9 +205,17 @@ export function buildDraftPreviewGeometry(available: number, rowCount: number): 
     faces,
     planes,
     arrows,
+    rulesLabel: { x: columnX, y: centreOf('views') },
     violation,
     chip,
   };
+}
+
+type DraftPreviewTiming = Pick<DraftPreviewGeometry, 'rows' | 'rowStops' | 'readDash' | 'faces' | 'arrows'>;
+
+export function draftPreviewTiming(rowCount: number): DraftPreviewTiming {
+  const { rows, rowStops, readDash, faces, arrows } = buildDraftPreviewGeometry(draftPreviewLayout(0), rowCount);
+  return { rows, rowStops, readDash, faces, arrows };
 }
 
 const ms = (seconds: number) => Math.round(seconds * 1000);
@@ -192,15 +229,16 @@ export const DRAFT_PREVIEW_CLOCK = Object.freeze({
   spring: springSettleMs(SPRING.surface),
   light: SETTLE * 2,
   lightRead: SETTLE * 4,
-  lightTravel: SETTLE * 6,
-  build: SETTLE * 8,
-  rules: SETTLE * 13,
-  catch: SETTLE * 16,
+  lightCarry: SETTLE * 2,
+  propose: SETTLE * 8,
+  name: SETTLE * 13,
+  save: SETTLE * 17,
+  rules: SETTLE * 19,
+  catch: SETTLE * 22,
   catchDraw: SETTLE * 2,
-  save: SETTLE * 19,
-  rest: SETTLE * 25,
-  clear: SETTLE * 30,
-  loop: SETTLE * 32,
+  rest: SETTLE * 26,
+  clear: SETTLE * 31,
+  loop: SETTLE * 33,
 });
 
 const DRAFT_PREVIEW_LOOPS = 3;
@@ -225,7 +263,6 @@ interface DraftPreviewLight {
 type FrameValue = Record<string, string | number>;
 type Stop = readonly [at: number, value: FrameValue, easing?: string];
 
-export const LIGHT_DASH = 0.07;
 const UNREAD_ROW_OPACITY = 0.45;
 const RISE = 'translateY(6px)';
 const RESTED = 'translateY(0px)';
@@ -249,7 +286,7 @@ function track(loop: number, stops: readonly Stop[]): Keyframe[] {
 }
 
 export function draftPreviewTracks(
-  geometry: DraftPreviewGeometry,
+  geometry: DraftPreviewTiming,
   easing: DraftPreviewEasing,
   light: DraftPreviewLight,
 ): Record<string, Keyframe[][]> {
@@ -262,6 +299,13 @@ export function draftPreviewTracks(
     [c.clear + c.fast, { opacity: 0 }],
   ];
   const appear = (at: number): Stop[] => [[0, { opacity: 0 }], [at, { opacity: 0 }, ease], [at + c.base, { opacity: 1 }], ...leave];
+  const hand = (at: number, until: number): Stop[] => [
+    [0, { opacity: 0 }],
+    [at, { opacity: 0 }, ease],
+    [at + c.base, { opacity: 1 }],
+    [until, { opacity: 1 }, ease],
+    [until + c.fast, { opacity: 0 }],
+  ];
   const rise = (at: number): Stop[] => [
     [0, { transform: RISE }],
     [at, { transform: RISE }, spring],
@@ -272,11 +316,22 @@ export function draftPreviewTracks(
     [at, { strokeDashoffset: '1' }, ease],
     [at + duration, { strokeDashoffset: '0' }],
   ];
-  const arrival = c.light + c.lightTravel;
-  const readTo = (geometry.rowStops[geometry.rowStops.length - 1] ?? 0) + LIGHT_DASH;
+  const travel = (start: number, duration: number): Stop[] => {
+    const lead = LIGHT_DASH_MAX * duration;
+    return [
+      [0, { strokeDashoffset: String(LIGHT_DASH_MAX), opacity: 0 }],
+      [start - lead, { opacity: 0 }],
+      [start - lead, { opacity: light.intensity }, 'linear'],
+      [start + duration + lead, { strokeDashoffset: String(-1 - LIGHT_DASH_MAX), opacity: light.intensity }],
+      [start + duration + lead, { opacity: 0 }],
+    ];
+  };
+  const arrival = c.light + c.lightRead + c.lightCarry;
   const litAt = (index: number) =>
-    c.light + ((geometry.rowStops[index]! + LIGHT_DASH / 2) / (readTo + LIGHT_DASH)) * c.lightRead;
-  const buildAt = (index: number) => c.build + (geometry.faces.length - 1 - index) * c.fast;
+    c.light + (geometry.rowStops[index]! - geometry.readDash / 2) * c.lightRead;
+  const lastFace = geometry.faces.length - 1;
+  const proposeAt = (index: number) => c.propose + (lastFace - index) * c.fast;
+  const nameAt = (index: number) => c.name + index * c.fast;
   const ruleAt = (index: number) => c.rules + index * c.fast;
   const caught = c.catch + c.catchDraw;
 
@@ -302,24 +357,26 @@ export function draftPreviewTracks(
         ]),
       ];
     }),
-    on('light', [
-      [0, { strokeDashoffset: String(LIGHT_DASH), opacity: 0 }],
-      [c.light, { opacity: 0 }],
-      [c.light, { opacity: light.intensity }, 'linear'],
-      [c.light + c.lightRead, { strokeDashoffset: String(-readTo) }, 'linear'],
-      [arrival, { strokeDashoffset: '-1', opacity: light.intensity }],
-      [arrival, { opacity: 0 }],
-    ]),
+    on('light-read', travel(c.light, c.lightRead)),
+    on('light-carry', travel(c.light + c.lightRead, c.lightCarry)),
     on('bloom', [
       [0, { opacity: 0 }],
       [arrival, { opacity: 0 }, ease],
       [arrival + c.fast / 2, { opacity: light.intensity }, ease],
       [arrival + c.fast / 2 + light.bloomTauMs * 3, { opacity: 0 }],
     ]),
+    on('link-port', appear(c.propose)),
+    on('heading-proposed', hand(c.propose, c.name)),
+    on('heading-approved', appear(c.name)),
     ...geometry.faces.flatMap((face, index) => [
-      on(`plane:${face.role}`, appear(buildAt(index))),
-      on(`face:${face.role}`, appear(buildAt(index)), rise(buildAt(index))),
+      on(`face:${face.role}`, appear(proposeAt(index)), rise(proposeAt(index))),
+      on(`group:${face.role}`, hand(proposeAt(index), nameAt(index))),
+      on(`named:${face.role}`, appear(nameAt(index) + c.fast / 2)),
+      on(`plane:${face.role}`, appear(nameAt(index))),
     ]),
+    on('chip', appear(c.save), rise(c.save)),
+    on('check', draw(c.save + c.fast, c.settle)),
+    on('rules-label', appear(c.rules)),
     ...geometry.arrows.flatMap((_, index) => [
       on(`arrow:${index}`, [...draw(ruleAt(index), c.base).map(([at, value, curve]): Stop => [at, { ...value, opacity: 1 }, curve]), ...leave]),
       on(`port:${index}`, appear(ruleAt(index))),
@@ -333,7 +390,5 @@ export function draftPreviewTracks(
       [caught + c.settle, { opacity: light.haloRest }],
     ]),
     on('violation-mark', appear(caught)),
-    on('chip', appear(c.save), rise(c.save)),
-    on('check', draw(c.save + c.fast, c.settle)),
   ]);
 }

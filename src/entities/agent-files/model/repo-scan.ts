@@ -314,6 +314,17 @@ function ignoredDirectories(gitignoreText: string | null): string[] {
   return out;
 }
 
+function ignoredRootNames(gitignoreText: string | null): Set<string> {
+  const out = new Set<string>();
+  for (const raw of String(gitignoreText ?? '').split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#') || line.startsWith('!') || /[*?[\]]/.test(line)) continue;
+    const name = line.replace(/^\//, '').replace(/\/$/, '');
+    if (name && !name.includes('/')) out.add(name);
+  }
+  return out;
+}
+
 export async function scanHarness(
   port: HarnessScanPort,
   options: HarnessScanOptions = {},
@@ -435,6 +446,7 @@ export async function scanHarness(
     },
   });
 
+  const ignoredRoots = ignoredRootNames(gitignore?.text ?? null);
   const scriptNames = [...scripts.keys()];
   return {
     analysis,
@@ -453,7 +465,9 @@ export async function scanHarness(
     testFiles: [...new Set(testFiles)].sort(),
     gitHookFiles: [...gitHooks.keys()].sort(),
     workflowFiles: [...workflows.keys()].sort(),
-    topLevelFolders: rootFolders.filter((name) => !excludedFolders.includes(name)).sort(),
+    topLevelFolders: rootFolders
+      .filter((name) => !excludedFolders.includes(name) && !ignoredRoots.has(name))
+      .sort(),
     timesAreFileMtime: true,
   };
 }

@@ -161,11 +161,13 @@
   "draftPreview": {
     "exampleLabel": "예시 · 내 폴더의 데이터가 아니에요",
     "sourceLabel": "예시 · 폴더 이름만 {name}에서 가져왔어요",
+    "proposedLabel": "에이전트가 제안한 묶음",
+    "rulesLabel": "사람이 정한 의존 규칙",
     "moreFolders": "+{count}개 더",
     "pause": "예시 애니메이션 일시 정지",
     "resume": "예시 애니메이션 다시 재생",
     "replay": "예시 애니메이션 처음부터 다시 보기",
-    "descriptionExample": "예시 애니메이션이에요. 내 폴더의 데이터가 아니에요. {name}의 폴더({folders})를 읽고 나면 {top}부터 {bottom}까지 {layers}개 층과 각 층이 의존할 수 있는 방향이 나타나요. {from}에서 {to}로 거꾸로 올라가는 import 하나가 규칙을 어긴 것으로 잡히고, 결과는 {file} 파일 하나로 저장돼요.",
-    "descriptionSource": "예시 애니메이션이에요. 폴더 이름만 연결된 소스 폴더 {name}의 실제 폴더({folders})이고, 그 뒤 결과는 예시예요. {top}부터 {bottom}까지 {layers}개 층과 각 층이 의존할 수 있는 방향이 나타나고, {from}에서 {to}로 거꾸로 올라가는 import 하나가 규칙을 어긴 것으로 잡힌 뒤, 결과가 {file} 파일 하나로 저장돼요."
+    "descriptionExample": "예시 애니메이션이에요. 내 폴더의 데이터가 아니에요. 에이전트가 {name}의 폴더({folders})와 import를 읽고 경로 묶음 {layers}개를 제안해요. 사람이 {top}부터 {bottom}까지 이름을 붙여 승인하면 {file} 파일 하나로 저장돼요. 그다음 사람이 의존 규칙을 정하면, 검사가 {from}에서 {to}로 거꾸로 올라가는 import 하나를 규칙을 어긴 것으로 잡아요.",
+    "descriptionSource": "예시 애니메이션이에요. 폴더 이름만 연결된 소스 폴더 {name}의 실제 폴더({folders})이고, 그 뒤는 예시예요. 에이전트가 이 폴더와 import를 읽고 경로 묶음 {layers}개를 제안해요. 사람이 {top}부터 {bottom}까지 이름을 붙여 승인하면 {file} 파일 하나로 저장돼요. 그다음 사람이 의존 규칙을 정하면, 검사가 {from}에서 {to}로 거꾸로 올라가는 import 하나를 규칙을 어긴 것으로 잡아요."
   }
 }

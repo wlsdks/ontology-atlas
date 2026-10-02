@@ -75,7 +75,16 @@ afterEach(() => {
   Element.prototype.animate = originalAnimate;
   if (widthDescriptor) Object.defineProperty(HTMLElement.prototype, 'clientWidth', widthDescriptor);
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+function supportLinearEasing(supported: boolean) {
+  vi.stubGlobal('CSS', { supports: (property: string, value: string) => supported && property === 'transition-timing-function' && value.startsWith('linear(') });
+}
+
+const usesLinear = (frames: Keyframe[]) => frames.some((frame) => String(frame.easing ?? '').startsWith('linear('));
+
+const allIn = (state: AnimationPlayState) => created.length > 0 && created.every((animation) => animation.playState === state);
 
 describe('ArchitectureDraftPreview', () => {
   it('labels the illustration as an example when no source folder is connected', () => {
@@ -101,6 +110,67 @@ describe('ArchitectureDraftPreview', () => {
     expect(Element.prototype.animate).not.toHaveBeenCalled();
     expect(screen.getByTestId('architecture-draft-preview')).toHaveAttribute('data-preview-state', 'still');
     expect(screen.queryByTestId('architecture-draft-preview-control')).toBeNull();
+  });
+
+  it('falls back to the house ease where linear() easing is not supported', () => {
+    supportLinearEasing(false);
+    renderPreview();
+    const calls = vi.mocked(Element.prototype.animate).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.some(([frames]) => usesLinear(frames as Keyframe[]))).toBe(false);
+  });
+
+  it('shows the finished picture still when an engine refuses an easing, instead of breaking the page', async () => {
+    supportLinearEasing(true);
+    Element.prototype.animate = vi.fn((frames: Keyframe[]) => {
+      if (usesLinear(frames)) throw new TypeError('Invalid easing');
+      const animation = new FakeAnimation();
+      created.push(animation);
+      return animation as unknown as Animation;
+    }) as unknown as typeof Element.prototype.animate;
+    renderPreview();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId('architecture-draft-preview')).toHaveAttribute('data-preview-state', 'still');
+    expect(screen.queryByTestId('architecture-draft-preview-control')).toBeNull();
+    expect(created.every((animation) => animation.cancel.mock.calls.length > 0)).toBe(true);
+  });
+
+  it('pauses off-screen and resumes when scrolled back into view', () => {
+    let report: (entries: Array<{ isIntersecting: boolean }>) => void = () => undefined;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: typeof report) {
+          report = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    renderPreview();
+    act(() => report([{ isIntersecting: false }]));
+    expect(allIn('paused')).toBe(true);
+    expect(screen.getByTestId('architecture-draft-preview')).toHaveAttribute('data-preview-state', 'paused');
+    act(() => report([{ isIntersecting: true }]));
+    expect(allIn('running')).toBe(true);
+  });
+
+  it('pauses while the tab is hidden and resumes when it returns', () => {
+    let visibility: DocumentVisibilityState = 'visible';
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+    renderPreview();
+    visibility = 'hidden';
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(allIn('paused')).toBe(true);
+    visibility = 'visible';
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(allIn('running')).toBe(true);
   });
 
   it('pauses and resumes every part together, then offers a replay once the loops end', async () => {

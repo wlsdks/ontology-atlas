@@ -14,19 +14,27 @@ import {
   buildDraftPreviewGeometry,
   DRAFT_PREVIEW_CLOCK,
   DRAFT_PREVIEW_FILE,
+  DRAFT_PREVIEW_GROUPS,
   DRAFT_PREVIEW_ROLES,
   DRAFT_PREVIEW_VIOLATION,
   draftPreviewIterations,
+  draftPreviewLayout,
+  draftPreviewTiming,
   draftPreviewTracks,
   EXAMPLE_SOURCE,
   foldFolderRows,
-  LIGHT_DASH,
   SENTENCE_W,
   type DraftPreviewSource,
 } from '../model/draft-preview';
 import { EDGE_STROKE, VIOLATED_STROKE, VIOLATION_HALO_BLUR, VIOLATION_HALO_WIDTH } from './ArchitectureSketch';
 
 const cubicBezier = (points: readonly number[]) => `cubic-bezier(${points.join(', ')})`;
+
+function springOrEase(): string {
+  const linearEasing = typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+    && CSS.supports('transition-timing-function', 'linear(0, 1)');
+  return linearEasing ? springEasing(SPRING.surface) : cubicBezier(MOTION_EASE);
+}
 
 function sameSource(a: DraftPreviewSource | null, b: DraftPreviewSource | null): boolean {
   if (a === b) return true;
@@ -57,6 +65,7 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
   const [userPaused, setUserPaused] = useState(false);
   const [finished, setFinished] = useState(false);
   const [generation, setGeneration] = useState(0);
+  const [broken, setBroken] = useState(false);
   const figureRef = useRef<HTMLElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const animationsRef = useRef<Animation[]>([]);
@@ -67,12 +76,15 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
   const rowLabels = folded.hidden > 0
     ? [...folded.shown, t('draftPreview.moreFolders', { count: folded.hidden })]
     : folded.shown;
+  const layout = draftPreviewLayout(available);
   const geometry = useMemo(
-    () => buildDraftPreviewGeometry(available, rowLabels.length),
-    [available, rowLabels.length],
+    () => buildDraftPreviewGeometry({ sentence: layout.sentence, faceW: layout.faceW, link: layout.link }, rowLabels.length),
+    [layout.sentence, layout.faceW, layout.link, rowLabels.length],
   );
+  const timing = useMemo(() => draftPreviewTiming(rowLabels.length), [rowLabels.length]);
   const canAnimate =
-    !still && !reduced && available > 0 && typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
+    !still && !reduced && !broken && available > 0
+    && typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
   const running = canAnimate && !finished && !userPaused && inView && pageVisible;
   const runningRef = useRef(running);
 
@@ -114,22 +126,33 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
     const scene = sceneRef.current;
     if (!scene || !canAnimate || finished) return undefined;
     const tracks = draftPreviewTracks(
-      geometry,
-      { ease: cubicBezier(MOTION_EASE), exit: cubicBezier(EXIT_TRANSITION.ease), spring: springEasing(SPRING.surface) },
+      timing,
+      { ease: cubicBezier(MOTION_EASE), exit: cubicBezier(EXIT_TRANSITION.ease), spring: springOrEase() },
       readLight(scene),
     );
-    const timing: KeyframeAnimationOptions = {
+    const options: KeyframeAnimationOptions = {
       duration: DRAFT_PREVIEW_CLOCK.loop,
       iterations: draftPreviewIterations(),
       fill: 'both',
     };
     const created: Animation[] = [];
-    for (const element of scene.querySelectorAll<HTMLElement | SVGElement>('[data-draft-part]')) {
-      for (const frames of tracks[element.dataset.draftPart ?? ''] ?? []) {
-        const animation = element.animate(frames, timing);
-        if (!runningRef.current) animation.pause();
-        created.push(animation);
+    try {
+      for (const element of scene.querySelectorAll<HTMLElement | SVGElement>('[data-draft-part]')) {
+        for (const frames of tracks[element.dataset.draftPart ?? ''] ?? []) {
+          const animation = element.animate(frames, options);
+          if (!runningRef.current) animation.pause();
+          created.push(animation);
+        }
       }
+    } catch {
+      for (const animation of created) animation.cancel();
+      let live = true;
+      void Promise.resolve().then(() => {
+        if (live) setBroken(true);
+      });
+      return () => {
+        live = false;
+      };
     }
     animationsRef.current = created;
     let live = true;
@@ -144,7 +167,7 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
       for (const animation of created) animation.cancel();
       animationsRef.current = [];
     };
-  }, [canAnimate, finished, geometry, generation, data]);
+  }, [canAnimate, finished, generation, data, timing, geometry.sentence]);
 
   useLayoutEffect(() => {
     runningRef.current = running;
@@ -253,7 +276,7 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
             ))}
 
             <g data-draft-part="folders">
-              <path d={geometry.lightPath} stroke="var(--color-border-strong)" strokeWidth={1} />
+              <path d={geometry.linePath} stroke="var(--color-border-strong)" strokeWidth={1} />
             </g>
             {geometry.branches.map((branch, index) => (
               <path key={branch} d={branch} stroke="var(--color-border-strong)" strokeWidth={1} data-draft-part={`row:${index}`} />
@@ -277,27 +300,34 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
               opacity={0}
               data-draft-part="bloom"
             />
-            <path
-              d={geometry.lightPath}
-              stroke="var(--color-indigo-accent)"
-              style={{ strokeWidth: 'var(--map-light-halo-px)' }}
-              strokeLinecap="round"
-              pathLength={1}
-              strokeDasharray={`${LIGHT_DASH} 2`}
-              filter={`url(#${blurId})`}
-              opacity={0}
-              data-draft-part="light"
-            />
-            <path
-              d={geometry.lightPath}
-              stroke="var(--color-indigo-text-soft)"
-              style={{ strokeWidth: 'var(--map-light-core-px)' }}
-              strokeLinecap="round"
-              pathLength={1}
-              strokeDasharray={`${LIGHT_DASH} 2`}
-              opacity={0}
-              data-draft-part="light"
-            />
+            {([
+              ['light-read', geometry.readPath, geometry.readDash],
+              ['light-carry', geometry.carryPath, geometry.carryDash],
+            ] as const).flatMap(([part, d, dash]) => [
+              <path
+                key={`${part}-glow`}
+                d={d}
+                stroke="var(--color-indigo-accent)"
+                style={{ strokeWidth: 'var(--map-light-halo-px)' }}
+                strokeLinecap="round"
+                pathLength={1}
+                strokeDasharray={`${dash} 2`}
+                filter={`url(#${blurId})`}
+                opacity={0}
+                data-draft-part={part}
+              />,
+              <path
+                key={`${part}-core`}
+                d={d}
+                stroke="var(--color-indigo-text-soft)"
+                style={{ strokeWidth: 'var(--map-light-core-px)' }}
+                strokeLinecap="round"
+                pathLength={1}
+                strokeDasharray={`${dash} 2`}
+                opacity={0}
+                data-draft-part={part}
+              />,
+            ])}
           </svg>
 
           <p
@@ -325,26 +355,57 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
 
           <p
             className="absolute block truncate text-label leading-label text-[color:var(--color-text-quaternary)]"
+            style={{ left: geometry.faceX, top: geometry.rootY - 8, maxWidth: geometry.faceW, opacity: 0 }}
+            data-draft-part="heading-proposed"
+          >
+            {t('draftPreview.proposedLabel')}
+          </p>
+          <p
+            className="absolute block truncate text-label leading-label text-[color:var(--color-text-quaternary)]"
             style={{ left: geometry.faceX, top: geometry.rootY - 8, maxWidth: geometry.faceW }}
-            data-draft-part={`plane:${geometry.faces[0]!.role}`}
+            data-draft-part="heading-approved"
           >
             {t('contractTrackLabel')}
           </p>
           {geometry.faces.map((face, index) => (
             <div
               key={face.role}
-              className="architecture-canvas-node absolute grid grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-center rounded-chip border border-[color:var(--color-architecture-sketch-ink)] bg-[color:var(--color-panel)] px-2"
+              className="absolute"
               style={{ left: geometry.faceX, top: face.y, width: geometry.faceW, height: geometry.faceH }}
               data-draft-part={`face:${face.role}`}
             >
-              <span className="font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span className="truncate text-center text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
-                {roleLabel(face.role)}
-              </span>
+              <div
+                className="absolute inset-0 flex items-center justify-center rounded-chip border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2"
+                style={{ opacity: 0 }}
+                data-draft-part={`group:${face.role}`}
+              >
+                <span className="truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                  {DRAFT_PREVIEW_GROUPS[face.role]}
+                </span>
+              </div>
+              <div
+                className="architecture-canvas-node absolute inset-0 grid grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-center rounded-chip border border-[color:var(--color-architecture-sketch-ink)] bg-[color:var(--color-panel)] px-2"
+                data-draft-part={`named:${face.role}`}
+              >
+                <span className="font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="truncate text-center text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+                  {roleLabel(face.role)}
+                </span>
+              </div>
             </div>
           ))}
+
+          {geometry.sentence ? (
+            <p
+              className="absolute -translate-y-1/2 text-balance text-caption leading-caption text-[color:var(--color-indigo-text-soft)]"
+              style={{ left: geometry.rulesLabel.x, top: geometry.rulesLabel.y, width: SENTENCE_W }}
+              data-draft-part="rules-label"
+            >
+              {`↓ ${t('draftPreview.rulesLabel')}`}
+            </p>
+          ) : null}
 
           {geometry.sentence ? (
             <p
@@ -395,7 +456,7 @@ export function ArchitectureDraftPreview({ source, still = false }: { source: Dr
               fill="var(--color-canvas)"
               stroke={EDGE_STROKE}
               strokeWidth={1.25}
-              data-draft-part={`plane:${geometry.faces[geometry.faces.length - 1]!.role}`}
+              data-draft-part="link-port"
             />
             {geometry.arrows.map((arrow, index) => (
               <g key={arrow.from}>

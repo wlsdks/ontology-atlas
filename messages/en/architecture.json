@@ -161,11 +161,13 @@
   "draftPreview": {
     "exampleLabel": "Example · not data from your folder",
     "sourceLabel": "Example · only the folder names come from {name}",
+    "proposedLabel": "Groups an agent proposed",
+    "rulesLabel": "Rules a person set",
     "moreFolders": "+{count} more",
     "pause": "Pause example animation",
     "resume": "Resume example animation",
     "replay": "Replay example animation",
-    "descriptionExample": "Example animation, not data from your folder: once the folders of {name} ({folders}) are read, {layers} layers from {top} down to {bottom} appear with the direction each may depend, one import climbing from {from} to {to} is flagged, and the result is saved as the file {file}.",
-    "descriptionSource": "Example animation; only the folder names are real, from your connected source folder {name} ({folders}), and the result after them is an example: {layers} layers from {top} down to {bottom} appear with the direction each may depend, one import climbing from {from} to {to} is flagged, and the result is saved as the file {file}."
+    "descriptionExample": "Example animation, not data from your folder: an agent reads the folders of {name} ({folders}) and their imports and proposes {layers} path groups; a person names them, from {top} down to {bottom}, and approving saves one file, {file}. Only then does a person set the dependency rules, and the check catches one import that climbs from {from} to {to}.",
+    "descriptionSource": "Example animation; only the folder names are real, from your connected source folder {name} ({folders}), and what follows is an example: an agent reads these folders and their imports and proposes {layers} path groups; a person names them, from {top} down to {bottom}, and approving saves one file, {file}. Only then does a person set the dependency rules, and the check catches one import that climbs from {from} to {to}."
   }
 }

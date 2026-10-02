@@ -57,7 +57,7 @@ export function ArchitectureDraftHero({
     >
       {notices}
       <div className="@container/draft w-full">
-        <div className="grid w-full grid-cols-1 items-center gap-8 @min-[76rem]/draft:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] @min-[76rem]/draft:gap-14">
+        <div className="grid w-full grid-cols-1 items-start gap-8 @min-[76rem]/draft:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] @min-[76rem]/draft:gap-14">
           <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
             <div className="flex flex-col gap-2">
               <Title className={cn(PAGE_TITLE, 'text-balance')}>{t('noProfiles')}</Title>
