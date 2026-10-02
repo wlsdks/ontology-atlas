@@ -70,6 +70,11 @@ describe('returning to the end resumes the follow', () => {
     expect(afterScroll(reading(3_000), box(END - 40)).following).toBe(false);
   });
 
+  it('resumes when text that landed before the scroll event moved the end past the slack', () => {
+    expect(afterScroll(reading(3_000), box(END, 5_030), 30).following).toBe(true);
+    expect(afterScroll(reading(3_000), box(END - 40, 5_030), 30).following).toBe(false);
+  });
+
   it('resumes on the explicit door without touching the recorded position', () => {
     expect(resumeFollowing(reading(1_234))).toEqual({ following: true, lastTop: 1_234 });
   });
