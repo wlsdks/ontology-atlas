@@ -7,7 +7,7 @@
   "rows": {
     "version": "当前版本",
     "updateCheck": "检查更新",
-    "updateAuto": "自动检查",
+    "updateAuto": "自动检查更新",
     "whatsNew": "新变化",
     "keyboardShortcuts": "快捷键",
     "source": "源代码",
@@ -51,7 +51,7 @@
   "logsOpen": "显示",
   "logsFailed": "无法打开日志文件夹。",
   "diagnostic": {
-    "build": "构建",
+    "build": "版本",
     "buildApp": "应用 {version}",
     "buildWeb": "网站 {version}",
     "buildUnknown": "未知",

@@ -7,7 +7,7 @@
   "rows": {
     "version": "バージョン",
     "updateCheck": "アップデートを確認",
-    "updateAuto": "自動で確認",
+    "updateAuto": "アップデートを自動で確認",
     "whatsNew": "新機能",
     "keyboardShortcuts": "キーボードショートカット",
     "source": "ソースコード",
@@ -30,7 +30,7 @@
   "webVersionCaption": "このページはWebサイトです。デスクトップアプリは自身でアップデートを確認します。",
   "on": "オン",
   "off": "オフ",
-  "whatsNewCaption": "各リリースの変更点",
+  "whatsNewCaption": "各バージョンの変更点",
   "shortcutsCaption": "設定を閉じて、すべてのキーを一覧表示します",
   "shortcutsOpen": "表示",
   "sourceCaption": "AtlasはGitHubで公開されているオープンソースです",
@@ -51,7 +51,7 @@
   "logsOpen": "表示",
   "logsFailed": "ログフォルダを開けませんでした。",
   "diagnostic": {
-    "build": "ビルド",
+    "build": "バージョン",
     "buildApp": "アプリ{version}",
     "buildWeb": "Webサイト{version}",
     "buildUnknown": "不明",

@@ -1,12 +1,14 @@
 {
-  "leadDesktop": "Atlas 的界面无法访问互联网，只有下列途径可以。",
+  "leadDesktop": "Atlas 的界面无法访问互联网，只有下面列表中的内容会离开。",
   "leadWeb": "此网站会读取这台电脑上的文件夹。你的文件夹绝不会被上传。",
   "outbound": {
     "title": "哪些内容可能离开这台电脑",
     "keywords": "网络 联网 发送 上传 外发 审计 日志 更新 检查",
-    "line": "{trigger} · {destinations} · {carries}",
-    "recorded": "记录在 {file}",
-    "notRecorded": "Atlas 不记录"
+    "recorded": "已记录",
+    "recordedIn": "记录在 {file}",
+    "notRecorded": "未记录",
+    "unseen": "Atlas 看不到",
+    "recordedNote": "已记录：每次发送都会写入此文件夹中的 <file>{file}</file>。"
   },
   "trigger": {
     "automatic": "自动",
@@ -16,8 +18,8 @@
   "carries": {
     "no-folder-content": "不含文件夹内容",
     "what-you-send": "你发送的内容",
-    "provider-owned": "工具与其服务商之间的内容；Atlas 看不到",
-    "agent-sends": "智能体发送的内容；Atlas 看不到"
+    "provider-owned": "工具与服务商之间",
+    "agent-sends": "智能体发送的内容"
   },
   "destinations": {
     "your-runner-address": "你填写的运行器地址",
@@ -40,8 +42,8 @@
     "coding-tools": "编码工具",
     "website-files": "网站文件"
   },
-  "updateOn": "开",
-  "updateOff": "关",
+  "updateOn": "自动检查已开",
+  "updateOff": "自动检查已关",
   "updateChange": "更改",
   "updateChangeAria": "在“关于”中更改自动检查更新",
   "allowances": {

@@ -1,12 +1,14 @@
 {
-  "leadDesktop": "Atlasの画面からインターネットには出られません。外に出られるのは、下の経路だけです。",
+  "leadDesktop": "Atlasの画面からインターネットには出られません。外に出られるのは、下の一覧にあるものだけです。",
   "leadWeb": "このWebサイトは、このコンピュータ上のフォルダを読み取ります。フォルダがアップロードされることはありません。",
   "outbound": {
     "title": "このコンピュータから出る可能性があるもの",
     "keywords": "ネットワーク インターネット 送信 アップロード 外部 転送 監査 ログ 更新 確認 プロバイダ　network internet send upload outbound transfer audit log update check provider",
-    "line": "{trigger}・{destinations}・{carries}",
-    "recorded": "「{file}」に記録されます",
-    "notRecorded": "Atlasは記録しません"
+    "recorded": "記録あり",
+    "recordedIn": "「{file}」に記録されます",
+    "notRecorded": "記録なし",
+    "unseen": "Atlasからは見えません",
+    "recordedNote": "記録あり：送信のたびに、このフォルダの「<file>{file}</file>」に残ります。"
   },
   "trigger": {
     "automatic": "自動",
@@ -14,10 +16,10 @@
     "agent-use": "エージェントが使うとき"
   },
   "carries": {
-    "no-folder-content": "フォルダの内容は含みません",
+    "no-folder-content": "フォルダの内容なし",
     "what-you-send": "送信した内容",
-    "provider-owned": "ツールとそのプロバイダの間のやり取りで、Atlasからは見えません",
-    "agent-sends": "エージェントが送る内容で、Atlasからは見えません"
+    "provider-owned": "ツールとプロバイダの間",
+    "agent-sends": "エージェントが送る内容"
   },
   "destinations": {
     "your-runner-address": "入力したランナーのアドレス",
@@ -40,8 +42,8 @@
     "coding-tools": "コーディングツール",
     "website-files": "Webサイトのファイル"
   },
-  "updateOn": "オン",
-  "updateOff": "オフ",
+  "updateOn": "自動確認オン",
+  "updateOff": "自動確認オフ",
   "updateChange": "変更",
   "updateChangeAria": "アプリ情報で自動のアップデート確認を変更",
   "allowances": {
