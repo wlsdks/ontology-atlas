@@ -86,6 +86,7 @@ export class CosmosEngine {
       this.cleanups.push(() => canvas.removeEventListener(type, fn as EventListener, opts));
     };
     listen("pointerdown", (e) => this.onPointerDown(e));
+    listen("blur", () => delete canvas.dataset.keyboardFocus);
     listen("pointermove", (e) => this.onPointerMove(e));
     listen("pointerup", (e) => this.onPointerUp(e));
     listen("pointercancel", () => this.rig.cancelDrag());
@@ -319,6 +320,7 @@ export class CosmosEngine {
   }
 
   private onPointerDown(e: PointerEvent): void {
+    delete this.canvas.dataset.keyboardFocus;
     if (e.button !== 0) return;
     this.lastInput = performance.now();
     this.canvas.focus({ preventScroll: true });

@@ -250,6 +250,17 @@ describe("cosmos engine", () => {
     engine.destroy();
   });
 
+  it("clears the keyboard focus mark on pointerdown and on blur", () => {
+    const { engine, canvas } = mount();
+    canvas.dataset.keyboardFocus = "true";
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { clientX: 10, clientY: 10 }));
+    expect(canvas.dataset.keyboardFocus).toBeUndefined();
+    canvas.dataset.keyboardFocus = "true";
+    canvas.dispatchEvent(new FocusEvent("blur"));
+    expect(canvas.dataset.keyboardFocus).toBeUndefined();
+    engine.destroy();
+  });
+
   it("reads the trail lens switch on every frame", () => {
     const { engine } = mount();
     const trail = { visitedIds: ["a"] };

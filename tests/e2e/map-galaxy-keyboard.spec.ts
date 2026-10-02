@@ -51,6 +51,19 @@ test.describe("Galaxy keyboard walk and mirror", () => {
     await grabMap(page);
   });
 
+  test("the canvas is a labelled group, and one mouse click leaves no focus outline", async ({ page }) => {
+    await openGalaxy(page);
+    const canvas = page.getByTestId("ontology-map-canvas");
+    await expect(canvas).toHaveAttribute("role", "group");
+    await grabMap(page);
+    const outline = () => canvas.evaluate((el) => getComputedStyle(el).outlineStyle);
+    expect(await outline()).not.toBe("none");
+    const box = (await canvas.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + 40);
+    await expect.poll(outline).toBe("none");
+    await expect(canvas).not.toHaveAttribute("data-keyboard-focus", "true");
+  });
+
   test("the keyboard-focused canvas outlines in the indigo focus token", async ({ page }) => {
     await openGalaxy(page);
     await focusByKeyboard(page);
