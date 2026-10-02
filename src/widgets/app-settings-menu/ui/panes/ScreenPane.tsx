@@ -56,7 +56,7 @@ export function ScreenPane({
         }
       />
       <SettingsRow
-        settingId="text-size"
+        settingId="type-size"
         testId="app-settings-text-size"
         label={t('textSizeLabel')}
         caption={t('textSizeCaption')}
