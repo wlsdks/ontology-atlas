@@ -93,32 +93,43 @@ export function createTraversalQueries({
     }
   
     const typeSet = normalizeTypes(options.types);
-    const queue = [{ slug: from, hops: [from], edges: [] }];
+    const queue = [{ slug: from, depth: 0, parent: null, edge: null }];
     const visited = new Set([from]);
   
-    // Head pointer keeps dequeue O(1) — Array.shift() is O(n) (repo convention)
+    // BFS retains O(V) predecessor state and projects only the selected path.
     let head = 0;
     while (head < queue.length) {
-      const current = queue[head++];
-      if (current.hops.length - 1 >= maxHops) continue;
+      const currentIndex = head++;
+      const current = queue[currentIndex];
+      if (current.depth >= maxHops) continue;
       for (const { next, edge } of traversalEdges(current.slug, direction, typeSet)) {
         if (visited.has(next)) continue;
-        const nextHops = [...current.hops, next];
-        const nextEdges = [...current.edges, formatPathEdge(edge, current.slug, next)];
         if (next === to) {
+          const hops = [next];
+          const edges = [formatPathEdge(edge, current.slug, next)];
+          let step = current;
+          while (step.parent !== null) {
+            const previous = queue[step.parent];
+            hops.push(step.slug);
+            edges.push(formatPathEdge(step.edge, previous.slug, step.slug));
+            step = previous;
+          }
+          hops.push(from);
+          hops.reverse();
+          edges.reverse();
           return {
             operation: 'path',
             from,
             to,
             found: true,
-            hopCount: nextHops.length - 1,
-            hops: nextHops,
-            nodes: pathNodes(nextHops),
-            edges: nextEdges,
+            hopCount: hops.length - 1,
+            hops,
+            nodes: pathNodes(hops),
+            edges,
           };
         }
         visited.add(next);
-        queue.push({ slug: next, hops: nextHops, edges: nextEdges });
+        queue.push({ slug: next, depth: current.depth + 1, parent: currentIndex, edge });
       }
     }
   
