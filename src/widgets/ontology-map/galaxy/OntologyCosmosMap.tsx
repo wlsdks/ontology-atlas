@@ -10,7 +10,7 @@ import { CosmosMirror, type CosmosMirrorLabels } from "./CosmosMirror";
 import { chooseArrival, hasArrived, markArrived } from "./cosmos-arrival";
 import { CosmosEngine } from "./cosmos-engine";
 import { publishCosmosSnapshot } from "./cosmos-marks";
-import type { CosmosBand, CosmosInks } from "./cosmos-types";
+import type { CosmosBand, CosmosInks, CosmosPaintRecord } from "./cosmos-types";
 import { mixHex } from "./draw/cosmos-paint";
 import type { CosmosPlacementRecord } from "./layout/cosmos-layout";
 import { cosmosLayoutFor } from "./layout/cosmos-layout-cache";
@@ -119,6 +119,7 @@ export function OntologyCosmosMap({
   const engineRef = useRef<CosmosEngine | null>(null);
   const firstOpen = useRef(true);
   const [deadEnds, setDeadEnds] = useState(0);
+  const [rest, setRest] = useState<{ signal: number; marks: readonly CosmosPaintRecord[] }>({ signal: 0, marks: [] });
   const callbacks = useRef({ onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane });
   useEffect(() => {
     callbacks.current = { onSelect, onPaneClick, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane };
@@ -155,6 +156,7 @@ export function OntologyCosmosMap({
       },
       onBand: (band) => callbacks.current.onZoomTierChange?.(band),
       onRest: () => {
+        setRest((prev) => ({ signal: prev.signal + 1, marks: engine.marks() }));
         if (inks) publishCosmosSnapshot({ marks: engine.marks(), canvas, inks });
       },
       onWalkDeadEnd: () => setDeadEnds((n) => n + 1),
@@ -232,8 +234,8 @@ export function OntologyCosmosMap({
         selectedId={selectedId}
         onSelect={(id) => callbacks.current.onSelect?.(id)}
         labels={labels}
-        marks={[]}
-        restSignal={0}
+        marks={rest.marks}
+        restSignal={rest.signal}
         deadEndSignal={deadEnds}
         walkNotice={walkNoticeLabel ?? null}
       />
