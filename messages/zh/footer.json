@@ -1,7 +1,7 @@
 {
-  "license": "MIT licensed",
-  "thirdPartyLicenses": "Third-party licenses",
+  "license": "MIT 许可",
+  "thirdPartyLicenses": "第三方许可",
   "github": "GitHub",
-  "stack": "Local-first · Next.js · TypeScript · Canvas 2D · MCP",
-  "trademarks": "Claude Code, Codex, Cursor and the other product names here are trademarks of their respective owners. Ontology Atlas is not affiliated with or endorsed by any of them; the names say what it connects to."
+  "stack": "本地优先 · Next.js · TypeScript · Canvas 2D · MCP",
+  "trademarks": "Claude Code、Codex、Cursor 等产品名称均为其各自所有者的商标。Ontology Atlas 与它们没有隶属关系，也未获其认可；这些名称只用来说明它能连接什么。"
 }

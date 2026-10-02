@@ -1,5 +1,5 @@
 {
-  "fresh": "Updated this week",
-  "active": "Updated this month",
-  "stale": "Update recommended"
+  "fresh": "本周已更新",
+  "active": "本月已更新",
+  "stale": "建议更新"
 }

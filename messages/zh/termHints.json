@@ -1,19 +1,19 @@
 {
-  "trigger": "About {term}",
+  "trigger": "关于 {term}",
   "mcp": {
     "expansion": "MCP (Model Context Protocol)",
-    "explanation": "The standard way a coding agent reads and writes outside tools and data, such as this folder."
+    "explanation": "让 AI 智能体以统一方式调用外部工具、读取外部数据的开放协议。"
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
-    "explanation": "The standard way an app like Atlas talks to a coding agent and asks before each write."
+    "explanation": "编辑器或应用与编程智能体之间通信所使用的协议。"
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",
-    "explanation": "A secret string a model provider issues so a program can call its model on your account."
+    "explanation": "调用服务时用来验证身份的一串字符，请勿泄露给他人。"
   },
   "cli": {
     "expansion": "CLI (Command-Line Interface)",
-    "explanation": "A program you run by typing commands in a terminal instead of clicking in a window."
+    "explanation": "在终端里输入命令来操作的方式。"
   }
 }

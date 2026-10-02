@@ -1,5 +1,5 @@
 {
-  "label": "Open my folder",
-  "busyLabel": "Opening…",
-  "unsupportedLabel": "Open in the app"
+  "label": "打开我的文件夹",
+  "busyLabel": "正在打开…",
+  "unsupportedLabel": "在应用中打开"
 }

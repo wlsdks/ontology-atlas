@@ -1,13 +1,13 @@
 {
-  "openingLocalVaultPicker": "Opening the local workspace setup",
-  "redirectEyebrow": "Local-first workspace",
-  "redirectTitle": "Preparing your local workbench",
-  "redirectBody": "The desktop app starts at local store setup before it shows any hosted introduction.",
-  "redirectFilesProof": "Markdown files stay local",
-  "redirectGraphProof": "The info block at the top becomes the map",
-  "redirectAgentProof": "An agent asks first before touching anything outside this folder",
-  "lostVaultMissing": "We could not find \"{name}\", the folder you connected before. It looks like it was moved or deleted. Pick it again and you can carry on where you left off.",
-  "lostVaultUnreadable": "The folder you connected before could not be reopened. Pick it again, or keep looking around with the sample.",
-  "lostVaultAction": "Pick the folder again",
-  "lostVaultDismiss": "Close this notice"
+  "openingLocalVaultPicker": "正在打开本地工作区设置",
+  "redirectEyebrow": "本地优先工作区",
+  "redirectTitle": "正在准备本地工作台",
+  "redirectBody": "桌面应用会先进入本地存储设置，再显示任何线上介绍。",
+  "redirectFilesProof": "Markdown 文件留在本地",
+  "redirectGraphProof": "顶部的信息块会变成地图",
+  "redirectAgentProof": "智能体要动这个文件夹以外的内容时，会先询问",
+  "lostVaultMissing": "找不到你之前连接的文件夹“{name}”，它可能被移动或删除了。重新选择后即可接着上次继续。",
+  "lostVaultUnreadable": "无法重新打开你之前连接的文件夹。请重新选择，或先用示例看看。",
+  "lostVaultAction": "重新选择文件夹",
+  "lostVaultDismiss": "关闭提示"
 }

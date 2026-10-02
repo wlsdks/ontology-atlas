@@ -1,8 +1,8 @@
 {
   "label": "404",
-  "title": "Looks like you're lost.",
-  "body": "This page doesn't exist. The link may be outdated or a project may have been renamed. Pick one of the options below to continue.",
-  "findByProject": "Find by project search",
-  "home": "Home",
-  "previous": "Previous screen"
+  "title": "好像迷路了。",
+  "body": "此页面不存在，可能是链接已过期，或项目被改了名。请从下面选择一项继续。",
+  "findByProject": "按项目搜索",
+  "home": "首页",
+  "previous": "上一页"
 }

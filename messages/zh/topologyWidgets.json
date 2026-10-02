@@ -1,16 +1,16 @@
 {
   "controls": {
-    "fitViewTooltip": "Fit map to view"
+    "fitViewTooltip": "适应窗口"
   },
   "hubRail": {
-    "label": "Hubs",
-    "expandTooltip": "Expand hub bar",
-    "expandAriaLabel": "Expand hub bar",
-    "collapseTooltip": "Collapse hub bar",
-    "collapseAriaLabel": "Collapse hub bar",
-    "itemTitle": "{name} · {degree} connections"
+    "label": "枢纽",
+    "expandTooltip": "展开枢纽栏",
+    "expandAriaLabel": "展开枢纽栏",
+    "collapseTooltip": "收起枢纽栏",
+    "collapseAriaLabel": "收起枢纽栏",
+    "itemTitle": "{name} · {degree} 条连线"
   },
   "keyboardWalk": {
-    "deadEnd": "No connected concept this way"
+    "deadEnd": "这个方向没有相连的概念"
   }
 }

@@ -1,9 +1,9 @@
 {
-  "label": "Unexpected error",
-  "title": "This screen stopped while rendering",
-  "body": "It may be a passing problem. Try again or go home.",
-  "bodyWithId": "It may be a passing problem. Try again or go home. If it keeps happening, report it with the error ID below.",
-  "retry": "Try again",
-  "home": "Home",
-  "errorId": "Error ID"
+  "label": "意外错误",
+  "title": "此页面在渲染时停止了",
+  "body": "可能只是暂时的问题。请重试，或回到首页。",
+  "bodyWithId": "可能只是暂时的问题。请重试，或回到首页。如果反复出现，请连同下面的错误 ID 一起反馈。",
+  "retry": "重试",
+  "home": "首页",
+  "errorId": "错误 ID"
 }

@@ -1,8 +1,8 @@
 {
   "relationShort": {
-    "isA": "broader",
-    "dependsOn": "depends on",
-    "contains": "contains",
-    "relates": "related"
+    "isA": "上位",
+    "dependsOn": "依赖",
+    "contains": "包含",
+    "relates": "相关"
   }
 }

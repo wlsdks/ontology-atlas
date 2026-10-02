@@ -1,9 +1,9 @@
 {
-  "takingLonger": "This is taking longer than expected. Return to the previous screen to try again.",
-  "returnToPrevious": "Return to previous screen",
-  "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
-  "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
-  "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
-  "mapComing": "Loading the map…",
-  "loadingDetail": "Arranging concepts and relationships for the map."
+  "takingLonger": "比预期耗时更长。请返回上一页重试。",
+  "returnToPrevious": "返回上一页",
+  "headline": "弄清代码库在构建什么、为何这样组织，以及一次改动会影响什么。",
+  "lede": "把产品领域、能力、实现依据、依赖和影响范围，以 Markdown 的形式放在代码旁边，让人和 AI 智能体共同维护同一份代码库本体。",
+  "demoNote": "这个页面就是实时地图，画的是 Ontology Atlas 自己：领域、能力和要素，都直接读取自每个文件顶部的信息块。",
+  "mapComing": "正在加载地图…",
+  "loadingDetail": "正在为地图排布概念和关系。"
 }
