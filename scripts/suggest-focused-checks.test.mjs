@@ -101,12 +101,16 @@ describe('focused check suggestion CLI', () => {
     }
   });
 
-  it('accepts an explicitly relative path whose basename begins with a dash', () => {
-    const output = [];
-    const status = runSuggestFocusedChecks({ argv: ['./--fixture.ts'], stdout: { write: text => output.push(text) }, spawn() { throw Error('explicit planning needs no git'); } });
+  it('preserves a dash-prefixed filename through planning and execution', () => {
+    const output = [], commands = [];
+    const status = runSuggestFocusedChecks({
+      argv: ['--run', './--fixture.ts'],
+      stdout: { write: text => output.push(text) },
+      spawn(command) { commands.push(command); return { status: 0 }; },
+    });
     assert.equal(status, 0);
-    assert.match(output.join(''), /--fixture\.ts/);
-    assert.match(output.join(''), /pnpm exec eslint/);
+    assert.ok(commands.includes('pnpm exec eslint --max-warnings 0 --no-warn-ignored ./--fixture.ts'));
+    assert.match(output.join(''), /\.\/--fixture\.ts/);
   });
 
   it('normalizes the pnpm separator and prints help without git', () => {
