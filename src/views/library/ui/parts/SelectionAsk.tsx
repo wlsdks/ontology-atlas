@@ -6,6 +6,7 @@ import { MessageCircleQuestion } from "lucide-react";
 import type { AskQuestionId } from "@/features/library";
 import { Chip, Surface } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Input } from "@/shared/ui/input";
 import { transientSurface } from "@/shared/ui/transient-surface";
@@ -250,7 +251,7 @@ export function SelectionAsk({
               autoFocus
               onChange={(event) => setCustom(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && custom.trim()) ask("custom", custom);
+                if (event.key === "Enter" && custom.trim() && !isImeComposing(event)) ask("custom", custom);
               }}
               placeholder={t("ask.placeholder")}
               className="w-[min(18rem,60vw)]"
