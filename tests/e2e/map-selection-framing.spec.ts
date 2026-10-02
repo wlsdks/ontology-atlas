@@ -82,6 +82,21 @@ test("a node picked from the search palette is framed left of the detail panel",
   expect(after.selected!.x).toBeGreaterThan(0);
 });
 
+test("a capability picked from the search palette brings the camera to rest on its target", async ({ page }) => {
+  const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+  await page.locator('[data-testid="topology-concept-search"]').click();
+  await page.keyboard.type("회원 탈퇴");
+  await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("회원 탈퇴");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await readMap(page)).selected?.label).toBe("회원 탈퇴");
+  await waitForMapStill(page, { what: "camera" });
+  const gap = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap: { camera: () => { x: number; y: number }; cameraTarget: () => { x: number; y: number } } }).__atlasMap;
+    return Math.hypot(m.camera().x - m.cameraTarget().x, m.camera().y - m.cameraTarget().y);
+  });
+  expect(gap, "카메라가 목표에 닿지 못하고 있다").toBeLessThan(0.5);
+});
+
 test("auto-arrange while everything is expanded keeps every node on screen", async ({ page }) => {
   await page.locator('[data-testid="topology-expand-all"]').click();
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 10_000 }).toBeGreaterThan(100);
