@@ -3,7 +3,9 @@ import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/do
 import type { TreeInputEdge, TreeInputNode } from "../model/containment-tree";
 import { computeHexBoard, HEX_TYPE, type HexTextRole } from "../model/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
-import { drawHexBoard, type HexDrawState, type HexEvidenceState } from "./hex-board";
+import { drawBoard } from "../board/board-paint";
+import { buildBoardScene } from "../board/board-scene";
+import type { HexDrawState, HexEvidenceState } from "./hex-board";
 
 /** A 2D context that records the text it is asked to draw and answers every other call. */
 function recordingContext() {
@@ -113,11 +115,11 @@ describe("hex board stale-only paint", () => {
     it(`draws every name at R=${R} with realistic moved files, and never throws`, () => {
       const { ctx, texts } = recordingContext();
       const state: HexDrawState = {
-        width: 1512,
-        height: 982,
+        width: 4000,
+        height: 3000,
         R,
-        ox: 700,
-        oy: 480,
+        ox: 2000,
+        oy: 1500,
         band: R >= 46 ? "names" : R >= 28 ? "pips" : "regions",
         selectedId: null,
         hoverId: caps[3]!.id,
@@ -139,7 +141,7 @@ describe("hex board stale-only paint", () => {
         sweep: 0.4,
         measure,
       };
-      const { stats } = drawHexBoard(ctx, layout, state, T);
+      const { stats } = drawBoard(ctx, layout, state, T, buildBoardScene(layout, null), { pitch: 0, pivotY: 0 });
       expect(stats.spills).toBe(0);
       if (state.band === "names") {
         expect(stats.names).toBe(layout.tiles.length);
