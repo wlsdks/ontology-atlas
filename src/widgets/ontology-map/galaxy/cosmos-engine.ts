@@ -1,18 +1,17 @@
 import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { isImeComposing } from "@/shared/lib/ime-composition";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
-import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { readHexRoom } from "../morph/hex-marks";
 import type { OntologyMapEdge } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
 import { CosmosArrivalRun } from "./cosmos-arrival";
 import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, liveBandRadius, memberBounds, posedPoint } from "./cosmos-camera";
-import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept } from "./cosmos-engine-watch";
+import { CosmosCameraRestWatch, CosmosRevealClock, relationsByConcept } from "./cosmos-engine-watch";
 import { CosmosHitIndex, litHit } from "./cosmos-hit";
 import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
 import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
-import { walkCandidates, walkTarget } from "./cosmos-walk";
+import { cosmosKeyAction } from "./cosmos-walk";
 import { CosmosBitmapCache, galaxyKey } from "./draw/cosmos-bitmap-cache";
 import { drawCosmosFrame } from "./draw/cosmos-frame";
 import { registerCosmosLabels } from "./draw/cosmos-labels";
@@ -34,7 +33,6 @@ interface CosmosEngineOptions {
   navigationSpeed: MapNavigationSpeed;
 }
 
-const WALK_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
 const CHROME_SETTLE_MS = 450;
 const APPROACH_READS_MS = [60, 420];
 
@@ -58,6 +56,7 @@ export class CosmosEngine {
   private band: CosmosBand | null = null;
   private lens: CosmosLens | null = null;
   private trail: CosmosTrail | null = null;
+  private trailActive: { readonly current: boolean } | null = null;
   paintLog: CosmosPaintRecord[] | null = null;
   private readonly probed = new URLSearchParams(window.location.search).has("e2e");
   private lastInput = 0;
@@ -156,9 +155,13 @@ export class CosmosEngine {
     this.requestFrame();
   }
 
-  setLens(lens: CosmosLens | null, trail: CosmosTrail | null): void {
-    [this.lens, this.trail] = [lens, trail];
+  setLens(lens: CosmosLens | null, trail: CosmosTrail | null, trailActive: { readonly current: boolean } | null = null): void {
+    [this.lens, this.trail, this.trailActive] = [lens, trail, trailActive];
     this.requestFrame();
+  }
+
+  private activeTrail(): CosmosTrail | null {
+    return this.trail && this.trailActive?.current === true ? this.trail : null;
   }
 
   requestFit(): void {
@@ -257,7 +260,7 @@ export class CosmosEngine {
     const paintLog: CosmosPaintRecord[] | null = this.paintLog ? (this.paintLog = []) : null;
     const stats = drawCosmosFrame({
       ctx: this.ctx, width: this.width, height: this.height, dpr: this.dpr, room: rig.room, camera: rig.camera, overviewScale: rig.overviewScale,
-      layout, inks, poses: this.poses, lens: this.lens, trail: this.trail, reducedMotion: this.options.reducedMotion,
+      layout, inks, poses: this.poses, lens: this.lens, trail: this.activeTrail(), reducedMotion: this.options.reducedMotion,
       attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs },
       relationsOf: (id) => this.relations.get(id) ?? [],
       pointOf: (id) => posedPoint(layout, this.poses, id),
@@ -293,7 +296,7 @@ export class CosmosEngine {
   hit(sx: number, sy: number): { id: string | null; galaxy: number } {
     const { layout, rig } = this;
     if (!layout) return { id: null, galaxy: -1 };
-    const lit = this.lens && litHit(this.lens.memberIds, (id) => posedPoint(layout, this.poses, id), rig.camera, rig.room, sx, sy);
+    const lit = litHit([this.lens?.memberIds, this.activeTrail()?.visitedIds], (id) => posedPoint(layout, this.poses, id), rig.camera, rig.room, sx, sy);
     return lit ? { id: lit, galaxy: -1 } : this.hits.hit(layout, this.poses, this.rig.camera, this.rig.room, this.dpr, sx, sy);
   }
 
@@ -364,27 +367,21 @@ export class CosmosEngine {
     this.lastInput = performance.now();
     const { layout, rig } = this;
     if (!layout || isImeComposing(e)) return;
-    const centre = { x: rig.room.x + rig.room.width / 2, y: rig.room.y + rig.room.height / 2 };
-    const intent = keyboardZoomIntent(e, this.options.navigationSpeed.zoom);
-    if (intent) {
-      e.preventDefault();
-      if (intent.kind === "zoom") return this.zoomAt(centre, intent.factor, true);
-      this.gesture();
-      rig.gesture();
-      return this.overview();
-    }
-    if (e.key === "Escape") return this.selectedId !== null ? this.options.onPaneClick?.() : this.overview();
-    if (e.key === "Enter") {
-      const gi = layout.galaxies.findIndex((g) => g.id === this.selectedId);
-      if (gi >= 0) e.preventDefault();
-      return this.flyToGalaxy(gi);
-    }
-    if (!WALK_KEYS.has(e.key)) return;
-    const candidates = walkCandidates({ layout, poses: this.poses, camera: rig.camera, room: rig.room, dpr: this.dpr });
-    const galaxyCentreOf = (id: string) => galaxyCentreOn(layout, this.poses, rig.camera, rig.room, id);
-    const step = walkTarget({ key: e.key, selectedId: this.selectedId, candidates, roomCentre: centre, galaxyCentreOf });
-    if (step.id) this.options.onSelect?.(step.id);
-    else if (step.deadEnd) this.options.onWalkDeadEnd?.();
+    const { room, camera } = rig;
+    const act = cosmosKeyAction(e, { layout, poses: this.poses, camera, room, dpr: this.dpr, selectedId: this.selectedId, zoomSpeed: this.options.navigationSpeed.zoom });
+    if (act?.kind === "zoom") this.zoomAt({ x: room.x + room.width / 2, y: room.y + room.height / 2 }, act.factor, true);
+    else if (act?.kind === "fit") this.fit();
+    else if (act?.kind === "overview") this.overview();
+    else if (act?.kind === "pane") this.options.onPaneClick?.();
+    else if (act?.kind === "fly") this.flyToGalaxy(act.galaxy);
+    else if (act?.kind === "select") this.options.onSelect?.(act.id);
+    else if (act?.kind === "deadEnd") this.options.onWalkDeadEnd?.();
+  }
+
+  private fit(): void {
+    this.gesture();
+    this.rig.gesture();
+    this.overview();
   }
 
   private onContextMenu(e: MouseEvent): void {

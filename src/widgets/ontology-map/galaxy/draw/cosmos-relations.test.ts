@@ -4,7 +4,7 @@ import { easeOutCubic } from "../../model/camera-easing";
 import type { CosmosLayout } from "../layout/cosmos-layout";
 import type { CosmosAttention, CosmosInks, CosmosLens, CosmosRelation, CosmosTrail } from "../cosmos-types";
 import { CosmosBitmapCache } from "./cosmos-bitmap-cache";
-import { drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
+import { drawCosmosRelations, galaxyLensAlpha, lensAlpha, trailHolds } from "./cosmos-relations";
 
 vi.mock("./cosmos-paint", () => ({ starSprite: () => ({}) }));
 
@@ -169,6 +169,18 @@ describe("drawCosmosRelations", () => {
     expect(group.rows).toHaveLength(200);
     expect(group.rows.every((r) => r.role === "member" && ids.includes(r.source) && ids.includes(r.target))).toBe(true);
     expect(group.candidates.filter((c) => c.kind === "member" && c.priority === 950)).toHaveLength(30);
+  });
+
+  it("with only the trail active, recedes unvisited stars and the galaxies the walk did not enter", () => {
+    const trail: CosmosTrail = { visitedIds: ["a"] };
+    expect(lensAlpha(null, "a", inks, trail)).toBe(1);
+    expect(lensAlpha(null, "b", inks, trail)).toBe(inks.spotlightRestAlpha);
+    expect(galaxyLensAlpha(null, inks, trail)).toBe(inks.spotlightRestAlpha);
+    const sky = { galaxyOf: new Map([["a", 0], ["b", 1]]) } as unknown as CosmosLayout;
+    expect(trailHolds(sky, trail, 0)).toBe(true);
+    expect(trailHolds(sky, trail, 1)).toBe(false);
+    const path: CosmosLens = { kind: "path", memberIds: new Set(["b"]), edgeIds: new Set() };
+    expect(lensAlpha(path, "a", inks, trail)).toBe(inks.pathRestAlpha);
   });
 
   it("lights visited ids for the trail and draws no rows", () => {

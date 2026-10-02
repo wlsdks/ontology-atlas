@@ -18,7 +18,7 @@ import type {
 import { galaxyKey, type CosmosBitmapCache } from "./cosmos-bitmap-cache";
 import { labelOf, placeCosmosLabels } from "./cosmos-labels";
 import { buildGalaxyGlow, buildStarImpostor, glowSizeFor, impostorSizeFor, IMPOSTOR_EXTENT, starSprite } from "./cosmos-paint";
-import { drawCosmosHover, drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
+import { drawCosmosHover, drawCosmosRelations, galaxyLensAlpha, lensAlpha, trailHolds } from "./cosmos-relations";
 import { drawCosmosWeb } from "./cosmos-web";
 
 interface CosmosFrameInput {
@@ -121,7 +121,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     focusGalaxy: attention.focusGalaxy,
     inks,
     settled,
-    lensRest: galaxyLensAlpha(input.lens, inks),
+    lensRest: galaxyLensAlpha(input.lens, inks, input.trail),
     metaFont,
   });
   stats.web = { alpha: web.alpha, items: web.items };
@@ -150,7 +150,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       const sprite = starSprite(halo.starKind[i] === STAR_KIND_CAPABILITY ? inks.capability : inks.element);
       if (!sprite) continue;
       const r = Math.min(7, Math.max(1.2, MIN_STAR_SPACING * camera.scale * 0.45));
-      ctx.globalAlpha = 0.7 * corePresence * lensAlpha(input.lens, halo.starIds[i]!, inks);
+      ctx.globalAlpha = 0.7 * corePresence * lensAlpha(input.lens, halo.starIds[i]!, inks, input.trail);
       ctx.drawImage(sprite, p.x - r, p.y - r, r * 2, r * 2);
       input.record?.(halo.starIds[i]!, p.x, p.y, r);
     }
@@ -179,7 +179,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       }
     });
   }
-  const galaxyAlpha = galaxyLensAlpha(input.lens, inks);
+  const galaxyAlpha = galaxyLensAlpha(input.lens, inks, input.trail);
   const frame = input.frame ?? 0;
   const drawn = (key: string) => {
     if (cache.markDrawn(key, frame)) stats.firstDraws += 1;
@@ -198,6 +198,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     }
     const m = galaxyMatrix(g, pose, camera, room);
     const key = galaxyKey(g);
+    const alpha = !input.lens && input.trail && trailHolds(layout, input.trail, index) ? 1 : galaxyAlpha;
     const E = g.radius * IMPOSTOR_EXTENT;
     const glowSize = glowSizeFor(extent, dpr);
     let glow = cache.glow(key, glowSize);
@@ -213,7 +214,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       }
     }
     const condense = pose.condense;
-    const glowAlpha = pose.presence * galaxyAlpha * (1 - 0.55 * smoothstep(900, 2600, rho));
+    const glowAlpha = pose.presence * alpha * (1 - 0.55 * smoothstep(900, 2600, rho));
     ctx.globalAlpha = glowAlpha;
     if (glow) {
       ctx.setTransform(dpr * m.a, dpr * m.b, dpr * m.c, dpr * m.d, dpr * m.e, dpr * m.f);
@@ -224,7 +225,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.drawImage(glow.wisps, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
       drawn(`glow:${key}:${glow.base.width}`);
     }
-    ctx.globalAlpha = pose.presence * galaxyAlpha;
+    ctx.globalAlpha = pose.presence * alpha;
     if (rho <= live) {
       const size = impostorSizeFor(extent, dpr);
       let bitmap = cache.impostor(key, size);
@@ -262,7 +263,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
         if (!sprite) continue;
         const base = kind === STAR_KIND_NUCLEUS ? 16 : kind === STAR_KIND_CAPABILITY ? 7.5 : 4.2;
         const r = Math.min(base + 3 * mag, Math.max(2.2, spacingPx * (kind === STAR_KIND_ELEMENT ? 0.8 : 1.4)));
-        ctx.globalAlpha = pose.presence * lensAlpha(input.lens, g.starIds[i]!, inks) * (kind === STAR_KIND_ELEMENT ? 0.6 + 0.4 * mag : 0.92);
+        ctx.globalAlpha = pose.presence * lensAlpha(input.lens, g.starIds[i]!, inks, input.trail) * (kind === STAR_KIND_ELEMENT ? 0.6 + 0.4 * mag : 0.92);
         ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2);
         input.record?.(g.starIds[i]!, x, y, r);
         stats.liveStars += 1;

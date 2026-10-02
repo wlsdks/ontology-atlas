@@ -6,6 +6,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
+import { listenForOntologyMapFrameRequests } from "../ui/use-topology-frame-loop";
 import { CosmosMirror, type CosmosMirrorLabels } from "./CosmosMirror";
 import { chooseArrival, hasArrived, markArrived } from "./cosmos-arrival";
 import { CosmosEngine } from "./cosmos-engine";
@@ -169,7 +170,9 @@ export function OntologyCosmosMap({
     engineRef.current = engine;
     inks = readInks();
     if (inks) engine.setInks(inks);
+    const stopListening = listenForOntologyMapFrameRequests(() => engine.requestFrame());
     return () => {
+      stopListening();
       engine.destroy();
       engineRef.current = null;
     };
@@ -211,8 +214,8 @@ export function OntologyCosmosMap({
 
   useEffect(() => {
     const lens = spotlightIds ? { kind: mapLensKind, memberIds: spotlightIds, edgeIds: mapLensKind === "path" ? pathEdgeIds : null } : null;
-    const trail = visitedTrail && visitedTrail.length > 0 && trailLensActiveRef?.current ? { visitedIds: visitedTrail } : null;
-    engineRef.current?.setLens(lens, trail);
+    const trail = visitedTrail && visitedTrail.length > 0 ? { visitedIds: visitedTrail } : null;
+    engineRef.current?.setLens(lens, trail, trailLensActiveRef ?? null);
   }, [spotlightIds, mapLensKind, pathEdgeIds, visitedTrail, trailLensActiveRef]);
 
   const fit = useMemo(() => () => engineRef.current?.requestFit(), []);

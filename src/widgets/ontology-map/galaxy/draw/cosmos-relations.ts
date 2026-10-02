@@ -30,13 +30,34 @@ function lensRestAlpha(lens: CosmosLens, inks: CosmosInks): number {
   return lens.kind === "path" ? inks.pathRestAlpha : inks.spotlightRestAlpha;
 }
 
-export function lensAlpha(lens: CosmosLens | null, id: string, inks: CosmosInks): number {
-  if (!lens) return 1;
-  return lens.memberIds.has(id) ? 1 : lensRestAlpha(lens, inks);
+const visitedSets = new WeakMap<CosmosTrail, Set<string>>();
+
+function visited(trail: CosmosTrail): Set<string> {
+  let set = visitedSets.get(trail);
+  if (!set) visitedSets.set(trail, (set = new Set(trail.visitedIds)));
+  return set;
 }
 
-export function galaxyLensAlpha(lens: CosmosLens | null, inks: CosmosInks): number {
-  return lens ? lensRestAlpha(lens, inks) : 1;
+export function lensAlpha(lens: CosmosLens | null, id: string, inks: CosmosInks, trail: CosmosTrail | null = null): number {
+  if (lens) return lens.memberIds.has(id) ? 1 : lensRestAlpha(lens, inks);
+  if (trail) return visited(trail).has(id) ? 1 : inks.spotlightRestAlpha;
+  return 1;
+}
+
+export function galaxyLensAlpha(lens: CosmosLens | null, inks: CosmosInks, trail: CosmosTrail | null = null): number {
+  if (lens) return lensRestAlpha(lens, inks);
+  return trail ? inks.spotlightRestAlpha : 1;
+}
+
+const trailGalaxies = new WeakMap<CosmosTrail, { layout: CosmosLayout; galaxies: Set<number> }>();
+
+export function trailHolds(layout: CosmosLayout, trail: CosmosTrail, galaxy: number): boolean {
+  let hit = trailGalaxies.get(trail);
+  if (!hit || hit.layout !== layout) {
+    hit = { layout, galaxies: new Set(trail.visitedIds.map((id) => layout.galaxyOf.get(id) ?? -1)) };
+    trailGalaxies.set(trail, hit);
+  }
+  return hit.galaxies.has(galaxy);
 }
 
 function revealProgress(revealMs: number, reducedMotion: boolean): number {
@@ -244,5 +265,5 @@ export function drawCosmosRelations(
   if (attention.selectedId) drawRing(ctx, input, attention.selectedId, 9, 2);
   const labels = input.hover === false ? [] : drawCosmosHover(ctx, input);
   const kind = input.lens?.kind ?? (input.trail ? "trail" : null);
-  return { rows, candidates, labels, lens: { kind, lit, restAlpha: galaxyLensAlpha(input.lens, inks) } };
+  return { rows, candidates, labels, lens: { kind, lit, restAlpha: galaxyLensAlpha(input.lens, inks, input.trail) } };
 }

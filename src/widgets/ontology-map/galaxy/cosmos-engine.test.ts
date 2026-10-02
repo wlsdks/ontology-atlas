@@ -6,10 +6,13 @@ import type { CosmosFrameStats, CosmosInks } from "./cosmos-types";
 import { galaxyKey } from "./draw/cosmos-bitmap-cache";
 import { computeCosmosLayout, type CosmosLayout } from "./layout/cosmos-layout";
 
-const draw = vi.hoisted(() => ({ next: [] as (() => Partial<CosmosFrameStats>)[] }));
+const draw = vi.hoisted(() => ({ next: [] as (() => Partial<CosmosFrameStats>)[], trail: undefined as unknown }));
 
 vi.mock("./draw/cosmos-frame", () => ({
-  drawCosmosFrame: () => ({ band: "spine", pendingBuilds: 0, buildsStarted: 0, firstDraws: 0, labels: [], ...(draw.next.shift()?.() ?? {}) }),
+  drawCosmosFrame: (input: { trail: unknown }) => {
+    draw.trail = input.trail;
+    return { band: "spine", pendingBuilds: 0, buildsStarted: 0, firstDraws: 0, labels: [], ...(draw.next.shift()?.() ?? {}) };
+  },
 }));
 vi.mock("./draw/cosmos-labels", () => ({ registerCosmosLabels: () => {} }));
 vi.mock("./draw/cosmos-paint", async (importOriginal) => ({ ...(await importOriginal<object>()), buildDeepField: () => null }));
@@ -244,6 +247,24 @@ describe("cosmos engine", () => {
     expect(engine.hit(s.x + 3, s.y).id).not.toBe(member);
     engine.setLens({ kind: "recent", memberIds: new Set([member]), edgeIds: null }, null);
     expect(engine.hit(s.x + 3, s.y).id).toBe(member);
+    engine.destroy();
+  });
+
+  it("reads the trail lens switch on every frame", () => {
+    const { engine } = mount();
+    const trail = { visitedIds: ["a"] };
+    const active = { current: false };
+    engine.setLens(null, trail, active);
+    runFrame(16);
+    expect(draw.trail).toBeNull();
+    active.current = true;
+    engine.requestFrame();
+    runFrame(32);
+    expect(draw.trail).toBe(trail);
+    active.current = false;
+    engine.requestFrame();
+    runFrame(48);
+    expect(draw.trail).toBeNull();
     engine.destroy();
   });
 

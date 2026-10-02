@@ -6,15 +6,17 @@ import type { CosmosGalaxy, CosmosLayout } from "./layout/cosmos-layout";
 const HIT_CELL = 12;
 const HIT_REACH_PX = 10;
 
-export function litHit(ids: Iterable<string>, pointOf: (id: string) => { x: number; y: number } | null, camera: CosmosCamera, room: CosmosRoom, sx: number, sy: number): string | null {
+export function litHit(groups: readonly (Iterable<string> | undefined)[], pointOf: (id: string) => { x: number; y: number } | null, camera: CosmosCamera, room: CosmosRoom, sx: number, sy: number): string | null {
   let best: string | null = null;
   let bestD = HIT_REACH_PX;
-  for (const id of ids) {
-    const w = pointOf(id);
-    if (!w) continue;
-    const p = worldToScreen(camera, room, w.x, w.y);
-    const d = Math.hypot(p.x - sx, p.y - sy);
-    if (d < bestD) [best, bestD] = [id, d];
+  for (const ids of groups) {
+    for (const id of ids ?? []) {
+      const w = pointOf(id);
+      if (!w) continue;
+      const p = worldToScreen(camera, room, w.x, w.y);
+      const d = Math.hypot(p.x - sx, p.y - sy);
+      if (d < bestD) [best, bestD] = [id, d];
+    }
   }
   return best;
 }
