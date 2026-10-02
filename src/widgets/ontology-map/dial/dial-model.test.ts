@@ -8,8 +8,8 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { buildDialModel, dialEvidenceView, resolveDialAttention, restNumberKeys, restStrongKeys } from "./dial-model";
-import type { DialEvidence, DialTokens } from "./types";
+import { buildDialModel, dialEvidenceView, resolveDialAttention } from "./dial-model";
+import type { DialEvidence } from "./types";
 
 const node = (id: string, kind: TreeInputNode["kind"]): TreeInputNode => ({ id, label: id.toUpperCase(), kind });
 const contains = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "contains", relationType: "contains" });
@@ -51,14 +51,6 @@ const fixture = () =>
     ],
   );
 
-const tokens = {
-  restNumbersShare: 0.6,
-  restNumbersMin: 4,
-  restNumbersMax: 9,
-  restNumberMinCount: 2,
-  restStrongMin: 6,
-  restStrongMax: 14,
-} as DialTokens;
 
 describe("buildDialModel", () => {
   it("counts a direct element, an orphan and a domain-level dependency", () => {
@@ -128,33 +120,3 @@ describe("resolveDialAttention", () => {
   });
 });
 
-describe("rest numbers", () => {
-  const ring = (n: number) => {
-    const nodes: TreeInputNode[] = [];
-    const edges: TreeInputEdge[] = [];
-    for (let i = 0; i < n; i += 1) nodes.push(node(`d${String(i).padStart(2, "0")}`, "domain"));
-    for (let i = 0; i < n; i += 1) {
-      const a = nodes[i]!.id;
-      const b = nodes[(i + 1) % n]!.id;
-      for (let k = 0; k < (i % 3) + 1; k += 1) {
-        nodes.push(node(`${a}-c${k}`, "capability"), node(`${b}-t${k}`, "capability"));
-        edges.push(contains(a, `${a}-c${k}`), contains(b, `${b}-t${k}`), depends(`${a}-c${k}`, `${b}-t${k}`));
-      }
-    }
-    return modelOf(nodes, edges);
-  };
-
-  it("numbers 5 flows at 9 domains and 9 at 15, counts of 2 or more only", () => {
-    const nine = ring(9);
-    const fifteen = ring(15);
-    expect(restNumberKeys(nine, tokens).size).toBe(5);
-    expect(restNumberKeys(fifteen, tokens).size).toBe(9);
-    for (const key of restNumberKeys(fifteen, tokens)) expect(fifteen.flowByKey.get(key)!.total).toBeGreaterThanOrEqual(2);
-    expect(restNumberKeys(nine, tokens)).toBe(restNumberKeys(nine, tokens));
-  });
-
-  it("keeps the strongest clamp(D, 6, 14) flows strong", () => {
-    expect(restStrongKeys(ring(9), tokens).size).toBe(9);
-    expect(restStrongKeys(ring(15), tokens).size).toBe(14);
-  });
-});

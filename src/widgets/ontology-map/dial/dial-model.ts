@@ -7,7 +7,6 @@ import type {
   DialEvidence,
   DialEvidenceView,
   DialModel,
-  DialTokens,
 } from "./types";
 
 export interface DialModelInput {
@@ -178,33 +177,4 @@ export function resolveDialAttention(model: DialModel, hoveredId: string | null,
     partnerDomains,
     selected,
   };
-}
-
-type FlowKeyCache = WeakMap<DialModel, { tokens: DialTokens; keys: ReadonlySet<string> }>;
-const restNumberCache: FlowKeyCache = new WeakMap();
-const restStrongCache: FlowKeyCache = new WeakMap();
-
-function cachedKeys(cache: FlowKeyCache, model: DialModel, tokens: DialTokens, pick: () => ReadonlySet<string>) {
-  const hit = cache.get(model);
-  if (hit && hit.tokens === tokens) return hit.keys;
-  const keys = pick();
-  cache.set(model, { tokens, keys });
-  return keys;
-}
-
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-export function restNumberKeys(model: DialModel, tokens: DialTokens): ReadonlySet<string> {
-  return cachedKeys(restNumberCache, model, tokens, () => {
-    const limit = clamp(Math.round(tokens.restNumbersShare * model.domains.length), tokens.restNumbersMin, tokens.restNumbersMax);
-    const ranked = model.flows.filter((f) => !f.relatesOnly && f.total >= tokens.restNumberMinCount);
-    return new Set(ranked.slice(0, limit).map((f) => f.key));
-  });
-}
-
-export function restStrongKeys(model: DialModel, tokens: DialTokens): ReadonlySet<string> {
-  return cachedKeys(restStrongCache, model, tokens, () => {
-    const limit = clamp(model.domains.length, tokens.restStrongMin, tokens.restStrongMax);
-    return new Set(model.flows.filter((f) => !f.relatesOnly).slice(0, limit).map((f) => f.key));
-  });
 }

@@ -26,15 +26,12 @@ describe("map dial tokens", () => {
   it("keeps ordered pairs ordered", () => {
     expect(t.stubMinPx).toBeLessThan(t.stubMaxPx);
     expect(t.restNumbersMin).toBeLessThanOrEqual(t.restNumbersMax);
-    expect(t.restStrongMin).toBeLessThanOrEqual(t.restStrongMax);
     expect(t.discMinPx).toBeLessThan(t.discMaxPx);
     expect(t.chipMinPx).toBeLessThan(t.chipMaxPx);
     expect(t.hubMinPx).toBeLessThan(t.hubMaxPx);
   });
 
   it("keeps ratios in range", () => {
-    expect(t.flowQuietRatio).toBeGreaterThan(0);
-    expect(t.flowQuietRatio).toBeLessThanOrEqual(1);
     expect(t.flowTaper).toBeGreaterThan(0);
     expect(t.flowTaper).toBeLessThanOrEqual(1);
     expect(t.chordArrival).toBeGreaterThan(0);
@@ -52,7 +49,7 @@ describe("map dial tokens", () => {
   });
 
   it("keeps the floors", () => {
-    expect(t.flowQuietRatio * rest(1)).toBeGreaterThanOrEqual(1);
+    expect(rest(1)).toBeGreaterThanOrEqual(1);
     expect(t.numeralSize).toBeGreaterThanOrEqual(9.5);
   });
 

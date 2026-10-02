@@ -16,7 +16,6 @@ export interface DialTokens {
   flowFocusBase: number;
   flowFocusGain: number;
   flowFocusMax: number;
-  flowQuietRatio: number;
   flowTaper: number;
   flowSplitPx: number;
   flowHeadBasePx: number;
@@ -30,8 +29,6 @@ export interface DialTokens {
   restNumbersMin: number;
   restNumbersMax: number;
   restNumberMinCount: number;
-  restStrongMin: number;
-  restStrongMax: number;
   pinMinPx: number;
   pinsMax: number;
   chordArrival: number;
