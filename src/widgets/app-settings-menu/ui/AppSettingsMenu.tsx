@@ -29,7 +29,7 @@ import {
   isTauriVaultRuntime,
   openTauriVaultInFinder,
 } from '@/shared/lib/tauri-vault-fs';
-import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
+import { vaultValidationCounts } from '../model/vault-validation-counts';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
@@ -288,17 +288,10 @@ export function AppSettingsMenu({
 
   const showVaultManagement = localVault.status !== 'unsupported';
   const vaultBusy = localVault.status === 'opening' || localVault.status === 'loading';
-  const localVaultValidationSummary = (() => {
-    if (localVault.status !== 'loaded' || !localVault.manifest) return null;
-    const summary = summarizeVaultValidation(
-      localVault.manifest.docs.map((doc) => ({
-        slug: doc.slug,
-        frontmatter: doc.frontmatter,
-      })),
-    );
-    if (summary.errorCount === 0 && summary.warningCount === 0) return null;
-    return { errorCount: summary.errorCount, warningCount: summary.warningCount };
-  })();
+  const localVaultValidationSummary =
+    localVault.status === 'loaded' && localVault.manifest
+      ? vaultValidationCounts(localVault.manifest)
+      : null;
 
   const vaultHref =
     mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
