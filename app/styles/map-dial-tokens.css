@@ -9,7 +9,6 @@
     --map-dial-flow-focus-base: 1;
     --map-dial-flow-focus-gain: 1.5;
     --map-dial-flow-focus-max: 6;
-    --map-dial-flow-quiet-ratio: 0.7;
     --map-dial-flow-taper: 0.45;
     --map-dial-flow-split-px: 4.5;
     --map-dial-flow-head-base-px: 4.2;
@@ -23,8 +22,6 @@
     --map-dial-rest-numbers-min: 4;
     --map-dial-rest-numbers-max: 9;
     --map-dial-rest-number-min-count: 2;
-    --map-dial-rest-strong-min: 6;
-    --map-dial-rest-strong-max: 14;
     --map-dial-pin-min-px: 6;
     --map-dial-pins-max: 12;
     --map-dial-chord-arrival: 0.7;
