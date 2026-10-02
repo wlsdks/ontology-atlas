@@ -191,9 +191,9 @@ body *::-webkit-scrollbar {
  * `:lang(ko)` because `keep-all` only means "between words" for a script that puts spaces
  * between words. Outside every layer, beside the caps override, for the same reason it gives.
  * `:lang(ko)` holds from the first paint because the inline boot script sets `<html lang>` from
- * the path. It is the first script in `<body>` (`app/layout.tsx`, `<AccentBootScript />`; served
+ * the path. It is the first script in `<body>` (`app/layout.tsx`, `<LangBootScript />`; served
  * after only Next's empty hidden div) and runs before any rendered body content is parsed
- * (`accent-boot-script.tsx`, `LANG_BOOT`).
+ * (`lang-boot-script.tsx`, `LANG_BOOT`).
  * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {

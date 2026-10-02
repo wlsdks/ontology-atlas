@@ -1,90 +1,3 @@
-/*
- * ── Accent replacement palette: Ember ─────────────────────────────────────────────
- *
- * The app's default color is **indigo** (`#5e6ad2`) — the `@theme` block above is authoritative,
- * and this block is an opt-in second palette **Ember** (`#c14a24`).
- *
- * On 2026-08-18 morning, we switched default from indigo → ember but the **owner reverted it same day**
- * (*"Set indigo color as default"*). There were two ways to revert —
- * ① flip only the default constant and keep overwriting indigo in the block below, or
- * ② swap both sets of values and raise indigo back to `:root` —
- * we chose ②. Since token names are `--color-indigo-*`, if copper color sits in the default palette,
- * **names lie about values**. This lie isn't caught by lint or tests; when the next person uses `--color-indigo-brand` assuming "it's indigo," it silently breaks. And ① creates a state where "default has attribute attached," breaking
- * the contract of `applyAccentAttribute` below (remove attribute if default).
- *
- * ## Why this block at file end
- *
- * `:root` and this selector have same specificity (both (0,1,0)), so order wins.
- * So we raise specificity to `:root[data-accent="ember"]` (0,2,0) and **simultaneously**
- * place it at the very end — either alone would win, but doing both protects against future token additions further down the file.
- *
- * ## What's missing — intentionally left empty
- *
- * **App icon · favicon · og images don't follow this switch.** Since they're baked PNG/ICNS,
- * they can't be changed via runtime CSS (`scripts/build-brand-assets.mjs` is authoritative). The color shown in Dock is always the one chosen at build time — this is a limitation, not a defect, and the settings screen states this fact.
- *
- * **Values weren't entered manually.** Even when swapping sets, the script moved values per token name (98 declarations = 52 tokens; alpha ladder exists in both `@theme` and forced emit `:root`, so twice). Manual entry would silently break one color.
- *
- * Gate: `tests/contract/accent-palette-switch.contract.test.ts` — checks if both palettes
- * **cover the same token set** (tokens existing only in one = screen breaking only for that color),
- * and if fill ink maintains AA in both palettes.
- */
-[data-accent-preview="ember"],
-:root[data-accent="ember"] {
-  --color-indigo-brand: #c14a24;
-  --color-indigo-accent: #f0894e;
-  --color-indigo-hover: #f5a06b;
-  --color-indigo-brand-hover: #a83e1d;
-  --color-indigo-a06: rgba(193, 74, 36, 0.06);
-  --color-indigo-a08: rgba(193, 74, 36, 0.08);
-  --color-indigo-a10: rgba(193, 74, 36, 0.1);
-  --color-indigo-a12: rgba(193, 74, 36, 0.12);
-  --color-indigo-a14: rgba(193, 74, 36, 0.14);
-  --color-indigo-a16: rgba(193, 74, 36, 0.16);
-  --color-indigo-a18: rgba(193, 74, 36, 0.18);
-  --color-indigo-a20: rgba(193, 74, 36, 0.2);
-  --color-indigo-a22: rgba(193, 74, 36, 0.22);
-  --color-indigo-a24: rgba(193, 74, 36, 0.24);
-  --color-indigo-a26: rgba(193, 74, 36, 0.26);
-  --color-indigo-a28: rgba(193, 74, 36, 0.28);
-  --color-indigo-a30: rgba(193, 74, 36, 0.3);
-  --color-indigo-a32: rgba(193, 74, 36, 0.32);
-  --color-indigo-a34: rgba(193, 74, 36, 0.34);
-  --color-indigo-a38: rgba(193, 74, 36, 0.38);
-  --color-indigo-a40: rgba(193, 74, 36, 0.4);
-  --color-indigo-a42: rgba(193, 74, 36, 0.42);
-  --color-indigo-a46: rgba(193, 74, 36, 0.46);
-  --color-indigo-a50: rgba(193, 74, 36, 0.5);
-  --color-indigo-a55: rgba(193, 74, 36, 0.55);
-  --color-indigo-a60: rgba(193, 74, 36, 0.6);
-  --color-indigo-a66: rgba(193, 74, 36, 0.66);
-  --color-indigo-focus-ring: rgb(193, 74, 36);
-  --color-indigo-text-strong: rgba(231, 155, 129, 0.95);
-  --color-indigo-text-soft: rgba(253, 182, 158, 0.92);
-  --color-indigo-accent-a32: rgba(240, 137, 78, 0.32);
-  --color-indigo-accent-a50: rgba(240, 137, 78, 0.5);
-  --color-indigo-line-a06: rgba(242, 127, 89, 0.06);
-  --color-indigo-line-a13: rgba(242, 127, 89, 0.13);
-  --color-indigo-line-a15: rgba(242, 127, 89, 0.15);
-  --color-indigo-line-a20: rgba(242, 127, 89, 0.2);
-  --color-indigo-line-a22: rgba(242, 127, 89, 0.22);
-  --color-indigo-line-a32: rgba(242, 127, 89, 0.32);
-  --color-indigo-line-a35: rgba(242, 127, 89, 0.35);
-  --color-indigo-line-a40: rgba(242, 127, 89, 0.4);
-  --color-indigo-line-a42: rgba(242, 127, 89, 0.42);
-  --color-indigo-line-a45: rgba(242, 127, 89, 0.45);
-  --color-indigo-line-a54: rgba(242, 127, 89, 0.54);
-  --color-indigo-line-a90: rgba(242, 127, 89, 0.9);
-  --color-indigo-pale-a28: rgba(254, 200, 181, 0.28);
-  --color-indigo-pale-a82: rgba(254, 200, 181, 0.82);
-  --color-indigo-pale-a86: rgba(254, 200, 181, 0.86);
-  --color-indigo-pale-a90: rgba(254, 200, 181, 0.9);
-  --color-indigo-pale-a92: rgba(254, 200, 181, 0.92);
-  --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
-  --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
-}
-
-
 /* Indeterminate orbit planes around a stable core. These are decorative light,
    never a progress percentage or an inferred graph. Hidden/reduced states rest. */
 .map-wait-halo {
@@ -112,15 +25,6 @@
 @keyframes map-wait-counter-orbit {
   from { transform: rotate(0deg); }
   to { transform: rotate(-360deg); }
-}
-
-/* Swatches keep their own palette even when the surrounding app uses the other
- * accent. These are the existing Indigo values; the rendered palette test
- * compares them with the actual root palette in both directions. */
-[data-accent-preview="indigo"] {
-  --color-indigo-brand: #5e6ad2;
-  --color-indigo-accent: #7170ff;
-  --color-indigo-a24: rgba(94, 106, 210, 0.24);
 }
 
 /* A floating panel that holds nothing to press passes the pointer through, its positioning

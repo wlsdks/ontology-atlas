@@ -41,12 +41,6 @@
       "ownership": "누가 무엇을 담는가",
       "coupling": "무엇이 무엇에 붙는가"
     },
-    "accentLabel": "강조 색",
-    "accentCaption": "앱에서 쓰는 색 하나를 골라요. 앱 아이콘은 설치할 때 색으로 고정이라 안 바뀌어요",
-    "accent": {
-      "indigo": "인디고(기본)",
-      "ember": "구리"
-    },
     "workspaceFolderLabel": "작업공간 폴더",
     "workspaceFolderEmpty": "선택 안 됨",
     "workspaceFolderDocCount": "개념 문서 {count}개",
@@ -139,7 +133,7 @@
       "update": "업데이트"
     },
     "sectionPurpose": {
-      "screen": "언어와 보기 방식, 아이콘과 강조색을 정해요. 모든 화면에 함께 적용돼요.",
+      "screen": "언어와 보기 방식, 아이콘을 정해요. 모든 화면에 함께 적용돼요.",
       "background": "지도 뒤에 깔리는 바탕을 골라요. 고르면 지도에 바로 보여요.",
       "expand": "지도에서 접힌 묶음을 어떻게 펼칠지 정해요. 바꾸면 지도에 바로 반영돼요.",
       "footprint": "지도에서 눌러 본 개념에 별이 하나씩 켜져요. 걸어온 순서가 숫자로 붙고, 이은 선을 따라 빛이 걸어간 방향으로 흘러요.",

@@ -41,6 +41,6 @@ export { SummaryFreshnessRow } from './summary-freshness-row';
 export { MtimeConflictBadge } from './mtime-conflict-badge';
 export { RouteLoadingFallback } from './route-loading-fallback';
 export { JsonLd } from './json-ld';
-export { AccentBootScript } from './accent-boot-script';
+export { LangBootScript } from './lang-boot-script';
 export { WebviewErrorReporter } from './webview-error-reporter';
 export { WidgetErrorFallback } from './widget-error-fallback';

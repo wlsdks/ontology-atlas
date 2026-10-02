@@ -602,13 +602,11 @@ Note: Type ramp utilities must be **strictly synchronized** with registration in
 
 ### Accent (the only color)
 
-The accent is indigo. On 2026-08-18 it moved to ember (`#c14a24`, decision 69) and was reverted the same day (decision 79) by swapping palettes, not by editing a constant; this document carried the ember values for eighteen days after the revert, which is why the wiki probe of 2026-09-06 read "ember" out of it. The values below are read from `app/globals.css`.
+The accent is indigo, and it is the only one: there is no accent setting. The copper alternate (ember, `#c14a24`) was removed on 2026-10-02, and a stored choice of it opens on indigo. The values below are read from `app/globals.css`.
 
 - `--color-indigo-brand`: `#5e6ad2`
 - `--color-indigo-accent`: `#7170ff`
 - `--color-indigo-hover`: `#828fff`
-
-The ember ramp had been derived by preserving L\* and C\* of the indigo ramp while rotating hue to 44.9°, so the contrast hierarchy was the same in both; that is what made the same-day swap safe.
 
 **Accent alpha steps** (registered 2026-08-04). Not new colors but transparency steps of the above accent — brand accent (`--color-indigo-a*`) and line accent (`--color-indigo-line-a*`) have alpha ladders, but accent lacked one, so three needed places all had **hand-written** `rgba(240,137,78,·)`.
 
