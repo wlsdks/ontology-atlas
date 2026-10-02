@@ -1,0 +1,15 @@
+{
+  "ariaLabel": "主导航",
+  "map": "地图",
+  "architecture": "Harness",
+  "docs": "本体",
+  "library": "资料库",
+  "automations": "自动化",
+  "insights": "分析",
+  "projects": "项目",
+  "agents": "智能体",
+  "mcp": "MCP",
+  "git": "Git",
+  "getApp": "下载应用",
+  "getAppTitle": "桌面应用会记住你的文件夹，可离线打开，并负责历史记录和 AI 连接"
+}

@@ -1,0 +1,115 @@
+{
+  "title": "智能体",
+  "subtitle": "一起看地图，一起整理文档文件夹",
+  "close": "关闭面板",
+  "you": "你：",
+  "send": "发送",
+  "stop": "停止",
+  "placeholder": "继续说…",
+  "placeholderFirst": "写下你想让它做的事",
+  "thinking": "思考中",
+  "thinkingSeconds": "思考中 · {seconds} 秒",
+  "unsupported": "这个回答没有读取文件夹，请不要当作事实。",
+  "charsLabel": "{chars} 字符",
+  "footer": "{provider} · 已记录 {rounds} 轮",
+  "boundary": "需要用到源代码的工作，更适合交给你自己终端里的 AI。这里的智能体只读取你的文档文件夹。",
+  "handoffSummary": "在终端中继续",
+  "handoffNote": "复制后粘贴到你自己的终端运行。由你来执行：此应用不会替你输入命令。",
+  "handoffCopy": "复制",
+  "handoffCopied": "已复制",
+  "snapshotLabel": "智能体更改前的检查点",
+  "provider": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI",
+    "gemini": "Gemini",
+    "local": "本地运行器"
+  },
+  "screenContext": {
+    "lookingAt": "屏幕上：正在看 {title}",
+    "wholeMap": "屏幕上：整张地图"
+  },
+  "scope": {
+    "title": "发送之前",
+    "body": "在这段对话中，智能体会边工作边读取你的文档文件夹。每次读到的内容都会发送给 {provider}（{host}）。",
+    "liveRows": "每次读取都会在这里单独显示一行，并注明发出了多少字符。",
+    "recorded": "每一次往返都记录在 {path} 中。",
+    "accept": "知道了",
+    "cancel": "暂不",
+    "consent": "如果文档需要修改，你会先看到具体改动，批准后才会保存。"
+  },
+  "promptDisclosure": {
+    "summary": "查看智能体收到的指令",
+    "note": "下面的文字每次都会发送。你不能编辑它，但随时可以阅读。"
+  },
+  "proposal": {
+    "title": "建议的更改 · 要修改 {count} 个文件",
+    "readOnlyTitle": "建议的更改（此文件夹为只读）",
+    "volume": "{files} 个文件 · +{added} / −{removed} 行",
+    "apply": "应用所选的 {count} 个",
+    "cancel": "取消",
+    "copy": "复制此更改",
+    "copied": "已复制",
+    "snapshot": "先建立检查点（git）",
+    "snapshotUnavailable": "此文件夹不是 git 仓库，无法建立检查点",
+    "applied": "已应用 · 检查点 {sha}",
+    "appliedNoSnapshot": "已应用",
+    "cancelled": "已取消，没有改动任何文件。",
+    "conflict": "此文档刚刚有改动，未写入任何内容。请重新提问。",
+    "failed": "应用失败：{message} 部分文件可能已被修改。请检查文档后再提问。",
+    "unreadWarning": "这会修改智能体在本次对话中没有读过的文件。请展开检查。",
+    "showOnMap": "在地图上显示",
+    "expandHint": "改动内容",
+    "createFile": "创建 {path}",
+    "modifyFile": "编辑 {path}",
+    "addRelation": "关联 {from} → {to}（{type}）",
+    "applying": "正在应用…"
+  },
+  "notice": {
+    "roundCap": "我就做到这里，开始收尾。",
+    "aborted": "已在此停止。",
+    "networkFailed": "连接失败。",
+    "timedOut": "模型未在时限内回答。请缩小问题范围，或换更快的模型。",
+    "rateLimited": "暂时达到了速率限制，请稍后再试。",
+    "rejected": "密钥被拒绝。请在“智能体 → 模型”中检查。",
+    "auditBlocked": "未发送任何内容，因为无法写入记录。",
+    "providerRefused": "此请求被拒绝。",
+    "failed": "出了点问题。",
+    "noToolCall": "智能体在第 {round} / {cap} 次尝试时停了下来，一次也没有读取此文件夹。请再问一次。"
+  },
+  "degraded": {
+    "webTitle": "仅限桌面应用",
+    "webBody": "浏览器没有安全的地方保存你的密钥。在桌面应用中，它保存在这台电脑的操作系统凭据库里。",
+    "download": "获取应用",
+    "noVaultTitle": "请先打开文档文件夹",
+    "noVaultBody": "智能体只读取你打开的文件夹中的文档。选好文件夹后，会从这里接着来。",
+    "noKeyTitle": "需要一次 AI 服务密钥",
+    "noKeyBody": "密钥只保存在这台电脑的钥匙串里。登记一次后，这里会立即连上，之后不会再问。如果你已在用 Claude Code 或 Codex，则不需要密钥：请在左侧的“智能体”中连接该工具。",
+    "noVaultAction": "打开文档文件夹",
+    "noKeyAction": "在模型中添加密钥"
+  },
+  "locked": {
+    "examplesTitle": "可以这样问",
+    "consentPromise": "如果文档需要修改，你会先看到具体改动。你点头之前，磁盘上的内容不会变。"
+  },
+  "sessionSummary": "本次对话：{concepts} 个概念 · {relations} 条关联",
+  "firstWords": {
+    "title": "想从哪里开始？",
+    "hint": "点一下，这句话会放进下方输入框，可在发送前修改",
+    "missingDefinition": "还没有人写下“{title}”是什么意思。请帮我起草",
+    "missingDomain": "“{title}”还没有归入任何分组。请找出它该放在哪里",
+    "missingRelations": "检查“{title}”是否缺少关联",
+    "mapReview": "这张地图上现在哪里最不对劲？",
+    "emptyVault": "这个文件夹还是空的。请先帮我理清这个产品是什么"
+  },
+  "nextStep": {
+    "title": "下一步"
+  },
+  "retry": {
+    "title": "重试"
+  },
+  "uncited": "本轮读取了：",
+  "footerDetail": "本轮交换了 {chars} 个字符，其中大部分是你看不到的指令。",
+  "reground": {
+    "title": "在第 {round} / {cap} 次尝试时停下。让它重新读取此文件夹并再次回答"
+  }
+}

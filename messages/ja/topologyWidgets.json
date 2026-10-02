@@ -1,0 +1,16 @@
+{
+  "controls": {
+    "fitViewTooltip": "マップを全体表示"
+  },
+  "hubRail": {
+    "label": "ハブ",
+    "expandTooltip": "ハブバーを展開",
+    "expandAriaLabel": "ハブバーを展開",
+    "collapseTooltip": "ハブバーを折りたたむ",
+    "collapseAriaLabel": "ハブバーを折りたたむ",
+    "itemTitle": "{name}・つながり{degree}件"
+  },
+  "keyboardWalk": {
+    "deadEnd": "この方向につながる概念はありません"
+  }
+}

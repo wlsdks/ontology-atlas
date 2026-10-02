@@ -1,0 +1,15 @@
+{
+  "prefix": "最終編集",
+  "subjectAgent": "AIエージェント",
+  "subjectHuman": "自分",
+  "conflictMessage": "この文書は別の場所で変更されました。上書きする前に確認してください",
+  "age": {
+    "justNow": "たった今",
+    "minutesAgo": "{count}分前",
+    "hoursAgo": "{count}時間前",
+    "yesterday": "昨日",
+    "daysAgo": "{count}日前",
+    "weeksAgo": "{count}週間前",
+    "monthsAgo": "{count}か月前"
+  }
+}

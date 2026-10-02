@@ -1,0 +1,15 @@
+{
+  "ariaLabel": "メインナビゲーション",
+  "map": "マップ",
+  "architecture": "ハーネス",
+  "docs": "オントロジー",
+  "library": "資料室",
+  "automations": "自動化",
+  "insights": "分析",
+  "projects": "プロジェクト",
+  "agents": "エージェント",
+  "mcp": "MCP",
+  "git": "Git",
+  "getApp": "アプリ入手",
+  "getAppTitle": "デスクトップアプリはフォルダを記憶し、オフラインで開け、履歴とAI接続も扱えます"
+}

@@ -22,7 +22,8 @@ describe('stripLocalePrefix', () => {
   it('defaults to the routing locales', () => {
     expect(stripLocalePrefix('/ko/git')).toBe('/git');
     expect(stripLocalePrefix('/en')).toBe('/');
-    expect(stripLocalePrefix('/ja/git')).toBe('/ja/git');
+    expect(stripLocalePrefix('/ja/git')).toBe('/git');
+    expect(stripLocalePrefix('/fr/git')).toBe('/fr/git');
   });
 
   it('is used by the ladders it feeds', () => {

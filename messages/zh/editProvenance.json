@@ -1,0 +1,15 @@
+{
+  "prefix": "最后编辑",
+  "subjectAgent": "AI 智能体",
+  "subjectHuman": "我",
+  "conflictMessage": "此文档在别处被改动，覆盖前请先检查",
+  "age": {
+    "justNow": "刚刚",
+    "minutesAgo": "{count} 分钟前",
+    "hoursAgo": "{count} 小时前",
+    "yesterday": "昨天",
+    "daysAgo": "{count} 天前",
+    "weeksAgo": "{count} 周前",
+    "monthsAgo": "{count} 个月前"
+  }
+}

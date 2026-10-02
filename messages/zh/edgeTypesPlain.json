@@ -1,0 +1,10 @@
+{
+  "contains": "包含",
+  "belongs_to": "属于",
+  "depends_on": "依赖",
+  "implements": "实现",
+  "uses": "使用",
+  "describes": "依据",
+  "related_to": "相关",
+  "is_a": "是一种"
+}

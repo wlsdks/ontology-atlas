@@ -1,0 +1,26 @@
+{
+  "languageLabel": "言語",
+  "viewModeLabel": "表示モード",
+  "viewModeCaption": "一般：コードの要素をたたみ、やさしい言葉で表示します",
+  "viewModeDev": "開発者",
+  "viewModePlain": "一般",
+  "textSizeLabel": "文字サイズ",
+  "textSizeCaption": "すべての画面で文字が大きくなります。マップ上のボタン、バー、名前の大きさは変わりません",
+  "textSize": {
+    "default": "標準",
+    "large": "大",
+    "larger": "特大"
+  },
+  "conceptIconsLabel": "概念のアイコン",
+  "motionLabel": "動き",
+  "motionReduced": "システムに従う・控えめ",
+  "motionFull": "システムに従う・控えめにしない",
+  "motionCaptionApp": "システム設定 → アクセシビリティ → ディスプレイ → 視差効果を減らす で変更できます",
+  "motionCaptionWeb": "お使いのコンピュータのシステム設定で変更できます",
+  "guidesLabel": "画面ガイド",
+  "guidesCaption": "各画面を初めて開いたときに自動で開きます。オフにすると、「もう一度表示」かマップ右上のガイドアイコンからだけ開きます",
+  "guidesAutoLabel": "ガイドを自動で表示",
+  "guidesOn": "オン",
+  "guidesOff": "オフ",
+  "guidesReplay": "もう一度表示"
+}

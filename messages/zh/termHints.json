@@ -1,0 +1,19 @@
+{
+  "trigger": "关于 {term}",
+  "mcp": {
+    "expansion": "MCP (Model Context Protocol)",
+    "explanation": "让 AI 智能体以统一方式调用外部工具、读取外部数据的开放协议。"
+  },
+  "acp": {
+    "expansion": "ACP (Agent Client Protocol)",
+    "explanation": "Atlas 这类应用与编码智能体通信、并在每次写入前先征求你同意的标准方式。"
+  },
+  "apiKey": {
+    "expansion": "API key (Application Programming Interface key)",
+    "explanation": "调用服务时用来验证身份的一串字符，请勿泄露给他人。"
+  },
+  "cli": {
+    "expansion": "CLI (Command-Line Interface)",
+    "explanation": "在终端里输入命令来操作的方式。"
+  }
+}
