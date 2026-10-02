@@ -74,6 +74,6 @@
   "platformLimit": "这个安全的本地读取功能目前只在 macOS 应用中运行。在此平台上依据保持未测量，图谱和文档阅读仍可使用。",
   "copyFailed": "无法更新剪贴板，依据未改变。",
   "localFolderRequired": "请打开本地本体文件夹，以检查其连接的代码。示例没有本地源码绑定。",
-  "draftLead": "{subject}\n{question} 请说明当前的依据和未知项，不要更改文件。",
+  "draftLead": "{subject}\n{question}请说明当前的依据和未知项，不要更改文件。",
   "draftContext": "调查 · {subject}"
 }

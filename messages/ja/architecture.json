@@ -8,7 +8,7 @@
   "evidenceClose": "アーキテクチャの根拠を閉じる",
   "evidenceOverlayTitle": "根拠のたどり",
   "contractLabel": "人が決めた契約",
-  "contractReviewed": "レビュー済みの構造",
+  "contractReviewed": "承認構造",
   "contractTrackLabel": "人がレビュー済み",
   "contractBody": "{pattern} · ロール{roles}個 · 根拠ファイル{evidence}件",
   "observationLabel": "ソースの観測",

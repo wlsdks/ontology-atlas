@@ -27,8 +27,8 @@
   },
   "reach": {
     "leadIn": "この概念から、",
-    "stepUnit": "ステップ",
-    "afterSteps": "以内に届く概念",
+    "stepUnit": "ステップ以内で",
+    "afterSteps": "届く概念",
     "stepsAria": "この概念からのステップ数",
     "ofTotal": "{count} / {total}",
     "mostlyNone": "ほかの概念には届きません。",

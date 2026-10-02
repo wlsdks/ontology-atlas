@@ -339,8 +339,8 @@
   "significance": {
     "whatWithDomain": "{domain}領域の{kind}",
     "what": "{kind}",
-    "importance": "{level, select, core {中核のハブ：{count}か所が依存しています} leaf {まだつながりの少ない末端の概念} other {数か所が依存している支える概念}}",
-    "dependsOn": "{count, plural, =0 {直接頼っているものはありません} other {{count}件に依存：{names}}}",
+    "importance": "{level, select, core {中核のハブ：{count}か所が依存しています} leaf {まだつながりの少ない末端の概念} other {数か所が依存している補助的な概念}}",
+    "dependsOn": "{count, plural, =0 {直接依存しているものはありません} other {{count}件に依存：{names}}}",
     "impact": "{count, plural, =0 {強い依存をたどっても、変更が及ぶ先はありません} other {依存をたどると、変更は最大{count}か所に波及する可能性があります}}"
   },
   "index": {

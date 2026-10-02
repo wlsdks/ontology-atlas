@@ -60,7 +60,7 @@
   "mobileTagline": "概念地图。",
   "workspace": {
     "growthThisWeek": " · 本周新增 {count} 个项目",
-    "subtitle": "<b>{concepts}</b> 个概念 · <b>{relations}</b> 条关系 {growth}",
+    "subtitle": "<b>{concepts}</b> 个概念 · <b>{relations}</b> 条关系{growth}",
     "eyebrow": "{concepts} 个概念",
     "expandHint": "展开工作区地图"
   },
@@ -337,8 +337,8 @@
     "retry": "重试"
   },
   "significance": {
-    "whatWithDomain": "{domain} 领域中的 {kind}",
-    "what": "一个 {kind}",
+    "whatWithDomain": "{domain} 领域中的{kind}",
+    "what": "一个{kind}",
     "importance": "{level, select, core {核心枢纽：有 {count} 处依赖它} leaf {末端概念，目前关联很少} other {辅助概念，有几处依赖它}}",
     "dependsOn": "{count, plural, =0 {不直接依赖任何概念} other {依赖 {count} 个：{names}}}",
     "impact": "{count, plural, =0 {沿强依赖追溯，改动不会影响任何地方} other {沿依赖追溯，改动最多可波及 {count} 处}}"
