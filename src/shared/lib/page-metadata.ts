@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/shared/config';
+import { LOCALE_META, type LocaleMeta } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
 
 /**
@@ -51,22 +52,27 @@ export interface PageMetadataInput {
  */
 const SITE_OG_IMAGE = { url: '/og-image.png', width: 1200, height: 630, alt: 'Ontology Atlas' };
 
-/** `og:locale` wants a full territory tag; bare `en`/`ko` is what the router uses. */
-const OG_LOCALE: Record<string, string> = { en: 'en_US', ko: 'ko_KR' };
+export interface PageMetadataLocales {
+  locales: readonly string[];
+  defaultLocale: string;
+  meta: Readonly<Record<string, LocaleMeta>>;
+}
+
+const ROUTED_LOCALES: PageMetadataLocales = {
+  locales: routing.locales,
+  defaultLocale: routing.defaultLocale,
+  meta: LOCALE_META,
+};
 
 function absolute(locale: string, path: string): string {
   const tail = path ? `/${path}` : '';
   return `${SITE_URL}/${locale}${tail}`;
 }
 
-export function buildPageMetadata({
-  locale,
-  path,
-  title,
-  description,
-  ogImage,
-  hasFileConventionImage,
-}: PageMetadataInput): Metadata {
+export function buildPageMetadata(
+  { locale, path, title, description, ogImage, hasFileConventionImage }: PageMetadataInput,
+  registry: PageMetadataLocales = ROUTED_LOCALES,
+): Metadata {
   const canonical = absolute(locale, path);
 
   /**
@@ -74,8 +80,10 @@ export function buildPageMetadata({
    * search engine decides for itself what to serve a visitor matching no locale (a
    * French-language browser, say) — and that choice would not be ours.
    */
-  const languages: Record<string, string> = { 'x-default': absolute(routing.defaultLocale, path) };
-  for (const l of routing.locales) languages[l] = absolute(l, path);
+  const languages: Record<string, string> = {
+    'x-default': absolute(registry.defaultLocale, path),
+  };
+  for (const l of registry.locales) languages[registry.meta[l]?.hreflang ?? l] = absolute(l, path);
 
   return {
     title,
@@ -87,7 +95,7 @@ export function buildPageMetadata({
       url: canonical,
       title,
       description,
-      locale: OG_LOCALE[locale] ?? locale,
+      locale: registry.meta[locale]?.ogLocale ?? locale,
       ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : SITE_OG_IMAGE] }),
     },
     twitter: {
