@@ -7,6 +7,7 @@ const MAX_STDERR_BYTES: usize = 64 * 1024;
 pub(super) enum CaptureError {
     Request(io::Error),
     Response(io::Error),
+    Cancelled,
 }
 struct ChildGuard(std::process::Child);
 impl Drop for ChildGuard {
@@ -64,6 +65,83 @@ pub(super) fn capture(mut command: Command, input: &[u8]) -> Result<Output, Capt
         stderr: stderr.map_err(CaptureError::Response)?,
     })
 }
+async fn read_async_pipe(
+    reader: impl tokio::io::AsyncRead + Unpin,
+    limit: usize,
+    stream: &str,
+) -> Result<Vec<u8>, CaptureError> {
+    use tokio::io::AsyncReadExt;
+    let mut bytes = Vec::new();
+    reader
+        .take(limit as u64 + 1)
+        .read_to_end(&mut bytes)
+        .await
+        .map_err(CaptureError::Response)?;
+    if bytes.len() > limit {
+        return Err(CaptureError::Response(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{stream}_limit_bytes={limit}"),
+        )));
+    }
+    Ok(bytes)
+}
+
+pub(super) async fn capture_cancelled(
+    command: Command,
+    input: &[u8],
+    cancellation: &mut tokio::sync::oneshot::Receiver<()>,
+) -> Result<Output, CaptureError> {
+    use tokio::io::AsyncWriteExt;
+    if !matches!(
+        cancellation.try_recv(),
+        Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+    ) {
+        return Err(CaptureError::Cancelled);
+    }
+    let mut child = tokio::process::Command::from(command)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()
+        .map_err(CaptureError::Request)?;
+    let mut stdin = child.stdin.take().expect("piped stdin");
+    let stdout = child.stdout.take().expect("piped stdout");
+    let stderr = child.stderr.take().expect("piped stderr");
+    let result = {
+        let capture = async {
+            let (_, stdout, stderr, status) = futures_util::future::try_join4(
+                async {
+                    stdin
+                        .write_all(input)
+                        .await
+                        .map_err(CaptureError::Request)?;
+                    drop(stdin);
+                    Ok(())
+                },
+                read_async_pipe(stdout, MAX_STDOUT_BYTES, "stdout"),
+                read_async_pipe(stderr, MAX_STDERR_BYTES, "stderr"),
+                async { child.wait().await.map_err(CaptureError::Response) },
+            )
+            .await?;
+            Ok(Output {
+                status,
+                stdout,
+                stderr,
+            })
+        };
+        match futures_util::future::select(cancellation, std::pin::pin!(capture)).await {
+            futures_util::future::Either::Left(_) => Err(CaptureError::Cancelled),
+            futures_util::future::Either::Right((result, _)) => result,
+        }
+    };
+    if result.is_err() {
+        let _ = child.kill().await;
+        let _ = child.wait().await;
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,3 +223,6 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod cancellation_tests;

@@ -42,6 +42,7 @@ describe("countVaultContents", () => {
     const docs = [
       { slug: "project", frontmatter: { kind: "project" } },
       { slug: "domains/works", frontmatter: { kind: "domain" } },
+      { slug: "history/retired", frontmatter: { kind: "document" } },
       // Not concepts: a wiki page, an untyped document, the vault README, and a blank kind.
       { slug: "wiki/notes", frontmatter: { kind: "wiki-page" } },
       { slug: "loose", frontmatter: {} },
@@ -49,8 +50,8 @@ describe("countVaultContents", () => {
       { slug: "blank", frontmatter: { kind: "   " } },
     ];
 
-    expect(countVaultContents(docs).conceptCount).toBe(2);
-    // The parity that matters: one predicate, so a row cannot say "2 concepts" while the
+    expect(countVaultContents(docs).conceptCount).toBe(3);
+    // The parity that matters: one predicate, so a row cannot say "3 concepts" while the
     // rail says this folder has no map.
     expect(describeVaultShape(docs).map).toBe(true);
   });

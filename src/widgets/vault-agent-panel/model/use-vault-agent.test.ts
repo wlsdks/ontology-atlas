@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 const runTurn = vi.hoisted(() => vi.fn());
 const buildProposal = vi.hoisted(() => vi.fn());
@@ -202,3 +202,28 @@ describe('useVaultAgent — send when the turn rejects', () => {
     expect(result.current.proposal).toBeNull();
   });
 });
+
+for (const retirement of ['stop', 'unmount', 'folder'] as const) {
+  it(`passes the turn signal into transport and retires on ${retirement}`, async () => {
+    const pending = Promise.withResolvers<TurnResult>();
+    let started!: AgentTurn;
+    runTurn.mockImplementation(async (deps: Parameters<typeof import('@/features/vault-agent').runTurn>[0], turn: AgentTurn) => {
+      started = turn;
+      await deps.send({ body: '{}', model: 'fixture', question: 'question', scope: { nodes: [], promptChars: 0, vaultChars: 0, tools: [] } });
+      return pending.promise;
+    });
+    const hook = renderHook((input) => useVaultAgent(input), { initialProps: args() });
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.send('question'); });
+    await waitFor(() => expect(llmChat).toHaveBeenCalled());
+    const signal = vi.mocked(llmChat).mock.calls.at(-1)![0].signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    act(() => {
+      if (retirement === 'stop') hook.result.current.stop();
+      else if (retirement === 'unmount') hook.unmount();
+      else hook.rerender({ ...args(), vaultPath: '/other' });
+    });
+    expect(signal?.aborted).toBe(true);
+    await act(async () => { pending.resolve({ turn: { ...started, status: 'aborted' }, readSlugs: [], writeIntents: [] }); await sending; });
+  });
+}

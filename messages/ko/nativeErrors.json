@@ -68,5 +68,6 @@
   "remote-url-unrecognized": "저장소 주소처럼 보이지 않아요. git@github.com:you/repo.git 같은 모양이면 돼요.",
   "connector-secret-ref-invalid": "이 연결 도구의 참조 형식을 이 컴퓨터에 저장할 수 없어요. 연결 도구를 지우고 다시 추가하십시오.",
   "connector-secret-missing": "이 연결 도구에 필요한 토큰이 이 컴퓨터의 키체인에 없어요. 연결 도구에서 다시 입력하시거나 연결을 끄십시오.",
-  "acp-line-rewrite-failed": "에이전트에게 보낼 메시지를 준비하지 못했어요. 대화를 다시 여십시오."
+  "acp-line-rewrite-failed": "에이전트에게 보낼 메시지를 준비하지 못했어요. 대화를 다시 여십시오.",
+  "cancelled": "요청이 중지됐어요."
 }

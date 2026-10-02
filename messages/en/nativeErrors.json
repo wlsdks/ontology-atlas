@@ -68,5 +68,6 @@
   "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git.",
   "connector-secret-ref-invalid": "That connector reference is not a shape this machine can store. Remove the connector and add it again.",
   "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
-  "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
+  "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again.",
+  "cancelled": "The request was stopped."
 }
