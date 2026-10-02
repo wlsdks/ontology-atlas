@@ -1,6 +1,8 @@
 import type { CosmosLayout } from "../layout/cosmos-layout";
-import type { CosmosInks, CosmosLabel, CosmosRoom, LabelCandidate } from "../cosmos-types";
+import type { CosmosInks, CosmosLabel, CosmosLabelKind, CosmosRoom, LabelCandidate } from "../cosmos-types";
 import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
+
+const TALL_LABELS: ReadonlySet<CosmosLabelKind> = new Set(["galaxy", "project"]);
 
 export function measureLabel(ctx: CanvasRenderingContext2D, cache: CosmosBitmapCache, font: string, text: string): number {
   const key = `${font}|${text}`;
@@ -42,7 +44,7 @@ export function placeCosmosLabels(
     const tw = measureLabel(ctx, cache, c.font, text);
     const metaW = c.meta ? measureLabel(ctx, cache, metaFont, c.meta) + 6 : 0;
     const w = tw + metaW + 10;
-    const h = c.kind === "galaxy" || c.kind === "project" ? 20 : 16;
+    const h = TALL_LABELS.has(c.kind) ? 20 : 16;
     const x = c.align === "center" ? c.x - w / 2 : c.x;
     const y = c.y - h / 2;
     if (x < room.x - 4 || x + w > room.x + room.width + 4 || y < room.y - 4 || y + h > room.y + room.height + 24) continue;

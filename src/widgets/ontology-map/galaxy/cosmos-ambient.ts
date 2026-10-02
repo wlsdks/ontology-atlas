@@ -2,7 +2,7 @@ import type { CosmosLayout } from "./layout/cosmos-layout";
 import { hash01 } from "./layout/cosmos-morphology";
 import type { GalaxyPose } from "./cosmos-types";
 
-export type CosmosAmbient = "off" | "haze" | "sway";
+type CosmosAmbient = "off" | "haze" | "sway";
 
 const ACTIVE_MS = 12_000;
 const SWAY_RIM_PX = 6;

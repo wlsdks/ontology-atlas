@@ -3,6 +3,8 @@ import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view";
+import { predictCosmosMarks } from "../galaxy/cosmos-marks";
+import type { CosmosPlacementRecord } from "../galaxy/layout/cosmos-layout";
 import { computeGalaxyLayout } from "../model/galaxy-layout";
 import type { HexPlacementRecord } from "../model/hex-board";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
@@ -192,6 +194,7 @@ export interface MapLayoutTargetInput {
   edges: readonly OntologyMapEdge[];
   territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null }) => { text: string };
   hexPlacement: HexPlacementRecord | null;
+  cosmosPlacement?: CosmosPlacementRecord | null;
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
@@ -216,6 +219,7 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
     });
     return target ? { ...target, ground: tokens.canvasBgNear } : null;
   }
-  const marks = view === "flat" || view === "galaxy" ? predictOntologyMapMarks({ ...input, host, tokens, galaxy: view === "galaxy" }) : null;
+  if (view === "galaxy") return predictCosmosMarks({ nodes, edges, placement: input.cosmosPlacement ?? null, host });
+  const marks = view === "flat" ? predictOntologyMapMarks({ ...input, host, tokens, galaxy: false }) : null;
   return marks ? { marks, ground: tokens.canvasBgNear } : null;
 }

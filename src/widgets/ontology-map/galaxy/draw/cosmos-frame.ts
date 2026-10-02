@@ -18,7 +18,7 @@ import type {
 import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
 import { labelOf, placeCosmosLabels } from "./cosmos-labels";
 import { buildGalaxyGlow, buildStarImpostor, glowSizeFor, impostorSizeFor, IMPOSTOR_EXTENT, starSprite } from "./cosmos-paint";
-import { drawCosmosRelations, galaxyLensAlpha } from "./cosmos-relations";
+import { drawCosmosRelations, galaxyLensAlpha, lensAlpha } from "./cosmos-relations";
 import { drawCosmosWeb } from "./cosmos-web";
 
 interface CosmosFrameInput {
@@ -131,7 +131,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       const sprite = starSprite(halo.starKind[i] === STAR_KIND_CAPABILITY ? inks.capability : inks.element);
       if (!sprite) continue;
       const r = Math.min(7, Math.max(1.2, MIN_STAR_SPACING * camera.scale * 0.45));
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 0.7 * lensAlpha(input.lens, halo.starIds[i]!, inks);
       ctx.drawImage(sprite, p.x - r, p.y - r, r * 2, r * 2);
     }
     ctx.globalAlpha = 1;

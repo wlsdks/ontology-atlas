@@ -1,0 +1,4 @@
+{
+  "list": "Domains on the map, each with its capabilities",
+  "galaxyRow": "{name}, {count, plural, one {# concept} other {# concepts}}"
+}

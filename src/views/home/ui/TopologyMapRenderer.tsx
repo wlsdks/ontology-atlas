@@ -28,6 +28,7 @@ import {
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
 import { useCallback, useRef, useState } from "react";
+import { readCosmosPlacement } from "../model/cosmos-placement-store";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
@@ -147,7 +148,6 @@ export function TopologyMapRenderer({
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
-  const [cosmos] = useState(() => typeof window === "undefined" || new URLSearchParams(window.location.search).get("cosmos") !== "0");
   const layoutView: MapLayoutView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : galaxy ? "galaxy" : "flat";
   const expandedParents =
     pathExpandedParents ?? (expandAllActive ? allExpandedParentIds : null) ?? spotlightExpandedParents ?? expandedParentSet;
@@ -165,7 +165,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), cosmosPlacement: readCosmosPlacement(vaultIdentity), expandStructure: expand.structure, overviewFit, expandedParents },
         host,
       ),
     frameRef,
@@ -237,7 +237,7 @@ export function TopologyMapRenderer({
               navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
-          ) : layoutView === "galaxy" && cosmos ? (
+          ) : morph.surface === "galaxy" ? (
             <TopologyCosmosSurface
               nodes={nodes}
               edges={edges}
@@ -247,6 +247,23 @@ export function TopologyMapRenderer({
               onPaneClick={clear}
               onDrawnCountChange={onDrawnCountChange}
               reducedMotion={reducedMotion}
+              arrivedByMorph={morph.arrivedByMorph}
+              navigationSpeed={navigationSpeed}
+              relayoutToken={topologyRelayoutToken}
+              fitToken={combinedFitToken}
+              lensFitToken={spotlightFitToken + constellationFitToken}
+              spotlightIds={mapLensIds}
+              mapLensKind={mapLensKind}
+              pathEdgeIds={pathLensEdgeIds}
+              visitedTrail={footprintVisitedIds}
+              trailLensActiveRef={footprintLensActiveRef}
+              canvasLabel={t('canvas.ariaLabel')}
+              walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
+              onVisibleCountChange={setTopologyVisibleCount}
+              onGraphStatsChange={handleTopologyGraphStatsChange}
+              onZoomTierChange={setMapZoomTier}
+              onContextMenuNode={handleContextMenuNode}
+              onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
             />
           ) : (
           <OntologyMap

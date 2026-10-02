@@ -11,7 +11,7 @@ export interface CosmosLink {
   weight: number;
 }
 
-export interface SettleTuning {
+interface SettleTuning {
   fill: number;
   gravity: number;
   contact: number;

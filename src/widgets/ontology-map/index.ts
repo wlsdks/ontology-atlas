@@ -2,7 +2,7 @@ export { OntologyMap } from './ui/OntologyMap';
 export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
 export { OntologyHexBoardMap } from './ui/OntologyHexBoardMap';
 export { OntologyCosmosMap } from './galaxy/OntologyCosmosMap';
-export type { CosmosAmbient } from './galaxy/cosmos-ambient';
+export type { CosmosMirrorLabels } from './galaxy/CosmosMirror';
 export type { CosmosPlacementRecord } from './galaxy/layout/cosmos-layout';
 export { MapLayoutMorphOverlay, installMapLayoutMorphProbe } from './morph/MapLayoutMorphOverlay';
 export type { MapLayoutMorphJob } from './morph/MapLayoutMorphOverlay';
