@@ -48,5 +48,6 @@ export function previewDocumentPatch({ rawBefore, frontmatterPatch, body, minted
   }
   if (mintedUid !== undefined) frontmatter.uid = mintedUid;
   const nextBody = body === undefined ? parsed.body : body;
-  return { status: 'available', frontmatter, body: nextBody, markdown: buildMarkdown({ frontmatter, body: nextBody }) };
+  const repairedKeys = Object.keys(frontmatterPatch ?? {}).filter((key) => frontmatterPatch[key] !== undefined);
+  return { status: 'available', frontmatter, body: nextBody, markdown: buildMarkdown({ frontmatter, body: nextBody, source: rawBefore, repairedKeys }) };
 }

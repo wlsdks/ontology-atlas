@@ -160,7 +160,7 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
 }
 
 /**
- * Reads an existing doc and returns { filePath, frontmatter, body, revision };
+ * Reads an existing doc and returns its raw text, parsed data and revision;
  * throws when the file is missing. Used to read current state before a patch.
  */
 export function readDocFrontmatter(rootPath, slug) {
@@ -175,7 +175,7 @@ export function readDocFrontmatter(rootPath, slug) {
     throw new Error(`Conflict: document changed or was deleted while reading: ${filePath}. Re-read and retry.`);
   }
   const { frontmatter, body } = parseFrontmatter(raw);
-  return { filePath, frontmatter, body, revision };
+  return { filePath, frontmatter, body, revision, raw };
 }
 
 /**
@@ -212,7 +212,8 @@ export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision =
   }
   const next = { ...frontmatter, ...patch };
   assertNodeIdentity(rootPath, slug, next);
-  const md = buildMarkdown({ frontmatter: next, body });
+  const repairedKeys = Object.keys(patch).filter((key) => patch[key] !== undefined);
+  const md = buildMarkdown({ frontmatter: next, body, source: current.raw, repairedKeys });
   writeFileAtomically(filePath, md, { expectedRevision });
   return filePath;
 }

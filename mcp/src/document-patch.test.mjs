@@ -5,9 +5,67 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { previewDocumentPatch } from './document-patch.mjs';
-import { updateDoc } from './vault.mjs';
+import { loadVaultDocs, patchFrontmatter, updateDoc } from './vault.mjs';
+import { compileOntology } from './ontology-compiler.mjs';
+import { queryCompiledOntology } from './ontology-engine.mjs';
+import { validateVaultDocument } from './validate.mjs';
 
 const UID = '00000000-0000-4000-8000-000000000001';
+
+test('file edits retain quoted relation rationale through compilation and expose malformed declarations to health', () => {
+  const root = mkdtempSync(join(tmpdir(), 'atlas-quoted-rationale-'));
+  const path = join(root, 'node.md');
+  try {
+    const before = `---\nuid: ${UID}\nkind: capability\ntitle: Source\nrelates: [target, unknown]\nrelation_notes: {"target": "Recorded reason"}\n---\n\nBody`;
+    writeFileSync(path, before);
+    writeFileSync(join(root, 'target.md'), '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: capability\ntitle: Target\n---\n');
+    for (let round = 0; round < 3; round += 1) {
+      const artifact = compileOntology(loadVaultDocs(root), { includeIndexes: true });
+      assert.equal(artifact.edges.find((edge) => edge.ref === 'target').rationale, 'Recorded reason');
+      assert.equal(artifact.edges.find((edge) => edge.ref === 'unknown').rationale, undefined);
+      updateDoc(root, 'node', { frontmatter: { title: `Source ${round}` } });
+    }
+    const malformed = before.replace('relation_notes:', 'labels: { good: yes, broken }\nrelation_notes:');
+    writeFileSync(path, malformed);
+    const validation = validateVaultDocument(malformed);
+    assert.ok(validation.issues.some((issue) => issue.code === 'malformed-frontmatter-line'));
+    const artifact = compileOntology(loadVaultDocs(root), { includeIndexes: true });
+    assert.ok(artifact.issues.some((issue) => issue.code === 'malformed-frontmatter-line'));
+    const health = queryCompiledOntology(artifact, { operation: 'health' });
+    assert.ok(health.checks.some((check) => check.id === 'compile_issues' && check.count > 0));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+for (const [name, write] of [
+  ['update', (root, patch) => updateDoc(root, 'node', { frontmatter: patch })],
+  ['patch', (root, patch) => patchFrontmatter(root, 'node', patch)],
+]) {
+  test(`${name} refuses unrelated lossy rewrites and allows explicit whole-field repairs`, () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-malformed-patch-'));
+    const path = join(root, 'node.md');
+    try {
+      for (const [declaration, repair] of [
+        ['dependencies: wrong', { dependencies: [] }],
+        ['labels: { good: yes, broken }', { labels: { good: 'yes' } }],
+        ['labels:\n  good: yes\n  "bad\\q": lost', { labels: null }],
+      ]) {
+        const before = `---\nuid: ${UID}\nkind: capability\ntitle: Before\n${declaration}\n---\n\nBody`;
+        writeFileSync(path, before);
+        assert.throws(() => write(root, { title: 'Changed' }), /malformed frontmatter/i);
+        assert.equal(readFileSync(path, 'utf8'), before);
+        write(root, repair);
+        const after = readFileSync(path, 'utf8');
+        assert.match(after, /title: Before/);
+        assert.ok(after.endsWith('Body'));
+        assert.doesNotMatch(after, /broken|lost|dependencies: wrong/);
+      }
+      const ambiguous = `---\nuid: ${UID}\nkind: capability\n"bad\\q": lost\n---\nBody`;
+      writeFileSync(path, ambiguous);
+      assert.throws(() => write(root, { 'bad\\q': null }), /malformed frontmatter/i);
+      assert.equal(readFileSync(path, 'utf8'), ambiguous);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+}
 const raw = [
   '---',
   '# owner comment is normalized by the existing writer',

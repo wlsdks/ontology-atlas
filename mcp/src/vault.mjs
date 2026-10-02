@@ -1186,9 +1186,10 @@ function commitDoc(
     expectedMtime,
     beforeCommit,
     serializedMarkdown,
+    repairedKeys = [],
   } = {},
 ) {
-  writeFileAtomically(filePath, serializedMarkdown ?? buildMarkdown({ frontmatter, body }), {
+  writeFileAtomically(filePath, serializedMarkdown ?? buildMarkdown({ frontmatter, body, source: expectedRaw, repairedKeys }), {
     expectedRaw,
     expectedAbsent: created,
     conflictSlug: created ? undefined : slug,
@@ -1359,6 +1360,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   const mintedUid = fillMissingUid(frontmatter, next);
   assertNodeIdentity(rootPath, slug, next);
   commitDoc(rootPath, slug, filePath, next, body, {
+    repairedKeys: Object.keys(patch).filter((key) => patch[key] !== undefined),
     pathWritten: Object.hasOwn(patch, 'path'),
     previousFrontmatter: frontmatter,
     expectedRaw: doc.raw,
@@ -2263,7 +2265,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     plan.push({
       op: 'write',
       path: filePath,
-      content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
+      content: buildMarkdown({ frontmatter: nextFm, body: nextBody, source: doc.raw }),
       // The snapshot may be minutes old; a person's edit since then must not be overwritten.
       expectedMtime: doc.mtime,
       expectedRaw: doc.raw,

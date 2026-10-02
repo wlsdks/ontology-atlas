@@ -132,10 +132,8 @@ const IMPORT_RE = new RegExp(
 const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
 
 /**
- * Walks a code repository and infers file-level import edges: one bounded walk
- * (`maxFiles`), a regex pass per file and a few fs probes per import; module
- * edges are aggregated in Maps. IMPORT_RE stops each clause at the next import
- * or export keyword, so one file costs O(bytes).
+ * Bounded repository walk (`maxFiles`), O(bytes) import parsing and fs probes
+ * per import. IMPORT_RE stops at import/export keywords; Maps aggregate edges.
  *
  * @param {string} rootPath — repo root (must exist)
  * @param {{ sourceFolders?: string[], ignore?: string[], maxFiles?: number }} options
@@ -214,6 +212,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
   );
 
   const edges = [];
+  const pythonEdgeKeys = new Set();
   const externalImports = [];
   const unresolved = [];
   const pathAliases = readTsconfigPathAliases(rootPath);
@@ -268,6 +267,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
           unresolved,
           ignore,
           sourceFolders,
+          pythonEdgeKeys,
         );
       }
       continue;
@@ -2068,6 +2068,7 @@ function classifyPythonImport(
   unresolved,
   ignore,
   sourceFolders,
+  pythonEdgeKeys,
 ) {
   const moduleSpec = resolvePythonRelativeModule(
     pythonImport.module,
@@ -2094,22 +2095,19 @@ function classifyPythonImport(
       ? [baseTarget]
       : [];
   if (targets.length > 0) {
+    const from = relative(rootPath, file);
     for (const target of targets) {
       const targetPath = relative(rootPath, target);
       if (isIgnoredPath(targetPath, ignore)) continue;
-      if (
-        !edges.some(
-          (edge) =>
-            edge.from === relative(rootPath, file) &&
-            edge.to === targetPath &&
-            edge.kind === 'static',
-        )
-      ) {
+      // Hash membership keeps Python edge deduplication O(E) across the scan.
+      const key = `${from}\0${targetPath}`;
+      if (!pythonEdgeKeys.has(key)) {
+        pythonEdgeKeys.add(key);
         edges.push({
-          from: relative(rootPath, file),
+          from,
           to: targetPath,
           kind: 'static',
-          sourceRole: sourceRoleOf(relative(rootPath, file)),
+          sourceRole: sourceRoleOf(from),
           importUsage: pythonImport.importUsage ?? 'unknown',
         });
       }
