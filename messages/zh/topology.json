@@ -397,7 +397,7 @@
     "alreadyTyped": "已在地图上的 {count} 篇文档保持原样。",
     "runtimeSkills": "智能体运行时管理的 {count} 个技能文件不会被改动：它们由对应程序维护。",
     "agentPointers": "{count} 个智能体指令文件（AGENTS.md、CLAUDE.md）不会被改动：它们告诉智能体如何使用此文件夹，不属于概念。",
-    "libraryFiles": "{count} 个资料库文件（sources/、wiki/）不会被改动：原始来源保持收到时的样子，wiki 页面则是 Atlas 已经写好的内容。",
+    "libraryFiles": "{count} 个资料库文件（sources/、wiki/）不会被改动：原始来源保持收到时的样子，Wiki 页面则是 Atlas 已经写好的内容。",
     "confirm": "生成地图",
     "cancel": "关闭",
     "errorPrefix": "无法保存：",

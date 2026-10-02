@@ -289,7 +289,7 @@
         "unverifiableHeader": "已确认，但无法检查 · {count}",
         "unverifiablePlain": "无法读取此文件，不知道它是否有改动",
         "reviewedOn": "{date} 检查",
-        "reviewedOnTitle": "有人读过这篇文档并认定含义正确的那一天"
+        "reviewedOnTitle": "有人读过这篇文档并认定语义正确的那一天"
       },
       "libraryLink": "汇集的文档在资料库里"
     },

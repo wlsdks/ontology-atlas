@@ -150,7 +150,7 @@
       "scopeTitle": "允许的操作",
       "mayRead": "通过 atlas-vault 读取本体和当前源码依据。",
       "mayPropose": "用准确的 slug、路径和不确定之处描述拟议的更改。",
-      "mayNeverWrite": "绝不写入概念、关系、文件或含义回执。"
+      "mayNeverWrite": "绝不写入概念、关系、文件或语义回执。"
     }
   },
   "documents": {

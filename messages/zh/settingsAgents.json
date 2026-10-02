@@ -8,7 +8,7 @@
   "modelsLabel": "模型 · API key",
   "modelsCaptionKeys": "{count, plural, =0 {钥匙串中没有密钥} other {钥匙串中有 # 个密钥}}",
   "modelsCaptionWeb": "在桌面应用中",
-  "modelsKeywords": "密钥 钥匙串 模型 提供方 api key",
+  "modelsKeywords": "密钥 钥匙串 模型 服务商 api key",
   "mcpLabel": "MCP",
   "mcpCaption": "文件夹的 MCP 服务器及其连接器",
   "mcpKeywords": "服务器 连接器 工具 mcp"

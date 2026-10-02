@@ -6,7 +6,7 @@
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
-    "explanation": "编辑器或应用与编程智能体之间通信所使用的协议。"
+    "explanation": "Atlas 这类应用与编码智能体通信、并在每次写入前先征求你同意的标准方式。"
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",

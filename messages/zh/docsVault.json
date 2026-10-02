@@ -236,8 +236,8 @@
     "newDoc": "新建文档"
   },
   "vaultReveal": {
-    "errorFallback": "无法在 Finder 中打开该文件夹。",
-    "error": "在 Finder 中打开失败：{message}"
+    "errorFallback": "无法在访达中打开该文件夹。",
+    "error": "在访达中打开失败：{message}"
   },
   "agentSetup": {
     "ariaLabel": "MCP 连接",

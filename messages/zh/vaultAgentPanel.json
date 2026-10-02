@@ -42,8 +42,8 @@
     "note": "下面的文字每次都会发送。你不能编辑它，但随时可以阅读。"
   },
   "proposal": {
-    "title": "提案 · 要修改 {count} 个文件",
-    "readOnlyTitle": "提案（此文件夹为只读）",
+    "title": "建议的更改 · 要修改 {count} 个文件",
+    "readOnlyTitle": "建议的更改（此文件夹为只读）",
     "volume": "{files} 个文件 · +{added} / −{removed} 行",
     "apply": "应用所选的 {count} 个",
     "cancel": "取消",

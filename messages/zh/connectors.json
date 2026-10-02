@@ -130,7 +130,7 @@
   "linkRefused": "该链接被拒绝（{reason}），未添加任何内容。",
   "catalogueSummary": {
     "notion": "读取和写入你 Notion 账号中的页面与数据库。",
-    "github": "读取和写入 GitHub 上的问题、拉取请求、代码和 Wiki。",
+    "github": "读取和写入 GitHub 上的议题、拉取请求、代码和 Wiki。",
     "playwright": "打开网页，并通过无障碍快照进行导航、点击、输入和读取。",
     "context7": "提供某个库当前版本对应的文档和代码示例。"
   },

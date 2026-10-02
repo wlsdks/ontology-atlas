@@ -16,7 +16,7 @@
   "carries": {
     "no-folder-content": "不含文件夹内容",
     "what-you-send": "你发送的内容",
-    "provider-owned": "工具与其提供方之间的内容；Atlas 看不到",
+    "provider-owned": "工具与其服务商之间的内容；Atlas 看不到",
     "agent-sends": "智能体发送的内容；Atlas 看不到"
   },
   "destinations": {
@@ -25,12 +25,12 @@
     "python-package-index": "Python 包索引（PyPI）",
     "your-connector-urls": "此文件夹中连接器的地址，或这台电脑上的程序",
     "your-git-remote": "你的 Git 远程仓库",
-    "your-coding-tool-provider": "你的编码工具自己的提供方"
+    "your-coding-tool-provider": "你的编码工具自己的服务商"
   },
   "paths": {
     "update-check": "检查更新",
     "update-download": "下载更新",
-    "model-providers": "模型提供方",
+    "model-providers": "模型服务商",
     "local-runner": "本地运行器",
     "jev": "外部检查",
     "tool-downloads": "编码工具安装",

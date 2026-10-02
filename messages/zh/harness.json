@@ -28,7 +28,7 @@
   "toolsSourceFor": "来源：{tool} 文档（{host}）",
   "toolsUncited": "无来源，待核实",
   "toolsUncitedHint": "哪个工具读取哪个文件，来自该工具的文档，而不是此仓库。这一行没有对应的文档。",
-  "conditionCodingAgent": "仅编程智能体",
+  "conditionCodingAgent": "仅编码智能体",
   "conditionSettingsContext": "仅在设置中接入时",
   "reviewedOn": "来源最后阅读于 {date}",
   "capNone": "无上限",
@@ -245,7 +245,7 @@
   "anatomySilentGuards": "{count} 个配置中指明的脚本不在磁盘上：{scripts}。这既不会拦截也不会报错，防护只是悄悄缺失了。",
   "anatomyChainWeight": "最深的链 {path} 每轮增加 {size}，共 {total}",
   "anatomyChainWeightLabel": "链是如何合并的",
-  "anatomyChainWeightHint": "编程智能体会把从仓库根目录一路向下、直到当前工作文件夹遇到的 AGENTS.md 文件拼接起来，每个目录最多一个，离得更近的文件会覆盖之前的内容。所以一轮的开销并不是每个仓库只有一个值：它等于始终读取的集合，加上该文件夹额外增加的部分。这里的数字是最深的链，也就是开销最大的情形；在更浅的文件夹里工作开销更低。",
+  "anatomyChainWeightHint": "编码智能体会把从仓库根目录一路向下、直到当前工作文件夹遇到的 AGENTS.md 文件拼接起来，每个目录最多一个，离得更近的文件会覆盖之前的内容。所以一轮的开销并不是每个仓库只有一个值：它等于始终读取的集合，加上该文件夹额外增加的部分。这里的数字是最深的链，也就是开销最大的情形；在更浅的文件夹里工作开销更低。",
   "anatomyBrief": "交给智能体",
   "anatomyBriefCopied": "已复制",
   "anatomyBriefAria": "把这份解读复制为文本，交给智能体"

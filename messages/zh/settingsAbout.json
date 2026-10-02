@@ -47,7 +47,7 @@
   "diagnosticsCopy": "复制",
   "diagnosticsCopied": "已复制",
   "diagnosticsCopyFailed": "无法复制",
-  "logsCaption": "在 Finder 中打开应用的日志文件",
+  "logsCaption": "在访达中打开应用的日志文件",
   "logsOpen": "显示",
   "logsFailed": "无法打开日志文件夹。",
   "diagnostic": {
@@ -78,7 +78,7 @@
     "autoOff": "Atlas 不会自行检查。按下“检查更新”时仍会去询问。",
     "autoLast": "上次检查：{when}。",
     "autoNever": "这台电脑上还没检查过。",
-    "autoDismissed": "你对 {version} 选了“稍后”；“检查更新”会再次显示它。",
+    "autoDismissed": "你对 {version} 选了“暂不”；“检查更新”会再次显示它。",
     "checking": "正在检查",
     "resultCurrent": "已是最新版本，无需获取。",
     "resultAvailable": "{version} 已发布。请从右下角的通知获取。",

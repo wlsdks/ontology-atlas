@@ -115,7 +115,7 @@
     "briefAskCopyError": "复制失败：请重试",
     "briefAskOpen": "交给智能体",
     "briefAskAgent": "在此打开智能体，读取地图并把概述重写为四个部分。写入文件前会先询问，结果可在资料库中审阅。",
-    "briefPrompt": "整理 {slug} 的概述。先用 get_concept(\"{slug}\", body: \"full\") 和 query_ontology('{'operation: \"project_map\", project: \"{slug}\"'}') 读取地图，并在领域、能力和元素文档中核对依据。然后把 {doc} 的正文重写为四个 ## 标题：1) 做什么（两三句话），2) 工作如何流转（编号列表，每一步用 [[domains/…]] 维基链接写出涉及的领域），3) 哪里不均衡（要点：能力多于元素的地方，以及相反的情况），4) 接下来看哪里（要点，每条附带指向其依据文档的维基链接）。地图没有支撑的内容一概不写。写入前，把 get_concept 返回的 mtime 作为 expected_mtime 传入，并只用 patch_concept 修改正文。我会在资料库中审阅。",
+    "briefPrompt": "整理 {slug} 的概述。先用 get_concept(\"{slug}\", body: \"full\") 和 query_ontology('{'operation: \"project_map\", project: \"{slug}\"'}') 读取地图，并在领域、能力和元素文档中核对依据。然后把 {doc} 的正文重写为四个 ## 标题：1) 做什么（两三句话），2) 工作如何流转（编号列表，每一步用 [[domains/…]] Wiki 链接写出涉及的领域），3) 哪里不均衡（要点：能力多于元素的地方，以及相反的情况），4) 接下来看哪里（要点，每条附带指向其依据文档的 Wiki 链接）。地图没有支撑的内容一概不写。写入前，把 get_concept 返回的 mtime 作为 expected_mtime 传入，并只用 patch_concept 修改正文。我会在资料库中审阅。",
     "connectedTitle": "相连的项目",
     "connectedRelation": "关联",
     "connectedEmpty": "尚未与其他项目相连。",

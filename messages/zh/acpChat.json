@@ -38,7 +38,7 @@
   "permission": {
     "title": "它想操作此文件夹之外的内容",
     "body": "在你允许之前不会有任何动作。请在下方确认它要写入的位置。",
-    "ontologyWriteTitle": "审阅拟议的更改",
+    "ontologyWriteTitle": "审阅提议的更改",
     "ontologyWriteBody": "允许后会写入此文件夹中的 Markdown 文件，在此之前不会有任何更改。",
     "consentTitle": "此文件夹中有一项更改待确认",
     "consentBody": "在你允许之前不会有任何更改。它想改什么，下方用它自己的话写明。",
@@ -65,18 +65,18 @@
       "scopeRelation": "{from} → {type} → {to}",
       "scopeItem": "本批共 {items} 项，当前第 {selected} 项",
       "batchRemaining": "本批另有 {count} 项不在此摘要中。",
-      "incomplete": "含义审阅不完整 · 已记录的 {total} 个含义单元中显示 {inspected} 个 · 省略 {omitted} 个。完整请求见“详情”。",
+      "incomplete": "语义审阅不完整 · 已记录的 {total} 个语义单元中显示 {inspected} 个 · 省略 {omitted} 个。完整请求见“详情”。",
       "coverageNone": "此请求没有可摘要的值。完整请求见“详情”。",
       "beforeUnavailable": "仅显示此请求中的值，不会编造之前的状态。",
       "beforeUnknown": "之前 · 不可用",
       "before": "之前",
-      "after": "拟议",
+      "after": "提议",
       "absent": "无",
       "comparisonCoverage": "可信对比 · 已检查 {inspected}/{total} · 省略 {omitted}",
-      "acknowledgeFullScope": "将此含义决定应用于所请求的全部 {count} 项。",
-      "acceptMeaning": "接受此拟议含义",
+      "acknowledgeFullScope": "将此语义决定应用于所请求的全部 {count} 项。",
+      "acceptMeaning": "接受这条提议的语义",
       "checkingBasis": "正在检查依据…",
-      "meaningAccepted": "含义已接受",
+      "meaningAccepted": "语义已接受",
       "rootMismatchBody": "当前连接的本体与此任务不符。写入已被阻止，请拒绝并基于当前本体重新创建请求。",
       "rootMismatch": "当前连接的本体：{actual} · 预期：{expected}。请拒绝此请求，并基于预期的本体重新创建。",
       "reason": {
@@ -85,7 +85,7 @@
         "source_basis_unavailable": "任务开始时的源码依据不可用。",
         "target_before_unavailable": "任务开始时没有捕获目标。",
         "current_basis_unavailable": "当前的对比依据不可用。",
-        "intervening_change": "目标在已捕获的提案之外发生了变化。",
+        "intervening_change": "目标在已捕获的建议更改之外发生了变化。",
         "guard_mismatch": "写入保护与已捕获的目标不匹配。",
         "parse_failed": "无法安全读取已捕获的 Markdown。",
         "request_changed": "待处理的请求在审阅期间发生了变化。",
@@ -112,7 +112,7 @@
       },
       "unknown": "未知",
       "authority": {
-        "meaning": "含义",
+        "meaning": "语义",
         "code": "代码验证",
         "merge": "合并",
         "deployment": "部署",
@@ -128,26 +128,26 @@
         "uncomparable": "无法对比"
       },
       "canonicalPreview": "将写入的完整 Markdown",
-      "canonicalPreviewNote": "写入器会重建格式和注释。接受含义之前，请审阅这份完整内容。",
-      "previewUnavailable": "无法获得写入器的确切输出。接受含义需要已有的 UID 和有效的单文档补丁。",
+      "canonicalPreviewNote": "写入器会重建格式和注释。接受语义之前，请审阅这份完整内容。",
+      "previewUnavailable": "无法获得写入器的确切输出。接受语义需要已有的 UID 和有效的单文档补丁。",
       "decisionSave": {
         "unsaved": "此决定尚未保存到历史。",
-        "saved": "含义决定已保存。执行、代码检查、合并和部署仍各自独立。",
-        "failed": "无法保存含义决定。请检查文件夹后重试。"
+        "saved": "语义决定已保存。执行、代码检查、合并和部署仍各自独立。",
+        "failed": "无法保存语义决定。请检查文件夹后重试。"
       },
-      "terminalSaveFailed": "含义决定已保留，但其最新的执行结果未能保存。历史中可能仍显示为未验证。",
-      "noSemanticDelta": "此请求不会改变已解析的含义，无需记录含义决定。",
+      "terminalSaveFailed": "语义决定已保留，但其最新的执行结果未能保存。历史中可能仍显示为未验证。",
+      "noSemanticDelta": "此请求不会改变已解析的语义，无需记录语义决定。",
       "rationale": "为什么接受这种解读？（可选）",
       "bodyInDetails": "正文其余的更改在“详情”中完整显示。",
       "detailsPointer": "“详情”显示发送时的完整请求。",
       "taskRest": "显示其余 {count} 行",
-      "allowEffect": "仅执行这一次写入。不代表接受含义，也不代表已验证代码、合并或部署。",
-      "allowEffectNamed": "仅执行这一次对“{name}”的写入。不代表接受含义，也不代表已验证代码、合并或部署。",
-      "allowEffectBatch": "一次执行本批全部 {count} 项写入。不代表接受含义，也不代表已验证代码、合并或部署。"
+      "allowEffect": "仅执行这一次写入。不代表接受语义，也不代表已验证代码、合并或部署。",
+      "allowEffectNamed": "仅执行这一次对“{name}”的写入。不代表接受语义，也不代表已验证代码、合并或部署。",
+      "allowEffectBatch": "一次执行本批全部 {count} 项写入。不代表接受语义，也不代表已验证代码、合并或部署。"
     },
     "deferredNotice": "此请求在本对话中仍待处理，且不会被保存；关闭或取消对话会拒绝它。",
     "resumeReview": "继续审阅",
-    "correctionDraft": "之前的提案已被拒绝。请为以下任务准备修正后的替代方案：{task}\n目标：{target}\n请求：{requestId}\n需要的修正：[描述所需修正]",
+    "correctionDraft": "之前提议的更改已被拒绝。请为以下任务准备修正后的替代方案：{task}\n目标：{target}\n请求：{requestId}\n需要的修正：[描述所需修正]",
     "intent": {
       "read": "想读取",
       "edit": "想修改",
@@ -167,7 +167,7 @@
     "insideFolderBody": "路径见下方。在你允许之前不会有任何动作。",
     "insideProjectTitle": "它想查看你项目中的代码",
     "insideProjectBody": "这些代码在地图文件夹之外，但在你选择的项目之内。在你允许之前不会有任何动作。",
-    "ontologyWriteUnverifiedBody": "只有点击“仅允许一次”后，此请求才会写入拟议的本体文件。允许前请先核对目标。"
+    "ontologyWriteUnverifiedBody": "只有点击“仅允许一次”后，此请求才会写入提议更改的本体文件。允许前请先核对目标。"
   },
   "close": "关闭对话",
   "composerPlaceholder": "询问此文件夹的内容，或交给它一项任务",
@@ -208,7 +208,7 @@
     "absorb": "把文档整理成候选",
     "connectSource": "连接来源",
     "disconnectSource": "断开来源",
-    "judgeMeaning": "评判已记录的含义"
+    "judgeMeaning": "判定已记录的语义"
   },
   "toolKind": {
     "read": "读取",
@@ -274,8 +274,8 @@
   "trouble": {
     "limit": {
       "title": "此工具已达使用上限",
-      "hint": "问题不在应用：是该工具自己的套餐额度用完了。如果“详情”里写明了重置时间，到时点“重试”；在此之前，请在下方换一个工具继续。",
-      "hintOnlyTool": "问题不在应用：是该工具自己的套餐额度用完了，而这里只设置了这一个工具。如果“详情”里写明了重置时间，到时点“重试”。在“智能体”页面再连接第二个工具，就有地方继续了。"
+      "hint": "问题不在应用：是该工具自己的套餐额度用完了。如果“详情”里写明了重置时间，到时点“再试一次”；在此之前，请在下方换一个工具继续。",
+      "hintOnlyTool": "问题不在应用：是该工具自己的套餐额度用完了，而这里只设置了这一个工具。如果“详情”里写明了重置时间，到时点“再试一次”。在“智能体”页面再连接第二个工具，就有地方继续了。"
     },
     "auth": {
       "title": "旧的应用专用登录挡住了去路",
@@ -311,7 +311,7 @@
     "diedMidTurn": "智能体在回答中途停止了。你看到的就是已收到的全部内容。请在上方开始新对话并重新提问。",
     "modeMoved": "工具把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。",
     "modeMovedServerGate": "工具把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
-    "autoAllowed": "{detail} 已直接写入，未经询问：它符合 wiki 页面规范。",
+    "autoAllowed": "{detail} 已直接写入，未经询问：它符合 Wiki 页面约定。",
     "autoRefused": "已直接拒绝，未经询问 · {detail}。它超出了此对话可以做的范围。",
     "openPage": "打开",
     "askNext": "下次先询问"
@@ -321,7 +321,7 @@
     "followUpHeading": "有用的下一步",
     "connectSource": {
       "label": "先连接代码文件夹",
-      "prompt": "请先连接真正实现此项目的代码文件夹。在连接之前，不要把 vault 里的文件当作源码来分析。"
+      "prompt": "请先连接真正实现此项目的代码文件夹。在连接之前，不要把文件夹里的文件当作源码来分析。"
     },
     "bootstrap": {
       "label": "读取代码并开始构建地图",
@@ -401,8 +401,8 @@
       "gate": "触碰文件夹之外的内容前是否会先询问"
     },
     "next": {
-      "cli": "从此列表打开该工具的安装指南，装好后点击上方的“重新检查”。",
-      "launcher": "启动该工具需要 Node。装好 Node 后，请点击“重新检查”。",
+      "cli": "从此列表打开该工具的安装指南，装好后点击上方的“检查连接”。",
+      "launcher": "启动该工具需要 Node。装好 Node 后，请点击“检查连接”。",
       "login": "请先在终端里登录该工具一次，应用会沿用这个登录。",
       "gate": "对这个工具，应用无法拦在你文件夹之外的操作前面。这需要我们来修复；在此之前，换一个工具更稳妥。"
     },

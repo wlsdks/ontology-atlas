@@ -7,8 +7,8 @@
     "mcpCount": "已开启的连接器"
   },
   "title": "智能体",
-  "lede": "Atlas 会找出这台电脑上已有的编程工具。",
-  "ledeWeb": "桌面应用会找出这台电脑上的编程工具，让你在 Atlas 里直接与它们对话。",
+  "lede": "Atlas 会找出这台电脑上已有的编码工具。",
+  "ledeWeb": "桌面应用会找出这台电脑上的编码工具，让你在 Atlas 里直接与它们对话。",
   "runtimesHeading": "这台电脑上的工具",
   "models": {
     "lede": "连接地图旁边的对话所调用的模型。",
@@ -34,7 +34,7 @@
     "auditTitle": "发送记录",
     "auditEmpty": "还没有发送过任何内容。发生调用时才会出现这个文件。",
     "auditPathNote": "纯文本，Git 可以读取；是否提交由你决定",
-    "auditOpen": "在 Finder 中显示",
+    "auditOpen": "在访达中显示",
     "auditPurposeVerify": "连接检查",
     "auditPurposeAsk": "提问",
     "auditScope": "{chars} 个文件夹字符",
