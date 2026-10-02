@@ -474,6 +474,47 @@ export class HexRouteRun<Role extends string = string> {
   }
 }
 
+export class HexFocusRoutes<Role extends string = string> {
+  private focus: object | null = null;
+  private blocked: Uint8Array | null = null;
+  private run: HexRouteRun<Role> | null = null;
+  private shown: readonly (HexRoute & { role: Role })[] = [];
+
+  lay(
+    lattice: HexLattice,
+    focus: object,
+    jobs: readonly HexRouteJob<Role>[],
+    blocked: Uint8Array | null,
+    otherPenalty: number,
+    deadline: number,
+    clock?: () => number,
+  ): { routes: readonly (HexRoute & { role: Role })[]; pending: boolean } {
+    if (jobs.length === 0) {
+      this.clear();
+      return { routes: this.shown, pending: false };
+    }
+    if (focus !== this.focus) {
+      this.focus = focus;
+      this.run = null;
+      this.shown = [];
+    }
+    if (!this.run || this.run.jobs !== jobs || blocked !== this.blocked) {
+      this.run = new HexRouteRun(lattice, jobs, otherPenalty, blocked);
+      this.blocked = blocked;
+    }
+    if (!this.run.done) this.run.advance(deadline, clock);
+    if (this.run.done) this.shown = this.run.routes;
+    return { routes: this.shown, pending: !this.run.done };
+  }
+
+  clear(): void {
+    this.focus = null;
+    this.blocked = null;
+    this.run = null;
+    this.shown = [];
+  }
+}
+
 /**
  * On a moat centre or a vertex touching at most one tile, near the route's middle and at
  * least `minGap` from any placed pill.

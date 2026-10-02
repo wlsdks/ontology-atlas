@@ -1,5 +1,5 @@
 import type { ParticleEdge } from "../../render/edge-fireflies";
-import { cometDots, fillCometDots, recordComets, type CometMark } from "../../render/traces";
+import { COMET_DOT_VALUES, cometDots, fillCometDots, recordComets, type CometMark } from "../../render/traces";
 
 interface Layer {
   canvas: HTMLCanvasElement;
@@ -91,8 +91,8 @@ function tee(main: CanvasRenderingContext2D, copy: CanvasRenderingContext2D): Ca
 export interface StillFrame {
   readonly building: boolean;
   readonly comets: readonly ParticleEdge[];
-  ready(world: object, tokens: object, dpr: number): boolean;
-  begin(world: object, tokens: object, dpr: number): boolean;
+  ready(world: object, tokens: object, dpr: number, reducedMotion: boolean): boolean;
+  begin(world: object, tokens: object, dpr: number, reducedMotion: boolean): boolean;
   nodeLayer(from: CanvasRenderingContext2D): CanvasRenderingContext2D;
   end(): void;
   paint(): void;
@@ -106,9 +106,9 @@ export function createStillFrame(canvas: HTMLCanvasElement, ctx: CanvasRendering
   let scratch: Layer | null = null;
   let marks: CometMark[] = [];
   let owners: ParticleEdge[] = [];
-  let key: { world: object; tokens: object; dpr: number; width: number; height: number } | null = null;
+  let key: { world: object; tokens: object; dpr: number; reducedMotion: boolean; width: number; height: number } | null = null;
   let phase: "idle" | "edges" | "nodes" = "idle";
-  const dots = new Float64Array(9);
+  const dots = new Float64Array(COMET_DOT_VALUES);
 
   const layer = (current: Layer | null, width: number, height: number): Layer | null => {
     const surface = current?.canvas ?? document.createElement("canvas");
@@ -183,23 +183,24 @@ export function createStillFrame(canvas: HTMLCanvasElement, ctx: CanvasRendering
     get comets() {
       return owners;
     },
-    ready(world, tokens, dpr) {
+    ready(world, tokens, dpr, reducedMotion) {
       return (
         phase === "idle" &&
         key !== null &&
         key.world === world &&
         key.tokens === tokens &&
         key.dpr === dpr &&
+        key.reducedMotion === reducedMotion &&
         key.width === canvas.width &&
         key.height === canvas.height
       );
     },
-    begin(world, tokens, dpr) {
+    begin(world, tokens, dpr, reducedMotion) {
       if (canvas.width === 0 || canvas.height === 0) return false;
       full = layer(full, canvas.width, canvas.height);
       cover = layer(cover, canvas.width, canvas.height);
       if (!full || !cover) return false;
-      key = { world, tokens, dpr, width: canvas.width, height: canvas.height };
+      key = { world, tokens, dpr, reducedMotion, width: canvas.width, height: canvas.height };
       marks = [];
       phase = "edges";
       recordComets(marks);

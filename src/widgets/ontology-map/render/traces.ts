@@ -522,7 +522,8 @@ export function cometDots(
   return n;
 }
 
-const dotsScratch = new Float64Array(COMET_TAIL_STEPS.length * 3);
+export const COMET_DOT_VALUES = COMET_TAIL_STEPS.length * 3;
+const dotsScratch = new Float64Array(COMET_DOT_VALUES);
 
 export function fillCometDots(ctx: CanvasRenderingContext2D, dots: Float64Array, n: number): void {
   for (let k = 0; k < n; k += 3) {

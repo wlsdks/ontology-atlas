@@ -32,7 +32,7 @@ import {
   hexGutter,
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
-import { buildHexLattice, closedNodes, HexRouteRun, layCanals, type HexRouteJob } from "../model/hex-router";
+import { buildHexLattice, closedNodes, HexFocusRoutes, layCanals, type HexRouteJob } from "../model/hex-router";
 import { buildBoardScene } from "../board/board-scene";
 import { drawBoard } from "../board/board-paint";
 import {
@@ -403,7 +403,7 @@ export function OntologyHexBoardMap({
     }
     return { lit: id ? lit : null, jobs, region: null };
   }, [layout, selectedId, hoverId, staleOnly, evidence]);
-  const focusRunRef = useRef<{ focus: FocusPlan; blocked: Uint8Array | null; run: HexRouteRun<FocusJob["role"]>; routes: HexDrawRoute[] | null } | null>(null);
+  const focusRoutesRef = useRef(new HexFocusRoutes<FocusJob["role"]>());
 
   /* ── camera ─────────────────────────────────────────────────────────── */
   const restCamera = useCallback((): Camera | null => (layout && room ? hexRestCamera(layout, room) : null), [layout, room]);
@@ -529,19 +529,12 @@ export function OntologyHexBoardMap({
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hovering = !selectedId && !!hoverId && !staleOnly;
-      let laid = focusRunRef.current;
-      if (!lattice || focus.jobs.length === 0) laid = focusRunRef.current = null;
-      else if (!laid || laid.focus !== focus || laid.blocked !== blocked) {
-        laid = { focus, blocked, run: new HexRouteRun(lattice, focus.jobs, 1.15, blocked), routes: null };
-        focusRunRef.current = laid;
-      }
       let routes: HexDrawRoute[] = [];
-      if (laid) {
-        if (!laid.routes && laid.run.advance(performance.now() + ROUTE_BUDGET_MS))
-          laid.routes = laid.run.routes.map((r) => ({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: r.role, stub: r.stub }));
-        if (laid.routes) routes = [...laid.routes];
-        else again = true;
-      }
+      if (lattice && focus.jobs.length > 0) {
+        const laid = focusRoutesRef.current.lay(lattice, focus, focus.jobs, blocked, 1.15, performance.now() + ROUTE_BUDGET_MS);
+        routes = [...laid.routes];
+        if (laid.pending) again = true;
+      } else focusRoutesRef.current.clear();
       if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
       const { stats, textBoxes, plateBoxes } = drawBoard(
         ctx,
@@ -625,11 +618,13 @@ export function OntologyHexBoardMap({
     const wrap = wrapRef.current;
     if (!wrap) return;
     const read = () => {
+      const chrome = mapChromeOf(canvasRef.current);
+      chromeRef.current = chrome;
       const r = wrap.getBoundingClientRect();
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const next = readHexRoom(canvasRef.current, r.width, r.height);
+      const next = readHexRoom(canvasRef.current, r.width, r.height, chrome?.free ?? null);
       setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
@@ -715,9 +710,10 @@ export function OntologyHexBoardMap({
         // Only return to rest if the reader had not zoomed away on their own.
         if (Math.abs(cur.R - restRef.current.R) < 0.5) moveCamera(restRef.current);
       }
+      chromeRef.current = null;
       // A room read with a selection's chrome up is not the map at rest: read it again once
       // that chrome has gone (INDEX may not change, so its observer cannot be relied on).
-      if (roomTakenRef.current === "selection") readWhenSettledRef.current();
+      readWhenSettledRef.current();
       return;
     }
     const makeRoom = () => {

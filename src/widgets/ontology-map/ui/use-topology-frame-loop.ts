@@ -174,13 +174,13 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         still.invalidate();
       }
       const settled = now - quietSince >= IDLE_GRACE_MS;
-      if (settled && still.ready(world, tokens, dpr)) {
+      if (settled && still.ready(world, tokens, dpr, reducedMotionRef.current)) {
         advanceTopologyComets(world, still.comets, dt, reducedMotionRef.current, stillFocusId, tokens, ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current));
         still.paint();
         requestFrame();
         return;
       }
-      const building = settled && awake && still.begin(world, tokens, dpr);
+      const building = settled && awake && still.begin(world, tokens, dpr, reducedMotionRef.current);
       if (building) nodeLayerRef.current = still.nodeLayer;
       let drawn = false;
       try {
