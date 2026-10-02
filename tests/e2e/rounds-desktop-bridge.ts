@@ -87,9 +87,14 @@ function allowancesFor(seedRounds: boolean): string {
 const SEED_SCRIPT = `
   const day = (offsetDays, h, m, s = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); d.setHours(h, m, s, 0); return d; };
   const iso = (d) => d.toISOString();
+  const nextWeekday = (h, m) => {
+    const d = day(1, h, m);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+    return d;
+  };
   const clock = {
     "r-consistency": { createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 9, 0)), nextDueAt: iso(day(1, 9, 0)) },
-    "r-confluence": { createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 7, 30)), nextDueAt: iso(day(1, 7, 30)) },
+    "r-confluence": { createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 7, 30)), nextDueAt: iso(nextWeekday(7, 30)) },
   };
   const rounds = { v: 1, rounds: definitions.map((round) => ({ ...round, ...clock[round.id] })), lastAway: { from: iso(day(-1, 18, 30)), to: iso(day(0, 9, 2)) } };
   const held = (id, d) => ({ v: 1, id, roundId: "r-consistency", roundName: "Pages still match", kind: "consistency", startedAt: iso(d), endedAt: iso(new Date(d.getTime() + 3000)), outcome: "held", checked: 4, stale: [], written: [], refused: [], called: [], agentTurns: 0, summary: "", trigger: "clock" });
@@ -270,4 +275,3 @@ export async function openRounds(page: Page) {
   await page.getByTestId("library-workspace-rounds").click();
   await page.getByTestId("library-rounds").waitFor({ timeout: 30_000 });
 }
-

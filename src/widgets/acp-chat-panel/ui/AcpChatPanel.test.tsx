@@ -199,6 +199,27 @@ afterEach(() => {
 });
 
 describe('대화 패널 — 일어난 일만 그린다', () => {
+  it('renders an empty panel and a streamed turn without newer backward-search array methods', async () => {
+    const last = Object.getOwnPropertyDescriptor(Array.prototype, 'findLast')!;
+    const lastIndex = Object.getOwnPropertyDescriptor(Array.prototype, 'findLastIndex')!;
+    Object.defineProperty(Array.prototype, 'findLast', { ...last, value: undefined });
+    Object.defineProperty(Array.prototype, 'findLastIndex', { ...lastIndex, value: undefined });
+    try {
+      await bootSession();
+      await startUserTurn('A legacy-compatible request');
+      act(() => {
+        emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'tool_call', toolCallId: 'read-1', title: 'Read node', kind: 'read', status: 'completed' } } });
+        emit({ jsonrpc: '2.0', method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Legacy-compatible answer.' } } } });
+      });
+      expect(await screen.findByText('Legacy-compatible answer.')).toBeInTheDocument();
+      act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+      await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    } finally {
+      Object.defineProperty(Array.prototype, 'findLast', last);
+      Object.defineProperty(Array.prototype, 'findLastIndex', lastIndex);
+    }
+  });
+
   it('forwards and awaits task baseline capture before prompting the agent', async () => {
     let release!: (value: TaskBaselineCaptureResult) => void;
     const captureTaskBaseline = vi.fn(() => new Promise<TaskBaselineCaptureResult>((resolve) => { release = resolve; }));
