@@ -33,11 +33,12 @@ routes: [/topology]
   map is the one a full read builds. The app reads 64 Markdown files per native call (each
   at most 4 MiB, Markdown only, never through a link into a dot file), eight calls at a
   time; the browser keeps 64 reads in flight. Measured at 120 ms per native answer on the
-  static export (median of 3): a 2,000-document vault drew its first frame at 0.85 s
-  instead of 16.5 s and finished at 1.9 s; 10,000 documents drew at 0.90 s instead of 77.7 s
-  and finished at 5.0 s, with no task longer than 378 ms (492 ms before) but frames up to
-  366 ms apart while documents arrive. In Chrome over an origin-private folder, 10,000
-  documents drew at 0.73 s instead of 26.3 s. Gate: `tests/e2e/vault-progressive-open.spec.ts`.
+  static export (median of 3): a 2,000-document vault drew its first frame at 0.87 s
+  instead of 16.5 s and finished at 2.0 s; 10,000 documents drew at 0.88 s instead of 77.7 s
+  and finished at 5.0 s, with no task longer than 372 ms (492 ms before) but frames up to
+  408 ms apart while documents arrive. In Chrome over an origin-private folder, 10,000
+  documents drew at 0.67 s instead of 26.3 s and finished at 6.6 s. Gate:
+  `tests/e2e/vault-progressive-open.spec.ts`.
 
 - **A name blocked below tries the slot above** (2026-09-20) → the greedy label
   placer walked the candidates by priority and dropped any whose box overlapped
