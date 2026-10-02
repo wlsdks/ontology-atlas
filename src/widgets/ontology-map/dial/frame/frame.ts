@@ -1,9 +1,9 @@
 import { MOTION } from "@/shared/motion/tokens";
-import { easeOutCubic } from "../model/camera-easing";
-import { dialEvidenceView, resolveDialAttention } from "./dial-model";
+import { easeOutCubic } from "../../model/camera-easing";
+import { dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { resolveDialDisclosure, smoothstep, type DialDisclosure } from "./disclosure";
-import { createMeasureText } from "./fit";
-import { resolveDialInks, type DialInks } from "./ink";
+import { createMeasureText } from "../fit";
+import { resolveDialInks, type DialInks } from "../ink";
 import { buildDialMarks, emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "./marks";
 import { paintDialMarks } from "./paint";
 import type {
@@ -19,7 +19,7 @@ import type {
   DialProbe,
   DialTokens,
   Point,
-} from "./types";
+} from "../types";
 
 const FOCUS_MS = MOTION.fast.duration * 1000;
 const CURVE_STEPS = 16;
@@ -122,7 +122,7 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     evidence: evidenceOf(model, input.evidence), attention, previous, inkMix, chordPresence,
     scale: input.scale, labelScale: input.labelScale, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
     freeRect: input.freeRect, nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText,
-    elementLabel: () => null, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
+    elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, disclosure,
   }, pool);
   paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
@@ -302,7 +302,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
     budget: built.flows.budget,
     stubs: built.flows.stubs,
     placement: { state: "settled", held: 0 },
-    texts: marks.texts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
+    texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
     numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
     discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r })),
     strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),

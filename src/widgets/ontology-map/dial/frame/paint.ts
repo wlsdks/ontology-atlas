@@ -1,9 +1,9 @@
-import { lerpColorHex } from "../render/grid";
-import { draw as drawNodeShape, type NodeShapeTokens } from "../render/node-shapes";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { mixOver } from "./ink";
+import { lerpColorHex } from "../../render/grid";
+import { draw as drawNodeShape, type NodeShapeTokens } from "../../render/node-shapes";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { mixOver } from "../ink";
 import type { DialFrameMarks } from "./marks";
-import type { DialKind, GlyphMark, StripMark, TextMark } from "./types";
+import type { DialKind, GlyphMark, StripMark, TextMark } from "../types";
 
 export interface DialPaintOptions {
   now: number;

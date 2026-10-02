@@ -8,10 +8,10 @@ import {
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
-import { easeOutCubic } from "../model/camera-easing";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildDialModel, resolveDialAttention } from "./dial-model";
+} from "../../model/containment-tree";
+import { easeOutCubic } from "../../model/camera-easing";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildDialModel, resolveDialAttention } from "../dial-model";
 import {
   clearDialFrame,
   countCrossings,
@@ -25,10 +25,10 @@ import {
   paintDialFrame,
   sampleStrips,
 } from "./frame";
-import { layoutDial } from "./layout";
-import { circularDomainOrder } from "./order";
-import { resolveDialTokens } from "./tokens";
-import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "./types";
+import { layoutDial } from "../layout";
+import { circularDomainOrder } from "../order";
+import { resolveDialTokens } from "../tokens";
+import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "../types";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));
@@ -99,7 +99,7 @@ function frameInput(model: DialModel, over: Partial<DialFrameInput> = {}): DialF
     viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 60, maxX: W - 60, maxY: H - 30 },
     mapTokens: MAP, dialTokens: TOKENS, labels: LABELS, evidence: null,
     hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
-    now: 0, reducedMotion: false, domainAppear: 1,
+    now: 0, reducedMotion: false, domainAppear: 1, elementLabel: (id) => id,
     ...over,
   };
 }

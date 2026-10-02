@@ -17,7 +17,7 @@ import {
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { buildFlowMarks, type FlowMarksInput } from "@/widgets/ontology-map/dial/flow-marks";
-import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/disclosure";
+import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { aggregateLinks, domainOfEnd, type DialLink } from "@/widgets/ontology-map/dial/links";

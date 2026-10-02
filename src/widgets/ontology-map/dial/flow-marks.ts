@@ -1,7 +1,7 @@
 import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
-import type { DialResolution } from "./disclosure";
+import type { DialResolution } from "./frame/disclosure";
 import { aggregateLinks, domainOfEnd, restBudget, type DialLink } from "./links";
 import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./types";
 

@@ -8,13 +8,13 @@ import {
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
-import { buildDialModel, resolveDialAttention } from "./dial-model";
+} from "../../model/containment-tree";
+import { buildDialModel, resolveDialAttention } from "../dial-model";
 import { RESOLVE_SLIDE_PX, resolveDialDisclosure, type DialCamera } from "./disclosure";
-import { layoutDial } from "./layout";
-import { circularDomainOrder } from "./order";
-import { resolveDialTokens } from "./tokens";
-import type { Box, DialModel, DialScene } from "./types";
+import { layoutDial } from "../layout";
+import { circularDomainOrder } from "../order";
+import { resolveDialTokens } from "../tokens";
+import type { Box, DialModel, DialScene } from "../types";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#ececf0" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

@@ -1,5 +1,5 @@
-import { ownLinkCount } from "./links";
-import type { Box, DialAttention, DialItem, DialModel, DialScene, DialTokens, Point } from "./types";
+import { ownLinkCount } from "../links";
+import type { Box, DialAttention, DialItem, DialModel, DialScene, DialTokens, Point } from "../types";
 
 export interface DialCamera {
   scale: number;

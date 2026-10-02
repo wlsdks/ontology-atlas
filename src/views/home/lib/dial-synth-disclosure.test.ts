@@ -15,11 +15,11 @@ import {
   type TreeInputNode,
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
-import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/disclosure";
+import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { createMeasureText, dialOverviewPad } from "@/widgets/ontology-map/dial/fit";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
-import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/marks";
+import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/frame/marks";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
 import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/types";
@@ -84,7 +84,7 @@ const vault = (name: string) => {
   return hit;
 };
 
-interface Count { domains: number; capabilities: number; elements: number; lines: number; marks: number; maxPerEnd: number; counted: number }
+interface Count { foreignSquares: number; entered: string | null; domains: number; capabilities: number; elements: number; lines: number; marks: number; maxPerEnd: number; counted: number }
 
 function measure(name: string, width: number, zoom: number): Count {
   const { model, labelOf } = vault(name);
@@ -128,7 +128,12 @@ function measure(name: string, width: number, zoom: number): Count {
     if (!link || link.relatesOnly) continue;
     for (const end of [link.u, link.v]) perEnd.set(end, (perEnd.get(end) ?? 0) + 1);
   }
+  const own = new Set<string>(scene.orphans.ids);
+  const enteredCluster = disclosure.entered ? scene.clusterByDomain.get(disclosure.entered) : undefined;
+  for (const it of enteredCluster?.items ?? []) for (const el of it.elementIds) own.add(el);
+  const foreignSquares = out.squares.filter((q) => q.id !== null && !own.has(q.id)).length;
   return {
+    foreignSquares, entered: disclosure.entered,
     domains, capabilities, elements, lines, marks: domains + capabilities + elements + lines,
     maxPerEnd: Math.max(0, ...perEnd.values()),
     counted: result.flows.links.filter((l) => !l.relatesOnly).length,
@@ -139,11 +144,9 @@ const ZOOM: Record<string, { zoom: number; deep: number | null }> = {
   storefront: { zoom: 2.63, deep: 5.69 },
   dogfood: { zoom: 2.82, deep: null },
   "synth 2,000": { zoom: 3.71, deep: 7.03 },
-  "synth 10,000": { zoom: 5.61, deep: 13.76 },
-  "layered 10,000": { zoom: 5.61, deep: 13.18 },
+  "synth 10,000": { zoom: 5.61, deep: 13.8 },
+  "layered 10,000": { zoom: 5.61, deep: 13.8 },
 };
-
-const LAYERED_ZOOM_1512 = 1252;
 
 const BARS: Record<string, { overview: number; zoom: number; deep: number | null }> = {
   storefront: { overview: 100, zoom: 150, deep: 60 },
@@ -171,9 +174,15 @@ describe("dial mark budget at four vault sizes (DESIGN.md, Mark budget)", () => 
         }
         const zoom = measure(name, width, ZOOM[name]!.zoom);
         expect(zoom.capabilities).toBeGreaterThan(0);
-        expect(zoom.marks).toBeLessThanOrEqual(name === "layered 10,000" && width === 1512 ? LAYERED_ZOOM_1512 : bar.zoom);
-        if (bar.deep !== null) expect(measure(name, width, ZOOM[name]!.deep!).marks).toBeLessThanOrEqual(bar.deep);
+        expect(zoom.marks).toBeLessThanOrEqual(bar.zoom);
+        expect(zoom.foreignSquares).toBe(0);
+        if (bar.deep !== null) {
+          const deep = measure(name, width, ZOOM[name]!.deep!);
+          expect(deep.marks).toBeLessThanOrEqual(bar.deep);
+          expect(deep.foreignSquares).toBe(0);
+        }
       });
     }
   }
 });
+

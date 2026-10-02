@@ -9,17 +9,17 @@ import {
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildDialModel, resolveDialAttention } from "./dial-model";
-import { resolveDialInks } from "./ink";
-import { layoutDial } from "./layout";
+} from "../../model/containment-tree";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildDialModel, resolveDialAttention } from "../dial-model";
+import { resolveDialInks } from "../ink";
+import { layoutDial } from "../layout";
 import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "./marks";
-import { circularDomainOrder } from "./order";
+import { circularDomainOrder } from "../order";
 import { paintDialMarks } from "./paint";
 import { resolveDialDisclosure } from "./disclosure";
-import { resolveDialTokens } from "./tokens";
-import type { DialLabels, DialModel } from "./types";
+import { resolveDialTokens } from "../tokens";
+import type { DialLabels, DialModel } from "../types";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

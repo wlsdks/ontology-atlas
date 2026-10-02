@@ -1,10 +1,10 @@
-import { scaledLabelFont } from "../render/labels";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildFlowMarks, type FlowMarksResult } from "./flow-marks";
-import { inkIndex, mixOver, type DialInks } from "./ink";
-import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "./label-marks";
+import { scaledLabelFont } from "../../render/labels";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildFlowMarks, type FlowMarksResult } from "../flow-marks";
+import { inkIndex, mixOver, type DialInks } from "../ink";
+import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
 import type { DialDisclosure } from "./disclosure";
-import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerPlan } from "./ledger";
+import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerPlan } from "../ledger";
 import type {
   Box,
   DialAttention,
@@ -18,7 +18,7 @@ import type {
   DialScene,
   DialTokens,
   Point,
-} from "./types";
+} from "../types";
 
 export interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
 
@@ -325,8 +325,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
     for (const c of scene.clusters) {
       if (!chips.has(c.domainId)) continue;
-      if (attn.domainId && receded(attn, c.domainId)) continue;
+      const inEntered = c.domainId === disclosure.entered && !(attn.domainId && receded(attn, c.domainId));
       for (const it of c.items) {
+        if (!inEntered && it.id !== attn.capabilityId) continue;
         const a = disclosure.elementAlphaFor(it) * input.appearOf(c.domainId);
         if (a < ALPHA_FLOOR) continue;
         const step = Math.max(1, Math.round(a * ALPHA_STEPS)) / ALPHA_STEPS;

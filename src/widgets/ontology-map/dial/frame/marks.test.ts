@@ -8,14 +8,14 @@ import {
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
-} from "../model/containment-tree";
-import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { buildDialModel, dialEvidenceView, resolveDialAttention } from "./dial-model";
-import { mixOver, resolveDialInks } from "./ink";
+} from "../../model/containment-tree";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import { buildDialModel, dialEvidenceView, resolveDialAttention } from "../dial-model";
+import { mixOver, resolveDialInks } from "../ink";
 import { buildDialMarks, dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
 import { resolveDialDisclosure } from "./disclosure";
-import { resolveDialTokens } from "./tokens";
-import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "./types";
+import { resolveDialTokens } from "../tokens";
+import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../types";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));
@@ -162,6 +162,21 @@ describe("buildDialMarks", () => {
     const discs = near.out.discs.length;
     expect(near.result.drawnCount).toBe(1 + chips + discs + squares.length);
     for (const q of squares) expect(near.result.alphas.get(q.id!)).toBe(1);
+  });
+
+  it("draws element squares only in the entered domain and for the attended capability", () => {
+    const domainOfSquare = (id: string) => id.slice(0, id.indexOf("c"));
+    const near = run({ scale: 2, centre: { x: 500, y: 1000 } });
+    const entered = near.input.disclosure.entered;
+    expect(entered).not.toBeNull();
+    const ids = near.out.squares.filter((q) => q.id !== null).map((q) => q.id!);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.filter((id) => domainOfSquare(id) !== entered)).toEqual([]);
+    const other = near.out.glyphs.find((g) => g.kind === "domain" && g.id !== entered)!.id;
+    const focused = run({ scale: 2, centre: { x: 500, y: 1000 }, focusId: `${other}c0`, disclosure: { entered } });
+    const focusedIds = focused.out.squares.filter((q) => q.id !== null).map((q) => q.id!);
+    expect(focusedIds.filter((id) => id.startsWith(`${other}c0e`)).length).toBeGreaterThan(0);
+    expect(focusedIds.filter((id) => domainOfSquare(id) !== entered && !id.startsWith(`${other}c0e`))).toEqual([]);
   });
 
   it("uses the glyph only for the hub, the chips and the attended capability", () => {

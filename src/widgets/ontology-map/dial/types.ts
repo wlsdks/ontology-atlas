@@ -103,7 +103,7 @@ export interface SquareMark { id: string | null; x: number; y: number; half: num
 export interface TickMark { ink: number; x0: number; y0: number; x1: number; y1: number }
 export interface RailMark { ink: number; cx: number; cy: number; r: number; a0: number; a1: number }
 export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number } | null; count: string | null; stalePip: boolean }
-export type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans";
+export type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element";
 export interface TextMark { id: string | null; role: TextRole; text: string; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number }[] | null }
 export interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box }
 export interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: number; ink: number }
@@ -120,7 +120,7 @@ export interface DialFrameInput {
   viewportWidth: number; viewportHeight: number; freeRect: Box;
   mapTokens: import("../tokens/read-map-tokens").OntologyMapTokens; dialTokens: DialTokens; labels: DialLabels | null; evidence: ReadonlyMap<string, DialEvidence> | null;
   hoveredNodeId: string | null; focusedNodeId: string | null; agentFocusNodeId: string | null;
-  selectionPulse: { nodeId: string; scaleFactor: number; alpha: number } | null; appearOf(id: string): number; hubCount: string | null;
+  selectionPulse: { nodeId: string; scaleFactor: number; alpha: number } | null; appearOf(id: string): number; hubCount: string | null; elementLabel(id: string): string | null;
   now: number; reducedMotion: boolean; domainAppear: number;
 }
 export interface DialFrameResult {

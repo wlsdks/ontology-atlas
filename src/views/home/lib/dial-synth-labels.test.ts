@@ -16,9 +16,9 @@ import {
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { createMeasureText, dialOverviewPad } from "@/widgets/ontology-map/dial/fit";
-import { namesCrossed, sampleStrips } from "@/widgets/ontology-map/dial/frame";
+import { namesCrossed, sampleStrips } from "@/widgets/ontology-map/dial/frame/frame";
 import { buildFlowMarks } from "@/widgets/ontology-map/dial/flow-marks";
-import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/disclosure";
+import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { buildLabelMarks, type Circle, type LabelMarksOut } from "@/widgets/ontology-map/dial/label-marks";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
