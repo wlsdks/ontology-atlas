@@ -124,6 +124,10 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   );
 }
 
+export function isSceneActive(flags: CanvasActivityFlags, livePulseCount: number): boolean {
+  return isCanvasActive({ ...flags, egoTailAnimating: livePulseCount > 0 });
+}
+
 /** Protects the tail of a decaying ramp. */
 export function shouldSkipFrame(nowMs: number, lastActiveMs: number, graceMs: number): boolean {
   return nowMs - lastActiveMs > graceMs;
