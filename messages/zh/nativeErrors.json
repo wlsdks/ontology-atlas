@@ -68,5 +68,6 @@
   "remote-url-unrecognized": "这看起来不像仓库地址。正确的形式类似 git@github.com:you/repo.git。",
   "connector-secret-ref-invalid": "该连接器引用的格式这台电脑无法存储。请移除连接器后重新添加。",
   "connector-secret-missing": "这个连接器需要的令牌不在这台电脑的钥匙串里。请打开“连接器”重新输入，或关闭该连接器。",
-  "acp-line-rewrite-failed": "发给智能体的消息无法准备好。请尝试重新打开对话。"
+  "acp-line-rewrite-failed": "发给智能体的消息无法准备好。请尝试重新打开对话。",
+  "cancelled": "请求已停止。"
 }

@@ -68,5 +68,6 @@
   "remote-url-unrecognized": "リポジトリのアドレスに見えません。git@github.com:you/repo.gitのような形式です。",
   "connector-secret-ref-invalid": "そのコネクタの参照は、このマシンに保存できる形式ではありません。コネクタを削除して、追加し直してください。",
   "connector-secret-missing": "このコネクタに必要なトークンが、このマシンのキーチェーンにありません。「コネクタ」を開いて入力し直すか、コネクタをオフにしてください。",
-  "acp-line-rewrite-failed": "エージェントへのメッセージを準備できませんでした。会話を開き直してみてください。"
+  "acp-line-rewrite-failed": "エージェントへのメッセージを準備できませんでした。会話を開き直してみてください。",
+  "cancelled": "リクエストを中止しました。"
 }
