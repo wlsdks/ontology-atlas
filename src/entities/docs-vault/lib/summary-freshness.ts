@@ -78,59 +78,57 @@ function toTime(iso: string): number | null {
   return Number.isFinite(time) ? time : null;
 }
 
-/** O(n) parser calls and O(1) retained parsed revisions; null supplies no staleness signal. */
-export function summaryStalenessOf(revisions: readonly NodeRevision[]): SummaryStaleness | null {
-  if (revisions.length < 2) return null;
-  const slug = revisions[0].slug;
-  const current = parseRevision(revisions[0]);
-  if (!(SUMMARY_KINDS as readonly string[]).includes(current.kind)) return null;
-  if (current.childCount === 0) return null;
-
+/** O(n) parser calls and O(1) retained revisions; push returns true when older rows cannot matter. */
+export function createSummaryStalenessScan(slug: string) {
+  let previous: ParsedRevision | null = null;
+  let count = 0;
+  let childCount = 0;
+  let eligible = true;
+  let done = false;
   let bodyChangedAt: string | null = null;
   let membershipChangedAt: string | null = null;
-  let newer = current;
-  for (let index = 1; index < revisions.length; index += 1) {
-    const older = parseRevision(revisions[index]);
-    if (bodyChangedAt === null && newer.body !== older.body) bodyChangedAt = newer.isoTime;
-    if (membershipChangedAt === null && newer.membership !== older.membership) {
-      membershipChangedAt = newer.isoTime;
-    }
-    if (bodyChangedAt !== null && membershipChangedAt !== null) break;
-    newer = older;
-  }
-  // Unchanged back to the oldest revision: its timestamp is a lower bound that can only understate
-  // the lag. `mcp/src/stale-parent.mjs` does the same.
-  const oldest = revisions[revisions.length - 1].isoTime;
-  const bodyTime = toTime(bodyChangedAt ?? oldest);
-  const membershipTime = toTime(membershipChangedAt ?? oldest);
-  if (bodyTime === null || membershipTime === null) return null;
-  if (membershipTime <= bodyTime) return null;
-
   return {
-    slug,
-    bodyChangedAt: new Date(bodyTime).toISOString(),
-    membershipChangedAt: new Date(membershipTime).toISOString(),
-    behindByMs: membershipTime - bodyTime,
-    childCount: current.childCount,
+    push(revision: NodeRevision): boolean {
+      if (done) return true;
+      const next = parseRevision(revision);
+      count += 1;
+      if (previous === null) {
+        childCount = next.childCount;
+        eligible = (SUMMARY_KINDS as readonly string[]).includes(next.kind) && childCount > 0;
+      } else {
+        if (bodyChangedAt === null && previous.body !== next.body) bodyChangedAt = previous.isoTime;
+        if (membershipChangedAt === null && previous.membership !== next.membership) {
+          membershipChangedAt = previous.isoTime;
+        }
+      }
+      previous = next;
+      done = !eligible || (bodyChangedAt !== null && membershipChangedAt !== null);
+      return done;
+    },
+    finish(): SummaryStaleness | null {
+      if (!eligible || count < 2 || previous === null) return null;
+      // An unchanged clock uses the oldest read revision as a lower bound, matching the MCP rule.
+      const bodyTime = toTime(bodyChangedAt ?? previous.isoTime);
+      const membershipTime = toTime(membershipChangedAt ?? previous.isoTime);
+      if (bodyTime === null || membershipTime === null || membershipTime <= bodyTime) return null;
+      return {
+        slug,
+        bodyChangedAt: new Date(bodyTime).toISOString(),
+        membershipChangedAt: new Date(membershipTime).toISOString(),
+        behindByMs: membershipTime - bodyTime,
+        childCount,
+      };
+    },
   };
 }
 
-/** Verdicts keyed by slug, for nodes that have one. */
-export function summaryStalenessBySlug(
-  revisions: readonly NodeRevision[],
-): Map<string, SummaryStaleness> {
-  const bySlug = new Map<string, NodeRevision[]>();
+export function summaryStalenessOf(revisions: readonly NodeRevision[]): SummaryStaleness | null {
+  if (revisions.length < 2) return null;
+  const scan = createSummaryStalenessScan(revisions[0].slug);
   for (const revision of revisions) {
-    const list = bySlug.get(revision.slug);
-    if (list) list.push(revision);
-    else bySlug.set(revision.slug, [revision]);
+    if (scan.push(revision)) break;
   }
-  const verdicts = new Map<string, SummaryStaleness>();
-  for (const [slug, list] of bySlug) {
-    const verdict = summaryStalenessOf(list);
-    if (verdict) verdicts.set(slug, verdict);
-  }
-  return verdicts;
+  return scan.finish();
 }
 
 /** Floored at 1 so a real lag never reads as zero. */
