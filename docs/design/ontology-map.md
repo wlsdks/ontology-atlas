@@ -204,7 +204,7 @@ Given that these are "tokens but consumed by canvas," the principle "no hardcodi
 | `--map-altitude-far-low-ratio` | `0.62` | `FAR_LOW = OVERVIEW_SCALE * 0.62` |
 | `--map-focus-fit-max-scale` | `1.9` | `setFocus` focus dive upper bound |
 | `--map-focus-bbox-margin` | `70` | `setFocus` bbox margin |
-| `--map-hysteresis-px` | `7` | Click=safe contract (drag判定 threshold) — interaction.md §1 recommends "~10px"; prototype measurement adopted 7px (both in safe range, exact value prioritizes prototype) |
+| `--map-hysteresis-px` | `7` | Click=safe contract (drag decision threshold) — interaction.md §1 recommends "~10px"; prototype measurement adopted 7px (both in safe range, exact value prioritizes prototype) |
 | `--map-emphasis-rise-tau` | `0.09` (s) | hover ripple rise time constant |
 | `--map-emphasis-decay-tau` | `0.15` (s) | hover ripple decay time constant |
 | `--map-ripple-stagger-ms` | `55` (+`12`/neighbor) | `startRipple` neighbor delay |

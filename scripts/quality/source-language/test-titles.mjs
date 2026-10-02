@@ -19,14 +19,14 @@ const PRINTED_LITERALS = new Set([
   ts.SyntaxKind.TemplateTail,
 ]);
 
-const HANGUL = /\p{Script=Hangul}/u;
+const NON_LATIN_SCRIPT = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 export function isTestSourcePath(path) {
   return /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path);
 }
 
-export function hasHangul(text) {
-  return HANGUL.test(text);
+export function hasNonLatinScript(text) {
+  return NON_LATIN_SCRIPT.test(text);
 }
 
 function titleRoot(expression) {
@@ -129,6 +129,6 @@ export function extractTestTitles(path, source) {
   return found;
 }
 
-export function hangulTestTitles(path, source) {
-  return extractTestTitles(path, source).filter((entry) => hasHangul(entry.text));
+export function nonLatinTestTitles(path, source) {
+  return extractTestTitles(path, source).filter((entry) => hasNonLatinScript(entry.text));
 }
