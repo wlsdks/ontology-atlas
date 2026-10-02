@@ -5,6 +5,7 @@ import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
 import { runTurn, startTurn, type AgentLoopDeps, AUDIT_BLOCKED_PREFIX, TIMED_OUT_PREFIX } from './agent-loop';
 import { anthropicAdapter } from './providers/anthropic';
 import { localAdapter } from './providers/local';
+import { PROVIDER_ADAPTERS } from './providers';
 import { EMPTY_SCREEN_CONTEXT } from './screen-context';
 import { AGENT_TOOLS } from './tool-catalog';
 import type { ToolExecution } from './tool-executor';
@@ -504,5 +505,22 @@ describe('runTurn', () => {
         (event) => event.kind === 'notice' && event.code === 'no-tool-call',
       ),
     ).toHaveLength(0);
+  });
+});
+
+describe('malformed response recovery', () => {
+  it.each(['openai', 'local', 'anthropic', 'gemini'] as const)('%s finishes a malformed round without executing tools', async (provider) => {
+    const d = deps({ adapter: PROVIDER_ADAPTERS[provider], send: vi.fn(async () => echo(null)) });
+    const progress: string[] = [];
+    const result = await runTurn(d, startTurn({ text: 'Read the current evidence', screenContext: EMPTY_SCREEN_CONTEXT }), {
+      signal: new AbortController().signal,
+      onProgress: turn => progress.push(turn.status),
+    });
+    expect(result.turn.status).toBe('failed');
+    expect(progress.at(-1)).toBe('failed');
+    expect(result.turn.auditCount).toBe(1);
+    expect(d.send).toHaveBeenCalledTimes(1);
+    expect(d.execute).not.toHaveBeenCalled();
+    expect(result.turn.events.at(-1)).toMatchObject({ kind: 'notice', code: 'failed', text: expect.stringContaining('invalid-provider-response') });
   });
 });
