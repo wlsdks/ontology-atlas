@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deriveOntologyFromVault, resolveStaticVaultSource } from "@/entities/docs-vault";
-import type { TerritoryInputEdge, TerritoryInputNode } from "./territories-layout";
+import type { TreeInputEdge, TreeInputNode } from "./containment-tree";
 import {
   computeHexBoard,
   fitHexRadius,
@@ -32,7 +32,7 @@ function measure(text: string, role: HexTextRole): number {
   return w;
 }
 
-function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdge[] } {
+function dogfoodGraph(): { nodes: TreeInputNode[]; edges: TreeInputEdge[] } {
   const derivation = deriveOntologyFromVault(resolveStaticVaultSource("dogfood").manifest);
   const kinds = new Set(["project", "domain", "capability", "element"]);
   const nodes = derivation.nodes
@@ -40,7 +40,7 @@ function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdg
     .map((n) => ({
       id: n.id,
       label: n.displayLocales?.ko ?? n.display ?? n.title,
-      kind: n.kind as TerritoryInputNode["kind"],
+      kind: n.kind as TreeInputNode["kind"],
     }));
   const ids = new Set(nodes.map((n) => n.id));
   const edges = derivation.edges
@@ -48,15 +48,15 @@ function dogfoodGraph(): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdg
     .map((e) => ({
       source: e.from,
       target: e.to,
-      kind: (e.type === "contains" ? "contains" : "depends") as TerritoryInputEdge["kind"],
+      kind: (e.type === "contains" ? "contains" : "depends") as TreeInputEdge["kind"],
       relationType: e.type,
     }));
   return { nodes, edges };
 }
 
-function synthetic(capabilityCount: number, domainCount: number): { nodes: TerritoryInputNode[]; edges: TerritoryInputEdge[] } {
-  const nodes: TerritoryInputNode[] = [{ id: "project:p", label: "합성 프로젝트", kind: "project" }];
-  const edges: TerritoryInputEdge[] = [];
+function synthetic(capabilityCount: number, domainCount: number): { nodes: TreeInputNode[]; edges: TreeInputEdge[] } {
+  const nodes: TreeInputNode[] = [{ id: "project:p", label: "합성 프로젝트", kind: "project" }];
+  const edges: TreeInputEdge[] = [];
   const words = ["결제", "재고 동기화", "알림 발송", "권한", "보고서 생성기", "검색 색인", "배송 라벨"];
   for (let d = 0; d < domainCount; d++) {
     nodes.push({ id: `domain:d${String(d).padStart(2, "0")}`, label: `도메인 ${d}`, kind: "domain" });
