@@ -29,6 +29,10 @@ All four retain surrounding quotes in mapping keys; a colon inside a quoted key
 is mistaken for its delimiter; nested quoted `001` and `false` become a number
 and boolean. The quoted unsafe-key case currently retains quote characters as
 part of the property name. That observation alone is not prototype mutation.
+A separate reproduced writer/readback probe, `quoted-backslash-roundtrip.json`,
+shows literal backslash sequences in `C:\new\tools` becoming newline/tab content.
+The decoder first collapses escaped backslashes, then interprets the newly exposed
+`\n`/`\t` again (`mcp/src/parser.mjs:278`, `:290`), losing the writer's distinction.
 
 The independently inspected source explains these results:
 
@@ -89,11 +93,15 @@ The supported first slice is deliberately exact:
   existing one-level block/inline maps. Accept single or double wrapping quotes;
   colons and commas inside a quoted key are data, including compact
   `{"key":"value"}` spelling. Plain forms retain their current behavior.
-- Keys use the existing Atlas quoted-string escape repertoire, including writer
-  escaped quotes/backslashes. Do not reinterpret historical value escapes or
-  adopt YAML's broader escape/type rules in this slice. Embedded raw matching
-  quotes or doubled-single-quote key syntax beyond that repertoire are diagnosed
-  rather than guessed; this does not tighten existing value leniency.
+- Newly decoded keys follow ordinary single-quote rules: doubled apostrophes
+  represent one apostrophe, while backslashes remain literal. Thus `'owner''s'`
+  names `owner's`. Double-quoted keys support the existing writer's escaped quote,
+  backslash, newline and tab repertoire. Other YAML escapes are outside this slice;
+  diagnose unsupported key escapes rather than inventing a decoded name.
+- Preserve historical value permissiveness and the existing escape repertoire,
+  but fix replacement-order data loss: literal backslash-plus-`n`/`t` must remain
+  distinct from actual newline/tab characters through every write/read cycle.
+  Consuming an escaped backslash cannot expose a second escape for reinterpretation.
 - Quoted scalar values remain strings at every supported mapping level, including
   empty text, `001` and `false`; unquoted booleans/numbers retain their types.
 - Check decoded keys against `__proto__`, `constructor` and `prototype` before
@@ -104,14 +112,16 @@ The supported first slice is deliberately exact:
   declaration into a silently valid partial map that is then saved over it.
 - A normal authorized edit preserves supported keys, scalar types, rationale and
   body content across renderer and MCP/CLI writers. Keep existing safe-key output;
-  quote keys only when necessary to retain their decoded contents. Existing canonical formatting may change; byte-identical source
-  formatting is not promised. Refused edits keep the input file bytes unchanged.
+  quote keys only when necessary to retain their decoded contents. Existing
+  canonical formatting may change; byte-identical formatting is not promised.
+  Refused edits keep the input file bytes unchanged.
 
 Quoted scalar and mapping forms are grounded in
 [YAML 1.2.2 sections 7.3, 7.4.2 and 8.2.2](https://yaml.org/spec/1.2.2/).
 That reference permits quoted keys and distinguishes quoted strings from plain
 scalar resolution. It does not make Atlas a conforming full YAML processor;
-Atlas's retained escape behavior is an explicit compatibility constraint.
+legacy value permissiveness remains a compatibility constraint, not a reason to
+preserve data loss or reject ordinary quoted keys.
 
 ## Flow
 
@@ -154,8 +164,9 @@ the repair does not add a new screen, toast or label.
   has one relation and one note; the six-case matrix is not a large-vault measure.
 - First run needs no migration. Hangul and other Unicode keys/values retain their
   information; avoid authoring localized prose in this spec or test titles.
-- Colons, commas, escaped quotes and backslashes are not mapping boundaries
-  inside supported quoted keys. Repeat write/read cycles to detect accumulation.
+- Colons, commas, doubled single quotes and escaped double quotes are not mapping
+  boundaries inside supported keys. Probe literal backslash sequences beside
+  actual control characters, including mixed values, over repeated write/read cycles.
 - Decoded aliases of graph-field names use the same validation as plain names.
   Existing duplicate-key precedence is unchanged; no new merge behavior is added.
 - Moved/renamed/unreadable folders and concurrent edits retain existing I/O,
@@ -169,7 +180,7 @@ the repair does not add a new screen, toast or label.
 ## Out of scope
 
 - Full YAML, recursive mappings, arrays of objects, tags, anchors/aliases,
-  multiline or complex keys, and a new scalar escape language: no observed need
+  physically multiline or complex keys, and a new scalar escape language: no observed need
   in this slice, and each can change existing file interpretation.
 - Semantic repair, relation inference, automatic migration or normalization of
   existing files: source bytes and explicit authorized edits remain the truth.
@@ -185,8 +196,10 @@ the repair does not add a new screen, toast or label.
    scalar types agree across renderer, MCP, scripts and CLI. Prove RED/GREEN in
    `tests/contract/parse-frontmatter.contract.test.ts`, using shared cases.
 2. **Given** supported top-level, inline and block keys containing colons, commas,
-   Unicode and supported escapes, **when** read and then written three times,
-   **then** keys, string/boolean/number types and body content remain stable.
+   Unicode, doubled single quotes and supported double-quote escapes, **when** read
+   and then written three times, **then** keys, scalar types and body remain stable.
+   Literal backslash sequences and actual newline/tab content remain distinct;
+   include paired and mixed cases in keys and values across every reader.
    Extend `frontmatter-writer.contract.test.ts`, renderer
    `frontmatter-updates.test.ts` and cross-reader round trips; updating an existing
    quoted key replaces it without duplication. Preserve established safe-key
@@ -222,8 +235,9 @@ the repair does not add a new screen, toast or label.
    readback and repeated round trips for decoded keys and quoted numeric text.
 2. Decoding exposes unsafe names or erases diagnostics. Exercise quoted meta-keys,
    graph-field aliases and malformed-neighbor preservation across every reader.
-3. A YAML cleanup changes existing values beyond this repair. Keep historical
-   fixtures unchanged and isolate new key syntax from existing scalar semantics.
+3. A YAML cleanup changes existing values beyond this repair. Retain historical
+   value permissiveness; separately prove ordinary quoted-key decoding and the
+   corrected distinction between escaped backslashes and control characters.
 
 ## Later
 
@@ -236,6 +250,6 @@ the repair does not add a new screen, toast or label.
 
 ## Owner question
 
-None — repair the evidenced existing-map contract and preserve legacy values.
+None — repair mapping and escape data loss while retaining legacy value syntax.
 The routed review can narrow an unsupported spelling before implementation;
 no data migration or new write authority is needed.
