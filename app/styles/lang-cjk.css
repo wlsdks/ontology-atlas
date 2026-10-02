@@ -6,20 +6,24 @@
  */
 :root:lang(ja) {
   --font-sans:
-    var(--font-pretendard-latin), "Hiragino Sans", "Yu Gothic UI", "Meiryo UI", "Noto Sans CJK JP",
+    var(--font-pretendard-latin), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Meiryo",
+    "Noto Sans JP", "Noto Sans CJK JP",
     system-ui, sans-serif;
   --font-mono:
-    var(--font-jetbrains), var(--font-pretendard-latin), "Hiragino Sans", "Yu Gothic UI", "Meiryo UI",
-    "Noto Sans CJK JP", ui-monospace, monospace;
+    var(--font-jetbrains), var(--font-pretendard-latin), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Meiryo",
+    "Noto Sans JP", "Noto Sans CJK JP",
+    ui-monospace, monospace;
 }
 
 :root:lang(zh) {
   --font-sans:
-    var(--font-pretendard-latin), "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC",
-    "WenQuanYi Micro Hei", system-ui, sans-serif;
+    var(--font-pretendard-latin), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei",
+    system-ui, sans-serif;
   --font-mono:
-    var(--font-jetbrains), var(--font-pretendard-latin), "PingFang SC", "Microsoft YaHei UI",
-    "Noto Sans CJK SC", "WenQuanYi Micro Hei", ui-monospace, monospace;
+    var(--font-jetbrains), var(--font-pretendard-latin), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei",
+    ui-monospace, monospace;
 }
 
 :root:lang(ja) body,

@@ -77,3 +77,37 @@ describe('Japanese and Chinese line rules', () => {
     }
   });
 });
+
+describe('Japanese and Chinese font stacks', () => {
+  const faces = (locale: string, token: string): string[] => {
+    const block = blockAt(new RegExp(`:root:lang\\(${locale}\\)\\s*\\{`)).block;
+    const stack = new RegExp(`${token}:\\s*([^;]+);`).exec(block)?.[1] ?? '';
+    return [...stack.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  };
+  const PLATFORMS = {
+    ja: { mac: /^Hiragino/, windows: /^(Yu Gothic|Meiryo)/, linux: /^Noto Sans (CJK )?JP$/ },
+    zh: { mac: /^(PingFang SC|Hiragino Sans GB)$/, windows: /^Microsoft YaHei/, linux: /^(Noto Sans (CJK )?SC|Source Han Sans SC|WenQuanYi)/ },
+  } as const;
+  const OWN = { ja: /^(Hiragino (Sans|Kaku)|Yu Gothic|Meiryo|Noto Sans (CJK )?JP)/, zh: /^(PingFang|Hiragino Sans GB|Microsoft YaHei|Noto Sans (CJK )?SC|Source Han Sans SC|WenQuanYi)/ } as const;
+
+  for (const locale of CJK_LOCALES) {
+    for (const token of ['--font-sans', '--font-mono']) {
+      it(`${locale} ${token} has a native face for macOS, Windows and Android or Linux`, () => {
+        const list = faces(locale, token);
+        expect(list.length, 'no quoted faces parsed').toBeGreaterThan(0);
+        for (const [platform, re] of Object.entries(PLATFORMS[locale])) {
+          expect(list.some((name) => re.test(name)), `${locale} ${token}: ${platform}`).toBe(true);
+        }
+      });
+    }
+  }
+
+  it('never lets one locale reach the other locale face first (Han unification)', () => {
+    for (const token of ['--font-sans', '--font-mono']) {
+      const zh = faces('zh', token);
+      const ja = faces('ja', token);
+      expect(zh.some((name) => OWN.ja.test(name) && !OWN.zh.test(name)), `zh ${token} lists a ja-only face`).toBe(false);
+      expect(ja.some((name) => OWN.zh.test(name) && !OWN.ja.test(name)), `ja ${token} lists a zh-only face`).toBe(false);
+    }
+  });
+});
