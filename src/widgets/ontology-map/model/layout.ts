@@ -4,9 +4,8 @@
  * on `--map-layout-ring-domain`, capabilities fanned on `--map-layout-ring-capability` round
  * their domain, elements on `--map-layout-ring-element` round their capability. The same
  * radius on both axes at every ring (no aspect stretch). Positions never depend on the
- * camera. Seeding filters every node once per domain and per capability, O(N × parents);
- * the grid relax costs O(N × k) per iteration for k nodes in a 3×3 cell block, which is
- * O(N²) when the seed piles nodes together.
+ * camera. With unique IDs, parent-indexed seeding is O(N log N); grid relaxation is O(N × k) per
+ * iteration for k nodes in a 3×3 cell block, O(N²) for coincident seeds.
  */
 
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -103,6 +102,11 @@ interface PlacedPoint {
   angle: number;
 }
 
+interface IndexedLayoutNode {
+  node: LayoutGraphNode;
+  order: number;
+}
+
 export function computeConcentricLayout(
   nodes: readonly LayoutGraphNode[],
   rings: LayoutRings,
@@ -113,9 +117,13 @@ export function computeConcentricLayout(
 
   // Containment child count is the only hub signal layout has, so the disc orders children
   // by it: the highest-DOI hub lands at i=0, nearest the centre.
-  const childCount = new Map<string, number>();
-  for (const n of nodes) {
-    if (n.parentId !== null) childCount.set(n.parentId, (childCount.get(n.parentId) ?? 0) + 1);
+  const childrenByParent = new Map<string, IndexedLayoutNode[]>();
+  for (const [order, node] of nodes.entries()) {
+    const parentId = node.parentId;
+    if (parentId === null) continue;
+    const children = childrenByParent.get(parentId) ?? [];
+    children.push({ node, order });
+    childrenByParent.set(parentId, children);
   }
   /**
    * Stable DOI sort before the phyllotaxis disc, so the hub sits at the centre and leaves at
@@ -124,7 +132,7 @@ export function computeConcentricLayout(
   const rankDiscChildren = (children: readonly LayoutGraphNode[]): LayoutGraphNode[] => {
     const byId = new Map(children.map((c) => [c.id, c]));
     return rankEgoNeighborsByDOI(
-      children.map((c) => ({ id: c.id, kind: c.kind, degree: childCount.get(c.id) ?? 0 })),
+      children.map((c) => ({ id: c.id, kind: c.kind, degree: childrenByParent.get(c.id)?.length ?? 0 })),
     ).map((id) => byId.get(id) as LayoutGraphNode);
   };
 
@@ -146,10 +154,11 @@ export function computeConcentricLayout(
   domainNodes.forEach((domain) => {
     const domainPoint = placed.get(domain.id);
     if (!domainPoint) return;
-    const caps = nodes.filter((n) => n.kind === "capability" && n.parentId === domain.id);
+    const children = childrenByParent.get(domain.id) ?? [];
+    const caps = children.filter(({ node }) => node.kind === "capability").map(({ node }) => node);
     // Elements directly under a domain join the capability fan as one arc; left out they stack
     // at (0,0) and physics drags the stack into a blob.
-    const directElements = nodes.filter((n) => n.kind === "element" && n.parentId === domain.id);
+    const directElements = children.filter(({ node }) => node.kind === "element").map(({ node }) => node);
     const fan = [...caps, ...directElements];
     if (fan.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(domainPoint, rankDiscChildren(fan), rings.capability, placed, expandStructure);
@@ -175,7 +184,8 @@ export function computeConcentricLayout(
   capabilityNodes.forEach((cap) => {
     const capPoint = placed.get(cap.id);
     if (!capPoint) return;
-    const elements = nodes.filter((n) => n.kind === "element" && n.parentId === cap.id);
+    const elements = (childrenByParent.get(cap.id) ?? [])
+      .filter(({ node }) => node.kind === "element").map(({ node }) => node);
     if (!elements.length) return;
     if (elements.length > PHYLLOTAXIS_THRESHOLD) {
       placeExpandedChildren(capPoint, rankDiscChildren(elements), rings.element, placed, expandStructure);
@@ -194,7 +204,7 @@ export function computeConcentricLayout(
     });
   });
 
-  placeRemainingByParentChain(nodes, rings, placed, rankDiscChildren, expandStructure);
+  placeRemainingByParentChain(childrenByParent, rings, placed, rankDiscChildren, expandStructure);
   placeOrphans(nodes, rings, placed);
 
   relaxCollisions(nodes, placed, options);
@@ -210,18 +220,20 @@ export function computeConcentricLayout(
  * capability ⊃ capability) fan out from their placed parent; a no-op on a standard vault.
  */
 function placeRemainingByParentChain(
-  nodes: readonly LayoutGraphNode[],
+  childrenByParent: ReadonlyMap<string, readonly IndexedLayoutNode[]>,
   rings: LayoutRings,
   placed: Map<string, PlacedPoint>,
   rankDiscChildren: (children: readonly LayoutGraphNode[]) => LayoutGraphNode[],
   expandStructure: ExpandStructure,
 ): void {
-  // Repeat while progress is made so deep chains converge deterministically.
-  for (let pass = 0; pass < nodes.length; pass += 1) {
-    const pending = nodes.filter((n) => !placed.has(n.id) && n.parentId !== null && placed.has(n.parentId));
+  // Visit each child once; sorting each frontier preserves input order in O(N log N).
+  let frontier = [...placed.keys()];
+  while (frontier.length > 0) {
+    const pending = frontier.flatMap((parentId) => childrenByParent.get(parentId) ?? [])
+      .filter(({ node }) => !placed.has(node.id)).sort((a, b) => a.order - b.order);
     if (pending.length === 0) return;
     const byParent = new Map<string, LayoutGraphNode[]>();
-    for (const n of pending) {
+    for (const { node: n } of pending) {
       const list = byParent.get(n.parentId as string) ?? [];
       list.push(n);
       byParent.set(n.parentId as string, list);
@@ -245,6 +257,7 @@ function placeRemainingByParentChain(
         });
       });
     }
+    frontier = [...new Set(pending.map(({ node }) => node.id))];
   }
 }
 

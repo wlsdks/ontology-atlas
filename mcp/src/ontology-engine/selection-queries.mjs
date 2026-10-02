@@ -898,9 +898,9 @@ export function createSelectionQueries({
 
     for (const node of nodes) {
       if (resolvedSource && node.slug === resolvedSource) continue;
-      const targetNeighbors = new Set(
+      const targetNeighbors = sourceNeighbors.size > 0 ? new Set(
         traversalEdges(node.slug, 'undirected', typeSet).map((row) => row.next),
-      );
+      ) : sourceNeighbors;
       const score = similarityScore(candidate, node, sourceNeighbors, targetNeighbors);
       if (score.total <= 0) continue;
       rows.push({
@@ -913,8 +913,8 @@ export function createSelectionQueries({
           domain: roundScore(score.domain),
           neighbors: roundScore(score.neighbors),
         },
-        sharedNeighbors: [...sourceNeighbors]
-          .filter((slug) => targetNeighbors.has(slug))
+        sharedNeighbors: [...(sourceNeighbors.size <= targetNeighbors.size ? sourceNeighbors : targetNeighbors)]
+          .filter((slug) => sourceNeighbors.has(slug) && targetNeighbors.has(slug))
           .sort()
           .map((slug) => summarizeNode(nodeBySlug.get(slug))),
       });
