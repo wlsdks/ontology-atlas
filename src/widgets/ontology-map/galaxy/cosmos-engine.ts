@@ -136,7 +136,7 @@ export class CosmosEngine {
     this.cache.clear();
     this.hits.clear();
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
-    this.rig.setBounds(layout.bounds);
+    this.rig.setBounds(layout.bounds, arrival !== "none");
     this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: -1, mode: arrival } : null;
     this.arrivalMode = this.arrival ? arrival : "none";
     [this.arrivalClock, this.arrivalEnd] = [0, performance.now() + (this.arrival ? ARRIVAL_MS : 0)];

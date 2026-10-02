@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
+import { overviewCamera } from "./cosmos-camera";
 import { CosmosEngine } from "./cosmos-engine";
 import type { CosmosFrameStats, CosmosInks } from "./cosmos-types";
 import type { CosmosLayout } from "./layout/cosmos-layout";
@@ -117,6 +118,20 @@ describe("cosmos engine", () => {
     expect(engine["lastInput"]).toBe(first);
     move(11);
     expect(engine["lastInput"]).toBe(first + 5_000);
+    engine.destroy();
+  });
+
+  it("keeps the reader's camera when a vault re-read hands it the same sky, and refits an untouched or arriving one", () => {
+    const { engine } = mount();
+    const reread = { ...layout, bounds: { ...layout.bounds, maxX: 100.004 } } as CosmosLayout;
+    engine.rig.frame({ x: 40, y: -25, scale: 6 }, 0);
+    engine.setLayout(reread, new Map(), [], "none");
+    expect(engine.rig.camera).toEqual({ x: 40, y: -25, scale: 6 });
+    expect(engine.rig.overviewScale).toBe(overviewCamera(reread.bounds, engine.rig.room).overviewScale);
+    engine.setLayout(layout, new Map(), [], "replay");
+    expect(engine.rig.camera).toEqual(overviewCamera(layout.bounds, engine.rig.room).camera);
+    engine.setLayout(reread, new Map(), [], "none");
+    expect(engine.rig.camera).toEqual(overviewCamera(reread.bounds, engine.rig.room).camera);
     engine.destroy();
   });
 

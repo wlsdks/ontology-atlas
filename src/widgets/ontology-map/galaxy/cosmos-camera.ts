@@ -145,10 +145,11 @@ export class CosmosCameraRig {
     if (roomMovesRest(this.room, next)) this.room = next;
   }
 
-  setBounds(bounds: CosmosLayout["bounds"]): void {
+  setBounds(bounds: CosmosLayout["bounds"], refit: boolean): void {
     this.bounds = bounds;
-    this.user = false;
-    this.fit(false, 0);
+    if (refit) this.user = false;
+    if (this.user) this.overviewScale = overviewCamera(bounds, this.room).overviewScale;
+    else this.fit(false, 0);
   }
 
   fit(glide: boolean, now: number): void {
