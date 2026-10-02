@@ -34,7 +34,7 @@ export function installCosmosProbe(engine: CosmosEngine): () => void {
     selection: () => ({ nodeId: engine.selectedId }),
     interaction: () => ({ kind: rig.interaction() }),
     arrival: () => ({ mode: engine.arrivalMode, active: engine.arrival !== null, clockMs: engine.arrivalClock, totalMs: ARRIVAL_MS }),
-    haze: () => ({ factor: engine.hazeAwake ? 1 : 0, tau: engine.haze.tau, awake: engine.hazeAwake }),
+    haze: () => ({ factor: engine.haze.factor, tau: engine.haze.tau, awake: engine.hazeAwake }),
     cacheBytes: () => engine.cache.bytes(),
     dropBitmaps: () => {
       engine.cache.clear();

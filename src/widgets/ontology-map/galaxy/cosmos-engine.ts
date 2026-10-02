@@ -256,7 +256,7 @@ export class CosmosEngine {
       relationsOf: (id) => this.relations.get(id) ?? [],
       pointOf: (id) => posedPoint(layout, this.poses, id),
       record: paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null,
-      cache: this.cache, deepField: this.deepField, buildBudget: 4,
+      cache: this.cache, deepField: this.deepField, buildBudget: 4, frame: this.frames,
     });
     if (stats.pendingBuilds > 0) why |= 16;
     this.lastStats = stats;
