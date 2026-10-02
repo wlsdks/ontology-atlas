@@ -3178,6 +3178,14 @@ fn native_tray_labels(candidates: &[String], locales: &[&str]) -> NativeTrayLabe
             open: "Ontology Atlas 열기",
             quit: "Ontology Atlas 종료",
         },
+        "ja" => NativeTrayLabels {
+            open: "Ontology Atlasを開く",
+            quit: "Ontology Atlasを終了",
+        },
+        "zh" => NativeTrayLabels {
+            open: "打开 Ontology Atlas",
+            quit: "退出 Ontology Atlas",
+        },
         _ => NativeTrayLabels {
             open: "Open Ontology Atlas",
             quit: "Quit Ontology Atlas",
