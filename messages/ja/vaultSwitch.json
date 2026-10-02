@@ -14,7 +14,7 @@
   "lastOpenBadge": "前回",
   "contents": "文書{docs}件 · 概念{concepts}件",
   "contentsUncounted": "未集計",
-  "openedAgo": "{when}に開きました",
+  "openedAgo": "最終オープン：{when}",
   "age": {
     "justNow": "たった今",
     "minutesAgo": "{count}分前",
@@ -51,7 +51,7 @@
   },
   "locate": "探し直す",
   "locateFolder": "「フォルダを選択…」で{name}を探し直す",
-  "countedAgo": "{when}に集計",
+  "countedAgo": "集計：{when}",
   "missing": {
     "summary": "{count}件のフォルダが見つかりません",
     "review": "確認",

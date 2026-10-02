@@ -59,7 +59,7 @@
   "selectionAnnouncement": "已选中 {name}。{deps} 个依赖，{referenced} 个引用。",
   "mobileTagline": "概念地图。",
   "workspace": {
-    "growthThisWeek": " · 本周新增 {count} 个项目",
+    "growthThisWeek": "· 本周新增 {count} 个项目",
     "subtitle": "<b>{concepts}</b> 个概念 · <b>{relations}</b> 条关系 {growth}",
     "eyebrow": "{concepts} 个概念",
     "expandHint": "展开工作区地图"
