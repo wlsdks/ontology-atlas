@@ -159,14 +159,11 @@ export function SettingsSearchResults({
                 <span className="min-w-0 flex-1 text-left">
                   <span className="block text-body text-[color:var(--color-text-primary)]">{item.label}</span>
                   <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-tertiary)]">
-                    {t('where', { section: item.sectionLabel, scope: item.scopeLabel })}
+                    {item.opensLabel
+                      ? t('opens', { place: item.opensLabel })
+                      : t('where', { section: item.sectionLabel, scope: item.scopeLabel })}
                   </span>
                 </span>
-                {item.opensLabel ? (
-                  <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
-                    {t('opens', { place: item.opensLabel })}
-                  </span>
-                ) : null}
               </div>
             ))}
           </div>

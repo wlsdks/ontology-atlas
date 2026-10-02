@@ -81,6 +81,14 @@ describe('SettingsSearch', () => {
     expect(results.querySelector('[data-setting-result="version"]')).not.toHaveTextContent('Opens');
   });
 
+  it('gives a door result its destination, not the scope of the pane it sits in', () => {
+    const { field } = renderHarness();
+    fireEvent.change(field, { target: { value: 'models' } });
+    const door = screen.getByTestId('app-settings-search-results').querySelector('[data-setting-result="door-models"]');
+    expect(door).toHaveTextContent('Opens Agents');
+    expect(door).not.toHaveTextContent('This computer');
+  });
+
   it('moves with the arrows, wraps, and opens the active result with Enter', () => {
     const { field, onOpen } = renderHarness();
     fireEvent.change(field, { target: { value: 'e' } });
