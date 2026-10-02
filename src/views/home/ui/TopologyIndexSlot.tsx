@@ -15,6 +15,7 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 
 import { useState, type ReactNode } from "react";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
+import { useVaultLoadProgress } from "@/entities/vault-session";
 import { focusWhenReady } from "../lib/topology-focus-return";
 import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
 
@@ -81,6 +82,7 @@ export function TopologyIndexSlot({
   const { unboundProjectSource, projectSourceReadiness } = topologySourceReadiness;
   const { acpRuntimes } = acpRuntimeController;
   const { handleIndexTabExpandFromAgent } = topologyAgentOrchestration;
+  const loadProgress = useVaultLoadProgress();
 
   return (<>
     {!selectedRelationActive && !topologyCreateNodeBlockingActive
@@ -216,7 +218,10 @@ export function TopologyIndexSlot({
                   noProjectsYet={projectSourceReadiness.state === "no-projects"}
                   // Names the folder the rows came from by `handle.name`; the browser has no
                   // absolute path, so neither claims one.
-                  sourceName={vault.status === "loaded" ? (vault.handle?.name ?? null) : null}
+                  sourceName={
+                    vault.status === "loaded" || vault.partialManifest ? (vault.handle?.name ?? null) : null
+                  }
+                  sourceLoadProgress={vault.status === "loaded" ? null : loadProgress}
                   sourceDocumentCount={vault.manifest?.docs.length ?? null}
                   sourceDocumentCountPartial={vault.manifest?.walkTruncated ?? false}
                   // Without an agent the door would create a folder and then do nothing.
@@ -236,6 +241,9 @@ export function TopologyIndexSlot({
                     censusConcepts: t("index.censusConcepts"),
                     sourceDocuments: t("index.sourceDocuments"),
                     sourceDocumentsPartialTitle: t("index.sourceDocumentsPartialTitle"),
+                    sourceDocumentsReading: loadProgress
+                      ? t("index.sourceDocumentsReading", { read: loadProgress.read, total: loadProgress.total })
+                      : undefined,
                     censusRelations: t("index.censusRelations"),
                     censusDomains: t("index.censusDomains"),
                     capabilitiesShort: t("index.capabilitiesShort"),

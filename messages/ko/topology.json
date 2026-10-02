@@ -352,6 +352,7 @@
     "censusConcepts": "개념",
     "sourceDocuments": "문서",
     "sourceDocumentsPartialTitle": "한 번에 다 읽기에는 폴더가 커서, 문서가 더 있을 수 있어요.",
+    "sourceDocumentsReading": "문서 {total}개 중 {read}개 읽는 중",
     "censusRelations": "관계",
     "censusDomains": "도메인",
     "agentSync": "AI가 함께 갱신 중",

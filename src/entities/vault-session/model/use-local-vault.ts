@@ -18,6 +18,7 @@ import {
   type VaultStampIndex,
   type BuiltVaultEntry,
   type LocalVaultBuild,
+  type VaultBuildObserver,
   type VaultManifest,
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
@@ -77,6 +78,7 @@ import {
   type AgentActivityStatus,
 } from './agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
+import { createVaultLoadProgressStore } from './vault-load-progress';
 /** Minimum interval (ms) between auto-refreshes when the tab regains focus.
  *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
@@ -1072,15 +1074,22 @@ export function useLocalVaultInternal() {
   const loadSequenceRef = useRef(0);
   const pickerSequenceRef = useRef(0);
   const mountedRef = useRef(true);
+  const [arrival, setArrival] = useState<{ handle: FileSystemDirectoryHandle; manifest: VaultManifest } | null>(null);
+  const [loadProgressStore] = useState(createVaultLoadProgressStore);
+  const endArrival = useCallback(() => {
+    setArrival(null);
+    loadProgressStore.set(null);
+  }, [loadProgressStore]);
   const beginVaultReadSession = useCallback((handle: FileSystemDirectoryHandle | null) => {
     const session = { handle };
     vaultReadSessionRef.current = session;
     if (!handle || lastBuildRef.current?.handle !== handle) {
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
+      endArrival();
     }
     return session;
-  }, []);
+  }, [endArrival]);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -1151,6 +1160,17 @@ export function useLocalVaultInternal() {
         lastBuildRef.current && lastBuildRef.current.handle === handle
           ? lastBuildRef.current.entries
           : null;
+      const arriving: VaultBuildObserver | undefined =
+        stateRef.current.manifestHandle === handle
+          ? undefined
+          : {
+              onProgress: (progress) => {
+                if (isCurrent()) loadProgressStore.set(progress);
+              },
+              onPartial: (build) => {
+                if (isCurrent()) setArrival({ handle, manifest: build.manifest });
+              },
+            };
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
       if (reuse) {
         try {
@@ -1159,10 +1179,10 @@ export function useLocalVaultInternal() {
           result = await rebuildLocalManifestIncremental(handle, reuse, nativeStamps);
         } catch {
           if (!isCurrent()) return null;
-          result = await buildLocalManifestWithEntries(handle);
+          result = await buildLocalManifestWithEntries(handle, arriving);
         }
       } else {
-        result = await buildLocalManifestWithEntries(handle);
+        result = await buildLocalManifestWithEntries(handle, arriving);
       }
       if (!isCurrent()) return null;
       /*
@@ -1211,6 +1231,7 @@ export function useLocalVaultInternal() {
       if (!isCurrent()) return null;
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
+      endArrival();
       setState({
         status: 'loaded',
         handle,
@@ -1275,6 +1296,7 @@ export function useLocalVaultInternal() {
       if (!isCurrent()) return null;
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
+      endArrival();
       // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
       // `invoke` rejects with a *string* rather than an Error; the previous
       // `err instanceof Error ? err.message : null` discarded it wholesale and silenced every
@@ -1301,7 +1323,7 @@ export function useLocalVaultInternal() {
       });
       return null;
     }
-  }, []);
+  }, [endArrival, loadProgressStore, stateRef]);
 
   const refreshRecentVaults = useCallback(async () => {
     setRecentVaults(await listRecentLocalFsHandles());
@@ -2398,6 +2420,9 @@ export function useLocalVaultInternal() {
       state.status === 'loading' &&
       state.manifest !== null &&
       state.manifestHandle === state.handle,
+    partialManifest:
+      state.status === 'loading' && arrival?.handle === state.handle ? arrival.manifest : null,
+    loadProgressStore,
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
     openedInsidePickedFolder,

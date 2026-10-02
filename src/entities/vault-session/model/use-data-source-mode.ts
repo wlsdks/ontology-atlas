@@ -17,7 +17,7 @@ import {
  * Side effect: publishes the current mode on `window.__ohMyOntologyMode` (debug only).
  */
 export function useDataSourceMode(): DataSourceMode {
-  const { status: vaultStatus, manifest } = useLocalVault();
+  const { status: vaultStatus, manifest, partialManifest } = useLocalVault();
 
   const mode = useMemo<DataSourceMode>(
     () =>
@@ -26,9 +26,9 @@ export function useDataSourceMode(): DataSourceMode {
         // manifest. Switching the source to static dogfood during that brief loading window
         // freezes local slug detail and edit pages as not-found. Only the first load (no
         // manifest) is static.
-        vaultLoaded: vaultStatus === 'loaded' || Boolean(manifest),
+        vaultLoaded: vaultStatus === 'loaded' || Boolean(manifest) || Boolean(partialManifest),
       }),
-    [manifest, vaultStatus],
+    [manifest, partialManifest, vaultStatus],
   );
 
   useEffect(() => {
