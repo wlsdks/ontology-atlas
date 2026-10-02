@@ -32,6 +32,7 @@ import {
   touchLocalFsHandle,
 } from './store';
 import type { LocalFsHandleRecord } from '../model/types';
+import { idbGet, idbSet } from '@/shared/lib/idb-kv';
 
 function fakeHandle(name: string): FileSystemDirectoryHandle {
   return { kind: 'directory', name } as unknown as FileSystemDirectoryHandle;
@@ -303,6 +304,75 @@ describe('recordLocalFsHandleContents', () => {
 });
 
 describe('the recent list survives concurrent writers', () => {
+  it('rechecks current selection before queued legacy migration', async () => {
+    memory.set('docs-vault:current-handle', fakeHandle('Legacy'));
+    let began!: () => void;
+    let release!: () => void;
+    const started = new Promise<void>((resolve) => { began = resolve; });
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    vi.mocked(idbGet).mockImplementationOnce(async () => { began(); await blocked; return undefined; });
+    const restoring = getLocalFsHandle();
+    await started;
+    await putLocalFsHandle({ id: 'current', handle: fakeHandle('New'), name: 'New', createdAt: 2, lastAccessedAt: 2 });
+    release();
+    expect((await restoring)?.name).toBe('New');
+    expect((await getLocalFsHandle())?.name).toBe('New');
+  });
+
+  it('allows a later record write after an earlier queued write rejects', async () => {
+    vi.mocked(idbSet).mockRejectedValueOnce(new Error('Fixture storage rejection'));
+    await expect(putLocalFsHandle({ id: 'current', handle: fakeHandle('Failed'), name: 'Failed', createdAt: 1, lastAccessedAt: 1 })).rejects.toThrow('Fixture storage rejection');
+    await putLocalFsHandle({ id: 'current', handle: fakeHandle('Recovered'), name: 'Recovered', createdAt: 2, lastAccessedAt: 2 });
+    expect((await getLocalFsHandle())?.name).toBe('Recovered');
+    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual(['Recovered']);
+  });
+
+  it('preserves counts when a delayed touch overlaps their publication', async () => {
+    const record: LocalFsHandleRecord = { id: 'current', handle: fakeHandle('A'), name: 'A', createdAt: 1, lastAccessedAt: 1 };
+    await putLocalFsHandle(record);
+    let began!: () => void;
+    let release!: () => void;
+    const started = new Promise<void>((resolve) => { began = resolve; });
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    vi.mocked(idbGet).mockImplementationOnce(async () => {
+      const snapshot = memory.get('docs-vault:fs-handle:current');
+      began();
+      await blocked;
+      return snapshot;
+    });
+    const touch = touchLocalFsHandle();
+    await started;
+    const count = recordLocalFsHandleContents({ docCount: 10, conceptCount: 3 });
+    release();
+    await Promise.all([touch, count]);
+    const stored = await getLocalFsHandle();
+    expect(stored?.docCount).toBe(10);
+    expect(stored?.conceptCount).toBe(3);
+    expect(stored?.lastAccessedAt).toBeGreaterThan(1);
+  });
+
+  it.each(['replace', 'delete'] as const)('does not revive an old record after a delayed touch and %s', async (operation) => {
+    await putLocalFsHandle({ id: 'current', handle: fakeHandle('A'), name: 'A', createdAt: 1, lastAccessedAt: 1 });
+    let began!: () => void;
+    let release!: () => void;
+    const started = new Promise<void>((resolve) => { began = resolve; });
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    vi.mocked(idbGet).mockImplementationOnce(async () => {
+      const snapshot = memory.get('docs-vault:fs-handle:current');
+      began();
+      await blocked;
+      return snapshot;
+    });
+    const touch = touchLocalFsHandle();
+    await started;
+    const later = operation === 'delete'
+      ? deleteLocalFsHandle()
+      : putLocalFsHandle({ id: 'current', handle: fakeHandle('B'), name: 'B', createdAt: 2, lastAccessedAt: 2 });
+    release();
+    await Promise.all([touch, later]);
+    expect((await getLocalFsHandle())?.name).toBe(operation === 'delete' ? undefined : 'B');
+  });
+
   /* Two unawaited writes must both land: the entry count decides whether the chooser opens. */
   it('keeps both folders when two writes are started without awaiting the first', async () => {
     // Neither awaited, as the vault-load path calls them.
