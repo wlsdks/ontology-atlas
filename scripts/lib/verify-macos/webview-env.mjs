@@ -1,5 +1,3 @@
-import { listLocales } from "../../build-messages.mjs";
-
 export const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 
 export const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
@@ -108,10 +106,10 @@ const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
  * user-visible markers instead.
  */
-export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = listLocales()) {
-  if (typeof expectedPath === "string" && locales.length > 0) {
+export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = null) {
+  if (typeof expectedPath === "string") {
     const pathname = new URL(expectedPath, "tauri://localhost/").pathname;
-    const prefix = `(?:${locales.join("|")})`;
+    const prefix = locales ? `(?:${locales.join("|")})` : "[a-z]{2}";
     const routeIs = (route) => new RegExp(`/${prefix}/${route}/?$`).test(pathname);
     if (routeIs("agents")) {
       return WEBVIEW_AGENTS_WORKBENCH_MARKERS;

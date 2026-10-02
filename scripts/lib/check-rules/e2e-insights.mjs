@@ -8,10 +8,10 @@ export const rules = [
     // verification eight minutes into a bundle build (measured 2026-09-20, when a pinned tab
     // count became unreachable). This spec runs both over the rendered screen in seconds.
     command: 'pnpm exec playwright test tests/e2e/insights-app-contract.spec.ts',
-    reason: 'the insights board, the app DOM probe, or the payload contract that judges it changed',
+    reason: 'the insights board, the app DOM probe, or a module the payload contract loads changed',
     matches: [
       /^src-tauri\/src\/webview_verify\/dom_marker_probe\.js$/,
-      /^scripts\/lib\/verify-macos\/payload-contract\.mjs$/,
+      /^scripts\/lib\/verify-macos\/[^/]+\.mjs$/,
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/lib\/insights-tab-state\.ts$/,
     ],
