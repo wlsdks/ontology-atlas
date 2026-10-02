@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import "./atlas-cosmos-probe";
+import { waitForCosmosStill } from "./atlas-cosmos-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForMapSettled } from "./settle";
 
@@ -8,6 +8,8 @@ const SOURCES = [
   { name: "dogfood", query: "", dogfood: true },
   { name: "synth 500", query: "synth=500&synthDeps=1&", dogfood: false },
 ] as const;
+
+const NAME_MARGIN = 112;
 
 const SIZES = [
   { width: 1512, height: 982 },
@@ -48,7 +50,7 @@ for (const source of SOURCES) {
       await page.setViewportSize(size);
       await openGalaxy(page, source.query, source.dogfood);
 
-      const result = await page.evaluate(() => {
+      const result = await page.evaluate((NAME_MARGIN) => {
         const probe = window.__atlasCosmos!;
         const stats = probe.stats()!;
         const room = probe.room();
@@ -59,15 +61,59 @@ for (const source of SOURCES) {
         const covered = stats.labels
           .filter((l) => document.elementFromPoint(rect.left + l.x + l.width / 2, rect.top + l.y + l.height / 2) !== canvas)
           .map((l) => l.text);
-        return { galaxies: probe.layout()!.galaxies.length, named: new Set(galaxyLabels.map((l) => l.id)).size, outside, covered };
-      });
+        const byId = new Map(probe.layout()!.galaxies.map((g) => [g.id, g]));
+        const far = galaxyLabels
+          .map((l) => {
+            const g = byId.get(l.id)!;
+            const dx = Math.max(l.x - g.sx, 0, g.sx - (l.x + l.width));
+            const dy = Math.max(l.y - g.sy, 0, g.sy - (l.y + l.height));
+            return { text: l.text, beyond: Math.round(Math.hypot(dx, dy) - g.rho) };
+          })
+          .filter((d) => d.beyond > NAME_MARGIN);
+        return { galaxies: byId.size, named: new Set(galaxyLabels.map((l) => l.id)).size, outside, covered, far };
+      }, NAME_MARGIN);
 
-      console.log(`[galaxy-names] ${source.name} ${size.width}x${size.height}: ${result.named}/${result.galaxies} named, ${result.outside.length} outside, ${result.covered.length} covered`);
+      console.log(`[galaxy-names] ${source.name} ${size.width}x${size.height}: ${result.named}/${result.galaxies} named, ${result.far.length} far, ${result.outside.length} outside, ${result.covered.length} covered`);
       expect(result.galaxies).toBeGreaterThan(0);
-      expect(result.named).toBe(result.galaxies);
+      expect(result.named).toBeGreaterThanOrEqual(size.width < 1200 ? Math.ceil((result.galaxies * 30) / 33) : result.galaxies);
+      expect(result.far).toEqual([]);
       expect(result.outside).toEqual([]);
       expect(result.covered).toEqual([]);
       expect(errors).toEqual([]);
     });
   }
 }
+
+test("flown into a galaxy at 1040x720, other domains are named beside their own galaxy or not at all", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1040, height: 720 });
+  await openGalaxy(page, "", false);
+  const inside = await page.evaluate(() => {
+    const probe = window.__atlasCosmos!;
+    const g = probe.layout()!.galaxies.slice().sort((a, b) => b.members - a.members)[0]!;
+    probe.flyTo(g.id);
+    return g.id;
+  });
+  await waitForCosmosStill(page);
+  const far = await page.evaluate(
+    ({ margin, inside }) => {
+      const probe = window.__atlasCosmos!;
+      const room = probe.room();
+      const byId = new Map(probe.layout()!.galaxies.map((g) => [g.id, g]));
+      const away = (g: { sx: number; sy: number; rho: number }) => g.sx + g.rho < room.x || g.sx - g.rho > room.x + room.width || g.sy + g.rho < room.y || g.sy - g.rho > room.y + room.height;
+      return probe
+        .stats()!
+        .labels.filter((l) => l.kind === "galaxy" && l.id !== inside)
+        .map((l) => {
+          const g = byId.get(l.id)!;
+          const dx = Math.max(l.x - g.sx, 0, g.sx - (l.x + l.width));
+          const dy = Math.max(l.y - g.sy, 0, g.sy - (l.y + l.height));
+          return { text: l.text, beyond: Math.round(Math.hypot(dx, dy) - g.rho), away: away(g) };
+        })
+        .filter((d) => d.beyond > margin || d.away);
+    },
+    { margin: NAME_MARGIN, inside },
+  );
+  console.log(`[galaxy-names] flown 1040x720: ${far.length} far ${JSON.stringify(far)}`);
+  expect(far).toEqual([]);
+});

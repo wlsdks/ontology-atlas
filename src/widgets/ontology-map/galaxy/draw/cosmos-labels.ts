@@ -4,8 +4,8 @@ import type { CosmosBitmapCache } from "./cosmos-bitmap-cache";
 
 const TALL_LABELS: ReadonlySet<CosmosLabelKind> = new Set(["galaxy", "project"]);
 const NAMED_BY_ID: ReadonlySet<CosmosLabelKind> = new Set(["element", "member"]);
-const NAME_SHIFTS: readonly (readonly [number, number])[] = [-1, -0.5, 0, 0.5, 1]
-  .flatMap((dx) => Array.from({ length: 25 }, (_, k) => [dx, k % 2 ? (k + 1) / 2 : -k / 2] as const))
+const NAME_SHIFTS: readonly (readonly [number, number])[] = [-0.5, 0, 0.5]
+  .flatMap((dx) => Array.from({ length: 9 }, (_, k) => [dx, k % 2 ? (k + 1) / 2 : -k / 2] as const))
   .sort((p, q) => Math.hypot(p[0] * 3, p[1]) - Math.hypot(q[0] * 3, q[1]));
 const NO_SHIFT: readonly (readonly [number, number])[] = [[0, 0]];
 
@@ -53,10 +53,6 @@ export function placeCosmosLabels(
     let x = c.align === "center" ? c.x - w / 2 : c.x;
     let y = c.y - h / 2;
     const anchored = TALL_LABELS.has(c.kind);
-    if (anchored) {
-      x = Math.min(room.x + room.width - w, Math.max(room.x, x));
-      y = Math.min(room.y + room.height - h, Math.max(room.y, y));
-    }
     const inside = (left: number, top: number) => left >= room.x && left + w <= room.x + room.width && top >= room.y && top + h <= room.y + room.height;
     let spot: readonly [number, number] | null = null;
     for (const [dx, dy] of anchored ? NAME_SHIFTS : NO_SHIFT) {

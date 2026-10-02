@@ -8,6 +8,8 @@ import type { CosmosPaintRecord } from "./cosmos-types";
 export interface CosmosMirrorLabels {
   list: string;
   galaxyRow: (name: string, count: number) => string;
+  strandList: string;
+  strandRow: (from: string, to: string, count: number, twoWay: boolean) => string;
 }
 
 const MARK_TRAILING_MS = 120;
@@ -99,6 +101,15 @@ export function CosmosMirror({
           </li>
         ))}
       </ul>
+      {layout.filaments.length > 0 ? (
+        <ul data-testid="cosmos-strand-list" aria-label={labels?.strandList}>
+          {layout.filaments.map((f) => {
+            const from = layout.galaxies[f.from]!;
+            const to = layout.galaxies[f.to]!;
+            return <li key={`${from.id}-${to.id}`}>{labels ? labels.strandRow(from.label, to.label, f.count, f.twoWay) : `${from.label}, ${to.label}, ${f.count}`}</li>;
+          })}
+        </ul>
+      ) : null}
       <p role="status" aria-live="polite" data-testid="cosmos-walk-notice">
         {notice ? <span key={notice.key}>{notice.text}</span> : null}
       </p>

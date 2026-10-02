@@ -224,6 +224,8 @@ routes: [/topology]
   - **Motion.** The first open of a folder replays the settle in about a second. While you work, the gas in each galaxy turns and breathes; it rests 12 seconds after your last input, never moves a concept, and is absent under reduced motion.
   - **Selection.** Selecting a star draws its real relations and approaches it in the free canvas beside the inspector. Closing returns to the earlier view unless you moved meanwhile.
   - **Leaving.** Flat returns to its own overview after a visit to Galaxy, as it does after the Hex board.
+  - **Where names go.** A galaxy's name stays beside its galaxy. A galaxy outside the free canvas, or under a card or the inspector, is not named; only the galaxy you are inside keeps its name pinned at the top.
+  - **Not in Galaxy.** The trail draws no walk line, and realm, tour anchors, agent focus and the INDEX hover brush are not drawn, as on the Hex board.
 
   In Galaxy, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through

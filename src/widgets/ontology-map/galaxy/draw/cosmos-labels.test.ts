@@ -60,6 +60,20 @@ describe("placeCosmosLabels", () => {
     expect(placed[0]!.y + placed[0]!.height <= placed[1]!.y || placed[1]!.y + placed[1]!.height <= placed[0]!.y).toBe(true);
   });
 
+  it("drops a domain name whose galaxy lies outside the room instead of pulling it in", () => {
+    const small: CosmosRoom = { x: 0, y: 0, width: 400, height: 300 };
+    const placed = place([candidate("galaxy", 0, 950, { x: 700, y: 150, align: "center" }), candidate("project", 1, 1000, { x: 200, y: 600, align: "center" })], small);
+    expect(placed).toEqual([]);
+  });
+
+  it("keeps a crowded domain name within 100 px of its anchor or drops it", () => {
+    const small: CosmosRoom = { x: 0, y: 0, width: 400, height: 300 };
+    const crowd = Array.from({ length: 12 }, (_, i) => candidate("galaxy", i, 950 - i, { x: 200, y: 150, align: "center" }));
+    const placed = place(crowd, small);
+    expect(placed.length).toBeLessThan(12);
+    for (const l of placed) expect(Math.abs(l.y + l.height / 2 - 150)).toBeLessThanOrEqual(100);
+  });
+
   it("names element and member labels by id", () => {
     const placed = place([candidate("member", 0, 500, { text: "" }), candidate("element", 1, 100, { text: "" })]);
     expect(placed.map((l) => l.text)).toEqual(["name of member-0", "name of element-1"]);

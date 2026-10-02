@@ -76,9 +76,10 @@ a composition.
 - No coloured left-edge stripe on a new card or row ("No left-edge selection
   stripe" in `docs/DESIGN-SYSTEM.md`).
 - Galaxy paints glows, circular cores and coronas only: no polygon or outline
-  round a star or a galaxy; counted strands between domains at the overview
-  are data marks, not the relation mesh. Twinkle is atmosphere, never data; reduced
-  motion freezes it. Flat and Dome keep canonical shapes. Details:
+  round a galaxy, and round a star only one indigo selection ring and one
+  hover ring; counted strands between domains at the overview are data marks,
+  not the relation mesh. Nothing twinkles; the haze is the only ambient
+  motion and reduced motion removes it. Flat and Dome keep canonical shapes. Details:
   `docs/DESIGN-SYSTEM.md`, "v2 Language Definition" and "Galaxy reference
   translation".
 - Workflow categories differ by shape (active underline, planned dashed), not

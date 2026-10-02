@@ -12,7 +12,12 @@ export function TopologyCosmosSurface({
 }: Omit<CosmosMapProps, "arrivalKey" | "labels"> & { vaultKey: string }) {
   const t = useTranslations("mapCosmos");
   const labels: CosmosMirrorLabels = useMemo(
-    () => ({ list: t("list"), galaxyRow: (name, count) => t("galaxyRow", { name, count }) }),
+    () => ({
+      list: t("list"),
+      galaxyRow: (name, count) => t("galaxyRow", { name, count }),
+      strandList: t("strandList"),
+      strandRow: (from, to, count, twoWay) => t(twoWay ? "strandRowBoth" : "strandRow", { from, to, count }),
+    }),
     [t],
   );
   return <OntologyCosmosMap key={vaultKey} {...props} arrivalKey={vaultKey} labels={labels} />;
