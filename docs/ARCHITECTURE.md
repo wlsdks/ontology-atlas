@@ -397,7 +397,7 @@ decision records behind it are in `docs/DECISIONS.md`, dated 2026-08-16.
 | `src/shared/lib/tauri-acp.ts` | The capability bridge and its web degradation. It never re-implements the permission policy |
 | `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused) |
 | `src/widgets/acp-chat-panel/` | The existing Home workbench conversation, task-bound meaning review and separate execution permission card |
-| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the settings sheet's Runtime section |
+| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the Agents destination's coding tools list |
 
 Three properties are structural rather than incidental. The registry is a
 committed snapshot, so no ACP code path touches the network at runtime. A
@@ -709,11 +709,12 @@ until a local manifest exists.
                            app-only folder when they are missing, runs the eight-step
                            connection check, and repairs what it can. Moved out of the
                            settings sheet 2026-08-20 (ledger 90): settings is where you pick
-                           values, this is operational work with progress state. Workspace
-                           stays in settings (a different owning domain). Since 2026-09-25
-                           the API Key pane is the page's models tab (?tab=models): local
-                           runners by address, Keychain keys, the experimental Jev check and
-                           the sent-log count; settings keeps one pointer row to it.
+                           values, this is operational work with progress state. The ontology
+                           folder stays in settings (a different owning domain). Since
+                           2026-09-25 the API Key pane is the page's models tab (?tab=models):
+                           local runners by address, Keychain keys, the experimental Jev
+                           check and the sent-log count; the settings Agents pane keeps door
+                           rows to it and to MCP (2026-10-02).
                            Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17

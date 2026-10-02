@@ -138,6 +138,7 @@ const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEm
 // to the settings sheet's drill-in panel, so the gate looks there.
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
+const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
 // After that merge the old `LocalVaultPicker` was an orphan no surface rendered
 // (#72); its features (recent-vault recovery, copy path, open in Finder) were
 // restored into the settings sheet's workspace group. The gate looks at the live
@@ -599,7 +600,7 @@ if (
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\b/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9\b/.test(pagesDeployWorkflow) &&
   /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
@@ -1841,19 +1842,20 @@ if (
   localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
   localVaultHook.includes("openRecent") &&
   localVaultHook.includes("forgetRecent") &&
-  appSettingsMenu.includes("localVault.recentVaults") &&
-  appSettingsMenu.includes("localVault.openRecent(record)") &&
-  appSettingsMenu.includes("localVault.forgetRecent(record)") &&
-  appSettingsMenu.includes("record.desktopRootPath") &&
+  appSettingsMenu.includes("<WorkspacePane") &&
+  workspacePane.includes("localVault.recentVaults") &&
+  workspacePane.includes("localVault.openRecent(record)") &&
+  workspacePane.includes("localVault.forgetRecent(record)") &&
+  workspacePane.includes("record.desktopRootPath") &&
   // #72 — see, copy, and open in Finder the selected vault's absolute path. Without
   // that path on the desktop the user has no way to know the value to paste into an
   // agent.
-  appSettingsMenu.includes("getTauriVaultRootPath(localVault.handle)") &&
-  appSettingsMenu.includes("openTauriVaultInFinder(vaultRootPath)") &&
-  appSettingsMenu.includes("app-settings-copy-vault-path") &&
+  workspacePane.includes("getTauriVaultRootPath(loadedHandle)") &&
+  workspacePane.includes("openTauriVaultInFinder(vaultRootPath)") &&
+  workspacePane.includes("app-settings-copy-vault-path") &&
   // Recent-vault switching must survive a permission re-request, or the recovery
   // path is cut.
-  appSettingsMenu.includes("!isLocalVaultLoaded &&")
+  workspacePane.includes("!isLoaded &&")
 ) {
   pass("desktop workspace settings expose recent vault recall, absolute vault path copy/reveal, stale-path cleanup, and vault-local agent config validation");
 } else {

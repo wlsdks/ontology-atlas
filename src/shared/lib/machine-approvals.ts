@@ -46,7 +46,12 @@ const NONE: MachineApprovals = snapshotOf(new Map());
 
 /** A refused write keeps the press for this run; it wins until a write succeeds. */
 let unsaved: Table | null = null;
-let cache: { source: string | Table | null; table: Table; snapshot: MachineApprovals } | null = null;
+let cache: {
+  source: string | Table | null;
+  table: Table;
+  snapshot: MachineApprovals;
+  list: readonly MachineApprovalItem[];
+} | null = null;
 
 function source(): string | Table | null {
   if (unsaved) return unsaved;
@@ -57,12 +62,37 @@ function source(): string | Table | null {
   }
 }
 
-function current(): { table: Table; snapshot: MachineApprovals } {
+function current(): NonNullable<typeof cache> {
   const from = source();
   if (cache && cache.source === from) return cache;
   const table = typeof from === 'string' || from === null ? tableOf(parseApprovals(from)) : from;
-  cache = { source: from, table, snapshot: snapshotOf(table) };
+  const list = [...table.values()].map(([subject, folder, id]) => ({ subject, folder, id }));
+  cache = { source: from, table, snapshot: snapshotOf(table), list };
   return cache;
+}
+
+/** What was allowed, never the allowed definition itself. */
+export interface MachineApprovalItem {
+  subject: ApprovalSubject;
+  folder: string;
+  id: string;
+}
+
+const NO_ITEMS: readonly MachineApprovalItem[] = [];
+
+export function listMachineApprovals(): readonly MachineApprovalItem[] {
+  if (typeof window === 'undefined') return NO_ITEMS;
+  return current().list;
+}
+
+/** Revoking only restricts. No folder forgets every folder; nothing inside a folder changes. */
+export function forgetMachineApprovals({ folder }: { folder?: string } = {}): void {
+  if (typeof window === 'undefined') return;
+  const doomed = [...current().table.entries()].filter(([, entry]) => !folder || entry[1] === folder);
+  if (doomed.length === 0) return;
+  write((table) => {
+    for (const [key] of doomed) table.delete(key);
+  });
 }
 
 export function readMachineApprovals(): MachineApprovals {
@@ -122,4 +152,10 @@ const serverSnapshot = () => NONE;
 
 export function useMachineApprovals(): MachineApprovals {
   return useSyncExternalStore(subscribeMachineApprovals, readMachineApprovals, serverSnapshot);
+}
+
+const serverList = () => NO_ITEMS;
+
+export function useMachineApprovalList(): readonly MachineApprovalItem[] {
+  return useSyncExternalStore(subscribeMachineApprovals, listMachineApprovals, serverList);
 }

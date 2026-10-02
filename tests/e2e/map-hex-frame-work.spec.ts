@@ -176,3 +176,75 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
   }
   console.log(`[hex-frame-work] ${JSON.stringify(results)}`);
 });
+
+type Reads = Window & { __rects?: { counting: boolean; calls: number }; __loaf?: number[] };
+
+test("the hex board at 10,000 concepts: hover and wheel read no layout and leave no long frame", async ({ page }) => {
+  test.setTimeout(300_000);
+  await installFrameWork(page);
+  await seedFirstRunSeen(page);
+  await page.addInitScript(() => {
+    const w = window as Reads;
+    const rects = { counting: false, calls: 0 };
+    w.__rects = rects;
+    w.__loaf = [];
+    const read = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (rects.counting) rects.calls += 1;
+      return read.call(this);
+    };
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) if (rects.counting) w.__loaf!.push(entry.duration);
+    }).observe({ type: "long-animation-frame" });
+  });
+  await page.goto("/en/topology/?synth=10000&synthDeps=1&view=hex&guides=off&e2e=1");
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
+  await still(page);
+
+  const box = (await page.getByTestId("hex-board-map").locator("canvas").boundingBox())!;
+  const targets = await page.evaluate(() => {
+    const picks: { x: number; y: number }[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>('[data-testid="hex-board-list"] [data-hex-kind="capability"][data-mark]')) {
+      const [x, y] = el.dataset.mark!.split(",").map(Number) as [number, number];
+      if (x < 460 || x > 1300 || y < 160 || y > 820) continue;
+      if (picks.every((p) => Math.hypot(p.x - x, p.y - y) > 90)) picks.push({ x, y });
+      if (picks.length === 8) break;
+    }
+    return picks;
+  });
+  expect(targets.length, "hover targets").toBe(8);
+
+  const counters = () =>
+    page.evaluate(() => {
+      const w = window as Reads;
+      return { rects: w.__rects!.calls, loaf: [...w.__loaf!] };
+    });
+  await page.evaluate(() => {
+    (window as Reads).__rects!.counting = true;
+  });
+  await startFrameWork(page);
+  let moves = 0;
+  let from = { x: targets[0]!.x + 40, y: targets[0]!.y + 40 };
+  for (const t of targets) {
+    for (let i = 1; i <= 6; i++) {
+      await page.mouse.move(box.x + from.x + ((t.x - from.x) * i) / 6, box.y + from.y + ((t.y - from.y) * i) / 6);
+      moves += 1;
+    }
+    await expect(page.getByTestId("hex-board-tooltip")).toBeVisible();
+    await still(page);
+    from = t;
+  }
+  const hoverWork = await stopFrameWork(page);
+  const hover = await counters();
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (const dy of [...Array<number>(10).fill(-100), ...Array<number>(10).fill(100)]) await page.mouse.wheel(0, dy);
+  await still(page);
+  const wheel = await counters();
+
+  console.log(
+    `[hex-hover] ${JSON.stringify({ moves, rects: hover.rects, hoverLoaf: hover.loaf, wheelLoaf: wheel.loaf.slice(hover.loaf.length), hoverP95: +p95(hoverWork).toFixed(2), hoverMax: +max(hoverWork, "hover frames").toFixed(2) })}`,
+  );
+  expect(hover.rects, "layout reads while hovering").toBeLessThanOrEqual(moves * 2);
+  if (bars) expect(wheel.loaf, "long animation frames while hovering and wheeling").toEqual([]);
+});

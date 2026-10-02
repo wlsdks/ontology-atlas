@@ -157,7 +157,7 @@ Atlas was slower. [The correction](docs/benchmark/FINDINGS-2026-08-31-metric-spl
 - **macOS** is Developer ID signed and notarized, with the MCP server inside the bundle.
 - **Windows x64 is an unsigned beta** — SmartScreen may warn, and a managed PC may refuse it. See [Security](SECURITY.md).
 - **Linux and others** run the browser app, or the CLI and MCP server from a [source checkout](cli/README.md#set-up-from-a-source-checkout).
-- Every release is a plain version; the in-app updater verifies each archive's signature before installing.
+- Every release is a plain version; the in-app updater verifies each archive's signature before installing. The daily check can be turned off in Settings → About.
 
 ## Documentation
 

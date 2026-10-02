@@ -4,6 +4,11 @@ import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
 import { useShellKeyClaimed } from "@/shared/lib/shell-key-claims";
+import {
+  OPEN_SHORTCUTS_EVENT,
+  requestSettingsOpen,
+  useSurfaceRequest,
+} from "@/shared/lib/surface-requests";
 import { blockingSurfaceOpen } from "@/shared/lib/use-destination-shortcuts";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 
@@ -22,13 +27,15 @@ const MountedGlobalSearch = dynamic(
 );
 
 /**
- * The keys `?` and ⌘K answer on every screen the rail stands on, as the shortcut sheet promises. Screens
- * that answer a key themselves claim it (`shared/lib/shell-key-claims.ts`). `disabled` is the
- * rail's verdict: no rail, no keys, the same rule as the `G` keys.
+ * The keys `?`, ⌘K and ⌘, answer on every screen the rail stands on, as the shortcut sheet
+ * promises. Screens that answer a key themselves claim it (`shared/lib/shell-key-claims.ts`).
+ * `disabled` is the rail's verdict: no rail, no keys, the same rule as the `G` keys.
  *
  * - `?` does not stack the sheet over another dialog (`blockingSurfaceOpen`), but always closes
  *   the sheet it opened.
  * - ⌘K opens the search in the sheet's place, so two modal surfaces never stand at once.
+ * - ⌘, asks a visible settings trigger to open its sheet (`requestSettingsOpen`), never over
+ *   another dialog.
  * - The search mounts on its first ⌘K, because it derives the whole ontology; once mounted it
  *   stays and binds ⌘K itself (`bindHotkey`) so the key closes it from its own field.
  */
@@ -40,10 +47,6 @@ export function ShellKeyboardSurfaces({ disabled }: { disabled: boolean }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchMounted, setSearchMounted] = useState(false);
-  /*
-   * A screen claiming a key, or a gateway arriving, closes the shell's dialog. Adjusted during
-   * render so no frame shows it over the screen that now owns the key.
-   */
   if (!sheetLive && sheetOpen) setSheetOpen(false);
   if (!searchLive && searchOpen) setSearchOpen(false);
 
@@ -55,6 +58,13 @@ export function ShellKeyboardSurfaces({ disabled }: { disabled: boolean }) {
     setSearchOpen(next);
   }, []);
 
+  useSurfaceRequest(OPEN_SHORTCUTS_EVENT, () => {
+    if (!sheetLive) return false;
+    setSearchOpen(false);
+    setSheetOpen(true);
+    return true;
+  });
+
   useTypingShortcuts([
     {
       combo: { key: "?" },
@@ -65,18 +75,23 @@ export function ShellKeyboardSurfaces({ disabled }: { disabled: boolean }) {
       },
     },
     {
-      // Opening only: once open, the search's own binding closes it, from its field too.
       combo: { key: "k", meta: true },
       disabled: !searchLive || searchOpen,
       onFire: () => changeSearchOpen(true),
+    },
+    {
+      combo: { key: ",", meta: true },
+      disabled,
+      onFire: () => {
+        if (blockingSurfaceOpen()) return;
+        requestSettingsOpen();
+      },
     },
   ]);
 
   return (
     <>
-      {/* Always mounted and steered by `open`, so a closing sheet keeps its exit motion. */}
       <ShortcutSheet open={sheetLive && sheetOpen} onClose={() => setSheetOpen(false)} />
-      {/* Mounted on the first search and then kept; it is only ever unmounted closed. */}
       {searchLive && searchMounted ? (
         <MountedGlobalSearch open={searchOpen} onOpenChange={changeSearchOpen} bindHotkey />
       ) : null}

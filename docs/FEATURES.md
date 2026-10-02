@@ -82,7 +82,7 @@ work here, and where it can.
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
-| In-app updates | ❌ | ✅ | |
+| In-app updates | ❌ | ✅ | the daily check can be turned off in Settings → About; Check for updates still works |
 
 **Windows**: an unsigned x64 beta carries the same local folder and MCP
 surface as the desktop app. `/download` states the SmartScreen unknown-publisher

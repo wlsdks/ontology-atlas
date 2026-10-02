@@ -1,0 +1,26 @@
+{
+  "languageLabel": "Language",
+  "viewModeLabel": "View mode",
+  "viewModeCaption": "General: folds code elements and uses plain language",
+  "viewModeDev": "Developer",
+  "viewModePlain": "General",
+  "textSizeLabel": "Text size",
+  "textSizeCaption": "Text grows on every screen; buttons, bars and names on the map canvas keep their size",
+  "textSize": {
+    "default": "Default",
+    "large": "Large",
+    "larger": "Larger"
+  },
+  "conceptIconsLabel": "Concept icons",
+  "motionLabel": "Motion",
+  "motionReduced": "Reduced",
+  "motionFull": "Full",
+  "motionCaptionApp": "Follows System Settings → Accessibility → Display → Reduce motion",
+  "motionCaptionWeb": "Follows your system settings",
+  "guidesLabel": "Screen guides",
+  "guidesCaption": "Opens by itself the first time you visit each screen. Turned off, it opens only from Show again or the guide icon at the map's top right",
+  "guidesAutoLabel": "Show guides automatically",
+  "guidesOn": "On",
+  "guidesOff": "Off",
+  "guidesReplay": "Show again"
+}

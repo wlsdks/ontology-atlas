@@ -42,6 +42,11 @@ describe("ShortcutSheet — the rows every screen shows", () => {
     expect(screen.queryByText("Search concepts, docs, and projects together")).toBeNull();
   });
 
+  it("lists ⌘ , for settings in Navigation", () => {
+    renderSheet();
+    expect(rowsOf(sections.navigation)).toContain(`${rows.openSettings}: ⌘ ,`);
+  });
+
   it("keeps D, which only the map binds, out of Navigation and in the map's own section", () => {
     renderSheet();
     expect(rowsOf(sections.navigation).some((row) => row.endsWith(": D"))).toBe(false);

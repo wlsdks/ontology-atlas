@@ -743,9 +743,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       .getByTestId("app-nav-rail-utility-tier")
       .getByTestId("app-settings-trigger")
       .click();
-    // 2026-09-25 — the API Key pane moved to the Agents destination's models tab; the sheet
-    // keeps one pointer row, and the old habit lands on the new tab.
-    await page.getByTestId("app-settings-nav-models").click();
+    await page.getByTestId("app-settings-nav-agents").click();
+    await page.getByTestId("app-settings-door-models").click();
     await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
 
     const card = page.getByTestId("ai-connection-web-degraded");

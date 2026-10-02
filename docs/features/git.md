@@ -8,6 +8,30 @@ routes: [/git]
 
 # Git
 
+### Summary descriptions and committed history
+
+The installed map compares domain/project descriptions with their committed
+membership history. It reads commit/time references first, then one body at a
+time, stopping when both latest change dates are established. Each body stays
+bound to its listed commit even if HEAD moves. Missing-file revisions are
+skipped; a failed read never finalizes a partial comparison.
+
+Each historical body is limited to 2 MiB of complete UTF-8. Git output reads
+have a 10-second deadline; the frontend starts no further reads after its
+30-second traversal budget. Reference logs are limited to 64 KiB each and
+retained reference strings to 2 MiB, within the existing 64-node and
+40-default/200-maximum revision limits. Oversized, unreadable or timed-out
+history shows that the comparison is unavailable and points to Git for
+inspection. Other nodes keep independently established results. No summary
+text, working file or Git history is rewritten.
+
+Historical reads use local objects only. An unavailable object is an incomplete
+comparison, not a deleted-file revision, and does not trigger a remote fetch.
+
+Git discovery also requires the selected vault to lie within the resolved
+working tree. A repository configuration cannot redirect a granted folder's
+operations into an unrelated working tree.
+
 ### `/git` — Git (primary desktop destination; redesigned 2026-07-27; named "Git" in both locales since 2026-09-19)
 
 The rail tile (`navRail.git`), the page headline (`atlasGit.title`) and the tile's title (`atlasGit.tileTitle*`) say **Git** in Korean and English; until 2026-09-19 the Korean said the plain word for "record" and the English said "History". The owner asked why the screen hid the word: Atlas keeps no history of its own — durable history, restore and discard are git's — so the plain name is the honest one. Git's trademark policy (Software Freedom Conservancy, U.S. reg. 4680534) permits factual reference to the Git software and identifying it as a component of a product; only portmanteaus, implied affiliation and the logo need permission. Sentences that describe the act (`initButton`, `scopeNotice`, `stepStart`) keep their verb.

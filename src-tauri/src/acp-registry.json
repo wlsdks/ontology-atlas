@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-10-01T20:17:31.103Z",
+  "npmDependencyCutoff": "2026-10-02T09:51:07.434Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.85.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.85.1",
         "args": []
       }
     },
@@ -115,7 +115,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.67",
+        "package": "cline@3.0.68",
         "args": [
           "--acp"
         ]
@@ -133,7 +133,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.161.0",
+        "package": "@tencent-ai/codebuddy-code@2.161.1",
         "args": [
           "--acp"
         ]
@@ -292,7 +292,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.231.0",
+        "package": "droid@0.232.0",
         "args": [
           "exec",
           "--output-format",
@@ -348,7 +348,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.90",
+        "package": "@github/copilot@1.0.91",
         "args": [
           "--acp"
         ]
@@ -416,7 +416,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.46",
+        "package": "@xai-official/grok@1.0.48",
         "args": [
           "agent",
           "stdio"

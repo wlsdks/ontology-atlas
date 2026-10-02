@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { writeUpdateAutoCheck } from './update-state';
 import { useAppUpdate } from './use-app-update';
 
 /** The automatic check must not erase the answer to a manual one. */
@@ -98,5 +99,22 @@ describe('result of a manual update check', () => {
       await Promise.resolve();
     });
     expect(check).not.toHaveBeenCalled();
+  });
+
+  it('runs no automatic check when the person turned it off, yet a press still checks', async () => {
+    writeUpdateAutoCheck('off');
+    check.mockResolvedValue(null);
+    const { result } = renderHook(() => useAppUpdate());
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+      await Promise.resolve();
+    });
+    expect(check).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.check(true);
+    });
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(result.current.phase.kind).toBe('current');
   });
 });

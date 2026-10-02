@@ -10,7 +10,7 @@ import {
   type MapSpeed,
 } from '@/shared/lib/appearance-preferences';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { SettingsGroup, SettingsRow } from './settings-primitives';
+import { SettingsRow } from './settings-primitives';
 
 function SpeedChoice({
   label,
@@ -45,8 +45,9 @@ export function MapSpeedSettings() {
   const drag = useMapDragSpeed();
   const zoom = useMapZoomSpeed();
   return (
-    <SettingsGroup testId="app-settings-map-speed">
+    <>
       <SettingsRow
+        settingId="pan-speed"
         testId="app-settings-map-drag-speed-row"
         label={t('mapDragSpeedLabel')}
         caption={t('mapDragSpeedCaption')}
@@ -60,6 +61,7 @@ export function MapSpeedSettings() {
         }
       />
       <SettingsRow
+        settingId="zoom-speed"
         testId="app-settings-map-zoom-speed-row"
         label={t('mapZoomSpeedLabel')}
         caption={t('mapZoomSpeedCaption')}
@@ -72,6 +74,6 @@ export function MapSpeedSettings() {
           />
         }
       />
-    </SettingsGroup>
+    </>
   );
 }

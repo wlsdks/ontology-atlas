@@ -108,7 +108,7 @@ interface TopologyCommandChromeProps {
     | "selectedEdgeOwnsRightRail"
     | "setActivityInboxOpen"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "galaxy" | "audiencePlain" | "setAudiencePlain" | "tWorkbench" | "tAtlasGit">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "galaxy" | "tWorkbench" | "tAtlasGit">;
   topologyExplorationLenses: Pick<
     ReturnType<typeof useTopologyExplorationLenses>,
     | "constellationCandidates"
@@ -136,7 +136,7 @@ export function TopologyCommandChrome({
   const { renderedIndexState } = topologyIndexPresentation;
   const { constellationCandidates, routedConstellation, setActiveConstellation, setConstellationFitToken } = topologyExplorationLenses;
 
-  const { t, galaxy, audiencePlain, setAudiencePlain, tWorkbench, tAtlasGit } = topologyPreferences;
+  const { t, galaxy, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
@@ -239,8 +239,6 @@ export function TopologyCommandChrome({
                 mode={vault.status === 'loaded' ? 'local' : 'static'}
                 triggerVariant="chrome-tile"
                 screenControls={{
-                  audiencePlain,
-                  onAudiencePlainChange: setAudiencePlain,
                   indexCollapsed: indexPanelCollapsedStored,
                   onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
                 }}
@@ -640,8 +638,6 @@ export function TopologyCommandChrome({
                       mode={vault.status === 'loaded' ? 'local' : 'static'}
                       triggerVariant="chrome-tile"
                       screenControls={{
-                        audiencePlain,
-                        onAudiencePlainChange: setAudiencePlain,
                         indexCollapsed: indexPanelCollapsedStored,
                         onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
                       }}
