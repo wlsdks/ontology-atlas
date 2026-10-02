@@ -56,8 +56,10 @@ describe('Japanese and Chinese line rules', () => {
   });
 
   it('keeps keep-all out of every rule that is not Korean', () => {
-    for (const m of CSS.matchAll(/([^{}]+)\{([^{}]*word-break:\s*keep-all[^{}]*)\}/g)) {
-      expect(m[1], 'a keep-all declaration outside the Korean rule').toMatch(/:lang\(ko\)/);
+    for (const rule of CSS.split('}')) {
+      const open = rule.lastIndexOf('{');
+      if (open < 0 || !/word-break:\s*keep-all/.test(rule.slice(open))) continue;
+      expect(rule.slice(0, open), 'a keep-all declaration outside the Korean rule').toMatch(/:lang\(ko\)/);
     }
     for (const locale of CJK_LOCALES) {
       expect(CSS).not.toMatch(new RegExp(`:lang\\(${locale}\\)[^{]*\\{[^}]*keep-all`));
