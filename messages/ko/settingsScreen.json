@@ -1,0 +1,26 @@
+{
+  "languageLabel": "언어",
+  "viewModeLabel": "보기 모드",
+  "viewModeCaption": "일반: 코드 요소를 접고 쉬운 말로 보여줘요",
+  "viewModeDev": "개발",
+  "viewModePlain": "일반",
+  "textSizeLabel": "글자 크기",
+  "textSizeCaption": "모든 화면의 글자가 커져요. 지도 캔버스의 버튼·막대·이름은 그대로예요",
+  "textSize": {
+    "default": "기본",
+    "large": "크게",
+    "larger": "더 크게"
+  },
+  "conceptIconsLabel": "개념 아이콘",
+  "motionLabel": "움직임",
+  "motionReduced": "줄임",
+  "motionFull": "전체",
+  "motionCaptionApp": "시스템 설정 → 손쉬운 사용 → 디스플레이 → 동작 줄이기를 따라요",
+  "motionCaptionWeb": "시스템 설정을 따라요",
+  "guidesLabel": "화면 안내",
+  "guidesCaption": "처음 여는 화면마다 한 번 저절로 떠요. 끄면 「다시 보기」나 지도 오른쪽 위 안내 아이콘으로만 열려요",
+  "guidesAutoLabel": "화면 안내 자동 표시",
+  "guidesOn": "켬",
+  "guidesOff": "끔",
+  "guidesReplay": "다시 보기"
+}
