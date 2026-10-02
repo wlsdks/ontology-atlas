@@ -53,17 +53,14 @@ function toStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
   return record;
 }
 
-/**
- * Serializes recent-list read-modify-writes: a lost entry changes the launch rule. The queue lives
- * here because awaiting at the call sites broke rename and `?edit=` timing.
- */
-let recentListWrites: Promise<unknown> = Promise.resolve();
+/** Record and recent-list writes share order without delaying rename or deeplink call sites. */
+let handleWrites: Promise<unknown> = Promise.resolve();
 
-function queueRecentListWrite<T>(operation: () => Promise<T>): Promise<T> {
+function queueHandleWrite<T>(operation: () => Promise<T>): Promise<T> {
   // `then(op, op)` so a rejected predecessor does not cancel the next write.
-  const run = recentListWrites.then(operation, operation);
+  const run = handleWrites.then(operation, operation);
   // The chain itself must never hold a rejection, or every later write inherits it.
-  recentListWrites = run.then(
+  handleWrites = run.then(
     () => undefined,
     () => undefined,
   );
@@ -73,16 +70,14 @@ function queueRecentListWrite<T>(operation: () => Promise<T>): Promise<T> {
 async function rememberRecentLocalFsHandle(record: LocalFsHandleRecord): Promise<void> {
   const storedRecord = toStoredRecord(record);
   const identity = recordIdentity(storedRecord);
-  return queueRecentListWrite(async () => {
-    const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
-    const next = [
-      storedRecord,
-      ...existing.filter((item) => recordIdentity(item) !== identity),
-    ]
-      .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
-      .slice(0, MAX_RECENT_HANDLES);
-    await idbSet(RECENT_KEY, next);
-  });
+  const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
+  const next = [
+    storedRecord,
+    ...existing.filter((item) => recordIdentity(item) !== identity),
+  ]
+    .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
+    .slice(0, MAX_RECENT_HANDLES);
+  await idbSet(RECENT_KEY, next);
 }
 
 /** For id 'current', a legacy raw handle is migrated and its key deleted. */
@@ -93,8 +88,11 @@ export async function getLocalFsHandle(
   if (stored) return normalizeStoredRecord(stored);
 
   if (id === CURRENT_LOCAL_FS_HANDLE_ID) {
-    const legacy = await idbGet<FileSystemDirectoryHandle>(LEGACY_KEY);
-    if (legacy) {
+    return queueHandleWrite(async () => {
+      const current = await idbGet<LocalFsHandleRecord>(recordKey(id));
+      if (current) return normalizeStoredRecord(current);
+      const legacy = await idbGet<FileSystemDirectoryHandle>(LEGACY_KEY);
+      if (!legacy) return undefined;
       const now = Date.now();
       const migrated: LocalFsHandleRecord = {
         id: CURRENT_LOCAL_FS_HANDLE_ID,
@@ -107,21 +105,23 @@ export async function getLocalFsHandle(
       await rememberRecentLocalFsHandle(migrated);
       await idbDel(LEGACY_KEY);
       return migrated;
-    }
+    });
   }
   return undefined;
 }
 
 export async function putLocalFsHandle(record: LocalFsHandleRecord): Promise<void> {
   const storedRecord = toStoredRecord(record);
-  await idbSet(recordKey(record.id), storedRecord);
-  await rememberRecentLocalFsHandle(storedRecord);
+  return queueHandleWrite(async () => {
+    await idbSet(recordKey(record.id), storedRecord);
+    await rememberRecentLocalFsHandle(storedRecord);
+  });
 }
 
 export async function deleteLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
-  await idbDel(recordKey(id));
+  return queueHandleWrite(() => idbDel(recordKey(id)));
 }
 
 /** The open vault's record is untouched. */
@@ -130,7 +130,7 @@ export async function forgetRecentLocalFsHandle(
 ): Promise<void> {
   const identity = recordIdentity(toStoredRecord(record));
   // Queued too, or a racing load could resurrect the removed folder.
-  return queueRecentListWrite(async () => {
+  return queueHandleWrite(async () => {
     const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
     await idbSet(
       RECENT_KEY,
@@ -143,11 +143,13 @@ export async function forgetRecentLocalFsHandle(
 export async function touchLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
-  const existing = await idbGet<LocalFsHandleRecord>(recordKey(id));
-  if (!existing) return;
-  const next = { ...existing, lastAccessedAt: Date.now() };
-  await idbSet(recordKey(id), next);
-  await rememberRecentLocalFsHandle(next);
+  return queueHandleWrite(async () => {
+    const existing = await idbGet<LocalFsHandleRecord>(recordKey(id));
+    if (!existing) return;
+    const next = { ...existing, lastAccessedAt: Date.now() };
+    await idbSet(recordKey(id), next);
+    await rememberRecentLocalFsHandle(next);
+  });
 }
 
 /** Writes folder contents to both the record and its recent entry, which different screens read; no-op without a record. */
@@ -155,16 +157,18 @@ export async function recordLocalFsHandleContents(
   contents: { docCount: number; conceptCount: number },
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
-  const existing = await idbGet<LocalFsHandleRecord>(recordKey(id));
-  if (!existing) return;
-  const next: LocalFsHandleRecord = {
-    ...existing,
-    docCount: contents.docCount,
-    conceptCount: contents.conceptCount,
-    countedAt: Date.now(),
-  };
-  await idbSet(recordKey(id), next);
-  await rememberRecentLocalFsHandle(next);
+  return queueHandleWrite(async () => {
+    const existing = await idbGet<LocalFsHandleRecord>(recordKey(id));
+    if (!existing) return;
+    const next: LocalFsHandleRecord = {
+      ...existing,
+      docCount: contents.docCount,
+      conceptCount: contents.conceptCount,
+      countedAt: Date.now(),
+    };
+    await idbSet(recordKey(id), next);
+    await rememberRecentLocalFsHandle(next);
+  });
 }
 
 /** On Tauri the handle shim is rebuilt from the stored path. */
