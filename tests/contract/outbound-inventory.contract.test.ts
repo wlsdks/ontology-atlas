@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -24,19 +25,24 @@ function rustFiles(dir: string): string[] {
   });
 }
 
-function isTestModuleFile(path: string): boolean {
-  const name = relative(RUST_ROOT, path).replace(/\.rs$/, '');
-  const parent = name.includes('/') ? name.slice(0, name.lastIndexOf('/')) : null;
-  const leaf = name.slice(name.lastIndexOf('/') + 1);
-  if (!parent) return false;
-  const parentSource = readFileSync(join(RUST_ROOT, `${parent}.rs`), 'utf8');
-  return new RegExp(`#\\[cfg\\(test\\)\\]\\s*(?:pub(?:\\([a-z]+\\))?\\s+)?mod\\s+${leaf}\\s*;`).test(parentSource);
+function isTestModuleFile(path: string, rustRoot = RUST_ROOT): boolean {
+  let name = relative(rustRoot, path).replaceAll('\\', '/').replace(/\.rs$/, '').replace(/\/mod$/, '');
+  while (name.includes('/')) {
+    const parent = name.slice(0, name.lastIndexOf('/'));
+    const leaf = name.slice(name.lastIndexOf('/') + 1);
+    const owner = [join(rustRoot, `${parent}.rs`), join(rustRoot, parent, 'mod.rs')].find(existsSync);
+    if (owner && new RegExp(`#\\[cfg\\(test\\)\\]\\s*(?:pub(?:\\([a-z]+\\))?\\s+)?mod\\s+${leaf}\\s*[;{]`).test(readFileSync(owner, 'utf8'))) {
+      return true;
+    }
+    name = parent;
+  }
+  return false;
 }
 
-function productionRustHosts(): Map<string, string[]> {
+function productionRustHosts(rustRoot = RUST_ROOT): Map<string, string[]> {
   const hosts = new Map<string, string[]>();
-  for (const file of rustFiles(RUST_ROOT)) {
-    if (isTestModuleFile(file)) continue;
+  for (const file of rustFiles(rustRoot)) {
+    if (isTestModuleFile(file, rustRoot)) continue;
     const source = readFileSync(file, 'utf8');
     const production = source.split('#[cfg(test)]')[0] ?? '';
     for (const match of production.matchAll(HOST_PATTERN)) {
@@ -77,6 +83,32 @@ function parseCsp(entries: [string, string][]): Map<string, string[]> {
 }
 
 describe('outbound inventory', () => {
+  it('excludes nested test modules while retaining production and unresolved owners', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-outbound-modules-'));
+    try {
+      const files = {
+        'engine.rs': '#[cfg(test)] mod tests { mod cancellation; }\nmod network;',
+        'engine/tests/cancellation.rs': 'const URL: &str = "https://inline-test.invalid";',
+        'engine/network.rs': 'const URL: &str = "https://production.invalid";',
+        'legacy/mod.rs': '#[cfg(test)] mod tests;',
+        'legacy/tests.rs': 'const URL: &str = "https://file-test.invalid";',
+        'unresolved/worker.rs': 'const URL: &str = "https://unresolved.invalid";',
+        'named.rs': 'mod tests;',
+        'named/tests.rs': 'const URL: &str = "https://named-production.invalid";',
+      };
+      for (const [file, contents] of Object.entries(files)) {
+        const path = join(root, file);
+        mkdirSync(join(path, '..'), { recursive: true });
+        writeFileSync(path, contents);
+      }
+      expect([...productionRustHosts(root).keys()].sort()).toEqual([
+        'named-production.invalid', 'production.invalid', 'unresolved.invalid',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('scans real production hosts, so an empty scan cannot pass', () => {
     expect(updaterHosts().length).toBeGreaterThan(0);
     expect(productionRustHosts().size).toBeGreaterThan(0);

@@ -24,7 +24,8 @@ serde_json = "1"
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
-tokio = { version = "1.52.3", features = ["io-util", "process", "rt", "time"] }
+futures-util = "0.3"
+tokio = { version = "1.52.3", features = ["io-util", "process", "rt", "sync", "time"] }
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 # A packaged `.app` has nowhere to print. Every `println!` in this crate is inside `#[cfg(test)]`,
