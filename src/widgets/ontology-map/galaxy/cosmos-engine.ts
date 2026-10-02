@@ -173,7 +173,7 @@ export class CosmosEngine {
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
     this.userCamera = false;
     this.fit(false);
-    this.arrival = arrival === "replay" && !this.options.reducedMotion && layout.settle.keyframes.length > 1 ? { start: performance.now(), mode: arrival } : null;
+    this.arrival = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0 ? { start: performance.now(), mode: arrival } : null;
     this.arrivalMode = this.arrival ? arrival : "none";
     this.arrivalClock = 0;
     this.drawnReported = false;
