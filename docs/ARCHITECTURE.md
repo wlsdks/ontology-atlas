@@ -397,7 +397,7 @@ decision records behind it are in `docs/DECISIONS.md`, dated 2026-08-16.
 | `src/shared/lib/tauri-acp.ts` | The capability bridge and its web degradation. It never re-implements the permission policy |
 | `src/features/acp-session/` | `acp-client.ts` (JSON-RPC framing over the bridge) and `use-acp-session.ts` (one session's lifetime; a permission request blocks until the screen answers, and an unanswered one is refused) |
 | `src/widgets/acp-chat-panel/` | The existing Home workbench conversation, task-bound meaning review and separate execution permission card |
-| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the settings sheet's Runtime section |
+| `src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx` | The one ACP surface a user can reach today: the Agents destination's coding tools list |
 
 Three properties are structural rather than incidental. The registry is a
 committed snapshot, so no ACP code path touches the network at runtime. A
@@ -647,10 +647,22 @@ partial artifact.
    one recursive block reader/writer. Import plans conflicts before writing;
    native or browser picker cancellation has no side effect.
 7. The installed shell and any web session with a mounted vault commit destination content only
-   after one local manifest is ready. LNB route changes mount against the current provider before
-   paint; a true folder switch holds a neutral body until the new manifest arrives, while a
-   same-vault reread keeps the existing facts. Picker, recent reopen, and cold restore all resolve a
-   project root containing Markdown under `atlas/` to that child before building.
+   after one local manifest is ready, except the map. While a folder is first read, the build
+   reads the project, then `domains/`, `capabilities/` and `elements/`, then the rest; in a
+   folder of 400 or more documents, once the read has run 0.2 s, it publishes what has arrived to
+   the session's arrival store, at most once a second (each finished subfolder, and quarters of a
+   large one only among the first three publishes). The vault value carries only the count,
+   `partialTotal`, so a screen that keeps an arriving vault value keeps none of its documents, and
+   the store empties once the folder settles. The first part drops the previous folder's manifest
+   and handles, and every write is refused until the folder is loaded. Only the map opts in
+   (`useArrivingOntologyInsight`, `useArrivingVaultIdentityScope`): it draws documents, never a
+   relation-only node, and the INDEX counts the documents read. `useVaultOntology`,
+   `useDataSourceMode` and every other destination, check and count wait for the whole manifest,
+   which equals a build that publishes nothing. LNB route changes mount against the
+   current provider before paint; a true folder switch holds a neutral body until the new manifest
+   (on the map, its first part) arrives, while a same-vault reread keeps the existing facts and
+   publishes no part. Picker, recent reopen, and cold restore all resolve a project root containing
+   Markdown under `atlas/` to that child before building.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
@@ -665,7 +677,7 @@ filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed a
 
 This is what a vault-less web visitor sees before choosing a folder. The installed app never uses
 this fallback: its first run offers only local create/open paths and its workbench rail stays hidden
-until a local manifest exists.
+until a local manifest, or the first part of one, exists.
 
 ## Routes
 
@@ -709,11 +721,12 @@ until a local manifest exists.
                            app-only folder when they are missing, runs the eight-step
                            connection check, and repairs what it can. Moved out of the
                            settings sheet 2026-08-20 (ledger 90): settings is where you pick
-                           values, this is operational work with progress state. Workspace
-                           stays in settings (a different owning domain). Since 2026-09-25
-                           the API Key pane is the page's models tab (?tab=models): local
-                           runners by address, Keychain keys, the experimental Jev check and
-                           the sent-log count; settings keeps one pointer row to it.
+                           values, this is operational work with progress state. The ontology
+                           folder stays in settings (a different owning domain). Since
+                           2026-09-25 the API Key pane is the page's models tab (?tab=models):
+                           local runners by address, Keychain keys, the experimental Jev
+                           check and the sent-log count; the settings Agents pane keeps door
+                           rows to it and to MCP (2026-10-02).
                            Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17
@@ -772,59 +785,12 @@ is the launch chooser: when two or more folders are known the cold restore stops
 rather than guess, leaving the folder screen to own the launch. Decision:
 `docs/DECISIONS.md`, "The folder count decides the launch".
 
-The optional companion home/journal is owned by `features/agent-activity` and
-mounted in `FirstRunPage` and the topology utility lane. Its versioned localStorage
-records separately retain personal reflections, explicit reading activity, project-construction
-high-water counts, and fictional game progress. The lazy-loaded game reads the current
-manifest, never writes vault frontmatter, and receives no meaning-acceptance signal.
-Its finite catalog owns 36 fictional map IDs and 108 species IDs independently of
-canonical UIDs. Discovery and map-clear fields safely default for existing saves;
-removed destinations return to camp without resetting accumulated progress. The existing verified mascot pose
-machine is mounted inline beside work status instead of as an AppShell map overlay.
-
-The first destination additionally opens `CompanionSector.tsx`, a Canvas 2D tile
-renderer with a static offscreen floor layer and a camera sized to the visible
-game frame. `companion-sector.ts` owns collisions, contextual targets, the
-three-stop fictional creature encounter, a strict project-scoped sector save,
-and the gate invariant. The sector does not enter `CompanionGame.mode=expedition`,
-so it neither starts timer combat nor changes existing combat saves or rewards.
-The gate rechecks that reflection history still resolves to a unique current
-concept through `observeQuestEvidence` and uses the existing validated reflection
-quest claim; old claims and a previously activated gate do not substitute for
-that current identity. Later source changes are not semantic reapproval. The room and creatures
-are fictional and never supply ontology UIDs or meaning approval.
-
-Companion quest evidence is derived while open from the loaded manifest, personal
-reading history, and the vault session's existing ACP work receipts. It adds no
-receipt polling or transcript parsing. Same-root writer correlation and current
-unique target resolution govern optional ACP claims; concept creation and body
-updates are eligible, while meaning-approval operations are not. Claims and relic
-materials persist atomically in the personal game save and unlock deterministic
-equipment tiers. Historical rewards retain their original target identity without
-inventing a replacement link after deletion. The run model saves the chosen next
-path and bounded applied floor history so healing/reward effects apply once.
-Quest assistance uses the existing cancelable live agent-chat intent: the game
-closes only when the workbench acknowledges the displayed request. Queued
-cold-start handoffs retain their separate lifecycle. This changes neither agent
-permissions nor canonical meaning acceptance.
-
-Camp learning expeditions reuse that manifest derivation, the existing personal
-reading/reflection store, and a project-scoped in-memory draft. Topics use uniquely
-resolved current documents; only original direct `depends_on` declarations identify
-review candidates. Containment, association, missing links, and transitive paths do
-not establish runtime impact. The in-game source reader preserves document bodies
-and can expose the original dependency fields and rationale. Targeted file reads
-check UID, modification time, and witnessed frontmatter, including a fresh check
-before saving a reflection. Failed reads or persistence preserve the draft and do
-not announce completion. No curriculum store, mastery score, canonical writer, or
-additional polling is introduced.
-
-Learning-note recall projects existing personal reflection rows by UID. It does
-not read source files or create activity entries. Saved-note display is independent
-of current topic availability; a missing source disables re-exploration without
-discarding the historical note. Explicit re-exploration invalidates the cached
-read and re-enters the same guarded learning flow. Recording dates remain the
-original activity timestamp, including after a reflection is revised.
+The companion game and related personal-record screens are retired. First-run
+and Map retain folder/document entry without a game door. Existing personal
+localStorage bytes are left untouched; no reader, migration or deletion runs.
+`features/agent-activity` owns verified work status and the notification inbox.
+Its finite mascot consumes that same feed and appears in the status lane only
+for observed read/completion events; it adds no polling or idle simulation.
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,

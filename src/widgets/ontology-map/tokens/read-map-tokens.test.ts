@@ -119,8 +119,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-camera-spring-angfreq-interactive": "12",
   "--map-camera-spring-angfreq-transition": "4.7",
   "--map-camera-damping-default": "1.0",
-  "--map-camera-damping-flick": "0.82",
-  "--map-camera-momentum-decay": "0.998",
   "--map-camera-release-velocity-window-ms": "80",
   "--map-camera-flick-min-speed": "0.05",
   "--map-camera-scale-min": "0.24",
@@ -225,7 +223,6 @@ describe("resolveOntologyMapTokens", () => {
     expect(tokens.realmFillRadius3).toBe(250);
     expect(tokens.cameraSpringAngFreqInteractive).toBeCloseTo(12, 3);
     expect(tokens.cameraSpringAngFreqTransition).toBeCloseTo(4.7, 3);
-    expect(tokens.cameraMomentumDecay).toBe(0.998);
     expect(tokens.hysteresisPx).toBe(7);
     expect(tokens.starCount).toBe(4);
     expect(tokens.overviewEntryRatio).toBeCloseTo(0.95, 3);

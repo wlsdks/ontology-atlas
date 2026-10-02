@@ -171,6 +171,39 @@ describe('scanHarness — the two numbers in the sentence', () => {
     expect(report.checks.total).toBe(8);
   });
 
+  it('names the top-level folders, leaving out dot, build, ignored and excluded folders', async () => {
+    const report = await scanHarness(
+      fixturePort({
+        'AGENTS.md': '# guide\n',
+        '.gitignore': 'output/\n',
+        'src/index.ts': '',
+        'app/page.tsx': '',
+        'node_modules/react/index.js': '',
+        'output/run.log': '',
+        'ontology/projects/shop.md': '',
+        '.claude/rules/a.md': '# a\n',
+      }),
+      { excludedFolders: ['ontology'] },
+    );
+    expect(report.topLevelFolders).toEqual(['app', 'src']);
+  });
+
+  it('leaves out folders a plain ignore line names, with or without a slash', async () => {
+    const report = await scanHarness(
+      fixturePort({
+        'AGENTS.md': '# guide\n',
+        '.gitignore': 'secrets\n/private\ncache/\n*.log\n!keep\nnested/inner\n',
+        'src/index.ts': '',
+        'secrets/key.txt': '',
+        'private/notes.md': '',
+        'cache/blob': '',
+        'keep/file.ts': '',
+        'nested/inner/file.ts': '',
+      }),
+    );
+    expect(report.topLevelFolders).toEqual(['keep', 'nested', 'src']);
+  });
+
   it('states that its change times are file modification times, not commit dates', async () => {
     const report = await scanHarness(fixturePort(REPO));
     expect(report.timesAreFileMtime).toBe(true);

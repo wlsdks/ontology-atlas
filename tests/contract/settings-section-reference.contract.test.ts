@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
+
+import { SETTINGS_SECTIONS } from '@/widgets/app-settings-menu/model/settings-sections';
 
 import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
@@ -171,13 +170,7 @@ describe('두 언어가 같은 자리를 가리킨다', () => {
  * actually renders.
  */
 describe('section.* 키는 전부 실제로 그려지는 칸이다', () => {
-  const source = readFileSync(
-    join(__dirname, '../../src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx'),
-    'utf8',
-  );
-  const renderedItems = [...source.matchAll(/items:\s*\[([^\]]*)\]/g)].flatMap((m) =>
-    [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]),
-  );
+  const renderedItems = [...SETTINGS_SECTIONS];
 
   it('items 추출이 헛돌지 않는다 — 0개면 아래 검사는 아무것도 안 잰다', () => {
     expect(renderedItems.length).toBeGreaterThan(5);
@@ -186,7 +179,7 @@ describe('section.* 키는 전부 실제로 그려지는 칸이다', () => {
   it.each([
     ['ko', ko as unknown as Bundle],
     ['en', en as unknown as Bundle],
-  ])('%s 의 section.* 키 집합 == SETTINGS_GROUPS 의 items 집합', (_locale, bundle) => {
+  ])('%s 의 section.* 키 집합 == SETTINGS_SECTIONS', (_locale, bundle) => {
     const nav = (bundle.nav as Bundle | undefined)?.settingsMenu as Bundle | undefined;
     const keys = Object.keys((nav?.section as Record<string, string>) ?? {}).sort();
     expect(keys).toEqual([...renderedItems].sort());

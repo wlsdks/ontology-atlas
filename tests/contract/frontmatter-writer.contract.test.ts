@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { WRITER_CASES } from "../fixtures/frontmatter-writer-cases.mjs";
+import { parseFrontmatter as parseRenderer } from "@/shared/lib/parse-frontmatter";
+import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontmatter.mjs";
 import {
   buildMarkdown as buildMcpMarkdown,
   parseFrontmatter as parseMcpFrontmatter,
@@ -58,6 +60,8 @@ describe("frontmatter writer contract — MCP and CLI agree", () => {
  * Defect 1 above did exactly that.
  */
 const ROUND_TRIP_CASES: Array<{ name: string; frontmatter: Record<string, unknown> }> = [
+  { name: "quoted mapping keys and nested strings", frontmatter: { 'a:b': 'Top', labels: { 'x,y': '001', flag: 'false', empty: '', "owner's": 'Literal', '한글:키': 'Value' } } },
+  { name: "literal escape sequences and control characters stay distinct", frontmatter: { labels: { 'key\\name': 'C:\\new\\tools, x', 'actual\nkey\t': 'actual\nvalue\t' } } },
   { name: "따옴표 든 값 — 이스케이프가 누적되지 않는다", frontmatter: { kind: "capability", title: 'say "hello"' } },
   { name: "배열 항목 안의 콤마", frontmatter: { kind: "capability", tags: ["a, b", "c"] } },
   { name: "객체 값 안의 콤마", frontmatter: { kind: "capability", labels: { ko: "지도, 검색", en: "Map" } } },
@@ -79,6 +83,8 @@ describe("왕복 계약 — 쓰고 다시 읽으면 같다 (누적 오염 차단
           const markdown = build({ frontmatter: current, body: "본문" });
           current = parse(markdown).frontmatter as Record<string, unknown>;
           expect(current, `${label} round ${round}`).toEqual(c.frontmatter);
+          expect(parseRenderer(markdown).frontmatter).toEqual(c.frontmatter);
+          expect(parseScripts(markdown).frontmatter).toEqual(c.frontmatter);
         }
       }
     });

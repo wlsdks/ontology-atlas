@@ -527,3 +527,20 @@ export function deriveOntologyFromVault(
   derivationCache.set(manifest, derivation);
   return derivation;
 }
+
+const arrivedCache = new WeakMap<VaultManifest, VaultOntologyDerivation>();
+
+export function deriveArrivedOntology(manifest: VaultManifest): VaultOntologyDerivation {
+  const cached = arrivedCache.get(manifest);
+  if (cached) return cached;
+  const full = deriveOntologyFromVault(manifest);
+  const nodes = full.nodes.filter((node) => node.hasOwnDocument);
+  const ids = new Set(nodes.map((node) => node.id));
+  const derivation = {
+    ...full,
+    nodes,
+    edges: full.edges.filter((edge) => ids.has(edge.from) && ids.has(edge.to)),
+  };
+  arrivedCache.set(manifest, derivation);
+  return derivation;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageMetadata } from './page-metadata';
+import { buildPageMetadata, type PageMetadataLocales } from './page-metadata';
 
 // Bug found 2026-09-01: Next merges metadata by replacing the whole top-level
 // openGraph/twitter key, so pages built here shipped
@@ -71,5 +71,48 @@ describe('buildPageMetadata — file-convention images', () => {
     expect(Object.hasOwn(meta.twitter as object, 'images')).toBe(false);
     // The spreads on the project page must not resurrect the key either.
     expect(Object.hasOwn({ ...(meta.openGraph as object) }, 'images')).toBe(false);
+  });
+});
+
+describe('buildPageMetadata — a four-locale registry', () => {
+  const registry: PageMetadataLocales = {
+    locales: ['en', 'ko', 'ja', 'zh'],
+    defaultLocale: 'en',
+    meta: {
+      en: { htmlLang: 'en', hreflang: 'en', ogLocale: 'en_US', intlTag: 'en-US', script: 'latin' },
+      ko: { htmlLang: 'ko', hreflang: 'ko', ogLocale: 'ko_KR', intlTag: 'ko-KR', script: 'hangul' },
+      ja: { htmlLang: 'ja', hreflang: 'ja', ogLocale: 'ja_JP', intlTag: 'ja-JP', script: 'han-kana' },
+      zh: {
+        htmlLang: 'zh-Hans',
+        hreflang: 'zh-Hans',
+        ogLocale: 'zh_CN',
+        intlTag: 'zh-CN',
+        script: 'han-kana',
+      },
+    },
+  };
+
+  it.each(['en', 'ko', 'ja', 'zh'])('lists all four plus x-default on %s, canonical is its own', (locale) => {
+    const meta = buildPageMetadata(
+      { locale, path: 'download', title: 'T', description: 'D' },
+      registry,
+    );
+    const alternates = meta.alternates as { canonical: string; languages: Record<string, string> };
+    expect(alternates.canonical).toMatch(new RegExp(`/${locale}/download$`));
+    expect(alternates.languages).toEqual({
+      'x-default': expect.stringMatching(/\/en\/download$/),
+      en: expect.stringMatching(/\/en\/download$/),
+      ko: expect.stringMatching(/\/ko\/download$/),
+      ja: expect.stringMatching(/\/ja\/download$/),
+      'zh-Hans': expect.stringMatching(/\/zh\/download$/),
+    });
+  });
+
+  it('takes og:locale from the registry', () => {
+    const og = (locale: string) =>
+      (buildPageMetadata({ locale, path: '', title: 'T', description: 'D' }, registry)
+        .openGraph as { locale: string }).locale;
+    expect(og('ja')).toBe('ja_JP');
+    expect(og('zh')).toBe('zh_CN');
   });
 });

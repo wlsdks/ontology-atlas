@@ -17,7 +17,7 @@ export type EvidenceDemoKey = 'title' | 'domain' | 'dependencies' | null;
 
 /** `title` also lights the display-name lines. */
 const DEMO_LINE_PREFIXES: Record<Exclude<EvidenceDemoKey, null>, readonly string[]> = {
-  title: ['title:', 'display_ko:', 'display_en:'],
+  title: ['title:', 'display_'],
   domain: ['domain:'],
   dependencies: ['dependencies:'],
 };
@@ -27,12 +27,11 @@ export function EvidenceSpecimen({ demoKey = null }: { demoKey?: EvidenceDemoKey
   const tKind = useTranslations('kinds');
   const locale = useLocale();
   const spec = EVIDENCE_SPECIMEN;
-  const tag: 'ko' | 'en' = locale === 'ko' ? 'ko' : 'en';
   /* The other locale's display line is left out and counted (`tests/e2e/locale-purity.spec.ts`). */
-  const frontmatter = spec.frontmatter[tag];
-  const omitted = spec.omittedLines[tag];
+  const frontmatter = spec.frontmatter[locale] ?? spec.frontmatter.en;
+  const omitted = spec.omittedLines[locale] ?? spec.omittedLines.en;
   /* The vault's names, not the catalogue's: an untranslated node shows its English name, not a blank. */
-  const name = (pair: { ko: string; en: string }) => pair[tag];
+  const name = (pair: { en: string; [locale: string]: string }) => pair[locale] ?? pair.en;
 
   const facts: { key: EvidenceDemoKey; label: string; value: string; mono?: boolean }[] = [
     { key: 'title', label: t('specimenFactName'), value: name(spec.facts.name) },

@@ -1,0 +1,8 @@
+{
+  "label": "설정 검색",
+  "placeholder": "설정 검색",
+  "results": "찾은 설정",
+  "where": "{section} · {scope}",
+  "opens": "{place} 열기",
+  "empty": "“{query}”에 맞는 설정이 없어요."
+}

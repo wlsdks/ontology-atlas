@@ -11,6 +11,7 @@ import { useLocalVault } from '@/entities/vault-session';
 export function useGuidedTourAutoStartReady(): boolean {
   const vault = useLocalVault();
   const mode = useDataSourceMode();
+  if (vault.partialTotal) return false;
   if (mode === 'local') return vault.status === 'loaded';
   return vault.restoreAttempted;
 }

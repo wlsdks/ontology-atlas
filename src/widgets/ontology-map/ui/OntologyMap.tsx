@@ -14,8 +14,8 @@ import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
 import type { DomeViewKind } from "../model/dome-view";
-import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
@@ -127,6 +127,7 @@ export interface OntologyMapProps {
    */
   dataSourceKey?: string | null;
   assembleOnOpen?: boolean;
+  arrivingDocuments?: number;
   /** Increment to re-run fit-to-bounds (HomePage's "fit the map" — fit the map). */
   fitViewToken: number;
   /**
@@ -414,6 +415,7 @@ export interface OntologyMapProps {
    * `"page-scroll"`.
    */
   wheelIntent?: "zoom" | "page-scroll";
+  navigationSpeed?: MapNavigationSpeed;
   /**
    * How long without input before ambient motion sleeps. Omitted uses the workbench
    * default (`AMBIENT_SLEEP_DELAY_MS`, 30 seconds — the value for a surface where a
@@ -431,7 +433,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -554,11 +556,13 @@ export function OntologyMap(props: OntologyMapProps) {
       reviewQuestionIds: props.reviewQuestionIds,
       onWalkDeadEnd: handleWalkDeadEnd,
       wheelIntent,
+      navigationSpeed,
       ambientSleepDelayMs,
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
       dataSourceKey,
       assembleOnOpen,
+      arrivingDocuments,
       fitViewToken,
       growthReplayToken,
       onGrowthReplayingChange,

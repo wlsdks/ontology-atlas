@@ -45,6 +45,16 @@
     "unknownTarget": "Cannot tell what it wants to do",
     "reject": "No thanks",
     "allowOnce": "Allow once",
+    "answered": {
+      "allow": "Allowed once. The agent carries on.",
+      "allowNamed": "Allowed once. The agent runs this write to “{name}”.",
+      "reject": "Declined. The agent does not do this.",
+      "rejectWrite": "Declined. Nothing is written.",
+      "rejectNamed": "Declined. Nothing is written to “{name}”.",
+      "correct": "Declined. A correction request is drafted in the composer, not sent.",
+      "always": "Allowed for the rest of this chat.",
+      "failed": "The answer was not sent. Press it again."
+    },
     "taskReview": {
       "eyebrow": "Current task",
       "nonGoalsUnstructured": "Non-goals were not recorded separately, so they remain unknown.",
@@ -54,11 +64,9 @@
       "details": "Details",
       "scopeRelation": "{from} → {type} → {to}",
       "scopeItem": "item {selected} of {items} in this batch",
-      "scopeFields": "{count, plural, one {# requested field} other {# requested fields}}",
       "batchRemaining": "{count, plural, one {# other batch item is outside this summary} other {# other batch items are outside this summary}}.",
       "incomplete": "Meaning review incomplete · {inspected} of {total} recorded meaning units shown · {omitted} omitted. Details contains the complete request.",
-      "coverageNone": "This request records no meaning text. Details carries the complete request.",
-      "coverageAll": "{total, plural, one {The # recorded meaning unit is shown in full} other {All # recorded meaning units are shown}}. Details carries the complete request.",
+      "coverageNone": "This request carries no values to summarize. Details shows the complete request.",
       "beforeUnavailable": "Only the values in this request are shown; a before state is never invented.",
       "beforeUnknown": "Before · unavailable",
       "before": "Before",
@@ -89,7 +97,8 @@
       },
       "correct": "Reject and edit",
       "defer": "Keep pending",
-      "interventionHint": "Correction rejects this proposal and prepares editable context; it does not send or roll back code. Pending stays live only in this conversation and is not saved.",
+      "correctEffect": "Declines this write and drafts a correction request in the composer. It does not send it or roll back code.",
+      "deferEffect": "Postpones the answer. The request waits only in this conversation and is not saved.",
       "provenance": "Request provenance and guards",
       "requestId": "request",
       "userEvent": "turn",
@@ -102,7 +111,6 @@
         "unknown": "unknown"
       },
       "unknown": "unknown",
-      "permissionSeparate": "Allow once permits this exact write. It does not accept meaning or prove code, merge, or deployment.",
       "authority": {
         "meaning": "Meaning",
         "code": "Code verification",
@@ -119,8 +127,6 @@
         "unchanged": "Unchanged",
         "uncomparable": "Uncomparable"
       },
-      "actionScope": "Action scope",
-      "allowScope": "Allow once executes only this write.",
       "canonicalPreview": "Exact Markdown to be written",
       "canonicalPreviewNote": "The writer reconstructs formatting and comments. Review these complete bytes before accepting meaning.",
       "previewUnavailable": "Exact writer output is unavailable. Meaning acceptance requires an existing UID and a valid single-document patch.",
@@ -131,7 +137,13 @@
       },
       "terminalSaveFailed": "The meaning decision is retained, but its latest execution result could not be saved. History may still show it as unverified.",
       "noSemanticDelta": "This request does not change the parsed meaning. No meaning decision record is needed.",
-      "rationale": "Why accept this interpretation? (optional)"
+      "rationale": "Why accept this interpretation? (optional)",
+      "bodyInDetails": "The rest of the body change is shown in full under Details.",
+      "detailsPointer": "Details shows the complete request as sent.",
+      "taskRest": "Show the remaining {count, plural, one {# line} other {# lines}}",
+      "allowEffect": "Runs this one write. It does not accept the meaning or verify code, merge or deployment.",
+      "allowEffectNamed": "Runs this one write to “{name}”. It does not accept the meaning or verify code, merge or deployment.",
+      "allowEffectBatch": "Runs all {count} writes in this batch at once. It does not accept the meaning or verify code, merge or deployment."
     },
     "deferredNotice": "This request is still pending in this conversation. It is not saved; closing or cancelling rejects it.",
     "resumeReview": "Resume review",

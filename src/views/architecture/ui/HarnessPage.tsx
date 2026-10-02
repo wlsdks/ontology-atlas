@@ -121,6 +121,11 @@ function HarnessPageInner() {
     reloadNonce,
   );
   const report = reportState.status === 'ready' ? reportState.report : null;
+  const draftSource = useMemo(() => {
+    if (reportState.status !== 'ready' || reportState.report.topLevelFolders.length === 0) return null;
+    const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
+    return name ? { name, folders: reportState.report.topLevelFolders } : null;
+  }, [reportState]);
   /*
    * A bridge is not a harness: a Tauri-shaped stub has one with no connected source. `unsupported`
    * and `no-source` send the arrival to the blueprint; a named `?view=` still wins.
@@ -260,6 +265,7 @@ function HarnessPageInner() {
       {view === 'architecture' ? (
         <ArchitecturePage
           embedded
+          draftSource={draftSource}
           harnessPanelId="harness-tabpanel-architecture"
           harnessPanelLabelledBy="harness-tab-architecture"
         />

@@ -23,6 +23,7 @@ import {
   lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
+  lastDrawnSkyTimeMs,
   lastLitStateCounts,
   setMapComets,
 } from "./topology-frame-draw";
@@ -55,6 +56,7 @@ export interface TopologyMapInstrumentationSources {
     galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
+    appearRef: SourceRef<Map<string, number>>;
   };
   interaction: {
     handlersRef: SourceRef<TopologyPointerHandlers | null>;
@@ -78,6 +80,7 @@ export interface TopologyMapInstrumentationSources {
     heatRef: SourceRef<number>;
     lastInputMsRef: SourceRef<number>;
     lastActiveMsRef: SourceRef<number>;
+    homeSpringsRef: SourceRef<ReadonlyMap<string, unknown>>;
   };
   lens: {
     mapLensKindRef: SourceRef<TopologyMapLensKind>;
@@ -109,6 +112,7 @@ export function useTopologyMapInstrumentation({
     galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
+    appearRef,
   } = scene;
   const {
     handlersRef,
@@ -128,6 +132,7 @@ export function useTopologyMapInstrumentation({
     heatRef,
     lastInputMsRef,
     lastActiveMsRef,
+    homeSpringsRef,
   } = activity;
   const {
     mapLensKindRef,
@@ -178,6 +183,7 @@ export function useTopologyMapInstrumentation({
         heat: heatRef.current,
         lastInputMs: lastInputMsRef.current,
         lastActiveMs: lastActiveMsRef.current,
+        homeSprings: homeSpringsRef.current.size,
         hovered: hoveredNodeIdRef.current,
         pointerPhase: pointerMachineRef.current.phase,
       }),
@@ -244,6 +250,7 @@ export function useTopologyMapInstrumentation({
              * only method that has agreed with the screen so far.
              */
             alpha: drawnAlphas.get(n.id) ?? 1,
+            appear: appearRef.current.get(n.id) ?? 1,
             previewEndpoint: isPreviewEndpoint(preview, n.id),
             /**
              * ★ For the graph-readability instrument: overlap cannot be counted
@@ -385,6 +392,7 @@ export function useTopologyMapInstrumentation({
        * read it from — the same reason every other entry here exists.
        */
       altitude: () => drawnFarTRef.current,
+      skyTime: () => lastDrawnSkyTimeMs(),
       camera: () => {
         const camera = cameraRef.current;
         const { width, height } = viewportRef.current;
@@ -544,7 +552,10 @@ export function useTopologyMapInstrumentation({
        * substitute: a frame measured **zero** disc overlaps while names visibly
        * crossed (2026-08-22). Names collide long before discs do.
        */
-      setComets: (on: boolean) => setMapComets(on),
+      setComets: (on: boolean) => {
+        setMapComets(on);
+        lastActiveMsRef.current = performance.now();
+      },
       wake: () => {
         lastActiveMsRef.current = performance.now();
         requestOntologyMapFrame();
@@ -589,6 +600,7 @@ export function useTopologyMapInstrumentation({
     };
   }, [
     agentFocusNodeIdRef,
+    appearRef,
     cameraRef,
     cameraTargetRef,
     canvasRef,
@@ -603,6 +615,7 @@ export function useTopologyMapInstrumentation({
     galaxyRampRef,
     handlersRef,
     heatRef,
+    homeSpringsRef,
     hoveredNodeIdRef,
     idleDebugEnabledRef,
     lastActiveCausesRef,

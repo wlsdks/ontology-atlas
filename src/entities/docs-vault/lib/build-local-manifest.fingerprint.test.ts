@@ -4,8 +4,8 @@ import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint,
-  walkVault,
 } from './build-local-manifest';
+import { walkVault } from './walk-vault';
 
 interface FakeFile {
   text: string;
@@ -123,7 +123,7 @@ it('bounds concurrent metadata reads while keeping every fingerprint entry', asy
   const root = {
     kind: 'directory', name: 'Pooled',
     entries: async function* () {
-      for (let i = 0; i < 96; i += 1) {
+      for (let i = 0; i < 192; i += 1) {
         const name = `n${i}.md`;
         yield [name, {
           kind: 'file', name,
@@ -139,9 +139,9 @@ it('bounds concurrent metadata reads while keeping every fingerprint entry', asy
     },
   } as unknown as FileSystemDirectoryHandle;
   const fingerprint = await computeLocalVaultFingerprint(root);
-  expect(fingerprint.split('\n')).toHaveLength(96);
+  expect(fingerprint.split('\n')).toHaveLength(192);
   expect(peak).toBeGreaterThan(1);
-  expect(peak).toBeLessThanOrEqual(16);
+  expect(peak).toBeLessThanOrEqual(64);
 });
 
 it.each([100_000, 100_001])('keeps the first 100,000 entries and reports truncation for %i files', async (size) => {

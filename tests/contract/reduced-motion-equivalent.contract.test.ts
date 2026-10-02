@@ -45,8 +45,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",
-  "atlas-mascot-presence--walking":
-    "The travel axis is decorative. Reduced motion places the verified state immediately; the role=status text still carries the same fact.",
   "atlas-mascot-sprite":
     "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "acp-working-shimmer":
@@ -411,7 +409,7 @@ describe('reduced-motion 동등물 계약', () => {
   it('캔버스 카메라의 reduced-motion 스냅은 앱 개시 이동에만 걸린다', () => {
     const step = TS('src/widgets/ontology-map/ui/topology-physics-step.ts');
     expect(
-      /if \(!freezeCamera && reducedMotion && !userDrivenCamera\)/.test(step),
+      /if \(reducedMotion && !userDrivenCamera\)/.test(step),
       '카메라 스냅이 사용자 개시 이동까지 자른다 (WCAG 2.3.3 예외 침범)',
     ).toBe(true);
 

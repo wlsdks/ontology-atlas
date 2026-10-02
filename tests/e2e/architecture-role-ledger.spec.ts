@@ -4,6 +4,7 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { FIT_LOCALES } from './locales';
 import { stubDirectoryPicker } from './vault-picker-stub';
 import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 
@@ -119,12 +120,9 @@ async function openSeededVault(page: import('@playwright/test').Page) {
   await page.getByTestId('first-run-starter-open').click();
   await page.getByTestId('vault-guide-pick-existing').click();
   await expect(page.getByTestId('ontology-map-canvas').first()).toBeVisible({ timeout: 60_000 });
-  /* Until the picked vault is the source — the sample answers the same selectors otherwise. */
-  await expect
-    .poll(() => page.evaluate(() => !document.body.innerText.includes('SAMPLE FOR NOW')), {
-      timeout: 60_000,
-    })
-    .toBe(true);
+  await expect(page.locator('[data-testid^="first-run-starter"]')).toHaveCount(0, {
+    timeout: 60_000,
+  });
 }
 
 test('a measured profile separates each role contract and receipt, whole chain on screen', async ({
@@ -133,7 +131,7 @@ test('a measured profile separates each role contract and receipt, whole chain o
   test.setTimeout(180_000);
   await openSeededVault(page);
 
-  for (const locale of ['en', 'ko']) {
+  for (const locale of FIT_LOCALES) {
     await page.goto(`/${locale}/architecture/?view=architecture&e2e=1&guides=off`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
     const ledgers = page.locator('[data-testid^="architecture-role-ledger-"]');

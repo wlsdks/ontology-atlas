@@ -8,8 +8,8 @@
 // build when this file and the vault disagree. Rationale: `scripts/generate-evidence-specimen.mjs`.
 
 interface EvidenceSpecimenName {
-  readonly ko: string;
   readonly en: string;
+  readonly [locale: string]: string;
   /** The map engine's node id (kind:basename) — what focus/emphasis props accept. */
   readonly nodeId: string;
 }
@@ -22,9 +22,9 @@ export interface EvidenceSpecimen {
   /** The same file on GitHub, so the claim is checkable in one click. */
   readonly url: string;
   /** Frontmatter lines, verbatim, in file order, per locale. */
-  readonly frontmatter: { readonly ko: readonly string[]; readonly en: readonly string[] };
+  readonly frontmatter: { readonly en: readonly string[]; readonly [locale: string]: readonly string[] };
   /** How many lines are not shown, per locale — stated on screen, never hidden. */
-  readonly omittedLines: { readonly ko: number; readonly en: number };
+  readonly omittedLines: { readonly en: number; readonly [locale: string]: number };
   readonly facts: {
     readonly name: EvidenceSpecimenName;
     readonly kind: string;

@@ -133,7 +133,7 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: '에이전트 연결(MCP)' }),
+      screen.getByRole('region', { name: 'MCP 연결' }),
     ).toBeInTheDocument();
     // One statement of the count: the row below says it, so no amber badge repeats it.
     expect(screen.queryByText('누락')).toBeNull();

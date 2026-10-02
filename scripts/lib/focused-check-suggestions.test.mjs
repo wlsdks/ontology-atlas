@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
+import { relatedMessagesCommand } from './check-rules/i18n.mjs';
 import { rules as SECURITY_RULES } from './check-rules/security.mjs';
 
 import {
@@ -33,6 +34,7 @@ const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-war
 const SECURITY_COMMAND = SECURITY_RULES[0].command;
 const TEST_HYGIENE_COMMAND =
   'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts';
+const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
   'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts';
 
@@ -43,6 +45,7 @@ function domainCommands(result) {
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
+      command !== IME_ENTER_GUARD_COMMAND &&
       !isScriptLint(command),
   );
 }
@@ -209,6 +212,15 @@ describe('focused check suggestions', () => {
         .filter((command) => command === DEAD_CODE_COMMAND).length;
       assert.equal(count, 1, `${path} must recommend ${DEAD_CODE_COMMAND} exactly once`);
     }
+  });
+
+  it('plans the IME Enter guard for TypeScript sources that the full contract suite misses', () => {
+    const plans = (path) => commandNames(suggestFocusedChecks([path]));
+    for (const path of ['src/shared/lib/example.ts', 'src/widgets/example/ui/use-example-keys.ts', 'app/sitemap.ts']) {
+      assert.equal(plans(path).filter((command) => command === IME_ENTER_GUARD_COMMAND).length, 1, path);
+    }
+    assert.ok(plans('src/widgets/example/ui/Example.tsx').includes('pnpm test:contracts'));
+    assert.ok(!plans('src/shared/lib/example.test.ts').includes(IME_ENTER_GUARD_COMMAND));
   });
 
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
@@ -1147,11 +1159,13 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('runs every companion journey when a companion screen changes, not only the spec it touched', () => {
-    const result = suggestFocusedChecks(['src/features/agent-activity/ui/CompanionMap.tsx']);
-    const row = result.commands.find((r) => r.command.includes('companion-growth.spec.ts'));
-    assert.ok(row, 'companion-growth guards the selector overflow and hit areas a map edit can break');
-    assert.match(row.command, /companion-sector\.spec\.ts/);
+  it('keeps personal-save and verified-status journeys on their entry owners', () => {
+    for (const path of ['src/views/first-run/ui/FirstRunPage.tsx', 'src/views/home/ui/TopologyCommandChrome.tsx', 'src/features/agent-activity/ui/AgentActivityChip.tsx']) {
+      const result = suggestFocusedChecks([path]);
+      const row = result.commands.find((r) => r.command.includes('retired-game-storage.spec.ts'));
+      assert.ok(row, `missing retirement journey for ${path}`);
+      assert.match(row.command, /agent-mascot-presence\.spec\.ts/);
+    }
   });
 
   it('suggests the map viewport framing E2E for the exact camera-obstacle source owners', () => {
@@ -1965,5 +1979,18 @@ describe('security surfaces', () => {
     for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
       assert.equal(securityRow(path), undefined, path);
     }
+  });
+});
+
+describe('message catalogue related-tests rule', () => {
+  it('names the composite of every locale it is given', () => {
+    assert.equal(
+      relatedMessagesCommand(['en', 'ja', 'ko', 'zh']),
+      'pnpm exec vitest related --run messages/en.json messages/ja.json messages/ko.json messages/zh.json --passWithNoTests',
+    );
+    assert.equal(
+      relatedMessagesCommand(),
+      'pnpm exec vitest related --run messages/en.json messages/ko.json --passWithNoTests',
+    );
   });
 });

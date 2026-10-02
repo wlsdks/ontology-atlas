@@ -30,6 +30,7 @@ import {
   isGatewaySurface,
   resolveActiveNavDestination,
   resolveGuideDestination,
+  stripLocalePrefix,
 } from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
@@ -168,7 +169,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
 
 /** Is this the locale root that owns the installed app's first-run/restore branch? */
 function isLocaleRoot(pathname: string): boolean {
-  const localPath = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
+  const localPath = stripLocalePrefix(pathname);
   return localPath === "/";
 }
 
@@ -197,12 +198,15 @@ function VaultRouteIdentityBoundary({
   const desktop = hydrated && isDesktopShell();
   const workbenchDestination =
     !isLocaleRoot(pathname) && resolveActiveNavDestination(pathname) !== null;
-  const localReady = vault.status === "loaded" || vault.isReloadingSameVault === true;
+  const localReady =
+    vault.status === "loaded" ||
+    vault.isReloadingSameVault === true ||
+    (resolveActiveNavDestination(pathname) === "map" && vault.partialTotal > 0);
   const localLoadPending =
     desktop &&
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
-  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest;
+  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest && !vault.partialTotal;
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
@@ -272,9 +276,9 @@ function AppNavRailSlot() {
   // In the static prerender `isDesktopShell()` is false, and hydration does not correct a
   // baked `lg:hidden`, so `useHydrated()` forces one re-render after hydration.
   const hydrated = useHydrated();
-  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest;
+  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
   const gateway = isGatewaySurface(pathname, {
-    hasVault: Boolean(vault.manifest),
+    hasVault: Boolean(vault.manifest || vault.partialTotal),
     desktop: hydrated && isDesktopShell(),
     vaultKnown: vault.restoreAttempted,
   });

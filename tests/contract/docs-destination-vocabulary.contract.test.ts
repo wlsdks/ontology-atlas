@@ -22,7 +22,7 @@ function at(catalog: Catalog, path: string): string {
 }
 
 const ONTOLOGY_REFERENCES = [
-  'nav.settingsMenu.vaultTitle',
+  'settingsFolder.documentsTitle',
   'searchWidgets.shortcuts.scope.docs',
   'topology.controls.docsLabel',
   'ontologyPages.insights.emptyTitleLink',

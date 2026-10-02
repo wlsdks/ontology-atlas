@@ -133,7 +133,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
               }}
               defaultKind={props.createNodeDefaultKind}
               defaultDomain={props.createNodeSeedDomain}
-              localeNames={{ primaryLocale: props.activeLocale, secondaryLocale: props.activeLocale === "ko" ? "en" : "ko" }}
+              localeNames={{ primaryLocale: props.activeLocale, secondaryLocale: props.activeLocale === "en" ? "ko" : "en" }}
               review={props.createNodeProposal ? {
                 changeSet: props.createNodeProposal.changeSet, confirming: props.createNodeConfirming,
                 onBack: props.clearCreateNodeProposal, onConfirm: props.confirmCreateNode

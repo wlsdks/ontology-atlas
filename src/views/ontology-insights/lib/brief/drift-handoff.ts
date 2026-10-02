@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from '@/i18n/answer-language';
 import type { BriefLineDetail } from './brief-model';
 
 /** Concepts one request may name; beyond this the agent is reading, not checking. */
@@ -35,7 +36,7 @@ export function buildDriftHandoff({
   const tail = hidden > 0
     ? [ko ? `- 같은 상태의 개념이 ${hidden}개 더 있다. 이번에는 위 ${named.length}개만 판단해줘.` : `- ${hidden} more concepts are in the same state. Judge only the ${named.length} above this time.`]
     : [];
-  return (ko
+  return withAnswerLanguage((ko
     ? [
         '이 폴더에서 기록된 의미보다 그 근거 코드가 나중에 바뀐 개념들이야.',
         '',
@@ -60,5 +61,5 @@ export function buildDriftHandoff({
         'If it is wrong, propose the sentence to change. Whatever you could not check belongs in that concept\'s `## Uncertainty` line, as a sentence to add — do not propose deleting a claim, because a removed sentence hides the unknown instead of stating it.',
         'Do not write to the vault, and say so plainly when you cannot tell.',
       ]
-  ).join('\n');
+  ).join('\n'), locale);
 }

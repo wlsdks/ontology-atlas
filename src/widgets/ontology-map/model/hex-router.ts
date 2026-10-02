@@ -159,55 +159,77 @@ export function buildHexLattice(layout: HexBoardLayout, pad = 2): HexLattice {
   };
 }
 
-class Heap {
-  private d: number[] = [];
-  private n: number[] = [];
-  get size() {
-    return this.d.length;
-  }
-  push(cost: number, id: number) {
-    const d = this.d;
-    const n = this.n;
-    d.push(cost);
-    n.push(id);
-    let k = d.length - 1;
-    while (k > 0) {
-      const p = (k - 1) >> 1;
-      if (d[p]! <= d[k]!) break;
-      [d[p], d[k]] = [d[k]!, d[p]!];
-      [n[p], n[k]] = [n[k]!, n[p]!];
-      k = p;
+interface Csr {
+  start: Int32Array;
+  to: Int32Array;
+  cost: Float64Array;
+  edge: Int32Array;
+  terminal: Uint8Array;
+}
+
+interface Scratch {
+  stamp: number;
+  seen: Uint32Array;
+  dist: Float64Array;
+  prev: Int32Array;
+  src: Uint32Array;
+  dst: Uint32Array;
+  heapCost: Float64Array;
+  heapNode: Int32Array;
+}
+
+const csrs = new WeakMap<HexLattice, Csr>();
+const scratches = new WeakMap<HexLattice, Scratch>();
+
+function csrOf(L: HexLattice): Csr {
+  let csr = csrs.get(L);
+  if (csr) return csr;
+  const n = L.adj.length;
+  const start = new Int32Array(n + 1);
+  for (let i = 0; i < n; i += 1) start[i + 1] = start[i]! + L.adj[i]!.length;
+  const to = new Int32Array(start[n]!);
+  const cost = new Float64Array(start[n]!);
+  const edge = new Int32Array(start[n]!);
+  const terminal = new Uint8Array(n);
+  for (let i = 0; i < n; i += 1) {
+    if (L.kind[i] === "m") terminal[i] = 1;
+    let k = start[i]!;
+    for (const [v, w, e] of L.adj[i]!) {
+      to[k] = v;
+      cost[k] = w;
+      edge[k] = e;
+      k += 1;
     }
   }
-  pop(): [number, number] {
-    const d = this.d;
-    const n = this.n;
-    const top: [number, number] = [d[0]!, n[0]!];
-    const ld = d.pop()!;
-    const ln = n.pop()!;
-    if (d.length) {
-      d[0] = ld;
-      n[0] = ln;
-      let k = 0;
-      for (;;) {
-        const l = 2 * k + 1;
-        const r = l + 1;
-        let m = k;
-        if (l < d.length && d[l]! < d[m]!) m = l;
-        if (r < d.length && d[r]! < d[m]!) m = r;
-        if (m === k) break;
-        [d[m], d[k]] = [d[k]!, d[m]!];
-        [n[m], n[k]] = [n[k]!, n[m]!];
-        k = m;
-      }
-    }
-    return top;
+  csr = { start, to, cost, edge, terminal };
+  csrs.set(L, csr);
+  return csr;
+}
+
+function scratchOf(L: HexLattice): Scratch {
+  let s = scratches.get(L);
+  if (!s) {
+    const n = L.xs.length;
+    s = {
+      stamp: 0,
+      seen: new Uint32Array(n),
+      dist: new Float64Array(n),
+      prev: new Int32Array(n),
+      src: new Uint32Array(n),
+      dst: new Uint32Array(n),
+      heapCost: new Float64Array(1024),
+      heapNode: new Int32Array(1024),
+    };
+    scratches.set(L, s);
   }
+  s.stamp += 1;
+  return s;
 }
 
 /** Routes share one ledger, so build one per drawn state, not per frame. */
 export class HexRouter {
   private use = new Map<number, Map<string, number>>();
+  private used: Uint8Array | null = null;
   constructor(
     readonly lattice: HexLattice,
     private otherPenalty = 1.15,
@@ -226,15 +248,50 @@ export class HexRouter {
     toward?: { x: number; y: number },
   ): { path: number[]; stub: boolean } | null {
     const L = this.lattice;
-    const n = L.xs.length;
-    const dist = new Float64Array(n).fill(Infinity);
-    const prev = new Int32Array(n).fill(-1);
-    const heap = new Heap();
+    const { start, to, cost, edge, terminal } = csrOf(L);
+    const s = scratchOf(L);
+    const stamp = s.stamp;
+    const { seen, dist, prev } = s;
+    const inSrc = s.src;
+    const inDst = s.dst;
+    for (const i of dst) inDst[i] = stamp;
+    for (const i of src) inSrc[i] = stamp;
+    let heapCost = s.heapCost;
+    let heapNode = s.heapNode;
+    let size = 0;
+    const push = (c: number, id: number) => {
+      if (size === heapCost.length) {
+        const nextCost = new Float64Array(size * 2);
+        const nextNode = new Int32Array(size * 2);
+        nextCost.set(heapCost);
+        nextNode.set(heapNode);
+        s.heapCost = heapCost = nextCost;
+        s.heapNode = heapNode = nextNode;
+      }
+      let k = size;
+      size += 1;
+      heapCost[k] = c;
+      heapNode[k] = id;
+      while (k > 0) {
+        const p = (k - 1) >> 1;
+        if (heapCost[p]! <= heapCost[k]!) break;
+        const pc = heapCost[p]!;
+        heapCost[p] = heapCost[k]!;
+        heapCost[k] = pc;
+        const pn = heapNode[p]!;
+        heapNode[p] = heapNode[k]!;
+        heapNode[k] = pn;
+        k = p;
+      }
+    };
     for (const i of src) {
+      seen[i] = stamp;
       dist[i] = 0;
-      heap.push(0, i);
+      prev[i] = -1;
+      push(0, i);
     }
     const blocked = this.blocked;
+    const used = this.used;
     const walk = (end: number) => {
       const path: number[] = [];
       for (let v = end; v !== -1; v = prev[v]!) path.push(v);
@@ -242,29 +299,52 @@ export class HexRouter {
     };
     let best = -1;
     let bestD = Infinity;
-    while (heap.size) {
-      const [d, u] = heap.pop();
+    while (size > 0) {
+      const d = heapCost[0]!;
+      const u = heapNode[0]!;
+      size -= 1;
+      if (size > 0) {
+        heapCost[0] = heapCost[size]!;
+        heapNode[0] = heapNode[size]!;
+        let k = 0;
+        for (;;) {
+          const l = 2 * k + 1;
+          const r = l + 1;
+          let m = k;
+          if (l < size && heapCost[l]! < heapCost[m]!) m = l;
+          if (r < size && heapCost[r]! < heapCost[m]!) m = r;
+          if (m === k) break;
+          const mc = heapCost[m]!;
+          heapCost[m] = heapCost[k]!;
+          heapCost[k] = mc;
+          const mn = heapNode[m]!;
+          heapNode[m] = heapNode[k]!;
+          heapNode[k] = mn;
+          k = m;
+        }
+      }
       if (d > dist[u]!) continue;
-      if (dst.has(u)) return { path: walk(u), stub: false };
-      if (toward && L.kind[u] !== "m") {
+      if (inDst[u] === stamp) return { path: walk(u), stub: false };
+      if (toward && !terminal[u]) {
         const h = Math.hypot(L.xs[u]! - toward.x, L.ys[u]! - toward.y);
         if (h < bestD) {
           bestD = h;
           best = u;
         }
       }
-      for (const [v, w, e] of L.adj[u]!) {
+      for (let k = start[u]!, end = start[u + 1]!; k < end; k += 1) {
+        const v = to[k]!;
         if (blocked && blocked[v]) continue;
         // A route never touches a tile it does not serve.
-        if (L.kind[v] === "m" && !dst.has(v) && !src.has(v)) continue;
-        const used = this.use.get(e);
+        if (terminal[v] && inDst[v] !== stamp && inSrc[v] !== stamp) continue;
         let m = 1;
-        if (used) m = used.has(bundle) ? 0.5 : this.otherPenalty;
-        const nd = d + w * m;
-        if (nd < dist[v]!) {
+        if (used && used[edge[k]!]) m = this.use.get(edge[k]!)!.has(bundle) ? 0.5 : this.otherPenalty;
+        const nd = d + cost[k]! * m;
+        if (seen[v] !== stamp || nd < dist[v]!) {
+          seen[v] = stamp;
           dist[v] = nd;
           prev[v] = u;
-          heap.push(nd, v);
+          push(nd, v);
         }
       }
     }
@@ -273,12 +353,20 @@ export class HexRouter {
   }
 
   private record(path: readonly number[], bundle: string) {
-    const L = this.lattice;
+    const { start, to, edge } = csrOf(this.lattice);
+    const used = (this.used ??= new Uint8Array(this.lattice.edgeCount));
     for (let i = 0; i < path.length - 1; i += 1) {
       const a = path[i]!;
       const b = path[i + 1]!;
-      const e = L.adj[a]!.find(([v]) => v === b)?.[2];
-      if (e === undefined) continue;
+      let e = -1;
+      for (let k = start[a]!, end = start[a + 1]!; k < end; k += 1) {
+        if (to[k] === b) {
+          e = edge[k]!;
+          break;
+        }
+      }
+      if (e === -1) continue;
+      used[e] = 1;
       let m = this.use.get(e);
       if (!m) this.use.set(e, (m = new Map()));
       m.set(bundle, (m.get(bundle) ?? 0) + 1);
@@ -327,6 +415,103 @@ export class HexRouter {
       targetId: stub ? ([...toIds][0] ?? "") : (L.terminalOwners[path[path.length - 1]!]?.find((id) => toIds.has(id)) ?? ""),
       ...(stub ? { stub: true } : {}),
     };
+  }
+}
+
+export function layCanals(
+  layout: HexBoardLayout,
+  lattice: HexLattice,
+  blocked: Uint8Array | null,
+  limit: number,
+): (HexRoute & { count: number; twoWay: boolean })[] {
+  const router = new HexRouter(lattice, 1.8, blocked);
+  const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
+  const out: (HexRoute & { count: number; twoWay: boolean })[] = [];
+  for (const canal of layout.canals) {
+    if (out.length >= limit) break;
+    const a = regionById.get(canal.fromDomain);
+    const b = regionById.get(canal.toDomain);
+    if (!a || !b) continue;
+    const route = router.route([a.domainId, ...a.capabilityIds], [b.domainId, ...b.capabilityIds], `${a.domainId}>${b.domainId}`);
+    if (route) out.push({ ...route, count: canal.count, twoWay: canal.twoWay });
+  }
+  return out;
+}
+
+export interface HexRouteJob<Role extends string = string> {
+  from: readonly string[];
+  to: readonly string[];
+  bundle: string;
+  role: Role;
+}
+
+export class HexRouteRun<Role extends string = string> {
+  readonly routes: (HexRoute & { role: Role })[] = [];
+  private next = 0;
+  private readonly router: HexRouter;
+  constructor(
+    lattice: HexLattice,
+    readonly jobs: readonly HexRouteJob<Role>[],
+    otherPenalty: number,
+    blocked: Uint8Array | null,
+  ) {
+    this.router = new HexRouter(lattice, otherPenalty, blocked);
+  }
+
+  get done(): boolean {
+    return this.next >= this.jobs.length;
+  }
+
+  advance(deadline: number, clock: () => number = () => performance.now()): boolean {
+    while (this.next < this.jobs.length) {
+      const job = this.jobs[this.next]!;
+      this.next += 1;
+      const route = this.router.route(job.from, job.to, job.bundle);
+      if (route) this.routes.push({ ...route, role: job.role });
+      if (clock() >= deadline) break;
+    }
+    return this.done;
+  }
+}
+
+export class HexFocusRoutes<Role extends string = string> {
+  private focus: object | null = null;
+  private blocked: Uint8Array | null = null;
+  private run: HexRouteRun<Role> | null = null;
+  private shown: readonly (HexRoute & { role: Role })[] = [];
+
+  lay(
+    lattice: HexLattice,
+    focus: object,
+    jobs: readonly HexRouteJob<Role>[],
+    blocked: Uint8Array | null,
+    otherPenalty: number,
+    deadline: number,
+    clock?: () => number,
+  ): { routes: readonly (HexRoute & { role: Role })[]; pending: boolean } {
+    if (jobs.length === 0) {
+      this.clear();
+      return { routes: this.shown, pending: false };
+    }
+    if (focus !== this.focus) {
+      this.focus = focus;
+      this.run = null;
+      this.shown = [];
+    }
+    if (!this.run || this.run.jobs !== jobs || blocked !== this.blocked) {
+      this.run = new HexRouteRun(lattice, jobs, otherPenalty, blocked);
+      this.blocked = blocked;
+    }
+    if (!this.run.done) this.run.advance(deadline, clock);
+    if (this.run.done) this.shown = this.run.routes;
+    return { routes: this.shown, pending: !this.run.done };
+  }
+
+  clear(): void {
+    this.focus = null;
+    this.blocked = null;
+    this.run = null;
+    this.shown = [];
   }
 }
 

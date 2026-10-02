@@ -32,7 +32,7 @@ conversation.
 - **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.
 - **Reconnection** — Deletes only what the app created and recreates it. This is not "logout": this app has no app-side login, and links to the login the user did in the terminal, using it as-is.
 
-**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **Workspaces remain in settings** (the axis a vault answers is different). API keys live in the Models tab below.
+**Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **The ontology folder remains in settings** (the axis a folder answers is different). API keys live in the Models tab below.
 
 **On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected. That row names the place: the MCP tab on the same strip, one press away, so the sentence carries no link (the settings sheet, which has no strip, still does).
 
@@ -77,9 +77,15 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   response output and 64 KiB of diagnostics per request. Larger outputs fail;
   a truncated reply is never returned as a successful answer. Credentials and
   request content still travel to curl through stdin, with an audit reservation
-  before sending.
+  before sending. Stop in direct-model chat or local Compile cancels that
+  turn's native request and reaps its owned HTTP process. Folder changes and
+  caller unmounts retire unfinished requests too. A replacement for the same
+  selected vault waits for the canceled request's audit cleanup before sending;
+  completed outcomes remain intact. The existing audit format records an
+  interrupted transfer as an error, not as unsent. Closing Atlas's connection
+  does not establish that the model server stopped inference.
 - **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
-  sample rows. Settings keeps a single "Models · API keys" pointer row, and the map dock's
+  sample rows. Settings keeps a "Models · API keys" door row in its Agents pane, and the map dock's
   no-key button opens this tab. Every way a row closes returns focus to its opener, and results
   are announced once through one polite live region.
 

@@ -15,7 +15,15 @@ import {
 } from "../model/dome-view";
 import { stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import type { StrataLodState } from "../model/strata-lod";
-import { isCameraUnsettled, isCanvasActive, isDomeSpinAnimating, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
+import {
+  isCameraUnsettled,
+  isCanvasActive,
+  isDomeSpinAnimating,
+  isEgoTailAnimating,
+  isGalaxyAtmosphereAnimating,
+  isSceneActive,
+  shouldSkipFrame,
+} from "../model/idle-gate";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
@@ -26,7 +34,7 @@ import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { type TopologyWorld } from "./topology-world";
 
-const IDLE_GRACE_MS = 1200;
+export const IDLE_GRACE_MS = 1200;
 const VIEWPORT_SETTLE_FRAMES = 2;
 const INTERACTION_DPR_CAP = 1;
 
@@ -100,6 +108,8 @@ interface FrameResult {
   height: number;
   dpr: number;
   dt: number;
+  awake: boolean;
+  sceneStill: boolean;
 }
 
 /** Nothing to draw yet, or the screen is being left: the loop asks again next frame. */
@@ -432,7 +442,11 @@ export function createFrameGate({
         galaxySettling:
           Math.abs(galaxyRampRef.current - (galaxyRef.current ? 1 : 0)) > 0.01 ||
           Math.abs(neuralRampRef.current - (view3dRef.current && mapArrangementRef.current === "coupling" ? 1 : 0)) > 0.01,
-        galaxyAtmosphereActive: galaxyRef.current && !reducedMotionRef.current,
+        galaxyAtmosphereActive: isGalaxyAtmosphereAnimating({
+          galaxyOn: galaxyRef.current,
+          reducedMotion: reducedMotionRef.current,
+          ambientAsleep,
+        }),
         trailLensSettling:
           (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
           Math.abs(
@@ -476,6 +490,13 @@ export function createFrameGate({
         realmTransitionRef.current.phase === "entering" ||
         realmTransitionRef.current.phase === "exiting" ||
         domeMotion;
+      result.awake = active;
+      result.sceneStill =
+        !isSceneActive(idleFlags, pulsesRef.current.length) &&
+        previewTransitionRef.current === null &&
+        realmTransitionRef.current.phase !== "entering" &&
+        realmTransitionRef.current.phase !== "exiting" &&
+        !domeMotion;
       if (active) {
         lastActiveMsRef.current = now;
         // e2e instrumentation: the names of the flags that just kept this

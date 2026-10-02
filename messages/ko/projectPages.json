@@ -39,7 +39,7 @@
     "nextSlotCliCaption": "터미널에서 · 파일 맨 위 정보칸 자동 정리",
     "nextSlotAgentLabel": "AI 에이전트",
     "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
-    "nextSlotAgentCaption": "에이전트 연결(MCP) · Claude Code / Codex가 직접 생성",
+    "nextSlotAgentCaption": "MCP 연결 · Claude Code / Codex가 직접 생성",
     "factStripGloss": "이 프로젝트가 다루는 영역과 그 안의 기능·구성요소 개수예요",
     "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져서, 오른쪽 숫자를 다 더하면 위 개수보다 클 수 있어요.",
     "emptyStateDesc": "폴더에 프로젝트 문서를 만들면 여기 나타나요. 파일 맨 위 정보칸에 `kind: project` 를 적으면 돼요.",

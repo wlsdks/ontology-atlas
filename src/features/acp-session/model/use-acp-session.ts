@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocale } from 'next-intl';
 
+import { answerLanguageSentence } from '@/i18n/answer-language';
+
 import {
   acpPermissionVerdict,
   isAcpBridgeAvailable,
@@ -283,20 +285,6 @@ function terminalMatchesWriter(update: Record<string, unknown>, receipt: AcpWork
  * someone writing English into a Korean build is asking for English.
  */
 const ANSWER_LANGUAGE_SLOT = '__ANSWER_LANGUAGE__';
-
-/** The language name in English, so the instruction reads to the model as an instruction. */
-function languageName(locale: string): string {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(locale) ?? locale;
-  } catch {
-    return locale;
-  }
-}
-
-function answerLanguageSentence(locale: string): string {
-  const name = languageName(locale);
-  return `Answer in ${name} — that is the language this person's interface is set to, and it is the language of the folder they are looking at. If they write to you in another language, follow theirs instead. This matters most when the request arrived from a button rather than something they typed: there is no message of theirs to take the language from, and the instruction you are reading is itself in English.`;
-}
 
 const VAULT_HANDOFF_BASE = [
   'You are working inside an Ontology Atlas vault opened in the Atlas app.',

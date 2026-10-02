@@ -161,6 +161,7 @@ const SECTIONS: ShortcutSection[] = [
     rows: [
       ...DESTINATION_ROWS,
       { keys: ["⌘", "K"], labelKey: "openSearchPalette" },
+      { keys: ["⌘", ","], labelKey: "openSettings" },
       { keys: ["?"], labelKey: "showShortcuts" },
       { keys: ["Esc"], labelKey: "stepCloseOverlays" },
     ],

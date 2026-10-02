@@ -1,4 +1,4 @@
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import type { RefObject } from "react";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { type TierNameAnchor } from "../model/tier-names";
@@ -22,6 +22,7 @@ export interface UseTopologyLoopArgs {
   /** Identity of this graph's source; a change refits the overview. See the same name on `OntologyMapProps`. */
   dataSourceKey?: string | null;
   assembleOnOpen?: boolean;
+  arrivingDocuments?: number;
   /**
    * What the overview camera fits: `"spine"` (default) is the project/domain/
    * hub bbox, `"full"` is every node's bbox. See the same name on
@@ -269,6 +270,7 @@ export interface UseTopologyLoopArgs {
   expand?: ExpandPreference;
   /** Wheel / vertical-swipe ownership — see `wheelIntent` in `topology-pointer-handlers.ts`. */
   wheelIntent?: "zoom" | "page-scroll";
+  navigationSpeed?: MapNavigationSpeed;
   /** Ambient sleep delay — see `ambientSleepDelayMs` on `OntologyMap`. */
   ambientSleepDelayMs?: number;
 }

@@ -13,8 +13,9 @@ import { Check, Copy, Download } from 'lucide-react';
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
+import { vaultValidationCounts } from '../model/vault-validation-counts';
 
+import { TermHint } from '@/shared/ui/term-hint';
 import { McpProofPacket } from './McpProofPacket';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
@@ -61,7 +62,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           className="mt-4 border-t border-[color:var(--color-divider)] pt-3"
         >
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            {t('agentTerminalTitle')}
+            <TermHint term="cli">{t('agentTerminalTitle')}</TermHint>
           </p>
           <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t('agentTerminalBody')}
@@ -142,17 +143,9 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
   );
 }
 
-/**
- * Vault validation summary, with a value only when something is wrong; written once so both
- * consumers state the same number.
- */
 function deriveValidationSummary(
   localVault: ReturnType<typeof useLocalVault>,
 ): { errorCount: number; warningCount: number } | null {
   if (localVault.status !== 'loaded' || !localVault.manifest) return null;
-  const summary = summarizeVaultValidation(
-    localVault.manifest.docs.map((doc) => ({ slug: doc.slug, frontmatter: doc.frontmatter })),
-  );
-  if (summary.errorCount === 0 && summary.warningCount === 0) return null;
-  return { errorCount: summary.errorCount, warningCount: summary.warningCount };
+  return vaultValidationCounts(localVault.manifest);
 }

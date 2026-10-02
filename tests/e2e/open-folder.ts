@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 
 /**
@@ -23,13 +24,13 @@ import { expect, type Page } from '@playwright/test';
  * where nothing was broken is a change with no evidence behind it, so those stay as they are
  * until one of them actually fails.
  */
-export async function openFolderFromFirstRun(page: Page, locale: 'en' | 'ko' = 'en') {
+export async function openFolderFromFirstRun(page: Page, locale: string = 'en') {
   await page.goto(`/${locale}/docs/`);
-  const door = page.getByRole('button', { name: /Open my folder|내 폴더 열기/i });
+  const door = page.getByTestId('first-run-open');
   await expect(door, 'waiting for the open-folder door').toBeVisible();
-  await door.first().click();
+  await door.click();
   await expect(
-    page.getByRole('heading', { name: locale === 'ko' ? '지도' : 'Map', level: 1 }),
+    page.getByRole('heading', { name: (JSON.parse(readFileSync(`messages/${locale}.json`, 'utf8')) as { navRail: { map: string } }).navRail.map, level: 1 }),
     'the folder is open once the map arrives; entering the Library before this bounces to the gateway',
   ).toBeVisible({ timeout: 30_000 });
 }

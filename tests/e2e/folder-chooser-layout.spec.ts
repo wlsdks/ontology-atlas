@@ -4,7 +4,7 @@ import { waitForAnimationsDone } from './settle';
 
 test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }); });
 
-async function seedChooser(page: Page) {
+async function seedChooser(page: Page, longNames = false) {
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
     (FileSystemHandle.prototype as FileSystemHandle & { queryPermission: () => Promise<'denied' | 'granted'> }).queryPermission = async function () {
@@ -12,9 +12,10 @@ async function seedChooser(page: Page) {
     };
   });
   await page.goto('/en/?shell=desktop&guides=off');
-  await page.evaluate(async () => {
+  await page.evaluate(async (longNames) => {
     const root = await navigator.storage.getDirectory();
-    const names = ['current-project', 'unavailable-project', 'another-project', 'long-project-name-with-a-distinct-ending-one', 'long-project-name-with-a-distinct-ending-two'];
+    const names = ['current-project', 'unavailable-project', 'another-project', 'long-project-name-with-a-distinct-ending-one', 'long-project-name-with-a-distinct-ending-two']
+      .map(name => longNames ? `${name}${' workspace architecture implementation review and maintenance records with source evidence'.repeat(2)}` : name);
     const records = await Promise.all(names.map(async (name, index) => ({
       id: 'current', name, handle: await root.getDirectoryHandle(name, { create: true }),
       createdAt: 1, lastAccessedAt: Date.now() - index * 3600000,
@@ -34,11 +35,12 @@ async function seedChooser(page: Page) {
       tx.onerror = () => reject(tx.error);
     });
     db.close();
-  });
+  }, longNames);
 }
 
 test('the chooser stays fixed while its folder list scrolls and every action remains reachable', async ({ page }) => {
-  await seedChooser(page);
+  // Five is the supported recent-folder limit. Long valid names exercise scrolling without the retired game card.
+  await seedChooser(page, true);
   const measurements = [];
   // The app's minimum window, the owner's desk and a wide display, with English at the floor where
   // its longer labels bind.

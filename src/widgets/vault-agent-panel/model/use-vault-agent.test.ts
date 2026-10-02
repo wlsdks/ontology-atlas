@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 const runTurn = vi.hoisted(() => vi.fn());
 const buildProposal = vi.hoisted(() => vi.fn());
@@ -30,6 +30,8 @@ vi.mock('@/shared/lib/tauri-llm', () => ({
 
 import { useVaultAgent, type UseVaultAgentArgs } from './use-vault-agent';
 import type { AgentTurn } from '@/features/vault-agent';
+import { llmChat } from '@/shared/lib/tauri-llm';
+import { EMPTY_SCREEN_CONTEXT } from '@/features/vault-agent/model/screen-context';
 
 type TurnResult = Awaited<ReturnType<typeof import('@/features/vault-agent').runTurn>>;
 
@@ -114,6 +116,27 @@ describe('useVaultAgent — send when the turn rejects', () => {
     expect(console.error).toHaveBeenCalledWith('[vault-agent] turn failed', thrown);
   });
 
+  it('keeps the malformed-response diagnosis and accepts the next send', async () => {
+    const actual = await vi.importActual<typeof import('@/features/vault-agent')>('@/features/vault-agent');
+    runTurn.mockImplementation(actual.runTurn);
+    const receipt = { status: 200, host: 'api.anthropic.com', durationMs: 1, loggedAt: '2026-10-02T00:00:00Z' };
+    vi.mocked(llmChat)
+      .mockResolvedValueOnce({ ...receipt, body: 'null' })
+      .mockResolvedValueOnce({ ...receipt, body: JSON.stringify({ content: [{ type: 'text', text: 'Ready.' }], stop_reason: 'end_turn' }) });
+    const { result } = renderHook(() => useVaultAgent({ ...args(), screenContext: EMPTY_SCREEN_CONTEXT }));
+    await act(async () => { await result.current.send('Inspect evidence'); });
+    expect(result.current.running).toBe(false);
+    expect(result.current.elapsedSeconds).toBeNull();
+    expect(result.current.turns.at(-1)?.events.at(-1)).toMatchObject({
+      kind: 'notice', code: 'failed', text: expect.stringContaining('invalid-provider-response'),
+    });
+    expect(buildProposal).not.toHaveBeenCalled();
+    await act(async () => { await result.current.send('Try again'); });
+    expect(result.current.running).toBe(false);
+    expect(result.current.turns).toHaveLength(2);
+    expect(result.current.turns.at(-1)?.status).toBe('done');
+  });
+
   it('leaves the success path untouched', async () => {
     runTurn.mockImplementation(async (_deps: unknown, turn: { id: string }) => ({
       turn: { ...turn, status: 'done' },
@@ -179,3 +202,28 @@ describe('useVaultAgent — send when the turn rejects', () => {
     expect(result.current.proposal).toBeNull();
   });
 });
+
+for (const retirement of ['stop', 'unmount', 'folder'] as const) {
+  it(`passes the turn signal into transport and retires on ${retirement}`, async () => {
+    const pending = Promise.withResolvers<TurnResult>();
+    let started!: AgentTurn;
+    runTurn.mockImplementation(async (deps: Parameters<typeof import('@/features/vault-agent').runTurn>[0], turn: AgentTurn) => {
+      started = turn;
+      await deps.send({ body: '{}', model: 'fixture', question: 'question', scope: { nodes: [], promptChars: 0, vaultChars: 0, tools: [] } });
+      return pending.promise;
+    });
+    const hook = renderHook((input) => useVaultAgent(input), { initialProps: args() });
+    let sending!: Promise<void>;
+    act(() => { sending = hook.result.current.send('question'); });
+    await waitFor(() => expect(llmChat).toHaveBeenCalled());
+    const signal = vi.mocked(llmChat).mock.calls.at(-1)![0].signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    act(() => {
+      if (retirement === 'stop') hook.result.current.stop();
+      else if (retirement === 'unmount') hook.unmount();
+      else hook.rerender({ ...args(), vaultPath: '/other' });
+    });
+    expect(signal?.aborted).toBe(true);
+    await act(async () => { pending.resolve({ turn: { ...started, status: 'aborted' }, readSlugs: [], writeIntents: [] }); await sending; });
+  });
+}

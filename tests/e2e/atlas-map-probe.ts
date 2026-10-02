@@ -43,6 +43,7 @@ export interface AtlasMapNode {
   radius: number;
   /** The alpha the last frame drew the node at; 0 is not on screen even when `hidden` is false. */
   alpha?: number;
+  appear?: number;
 }
 
 export interface AtlasMapProbe {
@@ -53,6 +54,7 @@ export interface AtlasMapProbe {
    * an interpolating position at an arbitrary wall-clock moment.
    */
   cameraTarget?: () => { x: number; y: number; scale: number } | null;
+  interaction?: () => { kind: "node" | "pan" | "idle"; nodeId: string | null };
   /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
   obstacleInsets: () => { left: number; right: number } | null;
   /** The drawn edges: endpoints and the quadratic control point, in canvas CSS px. */

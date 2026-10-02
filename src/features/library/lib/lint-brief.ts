@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from "@/i18n/answer-language";
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
 
@@ -44,7 +45,7 @@ function findingLines(
   return [head, ...rows, ""];
 }
 
-export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBriefInput): string {
+function composeLintBrief({ pages, locale, vaultRoot, findings }: LintBriefInput): string {
   const list = pageLines(pages);
   const found = findingLines(findings, locale);
   if (locale === "ko") {
@@ -250,4 +251,8 @@ export function dropCandidatesWithNodes(
       .filter((title) => title !== ""),
   );
   return candidates.filter((candidate) => !titles.has(candidate.name.trim().toLowerCase()));
+}
+
+export function buildLintBrief(input: LintBriefInput): string {
+  return withAnswerLanguage(composeLintBrief(input), input.locale);
 }

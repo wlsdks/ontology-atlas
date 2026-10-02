@@ -170,7 +170,7 @@
     },
     "tools": {
       "title": "Tools it can reach",
-      "body": "Servers this repository wires up over the agent connection (MCP). This is the reach an agent has."
+      "body": "Servers this repository wires up over MCP. This is the reach an agent has."
     },
     "toolGates": {
       "title": "Refuses a tool call",
@@ -216,7 +216,7 @@
       "title": "Kept out of the agent’s view",
       "body": "Files that say what an agent must not look at. A repository can write one; whether the tool honours it is the tool’s business.",
       "hintLabel": "Each product uses a different file name",
-      "hint": "Cursor reads `.cursorignore` and `.cursorindexingignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, the Gemini command-line tool (CLI) `.geminiignore`, JetBrains `.aiignore`. JetBrains also honours the first three at a repository root. There is no `.claudeignore`: Claude Code uses `.gitignore` for discovery and its settings’ deny list for the rest. `.agentignore` is a proposal, not a standard."
+      "hint": "Cursor reads `.cursorignore` and `.cursorindexingignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, Gemini CLI `.geminiignore`, JetBrains `.aiignore`. JetBrains also honours the first three at a repository root. There is no `.claudeignore`: Claude Code uses `.gitignore` for discovery and its settings’ deny list for the rest. `.agentignore` is a proposal, not a standard."
     }
   },
   "anatomyUnits": {

@@ -73,6 +73,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     files: [
       "src/views/home/ui/HomePage.tsx",
       "src/views/home/ui/TopologyCanvasSurface.tsx",
+      "src/views/home/ui/TopologyMapRenderer.tsx",
       "src/views/home/ui/CreateNodeForm.tsx",
       "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
       "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",

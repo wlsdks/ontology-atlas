@@ -43,7 +43,8 @@ import {
 
 import {
   DEFAULT_EXPAND,
-  DEFAULT_MAP_ARRANGEMENT
+  DEFAULT_MAP_ARRANGEMENT,
+  DEFAULT_MAP_NAVIGATION_SPEED,
 } from "@/shared/lib/appearance-preferences";
 import {
   type DomeViewKind
@@ -76,7 +77,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
   const {
-    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, overviewFit = "spine",
+    nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine",
     fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0,
     constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect,
     onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange,
@@ -88,7 +89,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null,
     tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false,
     mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
-    expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null,
+    expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
+    onWalkDeadEnd = null,
   } = args;
   const {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
@@ -173,7 +175,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const {
     cameraRef, cameraTargetRef, galaxyInspectionCameraRef, constellationCameraRef,
-    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef,
+    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
     runSpotlightFitRef, reframeViewportRef, viewportCameraTrackedRef, initialRelayoutTokenRef, panelInsetsRef,
@@ -412,6 +414,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onGraphStatsChange,
     dataSourceKey,
     assembleOnOpen,
+    arrivingDocuments,
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
@@ -701,6 +704,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       drawnHoveredNodeIdRef,
       panelEmphasisNodeIdRef,
       cameraTweenRef,
+      zoomEaseRef,
       reducedMotionRef,
       cameraRef,
       cameraTargetRef,
@@ -917,10 +921,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
     wheelIntent,
+    navigationSpeed,
     worldRef,
     cameraRef,
     cameraTargetRef,
     cameraTweenRef,
+    zoomEaseRef,
     dampingRef,
     cameraAngularFreqRef,
     viewportRef,
@@ -994,6 +1000,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
+      appearRef,
     },
     interaction: {
       handlersRef,
@@ -1013,6 +1020,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       heatRef,
       lastInputMsRef,
       lastActiveMsRef,
+      homeSpringsRef,
     },
     lens: {
       mapLensKindRef,

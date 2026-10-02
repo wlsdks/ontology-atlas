@@ -9,6 +9,7 @@ import {
 } from "./lib/macos-app-bundle-identity.mjs";
 import { MCP_BINARY_NAME } from "./lib/mcp-binary.mjs";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
+import { listLocales } from "./build-messages.mjs";
 import { verifyMcpExactCase } from "./verify-mcp-binary.mjs";
 
 const root = process.cwd();
@@ -56,21 +57,36 @@ function readMacosAppleLanguages() {
   return result.status === 0 ? result.stdout : "";
 }
 
+const DEFAULT_ROUTE_LOCALE = "en";
+const TRADITIONAL_CHINESE_SUBTAG = /^(?:hant|tw|hk|mo)$/;
+
+function localeOfTag(tag, locales) {
+  const [primary, ...rest] = String(tag).toLowerCase().split(/[-_.@]/);
+  if (primary === "zh" && rest.some((part) => TRADITIONAL_CHINESE_SUBTAG.test(part))) return null;
+  return locales.includes(primary) ? primary : null;
+}
+
 export function resolveDefaultDeployRoute({
   env = process.env,
   appleLanguagesRaw = readMacosAppleLanguages(),
+  locales = listLocales(),
 } = {}) {
-  const preferredLanguages = String(appleLanguagesRaw || "").toLowerCase();
-  if (preferredLanguages.includes("ko")) return "/ko/topology/";
+  const others = locales.filter((locale) => locale !== DEFAULT_ROUTE_LOCALE);
+  const preferred = String(appleLanguagesRaw || "")
+    .toLowerCase()
+    .match(/[a-z]{2,3}(?:[-_][a-z0-9]+)*/g) ?? [];
+  const preferredLocale = preferred
+    .map((tag) => localeOfTag(tag, others))
+    .find(Boolean);
+  if (preferredLocale) return `/${preferredLocale}/topology/`;
 
   const envLocale = [
     env.LC_ALL,
     env.LC_MESSAGES,
     env.LANG,
   ].find(Boolean);
-  return String(envLocale || "").toLowerCase().startsWith("ko")
-    ? "/ko/topology/"
-    : DEFAULT_ROUTE;
+  const fromEnv = envLocale ? localeOfTag(envLocale, others) : null;
+  return fromEnv ? `/${fromEnv}/topology/` : DEFAULT_ROUTE;
 }
 
 function regexEscape(value) {

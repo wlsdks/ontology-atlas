@@ -134,6 +134,7 @@
       "goTo_mcp": "MCP로",
       "goTo_git": "Git 기록으로",
       "openSearchPalette": "검색 팔레트 열기",
+      "openSettings": "설정 열기",
       "toggleDocsDrawer": "온톨로지 문서 빠른 보기 열기/닫기 (편집 권한 시)",
       "showShortcuts": "키보드 단축키 보기·닫기",
       "stepCloseOverlays": "열린 패널을 한 단계씩 닫기",

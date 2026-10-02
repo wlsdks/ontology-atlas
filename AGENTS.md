@@ -111,11 +111,11 @@ isolated style, lint, and fixtures without meaning changes skip the sync.
 
 Keep the owner document current: public behavior in `README.md` and
 `docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
-contracts in their READMEs. Authored prose is English; `display_ko` and
-`cli/templates/vault-ko/**` are localized data. Never edit frozen history
-(`docs/records/README.md`). Never edit or stage the generated
-`src/entities/docs-vault/data/` or `public/docs-vault/`; `pnpm docs-vault:build`
-materializes them.
+contracts in their READMEs. Authored prose is English; `display_ko`,
+`cli/templates/vault-ko/**` and `README.{ko,ja,zh}.md` are localized data.
+Never edit frozen history (`docs/records/README.md`); never edit or stage
+generated `src/entities/docs-vault/data/` or `public/docs-vault/`, which
+`pnpm docs-vault:build` writes.
 
 Use English conventional commit subjects. Open pull requests as drafts and land
 only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,

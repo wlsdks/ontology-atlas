@@ -16,6 +16,8 @@ command and tool contracts by their READMEs. When a feature file and the code
 disagree, the code wins; a feature file's history is its Git log
 (`pnpm doc:history -- <path>`).
 
+The cream-hooded planet traveler is the shared mascot across brand and in-app surfaces. Its waiting and verified-work poses remain tied to their existing activity states; see [Brand](design/brand.md).
+
 ## Surfaces
 
 | Surface | Entry | Reference |
@@ -28,6 +30,13 @@ disagree, the code wins; a feature file's history is its Git log
 Meaning review previews a nonblank authored description or a complete opening
 prose paragraph within 320 characters. The full-document action exposes the
 remaining sections and boundaries, including when no preview is eligible.
+
+The optional companion game and related personal-record screens are retired.
+Existing local saves remain untouched; no replacement viewer or export is provided.
+
+Direct model conversations reject malformed response structures with a bounded
+`invalid-provider-response` diagnostic. No tool call from that response executes;
+the existing retry flow remains available for cloud and local endpoints.
 
 ## Destinations
 
@@ -53,6 +62,10 @@ The desktop rail's order and hrefs come from
 
 ## Web and app capabilities
 
+Frontmatter readers preserve quoted mapping keys and nested quoted strings.
+Local field edits retain unrelated source; MCP rewrites refuse malformed data
+loss and allow explicit whole-field repair when ownership is unambiguous.
+
 Decided in `docs/DECISIONS.md`; the enforceable version is
 `.claude/rules/surfaces.md`. It is one codebase and one build — the app loads
 the same static export in a WebView — so this is a capability table, not a
@@ -75,7 +88,7 @@ work here, and where it can.
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
-| In-app updates | ❌ | ✅ | |
+| In-app updates | ❌ | ✅ | the daily check can be turned off in Settings → About; Check for updates still works |
 
 **Windows**: an unsigned x64 beta carries the same local folder and MCP
 surface as the desktop app. `/download` states the SmartScreen unknown-publisher

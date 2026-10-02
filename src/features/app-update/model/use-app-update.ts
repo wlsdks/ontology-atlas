@@ -5,6 +5,7 @@ import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import {
   DISMISSED_VERSION_KEY,
   LAST_CHECK_KEY,
+  readUpdateAutoCheck,
   shouldCheckForUpdate,
   shouldSurfaceVersion,
   type UpdatePhase,
@@ -54,6 +55,7 @@ export function useAppUpdate() {
         isDesktop: isDesktopShell(),
         now: Date.now(),
         lastCheckedAt: Number(read(LAST_CHECK_KEY)) || null,
+        automatic: readUpdateAutoCheck() === 'on',
         manual,
       })
     ) {

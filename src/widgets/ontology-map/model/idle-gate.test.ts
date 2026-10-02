@@ -5,6 +5,7 @@ import {
   isCanvasActive,
   isDomeSpinAnimating,
   isEgoTailAnimating,
+  isGalaxyAtmosphereAnimating,
   shouldSkipFrame,
   type CanvasActivityFlags,
   type DomeSpinInput,
@@ -228,6 +229,23 @@ describe("isDomeSpinAnimating", () => {
 
   it("does not auto-rotate before the assembly ramp fills", () => {
     expect(isDomeSpinAnimating({ ...SPINNING, assembled: false })).toBe(false);
+  });
+});
+
+describe("isGalaxyAtmosphereAnimating", () => {
+  const AWAKE = { galaxyOn: true, reducedMotion: false, ambientAsleep: false };
+
+  it("keeps the sky moving while Galaxy is on and input is recent", () => {
+    expect(isGalaxyAtmosphereAnimating(AWAKE)).toBe(true);
+  });
+
+  it("lets the sky sleep once ambient sleep has run its ramp", () => {
+    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, ambientAsleep: true })).toBe(false);
+  });
+
+  it("never runs under reduced motion or outside Galaxy", () => {
+    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, reducedMotion: true })).toBe(false);
+    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, galaxyOn: false })).toBe(false);
   });
 });
 

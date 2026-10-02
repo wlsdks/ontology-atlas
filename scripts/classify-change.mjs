@@ -136,7 +136,7 @@ const KNOWN_PATHS = [
   /^(?:app|assets|cli|docs|examples|mcp|messages|public|samples|script|scripts|src|src-tauri|tests)\//,
   /^\.(?:agents|claude|codex|github|githooks)\//,
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
-  /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README|SECURITY)\.md$/,
+  /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,
   /^LICENSE$/,
   /^(?:eslint\.config\.mjs|next\.config\.ts|package\.json|playwright\.config\.ts|pnpm-lock\.yaml|postcss\.config\.mjs|tsconfig\.json|vitest\.config\.ts|vitest\.setup\.ts)$/,
   // A third-party directory reads this at the repository root and nothing here builds from it,

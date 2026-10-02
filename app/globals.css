@@ -34,6 +34,7 @@
 @import "./styles/motion-surface.css";
 @import "./styles/motion-morph.css";
 @import "./styles/shell.css";
+@import "./styles/lang-cjk.css";
 @import "./styles/gateway.css";
 @import "./styles/gateway-map.css";
 @import "./styles/map-wait-orbit.css";

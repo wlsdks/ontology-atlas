@@ -28,8 +28,41 @@ test('allows the intentionally Korean vault template as locale content', () => {
     { path: 'cli/templates/vault-ko/README.md', content: '# 내 온톨로지 문서함\n' },
   ]);
 
-  assert.equal(result.unexpectedHangulCodePoints, 0);
+  assert.equal(result.unexpectedLanguageCodePoints, 0);
   assert.equal(result.localeTemplateFiles, 1);
+});
+
+test('allows the three localized root READMEs as locale content, and no other path', () => {
+  for (const path of ['README.ko.md', 'README.ja.md', 'README.zh.md']) {
+    assert.equal(classifyMarkdownPath(path).kind, 'localized-readme', path);
+  }
+  for (const path of ['README.md', 'README.kr.md', 'docs/README.ko.md', 'cli/README.ko.md']) {
+    assert.equal(classifyMarkdownPath(path).kind, 'canonical', path);
+  }
+
+  const result = auditMarkdownEntries([
+    { path: 'README.ko.md', content: '# 온톨로지 아틀라스\n코드가 바뀌어도 시스템을 이해하세요.\n' },
+    { path: 'docs/README.ko.md', content: '# 한국어 문서\n' },
+  ]);
+  assert.equal(result.localizedReadmeFiles, 1);
+  assert.deepEqual(result.violations.map(({ path }) => path), ['docs/README.ko.md']);
+});
+
+test('allows the root README language switcher, and only its link labels', () => {
+  const switcher = '[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh.md)';
+  const allowed = auditMarkdownEntries([{ path: 'README.md', content: `${switcher}\n# Atlas\n` }]);
+  assert.equal(allowed.languageSwitcherLines, 1);
+  assert.equal(allowed.unexpectedLanguageCodePoints, 0);
+
+  const refused = auditMarkdownEntries([
+    { path: 'docs/GUIDE.md', content: `${switcher}\n` },
+    { path: 'README.md', content: '[한국어](README.ko.md) 한국어 산문\n' },
+    { path: 'README.md', content: '[한국어로 된 아주 긴 설명 문장](README.ko.md)\n' },
+    { path: 'README.md', content: '[한국어](README.kr.md)\n' },
+    { path: 'README.md', content: '---\n[한국어](README.ko.md)\n---\n' },
+  ]);
+  assert.equal(refused.languageSwitcherLines, 0);
+  assert.equal(refused.unexpectedLines, 5);
 });
 
 test('allows display_ko only inside the leading frontmatter block', () => {
@@ -47,7 +80,7 @@ test('allows display_ko only inside the leading frontmatter block', () => {
     },
   ]);
 
-  assert.equal(result.unexpectedHangulCodePoints, 0);
+  assert.equal(result.unexpectedLanguageCodePoints, 0);
   assert.equal(result.allowedLocaleLines, 1);
 });
 
@@ -81,7 +114,7 @@ test('reports Korean prose, owner quotes, and display_ko outside frontmatter', (
 
   assert.equal(result.unexpectedFiles, 3);
   assert.equal(result.unexpectedLines, 3);
-  assert.ok(result.unexpectedHangulCodePoints > 0);
+  assert.ok(result.unexpectedLanguageCodePoints > 0);
   assert.deepEqual(
     result.violations.map(({ path, line }) => [path, line]),
     [
@@ -110,10 +143,8 @@ test('counts a Korean focused-test title quoted in an Evidence coordinate apart 
       ].join('\n'),
     },
   ]);
-  // The quoted coordinate is counted on its own ratchet, never as prose.
   assert.equal(result.quotedEvidenceLines, 1);
   assert.equal(result.scopes.current.quotedEvidenceLines, 1);
-  // Hangul outside the backticks, a non-test coordinate, and plain prose stay violations.
   assert.equal(result.unexpectedLines, 3);
   assert.deepEqual(result.violations.map((row) => row.line), [7, 8, 9]);
 });
@@ -145,7 +176,7 @@ test('ratchets each migration scope in both directions', () => {
       scope,
       {
         unexpectedFiles: value.unexpectedFiles,
-        unexpectedHangulCodePoints: value.unexpectedHangulCodePoints,
+        unexpectedLanguageCodePoints: value.unexpectedLanguageCodePoints,
       },
     ]),
   );
@@ -154,11 +185,11 @@ test('ratchets each migration scope in both directions', () => {
   assert.deepEqual(evaluateMarkdownLanguageGate(audit, exact), []);
 
   const tooLow = structuredClone(exact);
-  tooLow.operational.unexpectedHangulCodePoints -= 1;
+  tooLow.operational.unexpectedLanguageCodePoints -= 1;
   assert.match(evaluateMarkdownLanguageGate(audit, tooLow).join('\n'), /regressed/);
 
   const tooHigh = structuredClone(exact);
-  tooHigh.current.unexpectedHangulCodePoints += 1;
+  tooHigh.current.unexpectedLanguageCodePoints += 1;
   assert.match(evaluateMarkdownLanguageGate(audit, tooHigh).join('\n'), /lower the baseline/);
 });
 
@@ -173,4 +204,29 @@ test('counts language violations in each independent harness and detects an idle
   assert.equal(audit.scopes.operational.unexpectedFiles, 2);
   audit.harnessFiles.codex = 0;
   assert.match(evaluateMarkdownLanguageGate(audit).join('\n'), /did not scan codex/);
+});
+
+test('treats Han, kana and Hangul alike for every locale, in prose and in typed fields', () => {
+  const locales = [
+    ['ko', '한국어'],
+    ['ja', '日本語かな'],
+    ['zh', '简体中文'],
+  ];
+  for (const [locale, text] of locales) {
+    const template = auditMarkdownEntries([
+      { path: `cli/templates/vault-${locale}/README.md`, content: `# ${text}\n` },
+    ]);
+    assert.equal(template.localeTemplateFiles, 1, locale);
+    assert.equal(template.unexpectedLanguageCodePoints, 0, locale);
+
+    const typed = auditMarkdownEntries([
+      { path: 'docs/ontology/example.md', content: `---\ndisplay_${locale}: ${text}\n---\n# Example\n` },
+    ]);
+    assert.equal(typed.allowedLocaleLines, 1, locale);
+    assert.equal(typed.unexpectedLanguageCodePoints, 0, locale);
+
+    const prose = auditMarkdownEntries([{ path: 'docs/GUIDE.md', content: `${text}\n` }]);
+    assert.equal(prose.unexpectedLanguageCodePoints, [...text].length, locale);
+  }
+  assert.equal(classifyMarkdownPath('cli/templates/vault-english/README.md').kind, 'canonical');
 });

@@ -14,6 +14,21 @@ const hex = () =>
   buildArchitectureLayout(parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER as never));
 
 describe('buildArchitectureGraph', () => {
+  it('keeps parallel rule and traffic edges in the predecessor weighting', () => {
+    const graph = buildArchitectureGraph({
+      policy: 'explicit', nodes: [], rows: [['left', 'right'], ['single', 'weighted']],
+      edges: [
+        { from: 'left', to: 'single', skips: false },
+        { from: 'right', to: 'single', skips: false },
+        { from: 'left', to: 'weighted', skips: false },
+        { from: 'right', to: 'weighted', skips: false },
+      ],
+    }, [{ fromRole: 'left', toRole: 'weighted', count: 1 }]);
+
+    expect(graph.boxes.filter(box => box.column === 1).map(box => box.id))
+      .toEqual(['weighted', 'single']);
+  });
+
   it('puts one column per rank, left to right', () => {
     const graph = buildArchitectureGraph(fsd(), []);
     expect(graph.columns).toBe(7);

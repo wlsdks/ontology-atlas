@@ -15,7 +15,7 @@ For a known task, compact `agent_brief` supplies recorded context, implementatio
 anchors, currentness, and unknowns before the agent inspects source. Declared
 dependencies do not establish complete runtime impact. Host permissions and
 review behavior vary; an MCP connection is not a guarantee that every write is
-human-approved. [Product purpose and limits](../README.md#how-it-works).
+human-approved. [Product purpose and limits](../README.md#what-it-does).
 
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
@@ -35,6 +35,16 @@ frontmatter and the app renders it as `is_a`, but neither name is accepted by
 the public relation query/write enums. Read the node and its `mtime`, then use a
 guarded full-array `patch_concept` and `validate_vault`; do not invent
 `add_relation(type:"is_a")`.
+
+## Frontmatter fidelity
+
+Frontmatter supports nonempty quoted keys in top-level and one-level block or
+inline mappings. Quoted scalar values stay strings; escaped backslashes remain
+distinct from newline/tab escapes. Unsupported key escapes and malformed map
+members retain diagnostics. A rewrite refuses to discard those declarations
+unless the patch explicitly replaces or deletes their identifiable complete
+field. Correct an unidentifiable key in the original text. Existing write and
+currentness checks still apply; decoding a rationale does not approve it.
 
 ## SDK and protocol baseline
 

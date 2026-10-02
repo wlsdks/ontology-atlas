@@ -71,10 +71,11 @@ export interface TopologyMapRendererProps {
     | "mapArrangement"
     | "footprint"
     | "expand"
+    | "navigationSpeed"
   >;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
-    "deeplinkSourceReady" | "vaultIdentity" | "spotlightFitToken" | "selectedOntologyNode" | "ontologyInsight"
+    "deeplinkSourceReady" | "vaultIdentity" | "spotlightFitToken" | "selectedOntologyNode" | "ontologyInsight" | "vault"
   >;
   topologyAuthoring: Pick<
     ReturnType<typeof useTopologyAuthoring>,
@@ -118,9 +119,11 @@ export function TopologyMapRenderer({
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
   topologyIndexPresentation, topologyCreateIntent,
 }: TopologyMapRendererProps) {
-  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
-  const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight } = topologyVaultReadModel;
+  const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
+  const arrivingDocuments = vault.partialTotal;
+  const arriving = arrivingDocuments > 0;
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -213,6 +216,7 @@ export function TopologyMapRenderer({
               inspectorOpen={nodePanelMounted}
               indexExpanded={renderedIndexState === "expanded"}
               arrivedByMorph={morph.arrivedByMorph}
+              navigationSpeed={navigationSpeed}
             />
           ) : morph.surface === "hex" ? (
             <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
@@ -228,6 +232,7 @@ export function TopologyMapRenderer({
               reducedMotion={reducedMotion}
               arrivedByMorph={morph.arrivedByMorph}
               synthEvidence={topologyGraphProjection.synthEvidence}
+              navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
           ) : (
@@ -238,8 +243,9 @@ export function TopologyMapRenderer({
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
             focus={{ selectedSlug: canvasSelectedSlug }}
-            dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+            dataSourceKey={deeplinkSourceReady || arriving ? vaultIdentity : null}
             assembleOnOpen={mapAssemblesOnOpen && !morph.arrivedByMorph}
+            arrivingDocuments={arrivingDocuments}
             overviewFit={overviewFit}
             fitViewToken={combinedFitToken}
             growthReplayToken={growthReplayToken}
@@ -310,6 +316,7 @@ export function TopologyMapRenderer({
             detailPanelVisible={nodePanelMounted}
             footprint={footprint}
             expand={expand}
+            navigationSpeed={navigationSpeed}
           />
           )}
         </div>

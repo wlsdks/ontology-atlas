@@ -107,6 +107,17 @@ describe("Galaxy atmosphere", () => {
     expect(restingSamples).toBeGreaterThan(activeSamples * 2);
   });
 
+  it("drops a meteor that was in flight before a quiet cutoff and keeps the next one", () => {
+    const inFlight = 2200;
+    expect(galaxyMeteorPhase(inFlight, 0.25)).not.toBeNull();
+    expect(galaxyMeteorPhase(inFlight, 0.25, 2000)).toBeNull();
+    expect(galaxyMeteorPhase(inFlight, 0.25, 1700)?.progress).toBe(galaxyMeteorPhase(inFlight, 0.25)?.progress);
+    let next = inFlight;
+    while (galaxyMeteorPhase(next, 0.25) !== null) next += 10;
+    while (galaxyMeteorPhase(next, 0.25) === null) next += 10;
+    expect(galaxyMeteorPhase(next + 50, 0.25, 2000)).toEqual(galaxyMeteorPhase(next + 50, 0.25));
+  });
+
   it("freezes twinkle and gives each meteor entry a stable varied path and gap", () => {
     expect(galaxyTwinkle("domain:delivery", 0, true)).toEqual(
       galaxyTwinkle("domain:delivery", 5000, true),

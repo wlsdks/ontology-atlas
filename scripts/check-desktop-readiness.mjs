@@ -7,6 +7,7 @@ import {
 } from "./lib/release-script-contract.mjs";
 import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "./lib/desktop-csp.mjs";
+import { matches, matchesAll } from "./lib/locale-vocabulary.mjs";
 import { blankComments } from "./quality/source-language/inventory.mjs";
 
 const root = process.cwd();
@@ -138,6 +139,7 @@ const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEm
 // to the settings sheet's drill-in panel, so the gate looks there.
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
+const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
 // After that merge the old `LocalVaultPicker` was an orphan no surface rendered
 // (#72); its features (recent-vault recovery, copy path, open in Finder) were
 // restored into the settings sheet's workspace group. The gate looks at the live
@@ -599,7 +601,7 @@ if (
   /pnpm --version/.test(pagesDeployWorkflow) &&
   !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
   /^\s*(?:-\s+)?run:\s*pnpm build\s*$/m.test(pagesDeployWorkflow) &&
-  /actions\/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa\b/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9\b/.test(pagesDeployWorkflow) &&
   /actions\/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e\b/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
@@ -792,10 +794,7 @@ const desktopRoutingCopy = [
   koMessages.featuresMisc.localVaultPicker.unsupported,
 ];
 // Does each locale point at "the installed app" in its own words?
-const namesInstalledApp = (text, locale) =>
-  locale === "ko"
-    ? /설치(된|해)/.test(text) && /앱/.test(text)
-    : /installed|install the/i.test(text) && /app/i.test(text);
+const namesInstalledApp = (text, locale) => matchesAll("installedApp", locale, text);
 // Browser FSA must not be **advertised as a capability**. Naming it in an honest
 // degradation notice is fine, so only "you can do X" sentences are checked.
 const advertisesBrowserFsa = desktopRoutingCopy.some(
@@ -825,19 +824,19 @@ const advertisesBrowserFsa = desktopRoutingCopy.some(
  * it opens** (a folder) rather than a runtime. Whether FSA is advertised as a
  * capability is still checked across **all six** strings.
  */
-const namesTheFolder = (text) => /folder/i.test(text) || /폴더/.test(text);
+const namesTheFolder = (text, locale) => matches("folderWord", locale, text);
 
 if (
-  namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault) &&
-  namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault) &&
+  namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault, "en") &&
+  namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault, "ko") &&
   namesInstalledApp(enMessages.docsVault.vaultStatus.unsupportedTooltip, "en") &&
   namesInstalledApp(koMessages.docsVault.vaultStatus.unsupportedTooltip, "ko") &&
   namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
   namesInstalledApp(koMessages.featuresMisc.localVaultPicker.unsupported, "ko") &&
   !advertisesBrowserFsa &&
   // An open label must name **what it opens**. Which word it uses is not pinned.
-  /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
-  /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
+  namesTheFolder(enMessages.featuresMisc.localVaultPicker.openLabel, "en") &&
+  namesTheFolder(koMessages.featuresMisc.localVaultPicker.openLabel, "ko")
 ) {
   pass("the demotion notice names the installed app and the shortcut copy names the folder it opens — neither advertises FSA as a capability");
 } else {
@@ -873,7 +872,7 @@ if (
  * remains protected by generated-surface and referential-integrity checks.
  */
 if (
-  rootEntryPage.includes("if (vault.manifest) return <HomePage />") &&
+  rootEntryPage.includes("if (vault.manifest || vault.partialTotal) return <HomePage />") &&
   rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
   // Since 2026-09-13 the first-run branch is also reached when the launch deliberately
@@ -1841,19 +1840,20 @@ if (
   localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
   localVaultHook.includes("openRecent") &&
   localVaultHook.includes("forgetRecent") &&
-  appSettingsMenu.includes("localVault.recentVaults") &&
-  appSettingsMenu.includes("localVault.openRecent(record)") &&
-  appSettingsMenu.includes("localVault.forgetRecent(record)") &&
-  appSettingsMenu.includes("record.desktopRootPath") &&
+  appSettingsMenu.includes("<WorkspacePane") &&
+  workspacePane.includes("localVault.recentVaults") &&
+  workspacePane.includes("localVault.openRecent(record)") &&
+  workspacePane.includes("localVault.forgetRecent(record)") &&
+  workspacePane.includes("record.desktopRootPath") &&
   // #72 — see, copy, and open in Finder the selected vault's absolute path. Without
   // that path on the desktop the user has no way to know the value to paste into an
   // agent.
-  appSettingsMenu.includes("getTauriVaultRootPath(localVault.handle)") &&
-  appSettingsMenu.includes("openTauriVaultInFinder(vaultRootPath)") &&
-  appSettingsMenu.includes("app-settings-copy-vault-path") &&
+  workspacePane.includes("getTauriVaultRootPath(loadedHandle)") &&
+  workspacePane.includes("openTauriVaultInFinder(vaultRootPath)") &&
+  workspacePane.includes("app-settings-copy-vault-path") &&
   // Recent-vault switching must survive a permission re-request, or the recovery
   // path is cut.
-  appSettingsMenu.includes("!isLocalVaultLoaded &&")
+  workspacePane.includes("!isLoaded &&")
 ) {
   pass("desktop workspace settings expose recent vault recall, absolute vault path copy/reveal, stale-path cleanup, and vault-local agent config validation");
 } else {

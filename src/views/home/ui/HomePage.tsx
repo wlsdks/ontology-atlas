@@ -41,6 +41,7 @@ import { useHeldValue } from "@/shared/lib/use-presence";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
+import { OPEN_SHORTCUTS_EVENT, useSurfaceRequest } from "@/shared/lib/surface-requests";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { GestureHint } from "@/widgets/gesture-hint";
 import { useTranslations } from "next-intl";
@@ -106,7 +107,7 @@ export function HomePage() {
 
 function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
-  const { t, audiencePlain, setAudiencePlain, siteT, relationLabelInRegister, activeLocale, view3d, galaxy } = topologyPreferences;
+  const { t, siteT, relationLabelInRegister, activeLocale, view3d, galaxy } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
   // since the array identity changes every render.
@@ -187,6 +188,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     }
     return false;
   });
+  useSurfaceRequest(OPEN_SHORTCUTS_EVENT, () => {
+    setShortcutsOpen(true);
+    return true;
+  });
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
   // Not read in a `useState` initializer, which mismatches hydration on the className;
   // `useSyncExternalStore` applies the stored value after mount.
@@ -243,25 +248,18 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // the history tile reads.
   const navRailSettingsSlot = useMemo(
     () => (
-      <>
-        {/* Map-only screen state enters the single settings sheet through `screenControls`. */}
-        <AppSettingsMenu
-          mode={vaultStatus === 'loaded' ? 'local' : 'static'}
-          triggerVariant="rail-tile"
-          screenControls={{
-            audiencePlain,
-            onAudiencePlainChange: setAudiencePlain,
-            indexCollapsed: indexPanelCollapsedStored,
-            onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
-          }}
-        />
-      </>
+      <AppSettingsMenu
+        mode={vaultStatus === 'loaded' ? 'local' : 'static'}
+        triggerVariant="rail-tile"
+        screenControls={{
+          indexCollapsed: indexPanelCollapsedStored,
+          onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
+        }}
+      />
     ),
     [
       indexPanelCollapsedStored,
       handleChangeIndexDefaultCollapsed,
-      audiencePlain,
-      setAudiencePlain,
       vaultStatus,
     ],
   );

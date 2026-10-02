@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { OntologyTerritoriesMap, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 
@@ -35,6 +36,7 @@ export function TopologyTerritoriesSurface({
   inspectorOpen,
   indexExpanded,
   arrivedByMorph,
+  navigationSpeed,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -47,6 +49,7 @@ export function TopologyTerritoriesSurface({
   inspectorOpen: boolean;
   indexExpanded: boolean;
   arrivedByMorph: boolean;
+  navigationSpeed: MapNavigationSpeed;
 }) {
   const t = useTranslations("topology.territories");
   const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
@@ -116,6 +119,7 @@ export function TopologyTerritoriesSurface({
       inspectorOpen={inspectorOpen}
       chromeKey={`${indexExpanded ? "index" : "rail"}:${inspectorOpen ? "inspector" : "free"}`}
       arrivedByMorph={arrivedByMorph}
+      navigationSpeed={navigationSpeed}
     />
   );
 }

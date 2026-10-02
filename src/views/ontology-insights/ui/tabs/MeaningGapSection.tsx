@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, MessageCircle, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
@@ -425,7 +426,7 @@ function MeaningGapRowView({
                         onPatch({ value: event.target.value, cancelArmed: false })
                       }
                       onKeyDown={(event) => {
-                        if (event.key === "Enter" && canSave) {
+                        if (event.key === "Enter" && canSave && !isImeComposing(event)) {
                           event.preventDefault();
                           onSave(ui.value.trim());
                         }

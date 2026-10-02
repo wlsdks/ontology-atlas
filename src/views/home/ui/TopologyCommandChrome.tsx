@@ -1,5 +1,5 @@
 import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
-import { AgentActivityChip, CompanionHome } from "@/features/agent-activity";
+import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
@@ -108,7 +108,7 @@ interface TopologyCommandChromeProps {
     | "selectedEdgeOwnsRightRail"
     | "setActivityInboxOpen"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "galaxy" | "audiencePlain" | "setAudiencePlain" | "tWorkbench" | "tAtlasGit">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "galaxy" | "tWorkbench" | "tAtlasGit">;
   topologyExplorationLenses: Pick<
     ReturnType<typeof useTopologyExplorationLenses>,
     | "constellationCandidates"
@@ -136,7 +136,7 @@ export function TopologyCommandChrome({
   const { renderedIndexState } = topologyIndexPresentation;
   const { constellationCandidates, routedConstellation, setActiveConstellation, setConstellationFitToken } = topologyExplorationLenses;
 
-  const { t, galaxy, audiencePlain, setAudiencePlain, tWorkbench, tAtlasGit } = topologyPreferences;
+  const { t, galaxy, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
@@ -239,8 +239,6 @@ export function TopologyCommandChrome({
                 mode={vault.status === 'loaded' ? 'local' : 'static'}
                 triggerVariant="chrome-tile"
                 screenControls={{
-                  audiencePlain,
-                  onAudiencePlainChange: setAudiencePlain,
                   indexCollapsed: indexPanelCollapsedStored,
                   onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
                 }}
@@ -640,8 +638,6 @@ export function TopologyCommandChrome({
                       mode={vault.status === 'loaded' ? 'local' : 'static'}
                       triggerVariant="chrome-tile"
                       screenControls={{
-                        audiencePlain,
-                        onAudiencePlainChange: setAudiencePlain,
                         indexCollapsed: indexPanelCollapsedStored,
                         onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
                       }}
@@ -649,7 +645,6 @@ export function TopologyCommandChrome({
                   </div>
                   {/* Work status is the bell's left segment; one component owns both feeds, outside
                      click and Escape. */}
-                  <CompanionHome compact />
                   <AgentActivityChip
                     // Recedes for a datasheet, but not from under an open notification panel:
                     // pressing a row there focuses its node, which raises the datasheet.

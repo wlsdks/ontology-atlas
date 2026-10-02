@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { RETAINED_BODY_CHARS, useDocsBodyIndex } from './use-docs-body-index';
 
@@ -80,6 +80,53 @@ describe('useDocsBodyIndex', () => {
     const { result } = await visit([doc('bad', 1), doc('ok', 1)], 'sample:failed', getDocContent);
     expect(result.current.bodyIndex.get('ok')?.raw).toBe('body ok');
     expect(result.current.bodyIndex.has('bad')).toBe(false);
+  });
+
+  it('limits simultaneous reads and continues in document order after completion or failure', async () => {
+    const docs = Array.from({ length: 10 }, (_, i) => doc(`문서/${i}`, 1));
+    const pending = new Map<string, { resolve: (raw: string) => void; reject: (error: Error) => void }>();
+    const getDocContent = vi.fn((slug: string) => new Promise<string>((resolve, reject) => {
+      pending.set(slug, { resolve, reject });
+    }));
+    const { result } = renderHook(() => useDocsBodyIndex({
+      docs, enabled: true, scope: 'sample:concurrency', getDocContent, startDelayMs: 0,
+    }));
+    const readSlugs = () => getDocContent.mock.calls.map(([slug]) => slug);
+    await waitFor(() => expect(readSlugs()).toEqual(docs.slice(0, 6).map(d => d.slug)));
+    await act(async () => { pending.get('문서/4')!.resolve('four'); pending.delete('문서/4'); });
+    await waitFor(() => expect(readSlugs()).toEqual(docs.slice(0, 7).map(d => d.slug)));
+    await act(async () => { pending.get('문서/1')!.reject(new Error('io')); pending.delete('문서/1'); });
+    await waitFor(() => expect(readSlugs()).toEqual(docs.slice(0, 8).map(d => d.slug)));
+    const releasePending = async () => act(async () => {
+      const batch = [...pending];
+      pending.clear();
+      for (const [slug, read] of batch) read.resolve(`body ${slug}`);
+    });
+    await releasePending();
+    await waitFor(() => expect(readSlugs()).toEqual(docs.map(d => d.slug)));
+    await releasePending();
+    await waitFor(() => expect(result.current.indexing).toBe(false));
+    expect([...result.current.bodyIndex.keys()]).toEqual(docs.filter(d => d.slug !== '문서/1').map(d => d.slug));
+    expect(result.current.bodyIndex.get('문서/4')?.raw).toBe('four');
+  });
+
+  it('abandons pending reads on unmount and reads those bodies on the next visit', async () => {
+    const docs = Array.from({ length: 12 }, (_, i) => doc(`cancel/${i}`, 1));
+    const pending: (() => void)[] = [];
+    const getDocContent = vi.fn(() => new Promise<string>(resolve => {
+      pending.push(() => resolve('abandoned body'));
+    }));
+    const first = renderHook(() => useDocsBodyIndex({
+      docs, enabled: true, scope: 'sample:cancel', getDocContent, startDelayMs: 0,
+    }));
+    await waitFor(() => expect(getDocContent).toHaveBeenCalledTimes(6));
+    first.unmount();
+    await act(async () => { pending.forEach(resolve => resolve()); });
+    expect(getDocContent).toHaveBeenCalledTimes(6);
+    const reread = vi.fn(async (slug: string) => `fresh ${slug}`);
+    const second = await visit(docs, 'sample:cancel', reread);
+    expect(reread.mock.calls.map(([slug]) => slug)).toEqual(docs.map(d => d.slug));
+    expect(second.result.current.bodyIndex.get('cancel/0')?.raw).toBe('fresh cancel/0');
   });
 
   it('reads no body again on a second visit to the same vault session', async () => {

@@ -1,5 +1,6 @@
 import koMessages from '@/messages/ko.json';
 import enMessages from '@/messages/en.json';
+import type { AppLocale } from '@/i18n/locales';
 
 /**
  * Server-side only: the message subset for screens outside `app/[locale]/layout.tsx` (the root
@@ -7,9 +8,9 @@ import enMessages from '@/messages/en.json';
  * ships in every page; a server component passes the picked namespaces as props. The
  * contract `tests/contract/standalone-messages-server-only.contract.test.ts` enforces this.
  */
-const ALL = { ko: koMessages, en: enMessages } as const;
+const ALL = { ko: koMessages, en: enMessages } as const satisfies Record<AppLocale, unknown>;
 
-export type StandaloneLocale = keyof typeof ALL;
+export type StandaloneLocale = AppLocale;
 export type StandaloneMessages = Record<StandaloneLocale, Record<string, unknown>>;
 
 /**
@@ -19,7 +20,9 @@ export type StandaloneMessages = Record<StandaloneLocale, Record<string, unknown
 export type StandaloneMessagePick = Record<string, true | readonly string[]>;
 
 export function pickStandaloneMessages(pick: StandaloneMessagePick): StandaloneMessages {
-  const out = { ko: {}, en: {} } as StandaloneMessages;
+  const out = Object.fromEntries(
+    (Object.keys(ALL) as StandaloneLocale[]).map((locale) => [locale, {}]),
+  ) as StandaloneMessages;
   for (const locale of Object.keys(ALL) as StandaloneLocale[]) {
     const source = ALL[locale] as Record<string, Record<string, unknown>>;
     for (const [namespace, keys] of Object.entries(pick)) {

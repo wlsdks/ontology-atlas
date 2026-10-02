@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest';
 import { findStaleParentSummaries, revisionClocks } from '../../mcp/src/stale-parent.mjs';
 import {
   summaryStalenessOf,
+  createSummaryStalenessScan,
   type NodeRevision,
 } from '../../src/entities/docs-vault/lib/summary-freshness';
 
@@ -164,6 +165,11 @@ describe('summary freshness parity between the MCP server and the app', () => {
     it(`agrees on: ${testCase.name}`, () => {
       const server = serverVerdict(testCase);
       const client = summaryStalenessOf(clientRevisions(testCase));
+      const scan = createSummaryStalenessScan(SLUG);
+      for (const revision of clientRevisions(testCase)) {
+        if (scan.push(revision)) break;
+      }
+      expect(scan.finish()).toEqual(client);
 
       expect(Boolean(client), `client verdict for "${testCase.name}"`).toBe(Boolean(server));
       if (server && client) {

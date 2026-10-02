@@ -1573,6 +1573,30 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'allow' }));
   });
 
+  it('opens a queued second write as a new card with focus on its title', async () => {
+    await bootSession();
+    await startUserTurn('rename two concepts');
+    const patch = (id: number, toolCallId: string, slug: string) => {
+      const request = mcpPermissionRequest('mcp__atlas-vault__patch_concept', id, { slug, frontmatter: { title: `${slug} renamed` } });
+      return { ...request, params: { ...request.params, toolCall: { ...request.params.toolCall, toolCallId } } };
+    };
+    emit(patch(101, 'tc-first', 'capabilities/first'));
+    emit(patch(102, 'tc-second', 'capabilities/second'));
+
+    await waitFor(() => expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/first'));
+    const first = screen.getByTestId('acp-permission-card');
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    await waitFor(() => expect(answerFor(101)).toEqual({ outcome: 'selected', optionId: 'allow' }));
+
+    await waitFor(() => expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/second'));
+    const second = screen.getByTestId('acp-permission-card');
+    expect(second).not.toBe(first);
+    expect(second).not.toHaveAttribute('inert');
+    expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(second.querySelector('#acp-permission-title')));
+    expect(answerFor(102)).toBeUndefined();
+  });
+
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();
     emit(mcpPermissionRequest('mcp__atlas-vault__list_concepts'));
@@ -4328,5 +4352,23 @@ describe('AcpChatPanel — a connection that never finishes starting', () => {
     view.rerender(<AcpChatPanel {...props} openingRequest={{ text: 'Check the page format', nonce: 2 }} />);
     await waitFor(() => expect(bridge.starts).toBe(2));
     expect(screen.queryByTestId('acp-connect-stopped')).toBeNull();
+  });
+});
+
+describe('AcpChatPanel composer — IME composition', () => {
+  it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {
+    await bootSession();
+    const box = screen.getByRole('textbox') as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: '결제 흐름을 요약해 줘' } });
+
+    fireEvent.keyDown(box, { key: 'Enter', isComposing: true, keyCode: 229 });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 229 });
+    fireEvent.compositionEnd(box, { data: '줘' });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 13 });
+    expect(box.value).toBe('결제 흐름을 요약해 줘');
+
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 13 });
+    expect(box.value).toBe('');
+    await waitFor(() => expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true));
   });
 });

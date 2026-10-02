@@ -13,6 +13,7 @@ routes: []
 | Key | Surface | Action |
 |---|---|---|
 | `⌘K` (Shift optional) | Every screen with the rail | Unified node + project search (a project page: its project palette; ontology documents: the unified palette) |
+| `⌘,` | Every screen with the rail | Open settings |
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |

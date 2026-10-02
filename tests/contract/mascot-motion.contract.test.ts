@@ -8,10 +8,6 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 const ROOT = process.cwd();
 const CSS = readGlobalCss();
-const PRESENCE = readFileSync(
-  path.join(ROOT, 'src/features/agent-activity/ui/AgentMascotPresence.tsx'),
-  'utf8',
-);
 
 function paeth(a: number, b: number, c: number): number {
   const p = a + b - c;
@@ -79,19 +75,18 @@ describe('mascot motion continuity', () => {
     Object.entries(MASCOT_MOTION_ROWS).map(([state, spec]) => [state, decodeRgbaPng(spec.path)]),
   ) as Record<keyof typeof MASCOT_MOTION_ROWS, ReturnType<typeof decodeRgbaPng>>;
 
-  it('uses one five-transition clock for six poses and a 64px right-edge stage', () => {
+  it('uses one five-transition clock for six poses', () => {
     const fastMs = Number(CSS.match(/--motion-fast:\s*(\d+)ms/)?.[1]);
     expect(fastMs).toBe(120);
     expect(MASCOT_WALK_MS).toBe(fastMs * 5);
     expect(CSS).toMatch(
       /--atlas-mascot-sequence-duration:\s*calc\(var\(--motion-fast\) \* 5\)/,
     );
-    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(5, end\)/g)).toHaveLength(2);
-    expect(PRESENCE).toContain(
-      'right-[var(--chrome-inset)] top-[calc(50%+var(--chrome-inset)*2)]',
-    );
-    expect(PRESENCE).toContain('hidden size-16 overflow-visible lg:block');
-    expect(PRESENCE).not.toContain('w-32');
+    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(5, end\)/g)).toHaveLength(1);
+    expect(Object.keys(rows).length).toBeGreaterThan(0);
+    for (const row of Object.values(rows)) {
+      expect({ width: row.width, height: row.height }).toEqual({ width: 384, height: 64 });
+    }
   });
 
   it('joins WALK to READ and READ to SUCCESS with identical boundary pixels', () => {
@@ -100,30 +95,4 @@ describe('mascot motion continuity', () => {
     expect(frame(rows.success, 1)).not.toEqual(frame(rows.success, 0));
   });
 
-  it('keeps every opaque frame pixel inside the existing right-side map reserve', () => {
-    const chromeInset = Number(CSS.match(/--chrome-inset:\s*(\d+)px/)?.[1]);
-    const safeRight = Number(CSS.match(/--map-safe-inset-right:\s*(\d+)/)?.[1]);
-    expect({ chromeInset, safeRight }).toEqual({
-      chromeInset: 24,
-      // Rail inset 24 + tile 36 + the fit's side air 52 (map-fit-side-air contract).
-      safeRight: 112,
-    });
-
-    const leaks: string[] = [];
-    for (const [state, row] of Object.entries(rows)) {
-      for (let index = 0; index < 6; index += 1) {
-        const pixels = frame(row, index);
-        for (let y = 0; y < 64; y += 1) {
-          for (let x = 0; x < 64; x += 1) {
-            if (pixels[(y * 64 + x) * 4 + 3] === 0) continue;
-            const fromRight = chromeInset + (64 - x);
-            if (fromRight > safeRight) {
-              leaks.push(`${state}:${index + 1}@${x},${y}`);
-            }
-          }
-        }
-      }
-    }
-    expect(leaks, 'opaque mascot ink escaped the topology map right-side reserve').toEqual([]);
-  });
 });

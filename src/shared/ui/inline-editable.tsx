@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { cn } from "@/shared/lib/cn";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
@@ -102,7 +103,8 @@ export function InlineEditable({
       cancel();
       return;
     }
-    const isCommitKey = e.key === "Enter" && (!multiline || e.metaKey || e.ctrlKey);
+    const isCommitKey =
+      e.key === "Enter" && (!multiline || e.metaKey || e.ctrlKey) && !isImeComposing(e);
     if (isCommitKey) {
       e.preventDefault();
       void commit();

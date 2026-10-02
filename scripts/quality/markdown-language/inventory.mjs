@@ -1,15 +1,20 @@
-const HANGUL = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\uac00-\ud7af\ud7b0-\ud7ff]/gu;
+const NON_LATIN_SCRIPT = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu;
 
 /*
  * Typed locale data in leading frontmatter, the one place Korean is authored rather than written
- * as contributor prose. `display_ko` names a node in the reader's language; `summary_<role>_<ko>`
+ * as contributor prose. `display_ko` names a node in the reader's language; `summary_<role>_<locale>`
  * does the same for one architecture role, and the locale is matched by shape (two letters) for
  * the same reason both profile parsers match it that way: a vault file outlives the locale list
- * this build happens to ship. Anything else carrying Hangul is still counted as a violation.
+ * this build happens to ship. Anything else is still counted as a violation.
  */
 const TYPED_LOCALE_KEY = /^(?:display|summary_[a-z][a-z0-9-]*)_[a-z]{2}\s*:/;
 /** `- Focused test: `path#title`` on an element's Evidence list, title quoted from a test file. */
 const QUOTED_EVIDENCE_COORDINATE = /^\s*-\s*Focused test:\s*(`[^`\n]+#[^`\n]+`)\s*$/;
+
+const LOCALE_TEMPLATE = /^cli\/templates\/vault-[a-z]{2}\//;
+
+const LOCALIZED_READMES = Object.freeze(['README.ko.md', 'README.ja.md', 'README.zh.md']);
+const LANGUAGE_SWITCHER_LINK = /\[[^\]\n]{1,8}\]\((?:\.\/)?(README\.[a-z]{2}\.md)\)/gu;
 
 const OPERATIONAL_PATHS = new Set([
   'AGENTS.md',
@@ -45,10 +50,22 @@ export function classifyMarkdownPath(path) {
   if (path.startsWith('public/docs-vault/')) {
     return { kind: 'generated', scope: null };
   }
-  if (path.startsWith('cli/templates/vault-ko/')) {
+  if (LOCALE_TEMPLATE.test(path)) {
     return { kind: 'locale-template', scope: null };
   }
+  if (LOCALIZED_READMES.includes(path)) {
+    return { kind: 'localized-readme', scope: null };
+  }
   return { kind: 'canonical', scope: canonicalScope(path) };
+}
+
+function isLanguageSwitcherLine(path, line) {
+  if (path !== 'README.md') return false;
+  const rest = line.replace(
+    LANGUAGE_SWITCHER_LINK,
+    (link, target) => (LOCALIZED_READMES.includes(target) ? '' : link),
+  );
+  return rest !== line && [...rest.matchAll(NON_LATIN_SCRIPT)].length === 0;
 }
 
 function emptyScopeSummary() {
@@ -57,7 +74,7 @@ function emptyScopeSummary() {
     scannedBytes: 0,
     unexpectedFiles: 0,
     unexpectedLines: 0,
-    unexpectedHangulCodePoints: 0,
+    unexpectedLanguageCodePoints: 0,
     quotedEvidenceLines: 0,
   };
 }
@@ -70,11 +87,13 @@ export function auditMarkdownEntries(entries) {
     generatedFiles: 0,
     harnessFiles: { codex: 0, claude: 0 },
     localeTemplateFiles: 0,
+    localizedReadmeFiles: 0,
+    languageSwitcherLines: 0,
     allowedLocaleLines: 0,
     quotedEvidenceLines: 0,
     unexpectedFiles: 0,
     unexpectedLines: 0,
-    unexpectedHangulCodePoints: 0,
+    unexpectedLanguageCodePoints: 0,
     scopes: {
       operational: emptyScopeSummary(),
       current: emptyScopeSummary(),
@@ -92,6 +111,11 @@ export function auditMarkdownEntries(entries) {
     }
     if (classification.kind === 'locale-template') {
       result.localeTemplateFiles += 1;
+      result.skippedFiles += 1;
+      continue;
+    }
+    if (classification.kind === 'localized-readme') {
+      result.localizedReadmeFiles += 1;
       result.skippedFiles += 1;
       continue;
     }
@@ -119,10 +143,14 @@ export function auditMarkdownEntries(entries) {
         continue;
       }
 
-      const matches = [...line.matchAll(HANGUL)];
+      const matches = [...line.matchAll(NON_LATIN_SCRIPT)];
       if (matches.length === 0) continue;
       if (inLeadingFrontmatter && TYPED_LOCALE_KEY.test(line)) {
         result.allowedLocaleLines += 1;
+        continue;
+      }
+      if (!inLeadingFrontmatter && isLanguageSwitcherLine(entry.path, line)) {
+        result.languageSwitcherLines += 1;
         continue;
       }
       // A focused-test coordinate quotes a test title from source. When that
@@ -135,7 +163,7 @@ export function auditMarkdownEntries(entries) {
       if (!inLeadingFrontmatter && QUOTED_EVIDENCE_COORDINATE.test(line)) {
         const quoted = line.match(QUOTED_EVIDENCE_COORDINATE)[1];
         const outside = line.replace(quoted, '');
-        if (![...outside.matchAll(HANGUL)].length) {
+        if (![...outside.matchAll(NON_LATIN_SCRIPT)].length) {
           result.quotedEvidenceLines += 1;
           scope.quotedEvidenceLines += 1;
           continue;
@@ -144,9 +172,9 @@ export function auditMarkdownEntries(entries) {
 
       fileHasUnexpectedHangul = true;
       result.unexpectedLines += 1;
-      result.unexpectedHangulCodePoints += matches.length;
+      result.unexpectedLanguageCodePoints += matches.length;
       scope.unexpectedLines += 1;
-      scope.unexpectedHangulCodePoints += matches.length;
+      scope.unexpectedLanguageCodePoints += matches.length;
       result.violations.push({
         path: entry.path,
         line: index + 1,

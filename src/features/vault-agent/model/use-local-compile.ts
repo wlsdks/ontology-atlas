@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { buildWikiRetrievalIndex, isWikiPage, sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
@@ -165,6 +165,8 @@ export function useLocalCompile({
     setStatus((current) => (current === "running" ? "idle" : current));
   }, []);
 
+  useEffect(() => () => stop(), [stop, vaultRoot, vaultSessionScope]);
+
   const run = useCallback(
     async (brief: string) => {
       if (!vaultRoot || !endpoint) return;
@@ -234,6 +236,7 @@ export function useLocalCompile({
             },
             async send({ body, scope, question, model }) {
               const echo = await llmChat({
+                signal: controller.signal,
                 provider: LOCAL_PROVIDER,
                 vaultPath: vaultRoot,
                 model,
@@ -254,6 +257,12 @@ export function useLocalCompile({
 
         if (controller.signal.aborted) return;
         setTurn(result.turn);
+        if (result.turn.status === "failed") {
+          const notices = result.turn.events.filter((event) => event.kind === "notice");
+          setErrorMessage(notices[notices.length - 1]?.text ?? COMPILE_NOTICES.failed);
+          setStatus("failed");
+          return;
+        }
         const built = buildCompileConsentCard(executor.proposals(), {
           // A save point belongs to the surfaces that own Git, as in `use-vault-agent.ts`; the card
           // says none was taken.

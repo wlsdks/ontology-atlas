@@ -441,4 +441,25 @@ describe('VaultAgentPanel', () => {
       messages.vaultAgentPanel.placeholderFirst,
     );
   });
+
+  it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {
+    bridge.available = true;
+    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    vi.mocked(llmChat).mockClear();
+    renderPanel();
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+    const input = screen.getByTestId('vault-agent-input') as HTMLTextAreaElement;
+    fireEvent.change(input, { target: { value: '결제 처리의 정의를 채워 줘' } });
+
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true, keyCode: 229 });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+    fireEvent.compositionEnd(input, { data: '줘' });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+    expect(input.value).toBe('결제 처리의 정의를 채워 줘');
+    expect(llmChat).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+    expect(input.value).toBe('');
+    await waitFor(() => expect(llmChat).toHaveBeenCalledTimes(1));
+  });
 });
