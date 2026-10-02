@@ -78,29 +78,29 @@ function toTime(iso: string): number | null {
   return Number.isFinite(time) ? time : null;
 }
 
-/** Null, not clean, when history is too short, the kind is not a summary, or there are no members. */
+/** O(n) parser calls and O(1) retained parsed revisions; null supplies no staleness signal. */
 export function summaryStalenessOf(revisions: readonly NodeRevision[]): SummaryStaleness | null {
   if (revisions.length < 2) return null;
   const slug = revisions[0].slug;
-  const parsed = revisions.map(parseRevision);
-  const current = parsed[0];
+  const current = parseRevision(revisions[0]);
   if (!(SUMMARY_KINDS as readonly string[]).includes(current.kind)) return null;
   if (current.childCount === 0) return null;
 
   let bodyChangedAt: string | null = null;
   let membershipChangedAt: string | null = null;
-  for (let index = 0; index < parsed.length - 1; index += 1) {
-    const newer = parsed[index];
-    const older = parsed[index + 1];
+  let newer = current;
+  for (let index = 1; index < revisions.length; index += 1) {
+    const older = parseRevision(revisions[index]);
     if (bodyChangedAt === null && newer.body !== older.body) bodyChangedAt = newer.isoTime;
     if (membershipChangedAt === null && newer.membership !== older.membership) {
       membershipChangedAt = newer.isoTime;
     }
     if (bodyChangedAt !== null && membershipChangedAt !== null) break;
+    newer = older;
   }
   // Unchanged back to the oldest revision: its timestamp is a lower bound that can only understate
   // the lag. `mcp/src/stale-parent.mjs` does the same.
-  const oldest = parsed[parsed.length - 1].isoTime;
+  const oldest = revisions[revisions.length - 1].isoTime;
   const bodyTime = toTime(bodyChangedAt ?? oldest);
   const membershipTime = toTime(membershipChangedAt ?? oldest);
   if (bodyTime === null || membershipTime === null) return null;
