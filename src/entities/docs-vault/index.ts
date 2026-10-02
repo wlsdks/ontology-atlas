@@ -31,7 +31,6 @@ export type {
   LocalVaultBuild,
   BuiltVaultEntry,
   VaultBuildObserver,
-  VaultLoadProgress,
   VaultStampIndex,
 } from './lib/build-local-manifest';
 export { VAULT_SOURCES_DIR } from './lib/walk-vault';

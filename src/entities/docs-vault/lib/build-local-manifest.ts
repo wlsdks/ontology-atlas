@@ -491,7 +491,7 @@ const PARTIAL_SPLIT_MIN = 400;
 const PARTIAL_VAULT_MIN = 400;
 const READ_TIER_FOLDERS = ['projects', 'domains', 'capabilities', 'elements'];
 
-export interface VaultLoadProgress {
+interface VaultLoadProgress {
   read: number;
   total: number;
 }
