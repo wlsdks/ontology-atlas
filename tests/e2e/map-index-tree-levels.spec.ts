@@ -19,7 +19,7 @@ test("INDEX 트리의 모든 행이 자기 단계를 말한다", async ({ page }
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapStill(page, { what: "camera" });
-  await page.getByRole("button", { name: "여기서 둘러볼게요" }).click();
+  await page.getByTestId("first-run-starter-dismiss").click();
   const tree = page.getByTestId("topology-index-tree");
   await expect(tree).toBeVisible();
 

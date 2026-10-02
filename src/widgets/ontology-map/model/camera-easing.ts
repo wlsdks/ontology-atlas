@@ -5,7 +5,8 @@
  * gesture interrupts. Durations are feel constants, not themable `--map-*` tokens.
  */
 
-import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS } from "./motion-physics";
+import type { CameraTarget } from "../engine/camera";
+import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS, easeZoomScale, zoomStepProgress } from "./motion-physics";
 
 export interface CameraKeyframe {
   x: number;
@@ -152,5 +153,32 @@ export function easeCameraKeyframe(
     x: start.x + (target.x - start.x) * e,
     y: start.y + (target.y - start.y) * e,
     scale: start.scale + (target.scale - start.scale) * e,
+  };
+}
+
+export interface ZoomEase {
+  target: CameraTarget;
+  anchorX: number;
+  anchorY: number;
+  worldX: number;
+  worldY: number;
+  fromScale: number;
+  startMs: number;
+}
+
+export function easeAnchoredZoom(
+  ease: ZoomEase,
+  nowMs: number,
+  width: number,
+  height: number,
+): CameraKeyframe & { done: boolean } {
+  const progress = zoomStepProgress(nowMs - ease.startMs);
+  if (progress >= 1) return { x: ease.target.tx, y: ease.target.ty, scale: ease.target.tscale, done: true };
+  const scale = easeZoomScale(ease.fromScale, ease.target.tscale, progress);
+  return {
+    x: ease.worldX - (ease.anchorX - width / 2) / scale,
+    y: ease.worldY - (ease.anchorY - height / 2) / scale,
+    scale,
+    done: false,
   };
 }

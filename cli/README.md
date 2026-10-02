@@ -15,6 +15,9 @@ It does not yet establish the business meaning of your repository. Build and
 review that meaning before relying on it for a task; source paths, validation,
 and graph traversal do not certify code safety.
 
+The CLI shares MCP's quoted mapping keys, scalar types and malformed-source
+rewrite rules. See the [frontmatter contract](../mcp/README.md#frontmatter-fidelity).
+
 The CLI runs from a source checkout as `node cli/src/index.mjs` and needs
 Node.js 24, the same floor as the MCP server in `mcp/` that it spawns. There is
 no npm package, so `npx ontology-atlas` is not a channel. Users who only want

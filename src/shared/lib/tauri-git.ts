@@ -44,6 +44,24 @@ function getInvoke(): TauriInvoke | null {
 
 type GitChangeStatus = 'added' | 'modified' | 'deleted' | 'renamed';
 
+export interface GitNodeRevisionRef {
+  slug: string;
+  isoTime: string;
+  revision: string;
+}
+
+export async function gitNodeRevisions(vaultPath: string, slug: string): Promise<GitNodeRevisionRef[] | null> {
+  const invoke = getInvoke();
+  return invoke ? invoke<GitNodeRevisionRef[]>('vault_node_revisions', { vaultPath, slugs: [slug] }) : null;
+}
+
+export async function gitNodeRevisionContent(vaultPath: string, reference: GitNodeRevisionRef): Promise<string | null> {
+  const invoke = getInvoke();
+  return invoke ? invoke<string | null>('vault_node_revision_content', {
+    vaultPath, slug: reference.slug, revision: reference.revision,
+  }) : null;
+}
+
 /** Rust `ChangeEntry` (serde camelCase). */
 export interface GitChangeEntry {
   path: string;

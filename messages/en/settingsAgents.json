@@ -1,0 +1,15 @@
+{
+  "writesHeading": "When an agent writes",
+  "doorsHeading": "Managed in Agents",
+  "wikiWriteModeKeywords": "wiki page compile fix proposal permission ask auto write",
+  "codingToolsLabel": "Coding tools",
+  "codingToolsCaption": "Install and connect the coding agents on this computer",
+  "codingToolsKeywords": "agent install connect terminal chat",
+  "modelsLabel": "Models · API keys",
+  "modelsCaptionKeys": "{count, plural, =0 {No keys in Keychain} one {# key in Keychain} other {# keys in Keychain}}",
+  "modelsCaptionWeb": "In the desktop app",
+  "modelsKeywords": "api key keychain model provider local runner",
+  "mcpLabel": "MCP",
+  "mcpCaption": "The folder's MCP server and its connectors",
+  "mcpKeywords": "server connector tools connection"
+}

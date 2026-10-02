@@ -1,26 +1,4 @@
 import { projectDomeEdgeControl } from '../model/dome-edge';
-/**
- * Pointer/wheel event handlers — the click-safe contract
- * (`interaction/pointer-state-machine.ts`) plus camera pan/zoom/flick
- * (`engine/momentum.ts`, prototype §9 `pointerdown`/`pointermove`/
- * `releaseDrag()`/`wheel`). Split out of `use-topology-loop.ts` to keep both
- * files under the 300-line budget — `Ref<T>` here is any mutable box the
- * hook owns (`useRef`'s `.current`), not necessarily React's own ref type.
- *
- * FIX (owner + QA — flick proportionality): `projectFlickLanding` now projects
- * a landing PROPORTIONAL to release velocity (iOS deceleration, ~−249 world
- * units for a 0.5px/ms flick at scale 1), so a small flick glides a small
- * distance and a big flick a big distance. `handlePointerUp` still clamps the
- * projected target into the world's pan bounds
- * (`engine/camera.ts#computePanBounds`) — but now that only engages when the
- * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
- * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
- * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
- * returns it — docs/design/interaction.md §1 "Boundaries rubber-band" —
- * the boundary rubber-bands). The old port inflated
- * the projection ~60× so EVERY flick slammed to the same edge (the reported
- * snap); see `engine/momentum.ts`.
- */
 
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
@@ -28,7 +6,8 @@ import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "./topology-frame-draw"
 import type { Rect } from "../interaction/hover-card-placement";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
-import type { CameraTween } from "../model/camera-easing";
+import type { CameraTween, ZoomEase } from "../model/camera-easing";
+import { MOMENTUM_SPRING, MOMENTUM_TAU_MS, springAngularFrequency } from "../model/motion-physics";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
@@ -37,7 +16,7 @@ import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
-import { DEFAULT_EXPAND, type ExpandPreference } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND, DEFAULT_MAP_NAVIGATION_SPEED, type ExpandPreference, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import {
   commitDomeEntrySweep,
@@ -60,7 +39,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
-import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide, type PinchWheelStream } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
@@ -175,6 +154,8 @@ export interface PointerHandlerRefs {
    * hold, so it is raised from a constant to a contract.
    */
   wheelIntent?: "zoom" | "page-scroll";
+  navigationSpeedRef?: Ref<MapNavigationSpeed>;
+  zoomEaseRef?: Ref<ZoomEase | null>;
   worldRef: Ref<TopologyWorld | null>;
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
@@ -262,6 +243,7 @@ export interface PointerHandlerRefs {
    * ratio and the pan from the midpoint's movement.
    */
   pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
+  pinchWheelRef?: Ref<PinchWheelStream>;
   onSelect?: (slug: string) => void;
   /** P3b — a click at a point with no node hit that is close to an edge. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
@@ -429,6 +411,7 @@ export interface TopologyPointerHandlers {
    * `{ passive: false }` listener instead of the JSX prop.
    */
   handleWheel: (e: WheelEvent) => void;
+  handleGesturePinch: (ratio: number, clientX: number, clientY: number) => void;
   /**
    * W2-B — native browser context menu is suppressed ONLY when the
    * right-click lands on a hittable node (design gate
@@ -449,6 +432,9 @@ export interface TopologyPointerHandlers {
 export function createTopologyPointerHandlers(refs: PointerHandlerRefs): TopologyPointerHandlers {
   const {
     wheelIntent = "zoom",
+    navigationSpeedRef = { current: DEFAULT_MAP_NAVIGATION_SPEED },
+    zoomEaseRef = { current: null },
+    pinchWheelRef = { current: createPinchWheelStream() },
     worldRef,
     cameraRef,
     cameraTargetRef,
@@ -534,6 +520,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const runtime = domeRuntimeRef?.current ?? null;
     const fit = runtime !== null && runtime.rampClock > 0 ? runtime.fitScale : null;
     return fit !== null ? Math.min(base, fit) : base;
+  };
+
+  const scaleWithinZoomBounds = (tokens: OntologyMapTokens, scale: number): number => {
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const max = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+    const min = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
+    return Math.min(max, Math.max(min, scale));
   };
 
   /**
@@ -876,18 +869,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
-    // S3 — any pointer interaction (pan / select) abandons a live camera tween
-    // so the spring takes over from wherever the ease currently sits. A click
-    // that ends up selecting a node begins a fresh tween in the focus effect.
     if (cameraTweenRef) cameraTweenRef.current = null;
-    // R4 momentum-glide interruption — a new pointerdown catches an in-flight flick
-    // deceleration immediately (the iOS scroll catch). It zeroes the camera velocity
-    // and pins the spring target to the current position so it stops right here; the
-    // pan or selection that follows sets its own new target (pan: pointermove;
-    // selection: the focus effect's tween). With the velocity already 0 it is at rest,
-    // so the target is left alone (avoiding a needless state change).
     {
       const cam = cameraRef.current;
+      if (zoomEaseRef.current !== null) {
+        zoomEaseRef.current = null;
+        cameraTargetRef.current = { tx: cam.x.value, ty: cam.y.value, tscale: cam.scale.value };
+      }
       if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
         cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
         cameraTargetRef.current = { ...cameraTargetRef.current, tx: cam.x.value, ty: cam.y.value };
@@ -983,12 +971,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
-    // rank4 touch pinch zoom — two-finger movement into camera zoom plus pan. The
-    // maths is the same contract as `handleWheel`: composed against the camera TARGET
-    // (independent of spring lag), clamped to the effective min/max, on the interactive
-    // spring. Solving tx/ty so the world point under the previous midpoint lands under
-    // the new one makes the zoom anchor and the two-finger pan fall out of one
-    // equation: tx' = worldAtPrevMid − (mid' − c)/scale'.
     if (activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
       activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
       const pinch = pinchRef?.current;
@@ -998,48 +980,27 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         if (pinch.dist > 0 && dist > 0) {
-          // Camera motion starting — hover cards demote immediately (the same rule as the wheel).
-          clearEdgeHover();
-          clearClusterHover();
-          if (cameraTweenRef) cameraTweenRef.current = null;
-          // 3D — a pinch zoom is intervention too (the same contract as the wheel:
-          // ① release the attention spin, ④ stop the pose move).
-          {
-            const dome = domeInteractive();
-            if (dome) {
-              dome.spinArmed = false;
-          commitDomeEntrySweep(dome);
-              dome.poseTween = null;
-            }
-          }
+          releaseCameraForZoom();
           const { width, height } = viewportRef.current;
-          const target = cameraTargetRef.current;
-          const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-          const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-          const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
-          const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * (dist / pinch.dist)));
-          const worldAtPrevMidX = (pinch.midX - width / 2) / target.tscale + target.tx;
-          const worldAtPrevMidY = (pinch.midY - height / 2) / target.tscale + target.ty;
+          const cam = cameraRef.current;
+          const spread = Math.pow(dist / pinch.dist, navigationSpeedRef.current.zoom);
+          const newScale = scaleWithinZoomBounds(tokens, cam.scale.value * spread);
+          const worldAtPrevMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
+          const worldAtPrevMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
           const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
           const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
           cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+          cameraRef.current = {
+            x: { value: afterX, velocity: 0 },
+            y: { value: afterY, velocity: 0 },
+            scale: { value: newScale, velocity: 0 },
+          };
           noteUserCameraGesture();
           dampingRef.current = tokens.cameraDampingDefault;
           cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-          // Block residual flick velocity (as the wheel does) — a pinch is target driven.
-          const cam = cameraRef.current;
-          if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
-            cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
-          }
-          // WCAG 2.3.3 — a pinch is **user-initiated** magnification. The camera used
-          // to snap to its destination here, which teleports the whole viewport in one
-          // frame for a reduced-motion user (measured 2026-07-28: diff 0.00 forever
-          // after one frame) — worse for the vestibular system than the movement it was
-          // replacing, and it also removes any cue for reading "where did I go".
-          // Direct manipulation is an extension of the hand, so it keeps its time.
         }
         pinchRef.current = { dist, midX, midY };
-        return; // Mid-pinch, the single-pointer paths (pan/hover/drag) are not taken.
+        return;
       }
     }
 
@@ -1150,61 +1111,34 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // above), so "something is in my hand right now" reads as the same word in both cases.
       e.currentTarget.style.cursor = "grabbing";
 
-      // 3D orbit — an empty-space drag rotates the dome rather than panning the
-      // camera. Horizontal = yaw (hero sensitivity 0.006/px), vertical = pitch (with a
-      // rubber-band limit). Deeper tiers lag slightly with a twist and spring back —
-      // follow-through. A drag begun outside the dome is **a camera pan**, exactly as
-      // in 2D (it falls through to the default path below). Only a drag begun inside
-      // orbits.
+      const dragSpeed = navigationSpeedRef.current.drag;
       if (dome && domeGripRef.current) {
         const history = dragHistoryRef.current;
         const last = history[history.length - 1];
         const dx = last ? point.x - last.x : 0;
         const dy = last ? point.y - last.y : 0;
-        // The event pushes **the target only** — the actual yaw/pitch follow that
-        // target each frame at `ORBIT_SMOOTH_TAU_MS` (removing the stepping when the
-        // event rate exceeds the frame rate; the loop also charges the tier twist from
-        // the real per-frame movement). The total is still 1:1 with the pointer.
-        dome.yawTarget += dx * ORBIT_YAW_PER_PX;
-        dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX);
+        dome.yawTarget += dx * ORBIT_YAW_PER_PX * dragSpeed;
+        dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX * dragSpeed);
         dome.orbiting = true;
-        // Orbiting is intervention — the attention spin goes down here and does not
-        // come back (①; it returns via "Auto-arrange" or re-entering 3D — see the
-        // `DomeRuntime.spinArmed` JSDoc).
         dome.spinArmed = false;
-          commitDomeEntrySweep(dome);
+        commitDomeEntrySweep(dome);
         dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
         if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
         return;
       }
 
-      /*
-       * Incremental, not gesture-total (bug sweep 2026-09-01). The old math
-       * divided the WHOLE gesture's screen delta from downPoint by the CURRENT
-       * scale — wheel-zooming while a background drag was held retroactively
-       * rescaled the accumulated delta, so the next 1px pointermove jumped the
-       * camera by up to half the drag distance. Only the delta since the last
-       * sample (the history's tail — seeded with the down point) is converted
-       * at the current scale, so a mid-drag zoom changes nothing already panned.
-       */
       const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
         ?? next.downPoint
         ?? point;
       const scale = cameraRef.current.scale.value;
-      const worldDX = (point.x - previous.x) / scale;
-      const worldDY = (point.y - previous.y) / scale;
+      const worldDX = ((point.x - previous.x) * dragSpeed) / scale;
+      const worldDY = ((point.y - previous.y) * dragSpeed) / scale;
       const nextX = cameraRef.current.x.value - worldDX;
       const nextY = cameraRef.current.y.value - worldDY;
-      // 1:1 tracking, no lag — drag follows the pointer directly, the spring
-      // only takes back over once the flick is released (`engine/momentum.ts`).
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
       cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
       noteUserCameraGesture();
       dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
-      // Keep ~10 samples (~160ms at 60fps) so the release-velocity window
-      // (`--map-camera-release-velocity-window-ms`) is always covered,
-      // even on lower-frame-rate devices. The sampler filters by timestamp, so
-      // extra old samples are harmless.
       if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
       return;
     }
@@ -1421,20 +1355,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     if (wasDragging) {
-      // 3D orbit release — yaw/pitch momentum instead of a camera flick. The measured
-      // velocity of the release window is passed into angular velocity at the same
-      // sensitivity as the drag (velocity continuous at release). reduced-motion gets
-      // zero momentum — the user-initiated **drag itself** already finished 1:1, and the
-      // glide that follows is motion the app makes, so it is not exempt.
+      const dragSpeed = navigationSpeedRef.current.drag;
       {
         const dome = domeInteractive();
         if (dome && dome.orbiting) {
           dome.orbiting = false;
-          // The remaining target gap (≤ velocity × τ) is dropped and momentum takes over
-          // — target-following and momentum both pushing the pose after release would
-          // integrate twice.
-          dome.yawTarget = dome.yaw;
-          dome.pitchTarget = dome.pitch;
+          dome.yaw = dome.yawTarget;
+          dome.pitch = dome.pitchTarget;
           if (!reducedMotionRef.current) {
             const release = sampleReleaseVelocity({
               history: dragHistoryRef.current,
@@ -1443,17 +1370,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
               minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
             });
             if (release.isFlick) {
-              // Capped so the coast never exceeds half a turn (`ORBIT_COAST_MAX_RAD`).
-              dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX);
-              dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX);
-              /*
-               * **A meaningful landing** — left to momentum alone, the dome stops at an
-               * arbitrary angle. The natural landing point is computed from the release
-               * velocity first, and if that spot is near a domain meridian the
-               * deceleration's target is re-aimed there (the same two steps as
-               * UIScrollView paging — see the `ORBIT_SNAP_WINDOW_RAD` doc-block).
-               * Outside the window it is `null`, leaving the previous momentum as is.
-               */
+              dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX * dragSpeed);
+              dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX * dragSpeed);
               const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
               dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
             } else {
@@ -1463,11 +1381,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           return;
         }
       }
-      // Stationary release gate (owner spec: *"After dragging, stopping should stop it right there"* — after
-      // dragging, stopping should stop it right there) — sample the last ~80ms of
-      // pointer motion; a stationary release yields isFlick=false and the camera holds
-      // exactly here (no momentum glide). Only a release WITH motion (a flick) projects
-      // a landing target.
       const release = sampleReleaseVelocity({
         history: dragHistoryRef.current,
         releaseTime: performance.now(),
@@ -1476,8 +1389,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       });
 
       if (reducedMotionRef.current || !release.isFlick) {
-        // Hold in place: pin the spring target to the current camera position and
-        // clear any residual velocity so it comes to rest exactly here.
         cameraTargetRef.current = { tx: cameraRef.current.x.value, ty: cameraRef.current.y.value, tscale: cameraTargetRef.current.tscale };
         cameraRef.current = {
           ...cameraRef.current,
@@ -1487,38 +1398,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         dampingRef.current = tokens.cameraDampingDefault;
         return;
       }
-      const vx = release.vx;
-      const vy = release.vy;
       const px = projectFlickLanding({
-        velocityPxPerMs: vx,
+        velocityPxPerMs: release.vx * dragSpeed,
         cameraPosition: cameraRef.current.x.value,
         cameraScale: cameraRef.current.scale.value,
-        decay: tokens.cameraMomentumDecay,
+        timeConstantMs: MOMENTUM_TAU_MS,
       });
       const py = projectFlickLanding({
-        velocityPxPerMs: vy,
+        velocityPxPerMs: release.vy * dragSpeed,
         cameraPosition: cameraRef.current.y.value,
         cameraScale: cameraRef.current.scale.value,
-        decay: tokens.cameraMomentumDecay,
+        timeConstantMs: MOMENTUM_TAU_MS,
       });
-      // The projected landing is proportional to velocity (see file header) and
-      // usually within the graph's pan bounds — clamp it only so a landing that
-      // WOULD exceed the bounds rubber-bands at the edge instead of overshooting
-      // into blank canvas. Within-bounds flicks are unaffected by this clamp.
-      // The clamp source is the VISIBLE tier's bounds: at spine-only zoom the
-      // full 295-node bounds cover a huge legal-but-empty fan region (only ~8
-      // spine nodes draw), so a strong flick could land the camera on nothing
-      // (owner's "The canvas disappeared" — QA loss A). Once
-      // capabilities start revealing, the full bounds become honest again.
       const world = worldRef.current;
       let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
       if (world) {
         const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
         const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
         const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
-        // On a surface with the leash on (the gateway), the landing point uses the same
-        // envelope — otherwise a flick lands outside the leash and the spring pulls it
-        // back, moving twice.
         clampedLanding = clampPointToPanBounds(
           px.landingTarget,
           py.landingTarget,
@@ -1532,7 +1429,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
         y: { value: cameraRef.current.y.value, velocity: py.worldVelocity },
       };
-      dampingRef.current = tokens.cameraDampingFlick;
+      dampingRef.current = MOMENTUM_SPRING.damping;
+      cameraAngularFreqRef.current = springAngularFrequency(MOMENTUM_SPRING);
       return;
     }
 
@@ -1711,104 +1609,93 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     pointerMachineRef.current = next;
   };
 
+  const releaseCameraForZoom = () => {
+    clearEdgeHover();
+    clearClusterHover();
+    if (cameraTweenRef) cameraTweenRef.current = null;
+    zoomEaseRef.current = null;
+    const dome = domeInteractive();
+    if (dome) {
+      dome.spinArmed = false;
+      commitDomeEntrySweep(dome);
+      dome.poseTween = null;
+    }
+  };
+
+  const zoomAtPoint = (tokens: OntologyMapTokens, sx: number, sy: number, factor: number) => {
+    const { width, height } = viewportRef.current;
+    const camera = cameraRef.current;
+    const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
+    const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
+    const scale = scaleWithinZoomBounds(tokens, camera.scale.value * factor);
+    const x = worldX - (sx - width / 2) / scale;
+    const y = worldY - (sy - height / 2) / scale;
+    cameraTargetRef.current = { tx: x, ty: y, tscale: scale };
+    cameraRef.current = {
+      x: { value: x, velocity: 0 },
+      y: { value: y, velocity: 0 },
+      scale: { value: scale, velocity: 0 },
+    };
+    noteUserCameraGesture();
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+  };
+
+  const handleGesturePinch = (ratio: number, clientX: number, clientY: number) => {
+    if (activeTouchesRef && activeTouchesRef.current.size >= 2) return;
+    const tokens = readOntologyMapTokensOrNull();
+    const canvas = canvasRef?.current;
+    if (!tokens || !canvas) return;
+    releaseCameraForZoom();
+    const rect = currentRect(canvas);
+    zoomAtPoint(tokens, clientX - rect.left, clientY - rect.top, ratio ** navigationSpeedRef.current.zoom);
+  };
+
   const handleWheel = (e: WheelEvent) => {
-    // Gateway contract — a plain wheel belongs to the page. The point is **not** calling
-    // `preventDefault` here, so it exits before any guard.
     if (wheelIntent === "page-scroll" && !e.ctrlKey) return;
     e.preventDefault();
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
-    // Trackpad glide guard (owner report, 2026-07-23) — the |delta| < 4px micro-wheel
-    // noise that leaks out while fingers rest on the pad is not composed into zoom. That
-    // noise was the entry route for "just hovering an edge makes the screen move and
-    // shake". A pinch (ctrlKey wheel) and deliberate notches or scrolls pass through
-    // unchanged. `preventDefault` stays (stopping page-scroll leakage), and the hover
-    // cards stay too (there is no motion).
-    const { height: vpH } = viewportRef.current;
-    const glideDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, vpH);
-    if (shouldIgnoreWheelGlide(glideDeltaY, e.ctrlKey)) return;
-    // Edge and cluster hover cards lingering (panel2/3) — the moment a wheel or camera
-    // motion starts, the card must disappear. A card anchors to an idle hover only, so
-    // while zoom made the coordinates flow it lingered with no pointermove and survived
-    // right through a three-tier zoom. Dismissing on motion's first tick keeps the card
-    // from floating over the map.
-    clearEdgeHover();
-    clearClusterHover();
-    // S3 — a live wheel zoom is interactive input; abandon any programmatic
-    // camera tween so the crisp interactive spring owns this gesture.
-    if (cameraTweenRef) cameraTweenRef.current = null;
-    // 3D — zoom is intervention too: release the attention spin (①) and hand any pose
-    // move in flight to the gesture (the same interruption contract as the camera tween, ④).
-    {
-      const dome = domeInteractive();
-      if (dome) {
-        dome.spinArmed = false;
-          commitDomeEntrySweep(dome);
-        dome.poseTween = null;
-      }
-    }
     const { width, height } = viewportRef.current;
+    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
+    if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
+    releaseCameraForZoom();
     const rect = currentRect(e.currentTarget as HTMLCanvasElement);
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
-
-    // C1 A1 follow-up (owner feedback — rapid wheel notches felt "dead" even
-    // after the ceiling fix): compound off the camera's TARGET
-    // (`cameraTargetRef`), not its live/spring-animated value (`cameraRef`).
-    // A burst of wheel events arrives faster than the critically-damped
-    // spring can visually catch up (~0.34s time constant) — basing each new
-    // target on the live (still-lagging) scale meant a rapid flurry of
-    // notches barely compounded past the FIRST one's effect, since each
-    // subsequent notch's "current scale" was nearly identical to the one
-    // before it (measured live: 10 real notches at 30-80ms spacing only
-    // reached zoomRatio ~1.05-1.2, nowhere near the capability/element
-    // bands). Basing it on the TARGET instead lets intent compound correctly
-    // regardless of how fast the events arrive; the spring still smoothly
-    // interpolates the VISIBLE camera toward wherever that target ends up. In
-    // the steady state (no animation in flight) `cameraTargetRef` already
-    // equals `cameraRef`, so a single isolated wheel tick is unaffected.
-    const target = cameraTargetRef.current;
-    const beforeX = (sx - width / 2) / target.tscale + target.tx;
-    const beforeY = (sy - height / 2) / target.tscale + target.ty;
-    // Normalize deltaMode first — a line/page-mode wheel reports a tiny raw
-    // deltaY that the old `exp(-deltaY*0.0016)` turned into ~0% zoom (the
-    // owner's "Wheel zoom not working" bug). See `interaction/wheel.ts`.
-    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
-    // C1 owner feedback ("Zoom in/out is slow") — sensitivity upped 0.0016 → 0.0020,
-    // see `interaction/wheel.ts#WHEEL_ZOOM_SENSITIVITY`'s JSDoc.
-    const factor = computeWheelZoomFactor(pixelDeltaY);
-    // C1 A1 — wheel/pinch zoom-in must reach the ratio-based effective max
-    // (`topology-camera-math.ts#computeEffectiveCameraScaleMax`), not the
-    // absolute `cameraScaleMax` token — same fix as the spring clamp in
-    // `topology-physics-step.ts`.
-    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-    const effectiveScaleMin = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
-    const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * factor));
-    const afterX = beforeX - (sx - width / 2) / newScale;
-    const afterY = beforeY - (sy - height / 2) / newScale;
-
-    cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+    const camera = cameraRef.current;
+    const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
+    const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
+    const pinch = readPinchWheel(pinchWheelRef.current, e);
+    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeedRef.current.zoom });
+    if (pinch) {
+      zoomAtPoint(tokens, sx, sy, factor);
+      return;
+    }
+    const newScale = scaleWithinZoomBounds(tokens, cameraTargetRef.current.tscale * factor);
+    const next: CameraTarget = {
+      tx: worldX - (sx - width / 2) / newScale,
+      ty: worldY - (sy - height / 2) / newScale,
+      tscale: newScale,
+    };
+    cameraTargetRef.current = next;
     noteUserCameraGesture();
     dampingRef.current = tokens.cameraDampingDefault;
-    // R4 momentum-glide interruption — when a wheel zoom starts, the residual x/y
-    // velocity of an in-flight flick deceleration is zeroed so it does not leak (zoom is
-    // target driven, so the scale axis is unaffected).
-    if (cameraRef.current.x.velocity !== 0 || cameraRef.current.y.velocity !== 0) {
-      cameraRef.current = {
-        ...cameraRef.current,
-        x: { ...cameraRef.current.x, velocity: 0 },
-        y: { ...cameraRef.current.y, velocity: 0 },
-      };
-    }
-    // Dive-zoom fix — a live wheel gesture uses the crisp interactive spring
-    // for the scale axis (and pan, since point-to-zoom moves both together)
-    // until the NEXT programmatic camera move resets it back to transition.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-    // WCAG 2.3.3 — a wheel zoom is user-initiated too, so it does not snap, for the same
-    // reason as the pinch above. What a reduced-motion user loses is only the movement
-    // the app **takes them on** (ego dive, fit, arrange —
-    // `topology-physics-step.ts#userDrivenCamera`).
+    zoomEaseRef.current = {
+      target: next,
+      anchorX: sx,
+      anchorY: sy,
+      worldX,
+      worldY,
+      fromScale: camera.scale.value,
+      startMs: Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity),
+    };
+    cameraRef.current = {
+      ...camera,
+      x: { value: camera.x.value, velocity: 0 },
+      y: { value: camera.y.value, velocity: 0 },
+    };
   };
 
   // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown
@@ -1856,5 +1743,5 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
     hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleContextMenu, probeEdgeAt };
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt };
 }

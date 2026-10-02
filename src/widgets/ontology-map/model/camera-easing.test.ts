@@ -4,12 +4,51 @@ import {
   CAMERA_TRANSITION_MAX_MS,
   CAMERA_TRANSITION_MIN_MS,
   cameraTransitionDurationMs,
+  easeAnchoredZoom,
   easeCameraKeyframe,
   easeInOutCubic,
   type CameraKeyframe,
+  type ZoomEase,
   VAN_WIJK_RHO,
   vanWijkCameraKeyframe,
 } from "./camera-easing";
+import { ZOOM_STEP_TAU_MS } from "./motion-physics";
+
+describe("easeAnchoredZoom", () => {
+  const width = 1200;
+  const height = 800;
+  const anchorX = 900;
+  const anchorY = 250;
+  const from = { x: 40, y: -30, scale: 0.8 };
+  const worldX = (anchorX - width / 2) / from.scale + from.x;
+  const worldY = (anchorY - height / 2) / from.scale + from.y;
+  const tscale = from.scale * 1.26;
+  const ease: ZoomEase = {
+    target: { tx: worldX - (anchorX - width / 2) / tscale, ty: worldY - (anchorY - height / 2) / tscale, tscale },
+    anchorX,
+    anchorY,
+    worldX,
+    worldY,
+    fromScale: from.scale,
+    startMs: 1000,
+  };
+
+  it("keeps the world point under the pointer still at every moment of a step", () => {
+    for (const elapsed of [0, 4, 8.3, 16.7, 40, 90, 200]) {
+      const pose = easeAnchoredZoom(ease, 1000 + elapsed, width, height);
+      expect((worldX - pose.x) * pose.scale + width / 2).toBeCloseTo(anchorX, 9);
+      expect((worldY - pose.y) * pose.scale + height / 2).toBeCloseTo(anchorY, 9);
+    }
+  });
+
+  it("moves on the first frame and arrives exactly on the target", () => {
+    const first = easeAnchoredZoom(ease, 1000 + 8.3, width, height);
+    expect((first.scale - from.scale) / (tscale - from.scale)).toBeGreaterThan(0.15);
+    expect(first.done).toBe(false);
+    const last = easeAnchoredZoom(ease, 1000 + ZOOM_STEP_TAU_MS * 7, width, height);
+    expect(last).toEqual({ x: ease.target.tx, y: ease.target.ty, scale: tscale, done: true });
+  });
+});
 
 describe("easeInOutCubic", () => {
   it("pins the endpoints and the symmetric midpoint", () => {

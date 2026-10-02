@@ -41,6 +41,10 @@ ceiling or depth 12; this is a capacity bound, not a frame-rate guarantee.
 
 ## In 30 seconds
 
+Quoted frontmatter keys and nested string values round-trip across app, MCP and
+CLI edits. An MCP rewrite that would discard malformed declarations is refused;
+explicit replacement of an identifiable whole field can repair it.
+
 | | |
 |---|---|
 | **What** | An `atlas/` folder of Markdown inside your repository. Each file's frontmatter says what it is (`project`, `domain`, `capability`, `element`, `document`) and what it points at. That folder is the whole database. |
@@ -139,6 +143,10 @@ Full contracts: [what becomes a node?](docs/guide/what-becomes-a-node.md) ·
 | MCP and CLI read the folder directly, even with the app closed. | RDF/OWL/SHACL implementation ([§5.2](docs/ONTOLOGY-ATLAS-SPEC.md#52-standards-boundary)) |
 | Extensions are files a `git diff` shows you, never third-party code. | service, and not on npm |
 
+Malformed model responses, including compatible local endpoints, end the
+conversation turn with an explicit diagnostic and no tool calls from that response.
+The existing retry action remains available.
+
 **Measured, honestly:** our first benchmark mostly tested vocabulary only Atlas
 knew. Re-scored, we have not yet measured a difference in answer quality, and
 Atlas was slower. [The correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md) ·
@@ -150,7 +158,7 @@ Atlas was slower. [The correction](docs/benchmark/FINDINGS-2026-08-31-metric-spl
 - **macOS** is Developer ID signed and notarized, with the MCP server inside the bundle.
 - **Windows x64 is an unsigned beta** — SmartScreen may warn, and a managed PC may refuse it. See [Security](SECURITY.md).
 - **Linux and others** run the browser app, or the CLI and MCP server from a [source checkout](cli/README.md#set-up-from-a-source-checkout).
-- Every release is a plain version; the in-app updater verifies each archive's signature before installing.
+- Every release is a plain version; the in-app updater verifies each archive's signature before installing. The daily check can be turned off in Settings → About.
 
 ## Documentation
 

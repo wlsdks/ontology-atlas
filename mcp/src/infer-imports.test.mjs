@@ -917,6 +917,7 @@ test('Python TYPE_CHECKING imports stay type-only while value imports remain pro
         'from typing import TYPE_CHECKING',
         'if TYPE_CHECKING:',
         '    from pkg import models',
+        'from pkg import models, models',
         'from pkg import runtime',
       ].join('\n'),
     );
@@ -927,6 +928,7 @@ test('Python TYPE_CHECKING imports stay type-only while value imports remain pro
     const valueEdge = result.edges.find((edge) => edge.to === 'pkg/runtime.py');
 
     assert.equal(typeEdge?.importUsage, 'type_only');
+    assert.equal(result.edges.filter((edge) => edge.to === 'pkg/models.py').length, 1);
     assert.equal(valueEdge?.importUsage, 'value');
     assert.equal(
       result.moduleEdges.find((edge) => edge.to === 'elements/models')?.productValueCount,

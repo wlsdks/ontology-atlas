@@ -138,7 +138,7 @@ export function readRampSteps(css: string): { text: Set<string>; leading: Set<st
 export function extractRampRefs(line: string): Array<{ kind: "text" | "leading"; step: string }> {
   if (COMMENT_LINE.test(line)) return [];
   const out: Array<{ kind: "text" | "leading"; step: string }> = [];
-  const re = /(^|[^-\w[])(text|leading)-([a-z0-9][a-z0-9.-]*)/g;
+  const re = /(^|[^-\w[./])(text|leading)-([a-z0-9][a-z0-9.-]*)/g;
   for (const m of line.matchAll(re)) {
     const step = m[3].replace(/-$/, "");
     const after = line[(m.index ?? 0) + m[0].length];
@@ -224,6 +224,9 @@ describe("타입/행간 램프 — 존재하지 않는 스텝 차단", () => {
       ),
     ).toBe(0);
     expect(check("[data-x] a { text-align: left; text-decoration: underline; }")).toBe(0);
+    expect(check('key: "atlas.appearance.text-size"')).toBe(0);
+    expect(check('import { readTextSize } from "@/shared/lib/preferences/text-size";')).toBe(0);
+    expect(check('className="sm:text-large"')).toBe(1);
     // ④ Comments may cite defect history — nothing renders, so they are out of scope.
     expect(check("        // 예전엔 text-callout 이었다 (미등록 스텝 → 루트 16px)")).toBe(0);
   });

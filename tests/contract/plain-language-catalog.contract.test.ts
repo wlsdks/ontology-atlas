@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
+import { GLOSSARY_TERMS, type GlossaryTerm } from '../../src/shared/config/term-glossary';
 
 /**
  * **Every string a person reads is scanned, not four hand-picked namespaces.**
@@ -27,7 +32,7 @@ import ko from '../../messages/ko.json';
  * |---|---|
  * | Internal vocabulary | A word this repository invented reaches a label |
  * | Untranslated English | A Korean screen shows a sentence nobody translated |
- * | Bare acronym | `MCP` / `ACP` / `CLI` appears where nothing nearby says what it is |
+ * | Unexplained term | `MCP` / `ACP` / `CLI` has no glossary entry or no screen draws its `TermHint` |
  *
  * ## Why ratchets and not bans
  *
@@ -222,7 +227,6 @@ export function untranslatedEnglish(messages: Json, allowed: ReadonlySet<string>
  */
 const INTENTIONALLY_ENGLISH = new Set([
   'metadata.siteName', // the product's name
-  'firstRunStarter.brand', // the product's name
   'projectPages.detail.documentTitleSuffix', // the product's name
   'architecture.patternLabels.feature-sliced-design', // the architecture pattern's own name
   'footer.license', // the licence's own name
@@ -243,6 +247,14 @@ const INTENTIONALLY_ENGLISH = new Set([
   'agents.models.runnerLlamaCpp', // a product name
   'download.heroMacSilicon', // Apple's own chip name — the row beside it reads Intel
   'library.rounds.sheet.wherePlaceholder', // example locations, spelled the way each service spells them
+  // Terms stay as developers say them; the TermHint beside each carries the Korean explanation.
+  'agents.models.keysTitle',
+  'agents.models.keyLabel',
+  'agents.models.jev.keyLabel',
+  'termHints.mcp.expansion',
+  'termHints.acp.expansion',
+  'termHints.apiKey.expansion',
+  'termHints.cli.expansion',
 ]);
 
 /**
@@ -310,112 +322,74 @@ describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
 });
 
 /* ------------------------------------------------------------------------- *
- * Gate 3 — a bare acronym with nothing nearby that says what it is
+ * Gate 3 — a technical term with no explanation a reader can open
  * ------------------------------------------------------------------------- */
+
+/**
+ * Terms developers say in English stay as written, and the explanation lives in
+ * a `TermHint` tooltip (owner, 2026-10-02). So the demand is no longer a Korean
+ * gloss in parentheses beside the term: every term the catalogue uses has a
+ * glossary entry (expansion and one sentence, both locales) and at least one
+ * screen draws its `TermHint`.
+ */
+const TERM_PATTERNS: Record<GlossaryTerm, RegExp> = {
+  mcp: /\bMCP\b/,
+  acp: /\bACP\b/,
+  apiKey: /\bAPI key\b/,
+  cli: /\bCLI\b/,
+};
 
 const ACRONYMS = ['MCP', 'ACP', 'CLI'] as const;
 
-/**
- * A gloss is the acronym **beside a Korean phrase in parentheses**, either way
- * round: a Korean phrase followed by "(MCP)", or "MCP" followed by a Korean
- * phrase in parentheses. Anything else is the reader being handed three capital
- * letters.
- *
- * The unit is the **top-level namespace**, the same unit
- * `ui-string-self-contained.contract.test.ts` chose for its shell variables and
- * for the same reason: one screen's strings are read side by side, so a gloss
- * one key over is not a dead end, while a gloss on another screen is.
- */
-function glossPattern(acronym: string): RegExp {
-  return new RegExp(
-    `(?:${acronym}\\s*\\([^)]*[가-힣][^)]*\\)|[가-힣][^()]{0,24}\\(\\s*${acronym}\\s*\\))`,
-  );
-}
-
-/** `namespace/ACRONYM` for every namespace that uses one without glossing it. */
-export function unglossedAcronyms(messages: Json): string[] {
-  const byNamespace = new Map<string, string[]>();
-  for (const { key, text } of flatten(messages)) {
-    const namespace = key.split('.')[0];
-    const bucket = byNamespace.get(namespace) ?? [];
-    bucket.push(text);
-    byNamespace.set(namespace, bucket);
-  }
+/** Every bare acronym the catalogue uses that the glossary does not explain. */
+export function unexplainedTerms(messages: Json, glossary: Json): string[] {
+  const texts = flatten(messages).map(({ text }) => text);
   const out: string[] = [];
   for (const acronym of ACRONYMS) {
-    const used = new RegExp(`\\b${acronym}\\b`);
-    const glossed = glossPattern(acronym);
-    for (const [namespace, strings] of byNamespace) {
-      if (!strings.some((text) => used.test(text))) continue;
-      if (strings.some((text) => glossed.test(text))) continue;
-      out.push(`${namespace}/${acronym}`);
-    }
+    if (!texts.some((text) => new RegExp(`\\b${acronym}\\b`).test(text))) continue;
+    const entry = Object.values(glossary).find(
+      (value): value is Json =>
+        typeof value === 'object' && typeof value.expansion === 'string' && value.expansion.startsWith(acronym),
+    );
+    if (!entry || typeof entry.explanation !== 'string' || !entry.explanation.trim()) out.push(acronym);
   }
-  return out.sort();
+  return out;
 }
 
-/**
- * **Where three capital letters still stand alone** (counted 2026-08-31, after
- * glossing twelve strings across eleven namespaces and removing `ACP` from the
- * catalogue entirely).
- *
- * None of the six is a sentence explaining something to a newcomer, which is why
- * none of them got a gloss: they are a search-engine description, a technology
- * list, an example tag, a column label, a guide page's name, and copy for a
- * panel with no renderer left.
- */
-const UNGLOSSED_BASELINE: readonly string[] = [
-  'footer/MCP', // the technology list in the footer
-  'gatewayNav/CLI', // the name of a guide page
-  /*
-   * 2026-09-05, the MCP destination. Both of these are **the destination's name**, not a
-   * sentence teaching anything: an 11px rail tile label and the shortcut sheet's row for
-   * reaching it. A gloss in a rail tile is a second line under a fixed-height 36px tile, and a
-   * shortcut row that explained the destination would be the only one on that sheet doing so.
-   * The screen the name leads to opens with the gloss (`mcp.lede`), which is where a person
-   * reading three capital letters actually needs it.
-   */
-  'navRail/MCP', // the rail tile's own name
-  'searchWidgets/MCP', // the shortcut sheet's row for reaching that destination
-    'metadata/MCP', // search-engine descriptions, never drawn on a screen
-  'projectPages/CLI', // a two-character column label beside the command itself
-  'settings/MCP', // one of three example tags in a placeholder
-];
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return /\.tsx$/.test(entry.name) && !/\.test\.tsx$/.test(entry.name) ? [full] : [];
+  });
+}
 
-describe('머리글자 — 같은 화면 안에서 무슨 말인지 밝힌다', () => {
-  it('풀어 쓰지 않은 머리글자가 늘지 않는다', () => {
-    const offenders = unglossedAcronyms(CATALOG);
-    const unlisted = offenders.filter((entry) => !UNGLOSSED_BASELINE.includes(entry));
-
-    expect(
-      unlisted,
-      'MCP, ACP or CLI is used, but nowhere in the same namespace says what it is.\n' +
-        'Spell it out once in one sentence on the same screen, as in "agent connection (MCP)".\n' +
-        unlisted.join('\n'),
-    ).toEqual([]);
-
-    expect(
-      offenders.length,
-      `풀이 없는 머리글자가 ${UNGLOSSED_BASELINE.length} → ${offenders.length} 로 늘었다.`,
-    ).toBeLessThanOrEqual(UNGLOSSED_BASELINE.length);
+describe('기술 용어 — 그대로 쓰고, 설명은 TermHint 가 연다', () => {
+  it('카탈로그가 쓰는 머리글자는 모두 용어집에 풀이가 있다', () => {
+    for (const glossary of [ko.termHints, en.termHints]) {
+      expect(
+        unexplainedTerms(CATALOG, glossary as unknown as Json),
+        'Add the term to src/shared/config/term-glossary.ts and messages/{en,ko}/termHints.json.',
+      ).toEqual([]);
+    }
   });
 
-  it('probe: 풀이가 없으면 잡고, 있으면 놓아준다', () => {
-    expect(unglossedAcronyms({ card: { hint: 'MCP 로 연결하세요' } })).toEqual(['card/MCP']);
-    // Gloss after the acronym.
-    expect(
-      unglossedAcronyms({ card: { hint: 'MCP(에이전트가 이 폴더를 읽는 연결) 로 연결하세요' } }),
-    ).toEqual([]);
-    // Gloss before it.
-    expect(unglossedAcronyms({ card: { hint: '에이전트 연결(MCP) 을 켜세요' } })).toEqual([]);
-    // A gloss on another screen does not reach this one.
-    expect(
-      unglossedAcronyms({
-        here: { hint: 'MCP 로 연결하세요' },
-        elsewhere: { hint: '에이전트 연결(MCP)' },
-      }),
-    ).toEqual(['here/MCP']);
-    // A word that merely contains the letters is not the acronym.
-    expect(unglossedAcronyms({ card: { hint: 'MCPServerish 는 아니다' } })).toEqual([]);
+  it('카탈로그가 쓰는 용어마다 TermHint 를 그리는 화면이 하나 이상 있다', () => {
+    const texts = flatten(CATALOG).map(({ text }) => text);
+    const source = sourceFiles(join(process.cwd(), 'src')).map((file) => readFileSync(file, 'utf8')).join('\n');
+    const missing = GLOSSARY_TERMS.filter(
+      (term) => texts.some((text) => TERM_PATTERNS[term].test(text)) && !source.includes(`term="${term}"`),
+    );
+    expect(missing, 'Put a TermHint at the first prominent occurrence of each term.').toEqual([]);
+  });
+
+  it('probe: 용어집에 없는 머리글자를 잡고, 있으면 놓아준다', () => {
+    const glossary = { mcp: { expansion: 'MCP (Model Context Protocol)', explanation: '설명' } };
+    expect(unexplainedTerms({ card: { hint: 'ACP 로 연결하세요' } }, glossary)).toEqual(['ACP']);
+    expect(unexplainedTerms({ card: { hint: 'MCP 연결' } }, glossary)).toEqual([]);
+    expect(unexplainedTerms({ card: { hint: 'MCP 연결' } }, { mcp: { expansion: 'MCP', explanation: '' } })).toEqual([
+      'MCP',
+    ]);
+    expect(unexplainedTerms({ card: { hint: 'MCPServerish 는 아니다' } }, {})).toEqual([]);
   });
 });

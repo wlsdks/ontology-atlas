@@ -1,3 +1,4 @@
+import './ontology-engine/traversal-queries.test.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,6 +12,7 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology, shareArtifact } from './ontology-engine.mjs';
 import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
 import { createContextOperations } from './ontology-engine/context-operations.mjs';
+import { similarityScore } from './ontology-engine/engine-helpers.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';
@@ -1042,6 +1044,17 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.matches[0].score, 0.783333);
     assert.equal(result.matches[0].signals.title, 0.35);
     assert.equal(result.matches[0].signals.domain, 0.1);
+  });
+
+  it('compares a hub with a leaf without scanning every hub neighbor', () => {
+    let membershipChecks = 0;
+    const leafNeighbors = new Set(['shared']);
+    const has = leafNeighbors.has.bind(leafNeighbors);
+    leafNeighbors.has = (value) => { membershipChecks += 1; return has(value); };
+    const hubNeighbors = new Set(['shared', ...Array.from({ length: 10000 }, (_, i) => `node-${i}`)]);
+    const score = similarityScore({}, {}, hubNeighbors, leafNeighbors);
+    assert.equal(score.neighbors, 0.1 / 10001);
+    assert.ok(membershipChecks <= 1);
   });
 
   it('returns an ordered maintenance plan after graph changes', () => {

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useClaimShellKey, type ShellKey } from "@/shared/lib/shell-key-claims";
+import { OPEN_SETTINGS_EVENT, requestShortcutSheet } from "@/shared/lib/surface-requests";
 
 const mocks = vi.hoisted(() => ({ blocking: false, realGuard: false }));
 
@@ -147,6 +148,57 @@ describe("ShellKeyboardSurfaces", () => {
     press({ key: "k", code: "KeyK", metaKey: true });
     expect(screen.queryByTestId("shell-sheet")).toBeNull();
     expect(screen.queryByTestId("shell-search")).toBeNull();
+  });
+
+  it("asks for the settings sheet on ⌘, and Ctrl+,", () => {
+    const onRequest = vi.fn((event: Event) => {
+      (event as CustomEvent<{ claimed: boolean }>).detail.claimed = true;
+    });
+    window.addEventListener(OPEN_SETTINGS_EVENT, onRequest);
+    render(<ShellKeyboardSurfaces disabled={false} />);
+    press({ key: ",", code: "Comma", metaKey: true });
+    press({ key: ",", code: "Comma", ctrlKey: true });
+    expect(onRequest).toHaveBeenCalledTimes(2);
+    window.removeEventListener(OPEN_SETTINGS_EVENT, onRequest);
+  });
+
+  it("does not ask for settings over another dialog or without the rail", () => {
+    const onRequest = vi.fn();
+    window.addEventListener(OPEN_SETTINGS_EVENT, onRequest);
+    const { unmount } = render(<ShellKeyboardSurfaces disabled={false} />);
+    mocks.blocking = true;
+    press({ key: ",", code: "Comma", metaKey: true });
+    unmount();
+    mocks.blocking = false;
+    render(<ShellKeyboardSurfaces disabled />);
+    press({ key: ",", code: "Comma", metaKey: true });
+    expect(onRequest).not.toHaveBeenCalled();
+    window.removeEventListener(OPEN_SETTINGS_EVENT, onRequest);
+  });
+
+  it("opens the shortcut sheet on request while it is live", async () => {
+    render(<ShellKeyboardSurfaces disabled={false} />);
+    let claimed = false;
+    act(() => {
+      claimed = requestShortcutSheet();
+    });
+    expect(claimed).toBe(true);
+    expect(await screen.findByTestId("shell-sheet")).toBeInTheDocument();
+  });
+
+  it("leaves a shortcut request unclaimed where a screen owns the sheet", () => {
+    render(
+      <>
+        <ClaimingScreen keys={["shortcuts"]} />
+        <ShellKeyboardSurfaces disabled={false} />
+      </>,
+    );
+    let claimed = true;
+    act(() => {
+      claimed = requestShortcutSheet();
+    });
+    expect(claimed).toBe(false);
+    expect(screen.queryByTestId("shell-sheet")).toBeNull();
   });
 
   it("leaves ? alone while a field has the keyboard", () => {

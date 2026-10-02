@@ -644,3 +644,55 @@ describe('vendor adapters fold into one shape', () => {
     expect(findAgentTool('delete_concept')).toBeUndefined();
   });
 });
+
+describe('malformed provider response boundaries', () => {
+  for (const provider of ['openai', 'local', 'anthropic', 'gemini'] as const) {
+    it.each(['null', '[]', '42', '"text"', '{'])(`${provider} returns a diagnostic for invalid root %s`, (body) => {
+      const result = PROVIDER_ADAPTERS[provider].parseResponse(body);
+      expect(result).toMatchObject({ stop: 'error', text: '', toolCalls: [], raw: null });
+      expect(result.errorMessage).toContain('invalid-provider-response');
+    });
+  }
+
+  it.each([
+    ['openai', { choices: [{ message: null }] }],
+    ['openai', { choices: [{ message: { tool_calls: [null] } }] }],
+    ['openai', { choices: [{ message: { tool_calls: [{ function: { name: 4 } }] } }] }],
+    ['local', { choices: [{ message: { tool_calls: [null] } }] }],
+    ['anthropic', { content: [null], stop_reason: 'end_turn' }],
+    ['anthropic', { content: [{ type: 'text', text: 4 }], stop_reason: 'end_turn' }],
+    ['anthropic', { content: [{ type: 'tool_use', name: 4 }] }],
+    ['anthropic', { content: {} }],
+    ['gemini', { candidates: [{ content: { parts: [null] } }] }],
+    ['gemini', { candidates: [{ content: { parts: [{ text: 4 }] } }] }],
+    ['gemini', { candidates: [{ content: { parts: [{ functionCall: {} }] } }] }],
+  ] as const)('%s rejects malformed nested response %j', (provider, body) => {
+    const result = PROVIDER_ADAPTERS[provider].parseResponse(JSON.stringify(body));
+    expect(result).toMatchObject({ stop: 'error', text: '', toolCalls: [], raw: null });
+    expect(result.errorMessage).toContain('invalid-provider-response');
+  });
+
+  it('does not retain an executable prefix or echo malformed provider contents', () => {
+    const result = PROVIDER_ADAPTERS.anthropic.parseResponse(JSON.stringify({
+      content: [{ type: 'tool_use', name: 'patch_concept', input: { body: 'private fixture body' } }, null],
+      stop_reason: 'tool_use',
+    }));
+    expect(result.toolCalls).toEqual([]);
+    expect(result.stop).toBe('error');
+    expect(JSON.stringify(result)).not.toContain('private fixture body');
+  });
+});
+
+describe('valid provider response extensions', () => {
+  it.each(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST'])('keeps Gemini %s without content as a refusal', (finishReason) => {
+    expect(PROVIDER_ADAPTERS.gemini.parseResponse(JSON.stringify({ candidates: [{ finishReason }] })))
+      .toMatchObject({ stop: 'refusal', toolCalls: [], errorMessage: finishReason });
+  });
+
+  it('preserves opaque Anthropic thinking blocks alongside a valid answer', () => {
+    const content = [{ type: 'thinking', thinking: 'opaque', signature: 'fixture-signature' }, { type: 'text', text: 'Answer' }];
+    const result = PROVIDER_ADAPTERS.anthropic.parseResponse(JSON.stringify({ content, stop_reason: 'end_turn' }));
+    expect(result.stop).toBe('end');
+    expect(result.raw).toEqual(content);
+  });
+});

@@ -1211,6 +1211,31 @@ test.describe("하네스 탭", () => {
     await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
   });
 
+  test("with no profile, the architecture preview draws the connected source's own folders", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await installProfilelessHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=architecture");
+    const preview = page.getByTestId("architecture-draft-preview");
+    await expect(preview).toHaveAttribute("data-preview-source", "connected");
+    await expect(page.getByTestId("architecture-draft-preview-label")).toContainText("storefront");
+    for (const folder of ["api", "docs", "scripts", "src"]) {
+      await expect(preview.getByText(folder, { exact: true })).toBeVisible();
+    }
+  });
+
+  test("under reduced motion the architecture preview is one still, finished picture", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await installProfilelessHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=architecture");
+    const preview = page.getByTestId("architecture-draft-preview");
+    await expect(preview).toHaveAttribute("data-preview-state", "still");
+    expect(await preview.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0);
+    await expect(preview.getByTestId("architecture-draft-preview-violation")).toBeVisible();
+  });
+
   test("키보드로 보기를 옮겨도 초점이 탭에 남는다", async ({ page }) => {
     /*
      * One `TabBar` instance, not one per branch: the two-instance build unmounted the focused tab

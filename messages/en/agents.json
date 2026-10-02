@@ -1,6 +1,6 @@
 {
   "workspace": {
-    "aria": "Agents, models and agent connection (MCP) views",
+    "aria": "Agents, models and MCP views",
     "agents": "Agents",
     "models": "Models",
     "mcp": "MCP",

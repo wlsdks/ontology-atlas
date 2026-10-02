@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { readGlobalCss } from "../../scripts/lib/global-css.mjs";
@@ -78,21 +78,20 @@ import { readGlobalCss } from "../../scripts/lib/global-css.mjs";
 
 const UI = "src/widgets/app-settings-menu/ui";
 
-/** Files composing the root sheet — the LNB plus six panes. */
 const ROOT_SHEET_FILES = [
   "AppSettingsMenu.tsx",
+  "SettingsNav.tsx",
+  "SettingsSearch.tsx",
   "settings-primitives.tsx",
   "AppearancePickers.tsx",
   "ExpandSettings.tsx",
   "FootprintSettings.tsx",
   "AgentActivitySettings.tsx",
-] as const;
+  ...readdirSync(`${UI}/panes`)
+    .filter((name) => name.endsWith(".tsx") && !name.endsWith(".test.tsx"))
+    .map((name) => `panes/${name}`),
+];
 
-/**
- * Drill-in destinations and their descendants, brought into reach on 2026-08-09
- * (see the preamble). These paths leave `UI`, so they are written from the
- * repository root.
- */
 const DRILL_IN_FILES = [
   `${UI}/VaultAgentSetupPanel.tsx`,
   `${UI}/ModelConnectionsPanel.tsx`,
@@ -211,7 +210,7 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
       // A pane whose every line comes from the shared primitives (Footprint since its intro
       // moved to the pane head, 2026-09-25) still sits on the ramp through them.
       expect(source, `${file} 이 타입 램프를 안 쓴다 — 목록이 낡았다`).toMatch(
-        /text-(body|label|title|body-lg)|from '\.\/settings-primitives'/,
+        /text-(body|label|title|body-lg)|from '\.\.?\/settings-primitives'/,
       );
     }
   });
@@ -339,6 +338,7 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
    * checked **value by value**.
    */
   it("LNB 항목이 오른쪽 칸 행과 같은 인셋을 쓰고 한 단 위 글자를 쓴다", () => {
+    const nav = sourceWithoutComments("SettingsNav.tsx");
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
     /*
      * ⚠️ **Do not search the whole file for the value** — written that way at first,
@@ -346,7 +346,7 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
      * reverting the LNB to chrome dimensions still passed. **The scope is narrowed to
      * the LNB item's opening tag.**
      */
-    const from = menu.indexOf('data-testid={`app-settings-nav-${item}`}');
+    const from = nav.indexOf('data-testid={`app-settings-nav-${item}`}');
     /*
      * Cutting the opening tag at `>` **breaks at a `=>` or a `>` inside a template** —
      * written that way at first, a correct state went red. Brace depth is counted and
@@ -355,13 +355,13 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
      */
     let depth = 0;
     let to = from;
-    for (; to < menu.length; to += 1) {
-      const ch = menu[to];
+    for (; to < nav.length; to += 1) {
+      const ch = nav[to];
       if (ch === '{') depth += 1;
       else if (ch === '}') depth -= 1;
       else if (ch === '>' && depth === 0) break;
     }
-    const lnb = menu.slice(from, to);
+    const lnb = nav.slice(from, to);
     expect(lnb.length, "LNB 항목의 여는 태그를 못 찾았다 — 이 검사가 헛돈다").toBeGreaterThan(40);
 
     // Inset — must equal the `px-3 py-2` used by the right pane's row (`SettingsRow`).
@@ -384,9 +384,9 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   });
 
   it("LNB 아이콘이 글자보다 크다 — 훑기 채널로 선다", () => {
-    const menu = sourceWithoutComments("AppSettingsMenu.tsx");
+    const nav = sourceWithoutComments("SettingsNav.tsx");
     // At the text's own size the icon matches it and the scanning channel disappears.
-    expect(menu).toMatch(/<Icon size=\{16\}/);
+    expect(nav).toMatch(/<Icon size=\{16\}/);
   });
 
   /** `SettingsRow` is the single source for the inset — change it and the contract above loses its basis. */

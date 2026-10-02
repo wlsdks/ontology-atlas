@@ -3,9 +3,10 @@
 import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
-import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
+import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 
 /** Flat-top hexagon, 16 × 14. */
 const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
@@ -25,6 +26,8 @@ export function TopologyHexBoardSurface({
   onDrawnCountChange,
   reducedMotion,
   arrivedByMorph,
+  synthEvidence = null,
+  navigationSpeed,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -36,9 +39,12 @@ export function TopologyHexBoardSurface({
   onDrawnCountChange?: (drawn: number) => void;
   reducedMotion: boolean;
   arrivedByMorph: boolean;
+  synthEvidence?: MapEvidence | null;
+  navigationSpeed: MapNavigationSpeed;
 }) {
   const t = useTranslations("topology.hexBoard");
-  const evidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
+  const measuredEvidence = useMapEvidenceStates({ nodes: insightNodes, enabled: true });
+  const evidence = synthEvidence ?? measuredEvidence;
   const measured = evidence.availability === "measured";
   const placement = useMemo(() => (typeof window === "undefined" ? null : readHexPlacement(vaultKey)), [vaultKey]);
   const onPlacement = useCallback((record: HexPlacementRecord) => writeHexPlacement(vaultKey, record), [vaultKey]);
@@ -172,6 +178,7 @@ export function TopologyHexBoardSurface({
       legend={legend}
       reducedMotion={reducedMotion}
       arrivedByMorph={arrivedByMorph}
+      navigationSpeed={navigationSpeed}
     />
   );
 }

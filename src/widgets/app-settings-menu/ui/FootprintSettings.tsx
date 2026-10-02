@@ -25,18 +25,8 @@ import {
 import { drawFootprintSteps } from '@/shared/lib/footprint-glyph';
 import { drawStarEmission } from '@/shared/lib/star-emission';
 
-/**
- * Footprint settings: presets take the one decision (how loud) first, and the sliders sit
- * behind Adjust Manually. The preview calls `@/shared/lib/footprint-glyph` like the map,
- * so it cannot diverge.
- */
-
 const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold'];
 
-/**
- * Fixed preview height, so the window does not change size between sections; the width
- * fills the pane.
- */
 const PREVIEW_H = 176;
 
 function FootprintPreview({ pref }: { pref: FootprintPreference }) {
@@ -45,7 +35,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // The width is decided by layout, so the real width is measured at render time to size the backing store.
     const PREVIEW_W = Math.max(240, Math.round(canvas.getBoundingClientRect().width));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = PREVIEW_W * dpr;
@@ -59,7 +48,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       const raw = root.getPropertyValue(name).trim();
       return raw === '' ? fallback : raw;
     };
-    // The same `FOOTPRINT_TONE_TOKEN` table the canvas reads, or the preview's tone drifts.
     const fallback = FOOTPRINT_TONE_FALLBACK[pref.tone];
     const hex = read(FOOTPRINT_TONE_TOKEN[pref.tone], '');
     const parsed = /^#?([0-9a-f]{6})$/i.exec(hex);
@@ -74,8 +62,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.fillStyle = read('--map-canvas-bg-near', '#0a0a0d');
     ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
 
-    // Two walked stops painted like the map: the same emission (`shared/lib/star-emission.ts`),
-    // walked line, ordinals and chevron.
     const r = 15;
     const inset = 76;
     const a = { x: inset, y: PREVIEW_H / 2 };
@@ -87,7 +73,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       return path;
     };
 
-    // The node bodies first, so the light lands on them rather than under them.
     const nodeFill = read('--map-node-fill-domain', 'transparent');
     const nodeStroke = read('--map-node-stroke-domain', 'transparent');
     for (const p of [a, b]) {
@@ -99,17 +84,12 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       ctx.stroke();
     }
 
-    // The walked relation: a halo under the ink, in the same star ink, and the direction
-    // chevron past its midpoint — the one mark that says which way the walk went in a still
-    // frame and for a reader who has asked for reduced motion.
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     ctx.globalAlpha = pref.opacity * 0.3;
     ctx.strokeStyle = inkHex;
     ctx.lineWidth = 1 + 3.2 * 2;
-    // From silhouette to silhouette, the way the map draws a relation — a line run to the node
-    // centres would show through the bloom's hole and read as a notch in the node.
     ctx.beginPath();
     ctx.moveTo(a.x + r, a.y);
     ctx.lineTo(b.x - r, b.y);
@@ -130,7 +110,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.stroke();
     ctx.restore();
 
-    // The two stops.
     for (const p of [a, b]) {
       drawStarEmission(ctx, {
         x: p.x,
@@ -142,7 +121,6 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       });
     }
 
-    // The ordinals — the channel that actually carries the walk's order.
     const paint = { ctx, pref, ink: ink as unknown as readonly [number, number, number] };
     drawFootprintSteps(paint, a.x, a.y, r, pref.opacity, [1], inkHex);
     drawFootprintSteps(paint, b.x, b.y, r, pref.opacity, [2], inkHex);
@@ -170,14 +148,9 @@ export function FootprintSettings() {
     <div className="grid min-w-0 gap-3" data-testid="app-settings-footprint">
       <FootprintPreview pref={pref} />
 
-      {/* "Is this the current preset" compares only the values the preset sets — a
-          preset is still that preset even if colour or layout, which it does not
-          touch, differ. Matching no preset leaves the value matching no option → zero
-          checked (APG: the first item is the tab stop), and the primitive supports
-          that state directly. */}
+      <div className="justify-self-start" data-setting-id="footprint-strength">
       <SegmentedControl
         ariaLabel={t('presetLabel')}
-        className="justify-self-start"
         value={
           PRESET_ORDER.find((name) => {
             const preset: Partial<FootprintPreference> = FOOTPRINT_PRESETS[name];
@@ -195,8 +168,9 @@ export function FootprintSettings() {
           testId: `app-settings-footprint-preset-${name}`,
         }))}
       />
+      </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0" data-setting-id="footprint-detail">
       <Chip
         size="lg"
         tone="secondary"

@@ -97,7 +97,7 @@ import {
   ellipsizeToWidth,
   greedyPlaceLabels,
   filterFadingLabelCollisions,
-  overlapsForeignReserved,
+  ReservedBoxIndex,
   NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
   isSafeRectProtectedLabel,
@@ -454,6 +454,10 @@ export function setMapComets(on: boolean): void {
 }
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return drawnRelationCaptions; }
+let drawnSkyTimeMs = 0;
+export function lastDrawnSkyTimeMs(): number {
+  return drawnSkyTimeMs;
+}
 
 export function lastDrawnLabelBoxes(): readonly {
   nodeId: string;
@@ -782,6 +786,9 @@ export interface FrameDrawParams {
   galaxyIdentityActive?: boolean;
   /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
   galaxyElapsedMs?: number;
+  galaxyAtmosphereLagMs?: number;
+  galaxyAtmosphereLive?: number;
+  galaxyMeteorQuietUntilMs?: number;
   /** One entry-scoped seed; meteor paths remain stable throughout each apparition. */
   galaxyAtmosphereSeed?: number;
   /** Shared world radius of the real-node spiral; aligns the cached sky texture. */
@@ -1111,6 +1118,7 @@ export interface FrameDrawParams {
   backgroundVariant?: CanvasBackgroundVariant;
   /** Callback that paints the animated background buffer — consumed only by the non-dot variants. See `render/grid.ts`. */
   paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
+  nodeLayer?: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
   /** Patterns for the three depth-dot layers (consumed only when `variant === "depth"`). Their origins are computed here. */
   depthDotPatterns?: readonly (CanvasPattern | null)[];
   /**
@@ -1199,13 +1207,16 @@ export interface FrameDrawParams {
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
 export function drawTopologyFrame(params: FrameDrawParams): void {
   const {
-    ctx,
+    ctx: baseCtx,
     world,
     camera,
     farT,
     galaxyRamp: galaxyRampProp = 0,
     galaxyIdentityActive = galaxyRampProp > 0.001,
     galaxyElapsedMs = 0,
+    galaxyAtmosphereLagMs = 0,
+    galaxyAtmosphereLive = 1,
+    galaxyMeteorQuietUntilMs = Number.NEGATIVE_INFINITY,
     galaxyAtmosphereSeed = 0,
     galaxyLayoutRadius = 0,
     neuralRamp: neuralRampProp = 0,
@@ -1289,6 +1300,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeLight = null,
     trailLensRamp,
   } = params;
+  let ctx = baseCtx;
 
   // Spotlight sink multiplier — live only while the lens is on, the ramp is
   // advancing, and no node/edge focus is active (selection outranks lens). Applied
@@ -1408,6 +1420,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const galaxyIdentityOn = !domeOn && galaxyIdentityActive;
   const galaxyOn = galaxyIdentityOn || galaxyAtmosphereOn;
   const galaxyPhase = galaxyAppearance(galaxy);
+  const skyTimeMs = now - galaxyAtmosphereLagMs;
+  drawnSkyTimeMs = skyTimeMs;
   /**
    * One node's 3D transform (world offset + perspective factor). Nodes, labels,
    * edge endpoints, and chip anchors all pass through this map, so every mark on a
@@ -1525,11 +1539,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (galaxyAtmosphereOn && !reducedMotion) {
     drawGalaxyMeteor(
       ctx,
-      galaxyMeteorPhase(galaxyElapsedMs, galaxyAtmosphereSeed),
+      galaxyMeteorPhase(galaxyElapsedMs, galaxyAtmosphereSeed, galaxyMeteorQuietUntilMs),
       viewportWidth,
       viewportHeight,
       tokens.galaxyCapability,
-      galaxyPhase.corona * 0.82,
+      galaxyPhase.corona * 0.82 * galaxyAtmosphereLive,
     );
   }
 
@@ -2185,6 +2199,24 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
+      if (
+        galaxyIdentityOn &&
+        !isGalaxyEdgeVisible(edge, {
+          focusedNodeId,
+          hoveredNodeId,
+          selected:
+            selectedEdge !== null && edge.sourceId === selectedEdge.sourceId && edge.targetId === selectedEdge.targetId,
+          path:
+            isPathLensEdge(mapLensKind, edge.id, pathEdgeIds) ||
+            (constellationLensActive &&
+              spotlightIds !== null &&
+              spotlightIds.has(edge.sourceId) &&
+              spotlightIds.has(edge.targetId)),
+          walked: trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.size > 0,
+        })
+      ) {
+        continue;
+      }
       const sourceNode = galaxyOn ? world.nodeById.get(edge.sourceId) : undefined;
       const targetNode = galaxyOn ? world.nodeById.get(edge.targetId) : undefined;
       const galaxyFilamentInk =
@@ -2538,6 +2570,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
           containsCometEligible: kind === "contains" ? mapCometsOn && egoCometEdges.has(edge) : undefined,
           dependsCometEligible: kind === "depends" ? mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
+          cometOwner: edge,
         },
         traceTokensFrame,
       );
@@ -2625,6 +2658,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
     ctx.globalAlpha = 1;
   }
+  ctx = params.nodeLayer?.(ctx) ?? ctx;
 
   // rank7 — a just-expanded disc child's reveal multiplier = its NEAREST
   // expanded-ancestor parent's ramp (walk contains-parent chain up). Already-
@@ -2979,10 +3013,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
     );
     const nodeLayerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
-    // A selected Galaxy frame is a star immediately. On return, the loop keeps
-    // that identity until coordinates arrive, then this ramp reveals the Flat
-    // body while it is stationary.
-    ctx.globalAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+    const bodyAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+    ctx.globalAlpha = bodyAlpha;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
@@ -3109,10 +3141,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, canvasDpr,
         node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
     }
-    // perf 2026-08-19 — one token argument per frame (`nodeShapeTokensFrame`). The
-    // state literals stay spelled out because the review-ring-authorship contract
-    // gate pins that wiring.
-    nodeShapesDraw(
+    if (bodyAlpha > 0 || showCount) nodeShapesDraw(
       ctx,
       {
         // 3D depth shading, cross-faded on the assembly ramp (0 in 2D, adding no
@@ -3257,7 +3286,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ? Math.min(1, Math.max(0, emphasis))
           : 0;
       const luminance = nodeLayerAlpha * starLuminance(node.starMagnitude);
-      const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
+      const atmosphere = galaxyTwinkle(node.id, skyTimeMs, reducedMotion);
       const atmosphericLuminance = luminance * atmosphere.intensity;
       drawGalaxyNodeStar(ctx, {
         x: screen.x,
@@ -4078,17 +4107,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       })()
     : labelCandidates;
 
-  /*
-   * **Blocked below, flip above** — for the candidates that survived the budget.
-   * Suppressing outright would recreate the very "unlabelled shape" this
-   * mechanism removes, so a label is dropped only after a second slot has been
-   * tried. The upper slot mirrors the same offset across the node: no new
-   * spacing, no new token. It runs here rather than inside the candidate loop for
-   * the cost reason given at `labelFlipSlots`.
-   */
+  const discIndex = new ReservedBoxIndex(nodeDiscReservations);
   for (const candidate of placedLabelCandidates) {
     const nodeId = candidate.payload.nodeId;
-    if (!overlapsForeignReserved(candidate.bbox, nodeId, candidate.priority, nodeDiscReservations)) {
+    if (!discIndex.overlapsForeign(candidate.bbox, nodeId, candidate.priority)) {
       continue;
     }
     const slot = labelFlipSlots.get(nodeId);
@@ -4099,23 +4121,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       minY: slot.baselineY - slot.ascent,
       maxY: slot.baselineY + slot.descent,
     };
-    if (overlapsForeignReserved(flipped, nodeId, candidate.priority, nodeDiscReservations)) continue;
+    if (discIndex.overlapsForeign(flipped, nodeId, candidate.priority)) continue;
     candidate.bbox = flipped;
     candidate.payload.baselineY = slot.baselineY;
     labelBboxById.set(nodeId, flipped);
   }
 
-  // Greedy placement prefers what was placed on the previous frame (hysteresis),
-  // which damps LOD churn within one priority band. The resulting placed-id set
-  // becomes the next frame's preference.
   const placedResult = greedyPlaceLabels(
     placedLabelCandidates,
     (c) => prevPlacedLabelIds.has(c.payload.nodeId),
-    // A **passive** label (domain/capability/element) overlapping a chip's occupied
-    // area is dropped. Selected and hovered labels outrank chips and stay: a chip
-    // never silences the name the user is looking at. Chip occupancy and ego node
-    // discs are reserved together, and labels avoid both.
-    [...chipReservations, ...nodeDiscReservations],
+    chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations],
   );
   // A name the placer moved to its upper slot has to be drawn there too.
   for (const candidate of placedResult) {

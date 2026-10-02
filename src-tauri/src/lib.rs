@@ -20,6 +20,7 @@ mod acp_doctor;
 mod agent_setup;
 mod analysis_archive;
 mod connector_secrets;
+mod command_output;
 mod connectors;
 mod deep_link;
 mod errors;
@@ -2926,6 +2927,36 @@ fn vault_path_exists(
     })
 }
 
+fn reveal_in_finder_command(dir: &Path) -> Command {
+    let mut command = Command::new("open");
+    command.arg("-a").arg("Finder").arg(dir);
+    command
+}
+
+#[tauri::command]
+fn reveal_app_log_dir(app: AppHandle) -> Result<(), String> {
+    let dir = app.path().app_log_dir().map_err(|err| err.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    {
+        fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
+        let status = reveal_in_finder_command(&dir)
+            .status()
+            .map_err(|err| err.to_string())?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("open exited with status {status}"))
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = dir;
+        Err("Finder reveal is only available on macOS".into())
+    }
+}
+
 #[tauri::command]
 fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     // Only reveal a folder the user granted; an XSS must not open Finder anywhere.
@@ -2939,10 +2970,7 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         // `-a Finder` also stops a bundle launching; both guards stay in case one comes loose.
-        let status = Command::new("open")
-            .arg("-a")
-            .arg("Finder")
-            .arg(&root)
+        let status = reveal_in_finder_command(&root)
             .status()
             .map_err(|err| err.to_string())?;
         if status.success() {
@@ -3827,6 +3855,7 @@ pub fn run() {
             ensure_vault_directory,
             vault_path_exists,
             open_vault_in_finder,
+            reveal_app_log_dir,
             ensure_default_vault_parent_dir,
             library::hash_vault_files,
             gray_area::read_gray_area_evidence,
@@ -3856,6 +3885,7 @@ pub fn run() {
             git::git_snapshot,
             git::git_history,
             git::vault_node_revisions,
+            git::vault_node_revision_content,
             git::git_paths_last_change,
             git::git_diff,
             git::git_commit_diff,
@@ -5014,6 +5044,26 @@ mod tests {
             .any(|path| path.starts_with("generated/")));
 
         fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn reveal_app_log_dir_opens_only_the_given_folder_in_finder() {
+        let command = reveal_in_finder_command(Path::new("/tmp/atlas logs"));
+        assert_eq!(command.get_program(), "open");
+        let args: Vec<_> = command.get_args().collect();
+        assert_eq!(args, ["-a", "Finder", "/tmp/atlas logs"]);
+    }
+
+    #[test]
+    fn reveal_app_log_dir_is_registered_without_arguments() {
+        let source = include_str!("lib.rs");
+        let handler = source
+            .split(".invoke_handler(tauri::generate_handler![")
+            .nth(1)
+            .and_then(|rest| rest.split("])").next())
+            .expect("Tauri invoke handler");
+        assert!(handler.contains("reveal_app_log_dir,"));
+        assert!(source.contains("fn reveal_app_log_dir(app: AppHandle) -> Result<(), String>"));
     }
 
     #[test]

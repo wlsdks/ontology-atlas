@@ -1,5 +1,6 @@
 import {
   normalizeVaultSource,
+  readFrontmatterEntry,
   readVaultSourceShape,
   restoreVaultSourceShape,
 } from '@/shared/lib/parse-frontmatter';
@@ -36,32 +37,36 @@ export function applyFrontmatterUpdates(
   // A replaced or deleted key's block-style item lines (`  - a`) are dropped with it.
   let swallowingBlock = false;
   for (const line of fmLines) {
+    if (!line.trim()) {
+      if (!swallowingBlock) nextLines.push(line);
+      continue;
+    }
     if (/^\s+\S/.test(line)) {
       // A retained key keeps its block, and `  child: 1` is never taken for a top-level key.
       if (!swallowingBlock) nextLines.push(line);
       continue;
     }
     swallowingBlock = false;
-    const idx = line.indexOf(':');
-    if (idx === -1) {
+    const entry = readFrontmatterEntry(line);
+    if (!entry) {
       nextLines.push(line);
       continue;
     }
-    const key = line.slice(0, idx).trim();
-    if (!(key in updates)) {
+    const { key } = entry;
+    if (!Object.prototype.hasOwnProperty.call(updates, key)) {
       nextLines.push(line);
       continue;
     }
     updatedKeys.add(key);
-    swallowingBlock = true;
+    swallowingBlock = entry.value === '' || /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.test(entry.value);
     const value = updates[key];
     if (value === null) continue; // delete
-    nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
+    nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   for (const [key, value] of Object.entries(updates)) {
     if (updatedKeys.has(key)) continue;
     if (value === null) continue;
-    nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
+    nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   // No keys left: omit the frontmatter block.
   if (nextLines.every((l) => l.trim() === '')) {
@@ -71,6 +76,10 @@ export function applyFrontmatterUpdates(
     `---\n${nextLines.join('\n')}\n---\n\n${body}`,
     shape,
   );
+}
+
+function serializeKey(key: string): string {
+  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(key) ? `"${escapeQuoted(key)}"` : key;
 }
 
 function serializeFrontmatterValue(
@@ -88,7 +97,7 @@ function serializeFrontmatterValue(
       if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
       else if (typeof val === 'number') serialized = String(val);
       else serialized = needsQuote(val) ? `"${escapeQuoted(val)}"` : val;
-      return `${k}: ${serialized}`;
+      return `${serializeKey(k)}: ${serialized}`;
     });
     return `{ ${entries.join(', ')} }`;
   }

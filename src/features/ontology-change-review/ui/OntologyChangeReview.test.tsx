@@ -228,7 +228,7 @@ describe('an emptied or deleted value reads as none', () => {
 
     const value = screen.getByTestId('ontology-change-review-field-value');
     expect(value).toHaveTextContent('capabilities/library');
-    expect(value).toHaveTextContent('noValue');
+    expect(value).toHaveTextContent('valueEmptyList');
     expect(value.textContent).not.toContain('[]');
   });
 
@@ -239,9 +239,9 @@ describe('an emptied or deleted value reads as none', () => {
     ]));
 
     const [deleted, added] = screen.getAllByTestId('ontology-change-review-field-value');
-    expect(deleted).toHaveTextContent('noValue');
+    expect(deleted).toHaveTextContent('valueRemoved');
     expect(deleted.textContent).not.toContain('null');
-    expect(added).toHaveTextContent('noValue');
+    expect(added).toHaveTextContent('valueEmptyList');
     expect(added.textContent).not.toContain('[]');
   });
 

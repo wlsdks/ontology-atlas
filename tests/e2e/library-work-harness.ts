@@ -119,6 +119,7 @@ export async function installLibraryWorkHarness(
     files?: Record<string, string>;
     permissionFile?: string;
     permissionText?: string;
+    permissionInput?: Record<string, unknown>;
     writeMode?: 'ask' | 'auto';
     filePermission?: boolean;
     runtimeId?: LibraryWorkRuntimeId;
@@ -153,7 +154,7 @@ export async function installLibraryWorkHarness(
   const modes = options.modes ?? [{ id: "default", name: "Default" }];
   const currentModeId = options.currentModeId ?? modes[0]?.id ?? "default";
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionInput, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -227,7 +228,7 @@ export async function installLibraryWorkHarness(
          * scrolled produced a card of exactly the same height every time and proved nothing.
          */
         const rawInput = permissionKind === 'ontology-patch'
-          ? {
+          ? permissionInput ?? {
               slug: 'capabilities/task-review',
               expected_mtime: 1_727_000_000_000,
               body: permissionText ?? '## Definition\n\nReview the selected proposal.\n\n## Includes\n\n- Only the exact current request and selected item are under review.\n\n## Excludes\n\n- Allow once does not accept meaning.\n',
@@ -441,7 +442,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
       fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {

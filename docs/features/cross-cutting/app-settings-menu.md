@@ -9,15 +9,59 @@ routes: []
 # AppSettingsMenu
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
-- The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
-- Only the open sheet owns Escape (2026-09-26). With the sheet closed, Escape pressed on the gear reaches the page, so on the map it runs the map's own Escape order as it does from every other map control.
-- Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
-- The old 5-tab settings modal is now one compact settings sheet
-  (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
-  agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
-  control; the long MCP connection proof stays behind the AI agent drill-in.
+- One 880×672 modal sheet (`src/widgets/app-settings-menu`); there is no `/settings` route.
+  The left list holds places only, grouped by **where each value lives** (2026-10-02):
+
+  | Group | Panes |
+  |---|---|
+  | This computer | Screen · language, Map, Expansion, The path you walked, Notifications, Agents, Privacy · data |
+  | This folder | Ontology folder |
+  | App | About |
+
+  Each pane head ends with where its values live ("Saved on this computer; every folder uses
+  it", or "Files in `.ontology-atlas/` move with the folder; Git leaves them out by default").
+  Search results carry the same scope word. Retired pane ids map forward (`background` → `map`,
+  `update` → `about`).
+- **Panes** (`ui/panes/`): Screen · language (language, view mode on every screen, text size
+  Default / Large / Larger, concept icons, Motion status, screen guides); Map (background,
+  drag and zoom speed, INDEX default only where the map injects it, frame meter On · Off);
+  Agents (When an agent writes a wiki page, app only; door rows to Coding tools, Models · API
+  keys with the Keychain key count, and MCP); Privacy · data (what can leave this computer,
+  allowances on this computer, recent folders, each forget behind a two-press `ArmedChip`);
+  Ontology folder (folder, path, shape, documents, import, and what the folder keeps: agent
+  connections (MCP), schedules, Git, project sources); About (running or website build,
+  automatic update check On · Off, what's new, keyboard shortcuts, source, licences, copy
+  diagnostics, show log folder).
+- **Search** sits at the head of the left list. Typing replaces the pane with results grouped
+  by pane; ↑ ↓ move, Enter opens, Escape clears the query before it closes the sheet. A setting
+  result opens its pane, scrolls to the row and focuses its control; a door result leaves in one
+  press (typing "API", or the Korean word for key, then Enter reaches Agents → Models). Ranking: label start, a word
+  start in the label, the label anywhere, keywords, then the pane name; Hangul-aware, catalog
+  order within a tier, at most 30 results. The web never offers an app-only row.
+- **⌘,** (Ctrl+, off macOS) asks a visible settings trigger to open the sheet
+  (`requestSettingsOpen`); on an open sheet it focuses search. The shortcut sheet lists it.
+- The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself, so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. Only the open sheet owns Escape (2026-09-26).
+- Drag speed and zoom speed are five-step segmented rows (0.5×–2×, default 1×), stored per machine (`atlas.appearance.map-drag-speed`, `atlas.appearance.map-zoom-speed`); what each speed changes is in [Canvas](../map/canvas.md).
+
+#### Adding a setting
+
+1. Decide the scope. A computer-scoped value is a `definePreference` in
+   `src/shared/lib/preferences/<name>.ts` (key `atlas.<area>.<name>`). A folder-scoped value is a
+   file under `.ontology-atlas/` through an entity store that calls `ensureSidecarIgnore`. A
+   secret goes in Keychain through a `tauri-*` bridge. Never IndexedDB, which holds the folder
+   handle only.
+2. Register the key in `tests/contract/scope-registry.contract.test.ts`.
+3. Render the row with `settingId` (it becomes `data-setting-id`) in its pane under `ui/panes/`,
+   and add a catalog entry in `model/catalog/<section>.ts`. Copy goes in the pane's message
+   namespace. `tests/contract/settings-catalog.contract.test.ts` fails when the two disagree.
+4. If the setting changes what can leave the computer, add or update the row in
+   `model/outbound-paths.ts`; the outbound contract fails otherwise.
+5. App-only rows set `surface: 'desktop'` and are not drawn on the web.
+6. Update this page. Add a decision record when the setting moves a boundary (transfer, agent
+   write) or a design spec.
+
 - **AI Connection** (`AiConnectionPanel`, 2026-07-26; moved to Agents → Models as
-  `ModelConnectionsPanel` on 2026-09-25, the sheet keeps a pointer row) — a second drill-in row for
+  `ModelConnectionsPanel` on 2026-09-25, the sheet keeps a door row in its Agents pane) — a second drill-in row for
   your own API key: store it in the operating-system credential store (desktop only), check the
   connection with a request that carries **0 vault characters**, and read the
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
@@ -61,7 +105,7 @@ routes: []
   - Unregistered vendors collapse to a one-line `name · [Add key]` row that
     expands in place, one at a time — three always-open password fields would
     turn a settings sheet into a form gate.
-- **Runtime** (`AcpRuntimeSettings`, 2026-08-16, desktop app only) — A section where the app finds and displays coding agents (Claude Code, Codex, etc.) already installed on this computer. The one thing this section does is **tell you what can be used right now**.
+- **Runtime** (`AcpRuntimeSettings`, 2026-08-16, desktop app only; it lives on the Agents destination) — A section where the app finds and displays coding agents (Claude Code, Codex, etc.) already installed on this computer. The one thing this section does is **tell you what can be used right now**.
   - The list splits into two branches: "Ready to use" is expanded, while "Requires installation" is collapsed. Reasons for not being usable are split into four categories: requires installation / needs Node / needs uv / manual installation. Since the user's task differs per category, they are not lumped together as just "installed/not installed." Press [Re-check] to scan again at any time.
   - **The list comes from an ACP registry snapshot committed at build time**
     (`src-tauri/src/acp-registry.json`, `scripts/build-acp-registry.mjs`,

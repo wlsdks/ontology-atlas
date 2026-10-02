@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
 import { Chip } from "@/shared/ui/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
-import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
-import { VIEW_CAMERA_MS, VIEW_DIM_MS } from "../model/motion-physics";
-import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
+import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera, type MapChrome } from "../morph/hex-marks";
 import {
   computeHexBoard,
   hexBandFor,
@@ -29,9 +32,10 @@ import {
   hexGutter,
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
-import { buildHexLattice, closedNodes, HexRouter } from "../model/hex-router";
+import { buildHexLattice, closedNodes, HexFocusRoutes, layCanals, type HexRouteJob } from "../model/hex-router";
+import { buildBoardScene } from "../board/board-scene";
+import { drawBoard } from "../board/board-paint";
 import {
-  drawHexBoard,
   hexArrivalDuration,
   hexFonts,
   type HexDrawRoute,
@@ -92,6 +96,7 @@ export interface OntologyHexBoardMapProps {
   legend?: (state: { staleOnly: boolean; focused: boolean; band: HexBand }) => ReactNode;
   reducedMotion?: boolean;
   arrivedByMorph?: boolean;
+  navigationSpeed?: MapNavigationSpeed;
 }
 
 const SWEEP_MS = 420;
@@ -101,6 +106,15 @@ const CHROME_SETTLE_MS = 450;
 const MIRROR_REST_MS = 120;
 /** Canals shown in the far band (spec §7). */
 const FAR_CANALS = 14;
+const ROUTE_BUDGET_MS = 4;
+
+type FocusJob = HexRouteJob<"need" | "use" | "need-inside">;
+interface FocusPlan {
+  lit: Set<string> | null;
+  jobs: FocusJob[];
+  region: string | null;
+}
+const NO_FOCUS: FocusPlan = { lit: null, jobs: [], region: null };
 
 const arrivedKeys = new Set<string>();
 
@@ -148,8 +162,7 @@ interface RouteFrame {
   blocks: { x0: number; y0: number; x1: number; y1: number }[];
 }
 
-function routeFrameOf(canvas: HTMLCanvasElement | null, cam: Camera): RouteFrame | null {
-  const chrome = mapChromeOf(canvas);
+function routeFrameOf(chrome: MapChrome | null, cam: Camera): RouteFrame | null {
   if (!chrome) return null;
   const ux = (px: number) => (px - cam.ox) / cam.R;
   const uy = (py: number) => (py - cam.oy) / cam.R;
@@ -188,6 +201,7 @@ export function OntologyHexBoardMap({
   legend,
   reducedMotion = false,
   arrivedByMorph = false,
+  navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED,
 }: OntologyHexBoardMapProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -205,6 +219,8 @@ export function OntologyHexBoardMap({
   const camRef = useRef<Camera | null>(null);
   const restRef = useRef<Camera | null>(null);
   const animRef = useRef<{ from: Camera; to: Camera; start: number } | null>(null);
+  const zoomRef = useRef<{ from: Camera; toR: number; ax: number; ay: number; startMs: number } | null>(null);
+  const pinchWheelRef = useRef(createPinchWheelStream());
   const dimRef = useRef({ t: selectedId ? 1 : 0, target: selectedId ? 1 : 0 });
   const sweepRef = useRef<number | null>(null);
   const arrivalRef = useRef<number | null>(null);
@@ -285,15 +301,19 @@ export function OntologyHexBoardMap({
   }, [layout, namesFrom, measure]);
 
   const lattice = useMemo(() => (layout ? buildHexLattice(layout) : null), [layout]);
+  const scene = useMemo(() => (layout ? buildBoardScene(layout, null) : null), [layout]);
   /**
    * Where routes may run for the camera the board is resting on (or moving to): the free map
    * less its chrome, in unit space. Set when the camera is decided, not on every frame, so a
    * route does not re-route while the camera travels.
    */
   const [routeFrame, setRouteFrame] = useState<RouteFrame | null>(null);
+  const chromeRef = useRef<MapChrome | null>(null);
   const frameRoutes = useCallback((cam: Camera | null) => {
     if (!cam) return;
-    const next = routeFrameOf(canvasRef.current, cam);
+    const chrome = mapChromeOf(canvasRef.current);
+    if (chrome) chromeRef.current = chrome;
+    const next = routeFrameOf(chrome, cam);
     if (next) setRouteFrame((prev) => (prev && prev.key === next.key ? prev : next));
   }, []);
   const frameRoutesRef = useRef(frameRoutes);
@@ -308,18 +328,9 @@ export function OntologyHexBoardMap({
 
   const canalRoutes = useMemo(() => {
     if (!layout || !lattice || band !== "regions") return [];
-    const router = new HexRouter(lattice, 1.8, blocked);
-    const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
-    const out: HexDrawRoute[] = [];
-    for (const canal of layout.canals) {
-      const a = regionById.get(canal.fromDomain);
-      const b = regionById.get(canal.toDomain);
-      if (!a || !b) continue;
-      const route = router.route([a.domainId, ...a.capabilityIds], [b.domainId, ...b.capabilityIds], `${a.domainId}>${b.domainId}`);
-      if (!route) continue;
-      out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay, stub: route.stub });
-    }
-    return out;
+    return layCanals(layout, lattice, blocked, FAR_CANALS).map(
+      (route): HexDrawRoute => ({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: route.count, twoWay: route.twoWay, stub: route.stub }),
+    );
   }, [layout, lattice, blocked, band]);
 
   /** Edge ticks: a capability's notch toward each region it relies on. */
@@ -342,8 +353,8 @@ export function OntologyHexBoardMap({
   }, [layout]);
 
   /** Who stays lit, and the focus routes, for the selection (or the hover when nothing is selected). */
-  const focus = useMemo(() => {
-    if (!layout || !lattice) return { lit: null as Set<string> | null, routes: [] as HexDrawRoute[], region: null as string | null };
+  const focus = useMemo((): FocusPlan => {
+    if (!layout) return NO_FOCUS;
     const id = selectedId && layout.byId.has(selectedId) ? selectedId : null;
     const subject = id ?? hoverId;
     if (staleOnly && !id) {
@@ -353,51 +364,46 @@ export function OntologyHexBoardMap({
           lit.add(c.id);
           if (c.domainId) lit.add(c.domainId);
         }
-      return { lit, routes: [], region: null };
+      return { lit, jobs: [], region: null };
     }
-    if (!subject) return { lit: null, routes: [], region: null };
+    if (!subject) return NO_FOCUS;
     const tile = layout.byId.get(subject);
-    if (!tile) return { lit: null, routes: [], region: null };
-    const router = new HexRouter(lattice, 1.15, blocked);
-    const routes: HexDrawRoute[] = [];
+    if (!tile) return NO_FOCUS;
+    const jobs: FocusJob[] = [];
     const lit = new Set<string>([subject]);
     if (tile.kind === "capability") {
       if (tile.domainId) lit.add(tile.domainId);
       const needs = layout.dependencies.filter((d) => d.from === subject).sort((a, b) => ((layout.byId.get(a.to)?.domainId ?? "") < (layout.byId.get(b.to)?.domainId ?? "") ? -1 : 1));
       for (const d of needs) {
         lit.add(d.to);
-        const r = router.route([subject], [d.to], `need:${layout.byId.get(d.to)?.domainId}`);
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "need", stub: r.stub });
+        jobs.push({ from: [subject], to: [d.to], bundle: `need:${layout.byId.get(d.to)?.domainId}`, role: "need" });
       }
       for (const d of layout.dependencies.filter((x) => x.to === subject)) {
         lit.add(d.from);
-        const r = router.route([d.from], [subject], "use");
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "use", stub: r.stub });
+        jobs.push({ from: [d.from], to: [subject], bundle: "use", role: "use" });
       }
     } else if (tile.kind === "domain") {
       const region = layout.regions.find((r) => r.domainId === subject);
-      const jobs: { from: string; to: string; inside: boolean }[] = [];
+      const found: { from: string; to: string; inside: boolean }[] = [];
       for (const capId of region?.capabilityIds ?? []) {
         lit.add(capId);
         for (const d of layout.dependencies.filter((x) => x.from === capId)) {
           const inside = layout.byId.get(d.to)?.domainId === subject;
-          jobs.push({ from: capId, to: d.to, inside });
+          found.push({ from: capId, to: d.to, inside });
           lit.add(d.to);
         }
       }
-      jobs.sort((a, b) => Number(a.inside) - Number(b.inside));
-      if (id) {
-        for (const j of jobs) {
-          const r = router.route([j.from], [j.to], j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`);
-          if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: j.inside ? "need-inside" : "need", stub: r.stub });
-        }
-      }
-      return { lit: id ? lit : null, routes, region: id ? subject : null };
+      found.sort((a, b) => Number(a.inside) - Number(b.inside));
+      if (id)
+        for (const j of found)
+          jobs.push({ from: [j.from], to: [j.to], bundle: j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`, role: j.inside ? "need-inside" : "need" });
+      return { lit: id ? lit : null, jobs, region: id ? subject : null };
     } else {
-      return { lit: null, routes: [], region: null };
+      return NO_FOCUS;
     }
-    return { lit: id ? lit : null, routes, region: null };
-  }, [layout, lattice, blocked, selectedId, hoverId, staleOnly, evidence]);
+    return { lit: id ? lit : null, jobs, region: null };
+  }, [layout, selectedId, hoverId, staleOnly, evidence]);
+  const focusRoutesRef = useRef(new HexFocusRoutes<FocusJob["role"]>());
 
   /* ── camera ─────────────────────────────────────────────────────────── */
   const restCamera = useCallback((): Camera | null => (layout && room ? hexRestCamera(layout, room) : null), [layout, room]);
@@ -466,7 +472,7 @@ export function OntologyHexBoardMap({
     (now: number): boolean => {
       const canvas = canvasRef.current;
       const T = readHexBoardTokensOrNull();
-      if (!canvas || !size || !T || !layout || !camRef.current) return false;
+      if (!canvas || !size || !T || !layout || !scene || !camRef.current) return false;
       let again = false;
       const anim = animRef.current;
       if (anim) {
@@ -481,6 +487,15 @@ export function OntologyHexBoardMap({
         };
         if (t < 1) again = true;
         else animRef.current = null;
+      }
+      const zoom = zoomRef.current;
+      if (zoom) {
+        const progress = zoomStepProgress(now - zoom.startMs);
+        const R = easeZoomScale(zoom.from.R, zoom.toR, progress);
+        const k = R / zoom.from.R;
+        camRef.current = clampCamera({ R, ox: zoom.ax - (zoom.ax - zoom.from.ox) * k, oy: zoom.ay - (zoom.ay - zoom.from.oy) * k });
+        if (progress < 1) again = true;
+        else zoomRef.current = null;
       }
       const dim = dimRef.current;
       if (dim.t !== dim.target) {
@@ -514,9 +529,14 @@ export function OntologyHexBoardMap({
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hovering = !selectedId && !!hoverId && !staleOnly;
-      let routes: HexDrawRoute[] = [...focus.routes];
+      let routes: HexDrawRoute[] = [];
+      if (lattice && focus.jobs.length > 0) {
+        const laid = focusRoutesRef.current.lay(lattice, focus, focus.jobs, blocked, 1.15, performance.now() + ROUTE_BUDGET_MS);
+        routes = [...laid.routes];
+        if (laid.pending) again = true;
+      } else focusRoutesRef.current.clear();
       if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
-      const { stats, textBoxes, plateBoxes } = drawHexBoard(
+      const { stats, textBoxes, plateBoxes } = drawBoard(
         ctx,
         layout,
         {
@@ -547,6 +567,8 @@ export function OntologyHexBoardMap({
           measure,
         },
         T,
+        scene,
+        { pitch: 0, pivotY: 0 },
       );
       textBoxesRef.current = textBoxes;
       canvas.dataset.frame = JSON.stringify({ ...stats, namesFrom, staleOnly });
@@ -562,7 +584,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror],
+    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
   );
 
   const paintRef = useRef(paint);
@@ -596,11 +618,13 @@ export function OntologyHexBoardMap({
     const wrap = wrapRef.current;
     if (!wrap) return;
     const read = () => {
+      const chrome = mapChromeOf(canvasRef.current);
+      chromeRef.current = chrome;
       const r = wrap.getBoundingClientRect();
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const next = readHexRoom(canvasRef.current, r.width, r.height);
+      const next = readHexRoom(canvasRef.current, r.width, r.height, chrome?.free ?? null);
       setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
@@ -648,6 +672,7 @@ export function OntologyHexBoardMap({
       // Routes are laid for where the camera is going, so they do not re-route on arrival.
       frameRoutes(to);
       if (Math.abs(from.ox - to.ox) < 0.5 && Math.abs(from.oy - to.oy) < 0.5 && Math.abs(from.R - to.R) < 0.01) return;
+      zoomRef.current = null;
       if (reducedMotion) camRef.current = to;
       else animRef.current = { from, to, start: performance.now() };
       requestDraw();
@@ -685,9 +710,10 @@ export function OntologyHexBoardMap({
         // Only return to rest if the reader had not zoomed away on their own.
         if (Math.abs(cur.R - restRef.current.R) < 0.5) moveCamera(restRef.current);
       }
+      chromeRef.current = null;
       // A room read with a selection's chrome up is not the map at rest: read it again once
       // that chrome has gone (INDEX may not change, so its observer cannot be relied on).
-      if (roomTakenRef.current === "selection") readWhenSettledRef.current();
+      readWhenSettledRef.current();
       return;
     }
     const makeRoom = () => {
@@ -815,7 +841,8 @@ export function OntologyHexBoardMap({
       }
       const needs = layout!.dependencies.filter((d) => d.from === t.id).length;
       const users = layout!.dependencies.filter((d) => d.to === t.id).length;
-      tip.textContent = labels.tooltip({ name: t.name, stale: evidence.get(t.id) === "stale", needs, users, elements: t.elementCount });
+      const text = labels.tooltip({ name: t.name, stale: evidence.get(t.id) === "stale", needs, users, elements: t.elementCount });
+      if (tip.textContent !== text) tip.textContent = text;
       tip.hidden = false;
       const W = tip.offsetWidth;
       const H = tip.offsetHeight;
@@ -823,7 +850,8 @@ export function OntologyHexBoardMap({
       const y = cam.oy + t.y * cam.R;
       const R = cam.R;
       const gap = 8;
-      const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: size.w, height: size.h };
+      chromeRef.current ??= mapChromeOf(canvasRef.current);
+      const free = chromeRef.current?.free ?? { x: 0, y: 0, width: size.w, height: size.h };
       // Beside the tile first (right, left, below, above), then the same sides swept outward in
       // 6 px steps; the nearest spot that covers no name wins.
       const cands: { x: number; y: number; d: number }[] = [];
@@ -869,6 +897,7 @@ export function OntologyHexBoardMap({
     if (e.button !== 0 || !camRef.current) return;
     const p = local(e);
     animRef.current = null;
+    zoomRef.current = null;
     dragRef.current = { x: p.x, y: p.y, cam: camRef.current, moved: false, id: e.pointerId };
   };
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -883,7 +912,8 @@ export function OntologyHexBoardMap({
         setHoverId(null);
       }
       if (drag.moved) {
-        camRef.current = clampCamera({ R: drag.cam.R, ox: drag.cam.ox + dx, oy: drag.cam.oy + dy });
+        const gain = navigationSpeed.drag;
+        camRef.current = clampCamera({ R: drag.cam.R, ox: drag.cam.ox + dx * gain, oy: drag.cam.oy + dy * gain });
         requestDraw();
         return;
       }
@@ -904,23 +934,55 @@ export function OntologyHexBoardMap({
     if (hit) onSelect?.(hit);
     else onPaneClick?.();
   };
-  const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+  const zoomAbout = (ax: number, ay: number, factor: number, eased: boolean, startMs: number) => {
     const cam = camRef.current;
     if (!cam) return;
     animRef.current = null;
-    const p = local(e);
-    const factor = computeWheelZoomFactor(normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800));
-    const R = Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_RADIUS, cam.R * factor));
+    const pending = eased ? zoomRef.current : null;
+    const R = Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_RADIUS, (pending?.toR ?? cam.R) * factor));
     const k = R / cam.R;
-    camRef.current = clampCamera({ R, ox: p.x - (p.x - cam.ox) * k, oy: p.y - (p.y - cam.oy) * k });
+    const destination = clampCamera({ R, ox: ax - (ax - cam.ox) * k, oy: ay - (ay - cam.oy) * k });
+    if (eased) zoomRef.current = { from: cam, toR: R, ax, ay, startMs };
+    else {
+      zoomRef.current = null;
+      camRef.current = destination;
+    }
     setHoverId(null);
     requestDraw();
     if (wheelFrameRef.current != null) window.clearTimeout(wheelFrameRef.current);
     wheelFrameRef.current = window.setTimeout(() => {
       wheelFrameRef.current = null;
-      frameRoutes(camRef.current);
+      frameRoutes(destination);
     }, 160);
   };
+  const onWheel = useEffectEvent((e: WheelEvent) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas || !camRef.current) return;
+    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800);
+    if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
+    const r = canvas.getBoundingClientRect();
+    const pinch = readPinchWheel(pinchWheelRef.current, e);
+    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeed.zoom });
+    zoomAbout(e.clientX - r.left, e.clientY - r.top, factor, !pinch, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+  });
+  const onGesturePinch = useEffectEvent((ratio: number, clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !camRef.current) return;
+    const r = canvas.getBoundingClientRect();
+    zoomAbout(clientX - r.left, clientY - r.top, ratio ** navigationSpeed.zoom, false, performance.now());
+  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const listener = (e: WheelEvent) => onWheel(e);
+    canvas.addEventListener("wheel", listener, { passive: false });
+    const stopGesturePinch = listenForGesturePinch(canvas, (ratio, clientX, clientY) => onGesturePinch(ratio, clientX, clientY));
+    return () => {
+      canvas.removeEventListener("wheel", listener);
+      stopGesturePinch();
+    };
+  }, []);
   const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const hit = hitTest(local(e).x, local(e).y);
     const t = hit ? layout?.byId.get(hit) : null;
@@ -935,6 +997,16 @@ export function OntologyHexBoardMap({
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
     if (!layout) return;
+    const zoomIntent = keyboardZoomIntent(e, navigationSpeed.zoom);
+    if (zoomIntent) {
+      e.preventDefault();
+      if (zoomIntent.kind === "fit") {
+        if (restRef.current) moveCamera(restRef.current);
+        return;
+      }
+      if (size) zoomAbout(size.w / 2, size.h / 2, zoomIntent.factor, true, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
+      return;
+    }
     if (e.key === "Escape") {
       rowRef.current = null;
       onPaneClick?.();
@@ -972,6 +1044,33 @@ export function OntologyHexBoardMap({
 
   const staleTotal = layout ? layout.capabilities.filter((c) => evidence.get(c.id) === "stale").length : 0;
 
+  /* Every tile, in reading order, for assistive technology and measurement. Screen positions
+     are written onto these after each still frame. */
+  const tileList = useMemo(
+    () => (
+      <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="hex-board-list">
+        {(layout?.tiles ?? []).map((t) => (
+          <li key={t.id}>
+            <button
+              type="button"
+              tabIndex={-1}
+              data-hex-id={t.id}
+              data-hex-kind={t.kind}
+              data-hex-domain={t.domainId ?? ""}
+              data-hex-cell={`${t.q},${t.r}`}
+              data-evidence={t.kind === "capability" ? (evidence.get(t.id) ?? "unknown") : undefined}
+              aria-pressed={selectedId === t.id}
+              onClick={() => onSelect?.(t.id)}
+            >
+              {t.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    ),
+    [layout, evidence, selectedId, onSelect, listLabel],
+  );
+
   return (
     <div
       ref={wrapRef}
@@ -1004,7 +1103,6 @@ export function OntologyHexBoardMap({
           dragRef.current = null;
         }}
         onPointerLeave={() => setHoverId(null)}
-        onWheel={onWheel}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
       />
@@ -1052,27 +1150,7 @@ export function OntologyHexBoardMap({
         </div>
         {legend?.({ staleOnly, focused: !!selectedId, band })}
       </div>
-      {/* Every tile, in reading order, for assistive technology and measurement. Screen positions
-          are written onto these after each still frame. */}
-      <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="hex-board-list">
-        {(layout?.tiles ?? []).map((t) => (
-          <li key={t.id}>
-            <button
-              type="button"
-              tabIndex={-1}
-              data-hex-id={t.id}
-              data-hex-kind={t.kind}
-              data-hex-domain={t.domainId ?? ""}
-              data-hex-cell={`${t.q},${t.r}`}
-              data-evidence={t.kind === "capability" ? (evidence.get(t.id) ?? "unknown") : undefined}
-              aria-pressed={selectedId === t.id}
-              onClick={() => onSelect?.(t.id)}
-            >
-              {t.name}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {tileList}
     </div>
   );
 }

@@ -11,4 +11,4 @@ routes: [/topology]
 #### Top-right buttons
 - **Source button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent markdown source preview
 - **Shortcuts button** (`?`) → `ShortcutSheet`
-- **Settings gear** (`OntologyMapSettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: language (`LocaleSwitch`) · theme (`ThemeToggle`) · INDEX default state (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
+- **Settings** → the one settings sheet ([AppSettingsMenu](../cross-cutting/app-settings-menu.md)); on the map its Map pane also shows the INDEX default state, which writes the same localStorage key the INDEX panel reads. The open sheet owns Escape, so the topology Esc ladder does not fire twice

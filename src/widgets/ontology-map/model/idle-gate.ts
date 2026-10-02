@@ -93,6 +93,16 @@ export function isDomeSpinAnimating(input: DomeSpinInput): boolean {
   );
 }
 
+export interface GalaxyAtmosphereInput {
+  galaxyOn: boolean;
+  reducedMotion: boolean;
+  ambientAsleep: boolean;
+}
+
+export function isGalaxyAtmosphereAnimating(input: GalaxyAtmosphereInput): boolean {
+  return input.galaxyOn && !input.reducedMotion && !input.ambientAsleep;
+}
+
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||
@@ -112,6 +122,10 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.galaxyAtmosphereActive ||
     flags.lightActive
   );
+}
+
+export function isSceneActive(flags: CanvasActivityFlags, livePulseCount: number): boolean {
+  return isCanvasActive({ ...flags, egoTailAnimating: livePulseCount > 0 });
 }
 
 /** Protects the tail of a decaying ramp. */

@@ -57,7 +57,9 @@ import {
   type LocalRunnerId,
 } from '../model/local-runners';
 import { useAiConnection, type AiConnectionState } from '../model/use-ai-connection';
-import { SettingsGroupHeading } from './settings-primitives';
+import { ArmedChip, SettingsGroupHeading } from './settings-primitives';
+import { TermHint } from '@/shared/ui/term-hint';
+import type { GlossaryTerm } from '@/shared/config/term-glossary';
 
 /**
  * The Agents destination's models tab: which model Atlas's own conversation calls, and with
@@ -79,8 +81,6 @@ import { SettingsGroupHeading } from './settings-primitives';
  *   status beside it is a dot on the status tokens plus a word, never colour alone. Results are
  *   announced once through one polite live region, not by eight live statuses.
  */
-
-const CLEAR_ARM_MS = 3000;
 
 /** The quiet trailing control every row uses (check, replace, cancel, disconnect). */
 const ROW_CHIP =
@@ -262,7 +262,7 @@ export function ModelConnectionsPanel({
         ))}
       </ModelGroup>
 
-      <ModelGroup label={t('keysTitle')} hint={t('keysTitleHint')} testId="models-keys">
+      <ModelGroup label={t('keysTitle')} term="apiKey" hint={t('keysTitleHint')} testId="models-keys">
         {SECRET_PROVIDERS.map((provider) => (
           <KeyRow
             key={provider}
@@ -314,17 +314,19 @@ function ModelGroup({
   label,
   hint,
   testId,
+  term,
   children,
 }: {
   label: string;
   hint?: string;
+  term?: GlossaryTerm;
   testId: string;
   children: ReactNode;
 }) {
   return (
     <section aria-label={label} className="min-w-0" data-testid={testId}>
       <SettingsGroupHeading
-        label={label}
+        label={term ? <TermHint term={term}>{label}</TermHint> : label}
         trailing={
           hint ? <span className="text-label text-[color:var(--color-text-tertiary)]">{hint}</span> : undefined
         }
@@ -677,9 +679,11 @@ function KeyRow({
             note={t('pasteSafety', { provider: label })}
             clear={
               stored ? (
-                <ClearKeyChip
+                <ArmedChip
+                  label={t('clearKey')}
+                  armedLabel={t('clearConfirm')}
                   testId={`ai-clear-${provider}`}
-                  onClear={async () => {
+                  onConfirm={async () => {
                     try {
                       const next = await secretClear(provider);
                       setVerify({ kind: 'idle' });
@@ -802,43 +806,6 @@ function DraftFoot({ note, clear }: { note: string; clear: ReactNode }) {
 }
 
 /** Two presses to remove a key: the first arms (danger tone), the second removes. Disarms after 3s. */
-function ClearKeyChip({ testId, onClear }: { testId: string; onClear: () => Promise<void> }) {
-  const t = useTranslations('agents.models');
-  const [armed, setArmed] = useState(false);
-  const timer = useRef<number | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-    },
-    [],
-  );
-  return (
-    <Chip
-      size="lg"
-      tone={armed ? 'danger' : 'secondary'}
-      hoverInk={armed ? 'none' : 'strong'}
-      hoverBorder={armed ? 'none' : 'strong'}
-      data-testid={testId}
-      onClick={() => {
-        if (!armed) {
-          setArmed(true);
-          timer.current = window.setTimeout(() => setArmed(false), CLEAR_ARM_MS);
-          return;
-        }
-        if (timer.current !== null) window.clearTimeout(timer.current);
-        setArmed(false);
-        void onClear();
-      }}
-      className={cn(
-        ROW_CHIP,
-        armed ? 'border-[color:var(--color-danger-a32)] hover:bg-[color:var(--color-danger-a10)]' : null,
-      )}
-    >
-      {armed ? t('clearConfirm') : t('clearKey')}
-    </Chip>
-  );
-}
-
 /**
  * One runner row. There is one saved runner (`local-endpoint.ts`); a row is the one in use when
  * the saved address is its address and a model is picked. A check result belongs to the address
@@ -1306,9 +1273,11 @@ function JevRow({
               note={tJev('pasteSafety', { host: JEV_DESTINATION })}
               clear={
                 stored ? (
-                  <ClearKeyChip
+                  <ArmedChip
+                    label={t('clearKey')}
+                    armedLabel={t('clearConfirm')}
                     testId="ai-clear-jev"
-                    onClear={async () => {
+                    onConfirm={async () => {
                       try {
                         const next = await jevSecretClear();
                         if (next) onStatus(next);

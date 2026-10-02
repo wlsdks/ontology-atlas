@@ -5,7 +5,7 @@ import {
   useRef
 } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
-import { type CameraTween } from "../model/camera-easing";
+import { type CameraTween, type ZoomEase } from "../model/camera-easing";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -76,6 +76,8 @@ export function useTopologyCameraState({
    * `prefers-reduced-motion` (the spring path snaps instead).
    */
   const cameraTweenRef = useRef<CameraTween | null>(null);
+
+  const zoomEaseRef = useRef<ZoomEase | null>(null);
 
   const dampingRef = useRef(1.0);
 
@@ -186,7 +188,7 @@ export function useTopologyCameraState({
 
   return {
     cameraRef, cameraTargetRef, galaxyInspectionCameraRef, constellationCameraRef,
-    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef,
+    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
     runSpotlightFitRef, reframeViewportRef, viewportCameraTrackedRef, initialRelayoutTokenRef, panelInsetsRef,

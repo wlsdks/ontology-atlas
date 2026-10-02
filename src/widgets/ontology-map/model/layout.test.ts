@@ -28,6 +28,27 @@ function byId(points: { id: string; x: number; y: number }[], id: string) {
 }
 
 describe("computeConcentricLayout", () => {
+  it("bounds parent lookups for broad and deep hierarchies", () => {
+    for (const deep of [false, true]) {
+      let parentReads = 0;
+      const nodes: LayoutGraphNode[] = [{ id: "p", kind: "project", parentId: null }];
+      for (let i = 0; i < 1000; i += 1) {
+        nodes.push({
+          id: `node-${i}`,
+          kind: deep ? "element" : "capability",
+          get parentId() {
+            parentReads += 1;
+            return deep && i > 0 ? `node-${i - 1}` : "p";
+          },
+        });
+      }
+      const points = computeConcentricLayout(nodes, RINGS, { relaxIterations: 0 });
+      expect(points).toHaveLength(nodes.length);
+      expect(points.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y))).toBe(true);
+      expect(parentReads).toBeLessThan(nodes.length * 20);
+    }
+  });
+
   it("places the project at the origin", () => {
     const points = computeConcentricLayout(FIXTURE, RINGS);
     const project = byId(points, "ontology-atlas");

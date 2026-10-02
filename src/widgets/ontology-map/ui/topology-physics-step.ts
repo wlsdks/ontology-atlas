@@ -12,7 +12,7 @@ import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
 import { settleTierAssembly, tierAssemblyAppear } from "../morph/tier-assembly";
-import { selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
+import { selectEgoContainsComets, updateParticles, type ParticleEdge } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
@@ -128,16 +128,10 @@ export interface PhysicsStepInput {
    */
   userDrivenCamera?: boolean;
   /**
-   * S3 finishing polish (fable's design) — when true the camera is being driven
-   * externally by the cubic transition tween (`model/camera-easing.ts`, owned
-   * by `use-topology-loop.ts`): the spring step + pan-bounds clamp + reduced-
-   * motion snap are all skipped and `camera` is used verbatim as this frame's
-   * result. `farT`/`zoomRatio` and every emphasis/ego-reveal/edge-pulse ramp
-   * still derive from that eased camera, so a tween in flight animates the rest
-   * of the scene exactly as a spring move would. Default/false = spring as
-   * before. The loop only sets this while a programmatic tween is live and
-   * `prefers-reduced-motion` is off, so `freezeCamera && reducedMotion` never
-   * co-occur.
+   * True while a camera tween or a zoom step (`model/camera-easing.ts`) drives
+   * the camera: the spring step and pan-bounds clamp are skipped and `camera`
+   * is used verbatim. Under reduced motion only a hand-driven camera
+   * (`userDrivenCamera`) stays frozen; app-initiated travel still arrives.
    */
   freezeCamera?: boolean;
   altitudeScale?: number | null;
@@ -303,9 +297,6 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
     scaleMinOverride ?? Infinity,
   );
-  // freezeCamera: the cubic transition tween owns the camera this frame — use
-  // the (already-eased) `camera` verbatim, skipping the spring + pan clamp +
-  // reduced snap. Everything downstream still derives from `nextCamera`.
   const nextCamera: CameraAxes = freezeCamera
     ? { x: { ...camera.x }, y: { ...camera.y }, scale: { ...camera.scale } }
     : stepCamera({
@@ -319,14 +310,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         panBounds,
         isDragging,
       });
-  // A8 — reduced motion: the camera arrives instead of travelling. Snapping
-  // AFTER `stepCamera` (not instead of it) keeps its clamp/bounds work — only
-  // the spring interpolation is discarded. Velocities zero out so a later
-  // preference flip can't inherit stale momentum. (Never runs while frozen —
-  // the tween is disabled under reduced motion, so the spring path handles the
-  // snap.) `userDrivenCamera` carves out WCAG 2.3.3's user-initiated exception:
-  // wheel/drag/pinch keep the spring, only app-initiated travel arrives.
-  if (!freezeCamera && reducedMotion && !userDrivenCamera) {
+  if (reducedMotion && !userDrivenCamera) {
     nextCamera.x.value = target.tx;
     nextCamera.y.value = target.ty;
     nextCamera.scale.value = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale));
@@ -411,9 +395,23 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
+  advanceTopologyComets(world, world.edges, dt, reducedMotion, focusedNodeId, tokens, ambientFactor);
+
+  return { camera: nextCamera, farT, zoomRatio };
+}
+
+export function advanceTopologyComets(
+  world: TopologyWorld,
+  edges: readonly ParticleEdge[],
+  dt: number,
+  reducedMotion: boolean,
+  focusedNodeId: string | null,
+  tokens: Pick<OntologyMapTokens, "edgePulseSpeed" | "edgePulseSpeedEgo">,
+  ambientFactor: number | undefined,
+): void {
   // Prescription E: the focused node's capped incident `contains` edges advance like depends
   // edges. The draw asks `selectEgoContainsComets` the same question and gets the same cached answer.
-  const egoCometEdges =
+  const egoCometEdges: ReadonlySet<ParticleEdge> | null =
     focusedNodeId === null
       ? null
       : selectEgoContainsComets(world.edges, world.edgeIndexByNode.get(focusedNodeId)).edges;
@@ -429,7 +427,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // before by a single pixel.
   const ambient = ambientFactor ?? 1;
   updateParticles(
-    world.edges,
+    edges,
     dt,
     reducedMotion,
     (edge) => {
@@ -442,6 +440,4 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     },
     egoCometEdges === null || egoCometEdges.size === 0 ? undefined : (edge) => egoCometEdges.has(edge),
   );
-
-  return { camera: nextCamera, farT, zoomRatio };
 }

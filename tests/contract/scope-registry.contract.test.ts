@@ -153,12 +153,17 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   // ── State about the app itself (vault-independent) ───────────────────────
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "무시한 업데이트 버전" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "업데이트 확인 시각" },
+  { key: "app-update:auto-check", kind: "storage", scope: "global", file: "src/features/app-update/model/update-state.ts", note: "Automatic update check on this computer: on (default) or off" },
+  { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
+  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "프레임 미터 표시 선호" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D 보기(지도 돔 뷰) 선호 — 기본 꺼짐(2D)" },
   { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "갤럭시 보기(평면 지도를 별하늘로) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D 배치 기준: 소유(돔, 기본)/결합(힘 구름)" },
+  { key: "atlas.appearance.map-drag-speed", kind: "storage", scope: "global", note: "Map drag speed (0.5x-2x, default 1x), a hand preference of this machine" },
+  { key: "atlas.appearance.map-zoom-speed", kind: "storage", scope: "global", note: "Map zoom speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "상태 칩 on/off 선호" },
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "알림함 on/off 선호" },
   { key: "atlas.agentActivity.kinds", kind: "storage", scope: "global", note: "음소거한 알림 종류" },
@@ -394,6 +399,9 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:appearance-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:guide-auto-start-change", kind: "event", scope: "global", note: "" },
+  { key: "ontology-atlas:preference-change", kind: "event", scope: "global", file: "src/shared/lib/preferences/define-preference.ts", note: "Same-tab change of a definePreference store" },
+  { key: "ontology-atlas:open-settings", kind: "event", scope: "global", file: "src/shared/lib/surface-requests.ts", note: "Request that a visible settings trigger open the sheet" },
+  { key: "ontology-atlas:open-shortcuts", kind: "event", scope: "global", file: "src/shared/lib/surface-requests.ts", note: "Request that the keyboard shortcut sheet open" },
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },
   {
     key: "ontology-atlas:navigation-intent",
@@ -441,7 +449,8 @@ const REPO_ROOT = join(__dirname, "..", "..");
  * first.
  */
 const KEY_NAMESPACE_SHAPE =
-  /^(demo:|ontology-atlas:|atlas\.|atlas:|docs-vault:|docsVault:|guided-tour:|app-update:|dev:|vault-open-guide:)[A-Za-z0-9:._$%{}-]*$/;
+  /^(demo:|ontology-atlas:|atlas\.|atlas:|docs-vault:|docsVault:|guided-tour:|app-update:|dev:|vault-open-guide:|library\.)[A-Za-z0-9:._$%{}-]*$/;
+const TRANSLATION_NAMESPACE_LEAD = /\b(?:use|get)Translations\s*(?:<\s*|\(\s*)$/;
 
 function sourceFiles(): string[] {
   const files: string[] = [];
@@ -481,6 +490,7 @@ function scanKeyLiterals(): Map<string, string[]> {
     while ((match = literal.exec(text)) !== null) {
       const value = match[2];
       if (!KEY_NAMESPACE_SHAPE.test(value)) continue;
+      if (TRANSLATION_NAMESPACE_LEAD.test(text.slice(Math.max(0, match.index - 40), match.index))) continue;
       const relative = file.slice(REPO_ROOT.length + 1);
       const paths = found.get(value) ?? [];
       if (!paths.includes(relative)) paths.push(relative);
