@@ -45,15 +45,28 @@ function selectedPaths(snapshot: GrayAreaSnapshot): Map<string, string[]> {
   return paths;
 }
 
+function indexDependenciesLinear(edges: GrayAreaSnapshot['edges'], paths: ReadonlyMap<string, string[]>) {
+  const declared = new Set<string>();
+  const firstDependent = new Map<string, string>();
+  for (const edge of edges) {
+    if (!DEPENDENCIES.has(edge.via)) continue;
+    declared.add(JSON.stringify([edge.from, edge.to]));
+    if (paths.has(edge.from) && !firstDependent.has(edge.to)) firstDependent.set(edge.to, edge.from);
+  }
+  return { declared, firstDependent };
+}
+
 export function buildGrayAreaCandidates(snapshot: GrayAreaSnapshot): GrayAreaCandidate[] {
   const bySlug = new Map(snapshot.nodes.map(n => [n.slug, n]));
   const byPath = new Map<string, string[]>();
   for (const node of snapshot.nodes) {
     if (!node.path) continue;
-    byPath.set(node.path, [...(byPath.get(node.path) ?? []), node.slug]);
+    const slugs = byPath.get(node.path) ?? [];
+    slugs.push(node.slug);
+    byPath.set(node.path, slugs);
   }
   const paths = selectedPaths(snapshot);
-  const declared = new Set(snapshot.edges.filter(e => DEPENDENCIES.has(e.via)).map(e => JSON.stringify([e.from, e.to])));
+  const { declared, firstDependent } = indexDependenciesLinear(snapshot.edges, paths);
   const rows = new Map<string, GrayAreaCandidate>();
   const add = (row: Omit<GrayAreaCandidate, 'id'>) => {
     const id = JSON.stringify([snapshot.snapshotId, row.kind, row.slug, row.relatedSlug, row.statement]);
@@ -71,9 +84,9 @@ export function buildGrayAreaCandidates(snapshot: GrayAreaSnapshot): GrayAreaCan
   for (const drift of snapshot.drift) {
     const path = paths.get(drift.slug);
     if (!path || !bySlug.has(drift.slug)) continue;
-    const dependent = snapshot.edges.find(e => DEPENDENCIES.has(e.via) && e.to === drift.slug && paths.has(e.from));
+    const dependent = firstDependent.get(drift.slug);
     if (!dependent) continue;
-    add({ kind: 'changed-source', slug: drift.slug, relatedSlug: dependent.from, path: path.length > 1 ? path : [drift.slug, dependent.from], statement: `${drift.documentChangedAt} → ${drift.sourceChangedAt}`, sourcePaths: [drift.path], currency: 'observed' });
+    add({ kind: 'changed-source', slug: drift.slug, relatedSlug: dependent, path: path.length > 1 ? path : [drift.slug, dependent], statement: `${drift.documentChangedAt} → ${drift.sourceChangedAt}`, sourcePaths: [drift.path], currency: 'observed' });
   }
   for (const read of snapshot.recordedReads) {
     const path = paths.get(read.slug); const node = bySlug.get(read.slug);

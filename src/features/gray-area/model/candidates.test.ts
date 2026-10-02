@@ -19,6 +19,21 @@ function snapshot(): GrayAreaSnapshot {
   };
 }
 describe('bounded gray-area candidates', () => {
+  it('bounds relation reads when many source changes share a dependency', () => {
+    const s = snapshot();
+    let relationReads = 0;
+    const unrelated = Array.from({ length: 1000 }, (_, i) => ({
+      from: `other-${i}`, to: `unused-${i}`,
+      get via() { relationReads += 1; return 'dependencies'; },
+    }));
+    s.edges = [...unrelated, ...s.edges];
+    s.drift = Array.from({ length: 1000 }, () => ({ ...s.drift[0] }));
+    expect(buildGrayAreaCandidates(s).find(r => r.kind === 'changed-source')).toMatchObject({
+      slug: 'elements/b', relatedSlug: 'capabilities/a', path: ['capabilities/a', 'elements/b'],
+    });
+    expect(relationReads).toBeLessThan(s.edges.length * 8);
+  });
+
   it('joins exact code paths to known identities without making a missing import a graph edge', () => {
     const s = snapshot(); const rows = buildGrayAreaCandidates(s);
     const c = rows.find(r => r.kind === 'missing-link');
