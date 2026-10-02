@@ -15,52 +15,27 @@ import {
 } from '@/shared/lib/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import type { SettingId } from '../model/catalog/types';
 
-/**
- * The selection ink for both radio-group pickers. The value layer's `active` means pressed,
- * with a pale border too weak to mark the selected tile; delete this when the value layer
- * gains a selected axis.
- */
 const PICKER_TILE_INK = (active: boolean) =>
   active
     ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
     : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
 
-/**
- * Label ink on a picker tile. Marker indigo over the active tile's `line-a13` tint is 4.12:1,
- * below AA (`tests/contract/accent-ink-contrast.contract.test.ts`), so the active label is soft.
- */
 const PICKER_LABEL_INK = (active: boolean) =>
   active ? 'text-[color:var(--color-indigo-text-soft)]' : 'text-[color:var(--color-text-tertiary)]';
 
-/** Grid-cell placement plus focus ring — the layer the value layer does not supply. */
 const PICKER_TILE_FRAME =
   'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
-/*
- * Size `md`, not `sm`: `tile/sm` carries `text-caption` (9.5px), which the gate in
- * settings-sheet-type-dialect.contract.test.ts forbids here but only sees as a literal, so the
- * smaller size would break the rule while passing the gate.
- */
 
-/**
- * Personalisation pickers (`docs/plans/DESIGN-OVERHAUL-2026-07-25.md`): canvas background and
- * node icon set. Previews render the real `--canvas-bg-*` tokens and `OntologyMapKindGlyph`,
- * and a choice writes the app-wide store, which the map and every glyph follow at once.
- */
 
 const PREVIEW_KINDS = ['project', 'domain', 'capability', 'element'] as const;
 
-/**
- * Background preview, a still miniature in the real background ink tokens; animated
- * swatches would pull attention from the choice.
- */
 function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
   const ink = 'rgba(var(--canvas-bg-particle-rgb), 0.5)';
   const inkFaint = 'rgba(var(--canvas-bg-particle-rgb), 0.24)';
   return (
-    // The viewBox is the card's real ratio (240×56); a small stretched viewBox magnifies the
-    // pattern into fragments, so density is set for the visible size.
     <svg
       viewBox="0 0 240 56"
       preserveAspectRatio="xMidYMid slice"
@@ -80,7 +55,6 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
         </g>
       ) : variant === 'web' ? (
         <g>
-          {/* Without `fill="none"` an open polyline is **filled** with the default black and becomes a triangle. */}
           <g stroke={inkFaint} strokeWidth="0.8" fill="none">
             <path d="M18 16 L52 34 L88 12 L124 30 L160 14 L196 32 L228 18" />
             <path d="M52 34 L60 50 M124 30 L136 48 M196 32 L204 47" />
@@ -96,7 +70,6 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
           </g>
         </g>
       ) : (
-        /* Three dot layers differing in size and brightness, so depth reads in a still frame. */
         <g fill={ink}>
           {[
             { r: 0.9, o: 0.5, step: 33, offset: 8 },
@@ -122,18 +95,16 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
   );
 }
 
-export function CanvasBackgroundPicker() {
+export function CanvasBackgroundPicker({ settingId }: { settingId?: SettingId } = {}) {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
-  // A grid tile with its active ink split across parent and child (`PICKER_TILE_INK`
-  // and `PICKER_LABEL_INK`) fits neither canonical radio shape, so only the behaviour comes from the hook.
   const group = useRovingRadioGroup({
     value,
     values: CANVAS_BACKGROUNDS,
     onChange: writeCanvasBackground,
   });
   return (
-    <div className="border-x border-transparent px-3 py-2.5" data-testid="app-settings-canvas-background">
+    <div className="border-x border-transparent px-3 py-2.5" data-testid="app-settings-canvas-background" data-setting-id={settingId}>
       <p className="text-body text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('canvasBgCaption')}
@@ -167,12 +138,12 @@ export function CanvasBackgroundPicker() {
   );
 }
 
-export function GlyphSetPicker() {
+export function GlyphSetPicker({ settingId }: { settingId?: SettingId } = {}) {
   const t = useTranslations('nav.settingsMenu');
   const value = useGlyphSet();
   const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
-    <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
+    <div className="px-3 py-2.5" data-testid="app-settings-glyph-set" data-setting-id={settingId}>
       <p className="text-body text-[color:var(--color-text-primary)]">{t('glyphSetLabel')}</p>
       <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
         {t('glyphSetCaption')}
