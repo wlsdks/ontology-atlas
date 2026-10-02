@@ -90,7 +90,7 @@ function circleBox(c: Circle, pad: number): Box {
   return { minX: c.x - c.r - pad, maxX: c.x + c.r + pad, minY: c.y - c.r - pad, maxY: c.y + c.r + pad };
 }
 
-export function textBox(width: number, x: number, y: number, align: CanvasTextAlign, fontPx: number, pad: number): Box {
+function textBox(width: number, x: number, y: number, align: CanvasTextAlign, fontPx: number, pad: number): Box {
   const minX = align === "center" ? x - width / 2 : align === "right" || align === "end" ? x - width : x;
   return { minX: minX - pad, maxX: minX + width + pad, minY: y - fontPx * 0.62 - pad, maxY: y + fontPx * 0.62 + pad };
 }
@@ -180,7 +180,7 @@ export function domainLabelBlock(
   };
 }
 
-export interface PlacedBlock {
+interface PlacedBlock {
   block: DomainLabelBlock;
   align: CanvasTextAlign;
   x: number;
@@ -192,7 +192,7 @@ export interface PlacedBlock {
   box: Box;
 }
 
-export function placeBlock(block: DomainLabelBlock, angle: number, ax: number, ay: number): PlacedBlock {
+function placeBlock(block: DomainLabelBlock, angle: number, ax: number, ay: number): PlacedBlock {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const align: CanvasTextAlign = cos > SIDE_COS ? "left" : cos < -SIDE_COS ? "right" : "center";
@@ -206,7 +206,7 @@ export function placeBlock(block: DomainLabelBlock, angle: number, ax: number, a
   return { block, align, x: ax, lineYs, lineBoxes, unitsY, unitsBox, nameBox, box: unitsBox ? union([nameBox, unitsBox]) : nameBox };
 }
 
-export function nameCandidates(outward: number): number[] {
+function nameCandidates(outward: number): number[] {
   return [outward, Math.PI / 2, 0, Math.PI, -Math.PI / 2, outward + Math.PI / 4, outward - Math.PI / 4];
 }
 
