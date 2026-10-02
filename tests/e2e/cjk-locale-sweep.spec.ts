@@ -8,13 +8,6 @@ import { CJK_LOCALES } from './locales';
 import { seedFirstRunSeen } from './first-run-seed';
 import { waitFrames } from './settle';
 
-/**
- * Japanese and Chinese strings are written without the English or Korean length as a guide, so the
- * chrome that fits in `en` and `ko` can clip in `ja` and `zh`. This opens each main screen and every
- * settings pane at the app floor (1040) and the owner's laptop width (1440) and fails on any element
- * that cuts its own text, or any page that scrolls sideways. `E2E_SWEEP_SHOTS` also writes a dark
- * screenshot of each screen at 1440 into that directory, for a person to read.
- */
 const VIEWPORTS = [
   { width: 1040, height: 720 },
   { width: 1440, height: 900 },
@@ -49,9 +42,7 @@ async function measure(page: Page): Promise<{ clips: Clip[]; pageScroll: number 
         .trim();
       if (!own) continue;
       const rect = element.getBoundingClientRect();
-      // A visually hidden label is 1px by design.
       if (rect.width <= 2 || rect.height <= 2) continue;
-      // A file path is vault data, not copy, and truncates in every locale by design.
       if (element.closest('[data-testid="docs-editor-path"]')) continue;
       const style = getComputedStyle(element);
       if (style.visibility === 'hidden' || style.display === 'none') continue;
