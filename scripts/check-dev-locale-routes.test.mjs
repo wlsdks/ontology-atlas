@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import test from "node:test";
-import { DEFAULT_DEV_ROUTE_PATHS, evaluateDevLocaleRoutes } from "./check-dev-locale-routes.mjs";
+import { DEFAULT_DEV_ROUTE_PATHS, devRoutePaths, evaluateDevLocaleRoutes } from "./check-dev-locale-routes.mjs";
 
 function createStatusServer(handler) {
   return new Promise((resolve, reject) => {
@@ -85,4 +85,22 @@ test("evaluateDevLocaleRoutes reports the exact locale route that returns 404", 
   } finally {
     await server.close();
   }
+});
+
+test("dev route smoke paths follow an injected four-locale list", () => {
+  assert.deepEqual(devRoutePaths(["en", "ko"]), DEFAULT_DEV_ROUTE_PATHS);
+  assert.deepEqual(devRoutePaths(["en", "ja", "ko", "zh"]), [
+    "/",
+    "/en/",
+    "/ja/",
+    "/ko/",
+    "/zh/",
+    "/en/docs/",
+    "/ja/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/ja/ontology/?node=capability%3Aagent-graph-readiness",
+    "/ko/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/ko/ontology/?node=capability%3Aagent-graph-readiness",
+    "/zh/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/zh/ontology/?node=capability%3Aagent-graph-readiness",
+  ]);
 });
