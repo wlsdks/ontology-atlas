@@ -2337,6 +2337,67 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
     })
 }
 
+const VAULT_TEXT_BATCH_MAX: usize = 256;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriTextFileRead {
+    relative_path: String,
+    text: Option<String>,
+    last_modified: Option<u128>,
+    error: Option<String>,
+}
+
+#[tauri::command(async)]
+fn read_vault_text_files(
+    root_path: String,
+    relative_paths: Vec<String>,
+) -> Result<Vec<TauriTextFileRead>, String> {
+    if relative_paths.len() > VAULT_TEXT_BATCH_MAX {
+        return Err(format!(
+            "at most {VAULT_TEXT_BATCH_MAX} files are read in one batch"
+        ));
+    }
+    let root = canonical_root(&root_path)?;
+    Ok(relative_paths
+        .into_iter()
+        .map(
+            |relative_path| match read_vault_markdown(&root, &relative_path) {
+                Ok((text, last_modified)) => TauriTextFileRead {
+                    relative_path,
+                    text: Some(text),
+                    last_modified: Some(last_modified),
+                    error: None,
+                },
+                Err(error) => TauriTextFileRead {
+                    relative_path,
+                    text: None,
+                    last_modified: None,
+                    error: Some(error),
+                },
+            },
+        )
+        .collect())
+}
+
+fn read_vault_markdown(root: &Path, relative_path: &str) -> Result<(String, u128), String> {
+    let relative = normalize_relative_path(relative_path)?;
+    let markdown = relative.extension().is_some_and(|ext| ext == "md");
+    let hidden = relative
+        .components()
+        .any(|part| part.as_os_str().to_string_lossy().starts_with('.'));
+    if !markdown || hidden {
+        return Err("a batch reads only Markdown outside dot folders".into());
+    }
+    let path = fs::canonicalize(root.join(&relative)).map_err(|err| err.to_string())?;
+    if !path.starts_with(root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+    let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    let last_modified = metadata_mtime_ms(&path)?;
+    Ok((text, last_modified))
+}
+
 #[tauri::command(async)]
 fn read_vault_text_tail(
     root_path: String,
@@ -3810,6 +3871,7 @@ pub fn run() {
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
+            read_vault_text_files,
             read_vault_text_tail,
             read_vault_binary_file,
             write_vault_text_file,
@@ -5917,6 +5979,107 @@ mod vault_scope_tests {
         std::fs::create_dir_all(&base).unwrap();
         assert!(canonical_root(&base.to_string_lossy()).is_ok());
         assert!(canonical_root(&base.join("missing").to_string_lossy()).is_err());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+}
+
+#[cfg(test)]
+mod vault_text_batch_tests {
+    use super::{read_vault_text_files, VAULT_TEXT_BATCH_MAX};
+
+    fn vault(name: &str) -> std::path::PathBuf {
+        let base =
+            std::env::temp_dir().join(format!("atlas-text-batch-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(base.join("vault/domains")).unwrap();
+        std::fs::create_dir_all(base.join("vault/.claude")).unwrap();
+        std::fs::write(base.join("vault/project.md"), "# project").unwrap();
+        std::fs::write(base.join("vault/domains/order.md"), "# order").unwrap();
+        std::fs::write(base.join("vault/.claude/notes.md"), "hidden").unwrap();
+        std::fs::write(base.join("vault/.env.md"), "hidden").unwrap();
+        std::fs::write(base.join("vault/plan.txt"), "not markdown").unwrap();
+        std::fs::write(base.join("outside.md"), "outside").unwrap();
+        base
+    }
+
+    #[test]
+    fn reads_every_requested_markdown_file_in_the_order_asked() {
+        let base = vault("order");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root, vec!["domains/order.md".into(), "project.md".into()])
+                .unwrap();
+        let paths: Vec<&str> = read
+            .iter()
+            .map(|file| file.relative_path.as_str())
+            .collect();
+        assert_eq!(paths, ["domains/order.md", "project.md"]);
+        assert_eq!(read[0].text.as_deref(), Some("# order"));
+        assert_eq!(read[1].text.as_deref(), Some("# project"));
+        assert!(read
+            .iter()
+            .all(|file| file.error.is_none() && file.last_modified.is_some()));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_file_it_may_not_read_fails_alone_and_says_why() {
+        let base = vault("refuse");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read = read_vault_text_files(
+            root,
+            vec![
+                ".claude/notes.md".into(),
+                ".env.md".into(),
+                "plan.txt".into(),
+                "../outside.md".into(),
+                "missing.md".into(),
+                "project.md".into(),
+            ],
+        )
+        .unwrap();
+        assert_eq!(read.len(), 6);
+        for refused in &read[..5] {
+            assert!(refused.text.is_none(), "{} was read", refused.relative_path);
+            assert!(
+                refused.error.is_some(),
+                "{} has no reason",
+                refused.relative_path
+            );
+        }
+        assert_eq!(read[5].text.as_deref(), Some("# project"));
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_link_that_leaves_the_vault_is_not_followed() {
+        use std::os::unix::fs::symlink;
+        let base = vault("link");
+        symlink(base.join("outside.md"), base.join("vault/linked.md")).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read = read_vault_text_files(root, vec!["linked.md".into()]).unwrap();
+        assert!(read[0].text.is_none());
+        let reason = read[0].error.clone().unwrap_or_default();
+        assert!(reason.contains("stay inside"), "{reason}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn refuses_a_batch_past_the_bound_and_an_ungranted_root() {
+        let base = vault("bound");
+        let root = base.join("vault").to_string_lossy().to_string();
+        let too_many = vec!["project.md".to_string(); VAULT_TEXT_BATCH_MAX + 1];
+        assert!(read_vault_text_files(root.clone(), too_many).is_err());
+        assert!(read_vault_text_files(root.clone(), Vec::new())
+            .unwrap()
+            .is_empty());
+
+        let granted = std::fs::canonicalize(base.join("vault/domains")).unwrap();
+        let scope = crate::vault_grants::EnforcedScope::granting(&[granted]);
+        let err = read_vault_text_files(root, vec!["project.md".into()]).unwrap_err();
+        assert!(err.contains("not-granted"), "{err}");
+        drop(scope);
         let _ = std::fs::remove_dir_all(&base);
     }
 }

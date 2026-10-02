@@ -10,7 +10,14 @@ import {
 import { countWhitespaceWords } from '@/shared/lib/count-whitespace-words';
 import { meaningFindings } from '@/shared/lib/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
-import { nativeVaultFingerprint, readTauriVaultTextFile, type NativeVaultStamp } from '@/shared/lib/tauri-vault-fs';
+import {
+  nativeVaultFingerprint,
+  readTauriVaultTextFile,
+  readTauriVaultTextFiles,
+  type NativeVaultStamp,
+  type NativeVaultTextRead,
+} from '@/shared/lib/tauri-vault-fs';
+import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
@@ -66,125 +73,10 @@ function resolveRefToDocSlug(
   return byTail ?? null;
 }
 
-interface WalkEntry {
-  handle: FileSystemFileHandle;
-  /** Path relative to the top-level handle — e.g. 'specs/hello.md'. */
-  relativePath: string;
-  kind: 'md' | 'image' | 'source';
-}
-
-const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
-
-/**
- * The top-level raw-source folder: listed by name, format, size and mtime, never read
- * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
- * Mirrored in `src-tauri/src/lib.rs` (`vault-walk-rules.contract.test.ts`); if the walks diverge the
- * fingerprint counts a different file set, so the app rebuilds constantly or misses a new document.
- */
-export const VAULT_SOURCES_DIR = 'sources';
-
-export function isVaultSourcePath(relativePath: string): boolean {
-  return relativePath.startsWith(`${VAULT_SOURCES_DIR}/`);
-}
-
 /** `'sources/plan.PDF'` → `'pdf'`; a name with no extension yields `''`. */
 function vaultSourceFormat(name: string): string {
   const at = name.lastIndexOf('.');
   return at > 0 ? name.slice(at + 1).toLowerCase() : '';
-}
-
-/**
- * Source-code extensions, counted but never read, so first run can tell a repository from a documents folder
- * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
- */
-const SOURCE_EXT =
-  /\.(m?[jt]sx?|vue|svelte|dart|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|scala|ex|exs|sh)$/i;
-
-/** Walk bounds keep a repository root picked as a vault from flooding IPC with build trees. */
-
-/** Only names that never hold documents; `build`, `dist` and `out` can, so do not extend. */
-const PRUNE_BY_NAME = new Set(['node_modules']);
-
-/** A directory that declares itself a cache (bford.info/cachedir) is pruned whole. */
-const CACHE_DIR_TAG = 'CACHEDIR.TAG';
-
-/** Far above any document folder; past it the walk truncates and the manifest says so. */
-export const VAULT_WALK_MAX_ENTRIES = 100000;
-/** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
-export const VAULT_WALK_MAX_DEPTH = 12;
-
-export interface WalkResult {
-  entries: WalkEntry[];
-  /** A limit was hit, so the walk saw only part of the tree. */
-  truncated: boolean;
-  /** Relative paths of directories skipped whole as cache or dependencies. */
-  prunedDirs: string[];
-  /** Source files passed over: counted, never read or stored. */
-  sourceFileCount: number;
-}
-
-async function walkInto(
-  root: FileSystemDirectoryHandle,
-  prefix: string,
-  depth: number,
-  acc: WalkResult,
-): Promise<void> {
-  if (acc.truncated) return;
-  if (depth > VAULT_WALK_MAX_DEPTH) {
-    acc.truncated = true;
-    return;
-  }
-
-  // The listing already holds the cache tag; `getFileHandle` would cost an IPC round trip per directory.
-  const children: Array<[string, FileSystemHandle]> = [];
-  for await (const entry of root.entries()) children.push(entry);
-
-  if (children.some(([name]) => name === CACHE_DIR_TAG)) {
-    acc.prunedDirs.push(prefix || '.');
-    return;
-  }
-
-  for (const [name, handle] of children) {
-    if (acc.entries.length >= VAULT_WALK_MAX_ENTRIES) {
-      acc.truncated = true;
-      return;
-    }
-    if (name.startsWith('.')) continue;
-    /* macOS returns NFD names while refs are NFC; the MCP and CLI walkers normalize too. */
-    const nfcName = name.normalize('NFC');
-    const relative = prefix ? `${prefix}/${nfcName}` : nfcName;
-    if (handle.kind === 'directory') {
-      if (PRUNE_BY_NAME.has(name)) {
-        acc.prunedDirs.push(relative);
-        continue;
-      }
-      await walkInto(handle as FileSystemDirectoryHandle, relative, depth + 1, acc);
-    } else if (isVaultSourcePath(relative)) {
-      // Before every other branch: anything under `sources/`, Markdown included, is a raw source.
-      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'source' });
-    } else if (name.endsWith('.md')) {
-      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'md' });
-    } else if (IMAGE_EXT.test(name)) {
-      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'image' });
-    } else if (SOURCE_EXT.test(name)) {
-      acc.sourceFileCount += 1;
-    }
-  }
-}
-
-export async function walkVault(root: FileSystemDirectoryHandle): Promise<WalkResult> {
-  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [], sourceFileCount: 0 };
-  await walkInto(root, '', 0, acc);
-  return acc;
-}
-
-async function walk(
-  root: FileSystemDirectoryHandle,
-  prefix = '',
-): Promise<WalkEntry[]> {
-  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [], sourceFileCount: 0 };
-  await walkInto(root, prefix, 0, acc);
-  return acc.entries;
 }
 
 /** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
@@ -317,7 +209,7 @@ export async function computeLocalVaultFingerprint(
     if (native) return fingerprintFromEntries(native.entries);
   }
 
-  const files = await walk(root);
+  const files = (await walkVault(root)).entries;
   const stamps = await mapPooled(
     files,
     VAULT_READ_CONCURRENCY,
@@ -560,8 +452,7 @@ function aggregateBuild(
   };
 }
 
-/** Reads in flight at once (study D7): overlaps each bridge or FSA wait without flooding it. */
-const VAULT_READ_CONCURRENCY = 16;
+const VAULT_READ_CONCURRENCY = 64;
 
 /**
  * Maps `items` through `read` with at most `concurrency` in flight, results in input order. The
@@ -593,6 +484,31 @@ async function mapPooled<T, R>(
   return results;
 }
 
+const NATIVE_READ_BATCH = 64;
+const NATIVE_BATCH_CONCURRENCY = 8;
+const PARTIAL_AFTER_MS = 200;
+const PARTIAL_SPLIT_MIN = 400;
+const PARTIAL_VAULT_MIN = 400;
+const READ_TIER_FOLDERS = ['projects', 'domains', 'capabilities', 'elements'];
+
+export interface VaultLoadProgress {
+  read: number;
+  total: number;
+}
+
+export interface VaultBuildObserver {
+  onProgress?: (progress: VaultLoadProgress) => void;
+  onPartial?: (build: LocalVaultBuild, progress: VaultLoadProgress) => void;
+  partialAfterMs?: number;
+}
+
+interface MarkdownFile {
+  text: string;
+  lastModified: number;
+}
+
+type WalkInfo = { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number };
+
 async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
   if (entry.kind === 'md' && nativeRoot) {
     const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
@@ -601,51 +517,164 @@ async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promis
   return entry.handle.getFile();
 }
 
+async function readMarkdownFile(entry: WalkEntry, nativeRoot: string | null): Promise<MarkdownFile> {
+  const file = await manifestFile(entry, nativeRoot);
+  return { text: await file.text(), lastModified: file.lastModified };
+}
+
+function createMarkdownReader(nativeRoot: string | null) {
+  let batchUnavailable = false;
+  const one = (entry: WalkEntry) => readMarkdownFile(entry, nativeRoot);
+  const fallbackConcurrency = VAULT_READ_CONCURRENCY / NATIVE_BATCH_CONCURRENCY;
+  return async (entries: readonly WalkEntry[]): Promise<MarkdownFile[]> => {
+    if (!nativeRoot || batchUnavailable) {
+      return mapPooled(entries, fallbackConcurrency, one);
+    }
+    let answered: NativeVaultTextRead[] | null = null;
+    try {
+      answered = await readTauriVaultTextFiles(nativeRoot, entries.map((entry) => entry.relativePath));
+    } catch {
+      batchUnavailable = true;
+    }
+    const reads = entries.map((entry, at) => ({ entry, read: answered?.[at] }));
+    return mapPooled(reads, fallbackConcurrency, async ({ entry, read }) =>
+      read && read.relativePath === entry.relativePath && read.text !== null && read.lastModified !== null
+        ? { text: read.text, lastModified: read.lastModified }
+        : one(entry),
+    );
+  };
+}
+
+function readTier(entry: WalkEntry): number {
+  if (entry.kind !== 'md') return READ_TIER_FOLDERS.length + 2;
+  const slash = entry.relativePath.indexOf('/');
+  if (slash < 0) return 0;
+  const folder = READ_TIER_FOLDERS.indexOf(entry.relativePath.slice(0, slash));
+  return folder < 0 ? READ_TIER_FOLDERS.length + 1 : folder + 1;
+}
+
+function readUnits(files: readonly WalkEntry[], tiers: readonly number[], batched: boolean): number[][] {
+  const order = files.map((_, index) => index).sort((a, b) => tiers[a] - tiers[b] || a - b);
+  if (!batched) return order.map((index) => [index]);
+  const units: number[][] = [];
+  let batch: number[] = [];
+  for (const index of order) {
+    if (batch.length > 0 && (batch.length === NATIVE_READ_BATCH || tiers[batch[0]] !== tiers[index])) {
+      units.push(batch);
+      batch = [];
+    }
+    if (files[index].kind === 'md') batch.push(index);
+    else units.push([index]);
+  }
+  if (batch.length > 0) units.push(batch);
+  return units;
+}
+
+function createPartialPublisher(
+  tiers: readonly number[],
+  files: readonly WalkEntry[],
+  results: ReadonlyArray<BuiltVaultEntry | undefined>,
+  publish: (entries: BuiltVaultEntry[]) => void,
+  partialAfterMs: number,
+) {
+  const tierCount = READ_TIER_FOLDERS.length + 3;
+  const size = new Array<number>(tierCount).fill(0);
+  const done = new Array<number>(tierCount).fill(0);
+  let lastMarkdownTier = -1;
+  tiers.forEach((tier, index) => {
+    size[tier] += 1;
+    if (files[index].kind === 'md') lastMarkdownTier = Math.max(lastMarkdownTier, tier);
+  });
+  const startedAt = performance.now();
+  let published = -1;
+  let quarter = 0;
+  return (unit: readonly number[]) => {
+    for (const index of unit) done[tiers[index]] += 1;
+    if (performance.now() - startedAt < partialAfterMs) return;
+    let complete = published;
+    while (complete + 1 < tierCount && done[complete + 1] === size[complete + 1]) complete += 1;
+    if (complete >= lastMarkdownTier) return;
+    let through = -1;
+    if (complete > published) {
+      published = complete;
+      quarter = 0;
+      through = complete;
+    }
+    const current = published + 1;
+    if (size[current] >= PARTIAL_SPLIT_MIN) {
+      const reached = Math.floor((done[current] * 4) / size[current]);
+      if (reached > quarter) {
+        quarter = reached;
+        through = current;
+      }
+    }
+    if (through < 0) return;
+    publish(results.filter((entry, index): entry is BuiltVaultEntry => entry !== undefined && tiers[index] <= through));
+  };
+}
+
+async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): Promise<BuiltVaultEntry> {
+  const stamp = stamps?.get(entry.relativePath);
+  if (entry.kind === 'source') {
+    const { lastModified, bytes } = stamp
+      ? { lastModified: stamp.lastModified, bytes: stamp.size }
+      : await sourceStampFromHandle(entry.handle);
+    return { relativePath: entry.relativePath, lastModified, bytes, handle: entry.handle, kind: 'source' };
+  }
+  const lastModified = stamp ? stamp.lastModified : (await entry.handle.getFile()).lastModified;
+  return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
+}
+
 async function collectEntries(
   root: FileSystemDirectoryHandle,
-  walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
+  walkInfo: WalkInfo,
   concurrency = VAULT_READ_CONCURRENCY,
+  observer: VaultBuildObserver = {},
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
-  if (walkInfo) {
-    walkInfo.truncated = walked.truncated;
-    walkInfo.prunedDirs = walked.prunedDirs;
-    walkInfo.sourceFileCount = walked.sourceFileCount;
-  }
+  walkInfo.truncated = walked.truncated;
+  walkInfo.prunedDirs = walked.prunedDirs;
+  walkInfo.sourceFileCount = walked.sourceFileCount;
   const files = walked.entries;
   const nativeRoot = nativeRootPath(root);
   const internMetadata = createMetadataStringPool();
-  /* Images and sources are listed from native stamps, never opened (`getFile()` under Tauri
-   * transfers the whole file). On the web a directory `File` is metadata only. */
   const stamps = files.some((entry) => entry.kind !== 'md')
     ? await nativeStampIndex(root)
     : null;
-  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
-    if (entry.kind === 'source') {
-      const stamp = stamps?.get(entry.relativePath);
-      const { lastModified, bytes } = stamp
-        ? { lastModified: stamp.lastModified, bytes: stamp.size }
-        : await sourceStampFromHandle(entry.handle);
-      return {
-        relativePath: entry.relativePath,
-        lastModified,
-        bytes,
-        handle: entry.handle,
-        kind: 'source',
-      };
-    }
-    if (entry.kind === 'image') {
-      const stamp = stamps?.get(entry.relativePath);
-      const lastModified = stamp
-        ? stamp.lastModified
-        : (await entry.handle.getFile()).lastModified;
-      return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
-    }
-    const file = await manifestFile(entry, nativeRoot);
-    const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
-  };
-  return mapPooled(files, concurrency, readOne);
+  const readMarkdown = createMarkdownReader(nativeRoot);
+  const tiers = files.map(readTier);
+  const results: Array<BuiltVaultEntry | undefined> = new Array(files.length);
+  const total = files.filter((entry) => entry.kind === 'md').length;
+  let read = 0;
+  const { onPartial, onProgress } = observer;
+  const publishPartial = onPartial && total >= PARTIAL_VAULT_MIN
+    ? createPartialPublisher(
+        tiers,
+        files,
+        results,
+        (entries) => onPartial(aggregateBuild(entries, root.name, walkInfo), { read, total }),
+        observer.partialAfterMs ?? PARTIAL_AFTER_MS,
+      )
+    : null;
+  const batched = nativeRoot !== null && concurrency > 1;
+  await mapPooled(
+    readUnits(files, tiers, batched),
+    batched ? NATIVE_BATCH_CONCURRENCY : concurrency,
+    async (unit) => {
+      const markdown = unit.filter((index) => files[index].kind === 'md');
+      const texts = markdown.length > 0 ? await readMarkdown(markdown.map((index) => files[index])) : [];
+      markdown.forEach((index, at) => {
+        results[index] = buildMdEntry(files[index], texts[at].text, texts[at].lastModified, internMetadata);
+      });
+      for (const index of unit) {
+        if (files[index].kind !== 'md') results[index] = await stampedEntry(files[index], stamps);
+      }
+      read += markdown.length;
+      onProgress?.({ read, total });
+      publishPartial?.(unit);
+    },
+  );
+  return results as BuiltVaultEntry[];
 }
 
 async function sourceStampFromHandle(
@@ -655,40 +684,30 @@ async function sourceStampFromHandle(
   return { lastModified: file.lastModified, bytes: file.size };
 }
 
-/** Full build plus the entries the next incremental rebuild reuses. */
 export async function buildLocalManifestWithEntries(
   root: FileSystemDirectoryHandle,
+  observer?: VaultBuildObserver,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
-  const entries = await collectEntries(root, walkInfo);
+  const walkInfo: WalkInfo = { truncated: false, prunedDirs: [], sourceFileCount: 0 };
+  const entries = await collectEntries(root, walkInfo, VAULT_READ_CONCURRENCY, observer);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
 
-/** Builds a local manifest in the same VaultManifest shape as `scripts/build-docs-vault.mjs`. */
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
-  /** Tests pass 1 as a one-at-a-time reference. */
   readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<LocalVaultBuild> {
-  const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
+  const walkInfo: WalkInfo = { truncated: false, prunedDirs: [], sourceFileCount: 0 };
   const entries = await collectEntries(root, walkInfo, readConcurrency);
   return aggregateBuild(entries, root.name, walkInfo);
 }
 
-/**
- * Reuses previous entries whose (relativePath, mtime, kind) match and rereads the rest;
- * equivalent to a full build except `generatedAt`. Assumes equal mtime means equal content.
- */
 export async function rebuildLocalManifestIncremental(
   root: FileSystemDirectoryHandle,
   previous: BuiltVaultEntry[],
-  /** Native stamps already fetched by the caller's change check, so the vault is walked once. */
   providedStamps?: VaultStampIndex | null,
-  /** Tests pass 1 as a one-at-a-time reference. */
   readConcurrency = VAULT_READ_CONCURRENCY,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  /* The walk info must survive an incremental rebuild: the first-run card reads
-   * `sourceFileCount`, and its absence reorders the card while it is on screen. */
   const walked = await walkVault(root);
   const files = walked.entries;
   const internMetadata = createMetadataStringPool();
@@ -699,65 +718,47 @@ export async function rebuildLocalManifestIncremental(
   };
   const nativeRoot = nativeRootPath(root);
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
-  /* Decide from native mtimes before calling `getFile()`, which under Tauri transfers the whole
-   * body. The web has no batch API and gets null (`.claude/rules/surfaces.md`). */
   const nativeStamps: VaultStampIndex | null = providedStamps ?? (await nativeStampIndex(root));
-  const readOne = async (entry: WalkEntry): Promise<BuiltVaultEntry> => {
-    // An unchanged native mtime means the file is never opened; an unknown path is read to be safe.
+  const reused = (entry: WalkEntry, lastModified: number): BuiltVaultEntry | null => {
+    const prev = prevByPath.get(entry.relativePath);
+    return prev && prev.kind === entry.kind && prev.lastModified === lastModified
+      ? { ...prev, handle: entry.handle }
+      : null;
+  };
+  const known: Array<BuiltVaultEntry | null> = files.map((entry) => {
     const nativeStamp = nativeStamps?.get(entry.relativePath);
-    if (nativeStamp !== undefined) {
-      const prevNative = prevByPath.get(entry.relativePath);
-      if (
-        prevNative &&
-        prevNative.kind === entry.kind &&
-        prevNative.lastModified === nativeStamp.lastModified
-      ) {
-        return { ...prevNative, handle: entry.handle };
-      }
-    }
-    if (entry.kind === 'source') {
-      // Metadata only: a raw source's bytes never enter this process.
-      const { lastModified, bytes } = nativeStamp
-        ? { lastModified: nativeStamp.lastModified, bytes: nativeStamp.size }
-        : await sourceStampFromHandle(entry.handle);
-      return {
-        relativePath: entry.relativePath,
-        lastModified,
-        bytes,
-        handle: entry.handle,
-        kind: 'source',
-      };
-    }
-    if (entry.kind === 'image' && nativeStamp) {
-      // An image's mtime is all the build needs; its bytes stay native.
-      return {
-        relativePath: entry.relativePath,
-        lastModified: nativeStamp.lastModified,
-        handle: entry.handle,
-        kind: 'image',
-      };
+    return nativeStamp === undefined ? null : reused(entry, nativeStamp.lastModified);
+  });
+  const readMarkdown = createMarkdownReader(nativeRoot);
+  const pending = nativeRoot
+    ? files.flatMap((entry, index) => (known[index] === null && entry.kind === 'md' ? [index] : []))
+    : [];
+  const batches: number[][] = [];
+  for (let at = 0; at < pending.length; at += NATIVE_READ_BATCH) {
+    batches.push(pending.slice(at, at + NATIVE_READ_BATCH));
+  }
+  await mapPooled(batches, NATIVE_BATCH_CONCURRENCY, async (batch) => {
+    const texts = await readMarkdown(batch.map((index) => files[index]));
+    batch.forEach((index, at) => {
+      const { text, lastModified } = texts[at];
+      known[index] = reused(files[index], lastModified) ?? buildMdEntry(files[index], text, lastModified, internMetadata);
+    });
+  });
+  const readOne = async (index: number): Promise<BuiltVaultEntry> => {
+    const entry = files[index];
+    const settled = known[index];
+    if (settled) return settled;
+    if (entry.kind === 'source' || (entry.kind === 'image' && nativeStamps?.has(entry.relativePath))) {
+      return stampedEntry(entry, nativeStamps);
     }
     const file = await manifestFile(entry, nativeRoot);
-    const prev = prevByPath.get(entry.relativePath);
-    if (
-      prev &&
-      prev.kind === entry.kind &&
-      prev.lastModified === file.lastModified
-    ) {
-      // Unchanged — reuse the previous result without re-reading; take the fresh handle.
-      return { ...prev, handle: entry.handle };
-    }
+    const unchanged = reused(entry, file.lastModified);
+    if (unchanged) return unchanged;
     if (entry.kind === 'image') {
-      return {
-        relativePath: entry.relativePath,
-        lastModified: file.lastModified,
-        handle: entry.handle,
-        kind: 'image',
-      };
+      return { relativePath: entry.relativePath, lastModified: file.lastModified, handle: entry.handle, kind: 'image' };
     }
-    const raw = await file.text();
-    return buildMdEntry(entry, raw, file.lastModified, internMetadata);
+    return buildMdEntry(entry, await file.text(), file.lastModified, internMetadata);
   };
-  const entries = await mapPooled(files, readConcurrency, readOne);
+  const entries = await mapPooled(files.map((_, index) => index), readConcurrency, readOne);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }

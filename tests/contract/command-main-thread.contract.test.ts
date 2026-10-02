@@ -51,6 +51,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'lib.rs', fn: 'vault_fingerprint', because: 'walks the whole vault' },
   { file: 'lib.rs', fn: 'list_vault_directory', because: 'lists a folder of any size' },
   { file: 'lib.rs', fn: 'read_vault_text_file', because: 'reads a file of any size' },
+  { file: 'lib.rs', fn: 'read_vault_text_files', because: 'reads up to 256 files of any size' },
   { file: 'lib.rs', fn: 'read_vault_text_tail', because: 'reads the end of a file' },
   { file: 'lib.rs', fn: 'read_vault_binary_file', because: 'reads a file of any size' },
   { file: 'lib.rs', fn: 'read_library_collections', because: 'reads a vault file' },

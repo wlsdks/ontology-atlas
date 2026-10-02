@@ -12,6 +12,7 @@ const readTauriVaultTextFile = vi.fn();
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
   readTauriVaultTextFile: (rootPath: string, path: string) => readTauriVaultTextFile(rootPath, path),
+  readTauriVaultTextFiles: async () => null,
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =
