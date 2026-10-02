@@ -68,6 +68,9 @@ test("a resting map schedules no animation frame until input wakes it", async ({
     .toBeGreaterThan(5);
 });
 
+type SkyProbe = { __atlasMap: { skyTime: () => number } };
+type SkyWatch = { __skyAfterFrame?: number[] };
+
 test("a resting Galaxy stops its frames once its sky has gone to sleep, and input wakes it", async ({ page }) => {
   test.setTimeout(150_000);
   await countFrames(page);
@@ -76,22 +79,28 @@ test("a resting Galaxy stops its frames once its sky has gone to sleep, and inpu
     window.localStorage.setItem("atlas.appearance.hex-board", "off");
     window.localStorage.setItem("atlas.appearance.galaxy", "on");
     window.localStorage.setItem("atlas.appearance.view3d", "off");
+    const w = window as unknown as SkyWatch & Partial<SkyProbe>;
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback: FrameRequestCallback) =>
+      raf((time) => {
+        callback(time);
+        if (w.__skyAfterFrame && w.__atlasMap) w.__skyAfterFrame.push(w.__atlasMap.skyTime());
+      });
   });
   await page.goto("/en/topology?synth=300&synthDeps=1&guides=off&e2e=1");
   await expect(page.getByTestId("topology-view-3d")).toHaveText(/Galaxy/);
   await waitForMapSettled(page);
   await waitForNoFrames(page);
 
-  type SkyProbe = { __atlasMap: { skyTime: () => number } };
   const restingSky = await page.evaluate(() => (window as unknown as SkyProbe).__atlasMap.skyTime());
   const box = await page.getByTestId("ontology-map-canvas").boundingBox();
-  const wokenAt = await page.evaluate(() => performance.now());
+  const wokenAt = await page.evaluate(() => {
+    (window as unknown as SkyWatch).__skyAfterFrame = [];
+    return performance.now();
+  });
   await page.mouse.move(box!.x + box!.width * 0.6, box!.y + box!.height * 0.6, { steps: 4 });
   const wokenSky = await page.waitForFunction(
-    (resting) => {
-      const sky = (window as unknown as SkyProbe).__atlasMap.skyTime();
-      return sky !== resting ? sky : null;
-    },
+    (resting) => (window as unknown as SkyWatch).__skyAfterFrame!.find((sky) => sky !== resting) ?? null,
     restingSky,
     { polling: "raf" },
   );
