@@ -1,14 +1,14 @@
 {
-  "permission-denied": "This folder refused the write, so nothing changed. Allow Ontology Atlas to reach this folder in System Settings, under Privacy & Security, then try again.",
-  "target-missing": "That folder or file is no longer there. It may have moved or been deleted, so open the folder again and retry.",
-  "already-exists": "A file of that name is already there, so nothing was overwritten. Check the existing file or use another name, then try again.",
-  "app-required": "This action creates a file directly in the folder, so only the desktop app can do it.",
-  "answer-history-unreadable": "This answer's question or its link to earlier versions could not be read. Check that answer_thread in the info block at the top of the file starts with wiki/answers/, then try again.",
-  "answer-path-invalid": "This answer does not live under wiki/answers/. Move the answer page into that folder, then try again.",
-  "answer-sources-unmeasured": "One of the cited originals cannot be read right now, so the refresh did not start. Put the original files back, then try again.",
-  "answer-previous-changed": "The previous answer or an original changed while this was being prepared, so it stopped. Nothing was saved; ask for the draft again.",
-  "answer-draft-mismatch": "What you reviewed and what was about to be saved no longer match, so nothing was saved. Open the comparison again, then save.",
-  "answer-draft-invalid": "The agent's draft cannot become a new version. Ask again for one body with its citations.",
-  "answer-revision-exists": "A page already exists at that address, so nothing was overwritten. Open it in the Library to see what is there.",
-  "answer-turn-incomplete": "The refresh did not finish. The previous answer is unchanged. Ask again when you are ready."
+  "permission-denied": "このフォルダへの書き込みが拒否されたため、何も変更されていません。システム設定の「プライバシーとセキュリティ」で、Ontology Atlasにこのフォルダへのアクセスを許可してから、もう一度お試しください。",
+  "target-missing": "そのフォルダまたはファイルは見つかりません。移動または削除された可能性があるため、フォルダを開き直してからやり直してください。",
+  "already-exists": "同じ名前のファイルがすでにあるため、上書きしていません。既存のファイルを確認するか別の名前を使って、もう一度お試しください。",
+  "app-required": "この操作はフォルダ内に直接ファイルを作成するため、デスクトップアプリでのみ実行できます。",
+  "answer-history-unreadable": "この回答の質問、または以前のバージョンへのリンクを読み取れませんでした。ファイル先頭の情報ブロックにあるanswer_threadがwiki/answers/で始まっているか確認してから、もう一度お試しください。",
+  "answer-path-invalid": "この回答はwiki/answers/の下にありません。回答ページをそのフォルダに移動してから、もう一度お試しください。",
+  "answer-sources-unmeasured": "引用された原本の一部をいま読み取れないため、更新を開始しませんでした。原本ファイルを元の場所に戻してから、もう一度お試しください。",
+  "answer-previous-changed": "準備中に前の回答または原本が変更されたため、処理を中止しました。何も保存されていません。もう一度下書きを依頼してください。",
+  "answer-draft-mismatch": "確認した内容と保存しようとした内容が一致しなくなったため、何も保存されていません。比較を開き直してから保存してください。",
+  "answer-draft-invalid": "エージェントの下書きは新しいバージョンにできません。引用付きの本文を1つ、もう一度依頼してください。",
+  "answer-revision-exists": "そのアドレスにはすでにページがあるため、上書きしていません。資料室で開いて、内容を確認してください。",
+  "answer-turn-incomplete": "更新は完了しませんでした。前の回答は変更されていません。準備ができたら、もう一度依頼してください。"
 }

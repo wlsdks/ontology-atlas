@@ -1,26 +1,26 @@
 {
   "siteName": "Ontology Atlas",
-  "siteTagline": "Shared codebase meaning for people and AI agents",
+  "siteTagline": "人とAIエージェントで共有する、コードベースの意味",
   "pages": {
-    "topology": "Map",
-    "docs": "Ontology · Library",
-    "download": "Download",
-    "projects": "Projects",
-    "ontology": "Ontology",
-    "ontologyInsights": "Insights",
-    "projectNew": "New project",
-    "guide": "Guide",
-    "changelog": "Changelog",
-    "agents": "Agents"
+    "topology": "マップ",
+    "docs": "オントロジー・資料室",
+    "download": "ダウンロード",
+    "projects": "プロジェクト",
+    "ontology": "オントロジー",
+    "ontologyInsights": "分析",
+    "projectNew": "新規プロジェクト",
+    "guide": "ガイド",
+    "changelog": "更新履歴",
+    "agents": "エージェント"
   },
   "descriptions": {
-    "home": "Keep understanding your system as AI agents change its code. Share task context, inspect recorded meaning and evidence, and decide what to keep in a local Markdown vault.",
-    "download": "Download Ontology Atlas to share codebase context with agents and inspect recorded meaning, evidence, and unknowns. Signed macOS app; unsigned Windows beta; no Atlas backend.",
-    "topology": "See your project's domains, capabilities, elements and their dependencies as one map. The info block at the top of each file is the map, and the files stay on your own disk.",
-    "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
-    "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
-    "ontologyInsights": "Concept census by kind, the hubs with the most connections, and the concepts still attached to nothing. Where to look before you grow the map.",
-    "guide": "Start with a Markdown vault, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
-    "changelog": "Ontology Atlas changelog: user-visible changes, newest first."
+    "home": "AIエージェントがコードを変えても、システムの理解を保てます。タスクの文脈を共有し、記録された意味と根拠を確かめ、残すものをローカルのMarkdown vaultで判断できます。",
+    "download": "Ontology Atlasをダウンロードして、エージェントとコードベースの文脈を共有し、記録された意味、根拠、不明点を確認できます。macOSアプリは署名済み、Windowsはベータ版で未署名です。Atlasのバックエンドはありません。",
+    "topology": "プロジェクトのドメイン、ケイパビリティ、要素と、それらの依存関係を1枚のマップで見られます。各ファイル先頭の情報ブロックがそのままマップになり、ファイルは自分のディスクに残ります。",
+    "docs": "Markdownフォルダを直接読み書きできます。ファイル先頭の情報ブロックを変えると、マップもそれに合わせて変わります。",
+    "projects": "このマップ上のすべてのプロジェクトとハブを、それぞれを構成するドメインとケイパビリティとともに表示します。",
+    "ontologyInsights": "種類別の概念数、つながりが最も多いハブ、どこにもつながっていない概念を確認できます。マップを広げる前に見る場所です。",
+    "guide": "Markdown vaultから始めて、コーディングエージェントを接続し、Ontology Atlasで記録された意味、根拠、不明点を確認する方法を学べます。",
+    "changelog": "Ontology Atlasの更新履歴です。ユーザーに見える変更を新しい順に掲載します。"
   }
 }

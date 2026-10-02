@@ -1,15 +1,15 @@
 {
-  "ariaLabel": "Primary navigation",
-  "map": "Map",
-  "architecture": "Harness",
-  "docs": "Ontology",
-  "library": "Library",
-  "automations": "Automations",
-  "insights": "Insights",
-  "projects": "Projects",
-  "agents": "Agents",
+  "ariaLabel": "メインナビゲーション",
+  "map": "マップ",
+  "architecture": "ハーネス",
+  "docs": "オントロジー",
+  "library": "資料室",
+  "automations": "自動化",
+  "insights": "分析",
+  "projects": "プロジェクト",
+  "agents": "エージェント",
   "mcp": "MCP",
   "git": "Git",
-  "getApp": "Get the app",
-  "getAppTitle": "The desktop app remembers your folder, opens offline, and handles history and AI connections"
+  "getApp": "アプリ入手",
+  "getAppTitle": "デスクトップアプリはフォルダを記憶し、オフラインで開け、履歴とAI接続も扱えます"
 }

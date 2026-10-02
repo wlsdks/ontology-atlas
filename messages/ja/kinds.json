@@ -1,9 +1,9 @@
 {
-  "project": "Project",
-  "domain": "Domain",
-  "capability": "Capability",
-  "element": "Element",
-  "document": "Document",
-  "vault-readme": "Repository guide",
-  "unknown": "Unresolved"
+  "project": "プロジェクト",
+  "domain": "ドメイン",
+  "capability": "ケイパビリティ",
+  "element": "要素",
+  "document": "ドキュメント",
+  "vault-readme": "リポジトリガイド",
+  "unknown": "未分類"
 }

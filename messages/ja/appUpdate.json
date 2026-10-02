@@ -1,14 +1,14 @@
 {
-  "availableTitle": "Version {version} is available",
-  "availableBody": "Install it now, or keep working and update later.",
-  "install": "Install update",
-  "downloadingTitle": "Downloading {version}",
-  "downloadingPercent": "{percent} downloaded.",
-  "downloadingUnknown": "Downloading: the size is not reported.",
-  "readyTitle": "{version} is ready",
-  "readyBody": "Restart to finish. Your open folder stays where it is.",
-  "restart": "Restart now",
-  "failedTitle": "The update could not be installed",
-  "failedBody": "You can download the latest version from the releases page instead.",
-  "dismiss": "Not now"
+  "availableTitle": "バージョン{version}を利用できます",
+  "availableBody": "今すぐインストールするか、作業を続けて後で更新できます。",
+  "install": "更新をインストール",
+  "downloadingTitle": "{version}をダウンロード中",
+  "downloadingPercent": "{percent}ダウンロード済み。",
+  "downloadingUnknown": "ダウンロード中：サイズは不明です。",
+  "readyTitle": "{version}の準備ができました",
+  "readyBody": "再起動すると完了します。開いているフォルダはそのままです。",
+  "restart": "今すぐ再起動",
+  "failedTitle": "更新をインストールできませんでした",
+  "failedBody": "代わりにリリースページから最新版をダウンロードできます。",
+  "dismiss": "後で"
 }

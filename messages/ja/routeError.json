@@ -1,9 +1,9 @@
 {
-  "label": "Unexpected error",
-  "title": "This screen stopped while rendering",
-  "body": "It may be a passing problem. Try again or go home.",
-  "bodyWithId": "It may be a passing problem. Try again or go home. If it keeps happening, report it with the error ID below.",
-  "retry": "Try again",
-  "home": "Home",
-  "errorId": "Error ID"
+  "label": "予期しないエラー",
+  "title": "この画面は表示中に停止しました",
+  "body": "一時的な問題かもしれません。もう一度試すか、ホームに戻ってください。",
+  "bodyWithId": "一時的な問題かもしれません。もう一度試すか、ホームに戻ってください。繰り返し起きる場合は、下のエラーIDを添えて報告してください。",
+  "retry": "再試行",
+  "home": "ホーム",
+  "errorId": "エラーID"
 }

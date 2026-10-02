@@ -1,5 +1,5 @@
 {
-  "fresh": "Updated this week",
-  "active": "Updated this month",
-  "stale": "Update recommended"
+  "fresh": "今週更新",
+  "active": "今月更新",
+  "stale": "更新を推奨"
 }
