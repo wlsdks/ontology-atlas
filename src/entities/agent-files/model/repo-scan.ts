@@ -146,6 +146,7 @@ export interface HarnessReport {
   gitHookFiles: readonly string[];
   /** `.github/workflows/*` paths, listed even when the coverage pass does not run. */
   workflowFiles: readonly string[];
+  topLevelFolders: readonly string[];
   /** Filesystem mtimes, not commit dates: a fresh checkout stamps every file. */
   timesAreFileMtime: true;
 }
@@ -182,12 +183,14 @@ async function nestedAgentsFiles(
   port: HarnessScanPort,
   out: AgentFileEntry[],
   times: HarnessFileTime[],
+  folders: string[],
 ): Promise<void> {
   const entries = await port.listDir('');
   if (!entries) return;
   for (const entry of entries) {
     if (entry.kind !== 'directory') continue;
     if (SKIPPED_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
+    folders.push(entry.name);
     const path = `${entry.name}/AGENTS.md`;
     const file = await port.readText(path);
     if (!file) continue;
@@ -328,7 +331,8 @@ export async function scanHarness(
     times.push({ path, lastModified: file.lastModified });
   }
   report({ stage: 'nested', done: 0, total: null });
-  await nestedAgentsFiles(port, files, times);
+  const rootFolders: string[] = [];
+  await nestedAgentsFiles(port, files, times, rootFolders);
   for (const [index, dir] of SCAN_DIRS.entries()) {
     await walk(port, dir, 0, files, times);
     report({ stage: 'agent-directories', done: index + 1, total: SCAN_DIRS.length });
@@ -449,6 +453,7 @@ export async function scanHarness(
     testFiles: [...new Set(testFiles)].sort(),
     gitHookFiles: [...gitHooks.keys()].sort(),
     workflowFiles: [...workflows.keys()].sort(),
+    topLevelFolders: rootFolders.filter((name) => !excludedFolders.includes(name)).sort(),
     timesAreFileMtime: true,
   };
 }

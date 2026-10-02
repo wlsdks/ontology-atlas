@@ -105,6 +105,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
     contents: new Map(),
     checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },
     guideDocumentCount: 93,
+    topLevelFolders: [],
     timesAreFileMtime: true,
     ...overrides,
   };

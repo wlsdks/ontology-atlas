@@ -157,5 +157,15 @@
   "agentTaskCopyHint": "Choosing copies that task's sentence.",
   "copiedTaskHandoff": "Copied “{task}”. Paste it into your agent",
   "copyTaskSentence": "Copy the “{task}” task",
-  "deltaColumnHint": "Each mark says what that role's own outgoing imports did against the rules it declares. It is not a verdict on the role."
+  "deltaColumnHint": "Each mark says what that role's own outgoing imports did against the rules it declares. It is not a verdict on the role.",
+  "draftPreview": {
+    "exampleLabel": "Example · not data from your folder",
+    "sourceLabel": "Example · only the folder names come from {name}",
+    "moreFolders": "+{count} more",
+    "pause": "Pause example animation",
+    "resume": "Resume example animation",
+    "replay": "Replay example animation",
+    "descriptionExample": "Example animation, not data from your folder: once the folders of {name} ({folders}) are read, {layers} layers from {top} down to {bottom} appear with the direction each may depend, one import climbing from {from} to {to} is flagged, and the result is saved as the file {file}.",
+    "descriptionSource": "Example animation; only the folder names are real, from your connected source folder {name} ({folders}), and the result after them is an example: {layers} layers from {top} down to {bottom} appear with the direction each may depend, one import climbing from {from} to {to} is flagged, and the result is saved as the file {file}."
+  }
 }

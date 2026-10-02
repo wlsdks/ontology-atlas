@@ -288,3 +288,18 @@ opens on the blueprint there rather than on a card about what this browser canno
   whose reserve stays part of the workbench.
 
 **Import direction is drawn as depth** (2026-09-08). The reviewed ladder stands on stacked translucent planes, one per layer, stepping 14 px per rank so the stack shears along one line and reads as a solid: an allowed import runs down onto a lower plane in indigo, a violation is the stroke that climbs to a higher plane in the danger tone with a halo that rises when either end is selected. Plane fill is capped under a role's own face so depth never inverts; the lit top edge carries the reading. Measured at 1512 and 1280: overlap count 0, every label at or above 4.5:1 on its plane, height up 1.6 to 2.8 percent, width unchanged.
+
+**Before a profile exists, the tab shows what one gives** (2026-10-02, owner). The empty state is a
+hero on the Harness start line: the sentence and its two actions, and beside them from 1216px of
+content (under them below that) an illustration of the reviewed ladder. It plays three loops of
+7.68s and then rests on its finished frame: the folders appear, one light reads down them and
+carries the read to the foundation, the six layers rise from Shared foundation to Routes, the
+rules run down, one import that climbs from Shared foundation to Features is caught in the
+receipt's own danger tone and sentence, and `architecture/web.md` settles with a check. When the
+installed app has one connected source folder, the folder column is that folder's real top-level
+folders, kept from the root listing the harness scan already reads (dot, build and ignored folders
+left out; no new read), and the frame says only the folder names are real; otherwise every part is
+labelled an example. It pauses while hidden, off-screen or on request, holds its finished frame
+under reduced motion and while the agent dock is open, and spends no script per frame: measured on
+the static export at 1512, one loop cost 0.28ms of style and 0.08ms of paint per frame and 0 frames
+after the third loop.
