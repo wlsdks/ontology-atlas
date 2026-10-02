@@ -15,8 +15,11 @@ landing, and instruction integrity".
 
 ## Language
 
-Contributor prose is English. Korean appears only as `display_ko` data and
-inside `cli/templates/vault-ko/**`. The rule covers strings a program prints:
+Contributor prose is English. Han, kana and Hangul appear only as
+`display_<locale>` data, inside `cli/templates/vault-<locale>/**`, in the
+localized READMEs (`README.{ko,ja,zh}.md`), and in the labels of `README.md`'s
+language switcher links. The localized READMEs follow `README.md` section for
+section. The rule covers strings a program prints:
 `cli-output-language.contract.test.ts` holds `cli/src/**` at zero, and the
 matcher data in `mcp/src/absorb.mjs` is the `display_ko` exception.
 `pnpm docs:language` ratchets the remaining scopes.

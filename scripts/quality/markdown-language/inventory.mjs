@@ -13,6 +13,9 @@ const QUOTED_EVIDENCE_COORDINATE = /^\s*-\s*Focused test:\s*(`[^`\n]+#[^`\n]+`)\
 
 const LOCALE_TEMPLATE = /^cli\/templates\/vault-[a-z]{2}\//;
 
+const LOCALIZED_READMES = Object.freeze(['README.ko.md', 'README.ja.md', 'README.zh.md']);
+const LANGUAGE_SWITCHER_LINK = /\[[^\]\n]{1,8}\]\((?:\.\/)?(README\.[a-z]{2}\.md)\)/gu;
+
 const OPERATIONAL_PATHS = new Set([
   'AGENTS.md',
   'CLAUDE.md',
@@ -50,7 +53,19 @@ export function classifyMarkdownPath(path) {
   if (LOCALE_TEMPLATE.test(path)) {
     return { kind: 'locale-template', scope: null };
   }
+  if (LOCALIZED_READMES.includes(path)) {
+    return { kind: 'localized-readme', scope: null };
+  }
   return { kind: 'canonical', scope: canonicalScope(path) };
+}
+
+function isLanguageSwitcherLine(path, line) {
+  if (path !== 'README.md') return false;
+  const rest = line.replace(
+    LANGUAGE_SWITCHER_LINK,
+    (link, target) => (LOCALIZED_READMES.includes(target) ? '' : link),
+  );
+  return rest !== line && [...rest.matchAll(NON_LATIN_SCRIPT)].length === 0;
 }
 
 function emptyScopeSummary() {
@@ -72,6 +87,8 @@ export function auditMarkdownEntries(entries) {
     generatedFiles: 0,
     harnessFiles: { codex: 0, claude: 0 },
     localeTemplateFiles: 0,
+    localizedReadmeFiles: 0,
+    languageSwitcherLines: 0,
     allowedLocaleLines: 0,
     quotedEvidenceLines: 0,
     unexpectedFiles: 0,
@@ -94,6 +111,11 @@ export function auditMarkdownEntries(entries) {
     }
     if (classification.kind === 'locale-template') {
       result.localeTemplateFiles += 1;
+      result.skippedFiles += 1;
+      continue;
+    }
+    if (classification.kind === 'localized-readme') {
+      result.localizedReadmeFiles += 1;
       result.skippedFiles += 1;
       continue;
     }
@@ -125,6 +147,10 @@ export function auditMarkdownEntries(entries) {
       if (matches.length === 0) continue;
       if (inLeadingFrontmatter && TYPED_LOCALE_KEY.test(line)) {
         result.allowedLocaleLines += 1;
+        continue;
+      }
+      if (!inLeadingFrontmatter && isLanguageSwitcherLine(entry.path, line)) {
+        result.languageSwitcherLines += 1;
         continue;
       }
       // A focused-test coordinate quotes a test title from source. When that
