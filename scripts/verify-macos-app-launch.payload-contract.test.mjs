@@ -465,3 +465,12 @@ test("payload contract · a vanished insights subject or panel fails", () => {
     /question tab count/,
   );
 });
+
+test("workbench markers follow an injected four-locale list", () => {
+  const locales = ["en", "ja", "ko", "zh"];
+  for (const locale of locales) {
+    const markers = webviewWorkbenchMarkersForPath(`/${locale}/library/`, locales);
+    assert.notEqual(markers, WEBVIEW_WORKBENCH_MARKERS, locale);
+  }
+  assert.equal(webviewWorkbenchMarkersForPath("/ja/library/", ["en", "ko"]), WEBVIEW_WORKBENCH_MARKERS);
+});
