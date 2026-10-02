@@ -309,13 +309,14 @@
       "@swc/core",
       "unrs-resolver"
     ],
+    "//": "overrides: the brace-expansion floors lift eslint's minimatch 3 and typescript-estree's minimatch 10 (GHSA-q2hr-2g5m-vwhr); the undici floor lifts jsdom 29 (GHSA-w293-vg96-wgc3 and five more). All three are dev-only transitive dependencies whose parents still accept the vulnerable range; remove a floor once its parent's own range starts at or above it.",
     "overrides": {
-      "brace-expansion@<1.1.18": "1.1.18",
-      "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
+      "brace-expansion@<1.1.21": "1.1.21",
+      "brace-expansion@>=4.0.0 <5.0.12": "5.0.12",
       "nanoid@<3.3.17": "3.3.18",
       "postcss@<8.5.23": "8.5.23",
       "sharp@<0.35.4": "0.35.4",
-      "undici@>=7.0.0 <7.29.0": "7.29.0",
+      "undici@>=7.0.0 <7.29.1": "7.29.1",
       "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
       "vite@<8.0.16": "8.1.5"
     }

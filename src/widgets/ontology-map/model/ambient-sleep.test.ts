@@ -3,7 +3,9 @@ import {
   AMBIENT_SLEEP_DELAY_MS,
   AMBIENT_SLEEP_RAMP_MS,
   ambientSleepFactor,
+  createAmbientClock,
   isAmbientAsleep,
+  stepAmbientClock,
 } from "./ambient-sleep";
 
 describe("ambientSleepFactor", () => {
@@ -84,5 +86,64 @@ describe("ambient sleep contract, end to end", () => {
     lastInput = 40_000;
     expect(at(40_000)).toBe(1);
     expect(isAmbientAsleep(at(40_000))).toBe(false);
+  });
+});
+
+describe("stepAmbientClock", () => {
+  const D = AMBIENT_SLEEP_DELAY_MS;
+  const R = AMBIENT_SLEEP_RAMP_MS;
+  const run = (clock: ReturnType<typeof createAmbientClock>, entry: number, lastInput: number, from: number, to: number) => {
+    for (let now = from + 16; now <= to; now += 16) {
+      stepAmbientClock(clock, entry, now, 16, ambientSleepFactor(now, lastInput));
+    }
+    return clock.lostMs;
+  };
+
+  it("loses no time while input is recent, so an awake sky is the same sky as before", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    expect(run(clock, 0, 0, 0, D)).toBe(0);
+  });
+
+  it("slows across the ramp and stands still once asleep", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    run(clock, 0, 0, 0, D);
+    const afterRamp = run(clock, 0, 0, D, D + R);
+    expect(afterRamp).toBeGreaterThan(R * 0.4);
+    expect(afterRamp).toBeLessThan(R * 0.6);
+    const later = run(clock, 0, 0, D + R, D + R + 4800);
+    expect(D + R + 4800 - later).toBeCloseTo(D + R - afterRamp, 6);
+  });
+
+  it("resumes from where it stopped on input, advancing one frame rather than the whole sleep", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    run(clock, 0, 0, 0, D + R + 16);
+    const restedAt = D + R + 16 - clock.lostMs;
+    const woken = D + R + 60_000;
+    const lost = stepAmbientClock(clock, 0, woken, 50, ambientSleepFactor(woken, woken));
+    expect(woken - lost).toBeCloseTo(restedAt + 50, 6);
+  });
+
+  it("marks the sky time the quiet began, so what was in flight is not replayed on waking", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    run(clock, 0, 0, 0, D);
+    expect(clock.quietUntilMs).toBe(Number.NEGATIVE_INFINITY);
+    run(clock, 0, 0, D, D + R + 4800);
+    const restedAt = D + R + 4800 - clock.lostMs;
+    expect(clock.quietUntilMs).toBeCloseTo(restedAt, 6);
+    const woken = D + R + 60_000;
+    stepAmbientClock(clock, 0, woken, 50, ambientSleepFactor(woken, woken));
+    expect(clock.quietUntilMs).toBeCloseTo(restedAt, 6);
+  });
+
+  it("starts over on a new entry", () => {
+    const clock = createAmbientClock();
+    stepAmbientClock(clock, 0, 0, 16, 1);
+    run(clock, 0, 0, 0, D + R + 1000);
+    expect(stepAmbientClock(clock, 9000, 9250, 16, 1)).toBe(0);
+    expect(clock.quietUntilMs).toBe(Number.NEGATIVE_INFINITY);
   });
 });

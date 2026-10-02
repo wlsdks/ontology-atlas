@@ -4,7 +4,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraAxes } from "../engine/camera";
-import { ambientSleepFactor } from "../model/ambient-sleep";
+import { ambientSleepFactor, createAmbientClock, stepAmbientClock } from "../model/ambient-sleep";
 import type { ClusterChip } from "../model/density-gate";
 import {
   DOME_ASSEMBLE_TOTAL_MS,
@@ -228,6 +228,7 @@ export function createPresentationFrameStage({
    * the inks are re-parsed only when the token strings change.
    */
   const strataStage = createStrataStage();
+  const atmosphereClock = createAmbientClock();
   let litInkKey = "";
   let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
   const resolveLitInks = (tokens: OntologyMapTokens) => {
@@ -447,10 +448,9 @@ export function createPresentationFrameStage({
       trailLensRampRef.current = stepFocusRamp(trailLensRampRef.current, trailLensActive, dt, tokens.focusDimTau);
     }
 
-    // One animated-background step, refreshing its own buffer **before** the
-    // draw. It receives `ambientFactor` directly, so it decelerates to a stop
-    // once the hand lets go, and at 0 the call returns early — zero raster
-    // cost while idle.
+    const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
+    const atmosphereLagMs = stepAmbientClock(atmosphereClock, galaxyEnteredAtRef.current, now, dt * 1000, ambientFactor);
+
     {
       const bg = animatedBgRef.current;
       if (bg) {
@@ -461,7 +461,7 @@ export function createPresentationFrameStage({
           dpr,
           originX: origin.x,
           originY: origin.y,
-          ambientFactor: ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current),
+          ambientFactor,
           pointerX: bgPointerRef.current?.x ?? null,
           pointerY: bgPointerRef.current?.y ?? null,
           dtMs: dt * 1000,
@@ -486,8 +486,11 @@ export function createPresentationFrameStage({
       galaxyLayoutRadius: galaxyLayoutRef.current?.radius ?? 0,
       galaxyElapsedMs:
         galaxyRampRef.current > 0.001 && galaxyEnteredAtRef.current > 0
-          ? Math.max(0, now - galaxyEnteredAtRef.current)
+          ? Math.max(0, now - galaxyEnteredAtRef.current - atmosphereLagMs)
           : 0,
+      galaxyAtmosphereLagMs: atmosphereLagMs,
+      galaxyAtmosphereLive: ambientFactor,
+      galaxyMeteorQuietUntilMs: ambientFactor < 1 ? Number.NEGATIVE_INFINITY : atmosphereClock.quietUntilMs,
       galaxyAtmosphereSeed: galaxyAtmosphereSeedRef.current,
       neuralRamp: neuralRampRef.current,
       zoomRatio,

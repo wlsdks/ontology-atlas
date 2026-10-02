@@ -150,17 +150,40 @@ test.describe("guided tour on a true first run", () => {
     await expect(overlay).toHaveAttribute("data-tour-step", "index");
 
     await expect(page.getByTestId("topology-index-tree"), "INDEX 단계인데 목록이 안 보인다").toBeVisible();
-    await expect(page.getByTestId("first-run-starter-dismiss"), "INDEX 단계인데 첫 실행 카드가 서 있다").toHaveCount(0);
+    await expect(page.getByTestId("first-run-starter"), "INDEX 단계인데 첫 실행 카드가 서 있다").toHaveCount(0);
 
-    // The developer step points at the card's one-line command; the line has
-    // to be showing, not folded behind its disclosure.
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "recent");
+    await page.evaluate(() => {
+      const samples: Array<{ left: number; top: number; opacity: number }> = [];
+      (window as unknown as { __tourCardSamples: typeof samples }).__tourCardSamples = samples;
+      const tick = () => {
+        const step = document.querySelector('[data-testid="guided-tour-overlay"]')?.getAttribute("data-tour-step");
+        const tourCard = document.querySelector<HTMLElement>('[data-testid="guided-tour-card"]');
+        if (step === "agent" && tourCard) {
+          const box = tourCard.getBoundingClientRect();
+          samples.push({ left: box.left, top: box.top, opacity: Number(getComputedStyle(tourCard).opacity) });
+        }
+        if (samples.length < 30) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
     await card.getByTestId("guided-tour-dev-branch").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "agent");
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __tourCardSamples: unknown[] }).__tourCardSamples.length))
+      .toBe(30);
+    const cardPath = await page.evaluate(
+      () => (window as unknown as { __tourCardSamples: Array<{ left: number; top: number; opacity: number }> }).__tourCardSamples,
+    );
+    const shown = cardPath.filter((sample) => sample.opacity > 0.05);
+    expect(shown.length, "the developer step's card never became visible in the sampled frames").toBeGreaterThan(10);
+    const jumps = shown.slice(1).map((sample, index) =>
+      Math.max(Math.abs(sample.left - shown[index]!.left), Math.abs(sample.top - shown[index]!.top)),
+    );
+    expect(Math.max(...jumps), `the developer step's card moved after it appeared: ${JSON.stringify(shown.map((s) => [Math.round(s.left), Math.round(s.top)]))}`).toBeLessThanOrEqual(2);
+    await expect(page.getByTestId("first-run-starter-more-toggle"), "the developer step left the group holding the command folded").toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("first-run-starter-cli-toggle"), "개발자 단계인데 명령 한 줄이 접혀 있다").toHaveAttribute("aria-expanded", "true");
-    // ...and showing in full, not clipped under the card's edge: the card
-    // scrolls, and the command is its last row.
     await expect
       .poll(
         () =>
@@ -172,5 +195,25 @@ test.describe("guided tour on a true first run", () => {
         { timeout: 5_000, message: "명령 블록이 카드 아래로 잘려 있다" },
       )
       .toBeLessThanOrEqual(1);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const rect = (id: string) => document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+            const block = rect("first-run-starter-cli-bridge");
+            const cutout = rect("guided-tour-cutout");
+            const tourCard = rect("guided-tour-card");
+            const inside =
+              block.top >= cutout.top - 1 &&
+              block.bottom <= cutout.bottom + 1 &&
+              block.left >= cutout.left - 1 &&
+              block.right <= cutout.right + 1;
+            const covered =
+              block.left < tourCard.right && block.right > tourCard.left && block.top < tourCard.bottom && block.bottom > tourCard.top;
+            return { inside, covered };
+          }),
+        { timeout: 5_000, message: "the developer step lights the card but the command sits outside the cutout or under the tour card" },
+      )
+      .toEqual({ inside: true, covered: false });
   });
 });

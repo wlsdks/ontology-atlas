@@ -23,6 +23,7 @@ import {
   lastDrawnLod,
   lastDrawnNodeAlphas,
   lastDrawnRelationCaptions,
+  lastDrawnSkyTimeMs,
   lastLitStateCounts,
   setMapComets,
 } from "./topology-frame-draw";
@@ -385,6 +386,7 @@ export function useTopologyMapInstrumentation({
        * read it from — the same reason every other entry here exists.
        */
       altitude: () => drawnFarTRef.current,
+      skyTime: () => lastDrawnSkyTimeMs(),
       camera: () => {
         const camera = cameraRef.current;
         const { width, height } = viewportRef.current;

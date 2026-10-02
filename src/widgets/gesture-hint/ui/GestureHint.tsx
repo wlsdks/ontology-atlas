@@ -14,7 +14,6 @@ const STORAGE_KEY = "demo:gesture-hint:dismissed:v1";
 export function GestureHint({ disabled = false }: { disabled?: boolean }) {
   const t = useTranslations("searchWidgets.gestureHint");
   const [visible, setVisible] = useState(false);
-  // Touch environments only; initializeWithValue:false avoids a hydration mismatch.
   const isCoarsePointer = useMediaQuery("(pointer: coarse)", {
     initializeWithValue: false,
   });
@@ -33,13 +32,11 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, "1");
     } catch {
-      // A storage failure must not block the UX.
     }
   };
 
   useEffect(() => {
     if (!visible) return;
-    // Auto-dismiss after 10 seconds — a "read it and it's gone" experience.
     const id = window.setTimeout(dismiss, 10_000);
     return () => window.clearTimeout(id);
   }, [visible]);
@@ -57,7 +54,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
-          className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[var(--shadow-elevation-1)] md:hidden"
+          className="pointer-events-auto fixed bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] left-1/2 z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[var(--shadow-elevation-1)] md:hidden"
           role="status"
           aria-live="polite"
         >

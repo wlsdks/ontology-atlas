@@ -129,12 +129,33 @@ export interface GalaxyTwinkle {
   periodMs: number;
 }
 
+interface TwinkleSeed {
+  seed: number;
+  periodMs: number;
+  flareDurationMs: number;
+  rotation: number;
+}
+
+const TWINKLE_SEED_LIMIT = 65_536;
+const twinkleSeeds = new Map<string, TwinkleSeed>();
+
+function twinkleSeedFor(nodeId: string): TwinkleSeed {
+  const cached = twinkleSeeds.get(nodeId);
+  if (cached !== undefined) return cached;
+  if (twinkleSeeds.size >= TWINKLE_SEED_LIMIT) twinkleSeeds.clear();
+  const entry = {
+    seed: atmosphereHash(nodeId),
+    periodMs: 4000 + atmosphereHash(`${nodeId}:interval`) * 4000,
+    flareDurationMs: 700 + atmosphereHash(`${nodeId}:duration`) * 600,
+    rotation: atmosphereHash(`${nodeId}:glint`) * Math.PI,
+  };
+  twinkleSeeds.set(nodeId, entry);
+  return entry;
+}
+
 /** Deterministic; no frame changes graph meaning. */
 export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: boolean): GalaxyTwinkle {
-  const seed = atmosphereHash(nodeId);
-  const periodMs = 4000 + atmosphereHash(`${nodeId}:interval`) * 4000;
-  const flareDurationMs = 700 + atmosphereHash(`${nodeId}:duration`) * 600;
-  const rotation = atmosphereHash(`${nodeId}:glint`) * Math.PI;
+  const { seed, periodMs, flareDurationMs, rotation } = twinkleSeedFor(nodeId);
   if (reducedMotion) return { intensity: 0.9, glint: 0.32, rotation, periodMs };
   const cycleMs = ((nowMs + seed * periodMs) % periodMs + periodMs) % periodMs;
   const flareProgress = cycleMs <= flareDurationMs ? cycleMs / flareDurationMs : -1;
@@ -182,7 +203,11 @@ const METEOR_INTERVAL_BLOCK_MS = METEOR_INTERVALS_MS.reduce((sum, value) => sum 
  * A repeating interval block finds the cycle in constant time; the global cycle id keeps
  * visible paths from repeating with it.
  */
-export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteorPhase | null {
+export function galaxyMeteorPhase(
+  elapsedMs: number,
+  entrySeed = 0,
+  quietUntilMs = Number.NEGATIVE_INFINITY,
+): GalaxyMeteorPhase | null {
   if (!Number.isFinite(elapsedMs) || elapsedMs < METEOR_FIRST_AT_MS) return null;
   const sinceFirst = elapsedMs - METEOR_FIRST_AT_MS;
   const block = Math.floor(sinceFirst / METEOR_INTERVAL_BLOCK_MS);
@@ -196,7 +221,7 @@ export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteo
   const seed = `${entrySeed.toFixed(6)}:${cycle}`;
   const duration = 820 + meteorHash(`meteor-duration:${seed}`) * 620;
   const within = withinBlock;
-  if (within > duration) return null;
+  if (within > duration || elapsedMs - within <= quietUntilMs) return null;
   const direction = meteorHash(`meteor-direction:${seed}`) < 0.5 ? 1 : -1;
   const deltaX = direction * (0.28 + meteorHash(`meteor-length-x:${seed}`) * 0.34);
   const absDeltaX = Math.abs(deltaX);

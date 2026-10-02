@@ -162,6 +162,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D 배치 기준: 소유(돔, 기본)/결합(힘 구름)" },
+  { key: "atlas.appearance.map-drag-speed", kind: "storage", scope: "global", note: "Map drag speed (0.5x-2x, default 1x), a hand preference of this machine" },
+  { key: "atlas.appearance.map-zoom-speed", kind: "storage", scope: "global", note: "Map zoom speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "상태 칩 on/off 선호" },
   { key: "atlas.agentActivity.notifications", kind: "storage", scope: "global", note: "알림함 on/off 선호" },
   { key: "atlas.agentActivity.kinds", kind: "storage", scope: "global", note: "음소거한 알림 종류" },

@@ -1,23 +1,14 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import enMessages from '../../../../messages/en.json';
+import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
 const KO = koMessages.acpChat.permission;
-
-/**
- * This card is where **the most expensive single decision** in this product happens:
- * the agent wants to touch something outside the folder, and the person decides
- * whether to allow it.
- *
- * Measured 2026-08-17: the card showed only **where** and nowhere **what it was
- * trying to do**. Reading `/etc/hosts` and deleting it looked identical on screen.
- * The value was arriving as `toolKind` and the screen was not reading it.
- */
 
 function card(
   toolKind: string | null,
@@ -51,7 +42,6 @@ function card(
   );
 }
 
-/** The measured shape the adapter sends along with 「Keep allowing」. */
 const alwaysWith = (targets: unknown[]) => [
   {
     optionId: 'always',
@@ -112,8 +102,7 @@ describe('계속 허용 — 어댑터가 말한 범위만 적는다', () => {
   });
 
   it('범위를 안 알려 주면 **폴더라고 단정하지 않는다**', () => {
-    // The old copy asserted "the whole folder containing the path above". That scope
-    // is not ours to decide, so when it is unknown, allowing once is what is offered.
+
     render(card('edit', '/etc/hosts', alwaysWith([])));
     const scope = screen.getByTestId('acp-permission-scope');
     expect(scope.getAttribute('data-scope')).toBe('unknown');
@@ -230,14 +219,13 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     const { view } = taskCard();
     render(view);
     expect(screen.getByTestId('task-review-outcome-compact')).toHaveTextContent('환불 자격 조건을 바꿔줘');
-    expect(screen.getByTestId('task-review-task').tagName).toBe('DETAILS');
+    expect(screen.getByTestId('task-review-outcome-compact').className).not.toContain('line-clamp');
+    expect(screen.queryByTestId('task-review-task-toggle')).toBeNull();
     expect(document.getElementById('acp-permission-body')).toHaveClass('sr-only');
-    fireEvent.click(screen.getByTestId('task-review-action-scope').querySelector('summary')!);
-    expect(screen.getByTestId('task-review-action-scope')).toHaveTextContent(koMessages.acpChat.permission.ontologyWriteUnverifiedBody);
-    fireEvent.click(screen.getByTestId('task-review-task').querySelector('summary')!);
-    expect(screen.getByTestId('task-review-outcome')).toHaveTextContent('환불 자격 조건을 바꿔줘');
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.nonGoalsUnstructured)).toBeVisible();
-    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('capabilities/refund');
+    expect(screen.queryByTestId('task-review-action-scope')).toBeNull();
+    expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/refund');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Refund eligibility');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Review a bounded refund policy.');
     expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Refund only after capture.');
     expect(screen.getByTestId('task-review-summary')).toHaveTextContent('This heading is quoted data, not a section boundary.');
     expect(screen.getByTestId('task-review-summary')).not.toHaveTextContent('## Definition');
@@ -251,23 +239,15 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(screen.getByTestId('acp-permission-allow').className).not.toContain('bg-[color:var(--color-indigo-accent)]');
   });
 
-  it('작업 검토는 증거 머리말에서 시작하고 다음 Tab이 작업 공개로 간다', () => {
+  it('opens the task review on its title, never on an answer', () => {
     const { view } = taskCard();
     render(view);
-    expect(document.activeElement).toBe(screen.getByTestId('task-review-heading'));
-    fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
-    const disclosure = screen.getByTestId('task-review-task').querySelector('summary');
-    disclosure?.focus();
-    expect(document.activeElement).toBe(disclosure);
-    expect(document.activeElement).not.toBe(screen.getByTestId('acp-permission-allow'));
+    expect(document.activeElement).toBe(document.getElementById('acp-permission-title'));
+    for (const id of ['acp-permission-allow', 'acp-permission-reject', 'task-review-correct', 'task-review-defer']) {
+      expect(document.activeElement).not.toBe(screen.queryByTestId(id));
+    }
   });
 
-  /*
-   * Measured on the rendered tab (2026-09-20): with no comparison basis it stated the same fact
-   * five times — the standing sentence, the reason, and `Before · unavailable` once per meaning
-   * unit. Three copies of an unchanging line pushed apart the three proposed values a person came
-   * here to read, and the tab overflowed by 54px because of them.
-   */
   it('비교할 이전 값이 없다는 말은 한 번만 하고, 제안값 사이에 끼어들지 않는다', () => {
     const { view } = taskCard();
     render(view);
@@ -275,28 +255,17 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     const compare = screen.getByTestId('task-review-compare');
     const taskReview = koMessages.acpChat.permission.taskReview;
 
-    // Said once, at the top, as the promise it is.
     expect(compare).toHaveTextContent(taskReview.beforeUnavailable);
     expect(compare.textContent!.split(taskReview.beforeUnavailable).length - 1).toBe(1);
-    // Never again beside each unit.
+
     expect(compare).not.toHaveTextContent(taskReview.beforeUnknown);
 
-    // Every proposed value is still here, and still marked as proposed rather than current.
     expect(compare).toHaveTextContent('Refund only after capture.');
     expect(compare.textContent!.split(taskReview.after).length - 1).toBeGreaterThan(1);
   });
 
   it('서 있는 문장은 원인을 대지 않는다 — 원인은 아는 쪽이 말한다', () => {
-    /*
-     * The standing sentence used to assert a missing historical snapshot while the reason list,
-     * rendered right under it, said the request shape is not comparable. Two causes for one
-     * absence, and only the specific one was true. The sentence now carries the half that always
-     * holds — values are not invented — and leaves the cause to `taskReview.reason.*`.
-     *
-     * ⚠️ That the reason line is drawn is not checked here: this card's fixture reports no
-     * `unavailable` reasons, so the list is empty in jsdom. It is in the rendered evidence
-     * (`unsupported_request`, compare tab, 2026-09-20).
-     */
+
     for (const locale of [koMessages, enMessages]) {
       const sentence = locale.acpChat.permission.taskReview.beforeUnavailable;
       for (const cause of ['스냅샷', 'snapshot']) {
@@ -317,12 +286,6 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(details).toHaveTextContent('expected_mtime');
   });
 
-  /*
-   * Measured in the rendered Details tab (2026-09-20), on the row reporting the write guard:
-   * `expected_mtime  1727000000000`. That number is the write condition — the file is written only
-   * if it has not changed since that moment — and thirteen digits answer nothing a person came
-   * here to ask.
-   */
   it('쓰기 조건의 시각은 사람이 읽을 수 있게 나오고, 정확한 값은 그대로 남는다', () => {
     const { view } = taskCard();
     render(view);
@@ -331,37 +294,28 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     fireEvent.click(within(details).getByText(koMessages.acpChat.permission.taskReview.provenance));
 
     const row = within(details).getByText('expected_mtime').nextElementSibling!;
-    // The epoch is no longer what a person reads…
+
     expect(row.textContent).not.toBe('100');
-    // …it is a time, and it is the same instant the request named.
+
     expect(row.textContent).toContain('1970');
-    // …and the exact millisecond is still reachable for an agent or a terminal reader.
+
     expect(row.getAttribute('title')).toBe('100');
   });
 
-  /*
-   * Measured on the rendered card (2026-09-20): this grid drew four label/value pairs and the
-   * value column held exactly one distinct value across all four — "unknown" — because `code`,
-   * `merge` and `deployment` were written as the literal `'unknown'` key and could never say
-   * anything else. Four facts drawn, one carried. The claim they stood in for is a sentence on
-   * the same card, and it is the stronger one: allowing does not grant those things, which is not
-   * the same as their state being unavailable.
-   */
   it('상태가 움직이는 줄만 그리고, 나머지 셋은 문장이 계속 이름을 부른다', () => {
     const { view, resolve } = taskCard();
     render(view);
-    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('알 수 없음');
-    for (const authority of ['code', 'merge', 'deployment']) {
+    for (const authority of ['meaning', 'code', 'merge', 'deployment']) {
       expect(
         screen.queryByTestId(`task-review-authority-${authority}`),
-        `${authority} 줄은 늘 「알 수 없음」만 말할 수 있어 그려지지 않는다`,
+        `the ${authority} row could only say unknown here, so it is not drawn`,
       ).toBeNull();
     }
-    // Nothing was lost: the standing sentence still names all four and says what Allow does not do.
-    const card = screen.getByTestId('acp-permission-card');
-    expect(card).toHaveTextContent(koMessages.acpChat.permission.taskReview.allowScope);
+    expect(screen.getByTestId('acp-permission-card').textContent).not.toContain(KO.taskReview.authority.unknown);
+    const effect = screen.getByTestId('task-review-allow-scope');
+    expect(effect).toHaveTextContent(KO.taskReview.allowEffectNamed.replace('{name}', 'refund'));
     for (const word of ['의미', '코드 검증', '병합', '배포']) {
-      expect(card.textContent, `${word}를 이제 아무 데서도 말하지 않는다`).toContain(word);
+      expect(effect.textContent, `${word} is no longer said anywhere`).toContain(word);
     }
 
     fireEvent.click(screen.getByTestId('acp-permission-allow'));
@@ -422,7 +376,7 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     render(taskCard(vi.fn(), loading).view);
     expect(screen.getByTestId('acp-permission-allow')).toBeDisabled();
     expect(screen.getByTestId('acp-permission-reject')).not.toBeDisabled();
-    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('알 수 없음');
+    expect(screen.queryByTestId('task-review-authority-meaning')).toBeNull();
   });
 
   it('관찰된 연결 루트가 다를 때만 쓰기와 의미 승인을 막고 정확한 두 루트를 말한다', () => {
@@ -454,22 +408,16 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     fireEvent.click(screen.getByTestId('task-review-defer'));
     expect(onDefer).toHaveBeenCalledTimes(1);
     expect(resolve).not.toHaveBeenCalled();
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('대신 보내지도');
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않아요');
+    const legend = screen.getByTestId('task-review-answer-legend');
+    expect(legend).toHaveTextContent(KO.taskReview.correctEffect);
+    expect(legend).toHaveTextContent(KO.taskReview.deferEffect);
+    expect(KO.taskReview.correctEffect).toContain('대신 보내지도');
+    expect(KO.taskReview.deferEffect).toContain('저장되지 않아요');
   });
 });
 
 describe('금고 서버가 스스로 물을 때 — 카드가 그 문장을 그대로 보여준다', () => {
-  /*
-   * Wire capture, 2026-08-24. The vault's MCP server pauses each write through
-   * `elicitation/create`; `codex-acp` forwards it as `session/request_permission` with **no
-   * `toolCall.title`** and `kind: "other"`, putting the question in `toolCall.content[]`:
-   *
-   *   "Create concept wire-probe. Apply this change to the vault?"
-   *
-   * The screen was not reading that field, so the card printed 「the tool did not say what it wants
-   * to do」 and 「cannot tell what it wants to do」, one under the other — two lines, no information.
-   */
+
   const ASK = 'Create concept wire-probe. Apply this change to the vault?';
 
   function consentCard() {
@@ -523,14 +471,6 @@ describe('금고 서버가 스스로 물을 때 — 카드가 그 문장을 그�
   });
 });
 
-
-/**
- * Measured in the installed app, 2026-08-25: right after pressing 「make a map from my code」, this
- * card warned that the agent wanted to touch something **outside this folder** — which was the
- * person's own project, the thing they had just asked for. Since maps live inside projects, code
- * reads are outside the vault by construction, so that warning now fires on the intended path. A
- * warning that cries wolf teaches people to click through it.
- */
 describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르게 말한다', () => {
   const VAULT = '/Users/dana/my-product/atlas';
 
@@ -543,7 +483,7 @@ describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르�
     render(card('edit', `${VAULT}/wiki/plan.md`, [], VAULT));
     expect(screen.getByText(koMessages.acpChat.permission.insideFolderTitle)).toBeInTheDocument();
     expect(screen.queryByText(koMessages.acpChat.permission.insideProjectTitle)).toBeNull();
-    // Neutral card, same as inside the project: no amber alarm for the person's own folder.
+
     expect(screen.getByTestId('acp-permission-card').className).not.toContain('amber');
   });
 
@@ -553,14 +493,6 @@ describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르�
   });
 });
 
-/**
- * Owner, 2026-08-25: *"the colours are bad and the inside layout is poor."*
- *
- * Every non-write request was painted warning amber, including the one whose sentence says *this is
- * your own project, nothing has happened yet*. A frame that shouts while the words reassure teaches
- * people the amber means nothing — the cry-wolf failure the copy fix addressed, left standing in the
- * paint.
- */
 describe('권한 카드 색 — 경보는 벌어들인 자리에만 쓴다', () => {
   const VAULT = '/Users/dana/my-product/atlas';
   const panel = () => screen.getByTestId('acp-permission-card');
@@ -579,15 +511,6 @@ describe('권한 카드 색 — 경보는 벌어들인 자리에만 쓴다', () 
   });
 });
 
-/**
- * ⚠️ Written because the app appeared not to respond to 「keep allowing」 while driving it by hand
- * (2026-08-25). No test covered whether that button returns anything, so there was nothing to
- * distinguish a broken control from clicks that never reached the window — and the two failures had
- * landed one pixel apart. A claim of "reproduced" was made and then withdrawn.
- *
- * These hold the wiring so the next such report can be answered in a second: each control returns
- * **its own option id**, and rejection returns null rather than a stale id.
- */
 describe('권한 카드 — 세 버튼이 각자의 답을 돌려준다', () => {
   const options = [
     { optionId: 'reject', kind: 'reject_once', name: '거절' },
@@ -638,22 +561,6 @@ describe('권한 카드 — 세 버튼이 각자의 답을 돌려준다', () => 
   });
 });
 
-/**
- * ⚠️ **The card has to be answerable in three seconds** (owner, installed app at 1512×982,
- * 2026-09-06: *"can this design be improved? look at references… something is lacking"*).
- *
- * The measured screen: one fixed title — 「Review the proposed change」 — a fixed body sentence, an
- * operation heading, and then the request itself: the slug in mono, the frontmatter key in mono,
- * the argument beside it. Every line true, none of them the answer to *what will change, in which
- * file*. `relation_notes` was one JSON string until that morning and one text block after it; both
- * shapes ask a person to parse a value at a checkpoint that has the agent stopped.
- *
- * This is the case the redesign was built against — eight reasons written into one document — and
- * it is checked here rather than only in the app because this card renders **only** under an ACP
- * runtime, so it has no route to screenshot. The three claims are the three the owner has to be
- * able to trust: the title says the change, the eight sentences are eight rows, and the two answers
- * are outside the scroller no matter how long the change is.
- */
 describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () => {
   const TARGETS = [
     'domains/graph-modeling',
@@ -714,7 +621,7 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
 
     const text = screen.getByTestId('acp-permission-card').textContent ?? '';
     expect(text, '괄호와 따옴표를 사람이 풀어 읽게 하면 결정이 아니라 해독이 된다').not.toContain('{"');
-    // The document the bytes land in stays on screen exactly as it will be addressed.
+
     expect(screen.getByText('projects/ontology-atlas')).toBeInTheDocument();
   });
 
@@ -732,7 +639,7 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
     expect(card.contains(reject)).toBe(true);
     expect(card.contains(allow)).toBe(true);
     expect(card.className).toContain('max-h-full');
-    // The wider grant never appears beside a semantic write.
+
     expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
   });
 
@@ -810,11 +717,10 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     expect(block.textContent).toContain('uncited-fact:12');
     expect(block.textContent).toContain('인용 없는 사실');
     expect(block.textContent).toContain('citation-target-missing');
-    // The gate is the person: Allow is still offered.
+
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
   });
 
-  /** One missing frontmatter field, as the validator hands it over. */
   const missing = (field: string) => ({
     code: `missing-field:${field}`,
     message: `\`${field}:\` is missing. The page name a person reads.`,
@@ -822,16 +728,12 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
   });
 
   it('says every listed finding in the reader\'s language, not only the first', () => {
-    /*
-     * Measured on the rendered card (2026-09-20): four rows, one English sentence on the
-     * first, three bare machine codes under it. The sentences existed the whole time under
-     * `library.wiki.problem.*`; the card was printing the validator's copy for machines.
-     */
+
     render(cardWithVerdict({ ok: false, problems: [missing('title'), missing('created_by')] }));
     const block = screen.getByTestId('acp-permission-page-verdict');
     expect(block.textContent).toContain('파일 맨 위 정보칸에 title 줄이 없어요.');
     expect(block.textContent).toContain('파일 맨 위 정보칸에 created_by 줄이 없어요.');
-    // The validator's English copy is for machines and does not reach a Korean screen.
+
     expect(block.textContent).not.toContain('is missing. The page name a person reads.');
   });
 
@@ -840,7 +742,7 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     render(cardWithVerdict({ ok: false, problems }));
     const block = screen.getByTestId('acp-permission-page-verdict');
     expect(block.textContent).toContain('6건');
-    // Four are listed; the two it withheld are stated rather than dropped.
+
     expect(block.textContent).toContain('파일 맨 위 정보칸에 sources 줄이 없어요.');
     expect(block.textContent).not.toContain('파일 맨 위 정보칸에 summary 줄이 없어요.');
     expect(block.textContent).toContain('그 밖에 2건');
@@ -849,5 +751,225 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
   it('says nothing about a rest that does not exist', () => {
     render(cardWithVerdict({ ok: false, problems: [missing('title')] }));
     expect(screen.getByTestId('acp-permission-page-verdict').textContent).not.toContain('그 밖에');
+  });
+});
+
+describe('a one-field patch: the decision first, the evidence after', () => {
+  const TASK = '이 폴더의 원문을 읽고 위키 문서를 써 줘. 형식은 아래 템플릿 그대로여야 해.\n\n폴더: /Users/probe/launch\n템플릿:\n## Summary\n## Facts';
+
+  function titlePatch({
+    resolve = vi.fn(),
+    locale = 'ko',
+    onRequestCorrection = vi.fn(),
+    onDefer = vi.fn(),
+    frontmatter = { title: 'Probe delivery pipeline' },
+  }: {
+    resolve?: (optionId: string | null) => void;
+    locale?: 'ko' | 'en';
+    onRequestCorrection?: () => void;
+    onDefer?: () => void;
+    frontmatter?: Record<string, unknown>;
+  } = {}) {
+    render(
+      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? koMessages : enMessages}>
+        <AcpPermissionCard
+          vaultPath="/vault"
+          onRequestCorrection={onRequestCorrection}
+          onDefer={onDefer}
+          pending={{
+            request: {
+              requestId: 7,
+              sessionId: 'session-1',
+              title: 'mcp__atlas-vault__patch_concept',
+              toolCallId: 'tool-title',
+              toolName: 'mcp__atlas-vault__patch_concept',
+              toolKind: 'other',
+              filePath: null,
+              reviewKind: 'ontology-write',
+              rawInput: {
+                slug: 'capabilities/probe-delivery',
+                expected_mtime: 1_727_000_000_000,
+                frontmatter,
+              },
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ],
+            },
+            origin: {
+              sessionGeneration: 1,
+              turn: { sessionId: 'session-1', vaultRoot: '/vault', userEventId: 'user-event-1', text: TASK },
+              task: { outcome: TASK, nonGoals: null, structure: 'unstructured' },
+              taskBaseline: null,
+            },
+            resolve,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('shows the new name and its document in the summary and draws no empty row', () => {
+    titlePatch();
+    expect(document.getElementById('acp-permission-title')?.textContent).toBe('probe-delivery 문서의 이름 항목을 고쳐요');
+    expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/probe-delivery');
+    const value = screen.getByTestId('task-review-value');
+    expect(value.getAttribute('data-field-key')).toBe('title');
+    expect(value).toHaveTextContent('이름');
+    expect(value).toHaveTextContent('Probe delivery pipeline');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent(KO.taskReview.detailsPointer);
+    expect(screen.queryByTestId('task-review-action-scope')).toBeNull();
+    expect(screen.queryByTestId('task-review-authority-meaning')).toBeNull();
+    const text = screen.getByTestId('acp-permission-card').textContent ?? '';
+    expect(text).not.toContain(KO.taskReview.authority.unknown);
+    expect(text).not.toContain('동작 범위');
+    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent(KO.taskReview.allowEffectNamed.replace('{name}', 'probe-delivery'));
+  });
+
+  it('shows the first paragraph of the task whole and counts the rest before unfolding it', () => {
+    titlePatch();
+    expect(screen.getByTestId('task-review-outcome-compact').textContent).toBe('이 폴더의 원문을 읽고 위키 문서를 써 줘. 형식은 아래 템플릿 그대로여야 해.');
+    const toggle = screen.getByTestId('task-review-task-toggle');
+    expect(toggle).toHaveTextContent('나머지 4줄 보기');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('task-review-outcome')).toHaveTextContent('폴더: /Users/probe/launch');
+    expect(screen.getByText(KO.taskReview.nonGoalsUnstructured)).toBeInTheDocument();
+  });
+
+  it('pairs No thanks with Allow once at one size, with the rarer answers as smaller buttons above', () => {
+    titlePatch();
+    const reject = screen.getByTestId('acp-permission-reject');
+    const allow = screen.getByTestId('acp-permission-allow');
+    const correct = screen.getByTestId('task-review-correct');
+    const defer = screen.getByTestId('task-review-defer');
+    for (const main of [reject, allow]) {
+      expect(main.className).toContain('h-10');
+      expect(main.className).toContain('w-full');
+    }
+    for (const rare of [correct, defer]) {
+      expect(rare.className).toContain('h-8');
+      expect(rare.className).not.toContain('w-full');
+    }
+    for (const button of [reject, allow, correct, defer]) {
+      expect(button.className, 'a borderless text-only answer does not read as a button').not.toContain('bg-transparent');
+    }
+    expect(allow.className).toContain('bg-[color:var(--color-indigo-brand)]');
+    expect([reject, correct, defer].filter((button) => button.className.includes('bg-[color:var(--color-indigo-brand)]'))).toHaveLength(0);
+    expect(reject.parentElement).toBe(allow.parentElement);
+    expect(correct.parentElement).toBe(defer.parentElement);
+    const order = [...screen.getByTestId('acp-permission-card').querySelectorAll('button[data-testid]')]
+      .map((button) => button.getAttribute('data-testid'))
+      .filter((id) => ['task-review-correct', 'task-review-defer', 'acp-permission-reject', 'acp-permission-allow'].includes(id ?? ''));
+    expect(order).toEqual(['task-review-correct', 'task-review-defer', 'acp-permission-reject', 'acp-permission-allow']);
+    expect(document.getElementById(correct.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.correctEffect);
+    expect(document.getElementById(defer.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.deferEffect);
+    expect(document.getElementById(allow.getAttribute('aria-describedby') ?? '')).toHaveTextContent(KO.taskReview.allowEffectNamed.replace('{name}', 'probe-delivery'));
+  });
+
+  it('draws a decline as done, not as danger', async () => {
+    const resolve = vi.fn();
+    titlePatch({ resolve });
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+    expect(resolve).toHaveBeenCalledWith('reject');
+    const receipt = await screen.findByTestId('acp-permission-answered');
+    await waitFor(() => expect(receipt).toHaveAttribute('data-feedback', 'done'));
+    expect(receipt).toHaveAttribute('data-answer', 'reject');
+    expect(receipt.querySelector('[data-feedback-glyph="done"]')).not.toBeNull();
+    expect(receipt).toHaveTextContent(KO.answered.rejectNamed.replace('{name}', 'probe-delivery'));
+    expect(screen.getByTestId('acp-permission-card')).toHaveAttribute('inert');
+    expect(screen.getByRole('status')).toHaveTextContent(KO.answered.rejectNamed.replace('{name}', 'probe-delivery'));
+    const row = screen.getByTestId('acp-permission-allow').parentElement!;
+    expect(row).toHaveAttribute('aria-hidden', 'true');
+    expect(row.className).toContain('map-overlay-out');
+    expect(row.className).toContain('row-start-1');
+    expect(receipt.parentElement?.className).toContain('row-start-1');
+    const rare = screen.getByTestId('task-review-rare-answers');
+    expect(rare).toHaveAttribute('aria-hidden', 'true');
+    expect(rare.className).toContain('map-overlay-out');
+  });
+
+  it('shows the receipt only once the answer row has faded out', () => {
+    vi.useFakeTimers();
+    try {
+      titlePatch();
+      fireEvent.click(screen.getByTestId('acp-permission-reject'));
+      expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+      act(() => { vi.advanceTimersByTime(EXIT_WINDOW_MS); });
+      expect(screen.queryByTestId('acp-permission-answered')).toBeNull();
+      act(() => { vi.advanceTimersByTime(EXIT_WINDOW_MS); });
+      expect(screen.getByTestId('acp-permission-answered')).toHaveAttribute('data-feedback', 'done');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says so when the answer fails to send, and keeps the answers', async () => {
+    const resolve = vi.fn(() => {
+      throw new Error('transport closed');
+    });
+    titlePatch({ resolve });
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    const receipt = await screen.findByTestId('acp-permission-answered');
+    await waitFor(() => expect(receipt).toHaveAttribute('data-feedback', 'failed'));
+    expect(receipt).toHaveTextContent(KO.answered.failed);
+    expect(screen.getByTestId('acp-permission-card')).not.toHaveAttribute('inert');
+    expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument();
+    expect(screen.getByTestId('acp-permission-reject')).toBeInTheDocument();
+  });
+
+  it('keeps a failed answer failed after the feedback dwell, never turning it into a receipt', () => {
+    vi.useFakeTimers();
+    try {
+      titlePatch({ resolve: vi.fn(() => { throw new Error('transport closed'); }) });
+      fireEvent.click(screen.getByTestId('acp-permission-allow'));
+      act(() => { vi.advanceTimersByTime(1_600); });
+      const card = screen.getByTestId('acp-permission-card');
+      expect(card).not.toHaveAttribute('inert');
+      expect(screen.getByTestId('acp-permission-answered')).toHaveAttribute('data-feedback', 'failed');
+      expect(card.textContent).toContain(KO.answered.failed);
+      expect(card.textContent).not.toContain(KO.answered.allowNamed.replace('{name}', 'probe-delivery'));
+      expect(screen.getByRole('status')).toHaveTextContent(KO.answered.failed);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps lists, line breaks, removals and empty values apart, and leaves no relation note out', () => {
+    titlePatch({
+      frontmatter: {
+        relates: ['a', 'b'],
+        depends_on: ['a\nb'],
+        status: null,
+        description: 'None',
+        domains: [],
+        display: '',
+        relation_notes: { x: 'kept', y: null, z: { nested: 1 } },
+      },
+    });
+    const value = (key: string) => screen.getAllByTestId('task-review-value').find((row) => row.getAttribute('data-field-key') === key)!;
+    expect(value('relates').querySelectorAll('li')).toHaveLength(2);
+    expect(value('depends_on').querySelectorAll('li')).toHaveLength(1);
+    expect(value('depends_on').querySelector('li')?.textContent).toContain('a\nb');
+    expect(value('status').querySelector('[data-value-kind="removed"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueRemoved);
+    expect(value('description').querySelector('[data-value-kind="text"]')).toHaveTextContent('None');
+    expect(value('domains').querySelector('[data-value-kind="empty-list"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueEmptyList);
+    expect(value('display').querySelector('[data-value-kind="empty-text"]')).toHaveTextContent(koMessages.ontologyChangeReview.valueEmptyText);
+    const summary = screen.getByTestId('task-review-summary');
+    expect(summary).toHaveTextContent('relation_notes · x');
+    expect(summary).toHaveTextContent('kept');
+    expect(summary).toHaveTextContent('relation_notes · y');
+    expect(summary).toHaveTextContent('relation_notes · z');
+    expect(summary).toHaveTextContent('{"nested":1}');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent(KO.taskReview.detailsPointer);
+  });
+
+  it('says the same facts in the same places in English', () => {
+    titlePatch({ locale: 'en' });
+    expect(document.getElementById('acp-permission-title')?.textContent).toBe('Changes the name of probe-delivery');
+    expect(screen.getByTestId('task-review-value')).toHaveTextContent('Probe delivery pipeline');
+    expect(screen.getByTestId('task-review-allow-scope')).toHaveTextContent('Runs this one write to “probe-delivery”.');
+    expect(screen.getByTestId('task-review-task-toggle')).toHaveTextContent('Show the remaining 4 lines');
   });
 });

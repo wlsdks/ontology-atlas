@@ -78,3 +78,22 @@ describe("stepTopologyPhysics altitude during a view-return tween", () => {
     expect(held.camera.scale.value).toBeCloseTo(GALAXY_FRAME, 5);
   });
 });
+
+describe("stepTopologyPhysics with a frozen camera under reduced motion", () => {
+  it("keeps a hand-driven zoom step's eased camera", () => {
+    const frame = stepTopologyPhysics(flatReturnFrame({ reducedMotion: true, userDrivenCamera: true }));
+    expect(frame.camera.scale.value).toBeCloseTo(GALAXY_FRAME, 9);
+  });
+
+  it("lands app-initiated travel at its target", () => {
+    const frame = stepTopologyPhysics(
+      flatReturnFrame({
+        reducedMotion: true,
+        userDrivenCamera: false,
+        tokens: { ...tokens, cameraMaxZoomRatio: 8, cameraMinZoomRatio: 0.1 },
+      }),
+    );
+    expect(frame.camera.scale.value).toBeCloseTo(FLAT_OVERVIEW, 9);
+    expect(frame.camera.scale.velocity).toBe(0);
+  });
+});

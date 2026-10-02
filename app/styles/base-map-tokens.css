@@ -225,13 +225,12 @@
     --map-hex-face-project-top: #262219;
     --map-hex-face-project-bottom: #15130f;
     --map-hex-riser: #060608;
-    --map-hex-rim: #5e5f6b;
+    --map-hex-rim: #74768a;
     --map-hex-rim-domain: #7c80d8;
     --map-hex-rim-selected: #a5abff;
-    --map-hex-rim-unknown: #6a6a74;
+    --map-hex-rim-unknown: #7a7b88;
     --map-hex-hatch: #2a2a33;
     --map-hex-bevel-light: rgba(255, 255, 255, 0.16);
-    --map-hex-bevel-mid: rgba(255, 255, 255, 0.03);
     --map-hex-bevel-shade: rgba(0, 0, 0, 0.25);
     --map-hex-plate: var(--color-indigo-a06);
     --map-hex-plate-focus: var(--color-indigo-a12);
@@ -239,7 +238,7 @@
     --map-hex-moat: rgba(255, 255, 255, 0.022);
     --map-hex-glow: var(--color-indigo-a08);
     --map-hex-accent: #9aa0f0;
-    --map-hex-canal: #4a4c62;
+    --map-hex-canal: #5c5f79;
     --map-hex-canal-head: #6d7090;
     --map-hex-ink-meta: #a3a6ae;
     --map-hex-dim-alpha: 0.3;
@@ -439,8 +438,6 @@
     --map-camera-spring-angfreq-interactive: 15;
     --map-camera-spring-angfreq-transition: 4.7;
     --map-camera-damping-default: 1.0;
-    --map-camera-damping-flick: 0.82;
-    --map-camera-momentum-decay: 0.998;
     /* Stop release gate (iOS scroll rule) — sample pointer speed in this window (ms) just before release. If no movement within this window (=stopped then released), momentum is 0. */
     --map-camera-release-velocity-window-ms: 80;
     /* Speed below this threshold (px/ms) is considered stopped — stop in place without inertial glide.

@@ -294,7 +294,7 @@ describe('removing the last relation of a key writes no empty key', () => {
 
     const value = screen.getByTestId('ontology-change-review-field-value');
     expect(value).toHaveTextContent('capabilities/library-workspace');
-    expect(value).toHaveTextContent(enMessages.ontologyChangeReview.noValue);
+    expect(value).toHaveTextContent(enMessages.ontologyChangeReview.valueEmptyList);
     expect(value.textContent).not.toContain('[]');
   });
 });

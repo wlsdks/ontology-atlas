@@ -23,8 +23,22 @@ export interface Spring {
 /** Every motion that is not the tail of a flick: panel enter/exit, chip appear, focus settle. */
 export const UI_SPRING: Spring = { damping: 1.0, response: 0.35 };
 
-/** Only for motion a gesture threw (pan-flick release); anywhere else the bounce is wrong. */
-export const MOMENTUM_SPRING: Spring = { damping: 0.8, response: 0.35 };
+export const MOMENTUM_SPRING: Spring = { damping: 1.0, response: MOTION.base.duration };
+
+export const MOMENTUM_TAU_MS = MOMENTUM_SPRING.response * 1000;
+
+export const ZOOM_STEP_TAU_MS = (MOTION.fast.duration * 1000) / 3;
+
+const ZOOM_STEP_SETTLED_MS = ZOOM_STEP_TAU_MS * Math.log(1000);
+
+export function zoomStepProgress(elapsedMs: number): number {
+  if (elapsedMs >= ZOOM_STEP_SETTLED_MS) return 1;
+  return 1 - Math.exp(-Math.max(0, elapsedMs) / ZOOM_STEP_TAU_MS);
+}
+
+export function easeZoomScale(from: number, to: number, progress: number): number {
+  return from * Math.pow(to / from, progress);
+}
 
 /** The `angularFrequency` `engine/spring.ts` `stepSpring` takes. */
 export function springAngularFrequency(spring: Spring): number {
@@ -37,22 +51,6 @@ export function toSpringConstants(spring: Spring): {
   damping: number;
 } {
   return { angularFrequency: springAngularFrequency(spring), damping: spring.damping };
-}
-
-/**
- * The geometric-series gain `d/(1-d)` of iOS scroll deceleration; `engine/momentum.ts`
- * function `projectFlickLanding` projects through it so flick landing has one source.
- */
-export function momentumDecayGain(decay: number): number {
-  return decay / (1 - decay);
-}
-
-/**
- * Computes `project(v) = (v/1000)·d/(1-d)` from release velocity in px/s, returning
- * px. `engine/momentum.ts` works in px/ms and calls `momentumDecayGain` directly.
- */
-export function projectMomentum(velocityPxPerSec: number, decay = 0.998): number {
-  return (velocityPxPerSec / 1000) * momentumDecayGain(decay);
 }
 
 /**

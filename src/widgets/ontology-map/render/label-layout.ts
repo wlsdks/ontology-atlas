@@ -264,15 +264,108 @@ export function overlapsForeignReserved(
   reserved: readonly ReservedBox[] | undefined,
 ): boolean {
   if (!reserved) return false;
-  return reserved.some((box) => {
-    // A reservation counts as one's own only when **both** owners are defined and
-    // equal. Reading `undefined === undefined` as the same owner would let an
-    // ownerless reservation (a cluster chip) pass an ownerless candidate through,
-    // silently disabling chip suppression.
-    const ownedBySameNode = box.ownerId !== undefined && box.ownerId === ownerId;
-    if (ownedBySameNode) return false;
-    return priority > box.priority && bboxesOverlap(box.bbox, bbox);
-  });
+  return reserved.some((box) => blocksForeign(box, bbox, ownerId, priority));
+}
+
+function blocksForeign(box: ReservedBox, bbox: LabelBBox, ownerId: string | undefined, priority: number): boolean {
+  if (box.ownerId !== undefined && box.ownerId === ownerId) return false;
+  return priority > box.priority && bboxesOverlap(box.bbox, bbox);
+}
+
+const BOX_GRID_CELL_PX = 48;
+const BOX_GRID_MAX_SIDE = 128;
+
+function finiteBounds(boxes: readonly LabelBBox[]): LabelBBox {
+  const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  const widen = (x: number, y: number) => {
+    if (Number.isFinite(x)) {
+      bounds.minX = Math.min(bounds.minX, x);
+      bounds.maxX = Math.max(bounds.maxX, x);
+    }
+    if (Number.isFinite(y)) {
+      bounds.minY = Math.min(bounds.minY, y);
+      bounds.maxY = Math.max(bounds.maxY, y);
+    }
+  };
+  for (const box of boxes) {
+    widen(box.minX, box.minY);
+    widen(box.maxX, box.maxY);
+  }
+  if (bounds.minX > bounds.maxX) {
+    bounds.minX = 0;
+    bounds.maxX = 1;
+  }
+  if (bounds.minY > bounds.maxY) {
+    bounds.minY = 0;
+    bounds.maxY = 1;
+  }
+  return bounds;
+}
+
+class BoxGrid<T> {
+  private readonly x0: number;
+  private readonly y0: number;
+  private readonly cell: number;
+  private readonly cols: number;
+  private readonly rows: number;
+  private readonly buckets: (T[] | undefined)[];
+
+  constructor(bounds: LabelBBox) {
+    const width = Math.max(1, bounds.maxX - bounds.minX);
+    const height = Math.max(1, bounds.maxY - bounds.minY);
+    this.cell = Math.max(BOX_GRID_CELL_PX, width / BOX_GRID_MAX_SIDE, height / BOX_GRID_MAX_SIDE);
+    this.x0 = bounds.minX;
+    this.y0 = bounds.minY;
+    this.cols = Math.max(1, Math.ceil(width / this.cell));
+    this.rows = Math.max(1, Math.ceil(height / this.cell));
+    this.buckets = new Array(this.cols * this.rows);
+  }
+
+  private column(x: number): number {
+    return Math.min(this.cols - 1, Math.max(0, Math.floor((x - this.x0) / this.cell)));
+  }
+
+  private row(y: number): number {
+    return Math.min(this.rows - 1, Math.max(0, Math.floor((y - this.y0) / this.cell)));
+  }
+
+  insert(box: LabelBBox, item: T): void {
+    const c0 = this.column(box.minX);
+    const c1 = this.column(box.maxX);
+    for (let r = this.row(box.minY), r1 = this.row(box.maxY); r <= r1; r += 1) {
+      for (let c = c0; c <= c1; c += 1) {
+        const bucket = this.buckets[r * this.cols + c];
+        if (bucket === undefined) this.buckets[r * this.cols + c] = [item];
+        else bucket.push(item);
+      }
+    }
+  }
+
+  some(box: LabelBBox, test: (item: T) => boolean): boolean {
+    const c0 = this.column(box.minX);
+    const c1 = this.column(box.maxX);
+    for (let r = this.row(box.minY), r1 = this.row(box.maxY); r <= r1; r += 1) {
+      for (let c = c0; c <= c1; c += 1) {
+        const bucket = this.buckets[r * this.cols + c];
+        if (bucket === undefined) continue;
+        for (const item of bucket) if (test(item)) return true;
+      }
+    }
+    return false;
+  }
+}
+
+export class ReservedBoxIndex {
+  private readonly grid: BoxGrid<ReservedBox>;
+
+  constructor(reserved: readonly ReservedBox[]) {
+    this.grid = new BoxGrid(finiteBounds(reserved.map((box) => box.bbox)));
+    for (const box of reserved) this.grid.insert(box.bbox, box);
+  }
+
+  overlapsForeign(bbox: LabelBBox, ownerId: string | undefined, priority: number): boolean {
+    return this.grid.some(bbox, (box) => blocksForeign(box, bbox, ownerId, priority));
+  }
 }
 
 /**
@@ -295,28 +388,35 @@ export function overlapsForeignReserved(
 export function greedyPlaceLabels<T>(
   candidates: readonly LabelCandidate<T>[],
   isPreferred?: (candidate: LabelCandidate<T>) => boolean,
-  reserved?: readonly ReservedBox[],
+  reserved?: readonly ReservedBox[] | ReservedBoxIndex,
 ): LabelCandidate<T>[] {
-  const pref = isPreferred ?? (() => false);
-  const sorted = [...candidates].sort((a, b) => {
-    if (a.priority !== b.priority) return a.priority - b.priority;
-    const pa = pref(a) ? 0 : 1;
-    const pb = pref(b) ? 0 : 1;
-    if (pa !== pb) return pa - pb;
-    return a.order - b.order;
+  const ranked = candidates.map((candidate) => ({ candidate, preferred: isPreferred?.(candidate) ? 0 : 1 }));
+  ranked.sort((a, b) => {
+    if (a.candidate.priority !== b.candidate.priority) return a.candidate.priority - b.candidate.priority;
+    if (a.preferred !== b.preferred) return a.preferred - b.preferred;
+    return a.candidate.order - b.candidate.order;
   });
+  const reservedIndex =
+    reserved === undefined ? null : reserved instanceof ReservedBoxIndex ? reserved : new ReservedBoxIndex(reserved);
+  const boxes: LabelBBox[] = [];
+  for (const candidate of candidates) {
+    boxes.push(candidate.bbox);
+    if (candidate.altBbox) boxes.push(candidate.altBbox);
+  }
+  const occupied = new BoxGrid<LabelBBox>(finiteBounds(boxes));
   const placed: LabelCandidate<T>[] = [];
   const free = (box: LabelBBox, candidate: LabelCandidate<T>): boolean =>
-    !overlapsForeignReserved(box, candidate.ownerId, candidate.priority, reserved) &&
-    !placed.some((p) => bboxesOverlap(p.bbox, box));
-  for (const candidate of sorted) {
+    !(reservedIndex?.overlapsForeign(box, candidate.ownerId, candidate.priority) ?? false) &&
+    !occupied.some(box, (other) => bboxesOverlap(other, box));
+  for (const { candidate } of ranked) {
     if (free(candidate.bbox, candidate)) {
       placed.push(candidate);
+      occupied.insert(candidate.bbox, candidate.bbox);
       continue;
     }
-    // The preferred slot is taken; the one above the node may not be.
     if (candidate.altBbox && free(candidate.altBbox, candidate)) {
       placed.push({ ...candidate, bbox: candidate.altBbox, usedAlt: true });
+      occupied.insert(candidate.altBbox, candidate.altBbox);
     }
   }
   return placed;

@@ -41,7 +41,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
 import {
   COMPOSER_MIN_ROWS,
   composerGrowth,
@@ -1107,6 +1107,12 @@ export function AcpChatPanel({
     },
     [requestComposerFocus],
   );
+  const [answerHold, setAnswerHold] = useState(0);
+  useEffect(() => {
+    if (answerHold === 0) return;
+    const id = window.setTimeout(() => setAnswerHold(0), EXIT_WINDOW_MS + MOTION.settle.duration * 1000);
+    return () => window.clearTimeout(id);
+  }, [answerHold]);
   const pendingForCard = useMemo(
     () => (pendingHeld
       ? {
@@ -1114,13 +1120,13 @@ export function AcpChatPanel({
           resolve: (optionId: string | null) => {
             noteVerdict(pendingHeld.request, optionId);
             pendingHeld.resolve(optionId);
+            setAnswerHold((count) => count + 1);
           },
         }
       : null),
     [noteVerdict, pendingHeld],
   );
   const requestCorrection = () => {
-    // An exiting card must never answer a replacement request or overwrite its draft.
     if (!pendingHeld || livePendingRef.current !== pendingHeld) return;
     const rejected = pendingHeld.request.options.find((option) => option.kind === 'reject_once');
     const correction = t('permission.correctionDraft', {
@@ -1131,6 +1137,7 @@ export function AcpChatPanel({
     livePendingRef.current = null;
     noteVerdict(pendingHeld.request, rejected?.optionId ?? null);
     pendingHeld.resolve(rejected?.optionId ?? null);
+    setAnswerHold((count) => count + 1);
     setDeferredPermission(null);
     setDraft((existing) => existing.trim() ? `${existing}\n\n${correction}` : correction);
     window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -1627,6 +1634,10 @@ export function AcpChatPanel({
         : historyEdge.top
           ? `linear-gradient(to bottom, transparent 0, black ${historyFade})`
           : undefined;
+  const jumpShown = transcriptFollow.jumpVisible && !presentationVisible;
+  const transcriptMask = transcriptScrolled || jumpShown
+    ? `linear-gradient(to bottom, ${transcriptScrolled ? 'transparent 0, black var(--tabbar-edge-fade)' : 'black 0'}, ${jumpShown ? 'black calc(100% - var(--chrome-tile-size) - var(--tabbar-edge-fade)), transparent calc(100% - var(--chrome-tile-size))' : 'black 100%'})`
+    : undefined;
   const transcriptItems = useMemo(() => groupEvents(withoutErrorEcho(events, error)), [events, error]);
   // Stable renderers: a new function per render is a new component type, which remounts every row.
   const markdownComponents = useMemo(
@@ -1717,27 +1728,17 @@ export function AcpChatPanel({
         {t('openingScopeChanged')}
       </Surface>
 
-      {/* One frame for the transcript and the door that floats over its lower edge. */}
       <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
+        data-jump-band={jumpShown ? 'true' : undefined}
         inert={presentationVisible ? true : undefined}
         onScroll={(event) => {
           const scrolled = event.currentTarget.scrollTop > 1;
           setTranscriptScrolled((previous) => (previous === scrolled ? previous : scrolled));
         }}
-        // The top edge fades rather than slicing glyphs, by the tab strips' own width.
-        style={
-          transcriptScrolled
-            ? {
-                maskImage:
-                  'linear-gradient(to bottom, transparent 0, black var(--tabbar-edge-fade))',
-                WebkitMaskImage:
-                  'linear-gradient(to bottom, transparent 0, black var(--tabbar-edge-fade))',
-              }
-            : undefined
-        }
+        style={transcriptMask ? { maskImage: transcriptMask, WebkitMaskImage: transcriptMask } : undefined}
         className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
         {/*
@@ -2073,11 +2074,10 @@ export function AcpChatPanel({
         </Surface>
         </div>
       </div>
-      {/* A chrome chip, so its surface and shadow lift it off the text it floats over. */}
       <Surface
-        open={transcriptFollow.jumpVisible && !presentationVisible}
+        open={jumpShown}
         origin="bottom center"
-        className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-2"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center px-2"
       >
         <ChromeChip
           data-testid="acp-chat-jump-latest"
@@ -2247,50 +2247,22 @@ export function AcpChatPanel({
         </div>
       ) : null}
 
-      {/*
-        Drawn as just `{pending ? … : null}`, the card appears in one frame and vanishes
-        in one (the appearance ratchet caught this). This card is **what stops the
-        agent**, so it is the most urgent surface on screen — appearing without warning,
-        the user cannot follow what changed.
-
-        Why `origin` is at the bottom: this card grows directly above the composer — it
-        has to be born where the eyes and hands already are.
-      */}
-      {/*
-        ⚠️ **The answer has to stay on screen** (2026-09-06). The card is in the panel's flex
-        column with nothing bounding it, so a batch of ontology writes — a change review lists one
-        row per item — grew it until 「Don't」 and 「Allow once」 were below the bottom edge of a
-        1040×720 window. A checkpoint whose only two answers are unreachable is not a checkpoint;
-        it is a wall.
-
-        `shrink-0` keeps it from being squeezed by the transcript above. The old 45% ceiling left
-        only about 60px for task, depth and summary after fixed authority/intervention rows were
-        added. A bounded 70% keeps the composer plus a transcript foothold while giving the review
-        enough room for its principal task context. The scroll lives **inside** the card so the
-        fixed states and buttons never leave the frame.
-      */}
       <Surface
-        open={Boolean(pending)}
+        open={Boolean(pending) || answerHold > 0}
         origin="bottom center"
         motion="overlay"
-        /*
-         * ⚠️ **Half, on a short window** (measured 2026-09-25 at 1040×720). At 70% the card's
-         * natural 360px fit under its ceiling, so nothing bounded it, and the transcript above was
-         * left 62–96px: the request cut mid-line and the very row the card is asking about out of
-         * view. Below 800px of height the card takes at most half the panel and its body scrolls
-         * (`acp-permission-body-scroll`); the header, the answers and the transcript's tail stay.
-         */
         className="max-h-[70%] shrink-0 [@media(max-height:800px)]:max-h-[50%]"
       >
         {permissionDeferred ? (
-          <div className="flex items-center gap-2 rounded-panel border border-[color:var(--color-divider)] p-[var(--card-pad)]" data-testid="acp-permission-deferred">
-            <p className="min-w-0 flex-1 text-caption text-[color:var(--color-text-secondary)]">{t('permission.deferredNotice')}</p>
+          <div className="ai-row-swap flex items-center gap-3 rounded-panel border border-[color:var(--color-divider)] p-[var(--card-pad)]" data-testid="acp-permission-deferred">
+            <p className="min-w-0 flex-1 text-label leading-label text-[color:var(--color-text-secondary)]">{t('permission.deferredNotice')}</p>
             <Button variant="outline" size="sm" onClick={() => setDeferredPermission(null)}>
               {t('permission.resumeReview')}
             </Button>
           </div>
         ) : pendingHeld ? (
           <AcpPermissionCard
+            key={`${pendingHeld.request.toolCallId ?? ''}:${String(pendingHeld.request.requestId)}`}
             vaultPath={vaultRoot}
             pending={pendingForCard ?? pendingHeld}
             taskReview={taskMeaningReview}
