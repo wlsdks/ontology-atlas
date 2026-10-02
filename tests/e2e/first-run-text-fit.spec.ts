@@ -26,6 +26,9 @@ test.describe("첫 실행 카드 텍스트 맞춤", () => {
 
         const card = page.getByTestId("first-run-starter");
         await expect(card).toBeVisible({ timeout: 30_000 });
+        await page.getByTestId("first-run-starter-more-toggle").click();
+        await page.getByTestId("first-run-starter-glossary-toggle").click();
+        await expect(page.getByTestId("first-run-starter-dismiss")).toBeVisible();
         await expect(page.getByTestId("first-run-starter-glossary")).toBeVisible();
 
         const measurement = await page.evaluate(() => {

@@ -150,17 +150,14 @@ test.describe("guided tour on a true first run", () => {
     await expect(overlay).toHaveAttribute("data-tour-step", "index");
 
     await expect(page.getByTestId("topology-index-tree"), "INDEX 단계인데 목록이 안 보인다").toBeVisible();
-    await expect(page.getByTestId("first-run-starter-dismiss"), "INDEX 단계인데 첫 실행 카드가 서 있다").toHaveCount(0);
+    await expect(page.getByTestId("first-run-starter"), "INDEX 단계인데 첫 실행 카드가 서 있다").toHaveCount(0);
 
-    // The developer step points at the card's one-line command; the line has
-    // to be showing, not folded behind its disclosure.
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "recent");
     await card.getByTestId("guided-tour-dev-branch").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "agent");
+    await expect(page.getByTestId("first-run-starter-more-toggle"), "the developer step left the group holding the command folded").toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("first-run-starter-cli-toggle"), "개발자 단계인데 명령 한 줄이 접혀 있다").toHaveAttribute("aria-expanded", "true");
-    // ...and showing in full, not clipped under the card's edge: the card
-    // scrolls, and the command is its last row.
     await expect
       .poll(
         () =>

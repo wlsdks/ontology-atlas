@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -6,18 +6,11 @@ import enMessages from "../../../../messages/en.json";
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../model/first-run-starter-dismiss";
 import { FirstRunStarterModule } from "./FirstRunStarterModule";
 
-/**
- * The three-term definitions are always visible on the first-run card and use the same i18n keys
- * as ShortcutSheet. Uses a real NextIntlClientProvider, unlike FirstRunStarterModule.test.tsx,
- * to catch copy drift.
- */
-
 interface MockVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   restoreAttempted: boolean;
-  /** Decides who the sample notice targets. */
   recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
@@ -74,47 +67,36 @@ describe("FirstRunStarterModule three-term glossary", () => {
     window.localStorage.removeItem("demo:sample-source:v1");
   });
 
-  it("always shows domain, capability and element definitions outside a disclosure (ko)", () => {
-    renderWithLocale("ko");
+  it.each(["ko", "en"] as const)(
+    "names the three words on its closed toggle and opens the ShortcutSheet definitions (%s)",
+    (locale) => {
+      const messages = locale === "ko" ? koMessages : enMessages;
+      const words = messages.searchWidgets.shortcuts.glossary;
+      renderWithLocale(locale);
 
-    const glossary = screen.getByTestId("first-run-starter-glossary");
-    // A directly rendered <dl>, not inside a folding container such as <details>.
-    expect(glossary.tagName).toBe("DL");
+      const toggle = screen.getByTestId("first-run-starter-glossary-toggle");
+      expect(toggle).toHaveTextContent(messages.firstRunStarter.glossaryToggle);
+      for (const term of [words.domainTerm, words.capabilityTerm, words.elementTerm]) {
+        expect(toggle.textContent?.toLowerCase()).toContain(term.toLowerCase().slice(0, -1));
+      }
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByText(words.domainDefinition)).not.toBeInTheDocument();
 
-    // The title is a <p> above the <dl>.
-    expect(
-      screen.getByText(koMessages.searchWidgets.shortcuts.glossary.title),
-    ).toBeInTheDocument();
-    const body = within(glossary);
-    expect(body.getByText(koMessages.searchWidgets.shortcuts.glossary.domainTerm)).toBeInTheDocument();
-    expect(
-      body.getByText(koMessages.searchWidgets.shortcuts.glossary.domainDefinition),
-    ).toBeInTheDocument();
-    expect(
-      body.getByText(koMessages.searchWidgets.shortcuts.glossary.capabilityTerm),
-    ).toBeInTheDocument();
-    expect(
-      body.getByText(koMessages.searchWidgets.shortcuts.glossary.capabilityDefinition),
-    ).toBeInTheDocument();
-    expect(body.getByText(koMessages.searchWidgets.shortcuts.glossary.elementTerm)).toBeInTheDocument();
-    expect(
-      body.getByText(koMessages.searchWidgets.shortcuts.glossary.elementDefinition),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the same keys in the English locale (en)", () => {
-    renderWithLocale("en");
-
-    const glossary = within(screen.getByTestId("first-run-starter-glossary"));
-    expect(glossary.getByText(enMessages.searchWidgets.shortcuts.glossary.domainTerm)).toBeInTheDocument();
-    expect(
-      glossary.getByText(enMessages.searchWidgets.shortcuts.glossary.capabilityTerm),
-    ).toBeInTheDocument();
-    expect(glossary.getByText(enMessages.searchWidgets.shortcuts.glossary.elementTerm)).toBeInTheDocument();
-  });
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      const glossary = screen.getByTestId("first-run-starter-glossary");
+      expect(glossary.tagName).toBe("DL");
+      const body = within(glossary);
+      for (const term of ["domain", "capability", "element"] as const) {
+        expect(body.getByText(words[`${term}Term`])).toBeInTheDocument();
+        expect(body.getByText(words[`${term}Definition`])).toBeInTheDocument();
+      }
+    },
+  );
 
   it("renders in map hierarchy order domain, capability, element", () => {
     renderWithLocale("ko");
+    fireEvent.click(screen.getByTestId("first-run-starter-glossary-toggle"));
 
     const glossary = screen.getByTestId("first-run-starter-glossary");
     const terms = [
@@ -127,5 +109,13 @@ describe("FirstRunStarterModule three-term glossary", () => {
     expect(positions.every((pos) => pos >= 0)).toBe(true);
     expect(positions[0]).toBeLessThan(positions[1]);
     expect(positions[1]).toBeLessThan(positions[2]);
+  });
+
+  it.each(["ko", "en"] as const)("keeps the product name on one line in the body sentence (%s)", (locale) => {
+    renderWithLocale(locale);
+    const body = screen.getByTestId("first-run-starter-context");
+    const kept = [...body.querySelectorAll("span")].find((span) => span.textContent === "Claude Code");
+    expect(kept?.className).toContain("whitespace-nowrap");
+    expect(body.textContent).not.toContain("<keep>");
   });
 });
