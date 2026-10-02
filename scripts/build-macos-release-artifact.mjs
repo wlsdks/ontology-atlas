@@ -27,7 +27,7 @@ const NOTARY_CREDENTIALS = [
  */
 export const RELEASE_ARTIFACT_STEPS = Object.freeze([
   { phase: "validate", label: "validate release credentials", command: "pnpm", args: ["desktop:release-secrets"], allow: CURRENT_RELEASE_SECRET_NAMES },
-  { phase: "build", label: "build static application", command: "pnpm", args: ["build"], allow: [] },
+  { phase: "build", label: "build static application", command: "pnpm", args: ["build"], allow: [], env: { NODE_OPTIONS: "--max-old-space-size=4096" } },
   { phase: "build", label: "smoke static application", command: "pnpm", args: ["desktop:smoke"], allow: [] },
   { phase: "build", label: "build app bundle", command: "pnpm", args: ["desktop:build:app"], allow: [] },
   { phase: "sign", label: "sign app bundle", command: "pnpm", args: ["desktop:sign"], allow: [] },
@@ -58,7 +58,7 @@ export function runReleaseArtifactPipeline({
   for (const step of releaseArtifactSteps(phase)) {
     const result = spawn(step.command, step.args, {
       cwd,
-      env: releaseChildEnv(env, step.allow),
+      env: { ...releaseChildEnv(env, step.allow), ...step.env },
       stdio: "inherit",
     });
     if (result.error) {
