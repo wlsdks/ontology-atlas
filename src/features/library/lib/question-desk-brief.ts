@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from '@/i18n/answer-language';
 import type { DeskClaim, DeskSourceHit } from './question-desk';
 import { WIKI_CITATION_ANCHOR_PATTERN, WIKI_CITATION_PATTERN } from '@/shared/lib/wiki-page-schema';
 import { normalizeOriginalPaths, resolveSourceCitation } from '@/shared/lib/source-citation';
@@ -53,7 +54,8 @@ export function buildQuestionDeskBrief(input: {
   sourceHits: readonly DeskSourceHit[];
   coverage: string;
 }): string {
-  return buildBoundedBrief(input, 0);
+  const tail = withAnswerLanguage('', input.locale);
+  return buildBoundedBrief(input, tail.length) + tail;
 }
 
 function buildBoundedBrief(input: Parameters<typeof buildQuestionDeskBrief>[0], reserveChars: number): string {
@@ -104,7 +106,8 @@ export function buildQuestionDeskReportBrief(input: Parameters<typeof buildQuest
   const format = ko
     ? '\n\n이 질문에 대한 미검토 Markdown 보고서 초안을 작성해. 다음 네 제목을 사용해: ## 답, ## 원문 근거, ## 불일치하거나 변경된 주장, ## 모르는 점과 검색 한계. ## 답의 첫 문단은 160자 이하의 짧은 결론 한 문장으로 쓰고, 사실을 말하면 정확한 원문 인용을 그 문장에 붙여. 설명은 다음 문단에 써. 각 사실에는 다시 읽은 원문의 정확한 [[src:sources/<파일>#<앵커>]] 인용을 붙여. 위키 주장과 원문이 다르면 둘 다 밝히고 임의로 결론 내리지 마. 문서가 말하지 않으면 모른다고 써. 어떤 파일도 쓰지 마.'
     : '\n\nWrite an unreviewed Markdown report draft for this question with these headings: ## Answer, ## Source-backed evidence, ## Disagreements or changed claims, ## Unknowns and search limits. Start ## Answer with one short conclusion sentence in its own paragraph (160 characters or fewer); cite its exact original if it states a fact, then put explanation in later paragraphs. Cite each fact from an original you re-read with an exact [[src:sources/<file>#<anchor>]] citation. If a Wiki claim differs from its original, show both without silently choosing one. Say when the documents do not answer. Write no files.';
-  const brief = buildBoundedBrief(input, format.length) + format;
+  const tail = withAnswerLanguage('', input.locale);
+  const brief = buildBoundedBrief(input, format.length + tail.length) + format + tail;
   if (brief.length > QUESTION_DESK_BRIEF_MAX_CHARS) throw new Error('question-desk-report-brief-over-budget');
   return brief;
 }

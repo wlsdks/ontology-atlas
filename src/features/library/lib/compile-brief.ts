@@ -1,3 +1,4 @@
+import { withAnswerLanguage } from "@/i18n/answer-language";
 import { isRetainedAnswerPath } from './answer-revision';
 import { sourceNeedsCompile, type LibrarySourceRow, type LibraryWikiPage } from "@/entities/docs-vault";
 import {
@@ -235,7 +236,7 @@ function buildLocalBrief({
   ].join("\n");
 }
 
-export function buildCompileBrief({
+function composeCompileBrief({
   sources,
   locale,
   execution = "acp",
@@ -324,4 +325,8 @@ export function buildCompileBrief({
     "",
     "The Library write mode and the selected ACP runtime's permissions govern approval. Follow permission requests; this brief does not promise an automatic write for a fitting page.",
   ].join("\n");
+}
+
+export function buildCompileBrief(input: CompileBriefInput): string {
+  return withAnswerLanguage(composeCompileBrief(input), input.locale);
 }

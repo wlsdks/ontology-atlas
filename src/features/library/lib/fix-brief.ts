@@ -1,7 +1,8 @@
+import { withAnswerLanguage } from "@/i18n/answer-language";
 import type { LintFinding } from "./lint-brief";
 
 /** One turn that repairs one check finding under the page contract; a disagreement keeps both pages and citations. */
-export function buildFixBrief({ finding, locale, vaultRoot }: { finding: LintFinding; locale: string; vaultRoot: string }): string {
+function composeFixBrief({ finding, locale, vaultRoot }: { finding: LintFinding; locale: string; vaultRoot: string }): string {
   const pages = finding.pages.map((slug) => `${slug}.md`).join(", ");
   if (locale === "ko") {
     const what = { disagreement: "두 문서의 값이 어긋납니다", superseded: "나중 문서가 바꿔 놓은 주장이 옛 값으로 남아 있습니다", "missing-link": "같은 주제나 원문을 다루는데 서로 링크가 없습니다" }[finding.code];
@@ -33,4 +34,8 @@ export function buildFixBrief({ finding, locale, vaultRoot }: { finding: LintFin
     "- Keep the page contract (wiki/_template.md). Touch no file outside those pages.",
     "- End with one line per page saying what changed.",
   ].join("\n");
+}
+
+export function buildFixBrief(input: Parameters<typeof composeFixBrief>[0]): string {
+  return withAnswerLanguage(composeFixBrief(input), input.locale);
 }
