@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
 import { dogfoodEvidenceVault } from "./hex-board-vaults";
+import { waitForMapSettled } from "./settle";
 
 type Pt = [number, number];
 interface Face {
@@ -16,7 +17,6 @@ type ReliefProbe = Window & {
   };
 };
 
-const CHROME_SETTLE_MS = 600;
 const LEGEND = "▲ 높이와 숫자 = 이것에 의존한다고 적은 개념 수 (직접)";
 
 async function openBoard(page: Page, { reduced, relief, pick }: { reduced: boolean; relief: boolean; pick: "hex" | "flat" }) {
@@ -43,6 +43,7 @@ async function chooseHex(page: Page) {
 
 async function still(page: Page) {
   let last = "";
+  let same = 0;
   await expect
     .poll(
       async () => {
@@ -51,9 +52,9 @@ async function still(page: Page) {
           const frame = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')?.dataset.frame ?? "";
           return JSON.stringify([s?.pitch, s?.animating, frame]);
         });
-        const same = now === last;
+        same = now === last ? same + 1 : 0;
         last = now;
-        return same;
+        return same >= 2;
       },
       { intervals: [250, 250, 250, 250, 250, 250, 250, 250] },
     )
@@ -156,7 +157,6 @@ test("the hex board tilts into relief by chip and Shift-drag, and a click picks 
       await page.keyboard.press("Escape");
       await expect.poll(focus).toBeNull();
     }
-    await page.waitForTimeout(CHROME_SETTLE_MS);
     await still(page);
   }
   expect(misses, "clicks that picked a prism other than the one drawn under them").toEqual([]);
@@ -183,6 +183,7 @@ test("the hex board tilts into relief by chip and Shift-drag, and a click picks 
   expect(JSON.parse((await canvas.getAttribute("data-frame"))!).offset).not.toEqual(JSON.parse(before!).offset);
 
   const frames = await page.evaluate(() => (window as ReliefProbe).__atlasHexRelief!.state().frames);
+  // measurement window: a board at rest paints no frame for 1.5 s
   await page.waitForTimeout(1_500);
   expect(await page.evaluate(() => (window as ReliefProbe).__atlasHexRelief!.state().frames), "frames painted at rest").toBe(frames);
 });
@@ -213,7 +214,6 @@ async function landing(page: Page): Promise<Map<string, number>> {
   );
   const ghost = new Map(((await finals.jsonValue()) as { id: string; x: number; y: number }[]).map((m) => [m.id, m]));
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
-  await page.waitForTimeout(CHROME_SETTLE_MS);
   await still(page);
   const mirror = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>("[data-hex-id][data-mark]")].map((el) => {
@@ -227,13 +227,13 @@ async function landing(page: Page): Promise<Map<string, number>> {
 test("the glide from Flat lands on the relief's drawn tops as closely as on the top-down board", async ({ page }) => {
   test.setTimeout(240_000);
   await openBoard(page, { reduced: false, relief: false, pick: "flat" });
-  await page.waitForTimeout(1_500);
+  await waitForMapSettled(page);
   const flat = await landing(page);
   await page.getByTestId("topology-view-3d").click();
   await page.getByTestId("topology-view-3d-choice-flat").click();
   await expect(page.getByTestId("hex-board-map")).toHaveCount(0);
   await page.evaluate(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
-  await page.waitForTimeout(1_500);
+  await waitForMapSettled(page);
   const relief = await landing(page);
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-relief-pitch", "0.750");
   expect(relief.size).toBeGreaterThan(20);
