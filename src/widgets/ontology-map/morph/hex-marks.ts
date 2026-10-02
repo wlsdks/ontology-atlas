@@ -25,7 +25,7 @@ export interface HexCamera {
   oy: number;
 }
 
-interface MapChrome {
+export interface MapChrome {
   free: Rect;
   blocks: Rect[];
 }

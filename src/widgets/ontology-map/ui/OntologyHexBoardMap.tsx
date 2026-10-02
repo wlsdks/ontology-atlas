@@ -11,7 +11,7 @@ import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
-import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
+import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera, type MapChrome } from "../morph/hex-marks";
 import {
   computeHexBoard,
   hexBandFor,
@@ -32,7 +32,7 @@ import {
   hexGutter,
 } from "../model/hex-board";
 import { SQRT3 } from "../model/hex-grid";
-import { buildHexLattice, closedNodes, HexRouter } from "../model/hex-router";
+import { buildHexLattice, closedNodes, HexRouteRun, layCanals, type HexRouteJob } from "../model/hex-router";
 import { buildBoardScene } from "../board/board-scene";
 import { drawBoard } from "../board/board-paint";
 import {
@@ -106,6 +106,15 @@ const CHROME_SETTLE_MS = 450;
 const MIRROR_REST_MS = 120;
 /** Canals shown in the far band (spec §7). */
 const FAR_CANALS = 14;
+const ROUTE_BUDGET_MS = 4;
+
+type FocusJob = HexRouteJob<"need" | "use" | "need-inside">;
+interface FocusPlan {
+  lit: Set<string> | null;
+  jobs: FocusJob[];
+  region: string | null;
+}
+const NO_FOCUS: FocusPlan = { lit: null, jobs: [], region: null };
 
 const arrivedKeys = new Set<string>();
 
@@ -153,8 +162,7 @@ interface RouteFrame {
   blocks: { x0: number; y0: number; x1: number; y1: number }[];
 }
 
-function routeFrameOf(canvas: HTMLCanvasElement | null, cam: Camera): RouteFrame | null {
-  const chrome = mapChromeOf(canvas);
+function routeFrameOf(chrome: MapChrome | null, cam: Camera): RouteFrame | null {
   if (!chrome) return null;
   const ux = (px: number) => (px - cam.ox) / cam.R;
   const uy = (py: number) => (py - cam.oy) / cam.R;
@@ -300,9 +308,12 @@ export function OntologyHexBoardMap({
    * route does not re-route while the camera travels.
    */
   const [routeFrame, setRouteFrame] = useState<RouteFrame | null>(null);
+  const chromeRef = useRef<MapChrome | null>(null);
   const frameRoutes = useCallback((cam: Camera | null) => {
     if (!cam) return;
-    const next = routeFrameOf(canvasRef.current, cam);
+    const chrome = mapChromeOf(canvasRef.current);
+    if (chrome) chromeRef.current = chrome;
+    const next = routeFrameOf(chrome, cam);
     if (next) setRouteFrame((prev) => (prev && prev.key === next.key ? prev : next));
   }, []);
   const frameRoutesRef = useRef(frameRoutes);
@@ -317,18 +328,9 @@ export function OntologyHexBoardMap({
 
   const canalRoutes = useMemo(() => {
     if (!layout || !lattice || band !== "regions") return [];
-    const router = new HexRouter(lattice, 1.8, blocked);
-    const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
-    const out: HexDrawRoute[] = [];
-    for (const canal of layout.canals) {
-      const a = regionById.get(canal.fromDomain);
-      const b = regionById.get(canal.toDomain);
-      if (!a || !b) continue;
-      const route = router.route([a.domainId, ...a.capabilityIds], [b.domainId, ...b.capabilityIds], `${a.domainId}>${b.domainId}`);
-      if (!route) continue;
-      out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay, stub: route.stub });
-    }
-    return out;
+    return layCanals(layout, lattice, blocked, FAR_CANALS).map(
+      (route): HexDrawRoute => ({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: route.count, twoWay: route.twoWay, stub: route.stub }),
+    );
   }, [layout, lattice, blocked, band]);
 
   /** Edge ticks: a capability's notch toward each region it relies on. */
@@ -351,8 +353,8 @@ export function OntologyHexBoardMap({
   }, [layout]);
 
   /** Who stays lit, and the focus routes, for the selection (or the hover when nothing is selected). */
-  const focus = useMemo(() => {
-    if (!layout || !lattice) return { lit: null as Set<string> | null, routes: [] as HexDrawRoute[], region: null as string | null };
+  const focus = useMemo((): FocusPlan => {
+    if (!layout) return NO_FOCUS;
     const id = selectedId && layout.byId.has(selectedId) ? selectedId : null;
     const subject = id ?? hoverId;
     if (staleOnly && !id) {
@@ -362,51 +364,46 @@ export function OntologyHexBoardMap({
           lit.add(c.id);
           if (c.domainId) lit.add(c.domainId);
         }
-      return { lit, routes: [], region: null };
+      return { lit, jobs: [], region: null };
     }
-    if (!subject) return { lit: null, routes: [], region: null };
+    if (!subject) return NO_FOCUS;
     const tile = layout.byId.get(subject);
-    if (!tile) return { lit: null, routes: [], region: null };
-    const router = new HexRouter(lattice, 1.15, blocked);
-    const routes: HexDrawRoute[] = [];
+    if (!tile) return NO_FOCUS;
+    const jobs: FocusJob[] = [];
     const lit = new Set<string>([subject]);
     if (tile.kind === "capability") {
       if (tile.domainId) lit.add(tile.domainId);
       const needs = layout.dependencies.filter((d) => d.from === subject).sort((a, b) => ((layout.byId.get(a.to)?.domainId ?? "") < (layout.byId.get(b.to)?.domainId ?? "") ? -1 : 1));
       for (const d of needs) {
         lit.add(d.to);
-        const r = router.route([subject], [d.to], `need:${layout.byId.get(d.to)?.domainId}`);
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "need", stub: r.stub });
+        jobs.push({ from: [subject], to: [d.to], bundle: `need:${layout.byId.get(d.to)?.domainId}`, role: "need" });
       }
       for (const d of layout.dependencies.filter((x) => x.to === subject)) {
         lit.add(d.from);
-        const r = router.route([d.from], [subject], "use");
-        if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: "use", stub: r.stub });
+        jobs.push({ from: [d.from], to: [subject], bundle: "use", role: "use" });
       }
     } else if (tile.kind === "domain") {
       const region = layout.regions.find((r) => r.domainId === subject);
-      const jobs: { from: string; to: string; inside: boolean }[] = [];
+      const found: { from: string; to: string; inside: boolean }[] = [];
       for (const capId of region?.capabilityIds ?? []) {
         lit.add(capId);
         for (const d of layout.dependencies.filter((x) => x.from === capId)) {
           const inside = layout.byId.get(d.to)?.domainId === subject;
-          jobs.push({ from: capId, to: d.to, inside });
+          found.push({ from: capId, to: d.to, inside });
           lit.add(d.to);
         }
       }
-      jobs.sort((a, b) => Number(a.inside) - Number(b.inside));
-      if (id) {
-        for (const j of jobs) {
-          const r = router.route([j.from], [j.to], j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`);
-          if (r) routes.push({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: j.inside ? "need-inside" : "need", stub: r.stub });
-        }
-      }
-      return { lit: id ? lit : null, routes, region: id ? subject : null };
+      found.sort((a, b) => Number(a.inside) - Number(b.inside));
+      if (id)
+        for (const j of found)
+          jobs.push({ from: [j.from], to: [j.to], bundle: j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`, role: j.inside ? "need-inside" : "need" });
+      return { lit: id ? lit : null, jobs, region: id ? subject : null };
     } else {
-      return { lit: null, routes: [], region: null };
+      return NO_FOCUS;
     }
-    return { lit: id ? lit : null, routes, region: null };
-  }, [layout, lattice, blocked, selectedId, hoverId, staleOnly, evidence]);
+    return { lit: id ? lit : null, jobs, region: null };
+  }, [layout, selectedId, hoverId, staleOnly, evidence]);
+  const focusRunRef = useRef<{ focus: FocusPlan; blocked: Uint8Array | null; run: HexRouteRun<FocusJob["role"]>; routes: HexDrawRoute[] | null } | null>(null);
 
   /* ── camera ─────────────────────────────────────────────────────────── */
   const restCamera = useCallback((): Camera | null => (layout && room ? hexRestCamera(layout, room) : null), [layout, room]);
@@ -532,7 +529,19 @@ export function OntologyHexBoardMap({
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hovering = !selectedId && !!hoverId && !staleOnly;
-      let routes: HexDrawRoute[] = [...focus.routes];
+      let laid = focusRunRef.current;
+      if (!lattice || focus.jobs.length === 0) laid = focusRunRef.current = null;
+      else if (!laid || laid.focus !== focus || laid.blocked !== blocked) {
+        laid = { focus, blocked, run: new HexRouteRun(lattice, focus.jobs, 1.15, blocked), routes: null };
+        focusRunRef.current = laid;
+      }
+      let routes: HexDrawRoute[] = [];
+      if (laid) {
+        if (!laid.routes && laid.run.advance(performance.now() + ROUTE_BUDGET_MS))
+          laid.routes = laid.run.routes.map((r) => ({ points: r.points, sourceId: r.sourceId, targetId: r.targetId, role: r.role, stub: r.stub }));
+        if (laid.routes) routes = [...laid.routes];
+        else again = true;
+      }
       if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
       const { stats, textBoxes, plateBoxes } = drawBoard(
         ctx,
@@ -582,7 +591,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, scene, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
+    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera],
   );
 
   const paintRef = useRef(paint);
@@ -836,7 +845,8 @@ export function OntologyHexBoardMap({
       }
       const needs = layout!.dependencies.filter((d) => d.from === t.id).length;
       const users = layout!.dependencies.filter((d) => d.to === t.id).length;
-      tip.textContent = labels.tooltip({ name: t.name, stale: evidence.get(t.id) === "stale", needs, users, elements: t.elementCount });
+      const text = labels.tooltip({ name: t.name, stale: evidence.get(t.id) === "stale", needs, users, elements: t.elementCount });
+      if (tip.textContent !== text) tip.textContent = text;
       tip.hidden = false;
       const W = tip.offsetWidth;
       const H = tip.offsetHeight;
@@ -844,7 +854,8 @@ export function OntologyHexBoardMap({
       const y = cam.oy + t.y * cam.R;
       const R = cam.R;
       const gap = 8;
-      const free = freeAreaOf(canvasRef.current) ?? { x: 0, y: 0, width: size.w, height: size.h };
+      chromeRef.current ??= mapChromeOf(canvasRef.current);
+      const free = chromeRef.current?.free ?? { x: 0, y: 0, width: size.w, height: size.h };
       // Beside the tile first (right, left, below, above), then the same sides swept outward in
       // 6 px steps; the nearest spot that covers no name wins.
       const cands: { x: number; y: number; d: number }[] = [];
@@ -1037,6 +1048,33 @@ export function OntologyHexBoardMap({
 
   const staleTotal = layout ? layout.capabilities.filter((c) => evidence.get(c.id) === "stale").length : 0;
 
+  /* Every tile, in reading order, for assistive technology and measurement. Screen positions
+     are written onto these after each still frame. */
+  const tileList = useMemo(
+    () => (
+      <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="hex-board-list">
+        {(layout?.tiles ?? []).map((t) => (
+          <li key={t.id}>
+            <button
+              type="button"
+              tabIndex={-1}
+              data-hex-id={t.id}
+              data-hex-kind={t.kind}
+              data-hex-domain={t.domainId ?? ""}
+              data-hex-cell={`${t.q},${t.r}`}
+              data-evidence={t.kind === "capability" ? (evidence.get(t.id) ?? "unknown") : undefined}
+              aria-pressed={selectedId === t.id}
+              onClick={() => onSelect?.(t.id)}
+            >
+              {t.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    ),
+    [layout, evidence, selectedId, onSelect, listLabel],
+  );
+
   return (
     <div
       ref={wrapRef}
@@ -1116,27 +1154,7 @@ export function OntologyHexBoardMap({
         </div>
         {legend?.({ staleOnly, focused: !!selectedId, band })}
       </div>
-      {/* Every tile, in reading order, for assistive technology and measurement. Screen positions
-          are written onto these after each still frame. */}
-      <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="hex-board-list">
-        {(layout?.tiles ?? []).map((t) => (
-          <li key={t.id}>
-            <button
-              type="button"
-              tabIndex={-1}
-              data-hex-id={t.id}
-              data-hex-kind={t.kind}
-              data-hex-domain={t.domainId ?? ""}
-              data-hex-cell={`${t.q},${t.r}`}
-              data-evidence={t.kind === "capability" ? (evidence.get(t.id) ?? "unknown") : undefined}
-              aria-pressed={selectedId === t.id}
-              onClick={() => onSelect?.(t.id)}
-            >
-              {t.name}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {tileList}
     </div>
   );
 }
