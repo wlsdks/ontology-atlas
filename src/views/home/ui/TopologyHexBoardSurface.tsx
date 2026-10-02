@@ -74,7 +74,7 @@ export function TopologyHexBoardSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
-  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ focused, band }) => (
+  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ staleOnly, focused, band }) => (
     <div
       data-testid="hex-board-legend"
       data-evidence-availability={evidence.availability}
@@ -125,7 +125,14 @@ export function TopologyHexBoardSurface({
             {t("legendUsers")}
           </span>
         </>
-      ) : band === "regions" ? (
+      ) : band !== "regions" ? (
+        <span className="flex items-center gap-1.5">
+          <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
+            <line x1="7" y1="7" x2="17" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-indigo-bright)" }} />
+          </svg>
+          {t("legendNotches")}
+        </span>
+      ) : !staleOnly ? (
         <span className="flex items-center gap-1.5">
           <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
             <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-hex-canal)" }} />

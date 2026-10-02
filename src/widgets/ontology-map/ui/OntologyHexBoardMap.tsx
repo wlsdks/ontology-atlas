@@ -306,9 +306,8 @@ export function OntologyHexBoardMap({
     );
   }, [lattice, routeFrame]);
 
-  /** Canals at rest, routed once per board. */
   const canalRoutes = useMemo(() => {
-    if (!layout || !lattice) return [];
+    if (!layout || !lattice || band !== "regions") return [];
     const router = new HexRouter(lattice, 1.8, blocked);
     const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
     const out: HexDrawRoute[] = [];
@@ -321,7 +320,7 @@ export function OntologyHexBoardMap({
       out.push({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: canal.count, twoWay: canal.twoWay, stub: route.stub });
     }
     return out;
-  }, [layout, lattice, blocked]);
+  }, [layout, lattice, blocked, band]);
 
   /** Edge ticks: a capability's notch toward each region it relies on. */
   const ports = useMemo(() => {

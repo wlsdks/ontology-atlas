@@ -158,9 +158,11 @@ routes: [/topology]
   Territories. Placement is append-only per folder: a new capability takes a free
   cell of its region and a new domain the next free slot, so nothing already placed
   moves; only a region that outgrows its room re-seeds the board, and the board says
-  so. In the far band, strokes between regions count their dependencies; closer in, each tile's notches point at the regions it relies on, and hovering a tile
-  shows a one-line summary and routes what it needs and what uses it, and selecting
-  opens the flat map's inspector with those routes kept. Routes run only in the
+  so. In the far band, strokes between regions grow thicker with
+  their dependencies; closer in, each tile's notches point at the regions it relies
+  on. Hovering a tile shows a one-line summary; hovering or selecting a capability
+  routes what it needs and what uses it, and selecting a region routes what it
+  needs. Selecting opens the flat map's inspector with those routes kept. Routes run only in the
   gaps between tiles, never across one. "◐ Stale only" keeps stale tiles, naming the
   moved file, and recedes the rest; arrow keys move the selection to the
   neighbouring tile, crossing to the next region when there is none. The wheel scales
