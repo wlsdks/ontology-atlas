@@ -782,6 +782,8 @@ export interface FrameDrawParams {
   galaxyIdentityActive?: boolean;
   /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
   galaxyElapsedMs?: number;
+  galaxyAtmosphereLagMs?: number;
+  galaxyAtmosphereLive?: number;
   /** One entry-scoped seed; meteor paths remain stable throughout each apparition. */
   galaxyAtmosphereSeed?: number;
   /** Shared world radius of the real-node spiral; aligns the cached sky texture. */
@@ -1206,6 +1208,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     galaxyRamp: galaxyRampProp = 0,
     galaxyIdentityActive = galaxyRampProp > 0.001,
     galaxyElapsedMs = 0,
+    galaxyAtmosphereLagMs = 0,
+    galaxyAtmosphereLive = 1,
     galaxyAtmosphereSeed = 0,
     galaxyLayoutRadius = 0,
     neuralRamp: neuralRampProp = 0,
@@ -1529,7 +1533,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       viewportWidth,
       viewportHeight,
       tokens.galaxyCapability,
-      galaxyPhase.corona * 0.82,
+      galaxyPhase.corona * 0.82 * galaxyAtmosphereLive,
     );
   }
 
@@ -3257,7 +3261,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ? Math.min(1, Math.max(0, emphasis))
           : 0;
       const luminance = nodeLayerAlpha * starLuminance(node.starMagnitude);
-      const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
+      const atmosphere = galaxyTwinkle(node.id, now - galaxyAtmosphereLagMs, reducedMotion);
       const atmosphericLuminance = luminance * atmosphere.intensity;
       drawGalaxyNodeStar(ctx, {
         x: screen.x,
@@ -3384,7 +3388,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
        */
       const starInk = node.id === focusedNodeId ? tokens.selectionRingIndigo : trailStarInk;
       if (galaxyOn) {
-        const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
+        const atmosphere = galaxyTwinkle(node.id, now - galaxyAtmosphereLagMs, reducedMotion);
         drawGalaxyNodeStar(ctx, {
           x: screen.x,
           y: screen.y,
