@@ -305,6 +305,15 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "Hex board placement (append-only tile cells) per folder — view state, never meaning",
   },
   {
+    key: "atlas.map.cosmos.v1:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/home/model/cosmos-placement-store.ts",
+    provenBy: "src/views/home/model/cosmos-placement-store.test.ts",
+    note: "Galaxy cosmos (spike): settled galaxy centres per folder, so placed galaxies never move — view state, never meaning",
+  },
+  {
     key: "atlas.agentActivity.readAt:",
     kind: "storage",
     scope: "vault-scoped",

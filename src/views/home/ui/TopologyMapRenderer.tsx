@@ -32,6 +32,7 @@ import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
+import { TopologyCosmosSurface } from "./TopologyCosmosSurface";
 import { TopologyLightLegend } from "./TopologyLightLegend";
 import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
@@ -146,6 +147,7 @@ export function TopologyMapRenderer({
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
+  const [cosmos] = useState(() => typeof window === "undefined" || new URLSearchParams(window.location.search).get("cosmos") !== "0");
   const layoutView: MapLayoutView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : galaxy ? "galaxy" : "flat";
   const expandedParents =
     pathExpandedParents ?? (expandAllActive ? allExpandedParentIds : null) ?? spotlightExpandedParents ?? expandedParentSet;
@@ -235,6 +237,17 @@ export function TopologyMapRenderer({
               navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
+          ) : layoutView === "galaxy" && cosmos ? (
+            <TopologyCosmosSurface
+              nodes={nodes}
+              edges={edges}
+              vaultKey={vaultIdentity}
+              selectedId={canvasSelectedSlug}
+              onSelect={select}
+              onPaneClick={clear}
+              onDrawnCountChange={onDrawnCountChange}
+              reducedMotion={reducedMotion}
+            />
           ) : (
           <OntologyMap
             nodes={nodes}
