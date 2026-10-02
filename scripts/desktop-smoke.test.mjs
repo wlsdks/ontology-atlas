@@ -423,3 +423,24 @@ test("desktop smoke detects drift in the current download handoff", () => {
   );
   assert.match(report.nextAction, /contract drift|current route/i);
 });
+
+test("desktop smoke follows an injected four-locale list", () => {
+  const root = makeOutDir();
+  try {
+    const locales = ["en", "ja", "ko", "zh"];
+    for (const locale of locales) {
+      const catalog = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
+      catalog.metadata.siteName = `Site ${locale}`;
+      write(root, `messages/${locale}.json`, JSON.stringify(catalog));
+    }
+    const titles = resolveRouteTitles({ root, locales });
+    assert.equal(Object.keys(titles).length, locales.length * Object.keys(DESKTOP_SMOKE_ROUTE_TITLE_KEYS).length);
+    assert.ok(titles["zh:/download"].endsWith("· Site zh"));
+    assert.deepEqual(
+      Object.keys(resolveRouteText({ root, locales })).sort(),
+      locales.map((locale) => `${locale}:/download`),
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

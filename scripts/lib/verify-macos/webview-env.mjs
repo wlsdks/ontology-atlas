@@ -1,3 +1,5 @@
+import { listLocales } from "../../build-messages.mjs";
+
 export const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 
 export const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
@@ -106,22 +108,24 @@ const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
  * user-visible markers instead.
  */
-export function webviewWorkbenchMarkersForPath(expectedPath = null) {
-  if (typeof expectedPath === "string") {
+export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = listLocales()) {
+  if (typeof expectedPath === "string" && locales.length > 0) {
     const pathname = new URL(expectedPath, "tauri://localhost/").pathname;
-    if (/\/(?:ko|en)\/agents\/?$/.test(pathname)) {
+    const prefix = `(?:${locales.join("|")})`;
+    const routeIs = (route) => new RegExp(`/${prefix}/${route}/?$`).test(pathname);
+    if (routeIs("agents")) {
       return WEBVIEW_AGENTS_WORKBENCH_MARKERS;
     }
-    if (/\/(?:ko|en)\/mcp\/?$/.test(pathname)) {
+    if (routeIs("mcp")) {
       return WEBVIEW_MCP_WORKBENCH_MARKERS;
     }
-    if (/\/(?:ko|en)\/library\/?$/.test(pathname)) {
+    if (routeIs("library")) {
       return WEBVIEW_LIBRARY_WORKBENCH_MARKERS;
     }
-    if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
+    if (routeIs("topology")) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;
     }
-    if (/\/(?:ko|en)\/ontology\/insights\/?$/.test(pathname)) {
+    if (routeIs("ontology/insights")) {
       return WEBVIEW_INSIGHTS_WORKBENCH_MARKERS;
     }
   }

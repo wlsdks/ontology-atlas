@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { listLocales } from "./build-messages.mjs";
 
-export const DESKTOP_SMOKE_LOCALES = ["en", "ko"];
+export const DESKTOP_SMOKE_LOCALES = listLocales();
 export const DESKTOP_SMOKE_ROUTES = [
   "/download",
   "/docs",
