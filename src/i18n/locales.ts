@@ -2,7 +2,7 @@ import { routing } from "@/i18n/routing";
 
 export type AppLocale = (typeof routing.locales)[number];
 
-export type LocaleScript = "latin" | "hangul" | "han-kana";
+type LocaleScript = "latin" | "hangul" | "han-kana";
 
 export interface LocaleMeta {
   readonly htmlLang: string;
