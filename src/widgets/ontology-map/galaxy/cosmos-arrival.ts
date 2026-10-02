@@ -48,8 +48,10 @@ export function applyArrival(layout: CosmosLayout, clockMs: number, mode: Cosmos
     frameMix = f - frameA;
   }
   const reach = Math.max(1, layout.settle.targetRadius);
+  const corePresence = active ? easeOutCubic(clamp01(clock / TIER_RISE_MS)) : 1;
   layout.galaxies.forEach((g, i) => {
     const pose = poses[i]!;
+    pose.corePresence = corePresence;
     if (!active) {
       pose.x = g.x;
       pose.y = g.y;

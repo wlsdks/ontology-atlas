@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { CosmosCamera, CosmosInks, CosmosRoom, GalaxyPose } from "../cosmos-types";
+import type { CosmosCamera, CosmosInks, CosmosLens, CosmosRoom, GalaxyPose, LabelCandidate } from "../cosmos-types";
 import { computeCosmosLayout, MIN_STAR_SPACING, type CosmosLayout } from "../layout/cosmos-layout";
 import { CosmosBitmapCache } from "./cosmos-bitmap-cache";
 import { drawCosmosFrame } from "./cosmos-frame";
 
 const fakeCanvas = (size: number) => ({ width: size, height: size }) as unknown as HTMLCanvasElement;
+const relationCandidates = vi.hoisted(() => [] as LabelCandidate[]);
 
 vi.mock("./cosmos-paint", () => ({
   IMPOSTOR_EXTENT: 1.32,
@@ -12,7 +13,7 @@ vi.mock("./cosmos-paint", () => ({
   glowSizeFor: () => 256,
   impostorSizeFor: () => 256,
   buildGalaxyGlow: (_g: unknown, _i: unknown, size: number) => ({ base: fakeCanvas(size), wisps: fakeCanvas(size) }),
-  buildStarImpostor: (_g: unknown, size: number) => fakeCanvas(size),
+  buildStarImpostor: (_g: unknown, size: number) => Object.assign(fakeCanvas(size), { impostor: true }),
 }));
 
 vi.mock("./cosmos-web", () => ({
@@ -20,25 +21,34 @@ vi.mock("./cosmos-web", () => ({
 }));
 
 vi.mock("./cosmos-relations", () => ({
-  drawCosmosRelations: () => ({ rows: [], candidates: [], labels: [] }),
-  lensAlpha: () => 1,
-  galaxyLensAlpha: () => 1,
+  drawCosmosRelations: () => ({ rows: [], candidates: relationCandidates.splice(0), labels: [] }),
+  drawCosmosHover: () => [],
+  lensAlpha: (lens: unknown) => (lens ? 0.25 : 1),
+  galaxyLensAlpha: (lens: unknown) => (lens ? 0.25 : 1),
 }));
 
 interface FakeContext {
   ctx: CanvasRenderingContext2D;
   calls: string[];
   composites: string[];
+  impostorAlphas: number[];
 }
 
 function fakeContext(): FakeContext {
   const calls: string[] = [];
   const composites: string[] = [];
+  const impostorAlphas: number[] = [];
   const state: Record<string, unknown> = { globalCompositeOperation: "source-over" };
   const ctx = new Proxy(state, {
     get(target, key: string) {
       if (key in target) return target[key];
       if (key === "measureText") return (text: string) => ({ width: text.length * 7 });
+      if (key === "drawImage") {
+        return (image: { impostor?: boolean }) => {
+          calls.push(key);
+          if (image.impostor) impostorAlphas.push(Number(target.globalAlpha));
+        };
+      }
       if (key === "createPattern") {
         return () => {
           calls.push("createPattern");
@@ -58,7 +68,7 @@ function fakeContext(): FakeContext {
       return true;
     },
   }) as unknown as CanvasRenderingContext2D;
-  return { ctx, calls, composites };
+  return { ctx, calls, composites, impostorAlphas };
 }
 
 const inks: CosmosInks = {
@@ -99,11 +109,11 @@ beforeAll(() => {
   poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
 });
 
-function frame(ctx: CanvasRenderingContext2D, camera: CosmosCamera, cache = new CosmosBitmapCache(), deepField: HTMLCanvasElement | null = fakeCanvas(512)) {
+function frame(ctx: CanvasRenderingContext2D, camera: CosmosCamera, cache = new CosmosBitmapCache(), deepField: HTMLCanvasElement | null = fakeCanvas(512), lens: CosmosLens | null = null) {
   return drawCosmosFrame({
     ctx, width: 1200, height: 800, dpr: 1, room, camera, overviewScale: camera.scale, layout, inks, poses,
     attention: { selectedId: null, hoverId: null, hoverGalaxy: -1, focusGalaxy: -1, revealMs: 0 },
-    relationsOf: () => [], pointOf: () => null, lens: null, trail: null, record: null, reducedMotion: false,
+    relationsOf: () => [], pointOf: () => null, lens, trail: null, record: null, reducedMotion: false,
     cache, deepField, buildBudget: 100,
   });
 }
@@ -150,6 +160,22 @@ describe("drawCosmosFrame", () => {
     expect(frame(fakeContext().ctx, { x: g.x, y: g.y, scale: 400 / g.radius }).band).toBe("circuit");
     const element = Math.max(17 / MIN_STAR_SPACING, 700 / g.radius);
     expect(frame(fakeContext().ctx, { x: g.x, y: g.y, scale: element }).band).toBe("element");
+  });
+
+  it("places the relations' member candidates with the other names", () => {
+    relationCandidates.push({ text: "Member", kind: "member", id: "m", x: 600, y: 300, align: "left", font: "12px sans-serif", ink: "#ffffff", priority: 950 });
+    const labels = frame(fakeContext().ctx, overview()).labels;
+    expect(labels.filter((l) => l.kind === "member").map((l) => l.id)).toEqual(["m"]);
+  });
+
+  it("recedes impostors to the lens rest alpha while a lens is active", () => {
+    const plain = fakeContext();
+    frame(plain.ctx, overview());
+    const lensed = fakeContext();
+    frame(lensed.ctx, overview(), new CosmosBitmapCache(), null, { kind: "path", memberIds: new Set(["x"]), edgeIds: new Set() });
+    expect(plain.impostorAlphas.length).toBeGreaterThan(0);
+    expect(plain.impostorAlphas.every((a) => a === 1)).toBe(true);
+    expect(lensed.impostorAlphas.every((a) => a === 0.25)).toBe(true);
   });
 
   it("counts bitmaps the first time they are drawn", () => {
