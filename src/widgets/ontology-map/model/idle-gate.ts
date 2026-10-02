@@ -93,6 +93,16 @@ export function isDomeSpinAnimating(input: DomeSpinInput): boolean {
   );
 }
 
+export interface GalaxyAtmosphereInput {
+  galaxyOn: boolean;
+  reducedMotion: boolean;
+  ambientAsleep: boolean;
+}
+
+export function isGalaxyAtmosphereAnimating(input: GalaxyAtmosphereInput): boolean {
+  return input.galaxyOn && !input.reducedMotion && !input.ambientAsleep;
+}
+
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||

@@ -197,7 +197,9 @@ routes: [/topology]
   luminous filaments while retaining their solid/dashed and direction semantics;
   seeded dust and an occasional
   procedural shooting star on a varied entry-seeded path sit behind the graph
-  and are never graph records.
+  and are never graph records. Like the comets, the twinkle, the drifting gas
+  and the shooting star slow to a stop about 30 seconds after the last input,
+  so a resting Galaxy draws no frames; any input wakes them.
   In Galaxy, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through
   `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.

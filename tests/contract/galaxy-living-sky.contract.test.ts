@@ -40,7 +40,7 @@ describe("Galaxy living-sky paint contract", () => {
     expect(frame).toMatch(/if\s*\(!domeOn\s*&&\s*!galaxyOn\)/);
   });
 
-  it("keeps atmosphere out of reduced motion and out of non-Galaxy idle work", () => {
+  it("keeps atmosphere out of reduced motion and out of non-Galaxy idle work, and lets it sleep", () => {
     const frame = readCode("src/widgets/ontology-map/ui/topology-frame-draw.ts");
     const loop = readCode("src/widgets/ontology-map/ui/topology-frame-gate.ts");
     const scheduler = readCode("src/widgets/ontology-map/ui/use-topology-frame-loop.ts");
@@ -48,7 +48,9 @@ describe("Galaxy living-sky paint contract", () => {
     expect(scheduler).toContain("runFrameGate(now)");
 
     expect(frame).toMatch(/galaxyAtmosphereOn\s*&&\s*!reducedMotion[\s\S]*drawGalaxyMeteor/);
-    expect(loop).toContain("galaxyAtmosphereActive: galaxyRef.current && !reducedMotionRef.current");
+    expect(loop).toMatch(
+      /galaxyAtmosphereActive:\s*isGalaxyAtmosphereAnimating\(\{\s*galaxyOn:\s*galaxyRef\.current,\s*reducedMotion:\s*reducedMotionRef\.current,\s*ambientAsleep,?\s*\}\)/,
+    );
   });
 
   it("wires the stable Galaxy layout and the same attention rule into paint and hit testing", () => {
