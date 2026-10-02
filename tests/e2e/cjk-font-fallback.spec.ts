@@ -36,16 +36,18 @@ test.describe('CJK font fallback', () => {
         },
         { lang: probe.lang, text: probe.text },
       );
-      const faces = async () => {
-        await page.evaluate(() => document.fonts.ready);
-        return (await platformFonts(cdp, '#cjk-probe')).join(', ');
+      const rendered = async () => {
+        await page.evaluate(async (lang) => {
+          if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
+          document.getElementById('cjk-probe')!.getBoundingClientRect();
+          await document.fonts.ready;
+        }, probe.lang);
+        const faces = (await platformFonts(cdp, '#cjk-probe')).join(', ');
+        return { lang: await page.evaluate(() => document.documentElement.lang), faces };
       };
-      if (probe.expectPretendard) {
-        await expect.poll(faces).toMatch(/pretendard/i);
-      } else {
-        await expect.poll(faces).not.toMatch(/pretendard/i);
-        expect(await faces()).not.toBe('');
-      }
+      const drawnWith = probe.expectPretendard ? expect.stringMatching(/pretendard/i) : expect.not.stringMatching(/pretendard/i);
+      await expect.poll(rendered).toEqual({ lang: probe.lang, faces: drawnWith });
+      if (!probe.expectPretendard) expect((await rendered()).faces).not.toBe('');
     });
   }
 });
