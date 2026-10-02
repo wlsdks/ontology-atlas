@@ -1,5 +1,6 @@
 {
   "prefix": "Description is behind what this holds",
   "lag": "{count}d",
-  "action": "Update this description"
+  "action": "Update this description",
+  "unavailable": "Couldn't compare this description with its history. Open Git to inspect the original changes."
 }
