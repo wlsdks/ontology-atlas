@@ -8,6 +8,16 @@ describe('RouteMemory', () => {
     expect(isRestorableRoute('/en/docs')).toBe(true);
   });
 
+  it('takes the locale list from its argument', () => {
+    const locales = ['en', 'ko', 'ja', 'zh'];
+    expect(isRestorableRoute('/ja/topology/', locales)).toBe(true);
+    expect(isRestorableRoute('/zh/docs', locales)).toBe(true);
+    expect(isRestorableRoute('/ja/', locales)).toBe(false);
+    expect(isRestorableRoute('/zh/', locales)).toBe(false);
+    expect(isRestorableRoute('/fr/docs/', locales)).toBe(false);
+    expect(isRestorableRoute('/ja/topology/')).toBe(false);
+  });
+
   it('rejects a locale root and external URL shapes', () => {
     expect(isRestorableRoute('/en/')).toBe(false);
     expect(isRestorableRoute('/ko/')).toBe(false);
