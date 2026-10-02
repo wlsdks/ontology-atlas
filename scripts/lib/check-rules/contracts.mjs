@@ -39,4 +39,10 @@ export const rules = [
       /^scripts\/migrations\/[^/]+\.mjs$/,
     ],
   },
+  {
+    order: 445,
+    command: 'pnpm exec vitest run tests/contract/ime-enter-guard.contract.test.ts',
+    reason: 'a TypeScript source can hold an Enter handler, which must wait for IME composition to end',
+    matches: [/^(?:src|app)\/(?!.*\.(?:test|spec)\.ts$).*\.ts$/],
+  },
 ];

@@ -9,6 +9,7 @@ import {
   type BootstrapPlan,
 } from "@/features/docs-vault-local";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { Checkbox } from "@/shared/ui";
 
 /**
@@ -145,7 +146,7 @@ export function OntologyBootstrapForm({
               disabled={busy}
               onChange={(e) => setProjectTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") void submit();
+                if (e.key === "Enter" && !isImeComposing(e)) void submit();
               }}
               aria-label={labels.projectName}
               data-testid="ontology-bootstrap-title"

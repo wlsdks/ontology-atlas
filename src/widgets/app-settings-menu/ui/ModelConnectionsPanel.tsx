@@ -47,6 +47,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Download } from 'lucide-react';
 import { Select } from '@/shared/ui/select';
 import { cn } from '@/shared/lib/cn';
+import { isImeComposing } from '@/shared/lib/ime-composition';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import {
@@ -760,7 +761,7 @@ function KeyDraftForm({
         data-testid={`ai-key-input-${testSuffix}`}
         onChange={(event) => setDraftKey(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') void handleSave();
+          if (event.key === 'Enter' && !isImeComposing(event)) void handleSave();
         }}
         className={fieldClass({ size: 'md', className: 'min-w-0 flex-1 font-mono placeholder:font-sans' })}
       />
@@ -1006,7 +1007,7 @@ function LocalRunnerRow({
               data-testid="ai-local-url"
               onChange={(event) => setDraftUrl(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') void runVerify(draftUrl, detailCheckRef);
+                if (event.key === 'Enter' && !isImeComposing(event)) void runVerify(draftUrl, detailCheckRef);
               }}
               className={fieldClass({ size: 'md', className: 'min-w-0 flex-1 font-mono placeholder:font-sans' })}
             />

@@ -5,6 +5,7 @@ import { Check, PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 
 /**
  * One frontmatter field switching between read, edit and save/cancel; labels arrive as props, so it
@@ -99,7 +100,7 @@ export function InlineFieldEdit({
         placeholder={labels.placeholder}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") void commit();
+          if (e.key === "Enter" && !isImeComposing(e)) void commit();
           else if (e.key === "Escape") cancel();
         }}
         aria-label={labels.field}
