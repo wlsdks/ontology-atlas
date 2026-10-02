@@ -167,6 +167,27 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
   await expect.poll(async () => (await transcriptBox(page)).distance).toBeLessThanOrEqual(2);
 });
 
+test('a return to the end resumes the follow when text lands before its scroll event', async ({ page }) => {
+  const harness = await openStreamingDock(page);
+  await harness.stream(page, streamedAnswer(640), { perSecond: RATE, endTurn: true });
+  await untilStreamed(page, 60);
+  const box = await page.getByTestId('acp-chat-transcript').boundingBox();
+  if (!box) throw new Error('the transcript has no box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -300);
+  await waitFrames(page, 2);
+  expect((await transcriptBox(page)).distance, 'the reader left the end').toBeGreaterThan(100);
+  await page.getByTestId('acp-chat-transcript').evaluate((list) => {
+    list.scrollTop = list.scrollHeight;
+    const paragraph = document.createElement('div');
+    paragraph.style.height = '30px';
+    list.firstElementChild!.appendChild(paragraph);
+  });
+  const emitted = (await harness.streamed(page)).emitted;
+  await untilStreamed(page, emitted + 30);
+  await expect.poll(async () => (await transcriptBox(page)).distance, 'the follow resumed').toBeLessThanOrEqual(48);
+});
+
 test('scrolling back down to the end resumes the follow without the door', async ({ page }) => {
   const harness = await openStreamingDock(page);
   const chunks = streamedAnswer(300);
