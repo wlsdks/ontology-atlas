@@ -191,6 +191,7 @@ touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:languag
 # The gateway shows one vault file verbatim; the committed copy must match the vault.
 touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'
 touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
+touched '^(mcp/)?(package\.json|pnpm-lock\.yaml)$' '^src-tauri/Cargo\.(toml|lock)$' '^scripts/(check-licenses|build-notice)' '^scripts/lib/(license-policy|third-party-|attribution-marker)' '^scripts/data/license-exceptions\.json$' '^NOTICE\.md$' '^public/third-party-licenses\.txt$' && lane licenses 'pnpm licenses:check && pnpm notice:check'
 # The design system's table of contents is generated from its own headings, and only this file
 # can move it. It was missing here: a section added on 2026-08-28 shipped with a stale contents
 # list through thirteen green lanes, because `docs:check` runs this check and the docs lane

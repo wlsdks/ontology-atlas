@@ -50,6 +50,7 @@ before relying on it.
 | pre-push `source_language` | — | 7 s | Korean in source comments |
 | pre-push `lint` | — | 1-3 s | ESLint on the changed files |
 | pre-push `typecheck` · `comment_refs` · `decisions` | — | ~1 s each | types, code-comment citations, a route with no record |
+| pre-push `licenses` | — | 6-23 s (2026-10-02; alone, then beside nine lanes) | the license allow-list and notice freshness, when a shipped dependency tree changes |
 | **PR CI, wall clock** | 8 min | plan 25 s, then the slowest job | — |
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
@@ -1109,6 +1110,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `node scripts/measure-contrast.mjs`
 **Proves**: WCAG 1.4.3 text contrast and 1.4.11 adjacent data-mark contrast, measured over the rendered DOM with alpha compositing resolved, against a built static export.
 **Escalate**: none.
+
+### Third-party licenses and notices
+
+**Run**: `pnpm licenses:check`
+**Proves**: Every production package the web export, the MCP sidecar and the desktop app ship is on the license allow-list or has a recorded exception with a reason, and every attribution marker is well formed and permitted.
+**Escalate**: `pnpm notice:check` when a manifest, a lockfile or the notice generator changed, to prove `NOTICE.md` and `public/third-party-licenses.txt` match the trees
+**Fix**: replace the refused package or record why it may ship in `scripts/data/license-exceptions.json`; run `pnpm notice:build` after a production dependency changes (`docs/engineering/third-party-code.md`).
 
 ### Vault audit argument contract
 

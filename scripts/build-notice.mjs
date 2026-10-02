@@ -1,60 +1,25 @@
 #!/usr/bin/env node
 /**
- * Builds `NOTICE.md`, the third-party attribution the shipped app owes its users.
- *
- * **Why this file has to exist.** The installed `.app` is not only our code. Three
- * things inside it carry an obligation that MIT does not:
- *
- * 1. `binaries/ontology-atlas-mcp` is produced by `bun build --compile`, and Bun
- *    statically links JavaScriptCore and WebKit, which are LGPL-2.1. Static linking
- *    is the case LGPL-2.1 section 6 addresses: a user must be able to relink the
- *    application against their own build of the library. `otool -L` on that binary
- *    lists only macOS system libraries, which confirms the engine is baked in rather
- *    than borrowed from the OS.
- * 2. `PretendardVariable` ships as a woff2 in the static export under OFL-1.1, which
- *    requires the licence text to travel with the font. The npm package does not
- *    carry that text, so this file does.
- * 3. Five Rust crates are MPL-2.0. We do not modify them, so the only duty is saying
- *    where their source lives.
- *
- * None of the three changes our own licence. LGPL, OFL and MPL are all boundary
- * licences: they bind the component, not the program that links it. `LICENSE` stays
- * MIT. What was missing was the notice, not the right to ship.
- *
- * **Why a generator rather than a hand-written file.** The dependency inventory is
- * 564 Rust crates plus the production npm tree, and a hand-maintained list silently
- * rots the first time someone adds a dependency. `AGENTS.md` requires documentation
- * checks to compare machine-derived facts rather than pinning prose, so the inventory
- * is derived from `cargo metadata` and `pnpm licenses` on every run and the prose
- * above it is the only part a human writes. `--check` regenerates and diffs, which is
- * what CI and the release preflight call.
- *
- * Output is deterministic: every list is sorted, and no timestamp or version of this
- * repository is embedded, so an unchanged dependency tree produces a byte-identical
- * file.
+ * Builds `NOTICE.md` and `public/third-party-licenses.txt` from the dependency trees that build
+ * the shipped artifacts. `PREAMBLE` is the only hand-written part; `--check` regenerates both
+ * and fails on any difference.
  */
 
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { collectAttributionMarkers } from "./lib/attribution-marker.mjs";
+import { collectInventories } from "./lib/third-party-inventory.mjs";
+import { distinctNames, packageLicenseText, renderThirdPartyLicenses } from "./lib/third-party-licenses.mjs";
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const NOTICE_PATH = path.join(REPO_ROOT, "NOTICE.md");
-const CARGO_MANIFEST = path.join(REPO_ROOT, "src-tauri", "Cargo.toml");
+export const NOTICE_FILE = "NOTICE.md";
+export const LICENSES_FILE = "public/third-party-licenses.txt";
 
-/**
- * Licences that bind the component rather than the program linking it. Each one is
- * called out by name in the prose sections above the inventory, because a reader
- * scanning a 500-entry table will not notice them otherwise.
- */
-export const BOUNDARY_LICENSE_MARKERS = ["MPL", "LGPL", "GPL", "EPL", "CDDL"];
+const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-/**
- * SPDX strings appear in Cargo metadata in several spellings for the same choice
- * (`MIT/Apache-2.0`, `MIT OR Apache-2.0`, `Apache-2.0 OR MIT`). Normalising them keeps
- * the inventory from listing one licence three times.
- */
+/** One spelling per choice: `MIT/Apache-2.0`, `Apache-2.0 OR MIT` and `MIT OR Apache-2.0` agree. */
 export function normalizeLicense(raw) {
   if (!raw) return "UNKNOWN";
   const spaced = raw.replace(/\//g, " OR ");
@@ -66,12 +31,6 @@ export function normalizeLicense(raw) {
   return [...parts].sort().join(" OR ");
 }
 
-/** True when a licence obliges us to say something beyond attribution. */
-export function isBoundaryLicense(license) {
-  const upper = license.toUpperCase();
-  return BOUNDARY_LICENSE_MARKERS.some((marker) => upper.includes(marker));
-}
-
 function groupByLicense(entries) {
   const groups = new Map();
   for (const entry of entries) {
@@ -80,34 +39,8 @@ function groupByLicense(entries) {
     groups.get(license).push(entry.name);
   }
   return [...groups.entries()]
-    .map(([license, names]) => ({ license, names: [...new Set(names)].sort() }))
-    .sort((a, b) => a.license.localeCompare(b.license));
-}
-
-export function collectRustCrates() {
-  const raw = execFileSync(
-    "cargo",
-    ["metadata", "--manifest-path", CARGO_MANIFEST, "--format-version", "1", "--all-features"],
-    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  );
-  const meta = JSON.parse(raw);
-  return meta.packages
-    .filter((pkg) => pkg.name !== "ontology-atlas")
-    .map((pkg) => ({ name: pkg.name, license: pkg.license ?? "UNKNOWN" }));
-}
-
-export function collectNpmPackages() {
-  const raw = execFileSync("pnpm", ["licenses", "list", "--prod", "--json"], {
-    cwd: REPO_ROOT,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  const parsed = JSON.parse(raw);
-  const entries = [];
-  for (const [license, packages] of Object.entries(parsed)) {
-    for (const pkg of packages) entries.push({ name: pkg.name, license });
-  }
-  return entries;
+    .map(([license, names]) => ({ license, names: [...new Set(names)].sort(compare) }))
+    .sort((a, b) => compare(a.license, b.license));
 }
 
 function renderGroups(groups) {
@@ -121,96 +54,7 @@ function renderGroups(groups) {
   return lines.join("\n");
 }
 
-/** The hand-written part. Everything below the inventory heading is generated. */
-const PREAMBLE = `# Third-party notices
-
-Ontology Atlas is licensed under the MIT License; see [\`LICENSE\`](./LICENSE).
-
-This file lists the third-party components behind the released application and the
-notices they require. Listing a component here does not place Ontology
-Atlas under that component's license — the licenses below bind the component, not
-the program that links it.
-
-Scope: the macOS \`.app\` and Windows installer published on the releases page,
-which contain the static web export, the \`ontology-atlas\` application binary, and
-the \`ontology-atlas-mcp\` sidecar binary; plus the two artifacts that carry the MCP
-server on its own — the \`.mcpb\` bundle attached to each release and the
-\`ghcr.io/wlsdks/ontology-atlas-mcp\` image. Those two vendor three MIT packages
-(\`@modelcontextprotocol/core\`, \`@modelcontextprotocol/server\`, \`zod\`), each keeping
-its own \`LICENSE\` inside the artifact beside Atlas's, and carry no native binaries.
-A new distributed artifact belongs in this sentence: a notice that under-lists is a
-compliance failure.
-
-## Trademarks
-
-Product names that appear in Atlas — Claude Code, Codex, Cursor, Antigravity,
-Copilot, GitHub and others — are trademarks of their respective owners. Atlas is
-not affiliated with, sponsored by, or endorsed by any of them. It names them only
-to say what it interoperates with, which is the accurate way to describe an
-integration and the only reason they appear.
-
-Names are one thing and marks are another. A service's own glyph appears only
-where that service's published brand guideline was read and permits monochrome
-use to show an integration; every other row falls back to a generic connector
-glyph. \`docs/features/agents.md\` owns that rule and names which services have been
-checked. The ACP runtime icons under \`public/acp-icons/\` are the 16x16 monochrome
-SVGs the ACP registry itself publishes for this purpose, fetched at build time by
-\`pnpm acp:registry\`, so no brand colour enters the application.
-
-CC0 on an icon set waives copyright, not trademark. Do not read a permissive
-icon licence as permission to wear a mark.
-
-The two inventories at the end are read from the **build graphs** that produce those
-artifacts, so they are supersets of what is actually shipped: a proc-macro crate such
-as \`syn\`, or a build-only tool such as \`typescript\`, is listed without being
-distributed. That is deliberate. A notice that under-lists is a compliance failure; one
-that over-lists is only noise, and no obligation is created by appearing here.
-
----
-
-## JavaScriptCore and WebKit (LGPL-2.1)
-
-The \`ontology-atlas-mcp\` sidecar is compiled with [Bun](https://bun.sh) using
-\`bun build --compile\`. Bun statically links JavaScriptCore and WebKit, which are
-licensed under the GNU Lesser General Public License, version 2.1.
-
-Because the linking is static rather than dynamic, LGPL-2.1 section 6 applies: a
-recipient must be able to modify the library and relink the application against
-their modified version. That is possible here, and this is how:
-
-- The WebKit source Bun links is published at <https://github.com/oven-sh/webkit>,
-  pinned by \`WEBKIT_VERSION\` in Bun's build scripts. Bun documents the relink
-  procedure in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
-- The sidecar's own source is this repository's \`mcp/\` directory, published under
-  the MIT License with no additional restriction.
-- The sidecar is rebuilt from that source by \`pnpm mcp:build-binary\`, which runs
-  \`bun build --compile\` with the Bun release named in \`.bun-version\`.
-  Substituting a Bun built against a modified WebKit, with \`.bun-version\` set to
-  the version it reports, reproduces the sidecar with the modified library.
-
-No part of JavaScriptCore or WebKit was modified for this distribution.
-
-## Bun runtime (MIT)
-
-The compiled sidecar embeds the Bun runtime, which is MIT licensed, together with
-the libraries Bun statically links. Bun's complete third-party inventory, including
-BoringSSL, brotli, libarchive, lol-html, ls-hpack, mimalloc, tinycc, zlib and
-zstd, is published in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
-
-## Pretendard (SIL Open Font License 1.1)
-
-The static export ships \`PretendardVariable\` as a woff2 font file. Pretendard is
-copyright (c) 2021 Kil Hyung-jin, released under the SIL Open Font License 1.1.
-Source: <https://github.com/orioncactus/pretendard>.
-
-OFL-1.1 requires the license to accompany the font, and the npm package does not
-carry the text, so it is reproduced in full below.
-
-<details>
-<summary>SIL Open Font License, Version 1.1</summary>
-
-\`\`\`
-Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+const PRETENDARD_LICENSE = `Copyright (c) 2021, Kil Hyung-jin (https://github.com/orioncactus/pretendard),
 with Reserved Font Name Pretendard.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
@@ -302,7 +146,110 @@ COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
-OTHER DEALINGS IN THE FONT SOFTWARE.
+OTHER DEALINGS IN THE FONT SOFTWARE.`;
+
+const SUPPLIED_LICENSE_TEXTS = new Map([["npm pretendard", PRETENDARD_LICENSE]]);
+
+/** The hand-written part. Everything below the inventory heading is generated. */
+const PREAMBLE = `# Third-party notices
+
+Ontology Atlas is licensed under the MIT License; see [\`LICENSE\`](./LICENSE).
+
+This file lists the third-party components behind the released application and the
+notices they require. Listing a component here does not place Ontology
+Atlas under that component's license — the licenses below bind the component, not
+the program that links it.
+
+The license text of every package listed here, together with each NOTICE file a
+package publishes, is in
+[\`public/third-party-licenses.txt\`](./public/third-party-licenses.txt). The web
+export serves it at \`/third-party-licenses.txt\`, and the desktop app carries it
+beside this file. \`pnpm licenses:check\` holds every dependency to a permissive or
+boundary license, and
+[\`docs/engineering/third-party-code.md\`](./docs/engineering/third-party-code.md)
+holds the rules for adding a dependency or adapting third-party code.
+
+Scope: the static web export deployed to GitHub Pages; the macOS \`.app\` and
+Windows installer published on the releases page, which contain the static web
+export, the \`ontology-atlas\` application binary, and
+the \`ontology-atlas-mcp\` sidecar binary; plus the two artifacts that carry the MCP
+server on its own — the \`.mcpb\` bundle attached to each release and the
+\`ghcr.io/wlsdks/ontology-atlas-mcp\` image. Those two vendor three MIT packages
+(\`@modelcontextprotocol/core\`, \`@modelcontextprotocol/server\`, \`zod\`), each keeping
+its own \`LICENSE\` inside the artifact beside Atlas's, and carry no native binaries.
+A new distributed artifact belongs in this sentence: a notice that under-lists is a
+compliance failure.
+
+## Trademarks
+
+Product names that appear in Atlas — Claude Code, Codex, Cursor, Antigravity,
+Copilot, GitHub and others — are trademarks of their respective owners. Atlas is
+not affiliated with, sponsored by, or endorsed by any of them. It names them only
+to say what it interoperates with, which is the accurate way to describe an
+integration and the only reason they appear.
+
+Names are one thing and marks are another. A service's own glyph appears only
+where that service's published brand guideline was read and permits monochrome
+use to show an integration; every other row falls back to a generic connector
+glyph. \`docs/features/agents.md\` owns that rule and names which services have been
+checked. The ACP runtime icons under \`public/acp-icons/\` are the 16x16 monochrome
+SVGs the ACP registry itself publishes for this purpose, fetched at build time by
+\`pnpm acp:registry\`, so no brand colour enters the application.
+
+CC0 on an icon set waives copyright, not trademark. Do not read a permissive
+icon licence as permission to wear a mark.
+
+The inventories at the end are read from the **build graphs** that produce those
+artifacts, so they are supersets of what is actually shipped: a proc-macro crate such
+as \`syn\`, or a build-only tool such as \`typescript\`, is listed without being
+distributed. That is deliberate. A notice that under-lists is a compliance failure; one
+that over-lists is only noise, and no obligation is created by appearing here.
+
+---
+
+## JavaScriptCore and WebKit (LGPL-2.1)
+
+The \`ontology-atlas-mcp\` sidecar is compiled with [Bun](https://bun.sh) using
+\`bun build --compile\`. Bun statically links JavaScriptCore and WebKit, which are
+licensed under the GNU Lesser General Public License, version 2.1.
+
+Because the linking is static rather than dynamic, LGPL-2.1 section 6 applies: a
+recipient must be able to modify the library and relink the application against
+their modified version. That is possible here, and this is how:
+
+- The WebKit source Bun links is published at <https://github.com/oven-sh/webkit>,
+  pinned by \`WEBKIT_VERSION\` in Bun's build scripts. Bun documents the relink
+  procedure in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
+- The sidecar's own source is this repository's \`mcp/\` directory, published under
+  the MIT License with no additional restriction.
+- The sidecar is rebuilt from that source by \`pnpm mcp:build-binary\`, which runs
+  \`bun build --compile\` with the Bun release named in \`.bun-version\`.
+  Substituting a Bun built against a modified WebKit, with \`.bun-version\` set to
+  the version it reports, reproduces the sidecar with the modified library.
+
+No part of JavaScriptCore or WebKit was modified for this distribution.
+
+## Bun runtime (MIT)
+
+The compiled sidecar embeds the Bun runtime, which is MIT licensed, together with
+the libraries Bun statically links. Bun's complete third-party inventory, including
+BoringSSL, brotli, libarchive, lol-html, ls-hpack, mimalloc, tinycc, zlib and
+zstd, is published in its [\`LICENSE.md\`](https://github.com/oven-sh/bun/blob/main/LICENSE.md).
+
+## Pretendard (SIL Open Font License 1.1)
+
+The static export ships \`PretendardVariable\` as a woff2 font file. Pretendard is
+copyright (c) 2021 Kil Hyung-jin, released under the SIL Open Font License 1.1.
+Source: <https://github.com/orioncactus/pretendard>.
+
+OFL-1.1 requires the license to accompany the font, and the npm package does not
+carry the text, so it is reproduced in full below.
+
+<details>
+<summary>SIL Open Font License, Version 1.1</summary>
+
+\`\`\`
+${PRETENDARD_LICENSE}
 \`\`\`
 
 </details>
@@ -320,16 +267,18 @@ of this application.
 ## Apache License 2.0 components
 
 Several dependencies are licensed under the Apache License 2.0, which requires that
-any NOTICE file distributed by those projects be passed along. Those projects ship
-their notices inside their own published packages; this file records their inclusion
-and the license under which they are used. The Apache License 2.0 text is available
-at <https://www.apache.org/licenses/LICENSE-2.0>.
+any NOTICE file distributed by those projects be passed along. Every NOTICE file a
+listed package publishes is reproduced, after its license text, in
+\`public/third-party-licenses.txt\`. The Apache License 2.0 text is available at
+<https://www.apache.org/licenses/LICENSE-2.0>.
 
 ## Dual-licensed components
 
 Where a dependency offers a choice of licenses, Ontology Atlas takes the permissive
 option. For \`r-efi\`, offered as \`MIT OR Apache-2.0 OR LGPL-2.1-or-later\`, the MIT
-option is elected, so no LGPL obligation arises from that crate.
+option is elected, so no LGPL obligation arises from that crate. Every other choice
+is made the same way, and \`public/third-party-licenses.txt\` reproduces the license
+each package is used under.
 
 ---
 
@@ -340,53 +289,115 @@ Generated by \`pnpm notice:build\`. Do not edit below this line by hand.
 
 export const INVENTORY_MARKER = "# Dependency inventory";
 
-export function buildNotice({ rustCrates, npmPackages }) {
+function adaptedSection(adapted) {
+  if (adapted.length === 0) return "No source file carries code adapted from a third party.";
+  return adapted
+    .map((marker) => `- \`${marker.path}\`: adapted from <${marker.url}> under ${marker.license}, © ${marker.holder}`)
+    .join("\n");
+}
+
+export function buildNotice({ rustCrates, npmPackages, mcpPackages, adapted }) {
   const sections = [
     PREAMBLE.trimEnd(),
     "",
-    `## Rust crates (${rustCrates.length})`,
+    `## Rust crates (${distinctNames(rustCrates).length})`,
     "",
     "In the Cargo dependency graph of the `ontology-atlas` application binary, including\nbuild and proc-macro crates that are not linked into the shipped binary.",
     "",
     renderGroups(groupByLicense(rustCrates)).trimEnd(),
     "",
-    `## npm packages (${npmPackages.length})`,
+    `## npm packages (${distinctNames(npmPackages).length})`,
     "",
-    "Present in the production dependency tree that builds the static web export.",
+    "Present in the production dependency tree that builds the static web export.\nPlatform-specific native build tools, which differ per build machine and never\nship, are held to the license policy but not listed.",
     "",
     renderGroups(groupByLicense(npmPackages)).trimEnd(),
+    "",
+    `## MCP sidecar npm packages (${distinctNames(mcpPackages).length})`,
+    "",
+    "The production dependency tree of `mcp/`, which the sidecar binary compiles in.",
+    "",
+    renderGroups(groupByLicense(mcpPackages)).trimEnd(),
+    "",
+    `## Adapted code (${adapted.length})`,
+    "",
+    adaptedSection(adapted),
     "",
   ];
   return `${sections.join("\n")}\n`;
 }
 
-function main(argv) {
+/** Both generated files, keyed by repository path, from one reading of the trees. */
+export function buildOutputs({ web, mcp, rust, adapted, readText }) {
+  const npmPackages = web.filter((pkg) => !pkg.platformSpecific);
+  const sections = [
+    {
+      title: "npm packages in the web export",
+      intro: "The production dependency tree of the static web export, which the desktop app\nalso bundles. Platform-specific native build tools are not listed: they differ\nper build machine and never ship.",
+      packages: npmPackages,
+    },
+    {
+      title: "npm packages in the MCP sidecar",
+      intro: "The production dependency tree of mcp/, compiled into the ontology-atlas-mcp binary.",
+      packages: mcp,
+    },
+    {
+      title: "Rust crates in the desktop app",
+      intro: "The Cargo dependency graph of the ontology-atlas application binary, for every\ntarget, so it also lists build-only and other-platform crates.",
+      packages: rust,
+    },
+  ];
+  return {
+    [NOTICE_FILE]: buildNotice({ rustCrates: rust, npmPackages, mcpPackages: mcp, adapted }),
+    [LICENSES_FILE]: renderThirdPartyLicenses({
+      sections,
+      adapted,
+      readText: readText ?? ((pkg) => packageLicenseText(pkg, SUPPLIED_LICENSE_TEXTS)),
+    }),
+  };
+}
+
+function readCommitted(file) {
+  const absolute = path.join(REPO_ROOT, file);
+  return fs.existsSync(absolute) ? fs.readFileSync(absolute, "utf8").replace(/\r\n/g, "\n") : "";
+}
+
+function main(argv, env = process.env) {
   const check = argv.includes("--check");
-  const rustCrates = collectRustCrates();
-  const npmPackages = collectNpmPackages();
-  const next = buildNotice({ rustCrates, npmPackages });
+  const { web, mcp, rust } = collectInventories({ root: REPO_ROOT, env });
+  if (!rust) {
+    if (check) {
+      console.log("[notice] cargo is not installed here, so the notice files are checked in CI.");
+      return 0;
+    }
+    console.error("[notice] cargo is required to list the Rust crates; install Rust and run again.");
+    return 1;
+  }
+  const adapted = collectAttributionMarkers(REPO_ROOT).filter((marker) => !marker.malformed);
+  const outputs = buildOutputs({ web, mcp, rust, adapted });
+  const shipped = web.filter((pkg) => !pkg.platformSpecific);
+  const counts = `${distinctNames(rust).length} crates, ${distinctNames(shipped).length} web and ${distinctNames(mcp).length} MCP npm packages, ${adapted.length} adapted functions`;
 
   if (check) {
-    const current = fs.existsSync(NOTICE_PATH) ? fs.readFileSync(NOTICE_PATH, "utf8") : "";
-    if (current !== next) {
-      console.error(
-        "[notice] NOTICE.md is stale. The dependency tree changed without regenerating it.\n" +
-          "         Run: pnpm notice:build",
-      );
-      process.exit(1);
+    const stale = Object.keys(outputs).filter((file) => readCommitted(file) !== outputs[file]);
+    if (stale.length > 0) {
+      const verb = stale.length === 1 ? "no longer matches" : "no longer match";
+      console.error(`[notice] ${stale.join(" and ")} ${verb} the dependency trees and adapted-code markers. Run: pnpm notice:build`);
+      return 1;
     }
-    console.log(
-      `[notice] NOTICE.md current — ${rustCrates.length} crates, ${npmPackages.length} npm packages.`,
-    );
-    return;
+    console.log(`[notice] ${Object.keys(outputs).join(" and ")} current: ${counts}.`);
+    return 0;
   }
 
-  fs.writeFileSync(NOTICE_PATH, next);
-  console.log(
-    `[notice] wrote NOTICE.md — ${rustCrates.length} crates, ${npmPackages.length} npm packages.`,
-  );
+  for (const [file, text] of Object.entries(outputs)) fs.writeFileSync(path.join(REPO_ROOT, file), text);
+  console.log(`[notice] wrote ${Object.keys(outputs).join(" and ")}: ${counts}.`);
+  return 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  main(process.argv.slice(2));
+  try {
+    process.exitCode = main(process.argv.slice(2));
+  } catch (error) {
+    console.error(`[notice] ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
 }
