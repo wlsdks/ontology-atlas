@@ -227,6 +227,7 @@ export function TopologyMapRenderer({
               onDrawnCountChange={onDrawnCountChange}
               reducedMotion={reducedMotion}
               arrivedByMorph={morph.arrivedByMorph}
+              synthEvidence={topologyGraphProjection.synthEvidence}
             />
             </ErrorBoundary>
           ) : (
