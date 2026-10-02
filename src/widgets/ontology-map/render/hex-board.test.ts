@@ -43,7 +43,7 @@ const T: HexBoardTokens = {
   rimSelected: "#a5abff",
   rimUnknown: "#7a7b88",
   hatch: "#2a2a33",
-  bevel: ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.03)", "rgba(0,0,0,0.25)"],
+  bevel: ["rgba(255,255,255,0.16)", "rgba(0,0,0,0.25)"],
   plate: "rgba(94,106,210,0.06)",
   plateFocus: "rgba(94,106,210,0.12)",
   plateStroke: "rgba(136,144,224,0.22)",

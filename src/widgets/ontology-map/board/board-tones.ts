@@ -76,7 +76,7 @@ function material(T: HexBoardTokens, key: string, light: number, tops: () => [RG
       topCss: cssOf(top),
       walls: [cssOf(mix(top, BLACK, WALL_SHADE[0])), cssOf(mix(top, BLACK, WALL_SHADE[1])), cssOf(mix(top, BLACK, WALL_SHADE[2]))],
       bevelLight: cssOf(solid(T.bevel[0], top)),
-      bevelShade: cssOf(solid(T.bevel[2], top)),
+      bevelShade: cssOf(solid(T.bevel[1], top)),
     };
     m.set(k, hit);
   }

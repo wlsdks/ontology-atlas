@@ -17,7 +17,7 @@ export interface HexBoardTokens {
   rimSelected: string;
   rimUnknown: string;
   hatch: string;
-  bevel: readonly [string, string, string];
+  bevel: readonly [string, string];
   plate: string;
   plateFocus: string;
   plateStroke: string;
@@ -64,7 +64,7 @@ const VARS = {
   rimSelected: "--map-hex-rim-selected",
   rimUnknown: "--map-hex-rim-unknown",
   hatch: "--map-hex-hatch",
-  bevel: ["--map-hex-bevel-light", "--map-hex-bevel-mid", "--map-hex-bevel-shade"],
+  bevel: ["--map-hex-bevel-light", "--map-hex-bevel-shade"],
   plate: "--map-hex-plate",
   plateFocus: "--map-hex-plate-focus",
   plateStroke: "--map-hex-plate-stroke",
@@ -118,7 +118,7 @@ function resolveHexBoardTokens(get: (cssVar: string) => string): HexBoardTokens 
     rimSelected: one(VARS.rimSelected),
     rimUnknown: one(VARS.rimUnknown),
     hatch: one(VARS.hatch),
-    bevel: many(VARS.bevel) as unknown as [string, string, string],
+    bevel: many(VARS.bevel) as unknown as [string, string],
     plate: one(VARS.plate),
     plateFocus: one(VARS.plateFocus),
     plateStroke: one(VARS.plateStroke),

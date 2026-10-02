@@ -231,7 +231,6 @@
     --map-hex-rim-unknown: #7a7b88;
     --map-hex-hatch: #2a2a33;
     --map-hex-bevel-light: rgba(255, 255, 255, 0.16);
-    --map-hex-bevel-mid: rgba(255, 255, 255, 0.03);
     --map-hex-bevel-shade: rgba(0, 0, 0, 0.25);
     --map-hex-plate: var(--color-indigo-a06);
     --map-hex-plate-focus: var(--color-indigo-a12);

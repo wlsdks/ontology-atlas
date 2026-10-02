@@ -37,6 +37,9 @@ const readFrame = (page: Page) =>
   page.evaluate(() => JSON.parse(document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')!.dataset.frame ?? "{}") as Frame);
 
 async function still(page: Page) {
+  await page.evaluate(() => {
+    (window as Probe).__lastFrame = undefined;
+  });
   await page.waitForFunction(
     () => {
       const w = window as Probe;
@@ -109,6 +112,7 @@ async function pan(page: Page) {
   }
   const work = await stopFrameWork(page);
   const gradients = await page.evaluate(() => [...(window as Probe).__gradients!.values()]);
+  await page.mouse.move(c.x, c.y);
   await page.mouse.up();
   await still(page);
   return { work, gradients, painted };
@@ -155,8 +159,10 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
     }
     const { work, gradients, painted } = await pan(page);
     const inBand = painted.filter((f) => f.band === s.band);
+    const p95s = [p95(work)];
+    while (bars && p95s.length < 3) p95s.push(p95((await pan(page)).work));
     results[s.name] = {
-      p95: +p95(work).toFixed(2),
+      p95: +[...p95s].sort((a, b) => a - b)[p95s.length >> 1]!.toFixed(2),
       frames: work.length,
       offsets: new Set(inBand.map((f) => f.offset.join(","))).size,
       maxGradients: max(gradients, `${s.name}: gradients`),
