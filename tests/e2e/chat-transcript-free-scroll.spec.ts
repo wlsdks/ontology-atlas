@@ -116,7 +116,10 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.evaluate(() => {
     const seen: boolean[] = [];
-    (window as unknown as { __upwardWheels: boolean[] }).__upwardWheels = seen;
+    const tops: number[] = [];
+    const list = document.querySelector<HTMLElement>('[data-testid="acp-chat-transcript"]')!;
+    Object.assign(window, { __upwardWheels: seen, __topsAtWheel: tops });
+    window.addEventListener('wheel', (event) => { if (event.deltaY < 0) tops.push(list.scrollTop); }, { capture: true, passive: true });
     window.addEventListener('wheel', (event) => { if (event.deltaY < 0) seen.push(event.defaultPrevented); }, { passive: true });
   });
   // One notch up stays within 120px of the end, where the old follow still counted as following.
@@ -127,8 +130,11 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
     const emitted = (await harness.streamed(page)).emitted;
     await untilStreamed(page, emitted + 30);
     await expect.poll(async () => (await transcriptBox(page)).distance, `round ${round}: the tail is being followed`).toBeLessThanOrEqual(48);
-    const beforeNudge = await transcriptBox(page);
-    await page.evaluate(() => { (window as unknown as { __upwardWheels: boolean[] }).__upwardWheels.length = 0; });
+    await page.evaluate(() => {
+      const probe = window as unknown as { __upwardWheels: boolean[]; __topsAtWheel: number[] };
+      probe.__upwardWheels.length = 0;
+      probe.__topsAtWheel.length = 0;
+    });
     await page.mouse.wheel(0, -60);
     await waitFrames(page, 2);
     const nudged = await transcriptBox(page);
@@ -136,7 +142,8 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
       await page.evaluate(() => (window as unknown as { __upwardWheels: boolean[] }).__upwardWheels),
       `round ${round}: the wheel that stops the follow is taken over, so no queued write can undo it`,
     ).toEqual([true]);
-    expect(beforeNudge.top - nudged.top, `round ${round}: one notch has to take the view up`).toBeGreaterThan(40);
+    const [topAtWheel] = await page.evaluate(() => (window as unknown as { __topsAtWheel: number[] }).__topsAtWheel);
+    expect(topAtWheel! - nudged.top, `round ${round}: one notch has to take the view up`).toBeGreaterThan(40);
     const nudgeDrift = await driftWhile(page, nudged.top, (await harness.streamed(page)).emitted + 40);
     expect(nudgeDrift, `round ${round}: a reader one notch above the end must stay there`).toBeLessThanOrEqual(1);
   }
@@ -158,6 +165,27 @@ test('a reader who scrolls up mid-answer stays where they stopped, and the door 
   await untilStreamed(page, chunks.length);
   await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
   await expect.poll(async () => (await transcriptBox(page)).distance).toBeLessThanOrEqual(2);
+});
+
+test('a return to the end resumes the follow when text lands before its scroll event', async ({ page }) => {
+  const harness = await openStreamingDock(page);
+  await harness.stream(page, streamedAnswer(640), { perSecond: RATE, endTurn: true });
+  await untilStreamed(page, 60);
+  const box = await page.getByTestId('acp-chat-transcript').boundingBox();
+  if (!box) throw new Error('the transcript has no box');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -300);
+  await waitFrames(page, 2);
+  expect((await transcriptBox(page)).distance, 'the reader left the end').toBeGreaterThan(100);
+  await page.getByTestId('acp-chat-transcript').evaluate((list) => {
+    list.scrollTop = list.scrollHeight;
+    const paragraph = document.createElement('div');
+    paragraph.style.height = '30px';
+    list.firstElementChild!.appendChild(paragraph);
+  });
+  const emitted = (await harness.streamed(page)).emitted;
+  await untilStreamed(page, emitted + 30);
+  await expect.poll(async () => (await transcriptBox(page)).distance, 'the follow resumed').toBeLessThanOrEqual(48);
 });
 
 test('scrolling back down to the end resumes the follow without the door', async ({ page }) => {

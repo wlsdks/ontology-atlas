@@ -1,0 +1,9 @@
+{
+  "label": "Illustration · concept names and files from this repository's ontology",
+  "pause": "Pause the illustration",
+  "resume": "Play the illustration",
+  "replay": "Play the illustration again",
+  "agent": "Coding agent",
+  "proposal": "The agent proposes",
+  "description": "An illustration. Files in this repository rise into its ontology: {project}, its domains, and capabilities and elements that each point at a file. A coding agent asks Atlas over MCP with {tool} for {slug}. Atlas answers with {concept} ({domain}) and the declared relations the answer touched. It depends on {uses}; {usedBy} depends on it. The agent then proposes one connection: {concept} → {target}. A person allows it once before it is written. The names, files and relations come from this repository's own ontology; the exchange itself is illustrative."
+}

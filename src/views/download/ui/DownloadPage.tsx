@@ -35,6 +35,7 @@ import { HeroAtlas } from './HeroAtlas';
 import { HeroMacMenu } from './HeroMacMenu';
 import { ScreensStage } from './ScreensStage';
 import { AcpChatScene } from './AcpChatScene';
+import { ConductionSection } from './ConductionFigure';
 import { useInViewOnce } from '../lib/use-in-view-once';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
@@ -92,6 +93,7 @@ export function DownloadPage() {
           winner={winner}
           graph={graph}
         />
+        <ConductionSection graph={graph} />
         <DemoSection />
         <EvidenceSection graph={graph} />
         <ScreensSection />
