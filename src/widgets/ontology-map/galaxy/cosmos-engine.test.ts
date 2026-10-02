@@ -135,6 +135,30 @@ describe("cosmos engine", () => {
     engine.destroy();
   });
 
+  it("measures its canvas by layout through the surface's entry fade and reads the room again when the fade ends", () => {
+    let scale = 0.995;
+    const box = (x: number, y: number, width: number, height: number) => ({ x, y, left: x, top: y, right: x + width, bottom: y + height, width, height, toJSON: () => ({}) });
+    const panel = document.createElement("div");
+    panel.style.opacity = "1";
+    panel.getBoundingClientRect = () => box(0, 0, 385, 860);
+    const canvas = document.createElement("canvas");
+    canvas.getContext = (() => ({})) as unknown as HTMLCanvasElement["getContext"];
+    Object.assign(canvas.style, { width: "1336px", height: "860px" });
+    canvas.getBoundingClientRect = () => box((1336 - 1336 * scale) / 2, (860 - 860 * scale) / 2, 1336 * scale, 860 * scale);
+    document.body.append(panel, canvas);
+    const engine = new CosmosEngine(canvas, { reducedMotion: true, navigationSpeed: DEFAULT_MAP_NAVIGATION_SPEED });
+    engine.setInks({} as CosmosInks);
+    engine.setLayout(layout, new Map(), [], "none");
+    expect([engine.width, engine.height]).toEqual([1336, 860]);
+    const faded = { ...engine.rig.room };
+
+    scale = 1;
+    panel.dispatchEvent(new Event("animationend", { bubbles: true }));
+    expect(engine.rig.room).toEqual({ ...faded, x: faded.x + 3, width: faded.width - 3 });
+    expect(engine.rig.camera).toEqual(overviewCamera(layout.bounds, engine.rig.room).camera);
+    engine.destroy();
+  });
+
   it("reports drawn only on the first frame with no bitmap still baking", () => {
     const { engine, onDrawn } = mount();
     draw.next.push(() => ({ pendingBuilds: 3 }), () => ({ pendingBuilds: 1 }), () => ({ pendingBuilds: 0 }), () => ({ pendingBuilds: 0 }));

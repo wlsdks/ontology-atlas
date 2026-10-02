@@ -123,6 +123,7 @@ export interface FlickTuning { windowMs: number; minSpeed: number }
 export class CosmosCameraRig {
   camera: CosmosCamera = { x: 0, y: 0, scale: 1 };
   room: CosmosRoom = { x: 0, y: 0, width: 1, height: 1 };
+  roomFinal = false;
   overviewScale = 1;
   user = false;
   reducedMotion = false;
@@ -141,8 +142,9 @@ export class CosmosCameraRig {
     return this.drag !== null || this.motion !== null;
   }
 
-  readRoom(next: CosmosRoom): void {
-    if (roomMovesRest(this.room, next)) this.room = next;
+  readRoom(next: CosmosRoom, final: boolean): void {
+    if (!this.roomFinal || roomMovesRest(this.room, next)) this.room = next;
+    this.roomFinal = final;
   }
 
   setBounds(bounds: CosmosLayout["bounds"], refit: boolean): void {
