@@ -7,9 +7,9 @@ import type { OntologyMapEdge } from "../ui/OntologyMap";
 import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
 import { applyHaze, createHazeState, stepHaze } from "./cosmos-ambient";
 import { CosmosArrivalRun } from "./cosmos-arrival";
-import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, memberBounds, posedPoint } from "./cosmos-camera";
+import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, liveBandRadius, memberBounds, posedPoint } from "./cosmos-camera";
 import { CosmosCameraRestWatch, CosmosRevealClock, galaxyCentreOn, relationsByConcept } from "./cosmos-engine-watch";
-import { CosmosHitIndex } from "./cosmos-hit";
+import { CosmosHitIndex, litHit } from "./cosmos-hit";
 import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
 import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
 import { walkCandidates, walkTarget } from "./cosmos-walk";
@@ -291,8 +291,10 @@ export class CosmosEngine {
   }
 
   hit(sx: number, sy: number): { id: string | null; galaxy: number } {
-    if (!this.layout) return { id: null, galaxy: -1 };
-    return this.hits.hit(this.layout, this.poses, this.rig.camera, this.rig.room, this.dpr, sx, sy);
+    const { layout, rig } = this;
+    if (!layout) return { id: null, galaxy: -1 };
+    const lit = this.lens && litHit(this.lens.memberIds, (id) => posedPoint(layout, this.poses, id), rig.camera, rig.room, sx, sy);
+    return lit ? { id: lit, galaxy: -1 } : this.hits.hit(layout, this.poses, this.rig.camera, this.rig.room, this.dpr, sx, sy);
   }
 
   private gesture(): void {
@@ -354,7 +356,7 @@ export class CosmosEngine {
     const p = this.local(e.clientX, e.clientY);
     const hit = this.hit(p.x, p.y);
     if (hit.id) this.options.onSelect?.(hit.id);
-    else if (hit.galaxy >= 0) this.flyToGalaxy(hit.galaxy);
+    else if ((this.layout?.galaxies[hit.galaxy]?.radius ?? Infinity) * this.rig.camera.scale <= liveBandRadius(this.dpr)) this.flyToGalaxy(hit.galaxy);
     else this.options.onPaneClick?.();
   }
 

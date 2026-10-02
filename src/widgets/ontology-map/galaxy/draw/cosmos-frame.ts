@@ -140,6 +140,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.drawImage(core, coreScreen.x - r * 2, coreScreen.y - r * 2, r * 4, r * 4);
       ctx.globalAlpha = corePresence;
       ctx.drawImage(core, coreScreen.x - 14, coreScreen.y - 14, 28, 28);
+      if (layout.core.id) input.record?.(layout.core.id, coreScreen.x, coreScreen.y, 14);
     }
     const halo = layout.core;
     for (let i = 0; i < halo.starIds.length; i += 1) {
@@ -151,6 +152,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       const r = Math.min(7, Math.max(1.2, MIN_STAR_SPACING * camera.scale * 0.45));
       ctx.globalAlpha = 0.7 * corePresence * lensAlpha(input.lens, halo.starIds[i]!, inks);
       ctx.drawImage(sprite, p.x - r, p.y - r, r * 2, r * 2);
+      input.record?.(halo.starIds[i]!, p.x, p.y, r);
     }
     ctx.restore();
     if (layout.core.label) {

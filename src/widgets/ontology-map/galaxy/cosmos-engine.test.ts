@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
-import { overviewCamera } from "./cosmos-camera";
+import { galaxyFitScale, liveBandRadius, overviewCamera, posedPoint, worldToScreen } from "./cosmos-camera";
 import { CosmosEngine } from "./cosmos-engine";
 import type { CosmosFrameStats, CosmosInks } from "./cosmos-types";
 import { galaxyKey } from "./draw/cosmos-bitmap-cache";
@@ -191,6 +191,59 @@ describe("cosmos engine", () => {
     expect(engine.arrival.active).not.toBeNull();
     runFrame(16 + 1_130);
     expect(engine.arrival.active).toBeNull();
+    engine.destroy();
+  });
+
+  it("treats a click on empty space inside a live galaxy as a pane click, and flies only into a galaxy drawn as one bitmap", () => {
+    const onPaneClick = vi.fn();
+    const { engine, canvas } = mount();
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    engine.setOptions({ onPaneClick });
+    const click = (x: number, y: number) => {
+      canvas.dispatchEvent(new MouseEvent("pointerdown", { clientX: x, clientY: y }));
+      canvas.dispatchEvent(new MouseEvent("pointerup", { clientX: x, clientY: y }));
+    };
+    const g = sky.galaxies[0]!;
+    const emptyIn = () => {
+      for (let i = 0; i < 4_000; i += 1) {
+        const r = 0.6 * g.radius * engine.rig.camera.scale * Math.sqrt(((i * 0.618034) % 1));
+        const p = { x: 400 + Math.cos(i * 2.399) * r, y: 300 + Math.sin(i * 2.399) * r };
+        const hit = engine.hit(p.x, p.y);
+        if (hit.id === null && hit.galaxy === 0) return p;
+      }
+      throw new Error("no empty point");
+    };
+    engine.rig.camera = { x: g.x, y: g.y, scale: (2 * liveBandRadius(1)) / g.radius };
+    engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
+    const live = { ...engine.rig.camera };
+    const p = emptyIn();
+    click(p.x, p.y);
+    expect(onPaneClick).toHaveBeenCalledTimes(1);
+    runFrame(16);
+    runFrame(400);
+    expect(engine.rig.camera).toEqual(live);
+    engine.rig.camera = { x: g.x, y: g.y, scale: (0.5 * liveBandRadius(1)) / g.radius };
+    const q = emptyIn();
+    click(q.x, q.y);
+    expect(onPaneClick).toHaveBeenCalledTimes(1);
+    for (let t = 432; frames.length > 0 && t < 5_000; t += 16) runFrame(t);
+    expect(engine.rig.camera.scale).toBeCloseTo(galaxyFitScale(g, engine.rig.room), 6);
+    engine.destroy();
+  });
+
+  it("hits a lit lens member before the star or galaxy under it", () => {
+    const { engine } = mount();
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "none");
+    engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
+    engine.rig.camera = overviewCamera(sky.bounds, engine.rig.room).camera;
+    const member = sky.galaxies[1]!.starIds[2]!;
+    const w = posedPoint(sky, engine.poses, member)!;
+    const s = worldToScreen(engine.rig.camera, engine.rig.room, w.x, w.y);
+    expect(engine.hit(s.x + 3, s.y).id).not.toBe(member);
+    engine.setLens({ kind: "recent", memberIds: new Set([member]), edgeIds: null }, null);
+    expect(engine.hit(s.x + 3, s.y).id).toBe(member);
     engine.destroy();
   });
 

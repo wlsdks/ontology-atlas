@@ -225,6 +225,89 @@ test("the dogfood vault selects 40 of 40 points as painted and nothing between s
   await proveSelection(page, "dogfood");
 });
 
+test("empty space inside a live galaxy keeps the camera and clears the selection", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await openSample(page);
+  const galaxy = await page.evaluate(() => window.__atlasCosmos!.layout()!.galaxies.slice().sort((a, b) => b.rho - a.rho)[0]!.id);
+  const fit = await flyInto(page, galaxy);
+  await page.locator(CANVAS).focus();
+  await page.keyboard.press("=");
+  await page.keyboard.press("=");
+  await waitForCosmosStill(page);
+  const zoomed = await page.evaluate(() => {
+    const { x, y, scale } = window.__atlasCosmos!.camera();
+    return { x, y, scale };
+  });
+  expect(zoomed.scale).toBeGreaterThan(fit.scale * 1.05);
+  const plan = await planClicks(page, galaxy, 1);
+  expect(plan.misses.length).toBeGreaterThan(1);
+  await page.mouse.click(plan.misses[0]!.x, plan.misses[0]!.y);
+  await waitForCosmosStill(page);
+  expectSameFrame(
+    await page.evaluate(() => {
+      const { x, y, scale } = window.__atlasCosmos!.camera();
+      return { x, y, scale };
+    }),
+    zoomed,
+    "empty click past the fit",
+  );
+  await page.mouse.click(plan.hits[0]!.x, plan.hits[0]!.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos!.selection().nodeId)).toBe(plan.hits[0]!.expected);
+  await waitForCosmosStill(page);
+  const after = await planClicks(page, galaxy, 1);
+  await page.mouse.click(after.misses[0]!.x, after.misses[0]!.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos!.selection().nodeId)).toBeNull();
+});
+
+async function clickConcept(page: Page, id: string): Promise<void> {
+  await clearSelection(page);
+  await page.evaluate(() => window.__atlasCosmos!.overview());
+  await waitForCosmosStill(page);
+  const box = (await page.locator(CANVAS).boundingBox())!;
+  const p = (await page.evaluate((concept) => window.__atlasCosmos!.point(concept), id))!;
+  await page.mouse.click(box.x + p.x + 2, box.y + p.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos!.selection().nodeId), { message: id }).toBe(id);
+}
+
+test("at the overview the core star (and a halo star, when the vault has one) selects, and a lit lens member wins the pick", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await openSample(page);
+  await page.evaluate(() => window.__atlasCosmos!.overview());
+  await waitForCosmosStill(page);
+  await page.evaluate(() => window.__atlasCosmos!.armPaint(true));
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos!.painted().length)).toBeGreaterThan(0);
+  const read = await page.evaluate(() => {
+    const probe = window.__atlasCosmos!;
+    const project = probe.marks().find((m) => m.kind === "project")!.id;
+    return { project, halo: probe.painted().map((p) => p.id).filter((id) => id !== project), live: probe.stats()!.liveGalaxies };
+  });
+  await page.evaluate(() => window.__atlasCosmos!.armPaint(false));
+  expect(read.live).toBe(0);
+  console.log(`[galaxy-proof] overview core ${read.project}, halo ${read.halo.length}`);
+  await clickConcept(page, read.project);
+  if (read.halo.length > 0) await clickConcept(page, read.halo[0]!);
+
+  await page.goto("/en/topology/?e2e=1&guides=off&mode=path&pathFrom=domain:order&pathTo=domain:fulfillment", { waitUntil: "domcontentloaded" });
+  await waitForMapSettled(page);
+  await pickGalaxy(page);
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos?.stats()?.lens.kind ?? null), { timeout: 30_000 }).toBe("path");
+  await page.evaluate(() => window.__atlasCosmos!.overview());
+  await waitForCosmosStill(page);
+  const before = await page.evaluate(() => window.__atlasCosmos!.camera());
+  const box = (await page.locator(CANVAS).boundingBox())!;
+  const member = (await page.evaluate(() => window.__atlasCosmos!.point("domain:order")))!;
+  await page.mouse.move(box.x + member.x + 2, box.y + member.y);
+  await expect
+    .poll(() => page.evaluate(() => window.__atlasCosmos!.stats()!.labels.filter((l) => l.kind === "hover").map((l) => l.id)))
+    .toEqual(["domain:order"]);
+  await page.mouse.click(box.x + member.x + 2, box.y + member.y);
+  await waitForCosmosStill(page);
+  const after = await page.evaluate(() => window.__atlasCosmos!.camera());
+  expect(after.scale, "a path member picks the path end, it does not fly into its galaxy").toBeCloseTo(before.scale, 6);
+});
+
 test("opening Galaxy from the picker runs the cosmos layout once", async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1512, height: 982 });
