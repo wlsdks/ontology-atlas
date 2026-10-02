@@ -1,6 +1,6 @@
 /** Fictional game content. These IDs are never ontology UIDs or project evidence. */
-export type LocalizedName={en:string;ko:string};
-export const localName=(name:LocalizedName,locale:string)=>locale==='ko'?name.ko:name.en;
+export type LocalizedName={en:string;ko:string;ja?:string;zh?:string};
+export const localName=(name:LocalizedName,locale:string)=>(name as Partial<Record<string,string>>)[locale]??name.en;
 const MONSTER_TRAITS=['armored','fierce','mender','siphon','swarm','arcane'] as const;
 type MonsterTrait=typeof MONSTER_TRAITS[number];
 const MAP_EFFECTS=['calm','bounty','vital','fortified','insight','elite'] as const;

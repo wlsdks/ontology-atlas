@@ -56,6 +56,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
+import { listLocales } from './build-messages.mjs';
 
 const ROOT = process.cwd();
 const VAULT = path.join(ROOT, 'docs', 'ontology');
@@ -100,15 +102,17 @@ function unquote(value) {
  * generated here rather than re-derived by hand in the component — the same one-source rule as
  * every other value in this file.
  */
-function namesFor(slug) {
+function namesFor(slug, locales) {
   const lines = readFrontmatter(path.join(VAULT, `${slug}.md`));
   const title = unquote(field(lines, 'title')) ?? slug;
   const kind = unquote(field(lines, 'kind')) ?? 'capability';
-  return {
-    ko: unquote(field(lines, 'display_ko')) ?? title,
-    en: unquote(field(lines, 'display_en')) ?? title,
-    nodeId: `${kind}:${slug.split('/').pop()}`,
-  };
+  const names = Object.fromEntries(locales.map((l) => [l, unquote(field(lines, `display_${l}`)) ?? title]));
+  return { ...names, nodeId: `${kind}:${slug.split('/').pop()}` };
+}
+
+function orderLocales(locales) {
+  const rest = locales.filter((l) => l !== 'ko' && l !== 'en');
+  return ['ko', 'en'].filter((l) => locales.includes(l)).concat(rest);
 }
 
 function countNodes() {
@@ -132,33 +136,28 @@ function countNodes() {
   return total;
 }
 
-function build() {
+export function build(localeList = listLocales()) {
+  const locales = orderLocales(localeList);
   const file = path.join(VAULT, `${SPECIMEN_SLUG}.md`);
   const lines = readFrontmatter(file);
 
-  /** Per locale: short lines, minus the *other* locale's display name. */
-  const shownFor = (locale) => {
-    const other = locale === 'ko' ? 'display_en:' : 'display_ko:';
-    return lines.filter(
+  const shownFor = (locale) =>
+    lines.filter(
       (line) =>
         line.length <= MAX_LINE &&
-        !line.startsWith(other) &&
+        !(/^display_[a-z]{2}:/.test(line) && !line.startsWith(`display_${locale}:`)) &&
         !BOOKKEEPING.some((key) => line.startsWith(key)) &&
         !/^elements:\s*\[\s*\]\s*$/.test(line),
     );
-  };
-  const frontmatter = { ko: shownFor('ko'), en: shownFor('en') };
-  const omittedLines = {
-    ko: lines.length - frontmatter.ko.length,
-    en: lines.length - frontmatter.en.length,
-  };
+  const frontmatter = Object.fromEntries(locales.map((l) => [l, shownFor(l)]));
+  const omittedLines = Object.fromEntries(locales.map((l) => [l, lines.length - frontmatter[l].length]));
 
-  const self = namesFor(SPECIMEN_SLUG);
+  const self = namesFor(SPECIMEN_SLUG, locales);
   const domainSlug = field(lines, 'domain');
-  const domain = domainSlug ? namesFor(domainSlug) : null;
+  const domain = domainSlug ? namesFor(domainSlug, locales) : null;
   const depsRaw = field(lines, 'dependencies') ?? '[]';
   const depSlug = depsRaw.replace(/[[\]]/g, '').split(',')[0]?.trim() || null;
-  const dependency = depSlug ? namesFor(depSlug) : null;
+  const dependency = depSlug ? namesFor(depSlug, locales) : null;
   const implPath = unquote(field(lines, 'path'));
 
   if (!domain || !dependency || !implPath) {
@@ -197,8 +196,8 @@ function render(spec) {
 // build when this file and the vault disagree. Rationale: \`scripts/generate-evidence-specimen.mjs\`.
 
 interface EvidenceSpecimenName {
-  readonly ko: string;
   readonly en: string;
+  readonly [locale: string]: string;
   /** The map engine's node id (kind:basename) — what focus/emphasis props accept. */
   readonly nodeId: string;
 }
@@ -211,9 +210,9 @@ export interface EvidenceSpecimen {
   /** The same file on GitHub, so the claim is checkable in one click. */
   readonly url: string;
   /** Frontmatter lines, verbatim, in file order, per locale. */
-  readonly frontmatter: { readonly ko: readonly string[]; readonly en: readonly string[] };
+  readonly frontmatter: { readonly en: readonly string[]; readonly [locale: string]: readonly string[] };
   /** How many lines are not shown, per locale — stated on screen, never hidden. */
-  readonly omittedLines: { readonly ko: number; readonly en: number };
+  readonly omittedLines: { readonly en: number; readonly [locale: string]: number };
   readonly facts: {
     readonly name: EvidenceSpecimenName;
     readonly kind: string;
@@ -229,24 +228,33 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = ${json} as const;
 `;
 }
 
-const spec = build();
-const next = render(spec);
-
-if (process.argv.includes('--check')) {
-  const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
-  if (current !== next) {
-    console.error(
-      '[gateway:specimen] the generated file disagrees with the vault — run `pnpm gateway:specimen` and commit the result.',
-    );
-    process.exit(1);
-  }
-  console.log(
-    `[gateway:specimen] current · ${spec.file} · ko ${spec.frontmatter.ko.length} / en ${spec.frontmatter.en.length} lines shown`,
-  );
-} else {
-  fs.writeFileSync(OUT, next);
-  console.log(
-    `[gateway:specimen] ${spec.file} → ${path.relative(ROOT, OUT)} ` +
-      `(ko ${spec.frontmatter.ko.length} / en ${spec.frontmatter.en.length} lines shown, vault ${spec.vaultNodeCount} nodes)`,
-  );
+function shown(spec) {
+  return Object.entries(spec.frontmatter)
+    .map(([l, lines]) => `${l} ${lines.length}`)
+    .join(' / ');
 }
+
+function main() {
+  const spec = build();
+  const next = render(spec);
+  if (process.argv.includes('--check')) {
+    const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
+    if (current !== next) {
+      console.error(
+        '[gateway:specimen] the generated file disagrees with the vault — run `pnpm gateway:specimen` and commit the result.',
+      );
+      process.exit(1);
+    }
+    console.log(
+      `[gateway:specimen] current · ${spec.file} · ${shown(spec)} lines shown`,
+    );
+  } else {
+    fs.writeFileSync(OUT, next);
+    console.log(
+      `[gateway:specimen] ${spec.file} → ${path.relative(ROOT, OUT)} ` +
+        `(${shown(spec)} lines shown, vault ${spec.vaultNodeCount} nodes)`,
+    );
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
