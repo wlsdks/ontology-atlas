@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
+import { routing } from '@/i18n/routing';
 import { INDIGO_BRAND, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
 
 // Static export: pinned to force-static like sitemap.ts, so it runs once at build time and the PNG
@@ -17,7 +18,7 @@ interface Params {
 
 export async function generateStaticParams(): Promise<Params[]> {
   const out: Params[] = [];
-  for (const locale of ['en', 'ko']) {
+  for (const locale of routing.locales) {
     for (const slug of bundledProjectSlugs()) out.push({ locale, slug });
   }
   return out;
@@ -34,7 +35,7 @@ export default async function ProjectOgImage({
 
   const accent = project?.isHub ? INDIGO_BRAND : INDIGO_HIGHLIGHT;
   const name = project?.name ?? slug;
-  const description = project?.description ?? '프로젝트 토폴로지';
+  const description = project?.description ?? name;
   const category = project?.category ?? '';
 
   return new ImageResponse(
