@@ -21,6 +21,7 @@ import {
   isDomeSpinAnimating,
   isEgoTailAnimating,
   isGalaxyAtmosphereAnimating,
+  isSceneActive,
   shouldSkipFrame,
 } from "../model/idle-gate";
 import {
@@ -33,7 +34,7 @@ import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { type TopologyWorld } from "./topology-world";
 
-const IDLE_GRACE_MS = 1200;
+export const IDLE_GRACE_MS = 1200;
 const VIEWPORT_SETTLE_FRAMES = 2;
 const INTERACTION_DPR_CAP = 1;
 
@@ -107,6 +108,8 @@ interface FrameResult {
   height: number;
   dpr: number;
   dt: number;
+  awake: boolean;
+  sceneStill: boolean;
 }
 
 /** Nothing to draw yet, or the screen is being left: the loop asks again next frame. */
@@ -487,6 +490,13 @@ export function createFrameGate({
         realmTransitionRef.current.phase === "entering" ||
         realmTransitionRef.current.phase === "exiting" ||
         domeMotion;
+      result.awake = active;
+      result.sceneStill =
+        !isSceneActive(idleFlags, pulsesRef.current.length) &&
+        previewTransitionRef.current === null &&
+        realmTransitionRef.current.phase !== "entering" &&
+        realmTransitionRef.current.phase !== "exiting" &&
+        !domeMotion;
       if (active) {
         lastActiveMsRef.current = now;
         // e2e instrumentation: the names of the flags that just kept this

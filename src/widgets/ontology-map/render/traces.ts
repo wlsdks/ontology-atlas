@@ -18,6 +18,7 @@
 
 import { type EdgeReveal, partialQuadratic, type Point, revealSpan } from "../expressive/edge-reveal";
 import { isEdgeSignalled } from "../light/signal-plan";
+import type { ParticleEdge } from "./edge-fireflies";
 
 export type { Point };
 
@@ -206,6 +207,7 @@ export interface TraceDrawState {
    * does not regress.
    */
   dependsCometEligible?: boolean;
+  cometOwner?: ParticleEdge;
   /**
    * "walked-path lens" strength, 0..1 — non-zero only when this
    * relation was stepped along **consecutively**.
@@ -476,6 +478,88 @@ export const HOVER_LIFT_WIDTH_PX = 0.45;
 const COMET_TAIL_BASE_EGO = [2.9, 2.1, 1.3];
 const COMET_TAIL_BASE_EMPHASIZED = [3.6, 2.7, 1.7];
 
+export interface CometMark {
+  owner: ParticleEdge;
+  a: Point;
+  control: Point;
+  b: Point;
+  base: readonly number[];
+  farT: number;
+  color: string;
+  alpha: number;
+  shadowBlur: number;
+  shadowColor: string;
+  span: { lo: number; hi: number } | null;
+}
+
+let cometMarks: CometMark[] | null = null;
+
+export function recordComets(into: CometMark[] | null): void {
+  cometMarks = into;
+}
+
+export function cometDots(
+  a: Point,
+  control: Point,
+  b: Point,
+  t: number,
+  base: readonly number[],
+  farT: number,
+  span: { lo: number; hi: number } | null,
+  out: Float64Array,
+): number {
+  let n = 0;
+  for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
+    let tt = t - COMET_TAIL_STEPS[i];
+    if (tt < 0) tt += 1;
+    if (span && (tt < span.lo || tt > span.hi)) continue;
+    const uu = 1 - tt;
+    out[n] = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
+    out[n + 1] = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
+    out[n + 2] = base[i] + (COMET_TAIL_FAR_SIZES[i] - base[i]) * farT;
+    n += 3;
+  }
+  return n;
+}
+
+const dotsScratch = new Float64Array(COMET_TAIL_STEPS.length * 3);
+
+export function fillCometDots(ctx: CanvasRenderingContext2D, dots: Float64Array, n: number): void {
+  for (let k = 0; k < n; k += 3) {
+    ctx.beginPath();
+    ctx.arc(dots[k], dots[k + 1], dots[k + 2], 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function comet(
+  ctx: CanvasRenderingContext2D,
+  state: TraceDrawState,
+  base: readonly number[],
+  color: string,
+  span: { lo: number; hi: number } | null,
+): void {
+  const { a, b, control, farT, cometOwner } = state;
+  if (cometMarks && cometOwner) {
+    cometMarks.push({
+      owner: cometOwner,
+      a: { x: a.x, y: a.y },
+      control: { x: control.x, y: control.y },
+      b: { x: b.x, y: b.y },
+      base,
+      farT,
+      color,
+      alpha: ctx.globalAlpha,
+      shadowBlur: ctx.shadowBlur,
+      shadowColor: ctx.shadowColor,
+      span: span ? { lo: span.lo, hi: span.hi } : null,
+    });
+    return;
+  }
+  ctx.fillStyle = color;
+  fillCometDots(ctx, dotsScratch, cometDots(a, control, b, state.t, base, farT, span, dotsScratch));
+}
+
 export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, tokens: TraceTokens): void {
   const { a, b, control, farT, egoState, t } = state;
   const isDepends = state.relationType === "depends";
@@ -684,39 +768,14 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     if (isEdgeSignalled(a, control, b)) return;
     const ego = egoState === "ego" || state.selected === true;
     const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
-    const tailColor = ego ? tokens.indigoBright : tokens.indigo;
-    ctx.fillStyle = tailColor;
-    for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
-      let tt = t - COMET_TAIL_STEPS[i];
-      if (tt < 0) tt += 1;
-      if (span && (tt < span.lo || tt > span.hi)) continue;
-      const uu = 1 - tt;
-      const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
-      const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
-      const size = baseSizes[i] + (COMET_TAIL_FAR_SIZES[i] - baseSizes[i]) * farT;
-      ctx.beginPath();
-      ctx.arc(px, py, size, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    comet(ctx, state, baseSizes, ego ? tokens.indigoBright : tokens.indigo, span);
     return;
   }
 
   if (egoState !== "ego" || state.containsCometEligible !== true) return;
   if (state.reducedMotion === true) return;
   if (isEdgeSignalled(a, control, b)) return;
-  ctx.fillStyle = tokens.indigo;
-  for (let i = 0; i < COMET_TAIL_STEPS.length; i += 1) {
-    let tt = t - COMET_TAIL_STEPS[i];
-    if (tt < 0) tt += 1;
-    if (span && (tt < span.lo || tt > span.hi)) continue;
-    const uu = 1 - tt;
-    const px = uu * uu * a.x + 2 * uu * tt * control.x + tt * tt * b.x;
-    const py = uu * uu * a.y + 2 * uu * tt * control.y + tt * tt * b.y;
-    const size = COMET_TAIL_BASE_NORMAL[i] + (COMET_TAIL_FAR_SIZES[i] - COMET_TAIL_BASE_NORMAL[i]) * farT;
-    ctx.beginPath();
-    ctx.arc(px, py, size, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  comet(ctx, state, COMET_TAIL_BASE_NORMAL, tokens.indigo, span);
 }
 
 /**

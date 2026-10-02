@@ -1118,6 +1118,7 @@ export interface FrameDrawParams {
   backgroundVariant?: CanvasBackgroundVariant;
   /** Callback that paints the animated background buffer — consumed only by the non-dot variants. See `render/grid.ts`. */
   paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
+  nodeLayer?: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
   /** Patterns for the three depth-dot layers (consumed only when `variant === "depth"`). Their origins are computed here. */
   depthDotPatterns?: readonly (CanvasPattern | null)[];
   /**
@@ -1206,7 +1207,7 @@ export interface FrameDrawParams {
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
 export function drawTopologyFrame(params: FrameDrawParams): void {
   const {
-    ctx,
+    ctx: baseCtx,
     world,
     camera,
     farT,
@@ -1299,6 +1300,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeLight = null,
     trailLensRamp,
   } = params;
+  let ctx = baseCtx;
 
   // Spotlight sink multiplier — live only while the lens is on, the ramp is
   // advancing, and no node/edge focus is active (selection outranks lens). Applied
@@ -2568,6 +2570,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
           containsCometEligible: kind === "contains" ? mapCometsOn && egoCometEdges.has(edge) : undefined,
           dependsCometEligible: kind === "depends" ? mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
+          cometOwner: edge,
         },
         traceTokensFrame,
       );
@@ -2655,6 +2658,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
     ctx.globalAlpha = 1;
   }
+  ctx = params.nodeLayer?.(ctx) ?? ctx;
 
   // rank7 — a just-expanded disc child's reveal multiplier = its NEAREST
   // expanded-ancestor parent's ramp (walk contains-parent chain up). Already-
