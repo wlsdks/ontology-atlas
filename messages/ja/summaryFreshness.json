@@ -1,6 +1,6 @@
 {
-  "prefix": "Description is behind what this holds",
-  "lag": "{count}d",
-  "action": "Update this description",
-  "unavailable": "Couldn't compare this description with its history. Open Git to inspect the original changes."
+  "prefix": "説明が現在の内容より古い",
+  "lag": "{count}日",
+  "action": "説明を更新",
+  "unavailable": "説明と履歴を比較できませんでした。Gitを開いて元の変更を確認してください。"
 }

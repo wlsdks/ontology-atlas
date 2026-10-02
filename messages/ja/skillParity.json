@@ -1,10 +1,10 @@
 {
-  "header": "Skill copies",
-  "copyHandoff": "Copy a note for your agent",
-  "copied": "Copied: paste it to your agent.",
-  "copyFailed": "Could not copy.",
-  "chip": "read-only",
-  "valueDisagreeing": "{total} skills · {count} out of sync",
-  "valueAgreed": "{total} skills · all agree",
-  "body": "Compares the .claude/skills and .agents/skills copies file by file. It never writes anything."
+  "header": "スキルのコピー",
+  "copyHandoff": "エージェント向けメモをコピー",
+  "copied": "コピーしました。エージェントに貼り付けてください。",
+  "copyFailed": "コピーできませんでした。",
+  "chip": "読み取り専用",
+  "valueDisagreeing": "スキル{total}件・{count}件が不一致",
+  "valueAgreed": "スキル{total}件・すべて一致",
+  "body": "スキルのコピーを比較します。対象は「.claude/skills」と「.agents/skills」で、ファイルごとに突き合わせます。何も書き込みません。"
 }

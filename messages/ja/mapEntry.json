@@ -1,9 +1,9 @@
 {
-  "takingLonger": "This is taking longer than expected. Return to the previous screen to try again.",
-  "returnToPrevious": "Return to previous screen",
-  "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
-  "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
-  "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
-  "mapComing": "Loading the map…",
-  "loadingDetail": "Arranging concepts and relationships for the map."
+  "takingLonger": "想定より時間がかかっています。前の画面に戻って、もう一度お試しください。",
+  "returnToPrevious": "前の画面に戻る",
+  "headline": "コードベースが何を作り、なぜその構造になっていて、変更が何に影響するかを把握できます。",
+  "lede": "プロダクトのドメイン、ケイパビリティ、実装の根拠、依存関係、影響範囲を、コードの隣のMarkdownに残します。人もAIエージェントも、同じコードベースのオントロジーを保守できます。",
+  "demoNote": "この画面は実際のマップです。Ontology Atlas自身を描いており、ドメイン、ケイパビリティ、要素は各ファイル先頭の情報ブロックから直接読み取っています。",
+  "mapComing": "マップを読み込んでいます…",
+  "loadingDetail": "マップ用に概念と関係を配置しています。"
 }

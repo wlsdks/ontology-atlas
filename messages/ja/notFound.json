@@ -1,8 +1,8 @@
 {
   "label": "404",
-  "title": "Looks like you're lost.",
-  "body": "This page doesn't exist. The link may be outdated or a project may have been renamed. Pick one of the options below to continue.",
-  "findByProject": "Find by project search",
-  "home": "Home",
-  "previous": "Previous screen"
+  "title": "道に迷ったようです。",
+  "body": "このページは存在しません。リンクが古いか、プロジェクト名が変更された可能性があります。下の選択肢から続けてください。",
+  "findByProject": "プロジェクトを検索",
+  "home": "ホーム",
+  "previous": "前の画面"
 }

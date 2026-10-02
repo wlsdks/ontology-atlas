@@ -1,15 +1,15 @@
 {
-  "prefix": "Last edited",
-  "subjectAgent": "AI agent",
-  "subjectHuman": "me",
-  "conflictMessage": "This document changed elsewhere: check before you overwrite",
+  "prefix": "最終編集",
+  "subjectAgent": "AIエージェント",
+  "subjectHuman": "自分",
+  "conflictMessage": "このドキュメントは別の場所で変更されました。上書きする前に確認してください",
   "age": {
-    "justNow": "just now",
-    "minutesAgo": "{count}m ago",
-    "hoursAgo": "{count}h ago",
-    "yesterday": "yesterday",
-    "daysAgo": "{count}d ago",
-    "weeksAgo": "{count}w ago",
-    "monthsAgo": "{count}mo ago"
+    "justNow": "たった今",
+    "minutesAgo": "{count}分前",
+    "hoursAgo": "{count}時間前",
+    "yesterday": "昨日",
+    "daysAgo": "{count}日前",
+    "weeksAgo": "{count}週間前",
+    "monthsAgo": "{count}か月前"
   }
 }

@@ -1,16 +1,16 @@
 {
   "controls": {
-    "fitViewTooltip": "Fit map to view"
+    "fitViewTooltip": "マップを全体表示"
   },
   "hubRail": {
-    "label": "Hubs",
-    "expandTooltip": "Expand hub bar",
-    "expandAriaLabel": "Expand hub bar",
-    "collapseTooltip": "Collapse hub bar",
-    "collapseAriaLabel": "Collapse hub bar",
-    "itemTitle": "{name} · {degree} connections"
+    "label": "ハブ",
+    "expandTooltip": "ハブバーを展開",
+    "expandAriaLabel": "ハブバーを展開",
+    "collapseTooltip": "ハブバーを折りたたむ",
+    "collapseAriaLabel": "ハブバーを折りたたむ",
+    "itemTitle": "{name}・つながり{degree}件"
   },
   "keyboardWalk": {
-    "deadEnd": "No connected concept this way"
+    "deadEnd": "この方向につながる概念はありません"
   }
 }
