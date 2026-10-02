@@ -42,6 +42,22 @@ interface CosmosFrameInput {
   cache: CosmosBitmapCache;
   deepField: HTMLCanvasElement | null;
   buildBudget: number;
+  frame?: number;
+}
+
+const patterns = new WeakMap<CanvasRenderingContext2D, { field: HTMLCanvasElement; pattern: CanvasPattern | null }>();
+
+function deepFieldPattern(ctx: CanvasRenderingContext2D, field: HTMLCanvasElement): CanvasPattern | null {
+  const hit = patterns.get(ctx);
+  if (hit && hit.field === field) return hit.pattern;
+  const pattern = ctx.createPattern(field, "repeat");
+  patterns.set(ctx, { field, pattern });
+  return pattern;
+}
+
+function cosmosBand(rho: number, live: number, spacingPx: number, band: CosmosBand): CosmosBand {
+  if (rho <= live || band === "element") return band;
+  return spacingPx >= 16 && rho > 600 ? "element" : "circuit";
 }
 
 const smoothstep = (a: number, b: number, v: number) => {
@@ -76,7 +92,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
   ctx.fillStyle = inks.bgFar;
   ctx.fillRect(0, 0, width, height);
   if (input.deepField) {
-    const pattern = ctx.createPattern(input.deepField, "repeat");
+    const pattern = deepFieldPattern(ctx, input.deepField);
     if (pattern) {
       const ox = -camera.x * camera.scale * 0.06;
       const oy = -camera.y * camera.scale * 0.06;
@@ -114,6 +130,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
   const coreScreen = worldToScreen(camera, room, 0, 0);
   const coreR = layout.core.radius * camera.scale;
   if (coreScreen.x + coreR * 1.6 > 0 && coreScreen.x - coreR * 1.6 < width && coreScreen.y + coreR * 1.6 > 0 && coreScreen.y - coreR * 1.6 < height) {
+    ctx.save();
     ctx.globalCompositeOperation = "lighter";
     const core = starSprite(inks.project);
     if (core) {
@@ -134,8 +151,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.globalAlpha = 0.7 * lensAlpha(input.lens, halo.starIds[i]!, inks);
       ctx.drawImage(sprite, p.x - r, p.y - r, r * 2, r * 2);
     }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
     if (layout.core.label) {
       candidates.push({ text: layout.core.label, kind: "project", id: layout.core.id ?? "project", x: coreScreen.x, y: coreScreen.y + Math.max(30, coreR * 0.3) + 10, align: "center", font: scaledLabelFont("project", 1), ink: inks.labelProject, priority: 1000 });
     }
@@ -161,6 +177,11 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     });
   }
   const galaxyAlpha = galaxyLensAlpha(input.lens, inks);
+  const frame = input.frame ?? 0;
+  const drawn = (key: string) => {
+    if (cache.markDrawn(key, frame)) stats.firstDraws += 1;
+  };
+  ctx.save();
   ctx.globalCompositeOperation = "lighter";
   layout.galaxies.forEach((g, index) => {
     const pose = poses[index]!;
@@ -197,6 +218,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       ctx.setTransform(dpr * w.a, dpr * w.b, dpr * w.c, dpr * w.d, dpr * w.e, dpr * w.f);
       ctx.globalAlpha = glowAlpha * pose.wispLight;
       ctx.drawImage(glow.wisps, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
+      drawn(`glow:${index}:${glow.base.width}`);
     }
     ctx.globalAlpha = pose.presence;
     if (rho <= live) {
@@ -216,13 +238,13 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       if (bitmap) {
         ctx.setTransform(dpr * m.a, dpr * m.b, dpr * m.c, dpr * m.d, dpr * m.e, dpr * m.f);
         ctx.drawImage(bitmap, -E * condense, -E * condense, 2 * E * condense, 2 * E * condense);
+        drawn(`impostor:${index}:${bitmap.width}`);
       }
       stats.impostorGalaxies += 1;
     } else {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const spacingPx = MIN_STAR_SPACING * camera.scale;
-      if (band === "spine") band = "circuit";
-      if (spacingPx >= 16 && rho > 600) band = "element";
+      band = cosmosBand(rho, live, spacingPx, band);
       for (let i = 0; i < g.starIds.length; i += 1) {
         const u = g.starU[i]! * condense;
         const v = g.starV[i]! * condense;
@@ -271,8 +293,8 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
       priority: 900 + Math.min(80, g.members / 10) + (attention.hoverGalaxy === index ? 50 : 0),
     });
   });
+  ctx.restore();
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   stats.band = band;
 
