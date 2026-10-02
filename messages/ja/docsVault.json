@@ -168,7 +168,7 @@
   "desktopWelcome": {
     "eyebrow": "ローカルファーストのワークスペース",
     "title": "ローカルワークスペースを開く、または作成",
-    "body": "ワークスペースにするMarkdownフォルダを選んでください。Ontology Atlasはファイルをこのマックの中に置き、最近のワークスペースを覚え、文書のプロパティを意味のグラフに変えます。",
+    "body": "ワークスペースにするMarkdownフォルダを選んでください。Ontology AtlasはファイルをこのMacの中に置き、最近のワークスペースを覚え、文書のプロパティを意味のグラフに変えます。",
     "dogfoodTitle": "Ontology Atlasチームが使うフォルダを開く",
     "dogfoodBody": "Ontology Atlasチームが開発中に実際に管理しているオントロジーを見るには、リポジトリのチェックアウト内にある「docs/ontology」フォルダを選んでください。",
     "copyDogfoodPath": "パスをコピー",

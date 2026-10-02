@@ -126,6 +126,8 @@ export const ACCEPTED = {
   zh: {
     residue: {
       'harness.title': 'owner keeps Harness as written',
+      'navRail.architecture': 'owner keeps Harness as written',
+      'searchWidgets.shortcuts.rows.goTo_architecture': 'owner keeps Harness as written',
     },
   },
 };

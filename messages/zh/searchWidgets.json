@@ -124,7 +124,7 @@
       "walkNeighbors": "移到相连的概念",
       "navBlockedByOverlay": "请先关闭打开的面板，按 Esc 即可",
       "goTo_map": "前往地图",
-      "goTo_architecture": "前往运行框架",
+      "goTo_architecture": "前往 Harness",
       "goTo_docs": "前往本体",
       "goTo_library": "前往资料库",
       "goTo_automations": "前往自动化",
