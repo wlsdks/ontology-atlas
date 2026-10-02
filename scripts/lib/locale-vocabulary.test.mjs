@@ -18,9 +18,9 @@ test('every locale has a column or a stated reason for every concept', () => {
 });
 
 test('a locale with neither a column nor a reason fails, so a new locale cannot pass by being absent', () => {
-  const gaps = missingColumns(['en', 'ko', 'ja', 'zh']);
-  assert.equal(gaps.length, Object.keys(VOCABULARY).length * 2);
-  assert.ok(gaps.includes('folderSecondNames:ja has no column and no notApplicable reason'));
+  const gaps = missingColumns(['en', 'ko', 'xx']);
+  assert.equal(gaps.length, Object.keys(VOCABULARY).length);
+  assert.ok(gaps.includes('folderSecondNames:xx has no column and no notApplicable reason'));
 });
 
 test('an explicit notApplicable with a reason satisfies the check and a blank one does not', () => {
