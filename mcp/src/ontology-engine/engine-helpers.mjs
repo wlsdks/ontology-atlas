@@ -418,12 +418,14 @@ function textTokens(value) {
 }
 
 function setJaccard(left, right) {
+  // O(min(|left|, |right|)) work and O(1) extra space.
   if (!left || !right || left.size === 0 || right.size === 0) return 0;
   let intersection = 0;
-  for (const value of left) {
-    if (right.has(value)) intersection += 1;
+  const [smaller, larger] = left.size <= right.size ? [left, right] : [right, left];
+  for (const value of smaller) {
+    if (larger.has(value)) intersection += 1;
   }
-  const union = new Set([...left, ...right]).size;
+  const union = left.size + right.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
 
