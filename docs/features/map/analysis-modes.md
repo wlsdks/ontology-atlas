@@ -19,7 +19,7 @@ routes: [/topology]
 
 ## Explore overlooked areas
 
-A selected concept's More menu or the active Concept set opens a map-linked
+A selected concept's More menu or the active bookmark opens a map-linked
 inspector. Project/domain containment extends the selection scope; it does not
 assert impact. The app previews the bound code folder before an explicit local
 read. No Jev request, agent turn, acceptance or ontology write occurs.

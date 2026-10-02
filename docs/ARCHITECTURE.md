@@ -444,7 +444,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `<vault>/sources/`, and its discovery walk contains no writer.
 - **One Library destination, four tabs (2026-09-28).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki, Check history,
-  and saved Concept sets, and `src/views/docs-vault/` for Concept documents. Ontology owns the
+  and saved Bookmarks, and `src/views/docs-vault/` for Concept documents. Ontology owns the
   document/set switch (`ontologyView=documents|sets`); `view` remains owned by the document reader.
   Legacy `tab=collections` replaces itself with `tab=ontology&ontologyView=sets`, retaining
   every other query parameter and the fragment. Sets remain reachable with zero current nodes.
@@ -730,11 +730,11 @@ until a local manifest exists.
                            connectors dialog. Was its own destination from 2026-09-05.
 /library                   the project documents gathered into this folder, the wiki
                            pages written from them, typed ontology documents, and saved
-                           concept sets. Four tabs keep Sources, Wiki, Ontology, and
+                           bookmarks. Four tabs keep Sources, Wiki, Ontology, and
                            Check history distinct; Ontology contains Concept documents and
-                           Concept sets. The first two use the two-pane document
+                           Bookmarks. The first two use the two-pane document
                            flow, whose right pane shows the selected Wiki page or the
-                           bounded facts known about a raw source. Concept sets resolves
+                           bounded facts known about a raw source. Bookmarks resolves
                            real ontology members by UID and returns the whole set to Galaxy
                            with `?constellation=<folder UUID>`. Split out of /docs 2026-09-06:
                            gathering documents of any format and reading the ontology's
@@ -832,7 +832,7 @@ Architecture, Library, Automations, Insights, Projects, Agents, and Git. Agents 
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Check history;
-Concept sets lives inside Ontology alongside Concept documents;
+Bookmarks live inside Ontology alongside Concept documents;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen

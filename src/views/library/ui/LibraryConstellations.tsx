@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronRight, FileText, Orbit, Paperclip, Plus, TriangleAlert } from 'lucide-react';
+import { Bookmark, BookmarkPlus, ChevronDown, ChevronRight, FileText, Orbit, Paperclip, Plus, TriangleAlert } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState, type ReactNode } from 'react';
 
@@ -120,7 +120,7 @@ export function LibraryConstellations({
       </div>
       {saved.status === 'ready' && saved.constellations.length > 0 ? (
         <Button data-testid="library-collections-create" onClick={createInGalaxy} className="atlas-touch-floor atlas-touch-floor-wide shrink-0">
-          <Plus size={ICON_SIZE.sm} aria-hidden />
+          <BookmarkPlus size={ICON_SIZE.sm} aria-hidden />
           {t('create')}
         </Button>
       ) : null}
@@ -142,7 +142,7 @@ export function LibraryConstellations({
       <EmptyState
         title={t('unavailableTitle')}
         description={t('unavailableDescription')}
-        icon={<Orbit />}
+        icon={<Bookmark />}
         action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}>{t('openGalaxy')}</Button>}
         tone="solid"
       />
@@ -167,7 +167,7 @@ export function LibraryConstellations({
       stepsLabel={t('stepsLabel')}
       steps={(['pick', 'name', 'return'] as const).map((id) => ({ id, name: t(`step.${id}`), body: t(`step.${id}Body`) }))}
       action={canPick
-        ? <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><Plus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>
+        ? <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><BookmarkPlus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>
         : <Button data-testid="library-collections-add-concepts" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => router.push('/library/?tab=ontology&ontologyView=documents')}><Plus size={ICON_SIZE.sm} aria-hidden />{t('addConcepts')}</Button>} />;
   } else {
     content = (
