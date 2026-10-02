@@ -72,6 +72,8 @@ async function readBoard(page: Page) {
   });
 }
 
+const LEGEND_CANALS = "판 사이 기댐";
+
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 async function openHexBoard(page: Page, files: Record<string, string>, gitPathChanges?: DesktopRuntimeOptions["gitPathChanges"]) {
@@ -209,6 +211,9 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     // The real vault opens with its names on.
     expect(board.band).toBe("names");
     expect(board.frame.spills).toBe(0);
+    expect(board.frame.canals).toBe(0);
+    expect(board.frame.pills).toBe(0);
+    await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
 
     // Every tile is named, on screen, inside its own face; no two names overlap.
     const W = viewport.width;
@@ -382,6 +387,9 @@ test("hex board at 300 capabilities opens on region nameplates, none over a tile
   const board = await readBoard(page);
   console.log(`[hex 300] R=${board.R} band=${board.band} frame=${JSON.stringify(board.frame)}`);
   expect(board.band).toBe("regions");
+  expect(board.frame.canals).toBeGreaterThanOrEqual(1);
+  expect(board.frame.canals).toBeLessThanOrEqual(14);
+  await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_CANALS);
   const plates = board.tiles.filter((t) => t.plate).map((t) => ({ id: t.id, box: t.plate! }));
   expect(plates).toHaveLength(19);
   const hits: string[] = [];
