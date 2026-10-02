@@ -120,10 +120,12 @@ async function pan(page: Page) {
   return { work, gradients, painted };
 }
 
-test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, frame work per band", async ({ page }) => {
+for (const relief of [false, true]) {
+test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradient per frame, culled tiles, frame work per band`, async ({ page }) => {
   test.setTimeout(300_000);
   await installFrameWork(page);
   await seedFirstRunSeen(page);
+  await page.addInitScript((tilted: boolean) => window.localStorage.setItem("atlas.appearance.hex-relief", tilted ? "on" : "off"), relief);
   await page.addInitScript(() => {
     const w = window as Probe;
     w.__gradients = new Map();
@@ -149,6 +151,7 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
   await page.goto("/en/topology/?synth=10000&synthDeps=1&synthEvidence=12&view=hex&guides=off&e2e=1");
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
   await still(page);
+  await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-relief-pitch", relief ? "0.750" : "0.000");
 
   const results: Record<string, { p95: number; frames: number; offsets: number; maxGradients: number; maxDrawnShare: number }> = {};
   for (const s of SCENARIOS) {
@@ -176,8 +179,9 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
     if (s.band !== "regions") expect(results[s.name]!.maxDrawnShare, `${s.name}: drawn tiles share`).toBeLessThan(0.25);
     if (bars) expect(results[s.name]!.p95, `${s.name}: p95 frame work`).toBeLessThanOrEqual(s.bar);
   }
-  console.log(`[hex-frame-work] ${JSON.stringify(results)}`);
+  console.log(`[hex-frame-work${relief ? "-relief" : ""}] ${JSON.stringify(results)}`);
 });
+}
 
 type Reads = Window & { __rects?: { counting: boolean; calls: number }; __loaf?: number[] };
 
