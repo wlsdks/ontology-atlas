@@ -1,0 +1,37 @@
+/*
+ * Japanese and Chinese typography. Zero font bytes: kana, Han and CJK punctuation come from the
+ * OS face, so every glyph of a word is one family, and `--font-pretendard-latin` (the same
+ * Pretendard file limited to Latin, digits and symbols by `unicode-range`) draws the rest.
+ * Outside every layer so no utility layer wins it back.
+ */
+:root:lang(ja) {
+  --font-sans:
+    var(--font-pretendard-latin), "Hiragino Sans", "Yu Gothic UI", "Meiryo UI", "Noto Sans CJK JP",
+    system-ui, sans-serif;
+  --font-mono:
+    var(--font-jetbrains), var(--font-pretendard-latin), "Hiragino Sans", "Yu Gothic UI", "Meiryo UI",
+    "Noto Sans CJK JP", ui-monospace, monospace;
+}
+
+:root:lang(zh) {
+  --font-sans:
+    var(--font-pretendard-latin), "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC",
+    "WenQuanYi Micro Hei", system-ui, sans-serif;
+  --font-mono:
+    var(--font-jetbrains), var(--font-pretendard-latin), "PingFang SC", "Microsoft YaHei UI",
+    "Noto Sans CJK SC", "WenQuanYi Micro Hei", ui-monospace, monospace;
+}
+
+:root:lang(ja) body,
+:root:lang(zh) body {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+:root:lang(ja) body {
+  line-break: strict;
+}
+
+:root:is(:lang(ja), :lang(zh)) :is(.break-keep, [class*="break-keep"], [class*="word-break:keep-all"]) {
+  word-break: normal;
+}
