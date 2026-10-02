@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { isAttributionMarker } from "../../scripts/lib/attribution-marker.mjs";
 import { areaGate, changedPaths, sourceArea } from "../../scripts/quality/source-areas.mjs";
 import { extractCommentTokens, isSupportedSourcePath } from "../../scripts/quality/source-language/inventory.mjs";
 import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
@@ -10,13 +11,16 @@ import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
 const base = resolveRatchetBase();
 const changed = changedPaths(base).filter(isSupportedSourcePath);
 
+function sourceCommentBytes(path: string, source: string): number {
+  return extractCommentTokens(path, source)
+    .filter((token: { text: string }) => !isAttributionMarker(token.text))
+    .reduce((sum: number, token: { text: string }) => sum + Buffer.byteLength(token.text), 0);
+}
+
 function commentBytes(root: string, path: string): number {
   const file = join(root, path);
   if (!existsSync(file)) return 0;
-  return extractCommentTokens(path, readFileSync(file, "utf8")).reduce(
-    (sum: number, token: { text: string }) => sum + Buffer.byteLength(token.text),
-    0,
-  );
+  return sourceCommentBytes(path, readFileSync(file, "utf8"));
 }
 
 describe("source comment bytes", () => {
@@ -40,5 +44,11 @@ describe("source comment bytes", () => {
       }
     }
     expect(failures, failures.join("\n\n")).toEqual([]);
+  });
+
+  it("leaves out a license attribution marker, which a license requires, and counts any other comment", () => {
+    const marker = "// Adapted from https://example.com/noise.js (MIT, © Example Holder)";
+    expect(sourceCommentBytes("probe.ts", `${marker}\nexport const value = 1;\n`)).toBe(0);
+    expect(sourceCommentBytes("probe.ts", `// Adapted from a blog post\nexport const value = 1;\n`)).toBeGreaterThan(0);
   });
 });

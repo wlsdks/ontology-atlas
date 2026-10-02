@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   DESKTOP_SMOKE_DOCS,
+  DESKTOP_SMOKE_THIRD_PARTY_LICENSES,
   DESKTOP_SMOKE_LOCALES,
   DESKTOP_SMOKE_ROOT_ENTRY,
   DESKTOP_SMOKE_ROUTES,
@@ -59,6 +60,7 @@ function makeCurrentOut() {
   write(outDir, DESKTOP_SMOKE_ROOT_ENTRY);
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
   for (const doc of DESKTOP_SMOKE_DOCS) write(outDir, doc, "# bundled");
+  write(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES, "license texts");
 
   for (const locale of DESKTOP_SMOKE_LOCALES) {
     for (const route of DESKTOP_SMOKE_ROUTES) {
@@ -309,6 +311,20 @@ test("desktop smoke reports the exact missing Tauri root entry", () => {
 
   assert.equal(report.ok, false);
   assert.ok(report.missing.some((check) => check.id === "root-entry"));
+  assert.match(report.nextAction, /pnpm build/);
+});
+
+test("desktop smoke refuses an export without the third-party license texts", () => {
+  const outDir = makeCurrentOut();
+  fs.rmSync(path.join(outDir, DESKTOP_SMOKE_THIRD_PARTY_LICENSES));
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.missing.map((check) => check.id), ["third-party-licenses"]);
   assert.match(report.nextAction, /pnpm build/);
 });
 

@@ -185,7 +185,7 @@ export function commandsForLane({
  * lane. `pnpm lint` was 108 of the gates lane's 210 serial seconds (train run 36285265924);
  * beside the other 57 commands it costs the lane nothing it was not already waiting for.
  */
-export const CONCURRENT_COMMANDS = Object.freeze(['pnpm lint']);
+export const CONCURRENT_COMMANDS = Object.freeze(['pnpm lint', 'pnpm licenses:check', 'pnpm notice:check']);
 
 /** Start a command beside the serial ones, its output held in a file until it is reported. */
 function startConcurrent(command, { cwd, env }) {

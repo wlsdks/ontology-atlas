@@ -3,6 +3,7 @@ const AGENT_SETUP_INVOCATION = "node cli/src/index.mjs agent-brief docs/ontology
 const DESKTOP_PREFLIGHT_ORDER = [
   "pnpm desktop:check",
   "pnpm notice:check",
+  "pnpm licenses:check",
   "pnpm docs-vault:check",
   "pnpm vault:validate",
   "pnpm test:desktop:check",
