@@ -11,15 +11,15 @@ const values = (): Map<string, string> => {
 describe("resolveDialTokens", () => {
   it("fills every key and borrows the attended name ink", () => {
     const tokens = resolveDialTokens((v) => values().get(v) ?? "");
-    expect(Object.keys(tokens)).toHaveLength(65);
-    expect(tokens.ringMin).toBe(1);
-    expect(tokens.ledgerGapPx).toBe(64);
+    expect(Object.keys(tokens)).toHaveLength(71);
+    expect(tokens.pitch).toBe(1);
+    expect(tokens.labelScale).toBe(70);
     expect(tokens.attendedNameInk).toBe("#ececf0");
   });
 
-  it("names the 64 tokens once each, in camelCase of the css name", () => {
-    expect(DIAL_TOKEN_SPECS).toHaveLength(64);
-    expect(new Set(DIAL_TOKEN_SPECS.map((s) => s.key)).size).toBe(64);
+  it("names the 70 tokens once each, in camelCase of the css name", () => {
+    expect(DIAL_TOKEN_SPECS).toHaveLength(70);
+    expect(new Set(DIAL_TOKEN_SPECS.map((s) => s.key)).size).toBe(70);
     for (const { key, cssVar } of DIAL_TOKEN_SPECS) {
       expect(cssVar.replace("--map-dial-", "").replace(/-(\w)/g, (_, c: string) => c.toUpperCase())).toBe(key);
     }
