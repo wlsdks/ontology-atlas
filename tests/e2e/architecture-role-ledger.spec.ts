@@ -119,12 +119,9 @@ async function openSeededVault(page: import('@playwright/test').Page) {
   await page.getByTestId('first-run-starter-open').click();
   await page.getByTestId('vault-guide-pick-existing').click();
   await expect(page.getByTestId('ontology-map-canvas').first()).toBeVisible({ timeout: 60_000 });
-  /* Until the picked vault is the source — the sample answers the same selectors otherwise. */
-  await expect
-    .poll(() => page.evaluate(() => !document.body.innerText.includes('SAMPLE FOR NOW')), {
-      timeout: 60_000,
-    })
-    .toBe(true);
+  await expect(page.locator('[data-testid^="first-run-starter"]')).toHaveCount(0, {
+    timeout: 60_000,
+  });
 }
 
 test('a measured profile separates each role contract and receipt, whole chain on screen', async ({
