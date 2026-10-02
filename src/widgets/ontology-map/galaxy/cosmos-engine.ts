@@ -1,5 +1,6 @@
 import { isDirectionalRelation } from "@/entities/knowledge-graph";
 import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { isImeComposing } from "@/shared/lib/ime-composition";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { readHexRoom } from "../morph/hex-marks";
@@ -354,7 +355,7 @@ export class CosmosEngine {
   private onKey(e: KeyboardEvent): void {
     this.lastInput = performance.now();
     const { layout, rig } = this;
-    if (!layout) return;
+    if (!layout || isImeComposing(e)) return;
     const centre = { x: rig.room.x + rig.room.width / 2, y: rig.room.y + rig.room.height / 2 };
     const intent = keyboardZoomIntent(e, this.options.navigationSpeed.zoom);
     if (intent) {
