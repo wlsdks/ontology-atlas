@@ -53,6 +53,10 @@ The desktop rail's order and hrefs come from
 
 ## Web and app capabilities
 
+Frontmatter readers preserve quoted mapping keys and nested quoted strings.
+Local field edits retain unrelated source; MCP rewrites refuse malformed data
+loss and allow explicit whole-field repair when ownership is unambiguous.
+
 Decided in `docs/DECISIONS.md`; the enforceable version is
 `.claude/rules/surfaces.md`. It is one codebase and one build — the app loads
 the same static export in a WebView — so this is a capability table, not a

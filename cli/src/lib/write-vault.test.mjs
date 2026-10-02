@@ -18,6 +18,19 @@ function withVault(fn) {
   }
 }
 
+it('refuses unrelated malformed rewrites while allowing a complete field repair', () => {
+  withVault((root) => {
+    const path = join(root, 'node.md');
+    const before = '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: capability\ntitle: Before\nlabels: { good: yes, broken }\n---\n\nBody';
+    writeFileSync(path, before);
+    assert.throws(() => writeFrontmatterKeys(root, 'node', { title: 'Changed' }), /malformed frontmatter/i);
+    assert.equal(readFileSync(path, 'utf8'), before);
+    writeFrontmatterKeys(root, 'node', { labels: { good: '001' } });
+    assert.equal(readDocFrontmatter(root, 'node').frontmatter.labels.good, '001');
+    assert.ok(readFileSync(path, 'utf8').endsWith('Body'));
+  });
+});
+
 describe('write-vault writeDoc enforces flat slugs', () => {
   it('rejects a path-shaped slug under a schema folder', () => {
     withVault((root) => {

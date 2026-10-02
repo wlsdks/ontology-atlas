@@ -41,6 +41,10 @@ ceiling or depth 12; this is a capacity bound, not a frame-rate guarantee.
 
 ## In 30 seconds
 
+Quoted frontmatter keys and nested string values round-trip across app, MCP and
+CLI edits. An MCP rewrite that would discard malformed declarations is refused;
+explicit replacement of an identifiable whole field can repair it.
+
 | | |
 |---|---|
 | **What** | An `atlas/` folder of Markdown inside your repository. Each file's frontmatter says what it is (`project`, `domain`, `capability`, `element`, `document`) and what it points at. That folder is the whole database. |

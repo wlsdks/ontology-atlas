@@ -1,0 +1,262 @@
+---
+title: Quoted Frontmatter Mappings
+doc_type: spec
+status: draft
+area: agents
+date: 2026-10-02
+decisions: [0fee5483-f09d-4000-a70c-1d5b91dd7236]
+---
+
+# Quoted Frontmatter Mappings
+
+## Person and moment
+
+An agent reading a relation needs the recorded reason so its user can judge why
+that connection exists. In a read-only fixture probe, the host received no
+rationale for `relation_notes: {"elements/b": "a uses b"}`; writing the same
+claim as a block map with a plain key restored it. This is an observed synthetic
+data-loss case, not a reported user incident or a model-quality result.
+
+The outcome is **judge**: readers receive the rationale already in the file,
+with its correct target and scalar type, and an unrelated authorized edit keeps
+that information. Recovering the stored sentence does not accept its meaning.
+
+## Today
+
+Source baseline: `ff15d19ec`. The external six-case
+`quoted-mapping-matrix.json` captures renderer, MCP, build-script and CLI results.
+All four retain surrounding quotes in mapping keys; a colon inside a quoted key
+is mistaken for its delimiter; nested quoted `001` and `false` become a number
+and boolean. The quoted unsafe-key case currently retains quote characters as
+part of the property name. That observation alone is not prototype mutation.
+A separate reproduced writer/readback probe, `quoted-backslash-roundtrip.json`,
+shows literal backslash sequences in `C:\new\tools` becoming newline/tab content.
+The decoder first collapses escaped backslashes, then interprets the newly exposed
+`\n`/`\t` again (`mcp/src/parser.mjs:278`, `:290`), losing the writer's distinction.
+
+The independently inspected source explains these results:
+
+- Top-level keys use the first colon and are not decoded
+  (`src/shared/lib/parse-frontmatter.ts:105`, `mcp/src/parser.mjs:65`,
+  `scripts/lib/parse-frontmatter.mjs:80`). Block and inline maps repeat this
+  assumption (`parse-frontmatter.ts:159`, `:291`; `parser.mjs:117`, `:149`).
+- Nested values are unquoted before coercion, whereas top-level quoted scalars
+  remain strings (`src/shared/lib/parse-frontmatter.ts:301`, `:317`). Existing
+  plain boolean/number and historical quote behavior have explicit cases in
+  `tests/fixtures/frontmatter-cases.mjs:74`, `:466` and `:489`.
+- The compiler looks up a rationale by the actual reference or resolved target
+  (`mcp/src/ontology-compiler.mjs:153`). The public contract defines target-keyed
+  string rationale in `docs/ONTOLOGY-ATLAS-SPEC.md:423`.
+- The writer emits raw mapping keys (`mcp/src/parser.mjs:335`, `:348`) and quotes
+  values that otherwise change type (`:370`). Decoding a colon-bearing key on
+  read therefore also requires safe key serialization on the next write.
+- The renderer patches retained lines in place, but matches a top-level key
+  using its first colon and emits raw replacement/map keys
+  (`src/entities/docs-vault/lib/frontmatter-updates.ts:45`, `:59`, `:91`).
+  Updating a decoded quoted key must replace the intended field, not append a
+  second field while leaving the old quoted one in place.
+- CLI delegates to MCP (`cli/src/lib/parse-frontmatter.mjs:1`): four delivery
+  paths, three physical reader implementations. The existing parser and writer
+  contract tests exercise the public entrypoints.
+
+The standing [2026-08-14 (6) decision](../DECISIONS.md#2026-08-14-6--fail-an-indented-frontmatter-declaration-losslessly-too)
+requires malformed nonempty declarations to remain diagnostics through parsers,
+validation, compiler and health. Its falsifier is a normal block/comment gaining
+an error, or a malformed declaration disappearing before health. Keep it; this
+slice must exercise both sides. No later matching record returned by
+`pnpm decisions:find malformed` overturns it.
+
+The ontology's `elements/frontmatter-parser` assigns parsing and reconstruction
+here, while validation owns acceptance. The current product thesis separates
+readable evidence, semantic acceptance and deployment; this repair claims only
+faithful representation and safe subsequent editing.
+
+## Problem and alternatives
+
+The cause is parsing a quoted representation as literal key bytes, then coercing
+quoted map values. Adding missing rationale by inference would mask the loss and
+could replace the author's reason with an invented one.
+
+Priority: (1) preserve existing mapping information across reads and edits;
+(2) verify diagnostic and writer boundaries, because a correct first read is not
+enough; (3) consider more YAML grammar only when a distinct real file warrants it.
+
+| Option | Value and usability | Cost, feasibility and local-first fit | Decision |
+|---|---|---|---|
+| Keep current parser; ask authors to rewrite keys | Workaround for informed authors only | Cheap, but all clients silently misread existing Git truth | Reject |
+| Replace the subset with a full YAML engine | Broad syntax support | Changes historical scalar semantics, dependency and writer contracts far beyond observed loss | Defer |
+| Repair quoted keys and scalar types in existing map shapes | Existing files become usable without manual rewriting | Bounded cross-delivery read/write proof; preserves local-first files and approval | Select |
+
+The supported first slice is deliberately exact:
+
+- Decode single-line, nonempty quoted string keys in top-level mappings and the
+  existing one-level block/inline maps. Accept single or double wrapping quotes;
+  colons and commas inside a quoted key are data, including compact
+  `{"key":"value"}` spelling. Plain forms retain their current behavior.
+- Newly decoded keys follow ordinary single-quote rules: doubled apostrophes
+  represent one apostrophe, while backslashes remain literal. Thus `'owner''s'`
+  names `owner's`. Double-quoted keys support the existing writer's escaped quote,
+  backslash, newline and tab repertoire. Other YAML escapes are outside this slice;
+  diagnose unsupported key escapes rather than inventing a decoded name.
+- Preserve historical value permissiveness and the existing escape repertoire,
+  but fix replacement-order data loss: literal backslash-plus-`n`/`t` must remain
+  distinct from actual newline/tab characters through every write/read cycle.
+  Consuming an escaped backslash cannot expose a second escape for reinterpretation.
+- Quoted scalar values remain strings at every supported mapping level, including
+  empty text, `001` and `false`; unquoted booleans/numbers retain their types.
+- Check decoded keys against `__proto__`, `constructor` and `prototype` before
+  assignment. Quoting must not bypass the existing refusal. Decoded graph-field
+  names retain existing relation-array validation.
+- Malformed keys or nonempty map entries keep line diagnostics. An unrelated edit
+  must preserve their source or refuse with unchanged bytes. Diagnostics are not a
+  blanket write ban: explicit authorized replacement/deletion may repair a field
+  only when its key and complete source extent are unambiguous, all removed text
+  belongs to that field, and unrelated content and write checks remain intact.
+  If ownership cannot be established, correction uses the original text instead
+  of a guessed structured key; existing authorization/currentness checks apply.
+- A normal authorized edit preserves supported keys, scalar types, rationale and
+  body content across renderer and MCP/CLI writers. Keep existing safe-key output;
+  quote keys only when necessary to retain their decoded contents. Existing
+  canonical formatting may change; byte-identical formatting is not promised.
+  Refused edits keep the input file bytes unchanged.
+
+Quoted scalar and mapping forms are grounded in
+[YAML 1.2.2 sections 7.3, 7.4.2 and 8.2.2](https://yaml.org/spec/1.2.2/).
+That reference permits quoted keys and distinguishes quoted strings from plain
+scalar resolution. It does not make Atlas a conforming full YAML processor;
+legacy value permissiveness remains a compatibility constraint, not a reason to
+preserve data loss or reject ordinary quoted keys.
+
+## Flow
+
+1. When a person or agent reads a file with a supported quoted mapping, Atlas
+   exposes decoded keys and intended value types across all delivery paths.
+2. When the reader asks why a declared relation exists, Atlas returns its stored
+   rationale for that exact target. An absent note remains absent; Atlas supplies
+   no inferred reason and makes no new semantic acceptance claim.
+3. When a declaration is malformed, the person can inspect its diagnostic and
+   original text. An explicitly targeted, unambiguous field can be replaced or
+   deleted under existing write checks; for example, repair `dependencies: wrong`
+   to `dependencies: []`. An unidentifiable key needs original-text correction.
+4. When the person authorizes an unrelated edit, Atlas preserves malformed source
+   or refuses with unchanged bytes if the rewrite would discard it. An agent's
+   wrong interpretation still needs correction; parsing never approves meaning.
+5. When another reader opens the edited file, it sees the same target, rationale
+   and scalar types. No migration, background repair or additional approval path
+   is introduced.
+
+## States
+
+| State | Web | macOS app |
+|---|---|---|
+| Empty file or map | Out of scope — no new rendered state; existing empty reading remains | Out of scope — same; open or edit the original through existing controls |
+| Valid quoted mapping | Out of scope — parser data correction only; inspect existing node/relation evidence | Out of scope — same data contract; inspect existing evidence |
+| Missing rationale | Out of scope — existing missing-evidence presentation; investigate the original | Out of scope — same; no fabricated sentence |
+| Malformed mapping | Out of scope — existing diagnostic presentation receives parser codes; correct original | Out of scope — same; original bytes remain available |
+| Authorized unrelated edit | Out of scope — existing write controls and checks; no new action or message | Out of scope — same; existing approval applies |
+| Largest measured input | Out of scope — six tiny fixture cases only, no scale claim | Out of scope — same; field trial records its own counts |
+
+## Copy
+
+None — no new or changed user-facing message catalogue entries. Existing
+`malformed-frontmatter-line` and `malformed-quoted-scalar` diagnostics keep their
+roles. Runtime diagnostic details identify the affected line/key and correction;
+the repair does not add a new screen, toast or label.
+
+## Edge cases
+
+- Empty mappings stay empty. Empty quoted values stay strings. The first probe
+  has one relation and one note; the six-case matrix is not a large-vault measure.
+- First run needs no migration. Hangul and other Unicode keys/values retain their
+  information; avoid authoring localized prose in this spec or test titles.
+- Colons, commas, doubled single quotes and escaped double quotes are not mapping
+  boundaries inside supported keys. Probe literal backslash sequences beside
+  actual control characters, including mixed values, over repeated write/read cycles.
+- Decoded aliases of graph-field names use the same validation as plain names.
+  Existing duplicate-key precedence is unchanged; no new merge behavior is added.
+- Moved/renamed/unreadable folders and concurrent edits retain existing I/O,
+  expected-version and permission checks; parsing grants no disk authority.
+- Offline reads and edits keep the same local behavior; no network, model or
+  remote parser dependency is introduced.
+- A malformed member beside a valid one must remain diagnosable. Blank lines,
+  comments, existing lists and block scalars must not become errors as a side
+  effect of quote-aware map handling.
+
+## Out of scope
+
+- Full YAML, recursive mappings, arrays of objects, tags, anchors/aliases,
+  physically multiline or complex keys, and a new scalar escape language: no observed need
+  in this slice, and each can change existing file interpretation.
+- Semantic repair, relation inference, automatic migration or normalization of
+  existing files: source bytes and explicit authorized edits remain the truth.
+- Changing UID/slug rules, approvals, proposal gates or writer permissions:
+  faithfully decoding information grants none of these authorities.
+- UI redesign and universal local-model quality claims: this is shared parser
+  correctness, independent of whether an agent uses ACP or a local model.
+
+## Acceptance criteria
+
+1. **Given** the six observed before-state cases, **when** each public reader
+   consumes the corrected fixtures, **then** expected decoded keys and quoted
+   scalar types agree across renderer, MCP, scripts and CLI. Prove RED/GREEN in
+   `tests/contract/parse-frontmatter.contract.test.ts`, using shared cases.
+2. **Given** supported top-level, inline and block keys containing colons, commas,
+   Unicode, doubled single quotes and supported double-quote escapes, **when** read
+   and then written three times, **then** keys, scalar types and body remain stable.
+   Literal backslash sequences and actual newline/tab content remain distinct;
+   include paired and mixed cases in keys and values across every reader.
+   Extend `frontmatter-writer.contract.test.ts`, renderer
+   `frontmatter-updates.test.ts` and cross-reader round trips; updating an existing
+   quoted key replaces it without duplication. Preserve established safe-key
+   output, plain values and historical value cases.
+3. **Given** a declared fixture relation and a quoted target-keyed note, **when**
+   read through the actual compiler/MCP path and after an unrelated authorized
+   edit, **then** the same edge carries the same rationale. Absent rationale stays
+   unknown. Check compiler integration and MCP/CLI file readback, not just parsing.
+4. **Given** quoted meta-keys or a quoted graph-array key with a scalar value,
+   **when** read through all four paths, **then** meta-keys are refused without
+   inherited fields/prototype mutation and graph-array validation still reports
+   the malformed relation. Check shared security fixtures and validator contracts.
+5. **Given** malformed keys/members and normal blocks/comments, **when** parsed,
+   validated, compiled and checked for health, **then** only malformed declarations
+   retain line errors. An unrelated lossy rewrite refuses with unchanged bytes;
+   an explicitly authorized, unambiguous field replacement/deletion succeeds
+   without losing other content, including `dependencies: wrong` to `[]`.
+   An unidentifiable key requires original-text correction, never guessed repair.
+   Check malformed-line/health contracts and writer repair/refusal readbacks.
+6. **Given** an unfamiliar permissively licensed external repository, **when**
+   the host runs all four ontology-field-trial phases, **then** separately record
+   build cost, cited-path accuracy, sealed-question source-hidden handoff and
+   source audit. Keep all external project identity/artifacts outside this repo.
+   Fail any fabricated rationale or approval bypass; report uncertainty and do
+   not use structural green as semantic acceptance.
+7. **Given** the final bounded implementation, **when**
+   `pnpm checks:changed -- --run` and all recommendations finish, **then** preserve
+   source/write parity, existing ownership boundaries and diagnostic propagation.
+   Record actual counts and limits; no GUI or performance improvement is claimed
+   by this source-only correctness proof.
+
+## Risks
+
+1. Correct parsing followed by corrupt serialization. Require the ordinary edit
+   readback and repeated round trips for decoded keys and quoted numeric text.
+2. Decoding exposes unsafe names or erases diagnostics. Exercise quoted meta-keys,
+   graph-field aliases and malformed-neighbor preservation across every reader.
+3. A YAML cleanup changes existing values beyond this repair. Retain historical
+   value permissiveness; separately prove ordinary quoted-key decoding and the
+   corrected distinction between escaped backslashes and control characters.
+
+## Later
+
+1. Further grammar gaps only after a concrete outside file demonstrates loss;
+   capture expected behavior and compatibility cost before extending the subset.
+2. Module consolidation only if delivery/bundle evidence permits it; shared
+   fixtures currently cover three implementations and four paths.
+3. Model-quality evaluation after distinct task evidence; parser fidelity alone
+   does not establish that an agent understands the stored meaning.
+
+## Owner question
+
+None — repair mapping and escape data loss while retaining legacy value syntax.
+The routed review can narrow an unsupported spelling before implementation;
+no data migration or new write authority is needed.

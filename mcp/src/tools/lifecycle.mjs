@@ -180,7 +180,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     {
       op: 'write',
       path: targetPath,
-      content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body }),
+      content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body, source: sourceDoc.raw }),
       ...(targetDoc
         ? { expectedRaw: targetDoc.raw, expectedMtime: targetDoc.mtime }
         : { expectedAbsent: true }),
@@ -315,7 +315,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     {
       op: 'write',
       path: targetPath,
-      content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }),
+      content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody, source: sourceDoc.raw }),
       ...(sourcePath === targetPath
         ? { expectedRaw: sourceDoc.raw, expectedMtime: sourceDoc.mtime }
         : { expectedAbsent: true }),
@@ -444,6 +444,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
         merged_uids: identityHistory.merged_uids,
       },
       body: redirectedInto.body,
+      source: intoDoc.raw,
     }),
   };
   if (intoPlanIndex >= 0) result.plan[intoPlanIndex] = intoIdentityWrite;
