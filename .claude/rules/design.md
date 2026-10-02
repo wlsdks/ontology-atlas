@@ -75,8 +75,9 @@ a composition.
   use neutrals plus one indigo, separated by a 1px track gap.
 - No coloured left-edge stripe on a new card or row ("No left-edge selection
   stripe" in `docs/DESIGN-SYSTEM.md`).
-- Galaxy paints a circular core, corona and sparse glint only: no polygon,
-  outline or default edge mesh. Twinkle is atmosphere, never data; reduced
+- Galaxy paints glows, circular cores and coronas only: no polygon or outline
+  round a star or a galaxy; counted strands between domains at the overview
+  are data marks, not the relation mesh. Twinkle is atmosphere, never data; reduced
   motion freezes it. Flat and Dome keep canonical shapes. Details:
   `docs/DESIGN-SYSTEM.md`, "v2 Language Definition" and "Galaxy reference
   translation".

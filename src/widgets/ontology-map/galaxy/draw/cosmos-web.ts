@@ -1,12 +1,15 @@
-import { arrowHead, taperedCurve } from "../../render/tapered-arrow";
+import { domainFlowWidth, drawDomainFlow } from "../../aggregate/domain-flows";
 import { worldToScreen } from "../cosmos-camera";
 import { visualRadius, type CosmosLayout } from "../layout/cosmos-layout";
 import type { CosmosCamera, CosmosInks, CosmosRoom, CosmosWebItem, GalaxyPose, LabelCandidate } from "../cosmos-types";
 
+const WEB_WIDTH = { base: 0.5, slope: 0.35, max: 2.4 };
+const COUNTED_AT_REST = 5;
+
 function filamentGeometry(
   a: { x: number; y: number; radius: number },
   b: { x: number; y: number; radius: number },
-  bowShare = 0.15,
+  bowShare: number,
 ): { x1: number; y1: number; cx: number; cy: number; x2: number; y2: number } {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -29,25 +32,21 @@ function filamentGeometry(
   return { x1, y1, cx: mx + px * bow, cy: my + py * bow, x2, y2 };
 }
 
-function filamentWidth(count: number): number {
-  return Math.min(2.4, 0.5 + 0.35 * Math.log2(1 + count));
-}
+const restThresholds = new WeakMap<CosmosLayout, number>();
 
-const topCounts = new WeakMap<CosmosLayout, number>();
-
-function topFilamentCount(layout: CosmosLayout): number {
-  const hit = topCounts.get(layout);
+function restThreshold(layout: CosmosLayout): number {
+  const hit = restThresholds.get(layout);
   if (hit !== undefined) return hit;
   const ranked = layout.filaments.map((f) => f.count).sort((a, b) => b - a);
-  const top = ranked[Math.min(ranked.length - 1, 4)] ?? Infinity;
-  topCounts.set(layout, top);
-  return top;
+  const threshold = ranked[Math.min(ranked.length, COUNTED_AT_REST) - 1] ?? Infinity;
+  restThresholds.set(layout, threshold);
+  return threshold;
 }
 
-const smoothstep = (a: number, b: number, v: number) => {
-  const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
+function webFade(zoomRatio: number): number {
+  const t = Math.min(1, Math.max(0, (zoomRatio - 1.4) / 0.8));
+  return 1 - t * t * (3 - 2 * t);
+}
 
 interface CosmosWebInput {
   layout: CosmosLayout;
@@ -69,13 +68,14 @@ export function drawCosmosWeb(
   ctx: CanvasRenderingContext2D,
   input: CosmosWebInput,
 ): { alpha: number; items: CosmosWebItem[]; candidates: LabelCandidate[] } {
-  const { layout, poses, camera, room, width, height, inks, settled, metaFont, hoverGalaxy } = input;
+  const { layout, poses, camera, room, width, height, inks, settled, metaFont, hoverGalaxy, focusGalaxy } = input;
   const items: CosmosWebItem[] = [];
   const candidates: LabelCandidate[] = [];
-  const webAlpha = 1 - smoothstep(1.4, 2.2, input.zoomRatio);
-  if (webAlpha <= 0.01) return { alpha: 0, items, candidates };
-  ctx.globalAlpha = webAlpha;
-  const topCount = topFilamentCount(layout);
+  const alpha = webFade(input.zoomRatio) * input.lensRest;
+  if (alpha <= 0.01) return { alpha: 0, items, candidates };
+  const attended = hoverGalaxy >= 0 ? hoverGalaxy : focusGalaxy;
+  const threshold = restThreshold(layout);
+  ctx.globalAlpha = alpha;
   for (const f of layout.filaments) {
     const pa = poses[f.from]!;
     const pb = poses[f.to]!;
@@ -86,28 +86,29 @@ export function drawCosmosWeb(
     const p1 = worldToScreen(camera, room, geo.x1, geo.y1);
     const pc = worldToScreen(camera, room, geo.cx, geo.cy);
     const p2 = worldToScreen(camera, room, geo.x2, geo.y2);
-    const minX = Math.min(p1.x, pc.x, p2.x);
-    const maxX = Math.max(p1.x, pc.x, p2.x);
-    const minY = Math.min(p1.y, pc.y, p2.y);
-    const maxY = Math.max(p1.y, pc.y, p2.y);
-    if (maxX < -20 || minX > width + 20 || maxY < -20 || minY > height + 20) continue;
-    const w0 = filamentWidth(f.count);
-    const touches = hoverGalaxy === f.from || hoverGalaxy === f.to;
-    const receded = hoverGalaxy >= 0 && !touches;
-    ctx.fillStyle = touches ? inks.filamentHead : receded ? inks.filamentDim : inks.filament;
-    const w1 = f.twoWay ? w0 : w0 * 0.45;
-    taperedCurve(ctx, p1.x, p1.y, pc.x, pc.y, p2.x, p2.y, w0, w1);
-    ctx.fillStyle = receded ? inks.filamentDim : inks.filamentHead;
-    arrowHead(ctx, p2.x, p2.y, Math.atan2(p2.y - pc.y, p2.x - pc.x), Math.max(3, 2.4 * w1));
-    if (f.twoWay) arrowHead(ctx, p1.x, p1.y, Math.atan2(p1.y - pc.y, p1.x - pc.x), Math.max(3, 2.4 * w0));
-    const counted = (f.count >= topCount && hoverGalaxy < 0) || touches;
-    items.push({ from: ga.id, to: gb.id, count: f.count, twoWay: f.twoWay, width: w0, tone: touches ? "lit" : receded ? "receded" : "rest", counted });
-    if (counted) {
-      const mx = 0.25 * p1.x + 0.5 * pc.x + 0.25 * p2.x;
-      const my = 0.25 * p1.y + 0.5 * pc.y + 0.25 * p2.y;
-      candidates.push({ text: String(f.count), kind: "count", id: `${f.from}-${f.to}`, x: mx, y: my, align: "center", font: metaFont, ink: inks.labelMeta, priority: touches ? 880 : 600 + f.count });
-    }
+    if (Math.max(p1.x, pc.x, p2.x) < -20 || Math.min(p1.x, pc.x, p2.x) > width + 20) continue;
+    if (Math.max(p1.y, pc.y, p2.y) < -20 || Math.min(p1.y, pc.y, p2.y) > height + 20) continue;
+    const w = domainFlowWidth(f.count, WEB_WIDTH);
+    const lit = attended >= 0 && (attended === f.from || attended === f.to);
+    const receded = hoverGalaxy >= 0 && !lit;
+    const tone = lit ? "lit" : receded ? "receded" : "rest";
+    const fill = lit ? inks.filamentHead : receded ? inks.filamentDim : inks.filament;
+    drawDomainFlow(ctx, p1, pc, p2, w, f.twoWay, fill, receded ? inks.filamentDim : inks.filamentHead);
+    const counted = attended >= 0 ? lit : f.count >= threshold;
+    items.push({ from: ga.id, to: gb.id, count: f.count, twoWay: f.twoWay, width: w, tone, counted });
+    if (!counted) continue;
+    candidates.push({
+      text: String(f.count),
+      kind: "count",
+      id: `${f.from}-${f.to}`,
+      x: 0.25 * p1.x + 0.5 * pc.x + 0.25 * p2.x,
+      y: 0.25 * p1.y + 0.5 * pc.y + 0.25 * p2.y,
+      align: "center",
+      font: metaFont,
+      ink: inks.labelMeta,
+      priority: lit ? 880 : 600 + f.count,
+    });
   }
   ctx.globalAlpha = 1;
-  return { alpha: webAlpha, items, candidates };
+  return { alpha, items, candidates };
 }
