@@ -93,9 +93,10 @@ mod tests {
 
     #[test]
     fn an_inherited_stdout_pipe_does_not_escape_the_deadline() {
-        // The finite worker lifetime is a fixture hang detector, not a test wait.
-        let command = node("const child = require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 2000)'], {stdio:['ignore', process.stdout, 'ignore']}); child.unref(); process.stdout.write('parent done');");
-        assert!(run(command, Duration::from_millis(300)).is_none());
+        // Windows workers need detachment to survive parent exit; their finite lifetime detects hangs.
+        let command = node("const child = require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 2000)'], {detached: process.platform === 'win32', stdio:['ignore', process.stdout, 'ignore']}); child.unref(); process.stdout.write('parent done');");
+        let result = run(command, Duration::from_millis(300));
+        assert!(result.is_none(), "inherited pipe completed inside deadline: {result:?}");
     }
 
     #[test]
