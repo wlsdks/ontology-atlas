@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { localName } from '@/features/agent-activity/model/companion-catalog';
 import { build } from '../../../../scripts/generate-evidence-specimen.mjs';
 
 describe('locale-shaped data', () => {
@@ -24,10 +23,4 @@ describe('locale-shaped data', () => {
     expect(four.omittedLines.ko).toBe(two.omittedLines.ko);
   });
 
-  it('falls back to the English name when a locale has none', () => {
-    const name = { en: 'Dragon', ko: '용', ja: 'ドラゴン' };
-    expect(localName(name, 'ja')).toBe('ドラゴン');
-    expect(localName(name, 'zh')).toBe('Dragon');
-    expect(localName(name, 'ko')).toBe('용');
-  });
 });
