@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CosmosMirror } from "./CosmosMirror";
 import { computeCosmosLayout } from "./layout/cosmos-layout";
 
-function nineDomains() {
+function nineDomains(dependencies: [string, string][] = []) {
   const nodes: { id: string; label: string; kind: string; size: number }[] = [{ id: "p", label: "Shop", kind: "project", size: 1 }];
   const edges: { source: string; target: string; kind: "contains"; relationType: string }[] = [];
   const contains = (source: string, target: string) => edges.push({ source, target, kind: "contains", relationType: "contains" });
@@ -18,11 +18,17 @@ function nineDomains() {
       contains(cap, `${cap}e`);
     }
   }
-  return computeCosmosLayout(nodes as never, edges as never, {});
+  const deps = dependencies.map(([source, target]) => ({ source, target, kind: "depends", relationType: "depends_on" }));
+  return computeCosmosLayout(nodes as never, [...edges, ...deps] as never, {});
 }
 
 const layout = nineDomains();
-const labels = { list: "Domains", galaxyRow: (name: string, count: number) => `${name}, ${count}` };
+const labels = {
+  list: "Domains",
+  galaxyRow: (name: string, count: number) => `${name}, ${count}`,
+  strandList: "Dependencies",
+  strandRow: (from: string, to: string, count: number, twoWay: boolean) => `${from} ${twoWay ? "<->" : "->"} ${to}: ${count} dependencies`,
+};
 const base = { layout, labels, marks: [], restSignal: 0, deadEndSignal: 0, walkNotice: "Nothing that way", selectedId: null, onSelect: () => {} };
 
 describe("CosmosMirror", () => {
@@ -42,6 +48,13 @@ describe("CosmosMirror", () => {
     }
     expect(list.querySelector('[data-cosmos-id$="e"]')).toBeNull();
     expect(list.querySelectorAll("button[tabindex='-1']")).toHaveLength(1 + 9 + 18);
+  });
+
+  it("lists each strand with its count in words", () => {
+    const linked = nineDomains([["d0c0", "d1c0"], ["d0c1", "d1c1"], ["d2c0", "d3c0"], ["d3c1", "d2c1"]]);
+    const { getByTestId } = render(<CosmosMirror {...base} layout={linked} />);
+    const rows = [...getByTestId("cosmos-strand-list").querySelectorAll("li")].map((li) => li.textContent);
+    expect(rows.sort()).toEqual(["Domain 0 -> Domain 1: 2 dependencies", "Domain 2 <-> Domain 3: 2 dependencies"]);
   });
 
   it("presses the selected row and selects on click", () => {

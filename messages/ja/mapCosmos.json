@@ -1,4 +1,7 @@
 {
   "list": "地図上のドメインと、それぞれのケイパビリティ",
-  "galaxyRow": "{name}、概念{count, plural, other {#件}}"
+  "galaxyRow": "{name}、概念{count, plural, other {#件}}",
+  "strandList": "How domains depend on each other",
+  "strandRow": "{from} depends on {to}: {count, plural, other {# dependencies}}",
+  "strandRowBoth": "{from} and {to} depend on each other: {count, plural, other {# dependencies}}"
 }

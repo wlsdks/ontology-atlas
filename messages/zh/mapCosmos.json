@@ -1,4 +1,7 @@
 {
   "list": "地图上的领域及其能力",
-  "galaxyRow": "{name}，{count, plural, other {# 个}}概念"
+  "galaxyRow": "{name}，{count, plural, other {# 个}}概念",
+  "strandList": "How domains depend on each other",
+  "strandRow": "{from} depends on {to}: {count, plural, other {# dependencies}}",
+  "strandRowBoth": "{from} and {to} depend on each other: {count, plural, other {# dependencies}}"
 }
