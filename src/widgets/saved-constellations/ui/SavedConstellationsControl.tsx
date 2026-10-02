@@ -287,7 +287,16 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
       setPurpose(saved.folder.purpose ?? '');
       setMemberDrafts(constellationMemberDrafts(saved));
     } else {
-      const selected = selectedSlug ? candidates.findLast((candidate) => candidate.mapId === selectedSlug) : null;
+      let selected: ConstellationCandidate | undefined;
+      if (selectedSlug) {
+        // O(candidates), without requiring newer WebView array methods.
+        for (let index = candidates.length - 1; index >= 0; index -= 1) {
+          const candidate = candidates[index];
+          if (candidate.mapId !== selectedSlug) continue;
+          selected = candidate;
+          break;
+        }
+      }
       setEditingId(null);
       setName('');
       setPurpose('');
@@ -461,10 +470,6 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
             <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">{t('eyebrow')}</p>
             <h2 id={listHeadingId} className="mt-1 text-title text-[color:var(--color-text-primary)]">{t('listTitle')}</h2>
           </div>
-          {/*
-           * One action per state in one control grammar: where saving is impossible the body names
-           * why and holds the only action; where it is waiting, the button stays and says why.
-           */}
           {store.status === 'ready' || store.status === 'saving' || store.status === 'loading' ? (
             createBlockedReason ? (
               <Tooltip content={createBlockedReason}>
