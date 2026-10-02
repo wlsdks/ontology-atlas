@@ -43,7 +43,8 @@ import {
 
 import {
   DEFAULT_EXPAND,
-  DEFAULT_MAP_ARRANGEMENT
+  DEFAULT_MAP_ARRANGEMENT,
+  DEFAULT_MAP_NAVIGATION_SPEED,
 } from "@/shared/lib/appearance-preferences";
 import {
   type DomeViewKind
@@ -88,7 +89,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null,
     tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false,
     mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
-    expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null,
+    expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
+    onWalkDeadEnd = null,
   } = args;
   const {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
@@ -173,7 +175,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const {
     cameraRef, cameraTargetRef, galaxyInspectionCameraRef, constellationCameraRef,
-    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef,
+    previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
     runSpotlightFitRef, reframeViewportRef, viewportCameraTrackedRef, initialRelayoutTokenRef, panelInsetsRef,
@@ -701,6 +703,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       drawnHoveredNodeIdRef,
       panelEmphasisNodeIdRef,
       cameraTweenRef,
+      zoomEaseRef,
       reducedMotionRef,
       cameraRef,
       cameraTargetRef,
@@ -917,10 +920,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
     wheelIntent,
+    navigationSpeed,
     worldRef,
     cameraRef,
     cameraTargetRef,
     cameraTweenRef,
+    zoomEaseRef,
     dampingRef,
     cameraAngularFreqRef,
     viewportRef,

@@ -71,6 +71,7 @@ export interface TopologyMapRendererProps {
     | "mapArrangement"
     | "footprint"
     | "expand"
+    | "navigationSpeed"
   >;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
@@ -118,7 +119,7 @@ export function TopologyMapRenderer({
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
   topologyIndexPresentation, topologyCreateIntent,
 }: TopologyMapRendererProps) {
-  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight } = topologyVaultReadModel;
   const {
@@ -213,6 +214,7 @@ export function TopologyMapRenderer({
               inspectorOpen={nodePanelMounted}
               indexExpanded={renderedIndexState === "expanded"}
               arrivedByMorph={morph.arrivedByMorph}
+              navigationSpeed={navigationSpeed}
             />
           ) : morph.surface === "hex" ? (
             <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
@@ -228,6 +230,7 @@ export function TopologyMapRenderer({
               reducedMotion={reducedMotion}
               arrivedByMorph={morph.arrivedByMorph}
               synthEvidence={topologyGraphProjection.synthEvidence}
+              navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
           ) : (
@@ -310,6 +313,7 @@ export function TopologyMapRenderer({
             detailPanelVisible={nodePanelMounted}
             footprint={footprint}
             expand={expand}
+            navigationSpeed={navigationSpeed}
           />
           )}
         </div>

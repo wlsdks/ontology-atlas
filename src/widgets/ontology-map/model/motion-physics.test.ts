@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { MOTION } from "@/shared/motion/tokens";
+
 import {
   MOMENTUM_SPRING,
   UI_SPRING,
-  momentumDecayGain,
-  projectMomentum,
+  ZOOM_STEP_TAU_MS,
+  easeZoomScale,
   rubberband,
   springAngularFrequency,
   toSpringConstants,
+  zoomStepProgress,
 } from "./motion-physics";
 
 
@@ -32,8 +35,8 @@ describe("toSpringConstants", () => {
       damping: 1.0,
     });
     expect(toSpringConstants(MOMENTUM_SPRING)).toEqual({
-      angularFrequency: 1 / 0.35,
-      damping: 0.8,
+      angularFrequency: 1 / MOTION.base.duration,
+      damping: 1.0,
     });
   });
 
@@ -42,30 +45,22 @@ describe("toSpringConstants", () => {
   });
 });
 
-describe("momentumDecayGain", () => {
-  it("is the geometric-series gain d/(1-d)", () => {
-    expect(momentumDecayGain(0.998)).toBeCloseTo(0.998 / 0.002, 6);
-    expect(momentumDecayGain(0.5)).toBe(1);
+describe("zoom step easing", () => {
+  it("lands 95% of a step within the fast motion duration and settles exactly", () => {
+    expect(zoomStepProgress(MOTION.fast.duration * 1000)).toBeCloseTo(0.95, 2);
+    expect(zoomStepProgress(ZOOM_STEP_TAU_MS * 7)).toBe(1);
   });
 
-  it("grows without bound as decay approaches 1 (a stickier surface throws further)", () => {
-    expect(momentumDecayGain(0.999)).toBeGreaterThan(momentumDecayGain(0.99));
-  });
-});
-
-describe("projectMomentum", () => {
-  it("matches Apple's project(v) = (v/1000)·d/(1-d) for px/s velocity", () => {
-    // 1000 px/s at decay 0.998 → (1000/1000)·(0.998/0.002) = 499.
-    expect(projectMomentum(1000, 0.998)).toBeCloseTo(499, 6);
+  it("starts at once and never runs backwards for a frame stamped before the input", () => {
+    expect(zoomStepProgress(-5)).toBe(0);
+    expect(zoomStepProgress(8.3)).toBeGreaterThan(0.15);
   });
 
-  it("is proportional to velocity and sign-preserving", () => {
-    expect(projectMomentum(500, 0.998)).toBeCloseTo(projectMomentum(1000, 0.998) / 2, 6);
-    expect(projectMomentum(-1000, 0.998)).toBeCloseTo(-projectMomentum(1000, 0.998), 6);
-  });
-
-  it("defaults decay to 0.998 (normal scroll feel)", () => {
-    expect(projectMomentum(1000)).toBeCloseTo(projectMomentum(1000, 0.998), 10);
+  it("interpolates the scale in log space, so equal steps feel equal in and out", () => {
+    expect(easeZoomScale(1, 4, 0.5)).toBeCloseTo(2, 12);
+    expect(easeZoomScale(4, 1, 0.5)).toBeCloseTo(2, 12);
+    expect(easeZoomScale(1.5, 3, 0)).toBe(1.5);
+    expect(easeZoomScale(1.5, 3, 1)).toBeCloseTo(3, 12);
   });
 });
 

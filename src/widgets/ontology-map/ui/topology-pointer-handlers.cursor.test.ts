@@ -50,11 +50,9 @@ vi.mock("./topology-read-tokens", () => ({
     cameraMinZoomRatio: 0.5,
     cameraScaleMin: 0.24,
     cameraDampingDefault: 1,
-    cameraDampingFlick: 0.82,
     cameraSpringAngFreqInteractive: 10,
     cameraReleaseVelocityWindowMs: 80,
     cameraFlickMinSpeed: 40,
-    cameraMomentumDecay: 0.95,
     nodeReleaseSettleMs: 900,
   })),
 }));

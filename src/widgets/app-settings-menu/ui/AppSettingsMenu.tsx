@@ -47,6 +47,7 @@ import { AppUpdateSettings } from './AppUpdateSettings';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
+import { MapSpeedSettings } from './MapSpeedSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
 import {
   DETAIL_TOGGLE_CHIP,
@@ -724,6 +725,7 @@ export function AppSettingsMenu({
                   <>
                   {/* The 3D layout lives in the map's `View3dMenu`, over what it changes, not here. */}
                   <CanvasBackgroundPicker />
+                  <MapSpeedSettings />
                   {/* Frame meter: off by default, and while off its measurement loop does not run. */}
                   <SettingsGroup>
                     <SettingsRow

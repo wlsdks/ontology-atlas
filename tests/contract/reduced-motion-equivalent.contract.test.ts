@@ -411,7 +411,7 @@ describe('reduced-motion 동등물 계약', () => {
   it('캔버스 카메라의 reduced-motion 스냅은 앱 개시 이동에만 걸린다', () => {
     const step = TS('src/widgets/ontology-map/ui/topology-physics-step.ts');
     expect(
-      /if \(!freezeCamera && reducedMotion && !userDrivenCamera\)/.test(step),
+      /if \(reducedMotion && !userDrivenCamera\)/.test(step),
       '카메라 스냅이 사용자 개시 이동까지 자른다 (WCAG 2.3.3 예외 침범)',
     ).toBe(true);
 

@@ -1,85 +1,66 @@
 import { describe, expect, it } from "vitest";
 
+import { stepCamera, type CameraAxes } from "./camera";
 import { projectFlickLanding, sampleReleaseVelocity } from "./momentum";
 
-/**
- * Spec for `projectFlickLanding` — ported from the prototype's `releaseDrag()`
- * momentum branch. `projectFlickLanding` currently throws (unimplemented) so
- * every test below is RED until the lead implements it against this file.
- */
-const DECAY = 0.998; // --map-camera-momentum-decay
+const TAU_MS = 180;
 
 describe("projectFlickLanding", () => {
-  it("projects a proportional landing for a rightward flick (vx=0.5px/ms, scale=1)", () => {
-    // iOS UIScrollView deceleration projection — distance ∝ release velocity:
-    //   worldVelocity = -0.5/1 * 1000 = -500 (world units/sec)
-    //   landingOffset = -0.5/1 * decay/(1-decay) = -0.5 * (0.998/0.002) = -0.5*499 = -249.5
-    //   landingTarget = 100 - 249.5 = -149.5
-    const result = projectFlickLanding({
-      velocityPxPerMs: 0.5,
-      cameraPosition: 100,
-      cameraScale: 1,
-      decay: DECAY,
-    });
-
+  it("lands one time constant of release velocity away, against the drag", () => {
+    const result = projectFlickLanding({ velocityPxPerMs: 0.5, cameraPosition: 100, cameraScale: 1, timeConstantMs: TAU_MS });
     expect(result.worldVelocity).toBeCloseTo(-500, 6);
-    expect(result.landingTarget).toBeCloseTo(-149.5, 6);
+    expect(result.landingTarget).toBeCloseTo(100 - 0.5 * TAU_MS, 6);
   });
 
-  it("projects a proportional landing for a leftward flick (vy=-0.2px/ms, scale=1)", () => {
-    //   worldVelocity = -(-0.2)/1 * 1000 = 200
-    //   landingOffset = -(-0.2)/1 * 499 = +99.8
-    //   landingTarget = 50 + 99.8 = 149.8
-    const result = projectFlickLanding({
-      velocityPxPerMs: -0.2,
-      cameraPosition: 50,
-      cameraScale: 1,
-      decay: DECAY,
-    });
-
-    expect(result.worldVelocity).toBeCloseTo(200, 6);
-    expect(result.landingTarget).toBeCloseTo(149.8, 6);
-  });
-
-  it("glides proportionally to velocity — half the flick, half the landing offset", () => {
-    // The headline of the QA fix: a small flick lands proportionally close, not
-    // slammed to the same pan-bounds edge as a big flick.
-    const small = projectFlickLanding({ velocityPxPerMs: 0.25, cameraPosition: 0, cameraScale: 1, decay: DECAY });
-    const big = projectFlickLanding({ velocityPxPerMs: 0.5, cameraPosition: 0, cameraScale: 1, decay: DECAY });
-    expect(small.landingTarget).toBeCloseTo(big.landingTarget / 2, 6);
-    expect(small.landingTarget).toBeCloseTo(-124.75, 6);
-  });
-
-  it("scales the landing projection inversely with camera scale", () => {
-    // Same velocity/position as the first case but scale=2 halves both the
-    // worldVelocity and the projected landing offset from cameraPosition.
-    const atScale1 = projectFlickLanding({
-      velocityPxPerMs: 0.5,
-      cameraPosition: 0,
-      cameraScale: 1,
-      decay: DECAY,
-    });
-    const atScale2 = projectFlickLanding({
-      velocityPxPerMs: 0.5,
-      cameraPosition: 0,
-      cameraScale: 2,
-      decay: DECAY,
-    });
-
-    expect(atScale2.worldVelocity).toBeCloseTo(atScale1.worldVelocity / 2, 6);
-    expect(atScale2.landingTarget).toBeCloseTo(atScale1.landingTarget / 2, 3);
+  it("is proportional to the release velocity and inverse to the camera scale", () => {
+    const base = projectFlickLanding({ velocityPxPerMs: 0.4, cameraPosition: 0, cameraScale: 1, timeConstantMs: TAU_MS });
+    const half = projectFlickLanding({ velocityPxPerMs: 0.2, cameraPosition: 0, cameraScale: 1, timeConstantMs: TAU_MS });
+    const zoomed = projectFlickLanding({ velocityPxPerMs: 0.4, cameraPosition: 0, cameraScale: 2, timeConstantMs: TAU_MS });
+    expect(half.landingTarget).toBeCloseTo(base.landingTarget / 2, 9);
+    expect(zoomed.landingTarget).toBeCloseTo(base.landingTarget / 2, 9);
+    expect(zoomed.worldVelocity).toBeCloseTo(base.worldVelocity / 2, 9);
   });
 
   it("returns zero landing offset and velocity for a zero-velocity release", () => {
-    const result = projectFlickLanding({
-      velocityPxPerMs: 0,
-      cameraPosition: 42,
-      cameraScale: 1,
-      decay: DECAY,
-    });
-
-    expect(result.worldVelocity).toBe(0);
+    const result = projectFlickLanding({ velocityPxPerMs: 0, cameraPosition: 42, cameraScale: 1, timeConstantMs: TAU_MS });
+    expect(Object.is(result.worldVelocity, 0)).toBe(true);
     expect(result.landingTarget).toBe(42);
+  });
+
+  it("glides like friction under a critically damped spring of the same time constant: no overshoot, release speed kept", () => {
+    const velocityPxPerMs = 2;
+    const landing = projectFlickLanding({ velocityPxPerMs, cameraPosition: 0, cameraScale: 1, timeConstantMs: TAU_MS });
+    let camera: CameraAxes = {
+      x: { value: 0, velocity: landing.worldVelocity },
+      y: { value: 0, velocity: 0 },
+      scale: { value: 1, velocity: 0 },
+    };
+    const dt = 1 / 240;
+    let farthest = 0;
+    const firstStep = stepCamera({
+      camera,
+      target: { tx: landing.landingTarget, ty: 0, tscale: 1 },
+      dt,
+      damping: 1,
+      angularFrequency: 1000 / TAU_MS,
+      scaleMin: 0.1,
+      scaleMax: 10,
+    });
+    expect(firstStep.x.velocity / landing.worldVelocity).toBeCloseTo(Math.exp((-dt * 1000) / TAU_MS), 2);
+    for (let i = 0; i < 2400; i += 1) {
+      camera = stepCamera({
+        camera,
+        target: { tx: landing.landingTarget, ty: 0, tscale: 1 },
+        dt,
+        damping: 1,
+        angularFrequency: 1000 / TAU_MS,
+        scaleMin: 0.1,
+        scaleMax: 10,
+      });
+      farthest = Math.min(farthest, camera.x.value);
+    }
+    expect(farthest).toBeGreaterThanOrEqual(landing.landingTarget - 1e-6);
+    expect(camera.x.value).toBeCloseTo(-velocityPxPerMs * TAU_MS, 1);
   });
 });
 

@@ -98,7 +98,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         camera,
         farT,
         zoomRatio,
-      } = runCameraFrameStage(now, dt, tokens, world, width);
+      } = runCameraFrameStage(now, dt, tokens, world, width, height);
       const clusterFrame = runClusterFrameStage(now, tokens, world);
       const effectiveExpanded = clusterFrame.effectiveExpanded;
       let frameClusteredIds = clusterFrame.frameClusteredIds;
