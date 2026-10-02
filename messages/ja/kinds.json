@@ -1,0 +1,9 @@
+{
+  "project": "Project",
+  "domain": "Domain",
+  "capability": "Capability",
+  "element": "Element",
+  "document": "Document",
+  "vault-readme": "Repository guide",
+  "unknown": "Unresolved"
+}

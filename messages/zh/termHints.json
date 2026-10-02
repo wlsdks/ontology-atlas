@@ -1,0 +1,19 @@
+{
+  "trigger": "About {term}",
+  "mcp": {
+    "expansion": "MCP (Model Context Protocol)",
+    "explanation": "The standard way a coding agent reads and writes outside tools and data, such as this folder."
+  },
+  "acp": {
+    "expansion": "ACP (Agent Client Protocol)",
+    "explanation": "The standard way an app like Atlas talks to a coding agent and asks before each write."
+  },
+  "apiKey": {
+    "expansion": "API key (Application Programming Interface key)",
+    "explanation": "A secret string a model provider issues so a program can call its model on your account."
+  },
+  "cli": {
+    "expansion": "CLI (Command-Line Interface)",
+    "explanation": "A program you run by typing commands in a terminal instead of clicking in a window."
+  }
+}

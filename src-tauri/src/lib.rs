@@ -399,7 +399,7 @@ fn is_safe_verify_base_url(value: &str) -> bool {
             .any(|ch| ch.is_whitespace() || matches!(ch, '"' | '\'' | '`' | '<' | '>' | '\\'))
 }
 
-pub(crate) const APP_LOCALES: [&str; 2] = ["en", "ko"];
+pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
 fn webview_verify_locale<'a>(route: &str, locales: &[&'a str]) -> &'a str {
@@ -4311,7 +4311,7 @@ mod tests {
         }
         assert_eq!(
             crate::webview_verify_locale("/ja/topology/", &crate::APP_LOCALES),
-            "en"
+            "ja"
         );
         assert_eq!(crate::webview_verify_locale_root("/zh/map/", &four), "/zh/");
         let script = crate::build_webview_verify_route_reset_script_for("/ja/topology/", &four);

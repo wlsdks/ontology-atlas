@@ -1,0 +1,9 @@
+{
+  "takingLonger": "This is taking longer than expected. Return to the previous screen to try again.",
+  "returnToPrevious": "Return to previous screen",
+  "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
+  "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
+  "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
+  "mapComing": "Loading the map…",
+  "loadingDetail": "Arranging concepts and relationships for the map."
+}

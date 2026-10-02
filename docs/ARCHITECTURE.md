@@ -50,7 +50,7 @@ area: architecture
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
 │ ├─ Next.js 16 App Router                               │
-│ ├─ next-intl /[locale]/ (en, ko)                       │
+│ ├─ next-intl /[locale]/ (en, ko, ja, zh)               │
 │ ├─ output: 'export'  (static)                          │
 │ ├─ Tauri macOS shell (installed local workbench)        │
 │ └─ TaxonomyProvider · ToastProvider · MotionProvider   │
@@ -770,7 +770,7 @@ until a local manifest, or the first part of one, exists.
 /changelog                 renders the composed changelog (frozen history plus change/release fragments), most recent sections only
 ```
 
-All routes are wrapped under `/[locale]/` by next-intl (en, ko).
+All routes are wrapped under `/[locale]/` by next-intl (en, ko, ja, zh). Chinese is Simplified only, served as `zh` with `<html lang="zh-Hans">`; root `/` sends `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` browsers to `/en/`.
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
