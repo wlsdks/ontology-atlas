@@ -6,6 +6,7 @@ import {
   type VaultDoc,
   isWikiPage,
 } from "@/entities/docs-vault";
+import { LOCALE_META, type LocaleMeta } from "@/i18n/locales";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
 import { controlClass } from '@/shared/ui/control-class';
@@ -42,7 +43,7 @@ export function DocMetaBar({
   const t = useTranslations("vaultWidgets.parts.meta");
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const locale = useLocale();
-  const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
+  const numberLocale = (LOCALE_META as Record<string, LocaleMeta>)[locale]?.intlTag ?? "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
   const updated = new Date(doc.updatedAt);
   // Two clocks, one row: `reviewed_at` is meaning time (a person judged it right), `updatedAt`

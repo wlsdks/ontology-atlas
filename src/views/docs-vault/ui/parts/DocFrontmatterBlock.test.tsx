@@ -5,7 +5,7 @@ import enMessages from "../../../../../messages/en.json";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/entities/vault-session";
-import { DocFrontmatterBlock } from "./DocFrontmatterBlock";
+import { DocFrontmatterBlock, nameLocalesFor } from "./DocFrontmatterBlock";
 
 const doc: VaultDoc = {
   slug: "capabilities/cli-developer-entry",
@@ -728,5 +728,24 @@ describe("DocFrontmatterBlock unreadable parser lines", () => {
   it("renders no issue rows for a doc without diagnostics", () => {
     renderBlock("ko");
     expect(screen.queryByTestId("doc-frontmatter-issue")).not.toBeInTheDocument();
+  });
+});
+
+describe("nameLocalesFor", () => {
+  const FOUR = ["en", "ko", "ja", "zh"];
+
+  it("keeps the en/ko pair in the reader's order", () => {
+    expect(nameLocalesFor("en", {})).toEqual(["en", "ko"]);
+    expect(nameLocalesFor("ko", {})).toEqual(["ko", "en"]);
+  });
+
+  it("asks for the reader's locale, the locales the document names, then the companion", () => {
+    expect(nameLocalesFor("ja", { display_zh: "x" }, FOUR)).toEqual(["ja", "zh", "en"]);
+    expect(nameLocalesFor("en", { display_ja: "x" }, FOUR)).toEqual(["en", "ja", "ko"]);
+    expect(nameLocalesFor("ko", {}, FOUR)).toEqual(["ko", "en"]);
+  });
+
+  it("ignores names in locales the app does not route", () => {
+    expect(nameLocalesFor("en", { display_fr: "x" }, FOUR)).toEqual(["en", "ko"]);
   });
 });

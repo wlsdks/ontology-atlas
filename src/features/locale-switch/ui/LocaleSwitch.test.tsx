@@ -82,4 +82,13 @@ describe("LocaleSwitch", () => {
       mocks.replace.mock.invocationCallOrder[0],
     );
   });
+
+  it("skips locales that have no registered name", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <LocaleSwitch locales={["en", "ko", "ja", "zh"]} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getAllByRole("radio").map((node) => node.textContent)).toEqual(["EN", "KO"]);
+  });
 });
