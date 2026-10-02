@@ -107,9 +107,13 @@ The supported first slice is deliberately exact:
 - Check decoded keys against `__proto__`, `constructor` and `prototype` before
   assignment. Quoting must not bypass the existing refusal. Decoded graph-field
   names retain existing relation-array validation.
-- Unclosed quoted keys, trailing junk before the separator, and malformed
-  nonempty map entries receive line diagnostics. Never turn an affected malformed
-  declaration into a silently valid partial map that is then saved over it.
+- Malformed keys or nonempty map entries keep line diagnostics. An unrelated edit
+  must preserve their source or refuse with unchanged bytes. Diagnostics are not a
+  blanket write ban: explicit authorized replacement/deletion may repair a field
+  only when its key and complete source extent are unambiguous, all removed text
+  belongs to that field, and unrelated content and write checks remain intact.
+  If ownership cannot be established, correction uses the original text instead
+  of a guessed structured key; existing authorization/currentness checks apply.
 - A normal authorized edit preserves supported keys, scalar types, rationale and
   body content across renderer and MCP/CLI writers. Keep existing safe-key output;
   quote keys only when necessary to retain their decoded contents. Existing
@@ -130,12 +134,13 @@ preserve data loss or reject ordinary quoted keys.
 2. When the reader asks why a declared relation exists, Atlas returns its stored
    rationale for that exact target. An absent note remains absent; Atlas supplies
    no inferred reason and makes no new semantic acceptance claim.
-3. When an agent's interpretation is wrong or a declaration is malformed, the
-   person can inspect the original file and the existing diagnostic evidence.
-   A valid parsed sentence is still evidence to judge, not approval to write.
-4. When the person authorizes an unrelated edit, Atlas keeps the quoted-map
-   information through write/read. If doing so would discard an affected malformed
-   declaration, refuse that rewrite and retain the original bytes for correction.
+3. When a declaration is malformed, the person can inspect its diagnostic and
+   original text. An explicitly targeted, unambiguous field can be replaced or
+   deleted under existing write checks; for example, repair `dependencies: wrong`
+   to `dependencies: []`. An unidentifiable key needs original-text correction.
+4. When the person authorizes an unrelated edit, Atlas preserves malformed source
+   or refuses with unchanged bytes if the rewrite would discard it. An agent's
+   wrong interpretation still needs correction; parsing never approves meaning.
 5. When another reader opens the edited file, it sees the same target, rationale
    and scalar types. No migration, background repair or additional approval path
    is introduced.
@@ -212,11 +217,13 @@ the repair does not add a new screen, toast or label.
    **when** read through all four paths, **then** meta-keys are refused without
    inherited fields/prototype mutation and graph-array validation still reports
    the malformed relation. Check shared security fixtures and validator contracts.
-5. **Given** malformed quoted keys, nonempty malformed map members, ordinary
-   blocks and comments, **when** parsing, validating, compiling and checking
-   health, **then** malformed declarations remain errors with the right line and
-   normal forms stay clean. An affected unsafe rewrite is refused with unchanged
-   file bytes. Check existing malformed-line/health contracts and writer preflight.
+5. **Given** malformed keys/members and normal blocks/comments, **when** parsed,
+   validated, compiled and checked for health, **then** only malformed declarations
+   retain line errors. An unrelated lossy rewrite refuses with unchanged bytes;
+   an explicitly authorized, unambiguous field replacement/deletion succeeds
+   without losing other content, including `dependencies: wrong` to `[]`.
+   An unidentifiable key requires original-text correction, never guessed repair.
+   Check malformed-line/health contracts and writer repair/refusal readbacks.
 6. **Given** an unfamiliar permissively licensed external repository, **when**
    the host runs all four ontology-field-trial phases, **then** separately record
    build cost, cited-path accuracy, sealed-question source-hidden handoff and
