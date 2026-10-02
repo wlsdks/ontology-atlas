@@ -210,34 +210,27 @@ routes: [/topology]
   address or from another tab switches without motion. Gate:
   `tests/e2e/map-layout-morph.spec.ts`.
   The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
-  Galaxy gives every real concept a stable
-  three-arm position: the project forms the core, domains anchor contiguous
-  constellations, and their actual descendants form nearby clouds. The overview
-  names the project and domains while hiding the default relationship mesh;
-  hovering or selecting a star reveals only its actual adjacent relations.
-  Concepts render as borderless light cores with radial coronas and bounded
-  deterministic twinkle. Each concept's corona and glint flare independently on
-  a distinct 4–8 second interval while its contrast-safe core stays visible.
-  Revealed relations become source/target-temperature
-  luminous filaments while retaining their solid/dashed and direction semantics;
-  seeded dust and an occasional
-  procedural shooting star on a varied entry-seeded path sit behind the graph
-  and are never graph records. Like the comets, the twinkle, the drifting gas
-  and the shooting star slow to a stop about 30 seconds after the last input,
-  so a resting Galaxy draws no frames; any input wakes them.
+
+  **Galaxy** draws the ontology as a cosmos.
+  - **The picture.** The project is the bright core. Each domain is a galaxy of its own, separated by dark space; capabilities are star clusters and elements are stars. Concepts that belong to no domain form the core's halo.
+  - **Shape.** A galaxy's shape comes from its own data:
+    - under ten concepts it is irregular;
+    - it is elliptical when one capability holds at least 40 % of its elements, or when it has about one internal dependency per concept;
+    - otherwise it is a spiral with two to four arms.
+
+    Its tilt and orientation are decoration.
+  - **Placement.** Galaxies are placed once per change of the data, by a deterministic settle that draws domains which depend on each other closer together. The settled places are kept per folder on this machine, so placed galaxies never move; **Auto-arrange** settles the sky again.
+  - **Names and strands.** At the overview, every galaxy shows its name and concept count, and counted strands join the domains that depend on each other ([domain flows](domain-flows.md)). Closer in, capability names appear, then element names.
+  - **Motion.** The first open of a folder replays the settle in about a second. While you work, the gas in each galaxy turns and breathes; it rests 12 seconds after your last input, never moves a concept, and is absent under reduced motion.
+  - **Selection.** Selecting a star draws its real relations and approaches it in the free canvas beside the inspector. Closing returns to the earlier view unless you moved meanwhile.
+  - **Leaving.** Flat returns to its own overview after a visit to Galaxy, as it does after the Hex board.
+
   In Galaxy, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through
   `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.
   The set is durable task context, not a new graph kind or relation.
-  Two cached diffuse-gas layers carry fine dust through shallow counter-moving
-  arcs inside the fixed arms; concept positions and the anchored base field never move.
-  Three cached texture draws avoid rebuilding the dust particles on every frame.
-  Reduced motion freezes the atmosphere and omits the meteor. Galaxy inspection
-  keeps the expanded constellation mounted and smoothly approaches the selected
-  star in the free canvas beside the inspector. It never zooms out a view the
-  person already brought closer; closing restores the pre-selection camera unless
-  the person navigated meanwhile, and selecting another concept retains that
-  original return. **Strata** (2026-09-06, the default 3D view since 2026-09-25)
+
+  **Strata** (2026-09-06, the default 3D view since 2026-09-25)
   lays the four kinds out as stacked planes — project on top, then domain,
   capability, element — each drawn as a lit translucent floor, so
   "which level is this on" is a glance rather than an inference. Each plane's
