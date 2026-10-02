@@ -403,8 +403,8 @@ describe('permission options — the app picks the one that ends with this call'
 /**
  * **The option arrays are pinned to the version they were transcribed from.**
  *
- * Every array above was read by hand out of `dist/permissions/options/*.js` in one shipped tarball.
- * That is the only way to get the real shape, and it is also how a fixture quietly becomes a
+ * Arrays are checked against `src/permissions/options/*.ts` in the exact release tag.
+ * A fixture quietly becomes a
  * fiction: the registry gets bumped, the builders change, and these arrays keep passing while
  * describing a version nobody runs. The rule this file measures would then be measured against
  * nothing. `ExitPlanMode` in particular grew its `exit-plan-clear-*` entries between releases.
@@ -412,10 +412,9 @@ describe('permission options — the app picks the one that ends with this call'
  * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
  * app launches from: a bump turns this red and the arrays get re-read.
  */
-// 0.82.0 (2026-09-28): options.js f3e16436…, options/shared f3268e6d…, shell 102de11e…,
-// filesystem a4c5f1cb… and tools 6a7dc865… are byte-identical to 0.81.2; `optionId` still appears
-// in no `dist/**/*.js` outside `dist/permissions/`.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.82.0';
+// v0.85.0 src/permissions/options/{shared,shell,filesystem,tools}.ts retain these builders.
+// options.ts retains allow_once ordering and the defaultToNo decline-first variant.
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.85.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {

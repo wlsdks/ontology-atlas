@@ -5,6 +5,8 @@
 use std::ffi::{OsStr, OsString};
 use std::path::{Component, Path, PathBuf};
 
+mod probe_output;
+
 /// Generated into `src-tauri/src/acp-registry.json` by `scripts/build-acp-registry.mjs`
 /// and never fetched at runtime: no unrequested network traffic, and it works offline.
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -96,9 +98,8 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
     },
 ];
 
-// Listing codex here only lets the app control its config directory; whether
-// the UI offers chat is decided in `runtime-gate.ts`. Its `read-only` mode is a vault-scoped
-// write sandbox (`mode-safety.ts` reads `_meta.kind`), so Git history is the undo.
+// Config-directory isolation alone proves neither filesystem nor MCP permission control.
+// runtime-gate.ts owns chat eligibility and the required session mode.
 
 /// Runtimes whose permission gate was measured; not the same as `ISOLATION`
 /// (decision (111)). Joining requires an installed-app run showing reject-without-write,
@@ -1025,51 +1026,15 @@ pub(crate) fn bounded_output(
     command: std::process::Command,
     limit: std::time::Duration,
 ) -> Option<String> {
-    bounded_run(command, limit).map(|(_, stdout)| stdout)
+    probe_output::run(command, limit).map(|(_, stdout)| stdout)
 }
 
 /// `security add-generic-password` prints nothing either way, so only the exit status
 /// proves a write; a false yes would delete the working credential links.
 pub(crate) fn bounded_success(command: std::process::Command, limit: std::time::Duration) -> bool {
-    bounded_run(command, limit)
+    probe_output::run(command, limit)
         .map(|(success, _)| success)
         .unwrap_or(false)
-}
-
-/// `None` when it never finished.
-fn bounded_run(
-    mut command: std::process::Command,
-    limit: std::time::Duration,
-) -> Option<(bool, String)> {
-    use std::io::Read;
-    use std::process::Stdio;
-
-    let mut child = command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
-
-    let deadline = std::time::Instant::now() + limit;
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break status,
-            Ok(None) => {
-                if std::time::Instant::now() >= deadline {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return None;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(20));
-            }
-            Err(_) => return None,
-        }
-    };
-
-    let mut out = String::new();
-    child.stdout.take()?.read_to_string(&mut out).ok()?;
-    Some((status.success(), out))
 }
 
 /// Unconditional, because it runs only on an explicit "reconnect".

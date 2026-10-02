@@ -25,6 +25,10 @@ conversation.
 
 - **List** — Tools actually verified on this device are shown first, others are collapsed.
 - **Connection check** — Re-evaluate eight steps (does tool exist · can it launch · does it ask outside folder · is downloaded item intact · app-side settings · credential link · old login records · login). **Fixable things are fixed right there.** For unfixable ones, write what the human needs to do.
+  CLI and Keychain probes drain stdout while the command runs, accept at most
+  1 MiB of complete UTF-8 output, and apply their existing deadline to both the
+  output pipe and process exit. Expired, oversized or unreadable output remains
+  unknown; a partial response cannot authorize deleting working credential links.
 - **App-specific installation** — Downloads Node and tools only inside the app folder. Fixes versions, and after downloading Node, **compares hashes** (if mismatched, delete and stop). Shows the original text before executing anything. Progress and completion remain on screen — even if you close and reopen the window.
 - **Reconnection** — Deletes only what the app created and recreates it. This is not "logout": this app has no app-side login, and links to the login the user did in the terminal, using it as-is.
 
@@ -37,6 +41,10 @@ The page wears `PAGE_FRAME_FORM`, and the frame carries the desktop bottom breat
 The folder's own MCP connection and the connectors live in the MCP tab. This tab keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 
 Only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product.
+
+Coding-tool mode lists exclude presets that bypass the permission checkpoint,
+including Codex's workspace-write preset. Codex starts in read-only mode; the
+Atlas MCP write checkpoint remains separate from the adapter's filesystem sandbox.
 
 ### `/agents?tab=models` — Models
 

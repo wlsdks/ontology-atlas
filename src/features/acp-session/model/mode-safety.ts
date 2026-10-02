@@ -51,6 +51,8 @@ const GATE_REMOVING = new Set([
   'bypasspermissions',
   'acceptedits',
   'agent-full-access',
+  // Codex's workspace sandbox permits in-folder edits without an approval request.
+  'workspace-write',
   /*
    * `agent` belongs here. By name it sounds like "the normal mode", but the measurement
    * (2026-08-16) is recorded in `src-tauri/src/acp.rs`: launching codex on its default (`agent`)

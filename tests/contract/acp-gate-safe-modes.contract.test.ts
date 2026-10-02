@@ -52,6 +52,31 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
   return { id, name, description: null, metaKind, meta: metaKind ? { kind: metaKind } : null };
 }
 
+describe('current adapter mode transcription', () => {
+  it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
+    // v2.1.1 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
+    const modes = [
+      choice('read-only', 'Read-only', air ? 'standard' : null),
+      choice('workspace-write', 'Workspace access', air ? 'standard' : null),
+      choice('agent', 'Auto review', air ? 'auto_review' : null),
+      choice('agent-full-access', 'Full access', air ? 'full_access' : null),
+    ];
+    expect(keepGateSafeModes(modes).map((mode) => mode.id)).toEqual(['read-only']);
+  });
+
+  it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
+    // v0.85.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
+    const modes = [
+      choice('default', 'Manual'),
+      choice('acceptEdits', 'Accept edits'),
+      choice('plan', 'Plan'),
+      choice('auto', 'Auto'),
+      choice('bypassPermissions', 'Bypass permissions'),
+    ];
+    expect(keepGateSafeModes(modes).map((mode) => mode.id)).toEqual(['default', 'plan']);
+  });
+});
+
 describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다', () => {
   it('실측에서 실제로 온 claude 모드 목록을 그대로 넣어 본다', () => {
     // The 0.69-era list, kept because a person resuming an older adapter still meets it.
@@ -174,8 +199,8 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 /**
  * **The transcription is pinned to the version it was transcribed from.**
  *
- * Every array in this file was read by hand out of a shipped tarball. That is the only way to get
- * the real shape, and it is also how a fixture quietly becomes a fiction: the registry gets bumped,
+ * Version-specific arrays are transcribed from the exact adapter release source. A fixture becomes
+ * a fiction when the registry gets bumped,
  * the adapter changes what it builds, and these arrays keep passing while describing a version
  * nobody runs any more. This repository has the failure on record already, in the words the
  * permission tests use: *a gate that passes on invented input is not a gate*. A stale transcription
@@ -183,22 +208,20 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
  *
  * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
  * app actually launches from. A bump turns this red, and the person doing the bump has to open the
- * new tarball and re-transcribe rather than discover the drift in an installed session.
+ * new release source and re-transcribe rather than discover the drift in an installed session.
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.82.0 (2026-09-28): `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
+   * 0.85.0: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
    * now sent only to the adapter's own AIR client, so Atlas receives no kind and `mode-safety.ts`
    * judges by id alone; every gate-removing id is on its measured list.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.82.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.85.0',
   /**
-   * The launch is the newest upstream since 2026-09-07 (owner: "the version is always the
-   * newest"; the pin's overturn is in `docs/DECISIONS.md`). 1.13.1 (2026-09-27): the 110-line
-   * `AgentMode` module in `dist/index.js` is byte-identical to 1.12.0's (SHA-256 4587c50c…); the
-   * bundled `@openai/codex` went ^0.154.0 → ^0.156.1.
+   * 2.1.1 src/AgentMode.ts restores readOnly and adds workspace-write; Atlas excludes the
+   * latter because its workspaceWrite sandbox permits edits before an approval request.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@1.13.1',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.1.1',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');

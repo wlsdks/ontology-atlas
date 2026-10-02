@@ -2664,6 +2664,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
+ "tokio",
 ]
 
 [[package]]
@@ -4427,6 +4428,7 @@ dependencies = [
  "libc",
  "mio 1.2.0",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "windows-sys 0.61.2",
 ]
