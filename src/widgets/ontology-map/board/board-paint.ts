@@ -170,7 +170,7 @@ export function drawBoard(
       drawPlate(
         ctx,
         T,
-        { id: d.id, name: d.name, sub: n == null ? sub : sub ? `▲ ${n} · ${sub}` : `▲ ${n}`, cx: sx(region.cx), top: groundY(region.minY) - APO * c - lift, bottom: groundY(region.maxY) + APO * c, warm: false, alpha: plateAlpha(d.id) },
+        { id: d.id, name: d.name, sub: n == null ? sub : sub ? `▲ ${n} · ${sub}` : `▲ ${n}`, keep: n == null ? undefined : `▲ ${n}`, cx: sx(region.cx), top: groundY(region.minY) - APO * c - lift, bottom: groundY(region.maxY) + APO * c, warm: false, alpha: plateAlpha(d.id) },
         rects,
         plateBoxes,
         plateStrokeCss,

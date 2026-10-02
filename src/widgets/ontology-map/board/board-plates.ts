@@ -48,6 +48,7 @@ export interface PlateSpec {
   bottom: number;
   warm: boolean;
   alpha: number;
+  keep?: string;
 }
 
 export function drawPlate(ctx: CanvasRenderingContext2D, T: HexBoardTokens, p: PlateSpec, tiles: TileRects, plates: HexTextBox[], strokeCss: string) {
@@ -69,8 +70,8 @@ export function drawPlate(ctx: CanvasRenderingContext2D, T: HexBoardTokens, p: P
   let w = nw + (sub ? ctx.measureText(sub).width + 10 : 0) + 24;
   let pick = place(w);
   if (!pick && sub) {
-    sub = "";
-    w = nw + 24;
+    sub = p.keep ?? "";
+    w = nw + (sub ? ctx.measureText(sub).width + 10 : 0) + 24;
     pick = place(w);
   }
   pick ??= place(w, overPlate) ?? { x: p.cx, y: p.top - 16 };

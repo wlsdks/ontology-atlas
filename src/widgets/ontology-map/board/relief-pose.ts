@@ -1,7 +1,7 @@
 import { easeMotion } from "@/shared/motion/ease";
 import { RELIEF_PITCH_MAX, RELIEF_PITCH_REST, RELIEF_RISE_TOTAL_MS, reliefRisePitchAt } from "./relief-projection";
 
-export const RELIEF_TILT_PER_PX = 0.003;
+const RELIEF_TILT_PER_PX = 0.003;
 
 const clampPitch = (p: number) => Math.min(RELIEF_PITCH_MAX, Math.max(0, p));
 

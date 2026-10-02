@@ -63,7 +63,7 @@ function extent(lines: readonly HexTextLine[]): { top: number; bottom: number } 
   return { top, bottom };
 }
 
-export function placeLines(sets: readonly HexTextLine[][], room: number): HexTextLine[] | null {
+function placeLines(sets: readonly HexTextLine[][], room: number): HexTextLine[] | null {
   for (const set of sets) {
     const e = extent(set);
     if (e.bottom <= room && e.top >= -room) return set;
