@@ -16,7 +16,7 @@ conditions live. Making a rule resident updates that contract, this sentence,
 and the commit's reason together.
 
 `.claude/agents/` sets effort per type: `implementer` builds a planned slice at
-low; `planner`, `reviewer`, and `design-guardian` judge at max
+low; every other agent plans and judges at xhigh
 (`docs/engineering/agent-effort.md`; `CLAUDE_CODE_EFFORT_LEVEL` flattens them).
 Claude Code does not read `.agents/**` or `.codex/**`; Codex does not auto-load
 `CLAUDE.md` or `.claude/**`.

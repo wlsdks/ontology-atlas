@@ -8,7 +8,8 @@ area: harness
 # Agent effort tiers
 
 Follow this when you start a Claude Code session that plans, reviews, or fans
-out work. It leaves thinking at the highest effort and typing at the lowest.
+out work. Owner rule (2026-10-02): on Opus, planning and judgment run at `xhigh`;
+development of a decided slice runs at `low`.
 
 Basis, as of Claude Code 2.1.283 and Opus 5.5 (2026-09-27): on Opus 5.5 `low`
 comes close to `medium` on several coding evaluations at much lower cost, the
@@ -19,21 +20,18 @@ quality gain was measured
 
 | Agent | Effort | Work |
 |---|---|---|
-| lead session | xhigh from `.claude/settings.json`; `/effort max` for one session | decide, plan small changes, talk to the owner |
-| `planner` | max | slices a low-effort implementer can build without judgment |
-| `product-planner` | max | the product spec of a one-way product change, before its review |
+| lead session | xhigh from `.claude/settings.json` | decide, plan small changes, talk to the owner |
+| `planner` | xhigh | slices a low-effort implementer can build without judgment |
+| `product-planner` | xhigh | the product spec of a one-way product change, before its review |
 | `implementer` | low | one planned slice from `/parallel-brief` |
-| `investigator` | max | root cause of a failure or flake, then the fix |
-| `reviewer` | max | an independent review of a returned diff, or of a routed product or design decision |
-| `design-guardian` | max | a design verdict with edits, when the owner asks |
+| `investigator` | xhigh | root cause of a failure or flake, then the fix |
+| `reviewer` | xhigh | an independent review of a returned diff, or of a routed product or design decision |
+| `design-guardian` | xhigh | a design verdict with edits, when the owner asks |
 
 ## Steps
 
 1. The lead starts at `xhigh` from the project's `.claude/settings.json`
-   (`effortLevel`), the highest level a settings file accepts. For a session
-   that is mostly planning or judgment, run `/effort max` or start with
-   `claude --effort max`; `max` lasts one session, and a model cannot raise
-   its own effort.
+   (`effortLevel`). Keep it there; a model cannot raise its own effort.
 2. Do not export `CLAUDE_CODE_EFFORT_LEVEL`. It outranks every agent's
    `effort:` line, so implementers would run at max as well.
 3. Delegate by agent type. The Agent tool has no per-call effort, so the type
@@ -50,7 +48,7 @@ quality gain was measured
 
 - Implementer slices come back wrong: the plan left a decision open. Send it
   back to `planner` before raising the implementer to `medium`.
-- Cost or latency climbs without better plans: lower `planner` or `reviewer`
-  to `xhigh` and compare a few runs; keep whichever you measured better.
+- A plan or review misses something `max` would have caught: raise that one
+  agent to `max`, compare a few runs, and keep the level you measured better.
 - Codex briefs in `.agents/agents/` inherit the caller's model and effort;
   choose the reasoning effort when you start the Codex session.

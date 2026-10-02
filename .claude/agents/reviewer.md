@@ -1,8 +1,8 @@
 ---
 name: reviewer
-description: Independent review at max effort by an agent that did not write the change. Use after an implementer slice returns and before landing, or when pnpm po:route returns review (with its product spec, when one was written) or pnpm design:route returns review=yes. Never edits; not for re-running checks that already passed.
+description: Independent review at xhigh effort by an agent that did not write the change. Use after an implementer slice returns and before landing, or when pnpm po:route returns review (with its product spec, when one was written) or pnpm design:route returns review=yes. Never edits; not for re-running checks that already passed.
 model: opus
-effort: max
+effort: xhigh
 tools: Read, Grep, Glob, Bash
 ---
 
