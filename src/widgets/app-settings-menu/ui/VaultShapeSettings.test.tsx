@@ -31,6 +31,7 @@ describe('VaultShapeSettings', () => {
     expect(screen.getByTestId('app-settings-shape-start-map')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-shape-wiki').getAttribute('data-present')).toBe('true');
     expect(screen.queryByTestId('app-settings-shape-start-wiki')).not.toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-shape').getAttribute('data-setting-id')).toBe('folder-shape');
   });
 
   it('writes only the chosen part, in the screen language', async () => {

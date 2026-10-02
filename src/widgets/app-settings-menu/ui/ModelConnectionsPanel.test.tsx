@@ -118,6 +118,8 @@ function verifyResult(overrides: Record<string, unknown>) {
 }
 
 beforeEach(() => {
+  let clock = Date.parse('2026-10-02T00:00:00Z');
+  vi.spyOn(Date, 'now').mockImplementation(() => (clock += 1000));
   for (const mock of Object.values(mocks)) mock.mockReset();
   window.localStorage.clear();
 });

@@ -192,7 +192,7 @@ test("a WebKit gesture pinch zooms the flat map and the hex board about the fing
 test("choosing speeds in Settings changes how far a drag and a zoom key move the map", async ({ page }) => {
   await openFlatMap(page);
   await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-  await page.getByTestId("app-settings-nav-background").click();
+  await page.getByTestId("app-settings-nav-map").click();
   await page.getByTestId("app-settings-map-drag-speed-0.5").click();
   await page.getByTestId("app-settings-map-zoom-speed-2").click();
   await expect(page.getByTestId("app-settings-map-drag-speed-0.5")).toHaveAttribute("aria-checked", "true");

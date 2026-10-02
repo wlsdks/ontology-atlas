@@ -27,10 +27,10 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 
 #### Header (always visible)
 - Mobile tree-open button (<lg) · title · **vault pill**: vault path (md+) + doc count + top-level folder count (sm+) + swap/re-pick action · `Local` badge (when source=local)
-- **Source toggle** (radio: Sample / Local). Clicking Local opens the native folder picker when no vault is loaded (B2 2026-07 — the vault tools dropdown was retired; folder management now lives in App Settings → Workspace)
+- **Source toggle** (radio: Sample / Local). Clicking Local opens the native folder picker when no vault is loaded (B2 2026-07 — the vault tools dropdown was retired; folder management now lives in Settings → Ontology folder)
 - **Palette button** (`⌘K`)
 - **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
-- **App settings entry**: Workspace owns open/change/refresh/permission recovery
+- **App settings entry**: the Ontology folder pane owns open/change/refresh/permission recovery
   and starter setup; Agent owns MCP/CLI connection guidance. New doc stays a
   document action rather than a settings action. The old docs-header vault
   tools dropdown and folder-topology toggle are retired.
