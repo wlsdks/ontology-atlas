@@ -95,7 +95,7 @@ test("a capability picked from the search palette brings the camera to rest on i
     const m = (window as unknown as { __atlasMap: { camera: () => { x: number; y: number }; cameraTarget: () => { x: number; y: number } } }).__atlasMap;
     return Math.hypot(m.camera().x - m.cameraTarget().x, m.camera().y - m.cameraTarget().y);
   });
-  expect(gap, "카메라가 목표에 닿지 못하고 있다").toBeLessThan(0.5);
+  expect(gap, "the camera never reaches its target").toBeLessThan(0.5);
 });
 
 test("auto-arrange while everything is expanded keeps every node on screen", async ({ page }) => {
