@@ -25,6 +25,7 @@ import {
 } from "../interaction/keyboard-walk";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { createPinchWheelStream } from "../interaction/wheel";
 import { type PointerMachineState } from "../interaction/pointer-state-machine";
 import { type CameraTween, type ZoomEase } from "../model/camera-easing";
 import type { ClusterChip } from "../model/density-gate";
@@ -186,10 +187,12 @@ export function useTopologyInput({
   /* eslint-disable react-hooks/refs */
   const handlersRef = useRef<TopologyPointerHandlers | null>(null);
   const navigationSpeedRef = useRef(navigationSpeed);
+  const pinchWheelRef = useRef(createPinchWheelStream());
 
   const handlers = createTopologyPointerHandlers({
     wheelIntent,
     navigationSpeedRef,
+    pinchWheelRef,
     worldRef,
     cameraRef,
     cameraTargetRef,

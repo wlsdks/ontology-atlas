@@ -9,7 +9,7 @@ import type { Rect } from "../interaction/free-area";
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
-import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
 import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera } from "../morph/hex-marks";
 import {
@@ -212,6 +212,7 @@ export function OntologyHexBoardMap({
   const restRef = useRef<Camera | null>(null);
   const animRef = useRef<{ from: Camera; to: Camera; start: number } | null>(null);
   const zoomRef = useRef<{ from: Camera; toR: number; ax: number; ay: number; startMs: number } | null>(null);
+  const pinchWheelRef = useRef(createPinchWheelStream());
   const dimRef = useRef({ t: selectedId ? 1 : 0, target: selectedId ? 1 : 0 });
   const sweepRef = useRef<number | null>(null);
   const arrivalRef = useRef<number | null>(null);
@@ -954,7 +955,7 @@ export function OntologyHexBoardMap({
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, size?.h ?? 800);
     if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
     const r = canvas.getBoundingClientRect();
-    const pinch = isPinchWheel(e);
+    const pinch = readPinchWheel(pinchWheelRef.current, e);
     const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeed.zoom });
     zoomAbout(e.clientX - r.left, e.clientY - r.top, factor, !pinch, Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity));
   });

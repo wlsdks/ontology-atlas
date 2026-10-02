@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide, WHEEL_LINE_HEIGHT_PX, WHEEL_ZOOM_SENSITIVITY } from "./wheel";
+import {
+  computeWheelZoomFactor,
+  createPinchWheelStream,
+  normalizeWheelDeltaY,
+  PINCH_WHEEL_STREAM_GAP_MS,
+  readPinchWheel,
+  shouldIgnoreWheelGlide,
+  WHEEL_LINE_HEIGHT_PX,
+  WHEEL_ZOOM_SENSITIVITY,
+} from "./wheel";
 
 describe("normalizeWheelDeltaY", () => {
   it("passes pixel-mode (deltaMode 0) deltas through unchanged", () => {
@@ -60,24 +69,41 @@ describe("computeWheelZoomFactor", () => {
     );
   });
 
-  it("keeps Ctrl + a mouse notch on the notch path: deltaY -100 zooms no more than a plain notch", () => {
-    const ctrlNotch = { ctrlKey: true, deltaMode: 0, deltaY: -100 };
-    expect(isPinchWheel(ctrlNotch)).toBe(false);
-    expect(computeWheelZoomFactor(ctrlNotch.deltaY, { pinch: isPinchWheel(ctrlNotch) })).toBeLessThanOrEqual(
-      computeWheelZoomFactor(-100),
-    );
-    expect(isPinchWheel({ ctrlKey: true, deltaMode: 1, deltaY: -3 })).toBe(false);
-  });
-
-  it("reads Chromium's trackpad pinch events, a few pixels each, as a pinch", () => {
-    expect(isPinchWheel({ ctrlKey: true, deltaMode: 0, deltaY: -1.15 })).toBe(true);
-    expect(isPinchWheel({ ctrlKey: true, deltaMode: 0, deltaY: 17.9 })).toBe(true);
-    expect(isPinchWheel({ ctrlKey: false, deltaMode: 0, deltaY: -1.15 })).toBe(false);
-  });
-
   it("is monotonically more extreme for a larger-magnitude delta", () => {
     expect(computeWheelZoomFactor(-240)).toBeGreaterThan(computeWheelZoomFactor(-120));
     expect(computeWheelZoomFactor(240)).toBeLessThan(computeWheelZoomFactor(120));
+  });
+});
+
+describe("readPinchWheel", () => {
+  const ctrl = (deltaY: number, timeStamp: number, deltaMode = 0) => ({ ctrlKey: true, deltaMode, deltaY, timeStamp });
+
+  function read(events: { ctrlKey: boolean; deltaMode: number; deltaY: number; timeStamp: number }[], gestureEvents = false) {
+    const stream = createPinchWheelStream(gestureEvents);
+    return events.map((event) => readPinchWheel(stream, event));
+  }
+
+  it("keeps a pinch that starts with a few pixels a pinch through a coalesced 60 px event", () => {
+    expect(read([ctrl(-10, 0), ctrl(-60, 16), ctrl(-10, 33)])).toEqual([true, true, true]);
+  });
+
+  it("keeps Ctrl + a mouse notch on the notch path for the whole stream", () => {
+    expect(read([ctrl(-100, 0), ctrl(-10, 40), ctrl(-100, 80)])).toEqual([false, false, false]);
+    expect(computeWheelZoomFactor(-100, { pinch: read([ctrl(-100, 0)])[0] })).toBeLessThanOrEqual(computeWheelZoomFactor(-100));
+  });
+
+  it("reads a line-mode Ctrl wheel as notches", () => {
+    expect(read([ctrl(-3, 0, 1), ctrl(-1, 20, 1)])).toEqual([false, false]);
+  });
+
+  it("starts a new stream after a pause or a plain wheel event", () => {
+    const pause = PINCH_WHEEL_STREAM_GAP_MS + 1;
+    expect(read([ctrl(-100, 0), ctrl(-10, pause)])).toEqual([false, true]);
+    expect(read([ctrl(-10, 0), { ctrlKey: false, deltaMode: 0, deltaY: -10, timeStamp: 10 }, ctrl(-100, 20)])).toEqual([true, false, false]);
+  });
+
+  it("never reads Ctrl + wheel as a pinch where the browser sends gesture events for one", () => {
+    expect(read([ctrl(-2, 0), ctrl(-3, 16)], true)).toEqual([false, false]);
   });
 });
 

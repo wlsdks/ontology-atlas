@@ -12,8 +12,31 @@ const PINCH_ZOOM_SENSITIVITY = 0.01;
 
 const PINCH_WHEEL_MAX_DELTA_PX = 50;
 
-export function isPinchWheel(event: Pick<WheelEvent, "ctrlKey" | "deltaMode" | "deltaY">): boolean {
-  return event.ctrlKey && event.deltaMode === 0 && Math.abs(event.deltaY) < PINCH_WHEEL_MAX_DELTA_PX;
+export const PINCH_WHEEL_STREAM_GAP_MS = 300;
+
+export interface PinchWheelStream {
+  readonly gestureEvents: boolean;
+  pinch: boolean;
+  lastMs: number;
+}
+
+export function createPinchWheelStream(gestureEvents = typeof window !== "undefined" && "GestureEvent" in window): PinchWheelStream {
+  return { gestureEvents, pinch: false, lastMs: -Infinity };
+}
+
+export function readPinchWheel(
+  stream: PinchWheelStream,
+  event: Pick<WheelEvent, "ctrlKey" | "deltaMode" | "deltaY" | "timeStamp">,
+): boolean {
+  if (!event.ctrlKey || stream.gestureEvents) {
+    stream.lastMs = -Infinity;
+    return false;
+  }
+  if (event.timeStamp - stream.lastMs > PINCH_WHEEL_STREAM_GAP_MS) {
+    stream.pinch = event.deltaMode === 0 && Math.abs(event.deltaY) < PINCH_WHEEL_MAX_DELTA_PX;
+  }
+  stream.lastMs = event.timeStamp;
+  return stream.pinch;
 }
 
 export interface WheelZoomOptions {

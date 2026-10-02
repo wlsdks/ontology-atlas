@@ -189,11 +189,21 @@ describe("map zoom speed", () => {
     expect((before.y - camera.y.value) * camera.scale.value + 400).toBeCloseTo(200, 9);
   });
 
-  it("Ctrl + a mouse notch eases one plain notch instead of jumping as a pinch", () => {
+  it("a fast pinch that coalesces into a 60 px event still zooms exactly as far as the fingers", () => {
+    const refs = buildRefs({ drag: 1, zoom: 1 });
+    const { handleWheel } = createTopologyPointerHandlers(refs);
+    for (const deltaY of [-10, -60, -10]) handleWheel(wheel(deltaY, true));
+    expect(refs.cameraRef.current.scale.value).toBeCloseTo(Math.exp(0.8), 9);
+    expect(refs.zoomEaseRef.current).toBeNull();
+  });
+
+  it("Ctrl + a mouse notch eases one plain notch, and its stream stays notches", () => {
     const refs = buildRefs({ drag: 1, zoom: 1 });
     const { handleWheel } = createTopologyPointerHandlers(refs);
     handleWheel(wheel(-100, true));
     expect(refs.cameraTargetRef.current.tscale).toBeCloseTo(Math.exp(100 * 0.0023), 9);
+    handleWheel(wheel(-10, true));
+    expect(refs.cameraTargetRef.current.tscale).toBeCloseTo(Math.exp(110 * 0.0023), 9);
     expect(refs.cameraRef.current.scale.value).toBe(1);
     expect(refs.zoomEaseRef.current?.target).toBe(refs.cameraTargetRef.current);
   });

@@ -39,7 +39,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
-import { computeWheelZoomFactor, isPinchWheel, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
+import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide, type PinchWheelStream } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
@@ -243,6 +243,7 @@ export interface PointerHandlerRefs {
    * ratio and the pan from the midpoint's movement.
    */
   pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
+  pinchWheelRef?: Ref<PinchWheelStream>;
   onSelect?: (slug: string) => void;
   /** P3b — a click at a point with no node hit that is close to an edge. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
@@ -433,6 +434,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     wheelIntent = "zoom",
     navigationSpeedRef = { current: DEFAULT_MAP_NAVIGATION_SPEED },
     zoomEaseRef = { current: null },
+    pinchWheelRef = { current: createPinchWheelStream() },
     worldRef,
     cameraRef,
     cameraTargetRef,
@@ -1664,7 +1666,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const camera = cameraRef.current;
     const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
     const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
-    const pinch = isPinchWheel(e);
+    const pinch = readPinchWheel(pinchWheelRef.current, e);
     const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeedRef.current.zoom });
     if (pinch) {
       zoomAtPoint(tokens, sx, sy, factor);
