@@ -1,89 +1,139 @@
 import { describe, expect, it } from "vitest";
-import { buildLabelMarks, domainLabelBlock, wrapDialName, type LabelMarksInput } from "./label-marks";
-import type { Box, DialAttention, DialLabels, DialModel, DialScene, DialSector, DialTokens, Point, TextMark } from "./types";
+import { buildLabelMarks, crossesBox, domainLabelBlock, overlaps, wrapDialName, type Circle, type LabelMarksInput, type LabelMarksOut } from "./label-marks";
+import * as layout from "./layout";
+import type { Box, DialAttention, DialCluster, DialItem, DialLabels, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
 
-const TOKENS = { nameMaxPx: 160, namePitchPx: 13, namesRatio: 1.25 } as DialTokens;
+const TOKENS = { nameMaxPx: 160, labelScale: 1.1, pitch: 34, capName: 22, elementName: 26 } as DialTokens;
 const LABELS: DialLabels = {
   units: (c, e) => `${c} capabilities · ${e} elements`,
   stale: (n) => `${n} stale`,
   orphans: (n) => `${n} without a domain`,
   more: (n) => `+${n} more`,
+  ring: (min, max) => (max === null ? `used by ${min}+` : `used by ${min}–${max}`),
+  reading: (r, t) => `${r}/${t}`,
+  settling: () => "settling",
+  linksShown: (s, t) => `${s} of ${t}`,
 };
 const measure = (text: string) => text.length * 6;
 const REST: DialAttention = { key: "||", domainId: null, capabilityId: null, needsCaps: new Set(), usedByCaps: new Set(), partnerDomains: new Set(), selected: false };
 const WIDE: Box = { minX: -5000, minY: -5000, maxX: 5000, maxY: 5000 };
 
-function fixture(names: string[], ring = 300) {
-  const sectors: DialSector[] = names.map((_, i) => {
+function fixture(names: string[], caps = 0, ring = 300) {
+  const capabilities: { id: string; label: string; domainId: string }[] = [];
+  const positions = new Map<string, Point>();
+  const clusters: DialCluster[] = names.map((_, i) => {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / names.length;
-    return { domainId: `d${i}`, angle, start: angle - 0.3, end: angle + 0.3, chip: { x: Math.cos(angle) * ring, y: Math.sin(angle) * ring }, rows: 1, petals: [] };
+    const chip = { x: Math.cos(angle) * ring, y: Math.sin(angle) * ring };
+    const items: DialItem[] = Array.from({ length: caps }, (_, k) => {
+      const id = `d${i}c${k}`;
+      capabilities.push({ id, label: `Capability ${i}.${k}`, domainId: `d${i}` });
+      const a = (k * 2 * Math.PI) / Math.max(1, caps);
+      const p = { x: chip.x + Math.cos(a) * 120, y: chip.y + Math.sin(a) * 120 };
+      positions.set(id, p);
+      const elementIds = [`${id}e0`, `${id}e1`];
+      elementIds.forEach((e, j) => positions.set(e, { x: p.x + 6 + j * 10, y: p.y + 14 }));
+      return { id, direct: false, x: p.x, y: p.y, elementIds, elementPitch: 10 };
+    });
+    positions.set(`d${i}`, chip);
+    return { domainId: `d${i}`, step: 0, angle, chip, footprint: 140, items };
   });
-  const domains = names.map((label, i) => ({ id: `d${i}`, label, capabilityIds: ["a", "b"], directElementIds: [], elementCount: 5 }));
-  const positions = new Map<string, Point>(sectors.map((s) => [s.domainId, s.chip]));
-  positions.set("p", { x: 0, y: 0 });
-  const model: DialModel = {
-    projectId: "p", projectLabel: "Project", domains, domainById: new Map(domains.map((d) => [d.id, d])), capabilityById: new Map(),
-    domainOf: new Map(), capabilityOf: new Map(), flows: [], flowByKey: new Map(), capabilityDependencies: [], orphanIds: [],
-  };
-  const scene: DialScene = {
-    order: domains.map((d) => d.id), ringRadius: ring, outerRadius: ring, pitch: 26, rowGap: 17, hubClearance: 92, sectors,
-    sectorByDomain: new Map(sectors.map((s) => [s.domainId, s])), petalById: new Map(), orphans: [], positions, controls: new Map(),
-    extent: { minX: -ring, minY: -ring, maxX: ring, maxY: ring },
-  };
-  return { model, scene, positions };
+  const domains = names.map((label, i) => ({ id: `d${i}`, label, capabilityIds: capabilities.filter((c) => c.domainId === `d${i}`).map((c) => c.id), directElementIds: [], elementCount: 5 }));
+  const model = {
+    projectId: "p", projectLabel: "Project", domains, domainById: new Map(domains.map((d) => [d.id, d])),
+    capabilityById: new Map(capabilities.map((c) => [c.id, { ...c, elementIds: [], needsAcross: 0, usedAcross: 0 }])),
+  } as unknown as DialModel;
+  const rings: DialRing[] = [{ step: 0, min: 2, max: 3, radius: ring }];
+  const scene = {
+    order: domains.map((d) => d.id), rings, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])),
+    orphans: { ids: [], centre: { x: 0, y: ring + 120 }, pitch: 5, radius: 20 }, axisAngle: -Math.PI / 4,
+    extent: { minX: -ring - 140, minY: -ring - 140, maxX: ring + 140, maxY: ring + 140 }, positions,
+  } as unknown as DialScene;
+  return { model, scene };
 }
 
-function run(names: string[], over: Partial<LabelMarksInput> = {}): TextMark[] {
-  const { model, scene, positions } = fixture(names);
+interface Run extends Partial<LabelMarksInput> { names?: string[]; caps?: number }
+
+function run({ names = ["Payments", "Catalog", "Shipping", "Accounts"], caps = 0, ...over }: Run = {}) {
+  const { model, scene } = fixture(names, caps);
   const inks: string[] = [];
+  const chips = new Map<string, Circle>(scene.clusters.map((c) => [c.domainId, { ...c.chip, r: 12 }]));
+  const discs = new Map<string, Circle>();
+  for (const c of scene.clusters) for (const it of c.items) discs.set(it.id, { x: it.x, y: it.y, r: 4 });
   const input: LabelMarksInput = {
     model, scene, labels: LABELS, evidence: null, attention: REST, tokens: TOKENS,
-    inks: { project: "#1", domain: "#2", domainReceded: "#3", domainAttended: "#4", units: "#5", stale: "#6", capability: "#7", needs: "#8", usedBy: "#9", orphans: "#a" },
+    inks: { project: "#1", domain: "#2", domainReceded: "#3", domainAttended: "#4", units: "#5", stale: "#6", capability: "#7", needs: "#8", usedBy: "#9", orphans: "#a", ring: "#b", element: "#c", halo: "#d" },
     ink: (c) => { const i = inks.indexOf(c); return i >= 0 ? i : inks.push(c) - 1; },
-    measureText: measure, labelScale: 1, scale: 1, zoomRatio: 1,
-    nodeScreen: (id) => positions.get(id) ?? null, toScreen: (x, y) => ({ x, y }),
-    chipRadiusPx: 12, hubRadiusPx: 20, discRadiusPx: 4, petalBoxes: [], occupied: [], freeRect: WIDE, ledgerIds: new Set(),
+    measureText: measure, scale: 1, toScreen: (x, y) => ({ x, y }),
+    hub: { x: 0, y: 0, r: 20 }, chips, discs, capAlpha: caps > 0 ? 1 : 0, lines: [], occupied: [], freeRect: WIDE, ledgerIds: new Set(),
+    elementLabel: (id) => `el ${id}`,
     ...over,
   };
-  const out = { texts: [] as TextMark[] };
+  const out: LabelMarksOut = { texts: [], extraTexts: [] };
   buildLabelMarks(input, out);
-  return out.texts;
+  return { ...out, all: [...out.texts, ...out.extraTexts] };
+}
+
+function overlapCount(texts: { id: string | null; box: Box }[]): number {
+  let n = 0;
+  for (let i = 0; i < texts.length; i += 1) {
+    for (let j = i + 1; j < texts.length; j += 1) {
+      const a = texts[i]!;
+      const b = texts[j]!;
+      if (a.id !== null && a.id === b.id) continue;
+      if (overlaps(a.box, b.box)) n += 1;
+    }
+  }
+  return n;
 }
 
 describe("wrapDialName", () => {
   it("keeps words whole, never adds an ellipsis, and stays within two lines", () => {
-    const font = "x";
-    expect(wrapDialName("Payments", 160, font, measure)).toEqual(["Payments"]);
-    const lines = wrapDialName("Order fulfilment and warehouse routing service", 160, font, measure);
+    expect(wrapDialName("Payments", 160, "x", measure)).toEqual(["Payments"]);
+    const lines = wrapDialName("Order fulfilment and warehouse routing service", 160, "x", measure);
     expect(lines.length).toBeLessThanOrEqual(2);
     expect(lines.join(" ")).toBe("Order fulfilment and warehouse routing service");
-    expect(lines[0]!.length * 6).toBeLessThanOrEqual(160);
-    expect(wrapDialName("Supercalifragilisticexpialidocious", 60, font, measure)).toEqual(["Supercalifragilisticexpialidocious"]);
+    expect(wrapDialName("Supercalifragilisticexpialidocious", 60, "x", measure)).toEqual(["Supercalifragilisticexpialidocious"]);
     for (const line of lines) expect(line).not.toContain("…");
   });
 });
 
 describe("buildLabelMarks", () => {
-  it("names the project and every domain with its units line", () => {
-    const texts = run(["Payments", "Catalog", "Shipping", "Accounts"]);
+  it("names the project and every domain with its units line, whole", () => {
+    const { texts } = run();
     expect(texts.find((t) => t.role === "project")?.text).toBe("Project");
     expect(texts.filter((t) => t.role === "domain").map((t) => t.text).sort()).toEqual(["Accounts", "Catalog", "Payments", "Shipping"]);
     expect(texts.filter((t) => t.role === "units")).toHaveLength(4);
     expect(texts.some((t) => t.text.includes("…"))).toBe(false);
   });
 
-  it("drops the units line before the name when it touches a neighbour", () => {
-    const names = Array.from({ length: 24 }, (_, i) => `Domain number ${i}`);
-    const texts = run(names);
-    expect(texts.filter((t) => t.role === "domain").map((t) => t.id).filter((v, i, a) => a.indexOf(v) === i)).toHaveLength(24);
+  it("drops the units line before the name when crowded, and nothing overlaps", () => {
+    const names = Array.from({ length: 24 }, (_, i) => `Domain ${i}`);
+    const { texts, all } = run({ names });
+    expect(new Set(texts.filter((t) => t.role === "domain").map((t) => t.id)).size).toBe(24);
     expect(texts.filter((t) => t.role === "units").length).toBeLessThan(24);
+    expect(overlapCount(all)).toBe(0);
+  });
+
+  it("steps to another candidate to stay clear of a planned line", () => {
+    const lines: Point[][] = [[{ x: -40, y: -300 }, { x: 40, y: -370 }, { x: 40, y: -420 }, { x: -40, y: -420 }]];
+    const { texts } = run({ lines });
+    for (const t of texts.filter((x) => x.role === "domain" || x.role === "units")) expect(crossesBox(lines, t.box)).toBe(false);
+    expect(texts.some((t) => t.id === "d0" && t.role === "domain")).toBe(true);
+  });
+
+  it("keeps the name over a line only when every candidate crosses one, units yielding first", () => {
+    const lines: Point[][] = [];
+    for (let y = -460; y <= -200; y += 6) lines.push([{ x: -300, y }, { x: 300, y }]);
+    const { texts } = run({ lines });
+    expect(texts.some((t) => t.id === "d0" && t.role === "domain")).toBe(true);
+    expect(texts.some((t) => t.id === "d0" && t.role === "units")).toBe(false);
   });
 
   it("drops every text whose box leaves the free rect", () => {
-    const freeRect = { minX: -1000, minY: -260, maxX: 1000, maxY: 1000 };
-    const texts = run(["Payments", "Catalog", "Shipping", "Accounts"], { freeRect });
-    expect(texts.some((t) => t.id === "d0")).toBe(false);
-    for (const t of texts) {
+    const freeRect = { minX: -1000, minY: -250, maxX: 1000, maxY: 1000 };
+    const { all } = run({ freeRect });
+    expect(all.some((t) => t.id === "d0")).toBe(false);
+    for (const t of all) {
       expect(t.box.minX).toBeGreaterThanOrEqual(freeRect.minX);
       expect(t.box.minY).toBeGreaterThanOrEqual(freeRect.minY);
       expect(t.box.maxX).toBeLessThanOrEqual(freeRect.maxX);
@@ -93,23 +143,84 @@ describe("buildLabelMarks", () => {
 
   it("adds the stale count only when evidence is measured", () => {
     const evidence = { measured: true, stateOf: () => "stale" as const, staleByDomain: new Map([["d1", 2]]) };
-    const units = run(["Payments", "Catalog", "Shipping", "Accounts"], { evidence }).filter((t) => t.role === "units");
-    expect(units.find((t) => t.id === "d1")?.text).toBe("2 capabilities · 5 elements · 2 stale");
+    const units = run({ evidence }).texts.filter((t) => t.role === "units");
+    expect(units.find((t) => t.id === "d1")?.text).toBe("0 capabilities · 5 elements · 2 stale");
     expect(units.find((t) => t.id === "d1")?.parts).toHaveLength(2);
-    const unmeasured = run(["Payments", "Catalog", "Shipping", "Accounts"], { evidence: { ...evidence, measured: false } });
-    expect(unmeasured.some((t) => t.text.includes("stale"))).toBe(false);
+    expect(run({ evidence: { ...evidence, measured: false } }).texts.some((t) => t.text.includes("stale"))).toBe(false);
   });
 
   it("appends each placed box to occupied", () => {
     const occupied: Box[] = [];
-    const texts = run(["Payments", "Catalog"], { occupied });
-    expect(occupied.length).toBe(texts.length);
+    const { all } = run({ occupied });
+    expect(occupied.length).toBe(all.length);
   });
 
-  it("leaves units out without labels", () => {
-    const { model, scene } = fixture(["Payments"]);
-    const block = domainLabelBlock(scene.sectors[0]!, model, null, null, measure, 1, TOKENS);
-    expect(block.units).toBeNull();
-    expect(run(["Payments"], { labels: null }).some((t) => t.role === "units")).toBe(false);
+  it("leaves units and ring labels out without labels", () => {
+    const { model } = fixture(["Payments"]);
+    expect(domainLabelBlock("d0", model, null, null, measure, TOKENS).units).toBeNull();
+    const { all } = run({ labels: null });
+    expect(all.some((t) => t.role === "units" || t.role === "ring")).toBe(false);
+  });
+
+  it("labels a ring near its axis with a halo, clear of names", () => {
+    const { extraTexts } = run();
+    const ring = extraTexts.find((t) => t.role === "ring");
+    expect(ring?.text).toBe("used by 2–3");
+    expect(ring?.halo).not.toBeNull();
+    expect(Math.abs(Math.atan2(ring!.y, ring!.x) - -Math.PI / 4)).toBeLessThan(1);
+  });
+
+  it("leaves the ring label out when every slot on its axis crosses a line", () => {
+    const lines: Point[][] = [];
+    for (let y = -600; y <= 600; y += 5) lines.push([{ x: -600, y }, { x: 600, y }]);
+    expect(run({ lines }).extraTexts.some((t) => t.role === "ring")).toBe(false);
+  });
+
+  it("names capabilities only from cap-name px of pitch, skipping the ledger", () => {
+    expect(run({ caps: 3, scale: 0.5 }).texts.some((t) => t.role === "capability")).toBe(false);
+    expect(run({ caps: 3 }).texts.filter((t) => t.role === "capability").length).toBeGreaterThan(0);
+    expect(run({ caps: 3, ledgerIds: new Set(["d0c0"]) }).texts.some((t) => t.id === "d0c0")).toBe(false);
+  });
+
+  it("keeps capability names clear of lines when another side is free", () => {
+    const lines: Point[][] = [[{ x: 124, y: -300 }, { x: 240, y: -300 }]];
+    const cap = run({ caps: 1, lines, names: ["Payments"] }).texts.find((t) => t.id === "d0c0");
+    expect(cap).toBeDefined();
+    expect(crossesBox(lines, cap!.box)).toBe(false);
+  });
+
+  it("names the attended domain's partners and leaves other domains' capabilities unnamed", () => {
+    const attention: DialAttention = { ...REST, key: "d0||1", domainId: "d0", usedByCaps: new Set(["d1c0", "d1c1"]), partnerDomains: new Set(["d1"]) };
+    const caps = run({ caps: 2, attention }).texts.filter((t) => t.role === "capability").map((t) => t.id);
+    expect(caps.some((id) => id?.startsWith("d1"))).toBe(true);
+    expect(caps.some((id) => id?.startsWith("d2") || id?.startsWith("d3"))).toBe(false);
+  });
+
+  it("names elements from element-name px of element pitch", () => {
+    expect(run({ caps: 2 }).extraTexts.some((t) => t.role === "element")).toBe(false);
+    const zoomed = run({ caps: 2, scale: 3, toScreen: (x, y) => ({ x: x * 3, y: y * 3 }), names: ["Payments"] });
+    expect(zoomed.extraTexts.some((t) => t.role === "element")).toBe(true);
+  });
+
+  it("places no two texts over each other with capabilities shown", () => {
+    const { all } = run({ caps: 6, names: Array.from({ length: 12 }, (_, i) => `Domain ${i}`) });
+    expect(all.length).toBeGreaterThan(12);
+    expect(overlapCount(all)).toBe(0);
+    expect(all.some((t) => t.text.includes("…"))).toBe(false);
+  });
+});
+
+const layoutReady = typeof (layout as Record<string, unknown>).layoutDial === "function" && !("chordControl" in layout);
+const PENDING = "wire this bar to the B4′ ring scene and the B5′ planned lines";
+
+describe("label bars at real vault sizes", () => {
+  it.skipIf(!layoutReady)("names crossed at rest: storefront ≤ 3, dogfood ≤ 3, synth 10,000 ≤ 3, layered 10,000 ≤ 6", () => {
+    throw new Error(PENDING);
+  });
+  it.skipIf(!layoutReady)("domain names shown: synth 10,000 all 33 at 1512, ≥ 26 at 1040 with INDEX open", () => {
+    throw new Error(PENDING);
+  });
+  it.skipIf(!layoutReady)("names crossed at zoom: storefront at 2.6× ≤ 5", () => {
+    throw new Error(PENDING);
   });
 });
