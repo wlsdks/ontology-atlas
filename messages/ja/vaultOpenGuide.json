@@ -1,11 +1,11 @@
 {
-  "title": "Turn your folder into the map",
-  "subtitle": "Before the OS folder picker opens, just {count} things to know.",
-  "bulletAnyFolder": "Any markdown folder works: no special format required.",
-  "bulletLocal": "Atlas opens this folder locally and does not upload it to an Atlas backend. A coding agent you later connect may send prompts and context to its own provider.",
-  "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
-  "bulletPermission": "After you pick, the browser asks to Allow. That grants this page local file access; it is separate from any AI-provider connection.",
-  "actionPickExisting": "Choose existing folder",
-  "actionCreateNew": "Start fresh with an empty folder",
-  "actionCancel": "Not now"
+  "title": "フォルダをマップにする",
+  "subtitle": "OSのフォルダピッカーが開く前に、知っておくことは{count}つだけです。",
+  "bulletAnyFolder": "どんなMarkdownフォルダでも使えます。特別な形式は不要です。",
+  "bulletLocal": "Atlasはこのフォルダをローカルで開き、Atlasのバックエンドにアップロードすることはありません。あとで接続したコーディングエージェントは、プロンプトとコンテキストを各社のプロバイダに送ることがあります。",
+  "bulletStarter": "空のフォルダを選ぶと、スターター用のドキュメントを用意します。",
+  "bulletPermission": "選択後、ブラウザが「許可」を求めます。これはこのページにローカルファイルへのアクセスを与えるもので、AIプロバイダとの接続とは別です。",
+  "actionPickExisting": "既存のフォルダを選ぶ",
+  "actionCreateNew": "空のフォルダで新規に始める",
+  "actionCancel": "今はしない"
 }
