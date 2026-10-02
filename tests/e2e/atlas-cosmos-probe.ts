@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import type { CosmosArrivalMode, CosmosFrameStats, CosmosPaintRecord } from "../../src/widgets/ontology-map/galaxy/cosmos-types";
 
 export interface AtlasCosmosProbe {
@@ -27,6 +28,23 @@ export interface AtlasCosmosProbe {
   point(id: string): { x: number; y: number } | null;
   flyTo(id: string): void;
   overview(): void;
+}
+
+export async function waitForCosmosStill(page: Page, frames = 24): Promise<void> {
+  await page.waitForFunction(
+    (need) => {
+      const probe = window.__atlasCosmos;
+      if (!probe) return false;
+      const w = window as unknown as { __cosmosStill?: { key: string; count: number } };
+      const c = probe.camera();
+      const key = `${c.x.toFixed(4)},${c.y.toFixed(4)},${c.scale.toFixed(6)},${probe.interaction().kind}`;
+      const still = probe.interaction().kind === "none" && w.__cosmosStill?.key === key;
+      w.__cosmosStill = { key, count: still ? w.__cosmosStill!.count + 1 : 0 };
+      return w.__cosmosStill.count >= need;
+    },
+    frames,
+    { polling: "raf" },
+  );
 }
 
 declare global {
