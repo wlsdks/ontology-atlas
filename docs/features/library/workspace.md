@@ -12,7 +12,7 @@ routes: [/library]
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
 meaning across Sources, Wiki, Ontology, and Check history. Ontology contains
-Concept documents (the explicitly typed graph nodes) and Concept sets (saved map
+Concept documents (the explicitly typed graph nodes) and Bookmarks (saved map
 selections). Sources and Wiki draw the other two file kinds.
 
 The Library supports general knowledge as well as documents associated with code.
@@ -101,8 +101,8 @@ draft state, and five required section headings before creation. The current loc
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
 
-**Concept sets (2026-09-28; stored as saved constellations since 2026-09-15).**
-Ontology → Concept sets lists each saved selection's name, purpose, and ontology
+**Bookmarks (2026-09-28, renamed from Concept sets 2026-10-02; stored as saved constellations since 2026-09-15).**
+Ontology → Bookmarks lists each saved selection's name, purpose, and ontology
 concept count. The earlier Work scopes tab is a compatible URL alias:
 `tab=collections` becomes `tab=ontology&ontologyView=sets`, preserving all other
 parameters and the fragment. `ontologyView` is independent of the document

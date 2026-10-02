@@ -40,7 +40,7 @@ The desktop rail's order and hrefs come from
 |---|---|---|
 | Map | `/` (with a loaded vault), `/topology` | [`features/map/`](features/map/README.md), [first run](features/first-run.md), [gateway](features/gateway.md) |
 | Harness | `/architecture` | [`harness.md`](features/harness.md) |
-| Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — local Wiki questions, cited ACP reports, document export, Ontology concept sets, and optional Jev advice |
+| Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — local Wiki questions, cited ACP reports, document export, Ontology bookmarks, and optional Jev advice |
 | Automations | `/automations` | [`automations.md`](features/automations.md) |
 | Insights | `/ontology/insights` | [`analysis.md`](features/analysis.md) |
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
