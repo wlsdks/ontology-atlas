@@ -2338,6 +2338,7 @@ fn read_vault_text_file(root_path: String, relative_path: String) -> Result<Taur
 }
 
 const VAULT_TEXT_BATCH_MAX: usize = 256;
+const VAULT_TEXT_BATCH_FILE_MAX_BYTES: u64 = 4 * 1024 * 1024;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -2380,18 +2381,30 @@ fn read_vault_text_files(
         .collect())
 }
 
+fn is_visible_markdown(relative: &Path) -> bool {
+    relative.extension().is_some_and(|ext| ext == "md")
+        && !relative
+            .components()
+            .any(|part| part.as_os_str().to_string_lossy().starts_with('.'))
+}
+
 fn read_vault_markdown(root: &Path, relative_path: &str) -> Result<(String, u128), String> {
     let relative = normalize_relative_path(relative_path)?;
-    let markdown = relative.extension().is_some_and(|ext| ext == "md");
-    let hidden = relative
-        .components()
-        .any(|part| part.as_os_str().to_string_lossy().starts_with('.'));
-    if !markdown || hidden {
+    if !is_visible_markdown(&relative) {
         return Err("a batch reads only Markdown outside dot folders".into());
     }
     let path = fs::canonicalize(root.join(&relative)).map_err(|err| err.to_string())?;
-    if !path.starts_with(root) {
+    let Ok(target) = path.strip_prefix(root) else {
         return Err("resolved path must stay inside the selected vault".into());
+    };
+    if !is_visible_markdown(target) {
+        return Err("a batch reads only Markdown outside dot folders".into());
+    }
+    let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
+    if metadata.len() > VAULT_TEXT_BATCH_FILE_MAX_BYTES {
+        return Err(format!(
+            "a batch reads files up to {VAULT_TEXT_BATCH_FILE_MAX_BYTES} bytes"
+        ));
     }
     let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
     let last_modified = metadata_mtime_ms(&path)?;
@@ -5985,7 +5998,7 @@ mod vault_scope_tests {
 
 #[cfg(test)]
 mod vault_text_batch_tests {
-    use super::{read_vault_text_files, VAULT_TEXT_BATCH_MAX};
+    use super::{read_vault_text_files, VAULT_TEXT_BATCH_FILE_MAX_BYTES, VAULT_TEXT_BATCH_MAX};
 
     fn vault(name: &str) -> std::path::PathBuf {
         let base =
@@ -6062,6 +6075,47 @@ mod vault_text_batch_tests {
         assert!(read[0].text.is_none());
         let reason = read[0].error.clone().unwrap_or_default();
         assert!(reason.contains("stay inside"), "{reason}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_markdown_name_linked_to_a_dot_file_is_not_read() {
+        use std::os::unix::fs::symlink;
+        let base = vault("dotlink");
+        std::fs::write(base.join("vault/.env"), "SECRET=1").unwrap();
+        symlink(".env", base.join("vault/notes.md")).unwrap();
+        symlink(".claude/notes.md", base.join("vault/claude.md")).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root, vec!["notes.md".into(), "claude.md".into()]).unwrap();
+        for refused in &read {
+            assert!(refused.text.is_none(), "{} was read", refused.relative_path);
+            assert!(refused.error.is_some());
+        }
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn a_file_past_the_byte_bound_is_left_to_the_single_read() {
+        let base = vault("bytes");
+        let large = "x".repeat(VAULT_TEXT_BATCH_FILE_MAX_BYTES as usize + 1);
+        std::fs::write(base.join("vault/large.md"), &large).unwrap();
+        let root = base.join("vault").to_string_lossy().to_string();
+        let read =
+            read_vault_text_files(root.clone(), vec!["large.md".into(), "project.md".into()])
+                .unwrap();
+        assert!(read[0].text.is_none());
+        let reason = read[0].error.clone().unwrap_or_default();
+        assert!(reason.contains("bytes"), "{reason}");
+        assert_eq!(read[1].text.as_deref(), Some("# project"));
+        assert_eq!(
+            super::read_vault_text_file(root, "large.md".into())
+                .unwrap()
+                .text
+                .len(),
+            large.len()
+        );
         let _ = std::fs::remove_dir_all(&base);
     }
 
