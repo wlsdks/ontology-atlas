@@ -5,7 +5,12 @@ import { installFrameWork, p95, startFrameWork, stopFrameWork } from "./frame-wo
 
 const PAN_MS = 3_000;
 const bars = process.env.MAP_PERF_BARS === "1";
-const BARS = { names: 8.3, pips: 8.3, regions: 4.0 } as const;
+const SCENARIOS = [
+  { name: "rest", band: "regions", R: 0, bar: 4.0 },
+  { name: "floors", band: "regions", R: 15, bar: 8.3 },
+  { name: "pips", band: "pips", R: 36, bar: 8.3 },
+  { name: "names", band: "names", R: 56, bar: 8.3 },
+] as const;
 
 test.use({
   viewport: { width: 1512, height: 982 },
@@ -16,13 +21,16 @@ test.use({
   },
 });
 
-type Probe = Window & { __gradients?: Map<number, number>; __frameT?: number };
+type Probe = Window & { __gradients?: Map<number, number>; __frameT?: number; __lastFrame?: string };
 
 interface Frame {
   band: string;
   R: number;
   tiles: number;
   drawnTiles: number;
+  slabs: boolean;
+  arrived: boolean;
+  offset: [number, number];
 }
 
 const readFrame = (page: Page) =>
@@ -30,15 +38,21 @@ const readFrame = (page: Page) =>
 
 async function still(page: Page) {
   await page.waitForFunction(
-    () =>
-      new Promise<boolean>((resolve) => {
-        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas');
-        const a = canvas?.dataset.frame;
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve(!!a && canvas?.dataset.frame === a)));
-      }),
+    () => {
+      const w = window as Probe;
+      const frame = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')?.dataset.frame;
+      const same = !!frame && frame === w.__lastFrame;
+      w.__lastFrame = frame;
+      return same && (JSON.parse(frame) as Frame).arrived === true;
+    },
     undefined,
-    { timeout: 30_000 },
+    { polling: 200, timeout: 30_000 },
   );
+}
+
+function max(values: readonly number[], what: string): number {
+  expect(values.length, `${what}: samples`).toBeGreaterThan(0);
+  return Math.max(...values);
 }
 
 async function centre(page: Page) {
@@ -50,9 +64,27 @@ async function zoomTo(page: Page, R: number) {
   const c = await centre(page);
   await page.mouse.move(c.x, c.y);
   while ((await readFrame(page)).R < R) {
-    await page.mouse.wheel(0, -60);
+    await page.mouse.wheel(0, -40);
     await still(page);
   }
+}
+
+async function plateOverlaps(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const plates = [...document.querySelectorAll<HTMLElement>("[data-hex-id][data-plate-box]")].map((el) => {
+      const [x, y, w, h] = el.dataset.plateBox!.split(",").map(Number) as [number, number, number, number];
+      return { id: el.dataset.hexId!, x, y, w, h };
+    });
+    const hits: string[] = [];
+    for (let i = 0; i < plates.length; i++) {
+      for (let j = i + 1; j < plates.length; j++) {
+        const a = plates[i]!;
+        const b = plates[j]!;
+        if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) hits.push(`${a.id} × ${b.id}`);
+      }
+    }
+    return hits;
+  });
 }
 
 async function pan(page: Page) {
@@ -61,24 +93,29 @@ async function pan(page: Page) {
   await page.mouse.down();
   await startFrameWork(page);
   await page.evaluate(() => (window as Probe).__gradients!.clear());
-  const frames: Frame[] = [];
+  const painted: Frame[] = [];
+  let last = "";
   const start = Date.now();
   let step = 0;
   while (Date.now() - start < PAN_MS) {
     const angle = step * 0.05;
     await page.mouse.move(c.x + Math.cos(angle) * 160, c.y + Math.sin(angle) * 120);
-    frames.push(await page.evaluate(() => new Promise<Frame>((resolve) => requestAnimationFrame(() => resolve(JSON.parse(document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')!.dataset.frame ?? "{}") as Frame)))));
+    const frame = await page.evaluate(
+      () => new Promise<string>((resolve) => requestAnimationFrame(() => resolve(document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')!.dataset.frame ?? ""))),
+    );
+    if (frame && frame !== last) painted.push(JSON.parse(frame) as Frame);
+    last = frame;
     step += 1;
   }
   const work = await stopFrameWork(page);
   const gradients = await page.evaluate(() => [...(window as Probe).__gradients!.values()]);
   await page.mouse.up();
   await still(page);
-  return { work, gradients, frames };
+  return { work, gradients, painted };
 }
 
 test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, frame work per band", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
   await installFrameWork(page);
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
@@ -107,21 +144,29 @@ test("the hex board at 10,000 concepts: one gradient per frame, culled tiles, fr
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 90_000 });
   await still(page);
 
-  const results: Record<string, { p95: number; frames: number; maxGradients: number; maxDrawnShare: number }> = {};
-  for (const [band, R] of [["regions", 0], ["pips", 36], ["names", 56]] as const) {
-    await zoomTo(page, R);
-    const { work, gradients, frames } = await pan(page);
-    const drawn = frames.filter((f) => f.band === band);
-    results[band] = {
+  const results: Record<string, { p95: number; frames: number; offsets: number; maxGradients: number; maxDrawnShare: number }> = {};
+  for (const s of SCENARIOS) {
+    await zoomTo(page, s.R);
+    const at = await readFrame(page);
+    expect(at.band, `${s.name}: band`).toBe(s.band);
+    if (s.band === "regions") {
+      expect(at.slabs, `${s.name}: slabs`).toBe(s.name === "rest");
+      expect(await plateOverlaps(page), `${s.name}: name plates overlap`).toEqual([]);
+    }
+    const { work, gradients, painted } = await pan(page);
+    const inBand = painted.filter((f) => f.band === s.band);
+    results[s.name] = {
       p95: +p95(work).toFixed(2),
       frames: work.length,
-      maxGradients: Math.max(...gradients),
-      maxDrawnShare: +Math.max(...drawn.map((f) => f.drawnTiles / f.tiles)).toFixed(3),
+      offsets: new Set(inBand.map((f) => f.offset.join(","))).size,
+      maxGradients: max(gradients, `${s.name}: gradients`),
+      maxDrawnShare: +max(inBand.map((f) => f.drawnTiles / f.tiles), `${s.name}: painted frames`).toFixed(3),
     };
-    expect(drawn.length, `${band}: the pan stayed in its band`).toBeGreaterThan(0);
-    expect(results[band].maxGradients, `${band}: gradients per frame`).toBeLessThanOrEqual(1);
-    if (band !== "regions") expect(results[band].maxDrawnShare, `${band}: drawn tiles share`).toBeLessThan(0.25);
-    if (bars) expect(results[band].p95, `${band}: p95 frame work`).toBeLessThanOrEqual(BARS[band]);
+    expect(results[s.name]!.frames, `${s.name}: work frames`).toBeGreaterThanOrEqual(30);
+    expect(results[s.name]!.offsets, `${s.name}: the pan moved the camera`).toBeGreaterThanOrEqual(2);
+    expect(results[s.name]!.maxGradients, `${s.name}: gradients per frame`).toBeLessThanOrEqual(1);
+    if (s.band !== "regions") expect(results[s.name]!.maxDrawnShare, `${s.name}: drawn tiles share`).toBeLessThan(0.25);
+    if (bars) expect(results[s.name]!.p95, `${s.name}: p95 frame work`).toBeLessThanOrEqual(s.bar);
   }
   console.log(`[hex-frame-work] ${JSON.stringify(results)}`);
 });

@@ -64,10 +64,10 @@ const T: HexBoardTokens = {
   faceSelected: ["#2a2c55", "#1b1c36"],
   faceProject: ["#262219", "#15130f"],
   riser: "#060608",
-  rim: "#5e5f6b",
+  rim: "#74768a",
   rimDomain: "#7c80d8",
   rimSelected: "#a5abff",
-  rimUnknown: "#6a6a74",
+  rimUnknown: "#7a7b88",
   hatch: "#2a2a33",
   bevel: ["rgba(255,255,255,0.16)", "rgba(255,255,255,0.03)", "rgba(0,0,0,0.25)"],
   plate: "rgba(94,106,210,0.06)",
@@ -76,7 +76,7 @@ const T: HexBoardTokens = {
   moat: "rgba(255,255,255,0.022)",
   glow: "rgba(94,106,210,0.08)",
   accent: "#9aa0f0",
-  canal: "#4a4c62",
+  canal: "#5c5f79",
   canalHead: "#6d7090",
   inkMeta: "#a3a6ae",
   dimAlpha: 0.3,
@@ -263,5 +263,20 @@ describe("drawBoard at pitch 0", () => {
     const ground = [10, 10, 13] as const;
     expect(cssOf(solid("#8890e038", ground))).toBe(cssOf(solid("rgba(136, 144, 224, 0.22)", ground)));
     expect(cssOf(solid("#fff", ground))).toBe("rgb(255, 255, 255)");
+    expect(cssOf(solid("rgb(136 144 224 / 22%)", ground))).toBe(cssOf(solid("rgba(136, 144, 224, 0.22)", ground)));
+    expect(() => solid("oklch(0.5 0.1 270)", ground)).toThrow();
+  });
+
+  it("rings a hovered tile in the slab band", () => {
+    const { calls } = paint({ band: "regions", R: 10, hoverId: caps[2]!.id });
+    expect(calls.filter((c) => c.op === "stroke" && c.strokeStyle === T.indigoBright && c.lineWidth === 2)).toHaveLength(1);
+  });
+
+  it("lays the selection halo under every tile at pitch 0", () => {
+    const { calls } = paint({ selectedId: caps[0]!.id });
+    const halo = calls.findIndex((c) => c.op === "fill" && c.shadowBlur === 20);
+    const firstFace = calls.findIndex((c) => c.op === "fill" && c.fillStyle === T.riser);
+    expect(halo).toBeGreaterThan(-1);
+    expect(halo).toBeLessThan(firstFace);
   });
 });

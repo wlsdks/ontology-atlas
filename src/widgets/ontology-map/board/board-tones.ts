@@ -8,7 +8,7 @@ export const WALL_SHADE = [0.58, 0.44, 0.3] as const;
 
 const parsed = new Map<string, { rgb: RGB; a: number } | null>();
 
-export function parse(css: string): { rgb: RGB; a: number } | null {
+function parse(css: string): { rgb: RGB; a: number } | null {
   const hit = parsed.get(css);
   if (hit !== undefined) return hit;
   const s = css.trim();
@@ -20,7 +20,9 @@ export function parse(css: string): { rgb: RGB; a: number } | null {
     out = { rgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255], a: h.length === 8 ? parseInt(h.slice(6), 16) / 255 : 1 };
   } else {
     const fn = /^rgba?\(([^)]+)\)$/i.exec(s);
-    const p = fn ? fn[1]!.split(/[\s,/]+/).filter(Boolean).map(Number) : [];
+    const parts = fn ? fn[1]!.split(/[\s,/]+/).filter(Boolean) : [];
+    const num = (v: string, scale: number) => (v.endsWith("%") ? (Number(v.slice(0, -1)) / 100) * scale : Number(v));
+    const p = parts.map((v, i) => num(v, i < 3 ? 255 : 1));
     if (p.length >= 3 && p.slice(0, 3).every(Number.isFinite)) {
       out = { rgb: [p[0]!, p[1]!, p[2]!], a: p.length > 3 && Number.isFinite(p[3]!) ? p[3]! : 1 };
     }
@@ -37,9 +39,18 @@ export function cssOf(c: RGB): string {
   return `rgb(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])})`;
 }
 
-export function solid(css: string, ground: RGB, alphaScale = 1): RGB {
+function read(css: string): { rgb: RGB; a: number } {
   const p = parse(css);
-  if (!p) return ground;
+  if (!p) throw new Error(`Hex board tone cannot read "${css}"`);
+  return p;
+}
+
+export function rgbOf(css: string): RGB {
+  return read(css).rgb;
+}
+
+export function solid(css: string, ground: RGB, alphaScale = 1): RGB {
+  const p = read(css);
   return mix(ground, p.rgb, Math.min(1, p.a * alphaScale));
 }
 
@@ -52,19 +63,20 @@ interface Material {
 
 const materials = new WeakMap<HexBoardTokens, Map<string, Material>>();
 
-function material(T: HexBoardTokens, key: string, flatTop: RGB, litTop: RGB, light: number): Material {
+function material(T: HexBoardTokens, key: string, light: number, tops: () => [RGB, RGB]): Material {
   let m = materials.get(T);
   if (!m) materials.set(T, (m = new Map()));
   const q = Math.round(light * 16) / 16;
   const k = `${key}|${q}`;
   let hit = m.get(k);
   if (!hit) {
+    const [flatTop, litTop] = tops();
     const top = mix(flatTop, litTop, q);
     hit = {
       topCss: cssOf(top),
       walls: [cssOf(mix(top, BLACK, WALL_SHADE[0])), cssOf(mix(top, BLACK, WALL_SHADE[1])), cssOf(mix(top, BLACK, WALL_SHADE[2]))],
-      bevelLight: cssOf(mix(top, WHITE, 0.16)),
-      bevelShade: cssOf(mix(top, BLACK, 0.25)),
+      bevelLight: cssOf(solid(T.bevel[0], top)),
+      bevelShade: cssOf(solid(T.bevel[2], top)),
     };
     m.set(k, hit);
   }
@@ -90,22 +102,26 @@ export function tileMaterial(
   hovered: boolean,
   light: number,
 ): Material {
-  const ground = parse(T.ground)?.rgb ?? BLACK;
   if (selected || kind !== "capability") {
-    const pair = selected ? T.faceSelected : kind === "domain" ? T.faceDomain : T.faceProject;
-    const flat = mix(solid(pair[0], ground), solid(pair[1], ground), 0.5);
-    return material(T, selected ? "sel" : kind, flat, mix(flat, WHITE, 0.07), light);
+    return material(T, selected ? "sel" : kind, light, () => {
+      const ground = rgbOf(T.ground);
+      const pair = selected ? T.faceSelected : kind === "domain" ? T.faceDomain : T.faceProject;
+      const flat = mix(solid(pair[0], ground), solid(pair[1], ground), 0.5);
+      return [flat, mix(flat, WHITE, 0.07)];
+    });
   }
   const b = Math.min(4, bucket + (hovered ? 1 : 0));
-  const base = solid((ev === "stale" ? T.faceStale : T.face)[b]!, ground);
-  const flat = mix(base, BLACK, 0.05);
-  const lit =
-    ev === "current"
-      ? mix(mix(base, solid(T.accent, ground), 0.2), WHITE, 0.03)
-      : ev === "stale"
-        ? mix(base, solid(T.stale, ground), 0.08)
-        : mix(base, BLACK, 0.12);
-  return material(T, `${ev}|${b}`, flat, lit, light);
+  return material(T, `${ev}|${b}`, light, () => {
+    const ground = rgbOf(T.ground);
+    const base = solid((ev === "stale" ? T.faceStale : T.face)[b]!, ground);
+    const lit =
+      ev === "current"
+        ? mix(mix(base, solid(T.accent, ground), 0.2), WHITE, 0.03)
+        : ev === "stale"
+          ? mix(base, solid(T.stale, ground), 0.08)
+          : mix(base, BLACK, 0.12);
+    return [mix(base, BLACK, 0.05), lit];
+  });
 }
 
 const hatchTiles = new Map<string, HTMLCanvasElement>();

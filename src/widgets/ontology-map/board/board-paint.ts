@@ -6,7 +6,7 @@ import { edges, face, FRONT_SIDES, notch, pips, smooth, startDot, stubHead, tick
 import { drawFloors, drawPlate, drawSlabs, TileRects } from "./board-plates";
 import { arrivalOf, BOARD_ARRIVAL, lowerBound, type BoardScene } from "./board-scene";
 import { drawLines, lineSets, placeLines } from "./board-text";
-import { BLACK, cssOf, hatch, mix, parse, solid, tileMaterial, tone, WHITE } from "./board-tones";
+import { cssOf, hatch, mix, rgbOf, solid, tileMaterial, tone, WHITE } from "./board-tones";
 
 export interface BoardPose {
   pitch: number;
@@ -42,7 +42,7 @@ export function drawBoard(
   const groundY = (uy: number) => pivot + (oy + uy * R - pivot) * c;
   const unitY = (py: number) => ((py - pivot) / c + pivot - oy) / R;
   const at = (t: HexTile) => ({ x: sx(t.x), y: groundY(t.y) });
-  const ground = parse(T.ground)?.rgb ?? BLACK;
+  const ground = rgbOf(T.ground);
   const accent = solid(T.accent, ground);
   const slabs = band === "regions" && R < SLAB_BELOW;
   const stats: BoardFrameStats = {
@@ -149,6 +149,11 @@ export function drawBoard(
   };
   const plateAlpha = (id: string) => (lit && !lit.has(id) ? 1 - dimT * 0.4 : 1) * routesAlpha;
   const drawPlates = () => {
+    const p = layout.project;
+    if (p) {
+      const y = groundY(p.y);
+      drawPlate(ctx, T, { id: p.id, name: p.name, sub: "", cx: sx(p.x), top: y - APO * c, bottom: y + APO * c, warm: true, alpha: plateAlpha(p.id) }, rects, plateBoxes, plateStrokeCss);
+    }
     for (const region of scene.regions) {
       const d = layout.byId.get(region.domainId);
       if (!d) continue;
@@ -161,11 +166,6 @@ export function drawBoard(
         plateBoxes,
         plateStrokeCss,
       );
-    }
-    const p = layout.project;
-    if (p) {
-      const y = groundY(p.y);
-      drawPlate(ctx, T, { id: p.id, name: p.name, sub: "", cx: sx(p.x), top: y - APO * c, bottom: y + APO * c, warm: true, alpha: plateAlpha(p.id) }, rects, plateBoxes, plateStrokeCss);
     }
     stats.plates = plateBoxes.length;
   };
@@ -202,6 +202,8 @@ export function drawBoard(
     }
     const hov = state.hoverId && state.hoverId !== state.selectedId ? layout.byId.get(state.hoverId) : undefined;
     if (hov) halo(hov, T.indigo, 0.35, 14, 2);
+    const sel = state.selectedId ? layout.byId.get(state.selectedId) : undefined;
+    if (pose.pitch === 0 && sel?.kind === "capability") halo(sel, T.indigo, 0.55, 20, 4);
     drawCanals();
   }
   const usedBy = new Set<string>();
@@ -245,7 +247,7 @@ export function drawBoard(
     const alpha = alphaOf(t) * arr.a;
     const m = tileMaterial(T, t.kind, t.bucket, ev, isSel, isHov, light);
     ctx.globalAlpha = alpha;
-    if (isSel && t.kind === "capability") {
+    if (isSel && t.kind === "capability" && pose.pitch !== 0) {
       ctx.save();
       ctx.globalAlpha = alpha * 0.55;
       ctx.shadowColor = T.indigo;
