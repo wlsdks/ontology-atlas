@@ -6,6 +6,9 @@ import type { HexDrawRoute, HexDrawState, HexEvidenceState } from "../render/hex
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import { drawBoard } from "./board-paint";
 import { buildBoardScene } from "./board-scene";
+import type { PaintedFace } from "./board-geometry";
+import { declaredDependents } from "./relief-metric";
+import { RELIEF_PITCH_REST } from "./relief-projection";
 import { cssOf, solid } from "./board-tones";
 
 interface Call {
@@ -278,5 +281,42 @@ describe("drawBoard at pitch 0", () => {
     const firstFace = calls.findIndex((c) => c.op === "fill" && c.fillStyle === T.riser);
     expect(halo).toBeGreaterThan(-1);
     expect(halo).toBeLessThan(firstFace);
+  });
+});
+
+describe("drawBoard in relief", () => {
+  const nodes: TreeInputNode[] = layout.tiles.map((t) => ({ id: t.id, label: t.name, kind: t.kind }));
+  const edges: TreeInputEdge[] = [
+    ...layout.tiles.filter((t) => t.domainId && t.kind === "capability").map((t) => ({ source: t.domainId!, target: t.id, kind: "contains" as const, relationType: "contains" })),
+    { source: "b0", target: "a0", kind: "depends", relationType: "depends_on" },
+    { source: "c0", target: "a0", kind: "depends", relationType: "dependencies" },
+  ];
+  const scene = buildBoardScene(layout, declaredDependents(nodes, edges));
+
+  it("draws the same calls at pitch 0 with heights as without them", () => {
+    const flat = recorder();
+    drawBoard(flat.ctx, layout, stateFor(), T, buildBoardScene(layout, null), { pitch: 0, pivotY: 491 });
+    const withHeights = recorder();
+    drawBoard(withHeights.ctx, layout, stateFor(), T, scene, { pitch: 0, pivotY: 491 });
+    expect(withHeights.calls.map((c) => [c.op, c.args])).toEqual(flat.calls.map((c) => [c.op, c.args]));
+  });
+
+  it("prints each capability's count on its face and records faces back to front", () => {
+    const { ctx, calls } = recorder();
+    const record: PaintedFace[] = [];
+    const { stats } = drawBoard(ctx, layout, stateFor(), T, scene, { pitch: RELIEF_PITCH_REST, pivotY: 491, record });
+    const texts = calls.filter((c) => c.op === "fillText").map((c) => c.args[0]);
+    expect(texts).toContain("2");
+    expect(stats.numbers).toBeGreaterThanOrEqual(caps.length);
+    const ys = record.map((f) => layout.byId.get(f.id)!.y);
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    expect(record.find((f) => f.id === "a0")!.walls).toHaveLength(3);
+  });
+
+  it("fades the numbers in with the light", () => {
+    const { ctx, calls } = recorder();
+    drawBoard(ctx, layout, stateFor(), T, scene, { pitch: RELIEF_PITCH_REST * 0.2, pivotY: 491 });
+    const number = calls.find((c) => c.op === "fillText" && c.args[0] === "2")!;
+    expect(number.globalAlpha).toBeCloseTo(0.3, 6);
   });
 });

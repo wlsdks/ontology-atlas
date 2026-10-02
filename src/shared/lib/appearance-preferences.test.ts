@@ -15,13 +15,16 @@ import {
   MAP_SPEEDS,
   readCanvasBackground,
   readGlyphSet,
+  readHexRelief,
   resolveMapSpeed,
   useCanvasBackground,
   useGlyphSet,
+  useHexRelief,
   useMapDragSpeed,
   useMapZoomSpeed,
   writeCanvasBackground,
   writeGlyphSet,
+  writeHexRelief,
   writeMapDragSpeed,
   writeMapZoomSpeed,
 } from "./appearance-preferences";
@@ -186,5 +189,25 @@ describe("map drag and zoom speed", () => {
     expect(result.current).toEqual({ drag: 2, zoom: 1 });
     act(() => writeMapZoomSpeed(0.5));
     expect(result.current).toEqual({ drag: 2, zoom: 0.5 });
+  });
+});
+
+describe("hex board relief", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("is off by default, stored as on/off, and delivered to a mounted reader", () => {
+    expect(readHexRelief()).toBe(false);
+    const { result } = renderHook(() => useHexRelief());
+    expect(result.current).toBe(false);
+    act(() => writeHexRelief(true));
+    expect(result.current).toBe(true);
+    expect(window.localStorage.getItem("atlas.appearance.hex-relief")).toBe("on");
+    act(() => writeHexRelief(false));
+    expect(readHexRelief()).toBe(false);
   });
 });

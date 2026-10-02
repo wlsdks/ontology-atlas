@@ -1,0 +1,7 @@
+{
+  "toggle": "▲ 立体",
+  "legend": "▲ 的高度和数字 = 声明依赖于此的概念数量（直接）",
+  "legendNone": "没有概念声明依赖，所以所有方块都保持在底部高度",
+  "dependents": "声明依赖于此的概念：{count, plural, other {# 个}}",
+  "regionDependents": "外部声明依赖于此领域的概念：{count, plural, other {# 个}}"
+}

@@ -37,6 +37,9 @@ const labels: HexBoardLabels = {
   domainStale: () => null,
   projectMeta: null,
   plateSub: () => "sub",
+  relief: "relief",
+  dependents: (count) => String(count),
+  regionDependents: (count) => String(count),
 };
 
 const props = { nodes, edges, evidence: new Map(), evidenceMeasured: false, staleFiles: new Map(), labels, placement: null, reducedMotion: true };

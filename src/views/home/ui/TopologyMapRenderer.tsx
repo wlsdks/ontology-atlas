@@ -28,6 +28,7 @@ import {
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
 import { useCallback, useRef, useState } from "react";
+import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
@@ -163,7 +164,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), expandStructure: expand.structure, overviewFit, expandedParents },
         host,
       ),
     frameRef,

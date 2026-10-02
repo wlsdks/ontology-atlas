@@ -1,0 +1,7 @@
+{
+  "toggle": "▲ 입체",
+  "legend": "▲ 높이와 숫자 = 이것에 의존한다고 적은 개념 수 (직접)",
+  "legendNone": "의존을 적은 개념이 없어서 모든 칸이 바닥 높이예요",
+  "dependents": "의존한다고 적은 개념 {count}",
+  "regionDependents": "바깥에서 이 도메인에 의존한다고 적은 개념 {count}"
+}
