@@ -137,9 +137,9 @@ One parenthesis per screen; after that, plain words only.
 ### Terms developers say in English
 
 Decided by the owner, 2026-10-02. A term Korean developers say in English
-stays as written on both locales: `MCP 연결`, `ACP`, `API key`, `CLI`, never an
+stays as written on both locales: `MCP`, `ACP`, `API key`, `CLI`, never an
 invented Korean phrase with the term in parentheses. Only words with settled
-Korean (설정, 폴더, 검색, 지도) are translated.
+Korean (settings, folder, search, map) are translated.
 
 The explanation moves into a `TermHint` (`src/shared/ui/term-hint.tsx`): an
 info icon whose tooltip shows the expansion, then one sentence in the current
