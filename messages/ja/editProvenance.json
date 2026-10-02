@@ -2,7 +2,7 @@
   "prefix": "最終編集",
   "subjectAgent": "AIエージェント",
   "subjectHuman": "自分",
-  "conflictMessage": "このドキュメントは別の場所で変更されました。上書きする前に確認してください",
+  "conflictMessage": "この文書は別の場所で変更されました。上書きする前に確認してください",
   "age": {
     "justNow": "たった今",
     "minutesAgo": "{count}分前",

@@ -1,7 +1,7 @@
 {
   "backToMap": "← マップ",
   "breadcrumbSeparator": "/",
-  "census": "概念{concepts}件・関係{relations}件",
+  "census": "概念{concepts}件・つながり{relations}件",
   "freshOn": "最近更新",
   "freshOff": "動きなし",
   "copyLink": "概念のリンクをコピー",
@@ -43,10 +43,10 @@
     "label": "エージェントへの引き継ぎ",
     "copy": "次のアクションをコピー",
     "copied": "エージェントへの引き継ぎ呼び出しをコピーしました",
-    "openDocument": "ドキュメントを開く",
-    "openMentionDocument": "言及するドキュメントを開く",
-    "openMentionDocumentTip": "この概念にはまだ専用のドキュメントがありません。この概念について書かれた別のドキュメントを開きます",
-    "openStudio": "マップで関係を編集"
+    "openDocument": "文書を開く",
+    "openMentionDocument": "言及する文書を開く",
+    "openMentionDocumentTip": "この概念にはまだ専用の文書がありません。この概念について書かれた別の文書を開きます",
+    "openStudio": "マップでつながりを編集"
   },
   "codeLocations": {
     "heading": "コードの場所",

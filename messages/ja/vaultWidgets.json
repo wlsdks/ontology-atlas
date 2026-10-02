@@ -176,12 +176,12 @@
     "tbLink": "リンク ⌘K",
     "mentionLabel": "文書を選択{query}",
     "mentionFooter": "↑↓で移動 · ↵で選択 · Escで閉じる",
-    "mentionRelationLabel": "「{title}」との関係を選択",
+    "mentionRelationLabel": "「{title}」とのつながりを選択",
     "mentionRelationFooter": "先頭の情報ブロックにつながりとして保存され、本文にはリンクが入ります",
     "mentionEmpty": "このフォルダにその名前のものはありません",
     "mentionRelationAdded": "つなぎました：マップに表示されます",
     "mentionRelationExists": "すでにつながっています",
-    "mentionHint": "次に関係を選びます"
+    "mentionHint": "次につながりを選びます"
   },
   "palette": {
     "dialogAriaLabel": "オントロジーワークスペースのパレット",

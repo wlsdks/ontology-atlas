@@ -64,10 +64,10 @@
     "reduceMotion": "視差効果を減らす（システム）",
     "yes": "はい",
     "no": "いいえ",
-    "window": "ウインドウ",
+    "window": "ウィンドウ",
     "folder": "フォルダ",
     "folderNone": "開いていません",
-    "folderValue": "概念{count}件、マップ{map}、ウィキ{wiki}"
+    "folderValue": "概念{count}件、マップ{map}、Wiki{wiki}"
   },
   "appUpdate": {
     "versionValue": "{version}",
@@ -78,7 +78,7 @@
     "autoOff": "Atlasは自分では確認しません。「アップデートを確認」を押したときは確認します。",
     "autoLast": "最終確認：{when}",
     "autoNever": "このコンピュータでは、まだ確認していません。",
-    "autoDismissed": "{version}は「あとで」で見送りました。「アップデートを確認」を押すと、もう一度表示されます。",
+    "autoDismissed": "{version}は「後で」で見送りました。「アップデートを確認」を押すと、もう一度表示されます。",
     "checking": "確認中",
     "resultCurrent": "最新のバージョンです。取得するものはありません。",
     "resultAvailable": "{version}が公開されました。右下の通知から取得してください。",

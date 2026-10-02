@@ -2,9 +2,9 @@
   "projectForm": {
     "sections": {
       "basicsLabel": "基本",
-      "basicsDescription": "名前、ドキュメントのアドレス、カテゴリ、ステータスを決めます。",
+      "basicsDescription": "名前、文書のアドレス、カテゴリ、ステータスを決めます。",
       "basicsDetailedDescription": "まず名前、識別子、現在のカテゴリとステータスをそろえます。",
-      "storyLabel": "紹介とドキュメント",
+      "storyLabel": "紹介と文書",
       "storyDescription": "説明、Markdownの本文、タグ、リンクを入力します。",
       "storyDetailedDescription": "マップのカードと詳細ページに表示される紹介を入力します。",
       "networkLabel": "つながりと画像",
@@ -23,7 +23,7 @@
       "extrasCaption": "本文、タグ、関連プロジェクト、日付は、作成後に追加しても問題ありません。"
     },
     "fields": {
-      "slug": "ドキュメントのアドレス",
+      "slug": "文書のアドレス",
       "name": "名前",
       "nameEn": "英語名（任意）",
       "category": "カテゴリ",
@@ -53,7 +53,7 @@
       "nameEnPlaceholder": "英語名",
       "descriptionPlaceholder": "1〜2行の要約。マップと一覧のカードに表示されます",
       "detailPlaceholder": "# 見出し\n\n**Markdownが使えます**：詳細ページに表示されます",
-      "linksPlaceholder": "GitHub|https://github.com/...\nドキュメント|https://docs.example.com",
+      "linksPlaceholder": "GitHub|https://github.com/...\n文書|https://docs.example.com",
       "tagsPlaceholder": "AI, MCP, ポートフォリオ",
       "stackPlaceholder": "Next.js, Tauri",
       "dependenciesHint": "このプロジェクトがつながるハブや上流のプロジェクトを選びます。",
@@ -62,14 +62,14 @@
       "progressPlaceholder": "50",
       "isHubLabel": "ハブにする",
       "isHubHint": "（認証やエージェントのハブのように、インディゴで強調されます）",
-      "slugAutoLabel": "ドキュメントのアドレス",
+      "slugAutoLabel": "文書のアドレス",
       "slugAutoPending": "名前を入力すると生成されます",
       "slugEditToggle": "自分で設定"
     },
     "validation": {
       "categoryNotFound": "カテゴリが存在しません。",
       "statusNotFound": "ステータスが存在しません。",
-      "duplicateSlug": "そのドキュメントのアドレスはすでにあります。",
+      "duplicateSlug": "その文書のアドレスはすでにあります。",
       "missingDependencies": "存在しない依存関係：{slugs}",
       "duplicateDependencies": "重複した依存関係：{slugs}",
       "cyclicDependency": "循環した依存関係：{name}",
@@ -77,7 +77,7 @@
       "globalErrorMore": "ほか{count}件。下の各項目で確認してください。",
       "saveFailed": "保存に失敗しました",
       "deleteFailed": "削除に失敗しました",
-      "slugRequired": "ドキュメントのアドレスを入力してください。",
+      "slugRequired": "文書のアドレスを入力してください。",
       "slugFormat": "使えるのは文字、数字、ハイフンだけです。",
       "nameRequired": "名前を入力してください。",
       "categoryRequired": "カテゴリを選んでください。",
@@ -116,7 +116,7 @@
       "createNoticeStay": "プロジェクトを作成しました。そのまま編集を続けられます。",
       "editNoticeStay": "変更を保存しました。右のプレビューと詳細ページのリンクで確認できます。",
       "deleteRowTitle": "プロジェクトを削除",
-      "deleteRowCaption": "ドキュメントのファイルが削除され、それにリンクしていたドキュメントには壊れたリンクの警告が残ります。実行前に、何が消えるかを正確に確認できます。"
+      "deleteRowCaption": "文書のファイルが削除され、それにリンクしていた文書には壊れたリンクの警告が残ります。実行前に、何が消えるかを正確に確認できます。"
     },
     "preview": {
       "summaryDirty": "完成度{score}%・変更{count}件",
@@ -189,7 +189,7 @@
     "applying": "適用中…",
     "apply": "変更を適用",
     "reset": "入力をリセット",
-    "openDocument": "ドキュメントを登録",
+    "openDocument": "文書を登録",
     "openSettings": "すべて編集",
     "errorEmpty": "名前と1行の説明は空にできません。",
     "errorGeneric": "変更を適用できませんでした。",
@@ -198,14 +198,14 @@
   },
   "workspaceShapeLabel": "このフォルダの中身",
   "workspaceShapeMap": "オントロジーマップ",
-  "workspaceShapeWiki": "ウィキ",
+  "workspaceShapeWiki": "Wiki",
   "workspaceShapeCaption": "設定ではなく、ファイルから読み取っています。パーツを追加すると初期ファイルが書き込まれ、タブもそれに従います。",
   "workspaceShapeStartMap": "マップを始める",
-  "workspaceShapeStartWiki": "ウィキ を始める",
+  "workspaceShapeStartWiki": "Wikiを始める",
   "workspaceShapeStarted": "このフォルダに追加しました。",
-  "wikiWriteModeLabel": "エージェントが ウィキ ページを書くとき",
+  "wikiWriteModeLabel": "エージェントがWikiページを書くとき",
   "wikiWriteModeAuto": "すぐに書く",
   "wikiWriteModeAsk": "毎回確認",
-  "wikiWriteModeAutoCaption": "規約に合うソースの書き起こしは、すぐに書き込まれます。保持した回答は必ず別にレビューが必要です。形式の確認が必要なページは、許可カードで止まります。",
+  "wikiWriteModeAutoCaption": "規約に合うソースのまとめは、すぐに書き込まれます。保持した回答は必ず別にレビューが必要です。形式の確認が必要なページは、許可カードで止まります。",
   "wikiWriteModeAskCaption": "すべてのページが許可カードで止まります。"
 }

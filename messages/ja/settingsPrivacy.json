@@ -28,10 +28,10 @@
     "your-coding-tool-provider": "お使いのコーディングツール自身のプロバイダ"
   },
   "paths": {
-    "update-check": "更新の確認",
-    "update-download": "更新のダウンロード",
+    "update-check": "アップデートの確認",
+    "update-download": "アップデートのダウンロード",
     "model-providers": "モデルプロバイダ",
-    "local-runner": "ローカル実行",
+    "local-runner": "ローカルランナー",
     "jev": "外部チェック",
     "tool-downloads": "コーディングツールのインストール",
     "adapter-packages": "チャットアダプタのパッケージ",
@@ -43,7 +43,7 @@
   "updateOn": "オン",
   "updateOff": "オフ",
   "updateChange": "変更",
-  "updateChangeAria": "アプリ情報で自動の更新確認を変更",
+  "updateChangeAria": "アプリ情報で自動のアップデート確認を変更",
   "allowances": {
     "title": "このコンピュータで許可したもの",
     "keywords": "同意 承認 許可 取り消し 忘れる コネクタ スケジュール　consent approval allow revoke forget connector schedule",

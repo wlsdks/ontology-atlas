@@ -1,11 +1,11 @@
 {
   "sampleLabel": "仮のサンプル",
   "sampleLine": "表示中はサンプルです：{name}",
-  "headline": "プロダクトの構成要素と、その関係を描いたマップ",
+  "headline": "プロダクトの構成要素と、そのつながりを描いたマップ",
   "body": "Markdownフォルダを開くと、各ファイルの先頭の数行からマップが描かれます。その部分は<keep>Claude Code</keep>などのコーディングエージェントも読み書きします。",
   "bodyNoFolderAccess": "マップは、各Markdownファイルの先頭の数行から描かれます。その部分は<keep>Claude Code</keep>などのコーディングエージェントも読み書きします。",
-  "sampleScale": "サンプルの規模：概念{concepts}件 · 関係{relations}件 · ドメイン{domains}件",
-  "sampleRelationExample": "たとえば「注文 → 出荷」のような関係です。",
+  "sampleScale": "サンプルの規模：概念{concepts}件 · つながり{relations}件 · ドメイン{domains}件",
+  "sampleRelationExample": "たとえば「注文 → 出荷」のようなつながりです。",
   "openLabel": "自分のMarkdownフォルダを開く",
   "openBusy": "フォルダを開いています…",
   "buildFromCodeLabel": "コードからマップを作る",
@@ -32,7 +32,7 @@
   "sampleSourceStorefront": "オンラインストア",
   "nodeHint": {
     "action": "マップ上の概念をタップ",
-    "reason": "すべて実際のドキュメントから作られています"
+    "reason": "すべて実際の文書から作られています"
   },
   "readout": {
     "conceptUnit": "概念",
@@ -48,9 +48,9 @@
   "sampleSourceStorefrontTip": "商品、注文、会員、配送など、誰でも知っている名前でマップの読み方を学べます",
   "sampleSourceDogfoodTip": "このアプリ自身を作ったコードのマップです。人とエージェントが実際に育てたもので、Gitの履歴が裏付けています",
   "cliBridgeSourceOnly": "このコマンドはontology-atlasのソースチェックアウト内で実行します。アプリだけを使う場合は不要です。",
-  "errorRootRejected": "このフォルダはマップにできません。システムフォルダやホームフォルダ全体ではなく、ドキュメントが入っているフォルダを選んでください。",
+  "errorRootRejected": "このフォルダはマップにできません。システムフォルダやホームフォルダ全体ではなく、文書が入っているフォルダを選んでください。",
   "errorPathMissing": "そのフォルダは見つかりません。移動または削除された可能性があります。別のフォルダを選んでください。",
-  "errorGrantNeeded": "このアップデート後は、アクセスを確認するためオントロジーのフォルダをもう一度選んでください。ドキュメントはそのまま残っています。",
+  "errorGrantNeeded": "このアップデート後は、アクセスを確認するためオントロジーのフォルダをもう一度選んでください。文書はそのまま残っています。",
   "errorPermission": "Atlasはこのフォルダを読み取れません。もう一度選んでアクセスを許可してください。",
   "buildFromCodeWillCreate": "このプロジェクト内にマップ用フォルダを作成しますか？",
   "buildFromCodeReuse": "このプロジェクトのマップ用フォルダで続けますか？",

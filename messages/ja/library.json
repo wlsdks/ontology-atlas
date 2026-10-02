@@ -8,27 +8,27 @@
     "intro": "該当する箇所を見つけ、原本を開いて根拠を確かめます。",
     "questionLabel": "質問",
     "questionPlaceholder": "知りたい決定やルールは何ですか？",
-    "folderScope": "このフォルダのウィキページ{pages, number}件と原本{sources, number}件を検索します",
+    "folderScope": "このフォルダのWikiページ{pages, number}件と原本{sources, number}件を検索します",
     "originalsTitle": "まず原本から",
     "readOriginal": "読む",
-    "originalMeta": "{format} · {size} · ウィキページ{pages, number}件が引用",
+    "originalMeta": "{format} · {size} · Wikiページ{pages, number}件が引用",
     "otherOriginals": "ほかの原本{count, number}件は「ソース」タブにあります。",
     "editQuestion": "質問を編集",
     "search": "根拠を探す",
     "reading": "{read, number}件のファイルを読み込み中…",
-    "coverage": "ウィキページ{totalPages, number}件中{readPages, number}件、原本ファイル{totalSources, number}件中{readSources, number}件を検索しました。",
-    "coverageCompact": "ウィキ{readPages, number}/{totalPages, number} · 原本{readSources, number}/{totalSources, number} · 省略した手がかり{omitted, number}件",
+    "coverage": "Wikiページ{totalPages, number}件中{readPages, number}件、原本ファイル{totalSources, number}件中{readSources, number}件を検索しました。",
+    "coverageCompact": "Wiki{readPages, number}/{totalPages, number} · 原本{readSources, number}/{totalSources, number} · 省略した手がかり{omitted, number}件",
     "coverageDetails": "検索範囲と制限",
-    "leadsSummary": "根拠の手がかり · ウィキの主張{claims, number}件 · 原本の箇所{sources, number}件",
+    "leadsSummary": "根拠の手がかり · Wikiの主張{claims, number}件 · 原本の箇所{sources, number}件",
     "zeroLocalTitle": "該当する箇所はまだありません",
     "zeroLocalBody": "検索したファイルに、一致するテキストはありませんでした。単語検索では、別の言語の文書やAtlasが読めない形式の文書を見落とすことがあります。この結果は、答えがないことを示すものではありません。",
     "zeroLocalAgentNote": "「原本を調査」は読み取り専用のエージェントターンを開始し、報告を作る前に原本を読み直します。",
     "limits": "読めなかった原本：{unreadable, number}件 · 検索中に変更：{changed, number}件 · 読み込み上限でスキップ：{skipped, number}件 · 省略した該当手がかり：{omitted, number}件。検索は語句の一致で、最後に棚卸ししたファイルのバージョンを使います。外部での編集は、フォルダを更新すると反映されることがあります。",
     "unknown": "読み込んだファイルに該当する箇所はありませんでした。答えは不明のままです。ないと判断する前に、未読または省略したファイルを確認してください。",
     "outdated": "この検索の後にフォルダが変更されました。もう一度検索して最新のファイルを使ってください。",
-    "wikiTitle": "確認するウィキの主張",
+    "wikiTitle": "確認するWikiの主張",
     "wikiCaveat": "ページに書かれた記述であり、検証済みの答えではありません。出典が新しくても、主張が出典から導けることにはなりません。",
-    "noWikiHits": "読み込んだページに該当するウィキの事実や決定はありません。",
+    "noWikiHits": "読み込んだページに該当するWikiの事実や決定はありません。",
     "sourceTitle": "原本の該当箇所",
     "noSourceHits": "Atlasが読めた原本に、一致するテキストはありません。PDFや未対応の形式は、別のリーダーが必要な場合があります。",
     "noCitation": "この主張には出典のアンカーがなく、ここでは原本を確認できません。",
@@ -52,7 +52,7 @@
       "title": "質問の報告",
       "caveat": "主張を受け入れる前に、引用された原本を読んでください。この下書きはレビューもフォルダへの保存もされていません。",
       "leadsTitle": "取得した根拠の手がかり",
-      "file": "ウィキの回答として保存",
+      "file": "Wikiの回答として保存",
       "filing": "保存中…",
       "fileRefused": {
         "shape": "保存には、依頼した4つの報告セクションが順番どおりに1回ずつ必要です。この自由形式の下書きは、レビューと書き出しにそのまま使えます。",
@@ -84,14 +84,14 @@
       "noKey": "このMacにはJevのキーが保存されていません。ローカルの根拠は引き続き使えます。この任意の確認を使うには、「エージェント → モデル」でキーを追加してください。",
       "unavailable": "Jevのキーの状態を確認できませんでした。ローカルの根拠は引き続き使えます。何も送信していません。",
       "missing": "引用された原本が見つからないか、特定できません。Jevでの確認は使えません。",
-      "stale": "このウィキの主張を記録した後に出典が変更されました。Jevでの確認は使えません。",
-      "unmeasured": "出典のバージョンをこのウィキの主張と照合できません。Jevでの確認は使えません。",
+      "stale": "このWikiの主張を記録した後に出典が変更されました。Jevでの確認は使えません。",
+      "unmeasured": "出典のバージョンをこのWikiの主張と照合できません。Jevでの確認は使えません。",
       "too-long": "この主張または原本の箇所は、Jevに送るには長すぎます。ここで原本を読むか、より短い引用の主張を選んでください。何も送信していません。",
       "obsolete": "ページ、出典、またはフォルダが変更されました。現在の根拠を確認し、もう一度主張を選んでください。",
       "failed": "Jevへのリクエストが失敗しました。助言は適用されていません。",
       "consentTitle": "この主張と箇所をJevに送信しますか？",
       "transfer": "「送信」を押すと、このJSONとAPI key（認証ヘッダー内）が{host}に送られます。原本のファイルはこのフォルダに残ります。",
-      "keyNote": "キーの値は、このプレビューにもウィキにも表示されません。リクエストの前に、メタデータの転送記録が予約されます。",
+      "keyNote": "キーの値は、このプレビューにもWikiにも表示されません。リクエストの前に、メタデータの転送記録が予約されます。",
       "cancel": "キャンセル",
       "send": "1回だけ送信",
       "sending": "送信中…",
@@ -128,12 +128,12 @@
     }
   },
   "eyebrow": "このフォルダ",
-  "lede": "集めたプロジェクトの文書と、それをもとに書かれたウィキページです。文書は形式を問わず、ソースはバイト単位でそのまま保持され、ページの主張にはどれも出典があります。",
+  "lede": "集めたプロジェクトの文書と、それをもとに書かれたWikiページです。文書は形式を問わず、ソースはバイト単位でそのまま保持され、ページの主張にはどれも出典があります。",
   "index": {
     "tab": "索引",
     "aria": "索引に表示する一覧",
     "sources": "ソース{count, number}",
-    "wiki": "ウィキ{count, number}",
+    "wiki": "Wiki{count, number}",
     "about": "このフォルダの内容",
     "collapse": "索引を閉じる",
     "expand": "索引を表示"
@@ -156,7 +156,7 @@
       "nobody": "なし",
       "not-compiled": {
         "label": "未整理",
-        "hint": "このファイルを引用しているウィキページはまだありません。"
+        "hint": "このファイルを引用しているWikiページはまだありません。"
       },
       "compiled": {
         "label": "整理済み",
@@ -190,25 +190,25 @@
     "pagesNeedReview": "再確認が必要な既存ページ{count, number}件"
   },
   "wiki": {
-    "header": "ウィキ · {count, number}",
-    "listAria": "このフォルダのウィキページ",
+    "header": "Wiki · {count, number}",
+    "listAria": "このフォルダのWikiページ",
     "compile": "エージェントに整理を依頼",
     "compileTooltip": "ソースを読み、まとめた内容を更新します。保持された回答は、別途レビューと更新のために報告されます。",
     "lint": "ページ形式を確認",
-    "lintTooltip": "エージェントのターンを1回開始し、ウィキページを読んで、食い違い、置き換えられた主張、欠けているリンク、ページのない名前を報告します。何も書き込みません。",
+    "lintTooltip": "エージェントのターンを1回開始し、Wikiページを読んで、食い違い、置き換えられた主張、欠けているリンク、ページのない名前を報告します。何も書き込みません。",
     "candidateKind": {
       "domain": "ドメイン",
       "capability": "ケイパビリティ",
       "element": "要素",
-      "person": "人物 · ウィキにとどまる",
-      "organisation": "組織 · ウィキにとどまる",
+      "person": "人物 · Wikiにとどまる",
+      "organisation": "組織 · Wikiにとどまる",
       "other": "マップの概念ではない"
     },
     "candidatePages": "{count, number}ページに登場",
     "propose": "概念として提案",
     "proposeTooltip": "エージェントのターンを1回開始し、これらのページを読んでオントロジーの概念を1つ提案します。書き込みは、あなたの許可カードの手前で止まります。",
     "logLint": "前回の確認{when}: {summary}",
-    "empty": "ウィキページはまだありません。ページは、kind: のないMarkdownで、「wiki/_template.md」にある形式に従います。",
+    "empty": "Wikiページはまだありません。ページは、kind: のないMarkdownで、「wiki/_template.md」にある形式に従います。",
     "unknownAuthor": "不明",
     "offTemplate": "テンプレート外",
     "offTemplateCount": "テンプレートに合わないページ{count, number}件",
@@ -218,8 +218,8 @@
     "compileWebGetApp": "アプリを入手",
     "agentMissing": "ページ形式の確認とソースの整理を行うには、コーディングエージェントを接続してください。",
     "agentMissingDoor": "エージェントを接続",
-    "offTemplateReason": "ウィキのテンプレートに合っていません：{code}。ページを開いて、直す箇所を確認してください。",
-    "offTemplateAriaLabel": "このページとウィキテンプレートの違い",
+    "offTemplateReason": "Wikiのテンプレートに合っていません：{code}。ページを開いて、直す箇所を確認してください。",
+    "offTemplateAriaLabel": "このページとWikiテンプレートの違い",
     "offTemplateTitle": "修正が必要な箇所{count, number}件 · ページテンプレート",
     "offTemplateBody": "文書であることも、自由に編集できることも変わりません。以下を直すと、ほかのページと同じ形で読めるようになります。",
     "writtenBy": "作成者：{author}",
@@ -248,13 +248,13 @@
     "logNew": "新規",
     "logRevised": "改訂",
     "logNothingNew": "新しいものなし",
-    "emptyNoTemplate": "ウィキページはまだなく、このフォルダにテンプレートもありません。「設定 › ワークスペース」からウィキを始めてください。すべてのページが従う形式として「wiki/_template.md」が書き込まれます。",
+    "emptyNoTemplate": "Wikiページはまだなく、このフォルダにテンプレートもありません。「設定 › ワークスペース」からWikiを始めてください。すべてのページが従う形式として「wiki/_template.md」が書き込まれます。",
     "folderMark": "リンク",
     "candidatesMore": "ほか{count, number}件の名前",
     "candidatesLess": "名前を減らす",
-    "candidatesTooltip": "前回の確認で3ページ以上に登場したのに、専用のページがない名前です。マップに概念として提案できるのは、コードが作るもの、つまりドメイン、ケイパビリティ、要素だけです。人物と組織はウィキの中の名前にとどまります。",
+    "candidatesTooltip": "前回の確認で3ページ以上に登場したのに、専用のページがない名前です。マップに概念として提案できるのは、コードが作るもの、つまりドメイン、ケイパビリティ、要素だけです。人物と組織はWikiの中の名前にとどまります。",
     "fileAnswer": "回答を保存",
-    "fileAnswerTooltip": "直前の回答を「wiki/answers/」の下にウィキページとして書き込み、引用したファイルをソースとして記録します。ほかのページと同じ規約で判定されます。",
+    "fileAnswerTooltip": "直前の回答を「wiki/answers/」の下にWikiページとして書き込み、引用したファイルをソースとして記録します。ほかのページと同じ規約で判定されます。",
     "fileAnswerDone": "{page}として保存しました。",
     "fileAnswerRejected": "保存しませんでした。回答がページの規約に合っていません（{code}）。引用を求めて、もう一度試してください。",
     "findingKind": {
@@ -266,7 +266,7 @@
     "fixTooltip": "名前の挙がったページでこれを直すエージェントのターンを1回開始します。食い違いは両方の値を両方の引用つきで、置き換えられた主張は現在の値を先頭に、欠けているリンクは双方向のリンクで直します。",
     "newPage": "新規ページ",
     "newPageTooltip": "自分で書くページを始めます。規約のセクションとcreated_by: humanだけを用意し、好きなエディタで埋めるまでは空です。一覧は自動で更新されます。",
-    "newPageDialogTitle": "新規ウィキページ",
+    "newPageDialogTitle": "新規Wikiページ",
     "newPageDialogBody": "標準の構成を用意したMarkdownの下書きを作成します。",
     "newPageTitle": "ページのタイトル",
     "newPageTitleExample": "例：四半期計画のメモ",
@@ -374,7 +374,7 @@
   },
   "shelf": {
     "commonState": "{count, number}ページ · {state}",
-    "listAria": "ウィキページとソースのバージョン",
+    "listAria": "Wikiページとソースのバージョン",
     "freshness": {
       "fresh": "確認済みのソースバージョンに変更はありません。",
       "stale": "ソースが変更されたか、このページと照合されていません。",
@@ -392,7 +392,7 @@
     "counts": "ソース{sources, number}件 · ページ{pages, number}件 · 概念{concepts, number}件 · 引用{cites, number}件 · 言及{mentions, number}件",
     "countsIsland": "ソース{sources, number}件 · ページ{pages, number}件 · 引用{cites, number}件",
     "empty": "描くものがまだありません。整理がページを書くと、どのソースから書かれ、どの概念に触れているかがここに表示されます。",
-    "canvasAria": "資料室のグラフ。元ソース、ウィキページ、そのページが挙げる概念。",
+    "canvasAria": "資料室のグラフ。元ソース、Wikiページ、そのページが挙げる概念。",
     "legend": "左にソース、その隣にそこから書かれたページ、右にページが挙げる概念が並びます。線は、ソースからそれを読んだページへ伸びます。塗りつぶしの円はページ、四角はソース、輪はマップ上の概念です。太い線は引用、破線は言及です。スクロールで拡大縮小、背景をドラッグで移動、点を押すとその横にカードが開きます。",
     "legendShort": "円はページ、四角はソース、輪は概念です。",
     "legendCardOpen": "塗りつぶしの円はページ、四角はソース、輪はマップ上の概念です。太い線は引用、破線は言及で、どちらの場合も同じです。Escapeキーか、同じ点をもう一度押すとカードが閉じます。",
@@ -410,7 +410,7 @@
     "keys": "矢印キーで点の間を移動し、Enterキーで今いる点の横にカードを開き、Escapeキーで閉じます。",
     "announce": "{kind} {name}、{position, number}/{total, number}。Enterキーで{action}。",
     "kind": {
-      "page": "ウィキページ",
+      "page": "Wikiページ",
       "source": "ソース",
       "concept": "概念"
     },
@@ -421,13 +421,13 @@
     "fitDone": "全体はすでに収まっています",
     "describe": {
       "source": "{name}: 原本のファイルです。太い線は、これから書かれたページにつながります。線がなければ、まだ誰も書き起こしていません。押すと横にカードが開きます。",
-      "page": "{name}: ウィキページです。太い線は引用している原本に、破線は挙げている概念につながります。押すと横にカードが開きます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったウィキページにつながります。押すと横にカードが開きます。"
+      "page": "{name}: Wikiページです。太い線は引用している原本に、破線は挙げている概念につながります。押すと横にカードが開きます。",
+      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。押すと横にカードが開きます。"
     },
     "describeOpen": {
       "source": "{name}: 原本のファイルです。太い線は、これから書かれたページにつながります。線がなければ、まだ誰も書き起こしていません。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。",
-      "page": "{name}: ウィキページです。太い線は引用している原本に、破線は挙げている概念につながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったウィキページにつながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。"
+      "page": "{name}: Wikiページです。太い線は引用している原本に、破線は挙げている概念につながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。",
+      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。"
     },
     "card": {
       "close": "このカードを閉じる",
@@ -480,7 +480,7 @@
     "state": "状態",
     "hash": "sha256",
     "hashUnmeasured": "未計測。このファイルをハッシュつきで引用したものはまだありません",
-    "citedByNobody": "ウィキページはまだありません",
+    "citedByNobody": "Wikiページはまだありません",
     "neverOpened": "Atlasはこのファイルを一度も開いていません。以下はすべて、フォルダの一覧から、またはページが主張したハッシュを確かめるために計測したものです。",
     "reveal": "Finderで表示",
     "download": "コピーを開く",
@@ -524,7 +524,7 @@
   "kindsAria": "このフォルダが保持するもの",
   "kindSourcesTitle": "ソース",
   "kindSourcesBody": "届いたままのファイルです。形式は問わず、バイト単位でそのまま保持し、解析はしません。",
-  "kindWikiTitle": "ウィキ",
+  "kindWikiTitle": "Wiki",
   "kindWikiBody": "ソースごとに1ページ、同じ形式で、すべての主張が元のファイルを引用します。",
   "stage": {
     "title": "集める、整理する、読む",
@@ -548,7 +548,7 @@
     "read": {
       "title": "読む",
       "startWith": "まず{title}から",
-      "nothingYet": "ウィキページはまだありません。整理すると、最初の1ページが書かれます。",
+      "nothingYet": "Wikiページはまだありません。整理すると、最初の1ページが書かれます。",
       "coveredLine": "ソース{total, number}件中{compiled, number}件を整理済み",
       "coveredChecking": "{total, number}件中{compiled, number}件を整理済み、{checking, number}件は確認中",
       "coveredPartial": "{total, number}件中{compiled, number}件を整理済み、{partial, number}件は一部のみ読み込み済み",
@@ -557,7 +557,7 @@
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
     "brainNone": "まだ設定されていません",
-    "transferLocal": "ソースのテキストと、読み込む既存のウィキページは、このコンピュータ上の{host}に送られます。{file}にすべてのリクエストが記録されます。",
+    "transferLocal": "ソースのテキストと、読み込む既存のWikiページは、このコンピュータ上の{host}に送られます。{file}にすべてのリクエストが記録されます。",
     "blockedWeb": "整理には、このコンピュータ上で動くコーディングエージェントが必要で、起動できるのはアプリだけです。",
     "blockedChecking": "このコンピュータ上のコーディングエージェントを探しています。",
     "blockedLocalRemote": "このフォルダに保存されているランナーは{host}で、このコンピュータではありません。整理は文書の内容を送信するため、このマシン上のランナーでのみ実行します。「エージェント › モデル」でアドレスを変更してください。",
@@ -631,17 +631,17 @@
     "structuralTitle": "アプリが確認したこと",
     "structuralHead": "ページ{pages, number}件 · テンプレート外{offTemplate, number}件 · 指摘{findings, number}件",
     "structuralClean": "すべてのページがテンプレートに合い、すべてのリンクが解決し、同じ文書の2つのまとめが互いを無視していることもありません。",
-    "advisoryMark": "まだ新しいウィキではよくあること",
+    "advisoryMark": "まだ新しいWikiではよくあること",
     "advisoryFold": "参考の指摘{count, number}件",
     "advisoryLess": "参考の指摘を隠す",
     "jumpAria": "このページの台帳へ移動",
     "unmeasured": "まだ読まれていないページが{count, number}件あります。ここに載っているのは、これまでに読んだものすべてであり、存在するものすべてではありません。",
     "semanticTitle": "エージェントが読んだ内容",
-    "never": "エージェントはまだこれらのページを読んでいません。ウィキを確認すると、2つのページで食い違う値、後のページに置き換えられた主張、ページのない名前が追加されます。",
+    "never": "エージェントはまだこれらのページを読んでいません。Wikiを確認すると、2つのページで食い違う値、後のページに置き換えられた主張、ページのない名前が追加されます。",
     "clean": "エージェントの前回の確認では、直すべき点はありませんでした。",
     "fixed": "修正済み · もう一度確認して再判定",
-    "gone": "エージェントが読んだ内容は、アプリを開き直すと残りません。上の一覧は毎回フォルダから計算するので残ります。エージェント側の結果を見るには、もう一度ウィキを確認してください。",
-    "emptyLede": "ウィキの確認は、読んで報告するだけです。何も書き込みません。",
+    "gone": "エージェントが読んだ内容は、アプリを開き直すと残りません。上の一覧は毎回フォルダから計算するので残ります。エージェント側の結果を見るには、もう一度Wikiを確認してください。",
+    "emptyLede": "Wikiの確認は、読んで報告するだけです。何も書き込みません。",
     "rule": {
       "kind-present": "このページはマップ用の印がついています",
       "missing-field": "必須の行がありません",
@@ -657,7 +657,7 @@
     },
     "namesTitle": "ページのない名前",
     "open": "確認結果{count, number}",
-    "running": "ウィキを確認中…",
+    "running": "Wikiを確認中…",
     "unseen": "新規"
   },
   "search": {
@@ -665,7 +665,7 @@
     "matches": "ソース{sources, number}件（{passages, number}箇所） · ページ{pages, number}件が一致",
     "noneHere": "この一覧にはありません。",
     "nothing": "原本にもページにも「{needle}」に一致するものはありません。別の語で試してください。",
-    "showPages": "ウィキページ{count, number}件を表示",
+    "showPages": "Wikiページ{count, number}件を表示",
     "showSources": "ソース{count, number}件を表示",
     "reading": "ソースを読み込み中<count> · {read, number}/{total, number}</count>",
     "capped": "最初の{count, number}件のみ読み込み"
@@ -746,8 +746,8 @@
     "aria": "資料室の表示",
     "sources": "ソース",
     "sourcesCount": "元のソースファイル",
-    "wiki": "ウィキ",
-    "wikiCount": "ウィキページ",
+    "wiki": "Wiki",
+    "wikiCount": "Wikiページ",
     "ontology": "オントロジー",
     "rounds": "点検履歴",
     "roundsCount": "有効な定期点検",
@@ -800,7 +800,7 @@
     "openDocumentNamed": "{name}をオントロジーで開く",
     "kind": {
       "sourceReference": "ソースの参照",
-      "wikiReference": "ウィキの参照"
+      "wikiReference": "Wikiの参照"
     }
   },
   "rounds": {
@@ -828,7 +828,7 @@
     "emptySignals": "各実行がここに残すもの",
     "signal": {
       "stale": "古い",
-      "staleBody": "ページが引用しているソースが変更されました。ページを押すとウィキで開きます。",
+      "staleBody": "ページが引用しているソースが変更されました。ページを押すとWikiで開きます。",
       "redrafted": "書き直し済み",
       "redraftedBody": "エージェントが新しい下書きを書きました。確認するまでは下書きのままです。",
       "refused": "拒否",
@@ -901,7 +901,7 @@
       "held": "変更なしの実行{count, number}回",
       "refused": "拒否されたリクエスト{count, number}件",
       "failed": "完了しなかった実行{count, number}回",
-      "openPage": "{page}をウィキで開く",
+      "openPage": "{page}をWikiで開く",
       "showRefused": "台帳で確認"
     },
     "ledger": {

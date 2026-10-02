@@ -12,7 +12,7 @@
   "forget": "削除",
   "forgetFolder": "{name}を一覧から外す",
   "lastOpenBadge": "前回",
-  "contents": "ドキュメント{docs}件 · 概念{concepts}件",
+  "contents": "文書{docs}件 · 概念{concepts}件",
   "contentsUncounted": "未集計",
   "openedAgo": "{when}に開きました",
   "age": {
@@ -28,7 +28,7 @@
     "missing": "このパスにはもうありません。名前の変更や移動、またはマウントされていないボリュームにある可能性があります。",
     "missingShort": "フォルダが見つかりません",
     "blockedShort": "アクセスが必要です",
-    "blocked": "ブラウザがこのフォルダへの権限を拒否しました。フォルダピッカーからもう一度開いてください。",
+    "blocked": "ブラウザがこのフォルダへの権限を拒否しました。「フォルダを選択…」からもう一度開いてください。",
     "needsPermission": "開くと、ブラウザが再び許可を求めます。",
     "unknown": "このフォルダに到達できるか確認できませんでした。"
   },
@@ -45,12 +45,12 @@
     "releaseValve": "この一覧にフォルダを1つだけ残すと、次回の起動時にそのフォルダが直接開きます。",
     "helpLabel": "フォルダの選び方について",
     "closeHelp": "閉じる",
-    "justStartBody": "ピッカーを使わず、ホームフォルダのOntology Atlas内にすぐ使えるローカルフォルダを作成します。",
+    "justStartBody": "フォルダを選ばず、ホームフォルダのOntology Atlas内にすぐ使えるローカルフォルダを作成します。",
     "openBody": "既存の別のMarkdownフォルダを選びます。",
     "createBody": "空のフォルダを選び、入れる内容を選択します。"
   },
   "locate": "探し直す",
-  "locateFolder": "フォルダピッカーで{name}を探し直す",
+  "locateFolder": "「フォルダを選択…」で{name}を探し直す",
   "countedAgo": "{when}に集計",
   "missing": {
     "summary": "{count}件のフォルダが見つかりません",
@@ -59,7 +59,7 @@
     "body": "Atlasが記憶しているパスにフォルダがありません。名前の変更や移動、またはマウントされていないボリュームにある可能性があります。一覧から外してもこの一覧から消えるだけで、ディスク上のものは変わりません。",
     "forgetAll": "{count}件すべて削除",
     "locate": "移動したフォルダを探す",
-    "locateLabel": "フォルダピッカーで移動したフォルダを探す",
+    "locateLabel": "「フォルダを選択…」で移動したフォルダを探す",
     "close": "閉じる"
   }
 }

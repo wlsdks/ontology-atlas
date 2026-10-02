@@ -32,6 +32,8 @@ export const KEEP_TERMS = [
   'TypeScript',
   'Tauri',
   'MIT',
+  // The Library's wiki layer is a product surface name that developers say in English.
+  'Wiki',
 ];
 
 export const KEEP_TERM_EXEMPT = { ko: ['Markdown'] };

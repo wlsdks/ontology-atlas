@@ -6,7 +6,7 @@
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
-    "explanation": "エディタやアプリがコーディングエージェントとやり取りするためのプロトコルです。"
+    "explanation": "Atlasのようなアプリがコーディングエージェントとやり取りし、書き込みのたびに確認を取る標準の方式です。"
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",

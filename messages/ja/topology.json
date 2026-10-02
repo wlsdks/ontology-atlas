@@ -19,7 +19,7 @@
     "legendPips": "点＝要素数 · 金色＝古い要素",
     "legendStale": "古い",
     "legendUnknown": "不明",
-    "legendCanals": "リージョン間の依存 · 太いほど関係が多い",
+    "legendCanals": "リージョン間の依存 · 太いほどつながりが多い",
     "legendNotches": "切れ込み＝依存先に面した辺",
     "legendNeeds": "依存先",
     "legendUsers": "利用元",
@@ -38,7 +38,7 @@
     "legendCurrent": "最新",
     "legendStaleShort": "古い",
     "legendUnknownShort": "不明",
-    "legendStale": "古い · 引用したコードがドキュメントより後に変わった、またはなくなった",
+    "legendStale": "古い · 引用したコードが文書より後に変わった、またはなくなった",
     "legendUnknown": "不明 · 根拠をまだ読んでいない",
     "legendSize": "大きさ＝要素数",
     "legendRollup": "数字＝ドメイン間の依存数",
@@ -60,7 +60,7 @@
   "mobileTagline": "概念マップ。",
   "workspace": {
     "growthThisWeek": " · 今週プロジェクト+{count}件",
-    "subtitle": "概念<b>{concepts}</b>件 · 関係<b>{relations}</b>件{growth}",
+    "subtitle": "概念<b>{concepts}</b>件 · つながり<b>{relations}</b>件{growth}",
     "eyebrow": "概念{concepts}件",
     "expandHint": "ワークスペースのマップを開く"
   },
@@ -73,7 +73,7 @@
     "metricUsedByHelp": "この概念を直接使っている（指している）ほかの項目です。",
     "metricDependsOnHelp": "この概念が直接頼っているほかの項目です。",
     "metricBelongsToHelp": "この概念を直接含む親の項目です。1段上までです。",
-    "metricEvidenceHelp": "この概念が書かれているドキュメントです。専用のページか、この概念に触れているほかのページです。クリックで開きます。",
+    "metricEvidenceHelp": "この概念が書かれている文書です。専用のページか、この概念に触れているほかのページです。クリックで開きます。",
     "metricEvidenceDeclared": "宣言済み",
     "containsShowAll": "すべて表示",
     "groupShowMore": "もっと見る",
@@ -89,17 +89,17 @@
     "handoffCopyFailed": "コピーできませんでした。もう一度お試しください。",
     "openFullDetail": "詳細を開く",
     "actionsGroupLabel": "概念の操作",
-    "actionDocument": "ドキュメント",
+    "actionDocument": "文書",
     "actionMentionDocument": "言及箇所",
     "actionCreateLinked": "関連を作成",
-    "actionEditRelations": "関係を編集",
+    "actionEditRelations": "つながりを編集",
     "actionEditMenu": "編集",
     "actionMore": "その他の操作",
     "contextMenuAriaLabel": "{name}の操作",
     "actionCopyHandoff": "引き継ぎをコピー",
     "actionAskAgent": "エージェントに質問",
     "actionPath": "パス",
-    "actionMentionDocumentTip": "この概念には専用のドキュメントがまだありません。この概念について書かれたほかのドキュメントを開きます",
+    "actionMentionDocumentTip": "この概念には専用の文書がまだありません。この概念について書かれたほかの文書を開きます",
     "actionAskAgentTip": "マップの横にいるエージェントにこの概念について質問します",
     "updated_today": "今日変更",
     "updated_yesterday": "昨日変更",
@@ -149,7 +149,7 @@
     "sourceWhy_use_current_evidence": "ここにある内容は、前回のチェック時点ですべて確認済みです。そのままAIエージェントに渡せます。",
     "sourceDegradedWhy": "ブラウザではフォルダがディスク上のどこにあるか分からないため、この画面では接続できません。",
     "sourceDegradedCta": "アプリを入手",
-    "sourceDegradedStillWorks": "マップの閲覧、ドキュメントの編集、AI向け引き継ぎのコピーは、ここでも使えます。",
+    "sourceDegradedStillWorks": "マップの閲覧、文書の編集、AI向け引き継ぎのコピーは、ここでも使えます。",
     "sourcePickerTitle": "プロジェクトのコードフォルダを選択",
     "sourceProposeQuestion": "このフォルダで合っていますか？",
     "sourceProposeReasonGit": "このフォルダを囲むGitリポジトリです",
@@ -157,9 +157,9 @@
     "sourceProposeSupportNone": "コードの場所がまだ書かれていないため、パスを確認できませんでした",
     "sourceProposeConfirm": "このフォルダを接続",
     "sourceProposePickOther": "別のフォルダを選択",
-    "sourceRelationsShow": "関係を表示",
-    "sourceRelationsHide": "関係を隠す",
-    "sourceOntologyDocument": "概念のドキュメント",
+    "sourceRelationsShow": "つながりを表示",
+    "sourceRelationsHide": "つながりを隠す",
+    "sourceOntologyDocument": "概念の文書",
     "sourceBusy": "コードの根拠を計測中",
     "sourceError_sidecar_malformed": "ローカルの分析レシートが壊れているため、Atlasは上書きしませんでした。",
     "sourceError_sidecar_unavailable": "Atlasはローカルのレシートを読み取れず、既存の紐づけをそのまま残しました。",
@@ -239,7 +239,7 @@
     "overviewSyncCopiedAriaLabel": "Claude CodeまたはCodex向けのマップ更新チェックをコピーしました",
     "overviewBriefTitle": "マップ概要",
     "overviewBriefTotalNodes": "概念の合計",
-    "overviewBriefTotalRelations": "関係の合計",
+    "overviewBriefTotalRelations": "つながりの合計",
     "overviewBriefRelationReading": "つながりの読み方：線は誰かが書き残した種類付きの事実であり、似ていそうだという推測ではありません",
     "overviewBriefRelationProvenance": "根拠の出どころ",
     "overviewBriefRelationSourceBacked": "コードの裏付けあり",
@@ -291,7 +291,7 @@
   "controls": {
     "relayoutToast": "マップを再配置中",
     "spotlightTooltip": "最近の変更のスポットライト：直近{days}日に変わった概念ははっきり表示され、それ以外は後ろに下がります",
-    "spotlightEmptyTooltip": "最近の変更はありません。ドキュメントを編集すると、ここで示されます",
+    "spotlightEmptyTooltip": "最近の変更はありません。文書を編集すると、ここで示されます",
     "spotlightSampleTooltip": "サンプルの日付はあなたの作業ではありません。フォルダを開くと、自分の変更がここに表示されます",
     "spotlightAriaLabel": "最近の変更のスポットライトを切り替え",
     "spotlightLabel": "最近",
@@ -311,27 +311,27 @@
   "empty": {
     "noMatchesTitle": "一致する項目なし",
     "noMatchesBody": "検索、深さ、ハブの絞り込みで、すべての概念とプロジェクトが隠れています。",
-    "sparseFilterTitle": "絞り込みで関係が隠れています",
+    "sparseFilterTitle": "絞り込みでつながりが隠れています",
     "sparseFilterBody": "現在の絞り込みでは概念やプロジェクトが少なすぎて、つながったマップを描けません。",
     "clearFilters": "絞り込みを解除",
     "kicker": "マップ · 概念{count}件",
-    "kickerNoDeps": "マップ · 概念{count}件 · 関係0件",
+    "kickerNoDeps": "マップ · 概念{count}件 · つながり0件",
     "titleNoProjects": "このフォルダはまだ空です",
-    "titleNoDeps": "描ける関係はまだありません",
+    "titleNoDeps": "描けるつながりはまだありません",
     "bodyNoProjectsDownload": "デスクトップアプリをインストールしてフォルダを開くと、ここを埋め始められます。",
     "bodyNoProjectsPicker": "自分で書くか、AIエージェントにコードを読ませて一気に埋めましょう。",
-    "bodyNoDeps": "保存/編集で関係を1つ作ると、その線がここに表示されます。",
+    "bodyNoDeps": "保存/編集でつながりを1つ作ると、その線がここに表示されます。",
     "crossViewHint": "作ったものは、閲覧と保存/編集にも表示されます。",
     "ctaCreateNode": "概念を作成",
     "ctaTree": "概念を閲覧",
     "ctaBuilder": "保存/編集を開く",
-    "ctaBuilderNoDeps": "関係を作成",
+    "ctaBuilderNoDeps": "つながりを作成",
     "ctaOpenVaultDownload": "アプリを入手",
     "ctaOpenVaultPicker": "フォルダを開く",
-    "kickerDocsFound": "あなたのフォルダ · ドキュメント{count}件",
-    "titleDocsFound": "ドキュメントが見つかりましたが、まだマップにありません",
+    "kickerDocsFound": "あなたのフォルダ · 文書{count}件",
+    "titleDocsFound": "文書が見つかりましたが、まだマップにありません",
     "bodyDocsFound": "このフォルダでMarkdownファイルが{count}件見つかりました。ファイル先頭の情報ブロックに種類の目印がまだないため、マップには載っていません。",
-    "ctaStartFromDocs": "ドキュメントからマップを作成"
+    "ctaStartFromDocs": "文書からマップを作成"
   },
   "errorBanner": {
     "retry": "再試行"
@@ -353,7 +353,7 @@
     "sourceDocuments": "文書",
     "sourceDocumentsPartialTitle": "フォルダが一度に読み取れる量を超えているため、ほかにも文書がある可能性があります。",
     "sourceDocumentsReading": "文書{total}件中{read}件を読み取り中",
-    "censusRelations": "関係",
+    "censusRelations": "つながり",
     "censusDomains": "ドメイン",
     "agentSync": "AIで更新",
     "capabilitiesShort": "ケイパ",
@@ -385,29 +385,29 @@
   },
   "deeplinkNotFound": "概念が見つかりません：{query}",
   "bootstrap": {
-    "heading": "ドキュメントからマップを作成",
+    "heading": "文書からマップを作成",
     "headingAddToMap": "マップに追加",
-    "confirmAddToMap": "{count}件のドキュメントをマップに追加",
+    "confirmAddToMap": "{count}件の文書をマップに追加",
     "projectName": "プロジェクト名",
     "folders": "マップに載せるフォルダ",
     "folderDocCount": "{count}件",
-    "summary": "{count}件のドキュメントの先頭に種類の目印を追加し、プロジェクトファイル（{projectFile}）を新しく1つ作成します。",
-    "summaryExistingProject": "{count}件のドキュメントの先頭に種類の目印を追加し、すでにあるプロジェクトファイル（{projectFile}）にフォルダを追加します。プロジェクトファイルは新しく作りません。",
-    "bodyUntouched": "ドキュメントの本文は変更しません。すべてフォルダの中で行われ、Gitでいつでも元に戻せます。",
-    "alreadyTyped": "すでにマップにある{count}件のドキュメントはそのままです。",
+    "summary": "{count}件の文書の先頭に種類の目印を追加し、プロジェクトファイル（{projectFile}）を新しく1つ作成します。",
+    "summaryExistingProject": "{count}件の文書の先頭に種類の目印を追加し、すでにあるプロジェクトファイル（{projectFile}）にフォルダを追加します。プロジェクトファイルは新しく作りません。",
+    "bodyUntouched": "文書の本文は変更しません。すべてフォルダの中で行われ、Gitでいつでも元に戻せます。",
+    "alreadyTyped": "すでにマップにある{count}件の文書はそのままです。",
     "runtimeSkills": "エージェントのランタイムが管理するSkillファイル{count}件には触れません。そのプログラムが管理しているためです。",
     "agentPointers": "エージェント向けの指示ファイル{count}件（AGENTS.md、CLAUDE.md）には触れません。このフォルダの使い方をエージェントに伝えるものなので、概念ではないためです。",
     "libraryFiles": "資料室のファイル{count}件（sources/、wiki/）には触れません。元の資料は届いたままの状態で保たれ、wikiページはAtlasがすでに書いたものだからです。",
     "confirm": "マップを作成",
     "cancel": "閉じる",
     "errorPrefix": "保存できませんでした：",
-    "toastDone": "ドキュメント{count}件から最初のマップを作成しました",
-    "toastAdded": "ドキュメント{count}件をマップに追加しました"
+    "toastDone": "文書{count}件から最初のマップを作成しました",
+    "toastAdded": "文書{count}件をマップに追加しました"
   },
   "edgePanel": {
-    "kicker": "関係",
+    "kicker": "つながり",
     "declaredBy": "宣言元",
-    "editRelation": "マップでこの関係を修正",
+    "editRelation": "マップでこのつながりを修正",
     "close": "閉じる",
     "openDoc": "開く",
     "noReason": "このつながりの理由はまだ記録されていません。意味のレビューで、エージェントに書かせることができます。"
@@ -446,10 +446,10 @@
       "searchPlaceholder": "ここを検索",
       "exit": "全体マップ",
       "boundaryHeading": "外へのつながり · {count}",
-      "boundaryToggleAria": "境界をまたぐ関係の一覧を展開または折りたたむ",
+      "boundaryToggleAria": "境界をまたぐつながりの一覧を展開または折りたたむ",
       "boundaryJump": "その領域のみ表示",
       "boundaryJumpAria": "この外側の概念が属する領域だけを表示",
-      "boundaryEmpty": "外へ出る関係はありません"
+      "boundaryEmpty": "外へ出るつながりはありません"
     }
   },
   "footprint": {
@@ -470,7 +470,7 @@
     "packetTitle": "探索の軌跡",
     "packetOrder": "訪れた順（古い順 → 新しい順）：",
     "packetReviewHint": "各概念の文脈を確認してください：",
-    "packetUndocumented": "ドキュメントはまだありません（参照として存在するだけです）。add_conceptで作成できます。",
+    "packetUndocumented": "文書はまだありません（参照として存在するだけです）。add_conceptで作成できます。",
     "packetPathHint": "旅の両端の間のパスを確認してください：",
     "packetDustyHint": "しばらく更新されていない概念{count}件：メンテナンス候補：",
     "pastLinkLabel": "過去（{count}）",
@@ -487,10 +487,10 @@
     "pastEmptyBody": "過去の軌跡はまだありません。歩き終えるとここに残ります。",
     "pastReplayAriaLabel": "この軌跡を開き直す：{date}、{count}か所",
     "pastDeadRowMeta": "このマップにはもうありません",
-    "pastReadOnlyNotice": "このフォルダは読み取り専用で開かれているため、この軌跡は保存されません。ドキュメントを保存しようとすると、書き込みの許可を求められます。"
+    "pastReadOnlyNotice": "このフォルダは読み取り専用で開かれているため、この軌跡は保存されません。文書を保存しようとすると、書き込みの許可を求められます。"
   },
   "startChecklist": {
-    "scaffoldToast": "概念ドキュメント{concepts}件とAI接続ファイル{configs}件を作成しました"
+    "scaffoldToast": "概念文書{concepts}件とAI接続ファイル{configs}件を作成しました"
   },
   "recentChangesNeedsVault": {
     "eyebrow": "最近の変更",
@@ -500,9 +500,9 @@
     "close": "閉じる"
   },
   "editNeedsVault": {
-    "eyebrow": "関係を編集",
+    "eyebrow": "つながりを編集",
     "title": "編集するにはフォルダを開いてください",
-    "body": "いまはサンプルのマップを見ているため、編集できません。フォルダを開くと、ここで関係を修正できます。変更は、そのフォルダ内のMarkdownファイルに書き込まれます。",
+    "body": "いまはサンプルのマップを見ているため、編集できません。フォルダを開くと、ここでつながりを修正できます。変更は、そのフォルダ内のMarkdownファイルに書き込まれます。",
     "action": "フォルダを開く",
     "close": "閉じる"
   },
@@ -536,7 +536,7 @@
     },
     "starter": {
       "title": "スターター文書を作成",
-      "body": "このフォルダはまだ空です。骨組みのドキュメント5件とAI接続の設定をまとめて作成できます。あとから編集や削除もできます。",
+      "body": "このフォルダはまだ空です。骨組みの文書5件とAI接続の設定をまとめて作成できます。あとから編集や削除もできます。",
       "cta": "スターター文書を作成",
       "ctaBusy": "作成中…"
     },
@@ -547,8 +547,8 @@
     },
     "docs": {
       "title": "このフォルダの文書から始める",
-      "body": "まだマップにないドキュメントが{count}件見つかりました。そのままマップに載せられます。",
-      "cta": "ドキュメントからマップを作成"
+      "body": "まだマップにない文書が{count}件見つかりました。そのままマップに載せられます。",
+      "cta": "文書からマップを作成"
     },
     "next": "次へ"
   }

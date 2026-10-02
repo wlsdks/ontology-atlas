@@ -9,7 +9,7 @@
     "revealPathLabel": "Finderで表示",
     "openLabel": "フォルダを開く",
     "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
-    "validationTooltip": "{errors, plural, =0 {情報ブロックの警告が{warnings}件：詳細は「pnpm vault:validate」で確認} other {情報ブロックのエラーが{errors}件{warnings, plural, =0 {} other {、警告が{warnings}件}}：マップに含まれていないドキュメントがあります。詳細は「pnpm vault:validate」で確認}}"
+    "validationTooltip": "{errors, plural, =0 {情報ブロックの警告が{warnings}件：詳細は「pnpm vault:validate」で確認} other {情報ブロックのエラーが{errors}件{warnings, plural, =0 {} other {、警告が{warnings}件}}：マップに含まれていない文書があります。詳細は「pnpm vault:validate」で確認}}"
   },
   "vaultDiffToaster": {
     "added": "追加：{name}",
@@ -33,11 +33,11 @@
     "emptyBodyLine1": "プロジェクト、ドメイン、ケイパビリティ、要素、READMEの5つのMarkdownスターターファイルを作成します。あわせて<code>.mcp.json</code>と<code>.codex/config.toml</code>も作成します。",
     "emptyBodyLine2": "各ファイルの情報ブロックを自分のプロジェクトに合わせて編集すると、Atlasがそのファイルからツリー、マップ、エディタを更新します。",
     "definitionLabel": "オントロジーが記録するもの",
-    "definitionBody": "このフォルダが何を作り、何に依存し、変更が何に影響するかのMarkdownによる記録です。プロジェクト、ドメイン、ケイパビリティ、要素と、それらの関係でオントロジーができています。",
+    "definitionBody": "このフォルダが何を作り、何に依存し、変更が何に影響するかのMarkdownによる記録です。プロジェクト、ドメイン、ケイパビリティ、要素と、それらのつながりでオントロジーができています。",
     "proofLocalLabel": "ファイルはローカルのまま",
     "proofLocalBody": "Markdownファイルがそのままデータベースです。アカウントもサーバも不要で、Atlasはこのフォルダを読み書きします。",
     "proofGraphLabel": "リンクを検証",
-    "proofGraphBody": "Atlasは、概念と関係が矛盾のないグラフになっているかを検証します。",
+    "proofGraphBody": "Atlasは、概念とつながりが矛盾のないグラフになっているかを検証します。",
     "proofAgentLabel": "エージェントが先に読む",
     "proofAgentBody": "Claude Code、Cursor、Codexは、編集前に同じフォルダを読みます。",
     "verifyAriaLabel": "スターターにはAIエージェントの検証手順が含まれます",
