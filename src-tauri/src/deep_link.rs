@@ -98,7 +98,16 @@ pub(crate) fn parse_install_deep_link(raw: &str) -> Result<String, DeepLinkRefus
 /// Escaped again although `parse_install_deep_link` refused literal-ending characters: a new caller would skip that check.
 /// One location.assign per link, marked in sessionStorage, because re-evaluating it would restart the navigation.
 pub(crate) fn build_install_route_script(payload: &str) -> String {
+    build_install_route_script_for(payload, &crate::APP_LOCALES)
+}
+
+fn build_install_route_script_for(payload: &str, locales: &[&str]) -> String {
     let payload = crate::js_string_literal(payload);
+    let locales = locales
+        .iter()
+        .map(|locale| crate::js_string_literal(locale))
+        .collect::<Vec<_>>()
+        .join(", ");
     format!(
         r#"(() => {{
   const payload = {payload};
@@ -108,7 +117,9 @@ pub(crate) fn build_install_route_script(payload: &str) -> String {
   try {{ tried = sessionStorage.getItem("atlas.deepLink"); }} catch (error) {{ tried = null; }}
   if (tried === payload) return true;
   try {{ sessionStorage.setItem("atlas.deepLink", payload); }} catch (error) {{ /* private mode */ }}
-  const locale = location.pathname.startsWith("/ko/") ? "ko" : "en";
+  const locales = [{locales}];
+  const first = location.pathname.split("/")[1];
+  const locale = locales.includes(first) ? first : "en";
   location.assign("/" + locale + "/mcp/" + query);
   return false;
 }})()"#
@@ -231,8 +242,17 @@ mod tests {
             "{script}"
         );
         assert!(
-            script.contains(r#"location.pathname.startsWith("/ko/")"#),
+            script.contains(r#"const locales = ["en", "ko"];"#),
             "{script}"
+        );
+        assert!(
+            script.contains(r#"locales.includes(first) ? first : "en""#),
+            "{script}"
+        );
+        let four = build_install_route_script_for("e30", &["en", "ko", "ja", "zh"]);
+        assert!(
+            four.contains(r#"const locales = ["en", "ko", "ja", "zh"];"#),
+            "{four}"
         );
         assert!(script.contains("return true;"), "{script}");
         assert!(
