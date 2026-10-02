@@ -1,6 +1,6 @@
 {
   "title": "MCP",
-  "lede": "에이전트 연결(MCP)은 코딩 에이전트가 이 폴더를 읽고 쓰는 선이에요. 바깥 서비스도 여기서 붙여요.",
+  "lede": "MCP 연결은 코딩 에이전트가 이 폴더를 읽고 쓰는 선이에요. 바깥 서비스도 여기서 붙여요.",
   "tablistAriaLabel": "MCP 구역",
   "shareHeading": "이 폴더 내주기",
   "connectorsHeading": "연결 도구",

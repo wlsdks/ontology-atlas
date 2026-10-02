@@ -202,7 +202,7 @@
     "kindGlyphCaption": "Each glyph is the shape the concept wears on the map, so you can find it there by shape.",
     "domainCapacityCaption": "Capabilities fill the bar from the left and elements from the right, so a domain leaning hard one way has claims without evidence, or the reverse. A concept in several domains counts once in each, so the totals can exceed the whole.",
     "relationTypesTitle": "Relation types",
-    "relationTypesCaption": "If containment dominates, draw more \"leans on\" links. A relation written in both documents counts once here, so this is smaller than what the terminal command (CLI) and the agent connection (MCP) report, since they count every written reference.",
+    "relationTypesCaption": "If containment dominates, draw more \"leans on\" links. A relation written in both documents counts once here, so this is smaller than what the CLI and MCP report, since they count every written reference.",
     "noRelationTypes": "No relations connected yet",
     "noRelationTypesHint": "Connect concepts on the map.",
     "hubsTitle": "Most connected concepts",

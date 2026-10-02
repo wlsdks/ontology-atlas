@@ -39,7 +39,7 @@
     "nextSlotCliCaption": "From the terminal · the info block at the top gets tidied automatically",
     "nextSlotAgentLabel": "AI agent",
     "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
-    "nextSlotAgentCaption": "Agent connection (MCP) · created directly by Claude Code / Codex",
+    "nextSlotAgentCaption": "MCP connection · created directly by Claude Code / Codex",
     "factStripGloss": "The areas this project covers, and how many features and components live inside each.",
     "domainOverlapNote": "A concept in multiple domains is counted once per domain, so adding up the numbers on the right can exceed the count above.",
     "emptyStateDesc": "Create a project document in your folder and it appears here. Put `kind: project` in the info block at the top of the file.",

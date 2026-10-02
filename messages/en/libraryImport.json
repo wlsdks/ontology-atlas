@@ -28,7 +28,7 @@
     },
     "other": {
       "title": "Another service",
-      "body": "Set one up by hand in the MCP section of Agents (the agent connection), where the connection details live.",
+      "body": "Set one up by hand in the MCP section of Agents, where the connection details live.",
       "example": ""
     }
   },

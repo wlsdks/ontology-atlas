@@ -536,7 +536,7 @@
       "wiki": "Build {goal} wiki pages",
       "explored": "Explore {goal} knowledge cards",
       "reflected": "Record discoveries, corrections, or uncertainty on {goal} distinct concepts",
-      "acp": "Inspect {goal} concepts with confirmed body saves through Agent Client Protocol (ACP)"
+      "acp": "Inspect {goal} concepts with confirmed body saves through ACP"
     },
     "claimed": "Claimed",
     "progress": "Current {current} / {goal}",

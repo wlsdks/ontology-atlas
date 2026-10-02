@@ -1,6 +1,6 @@
 {
   "workspace": {
-    "aria": "에이전트 · 모델 · 에이전트 연결(MCP) 보기",
+    "aria": "에이전트 · 모델 · MCP 보기",
     "agents": "에이전트",
     "models": "모델",
     "mcp": "MCP",
@@ -15,8 +15,8 @@
     "providerAnthropic": "Anthropic",
     "providerOpenai": "OpenAI",
     "providerGemini": "Google Gemini",
-    "keyLabel": "{provider} API 키",
-    "keyPlaceholder": "API 키 붙여넣기",
+    "keyLabel": "{provider} API key",
+    "keyPlaceholder": "API key 붙여넣기",
     "save": "저장",
     "cancel": "취소",
     "saving": "저장 중…",
@@ -65,7 +65,7 @@
     "webDegradedLocalBody": "이 컴퓨터에서 도는 러너(Ollama · LM Studio 등)에 주소로 붙는 것도 브라우저에서는 안 돼요. 러너 쪽 설정을 바꿔도 마찬가지예요. 웹 화면에는 모델로 글을 보내는 길 자체를 두지 않기로 했거든요. 데스크톱 앱에서는 러너 주소만 적으면 되고 키는 필요 없어요. 보낸 기록에도 목적지가 이 컴퓨터로 남아요.",
     "localTitle": "로컬 모델",
     "localTitleHint": "주소로 연결 · 키 필요 없음",
-    "keysTitle": "API 키",
+    "keysTitle": "API key",
     "keysTitleHint": "내 키, 키체인에 보관",
     "externalTitle": "외부 점검",
     "experimental": "실험 기능",
@@ -100,7 +100,7 @@
     "jev": {
       "name": "Jev 근거 점검",
       "caption": "보내기 전에 요청을 보여줘요",
-      "keyLabel": "Jev API 키",
+      "keyLabel": "Jev API key",
       "pasteSafety": "키는 이 컴퓨터의 키체인에만 저장돼요. 점검을 눌러 보낼 때만 {host}로 가요.",
       "intro": "온톨로지에 적으려는 설명 한 문장과 그 근거가 되는 발췌를 넣으면, Jev가 근거가 설명을 뒷받침하는지 답해요. 폴더를 자동으로 읽지 않아요.",
       "claimLabel": "확인할 설명",

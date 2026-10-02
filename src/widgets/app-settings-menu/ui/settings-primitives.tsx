@@ -44,7 +44,7 @@ export function SettingsGroupHeading({
   trailing,
   id,
 }: {
-  label: string;
+  label: ReactNode;
   trailing?: ReactNode;
   id?: string;
 }) {
