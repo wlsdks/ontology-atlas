@@ -330,3 +330,15 @@ test("local macOS app deploy waits on installed app executable patterns before r
     "\\.app/Contents/MacOS/Ontology Atlas$",
   ]);
 });
+
+test("local macOS app deploy default route follows an injected four-locale list", () => {
+  const locales = ["en", "ja", "ko", "zh"];
+  const route = (appleLanguagesRaw, lang = "C.UTF-8") =>
+    resolveDefaultDeployRoute({ env: { LANG: lang }, appleLanguagesRaw, locales });
+  assert.equal(route('("ja-JP")'), "/ja/topology/");
+  assert.equal(route('("zh-Hans-CN")'), "/zh/topology/");
+  assert.equal(route('("zh-Hant-TW")'), "/en/topology/");
+  assert.equal(route('("en-US")', "ja_JP.UTF-8"), "/ja/topology/");
+  assert.equal(route('("en-US")', "zh_TW.UTF-8"), "/en/topology/");
+  assert.equal(route('("en-US")'), "/en/topology/");
+});
