@@ -9,7 +9,7 @@ const bounds = { minX: -500, minY: -400, maxX: 500, maxY: 400 };
 function rig(camera: CosmosCamera = { x: 0, y: 0, scale: 1 }): CosmosCameraRig {
   const r = new CosmosCameraRig();
   r.room = room;
-  r.setBounds(bounds);
+  r.setBounds(bounds, true);
   r.camera = { ...camera };
   return r;
 }
