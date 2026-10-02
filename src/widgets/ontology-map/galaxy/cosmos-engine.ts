@@ -186,7 +186,7 @@ export class CosmosEngine {
     this.raf = requestAnimationFrame((now) => this.frame(now));
   }
 
-  private resize(): void {
+  private resize(glide = false): void {
     const rect = this.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const width = Math.max(1, Math.round(rect.width));
@@ -197,8 +197,8 @@ export class CosmosEngine {
       this.canvas.height = Math.round(height * dpr);
     }
     if ((this.roomHeld = this.arrival.active !== null)) return this.requestFrame();
-    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height));
-    if (!this.rig.user) this.rig.fit(false, performance.now());
+    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height), glide);
+    if (!this.rig.user) this.rig.fit(glide, performance.now());
     this.requestFrame();
   }
 
@@ -252,7 +252,7 @@ export class CosmosEngine {
     this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: Math.max(this.lastInput, this.arrival.end), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
     if (this.hazeAwake) why |= 4;
     const arriving = this.arrival.step(layout, now, this.poses);
-    if (!arriving && this.roomHeld) this.resize();
+    if (!arriving && this.roomHeld) this.resize(true);
     applyHaze(layout, this.haze, this.poses, rig.camera.scale, this.options.reducedMotion);
     if (arriving) why |= 8;
     const attended = this.selectedId ?? this.hoverId;

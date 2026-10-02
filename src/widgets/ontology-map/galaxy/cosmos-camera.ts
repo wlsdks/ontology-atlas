@@ -141,8 +141,11 @@ export class CosmosCameraRig {
     return this.drag !== null || this.motion !== null;
   }
 
-  readRoom(next: CosmosRoom): void {
-    if (roomMovesRest(this.room, next)) this.room = next;
+  readRoom(next: CosmosRoom, keepView = false): void {
+    if (!roomMovesRest(this.room, next)) return;
+    const { room, camera } = this;
+    if (keepView) this.camera = { ...camera, x: camera.x + (next.x + next.width / 2 - room.x - room.width / 2) / camera.scale, y: camera.y + (next.y + next.height / 2 - room.y - room.height / 2) / camera.scale };
+    this.room = next;
   }
 
   setBounds(bounds: CosmosLayout["bounds"], refit: boolean): void {
