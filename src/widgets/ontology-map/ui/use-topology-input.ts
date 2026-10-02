@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
+import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import {
   useCallback,
   useEffect,
@@ -23,9 +23,11 @@ import {
   shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { createPinchWheelStream } from "../interaction/wheel";
 import { type PointerMachineState } from "../interaction/pointer-state-machine";
-import { type CameraTween } from "../model/camera-easing";
+import { type CameraTween, type ZoomEase } from "../model/camera-easing";
 import type { ClusterChip } from "../model/density-gate";
 import {
   commitDomeEntrySweep,
@@ -45,10 +47,12 @@ import { type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
   wheelIntent: "page-scroll" | "zoom";
+  navigationSpeed: MapNavigationSpeed;
   worldRef: RefObject<TopologyWorld | null>;
   cameraRef: RefObject<CameraAxes>;
   cameraTargetRef: RefObject<CameraTarget>;
   cameraTweenRef: RefObject<CameraTween | null>;
+  zoomEaseRef: RefObject<ZoomEase | null>;
   dampingRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
@@ -111,10 +115,12 @@ interface Dependencies {
 /** Bind pointer, wheel, keyboard walk, and realm-entry input; clean up native listeners. */
 export function useTopologyInput({
   wheelIntent,
+  navigationSpeed,
   worldRef,
   cameraRef,
   cameraTargetRef,
   cameraTweenRef,
+  zoomEaseRef,
   dampingRef,
   cameraAngularFreqRef,
   viewportRef,
@@ -180,13 +186,18 @@ export function useTopologyInput({
   // a render-time read; the lint rule can't see into the imported function body.
   /* eslint-disable react-hooks/refs */
   const handlersRef = useRef<TopologyPointerHandlers | null>(null);
+  const navigationSpeedRef = useRef(navigationSpeed);
+  const pinchWheelRef = useRef(createPinchWheelStream());
 
   const handlers = createTopologyPointerHandlers({
     wheelIntent,
+    navigationSpeedRef,
+    pinchWheelRef,
     worldRef,
     cameraRef,
     cameraTargetRef,
     cameraTweenRef,
+    zoomEaseRef,
     dampingRef,
     cameraAngularFreqRef,
     viewportRef,
@@ -258,6 +269,7 @@ export function useTopologyInput({
   // pure.
   useEffect(() => {
     handlersRef.current = handlers;
+    navigationSpeedRef.current = navigationSpeed;
   });
 
   // A JSX `onWheel` prop
@@ -292,7 +304,14 @@ export function useTopologyInput({
       handleWheelRef.current(e);
     };
     canvas.addEventListener("wheel", listener, { passive: false });
-    return () => canvas.removeEventListener("wheel", listener);
+    const stopGesturePinch = listenForGesturePinch(canvas, (ratio, clientX, clientY) => {
+      wheelNoteInputRef.current();
+      handlersRef.current?.handleGesturePinch(ratio, clientX, clientY);
+    });
+    return () => {
+      canvas.removeEventListener("wheel", listener);
+      stopGesturePinch();
+    };
   }, [canvasRef]);
 
   // Clicking the orbit enter button enters the realm of the slug currently
@@ -431,12 +450,7 @@ export function useTopologyInput({
         }
       }
     }
-    /*
-     * Keyboard zoom and fit (`interaction/keyboard-zoom.ts`): `+`/`-` step the
-     * camera about the viewport centre on the same tween the fit uses, `0` is
-     * the toolbar fit itself. Modifier combinations fall through to the browser.
-     */
-    const zoomIntent = keyboardZoomIntent(e);
+    const zoomIntent = keyboardZoomIntent(e, navigationSpeedRef.current.zoom);
     if (zoomIntent !== null) {
       e.preventDefault();
       if (zoomIntent.kind === "fit") {
@@ -451,7 +465,6 @@ export function useTopologyInput({
       let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
       const dome = domeRuntimeRef.current;
       if (dome !== null && dome.active) {
-        // The 3D fit sits below the 2D floor; the wheel path lowers the floor the same way.
         if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
         dome.spinArmed = false;
         commitDomeEntrySweep(dome);
@@ -459,13 +472,29 @@ export function useTopologyInput({
       }
       const tscale = Math.min(scaleMax, Math.max(scaleMin, target.tscale * zoomIntent.factor));
       if (Math.abs(tscale - target.tscale) < 1e-6) return;
-      const next = { tx: target.tx, ty: target.ty, tscale };
+      const camera = cameraRef.current;
+      const { width, height } = viewportRef.current;
+      const next = { tx: camera.x.value, ty: camera.y.value, tscale };
       cameraTargetRef.current = next;
+      cameraTweenRef.current = null;
+      zoomEaseRef.current = {
+        target: next,
+        anchorX: width / 2,
+        anchorY: height / 2,
+        worldX: camera.x.value,
+        worldY: camera.y.value,
+        fromScale: camera.scale.value,
+        startMs: Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity),
+      };
+      cameraRef.current = {
+        ...camera,
+        x: { value: camera.x.value, velocity: 0 },
+        y: { value: camera.y.value, velocity: 0 },
+      };
       userDrivenCameraRef.current = true;
       cameraGestureRevisionRef.current += 1;
       dampingRef.current = tokens.cameraDampingDefault;
-      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-      beginCameraTween(next);
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
       return;
     }
     const direction = walkDirectionForKey(e.key);
@@ -601,7 +630,7 @@ export function useTopologyInput({
         beginCameraTween(cameraTarget);
       }
     }
-  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd]);
+  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd]);
 
   const wrappedHandlers = useMemo(
     () => ({

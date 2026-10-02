@@ -12,6 +12,7 @@ routes: []
 - The sheet is a modal like every `<Dialog>` (2026-09-25): opened by a click it takes focus itself (WebKit does not focus the clicked gear), so Escape and Tab work at once, and a click on the dim beside the panel closes it and returns focus to the gear. A drag that starts in the panel and ends over the dim does not close it.
 - Only the open sheet owns Escape (2026-09-26). With the sheet closed, Escape pressed on the gear reaches the page, so on the map it runs the map's own Escape order as it does from every other map control.
 - Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
+- The **Map** pane (2026-10-02; it was *Map background*) holds the canvas background, then *Drag speed* and *Zoom speed* as two five-step segmented rows (0.5×–2×, default 1×), then the frame meter. A choice is stored per machine (`atlas.appearance.map-drag-speed`, `atlas.appearance.map-zoom-speed`) and every open map view follows it at once; what each speed changes is in [Canvas](../map/canvas.md).
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen

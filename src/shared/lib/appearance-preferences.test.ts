@@ -10,13 +10,20 @@ import {
   resolveFootprint,
   resolveStoredMapArrangement,
   DEFAULT_GLYPH_SET,
+  DEFAULT_MAP_SPEED,
   GLYPH_SETS,
+  MAP_SPEEDS,
   readCanvasBackground,
   readGlyphSet,
+  resolveMapSpeed,
   useCanvasBackground,
   useGlyphSet,
+  useMapDragSpeed,
+  useMapZoomSpeed,
   writeCanvasBackground,
   writeGlyphSet,
+  writeMapDragSpeed,
+  writeMapZoomSpeed,
 } from "./appearance-preferences";
 
 describe("appearance-preferences", () => {
@@ -154,5 +161,30 @@ describe("map arrangement — the retired Cone", () => {
     expect(resolveStoredMapArrangement("coupling")).toBe("coupling");
     expect(resolveStoredMapArrangement(null)).toBe("strata");
     expect(resolveStoredMapArrangement("toString")).toBe("strata");
+  });
+});
+
+describe("map drag and zoom speed", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("reads each of the five steps back and anything else as 1x", () => {
+    for (const speed of MAP_SPEEDS) expect(resolveMapSpeed(String(speed))).toBe(speed);
+    for (const stored of [null, "", "  ", "3", "1.2", "fast", "NaN", "Infinity"]) {
+      expect(resolveMapSpeed(stored)).toBe(DEFAULT_MAP_SPEED);
+    }
+  });
+
+  it("keeps drag and zoom apart and delivers a change to a mounted reader at once", () => {
+    const { result } = renderHook(() => ({ drag: useMapDragSpeed(), zoom: useMapZoomSpeed() }));
+    expect(result.current).toEqual({ drag: 1, zoom: 1 });
+    act(() => writeMapDragSpeed(2));
+    expect(result.current).toEqual({ drag: 2, zoom: 1 });
+    act(() => writeMapZoomSpeed(0.5));
+    expect(result.current).toEqual({ drag: 2, zoom: 0.5 });
   });
 });

@@ -198,8 +198,6 @@ Given that these are "tokens but consumed by canvas," the principle "no hardcodi
 |---|---|---|
 | `--map-camera-spring-angfreq` | `2.941` (rad/s, `1/0.34`) | `updateCamera` `angFreq` |
 | `--map-camera-damping-default` | `1.0` | critically damped default |
-| `--map-camera-damping-flick` | `0.82` | slight overshoot on flick release |
-| `--map-camera-momentum-decay` | `0.998` | `releaseDrag` inertia projection `d` |
 | `--map-camera-scale-min` | `0.24` | `MIN_SCALE` |
 | `--map-camera-scale-max` | `2.6` | `MAX_SCALE` |
 | `--map-altitude-far-high-ratio` | `0.92` | `FAR_HIGH = OVERVIEW_SCALE * 0.92` |

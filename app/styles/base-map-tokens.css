@@ -438,8 +438,6 @@
     --map-camera-spring-angfreq-interactive: 15;
     --map-camera-spring-angfreq-transition: 4.7;
     --map-camera-damping-default: 1.0;
-    --map-camera-damping-flick: 0.82;
-    --map-camera-momentum-decay: 0.998;
     /* Stop release gate (iOS scroll rule) — sample pointer speed in this window (ms) just before release. If no movement within this window (=stopped then released), momentum is 0. */
     --map-camera-release-velocity-window-ms: 80;
     /* Speed below this threshold (px/ms) is considered stopped — stop in place without inertial glide.
