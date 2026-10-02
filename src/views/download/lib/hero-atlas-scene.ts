@@ -1,5 +1,5 @@
 /**
- * The real vault as a lit three.js object, placed by the map's own cone (`buildDomeModel`).
+ * The real vault as a lit three.js object, placed by the map's own cone (`layoutCone`).
  * It keeps the 2D engine's contracts the gates measure: the typing echo, one edge fact on hover,
  * the `litCount()`/`nodesOnScreen()` probes under `?e2e=1`, the shared frame loop, and one still
  * frame under reduced motion. Per frame O(N + D) over slug-keyed Maps and instanced meshes, plus
@@ -12,14 +12,14 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 
-import { buildDomeModel, type DomeInputNode, type DomeViewKind } from '@/widgets/ontology-map';
+import { type ConeInputNode, type ConeKind, layoutCone } from '@/widgets/ontology-map';
 
 import { registerGatewayFrameClient } from './gateway-frame-loop';
 import { echoCount, echoOrder } from './hero-echo';
 
 export interface AtlasNode {
   s: string;
-  k: DomeViewKind;
+  k: ConeKind;
   l?: string;
 }
 export interface AtlasEdge {
@@ -52,14 +52,14 @@ export interface AtlasHandle {
   dispose: () => void;
   setTyping: (typed: number, total: number) => void;
   litCount: () => number;
-  nodesOnScreen: () => { s: string; k: DomeViewKind; x: number; y: number }[];
+  nodesOnScreen: () => { s: string; k: ConeKind; x: number; y: number }[];
 }
 
 const PERIOD_MS = 64_000;
 const ECHO_TAU_MS = 110;
 const TILT_TAU_MS = 220;
 
-const RADIUS: Record<DomeViewKind, number> = { project: 0.07, domain: 0.046, capability: 0.024, element: 0.012 };
+const RADIUS: Record<ConeKind, number> = { project: 0.07, domain: 0.046, capability: 0.024, element: 0.012 };
 
 function cssVar(el: Element, name: string, fallback: string): string {
   const v = getComputedStyle(el).getPropertyValue(name).trim();
@@ -147,12 +147,12 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
 
   const parentOf = new Map<string, string>();
   for (const e of data.edges) if (e.y === 'contains') parentOf.set(e.b, e.a);
-  const domeNodes: DomeInputNode[] = data.nodes.map((n) => ({ id: n.s, kind: n.k, x: 0, y: 0, parentId: parentOf.get(n.s) ?? null }));
-  const model = buildDomeModel(domeNodes, { arrangement: 'ownership' });
+  const domeNodes: ConeInputNode[] = data.nodes.map((n) => ({ id: n.s, kind: n.k, x: 0, y: 0, parentId: parentOf.get(n.s) ?? null }));
+  const coords = layoutCone(domeNodes).coords;
   let maxR = 1e-6;
   let minY = Infinity;
   let maxY = -Infinity;
-  for (const c of model.coords.values()) {
+  for (const c of coords.values()) {
     maxR = Math.max(maxR, Math.hypot(c.px, c.pz));
     minY = Math.min(minY, c.py);
     maxY = Math.max(maxY, c.py);
@@ -160,7 +160,7 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
   const midY = (minY + maxY) / 2;
   const pos = new Map<string, THREE.Vector3>();
   for (const n of data.nodes) {
-    const c = model.coords.get(n.s);
+    const c = coords.get(n.s);
     if (!c) continue;
     pos.set(n.s, new THREE.Vector3(c.px / maxR, (c.py - midY) / maxR, c.pz / maxR));
   }
@@ -192,17 +192,17 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
 
   const sphere = new THREE.SphereGeometry(1, 20, 14);
-  const materials: Record<DomeViewKind, THREE.MeshStandardMaterial> = {
+  const materials: Record<ConeKind, THREE.MeshStandardMaterial> = {
     project: new THREE.MeshStandardMaterial({ color: accent, emissive: accentBright, emissiveIntensity: 1.3, roughness: 0.28, metalness: 0.15 }),
     domain: new THREE.MeshStandardMaterial({ color: ink, emissive: accentBright, emissiveIntensity: 0.34, roughness: 0.38, metalness: 0.12 }),
     capability: new THREE.MeshStandardMaterial({ color: inkSoft, emissive: accent, emissiveIntensity: 0.06, roughness: 0.55, metalness: 0.05 }),
     element: new THREE.MeshStandardMaterial({ color: inkDim, roughness: 0.7, metalness: 0 }),
   };
-  const byKind: Record<DomeViewKind, AtlasNode[]> = { project: [], domain: [], capability: [], element: [] };
+  const byKind: Record<ConeKind, AtlasNode[]> = { project: [], domain: [], capability: [], element: [] };
   for (const n of nodes) byKind[n.k].push(n);
-  const meshes: Partial<Record<DomeViewKind, THREE.InstancedMesh>> = {};
+  const meshes: Partial<Record<ConeKind, THREE.InstancedMesh>> = {};
   const dummy = new THREE.Object3D();
-  for (const k of Object.keys(byKind) as DomeViewKind[]) {
+  for (const k of Object.keys(byKind) as ConeKind[]) {
     const list = byKind[k];
     if (list.length === 0) continue;
     const mesh = new THREE.InstancedMesh(sphere, materials[k], list.length);
@@ -357,7 +357,7 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
     ndc.set((x / W) * 2 - 1, -(y / H) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
     let best: { d: number; s: string } | null = null;
-    for (const k of Object.keys(meshes) as DomeViewKind[]) {
+    for (const k of Object.keys(meshes) as ConeKind[]) {
       const mesh = meshes[k];
       if (!mesh) continue;
       const hits = raycaster.intersectObject(mesh, false);
@@ -389,7 +389,7 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
     }
     if (!changed && !reduced && litTarget >= nodes.length) echoing = false;
 
-    for (const kind of Object.keys(meshes) as DomeViewKind[]) {
+    for (const kind of Object.keys(meshes) as ConeKind[]) {
       const mesh = meshes[kind]!;
       const list = byKind[kind];
       for (let i = 0; i < list.length; i += 1) {

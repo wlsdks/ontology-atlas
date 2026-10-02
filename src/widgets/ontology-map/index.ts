@@ -38,14 +38,8 @@ export { ambientSleepFactor, isAmbientAsleep } from './model/ambient-sleep';
 export { PLAIN_TIER_REVEAL } from './model/tier-visibility';
 export type { TierRevealConfig } from './model/tier-visibility';
 export { OntologyMapEdgePanel } from './ui/OntologyMapEdgePanel';
-/**
- * The 3D placement the map's Cone view draws (`model/dome-view.ts`), for a surface that must
- * draw **the same object** the map does — the download gateway's hero (2026-09-08). Exported
- * here rather than reached into, because the slice rule forbids a view importing a widget's
- * internals; the gateway consumes the coordinates and draws nothing of the map's chrome.
- */
-export { buildDomeModel } from './model/dome-view';
-export type { DomeInputNode, DomeViewKind } from './model/dome-view';
+export { layoutCone } from './model/cone-layout';
+export type { ConeInputNode, ConeKind } from './model/cone-layout';
 export { computeGalaxyLayout } from './model/galaxy-layout';
 /**
  * Where the last frame drew each node's name and disc, for chrome outside the map that must
