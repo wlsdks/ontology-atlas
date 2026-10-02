@@ -3,6 +3,7 @@ import { SQRT3 } from "../model/hex-grid";
 import { type HexDrawRoute, type HexDrawState, type HexFrameStats, type HexTextBox } from "../render/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
 import { edges, face, FRONT_SIDES, notch, pips, prismPolygons, smooth, startDot, stubHead, ticks, wall, type PaintedFace } from "./board-geometry";
+import { drawReliefFloors } from "./board-relief-floors";
 import { drawFloors, drawPlate, drawSlabs, TileRects } from "./board-plates";
 import { arrivalOf, BOARD_ARRIVAL, lowerBound, type BoardScene } from "./board-scene";
 import { drawLines, drawNumber, lineSets, placeLinesWithNumber } from "./board-text";
@@ -240,7 +241,10 @@ export function drawBoard(
   const tiles: HexTile[] = [];
   for (let i = lo; i < hi; i += 1) tiles.push(scene.order[i]!);
   if (slabs && layout.project) tiles.push(layout.project);
-  for (const t of tiles) {
+  const floors = band === "regions" && !slabs && s > 0;
+  if (floors)
+    stats.drawnTiles += drawReliefFloors(ctx, scene, tiles, state, T, { pivot, lift, alphaOf, c, RI, FAPO, light, rimLit, staleRim, counts: counts?.capability ?? null, numberAlpha, record: pose.record, rising: !!pose.rise }, rects);
+  for (const t of floors ? [] : tiles) {
     const x = sx(t.x);
     if (x < -R || x > width + R) continue;
     const arr = arrivalOf(t.ring, state.arrivalMs, state.reducedMotion);

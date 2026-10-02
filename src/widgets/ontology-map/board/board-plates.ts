@@ -220,11 +220,49 @@ export function drawSlabs(
   return drawn;
 }
 
+const moatCache = new WeakMap<HexBoardLayout, { key: string; bands: Path2D[] }>();
+
+function cachedMoat(layout: HexBoardLayout, R: number, c: number, RI: number, gx: number, gy: number, gr: number): Path2D[] {
+  const key = [R, c, gx, gy, gr].join("|");
+  const hit = moatCache.get(layout);
+  if (hit && hit.key === key) return hit.bands;
+  const bands = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
+  const ey = gr * Math.max(0.2, c * 0.8);
+  const qLo = Math.floor((gx - gr) / (1.5 * R)) - 1;
+  const qHi = Math.ceil((gx + gr) / (1.5 * R)) + 1;
+  for (let q = qLo; q <= qHi; q += 1) {
+    const rLo = Math.floor((gy - ey) / (R * c * SQRT3) - q / 2) - 1;
+    const rHi = Math.ceil((gy + ey) / (R * c * SQRT3) - q / 2) + 1;
+    for (let r = rLo; r <= rHi; r += 1) {
+      if (layout.occupied.has(hexKey(q, r))) continue;
+      const x = 1.5 * q * R;
+      const y = SQRT3 * (r + q / 2) * R * c;
+      const far = Math.hypot(x - gx, (y - gy) / Math.max(0.2, c * 0.8)) / gr;
+      if (far <= 1) face(bands[Math.min(3, Math.floor(far * 4))] as unknown as CanvasRenderingContext2D, x, y, RI, c);
+    }
+  }
+  moatCache.set(layout, { key, bands });
+  return bands;
+}
+
 export function drawFloors(ctx: CanvasRenderingContext2D, layout: HexBoardLayout, state: HexDrawState, T: HexBoardTokens, scene: BoardScene, f: BoardFrame) {
   const { R, ox, width, height, lit, dimT } = state;
   const { sx, groundY, unitY, c, s, light, RI } = f;
   const ground = rgbOf(T.ground);
-  if (R >= 12) {
+  if (R >= 12 && light > 0 && typeof Path2D !== "undefined") {
+    const dx = state.ox;
+    const dy = f.groundY(0);
+    const bands = cachedMoat(layout, R, c, RI, f.glow.x - dx, f.glow.y - dy, f.glow.r);
+    const moat = solid(T.moat, ground);
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.lineWidth = 1;
+    bands.forEach((path, i) => {
+      ctx.strokeStyle = cssOf(mix(ground, moat, 1 - ((i + 0.5) / 4) * 0.8));
+      ctx.stroke(path);
+    });
+    ctx.restore();
+  } else if (R >= 12) {
     const moat = solid(T.moat, ground);
     const qLo = Math.ceil((-R - ox) / (1.5 * R));
     const qHi = Math.floor((width + R - ox) / (1.5 * R));

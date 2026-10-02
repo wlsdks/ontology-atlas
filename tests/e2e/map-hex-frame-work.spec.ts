@@ -153,7 +153,7 @@ test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradien
   await still(page);
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-relief-pitch", relief ? "0.750" : "0.000");
 
-  const results: Record<string, { p95: number; frames: number; offsets: number; maxGradients: number; maxDrawnShare: number }> = {};
+  const results: Record<string, { p95: number; runs: number[]; frames: number; offsets: number; maxGradients: number; maxDrawnShare: number }> = {};
   for (const s of SCENARIOS) {
     await zoomTo(page, s.R);
     const at = await readFrame(page);
@@ -168,6 +168,7 @@ test(`the hex board at 10,000 concepts${relief ? " in relief" : ""}: one gradien
     while (bars && p95s.length < 3) p95s.push(p95((await pan(page)).work));
     results[s.name] = {
       p95: +[...p95s].sort((a, b) => a - b)[p95s.length >> 1]!.toFixed(2),
+      runs: p95s.map((v) => +v.toFixed(2)),
       frames: work.length,
       offsets: new Set(inBand.map((f) => f.offset.join(","))).size,
       maxGradients: max(gradients, `${s.name}: gradients`),
