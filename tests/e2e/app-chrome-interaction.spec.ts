@@ -439,7 +439,7 @@ test.describe('settings', () => {
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
     await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-    await page.getByTestId('app-settings-nav-update').click();
+    await page.getByTestId('app-settings-nav-about').click();
     const check = page.getByTestId('app-settings-update-check');
     await check.focus();
     await page.keyboard.press('Enter');
@@ -464,14 +464,13 @@ test.describe('settings', () => {
     expect(Math.abs(lines.label - lines.result), 'result line is off the row start').toBeLessThanOrEqual(1);
   });
 
-  // The key form lives on Agents → Models since 2026-09-25; the settings sheet's pointer row
-  // is the door a person who reaches for keys in settings takes.
   test('an inline key form uses one control size', async ({ page }) => {
     test.setTimeout(120_000);
     await installDesktopRailRuntime(page);
     await mountDesktopVault(page);
     await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-    await page.getByTestId('app-settings-nav-models').click();
+    await page.getByTestId('app-settings-nav-agents').click();
+    await page.getByTestId('app-settings-door-models').click();
     await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
     await page.getByTestId('ai-register-anthropic').click();
     await expect(page.getByTestId('ai-save-anthropic')).toBeVisible();
@@ -494,7 +493,8 @@ test.describe('settings', () => {
     const workspace = page.getByTestId('app-settings-reveal-vault-path');
     await expect(workspace).toBeVisible();
     const workspaceInk = await workspace.evaluate((el) => getComputedStyle(el).color);
-    await page.getByTestId('app-settings-nav-models').click();
+    await page.getByTestId('app-settings-nav-agents').click();
+    await page.getByTestId('app-settings-door-models').click();
     await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
     await page.getByTestId('ai-register-anthropic').click();
     await expect(page.getByTestId('ai-cancel-anthropic')).toBeVisible();
@@ -515,7 +515,7 @@ test.describe('settings', () => {
       .toEqual([workspaceInk, workspaceInk]);
   });
 
-  test('the web lists no app-only Updates pane', async ({ page }) => {
+  test('the web About pane shows the website build without the update check', async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/ko/topology/?guides=off', { waitUntil: 'networkidle' });
@@ -524,8 +524,9 @@ test.describe('settings', () => {
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
       await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: 20_000 });
-    await expect(page.getByTestId('app-settings-nav-screen')).toBeVisible();
-    await expect(page.getByTestId('app-settings-nav-update')).toHaveCount(0);
+    await page.getByTestId('app-settings-nav-about').click();
+    await expect(page.getByTestId('app-settings-about-web-version')).toBeVisible();
+    await expect(page.getByTestId('app-settings-update-check')).toHaveCount(0);
   });
 
   test('switching language keeps the sheet open on the same pane', async ({ page }) => {

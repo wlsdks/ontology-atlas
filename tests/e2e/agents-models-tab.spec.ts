@@ -231,8 +231,8 @@ for (const width of [1280, 1512]) {
       await page.goto("/ko/?guides=off");
       await page.getByTestId("first-run-open").click();
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
-      await expect(page.getByTestId("app-settings-nav-ai")).toHaveCount(0);
-      await page.getByTestId("app-settings-nav-models").click();
+      await page.getByTestId("app-settings-nav-agents").click();
+      await page.getByTestId("app-settings-door-models").click();
       await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
       await expect(page.getByTestId("ai-connection-view")).toBeVisible();
     });

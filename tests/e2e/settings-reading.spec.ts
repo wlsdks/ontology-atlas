@@ -1,11 +1,106 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { installDesktopRailRuntime } from './desktop-rail-arrival-harness';
+
+const SECTIONS = ['screen', 'map', 'expand', 'footprint', 'notify', 'agents', 'privacy', 'workspace', 'about'];
+
+async function openSettings(page: Page, locale: 'en' | 'ko', textSize?: 'larger') {
+  if (textSize) {
+    await page.addInitScript((value) => window.localStorage.setItem('atlas.appearance.text-size', value), textSize);
+  }
+  await installDesktopRailRuntime(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(`/${locale}/?guides=off`);
+  await page.getByTestId('first-run-open').click();
+  await page.locator('[data-testid="app-settings-trigger"]:visible').click();
+  await expect(page.getByTestId('app-settings-popover')).toBeVisible();
+}
+
+function rowTextStarts(): { id: string; left: number }[] {
+  const pane = document.querySelector('[data-testid^="app-settings-pane-"]')!;
+  const firstInk = (root: Element): number | null => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node instanceof Element && node.tagName.toLowerCase() === 'svg') return node.getBoundingClientRect().left;
+      if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        if (rect.width > 0) return rect.left;
+      }
+    }
+    return null;
+  };
+  return [...pane.querySelectorAll('[data-setting-id]')]
+    .filter((row) => !row.parentElement?.closest('[data-setting-id]'))
+    .flatMap((row) => {
+      const left = firstInk(row);
+      return left === null ? [] : [{ id: row.getAttribute('data-setting-id')!, left }];
+    });
+}
 
 // The app's window floor and a common desktop window; phone and tablet widths are not a
 // target (owner direction, 2026-09-27).
-for (const width of [1040, 1440]) {
+for (const [width, height] of [[1040, 720], [1440, 900]] as const) {
   test.describe(`settings at ${width}`, () => {
-    test.use({ viewport: { width, height: 900 } });
+    test.use({ viewport: { width, height } });
+
+    test('⌘, opens the sheet, and on an open sheet focuses search', async ({ page }) => {
+      await installDesktopRailRuntime(page);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto('/en/?guides=off');
+      await page.getByTestId('first-run-open').click();
+      await expect(page.locator('[data-testid="app-settings-trigger"]:visible')).toHaveAttribute('aria-expanded', 'false');
+      await expect(async () => {
+        await page.keyboard.press('ControlOrMeta+Comma');
+        await expect(page.getByTestId('app-settings-popover')).toBeVisible({ timeout: 1_000 });
+      }).toPass({ timeout: 15_000 });
+      await page.keyboard.press('ControlOrMeta+Comma');
+      await expect(page.getByTestId('app-settings-search')).toBeFocused();
+    });
+
+    for (const textSize of [undefined, 'larger'] as const) {
+      test(`the left list fits without scrolling at ${textSize ?? 'default'} text`, async ({ page }) => {
+        await openSettings(page, 'en', textSize);
+        const root = await page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+        expect(root).toBe(textSize ? '20px' : '16px');
+        const nav = await page.getByTestId('app-settings-nav').evaluate((el) => ({
+          vertical: el.scrollHeight - el.clientHeight,
+          horizontal: el.scrollWidth - el.clientWidth,
+        }));
+        expect(nav.vertical, 'the left list scrolls vertically').toBeLessThanOrEqual(1);
+        expect(nav.horizontal, 'the left list scrolls sideways').toBeLessThanOrEqual(1);
+      });
+    }
+
+    for (const [locale, query] of [['en', 'API'], ['ko', '키']] as const) {
+      test(`search reaches API keys in one press (${locale})`, async ({ page }) => {
+        await openSettings(page, locale);
+        await page.getByTestId('app-settings-search').fill(query);
+        await expect(page.getByTestId('app-settings-search-results')).toBeVisible();
+        await page.getByTestId('app-settings-search').press('Enter');
+        await expect(page).toHaveURL(/\/agents\/\?(?:.*&)?tab=models/);
+      });
+    }
+
+    test('Screen · language fits at the default text size', async ({ page }) => {
+      await openSettings(page, 'en');
+      const pane = page.getByTestId('app-settings-pane-screen');
+      const overflow = await pane.evaluate((el) => el.scrollHeight - el.clientHeight);
+      expect(overflow, 'the Screen pane scrolls').toBeLessThanOrEqual(1);
+    });
+
+    test('every pane starts its row text on one line', async ({ page }) => {
+      await openSettings(page, 'ko');
+      for (const section of SECTIONS) {
+        await page.getByTestId(`app-settings-nav-${section}`).click();
+        await expect(page.getByTestId(`app-settings-pane-${section}`)).toBeVisible();
+        const starts = await page.evaluate(rowTextStarts);
+        expect(starts.length, `${section} anchors no row`).toBeGreaterThan(0);
+        const lefts = starts.map((start) => start.left);
+        expect(Math.max(...lefts) - Math.min(...lefts), `${section}: ${JSON.stringify(starts)}`).toBeLessThanOrEqual(1);
+      }
+    });
+
     test('notification choices leave their explanation readable', async ({ page }) => {
       await installDesktopRailRuntime(page);
       await page.emulateMedia({ reducedMotion: 'reduce' });
