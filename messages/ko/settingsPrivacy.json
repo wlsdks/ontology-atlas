@@ -1,6 +1,6 @@
 {
   "leadDesktop": "Atlas 화면은 인터넷에 닿지 않습니다. 아래 길만 밖으로 나갈 수 있습니다.",
-  "leadWeb": "이 웹사이트는 폴더를 이 브라우저 안에서 읽습니다. 폴더는 업로드되지 않습니다.",
+  "leadWeb": "이 웹사이트는 폴더를 이 컴퓨터 안에서 읽습니다. 폴더는 업로드되지 않습니다.",
   "outbound": {
     "title": "이 컴퓨터 밖으로 나갈 수 있는 것",
     "keywords": "네트워크 인터넷 전송 업로드 외부 기록 로그 업데이트 확인 제공자",
@@ -33,7 +33,7 @@
     "jev": "외부 점검",
     "tool-downloads": "코딩 도구 설치",
     "adapter-packages": "대화 어댑터 패키지",
-    "connectors": "MCP 연결 도구",
+    "connectors": "에이전트 연결(MCP)",
     "git-remote": "Git 보내기·받기·가져오기",
     "coding-tools": "코딩 도구",
     "website-files": "웹사이트 파일"
@@ -59,7 +59,7 @@
     "keywords": "최근 폴더 기록 잊기 목록",
     "label": "최근 폴더",
     "count": "{count, plural, =0 {기억한 폴더 없음} other {폴더 #개 기억}}",
-    "captionWeb": "이 브라우저에 보관합니다. 잊어도 폴더는 그대로입니다.",
+    "captionWeb": "이 컴퓨터에 보관합니다. 잊어도 폴더는 그대로입니다.",
     "captionDesktop": "이 앱에 보관합니다. 잊어도 폴더는 그대로입니다.",
     "failed": "목록을 잊지 못했습니다. 다시 시도하세요.",
     "forgetAll": "모두 잊기",

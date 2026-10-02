@@ -1,6 +1,6 @@
 {
   "leadDesktop": "Atlas screens cannot reach the internet; only the paths below can.",
-  "leadWeb": "This website reads your folder in this browser. Your folder is never uploaded.",
+  "leadWeb": "This website reads your folder on this computer. Your folder is never uploaded.",
   "outbound": {
     "title": "What can leave this computer",
     "keywords": "network internet send upload outbound transfer audit log update check provider",
@@ -33,7 +33,7 @@
     "jev": "External check",
     "tool-downloads": "Coding tool installs",
     "adapter-packages": "Chat adapter packages",
-    "connectors": "MCP connectors",
+    "connectors": "Agent connections (MCP)",
     "git-remote": "Git send, pull and fetch",
     "coding-tools": "Coding tools",
     "website-files": "Website files"
@@ -59,7 +59,7 @@
     "keywords": "recent folders history forget list",
     "label": "Recent folders",
     "count": "{count, plural, =0 {None remembered} one {# folder remembered} other {# folders remembered}}",
-    "captionWeb": "Kept in this browser. Forgetting does not touch the folders.",
+    "captionWeb": "Kept on this computer. Forgetting does not touch the folders.",
     "captionDesktop": "Kept in this app. Forgetting does not touch the folders.",
     "failed": "Could not forget the list. Try again.",
     "forgetAll": "Forget all",
