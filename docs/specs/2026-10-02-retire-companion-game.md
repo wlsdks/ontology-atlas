@@ -93,6 +93,18 @@ Place the status-only mascot in the existing activity/status lane without a
 clickable game door, a new control or a new idle animation. This is continuity
 of existing work feedback, not a replacement companion feature.
 
+The dogfood ontology has a concrete final representation: reclassify the existing
+`capabilities/companion-memories` node to the existing `document` kind, retaining
+UID `442d74e4-ea20-4229-8fe3-2b8a98743aa4`, its slug/file and recorded history.
+Its title becomes `Companion game and personal records history`; its body clearly
+frames the retained behavior/evidence as historical and records this retirement
+and saved-byte boundary. Remove its capability-only `domain`, `elements` and
+live implementation `path` fields. Remove only `capabilities/companion-memories`
+from `domains/human-workbench.capabilities` and the matching `relation_notes`
+entry. The domain must no longer advertise it as an active capability. The host
+performs this through ontology-sync and verifies UID/type/body and backlinks;
+there is no new retired kind, canonical node deletion or personal-data migration.
+
 ## Flow
 
 1. When the person opens Atlas without an active folder, the existing folder
@@ -191,10 +203,13 @@ banner, export prompt or new journal label.
    and comparable before/after production output sizes; report their exact scope.
 6. **Given** existing canonical fixture files and permission checks, **when** the
    updated app runs, **then** those files remain byte-identical until an ordinary
-   authorized edit. Current feature/architecture docs describe retirement; the
-   host reconciles the dogfood capability through ontology-sync without erasing
-   canonical nodes. Historical records remain immutable and the new decision
-   records owner-authorized retirement, retained dissent and a falsifier.
+   authorized edit. Current feature/architecture docs describe retirement. After
+   the separate authorized ontology-sync, the retained node has kind `document`,
+   the same UID/slug, historical body and no capability-only fields; the domain's
+   active capability link and matching rationale are absent. Read back the node
+   and backlinks to prove this without canonical deletion or personal-save edits.
+   Frozen records remain immutable; the new decision records owner authorization,
+   retained dissent and a falsifier.
 7. **Given** the final change, **when** `pnpm checks:changed -- --run` and every
    recommendation finish, **then** source, bundle and relevant interaction checks
    pass. Report measured code/asset/output reduction separately from unmeasured
