@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from '@/i18n/navigation';
+import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 
 const ROUTE_FOCUS_INTENT_KEY = 'ontology-atlas:route-focus-intent';
 const ROUTE_FOCUS_INTENT_MAX_AGE_MS = 10_000;
@@ -15,7 +16,7 @@ interface RouteFocusIntent {
 
 /** Only a different semantic pathname starts a new page-reading context. */
 function normalizeRouteSurfacePath(pathname: string): string {
-  const withoutLocale = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, '') || '/';
+  const withoutLocale = stripLocalePrefix(pathname);
   if (withoutLocale === '/') return withoutLocale;
   return withoutLocale.replace(/\/+$/, '');
 }

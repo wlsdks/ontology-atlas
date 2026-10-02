@@ -30,6 +30,7 @@ import {
   isGatewaySurface,
   resolveActiveNavDestination,
   resolveGuideDestination,
+  stripLocalePrefix,
 } from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
@@ -168,7 +169,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
 
 /** Is this the locale root that owns the installed app's first-run/restore branch? */
 function isLocaleRoot(pathname: string): boolean {
-  const localPath = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
+  const localPath = stripLocalePrefix(pathname);
   return localPath === "/";
 }
 

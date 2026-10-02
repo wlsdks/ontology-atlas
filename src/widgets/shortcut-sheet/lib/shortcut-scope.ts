@@ -1,3 +1,5 @@
+import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+
 /**
  * The shortcut sheet's contextual scope: what works on the current screen comes first, and the All
  * tab keeps everything, so nothing is hidden for good.
@@ -15,7 +17,7 @@ export const SHORTCUT_SCOPES: readonly ShortcutScope[] = ["current", "topology",
  * are `global`.
  */
 export function surfaceForPathname(pathname: string, libraryTab?: string | null): ShortcutSurface {
-  const normalized = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
+  const normalized = stripLocalePrefix(pathname);
   if (normalized === "/" || normalized.startsWith("/topology")) return "topology";
   if (normalized.startsWith("/docs")) return "docs";
   if (normalized.startsWith("/library") && libraryTab === "ontology") return "docs";

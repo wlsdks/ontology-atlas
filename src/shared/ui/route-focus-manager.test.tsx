@@ -9,6 +9,10 @@ import {
 
 const route = vi.hoisted(() => ({ pathname: '/ko/topology/' }));
 
+vi.mock('@/i18n/routing', () => ({
+  routing: { locales: ['en', 'ko', 'ja', 'zh'] },
+}));
+
 vi.mock('@/i18n/navigation', () => ({
   usePathname: () => route.pathname,
 }));
@@ -64,6 +68,23 @@ describe('RouteFocusManager', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: '문서함' })).toHaveFocus();
+    });
+  });
+
+  it('matches the remembered surface under every routable locale prefix', async () => {
+    route.pathname = '/ko/topology/';
+    rememberRouteFocusIntent('/docs/');
+    route.pathname = '/ja/docs/';
+
+    render(
+      <>
+        <RouteFocusManager />
+        <Surface title="docs" />
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'docs' })).toHaveFocus();
     });
   });
 
