@@ -1,0 +1,68 @@
+{
+  "leadDesktop": "Atlas 화면은 인터넷에 닿지 않습니다. 아래 길만 밖으로 나갈 수 있습니다.",
+  "leadWeb": "이 웹사이트는 폴더를 이 브라우저 안에서 읽습니다. 폴더는 업로드되지 않습니다.",
+  "outbound": {
+    "title": "이 컴퓨터 밖으로 나갈 수 있는 것",
+    "keywords": "네트워크 인터넷 전송 업로드 외부 기록 로그 업데이트 확인 제공자",
+    "line": "{trigger} · {destinations} · {carries}",
+    "recorded": "{file}에 기록",
+    "notRecorded": "Atlas가 기록하지 않음"
+  },
+  "trigger": {
+    "automatic": "자동",
+    "press": "누를 때",
+    "agent-use": "에이전트가 쓸 때"
+  },
+  "carries": {
+    "no-folder-content": "폴더 내용 없음",
+    "what-you-send": "보내는 내용",
+    "provider-owned": "도구와 그 제공자 사이의 전송, Atlas는 보지 못함"
+  },
+  "destinations": {
+    "your-runner-address": "입력한 러너 주소",
+    "npm-registry": "npm 패키지 저장소",
+    "python-package-index": "파이썬 패키지 저장소(PyPI)",
+    "your-connector-urls": "이 폴더의 연결 도구 주소",
+    "your-git-remote": "Git 원격 저장소",
+    "your-coding-tool-provider": "코딩 도구의 제공자"
+  },
+  "paths": {
+    "update-check": "업데이트 확인",
+    "model-providers": "모델 제공자",
+    "local-runner": "로컬 러너",
+    "jev": "외부 점검",
+    "tool-downloads": "코딩 도구 설치",
+    "adapter-packages": "대화 어댑터 패키지",
+    "connectors": "MCP 연결 도구",
+    "git-remote": "Git 보내기·받기·가져오기",
+    "coding-tools": "코딩 도구",
+    "website-files": "웹사이트 파일"
+  },
+  "updateOn": "켬",
+  "updateOff": "끔",
+  "updateChange": "바꾸기",
+  "updateChangeAria": "정보에서 자동 업데이트 확인 바꾸기",
+  "allowances": {
+    "title": "이 컴퓨터에서 허용한 것",
+    "keywords": "동의 승인 허용 취소 잊기 연결 도구 예약",
+    "empty": "아직 허용한 것이 없습니다. 폴더의 연결 도구와 예약은 허용하기 전까지 기다립니다.",
+    "counts": "{connectors, plural, =0 {} other {연결 도구 #개}}{both, select, yes { · } other {}}{rounds, plural, =0 {} other {예약 #개}}",
+    "forget": "잊기",
+    "forgetArmed": "한 번 더 누르면 잊기",
+    "forgetAll": "모두 잊기",
+    "forgetAllArmed": "한 번 더 누르면 모두 잊기",
+    "caption": "잊으면 다시 허용할 때까지 멈출 뿐, 폴더 안은 바뀌지 않습니다.",
+    "forgetAria": "{name}에 허용한 것 잊기"
+  },
+  "recent": {
+    "title": "이 컴퓨터가 기억하는 것",
+    "keywords": "최근 폴더 기록 잊기 목록",
+    "label": "최근 폴더",
+    "count": "{count, plural, =0 {기억한 폴더 없음} other {폴더 #개 기억}}",
+    "captionWeb": "이 브라우저에 보관합니다. 잊어도 폴더는 그대로입니다.",
+    "captionDesktop": "이 앱에 보관합니다. 잊어도 폴더는 그대로입니다.",
+    "failed": "목록을 잊지 못했습니다. 다시 시도하세요.",
+    "forgetAll": "모두 잊기",
+    "forgetAllArmed": "한 번 더 누르면 모두 잊기"
+  }
+}
