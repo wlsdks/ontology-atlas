@@ -49,12 +49,23 @@ import {
   sep,
 } from 'node:path';
 
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, proposal, qualification } = {}) {
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, sourceOnly, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
+  requireOptionalBoolean(sourceOnly, 'sourceOnly');
+  if (sourceOnly && (proposal !== undefined || qualification !== undefined)) {
+    throw new Error('sourceOnly cannot be combined with proposal or qualification; omit sourceOnly for full analysis and lifecycle replay.');
+  }
+  if (sourceOnly && sourceReads === undefined) {
+    throw new Error('sourceOnly requires sourceReads with 1–8 exact selectors.');
+  }
   const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
   if (sourceReads !== undefined) validateSourceReadSelectors(sourceReads);
+  if (sourceOnly) {
+    return { rootPath: target, delivery: 'source_only', canWrite: false,
+      sourceEvidence: readSourceEvidence(target, sourceReads, { ignore }) };
+  }
   if (sourceReads !== undefined && (proposal != null || qualification != null)) {
     const missingHash = sourceReads.findIndex((row) => row?.expectedSha256 === undefined);
     if (missingHash >= 0) {

@@ -83,6 +83,7 @@
           "proposal",
           "qualification",
           "rootPath",
+          "sourceOnly",
           "sourceReads"
         ],
         "required": []

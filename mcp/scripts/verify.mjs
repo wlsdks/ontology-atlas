@@ -1816,8 +1816,37 @@ export function toolsListSchemaFailure(tools) {
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }
-  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'])) {
+  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath'])) {
     return 'analyze_repo_structure outputSchema required drift';
+  }
+  const analysisFields = ['framework', 'domains', 'capabilities', 'elements', 'meaningGate',
+    'extractionContract', 'semanticEvidence', 'configurationEvidence',
+    'proposalValidation', 'suggestedRelations', 'skipped'];
+  const analysisBranches = analyzeTool.outputSchema.oneOf;
+  if (!Array.isArray(analysisBranches) || analysisBranches.length !== 2) {
+    return 'analyze_repo_structure outputSchema delivery branches drift';
+  }
+  const branchMatches = (branch, required, forbidden) =>
+    sameArray(Object.keys(branch ?? {}).sort(), ['not', 'required'])
+    && sameArray(branch.required, required)
+    && Array.isArray(branch.not?.anyOf)
+    && branch.not.anyOf.length === forbidden.length
+    && branch.not.anyOf.every((rule, index) => sameArray(Object.keys(rule), ['required'])
+      && sameArray(rule.required, [forbidden[index]]));
+  if (!branchMatches(analysisBranches[0], ['delivery', 'canWrite', 'sourceEvidence'],
+    ['project', ...analysisFields])) {
+    return 'analyze_repo_structure outputSchema source-only branch drift';
+  }
+  if (!branchMatches(analysisBranches[1], analysisFields, ['delivery', 'canWrite'])) {
+    return 'analyze_repo_structure outputSchema full branch drift';
+  }
+  if (propertyAt(analyzeTool, ['properties', 'sourceOnly'])?.type !== 'boolean'
+    || outputPropertyAt(analyzeTool, ['properties', 'delivery'])?.type !== 'string'
+    || outputPropertyAt(analyzeTool, ['properties', 'delivery'])?.const !== 'source_only'
+    || outputPropertyAt(analyzeTool, ['properties', 'canWrite'])?.type !== 'boolean'
+    || outputPropertyAt(analyzeTool, ['properties', 'canWrite'])?.const !== false
+    || outputPropertyAt(analyzeTool, ['properties', 'sourceEvidence'])?.type !== 'object') {
+    return 'analyze_repo_structure outputSchema source-only discriminator drift';
   }
   if (analyzeTool.outputSchema?.additionalProperties !== false) {
     return 'analyze_repo_structure outputSchema root openness drift';

@@ -29,7 +29,7 @@ completion artwork share the same traveler proportions and equipment.
 |---|---|---|
 | Desktop app (macOS; Windows x64 beta) | Installed local workbench over a folder on disk | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md), [Download](features/download.md) |
 | CLI | `node cli/src/index.mjs <command>` from a source checkout | [`cli/README.md`](../cli/README.md); the command list is `node cli/src/index.mjs --help` |
-| MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer |
+| MCP | JSON-RPC server an agent registers against a vault | [`mcp/README.md`](../mcp/README.md); the tool list is the server's `tools/list` answer; optional first-construction discovery exposes 20 existing tools, with full discovery as the default; exact `sourceOnly` continuations reuse bounded evidence without rescanning |
 | Website | Static export; `/` is the gateway until a vault is loaded | [Gateway](features/gateway.md) |
 
 Meaning review previews a nonblank authored description or a complete opening
@@ -41,7 +41,7 @@ Existing local saves remain untouched; no replacement viewer or export is provid
 
 Direct model conversations reject malformed response structures with a bounded
 `invalid-provider-response` diagnostic. No tool call from that response executes;
-the existing retry flow remains available for cloud and local endpoints.
+the existing retry flow remains available for cloud and local endpoints. The local conversation stops evidence reads after a strictly verified empty census and explains its source-access limit; it does not construct a codebase map from an empty vault.
 
 ## Destinations
 

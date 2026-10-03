@@ -51,6 +51,21 @@ function domainCommands(result) {
 }
 
 describe('focused check suggestions', () => {
+  it('covers construction registry, replay delegation and rendered guide consumers', () => {
+    const subjects = [
+      ['mcp/src/server/registry.mjs', 'pnpm test:mcp:unit'],
+      ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
+      ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
+      ['scripts/lib/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
+      ['docs/guide/body-backed-construction.md', 'pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts'],
+    ];
+    assert.ok(subjects.length > 0);
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
+      assert.ok(commandNames(suggestFocusedChecks([], { deletedPaths: [path] })).includes(command), `deleted ${path} -> ${command}`);
+    }
+  });
   it('lints changed scripts, tests and packages that the full lint lane covers', () => {
     const lint = (paths) => commandNames(suggestFocusedChecks(paths)).find(isScriptLint);
     // A scripts-only change once planned no lint and landed a warning on main (train #1921).
@@ -288,6 +303,7 @@ describe('focused check suggestions', () => {
       'pnpm docs:links',
       'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:guide-examples',
+      'pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     ]);
   });

@@ -10,16 +10,19 @@ path: src/features/vault-agent/model/provider-adapter.ts
 created_by: "agent:claude-code"
 ---
 
-Shapes three model vendors into one form, so switching vendor is a change here rather than a change everywhere the agent loop touches.
+Shapes cloud and local model requests and responses into a common form used by the vault conversation loop.
 
 ## Includes
-- One normalized request and response shape covering the supported vendors, including how each expresses a tool call.
-
-- Structural response validation shared by cloud adapters and the OpenAI-compatible local adapter. Invalid roots or malformed message/tool blocks return a failed normalized response with a bounded structure diagnostic and no executable calls from that response. Tool argument validation and approval remain separate.
+- Normalized request, response and tool-call shapes for the supported providers.
+- Structural response validation: malformed roots or blocks fail with a bounded diagnostic and no executable calls from that response. Argument validation and approval remain separate.
+- The local conversation's bounded evidence reads and synthesis checks in `src/features/vault-agent/model/providers/local.ts`.
+- After a successful census explicitly reports zero documented and referenced concepts, the local adapter closes tools and explains that source inspection is unavailable in this conversation. Missing, erroneous, malformed and nonempty census results do not take that shortcut.
 
 ## Excludes
-- Secrets, transport and auditing, which the native layer handles so keys never enter the web context.
-- Choosing which vendor to use.
+- Secrets, transport and auditing, which the native layer owns.
+- Choosing the provider or granting repository-analysis tools to the internal local conversation.
+- Claiming that a refusal or a structurally valid response is a constructed or qualified ontology.
 
 ## Uncertainty
-- Vendor-shaped fixtures and malformed root/block cases exercise the normalizers, loop failure and subsequent-send recovery. No live provider was contacted in this check; compatibility with unobserved newer response shapes and answer quality remain unmeasured.
+- Provider fixtures exercise normalization and the empty-census regression. A 2026-10-03 Node HTTP shim drove the shipped loop against the installed local 27B model: four requests and a failed impossible read became two requests and an honest source-access limit, with zero writes in both runs.
+- This measured the source loop with a substituted transport, not a reinstalled native bundle or rendered app. General answer quality and newer unobserved provider shapes remain unmeasured.

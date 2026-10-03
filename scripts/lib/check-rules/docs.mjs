@@ -78,11 +78,18 @@ export const rules = [
     ],
   },
   {
+    order: 245,
+    command: 'pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts',
+    reason: 'guide links are rendered outside the repository and must retain their destinations',
+    matches: [/^docs\/guide\/.*\.md$/],
+  },
+  {
     order: 250,
     command: 'pnpm docs:surface:check',
     reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
     matches: [
       /^mcp\/src\/index\.js$/,
+      /^mcp\/src\/server\/registry\.mjs$/,
       /^cli\/src\/lib\/cli-commands\.mjs$/,
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
