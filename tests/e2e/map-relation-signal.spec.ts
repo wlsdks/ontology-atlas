@@ -240,8 +240,6 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
   }
 
   const glue = frames.flatMap((frame) => frame.glue).filter((sample) => !sample.ambiguous && sample.lineContrast >= 8);
-  // The probe skips a light whose two-way twin is in flight: the twin's stroke lies
-  // 4.5 px away, inside its window, and the two lights cross mid-line.
   expect(new Set(glue.map((sample) => sample.key)).size, "the glue was measured on at least two lines").toBeGreaterThanOrEqual(2);
   const moved = glue.filter((sample) => sample.cameraShiftPx >= MOVED_PX);
   test.info().annotations.push({
@@ -259,6 +257,66 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
     expect(sample.aheadInk, `no light runs ahead of ${sample.key}`).toBeLessThanOrEqual(sample.headInk * 0.05);
   }
 
+  const spent = await page.evaluate(() => window.__atlasMapLight!.records().at(-1)!);
+  expect(spent.standDowns).toBe(0);
+});
+
+test("inside a realm, the classic focus light runs one light along each relation and stands the comets down", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openMap(page, "&realm=project%3Astorefront");
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  await waitForLight(page);
+  await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
+  await selectBySearch(page, FOCUS);
+  const { plan, frames } = await lightEvent(page, "focus");
+
+  expect(plan.length, "the focus lit its relations").toBeGreaterThanOrEqual(3);
+  const focusIndex = frames.findIndex((frame) => frame.focus === FOCUS);
+  expect(focusIndex, "the recorder saw the focus frame").toBeGreaterThanOrEqual(0);
+  const reached = new Map<string, number>();
+  for (const signal of plan) {
+    const index = arrivalIndex(frames, signal.key, "focus");
+    if (signal.bloomId !== null && index >= 0) reached.set(signal.bloomId, Math.min(reached.get(signal.bloomId) ?? Infinity, frames[index]!.now));
+  }
+
+  for (const signal of plan) {
+    const track = headTrack(frames, signal.key, "focus");
+    const firstIndex = frames.indexOf(track[0]!.frame);
+    expect(firstIndex - focusIndex, `${signal.key} starts within a frame of the focus`).toBeLessThanOrEqual(1);
+    for (let i = 1; i < track.length; i += 1) {
+      expect(track[i]!.head.t, `${signal.key} never runs backwards`).toBeGreaterThanOrEqual(track[i - 1]!.head.t - 1e-9);
+    }
+    if (signal.revealBound) {
+      const departure = track[0]!.head.t;
+      for (const { frame, head } of track) {
+        expect(head.t, `${signal.key} stays inside the drawn span`).toBeLessThanOrEqual(Math.max(frame.reveal, departure) + 1e-6);
+      }
+    }
+    const arrivedIndex = arrivalIndex(frames, signal.key, "focus");
+    const allowedIndex = allowedArrivalIndex(frames, focusIndex, signal);
+    expect(arrivedIndex, `${signal.key} arrives`).toBeGreaterThan(focusIndex);
+    expect(arrivedIndex - allowedIndex, `${signal.key} arrives on the frame its clock and the reveal allow`).toBeLessThanOrEqual(1);
+    if (signal.bloomId !== null) {
+      const bloomId = signal.bloomId;
+      const id = `node:${bloomId}`;
+      const strength = (frame: LightFrame) => frame.blooms.find((b) => b.id === id)?.strength ?? 0;
+      const peakIndex = frames.reduce((best, frame, i) => (strength(frame) > strength(frames[best]!) ? i : best), 0);
+      expect(strength(frames[peakIndex]!), `${bloomId} blooms`).toBeGreaterThan(0);
+      const riseEnd = frames.findIndex((frame) => frame.now >= reached.get(bloomId)! + BLOOM_RISE_MS - 1e-6);
+      expect([riseEnd - 1, riseEnd], `${bloomId} peaks on the frame ${BLOOM_RISE_MS} ms after the light reaches it`).toContain(peakIndex);
+    }
+  }
+
+  const glue = frames.flatMap((frame) => frame.glue).filter((sample) => !sample.ambiguous && sample.lineContrast >= 8);
+  const moved = glue.filter((sample) => sample.cameraShiftPx >= MOVED_PX);
+  expect(moved.length, "the glue was measured on frames where the camera moved the line").toBeGreaterThanOrEqual(5);
+  for (const sample of glue) {
+    expect(sample.offsetPx, `the light sits on its line (${sample.key}, camera moved ${sample.cameraShiftPx.toFixed(1)} px)`).toBeLessThanOrEqual(GLUE_PX);
+    expect(sample.aheadInk, `no light runs ahead of ${sample.key}`).toBeLessThanOrEqual(sample.headInk * 0.05);
+  }
+
+  const running = frames.filter((frame) => frame.heads.some((head) => !head.arrived));
+  expect(running.some((frame) => frame.standDowns > 0), "a comet stood down on a lit line").toBe(true);
   const spent = await page.evaluate(() => window.__atlasMapLight!.records().at(-1)!);
   expect(spent.standDowns).toBe(0);
 });
