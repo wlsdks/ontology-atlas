@@ -58,6 +58,8 @@ export function InsightsAgentDock({
   const chatWidth = useChatWidth();
   const reducedMotion = usePrefersReducedMotion();
   const presence = usePanelPresence(open);
+  const [standing, setStanding] = useState(open && prefillRequest !== null);
+  if (open && prefillRequest && !standing) setStanding(true);
   const [openingRequest, setOpeningRequest] = useState<{ text: string; nonce: number; scopeKey: string } | null>(null);
   const [parentRunId, setParentRunId] = useState<string | null>(null);
   const [parentRequestText, setParentRequestText] = useState<string | null>(null);
@@ -90,6 +92,9 @@ export function InsightsAgentDock({
       data-testid="insights-agent-dock-frame"
       data-right-dock={open || presence.mounted ? 'insights-agent' : undefined}
       data-agent-session-scope="vault-runtime"
+      data-dock-state={open ? 'open' : standing ? 'put-away' : 'empty'}
+      inert={!open}
+      aria-hidden={!open || undefined}
       onTransitionEnd={(event) => {
         if (
           event.target === event.currentTarget
@@ -111,15 +116,19 @@ export function InsightsAgentDock({
           : 'pointer-events-none w-0 lg:w-0',
       )}
     >
-      {presence.mounted && prefillRequest ? (
+      {standing && prefillRequest ? (
         <Surface
-          open={open}
+          open={standing}
           as="aside"
           motion="overlay"
           data-testid="insights-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={prefillRequest.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--insights-agent-chat-width)-var(--chrome-inset))]`}
+          className={cn(
+            `${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--insights-agent-chat-width)-var(--chrome-inset))]`,
+            !open && 'map-overlay-out',
+            !open && !presence.mounted && 'invisible',
+          )}
         >
           <div className="hidden lg:contents">
             <AcpChatResizeHandle
@@ -149,6 +158,7 @@ export function InsightsAgentDock({
             sessionEnabled={
               open && enabledRequestNonce === prefillRequest.nonce
             }
+            putAway={!open}
             prefillRequest={prefillRequest}
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, 'meaning'])}

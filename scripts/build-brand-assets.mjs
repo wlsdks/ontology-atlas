@@ -35,6 +35,28 @@ export const MASCOT_MASTERS = Object.freeze({
   }),
 });
 
+export const MASCOT_PRESENTATION_MASTER = Object.freeze({
+  path: 'assets/brand/mascot/mascot-presentation-128.png',
+  width: 128,
+  height: 128,
+});
+
+const MASCOT_PORTRAITS = Object.freeze({
+  welcome: Object.freeze({ path: 'assets/brand/mascot/mascot-welcome-32.png', width: 32, height: 32 }),
+  curious: Object.freeze({ path: 'assets/brand/mascot/mascot-curious-32.png', width: 32, height: 32 }),
+});
+
+export function readMascotPortraits(root = process.cwd()) {
+  return Object.fromEntries(Object.entries(MASCOT_PORTRAITS).map(([expression,spec]) => {
+    const bytes = readFileSync(join(root,spec.path));
+    const { width, height } = pngDimensions(bytes);
+    if (width !== spec.width || height !== spec.height || bytes[25] !== 6) {
+      throw new Error(`${spec.path} must be a ${spec.width}x${spec.height} RGBA portrait`);
+    }
+    return [expression,{ ...spec,base64: bytes.toString('base64') }];
+  }));
+}
+
 export const MASCOT_MOTION_ROWS = Object.freeze({
   walk: Object.freeze({
     path: 'assets/brand/mascot/mascot-walk-row-64.png',
@@ -104,6 +126,17 @@ export function readMascotMasters(root = process.cwd()) {
       return [detail, { ...spec, base64: bytes.toString('base64') }];
     }),
   );
+}
+
+export function readMascotPresentationMaster(root = process.cwd()) {
+  const spec = MASCOT_PRESENTATION_MASTER;
+  const bytes = readFileSync(join(root, spec.path));
+  const { width, height } = pngDimensions(bytes);
+  if (width !== spec.width || height !== spec.height) {
+    throw new Error(`${spec.path} must be ${spec.width}x${spec.height}, got ${width}x${height}`);
+  }
+  if (bytes[25] !== 6) throw new Error(`${spec.path} must be an RGBA PNG`);
+  return { ...spec, base64: bytes.toString('base64') };
 }
 
 export function readMascotMotionRows(root = process.cwd()) {

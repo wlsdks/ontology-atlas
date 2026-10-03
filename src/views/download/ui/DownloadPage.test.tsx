@@ -1,4 +1,4 @@
-import { fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +7,6 @@ import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { DEMO_CLIPS } from '../model/demo-clips';
 import { RELEASE_VERSION } from '../lib/release-facts';
 import { DownloadPage } from './DownloadPage';
-import { useStageGraph } from './StageMap';
 
 vi.mock('@/features/locale-switch', () => ({
   LocaleSwitch: () => <div data-testid="locale-switch" />,
@@ -42,7 +41,7 @@ const mocks = vi.hoisted(() => ({
     publishedAt: null as string | null,
     releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
     assets: [] as Array<{
-      arch: 'aarch64' | 'x64';
+      arch: 'aarch64';
       fileName: string;
       sizeBytes: number;
       sha256: string;
@@ -76,7 +75,6 @@ vi.mock('../model/macos-release.generated', () => ({
 }));
 
 const AARCH64_SHA = 'a'.repeat(64);
-const X64_SHA = 'b'.repeat(64);
 
 function publishRelease() {
   mocks.release = {
@@ -92,13 +90,6 @@ function publishRelease() {
         sizeBytes: 13_002_342,
         sha256: AARCH64_SHA,
         downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
-      },
-      {
-        arch: 'x64',
-        fileName: `ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
-        sizeBytes: 14_500_000,
-        sha256: X64_SHA,
-        downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       },
     ],
   };
@@ -200,28 +191,18 @@ describe('DownloadPage', () => {
   describe('once a release is published', () => {
     beforeEach(publishRelease);
 
-    it('offers both Mac files with their real sizes behind one Mac control', () => {
+    it('links the Apple Silicon file with its real size from the hero', () => {
       renderDownloadPage();
 
-      const mac = screen.getByTestId('gateway-hero-cta');
-      expect(mac).toHaveAttribute('aria-haspopup', 'menu');
-      expect(mac).toHaveTextContent(/Download for Mac/i);
-      expect(screen.queryByTestId('gateway-hero-macos-aarch64')).toBeNull();
-      fireEvent.click(mac);
-      expect(mac).toHaveAttribute('aria-expanded', 'true');
-
-      const appleSilicon = screen.getByTestId('gateway-hero-macos-aarch64');
+      const appleSilicon = screen.getByTestId('gateway-hero-cta');
       expect(appleSilicon).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
-      expect(appleSilicon).toHaveTextContent(/Apple Silicon/i);
+      expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon/i);
       // 13,002,342 B in decimal MB, as Finder reports.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
-      expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
-        'href',
-        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
-      );
+      expect(screen.getAllByText(/macOS 12 or later · Apple Silicon/).length).toBeGreaterThan(0);
       const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
       expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
     });
@@ -231,7 +212,7 @@ describe('DownloadPage', () => {
       renderDownloadPage();
 
       const primary = screen.getByTestId('gateway-hero-cta');
-      expect(primary).toHaveAttribute('aria-haspopup', 'menu');
+      expect(primary).toHaveAttribute('href', expect.stringMatching(/_aarch64\.dmg$/));
       expect(primary.className).toMatch(/--color-indigo-brand/);
 
       expect(screen.queryByTestId('gateway-hero-demo-link')).toBeNull();
@@ -248,8 +229,8 @@ describe('DownloadPage', () => {
       expect(web).toHaveAttribute('href', '/topology');
       expect(web).toHaveTextContent(/playground/i);
 
-      const row = primary.parentElement!.parentElement!;
-      expect(row.querySelectorAll(':scope > a, :scope > div > button')).toHaveLength(3);
+      const row = primary.parentElement!;
+      expect(row.querySelectorAll(':scope > a')).toHaveLength(3);
 
       for (const secondary of [windows, web]) {
         expect(secondary.className).not.toMatch(/--color-indigo-brand/);
@@ -272,24 +253,19 @@ describe('DownloadPage', () => {
           expect.stringMatching(/_windows_x64-setup\.exe$/),
         );
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        // The hero trust line and the closing band.
-        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
-        expect(screen.getByTestId('download-closing-cta')).toHaveAttribute(
-          'href',
-          expect.stringMatching(/_windows_x64-setup\.exe$/),
-        );
-        expect(screen.getByTestId('download-closing-command')).toHaveTextContent(
-          /Get-FileHash ontology-atlas_.*_windows_x64-setup\.exe -Algorithm SHA256/,
-        );
+        // The hero trust line is the one place it lives.
+        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(1);
+        // The checksum is the Windows file's, and it opens the release page.
+        const sha = screen.getByTestId('gateway-facts-sha');
+        expect(sha).toHaveAccessibleName(/_windows_x64-setup\.exe/);
+        expect(sha).toHaveTextContent('cccccccc…cccccccc');
 
         const mac = screen.getByTestId('gateway-hero-mac');
         expect(mac.className).not.toMatch(/--color-indigo-brand/);
-        fireEvent.click(mac);
-        expect(screen.getByTestId('gateway-hero-macos-aarch64')).toHaveAttribute(
+        expect(mac).toHaveAttribute(
           'href',
           expect.stringMatching(/_aarch64\.dmg$/),
         );
-        expect(screen.getByTestId('gateway-hero-macos-x64')).toBeInTheDocument();
         expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
       } finally {
         // Removing the instance property restores the prototype getter.
@@ -305,7 +281,7 @@ describe('DownloadPage', () => {
       try {
         renderDownloadPage();
 
-        expect(screen.getByTestId('gateway-hero-cta')).toHaveTextContent(/Download for Mac/i);
+        expect(screen.getByTestId('gateway-hero-cta')).toHaveTextContent(/Download for Apple Silicon/i);
         expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
         expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
       } finally {
@@ -316,15 +292,11 @@ describe('DownloadPage', () => {
 
 
   /* The only slots left for the signing fact, so this is its last line of defence. */
-  it('states the signing status that is true today, at the top and at the foot', () => {
+  it('states the signing status that is true today, once, in the hero', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(2);
-    expect(screen.getByTestId('download-closing-command')).toHaveTextContent(
-      /shasum -a 256 ontology-atlas_.*_aarch64\.dmg/,
-    );
-    expect(screen.getByTestId('download-closing-sha')).toHaveTextContent(/^[0-9a-f]{64}$/);
+    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(1);
 
     expect(screen.queryByText(/Not signed yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
@@ -332,12 +304,46 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
   });
 
+  it('links the hash to the release page, which lists the file with its .sha256 beside it', () => {
+    publishRelease();
+    renderDownloadPage();
+
+    const sha = screen.getByTestId('gateway-facts-sha');
+    expect(sha).toHaveAttribute('href', `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`);
+    expect(sha).toHaveAttribute('target', '_blank');
+    expect(sha).toHaveAccessibleName(
+      `The checksum file for ontology-atlas_${RELEASE_VERSION}_aarch64.dmg on the release page`,
+    );
+    expect(sha).toHaveTextContent('aaaaaaaa…aaaaaaaa');
+  });
+
+  it('offers no hash link while nothing is published', () => {
+    renderDownloadPage();
+
+    expect(screen.queryByTestId('gateway-facts-sha')).not.toBeInTheDocument();
+  });
+
+  it('ends on the screens and a colophon of reading links, license, stack and trademarks', () => {
+    publishRelease();
+    renderDownloadPage();
+
+    for (const id of ['gateway-evidence-section', 'gateway-agents-section', 'download-closing-band']) {
+      expect(screen.queryByTestId(id)).not.toBeInTheDocument();
+    }
+    expect(document.querySelector('[data-gateway-stage]')).toBeNull();
+    const footer = screen.getByTestId('download-bottom-band').querySelector('footer')!;
+    expect(footer).not.toHaveTextContent(/only after clearing|Defender scan/i);
+    expect(footer).toHaveTextContent(enMessages.footer.license);
+    expect(footer).toHaveTextContent(enMessages.footer.stack);
+    expect(footer).toHaveTextContent(enMessages.footer.trademarks);
+  });
+
   // Scoped to Atlas: the updater and a connected agent do use the network.
   it('states the local-first promise where the download decision is made', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(2);
+    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(1);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Chromium on the web does open a folder.
     expect(
@@ -351,33 +357,7 @@ describe('DownloadPage', () => {
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
-  it('draws the real vault in the evidence section, with the same numbers the caption claims', () => {
-    renderDownloadPage();
-
-    const caption = screen.getByTestId('download-portrait-caption');
-    const { result } = renderHook(() => useStageGraph(), { wrapper: IntlWrapper });
-    const graph = result.current;
-    expect(graph.nodes.length).toBeGreaterThan(0);
-    expect(caption).toHaveTextContent(`${graph.nodes.length} concepts`);
-    expect(caption).toHaveTextContent(`${graph.edges.length} relations`);
-    // Scoped, since the reader's own folder yields a different number.
-    expect(caption).toHaveTextContent(/docs\/ontology/i);
-    expect(caption).toHaveTextContent(/your own numbers/i);
-
-    // Understating what works is dishonest too (`.claude/rules/surfaces.md`).
-    expect(caption).toHaveTextContent(/web version/i);
-
-    // The only visible affordance on a still frame.
-    expect(caption).toHaveTextContent(/drag to move/i);
-  });
-
-  it('mounts the real map engine in the evidence section', () => {
-    renderDownloadPage();
-
-    expect(screen.getByTestId('download-stage-map')).toBeInTheDocument();
-  });
-
-  it('does not stack a second landing page under the evidence section', () => {
+  it('does not stack a second landing page under the hero', () => {
     renderDownloadPage();
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
@@ -386,27 +366,25 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('walks problem → demo → map → architecture → library → agents, with the decision in the first screen', () => {
+  it('walks problem → conduction → demo → screens → colophon, with the decision in the first screen', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('gateway-hero-cta');
+    const conduction = screen.getByTestId('download-conduction-figure');
     const demo = screen.getByTestId('demo-stage');
-    const caption = screen.getByTestId('download-portrait-caption');
-    const terminal = screen.getByTestId('gateway-agent-chat');
-    const colophon = screen.getByTestId('download-bottom-band');
     const architecture = screen.getByTestId('gateway-architecture-capture');
     const library = screen.getByTestId('gateway-library-capture');
+    const colophon = screen.getByTestId('download-bottom-band');
 
     for (const [earlier, later] of [
       [heading, primaryCta],
-      [primaryCta, demo],
-      [demo, caption],
-      [caption, architecture],
+      [primaryCta, conduction],
+      [conduction, demo],
+      [demo, architecture],
       [architecture, library],
-      [library, terminal],
-      [terminal, colophon],
+      [library, colophon],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -427,10 +405,6 @@ describe('DownloadPage', () => {
       'Projects',
       'Git',
     ]);
-
-    const map = screen.getByTestId('gateway-screens-map');
-    expect(map).toHaveAttribute('href', '#evidence');
-    expect(document.getElementById('evidence')).toBe(screen.getByTestId('gateway-evidence-section'));
 
     for (const tab of tabs) {
       expect(document.getElementById(tab.getAttribute('aria-controls')!)).not.toBeNull();
@@ -455,32 +429,6 @@ describe('DownloadPage', () => {
     fireEvent.keyDown(gitTab, { key: 'Home' });
     expect(harness).toHaveAttribute('data-state', 'active');
     expect(door('library')).toHaveAttribute('href', '/library');
-  });
-
-  it('replays the measured in-app ACP round trip verbatim, under the allowed vendor name', () => {
-    renderDownloadPage();
-
-    const chat = screen.getByTestId('gateway-agent-chat');
-    expect(chat).toHaveTextContent('add_relation');
-    /* The payload follows the screen's language; the date is the measurement's evidence. */
-    expect(chat).toHaveTextContent(/auth goes down payments go down with it \(2026-08-16\)/);
-
-    const section = screen.getByTestId('gateway-agents-section');
-    expect(section).not.toHaveTextContent(/Claude Code/i);
-    expect(section).toHaveTextContent(/Claude Agent/);
-    expect(section).toHaveTextContent(/already use/i);
-  });
-
-  /** Locks text in the first paint, not timings, which would redden every rhythm change. */
-  it('never paints the ACP scene as an empty box — the human line is the premise', () => {
-    renderDownloadPage();
-
-    const chat = screen.getByTestId('gateway-agent-chat');
-    const lines = chat.querySelectorAll('.gateway-term-line');
-    expect(lines.length, 'the replay needs three lines for this test to mean anything').toBe(3);
-
-    expect(lines[0].className).toContain('is-on');
-    expect((lines[0].textContent ?? '').trim().length).toBeGreaterThan(0);
   });
 
   it('renders the catalogue headline and lead in their semantic slots', () => {

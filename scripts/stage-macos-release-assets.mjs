@@ -11,16 +11,10 @@
  * builder, release upload glob) knows only that.
  *
  * **Why the updater archive is renamed.** Tauri emits it as
- * `<product name>.app.tar.gz` — **the same name for both architectures**, and
- * containing a **space**. Left alone there are two ways to fail silently:
- *
- * 1. Both architectures upload under the same name into one release and one
- *    overwrites the other. Users on the overwritten side either get the app for
- *    another architecture or fail signature verification and never receive an
- *    update again.
- * 2. GitHub converts spaces in asset names to dots. The URL recorded in
- *    `latest.json` still has the space, so it no longer matches the real asset,
- *    and the installed app shows the 404 as "no update available".
+ * `<product name>.app.tar.gz`, with no version or architecture and with a
+ * **space**. GitHub converts spaces in asset names to dots, so the URL in
+ * `latest.json` would no longer match the real asset, and the installed app
+ * shows the 404 as "no update available".
  *
  * So it is renamed under the same rule as the DMG
  * (`ontology-atlas_<version>_<arch>`). Version and architecture are **read from
@@ -88,7 +82,7 @@ function stageDsymArchive(dsymDir, outDir, archiveName) {
 
 /** `ontology-atlas_1.3.0_aarch64.dmg` → `{ version, arch }`. */
 export function parseDmgName(name) {
-  const match = name.match(/^ontology-atlas_(.+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(/^ontology-atlas_(.+)_(aarch64)\.dmg$/);
   return match ? { version: match[1], arch: match[2] } : null;
 }
 
@@ -136,7 +130,7 @@ export function stageReleaseAssets({ bundleDir, outDir, expectArch, dsymDir, req
   const parsed = parseDmgName(dmg);
   if (!parsed) {
     throw new Error(
-      `DMG name does not follow the rule: ${dmg} - expected ontology-atlas_<version>_<aarch64|x64>.dmg.`,
+      `DMG name does not follow the rule: ${dmg} - expected ontology-atlas_<version>_<aarch64>.dmg.`,
     );
   }
   if (expectArch && parsed.arch !== expectArch) {

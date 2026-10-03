@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const chat = vi.hoisted(() => ({ props: vi.fn() }));
@@ -46,6 +46,18 @@ afterEach(() => {
 });
 
 describe('ArchitectureAgentDock', () => {
+  it('retains the same conversation after closing without a new architecture request', () => {
+    vi.useFakeTimers();
+    const props = { ...baseProps, openingRequest: null };
+    const view = render(<ArchitectureAgentDock open {...props} />);
+    const node = screen.getByTestId('mock-acp-chat');
+    view.rerender(<ArchitectureAgentDock open={false} {...props} />);
+    act(() => vi.runOnlyPendingTimers());
+    expect(screen.getByTestId('mock-acp-chat')).toBe(node);
+    expect(screen.getByTestId('architecture-agent-dock-frame')).toHaveAttribute('inert');
+    view.rerender(<ArchitectureAgentDock open {...props} />);
+    expect(screen.getByTestId('mock-acp-chat')).toBe(node);
+  });
   it('renders the conversation immediately but starts the process after width reflow settles', () => {
     render(<ArchitectureAgentDock open {...baseProps} />);
 

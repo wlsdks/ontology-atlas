@@ -516,25 +516,25 @@ input from `main`. An unprivileged admission job binds that tag to the current
 `main` SHA before the main-only `release-signing` environment exposes
 Apple/Tauri credentials. It then passes docs-vault freshness, desktop checker
 tests, and native bridge tests before importing the certificate. It builds Apple Silicon
-on `macos-14` and Intel on `macos-15-intel`, route-smokes the static desktop payload,
+on `macos-14` (v1.5.0 was the last Intel build), route-smokes the static desktop payload,
 runs `pnpm desktop:release-source -- --mode=pin` so the tag remains bound to the admitted SHA,
 runs `pnpm desktop:release-tag` so the v-prefixed tag matches package/Tauri/Cargo
 versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
 `pnpm desktop:notarize`, staples the DMG, refreshes its checksum, verifies the
 final mounted artifact with signing and notarization required, and launch-smokes
-the app copied from the DMG before attaching both architecture DMGs to a draft
+the app copied from the DMG before attaching the DMG to a draft
 GitHub Release.
 The publish job first checks that the tag has no existing GitHub Release, so a
 rerun or manual draft cannot mix stale DMG assets with newly signed artifacts.
 `pnpm desktop:verify-download -- --allow-draft` byte-checks those draft assets
 before the workflow publishes the release as stable. `pnpm
 desktop:verify-download` then runs again as the public hosted CTA gate: it
-fails unless a public non-draft GitHub Release exposes reachable
-`ontology-atlas_*_aarch64.dmg` and `ontology-atlas_*_x64.dmg` assets plus
-matching `.sha256` checksum files that name those same-version DMGs, and it
-rejects unsupported extra `ontology-atlas_*.dmg` names so the GitHub Release
-page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
-DMGs so each release has exactly one Apple Silicon and one Intel download. The
+fails unless a public non-draft GitHub Release exposes a reachable
+`ontology-atlas_*_aarch64.dmg` asset plus a matching `.sha256` checksum file
+that names that same-version DMG, and it rejects unsupported extra
+`ontology-atlas_*.dmg` names (an x64 DMG only up to v1.5.0) so the GitHub
+Release page cannot show ambiguous macOS downloads; it also rejects a duplicate
+DMG so each release has exactly one Apple Silicon download. The
 protected desktop release workflow intentionally stops
 there: the installed macOS app is local-only and does not require any website
 deploy secrets. The separate GitHub Pages `deploy-pages` workflow owns the

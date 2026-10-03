@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
+import type { MapLayoutView } from "./map-layout-morph-store";
 
 /**
  * Appearance preferences (`docs/plans/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
@@ -354,10 +355,6 @@ function readTerritories(): boolean {
   return readOnOff(TERRITORIES_KEY, DEFAULT_TERRITORIES);
 }
 
-export function writeTerritories(value: boolean): void {
-  writeOnOff(TERRITORIES_KEY, value);
-}
-
 export function useTerritories(): boolean {
   const getSnapshot = useCallback(() => readTerritories(), []);
   const getServerSnapshot = useCallback(() => DEFAULT_TERRITORIES, []);
@@ -380,10 +377,6 @@ const DEFAULT_HEX_BOARD = false;
 
 function readHexBoard(): boolean {
   return readOnOff(HEX_BOARD_KEY, DEFAULT_HEX_BOARD);
-}
-
-export function writeHexBoard(value: boolean): void {
-  writeOnOff(HEX_BOARD_KEY, value);
 }
 
 export function useHexBoard(): boolean {
@@ -479,12 +472,26 @@ function readMapArrangement(): MapArrangement {
   }
 }
 
-export function writeMapArrangement(value: MapArrangement): void {
+export function writeMapView(view: MapLayoutView): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(MAP_ARRANGEMENT_KEY, value);
-  } catch {
-    // Storage blocked; the event still updates this session.
+  const dome = view === "strata" || view === "coupling";
+  const writes: Array<[string, string]> = [
+    [TERRITORIES_KEY, view === "territories" ? "on" : "off"],
+    [HEX_BOARD_KEY, view === "hex" ? "on" : "off"],
+    [GALAXY_KEY, view === "galaxy" ? "on" : "off"],
+    ...(dome ? [[MAP_ARRANGEMENT_KEY, view] as [string, string]] : []),
+    [VIEW_3D_KEY, dome ? "on" : "off"],
+  ];
+  for (const [key, value] of writes) {
+    let unchanged = false;
+    try {
+      unchanged = window.localStorage.getItem(key) === value;
+    } catch {}
+    if (!unchanged) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch {}
+    }
   }
   notifyPreferenceChange();
 }

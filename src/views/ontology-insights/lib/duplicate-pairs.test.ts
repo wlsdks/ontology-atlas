@@ -173,4 +173,73 @@ describe("buildDuplicatePairs", () => {
       expect(bounded.restRows).toEqual(exhaustive.rows.slice(shown, shown + folded));
     }
   });
+
+  it("matches exhaustive results at rounded thresholds across varied names, domains and neighbors", () => {
+    for (let seed = 1; seed <= 8; seed += 1) {
+      let state = seed;
+      const random = () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state;
+      };
+      const titles = ["Shared parser", "Vault reader", "온톨로지", "", "alpha beta gamma", "doc 22"];
+      const generated = [
+        node("domain:atlas", "domain", "Atlas", "domains/atlas"),
+        node("domain:library", "domain", "Library", "domains/library"),
+        ...Array.from({ length: 36 }, (_, i) => ({
+          ...node(`element:n${i}`, i % 7 === 0 ? "" : "element", titles[random() % titles.length], `elements/${i % 3 === 0 ? "shared-parser" : "reader"}-${i}`),
+          display: `Rendered name ${i}`,
+          hasOwnDocument: i % 11 !== 0,
+        })),
+      ];
+      const generatedEdges = generated.slice(2).flatMap((entry, i) => [
+        edge(`parent${i}`, generated[random() % 2].id, entry.id, "contains"),
+        edge(`neighbor${i}`, entry.id, generated[2 + random() % 36].id, "depends_on"),
+      ]);
+      // Threshold zero takes the exhaustive branch; unique slugs give the same score/id ordering.
+      const exhaustive = buildDuplicatePairs(generated, generatedEdges, Infinity, 0).rows;
+      expect(exhaustive.length).toBeGreaterThan(100);
+      const boundaryScores = [...new Set(exhaustive.map(row => row.score))].slice(0, 8);
+      for (const threshold of [0.3, 0.3000001, 0.6, 0.6000001, 1, Infinity, Number.NaN,
+        ...boundaryScores.flatMap(score => [score, score - 0.0000001, score + 0.0000001])]) {
+        const expected = exhaustive.filter(row => !(row.score < threshold));
+        expect(buildDuplicatePairs(generated, generatedEdges, 3, threshold, 4)).toEqual({
+          suspectCount: expected.length,
+          rows: expected.slice(0, 3),
+          restRows: expected.slice(3, 7),
+        });
+      }
+    }
+  });
+
+  it("keeps a pair exactly at the rounded score upper bound", () => {
+    const boundary = [
+      node("domain:map", "domain", "Map", "domains/map"),
+      node("element:unique", "element", "Vault reader", "elements/unique"),
+      node("element:folder", "element", "Vault", "elements"),
+    ];
+    const parents = boundary.slice(1).map((entry, i) => edge(`parent${i}`, boundary[0].id, entry.id, "contains"));
+    const result = buildDuplicatePairs(boundary, parents, 3, 0.65);
+    expect(result.suspectCount).toBe(1);
+    expect(result.rows[0].score).toBe(0.65);
+    expect(buildDuplicatePairs(boundary, parents, 3, 0.6500001).suspectCount).toBe(0);
+  });
+
+  it("preserves stable ties when multiple graph nodes name the same document pair", () => {
+    const aliases = [
+      node("domain:intro", "domain", "Early phrase", "domains/intro"),
+      node("element:a1", "element", "Late phrase", "elements/read"),
+      node("element:b1", "element", "Late phrase", "elements/reader"),
+      node("element:a2", "element", "Early phrase", "elements/read"),
+      node("element:b2", "element", "Early phrase", "elements/reader"),
+    ];
+    const parents = aliases.slice(1).map((entry, i) => edge(`parent${i}`, aliases[0].id, entry.id, "contains"));
+    const full = buildDuplicatePairs(aliases, parents, Infinity);
+    expect(full.rows.filter(row => row.keepSlug !== row.dissolveSlug).map(row => [row.keepId, row.dissolveId]))
+      .toEqual([["element:a2", "element:b2"], ["element:a1", "element:b1"]]);
+    expect(buildDuplicatePairs(aliases, parents, 2, 0.6, 1)).toEqual({
+      suspectCount: full.suspectCount,
+      rows: full.rows.slice(0, 2),
+      restRows: full.rows.slice(2, 3),
+    });
+  });
 });

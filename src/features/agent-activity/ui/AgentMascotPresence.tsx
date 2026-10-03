@@ -21,10 +21,8 @@ export const MASCOT_SUCCESS_HOLD_MS = 1_200;
 export const MASCOT_WALK_MS = 600;
 
 /**
- * One truthful, finite mascot journey. It appears only for a verified read-like
- * Atlas operation, walks into the workbench edge, holds READ, and may resolve to
- * SUCCESS only when that same observed sequence receives a terminal completion.
- * There is no idle loop and no inferred work state.
+ * A finite WALK/READ sequence for verified read work. SUCCESS requires that
+ * same sequence's observed completion; idle work stays hidden.
  */
 export function AgentMascotPresence({ feed }: { feed: Pick<AgentActivityFeed, 'showStatus' | 'work'> }) {
   const t = useTranslations('agentActivity.mascot');
@@ -39,6 +37,10 @@ export function AgentMascotPresence({ feed }: { feed: Pick<AgentActivityFeed, 's
     () => () => {
       if (walkTimerRef.current !== null) window.clearTimeout(walkTimerRef.current);
       if (successTimerRef.current !== null) window.clearTimeout(successTimerRef.current);
+      // Effect replay must restart a sequence whose timers were just cancelled.
+      walkTimerRef.current = null;
+      successTimerRef.current = null;
+      readSequenceRef.current = false;
     },
     [],
   );

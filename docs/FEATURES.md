@@ -18,6 +18,11 @@ disagree, the code wins; a feature file's history is its Git log
 
 The cream-hooded planet traveler is the shared mascot across brand and in-app surfaces. Its waiting and verified-work poses remain tied to their existing activity states; see [Brand](design/brand.md).
 
+The folder entry uses a static welcome portrait, and the missing-page screen
+uses a curious map-search portrait in its existing icon slot. These expressions
+leave the screen's labels and actions authoritative. Walking, reading and
+completion artwork share the same traveler proportions and equipment.
+
 ## Surfaces
 
 | Surface | Entry | Reference |

@@ -106,19 +106,16 @@ jobs:
     needs: admit-release
     environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # The Intel runner needs 25-30 minutes for the cold release build plus
-    # notarization (v1.0.5 x64: 28m50s; v1.0.6 first attempt cancelled at 30m
-    # with rustc still running). The arm64 runner finishes in about 15 minutes.
-    # budget: 2200s
-    timeout-minutes: 45
+    # Measured aarch64 lane: v1.4.0 20m37s, v1.5.0 16m53s (cold build plus
+    # notarization).
+    # budget: 1300s
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: aarch64
             runner: macos-14
-          - arch: x64
-            runner: macos-15-intel
     env:
       TAURI_ARCH: ${{ matrix.arch }}
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
@@ -548,11 +545,8 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # Do not flatten — the manifest builder splits architectures by **folder**
-          # (`release-assets/ontology-atlas-macos-<arch>/`). Merging them mixes two
-          # architectures in one folder, making it impossible to know which archive
-          # belongs to which architecture, and incorrectly merging them causes users
-          # to receive apps for the wrong architecture.
+          # Do not flatten: the manifest builder finds each architecture by its
+          # folder (`release-assets/ontology-atlas-macos-<arch>/`).
           merge-multiple: false
 
       - name: Download Windows artifact
@@ -597,7 +591,6 @@ jobs:
         uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
-          target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
           generate_release_notes: true
           files: |
@@ -623,7 +616,7 @@ jobs:
           {
             echo "## Draft desktop release — awaiting approval"
             echo ""
-            echo "macOS DMGs and the unsigned Windows x64 beta are staged at ${release_url}."
+            echo "The Apple Silicon DMG and the unsigned Windows x64 beta are staged at ${release_url}."
             echo "The Windows artifact passed the native Windows Server 2022 build, Defender scan,"
             echo "silent install, app launch, and installed MCP sidecar smoke before this gate."
             echo "Windows 11 client SmartScreen UI remains explicitly unverified."
@@ -678,9 +671,6 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # It is safe to merge here — staging includes version and architecture in the file names,
-          # so all eight assets have unique names. This step only creates a summary table;
-          # there is no need to split architectures again.
           merge-multiple: true
 
       - name: Download Windows artifact
@@ -699,6 +689,11 @@ jobs:
           # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
           # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
           gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Recheck admitted release source after publication
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

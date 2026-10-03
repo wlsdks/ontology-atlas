@@ -124,7 +124,7 @@
       gradient.addColorStop(1, '#060708');
       context.fillStyle = gradient;
       context.fillRect(0, 0, width, height);
-      drawMascot(context, 'full', { x: 88, y: 91, width: 420, height: 448 });
+      drawMascot(context, 'presentation', { x: 88, y: 91, width: 420, height: 448 });
       context.textBaseline = 'alphabetic';
       context.fillStyle = '#F7F5E6';
       context.font = '650 84px "Pretendard Variable"';
@@ -145,8 +145,8 @@
     for (const [name, width, height, tone, withTagline] of data.lockupPlan) {
       outputs[name] = png(drawLockup(width, height, tone, withTagline));
     }
-    outputs['icon-light'] = png(drawIcon('full', 512, 'squircle', 'light'));
-    outputs['icon-dark'] = png(drawIcon('full', 512, 'squircle', 'dark'));
+    outputs['icon-light'] = png(drawIcon('presentation', 512, 'squircle', 'light'));
+    outputs['icon-dark'] = png(drawIcon('presentation', 512, 'squircle', 'dark'));
     outputs['og-image'] = png(drawOg());
 
     const response = await fetch('/save?token=' + encodeURIComponent(saveToken), {

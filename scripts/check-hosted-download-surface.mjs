@@ -193,6 +193,8 @@ function assertOkJson(page, path) {
  * A guard that cannot tell "the page lost this text" from "nobody told me what
  * text to look for" is worse than no guard — it is a green light nobody earned.
  */
+const stripKeyTags = (title) => title.replace(/<\/?key>/g, "");
+
 function assertIncludes(text, label, needles) {
   const unusable = needles.filter((needle) => typeof needle !== "string" || needle.length === 0);
   if (unusable.length > 0) {
@@ -281,13 +283,14 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // `windowsPlatformTitle`, `releaseGateNote`) all lived inside the install section,
     // and the owner removed that section wholesale (*"The last one seems unnecessary since it's all at the
     // top anyway"* — the last one seems unnecessary since it's all at the
-    // top anyway). The page is now made of four sections, so one needle is placed per
-    // section: if a section drops out of a deployment, that section's needle catches
-    // it.
+    // top anyway). One needle is placed per section: if a section drops out of a
+    // deployment, that section's needle catches it. The evidence and agents sections
+    // left on 2026-10-03; the two figures that replaced them carry a needle each.
     downloadCopy.eyebrow,
     downloadCopy.demoTitle,
-    downloadCopy.evidenceTitle,
-    downloadCopy.agentsTitle,
+    stripKeyTags(downloadCopy.change.title),
+    downloadCopy.screens.title,
+    stripKeyTags(downloadCopy.start.title),
     // The **last** place the honesty facts live. Since the verification rail was
     // removed, the only thing stating signing, notarisation, and "nothing is sent to a
     // server" is the hero's trust line — if that line drops out of a deployment, the page

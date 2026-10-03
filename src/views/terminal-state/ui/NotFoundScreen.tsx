@@ -2,12 +2,13 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Compass, Search } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
+import { BrandPortrait } from '@/shared/ui/brand-portrait';
 import { TerminalState, TerminalStatePending } from './TerminalState';
 import {
   StandaloneLocaleProvider,
@@ -78,7 +79,7 @@ function NotFoundBody() {
     <TerminalState
       testId="not-found-stage"
       tone="neutral"
-      icon={<Compass size={ICON_SIZE.lg} />}
+      icon={<BrandPortrait expression="curious" />}
       eyebrow={t('label')}
       title={t('title')}
       body={t('body')}

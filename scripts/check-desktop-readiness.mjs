@@ -626,7 +626,7 @@ if (
   downloadReleaseVerifier.includes("unsupported macOS DMG asset names") &&
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&
-  downloadReleaseVerifier.includes("REQUIRED_MACOS_ARCHES = [\"aarch64\", \"x64\"]") &&
+  downloadReleaseVerifier.includes("REQUIRED_MACOS_ARCHES = [\"aarch64\"]") &&
   downloadReleaseVerifier.includes("Expected ontology-atlas_<version>_<aarch64|x64>.dmg") &&
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
@@ -640,7 +640,7 @@ if (
   pass("desktop download verifier re-downloads and hashes the required macOS and Windows installers");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMGs plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets, and refuse any release GitHub marks as a pre-release",
+    "scripts/check-macos-download-release.mjs must require exactly one aarch64 ontology-atlas DMG (Intel is no longer required) plus exactly one Windows x64 setup executable, reject unsupported or duplicate DMGs, verify artifact filename versions match the release tag, re-download macOS and Windows bytes to match their checksums, and let --allow-draft find tagged draft pre-publish assets, and refuse any release GitHub marks as a pre-release",
   );
 }
 
@@ -960,8 +960,8 @@ if (
   //
   // Revised 2026-07-29: the gateway redesign replaced the "coming soon" badge and
   // card with a one-line status (`platformStatus`), a tracking link
-  // (`windowsTrackCta`), and a policy sentence stating the criteria
-  // (`windowsPolicy`). The check is on the **contract** the three make together —
+  // (`windowsTrackCta`), and a policy sentence stating the criteria (now in the
+  // guide's On trust chapter). The check is on the **contract** the three make together —
   // where it is, where it goes, why it is not out — not on the badge **form**.
   /Windows/.test(enMessages.download?.platformStatus ?? "") &&
   /Windows/.test(koMessages.download?.platformStatus ?? "") &&
@@ -983,7 +983,9 @@ if (
   // decides on **whether the claim matches the actual release chain**.
   !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
   !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
-  /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
+  /\{file\}/.test(enMessages.download?.factShaLink ?? "") &&
+  readText("docs/guide/trust.md").includes("shasum -a 256 <file>") &&
+  readText("docs/guide/trust.md").includes("Get-FileHash <file> -Algorithm SHA256") &&
   // Claiming signing requires the release asset chain to actually sign, notarise,
   // and verify.
   (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||

@@ -586,7 +586,7 @@
    *
    * **Why register with `@property`**: Registration allows computed values to resolve as their **written length**
    * (e.g., `160px`), enabling ① CSS to recalculate automatically when the viewport changes and
-   * ② JS (`StageMap`) to read the **same number** via `parseFloat` to derive camera reservation width. Without registration, the computed value remains a token stream, causing JS to see NaN.
+   * ② JS to read the **same number** via `parseFloat` to derive camera reservation width. Without registration, the computed value remains a token stream, causing JS to see NaN.
    *
    * The reason not to register the atomic values (`--gateway-*`) is the opposite — those are values manually set by humans,
    * so natural typos like `2.5rem` silently drift back as initial-value without error

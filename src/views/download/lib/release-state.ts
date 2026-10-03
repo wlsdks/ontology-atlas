@@ -13,8 +13,7 @@ import {
 
 export type DesktopArch = MacosReleaseAsset['arch'];
 
-/** Apple Silicon first: most Macs sold since 2020. */
-export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64', 'x64'];
+export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64'];
 
 export function isMacosReleasePublished(): boolean {
   return MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
@@ -38,6 +37,11 @@ function isWindowsReleasePublished(): boolean {
 export function windowsAsset(): WindowsReleaseAsset | null {
   if (!isWindowsReleasePublished()) return null;
   return WINDOWS_RELEASE.assets[0] ?? null;
+}
+
+/** The release page that lists each file with its `.sha256` sibling. */
+export function releasePageUrl(platform: 'macos' | 'windows'): string {
+  return platform === 'windows' ? WINDOWS_RELEASE.releaseUrl : MACOS_RELEASE.releaseUrl;
 }
 
 /** Decimal MB with one decimal, matching what Finder and Safari show for the same file. */

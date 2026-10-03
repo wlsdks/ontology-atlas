@@ -82,8 +82,6 @@ export const ACCEPTED = {
       'connectors.source.claude': 'a lowercase connector identifier shown as written',
       'connectors.source.codex': 'a lowercase connector identifier shown as written',
       'connectors.source.cursor': 'a lowercase connector identifier shown as written',
-      'download.trustVerifyCommand': 'a shell command the person copies',
-      'download.trustVerifyCommandWindows': 'a PowerShell command the person copies',
       'library.source.hash': 'the name of a hash algorithm',
       'projectPages.selector.nextSlotCliCommand': 'a command the person copies',
       'projectPages.selector.nextSlotAgentCommand': 'a tool call the person copies',

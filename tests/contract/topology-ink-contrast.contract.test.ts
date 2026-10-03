@@ -188,19 +188,9 @@ describe("topology ink contrast contract", () => {
   });
 
   it("관문 스테이지가 엣지 잉크를 **강등**하지 않는다", () => {
-    // The old `html[data-gateway-stage]` block was an override that raised edges back
-    // when the workbench was darker. Once the defaults rose above 3:1, those values
-    // were lower and demoted the gateway alone — so it was removed. Reviving it is
-    // caught here.
-    const stageBlock = CSS.slice(CSS.indexOf("html[data-gateway-stage]"));
-    const scoped = stageBlock.slice(0, stageBlock.indexOf("}"));
-    for (const name of [...EDGE_LADDER, "map-edge-depends"]) {
-      const override = scoped.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
-      if (!override) continue;
-      expect(contrast(override[1], CANVAS), `${name} 관문 오버라이드`).toBeGreaterThanOrEqual(
-        contrast(readToken(name), CANVAS),
-      );
-    }
+    // The old `html[data-gateway-stage]` block overrode map ink for the gateway's map; the
+    // gateway no longer mounts a map, so reviving the scope is caught here.
+    expect(CSS).not.toMatch(/html\[data-gateway-stage\]\s*\{/);
   });
 
   it("깊이 선명도 알파와 **합성해도** 잉크 사다리가 3:1 바닥 위다", () => {

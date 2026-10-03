@@ -2,7 +2,6 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import {
   isEvidenceOnlyConcept,
   IMPACT_RELATION_TYPES,
-  buildOntologyReachability,
   buildReachabilityIndex,
 } from "@/entities/knowledge-graph";
 
@@ -42,11 +41,8 @@ export interface ImpactRanking {
 }
 
 /**
- * Concepts ordered by how many concepts point at them, directly and transitively, through `buildOntologyReachability`
- * (MCP `blast_radius` semantics: incoming, soft associations excluded); `tests/contract/impact-ranking.contract.test.ts`
- * catches divergence. Only `depends_on` counts: containment is structure, not change. Layers split after measuring the
- * whole graph, so the numbers match the agent's. Two reverse BFS per node (full depth, then depth 1) over one shared
- * index, each sorting what it reaches: O(N x (N log N + E)).
+ * Incoming `depends_on` counts match MCP `blast_radius` (`tests/contract/impact-ranking.contract.test.ts`).
+ * One bounded BFS per node over a shared index: O(N x (N + E)). Evidence splits only after counting.
  */
 export function buildImpactRanking(
   nodes: readonly KnowledgeGraphNode[],
@@ -59,27 +55,11 @@ export function buildImpactRanking(
   evidenceLimit = 4,
 ): ImpactRanking {
   const dependencyEdges = edges.filter((edge) => IMPACT_RELATION_TYPES.includes(edge.type));
-  // Build the index once, with the same filter as both calls below; rebuilding it per node was quadratic in index
-  // builds. A different filter would make it a different index.
   const index = buildReachabilityIndex(nodes, edges, { types: IMPACT_RELATION_TYPES });
   const scored: ImpactRankingRow[] = [];
   for (const node of nodes) {
-    const total = buildOntologyReachability(node.id, nodes, edges, {
-      direction: "incoming",
-      depth: Math.max(nodes.length, 1),
-      limit: 1,
-      types: IMPACT_RELATION_TYPES,
-      index,
-    }).summary.reachableNodes;
+    const { total, direct } = countDependents(node.id, index, Math.max(nodes.length, 1));
     if (total === 0) continue;
-    // Same filter and direction at depth 1 for "direct", so both numbers follow one rule.
-    const direct = buildOntologyReachability(node.id, nodes, edges, {
-      direction: "incoming",
-      depth: 1,
-      limit: 1,
-      types: IMPACT_RELATION_TYPES,
-      index,
-    }).summary.reachableNodes;
     scored.push({
       id: node.id,
       title: node.display ?? node.title,
@@ -108,4 +88,28 @@ export function buildImpactRanking(
     evidenceRows: evidence.slice(0, Math.max(0, evidenceLimit)),
     evidenceRankedCount: evidence.length,
   };
+}
+
+// Preserve the bounded incoming walk, including unresolved intermediates, without constructing display layers.
+function countDependents(startId: string, index: ReturnType<typeof buildReachabilityIndex>, maxDepth: number) {
+  const seen = new Set([startId]);
+  const queue = [startId];
+  let head = 0;
+  let total = 0;
+  let direct = 0;
+  for (let depth = 0; depth < maxDepth && head < queue.length; depth += 1) {
+    const end = queue.length;
+    while (head < end) {
+      for (const { next } of index.adjacency.incoming.get(queue[head++]) ?? []) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        queue.push(next);
+        if (index.nodeById.has(next)) {
+          total += 1;
+          if (depth === 0) direct += 1;
+        }
+      }
+    }
+  }
+  return { total, direct };
 }

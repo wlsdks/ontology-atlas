@@ -57,6 +57,40 @@ describe('searchDocs metadata tiers', () => {
 });
 
 describe('searchDocs body tier ranks lowest', () => {
+  it('keeps complete phrase highlights in successive documents', () => {
+    const docs = [doc('a', 'Other'), doc('b', 'Other')];
+    const index = bodyIndexOf({ a: 'needle\nphrase here', b: 'needle\tphrase there' });
+    const matches = searchDocs('needle phrase', docs, 1, index);
+    expect(matches[0].doc).toBe(docs[0]);
+    const all = searchDocs('needle phrase', docs, 2, index);
+    expect(all.map(match => match.score)).toEqual([16, 16]);
+    expect(all.map(match => match.bodyHit!.text.slice(match.bodyHit!.hit.start, match.bodyHit!.hit.end)))
+      .toEqual(['needle phrase', 'needle phrase']);
+  });
+
+  it('keeps the exhaustive prefix, stable ties and highlights across result limits', () => {
+    const docs = Array.from({ length: 80 }, (_, i) => doc(`documents/${79 - i}`, i % 5 === 0 ? 'needle phrase' : 'Other', {
+      excerpt: i % 3 === 0 ? 'needle phrase' : '', tags: i % 7 === 0 ? ['needle', 'phrase'] : [],
+      frontmatter: { display_ko: '그래프 문서', display_en: 'Graph document' },
+    }));
+    const bodies = bodyIndexOf(Object.fromEntries(docs.map((d, i) => [d.slug,
+      `${' \n\t'.repeat(i % 17)}needle${i % 2 ? '\n' : ' scattered '}phrase 그래프 c++ [x] İ`,
+    ])));
+    const snapshot = structuredClone({ docs, bodies });
+    for (const query of ['needle phrase', 'NEEDLE', '그래프', 'graph', 'c++ [x]', 'i', 'missing', '']) {
+      const exhaustive = searchDocs(query, docs, Infinity, bodies);
+      for (const limit of [0, 1, 3, 15, 79, 80, 200, 3.8, -3, Number.NaN, Infinity]) {
+        expect(searchDocs(query, docs, limit, bodies)).toEqual(exhaustive.slice(0, limit));
+      }
+    }
+    expect({ docs, bodies }).toEqual(snapshot);
+    const ties = docs.map(d => ({ ...d, title: 'needle', excerpt: '', tags: [], frontmatter: {} }));
+    const tiedBodies = bodyIndexOf(Object.fromEntries(ties.map(d => [d.slug, 'needle'])));
+    expect(searchDocs('needle', ties, 15, tiedBodies).map(match => match.doc)).toEqual(ties.slice(0, 15));
+    const lateWinner = { ...ties[79], title: 'needle', excerpt: 'needle', tags: ['needle'] };
+    expect(searchDocs('needle', [...ties.slice(0, 79), lateWinner], 1, tiedBodies)[0].doc).toBe(lateWinner);
+  });
+
   it('ignores the body when there is no bodyIndex', () => {
     const docs = [doc('a', 'other')];
     expect(searchDocs('phrase', docs)).toEqual([]);

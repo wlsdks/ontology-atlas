@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   CANVAS_BACKGROUNDS,
@@ -27,6 +27,7 @@ import {
   writeHexRelief,
   writeMapDragSpeed,
   writeMapZoomSpeed,
+  writeMapView,
 } from "./appearance-preferences";
 
 describe("appearance-preferences", () => {
@@ -74,6 +75,38 @@ describe("appearance-preferences", () => {
     expect(result.current).toBe("geometric");
     act(() => writeGlyphSet("line"));
     expect(result.current).toBe("line");
+  });
+
+  it("persists an explicit flat choice, then only rewrites changed map flags", () => {
+    writeMapView("flat");
+    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    try {
+      writeMapView("hex");
+      expect(write.mock.calls).toEqual([["atlas.appearance.hex-board", "on"]]);
+      writeMapView("hex");
+      expect(write).toHaveBeenCalledTimes(1);
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it("preserves the remembered dome arrangement when switching to a flat surface", () => {
+    writeMapView("coupling");
+    writeMapView("flat");
+    expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBe("coupling");
+    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
+  });
+
+  it("still attempts the map writes when storage reads are unavailable", () => {
+    const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("Read blocked"); });
+    try {
+      writeMapView("hex");
+    } finally {
+      read.mockRestore();
+    }
+    expect(window.localStorage.getItem("atlas.appearance.hex-board")).toBe("on");
+    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
   });
 });
 

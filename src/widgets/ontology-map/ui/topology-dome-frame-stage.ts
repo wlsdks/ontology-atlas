@@ -337,16 +337,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         }
 
         /*
-         * The 2D return fit, paid **once, on the frame teardown finishes**
-         * (see the `flatFitPendingRef` doc-block). Fitting while the ramp
-         * runs frames mid-morph coordinates and is wrong again on arrival.
-         *
-         * The target uses the **same computation** as 2D fit-view
-         * (`overviewBoundsFor` + `computeOverviewCameraTarget`): if the view
-         * after turning 3D off differed from the view after pressing
-         * fit-view, that difference would itself be the next defect.
-         */
-        /*
          * The return fit starts **with** the teardown and lasts exactly as
          * long (measured 2026-09-02: it used to wait for the ramp to reach 0,
          * so the concepts folded back at 3D zoom for 700 ms and only then
@@ -357,11 +347,14 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         if (flatFitPendingRef.current && !domeTargetOn) {
           flatFitPendingRef.current = false;
           const teardownMs = reducedMotionRef.current ? 0 : dome.rampClock / 1.6;
+          // Use the same live panel measurement as fit-view; static reservations
+          // can send the returning map underneath INDEX before a later fit corrects it.
+          const fitTokens = cameraTokens(tokens);
           const flatTarget = computeOverviewCameraTarget(
             overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
             width,
             height,
-            tokens,
+            fitTokens,
             world.nodes.length,
             dialOverviewFit(world),
           );
@@ -370,7 +363,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
             width,
             height,
-            tokens,
+            fitTokens,
             world.nodes.length,
             dialOverviewFit(world),
           );
@@ -743,6 +736,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
           if (
             dome.yawVel === 0 &&
+            !dome.settling &&
             isDomeSpinAnimating({
               domeOn: domeTargetOn,
               reducedMotion: reducedMotionRef.current,

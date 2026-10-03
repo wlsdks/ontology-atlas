@@ -12,7 +12,7 @@ const hostedUpdaterManifest = JSON.stringify({
   platforms: {
     "darwin-aarch64": {
       signature: "signed",
-      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.3.0/app.tar.gz",
+      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.3.0/ontology-atlas_1.3.0_aarch64.app.tar.gz",
     },
   },
 });
@@ -87,8 +87,9 @@ const alignedDownload = `<!doctype html>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>
   <p>${koDownloadCopy.trustLine}</p>
   <h2>${koDownloadCopy.demoTitle}</h2>
-  <h2>${koDownloadCopy.evidenceTitle}</h2>
-  <h2>${koDownloadCopy.agentsTitle}</h2>
+  <h2>${koDownloadCopy.change.title.replace(/<\/?key>/g, "")}</h2>
+  <h2>${koDownloadCopy.screens.title}</h2>
+  <h2>${koDownloadCopy.start.title.replace(/<\/?key>/g, "")}</h2>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {

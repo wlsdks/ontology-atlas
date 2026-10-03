@@ -6,7 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { collectDomeAncestry, collectDomeSubtree, domeAncestryEdgeKey } from "../model/dome-ancestry";
+import { domeAncestryEdgeKey } from "../model/dome-ancestry";
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
 import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
@@ -121,7 +121,7 @@ import {
 import { drawPulses, edgePairMeta, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { worldToScreen } from "./topology-camera-math";
-import { indexedPulseEdges, rankedDiscChildren, rankedEgoNeighbors } from "./frame-cache/structure";
+import { domeFamily, indexedPulseEdges, rankedDiscChildren, rankedEgoNeighbors } from "./frame-cache/structure";
 
 /**
  * Cull slack. Edges: the control hull already bounds the curve, so this only
@@ -209,15 +209,6 @@ const domeEdgeOrderReused: WorldEdge[] = [];
 const domeEdgeDepthReused: number[] = [];
 const domeEdgeIndexReused: number[] = [];
 const domeNodeOrderReused: WorldNode[] = [];
-// Dome ancestry (2026-08-23) — the containment chain lit under selection. Reused per frame,
-// the file's standing allocation discipline. Two pairs because the COLOR ramp classifies by
-// the retained focus, which trails the live focus by ~160ms during a deselect fade.
-const domeAncestryNodesReused = new Set<string>();
-const domeAncestryEdgesReused = new Set<string>();
-const domeAncestryColorNodesReused = new Set<string>();
-const domeAncestryColorEdgesReused = new Set<string>();
-const domeAncestryUnionReused = new Set<string>();
-const domeAncestryColorUnionReused = new Set<string>();
 /** Lit 3D — the sectors of the focused line (its domain, and its capability). */
 const litSectorIdsReused = new Set<string>();
 const domeRingScreenReused: {
@@ -1659,56 +1650,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * way the neighbourhood already lights. 2D is untouched: the flat map's ego stays 1-hop.
    */
   const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
-  const childrenOf = (id: string) => world.childrenByParent.get(id);
-  /*
-   * Lit 3D (2026-09-25): a focus lights **one subtree**, apex to leaves — the ancestry above
-   * plus everything the focused node contains (`collectDomeSubtree`), joined through the same
-   * neighbour set and ego edge state, so no new grammar is needed to light it.
-   */
+  // Containment and one-hop neighbors are static for this world. Keep the live
+  // focus and retained colour focus separate so deselection still fades normally.
   const litOn = domeOn && domeLight !== null;
-  const domeAncestryOn =
-    domeOn && focusedNodeId !== null &&
-    collectDomeAncestry(focusedNodeId, parentOf, domeAncestryNodesReused, domeAncestryEdgesReused) +
-      (litOn ? collectDomeSubtree(focusedNodeId, childrenOf, domeAncestryNodesReused, domeAncestryEdgesReused) : 0) >
-      0;
-  let neighborsOfFocused: ReadonlySet<string> = neighborsOfFocusedRaw;
-  if (domeAncestryOn) {
-    domeAncestryUnionReused.clear();
-    for (const id of neighborsOfFocusedRaw) domeAncestryUnionReused.add(id);
-    for (const id of domeAncestryNodesReused) domeAncestryUnionReused.add(id);
-    neighborsOfFocused = domeAncestryUnionReused;
-  }
-  // Click-focus color signature — the ego classification for the COLOR ramp
-  // uses the RETAINED focus (`colorFocusedNodeId`/`colorSelectedEdge`), which
-  // equals the live focus while a selection is active and lingers ~160ms after
-  // a deselect so the fade-out has a dim/ego target to ease from. Everything
-  // else on this frame still keys off the live `focusedNodeId` — no retention
-  // bleed into labels, tier reveal, or camera.
+  const family = domeOn && focusedNodeId !== null ? domeFamily(world, focusedNodeId, litOn) : null;
+  const colorFamily = domeOn && colorFocusedNodeId !== null ? domeFamily(world, colorFocusedNodeId, litOn) : null;
+  const domeAncestryOn = family !== null && family.nodes.size > 0;
+  const domeAncestryEdges = family?.edges ?? EMPTY_NEIGHBOR_SET;
+  const domeAncestryColorNodes = colorFamily?.nodes ?? EMPTY_NEIGHBOR_SET;
+  const neighborsOfFocused = domeAncestryOn ? family.neighbors : neighborsOfFocusedRaw;
   const colorNeighborsRaw = colorFocusedNodeId
     ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
     : EMPTY_NEIGHBOR_SET;
-  let colorNeighbors: ReadonlySet<string> = colorNeighborsRaw;
-  if (
-    domeOn &&
-    colorFocusedNodeId !== null &&
-    // The retained colour signature gets the same ancestry, so a deselect fades the chain out
-    // through the normal ego fade instead of snapping it to dim one ramp early.
-    collectDomeAncestry(
-      colorFocusedNodeId,
-      parentOf,
-      domeAncestryColorNodesReused,
-      domeAncestryColorEdgesReused,
-    ) +
-      (litOn
-        ? collectDomeSubtree(colorFocusedNodeId, childrenOf, domeAncestryColorNodesReused, domeAncestryColorEdgesReused)
-        : 0) >
-      0
-  ) {
-    domeAncestryColorUnionReused.clear();
-    for (const id of colorNeighborsRaw) domeAncestryColorUnionReused.add(id);
-    for (const id of domeAncestryColorNodesReused) domeAncestryColorUnionReused.add(id);
-    colorNeighbors = domeAncestryColorUnionReused;
-  }
+  const colorNeighbors = colorFamily !== null && colorFamily.nodes.size > 0 ? colorFamily.neighbors : colorNeighborsRaw;
   /*
    * The lit line and its ramp — the retained colour focus, so the light leaves with the same
    * fade the ego dim takes. `inLitLine` is the family the focus lights; everything else takes
@@ -1718,7 +1672,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const litFocusRamp =
     litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
   const inLitLine = (id: string): boolean =>
-    litFocusId !== null && (id === litFocusId || domeAncestryColorNodesReused.has(id));
+    litFocusId !== null && (id === litFocusId || domeAncestryColorNodes.has(id));
   litSectorIdsReused.clear();
   if (litFocusId !== null) {
     // The focus and its ancestors own the lit sectors — a descendant's band would light a
@@ -2341,7 +2295,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         domeAncestryOn &&
         !trailLensActive &&
         kind === "contains" &&
-        domeAncestryEdgesReused.has(domeAncestryEdgeKey(edge.sourceId, edge.targetId))
+        domeAncestryEdges.has(domeAncestryEdgeKey(edge.sourceId, edge.targetId))
       ) {
         edgeEgoState = "ego";
       }

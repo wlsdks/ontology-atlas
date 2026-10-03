@@ -30,9 +30,9 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
  * - **Through handles already granted.** `sourceHandles` is the folder walk's own map —
  *   a `TauriFileHandle` over `read_vault_binary_file` in the app, an FSA handle in the
  *   browser. No new permission, no new bridge.
- * - **Nothing kept on disk.** The units live in this hook's state, keyed by the folder's
- *   identity and each file's mtime, and go when the folder closes or the component
- *   unmounts. No IndexedDB, no `.ontology-atlas/` record: a search index on disk would be
+ * - **Nothing kept on disk.** Units stay only for the current folder and planned file
+ *   versions; a plan change drops retired entries, and unmount drops the rest.
+ *   No IndexedDB, no `.ontology-atlas/` record: a search index on disk would be
  *   the second store `.claude/rules/local-first.md` forbids, and the vault's Markdown is
  *   the only index Atlas has.
  * - **Nothing sent.** No LLM, ACP or MCP path is touched.
@@ -158,9 +158,6 @@ export function useSourceSearch({
   needle: string;
   enabled: boolean;
 }): SourceSearchState {
-  const [unitsByStamp, setUnitsByStamp] = useState<Map<string, SourceUnit[]>>(
-    () => new Map(),
-  );
   const active = enabled && needle.length > 0;
 
   /*
@@ -189,6 +186,14 @@ export function useSourceSearch({
   }, [sources, vaultScope]);
 
   const plannedKey = planned.map((file) => file.stamp).join('');
+
+  const [cache, setCache] = useState(() => ({ key: plannedKey, units: new Map<string, SourceUnit[]>() }));
+  let unitsByStamp = cache.units;
+  if (cache.key !== plannedKey) {
+    const currentStamps = new Set(planned.map(file => file.stamp));
+    unitsByStamp = new Map([...cache.units].filter(([stamp]) => currentStamps.has(stamp)));
+    setCache({ key: plannedKey, units: unitsByStamp });
+  }
 
   useEffect(() => {
     if (!active) return;
@@ -228,11 +233,11 @@ export function useSourceSearch({
          * Publish each result to keep progress visible. A new Map updates matching without
          * restarting this reader or rereading its next in-flight file.
          */
-        setUnitsByStamp((current) => {
-          if (current.has(file.stamp)) return current;
-          const next = new Map(current);
+        setCache((current) => {
+          if (current.key !== plannedKey || current.units.has(file.stamp)) return current;
+          const next = new Map(current.units);
           next.set(file.stamp, units);
-          return next;
+          return { key: current.key, units: next };
         });
       }
     })();
