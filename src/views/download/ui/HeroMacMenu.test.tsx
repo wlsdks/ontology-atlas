@@ -49,25 +49,6 @@ describe('HeroMacMenu — the keyboard', () => {
     expect(isOpen()).toBe(false);
   });
 
-  it('walks the rows with ArrowDown and ArrowUp, wrapping at both ends', () => {
-    openMenu();
-    const items = rows();
-    expect(items.length, 'wrapping needs at least two rows to be observable').toBeGreaterThan(1);
-    const last = items.length - 1;
-
-    fireEvent.keyDown(items[0]!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(items[1]);
-
-    fireEvent.keyDown(items[1]!, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(items[0]);
-
-    fireEvent.keyDown(items[0]!, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(items[last]);
-
-    fireEvent.keyDown(items[last]!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(items[0]);
-  });
-
   it('jumps to the ends with Home and End', () => {
     openMenu();
     const items = rows();

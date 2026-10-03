@@ -5,17 +5,19 @@ import https from "node:https";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
-const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
+const REQUIRED_MACOS_ARCHES = ["aarch64"];
+/** Releases up to v1.5.0 also carried an Intel DMG; it is still a known name, never a required one. */
+const DMG_NAME_PATTERN = /^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/;
 const WINDOWS_NAME_PATTERN = /^ontology-atlas_([^/]+)_windows_(x64)-setup\.exe$/;
 /** The key an installed app uses to find its own slot in `latest.json`. A Rust target name. */
-const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
+const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater]
 
-Verifies that a public GitHub Release exposes reachable Apple Silicon
-(aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
+Verifies that a public GitHub Release exposes a reachable Apple Silicon
+(aarch64) macOS DMG, exactly one per architecture, and
 one Windows x64 setup executable, all with matching .sha256 checksums. With
 --require-updater it also opens latest.json and
 checks that every platform URL points at an archive (and .sig) that actually
@@ -247,7 +249,7 @@ function isDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^ontology-atlas_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
+    DMG_NAME_PATTERN.test(asset.name) &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -261,7 +263,7 @@ function isAnyDmgAsset(asset) {
 }
 
 function parseDmgName(name) {
-  const match = name.match(/^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(DMG_NAME_PATTERN);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
 }
@@ -420,7 +422,7 @@ try {
   const message = error instanceof Error ? error.message : String(error);
   if (options.tag && /\b404\b/.test(message)) {
     fail(
-      `release tag ${options.tag} was not found for ${options.repo}. Push the v-prefixed tag and let .github/workflows/release-macos.yml publish signed, notarized Apple Silicon and Intel DMGs before running desktop:verify-download.`,
+      `release tag ${options.tag} was not found for ${options.repo}. Push the v-prefixed tag and let .github/workflows/release-macos.yml publish the signed, notarized Apple Silicon DMG before running desktop:verify-download.`,
     );
   }
   if (/rate limit exceeded/i.test(message) || /\b403\b/.test(message)) {

@@ -15,7 +15,6 @@ test("platform keys are Tauri's Rust target names, not our arch labels", () => {
   // A typo fails silently — the app just says "no update".
   assert.deepEqual(PLATFORM_BY_ARCH, {
     aarch64: "darwin-aarch64",
-    x64: "darwin-x86_64",
   });
 });
 
@@ -27,7 +26,6 @@ test("download URLs pin the tag, never `latest`", () => {
     tag: "v1.0.1",
     platforms: {
       aarch64: { archiveName: "a.app.tar.gz", signature: "sig-a" },
-      x64: { archiveName: "b.app.tar.gz", signature: "sig-b" },
     },
   });
 
@@ -39,11 +37,11 @@ test("download URLs pin the tag, never `latest`", () => {
   }
   assert.equal(manifest.version, "1.0.1");
   assert.equal(manifest.platforms["darwin-aarch64"].signature, "sig-a");
-  assert.equal(manifest.platforms["darwin-x86_64"].signature, "sig-b");
+  assert.deepEqual(Object.keys(manifest.platforms), ["darwin-aarch64"]);
 });
 
 test("a missing architecture is refused rather than shipped half-complete", () => {
-  // Emitting only one arch means that architecture's users never receive an update — with no error either.
+  // A manifest without the Apple Silicon entry means no installed app ever receives an update.
   const originalExit = process.exit;
   const originalError = console.error;
   let exitCode = null;
@@ -62,7 +60,7 @@ test("a missing architecture is refused rather than shipped half-complete", () =
         pubDate: "2026-07-27T00:00:00Z",
         repo: "wlsdks/ontology-atlas",
         tag: "v1.0.1",
-        platforms: { aarch64: { archiveName: "a.app.tar.gz", signature: "sig-a" } },
+        platforms: {},
       }),
     );
   } finally {
@@ -70,7 +68,7 @@ test("a missing architecture is refused rather than shipped half-complete", () =
     console.error = originalError;
   }
   assert.equal(exitCode, 1);
-  assert.match(message, /x64/);
+  assert.match(message, /aarch64/);
 });
 
 test("an archive without its .sig is refused — that build had no signing key", () => {
@@ -101,7 +99,7 @@ test("an archive without its .sig is refused — that build had no signing key",
 
 test("finds the archive and signature pair", () => {
   const dir = mkdtempSync(join(tmpdir(), "oa-updater-ok-"));
-  const archDir = join(dir, "x64");
+  const archDir = join(dir, "aarch64");
   mkdirSync(archDir, { recursive: true });
   writeFileSync(join(archDir, "App.app.tar.gz"), "archive");
   writeFileSync(join(archDir, "App.app.tar.gz.sig"), "signature-line\n");
@@ -113,8 +111,8 @@ test("finds the archive and signature pair", () => {
   }
 });
 
-test("both architectures are required", () => {
-  assert.deepEqual(REQUIRED_ARCHES, ["aarch64", "x64"]);
+test("only Apple Silicon is required", () => {
+  assert.deepEqual(REQUIRED_ARCHES, ["aarch64"]);
 });
 
 /**

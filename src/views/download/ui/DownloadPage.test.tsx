@@ -42,7 +42,7 @@ const mocks = vi.hoisted(() => ({
     publishedAt: null as string | null,
     releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
     assets: [] as Array<{
-      arch: 'aarch64' | 'x64';
+      arch: 'aarch64';
       fileName: string;
       sizeBytes: number;
       sha256: string;
@@ -76,7 +76,6 @@ vi.mock('../model/macos-release.generated', () => ({
 }));
 
 const AARCH64_SHA = 'a'.repeat(64);
-const X64_SHA = 'b'.repeat(64);
 
 function publishRelease() {
   mocks.release = {
@@ -92,13 +91,6 @@ function publishRelease() {
         sizeBytes: 13_002_342,
         sha256: AARCH64_SHA,
         downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
-      },
-      {
-        arch: 'x64',
-        fileName: `ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
-        sizeBytes: 14_500_000,
-        sha256: X64_SHA,
-        downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       },
     ],
   };
@@ -218,10 +210,7 @@ describe('DownloadPage', () => {
       expect(appleSilicon).toHaveTextContent(/Apple Silicon/i);
       // 13,002,342 B in decimal MB, as Finder reports.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
-      expect(screen.getByTestId('gateway-hero-macos-x64')).toHaveAttribute(
-        'href',
-        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
-      );
+      expect(screen.queryByTestId('gateway-hero-macos-x64')).toBeNull();
       const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
       expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
     });
@@ -289,7 +278,6 @@ describe('DownloadPage', () => {
           'href',
           expect.stringMatching(/_aarch64\.dmg$/),
         );
-        expect(screen.getByTestId('gateway-hero-macos-x64')).toBeInTheDocument();
         expect(screen.queryByTestId('gateway-hero-windows')).not.toBeInTheDocument();
       } finally {
         // Removing the instance property restores the prototype getter.

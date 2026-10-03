@@ -140,34 +140,23 @@ describe("릴리스 자산 경로 계약", () => {
   });
 
   it("아티팩트 폴더 이름이 아치를 나른다", () => {
-    // On download, the folder is the only thing separating the two architectures.
+    // On download, the folder is the only thing naming the architecture.
     const uploadName = yamlValues(step(buildJob, "Upload workflow artifact"), "name")[0];
-    for (const arch of ["aarch64", "x64"]) {
-      expect(uploadName.replace("${{ matrix.arch }}", arch)).toBe(artifactNameForArch(arch));
-    }
+    expect(uploadName.replace("${{ matrix.arch }}", "aarch64")).toBe(artifactNameForArch("aarch64"));
   });
 
-  it("매니페스트 빌더가 실제 레이아웃에서 두 아치를 찾는다", () => {
-    const { root } = replayDownloadRoot(["aarch64", "x64"]);
-    const platforms: Record<string, { archiveName: string; signature: string }> = {};
-    for (const arch of ["aarch64", "x64"]) {
-      const found = findUpdaterArtifacts(resolveArchDir(root, arch));
-      expect(found, `${arch} 의 업데이터 아티팩트를 찾지 못했다`).not.toBeNull();
-      platforms[arch] = {
-        archiveName: found!.archiveName,
-        signature: readFileSync(found!.signaturePath, "utf8").trim(),
-      };
-    }
-    expect(platforms.aarch64.archiveName).not.toBe(platforms.x64.archiveName);
-    expect(platforms.aarch64.signature).toBe("sig-aarch64");
-    expect(platforms.x64.signature).toBe("sig-x64");
-  });
-
-  it("아치 하나가 빠지면 반쪽짜리로 나가지 않는다", () => {
-    // Shipping only one leaves users on that architecture permanently without updates —
-    // and with no error.
+  it("the manifest builder finds the Apple Silicon archive in the real layout", () => {
     const { root } = replayDownloadRoot(["aarch64"]);
-    expect(resolveArchDir(root, "x64")).toBeNull();
+    const found = findUpdaterArtifacts(resolveArchDir(root, "aarch64"));
+    expect(found).not.toBeNull();
+    expect(readFileSync(found!.signaturePath, "utf8").trim()).toBe("sig-aarch64");
+  });
+
+  it("a release without the Apple Silicon archive is refused", () => {
+    // Shipping without it leaves every installed app permanently without updates —
+    // and with no error.
+    const { root } = replayDownloadRoot([]);
+    expect(resolveArchDir(root, "aarch64")).toBeNull();
 
     const exit = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new Error(`exit ${code}`);
@@ -181,10 +170,10 @@ describe("릴리스 자산 경로 계약", () => {
           pubDate: "2026-07-27T00:00:00Z",
           repo: REPO,
           tag: TAG,
-          platforms: { aarch64: { archiveName: "a.app.tar.gz", signature: "sig" } },
+          platforms: {},
         }),
       ).toThrow(/exit 1/);
-      expect(error.mock.calls.join(" ")).toMatch(/x64/);
+      expect(error.mock.calls.join(" ")).toMatch(/aarch64/);
     } finally {
       exit.mockRestore();
       error.mockRestore();
@@ -196,7 +185,7 @@ describe("릴리스 자산 경로 계약", () => {
     const globs = yamlValues(step(stageJob, "Upload draft GitHub Release assets"), "files");
     expect(globs.length).toBeGreaterThan(0);
 
-    const { root, staged } = replayDownloadRoot(["aarch64", "x64"]);
+    const { root, staged } = replayDownloadRoot(["aarch64"]);
     const cwd = join(root, "..");
     writeFileSync(join(root, "latest.json"), "{}\n");
 
@@ -261,7 +250,7 @@ describe("릴리스 자산 경로 계약", () => {
     const summaryGlob = publishJob.match(/for dmg in (\S+); do/)?.[1];
     expect(summaryGlob).toBeTruthy();
 
-    const { root, staged } = replayDownloadRoot(["aarch64", "x64"]);
+    const { root, staged } = replayDownloadRoot(["aarch64"]);
     const merged = mkdtempSync(join(scratch, "merged-"));
     const flat = join(merged, "release-assets");
     mkdirSync(flat, { recursive: true });
@@ -269,7 +258,7 @@ describe("릴리스 자산 경로 계약", () => {
     for (const [arch, files] of staged) {
       for (const file of files) {
         // Colliding names silently overwrite one another — caught before the merge.
-        expect(names.has(file), `${file} 이름이 두 아치에서 겹친다`).toBe(false);
+        expect(names.has(file)).toBe(false);
         names.add(file);
         writeFileSync(
           join(flat, file),
@@ -277,21 +266,20 @@ describe("릴리스 자산 경로 계약", () => {
         );
       }
     }
-    expect(globSync(summaryGlob!, { cwd: merged })).toHaveLength(2);
+    expect(globSync(summaryGlob!, { cwd: merged })).toHaveLength(1);
   });
 
   it("latest.json 의 URL 이 실제로 올라가는 자산 이름과 같다", () => {
     // The updater downloads from this URL. When it is wrong the 404 is shown as "no
     // update" and the user never finds out.
-    const { root, staged } = replayDownloadRoot(["aarch64", "x64"]);
-    const platforms: Record<string, { archiveName: string; signature: string }> = {};
-    for (const arch of ["aarch64", "x64"]) {
-      const found = findUpdaterArtifacts(resolveArchDir(root, arch))!;
-      platforms[arch] = {
+    const { root, staged } = replayDownloadRoot(["aarch64"]);
+    const found = findUpdaterArtifacts(resolveArchDir(root, "aarch64"))!;
+    const platforms = {
+      aarch64: {
         archiveName: found.archiveName,
         signature: readFileSync(found.signaturePath, "utf8").trim(),
-      };
-    }
+      },
+    };
     const manifest = buildManifest({
       version: VERSION,
       notes: "",
@@ -305,7 +293,7 @@ describe("릴리스 자산 경로 계약", () => {
     const urls = (Object.values(manifest.platforms) as { url: string }[]).map(
       (platform) => platform.url,
     );
-    expect(new Set(urls).size).toBe(2);
+    expect(urls).toHaveLength(1);
     for (const url of urls) {
       const name = decodeURIComponent(url.split("/").pop() ?? "");
       expect(uploaded.has(name)).toBe(true);

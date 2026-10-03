@@ -106,9 +106,8 @@ jobs:
     needs: admit-release
     environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # The Intel runner needs 25-30 minutes for the cold release build plus
-    # notarization (v1.0.5 x64: 28m50s; v1.0.6 first attempt cancelled at 30m
-    # with rustc still running). The arm64 runner finishes in about 15 minutes.
+    # The arm64 runner finishes the cold release build plus notarization in
+    # about 15 minutes.
     # budget: 2200s
     timeout-minutes: 45
     strategy:
@@ -117,8 +116,6 @@ jobs:
         include:
           - arch: aarch64
             runner: macos-14
-          - arch: x64
-            runner: macos-15-intel
     env:
       TAURI_ARCH: ${{ matrix.arch }}
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}

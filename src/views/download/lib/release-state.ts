@@ -13,8 +13,7 @@ import {
 
 export type DesktopArch = MacosReleaseAsset['arch'];
 
-/** Apple Silicon first: most Macs sold since 2020. */
-export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64', 'x64'];
+export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64'];
 
 export function isMacosReleasePublished(): boolean {
   return MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;

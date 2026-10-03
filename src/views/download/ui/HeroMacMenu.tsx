@@ -36,7 +36,6 @@ export function HeroMacMenu({
   const menuId = useId();
 
   const silicon = macosAssetFor('aarch64');
-  const intel = macosAssetFor('x64');
 
   const close = useCallback((refocus: boolean) => {
     setOpen(false);
@@ -96,7 +95,6 @@ export function HeroMacMenu({
 
   const rows = [
     { asset: silicon, label: t('heroMacSilicon'), testId: 'gateway-hero-macos-aarch64' },
-    ...(intel ? [{ asset: intel, label: t('heroMacIntel'), testId: 'gateway-hero-macos-x64' }] : []),
   ];
 
   return (

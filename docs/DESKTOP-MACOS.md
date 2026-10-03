@@ -168,8 +168,8 @@ exact `workflow_dispatch` run for the admitted commit, and runs
 pnpm desktop:release-run -- --tag=<tag> --ref=main
 ```
 
-The run builds, signs, notarizes, and install-smokes both macOS architectures
-and builds the Windows x64 installer. Each lane writes DMG filename, size, and
+The run builds, signs, notarizes, and install-smokes the Apple Silicon macOS app
+(Intel builds stopped after v1.5.0) and builds the Windows x64 installer. Each lane writes DMG filename, size, and
 SHA-256 to the step summary. The run also ships the MCP bundle and lists the
 server in the official MCP Registry (the `list-mcp-registry` job), so a
 dispatch publishes outside GitHub Releases. `scripts/check-macos-release-slot.mjs` refuses a
@@ -181,7 +181,7 @@ verified with `pnpm desktop:verify-download -- --allow-draft --require-updater`.
 environment. Install that exact draft DMG on a real Mac, launch it, open a
 vault, then approve. Publication rechecks the admitted source, publishes, runs
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater`
-(reachable Apple Silicon and Intel DMGs, one Windows x64 installer, matching
+(a reachable Apple Silicon DMG, one Windows x64 installer, matching
 checksums, `latest.json` pointing at real archives), writes the public URL and
 asset hashes to the step summary, and uploads an
 `ontology-atlas-release-facts-<tag>` artifact. The workflow token cannot push to

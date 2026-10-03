@@ -88,7 +88,7 @@ function stageDsymArchive(dsymDir, outDir, archiveName) {
 
 /** `ontology-atlas_1.3.0_aarch64.dmg` → `{ version, arch }`. */
 export function parseDmgName(name) {
-  const match = name.match(/^ontology-atlas_(.+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(/^ontology-atlas_(.+)_(aarch64)\.dmg$/);
   return match ? { version: match[1], arch: match[2] } : null;
 }
 
@@ -136,7 +136,7 @@ export function stageReleaseAssets({ bundleDir, outDir, expectArch, dsymDir, req
   const parsed = parseDmgName(dmg);
   if (!parsed) {
     throw new Error(
-      `DMG name does not follow the rule: ${dmg} - expected ontology-atlas_<version>_<aarch64|x64>.dmg.`,
+      `DMG name does not follow the rule: ${dmg} - expected ontology-atlas_<version>_<aarch64>.dmg.`,
     );
   }
   if (expectArch && parsed.arch !== expectArch) {

@@ -434,9 +434,8 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(verifyDownload.stdout, /public GitHub Release/);
   assert.match(verifyDownload.stdout, /Apple Silicon/);
   assert.match(verifyDownload.stdout, /aarch64/);
-  assert.match(verifyDownload.stdout, /exactly one DMG per architecture/);
-  assert.match(verifyDownload.stdout, /Intel/);
-  assert.match(verifyDownload.stdout, /x64/);
+  assert.match(verifyDownload.stdout, /exactly one per architecture/);
+  assert.doesNotMatch(verifyDownload.stdout, /Intel/);
   assert.doesNotMatch(verifyDownload.stdout, /--allow-prerelease/);
 
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);

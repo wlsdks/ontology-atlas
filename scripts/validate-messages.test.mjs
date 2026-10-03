@@ -139,11 +139,6 @@ describe('i18n message catalog', () => {
     assert.match(en.download.proofSigned, /Developer ID/);
     assert.match(ko.download.proofSigned, /Developer ID/);
 
-    // Most visitors do not know their own Mac's architecture. Naming both and
-    // stopping there leaves them stuck in front of two buttons.
-    assert.match(en.download.archHelpBody, /About This Mac/i);
-    assert.match(ko.download.archHelpBody, /이 Mac에 관하여/);
-
     // Local-first describes Atlas storage, not provider-owned agent traffic.
     // The page must state both boundaries instead of promising zero network.
     assert.match(en.download.trustPrivacyNote, /No Atlas account or backend/i);
