@@ -120,6 +120,7 @@ export function useTopologySceneControls({
       focusedHubSlug: null,
       pathSourceSlug: null,
       pathTargetSlug: null,
+      realmSlug: null,
       expandedParents: [],
       meaningEditorIntent: false,
       meaningEditParam: null,
