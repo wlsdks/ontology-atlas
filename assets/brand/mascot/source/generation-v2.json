@@ -1,0 +1,22 @@
+{
+  "created": "2026-10-03",
+  "method": "Built-in image_gen with the owner's cartographer robot, pixel asset sheet and brand kit references; native-grid registration by scripts/build-traveler-sprites.mjs.",
+  "reference": [
+    "별빛 지도 제작자 로봇-3 (1).png",
+    "온톨로지 아틀라스 픽셀 에셋 시트-2 (1).png",
+    "아틀라스 픽셀 아트 브랜드 키트-1 (1).png"
+  ],
+  "prompts": [
+    {
+      "file": "traveler-master-v2.png",
+      "generation": "exec-2c9e5cdb-07bb-477b-81dd-7e9adc263861",
+      "prompt": "Create ONE production pixel-art mascot master on a truly transparent background, using the attached three images only as identity/style references. Character: the same adorable chibi cartographer robot/traveler, rounded cream parchment hood, WIDE rounded dark navy face, two large separated glowing cyan eyes, tiny warm mouth, short blue scarf, small cream coat, brown backpack with rolled parchment, short brown boots, holding a golden lantern on viewer left and a small parchment map on viewer right. A blue turquoise planet with warm thin tilted ring floats over the hood, detached by a small gap. Front-facing slightly 3/4, standing still. Match the rounded head and compact proportions of reference image 1 and the clean pixel art of images 2/3. Hood and face take about half of character body height. Planet diameter about half hood width. Short compact body, not long pointed hood or elongated coat. Native logical 64x64 pixel sprite drawn as crisp large square pixel clusters, nearest-neighbor style, approximately 24-color limited palette, readable silhouettes and simplified materials. Center entire figure including planet and lantern in a square canvas with 4 logical pixels padding on every side. No floating particles, scenery, lettering, logo, shadow, ground, plate, border or checkerboard. Do not reproduce the reference sheet. One character only. Deliver clean alpha edges with no gray matte."
+    },
+    {
+      "file": "traveler-small-v2.png",
+      "generation": "exec-737b12a8-50a2-4eca-bacc-74522b3b7571",
+      "prompt": "Produce a production pixel-art small icon sheet on transparent background using the three attached Atlas references as identity references. Two icon drawings only, one centered in each half of a 2-column by 1-row sheet, no labels. Left icon is separately authored for a 32x32 logical grid: rounded cream hood enclosing a wide friendly dark navy face with two evenly separated large cyan eyes and a small warm mouth, short cobalt scarf at bottom, detached floating ringed blue/turquoise globe over hood. Hood occupies ~60% icon height, planet ~25%; no full body, no hands, no gear. Right icon is separately simplified for a 16x16 logical grid: recognizable cream hood, dark interior and two cyan eye dots, a tiny blue globe and a simple pale ring above; no mouth, scarf only two blue clusters. Reference images 2 and 3 show intended miniature proportions. Make face round and wide, not triangular or tall. Both are square compositions with 1 logical pixel transparent padding. Render as hard-edged chunky square pixels, limited palette, no antialiasing or blur. The left half should have at most 32 pixels of detail across its square and right half at most 16. Each drawing centered and fits entirely inside its own equal square cell with transparent space between. No background, frame, plate, letter, text, decorative stars, particles or shadows. These are two distinct miniature artworks, not the same full body scaled down."
+    }
+  ],
+  "delivery": "Static 64/32/16px native marks plus a separately registered 128px presentation master for large OS/PWA icons and Open Graph. Work-state rows and animation timing are unchanged."
+}

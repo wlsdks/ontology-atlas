@@ -38,6 +38,14 @@ in the message catalogs rather than raster assets.
 
 The mascot is a curious planet traveler: a cream parchment hood and coat, a dark navy face with two cyan eyes, a blue scarf and boots, and a floating ringed blue planet. Compact and micro forms retain the hood and eyes while simplifying the planet and removing the body. The owner supplied the reference pack on 2026-10-02.
 
+The owner's additional 2026-10-03 references refine the static art to a rounded
+hood, broad face, short body, brown traveling boots, lantern, map, and backpack.
+The full figure and separately drawn compact/micro portraits live in the
+`source/traveler-{master,small}-v2.png` inputs. Each tier trims transparent
+presentation padding, preserves the drawing's aspect ratio, and registers a
+clear integer-pixel margin. Existing work-state sprite rows retain their poses
+and timing; their state meanings do not change with this static-art refinement.
+
 This is a character, not an ontology kind, an assistant persona, or a claim that
 work is happening. Static brand surfaces are state-free.
 
@@ -50,11 +58,18 @@ The source masters live under `assets/brand/mascot/`.
 | Full | `mascot-full-64.png` | 64px and larger; full traveler and ringed planet |
 | Compact | `mascot-compact-32.png` | 20–48px; hood, eyes, scarf, and planet |
 | Micro | `mascot-micro-16.png` | 16–18px; hood, paired cyan eyes, and simplified planet |
+| Presentation | `mascot-presentation-128.png` | 128–1024px static desktop/PWA icons and Open Graph; detailed face, lantern, map, and backpack with an 8px clear margin |
 | macOS template | `mascot-tray-template-{16,32}.png` | black/clear menu-bar mask at 1×/2× |
 
 Each tier is authored separately. Do not downscale the full body to make a
 favicon. Scale a tier only by whole-number nearest-neighbour steps; fractional
 scaling makes individual pixel widths inconsistent.
+
+Large desktop/PWA icons use the 128px presentation art at 1×, 2×, 4×, and
+8×. Open Graph uses it at 3×. Native 64px work poses, small runtime marks,
+compact/micro portraits, and their density partners keep their own drawings.
+The presentation source adds detail without enlarging the character into the
+platform mask or reducing the body into a tiny face icon.
 
 ## Palette Boundary
 
