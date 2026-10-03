@@ -11,7 +11,7 @@ import { CONDUCTION_CAST } from '../model/conduction-cast';
 import { CHANGE_BEATS, CHANGE_CAST, changeRest, changeTracks } from './change-scene';
 import { ChangeSection } from './ChangeFigure';
 import { frames, TEST_ENV } from './showpiece-player';
-import { useStageGraph } from './StageMap';
+import { useStageGraph } from '../lib/use-stage-graph';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const KIND_FOLDER = { capability: 'capabilities', element: 'elements' } as const;

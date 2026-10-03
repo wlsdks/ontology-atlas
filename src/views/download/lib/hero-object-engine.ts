@@ -5,7 +5,7 @@
  * (WCAG 2.3.3's user-initiated exception). Per frame O(N log N + E log E): sorts by depth.
  */
 
-import { registerGatewayFrameClient } from './gateway-frame-loop';
+import { registerGatedFrameClient } from './gateway-frame-loop';
 import { echoCount, echoOrder, preferredParents } from './hero-echo';
 
 const TAU = Math.PI * 2;
@@ -422,6 +422,10 @@ export function mountHeroObject(
   canvas.addEventListener('pointercancel', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerLeave);
   const onResize = (): void => {
+    const r = canvas.getBoundingClientRect();
+    const nextDpr = Math.min(devicePixelRatio || 1, 2);
+    // The observer's first report repeats the mount's size; redrawing it would paint twice.
+    if (nextDpr === dpr && Math.round(r.width * dpr) === canvas.width && Math.round(r.height * dpr) === canvas.height) return;
     size();
     drawAt(lastT);
   };
@@ -748,12 +752,21 @@ export function mountHeroObject(
     }
   }
 
+  /** Reduced motion paints once per frame at most, so the mount and the typed headline share one still. */
+  let stillPending = 0;
+  const drawStill = (): void => {
+    if (stillPending) return;
+    stillPending = requestAnimationFrame(() => {
+      stillPending = 0;
+      if (!disposed) drawAt(Math.max(lastT, ASSEMBLE + 601)); // the finished assembly
+    });
+  };
   if (reduced) {
-    drawAt(ASSEMBLE + 601); // the finished assembly
+    drawStill();
   } else {
     // The yaw clock is scaled by the sleep factor, so idle decelerates to a stop, never a cut.
     let animT = 0;
-    unregisterFrame = registerGatewayFrameClient(({ dtMs, factor }) => {
+    unregisterFrame = registerGatedFrameClient(canvas, ({ dtMs, factor }) => {
       if (disposed) return;
       frameDt = dtMs;
       if (!dragging) {
@@ -768,6 +781,7 @@ export function mountHeroObject(
   return {
     dispose(): void {
       disposed = true;
+      cancelAnimationFrame(stillPending);
       unregisterFrame?.();
       removeEventListener('resize', onResize);
       boxObserver?.disconnect();
@@ -787,8 +801,10 @@ export function mountHeroObject(
     setTyping(typed: number, total: number): void {
       const n = echoCount(typed, total, order.length);
       // Only ever added: a remounted headline's smaller count must not put out seen ink.
+      const before = revealAt.size;
       for (let i = revealAt.size; i < n; i += 1) revealAt.set(order[i], lastT);
-      if (reduced) drawAt(lastT);
+      // Reduced motion draws only when ink was added, so a still page paints once.
+      if (reduced && revealAt.size > before) drawStill();
     },
     litCount: () => revealAt.size,
     nodesOnScreen: () =>

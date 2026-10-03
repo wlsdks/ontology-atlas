@@ -960,8 +960,8 @@ if (
   //
   // Revised 2026-07-29: the gateway redesign replaced the "coming soon" badge and
   // card with a one-line status (`platformStatus`), a tracking link
-  // (`windowsTrackCta`), and a policy sentence stating the criteria
-  // (`windowsPolicy`). The check is on the **contract** the three make together —
+  // (`windowsTrackCta`), and a policy sentence stating the criteria (now in the
+  // guide's On trust chapter). The check is on the **contract** the three make together —
   // where it is, where it goes, why it is not out — not on the badge **form**.
   /Windows/.test(enMessages.download?.platformStatus ?? "") &&
   /Windows/.test(koMessages.download?.platformStatus ?? "") &&
@@ -983,7 +983,9 @@ if (
   // decides on **whether the claim matches the actual release chain**.
   !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
   !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
-  /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
+  /\{file\}/.test(enMessages.download?.factShaLink ?? "") &&
+  readText("docs/guide/trust.md").includes("shasum -a 256 <file>") &&
+  readText("docs/guide/trust.md").includes("Get-FileHash <file> -Algorithm SHA256") &&
   // Claiming signing requires the release asset chain to actually sign, notarise,
   // and verify.
   (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||

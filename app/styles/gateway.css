@@ -108,9 +108,7 @@
  *   matches exactly the alternative below (base layer carve-out).
  * - JS failure: permanently blank before, now full text.
  *
- * `.is-in` is kept — same value as resting state so it does nothing, but
- * `useInViewOnce` sections below still attach that class, and this declaration wins entrance for browsers that cannot use scroll
- * timeline.
+ * `.is-in` is kept — same value as resting state, so it does nothing but end the hero's rise.
  */
 .gateway-rise {
   opacity: 1;
@@ -187,12 +185,13 @@
  */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    /* One entrance per section: the stage (demo video · evidence map · ACP scene), the one
+    /* One entrance per section: the stage (demo video · screens), the one
        thing with mass. The section head above it is still (2026-08-30 — the head's three
        lines used to rise too, twelve entrances on one page that all said "something arrived").
        `scale` is not used — in this repository, zoom means map camera. */
     .gateway-scroll-stage {
-      animation: gatewayScrollStage linear both;
+      /* Backwards only: past its range the stage keeps no fill and no layer. */
+      animation: gatewayScrollStage linear backwards;
       animation-timeline: view();
       animation-range: entry 4% entry 78%;
     }
@@ -233,8 +232,11 @@
  * so hiding the glyph that way hid the caret with it and the caret never appeared once
  * (measured 2026-08-23). `visibility` inherits but a descendant can override it back, which is
  * exactly the seam needed here. Both keep the character's box, which is what stops the reflow. */
-.gateway-type-ch {
-  visibility: hidden;
+/* Hidden only where a script will type it: with scripting off the headline is plain text. */
+@media (scripting: enabled) {
+  .gateway-type-ch {
+    visibility: hidden;
+  }
 }
 
 .gateway-type-ch.is-on {
@@ -252,7 +254,7 @@
   /* `gateway-type-land` is the landing's own class (set with `is-on` by HeroTypewriter) so the
      reduced-motion contract can name it — the scanner reads the last class of a selector. */
   .gateway-type-land {
-    animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) both;
+    animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) backwards;
   }
 }
 
@@ -329,40 +331,3 @@
   );
 }
 
-/* Map section caption — arrives only after assembly completes (numbers are result of assembly). */
-.gateway-map-after {
-  opacity: 0;
-  transform: translateY(6px);
-  transition:
-    opacity var(--motion-fast) var(--motion-ease),
-    transform var(--motion-settle) var(--motion-ease);
-}
-
-.gateway-map-after.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-/* Agent round-trip terminal — lines light up immediately (typing rhythm is driven by JS timer). */
-.gateway-term-line {
-  opacity: 0;
-}
-
-.gateway-term-line.is-on {
-  opacity: 1;
-}
-
-.gateway-term-caret {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--color-text-tertiary);
-  vertical-align: -2px;
-  animation: gatewayCaretBlink 1.06s steps(1) infinite;
-}
-
-@keyframes gatewayCaretBlink {
-  50% {
-    opacity: 0;
-  }
-}

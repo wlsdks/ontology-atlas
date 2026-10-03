@@ -113,8 +113,9 @@ describe("관문 FX — 감속 동등물", () => {
     // (@layer base) and after it to win — an !important outside the layer loses to one
     // inside it (measured).
     const kill = css.indexOf("animation-duration: 0.01ms");
-    const carve = css.indexOf(".gateway-rise,");
     expect(kill).toBeGreaterThan(-1);
+    // The carve-out is the `!important` rule; the plain `.gateway-rise` rest state lives elsewhere.
+    const carve = css.search(/\.gateway-rise\s*\{[^}]*opacity: 1 !important/);
     expect(carve, "관문 감속 carve-out 이 없다").toBeGreaterThan(-1);
     expect(carve, "carve-out 이 전역 kill 규칙보다 앞이라 조용히 진다").toBeGreaterThan(kill);
     const block = css.slice(carve, css.indexOf("}", carve));
