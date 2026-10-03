@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
@@ -147,7 +146,7 @@ export function useTopologyCameraNavigation({
    * ends there — debt recorded then could never be paid, and a session with no
    * spotlit nodes would retry on every initialization.
    */
-  const runSpotlightFit = useCallback((motion: "tween" | "follow" | "snap" = "tween"): boolean => {
+  const runSpotlightFit = useEffectEvent((motion: "tween" | "follow" | "snap" = "tween"): boolean => {
     const ids = spotlightIdsRef.current;
     if (ids === null || ids.size === 0) return true; // No debt to record.
     const tokens = readOntologyMapTokensOrNull();
@@ -234,19 +233,18 @@ export function useTopologyCameraNavigation({
     } else if (motion === "follow") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, constellationCameraRef, constellationFocusId, dampingRef, dataSourceKey, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, mapLensKindRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
-
-  const getRunSpotlightFit = useEffectEvent(() => runSpotlightFit);
+  });
 
   useLayoutEffect(() => {
-    runSpotlightFitRef.current = getRunSpotlightFit();
-  }, [runSpotlightFit, runSpotlightFitRef]);
+    runSpotlightFitRef.current = runSpotlightFit;
+    return () => { runSpotlightFitRef.current = null; };
+  }, [runSpotlightFitRef]);
 
   useEffect(() => {
     if (spotlightFitToken === lastProcessedSpotlightFitTokenRef.current) return;
     lastProcessedSpotlightFitTokenRef.current = spotlightFitToken;
     if (!runSpotlightFit()) pendingSpotlightFitRef.current = true;
-  }, [spotlightFitToken, runSpotlightFit, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef]);
+  }, [spotlightFitToken, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef]);
 
   useEffect(() => {
     const previousId = previousConstellationFocusIdRef.current;
@@ -283,7 +281,7 @@ export function useTopologyCameraNavigation({
    // owned by each selection/area/path-full lens/3D, preserving screens panned/zoomed
    // directly.
    */
-  const reframeViewport = useCallback((motion: ViewportReframeMotion): boolean => {
+  const reframeViewport = useEffectEvent((motion: ViewportReframeMotion): boolean => {
     const rawTokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -415,13 +413,13 @@ export function useTopologyCameraNavigation({
     } else if (motion === "tracking") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, clusteredIdsRef, dampingRef, domeFocusPendingRef, domeRuntimeRef, expandedParentsRef, focusedSlugRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, lastActiveMsRef, mapLensKindRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFit, selectedEdgeRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  });
 
   useEffect(() => {
     reframeViewportRef.current = reframeViewport;
     return () => {
       reframeViewportRef.current = null;
     };
-  }, [reframeViewport, reframeViewportRef]);
+  }, [reframeViewportRef]);
 
 }
