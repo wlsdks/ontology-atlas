@@ -31,6 +31,7 @@ import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type Topol
 import type { FlatRingMemoryStore } from "./topology-loop-contract";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
+import { claimDialOrderFolder } from "../dial/order";
 import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../dial/types";
 
@@ -98,7 +99,6 @@ function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): D
   }
 }
 
-/** Construct the world and simulation; own initial fit, source changes, and disposal. */
 export function useTopologyWorldLifecycle({
   worldRef,
   viewportRef,
@@ -166,17 +166,6 @@ export function useTopologyWorldLifecycle({
   }, [simRef, worldRef]);
   const provisionalMemoryRef = useRef<DialMemory | null>(null);
 
-  /**
-   * Safety net: if a resize or a monitor change leaves **no node on screen at
-   * all**, return to the overview fit.
-   *
-   * The discipline is not to refit on every resize. A zoom and position the
-   * user set are intent, and erasing them is its own kind of defect. This
-   * intervenes only in the unambiguous "the map looks empty" state
-   * (`hasAnyNodeOnScreen === false`), and moves the spring target rather than
-   * the value so nothing jumps; reduced-motion is already honoured by the
-   * camera tween contract.
-   */
   const rescueCameraIfEverythingOffscreen = useCallback((tokens: OntologyMapTokens) => {
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -269,20 +258,15 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = true;
   };
 
-  // --- world (layout + adjacency) — rebuilt whenever the graph itself changes ---
   useEffect(() => {
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
     const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
-    // Contract point for installed-app proof: desktop WebView verification
-    // reads the click-cancel hysteresis from here. Exposes the token verbatim.
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx),
     );
-    // The expansion structure decides the **seed coordinates**, so it is an
-    // input to the world build and appears in the dep array below: changing the
-    // preference rebuilds the world and children move to the new placement.
+    if (dataSourceKey !== null) claimDialOrderFolder(dataSourceKey);
     const ringMemory = dataSourceKey === null ? null : flatRingMemory;
     const stored = ringMemory?.current() ?? null;
     let placed = { state: "settled" as DialPlacementState, held: 0 };
@@ -337,18 +321,16 @@ export function useTopologyWorldLifecycle({
         if (isFirstBuild || prevIds.has(n.id)) {
           if (!appear.has(n.id)) appear.set(n.id, 1);
         } else {
-          appear.set(n.id, 0); // New node — swells into view from 0.
-          bornNodeIdsRef.current.add(n.id); // Tier-gate exemption; see `bornNodeIdsRef`.
+          appear.set(n.id, 0);
+          bornNodeIdsRef.current.add(n.id);
         }
       }
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
       for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
     }
-    // Cache whether comets can ever run, so the idle gate can decide.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
-    // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
     simRef.current = null;
     pendingSimRef.current = {
@@ -358,11 +340,7 @@ export function useTopologyWorldLifecycle({
     };
     const simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
     nodeDragRef.current = null;
-    // No load-time settle: the sim stays cold until a node is pin-dragged. The
-    // static default is the deterministic de-piled grid from `topology-world`.
     heatRef.current = 0;
-    // A graph rebuild invalidates any in-flight drag/tug/homing state — those
-    // ids/refs point at the OLD world's nodes.
     dragAffectedSetRef.current = null;
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
@@ -372,31 +350,6 @@ export function useTopologyWorldLifecycle({
     prevPinnedNodeIdRef.current = null;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
-    /*
-     * **A different data source refits the overview** (decision ledger
-     * 2026-08-08 (3) ②).
-     *
-     * `trySnapInitialCamera` ran once, guarded by `hasInitializedRef`, so
-     * opening a vault mid-session (sample → local) **drew the new graph with
-     * the previous graph's camera**, leaving the new world's outermost nodes
-     * outside the chrome safe area.
-     *
-     * The single trigger is source identity; triggering on node count would
-     * hijack the camera every time the user adds one. Lowering the
-     * initialization flag reuses the **same overview fit path**, so safe-area
-     * fit, the `overviewScaleRef` anchor and reduced-motion handling all come
-     * along for free.
-     *
-     * ⚠️ **`null` means "not known yet", not "changed".** The vault identity
-     * string **lies while loading**: every live refresh sends `load()` back to
-     * status `'loading'` (`use-local-vault.ts`), so the identity computed then
-     * is `sample:<sample>` rather than `local:<folder>`. Counting that as a
-     * change **hijacks the camera on every file saved into the vault** —
-     * measured 2026-08-08: adding one node jumped it dx −3.93, dy −10.66,
-     * scale −0.0327. So the caller passes `null` until it settles (HomePage's
-     * `deeplinkSourceReady`) and this compares only against the last value it
-     * knew.
-     */
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
       galaxyModeCameraRef.current = { flat: null, galaxy: null };
@@ -422,7 +375,6 @@ export function useTopologyWorldLifecycle({
       glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
     }
     trySnapInitialCamera(tokens);
-    // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
     return () => clearTimeout(simTask);
     // eslint-disable-next-line react-hooks/exhaustive-deps
