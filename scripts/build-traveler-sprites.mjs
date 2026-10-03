@@ -1,4 +1,4 @@
-/** Normalize the owner-selected traveler into registered, nearest-neighbor pixel grids. */
+/** Build native traveler sprites and identity artwork. */
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
@@ -20,15 +20,43 @@ async function grid(input, size, extract) {
 }
 const blank = (width,height) => sharp({create:{width,height,channels:4,background:'#00000000'}});
 async function row(frames,path){await blank(frames.length*64,64).composite(frames.map((input,i)=>({input,left:i*64,top:0}))).png().toFile(path);}
-await sharp(await grid(`${source}/traveler-master.png`,64)).toFile(`${root}/mascot-full-64.png`);
-await sharp(await grid(`${source}/traveler-small.png`,32,{left:100,top:0,width:700,height:887})).toFile(`${root}/mascot-compact-32.png`);
-await sharp(await grid(`${source}/traveler-small.png`,16,{left:1100,top:235,width:480,height:615})).toFile(`${root}/mascot-micro-16.png`);
-for(const size of [16,32]){
-  const file=`${root}/mascot-${size===16?'micro-16':'compact-32'}.png`;
-  const {data,info}=await sharp(file).raw().toBuffer({resolveWithObject:true});
-  const side=size===16?1:2, y=size===16?10:22;
-  for(const x of size===16?[6,9]:[12,18])for(let dy=0;dy<side;dy++)for(let dx=0;dx<side;dx++)data.set([101,189,233,255],((y+dy)*size+x+dx)*4);
-  await sharp(data,{raw:info}).png().toFile(file);
+
+async function identityGrid(input, size, extract, margin = 1) {
+  let image = sharp(input);
+  if (extract) image = image.extract(extract);
+  const cropped = await image.png().toBuffer();
+  const trimmed = await sharp(cropped).trim().png().toBuffer();
+  const { data, info } = await sharp(trimmed)
+    .resize(size - margin * 2, size - margin * 2, { fit: 'inside', kernel: 'nearest' })
+    .png().toBuffer({ resolveWithObject: true });
+  const registered = await blank(size, size).composite([{
+    input: data,
+    left: Math.floor((size - info.width) / 2),
+    top: Math.floor((size - info.height) / 2),
+  }]).png().toBuffer();
+  return grid(registered, size);
+}
+await sharp(await identityGrid(`${source}/traveler-master-v2.png`,64)).toFile(`${root}/mascot-full-64.png`);
+await sharp(await identityGrid(`${source}/traveler-master-v2.png`,128,undefined,8)).toFile(`${root}/mascot-presentation-128.png`);
+const smallFile = `${source}/traveler-small-v2.png`;
+const small = await sharp(smallFile).metadata();
+const cellWidth = Math.floor(small.width / 2);
+for (const [column, size, tier] of [[0,32,'compact'],[1,16,'micro']]) {
+  await sharp(await identityGrid(smallFile, size, {
+    left: column * cellWidth, top: 0, width: cellWidth, height: small.height,
+  })).toFile(`${root}/mascot-${tier}-${size}.png`);
+}
+{
+  const file = `${root}/mascot-micro-16.png`;
+  const { data, info } = await sharp(file).raw().toBuffer({ resolveWithObject: true });
+  const pixel = (x, y, rgba) => data.set(rgba, (y * 16 + x) * 4);
+  for (let y = 10; y <= 12; y++) {
+    for (let x = 5; x <= 10; x++) pixel(x, y, [16,16,37,255]);
+  }
+  for (const x of [6,9]) pixel(x, 10, [101,189,233,255]);
+  pixel(12, 12, [255,221,166,255]);
+  for (const x of [7,8]) pixel(x, 13, [40,109,208,255]);
+  await sharp(data, { raw: info }).png().toFile(file);
 }
 for(const size of [16,32]){
   const {data,info}=await sharp(`${root}/mascot-${size===16?'micro-16':'compact-32'}.png`).raw().toBuffer({resolveWithObject:true});

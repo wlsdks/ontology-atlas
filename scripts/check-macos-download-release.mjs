@@ -3,11 +3,12 @@ import crypto from "node:crypto";
 import http from "node:http";
 import https from "node:https";
 
+import { LAST_INTEL_VERSION, isAfterLastIntel } from "./lib/last-intel-release.mjs";
+import { updaterArchiveName } from "./stage-macos-release-assets.mjs";
+
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
 const REQUIRED_MACOS_ARCHES = ["aarch64"];
-/** v1.5.0 is the last release with an Intel DMG; a later one carrying it is refused. */
-const LAST_INTEL_VERSION = [1, 5, 0];
 const DMG_NAME_PATTERN = /^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/;
 const WINDOWS_NAME_PATTERN = /^ontology-atlas_([^/]+)_windows_(x64)-setup\.exe$/;
 /** The key an installed app uses to find its own slot in `latest.json`. A Rust target name. */
@@ -282,14 +283,6 @@ function parseWindowsInstallerName(name) {
   const match = name.match(WINDOWS_NAME_PATTERN);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
-}
-
-function isAfterLastIntel(version) {
-  const parts = version.split(/[.-]/).slice(0, 3).map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    if (parts[index] !== LAST_INTEL_VERSION[index]) return !(parts[index] < LAST_INTEL_VERSION[index]);
-  }
-  return false;
 }
 
 function releaseVersionFromTag(tagName) {
@@ -589,12 +582,11 @@ async function verifyUpdaterManifest() {
     if (!entry?.url || !entry?.signature) {
       fail(`latest.json is missing a url/signature pair for ${platform}.`);
     }
-    if (!entry.url.includes(`/releases/download/${release.tag_name}/`)) {
-      // Leaving it at `latest` means this URL points at a different file the moment the
-      // next release ships.
-      fail(`latest.json ${platform} url is not pinned to ${release.tag_name}: ${entry.url}`);
+    const archiveName = updaterArchiveName(releaseVersion, platform.replace(/^darwin-/, ""));
+    const expectedUrl = `https://github.com/${options.repo}/releases/download/${release.tag_name}/${archiveName}`;
+    if (entry.url !== expectedUrl) {
+      fail(`latest.json ${platform} url is not pinned to ${release.tag_name} as ${expectedUrl}: ${entry.url}`);
     }
-    const archiveName = decodeURIComponent(entry.url.split("/").pop() ?? "");
     if (!assetNames.has(archiveName)) {
       fail(
         `latest.json ${platform} url points at ${archiveName}, which is not an asset of ${release.tag_name}. GitHub rewrites spaces in asset names, so an archive named with a space never matches the manifest.`,

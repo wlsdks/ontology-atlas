@@ -11,7 +11,7 @@
 // generator after the release publishes and commit the result.
 
 export interface MacosReleaseAsset {
-  readonly arch: 'aarch64' | 'x64';
+  readonly arch: 'aarch64';
   readonly fileName: string;
   readonly sizeBytes: number;
   readonly sha256: string;
@@ -65,13 +65,6 @@ export const MACOS_RELEASE: MacosRelease = {
       sizeBytes: 87436843,
       sha256: "94215c9ea552e59c40728c9833b7cfb8407c75cea0d777ef88cce6e872168980",
       downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.5.0/ontology-atlas_1.5.0_aarch64.dmg",
-    },
-    {
-      arch: "x64",
-      fileName: "ontology-atlas_1.5.0_x64.dmg",
-      sizeBytes: 90205168,
-      sha256: "ce597242e0c3835716b48e5250845db2fa688d2031fd8cfad92ceaeead937ce4",
-      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.5.0/ontology-atlas_1.5.0_x64.dmg",
     },
   ],
 };

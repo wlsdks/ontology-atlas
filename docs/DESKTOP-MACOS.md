@@ -177,6 +177,12 @@ tag that already has any Release. Assets are staged
 (`scripts/stage-macos-release-assets.mjs`) and uploaded as a draft, then
 verified with `pnpm desktop:verify-download -- --allow-draft --require-updater`.
 
+Do not land changes under `.github/workflows` between tagging and publish:
+GitHub refuses `GITHUB_TOKEN` a release whose target commit's workflow files
+differ from the default branch's, which blocked v1.5.0's staging. The draft
+release therefore names no `target_commitish`; the tag pins the commit and
+`desktop:release-source --mode=pin` rechecks it before staging and publish.
+
 **4. Install the draft before publication.** The run pauses at the `release`
 environment. Install that exact draft DMG on a real Mac, launch it, open a
 vault, then approve. Publication rechecks the admitted source, publishes, runs

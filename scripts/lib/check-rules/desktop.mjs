@@ -111,6 +111,10 @@ export const rules = [
 
 export const directTests = {
   script: [
+    ['scripts/build-brand-assets.mjs', 'scripts/build-brand-raster.test.mjs'],
+    ['scripts/build-brand-raster.mjs', 'scripts/build-brand-raster.test.mjs'],
+    ['scripts/brand-raster-page.html', 'scripts/build-brand-raster.test.mjs'],
+    ['scripts/build-traveler-sprites.mjs', 'scripts/build-brand-raster.test.mjs'],
     ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
     ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
     ['scripts/desktop-doctor.mjs', 'scripts/desktop-doctor.test.mjs'],

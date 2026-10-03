@@ -20,6 +20,7 @@ import {
   BRAND_TAGLINE,
   MASCOT_PALETTE,
   readMascotMasters,
+  readMascotPresentationMaster,
 } from './build-brand-assets.mjs';
 
 const PORT = 8231;
@@ -28,10 +29,10 @@ const MAX_SAVE_BODY_BYTES = 64 * 1024 * 1024;
 
 /** [output name, master, physical size, plate treatment]. */
 export const ICON_RASTER_PLAN = Object.freeze([
-  ['icon-1024', 'full', 1024, 'squircle'],
-  ['icon-512', 'full', 512, 'squircle'],
-  ['icon-256', 'full', 256, 'squircle'],
-  ['icon-128', 'full', 128, 'squircle'],
+  ['icon-1024', 'presentation', 1024, 'squircle'],
+  ['icon-512', 'presentation', 512, 'squircle'],
+  ['icon-256', 'presentation', 256, 'squircle'],
+  ['icon-128', 'presentation', 128, 'squircle'],
   ['icon-64', 'full', 64, 'squircle'],
   ['icon-48', 'compact', 48, 'squircle'],
   ['icon-32', 'compact', 32, 'squircle'],
@@ -163,7 +164,7 @@ export function createBrandRasterServer({
           name: BRAND_NAME,
           tagline: BRAND_TAGLINE,
           palette: MASCOT_PALETTE,
-          masters: readMascotMasters(),
+          masters: { ...readMascotMasters(), presentation: readMascotPresentationMaster() },
           iconPlan: ICON_RASTER_PLAN,
           markPlan: MARK_RASTER_PLAN,
           lockupPlan: LOCKUP_RASTER_PLAN,

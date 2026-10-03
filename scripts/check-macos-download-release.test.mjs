@@ -774,7 +774,7 @@ test("updater gate refuses a URL that no asset answers", async () => {
   await withServer(withUpdater({ manifest }), async (baseUrl) => {
     await assert.rejects(
       runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
-      (error) => /is not an asset of v0\.1\.0/.test(error.stderr),
+      (error) => /is not pinned to v0\.1\.0 as/.test(error.stderr),
     );
   });
 });
@@ -795,6 +795,21 @@ test("updater gate refuses a platform key beyond the required ones", async () =>
     await assert.rejects(
       runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
       (error) => /platforms must be exactly darwin-aarch64; found darwin-aarch64, darwin-x86_64/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses the right path on a foreign host", async () => {
+  const manifest = updaterManifest({
+    "darwin-aarch64": {
+      signature: "sig",
+      url: `https://github.example/wlsdks/ontology-atlas/releases/download/v0.1.0/${archiveNames["darwin-aarch64"]}`,
+    },
+  });
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /is not pinned to v0\.1\.0 as https:\/\/github\.com\//.test(error.stderr),
     );
   });
 });

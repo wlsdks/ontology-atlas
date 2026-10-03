@@ -11,16 +11,10 @@
  * builder, release upload glob) knows only that.
  *
  * **Why the updater archive is renamed.** Tauri emits it as
- * `<product name>.app.tar.gz` — **the same name for both architectures**, and
- * containing a **space**. Left alone there are two ways to fail silently:
- *
- * 1. Both architectures upload under the same name into one release and one
- *    overwrites the other. Users on the overwritten side either get the app for
- *    another architecture or fail signature verification and never receive an
- *    update again.
- * 2. GitHub converts spaces in asset names to dots. The URL recorded in
- *    `latest.json` still has the space, so it no longer matches the real asset,
- *    and the installed app shows the 404 as "no update available".
+ * `<product name>.app.tar.gz`, with no version or architecture and with a
+ * **space**. GitHub converts spaces in asset names to dots, so the URL in
+ * `latest.json` would no longer match the real asset, and the installed app
+ * shows the 404 as "no update available".
  *
  * So it is renamed under the same rule as the DMG
  * (`ontology-atlas_<version>_<arch>`). Version and architecture are **read from
