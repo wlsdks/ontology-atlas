@@ -15,11 +15,7 @@ import {
   useMapArrangement,
   useTerritories,
   useView3d,
-  writeGalaxy,
-  writeHexBoard,
-  writeMapArrangement,
-  writeTerritories,
-  writeView3d,
+  writeMapView,
   type MapArrangement,
 } from '@/shared/lib/appearance-preferences';
 
@@ -75,17 +71,7 @@ export function View3dMenu({
 
   const write = (next: View3dChoice) => {
     if (next !== value) armMapLayoutMorph();
-    writeTerritories(next === 'territories');
-    writeHexBoard(next === 'hex');
-    if (next === 'flat' || next === 'galaxy' || next === 'territories' || next === 'hex') {
-      writeGalaxy(next === 'galaxy');
-      writeView3d(false);
-    } else {
-      writeGalaxy(false);
-      // The arrangement goes first, or 3D assembles the old arrangement for a frame and rebuilds.
-      writeMapArrangement(next);
-      writeView3d(true);
-    }
+    writeMapView(next);
   };
 
   /*
