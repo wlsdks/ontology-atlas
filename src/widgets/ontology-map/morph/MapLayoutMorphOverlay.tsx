@@ -16,7 +16,7 @@ import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion
 import { massForDegree } from "../expressive/mass-spring";
 import { getOntologyMapTokens } from "../tokens/read-map-tokens";
 import { createGlideFrame, glideVelocity, type GlideFrame } from "./glide";
-import { layoutMorphEffect, planLayoutMorph, sampleLayoutMorph, sampleLayoutMorphFrame, type LayoutMorphPlan } from "./layout-morph";
+import { layoutMorphEffect, layoutMorphSize, planLayoutMorph, sampleLayoutMorph, sampleLayoutMorphFrame, type LayoutMorphPlan } from "./layout-morph";
 
 export interface MapLayoutTarget {
   marks: MapLayoutMark[];
@@ -144,7 +144,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, plan: LayoutMorphPlan, frame:
     const shape = e < 0.5 ? group.from.shape : group.to.shape;
     const path = new Path2D();
     for (const i of group.members) {
-      traceShape(path, shape, frame.x[i]!, frame.y[i]!, plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * e);
+      traceShape(path, shape, frame.x[i]!, frame.y[i]!, layoutMorphSize(plan.s0[i]!, plan.s1[i]!, frame.p[i]!, e));
     }
     ctx.globalAlpha = alpha;
     ctx.fillStyle = mix(group.from.fill, group.to.fill, e);

@@ -105,6 +105,18 @@ describe("planLayoutMorph", () => {
     expect(at(sampleLayoutMorph(plan, END), "domain:a")!.size).toBe(4);
   });
 
+  it("keeps a growing tile on its positional clock so it cannot expand ahead of its landing", () => {
+    const plan = planLayoutMorph(
+      [{ ...mark("domain:a", 10, 20), size: 4 }],
+      [{ ...mark("domain:a", 1010, 620), size: 96, shape: "hex" }],
+      new Map(),
+    );
+    const moving = at(sampleLayoutMorph(plan, MOTION.base.duration * 1000), "domain:a")!;
+    expect(moving.size).toBeGreaterThan(4);
+    expect(moving.size).toBeLessThan(96);
+    expect(moving.size).toBeCloseTo(4 + 92 * ((moving.x - 10) / 1000));
+  });
+
   it("sends a concept missing from the target into its nearest drawn ancestor, fading out", () => {
     const plan = planLayoutMorph(
       [mark("domain:a", 0, 0), mark("element:a1x", 50, 50)],
