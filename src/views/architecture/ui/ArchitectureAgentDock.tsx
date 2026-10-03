@@ -68,6 +68,8 @@ export function ArchitectureAgentDock({
 }) {
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
+  const [standing, setStanding] = useState(open);
+  if (open && !standing) setStanding(true);
   const capture = useAnalysisCapture(analysisContext);
   const [conversationActive, setConversationActive] = useState(false);
   const handleSectionChange = useCallback((tab: string) => setConversationActive(tab === 'conversation'), []);
@@ -93,6 +95,9 @@ export function ArchitectureAgentDock({
   return (
     <div
       data-testid="architecture-agent-dock-frame"
+      data-dock-state={open ? 'open' : standing ? 'put-away' : 'empty'}
+      inert={!open}
+      aria-hidden={!open || undefined}
       data-right-dock={open || presence.mounted ? 'architecture-agent' : undefined}
       onTransitionEnd={(event) => {
         if (
@@ -116,9 +121,9 @@ export function ArchitectureAgentDock({
           : 'pointer-events-none w-0 lg:w-0',
       )}
     >
-      {presence.mounted ? (
+      {standing ? (
         <Surface
-          open={open}
+          open={standing}
           as="aside"
           motion="overlay"
           data-testid="architecture-agent-dock"
@@ -160,6 +165,7 @@ export function ArchitectureAgentDock({
               (openingRequest !== null || conversationActive) &&
               frameSettled
             }
+            putAway={!open}
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, analysisContext.scope.profileSlug])}
             onOpeningRequestSent={onOpeningRequestSent}
