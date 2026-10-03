@@ -80,7 +80,7 @@
   "measurementScope": "この数は、記録されたスキャンとその宣言済みルールに基づきます。保守性について結論を出す前に、不明な範囲を確認してください。",
   "observationDetails": "計測と依存の根拠",
   "showRelationMeaning": "つながりの意味をマップに表示",
-  "captionGuide": "Labels the meaning of a selected concept's connections. Up to 24 labels appear where they fit.",
+  "captionGuide": "選択した概念のつながりごとに、その意味をラベルで表示します。ラベルは重ならない場所に、最大24個まで表示されます。",
   "captionHelp": "つながりのラベルの読み方",
   "loadingHistory": "分析履歴を読み込み中…",
   "targetSelected": "対象がマップで選択されました。",
