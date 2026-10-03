@@ -101,6 +101,8 @@ continuations reduced one identical-evidence payload **11,105→2,042 bytes
 semantic quality, formal qualification and native local construction remain
 unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial).
 
+When an approved model proposal fails during application, Atlas lists the files whose saves completed and attempts to reload the folder. A reload error is reported separately. The failed write may also have changed bytes; this is not an automatic rollback. Inspect the documents before retrying.
+
 ## Local-first and privacy
 
 - Atlas has no backend, account or telemetry. Your folder stays plain Markdown on your disk.
