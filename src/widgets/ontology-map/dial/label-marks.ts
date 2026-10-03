@@ -67,6 +67,7 @@ export interface LabelMarksInput {
 const SIDE_COS = 0.4;
 const NAME_GAP_PX = 5;
 const DISC_GAP_PX = 4;
+const HUB_CLEAR_PX = 14;
 const NAME_STEPS_PX = [0, 9, 18];
 const RING_OFFSETS = [0, 0.18, -0.18, 0.36, -0.36, 0.6, -0.6, 0.9, -0.9];
 
@@ -234,14 +235,25 @@ function claim(ctx: Ctx, box: Box): void {
 function projectName(ctx: Ctx): void {
   const { input } = ctx;
   const { model } = input;
-  if (!model.projectId || !model.projectLabel || !input.hub) return;
+  const hub = input.hub;
+  if (!model.projectId || !model.projectLabel || !hub) return;
   const ls = input.tokens.labelScale * 0.9;
   const font = scaledLabelFont("project", ls);
   const fontPx = scaledLabelFontSize("project", ls);
-  const y = input.hub.y + input.hub.r + fontPx * 0.95;
-  const box = textBox(input.measureText(model.projectLabel, font), input.hub.x, y, "center", fontPx, 3);
-  if (!free(ctx, box)) return;
-  ctx.out.texts.push({ id: model.projectId, role: "project", text: model.projectLabel, x: input.hub.x, y, align: "center", font, ink: input.ink(input.inks.project), box, parts: null });
+  const width = input.measureText(model.projectLabel, font);
+  const gap = fontPx * 0.95;
+  const tries: [number, number, CanvasTextAlign][] = NAME_STEPS_PX.flatMap((step): [number, number, CanvasTextAlign][] => [
+    [hub.x, hub.y + hub.r + gap + step, "center"],
+    [hub.x, hub.y - hub.r - gap - step, "center"],
+    [hub.x + hub.r + 6 + step, hub.y, "left"],
+    [hub.x - hub.r - 6 - step, hub.y, "right"],
+  ]);
+  const boxes = tries.map(([x, y, align]) => textBox(width, x, y, align, fontPx, 3));
+  const pick = boxes.findIndex((box) => free(ctx, box) && !crossesBox(input.lines, box));
+  if (pick < 0) return;
+  const [x, y, align] = tries[pick]!;
+  const box = boxes[pick]!;
+  ctx.out.texts.push({ id: model.projectId, role: "project", text: model.projectLabel, x, y, align, font, ink: input.ink(input.inks.project), box, parts: null });
   claim(ctx, box);
 }
 
@@ -427,6 +439,7 @@ export function buildLabelMarks(input: LabelMarksInput, out: LabelMarksOut): voi
   for (const d of input.discs.values()) marks.push(circleBox(d, 1));
   const ctx: Ctx = { input, out, texts: [], marks };
   projectName(ctx);
+  if (input.hub) marks.push(circleBox(input.hub, HUB_CLEAR_PX));
   domainNames(ctx);
   ringLabels(ctx);
   orphanCaption(ctx);

@@ -136,6 +136,7 @@ import { pressResponse } from "../expressive/mass-spring";
 import { beginEdgeGlow, drawNodeBloom, endEdgeGlow } from "../expressive/ego-light";
 import { drawNeuralBloom } from "../expressive/neural-bloom";
 import { edgeRevealProgress } from "../expressive/edge-reveal";
+import { dialConceptTotal } from "../dial/dial-model";
 import { clearDialFrame, dialOwnsFlatPaint, paintDialFrame } from "../dial/frame/frame";
 import { readDialTokens } from "../dial/tokens";
 import { tierAssemblyAppear } from "../morph/tier-assembly";
@@ -4306,7 +4307,7 @@ function paintOwnedDial(
     hoveredNodeId: params.hoveredNodeId, focusedNodeId: params.focusedNodeId, agentFocusNodeId: params.agentFocusNodeId,
     selectionPulse: pulse && selectionPulse ? { nodeId: selectionPulse.nodeId, ...pulse } : null,
     appearOf: (id) => Math.min(1, Math.max(0, appearById?.get(id) ?? 1)),
-    hubCount: hub && hub.count > 0 ? String(hub.count) : null,
+    hubCount: hub ? String(dialConceptTotal(dial.model)) : null,
     elementLabel: (id) => world.nodeById.get(id)?.label ?? null,
     now, reducedMotion,
     domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,

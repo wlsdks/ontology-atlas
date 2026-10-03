@@ -21,8 +21,11 @@ import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/frame-meter";
 import { Compass, HelpCircle, Play } from "lucide-react";
+import type { FlatDialState } from "@/widgets/ontology-map";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
+import { FlatDialLegend } from "./FlatDialLegend";
 import { TopologyMapRenderer, type TopologyMapRendererProps } from "./TopologyMapRenderer";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 const VaultStartSteps = dynamic(
@@ -106,6 +109,8 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
 };
 
 export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
+  const [flatDial, setFlatDial] = useState<FlatDialState | null>(null);
+  const hintInline = flatDial !== null && !props.readoutStepsAside;
   const {
     localGraphRoot, acpRuntimeLabel, router, setFitViewToken, setShortcutsOpen, analysisMode, growthReplaying,
     setGrowthReplayToken, renderProjects, leftPanelCollapsed, localGraphStack, setLocalGraphStack,
@@ -237,7 +242,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
               variant="sparse"
             />
           ) : null}
-          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} /> : null}
+          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} onFlatDialShown={setFlatDial} /> : null}
           {topologyRenderState.renderCanvas ? (
             <TopologyChangeAnnouncement
               touchedCount={changedSlugs.size}
@@ -456,7 +461,18 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           )}
           aria-hidden={readoutStepsAside ? true : undefined}
         >
+          {flatDial ? (
+            <div className="flex max-w-[calc(100vw-7rem)] flex-wrap items-center justify-end gap-x-4 gap-y-2">
+              {hintInline ? <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} inline /> : null}
+              <FlatDialLegend
+                evidenceMeasured={flatDial.evidenceMeasured}
+                linksShown={flatDial.summary?.linksShown ?? 0}
+                linksTotal={flatDial.summary?.linksTotal ?? 0}
+              />
+            </div>
+          ) : null}
           <FirstRunReadout
+            dial={flatDial?.summary ?? null}
             conceptCount={drawnConceptCount}
             totalConceptCount={totalConceptCount}
             domainCount={indexDomainCount}
@@ -471,7 +487,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
         {/* Pointer-transparent; the first selection that exists dismisses it for good
            (`features/first-run-starter`), so a ghost slug cannot
            (see `resolvedSelectionSlug`). */}
-        <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} />
+        <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open || hintInline} />
 
         {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
            elsewhere. */}

@@ -1,5 +1,6 @@
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import type { RefObject } from "react";
+import type { DialFrameSummary } from "../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../dial/types";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { type TierNameAnchor } from "../model/tier-names";
@@ -281,7 +282,11 @@ export interface UseTopologyLoopArgs {
   loadProgress?: { read: number; total: number } | null;
 }
 
-export interface FlatDialState { drawn: boolean; evidenceMeasured: boolean }
+export interface FlatDialState {
+  drawn: boolean;
+  evidenceMeasured: boolean;
+  summary?: DialFrameSummary | null;
+}
 
 export interface FlatRingMemoryStore {
   current(): DialMemory | null;
@@ -295,10 +300,17 @@ export interface FlatDialFrameProps {
   sent: FlatDialState | null;
 }
 
-export function reportFlatDial(props: FlatDialFrameProps, drawn: boolean): void {
+export function reportFlatDial(props: FlatDialFrameProps, summary: DialFrameSummary | null): void {
+  const drawn = summary !== null;
   const evidenceMeasured = drawn && props.evidence !== null;
-  if (props.sent && props.sent.drawn === drawn && props.sent.evidenceMeasured === evidenceMeasured) return;
-  props.sent = { drawn, evidenceMeasured };
+  const sent = props.sent;
+  if (sent && sent.drawn === drawn && sent.evidenceMeasured === evidenceMeasured && sameSummary(sent.summary ?? null, summary)) return;
+  props.sent = { drawn, evidenceMeasured, summary };
   props.onChange?.(props.sent);
+}
+
+function sameSummary(a: DialFrameSummary | null, b: DialFrameSummary | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.concepts === b.concepts && a.domains === b.domains && a.tier === b.tier && a.linksShown === b.linksShown && a.linksTotal === b.linksTotal;
 }
 

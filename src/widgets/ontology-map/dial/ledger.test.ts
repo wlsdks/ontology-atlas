@@ -31,6 +31,20 @@ function input(over: Partial<LedgerInput> = {}): LedgerInput {
 }
 
 describe("buildLedger", () => {
+  it("moves its column off planned strokes and placed names", () => {
+    const set = discs(4);
+    const free = buildLedger(input({ discs: set }))!;
+    const colX = free.rows[0]!.box.minX;
+    const midY = (free.rows[0]!.box.minY + free.rows[free.rows.length - 1]!.box.maxY) / 2;
+    const stroke = [{ x: colX - 40, y: midY + 3 }, { x: colX + 400, y: midY - 3 }];
+    const name = { minX: colX, maxX: colX + 80, minY: free.rows[0]!.box.minY - 2, maxY: free.rows[0]!.box.maxY };
+    const plan = buildLedger(input({ discs: set, avoid: { boxes: [name], lines: [stroke] } }))!;
+    const rows = plan.rows.map((r) => r.box);
+    expect(rows.some((b) => b.minX < name.maxX && b.maxX > name.minX && b.minY < name.maxY && b.maxY > name.minY)).toBe(false);
+    expect(rows.some((b) => b.minY < midY + 3 && b.maxY > midY - 3 && b.maxX > colX - 40)).toBe(false);
+    expect(countLeaderCrossings(plan.leaders)).toBe(0);
+  });
+
   it("leaves no leader crossings over 200 seeded disc sets", () => {
     for (let seed = 1; seed <= 200; seed += 1) {
       const random = rng(seed);

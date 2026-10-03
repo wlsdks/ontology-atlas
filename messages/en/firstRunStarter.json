@@ -41,7 +41,9 @@
     "tier_circuit": "Down to capabilities",
     "tier_element": "Down to elements",
     "zoomHint": "zoom in to reveal elements",
-    "zoomHintPlain": "click a dot to reveal its elements"
+    "zoomHintPlain": "click a dot to reveal its elements",
+    "dialCapabilitiesHint": "capabilities show as you zoom",
+    "dialElementsHint": "elements show inside the domain you enter"
   },
   "plainModeCta": "Switch to plain-language view",
   "reopenLabel": "Reopen the start guide",

@@ -1,6 +1,6 @@
 import { MOTION } from "@/shared/motion/tokens";
 import { easeOutCubic } from "../../model/camera-easing";
-import { dialEvidenceView, resolveDialAttention } from "../dial-model";
+import { dialConceptTotal, dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { resolveDialDisclosure, smoothstep, type DialDisclosure } from "./disclosure";
 import { createMeasureText } from "../fit";
 import { inkIndex, resolveDialInks, type DialInks } from "../ink";
@@ -164,6 +164,22 @@ function pushPlacementLine(input: DialFrameInput, inks: DialInks): void {
 
 export function lastDialFrame(): DialFrameResult | null {
   return last?.result ?? null;
+}
+
+export interface DialFrameSummary {
+  concepts: number;
+  domains: number;
+  tier: "spine" | "circuit" | "element";
+  linksShown: number;
+  linksTotal: number;
+}
+
+export function dialFrameSummary(): DialFrameSummary | null {
+  if (!last) return null;
+  const { model } = last.input.dial;
+  const { disclosure, built } = last;
+  const tier = disclosure.entered !== null && disclosure.elementsAlpha > 0.5 ? "element" : disclosure.capAlpha > 0.5 ? "circuit" : "spine";
+  return { concepts: dialConceptTotal(model), domains: model.domains.length, tier, linksShown: built.flows.budget.shown, linksTotal: built.flows.budget.total };
 }
 
 export function clearDialFrame(): void {

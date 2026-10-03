@@ -41,7 +41,9 @@
     "tier_circuit": "ケイパビリティまで",
     "tier_element": "要素まで",
     "zoomHint": "ズームインすると要素が表示されます",
-    "zoomHintPlain": "点をクリックすると要素が表示されます"
+    "zoomHintPlain": "点をクリックすると要素が表示されます",
+    "dialCapabilitiesHint": "capabilities show as you zoom",
+    "dialElementsHint": "elements show inside the domain you enter"
   },
   "plainModeCta": "やさしい表示に切り替え",
   "reopenLabel": "スタートガイドを再表示",
