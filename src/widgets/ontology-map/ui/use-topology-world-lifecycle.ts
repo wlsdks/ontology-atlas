@@ -401,7 +401,7 @@ export function useTopologyWorldLifecycle({
     const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, arrivalStill || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
