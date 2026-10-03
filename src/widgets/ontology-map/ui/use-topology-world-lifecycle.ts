@@ -396,7 +396,9 @@ export function useTopologyWorldLifecycle({
   }, [nodes, edges, expand.structure, dialLabels]);
   useEffect(() => {
     if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
-  }, [dataSourceKey, worldRef]);
+    const dial = dataSourceKey === null ? null : worldRef.current?.dial;
+    if (dial) flatRingMemory?.write(dial.scene.memory);
+  }, [dataSourceKey, flatRingMemory, worldRef]);
 
   useEffect(() => {
     const container = containerRef.current;
