@@ -40,7 +40,6 @@ test.describe("download — every drawing stops out of view", () => {
 
     await scrollHostTo(page, "bottom");
     await expect(page.locator("main footer")).toBeInViewport();
-    // The install figure sits just above the colophon and plays once in view; it must leave nothing running.
     await expect(page.locator('[data-showpiece-state="running"]')).toHaveCount(0, {
       timeout: 15_000,
     });
