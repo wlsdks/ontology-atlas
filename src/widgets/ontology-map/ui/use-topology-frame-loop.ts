@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
+import { clearDialFrame } from "../dial/frame/frame";
 import type { CameraAxes } from "../engine/camera";
 import { createLightFrameStage } from "../light/light-frame-stage";
 import { ambientSleepFactor } from "../model/ambient-sleep";
+import { shouldSkipFrame } from "../model/idle-gate";
 import { projectDomeEdgeControl } from '../model/dome-edge';
 import { createStillFrame } from "./frame-cache/still-frame";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
@@ -50,6 +52,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
   const renderedRef = useRef(true);
+  useEffect(() => clearDialFrame, []);
   useEffect(() => {
     renderedRef.current = true;
     getConfiguration().recovery.wakeFrameLoopRef.current();
@@ -102,6 +105,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     let gateActiveMs = Number.NaN;
     let quietSince = Number.NEGATIVE_INFINITY;
     let stillFocusId: string | null = null;
+    let lastDrawnAt = Number.NaN;
 
     const drawFull = (now: number, { tokens, world, width, height, dpr, dt }: Frame): boolean => {
       if (!runDomeFrameStage(now, dt, tokens, world, width, height)) return false;
@@ -114,7 +118,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         camera,
         farT,
         zoomRatio,
-      } = runCameraFrameStage(now, dt, tokens, world, width, height);
+      } = runCameraFrameStage(now, dt, tokens, world, width, height, lastDrawnAt);
       const clusterFrame = runClusterFrameStage(now, tokens, world);
       const effectiveExpanded = clusterFrame.effectiveExpanded;
       let frameClusteredIds = clusterFrame.frameClusteredIds;
@@ -153,7 +157,8 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         batchAppearVisible,
       );
       light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
-      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById);
+      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds);
+      light.afterPaint();
       stillFocusId = focusedNodeId;
       return true;
     };
@@ -200,11 +205,16 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         requestFrame();
         return;
       }
+      lastDrawnAt = performance.now();
       light.render();
       if (building && still.comets.length === 0 && lastActiveMsRef.current === gateActiveMs) {
         still.release();
         cancelAnimationFrame(handle);
         handle = 0;
+        return;
+      }
+      if (frameState.lightOnly && !lightActiveRef.current && shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
+        still.release();
         return;
       }
       requestFrame();

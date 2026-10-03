@@ -593,10 +593,17 @@ function createPartialPublisher(
   let publishes = 0;
   let published = -1;
   let quarter = 0;
-  return (unit: readonly number[]) => {
-    for (const index of unit) done[tiers[index]] += 1;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const attempt = () => {
     const now = performance.now();
-    if (now - startedAt < pacing.afterMs || now - lastPublishedAt < pacing.intervalMs) return;
+    const wait = Math.max(startedAt + pacing.afterMs, lastPublishedAt + pacing.intervalMs) - now;
+    if (wait > 0) {
+      timer ??= setTimeout(() => {
+        timer = null;
+        attempt();
+      }, wait);
+      return;
+    }
     let complete = published;
     while (complete + 1 < tierCount && done[complete + 1] === size[complete + 1]) complete += 1;
     if (complete >= lastMarkdownTier) return;
@@ -618,6 +625,16 @@ function createPartialPublisher(
     lastPublishedAt = now;
     publishes += 1;
     publish(results.filter((entry, index): entry is BuiltVaultEntry => entry !== undefined && tiers[index] <= through));
+  };
+  return {
+    read(unit: readonly number[]) {
+      for (const index of unit) done[tiers[index]] += 1;
+      attempt();
+    },
+    stop() {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+    },
   };
 }
 
@@ -668,23 +685,27 @@ async function collectEntries(
       )
     : null;
   const batched = nativeRoot !== null && concurrency > 1;
-  await mapPooled(
-    readUnits(files, tiers, batched),
-    batched ? NATIVE_BATCH_CONCURRENCY : concurrency,
-    async (unit) => {
-      const markdown = unit.filter((index) => files[index].kind === 'md');
-      const texts = markdown.length > 0 ? await readMarkdown(markdown.map((index) => files[index])) : [];
-      markdown.forEach((index, at) => {
-        results[index] = buildMdEntry(files[index], texts[at].text, texts[at].lastModified, internMetadata);
-      });
-      for (const index of unit) {
-        if (files[index].kind !== 'md') results[index] = await stampedEntry(files[index], stamps);
-      }
-      read += markdown.length;
-      onProgress?.({ read, total });
-      publishPartial?.(unit);
-    },
-  );
+  try {
+    await mapPooled(
+      readUnits(files, tiers, batched),
+      batched ? NATIVE_BATCH_CONCURRENCY : concurrency,
+      async (unit) => {
+        const markdown = unit.filter((index) => files[index].kind === 'md');
+        const texts = markdown.length > 0 ? await readMarkdown(markdown.map((index) => files[index])) : [];
+        markdown.forEach((index, at) => {
+          results[index] = buildMdEntry(files[index], texts[at].text, texts[at].lastModified, internMetadata);
+        });
+        for (const index of unit) {
+          if (files[index].kind !== 'md') results[index] = await stampedEntry(files[index], stamps);
+        }
+        read += markdown.length;
+        onProgress?.({ read, total });
+        publishPartial?.read(unit);
+      },
+    );
+  } finally {
+    publishPartial?.stop();
+  }
   return results as BuiltVaultEntry[];
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  extendsGrace,
   isCameraUnsettled,
   isCanvasActive,
   isDomeSpinAnimating,
@@ -40,6 +41,24 @@ describe("isCanvasActive", () => {
     for (const key of Object.keys(IDLE) as (keyof CanvasActivityFlags)[]) {
       expect(isCanvasActive({ ...IDLE, [key]: true })).toBe(true);
     }
+  });
+});
+
+describe("extendsGrace", () => {
+  it("keeps a light drawing without restarting the grace, so the map sleeps once the last light lands", () => {
+    expect(isCanvasActive({ ...IDLE, lightActive: true })).toBe(true);
+    expect(extendsGrace({ ...IDLE, lightActive: true })).toBe(false);
+    expect(extendsGrace({ ...IDLE, lightActive: true, cameraMoving: true })).toBe(true);
+    let lastActive = 0;
+    let lastDrawn = 0;
+    for (let now = 0; now <= 4000; now += 16) {
+      const flags = { ...IDLE, cameraMoving: now < 500, lightActive: now >= 120 && now < 2100 };
+      if (isCanvasActive(flags)) {
+        if (extendsGrace(flags)) lastActive = now;
+      } else if (shouldSkipFrame(now, lastActive, 1200)) continue;
+      lastDrawn = now;
+    }
+    expect(lastDrawn).toBeLessThan(2100 + 17);
   });
 });
 

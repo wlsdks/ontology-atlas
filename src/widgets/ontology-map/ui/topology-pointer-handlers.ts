@@ -3,6 +3,8 @@ import { projectDomeEdgeControl } from '../model/dome-edge';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "./topology-frame-draw";
+import { lastDialFrame } from "../dial/frame/frame";
+import { pickDial } from "../dial/pick";
 import type { Rect } from "../interaction/hover-card-placement";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
@@ -98,7 +100,13 @@ function collectHoverAvoidRects(
 ): HoverAvoidRect[] {
   const out: HoverAvoidRect[] = [];
   const alphas = lastDrawnNodeAlphas();
-  for (const node of world.nodes) {
+  const dialFrame = lastDialFrame();
+  for (const pick of dialFrame?.picks ?? []) {
+    if (Math.abs(pick.x - pointer.x) > HOVER_AVOID_REACH_PX || Math.abs(pick.y - pointer.y) > HOVER_AVOID_REACH_PX) continue;
+    const rr = pick.r + HOVER_AVOID_MARGIN_PX;
+    out.push({ x: canvasOrigin.x + pick.x - rr, y: canvasOrigin.y + pick.y - rr, w: 2 * rr, h: 2 * rr });
+  }
+  for (const node of dialFrame ? [] : world.nodes) {
     if (clustered?.has(node.id)) continue;
     if ((alphas.get(node.id) ?? 1) < 0.05) continue;
     const off = domeFrame?.get(node.id);
@@ -524,7 +532,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
 
   const scaleWithinZoomBounds = (tokens: OntologyMapTokens, scale: number): number => {
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    const max = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+    const max = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, worldRef.current?.dialScaleMax ?? undefined);
     const min = effectiveScaleMinWithDome(computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin));
     return Math.min(max, Math.max(min, scale));
   };
@@ -622,6 +630,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     py: number,
   ): string | null => {
     if (!tokens) return null;
+    const dialFrame = lastDialFrame();
+    if (dialFrame) return pickDial(dialFrame.picks, dialFrame.rows, px, py, HIT_TOUCH_SLACK_PX);
     // Tier hittability rides the same zoom-ratio signal as the draw pass
     // (`model/tier-visibility.ts`), NOT `farT` — so the pointer never grabs a
     // semantic-zoom-hidden capability/element even at the circuit default entry.
@@ -725,7 +735,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   /** Shared by P3b/P3c — screen projections of edges whose ends are both hittable at the current tier. */
   const buildEdgeCandidates = (): EdgeHitCandidate[] => {
     const world = worldRef.current;
-    if (!world) return [];
+    if (!world || lastDialFrame()) return [];
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return [];
     const { width, height } = viewportRef.current;
@@ -1465,7 +1475,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           flyDome.flyRequest = { slug: nodeId };
           return;
         }
-        const chip = clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
+        const chip = lastDialFrame() ? undefined : clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
         if (chip && onToggleCluster) {
           onToggleCluster(nodeId);
           clearClusterHover();

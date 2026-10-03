@@ -45,14 +45,16 @@ test('keyboard focus stays visible across the canvas and related concept replace
   }, screenshot);
   const ink = focus.color.match(/\d+/g)!.slice(0, 3).map(Number);
   for (const pixel of pixels) expect(ink.every((channel, i) => Math.abs(pixel[i] - channel) <= 4), 'canvas focus outline is clipped').toBe(true);
+  // The walk lands on whatever the drawing puts beside it (a capability on the flat dial);
+  // any concept with a related one will do.
   const panel = page.getByTestId('map-detail-panel');
+  const relation = panel.locator('[data-datasheet-connection]').first();
   for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
     await page.keyboard.press(key);
     await waitForMapStill(page);
-    if (await panel.getAttribute('data-selected-node-kind') === 'domain') break;
+    if (await relation.isVisible().catch(() => false)) break;
   }
-  await expect(panel).toHaveAttribute('data-selected-node-kind', 'domain');
-  const relation = panel.locator('[data-datasheet-connection]').first();
+  await expect(panel).toHaveAttribute('data-selected-node-kind', /^(domain|capability|element)$/);
   await expect(relation).toBeVisible();
   const targetId = (await relation.getAttribute('data-datasheet-connection'))!;
   for (let i = 0; i < 50 && (await page.evaluate(() => document.activeElement?.getAttribute('data-datasheet-connection'))) !== targetId; i += 1) await page.keyboard.press('Tab');
