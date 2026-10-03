@@ -16,9 +16,10 @@ const pipeline = vi.hoisted(() => {
   const reveal = run("reveal");
   const presentation = run("presentation");
   const lightPrepare = run("light-prepare");
+  const lightAfterPaint = run("light-after-paint");
   const lightRender = run("light-render");
   const lightDispose = vi.fn();
-  return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation, lightPrepare, lightRender, lightDispose };
+  return { order, gate, dome, motion, camera, clusters, realm, reveal, presentation, lightPrepare, lightAfterPaint, lightRender, lightDispose };
 });
 
 const still = vi.hoisted(() => {
@@ -67,7 +68,7 @@ vi.mock("./topology-realm-frame-stage", () => ({ createRealmFrameStage: vi.fn(()
 vi.mock("./topology-reveal-frame-stage", () => ({ createRevealFrameStage: vi.fn(() => pipeline.reveal) }));
 vi.mock("./topology-presentation-frame-stage", () => ({ createPresentationFrameStage: vi.fn(() => pipeline.presentation) }));
 vi.mock("../light/light-frame-stage", () => ({
-  createLightFrameStage: vi.fn(() => ({ prepare: pipeline.lightPrepare, render: pipeline.lightRender, dispose: pipeline.lightDispose })),
+  createLightFrameStage: vi.fn(() => ({ prepare: pipeline.lightPrepare, afterPaint: pipeline.lightAfterPaint, render: pipeline.lightRender, dispose: pipeline.lightDispose })),
 }));
 
 import { createLightFrameStage } from "../light/light-frame-stage";
@@ -121,7 +122,7 @@ describe("topology frame scheduling", () => {
   it("runs stages in dependency order and passes the same frame clock to reveal", () => {
     const { unmount, rerender } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     act(() => nextFrame(1234));
-    expect(pipeline.order).toEqual(["gate", "dome", "motion", "camera", "clusters", "realm", "reveal", "light-prepare", "presentation", "light-render"]);
+    expect(pipeline.order).toEqual(["gate", "dome", "motion", "camera", "clusters", "realm", "reveal", "light-prepare", "presentation", "light-after-paint", "light-render"]);
     expect(pipeline.reveal.mock.calls[0]?.slice(0, 2)).toEqual([1234, 0.016]);
     expect(pipeline.lightPrepare.mock.calls[0]?.[0]).toBe(1234);
     expect(pipeline.presentation).toHaveBeenCalledOnce();
@@ -331,6 +332,23 @@ describe("a flat map where only the comets move", () => {
     expect(pipeline.presentation.mock.calls.length).toBe(drawn);
     expect(still.frame.paint.mock.calls.length).toBeGreaterThan(50);
     expect(still.state.comets[0]!.t).not.toBe(0.25);
+    unmount();
+  });
+
+  it("asks for no frame after the last light lands when nothing else moves", () => {
+    pipeline.gate.mockImplementation(() => ({ ...readyFrame, awake: true, sceneStill: false, lightOnly: true }));
+    const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
+    const lightActive = vi.mocked(createFrameGate).mock.calls[0]![0].lightActiveRef;
+    lightActive.current = true;
+    runUntil(5000, 5032);
+    expect(nextFrame).not.toBeNull();
+    pipeline.lightRender.mockImplementationOnce(() => {
+      lightActive.current = false;
+    });
+    const due = nextFrame!;
+    nextFrame = null;
+    act(() => due(5048));
+    expect(nextFrame).toBeNull();
     unmount();
   });
 

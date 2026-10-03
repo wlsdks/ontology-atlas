@@ -6,6 +6,7 @@ import { waitForMapSettled } from "./settle";
 
 interface Frame {
   t: number;
+  clock: number;
   cam: [number, number, number] | null;
   pos: Record<string, [number, number]>;
 }
@@ -69,6 +70,7 @@ async function installSampler(page: Page): Promise<void> {
           }
           w.__assembly.frames.push({
             t: performance.now(),
+            clock: time,
             cam: [cam.x, cam.y, cam.scale],
             pos,
           });
@@ -146,16 +148,13 @@ test.describe("first-open map assembly", () => {
     expect(capabilityAt).toBeLessThan(Infinity);
 
     const total = Math.max(...d);
-    const shares = [];
-    for (let i = start + 1; i < d.length; i += 1) {
-      const interval = frames[i].t - frames[i - 1].t;
-      if (interval <= 0) continue;
-      shares.push(((d[i - 1] - d[i]) / total) * Math.max(1, 16.7 / interval));
-    }
+    const ticks = frames.map((frame, i) => ({ clock: frame.clock, d: d[i] })).filter((tick, i, all) => i >= start && all[i + 1]?.clock !== tick.clock);
+    const shares = ticks.slice(1).map((tick, i) => ((ticks[i].d - tick.d) / total) * (16.7 / (tick.clock - ticks[i].clock)));
     const firstMoving = shares.find((s) => s > 0) ?? 0;
     expect(firstMoving).toBeGreaterThan(0);
     expect(firstMoving).toBeLessThanOrEqual(0.2);
     expect(Math.max(...shares)).toBeLessThanOrEqual(0.25);
+    expect(ticks.filter((tick, i) => i > 0 && ticks[i - 1].d - tick.d > 0.002 * total).length, "the tiers rise over many frames instead of jumping").toBeGreaterThanOrEqual(6);
 
     await page.waitForFunction(
       () => {

@@ -25,7 +25,18 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { computePathPickBounds, type TopologyWorld } from "./topology-world";
+import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "./topology-world";
+import { lastDialFrame } from "../dial/frame/frame";
+import { readDialTokens } from "../dial/tokens";
+
+export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialFocusFrame | undefined {
+  if (lastDialFrame() === null) return undefined;
+  try {
+    return dialFocusFrame(world, focusId, readDialTokens());
+  } catch {
+    return undefined;
+  }
+}
 
 interface Dependencies {
   lastFocusedSlugRef: RefObject<string | null>;
@@ -323,7 +334,7 @@ export function useTopologyFocusNavigation({
                 focusTokens,
                 world.nodes.length,
               )
-            : computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBounds);
+            : computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBounds, realmActive || focusedSlug === null ? undefined : liveDialFocusFrame(world, focusedSlug));
       }
       if (!target) return;
       /*

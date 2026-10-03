@@ -225,7 +225,7 @@ test.describe("지도 키보드 걷기", () => {
      * finishes"). This test judges by **reading coordinates**, so what must be waited
      * on is whether the coordinates settled, not a duration — a slow machine measures
      * mid-transition and a fast one wastes the remainder (full check audit,
-     * 2026-08-17; the same prescription as `settleLayout` in `map-expand-all`).
+     * 2026-08-17).
      */
     for (const key of DIRECTIONS) {
       await page.keyboard.press(key);

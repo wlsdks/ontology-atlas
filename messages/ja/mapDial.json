@@ -1,0 +1,17 @@
+{
+  "units": "{capabilities, plural, other {ケイパビリティ#件}} · {elements, plural, other {要素#件}}",
+  "stale": "古い{count, number}件",
+  "orphans": "{count, plural, other {#件の概念がどのドメインにも属していません}}",
+  "more": "ほか{count, number}件",
+  "ringBetween": "他の{min, number}～{max, number}ドメインが利用",
+  "ringAtLeast": "他の{min, number}ドメイン以上が利用",
+  "ringAtMostOne": "利用する他ドメインは1つまで",
+  "linksShown": "リンク{total, number}件中{shown, number}件を表示",
+  "reading": "{total, number}件中{read, number}件のファイルを読み込み中",
+  "settling": "全ファイルの読み込みが終わると輪が確定します",
+  "legendFlows": "線 = 依存 · 数字 = 件数",
+  "legendNeeds": "依存先",
+  "legendUsers": "利用元",
+  "legendStale": "古い",
+  "legendRings": "中心に近いほど、他のドメインからの依存が多い"
+}

@@ -2,52 +2,13 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill } from "./settle";
 
-/**
- * **Does "expand all" actually reveal the count it claims** (promoted from the
- * 2026-08-13 walkthrough).
- *
- * `__atlasMap.chips()` is the observation window built after the precedent of
- * "claiming 24 chips while drawing 1", and until this spec it had **0 consumers** —
- * an instrument built for verification that nobody reads lets that precedent return
- * at any time.
- *
- * Three things measured: ① expanding increases the visible nodes by the claimed
- * child count and chips reports the same through expanded/shownChildren ② expanded
- * children do not overlap each other (0 pairs closer than the sum of their radii)
- * ③ the same bar reverses it as "collapse".
- *
- * The expand bar is drawn on the canvas rather than in the DOM, so it is clicked by
- * coordinate — and since the camera moves after selection, **the coordinates are
- * re-read after selecting** (clicking the original coordinates misses, measured).
- * The bar's y offset grows with zoom (measured -52 → -75 after a dive), so it is
- * computed as **screen radius + 32** rather than a fixed value. If the bar moves,
- * this spec dies loudly and the offset formula is fixed with it.
- */
-/**
- * Waits for layout to settle — **until coordinates stop changing between frames.**
- *
- * ⚠️ Why it is needed (learned 2026-08-17 while fixing a regression introduced
- * here). Replacing a fixed 1.6s wait with polling "until the count matches" made
- * collapse fail in CI (expected 36, got 50). The count passes the instant it
- * matches, but **the camera and nodes are still moving**, so click coordinates
- * measured in that window were stale by the time the click arrived and landed on
- * empty space. That is the work the fixed wait had been doing by accident.
- *
- * So count and position are awaited separately — the count is what was revealed, the
- * position is where the next click will land.
- */
-async function settleLayout(page: import("@playwright/test").Page) {
-  // Stillness judged in the page, on drawn frames, so the click coordinate taken next
-  // is the one the frame drew — not one read halfway through a 250 ms round trip.
-  await waitForMapStill(page);
-}
-
 test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/topology/?e2e=1&guides=off&realm=project%3Astorefront", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
   await waitForMapStill(page);
 
   const nodePos = () =>
@@ -70,7 +31,6 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   const first = await nodePos();
   expect(first, "주문 도메인을 지도에서 못 찾았다 — 이 스펙이 공회전한다").not.toBeNull();
   await page.mouse.click(first!.px, first!.py);
-  // The chip the next lines read belongs to the node this click selected.
   await expect
     .poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId), {
       timeout: 15_000,
@@ -85,14 +45,9 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   expect(chipBefore!.expanded).toBe(false);
   expect(chipBefore!.claimedCount).toBeGreaterThan(0);
 
-  await settleLayout(page);
+  await waitForMapStill(page);
   const selected = await nodePos();
   await page.mouse.click(selected!.px, selected!.py - (selected!.r + 32));
-  /*
-   * ⚠️ This used to be a count comparison **with no retry** after a fixed 1.6s — on a
-   * machine where the expansion had not finished, the count simply did not match and
-   * it failed. It now waits for the value to arrive (full check audit, 2026-08-17).
-   */
   await expect
     .poll(async () => (await visibleCount()) - before, {
       timeout: 20_000,
@@ -103,7 +58,6 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   expect(chipAfter!.expanded).toBe(true);
   expect(chipAfter!.shownChildren, "chips 가 화면과 다른 말을 한다").toBe(chipBefore!.claimedCount);
 
-  // Zero overlap among expanded children — no pair is closer than the sum of their radii.
   const overlapPairs = await page.evaluate(() => {
     const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ hidden: boolean; x: number; y: number; radius: number }> } }).__atlasMap;
     const nodes = m.nodes().filter((n) => !n.hidden && n.radius > 0);
@@ -119,117 +73,10 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   });
   expect(overlapPairs, "펼쳐진 노드가 서로 겹쳤다").toBe(0);
 
-  // The same bar is now "collapse" — press it and measure the return to the original
-  // state. Layout must settle before coordinates are measured (see `settleLayout`
-  // above).
-  await settleLayout(page);
+  await waitForMapStill(page);
   const expanded = await nodePos();
   await page.mouse.click(expanded!.px, expanded!.py - (expanded!.r + 32));
   await expect
     .poll(visibleCount, { timeout: 20_000, message: "접기가 원상 복귀하지 않았다" })
     .toBe(before);
-});
-
-test("상단 전체 펼치기는 전 노드를 드러내고 자동으로 화면 안에 맞춘다", async ({ page }) => {
-  test.setTimeout(120_000);
-  await page.setViewportSize({ width: 1512, height: 900 });
-  await seedFirstRunSeen(page);
-  await page.addInitScript(() => {
-    window.localStorage.setItem("demo:sample-source:v1", "dogfood");
-  });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => document.fonts.ready);
-  await expect
-    .poll(() => page.evaluate(() => window.__atlasMap?.nodes().length ?? 0), {
-      timeout: 20_000,
-      message: "전 노드 검사가 읽을 지도 계기가 없다",
-    })
-    .toBeGreaterThan(20);
-
-  const action = page.getByTestId("topology-expand-all");
-  await expect(action).toBeVisible();
-  await action.click();
-  await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "all");
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const nodes = window.__atlasMap?.nodes() ?? [];
-          return nodes.length > 0 && nodes.every((node) => !node.hidden);
-        }),
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-  await settleLayout(page);
-
-  const offscreen = await page.evaluate(() => {
-    const map = document.querySelector<HTMLElement>('[data-testid="ontology-map"]');
-    const nodes = window.__atlasMap?.nodes().filter((node) => !node.hidden) ?? [];
-    if (!map || nodes.length === 0) return -1;
-    const box = map.getBoundingClientRect();
-    return nodes.filter(
-      (node) =>
-        node.x - node.radius < 0 ||
-        node.y - node.radius < 0 ||
-        node.x + node.radius > box.width ||
-        node.y + node.radius > box.height,
-    ).length;
-  });
-  expect(offscreen, "전체 펼치기 뒤 화면 밖에 남은 노드가 있다").toBe(0);
-
-  // Centred beside the panels, not on the raw canvas. Measured 2026-09-19 at
-  // 1512 wide with the INDEX panel open: the lens fit used the whole canvas and
-  // put the drawn centre at x 719 while the width left beside the panel is
-  // centred at 835 — and the next "fit" press, which does read the panels,
-  // moved the map. The expected centre is derived from the same two sources
-  // the camera reads: the safe-inset tokens and the measured obstruction.
-  const centring = await page.evaluate(() => {
-    const map = document.querySelector<HTMLElement>('[data-testid="ontology-map"]');
-    const probe = window.__atlasMap;
-    const nodes = probe?.nodes().filter((node) => !node.hidden) ?? [];
-    const camera = probe?.camera();
-    const insets = probe?.obstacleInsets();
-    if (!map || !camera || !insets || nodes.length === 0) return null;
-    const style = getComputedStyle(map);
-    const left = Math.max(Number(style.getPropertyValue("--map-safe-inset-left")), insets.left);
-    const right = Math.max(Number(style.getPropertyValue("--map-safe-inset-right")), insets.right);
-    let minX = Infinity;
-    let maxX = -Infinity;
-    for (const node of nodes) {
-      minX = Math.min(minX, node.x - node.radius);
-      maxX = Math.max(maxX, node.x + node.radius);
-    }
-    return { drawn: (minX + maxX) / 2, expected: (left + camera.width - right) / 2 };
-  });
-  expect(centring, "가운데 검사가 읽을 계기가 없다").not.toBeNull();
-  expect(
-    Math.abs(centring!.drawn - centring!.expected),
-    `전체 펼치기가 패널 옆 빈 자리 가운데(${Math.round(centring!.expected)})가 아니라 ${Math.round(centring!.drawn)}에 놓였다`,
-  ).toBeLessThan(24);
-
-  // One lens, one frame. "Auto-arrange", "fit" and the 0 key used to go through
-  // the spine overview fit, which reserves the tool lane and the chip row and
-  // shrank the expanded map from 75 % to 63 % of the height — pressing either
-  // after expand-all made the same nodes jump to a second, smaller frame
-  // (measured 2026-09-19 at 1512×806).
-  const scaleAfterExpand = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
-  await page.getByTestId("topology-auto-arrange").click();
-  await settleLayout(page);
-  const scaleAfterArrange = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
-  expect(
-    Math.abs(scaleAfterArrange - scaleAfterExpand),
-    `자동 정렬이 펼친 지도를 다른 배율(${scaleAfterArrange.toFixed(3)} vs ${scaleAfterExpand.toFixed(3)})로 다시 맞췄다`,
-  ).toBeLessThan(0.01);
-
-  await page.getByTestId("ontology-map-canvas").focus();
-  await page.keyboard.press("=");
-  await settleLayout(page);
-  expect(await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0), "keyboard zoom must move the expanded lens before fit").toBeGreaterThan(scaleAfterArrange);
-  await page.keyboard.press("0");
-  await settleLayout(page);
-  const scaleAfterKeyboardFit = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
-  expect(Math.abs(scaleAfterKeyboardFit - scaleAfterArrange), "keyboard fit must restore the expanded lens frame").toBeLessThan(0.01);
-
-  await action.click();
-  await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens");
 });

@@ -41,7 +41,9 @@
     "tier_circuit": "역량까지 보기",
     "tier_element": "요소까지 보기",
     "zoomHint": "줌인하면 요소가 나타나요",
-    "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
+    "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요",
+    "dialCapabilitiesHint": "확대하면 역량이 보여요",
+    "dialElementsHint": "들어간 도메인 안에서 요소가 보여요"
   },
   "plainModeCta": "쉬운 말로 보기 켜기",
   "reopenLabel": "시작 안내 다시 열기",

@@ -252,3 +252,57 @@ fn source_names_cannot_escape_the_sources_folder() {
         Some("hidden.pdf")
     );
 }
+
+#[test]
+fn exhausted_source_names_preserve_originals_and_the_last_free_slot_still_works() {
+    for occupied in [999, 998] {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let fixture = std::env::temp_dir().join(format!(
+            "atlas-source-name-limit-{}-{nonce}-{occupied}",
+            std::process::id()
+        ));
+        let vault = fixture.join("vault");
+        let sources = vault.join(SOURCES_DIR);
+        fs::create_dir_all(&sources).unwrap();
+        for index in 1..=occupied {
+            let name = if index == 1 {
+                "source.txt".to_string()
+            } else {
+                format!("source ({index}).txt")
+            };
+            fs::write(sources.join(name), b"preserved original").unwrap();
+        }
+        let picked = fixture.join("source.txt");
+        fs::write(&picked, b"new selected original").unwrap();
+        let offered = vend(&picked);
+        let outcome =
+            import_source_files(vault.to_string_lossy().into_owned(), vec![offered]).unwrap();
+        for index in 1..=occupied {
+            let name = if index == 1 {
+                "source.txt".to_string()
+            } else {
+                format!("source ({index}).txt")
+            };
+            assert_eq!(fs::read(sources.join(name)).unwrap(), b"preserved original");
+        }
+        if occupied == 999 {
+            assert_eq!(outcome[0].status, "failed");
+            assert_eq!(outcome[0].relative_path, None);
+            assert_eq!(fs::read_dir(&sources).unwrap().count(), 999);
+        } else {
+            assert_eq!(outcome[0].status, "renamed");
+            assert_eq!(
+                outcome[0].relative_path.as_deref(),
+                Some("sources/source (999).txt")
+            );
+            assert_eq!(
+                fs::read(sources.join("source (999).txt")).unwrap(),
+                b"new selected original"
+            );
+        }
+        fs::remove_dir_all(fixture).unwrap();
+    }
+}

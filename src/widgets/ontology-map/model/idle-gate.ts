@@ -124,6 +124,10 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   );
 }
 
+export function extendsGrace(flags: CanvasActivityFlags): boolean {
+  return isCanvasActive({ ...flags, lightActive: false });
+}
+
 export function isSceneActive(flags: CanvasActivityFlags, livePulseCount: number): boolean {
   return isCanvasActive({ ...flags, egoTailAnimating: livePulseCount > 0 });
 }
