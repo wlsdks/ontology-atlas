@@ -5,6 +5,7 @@ import { ChevronDown, SquareTerminal } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
 
@@ -220,7 +221,7 @@ function CommitCard({ wide, labelOf }: { wide: boolean; labelOf: (id: string) =>
   return (
     <div
       data-anchor="card"
-      className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3"
+      className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
     >
       <p
         className="flex min-w-0 items-center justify-between gap-3 border-b border-[color:var(--color-divider)] pb-2.5 text-label leading-label"
@@ -271,7 +272,11 @@ function ConceptChip({ id, index, labelOf }: { id: string; index: number; labelO
   return (
     <span
       data-anchor={`chip-${index}`}
-      className="inline-flex h-8 min-w-0 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
+      className={badgeClass({
+        shape: 'pill',
+        className:
+          'inline-flex h-8 min-w-0 shrink-0 items-center gap-2 border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 py-0 text-label leading-label text-[color:var(--color-text-primary)]',
+      })}
       {...part(`chip:${index}`)}
     >
       <OntologyMapKindGlyph kind={kindOf(id)} size={11} />
@@ -290,7 +295,13 @@ function ConceptColumn({ labelOf }: { labelOf: (id: string) => string }) {
         </li>,
         ...row.calm.map((id) => (
           <li key={id} className="flex min-w-0 max-w-full" style={{ opacity: CALM_ALPHA }}>
-            <span className="inline-flex h-8 min-w-0 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] px-3 text-label leading-label text-[color:var(--color-text-secondary)]">
+            <span
+              className={badgeClass({
+                shape: 'pill',
+                className:
+                  'inline-flex h-8 min-w-0 items-center gap-2 border border-[color:var(--color-border-soft)] px-3 py-0 text-label leading-label text-[color:var(--color-text-secondary)]',
+              })}
+            >
               <OntologyMapKindGlyph kind={kindOf(id)} size={11} />
               <span className="truncate">{labelOf(id)}</span>
             </span>
@@ -318,7 +329,7 @@ function BriefPanel({
   const tTab = useTranslations('ontologyPages.insights.tab');
   return (
     <div
-      className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-5 py-4 shadow-elevation-2"
+      className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-elevation-2"
       {...part('brief')}
     >
       <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
@@ -327,7 +338,7 @@ function BriefPanel({
       <p className="mt-3 flex min-w-0 items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]" {...part('line')}>
         <span aria-hidden className="mt-[0.45rem] size-2.5 shrink-0 rounded-full bg-[color:var(--color-amber-source-a90)]" {...part('line-dot')} />
         <ChevronDown size={ICON_SIZE.sm} aria-hidden className="mt-1 shrink-0 text-[color:var(--color-text-tertiary)]" />
-        <span className="min-w-0 break-keep font-[var(--font-weight-signature)]">{moved}</span>
+        <span className="min-w-0 font-[var(--font-weight-signature)]">{moved}</span>
       </p>
       <ul className={cn('ml-7 mt-2 flex flex-col border-l border-[color:var(--color-divider)] pl-4', wide ? 'gap-3' : 'gap-1.5')}>
         {CHANGE_CAST.map((row, index) => (

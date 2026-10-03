@@ -5,6 +5,7 @@ import { Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
 
@@ -115,7 +116,7 @@ export function StartSection() {
       <p className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {words.eyebrow}
       </p>
-      <p className="mt-2 break-keep text-title leading-title text-[color:var(--color-text-primary)]">{words.firstTitle}</p>
+      <p className="mt-2 text-title leading-title text-[color:var(--color-text-primary)]">{words.firstTitle}</p>
       <p className="mt-4 flex flex-wrap gap-2">
         <span data-anchor="press-0" className={DRAWN_PRIMARY} {...part('press:0')}>
           {words.openFolder}
@@ -126,13 +127,13 @@ export function StartSection() {
     <div key="offer" className={cn('flex h-full items-center p-4', DOTS)}>
       <div
         data-anchor="offer"
-        className="min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+        className="min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <p className="flex min-w-0 items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]">
           <Sparkles size={ICON_SIZE.sm} aria-hidden className="mt-1 shrink-0 text-[color:var(--color-indigo-text-soft)]" />
-          <span className="min-w-0 break-keep">{words.draftTitle}</span>
+          <span className="min-w-0">{words.draftTitle}</span>
         </p>
-        <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">{words.draftBody}</p>
+        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{words.draftBody}</p>
         <p className="mt-3">
           <span data-anchor="press-1" className={DRAWN_PRIMARY} {...part('press:1')}>
             {words.askAgent}
@@ -145,14 +146,18 @@ export function StartSection() {
       <p className="absolute right-3 top-3 max-w-[calc(100%-1.5rem)]">
         <span
           data-anchor="stamp"
-          className="inline-block rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1 text-label leading-label text-[color:var(--color-text-secondary)]"
+          className={badgeClass({
+            shape: 'pill',
+            className:
+              'inline-block border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1 text-label leading-label text-[color:var(--color-text-secondary)]',
+          })}
           {...part('stamp')}
         >
           {words.allowed}
         </span>
       </p>
       <p
-        className="absolute bottom-3 left-4 right-4 flex min-w-0 items-start gap-2 break-keep text-label leading-label text-[color:var(--color-text-primary)]"
+        className="absolute bottom-3 left-4 right-4 flex min-w-0 items-start gap-2 text-label leading-label text-[color:var(--color-text-primary)]"
         {...part('unreviewed')}
       >
         <span aria-hidden className="mt-1 size-2.5 shrink-0 rounded-full border-[1.5px] border-[color:var(--color-text-tertiary)]" />
@@ -161,11 +166,11 @@ export function StartSection() {
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           data-anchor="card"
-          className="w-full max-w-[22rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-4 shadow-elevation-2"
+          className="w-full max-w-[22rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-elevation-2"
           {...part('card')}
         >
-          <p className="break-keep text-body leading-body text-[color:var(--color-text-primary)]">{words.headline}</p>
-          <p className="mt-1.5 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">{words.writeBody}</p>
+          <p className="text-body leading-body text-[color:var(--color-text-primary)]">{words.headline}</p>
+          <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">{words.writeBody}</p>
           <p className="mt-3 flex flex-wrap justify-end gap-2">
             <span className={DRAWN_OUTLINE}>{words.reject}</span>
             <span
@@ -176,7 +181,7 @@ export function StartSection() {
               )}
               {...part('press:2')}
             >
-              <span aria-hidden className="absolute inset-0 bg-[color:var(--color-indigo-brand)]" {...part('fill')} />
+              <span aria-hidden className="absolute inset-0 bg-[color:var(--color-indigo-accent)]" {...part('fill')} />
               <span className="relative">{words.allowOnce}</span>
             </span>
           </p>
@@ -186,7 +191,7 @@ export function StartSection() {
   ];
 
   const captions = STEPS.map((step, index) => (
-    <p key={step} className="flex min-w-0 gap-3 break-keep text-body leading-body text-[color:var(--color-text-primary)]" {...part(`cap:${index}`)}>
+    <p key={step} className="flex min-w-0 gap-3 text-body leading-body text-[color:var(--color-text-primary)]" {...part(`cap:${index}`)}>
       <span className="shrink-0 font-mono text-[color:var(--color-text-tertiary)]">{index + 1}</span>
       <span className="min-w-0">{t(step)}</span>
     </p>

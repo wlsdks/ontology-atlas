@@ -12,7 +12,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { SHOWPIECE_PART, type ShowpieceState } from './showpiece-player';
 
 export const DRAWN_PRIMARY =
-  'inline-flex h-7 items-center rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label leading-label text-[color:var(--color-text-on-accent)]';
+  'inline-flex h-7 items-center rounded-chip bg-[color:var(--color-indigo-accent)] px-3 text-label leading-label text-[color:var(--color-text-on-accent)]';
 export const DRAWN_OUTLINE =
   'inline-flex h-7 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]';
 
@@ -46,13 +46,13 @@ export function ShowpieceSection({
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-accent)]" />
           {eyebrow}
         </p>
-        <h2 className="mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+        <h2 className="mt-4 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
           {title}
         </h2>
-        <p className="mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">{sub}</p>
+        <p className="mt-3 max-w-[40rem] text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]">{sub}</p>
         <div className="mt-9 min-w-0">{children}</div>
       </div>
     </section>
@@ -70,7 +70,7 @@ export function keyPhrase(underline: 'amber' | 'indigo', style: React.CSSPropert
           style={style}
           className={cn(
             'absolute inset-x-0 -bottom-1 h-0.5 origin-left rounded-full',
-            underline === 'amber' ? 'bg-[color:var(--color-amber-source-a90)]' : 'bg-[color:var(--color-indigo-brand)]',
+            underline === 'amber' ? 'bg-[color:var(--color-amber-source-a90)]' : 'bg-[color:var(--color-indigo-accent)]',
           )}
         />
       </span>
@@ -123,7 +123,7 @@ export function ShowpieceFigure({
           id={`${ids}-label`}
           className="flex min-w-0 items-center gap-2 text-label leading-label text-[color:var(--color-text-tertiary)]"
         >
-          <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-brand)]" />
+          <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]" />
           <span className="min-w-0">{label}</span>
         </p>
         {canAnimate ? (
