@@ -16,11 +16,9 @@ export interface ChangeRow {
   added: number;
   removed: number;
   concept: string;
-  /** Concepts listed after this one on the map that the commit leaves alone. */
   calm: readonly string[];
 }
 
-/** Concepts and files from this repository's vault; the commit around them is an example. */
 export const CHANGE_CAST: readonly ChangeRow[] = [
   {
     file: 'src/views/library/ui/LibraryPage.tsx',
@@ -62,7 +60,6 @@ export const folderOf = (file: string) => file.slice(0, file.lastIndexOf('/') + 
 const RISE_REST = 'translate(0px, 0px)';
 const PLACED = 'scale(1)';
 
-/** Every moving part's resting value: the frame React renders, and the one reduced motion keeps. */
 export function changeRest(part: string): FrameValue {
   if (part.startsWith('light:')) return LIGHT_REST;
   if (part.startsWith('dot:') || part === 'line-dot') return { transform: PLACED };
@@ -72,7 +69,6 @@ export function changeRest(part: string): FrameValue {
 }
 
 export interface ChangeMeasure {
-  /** Per row: how far the travelling path starts from its resting place, and the light's path length. */
   rows: { travel: { dx: number; dy: number }; thread: number }[];
 }
 

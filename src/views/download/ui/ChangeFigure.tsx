@@ -23,7 +23,6 @@ import { DRAWN_OUTLINE, keyPhrase, ShowpieceFigure, ShowpieceSection } from './S
 import { layoutBox, LIGHT_LAYERS, SHOWPIECE_PART, useShowpiece, type ShowpieceEnv } from './showpiece-player';
 
 const CALM_ALPHA = 'var(--map-spotlight-rest-alpha)';
-/** Relative dates the brief prints, fixed so the static HTML and the client agree. */
 const NOW = 1_000_000_000;
 const MOVED_AT = NOW - 2 * 60_000;
 const WRITTEN_AT = NOW - 6 * 86_400_000;

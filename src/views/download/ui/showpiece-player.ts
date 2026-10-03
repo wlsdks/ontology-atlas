@@ -53,7 +53,6 @@ export interface ShowpieceEnv {
   easing: ShowpieceEasing;
 }
 
-/** Light values for tests and for a page whose tokens are missing; the page reads its own. */
 export const FALLBACK_LIGHT: ShowpieceLight = {
   speed: 1100,
   hopMinMs: 180,
@@ -107,7 +106,6 @@ export const TEST_ENV: ShowpieceEnv = {
   },
 };
 
-/** Keyframes on one clock: every frame carries every property, the last value held until the next stop. */
 export function frames(duration: number, stops: readonly Stop[]): Keyframe[] {
   const keys = [...new Set(stops.flatMap(([, value]) => Object.keys(value)))];
   const held: FrameValue = {};
@@ -135,7 +133,6 @@ export function lightDash(layer: LightLayer, tail: number): number {
   return round(tail * 0.4);
 }
 
-/** The conduction figure's light: a dash on a unit path that leaves its cause and is gone on arrival. */
 export function lightStops(start: number, hop: number, layer: LightLayer, light: ShowpieceLight): Stop[] {
   const dash = lightDash(layer, light.tail);
   const alpha = round(light.intensity * (layer === 'halo' ? 0.32 : 0.55));
@@ -151,7 +148,6 @@ export function lightStops(start: number, hop: number, layer: LightLayer, light:
 
 export const LIGHT_REST: FrameValue = { opacity: 0, strokeDashoffset: '-1' };
 
-/** Offsets of an HTML element inside `stage`, ignoring transforms, so a figure in motion measures its rest layout. */
 export function layoutBox(element: HTMLElement, stage: HTMLElement) {
   let x = 0;
   let y = 0;
@@ -203,18 +199,10 @@ export type ShowpieceState = 'still' | 'primed' | 'running' | 'paused' | 'finish
 
 interface ShowpieceOptions {
   duration: number;
-  /** Measures the rest layout and returns every part's lanes; parts it omits do not move. */
   build: (root: HTMLElement, env: ShowpieceEnv) => ShowpieceTracks;
-  /** A change (a new layout) ends a run on its rest frame instead of playing stale geometry. */
   layoutKey: string;
 }
 
-/**
- * One showpiece's clock: primed (opening frame as inline style, no animation) once it comes within a
- * viewport, played once from 35% visible, held below 20%, in a hidden tab or while another showpiece plays
- * (the later start wins), and at rest with no animation left. Reduced motion, no `Element.animate`, or a
- * refusal keeps the rest frame React rendered.
- */
 export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
   const id = useId();
   const reduced = usePrefersReducedMotion();
@@ -262,7 +250,6 @@ export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
         const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
         if (first) {
           first = false;
-          // A reload with the figure already in view shows the rest frame instead of playing over reading.
           if (ratio >= HOLD_VISIBLE) setFinished(true);
         }
         setSeen(ratio >= HOLD_VISIBLE);
@@ -319,7 +306,6 @@ export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
     [duration],
   );
 
-  // Prime: the opening frame as plain inline style, which holds no animation and no layer.
   useLayoutEffect(() => {
     if (!root || !canAnimate || finished || !near || animations.current.length > 0) return;
     const lanes = tracksFor(root);
@@ -359,7 +345,6 @@ export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
     );
   }, [root, running, generation, duration, tracksFor, settle]);
 
-  // Reduced motion switched on mid-run, a new layout, or unmounting: jump to the rest frame.
   useLayoutEffect(() => {
     if (canAnimate) return;
     settle();

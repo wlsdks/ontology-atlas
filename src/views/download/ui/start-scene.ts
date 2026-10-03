@@ -13,7 +13,6 @@ import {
 
 export const START_WIDE_MIN = 900;
 export const START_DURATION = 4000;
-/** One write batch drafts the map: 1 project, 4 domains, 7 capabilities. */
 export const START_DRAFT_COUNT = 12;
 
 export const START_BEATS = Object.freeze({
@@ -28,7 +27,6 @@ export const START_BEATS = Object.freeze({
   exit: 3500,
 });
 
-/** The drafted map in a 400 × 190 box: names stay unknown until the visitor opens a folder. */
 export const DRAFT_MAP = (() => {
   const capabilities = [
     { x: 40, parent: 0 },
@@ -61,7 +59,6 @@ export function draftEdges() {
   ];
 }
 
-/** The light's walk: project to the first domain to its first capability. */
 export function draftLightPaths() {
   const edges = draftEdges();
   return [edges[0]!, edges[DRAFT_MAP.domains.length]!].map(({ from, to }) => ({
@@ -74,7 +71,6 @@ const STEPPED = 'var(--map-spotlight-rest-alpha)';
 const POINTER_REST = 'translate(24px, 28px)';
 const RISE_REST = 'translate(0px, 0px)';
 
-/** Resting values: wide rests windows 1-2 stepped down and 3 full; narrow rests on its third state. */
 export function startRest(part: string, wide: boolean): FrameValue {
   if (part.startsWith('light:')) return LIGHT_REST;
   if (part === 'pointer') return { transform: POINTER_REST };
@@ -92,7 +88,6 @@ export function startRest(part: string, wide: boolean): FrameValue {
 
 export interface StartMeasure {
   wide: boolean;
-  /** Pointer translations that put its tip on each pressed button. */
   pointer: { x: number; y: number }[];
   stamp: { dx: number; dy: number };
 }

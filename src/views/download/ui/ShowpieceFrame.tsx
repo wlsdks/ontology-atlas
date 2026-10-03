@@ -11,14 +11,12 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { SHOWPIECE_PART, type ShowpieceState } from './showpiece-player';
 
-/** Drawn controls: the app's button shapes at the figure's scale, inert. */
 export const DRAWN_PRIMARY =
   'inline-flex h-7 items-center rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label leading-label text-[color:var(--color-text-on-accent)]';
 export const DRAWN_OUTLINE =
   'inline-flex h-7 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]';
 
 
-/** A section head whose key phrase carries the figure's mark at rest; the figure draws it during its run. */
 export function ShowpieceSection({
   id,
   testId,
@@ -61,7 +59,6 @@ export function ShowpieceSection({
   );
 }
 
-/** `t.rich` renderer for `<key>`: the phrase with a 2px bar the figure scales in from the left. */
 export function keyPhrase(underline: 'amber' | 'indigo', style: React.CSSProperties) {
   function KeyPhrase(chunks: ReactNode) {
     return (
