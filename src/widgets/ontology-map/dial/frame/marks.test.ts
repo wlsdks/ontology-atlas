@@ -100,6 +100,7 @@ interface RunOptions {
   disclosure?: Partial<DialDisclosureInput>;
   appearOf?: (id: string) => number;
   relates?: [string, string][];
+  hoverId?: string | null;
 }
 
 function run(o: RunOptions = {}) {
@@ -111,12 +112,12 @@ function run(o: RunOptions = {}) {
   const input: DialMarksInput = {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: INKS, labels: LABELS,
     evidence: o.evidence === undefined ? null : dialEvidenceView(model, o.evidence),
-    attention: resolveDialAttention(model, null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
+    attention: resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
     scale, zoomRatio: 1, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, null, o.focusId ?? null), TOKENS), ...o.disclosure },
+    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), TOKENS), ...o.disclosure },
   };
   const out = emptyDialFrameMarks();
   const result = buildDialMarks(input, out);
@@ -236,6 +237,22 @@ describe("buildDialMarks", () => {
     const partner = out.discs.find((d) => d.id === "d2c0")!;
     expect(out.inks[sibling.rim]).toBe(mixOver(INKS.capabilityReceded, INKS.bg, 1));
     expect(out.inks[partner.rim]).toBe(INKS.usedBy);
+  });
+
+  it("names a focused capability's partners in the ledger column below the name pitch, and in place above it", () => {
+    const partnerIds = ["d2c0", "d6c0"];
+    const placed = (r: ReturnType<typeof run>, role: string) => r.out.texts.filter((t) => t.role === role && partnerIds.includes(t.id ?? "")).map((t) => t.id).sort();
+    expect(TOKENS.pitch * 0.5).toBeLessThan(TOKENS.capName);
+    const below = run({ focusId: "d3c1", scale: 0.5, relates: [["d3c1", "d6c0"]] });
+    expect(placed(below, "ledger")).toEqual(partnerIds);
+    expect(placed(below, "capability")).toEqual([]);
+    expect(below.result.ledger?.leaderCrossings).toBe(0);
+    expect(below.result.rows.map((r) => r.id).sort()).toEqual(partnerIds);
+    const above = run({ focusId: "d3c1", scale: 1, relates: [["d3c1", "d6c0"]] });
+    expect(placed(above, "capability")).toEqual(partnerIds);
+    expect(placed(above, "ledger")).toEqual([]);
+    const hovered = run({ hoverId: "d3c1", scale: 0.5, relates: [["d3c1", "d6c0"]] });
+    expect(hovered.out.texts.filter((t) => t.role === "ledger")).toEqual([]);
   });
 
   it("keeps a focused capability's relates neighbours lit, in its domain or another, while siblings recede", () => {

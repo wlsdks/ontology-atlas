@@ -20,11 +20,11 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { buildDialModel } from "../dial/dial-model";
+import { buildDialModel, resolveDialAttention } from "../dial/dial-model";
 import { dialOverviewPad } from "../dial/fit";
 import { layoutDial } from "../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../dial/order";
-import type { DialModel, DialWorld, DialWorldInput } from "../dial/types";
+import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../dial/types";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
 import { fireflySeed } from "../render/edge-fireflies";
@@ -211,6 +211,18 @@ const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
 
 export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number } | undefined {
   return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR } : undefined;
+}
+
+export interface DialFocusFrame {
+  ids: ReadonlySet<string>;
+  nameScale: number;
+}
+
+export function dialFocusFrame(world: DialBearing, focusId: string, tokens: Pick<DialTokens, "pitch" | "capName">): DialFocusFrame | undefined {
+  const model = world.dial?.model;
+  if (!model?.capabilityById.has(focusId)) return undefined;
+  const a = resolveDialAttention(model, null, focusId);
+  return { ids: new Set([focusId, ...a.needsCaps, ...a.usedByCaps, ...a.relatesCaps]), nameScale: tokens.capName / tokens.pitch };
 }
 
 function extentBounds(dial: DialWorld): Bounds {
@@ -427,11 +439,15 @@ export function computeEgoBounds(
     if (restrictIds && !restrictIds.has(id)) continue;
     egoIds.add(id);
   }
+  return computeIdsBounds(world, tokens, egoIds);
+}
+
+export function computeIdsBounds(world: Pick<TopologyWorld, "nodeById">, tokens: OntologyMapTokens, ids: Iterable<string>): Bounds | null {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const id of egoIds) {
+  for (const id of ids) {
     const n = world.nodeById.get(id);
     if (!n) continue;
     const r = radiusForKind(n.kind, tokens);
