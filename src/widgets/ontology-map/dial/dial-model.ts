@@ -109,6 +109,10 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [] }: D
   };
 }
 
+export function dialConceptTotal(model: DialModel): number {
+  return model.domainOf.size + (model.projectId === null ? 0 : 1);
+}
+
 const evidenceViews = new WeakMap<DialModel, { evidence: ReadonlyMap<string, DialEvidence> | null; view: DialEvidenceView }>();
 
 export function dialEvidenceView(model: DialModel, evidence: ReadonlyMap<string, DialEvidence> | null): DialEvidenceView {

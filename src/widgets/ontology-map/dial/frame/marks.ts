@@ -256,6 +256,14 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         moreText: (n) => input.labels?.more(n) ?? `+${n}`,
         tokens,
         footprint: { x: chip.x, y: chip.y, r: enteredCluster.footprint * s },
+        avoid: {
+          boxes: [
+            ...occupied,
+            ...out.texts.filter((t) => !(t.role === "capability" && t.id !== null && capIds.includes(t.id))).map((t) => t.box),
+            ...out.extraTexts.map((t) => t.box),
+          ],
+          lines,
+        },
       });
       if (plan) {
         const drop = new Set(capIds);

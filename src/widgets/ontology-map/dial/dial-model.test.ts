@@ -8,7 +8,7 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { buildDialModel, dialEvidenceView, resolveDialAttention } from "./dial-model";
+import { buildDialModel, dialConceptTotal, dialEvidenceView, resolveDialAttention } from "./dial-model";
 import type { DialEvidence } from "./types";
 
 const node = (id: string, kind: TreeInputNode["kind"]): TreeInputNode => ({ id, label: id.toUpperCase(), kind });
@@ -53,6 +53,10 @@ const fixture = () =>
 
 
 describe("buildDialModel", () => {
+  it("totals every concept it holds, orphans and the project included", () => {
+    expect(dialConceptTotal(fixture())).toBe(10);
+  });
+
   it("counts a direct element, an orphan and a domain-level dependency", () => {
     const m = fixture();
     expect(m.projectId).toBe("p");

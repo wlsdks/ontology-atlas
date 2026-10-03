@@ -41,7 +41,9 @@
     "tier_circuit": "展开到能力",
     "tier_element": "展开到元素",
     "zoomHint": "放大以显示元素",
-    "zoomHintPlain": "点击圆点显示其元素"
+    "zoomHintPlain": "点击圆点显示其元素",
+    "dialCapabilitiesHint": "capabilities show as you zoom",
+    "dialElementsHint": "elements show inside the domain you enter"
   },
   "plainModeCta": "切换到通俗视图",
   "reopenLabel": "重新打开起步指南",

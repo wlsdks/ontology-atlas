@@ -105,6 +105,23 @@ describe("buildLabelMarks", () => {
     expect(texts.some((t) => t.text.includes("…"))).toBe(false);
   });
 
+  it("moves the project name off a stroke under the hub, and never lays it on one", () => {
+    const under = [{ x: -200, y: 33 }, { x: 200, y: 33 }];
+    const project = run({ lines: [under] }).texts.find((t) => t.role === "project")!;
+    expect(project.box.maxY < 33 || project.box.minY > 33).toBe(true);
+    const hatched = Array.from({ length: 41 }, (_, i) => [{ x: -400, y: -240 + i * 12 }, { x: 400, y: -240 + i * 12 }]);
+    expect(run({ lines: hatched }).texts.some((t) => t.role === "project")).toBe(false);
+  });
+
+  it("keeps domain names clear of the hub", () => {
+    const { texts } = run();
+    for (const t of texts.filter((x) => x.role === "domain" || x.role === "units")) {
+      const nx = Math.max(t.box.minX, Math.min(0, t.box.maxX));
+      const ny = Math.max(t.box.minY, Math.min(0, t.box.maxY));
+      expect(Math.hypot(nx, ny)).toBeGreaterThan(20 + 14 - 1);
+    }
+  });
+
   it("drops the units line before the name when crowded, and nothing overlaps", () => {
     const names = Array.from({ length: 24 }, (_, i) => `Domain ${i}`);
     const { texts, all } = run({ names });

@@ -22,6 +22,7 @@ export interface FirstRunReadoutProps {
    * wording replaces the zoom hint regardless of `tier`.
    */
   audiencePlain?: boolean;
+  dial?: { concepts: number; domains: number; tier: "spine" | "circuit" | "element" } | null;
 }
 
 /**
@@ -35,6 +36,7 @@ export function FirstRunReadout({
   domainCount,
   tier = "spine",
   audiencePlain = false,
+  dial = null,
 }: FirstRunReadoutProps) {
   const t = useTranslations("firstRunStarter.readout");
   const visible = useFirstRunSampleModeSettled();
@@ -47,27 +49,33 @@ export function FirstRunReadout({
    * When every concept is already drawn the tier label and zoom hint are false, so the count
    * hides them and no view has to opt out.
    */
-  const everythingDrawn = totalConceptCount > 0 && conceptCount >= totalConceptCount;
-  const tierLabel = t(`tier_${tier}`);
+  const shownTier = dial?.tier ?? tier;
+  const everythingDrawn = !dial && totalConceptCount > 0 && conceptCount >= totalConceptCount;
+  const tierLabel = t(`tier_${shownTier}`);
   // At the element tier the zoom hint is already fulfilled. Plain mode can never reach an
   // element, so it always shows the hint with click-based wording.
-  const showZoomHint = !everythingDrawn && (audiencePlain || tier !== "element");
-  const zoomHintText = audiencePlain ? t("zoomHintPlain") : t("zoomHint");
+  const showZoomHint = dial ? shownTier !== "element" : !everythingDrawn && (audiencePlain || tier !== "element");
+  const zoomHintText = dial
+    ? t(shownTier === "spine" ? "dialCapabilitiesHint" : "dialElementsHint")
+    : audiencePlain ? t("zoomHintPlain") : t("zoomHint");
+  const shownConcepts = dial?.concepts ?? conceptCount;
+  const shownDomains = dial?.domains ?? domainCount;
 
   return (
     <div
       data-testid="first-run-readout"
-      data-zoom-tier={tier}
+      data-zoom-tier={shownTier}
+      data-dial={dial ? "true" : undefined}
       data-drawn-concepts={conceptCount}
       className={`pointer-events-none hidden items-center gap-3.5 text-caption text-[color:var(--color-text-quaternary)] md:flex ${eyebrow}`}
     >
       <span data-testid="first-run-readout-concepts">
-        <span className="text-[color:var(--color-text-tertiary)]">{conceptCount}</span>{" "}
+        <span className="text-[color:var(--color-text-tertiary)]">{shownConcepts}</span>{" "}
         {t("conceptUnit")}
       </span>
       <Dot />
       <span>
-        <span className="text-[color:var(--color-text-tertiary)]">{domainCount}</span>{" "}
+        <span className="text-[color:var(--color-text-tertiary)]">{shownDomains}</span>{" "}
         {t("domainUnit")}
       </span>
       {everythingDrawn ? null : (

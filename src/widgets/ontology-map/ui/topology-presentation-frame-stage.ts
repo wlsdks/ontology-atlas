@@ -40,7 +40,7 @@ import type { OntologyMapProps } from "./OntologyMap";
 import { worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "./topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "./topology-loop-contract";
-import { lastDialFrame } from "../dial/frame/frame";
+import { dialFrameSummary } from "../dial/frame/frame";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
@@ -619,7 +619,7 @@ export function createPresentationFrameStage({
       tierNameBoxes: domeTierAnchorsSentRef.current,
       dial: flatDialRef.current,
     });
-    reportFlatDial(flatDialRef.current, lastDialFrame() !== null);
+    reportFlatDial(flatDialRef.current, dialFrameSummary());
 
     // Record which lens state this frame drew; the idle gate compares
     // against it next frame to decide whether the lens changed.

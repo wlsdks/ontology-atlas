@@ -28,7 +28,7 @@ import {
   predictMapLayoutTarget,
   type FlatDialState,
 } from "@/widgets/ontology-map";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { flatRingMemorySlot } from "../model/flat-ring-memory-store";
 import { useCosmosPlacement } from "../model/use-cosmos-placement";
@@ -36,13 +36,13 @@ import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
-import { FlatDialLegend } from "./FlatDialLegend";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { TopologyCosmosSurface } from "./TopologyCosmosSurface";
 import { TopologyLightLegend } from "./TopologyLightLegend";
 import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
 export interface TopologyMapRendererProps {
+  onFlatDialShown?: (state: FlatDialState | null) => void;
   localGraphRoot: string | null;
   mapEntryTicket: number | null;
   expandAllActive: boolean;
@@ -125,7 +125,7 @@ export function TopologyMapRenderer({
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent,
+  topologyIndexPresentation, topologyCreateIntent, onFlatDialShown,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
@@ -155,7 +155,7 @@ export function TopologyMapRenderer({
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
   const [flatDial, setFlatDial] = useState<FlatDialState>({ drawn: false, evidenceMeasured: false });
   const onFlatDialChange = useCallback((state: FlatDialState) => {
-    setFlatDial((current) => (current.drawn === state.drawn && current.evidenceMeasured === state.evidenceMeasured ? current : state));
+    setFlatDial(state);
   }, []);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
@@ -185,6 +185,10 @@ export function TopologyMapRenderer({
     frameRef,
   });
   const { onIncomingDrawn } = morph;
+  const flatDialShown = morph.surface === "map" && flatDial.drawn ? flatDial : null;
+  useEffect(() => {
+    onFlatDialShown?.(flatDialShown);
+  }, [flatDialShown, onFlatDialShown]);
   const onDrawnCountChange = useCallback(
     (drawn: number) => {
       handleMapFrameDrawn(drawn);
@@ -369,7 +373,6 @@ export function TopologyMapRenderer({
             navigationSpeed={navigationSpeed}
           />
           )}
-          {morph.surface === "map" && flatDial.drawn ? <FlatDialLegend evidenceMeasured={flatDial.evidenceMeasured} /> : null}
         </div>
       ) : null}
       {morph.overlay ? (

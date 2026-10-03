@@ -2,10 +2,16 @@
 
 import { useTranslations } from "next-intl";
 
-export function FlatDialLegend({ evidenceMeasured }: { evidenceMeasured: boolean }) {
+interface FlatDialLegendProps {
+  evidenceMeasured: boolean;
+  linksShown: number;
+  linksTotal: number;
+}
+
+export function FlatDialLegend({ evidenceMeasured, linksShown, linksTotal }: FlatDialLegendProps) {
   const t = useTranslations("mapDial");
   return (
-    <div className="pointer-events-none absolute bottom-[calc(var(--topology-relation-legend-bottom-inset)+2.75rem)] left-[calc(var(--map-safe-inset-left)*1px)] right-[var(--topology-relation-legend-inset)] z-20 hidden justify-end md:flex">
+    <div className="pointer-events-none hidden max-w-full justify-end md:flex">
       <div
         data-testid="flat-dial-legend"
         data-evidence-measured={evidenceMeasured ? "true" : "false"}
@@ -32,6 +38,9 @@ export function FlatDialLegend({ evidenceMeasured }: { evidenceMeasured: boolean
           </svg>
           {t("legendUsers")}
         </span>
+        {linksShown < linksTotal ? (
+          <span data-testid="flat-dial-legend-links">{t("linksShown", { shown: linksShown, total: linksTotal })}</span>
+        ) : null}
         {evidenceMeasured ? (
           <span className="flex items-center gap-1.5">
             <svg aria-hidden width="14" height="14" viewBox="0 0 14 14">

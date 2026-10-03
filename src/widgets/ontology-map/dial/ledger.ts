@@ -1,4 +1,5 @@
-import type { Box, DialTokens } from "./types";
+import { crossesBox, overlaps } from "./label-marks";
+import type { Box, DialTokens, Point } from "./types";
 
 export interface LedgerDisc {
   id: string;
@@ -19,6 +20,7 @@ export interface LedgerInput {
   moreText(count: number): string;
   tokens: Pick<DialTokens, "ledgerRowPx" | "ledgerGapPx">;
   footprint?: { x: number; y: number; r: number } | null;
+  avoid?: { boxes: readonly Box[]; lines: readonly (readonly Point[])[] } | null;
 }
 
 export interface LedgerTriggerInput {
@@ -60,6 +62,9 @@ export interface LedgerPlan {
 
 const LEADER_INSET_PX = 3;
 const MAX_UNCROSS_PASSES = 400;
+const GAP_STEPS = [0, 1, 2, 3];
+const SHIFT_ROWS = 10;
+const TEXT_HIT_COST = 3;
 
 function cross(ax: number, ay: number, bx: number, by: number, cx: number, cy: number): number {
   return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
@@ -108,22 +113,69 @@ export function buildLedger(input: LedgerInput): LedgerPlan | null {
   const fp = input.footprint ?? null;
   const minX = Math.min(...input.discs.map((d) => d.x - d.r), fp ? fp.x - fp.r : Infinity);
   const maxX = Math.max(...input.discs.map((d) => d.x + d.r), fp ? fp.x + fp.r : -Infinity);
-  let side: "right" | "left";
-  let colX: number;
-  if (maxX + tokens.ledgerGapPx + widest <= freeRect.maxX) {
-    side = "right";
-    colX = maxX + tokens.ledgerGapPx;
-  } else if (minX - tokens.ledgerGapPx - widest >= freeRect.minX) {
-    side = "left";
-    colX = minX - tokens.ledgerGapPx;
-  } else {
-    return null;
+  const sides: { side: "right" | "left"; colX: number; step: number }[] = [];
+  for (const step of GAP_STEPS) {
+    const gap = tokens.ledgerGapPx * (1 + step);
+    if (maxX + gap + widest <= freeRect.maxX) sides.push({ side: "right", colX: maxX + gap, step });
+    if (minX - gap - widest >= freeRect.minX) sides.push({ side: "left", colX: minX - gap, step });
   }
-  const align: CanvasTextAlign = side === "right" ? "left" : "right";
+  if (sides.length === 0) return null;
   const slotCount = shown.length + (moreText ? 1 : 0);
   const centre = shown.length > 0 ? shown.reduce((s, d) => s + d.y, 0) / shown.length : (freeRect.minY + freeRect.maxY) / 2;
   const height = slotCount * rowPx;
-  const top = Math.min(freeRect.maxY - height, Math.max(freeRect.minY, centre - height / 2));
+  const clampTop = (t: number) => Math.min(freeRect.maxY - height, Math.max(freeRect.minY, t));
+  const base = clampTop(centre - height / 2);
+  const avoid = input.avoid ?? null;
+  if (!avoid) return layoutLedger(input, shown, widths, moreText, more, sides[0]!.side, sides[0]!.colX, base);
+  const tries: { side: "right" | "left"; colX: number; top: number; distance: number }[] = [];
+  for (const s of sides) {
+    for (let k = -SHIFT_ROWS; k <= SHIFT_ROWS; k += 1) tries.push({ side: s.side, colX: s.colX, top: clampTop(base + k * rowPx), distance: Math.abs(k) + s.step * 2 });
+  }
+  tries.sort((a, b) => a.distance - b.distance);
+  let best = tries[0]!;
+  let bestCost = Infinity;
+  for (const t of tries) {
+    const cost = slotCost(t.side, t.colX, t.top, slotCount, widest, rowPx, avoid);
+    if (cost < bestCost) {
+      best = t;
+      bestCost = cost;
+      if (cost === 0) break;
+    }
+  }
+  return layoutLedger(input, shown, widths, moreText, more, best.side, best.colX, best.top);
+}
+
+function slotCost(
+  side: "right" | "left",
+  colX: number,
+  top: number,
+  slots: number,
+  width: number,
+  rowPx: number,
+  avoid: NonNullable<LedgerInput["avoid"]>,
+): number {
+  const minX = side === "right" ? colX : colX - width;
+  let cost = 0;
+  for (let k = 0; k < slots; k += 1) {
+    const box = { minX, maxX: minX + width, minY: top + rowPx * k, maxY: top + rowPx * (k + 1) };
+    if (avoid.boxes.some((b) => overlaps(b, box))) cost += TEXT_HIT_COST;
+    else if (crossesBox(avoid.lines, box)) cost += 1;
+  }
+  return cost;
+}
+
+function layoutLedger(
+  input: LedgerInput,
+  shown: readonly LedgerDisc[],
+  widths: ReadonlyMap<string, number>,
+  moreText: string | null,
+  more: number,
+  side: "right" | "left",
+  colX: number,
+  top: number,
+): LedgerPlan {
+  const rowPx = input.tokens.ledgerRowPx;
+  const align: CanvasTextAlign = side === "right" ? "left" : "right";
   const slotY = (k: number) => top + rowPx * (k + 0.5);
   const anchorX = side === "right" ? colX - LEADER_INSET_PX : colX + LEADER_INSET_PX;
 
