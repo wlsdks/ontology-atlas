@@ -78,157 +78,17 @@ require("node:fs").writeFileSync(cfg, JSON.stringify({
 # ---------------------------------------------------------------------------
 # The two prompts, read from the app source. A shape change is a hard stop.
 # ---------------------------------------------------------------------------
-cat > "$out/extract-prompts.mjs" <<'EXTRACT'
-import { readFileSync, writeFileSync } from 'node:fs';
+node --input-type=module - "$repo_root" "$target" "$out" <<'EXTRACT'
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-
+import { pathToFileURL } from 'node:url';
 const [repoRoot, targetRoot, outDir] = process.argv.slice(2);
-const SESSION = 'src/features/acp-session/model/use-acp-session.ts';
-const DOOR = 'src/features/first-run-starter/model/build-from-code-prompt.ts';
-
-function fail(file, why) {
-  console.error(`acp-replay: cannot read the prompt from ${file}: ${why}.`);
-  console.error('acp-replay: that file changed shape. Repair this extractor; never replay a stale copy of a prompt the app no longer sends.');
-  process.exit(1);
-}
-
-function read(file) {
-  try {
-    return readFileSync(join(repoRoot, file), 'utf8');
-  } catch {
-    fail(file, 'the file is missing');
-  }
-}
-
-/** Walk source that may contain strings and comments, stopping at one delimiter. */
-function walk(source, from, stop) {
-  let depth = 0;
-  for (let i = from; i < source.length; i += 1) {
-    const ch = source[i];
-    if (ch === '/' && source[i + 1] === '/') {
-      const end = source.indexOf('\n', i);
-      if (end === -1) return -1;
-      i = end;
-      continue;
-    }
-    if (ch === '/' && source[i + 1] === '*') {
-      const end = source.indexOf('*/', i + 2);
-      if (end === -1) return -1;
-      i = end + 1;
-      continue;
-    }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      const quote = ch;
-      let j = i + 1;
-      for (; j < source.length; j += 1) {
-        if (source[j] === '\\') { j += 1; continue; }
-        if (source[j] === quote) break;
-      }
-      if (j >= source.length) return -1;
-      i = j;
-      continue;
-    }
-    if ('([{'.includes(ch)) depth += 1;
-    else if (')]}'.includes(ch)) depth -= 1;
-    else continue;
-    const answer = stop(ch, depth, i);
-    if (answer !== undefined) return answer;
-  }
-  return -1;
-}
-
-/** The right-hand side of `const NAME = …;`, comments and all — valid JavaScript. */
-function constantExpression(source, name, file) {
-  const match = new RegExp(`(?:^|\\n)const ${name}\\s*(?::[^=\\n]*)?=`).exec(source);
-  if (!match) fail(file, `the declaration of ${name} is gone`);
-  const start = match.index + match[0].length;
-  let depth = 0;
-  for (let i = start; i < source.length; i += 1) {
-    const ch = source[i];
-    if (ch === '/' && source[i + 1] === '/') { const end = source.indexOf('\n', i); if (end === -1) break; i = end; continue; }
-    if (ch === '/' && source[i + 1] === '*') { const end = source.indexOf('*/', i + 2); if (end === -1) break; i = end + 1; continue; }
-    if (ch === "'" || ch === '"' || ch === '`') {
-      const quote = ch;
-      let j = i + 1;
-      for (; j < source.length; j += 1) {
-        if (source[j] === '\\') { j += 1; continue; }
-        if (source[j] === quote) break;
-      }
-      if (j >= source.length) break;
-      i = j;
-      continue;
-    }
-    if ('([{'.includes(ch)) depth += 1;
-    else if (')]}'.includes(ch)) depth -= 1;
-    else if (ch === ';' && depth === 0) return source.slice(start, i);
-  }
-  fail(file, `the declaration of ${name} does not end`);
-}
-
-/** One function turned into an arrow expression: its parameter types dropped, its body untouched. */
-function functionExpression(source, name, file) {
-  const head = `function ${name}(`;
-  const at = source.indexOf(head);
-  if (at === -1) fail(file, `the function ${name} is gone`);
-  const parenAt = at + head.length - 1;
-  const parenEnd = walk(source, parenAt, (ch, depth, i) => (ch === ')' && depth === 0 ? i : undefined));
-  if (parenEnd === -1) fail(file, `the parameter list of ${name} does not close`);
-  const params = source
-    .slice(parenAt + 1, parenEnd)
-    .split(',')
-    .map((part) => part.split(':')[0].trim())
-    .filter(Boolean);
-  const braceAt = source.indexOf('{', parenEnd);
-  if (braceAt === -1) fail(file, `the body of ${name} is gone`);
-  const braceEnd = walk(source, braceAt, (ch, depth, i) => (ch === '}' && depth === 0 ? i : undefined));
-  if (braceEnd === -1) fail(file, `the body of ${name} does not close`);
-  return `(${params.join(', ')}) => ${source.slice(braceAt, braceEnd + 1)}`;
-}
-
-function evaluate(expression, names, values, file, what) {
-  try {
-    // Parenthesised, because several of these declarations put their value on
-    // the line after the `=`, and a bare `return` before a newline returns nothing.
-    return new Function(...names, `return (${expression}\n);`)(...values);
-  } catch (error) {
-    fail(file, `${what} could not be evaluated (${error.message})`);
-  }
-}
-
-const sessionSource = read(SESSION);
-const doorSource = read(DOOR);
-
-const slot = evaluate(constantExpression(sessionSource, 'ANSWER_LANGUAGE_SLOT', SESSION), [], [], SESSION, 'the answer-language slot');
-const mcpSentence = evaluate(constantExpression(sessionSource, 'VAULT_MCP_SENTENCE', SESSION), [], [], SESSION, 'the MCP sentence');
-const constructionSentence = evaluate(constantExpression(sessionSource, 'VAULT_CONSTRUCTION_SENTENCE', SESSION), [], [], SESSION, 'the construction sentence');
-const base = evaluate(constantExpression(sessionSource, 'VAULT_HANDOFF_BASE', SESSION), ['ANSWER_LANGUAGE_SLOT'], [slot], SESSION, 'the handoff base');
-const languageName = evaluate(functionExpression(sessionSource, 'languageName', SESSION), [], [], SESSION, 'the language name');
-const answerLanguageSentence = evaluate(functionExpression(sessionSource, 'answerLanguageSentence', SESSION), ['languageName'], [languageName], SESSION, 'the answer-language sentence');
-const vaultHandoffPrompt = evaluate(
-  functionExpression(sessionSource, 'vaultHandoffPrompt', SESSION),
-  ['VAULT_HANDOFF_BASE', 'VAULT_MCP_SENTENCE', 'VAULT_CONSTRUCTION_SENTENCE', 'ANSWER_LANGUAGE_SLOT', 'answerLanguageSentence'],
-  [base, mcpSentence, constructionSentence, slot, answerLanguageSentence],
-  SESSION,
-  'the handoff',
-);
-const buildFromCodePrompt = evaluate(functionExpression(doorSource, 'buildFromCodePrompt', DOOR), [], [], DOOR, 'the door instruction');
-
-const handoff = vaultHandoffPrompt(true, 'en');
-const firstTurn = buildFromCodePrompt(targetRoot, null);
-
-if (typeof handoff !== 'string' || !handoff.includes('atlas-vault') || !handoff.includes('connection_info')) {
-  fail(SESSION, 'the rendered handoff no longer names the vault server or its first read call');
-}
-if (typeof firstTurn !== 'string' || !firstTurn.includes('analyze_repo_structure') || !firstTurn.includes(targetRoot)) {
-  fail(DOOR, 'the rendered door instruction no longer names the survey call or the target folder');
-}
-
+const { constructionPrompts } = await import(pathToFileURL(join(repoRoot, 'scripts/lib/construction-prompts.mjs')));
+const { handoff, firstTurn } = constructionPrompts(repoRoot, targetRoot);
 writeFileSync(join(outDir, 'handoff.txt'), handoff);
 writeFileSync(join(outDir, 'turn-one.txt'), firstTurn);
 console.log(`acp-replay: handoff ${handoff.length} characters, door instruction ${firstTurn.length} characters`);
 EXTRACT
-
-node "$out/extract-prompts.mjs" "$repo_root" "$target" "$out"
 
 # ---------------------------------------------------------------------------
 # The two turns. The environment variables are cleared because a session

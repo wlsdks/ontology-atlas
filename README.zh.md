@@ -63,6 +63,24 @@ frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `ui
 - **MCP**（Model Context Protocol）：你的智能体会启动 Atlas MCP 服务器，由它直接读写磁盘上的文件夹，应用关闭时也能工作。[连接智能体](docs/guide/connect-agent.md) · [MCP 参考](mcp/README.md)
 - **ACP**（Agent Client Protocol）：Claude Agent 和 Codex 也可以在应用自带的对话中工作。读取直接放行，每次 Atlas 写入都要等你允许一次后才会执行。[Agents 界面](docs/features/agents.md)
 
+## 构建测量
+
+2026-10-03，我们用实际 ACP 会话构建了一个此前未读的 MIT Python 配置库，并通过无法访问源码的独立读取会话及源码审计进行评估。这是单个仓库的有限结果，不是模型排名或语义质量认证。
+
+| 路径 | 测量结果 | 语义证据 |
+|---|---|---|
+| Claude Sonnet 5.5，low · full → construction | 107.6 → 100.4秒；工具说明及输入模式缩小24.0% | 完整回答3/6 → 2/6；已验证声明17/18 → 18/21；两者均需审查 |
+| Codex Luna low · 初始ACP诊断 | 250.2秒；3个节点；33次调用中4次失败 | 完整回答1/6；声明13/13验证；覆盖仍不完整 |
+| Codex Luna xhigh · full / construction | 均在900秒停止；4 / 2个节点；没有完成凭据 | 构建未完成 |
+| 本地27B · 空库循环修复前 → 后 | 模型请求4 → 2次；189.1 → 151.6秒 | 说明缺少源码工具；创建节点0个 |
+
+可选的 `OATLAS_TOOL_PROFILE=construction` 展示20个首次构建所需的现有工具，默认 `full` 保持40个。本次比较中，较小的工具输入没有改善交接质量。本地源码MCP实验也在持久化写入前失败，因此代码构建质量仍未测量。内部本地对话与ACP源码构建的工具能力不同。本地循环通过Node HTTP连接测量，已安装应用的原生连接尚未验证。
+
+`pnpm benchmark:construction <runs.json> [--json]` 分别记录时间、用量、工具错误、图谱与路径检查、无源码回答及声明审计。[流程、失败与限制](docs/benchmark/CONSTRUCTION.md) · [配置方式](mcp/README.md#first-construction-discovery-oatlas_tool_profile)
+
+
+正文证据改进试验中，已知配置库的完整回答由 **2/6→4/6**，已验证声明为 **19/20**。新的重试库回答了4/6问题，但21条声明仅16条得到验证，4条错误、1条未确认。相同源码证据的后续响应从 **11,105降至2,042字节（减少81.6%）**。配置库构建耗时137.5秒，因此并非整体速度提升；一般语义质量、正式认证及原生本地构建仍未证明。[正文证据试验](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
+
 ## 本地优先与隐私
 
 - Atlas 没有后端、账号或遥测。你的文件夹以普通 Markdown 的形式保存在你的磁盘上。

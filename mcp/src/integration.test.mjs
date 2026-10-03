@@ -767,7 +767,9 @@ await test("tools/list — each single-item tool description cross-references it
       { required: ["text"] }, { required: ["citation"] },
     ]);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "configurationEvidence", "proposalValidation", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ['rootPath']);
+    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[1]?.required, ['framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped']);
+    assert.deepEqual(analyzeRepo?.outputSchema?.oneOf?.[0]?.required, ['delivery', 'canWrite', 'sourceEvidence']);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -2565,6 +2567,99 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
   }
+});
+
+await test("analyze_repo_structure — source-only preserves exact evidence and skips candidate delivery", async () => {
+  const root = makeVault();
+  writeFileSync(join(root, 'index.ts'), 'export function readSetting(value = 2) { return value; }\n');
+  const reads = [{ path: 'index.ts', startLine: 1, maxLines: 10 }];
+  try {
+    const { responses } = await rpcForRepo(root, root, [...INIT_REQUESTS,
+      { jsonrpc: '2.0', id: 5, method: 'tools/list', params: {} },
+      callTool(2, 'analyze_repo_structure', { sourceReads: reads }),
+      callTool(3, 'analyze_repo_structure', { sourceOnly: true, sourceReads: reads }),
+      callTool(4, 'analyze_repo_structure', { sourceOnly: false, sourceReads: reads }),
+    ], 1500, { OATLAS_READ_ONLY: '1' });
+    const full = getCallParsed(responses, 2), compact = getCallParsed(responses, 3);
+    assert.deepEqual(Object.keys(compact).sort(), ['rootPath', 'delivery', 'canWrite', 'sourceEvidence'].sort());
+    assert.equal(compact.delivery, 'source_only');
+    assert.equal(compact.canWrite, false);
+    assert.deepEqual(compact.sourceEvidence, full.sourceEvidence);
+    assert.deepEqual(getCallParsed(responses, 4), full);
+    const schema = responses.find((row) => row.id === 5).result.tools
+      .find((tool) => tool.name === 'analyze_repo_structure').outputSchema;
+    const validation = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `
+      import { readFileSync } from 'node:fs';
+      import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/ajv';
+      const { schema, values } = JSON.parse(readFileSync(0, 'utf8'));
+      const validate = new AjvJsonSchemaValidator().getValidator(schema);
+      process.stdout.write(JSON.stringify(values.map(validate)));
+    `], { cwd: resolve(__dirname, '..'), encoding: 'utf8', input: JSON.stringify({ schema,
+      values: [full, compact, { ...full, delivery: 'source_only', canWrite: false },
+        { ...compact, canWrite: true }, { ...compact, writePlan: {} }],
+    }) }));
+    assert.equal(validation[0].valid, true, validation[0].errorMessage);
+    assert.equal(validation[1].valid, true, validation[1].errorMessage);
+    assert.deepEqual(validation.slice(2).map((result) => result.valid), [false, false, false]);
+    const fullBytes = Buffer.byteLength(JSON.stringify(full));
+    const compactBytes = Buffer.byteLength(JSON.stringify(compact));
+    console.log(`    source packet: full ${fullBytes} bytes; source-only ${compactBytes} bytes`);
+    assert.ok(compactBytes < fullBytes);
+    assert.equal(loadVaultDocs(root).length, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+await test("analyze_repo_structure — source-only rejects missing reads and every lifecycle combination", async () => {
+  const root = makeVault();
+  const reads = [{ path: 'index.ts', startLine: 1, maxLines: 1 }];
+  try {
+    const invalid = [{ sourceOnly: true }, { sourceOnly: true, sourceReads: [] },
+      { sourceOnly: true, sourceReads: Array(9).fill(reads[0]) },
+      { sourceOnly: 'true', sourceReads: reads },
+      { sourceOnly: true, sourceReads: reads, proposal: null },
+      { sourceOnly: true, sourceReads: reads, qualification: null },
+      { sourceOnly: true, sourceReads: reads, proposal: {} },
+      { sourceOnly: true, sourceReads: reads, qualification: {} }];
+    const { responses } = await rpcForRepo(root, root, [...INIT_REQUESTS,
+      ...invalid.map((args, i) => callTool(i + 2, 'analyze_repo_structure', args)),
+    ]);
+    for (const [i] of invalid.entries()) {
+      const result = responses.find((row) => row.id === i + 2).result;
+      assert.equal(result.isError, true);
+      assert.notEqual(result.structuredContent.errorCode, 'unknown_argument');
+      assert.match(result.structuredContent.error, /sourceOnly|sourceReads/);
+    }
+    assert.equal(loadVaultDocs(root).length, 0);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+await test("analyze_repo_structure — source-only retains refusal and continuation boundaries", async () => {
+  const root = makeVault();
+  writeFileSync(join(root, 'index.ts'), 'export const value = 1;\n');
+  writeFileSync(join(root, '.env'), 'SECRET=value\n');
+  symlinkSync(join(root, 'index.ts'), join(root, 'link.ts'));
+  const reads = [{ path: 'index.ts', startLine: 1, maxLines: 1, expectedSha256: '0'.repeat(64) },
+    { path: '.env', startLine: 1, maxLines: 1 },
+    { path: '../outside.ts', startLine: 1, maxLines: 1 },
+    { path: 'link.ts', startLine: 1, maxLines: 1 }];
+  try {
+    const { responses } = await rpcForRepo(root, root, [...INIT_REQUESTS,
+      callTool(2, 'analyze_repo_structure', { sourceOnly: true, sourceReads: reads }),
+      callTool(3, 'analyze_repo_structure', { sourceOnly: true,
+        sourceReads: [{ path: 'index.ts', mode: 'outline' }] }),
+    ], 1500, { OATLAS_READ_ONLY: '1' });
+    const packet = getCallParsed(responses, 2).sourceEvidence;
+    assert.equal(packet.repositoryComplete, false);
+    for (const row of packet.rows) {
+      assert.equal(row.status, 'refused');
+      assert.equal(row.text, undefined);
+      assert.equal(row.citation, undefined);
+    }
+    const outline = getCallParsed(responses, 3).sourceEvidence.rows[0];
+    assert.equal(outline.status, 'outlined');
+    assert.equal(outline.text, undefined);
+    assert.equal(outline.citation, undefined);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 await test("analyze_repo_structure — round-trips bounded sourceReads through MCP", async () => {
@@ -9313,6 +9408,63 @@ await test("initialize — read-only inventory matches the actually advertised t
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+await test("construction profile — advertised inventories agree and retain cold-start tools", async () => {
+  const root = makeVault();
+  try {
+    const expected = ['connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts',
+      'find_evidence', 'find_path', 'find_backlinks', 'query_ontology', 'read_source',
+      'analyze_repo_structure', 'index_project', 'infer_imports', 'add_concepts', 'add_relations',
+      'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning'];
+    for (const readOnly of ['0', '1']) {
+      const { responses } = await rpc(root, [...INIT_REQUESTS,
+        { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, callTool(3, 'connection_info'),
+        callTool(4, 'add_concept', { slug: 'domains/example', kind: 'domain', title: 'Example' }),
+      ], 1500, { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: readOnly });
+      const listed = responses.find((row) => row.id === 2).result.tools;
+      const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
+      assert.deepEqual(listed.map((tool) => tool.name).sort(), names.sort());
+      assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
+      const info = getCallParsed(responses, 3);
+      assert.deepEqual(info.server.toolNames, listed.map((tool) => tool.name));
+      assert.equal(info.server.toolCount, readOnly === '0' ? 20 : 15);
+      assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
+      for (const tool of listed) {
+        assert.equal(tool.inputSchema.additionalProperties, false);
+        assert.equal(typeof tool.annotations.readOnlyHint, 'boolean');
+      }
+      const result = responses.find((row) => row.id === 4).result;
+      assert.equal(result.isError === true, readOnly === '1');
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+await test("construction profile — invalid selection refuses startup and full restores every tool", async () => {
+  const root = makeVault();
+  try {
+    for (const profile of ['unexpected', ' ']) {
+      await assert.rejects(() => rpc(root, INIT_REQUESTS, 1500, { OATLAS_TOOL_PROFILE: profile }), /OATLAS_TOOL_PROFILE/);
+    }
+    const { responses } = await rpc(root, [...INIT_REQUESTS,
+      { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
+    ], 1500, { OATLAS_TOOL_PROFILE: 'full', OATLAS_READ_ONLY: '0' });
+    assert.deepEqual(responses.find((row) => row.id === 2).result.tools.map((t) => t.name).sort(), [...EXPECTED_TOOLS].sort());
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+await test("construction profile — discovery does not bypass consent for an omitted known write", async () => {
+  const root = makeVault();
+  try {
+    const { responses } = await rpc(root, [...INIT_REQUESTS,
+      callTool(2, 'add_concept', { slug: 'domains/example', kind: 'domain', title: 'Example' }),
+    ], 1500, { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: '0', OATLAS_WRITE_CONSENT: '1' });
+    const result = responses.find((row) => row.id === 2).result;
+    assert.equal(result.isError, true);
+    assert.equal(result.structuredContent.errorCode, 'tool_error');
+    assert.match(result.structuredContent.error, /no "elicitation" capability/);
+    assert.equal(existsSync(join(root, 'domains/example.md')), false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 await test("builder_context — persisted Workshop focus, positions, and agent handoff", async () => {
