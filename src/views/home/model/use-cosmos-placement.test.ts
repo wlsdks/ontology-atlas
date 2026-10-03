@@ -36,6 +36,16 @@ describe("useCosmosPlacement", () => {
     expect(result.current.current()?.centres["domain:a"]).toEqual([7, 0]);
   });
 
+  it("makes no function per folder, so a kept store cannot pin the render that made it", () => {
+    const { result, rerender } = renderHook(({ key }) => useCosmosPlacement(key), { initialProps: { key: "local:alpha" } });
+    const first = result.current;
+    rerender({ key: "local:beta" });
+    const second = result.current;
+    expect(second).not.toBe(first);
+    for (const method of ["current", "write", "clear"] as const) expect(second[method]).toBe(first[method]);
+    expect(Object.values(second).filter((value) => typeof value === "function")).toEqual([]);
+  });
+
   it("drops an oversize record instead of writing it", () => {
     const { result } = renderHook(() => useCosmosPlacement("local:alpha"));
     const centres: Record<string, [number, number]> = {};
