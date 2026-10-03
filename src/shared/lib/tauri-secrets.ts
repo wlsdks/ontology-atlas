@@ -141,6 +141,8 @@ export function subscribeSecretChange(handler: () => void): () => void {
   return () => window.removeEventListener(SECRET_CHANGE_EVENT, handler);
 }
 
+const pendingStatuses = new Map<SecretProvider, Promise<SecretStatus>>();
+
 /** Store — **only when the user pastes and presses save**. The caller discards the input on success. */
 export async function secretSet(
   provider: SecretProvider,
@@ -148,7 +150,10 @@ export async function secretSet(
 ): Promise<SecretStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  const status = await invoke<SecretStatus>('secret_set', { provider, secret });
+  pendingStatuses.delete(provider);
+  let status: SecretStatus;
+  try { status = await invoke<SecretStatus>('secret_set', { provider, secret }); }
+  finally { pendingStatuses.delete(provider); }
   notifySecretChange();
   return status;
 }
@@ -159,7 +164,18 @@ export async function secretStatus(
 ): Promise<SecretStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<SecretStatus>('secret_status', { provider });
+  if (!SECRET_PROVIDERS.includes(provider)) return invoke<SecretStatus>('secret_status', { provider });
+  const existing = pendingStatuses.get(provider);
+  if (existing) {
+    const status = await existing;
+    return status ? { ...status } : status;
+  }
+  const pending = invoke<SecretStatus>('secret_status', { provider }).finally(() => {
+    if (pendingStatuses.get(provider) === pending) pendingStatuses.delete(provider);
+  });
+  pendingStatuses.set(provider, pending);
+  const status = await pending;
+  return status ? { ...status } : status;
 }
 
 /**
@@ -179,7 +195,10 @@ export async function secretClear(
 ): Promise<SecretStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  const status = await invoke<SecretStatus>('secret_clear', { provider });
+  pendingStatuses.delete(provider);
+  let status: SecretStatus;
+  try { status = await invoke<SecretStatus>('secret_clear', { provider }); }
+  finally { pendingStatuses.delete(provider); }
   notifySecretChange();
   return status;
 }

@@ -123,3 +123,108 @@ describe('tauri secrets bridge', () => {
     expect(secretErrorMessage(new Error('boom'))).toBe('boom');
   });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
+}
+const storedStatus = (provider = 'anthropic', last4 = 'abcd') => ({ provider, stored: true, last4 });
+
+describe('pending status reads', () => {
+  it('shares overlapping provider reads and reads freshly after settlement', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    const read = deferred<ReturnType<typeof storedStatus>>();
+    tauriApiMock.invoke.mockReturnValueOnce(read.promise).mockResolvedValue(storedStatus('anthropic', 'next'));
+    const first = secretStatus('anthropic');
+    const second = secretStatus('anthropic');
+    read.resolve(storedStatus());
+    expect(await Promise.all([first, second])).toEqual([storedStatus(), storedStatus()]);
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1);
+    expect(await secretStatus('anthropic')).toEqual(storedStatus('anthropic', 'next'));
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps each consumer status object independent', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    const read = deferred<ReturnType<typeof storedStatus>>();
+    tauriApiMock.invoke.mockReturnValue(read.promise);
+    const requests = [secretStatus('anthropic'), secretStatus('anthropic')];
+    read.resolve(storedStatus());
+    const [a, b] = await Promise.all(requests);
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1);
+    expect(a).not.toBe(b);
+    a!.last4 = 'edited';
+    expect(b!.last4).toBe('abcd');
+  });
+
+  it('keeps providers independent while reads overlap', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    const a = deferred<ReturnType<typeof storedStatus>>();
+    const b = deferred<ReturnType<typeof storedStatus>>();
+    tauriApiMock.invoke.mockImplementation((_command, args) => args.provider === 'anthropic' ? a.promise : b.promise);
+    const requests = [secretStatus('anthropic'), secretStatus('openai'), secretStatus('anthropic')];
+    a.resolve(storedStatus()); b.resolve(storedStatus('openai', 'efgh'));
+    expect(await Promise.all(requests)).toEqual([storedStatus(), storedStatus('openai', 'efgh'), storedStatus()]);
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it('releases rejected reads so a retry reaches the native store', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    const read = deferred<ReturnType<typeof storedStatus>>();
+    tauriApiMock.invoke.mockReturnValueOnce(read.promise).mockResolvedValue(storedStatus());
+    const requests = [secretStatus('anthropic'), secretStatus('anthropic')];
+    const outcomes = Promise.allSettled(requests);
+    read.reject(new Error('store locked'));
+    expect((await outcomes).every(result => result.status === 'rejected')).toBe(true);
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1);
+    expect(await secretStatus('anthropic')).toEqual(storedStatus());
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retain unknown providers in the shared-read map', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockRejectedValue(new Error('unsupported-provider'));
+    const unknown = 'unsupported' as Parameters<typeof secretStatus>[0];
+    expect((await Promise.allSettled([secretStatus(unknown), secretStatus(unknown)])).every(result => result.status === 'rejected')).toBe(true);
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['secret_set', 'secret_clear'] as const)('starts a fresh read after failed %s without publishing a mutation event', async command => {
+    tauriApiMock.runtimeAvailable = true;
+    const old = deferred<ReturnType<typeof storedStatus>>();
+    const during = deferred<ReturnType<typeof storedStatus>>();
+    const mutation = deferred<ReturnType<typeof storedStatus>>();
+    let count = 0;
+    tauriApiMock.invoke.mockImplementation(name => name === 'secret_status' ? [old.promise, during.promise, Promise.resolve(storedStatus())][count++] : mutation.promise);
+    const changed = vi.fn(); const unsubscribe = subscribeSecretChange(changed);
+    const first = secretStatus('anthropic');
+    const write = command === 'secret_set' ? secretSet('anthropic', 'synthetic') : secretClear('anthropic');
+    const failure = write.catch(error => error);
+    const second = secretStatus('anthropic');
+    mutation.reject(new Error('write failed')); await failure;
+    expect(await secretStatus('anthropic')).toEqual(storedStatus());
+    old.resolve(storedStatus()); during.resolve(storedStatus()); await Promise.all([first, second]);
+    expect(count).toBe(3); expect(changed).not.toHaveBeenCalled(); unsubscribe();
+  });
+
+  it.each(['secret_set', 'secret_clear'] as const)('isolates reads across %s and protects a successor from old cleanup', async command => {
+    tauriApiMock.runtimeAvailable = true;
+    const reads = [deferred<ReturnType<typeof storedStatus>>(), deferred<ReturnType<typeof storedStatus>>(), deferred<ReturnType<typeof storedStatus>>()];
+    const mutation = deferred<ReturnType<typeof storedStatus>>();
+    let next = 0;
+    tauriApiMock.invoke.mockImplementation((name) => name === 'secret_status' ? reads[next++]!.promise : mutation.promise);
+    const before = secretStatus('anthropic');
+    const writing = command === 'secret_set' ? secretSet('anthropic', 'synthetic') : secretClear('anthropic');
+    const during = secretStatus('anthropic');
+    mutation.resolve(storedStatus('anthropic', 'new1')); await writing;
+    const after = secretStatus('anthropic');
+    reads[0]!.resolve(storedStatus('anthropic', 'old1')); await before;
+    const shared = secretStatus('anthropic');
+    reads[1]!.resolve(storedStatus('anthropic', 'mid1')); await during;
+    reads[2]!.resolve(storedStatus('anthropic', 'new1'));
+    expect(await Promise.all([after, shared])).toEqual([storedStatus('anthropic', 'new1'), storedStatus('anthropic', 'new1')]);
+    expect(next).toBe(3);
+  });
+});

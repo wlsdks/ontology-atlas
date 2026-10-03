@@ -736,7 +736,10 @@ until a local manifest, or the first part of one, exists.
                            expired bounded reads remain unavailable with Retry;
                            only complete scans publish count
                            and five recent rows. Web retains FSA. Keychain presence
-                           lookups dispatch off the window event thread.
+                           lookups dispatch off the window event thread. A renderer
+                           shares only pending lookups per provider; mutation
+                           boundaries detach older reads and completed values are
+                           never cached.
                            Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17
