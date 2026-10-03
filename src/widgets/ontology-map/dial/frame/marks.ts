@@ -2,7 +2,7 @@ import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildFlowMarks, type FlowMarksResult } from "../flow-marks";
 import { inkIndex, mixOver, type DialInks } from "../ink";
-import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
+import { buildLabelMarks, overlaps, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
 import type { DialDisclosure } from "./disclosure";
 import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerPlan } from "../ledger";
 import type {
@@ -296,9 +296,11 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     });
     if (!plan) return;
     const drop = new Set(ids);
+    const rowBoxes = [...plan.rows.map((r) => r.box), ...(plan.more ? [plan.more.row.box] : [])];
     for (let i = out.texts.length - 1; i >= 0; i -= 1) {
       const t = out.texts[i]!;
       if (t.role === "capability" && t.id !== null && drop.has(t.id)) out.texts.splice(i, 1);
+      else if (t.role === "units" && rowBoxes.some((b) => overlaps(b, t.box))) out.texts.splice(i, 1);
     }
     const rowInk = ink(inks.capabilityLabel);
     const leaderInk = ink(mixOver(inks.rail, inks.bg));
