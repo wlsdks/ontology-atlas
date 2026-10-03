@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: agents
 date: 2026-10-04
-decisions: []
+decisions: [b8e1b4cb-a6f8-4fa0-ba5a-a861d9db7518]
 ---
 
 # Bounded native reads of the sent log
