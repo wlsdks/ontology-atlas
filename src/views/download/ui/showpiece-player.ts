@@ -24,9 +24,8 @@ export const SHOWPIECE_CLOCK = Object.freeze({
   canvas: springSettleMs(SPRING.canvas),
 });
 
-export const START_VISIBLE = 0.35;
-export const HOLD_VISIBLE = 0.2;
-export const PRESS_SCALE = 0.97;
+const START_VISIBLE = 0.35;
+const HOLD_VISIBLE = 0.2;
 export const LIGHT_LAYERS = ['halo', 'core', 'tip'] as const;
 export type LightLayer = (typeof LIGHT_LAYERS)[number];
 
@@ -39,7 +38,7 @@ export interface ShowpieceLight {
   restAlpha: number;
 }
 
-export interface ShowpieceEasing {
+interface ShowpieceEasing {
   ease: string;
   exit: string;
   place: string;
@@ -53,7 +52,7 @@ export interface ShowpieceEnv {
   easing: ShowpieceEasing;
 }
 
-export const FALLBACK_LIGHT: ShowpieceLight = {
+const FALLBACK_LIGHT: ShowpieceLight = {
   speed: 1100,
   hopMinMs: 180,
   hopMaxMs: 420,
@@ -64,7 +63,7 @@ export const FALLBACK_LIGHT: ShowpieceLight = {
 
 const cubicBezier = (points: readonly number[]) => `cubic-bezier(${points.join(', ')})`;
 
-export function readEnv(element: Element): ShowpieceEnv {
+function readEnv(element: Element): ShowpieceEnv {
   const style = getComputedStyle(element);
   const read = (name: string, fallback: number) => {
     const value = Number.parseFloat(style.getPropertyValue(name));
@@ -127,7 +126,7 @@ export function hopMs(length: number, light: ShowpieceLight): number {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-export function lightDash(layer: LightLayer, tail: number): number {
+function lightDash(layer: LightLayer, tail: number): number {
   if (layer === 'halo') return round(tail * 0.6);
   if (layer === 'core') return tail;
   return round(tail * 0.4);
