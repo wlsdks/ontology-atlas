@@ -18,11 +18,12 @@ import {
 import type { TopologyWorld } from "./topology-world";
 
 export function computeTopologyClusterState(
-  world: Pick<TopologyWorld, "nodeById" | "childrenByParent" | "clusterMetaByParent">,
+  world: Pick<TopologyWorld, "nodeById" | "childrenByParent" | "clusterMetaByParent"> & Partial<Pick<TopologyWorld, "dial">>,
   expandedParents: ReadonlySet<string>,
   /** The focused node's cross-parent neighbours, drawn inside folded parents (`DensityGateInput.heldOpen`). */
   heldOpen?: ReadonlySet<string>,
 ): DensityGateResult {
+  if (world.dial) return { clusteredIds: new Set(), chips: [] };
   const parentGeometry = new Map<string, DensityGateParentGeometry>();
   for (const [parentId, meta] of world.clusterMetaByParent) {
     const parent = world.nodeById.get(parentId);

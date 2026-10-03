@@ -1,5 +1,6 @@
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import type { RefObject } from "react";
+import type { DialEvidence, DialLabels, DialMemory } from "../dial/types";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { type TierNameAnchor } from "../model/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
@@ -273,5 +274,30 @@ export interface UseTopologyLoopArgs {
   navigationSpeed?: MapNavigationSpeed;
   /** Ambient sleep delay — see `ambientSleepDelayMs` on `OntologyMap`. */
   ambientSleepDelayMs?: number;
+  dialLabels?: DialLabels | null;
+  evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  onFlatDialChange?: (state: FlatDialState) => void;
+  flatRingMemory?: FlatRingMemoryStore | null;
+}
+
+export interface FlatDialState { drawn: boolean; evidenceMeasured: boolean }
+
+export interface FlatRingMemoryStore {
+  current(): DialMemory | null;
+  write(next: DialMemory): void;
+}
+
+export interface FlatDialFrameProps {
+  labels: DialLabels | null;
+  evidence: ReadonlyMap<string, DialEvidence> | null;
+  onChange: ((state: FlatDialState) => void) | undefined;
+  sent: FlatDialState | null;
+}
+
+export function reportFlatDial(props: FlatDialFrameProps, drawn: boolean): void {
+  const evidenceMeasured = drawn && props.evidence !== null;
+  if (props.sent && props.sent.drawn === drawn && props.sent.evidenceMeasured === evidenceMeasured) return;
+  props.sent = { drawn, evidenceMeasured };
+  props.onChange?.(props.sent);
 }
 

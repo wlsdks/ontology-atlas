@@ -352,17 +352,18 @@ function readSafeInsets(
   tokens: SafeInsetTokens,
   viewportWidth?: number,
   viewportHeight?: number,
+  pad?: OverviewFitOptions["padPx"],
 ): SafeInsets {
   const raw = {
-    left: tokens.safeInsetLeft ?? 0,
-    right: tokens.safeInsetRight ?? 0,
-    top: tokens.safeInsetTop ?? 0,
+    left: (tokens.safeInsetLeft ?? 0) + (pad?.left ?? 0),
+    right: (tokens.safeInsetRight ?? 0) + (pad?.right ?? 0),
+    top: (tokens.safeInsetTop ?? 0) + (pad?.top ?? 0),
     // No insets specified (= the pure fit test contract, with no chrome) stays 0 as
     // before — the label allowance is added only when a real bottom chrome inset exists.
     bottom:
       tokens.safeInsetBottom == null
-        ? 0
-        : tokens.safeInsetBottom + OVERVIEW_LABEL_BOTTOM_ALLOWANCE,
+        ? pad?.bottom ?? 0
+        : tokens.safeInsetBottom + OVERVIEW_LABEL_BOTTOM_ALLOWANCE + (pad?.bottom ?? 0),
   };
   // The chrome may not eat the map (`MAX_FIT_CHROME_SHARE`). Callers without a
   // viewport — the pan leash — keep the raw numbers.
@@ -389,6 +390,11 @@ function readSafeInsets(
  */
 const SMALL_GRAPH_NODE_MAX = 5;
 
+export interface OverviewFitOptions {
+  padPx?: { left: number; right: number; top: number; bottom: number };
+  scaleFloor?: number;
+}
+
 export function computeOverviewFitScale(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
@@ -400,15 +406,16 @@ export function computeOverviewFitScale(
    * pure camera-math tests) → no small-graph clamp, previous behavior exactly.
    */
   nodeCount?: number,
+  fit?: OverviewFitOptions,
 ): number {
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   const maxScale =
     nodeCount !== undefined && nodeCount <= SMALL_GRAPH_NODE_MAX
       ? Math.min(tokens.cameraScaleMax, tokens.cameraSmallGraphScaleMax)
       : tokens.cameraScaleMax;
-  return fitWorldTarget(bounds, effW, effH, maxScale, tokens.cameraScaleMin).tscale;
+  return fitWorldTarget(bounds, effW, effH, maxScale, fit?.scaleFloor ?? tokens.cameraScaleMin).tscale;
 }
 
 /**
@@ -427,10 +434,11 @@ export function computeOverviewCameraTarget(
   tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin" | "cameraSmallGraphScaleMax" | "overviewEntryRatio"> & SafeInsetTokens,
   /** #11 — total node count, forwarded to the small-graph fit clamp. */
   nodeCount?: number,
+  fit?: OverviewFitOptions,
 ): CameraTarget {
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
-  const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens, nodeCount);
-  const tscale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx);
+  const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens, nodeCount, fit);
+  const tscale = Math.min(tokens.cameraScaleMax, Math.max(fit?.scaleFloor ?? tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
   // worldToScreen centers on the raw screen midpoint; offset the camera so the
@@ -592,9 +600,10 @@ export function computeEffectiveCameraScaleMax(
   overviewEntryScale: number,
   maxZoomRatio: number,
   absoluteFallback: number,
+  contentScaleMax?: number,
 ): number {
   if (!(overviewEntryScale > 0)) return absoluteFallback;
-  return overviewEntryScale * maxZoomRatio;
+  return Math.max(overviewEntryScale * maxZoomRatio, contentScaleMax ?? 0);
 }
 
 /**

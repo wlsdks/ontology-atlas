@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
+import type { FlatDialState, FlatRingMemoryStore } from "./topology-loop-contract";
+import type { DialEvidence, DialLabels } from "../dial/types";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
@@ -386,6 +388,10 @@ export interface OntologyMapProps {
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
   onHiddenDependenciesChange?: (count: number) => void;
+  dialLabels?: DialLabels | null;
+  evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  onFlatDialChange?: (state: FlatDialState) => void;
+  flatRingMemory?: FlatRingMemoryStore | null;
   /**
    * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
    * shown only while 3D is on. The widget places it; it owns no copy.
@@ -610,6 +616,10 @@ export function OntologyMap(props: OntologyMapProps) {
       mapArrangement,
       domeEvidence: props.domeEvidence ?? null,
       onHiddenDependenciesChange: props.onHiddenDependenciesChange,
+      dialLabels: props.dialLabels ?? null,
+      evidenceStates: props.evidenceStates ?? null,
+      onFlatDialChange: props.onFlatDialChange,
+      flatRingMemory: props.flatRingMemory ?? null,
       detailPanelVisible,
       footprint,
       expand,

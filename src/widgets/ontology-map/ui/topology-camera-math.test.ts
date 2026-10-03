@@ -815,3 +815,33 @@ describe("clampFitInsets — the chrome may not eat the map", () => {
     expect(clampFitInsets(350, 120, 0)).toEqual({ lo: 350, hi: 120 });
   });
 });
+
+describe("overview fit options (Flat dial)", () => {
+  const bounds = { minX: -300, minY: -150, maxX: 900, maxY: 450 };
+  const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
+  const centreX = (bounds.minX + bounds.maxX) / 2;
+  const centreY = (bounds.minY + bounds.maxY) / 2;
+
+  it("equals the old result with a zero pad and no floor", () => {
+    const zero = { padPx: { left: 0, right: 0, top: 0, bottom: 0 } };
+    expect(computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, zero)).toEqual(computeOverviewCameraTarget(bounds, 1200, 800, tokens));
+    expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, zero)).toBe(computeOverviewFitScale(bounds, 1200, 800, tokens));
+  });
+
+  it("shrinks the scale and shifts the centre by (left - right) / (2 scale)", () => {
+    const padPx = { left: 120, right: 40, top: 30, bottom: 10 };
+    const plain = computeOverviewCameraTarget(bounds, 1200, 800, tokens);
+    const padded = computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, { padPx });
+    expect(padded.tscale).toBeLessThan(plain.tscale);
+    expect(padded.tx).toBeCloseTo(centreX - (padPx.left - padPx.right) / (2 * padded.tscale), 9);
+    expect(padded.ty).toBeCloseTo(centreY - (padPx.top - padPx.bottom) / (2 * padded.tscale), 9);
+    expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, { padPx })).toBeCloseTo((1200 - 160) / 1200, 9);
+  });
+
+  it("lets a scale floor stand in for cameraScaleMin", () => {
+    const huge = { minX: -40_000, minY: -40_000, maxX: 40_000, maxY: 40_000 };
+    expect(computeOverviewFitScale(huge, 1000, 1000, tokens)).toBe(tokens.cameraScaleMin);
+    expect(computeOverviewFitScale(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 })).toBeCloseTo(1000 / 80_000, 9);
+    expect(computeOverviewCameraTarget(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 }).tscale).toBeCloseTo((1000 / 80_000) * 0.95, 9);
+  });
+});

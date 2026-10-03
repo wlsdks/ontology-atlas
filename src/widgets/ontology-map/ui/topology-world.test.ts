@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { resolveDialTokens } from "../dial/tokens";
+import type { DialMemory, DialWorldInput } from "../dial/types";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
   buildTopologyWorld,
@@ -11,11 +14,14 @@ import {
   computePathPickBounds,
   computeRevealedBounds,
   computeSpineBounds,
+  dialOverviewFit,
   isSpineNode,
+  recomputeWorldGeometry,
   type WorldNode,
   containmentLevelFor,
 } from "./topology-world";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
+import { computeTopologyClusterState } from "./topology-cluster-state";
 
 /**
  * Spine bounds (fit-fix): the overview camera must fit to the level-0 spine
@@ -505,3 +511,82 @@ describe("computePathPickBounds", () => {
   });
 });
 
+
+describe("buildTopologyWorld with the Flat dial", () => {
+  const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
+  const dialTokens = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));
+  const fullTokens = {
+    radiusProject: 20, radiusDomain: 14, radiusCapability: 8, radiusElement: 5,
+    layoutRingDomain: 250, layoutRingCapability: 145, layoutRingElement: 90,
+    edgeBowContains: 70, edgeBowDepends: 92, edgeBlendContains: 0.46, edgeBlendDepends: 0.62, starCount: 2,
+  } as unknown as OntologyMapTokens;
+  const mapNode = (id: string, kind: OntologyMapNode["kind"]): OntologyMapNode => ({
+    id, label: id, kind, size: 1, x: 0, y: 0, isHub: false, ownerKey: null, recentlyUpdated: false, fullDegree: 0, descendantCount: 0,
+  });
+  const edge = (source: string, target: string, relationType: string): OntologyMapEdge => ({
+    source, target, relationType, relationQuality: null, evidenceCount: 0, kind: relationType === "contains" ? "contains" : "depends", declaredBySlug: null,
+  });
+  const nodes: OntologyMapNode[] = [mapNode("p", "project")];
+  const edges: OntologyMapEdge[] = [];
+  for (let d = 0; d < 4; d += 1) {
+    nodes.push(mapNode(`d${d}`, "domain"));
+    edges.push(edge("p", `d${d}`, "contains"));
+    for (let c = 0; c < 14; c += 1) {
+      nodes.push(mapNode(`d${d}c${c}`, "capability"));
+      edges.push(edge(`d${d}`, `d${d}c${c}`, "contains"));
+      nodes.push(mapNode(`d${d}c${c}e`, "element"));
+      edges.push(edge(`d${d}c${c}`, `d${d}c${c}e`, "contains"));
+    }
+  }
+  edges.push(edge("d1c0", "d0c0", "depends_on"), edge("d2c3", "d0c1", "depends_on"), edge("d3c2", "d1c4", "depends_on"));
+  const input = (memory: DialMemory | null): DialWorldInput => ({
+    labels: null, tokens: dialTokens, measureText: (text) => text.length * 6, rememberOrder: false, memory,
+  });
+
+  it("places every node at the scene's position and folds nothing", () => {
+    const world = buildTopologyWorld(nodes, edges, fullTokens, "disc", input(null));
+    const dial = world.dial!;
+    expect(dial.scene.clusters).toHaveLength(4);
+    for (const n of world.nodes) {
+      const p = dial.scene.positions.get(n.id)!;
+      expect([n.x, n.y, n.homeX, n.homeY]).toEqual([p.x, p.y, p.x, p.y]);
+    }
+    const crowded = new Set(["d0"]);
+    expect(computeFoldedIds(world, new Set()).size).toBe(0);
+    expect(computeTopologyClusterState(world, new Set()).clusteredIds.size).toBe(0);
+    expect(computeFoldedIds({ ...world, dial: null }, new Set()).size).toBeGreaterThan(0);
+    const extent = dial.scene.extent;
+    expect(world.spineBounds).toEqual(extent);
+    expect(computeDrawnSpineBounds(world, fullTokens, new Set())).toEqual(extent);
+    expect(computeRevealedBounds(world, fullTokens, crowded, null)).toEqual(extent);
+    recomputeWorldGeometry(world, fullTokens);
+    expect(world.spineBounds).toEqual(extent);
+    expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.02 });
+  });
+
+  it("leaves the world as it was without dial input", () => {
+    const plain = buildTopologyWorld(nodes, edges, fullTokens);
+    expect(plain.dial).toBeNull();
+    expect(dialOverviewFit(plain)).toBeUndefined();
+    expect(buildTopologyWorld(nodes, edges, fullTokens, undefined, null).nodes.map((n) => [n.x, n.y])).toEqual(plain.nodes.map((n) => [n.x, n.y]));
+  });
+
+  it("reproduces every position from the memory it returned, through JSON", () => {
+    const first = buildTopologyWorld(nodes, edges, fullTokens, "disc", input(null));
+    const memory = first.dial!.scene.memory;
+    const json = JSON.parse(JSON.stringify({
+      order: memory.order, radius: [...memory.radiusByStep], angle: [...memory.angleById], items: [...memory.itemOrder],
+    })) as { order: string[]; radius: [number, number][]; angle: [string, { step: number; angle: number }][]; items: [string, string[]][] };
+    const restored: DialMemory = { order: json.order, radiusByStep: new Map(json.radius), angleById: new Map(json.angle), itemOrder: new Map(json.items) };
+    const again = buildTopologyWorld(nodes, edges, fullTokens, "disc", input(restored));
+    for (const n of again.nodes) {
+      const was = first.nodeById.get(n.id)!;
+      expect(Math.hypot(n.x - was.x, n.y - was.y)).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  it("builds no dial for a graph without a domain", () => {
+    const world = buildTopologyWorld([mapNode("p", "project"), mapNode("c", "capability")], [edge("p", "c", "contains")], fullTokens, "disc", input(null));
+    expect(world.dial).toBeNull();
+  });
+});

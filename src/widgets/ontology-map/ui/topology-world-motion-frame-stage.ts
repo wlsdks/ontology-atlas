@@ -47,6 +47,7 @@ import type { RealmRuntimeData } from "./topology-realm-runtime";
 import { fallbackAngleFor } from "./topology-realm-runtime";
 import {
   applyForcePositions,
+  dialOverviewFit,
   radiusForKind,
   recomputeWorldGeometry,
   type TopologyWorld,
@@ -747,13 +748,13 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         // ceiling anchor is recomputed live and cannot suppress the target at
         // the tween → spring handover — equivalent to the fresh and deselect
         // paths.
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
       } else if (rt.phase === "idle" && realmDataRef.current !== null) {
         // Exit complete: reverse playback returned everything home, so drop
         // the realm data and settle the overview anchor against the home
         // spineBounds — the close of the recomputation above.
         realmDataRef.current = null;
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
       }
     }
 
