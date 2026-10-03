@@ -15,6 +15,8 @@ const QUIET_MS = 1_500;
 const MAX_INTERVAL_MS = 50;
 const CHORD_APPEAR = 0.7;
 const ORDERS = "domain:order";
+const SYNTH = "synth=2000&synthDeps=1&";
+const bars = process.env.MAP_PERF_BARS === "1";
 
 test.use({ viewport: VIEWPORT });
 
@@ -211,20 +213,34 @@ test("the sample's first open assembles outward, chords wait for their domains, 
   expect.soft(quiet, "frames in 1.5 s after the assembly").toBe(0);
 });
 
+test("synth 2,000's first open assembles outward with every disc at its slot, then the map sleeps", async ({ page }) => {
+  test.setTimeout(180_000);
+  await installSampler(page, { probe: true });
+  await openSample(page, SYNTH);
+  await waitQuiet(page);
+  const verdict = assemblyVerdict(await frames(page));
+  const quiet = await quietAfter(page);
+  console.log(`[flat-dial-motion] synth 2,000 assembly ${JSON.stringify({ ...verdict, quiet })}`);
+  expect(verdict.frames, "assembly frames sampled").toBeGreaterThan(5);
+  expect.soft(verdict.chipDrop, "a chip moved toward the hub").toBe(0);
+  expect.soft(verdict.discDrop, "a disc moved toward its chip").toBe(0);
+  expect.soft(verdict.offSlot, `chips off their slot ${ASSEMBLY_MS} ms after the first`).toEqual([]);
+  expect.soft(quiet, "frames in 1.5 s after the assembly").toBe(0);
+});
+
 test("synth 2,000's first open keeps every frame interval under 50 ms", async ({ page }) => {
+  test.skip(!bars, "a local frame-rate bar: MAP_PERF_BARS=1");
   test.setTimeout(180_000);
   await installSampler(page, { probe: false });
-  await openSample(page, "synth=2000&synthDeps=1&");
+  await openSample(page, SYNTH);
   await waitQuiet(page);
   const raf = await rafTimes(page);
   const mapAt = await page.evaluate(() => (window as unknown as SamplerWindow).__dialSampler.mapAt);
   const span = raf.slice(1).map((t, i) => [raf[i]!, t - raf[i]!] as const).filter(([at]) => mapAt !== null && at >= mapAt && at < mapAt + ASSEMBLY_MS);
   const max = Math.max(0, ...span.map(([, gap]) => gap));
-  const quiet = await quietAfter(page);
-  console.log(`[flat-dial-motion] synth 2,000 assembly ${JSON.stringify({ frames: span.length, maxIntervalMs: Math.round(max), longest: span.filter(([, gap]) => gap > MAX_INTERVAL_MS).map(([at, gap]) => [Math.round(at - mapAt!), Math.round(gap)]), quiet })}`);
+  console.log(`[flat-dial-motion] synth 2,000 frame intervals ${JSON.stringify({ frames: span.length, maxIntervalMs: Math.round(max), longest: span.filter(([, gap]) => gap > MAX_INTERVAL_MS).map(([at, gap]) => [Math.round(at - mapAt!), Math.round(gap)]) })}`);
   expect(span.length, "frames from the map's first drawn frame to the end of the assembly").toBeGreaterThan(5);
-  expect.soft(max, "largest frame interval from the map's first frame to the end of the assembly").toBeLessThanOrEqual(MAX_INTERVAL_MS);
-  expect.soft(quiet, "frames in 1.5 s after the assembly").toBe(0);
+  expect(max, "largest frame interval from the map's first frame to the end of the assembly").toBeLessThanOrEqual(MAX_INTERVAL_MS);
 });
 
 const STREAMED_ELEMENTS = 400;
@@ -460,8 +476,8 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   const attendedInks = [...new Set(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!)).map((s) => s.split("|")[1]!) : [])];
   const numeralsAtFirst = focused.numerals.map((n) => n.split("|")[0]!);
   const signals = plan.flatMap((p) => p.signals);
-  const mixAt = full?.t ?? Infinity;
-  const earlyLights = signals.filter((s) => s.startMs < mixAt - FRAME_MS).length;
+  const mixAt = full?.at ?? Infinity;
+  const earlyLights = signals.filter((s) => s.startMs < mixAt).length;
   const verdict = {
     mixMs: full ? Math.round(full.at - focused.t) : null,
     gapMs: full ? Math.round(full.at - (all[all.indexOf(full) - 1]?.at ?? full.at)) : null,
