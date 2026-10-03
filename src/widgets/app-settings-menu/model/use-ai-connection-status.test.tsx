@@ -1,0 +1,22 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+const bridge = vi.hoisted(() => ({ secretStatus: vi.fn(), jevSecretStatus: vi.fn() }));
+vi.mock('@/shared/lib/tauri-secrets', () => ({ isSecretBridgeAvailable: () => true, SECRET_PROVIDERS: ['openai'], secretStatus: bridge.secretStatus }));
+vi.mock('@/shared/lib/tauri-jev', () => ({ jevSecretStatus: bridge.jevSecretStatus }));
+import { useAiConnection } from './use-ai-connection';
+it('preserves newer save and clear results after a delayed initial keychain snapshot', async () => {
+  let resolveSecret!: (status: unknown) => void;
+  let resolveJev!: (status: unknown) => void;
+  bridge.secretStatus.mockImplementation(() => new Promise(resolve => { resolveSecret = resolve; }));
+  bridge.jevSecretStatus.mockImplementation(() => new Promise(resolve => { resolveJev = resolve; }));
+  const { result } = renderHook(() => useAiConnection({ enabled: true, vaultHandle: null }));
+  await waitFor(() => expect(resolveSecret).toBeTypeOf('function'));
+  act(() => result.current.applyStatus('openai', { provider: 'openai', stored: false, last4: null }));
+  await act(async () => resolveSecret({ provider: 'openai', stored: true, last4: 'old1' }));
+  await waitFor(() => expect(resolveJev).toBeTypeOf('function'));
+  act(() => result.current.applyJevStatus({ stored: true, last4: 'new2' }));
+  await act(async () => resolveJev({ stored: false, last4: null }));
+  await waitFor(() => expect(result.current.keysRead).toBe(true));
+  expect(result.current.statuses.openai).toEqual({ provider: 'openai', stored: false, last4: null });
+  expect(result.current.jevStatus).toEqual({ stored: true, last4: 'new2' });
+});

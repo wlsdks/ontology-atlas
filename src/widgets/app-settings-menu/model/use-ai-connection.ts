@@ -8,8 +8,9 @@ import {
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/tauri-secrets';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/tauri-jev';
-import { readLlmAuditSummary, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
+import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 
 /**
  * State for the Agents destination's models tab, owned by the panel so the rows and the sent-log
@@ -30,6 +31,7 @@ export interface AiConnectionState {
   auditEntries: LlmAuditEntry[];
   /** How many transfers the log holds in all; `null` until read, so "nothing sent" never flashes. */
   auditTotal: number | null;
+  auditError: AuditReadFailure | null;
   refreshAudit: () => void;
 }
 
@@ -57,11 +59,16 @@ export function useAiConnection({
   const [keysRead, setKeysRead] = useState(false);
   const [auditEntries, setAuditEntries] = useState<LlmAuditEntry[]>([]);
   const [auditTotal, setAuditTotal] = useState<number | null>(null);
+  const [auditError, setAuditError] = useState<AuditReadFailure | null>(null);
   const [auditNonce, setAuditNonce] = useState(0);
+  const statusEpochs = useRef<Partial<Record<SecretProvider, number>>>({});
+  const jevEpoch = useRef(0);
 
   useEffect(() => {
     if (!enabled || !bridgeAvailable) return undefined;
     let cancelled = false;
+    const initialEpochs = { ...statusEpochs.current };
+    const initialJevEpoch = jevEpoch.current;
     void (async () => {
       const settled = await Promise.all(
         SECRET_PROVIDERS.map(async (provider) => {
@@ -82,10 +89,12 @@ export function useAiConnection({
       if (cancelled) return;
       setStatuses((prev) => {
         const next = { ...prev };
-        for (const [provider, status] of settled) next[provider] = status;
+        for (const [provider, status] of settled) {
+          if (statusEpochs.current[provider] === initialEpochs[provider]) next[provider] = status;
+        }
         return next;
       });
-      setJevStatus(jev);
+      setJevStatus(prev => jevEpoch.current === initialJevEpoch ? jev : prev);
       setKeysRead(true);
     })();
     return () => {
@@ -93,10 +102,9 @@ export function useAiConnection({
     };
   }, [enabled, bridgeAvailable]);
 
-  // Keyed by folder name with the handle in a ref: a caller's new handle object each
-  // render would otherwise re-run the read endlessly.
+  // Native root paths and browser handle identity distinguish same-name vaults.
   const vaultHandleRef = useRef(vaultHandle);
-  const vaultKey = vaultHandle?.name ?? null;
+  const vaultKey = vaultHandle ? getTauriVaultRootPath(vaultHandle) ?? vaultHandle : null;
 
   // Must precede the read effect: effects run in declaration order.
   useEffect(() => {
@@ -108,15 +116,23 @@ export function useAiConnection({
     if (!enabled || !handle) {
       setAuditEntries((prev) => (prev.length === 0 ? prev : []));
       setAuditTotal(0);
+      setAuditError(null);
       return undefined;
     }
     let cancelled = false;
     const controller = new AbortController();
+    setAuditTotal(null);
+    setAuditEntries([]);
+    setAuditError(null);
     void (async () => {
-      const summary = await readLlmAuditSummary(handle, { limit: AUDIT_TAIL, signal: controller.signal });
-      if (cancelled) return;
-      setAuditTotal(summary.total);
-      setAuditEntries(summary.entries);
+      try {
+        const summary = await readLlmAuditSummary(handle, { limit: AUDIT_TAIL, signal: controller.signal });
+        if (cancelled) return;
+        setAuditTotal(summary.total);
+        setAuditEntries(summary.entries);
+      } catch (error) {
+        if (!cancelled) setAuditError(error instanceof AuditReadError ? error.reason : 'failed');
+      }
     })();
     return () => {
       cancelled = true;
@@ -125,10 +141,14 @@ export function useAiConnection({
   }, [enabled, vaultKey, auditNonce]);
 
   const applyStatus = useCallback((provider: SecretProvider, next: SecretStatus) => {
+    statusEpochs.current[provider] = (statusEpochs.current[provider] ?? 0) + 1;
     setStatuses((prev) => ({ ...prev, [provider]: next }));
   }, []);
 
-  const applyJevStatus = useCallback((next: JevSecretStatus) => setJevStatus(next), []);
+  const applyJevStatus = useCallback((next: JevSecretStatus) => {
+    jevEpoch.current++;
+    setJevStatus(next);
+  }, []);
 
   const refreshAudit = useCallback(() => setAuditNonce((n) => n + 1), []);
 
@@ -141,6 +161,7 @@ export function useAiConnection({
     applyJevStatus,
     auditEntries,
     auditTotal,
+    auditError,
     refreshAudit,
   };
 }

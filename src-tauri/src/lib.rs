@@ -32,6 +32,7 @@ mod jev;
 mod library;
 mod llm;
 mod llm_audit;
+mod audit_read;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
@@ -3925,6 +3926,25 @@ pub fn run() {
                                 }
                             }
                         }
+                        if std::env::var_os("ONTOLOGY_ATLAS_VERIFY_AUDIT_READ").is_some() {
+                            if let Ok(root) = std::env::var(WEBVIEW_VERIFY_VAULT_ENV) {
+                                let script = include_str!("webview_verify/audit_read_verify.js")
+                                    .replace("__ROOT_PATH__", &js_string_literal(&root));
+                                let _ = verify_window.eval(&script);
+                                for _ in 0..100 {
+                                    let completed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+                                    let flag = completed.clone();
+                                    let _ = verify_window.eval_with_callback("JSON.stringify(window.__ontologyAtlasAuditReadVerify || {})", move |result| {
+                                        if result.contains("done") || result.contains("failed") {
+                                            write_verify_line(format!("[ontology-atlas-audit-read-verify] {result}"));
+                                            flag.store(true, std::sync::atomic::Ordering::SeqCst);
+                                        }
+                                    });
+                                    tokio::time::sleep(Duration::from_millis(500)).await;
+                                    if completed.load(std::sync::atomic::Ordering::SeqCst) { break; }
+                                }
+                            }
+                        }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(
                             DOM_MARKER_PROBE_SCRIPT,
@@ -3964,6 +3984,11 @@ pub fn run() {
             read_vault_text_files,
             read_vault_text_tail,
             read_vault_binary_file,
+            audit_read::audit_read_prepare,
+            audit_read::audit_read_begin,
+            audit_read::audit_read_pull,
+            audit_read::audit_read_finish,
+            audit_read::audit_read_cancel,
             write_vault_text_file,
             read_library_collections,
             write_library_collections,
@@ -4041,10 +4066,12 @@ pub fn run() {
             }
             RunEvent::WindowEvent { label, event: tauri::WindowEvent::Destroyed, .. } => {
                 llm::requests::cancel_owner(Some(&label));
+                audit_read::cancel_owner(Some(&label));
             }
             // Adapters and their children must not outlive the window.
             RunEvent::ExitRequested { .. } | RunEvent::Exit => {
                 llm::requests::cancel_owner(None);
+                audit_read::cancel_owner(None);
                 terminate_all_acp_sessions(app_handle);
             }
             _ => {}

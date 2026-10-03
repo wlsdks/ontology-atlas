@@ -93,6 +93,7 @@ work here, and where it can.
 | Explore overlooked areas | ❌ reason + app link; recorded map stays usable | macOS local evidence reader; Windows stays unmeasured | selected scope + explicit bound-folder confirmation; native re-selection recovers missing source access without rebinding or scanning automatically; no agent or service needed |
 | Work offline | ❌ | ✅ | |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
+| Sent-log count and five recent records | FSA complete read | macOS bounded native pulls; other native platforms keep existing reads | changed, failed or expired reads offer Retry without publishing zero or stale rows; original history is preserved |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
 | In-app updates | ❌ | ✅ | the daily check can be turned off in Settings → About; Check for updates still works |
