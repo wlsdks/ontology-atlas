@@ -64,6 +64,7 @@ export interface LightEmitter {
 
 export interface LightSource {
   readonly id: string;
+  readonly readsPaint?: boolean;
   step(input: LightSourceInput, out: LightEmitter): boolean;
   plan(): LightPlan<unknown> | null;
   reset(): void;
