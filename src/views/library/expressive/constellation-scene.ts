@@ -146,8 +146,9 @@ export function mountLibraryConstellation(
 
   const tokenEl = options.tokenEl ?? document.documentElement;
   const reduced =
-    options.reducedMotion ??
-    (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    (options.reducedMotion ??
+      (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)) ||
+    typeof IntersectionObserver === "undefined";
   const dim = options.dim ?? 1;
 
   /*
@@ -446,7 +447,12 @@ export function mountLibraryConstellation(
     camera.bottom = -halfHeight;
     camera.updateProjectionMatrix();
   };
-  const observer = new ResizeObserver(resize);
+  const observer = new ResizeObserver(() => {
+    if (disposed) return;
+    resize();
+    if (!reduced) wake();
+    else draw();
+  });
   observer.observe(canvas);
   resize();
 
@@ -471,13 +477,17 @@ export function mountLibraryConstellation(
     renderer.render(scene, camera);
   };
 
-  let raf = 0;
+  let raf: number | null = null;
+  let inViewport = false;
+  let suspendedAt: number | null = performance.now();
+  let viewport: IntersectionObserver | null = null;
   let lastInput = performance.now();
   let previous = performance.now();
 
   const loop = (now: number): void => {
+    raf = null;
     if (disposed) return;
-    raf = requestAnimationFrame(loop);
+    if (document.hidden || !inViewport) { park(); return; }
     const dt = Math.min(64, now - previous);
     previous = now;
     /*
@@ -486,16 +496,17 @@ export function mountLibraryConstellation(
      * started — so without this an assembly begun on a screen somebody opened and then sat
      * still in front of would freeze halfway. An object mid-arrival is not idle.
      */
-    const stillAssembling = placeAssembling(now);
+    const wasAssembling = assembling !== null;
+    placeAssembling(now);
     const factor = ambientSleepFactor(now, lastInput);
-    // Asleep and settled: nothing has changed, so nothing is drawn. rAF keeps ticking so
-    // any input wakes it on the very next frame, which is the map's own conservative rule.
+    // The final assembly frame paints before sleep; settled sleep releases the frame.
     if (
-      !stillAssembling &&
+      !wasAssembling &&
       isAmbientAsleep(factor) &&
       Math.abs(tiltYaw - tiltYawTarget) < 1e-4 &&
       Math.abs(tiltPitch - tiltPitchTarget) < 1e-4
     ) {
+      park();
       return;
     }
     yaw += dt * TURN_RATE * factor;
@@ -505,15 +516,38 @@ export function mountLibraryConstellation(
     tiltYaw += (tiltYawTarget - tiltYaw) * follow;
     tiltPitch += (tiltPitchTarget - tiltPitch) * follow;
     draw();
+    raf = requestAnimationFrame(loop);
+  };
+
+  function park(): void {
+    if (raf !== null) cancelAnimationFrame(raf);
+    raf = null;
+    suspendedAt ??= performance.now();
+  }
+  function wake(): void {
+    if (disposed || reduced || document.hidden || !inViewport) return;
+    const now = performance.now();
+    lastInput = now;
+    if (raf !== null) return;
+    if (assembling && suspendedAt !== null) {
+      assembling.startedAt += now - Math.max(suspendedAt, assembling.startedAt);
+    }
+    suspendedAt = null;
+    previous = now;
+    raf = requestAnimationFrame(loop);
+  }
+  const onVisibility = (): void => {
+    if (document.hidden) park();
+    else wake();
   };
 
   const onPointerMove = (event: PointerEvent): void => {
-    lastInput = performance.now();
     const rect = canvas.getBoundingClientRect();
     tiltYawTarget = (event.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
     tiltPitchTarget = -((event.clientY - rect.top) / Math.max(1, rect.height) - 0.5) * 0.4;
     tiltYawTarget *= 0.12;
     tiltPitchTarget *= 0.12;
+    wake();
   };
 
   /*
@@ -522,9 +556,9 @@ export function mountLibraryConstellation(
    * complaint as one that moves for no reason.
    */
   const onPointerLeave = (): void => {
-    lastInput = performance.now();
     tiltYawTarget = 0;
     tiltPitchTarget = 0;
+    wake();
   };
 
   /*
@@ -548,7 +582,15 @@ export function mountLibraryConstellation(
   } else {
     pointerHost.addEventListener("pointermove", onPointerMove, { passive: true });
     pointerHost.addEventListener("pointerleave", onPointerLeave, { passive: true });
-    raf = requestAnimationFrame(loop);
+    document.addEventListener("visibilitychange", onVisibility);
+    viewport = new IntersectionObserver((entries) => {
+      const entry = entries.at(-1);
+      if (!entry) return;
+      inViewport = entry.isIntersecting;
+      if (inViewport) wake();
+      else park();
+    });
+    viewport.observe(canvas);
   }
 
   return {
@@ -561,12 +603,15 @@ export function mountLibraryConstellation(
         placeAssembling(performance.now());
         draw();
       } else {
-        lastInput = performance.now();
+        wake();
       }
     },
     dispose: () => {
+      if (disposed) return;
       disposed = true;
-      if (raf) cancelAnimationFrame(raf);
+      park();
+      viewport?.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       pointerHost.removeEventListener("pointermove", onPointerMove);
       pointerHost.removeEventListener("pointerleave", onPointerLeave);
       observer.disconnect();
