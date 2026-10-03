@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Orbit, Sparkles, Zap } from "lucide-react";
+import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
@@ -18,6 +18,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
+import { BrandPortrait } from '@/shared/ui/brand-portrait';
 import styles from './first-run-chooser.module.css';
 
 /**
@@ -164,9 +165,7 @@ export function FirstRunPage() {
           className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
         >
           <div className={`${styles.identity} inline-flex items-center gap-3`}>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-              <Orbit size={ICON_SIZE.md} aria-hidden />
-            </span>
+            <BrandPortrait expression="welcome" />
             <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               Ontology Atlas
             </span>
