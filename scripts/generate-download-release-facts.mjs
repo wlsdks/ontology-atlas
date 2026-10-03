@@ -46,7 +46,7 @@ const OUTPUT_PATH = path.join(
 );
 const REPOSITORY = "wlsdks/ontology-atlas";
 const RELEASES_URL = `https://github.com/${REPOSITORY}/releases`;
-const DMG_NAME_PATTERN = /^ontology-atlas_(?<version>[^_]+)_(?<arch>aarch64|x64)\.dmg$/;
+const DMG_NAME_PATTERN = /^ontology-atlas_(?<version>[^_]+)_(?<arch>aarch64)\.dmg$/;
 const WINDOWS_NAME_PATTERN = /^ontology-atlas_(?<version>[^_]+)_windows_(?<arch>x64)-setup\.exe$/;
 
 function fail(message) {
@@ -214,7 +214,7 @@ function renderModule(release) {
 // generator after the release publishes and commit the result.
 
 export interface MacosReleaseAsset {
-  readonly arch: 'aarch64' | 'x64';
+  readonly arch: 'aarch64';
   readonly fileName: string;
   readonly sizeBytes: number;
   readonly sha256: string;
@@ -433,12 +433,10 @@ const assets = release.assets
       sha256: sha256FromChecksumAsset(checksumAsset.id, asset.name),
       downloadUrl: asset.browser_download_url,
     };
-  })
-  // Apple Silicon first, matching the page's ARCH_ORDER.
-  .sort((a, b) => (a.arch === b.arch ? 0 : a.arch === "aarch64" ? -1 : 1));
+  });
 
 if (assets.length === 0) {
-  fail(`release ${tag} has no ontology-atlas_<version>_<arch>.dmg assets.`);
+  fail(`release ${tag} has no ontology-atlas_<version>_aarch64.dmg asset.`);
 }
 
 const windowsAssets = release.assets

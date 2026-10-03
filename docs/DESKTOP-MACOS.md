@@ -168,8 +168,8 @@ exact `workflow_dispatch` run for the admitted commit, and runs
 pnpm desktop:release-run -- --tag=<tag> --ref=main
 ```
 
-The run builds, signs, notarizes, and install-smokes both macOS architectures
-and builds the Windows x64 installer. Each lane writes DMG filename, size, and
+The run builds, signs, notarizes, and install-smokes the Apple Silicon macOS app
+(Intel builds stopped after v1.5.0) and builds the Windows x64 installer. Each lane writes DMG filename, size, and
 SHA-256 to the step summary. The run also ships the MCP bundle and lists the
 server in the official MCP Registry (the `list-mcp-registry` job), so a
 dispatch publishes outside GitHub Releases. `scripts/check-macos-release-slot.mjs` refuses a
@@ -177,11 +177,17 @@ tag that already has any Release. Assets are staged
 (`scripts/stage-macos-release-assets.mjs`) and uploaded as a draft, then
 verified with `pnpm desktop:verify-download -- --allow-draft --require-updater`.
 
+Do not land changes under `.github/workflows` between tagging and publish:
+GitHub refuses `GITHUB_TOKEN` a release whose target commit's workflow files
+differ from the default branch's, which blocked v1.5.0's staging. The draft
+release therefore names no `target_commitish`; the tag pins the commit and
+`desktop:release-source --mode=pin` rechecks it before staging and publish.
+
 **4. Install the draft before publication.** The run pauses at the `release`
 environment. Install that exact draft DMG on a real Mac, launch it, open a
 vault, then approve. Publication rechecks the admitted source, publishes, runs
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater`
-(reachable Apple Silicon and Intel DMGs, one Windows x64 installer, matching
+(a reachable Apple Silicon DMG, one Windows x64 installer, matching
 checksums, `latest.json` pointing at real archives), writes the public URL and
 asset hashes to the step summary, and uploads an
 `ontology-atlas-release-facts-<tag>` artifact. The workflow token cannot push to
@@ -198,6 +204,10 @@ pnpm desktop:release-run -- --tag=<tag> --refresh-only
 
 Until it lands, `desktop:release-preflight` and the next release's admission
 fail at `download:release-facts:check`.
+A release cut while `main` carries a newer generator (v1.5.0 was cut before
+the Apple Silicon-only generator) is regenerated locally on `main` with
+`pnpm download:release-facts -- --tag=<tag>`, not applied from the artifact,
+which the older generator wrote.
 
 **6. Audit completion.**
 

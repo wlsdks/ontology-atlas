@@ -223,15 +223,6 @@ const OPENERS: readonly Opener[] = [
     dogfood: true,
   },
   {
-    // The gateway's Mac download menu (2026-09-08). It needs no folder and no desktop
-    // runtime — one press on the face's own winner reaches it — so the sweep opens it
-    // directly, which is why it entered this list rather than the ratchet's undeclared side.
-    name: "관문 Mac 받기 메뉴",
-    route: "/ko/download/",
-    trigger: "gateway-hero-cta",
-    surface: '[data-testid="gateway-hero-mac-menu"]',
-  },
-  {
     name: "Library work receipt history",
     route: "/en/library/",
     trigger: "library-work-history-toggle",

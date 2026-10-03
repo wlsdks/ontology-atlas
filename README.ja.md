@@ -20,7 +20,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
 
-- **macOS**（Apple Silicon と Intel）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。
+- **macOS**（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。
 - **Windows x64** は未署名のベータ版です。SmartScreen が警告を出すことがあり、管理下の PC では実行がブロックされる場合があります。
 - **Linux** 向けのアプリはまだありません。ブラウザ版を使うか、[ソースのチェックアウト](cli/README.md#set-up-from-a-source-checkout)から CLI と MCP サーバーを実行してください。
 

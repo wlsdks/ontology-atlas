@@ -12,7 +12,7 @@ const hostedUpdaterManifest = JSON.stringify({
   platforms: {
     "darwin-aarch64": {
       signature: "signed",
-      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.3.0/app.tar.gz",
+      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.3.0/ontology-atlas_1.3.0_aarch64.app.tar.gz",
     },
   },
 });
