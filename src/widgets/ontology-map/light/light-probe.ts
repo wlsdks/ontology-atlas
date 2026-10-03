@@ -184,8 +184,10 @@ function measureGlue(
   const across: number[] = [];
   for (let d = -GLUE_ACROSS_PX; d <= GLUE_ACROSS_PX; d += 1) across.push(d);
   const result: LightProbeFrame["glue"] = [];
+  const twinOf = (key: string) => key.split("\0").reverse().join("\0");
   const clear = heads.filter((h) => {
     if (h.arrived) return false;
+    if (heads.some((other) => other.source === h.source && other.key !== h.key && other.key === twinOf(h.key))) return false;
     const length = curveLength(h.curve);
     return (h.t - h.departAt) * length >= GLUE_RIM_PX + GLUE_SLICES * GLUE_SLICE_PX && (h.arriveAt - h.t) * length >= GLUE_RIM_PX;
   });
@@ -218,7 +220,7 @@ function measureGlue(
     result.push({
       key: head.key,
       t: head.t,
-      ambiguous: !singlePeak(line) || !isolated(light),
+      ambiguous: !singlePeak(line) || !isolated(line) || !isolated(light),
       cameraShiftPx: cameraShiftAcross(slices[0]!, frame, previous),
       offsetPx: Math.abs(peakAt(light, across) - strokeCentre(line, across)),
       lineContrast: Math.max(...line) - Math.min(...line),

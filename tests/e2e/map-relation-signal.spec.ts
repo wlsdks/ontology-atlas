@@ -240,6 +240,9 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
   }
 
   const glue = frames.flatMap((frame) => frame.glue).filter((sample) => !sample.ambiguous && sample.lineContrast >= 8);
+  // The probe skips a light whose two-way twin is in flight: the twin's stroke lies
+  // 4.5 px away, inside its window, and the two lights cross mid-line.
+  expect(new Set(glue.map((sample) => sample.key)).size, "the glue was measured on at least two lines").toBeGreaterThanOrEqual(2);
   const moved = glue.filter((sample) => sample.cameraShiftPx >= MOVED_PX);
   test.info().annotations.push({
     type: "glue",
