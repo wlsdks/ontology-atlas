@@ -12,6 +12,7 @@ export { conceptDegrees } from './morph/glide';
 export { predictMapLayoutTarget } from './morph/map-marks';
 export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
 export type { HexPlacementRecord } from './model/hex-board';
+export type { DialMemory } from './dial/types';
 export type {
   OntologyMapNode,
   OntologyMapEdge,
