@@ -13,6 +13,7 @@ import {
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildDialModel, dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { mixOver, resolveDialInks } from "../ink";
+import { pickDial } from "../pick";
 import { buildDialMarks, dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
@@ -279,6 +280,22 @@ describe("buildDialMarks", () => {
     expect(rimOf(measured, "d2c0")).toBe(mixOver(INKS.stale, INKS.bg, 1));
     expect(measured.out.discs.find((d) => d.id === "d2c1")!.dashed).toBe(true);
     expect(rimOf(measured, "d5c0")).toBe(rimOf(unmeasured, "d5c0"));
+  });
+
+  it("registers picks in paint order, so a click on a chip's edge over a disc selects the chip", () => {
+    const { out, result } = run({ capOffset: 12 });
+    const chip = out.glyphs.find((g) => g.id === "d0")!;
+    const disc = out.discs.find((d) => d.id === "d0c0")!;
+    const ux = (disc.x - chip.x) / Math.hypot(disc.x - chip.x, disc.y - chip.y);
+    const uy = (disc.y - chip.y) / Math.hypot(disc.x - chip.x, disc.y - chip.y);
+    const edge = { x: chip.x + ux * (chip.r - 1), y: chip.y + uy * (chip.r - 1) };
+    expect(Math.hypot(edge.x - disc.x, edge.y - disc.y)).toBeLessThan(disc.r);
+    expect(pickDial(result.picks, result.rows, edge.x, edge.y, 0)).toBe("d0");
+    const beyond = { x: chip.x + ux * (chip.r + 2), y: chip.y + uy * (chip.r + 2) };
+    expect(pickDial(result.picks, result.rows, beyond.x, beyond.y, 0)).toBe("d0c0");
+    const kinds = result.picks.map((p) => (p.id === "p" ? "hub" : /^d\d+$/.test(p.id) ? "chip" : "disc"));
+    expect(kinds.indexOf("hub")).toBe(kinds.lastIndexOf("disc") + 1);
+    expect(kinds.slice(kinds.indexOf("hub") + 1).every((k) => k === "chip")).toBe(true);
   });
 
   it("stands one plate per drawn domain while the plate alpha holds, and none after", () => {

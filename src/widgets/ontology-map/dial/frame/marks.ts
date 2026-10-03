@@ -433,10 +433,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       fill: null, stroke: null, hovered: input.hoveredNodeId === model.projectId, agentFocus: input.agentFocusNodeId === model.projectId,
       selectionPulse: pulseOf(model.projectId), count: input.hubCount, stalePip: false,
     });
-    picks.unshift({ id: model.projectId, x: hub.x, y: hub.y, r: hub.r });
+    picks.push({ id: model.projectId, x: hub.x, y: hub.y, r: hub.r });
     alphas.set(model.projectId, 1);
   }
-  const chipPicks: DialPick[] = [];
   for (const c of scene.clusters) {
     const chip = chips.get(c.domainId);
     if (!chip) {
@@ -453,10 +452,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       hovered: input.hoveredNodeId === c.domainId, agentFocus: input.agentFocusNodeId === c.domainId,
       selectionPulse: pulseOf(c.domainId), count: null, stalePip: stale > 0,
     });
-    chipPicks.push({ id: c.domainId, x: chip.x, y: chip.y, r: chip.r });
+    picks.push({ id: c.domainId, x: chip.x, y: chip.y, r: chip.r });
     alphas.set(c.domainId, dimmed ? restAlpha : 1);
   }
-  picks.splice(hub ? 1 : 0, 0, ...chipPicks);
   if (attn.capabilityId) {
     const d = discs.get(attn.capabilityId);
     if (d) {
