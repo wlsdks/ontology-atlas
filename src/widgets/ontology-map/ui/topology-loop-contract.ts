@@ -280,6 +280,7 @@ export interface UseTopologyLoopArgs {
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
   loadProgress?: { read: number; total: number } | null;
+  placingTierRead?: boolean;
 }
 
 export interface FlatDialState { drawn: boolean; evidenceMeasured: boolean }

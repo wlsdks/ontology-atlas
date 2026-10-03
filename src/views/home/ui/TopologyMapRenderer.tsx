@@ -23,6 +23,7 @@ import {
   MapLayoutMorphOverlay,
   OntologyMap,
   PLAIN_TIER_REVEAL,
+  capabilityTierRead,
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
@@ -134,6 +135,10 @@ export function TopologyMapRenderer({
   const arrivingDocuments = vault.partialTotal;
   const arriving = arrivingDocuments > 0;
   const loadProgress = useVaultLoadProgress();
+  const placingTierRead = useMemo(
+    () => arriving && capabilityTierRead((ontologyInsight?.nodes ?? []).flatMap((node) => node.evidenceIds)),
+    [arriving, ontologyInsight],
+  );
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -291,6 +296,7 @@ export function TopologyMapRenderer({
             impactLens={impactLensActive}
             onFlatDialChange={onFlatDialChange}
             loadProgress={arriving ? loadProgress : null}
+            placingTierRead={placingTierRead}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}

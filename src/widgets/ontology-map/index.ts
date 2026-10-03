@@ -13,6 +13,7 @@ export { predictMapLayoutTarget } from './morph/map-marks';
 export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
 export type { HexPlacementRecord } from './model/hex-board';
 export type { DialLabels, DialMemory } from './dial/types';
+export { capabilityTierRead } from './dial/placement';
 export type { FlatDialState, FlatRingMemoryStore } from './ui/topology-loop-contract';
 export type {
   OntologyMapNode,

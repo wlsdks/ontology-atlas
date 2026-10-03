@@ -430,6 +430,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dialLabels: args.dialLabels ?? null,
     flatRingMemory: args.flatRingMemory ?? null,
     loadProgress: args.loadProgress ?? null,
+    placingTierRead: args.placingTierRead ?? false,
   });
 
   useTopologyViewportLifecycle({

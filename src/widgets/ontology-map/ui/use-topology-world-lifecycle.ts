@@ -31,7 +31,7 @@ import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type Topol
 import type { FlatRingMemoryStore } from "./topology-loop-contract";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
-import { capabilityTierRead, createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
+import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../dial/types";
 
 interface Dependencies {
@@ -85,6 +85,7 @@ interface Dependencies {
   dialLabels: DialLabels | null;
   flatRingMemory: FlatRingMemoryStore | null;
   loadProgress: { read: number; total: number } | null;
+  placingTierRead: boolean;
 }
 
 function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
@@ -147,6 +148,7 @@ export function useTopologyWorldLifecycle({
   dialLabels,
   flatRingMemory,
   loadProgress,
+  placingTierRead,
 }: Dependencies) {
   const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
@@ -277,7 +279,7 @@ export function useTopologyWorldLifecycle({
     const stored = ringMemory?.current() ?? null;
     let placed = { state: "settled" as DialPlacementState, held: 0 };
     const placeDial = (model: Parameters<typeof dialPlacement.next>[0]["model"]) => {
-      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: capabilityTierRead(nodes.map((n) => n.id)), memory: stored });
+      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: placingTierRead, memory: stored });
       placed = { state: step.state, held: step.held };
       return step.model;
     };
@@ -412,7 +414,7 @@ export function useTopologyWorldLifecycle({
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure, dialLabels, arriving]);
+  }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
   useEffect(() => {
     const dial = worldRef.current?.dial;
     if (!dial || placementStateRef.current === "settled") return;
