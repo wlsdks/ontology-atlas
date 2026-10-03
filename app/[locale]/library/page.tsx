@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { LibraryWorkspace } from '@/app-providers/library-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
 
@@ -11,7 +12,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'library' });
-  return { title: t('title') };
+  const tMeta = await getTranslations({ locale, namespace: 'metadata' });
+  return buildPageMetadata({
+    locale,
+    path: 'library',
+    title: t('title'),
+    description: tMeta('descriptions.library'),
+  });
 }
 
 /** Library composes Sources, Wiki, and the existing ontology editor. The

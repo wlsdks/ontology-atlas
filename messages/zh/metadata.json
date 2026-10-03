@@ -1,6 +1,7 @@
 {
   "siteName": "Ontology Atlas",
   "siteTagline": "人和 AI 智能体共享的代码库语义",
+  "homeTitle": "Ontology Atlas: codebase ontology for coding agents (MCP)",
   "pages": {
     "topology": "地图",
     "docs": "本体 · 资料库",
@@ -21,6 +22,24 @@
     "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",
     "ontologyInsights": "按类型统计的概念数量、连线最多的枢纽，以及仍未连到任何东西的概念。扩充地图前先看这里。",
     "guide": "从 Markdown 文件夹开始，连接你的编码智能体，学习如何在 Ontology Atlas 中查看已记录的语义、依据和未知项。",
-    "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。"
+    "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。",
+    "library": "Gather sources, compile them into wiki pages, and ask questions that cite their passages, all inside your local Markdown folder.",
+    "agents": "See the coding agents on this computer and connect them to Ontology Atlas over MCP.",
+    "automations": "Schedule ontology reviews and document checks that run on your computer and leave proposals for you to review.",
+    "git": "Review your folder's Git history, read each change as a document, and restore a single file."
+  },
+  "guideDescriptions": {
+    "firstFiveMinutes": "Watch Ontology Atlas move before you install: the first screen is a read-only sample map that shows what a Markdown folder turns into.",
+    "readingTheMap": "Read the Ontology Atlas map: what each dot and line means, why sizes and counts differ, and how a click focuses a concept and its neighbours.",
+    "vaultStructure": "Your ontology is a plain Markdown folder. Learn the fields in the info block at the top of each file that turn it into a graph.",
+    "whatBecomesANode": "Decide what becomes a concept: when something is a domain, a capability or an element, and why one file is not one concept.",
+    "relations": "How relations between concepts work in Ontology Atlas: one line in the info block at the top of a Markdown file, not a row in a database.",
+    "studio": "Edit concepts and relations right beside the selected concept on the map, without writing YAML by hand.",
+    "fromYourRepo": "Start an ontology from what you already have: your code, its folder structure, and CLAUDE.md or AGENTS.md, extracted with your coding agent.",
+    "connectAgent": "Connect a coding agent to Ontology Atlas over MCP in one click: Atlas writes the tool's configuration with the real absolute path.",
+    "growingVault": "Keep a growing folder healthy: find duplicates, see what a rename breaks, and know what to fix when people and agents add concepts every day.",
+    "insights": "The Insights screen answers what to fix next: concept counts by kind, the most-connected hubs, and concepts attached to nothing.",
+    "cli": "The Ontology Atlas CLI is the daily entry point from a source checkout: check, snapshot and inspect a folder from the terminal.",
+    "trust": "What Ontology Atlas does not do: no backend, account or telemetry, and your files stay on your disk."
   }
 }

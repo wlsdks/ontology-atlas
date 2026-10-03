@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SITE_URL } from '@/shared/config';
+import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
@@ -24,5 +25,11 @@ describe('downloadStructuredData', () => {
     expect(data.operatingSystem).toEqual(
       windows ? [RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS] : RELEASE_MIN_MACOS,
     );
+  });
+
+  it('ties the app and its publisher to the repository the page links to', () => {
+    const data = downloadStructuredData('en', 'Description');
+    expect(data.sameAs).toContain(GITHUB_REPO_URL);
+    expect(data.publisher.sameAs).toContain(GITHUB_REPO_URL);
   });
 });

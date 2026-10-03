@@ -4,6 +4,7 @@ import http from "node:http";
 import https from "node:https";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { evaluateLocaleCluster, parseHead, parseSitemap } from "./check-seo-surface.mjs";
 import { validateHostedUpdaterManifest } from "./stage-hosted-updater-manifest.mjs";
 
 // The expected copy is read from the shipped message catalog rather than
@@ -29,6 +30,8 @@ product path:
   offers the local-folder open CTA directly — it does NOT stay promo-only
 - /ko/download/ exists, states per-platform installability (macOS + Windows),
   and points users to the GitHub Releases download path
+- /en/ and /en/download/ both canonicalize to /en/download/, with the hreflang
+  set the live /sitemap.xml declares for it
 
 Only server-rendered text can be asserted: the root map hydrates client-side,
 so its in-app CTAs are not in the static HTML this command reads.
@@ -225,15 +228,36 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   const rootPath = "/ko/";
   const downloadPath = "/ko/download/";
   const updaterPath = "/update/latest.json";
-  const [root, download, updater] = await Promise.all([
+  const enRootPath = "/en/";
+  const enDownloadPath = "/en/download/";
+  const sitemapPath = "/sitemap.xml";
+  const [root, download, updater, enRoot, enDownload, sitemap] = await Promise.all([
     requestText(`${baseUrl}${rootPath}`, { timeoutMs }),
     requestText(`${baseUrl}${downloadPath}`, { timeoutMs }),
     requestText(`${baseUrl}${updaterPath}`, { timeoutMs }),
+    requestText(`${baseUrl}${enRootPath}`, { timeoutMs }),
+    requestText(`${baseUrl}${enDownloadPath}`, { timeoutMs }),
+    requestText(`${baseUrl}${sitemapPath}`, { timeoutMs }),
   ]);
 
   assertOkPage(root, rootPath);
   assertOkPage(download, downloadPath);
   assertOkJson(updater, updaterPath);
+  assertOkPage(enRoot, enRootPath);
+  assertOkPage(enDownload, enDownloadPath);
+  if (sitemap.status < 200 || sitemap.status >= 300) {
+    throw new Error(`${sitemapPath} returned HTTP ${sitemap.status}`);
+  }
+
+  const homeEntry = parseSitemap(sitemap.body).find(
+    (entry) => new URL(entry.loc).pathname === enDownloadPath,
+  );
+  if (!homeEntry) throw new Error(`${sitemapPath} does not list ${enDownloadPath}`);
+  const clusterProblems = [
+    ...evaluateLocaleCluster({ label: enDownloadPath, head: parseHead(enDownload.body), entry: homeEntry }),
+    ...evaluateLocaleCluster({ label: enRootPath, head: parseHead(enRoot.body), entry: homeEntry }),
+  ];
+  if (clusterProblems.length > 0) throw new Error(clusterProblems.join("; "));
 
   const rootText = renderedText(root.body);
   const downloadText = renderedText(download.body);
