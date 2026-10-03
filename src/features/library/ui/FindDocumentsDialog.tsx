@@ -1,5 +1,6 @@
 "use client";
 
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FilePlus2, SearchX } from "lucide-react";
@@ -32,6 +33,7 @@ export interface FindDocumentsDialogProps {
   onAddFiles?: () => void;
   /** The visible label of that door — the index chip's own word, so the two read as one. */
   addFilesLabel?: string;
+  addFilesFeedback?: ActionFeedbackState;
 }
 
 export function FindDocumentsDialog({
@@ -44,6 +46,7 @@ export function FindDocumentsDialog({
   busy,
   onAddFiles,
   addFilesLabel,
+  addFilesFeedback = 'idle',
 }: FindDocumentsDialogProps) {
   const t = useTranslations("library.find");
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
@@ -144,6 +147,7 @@ export function FindDocumentsDialog({
                 onAddFiles && addFilesLabel ? (
                   <Chip
                     data-testid="find-documents-add-files"
+                    aria-busy={open && addFilesFeedback === 'working' || undefined}
                     tone="strong"
                     hoverSurface="lift"
                     hoverBorder="strong"
@@ -154,7 +158,7 @@ export function FindDocumentsDialog({
                       onAddFiles();
                     }}
                   >
-                    <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
+                    <ActionFeedbackGlyph state={open ? addFilesFeedback : 'idle'} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} />
                     {addFilesLabel}
                   </Chip>
                 ) : undefined
