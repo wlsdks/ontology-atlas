@@ -52,7 +52,7 @@ import {
   computeOverviewFitScale,
 } from "./topology-camera-math";
 import { overviewBoundsFor } from "./topology-overview-fit";
-import { radiusForKind, type TopologyWorld } from "./topology-world";
+import { dialOverviewFit, radiusForKind, type TopologyWorld } from "./topology-world";
 
 type SourceRef<T> = { current: T; };
 
@@ -356,6 +356,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             height,
             fitTokens,
             world.nodes.length,
+            dialOverviewFit(world),
           );
           cameraTargetRef.current = flatTarget;
           overviewScaleRef.current = computeOverviewFitScale(
@@ -364,6 +365,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             height,
             fitTokens,
             world.nodes.length,
+            dialOverviewFit(world),
           );
           // This is a programmatic move, so it uses the transition easing
           // rather than the interactive spring a preceding wheel gesture left

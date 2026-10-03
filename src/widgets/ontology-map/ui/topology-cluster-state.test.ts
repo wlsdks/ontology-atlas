@@ -53,6 +53,13 @@ describe("computeTopologyClusterState", () => {
     expect(result.chips[0]).toMatchObject({ parentId: "d", expanded: false, count: childIds.length });
   });
 
+  it("folds nothing at the dial overview but folds inside a realm", () => {
+    const world = { ...buildWorld(0, 0), dial: {} as never };
+    expect(computeTopologyClusterState(world, new Set()).clusteredIds.size).toBe(0);
+    const inRealm = computeTopologyClusterState(world, new Set(), undefined, true);
+    for (const id of childIds) expect(inRealm.clusteredIds.has(id)).toBe(true);
+  });
+
   it("부모가 움직이면(라이브 좌표) 칩 anchor 도 함께 이동한다", () => {
     const moved = computeTopologyClusterState(buildWorld(0, 0), new Set());
     // parent (0,0) → anchor (100, 0)

@@ -4,8 +4,14 @@ import "./atlas-map-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill } from "./settle";
 
-const ROUTE = "/ko/topology/?e2e=1&guides=off";
+// The Flat overview counts lines between domains (the flat dial, 2026-10-02); one relation
+// at a time is drawn and revealed inside a realm.
+const ROUTE = "/ko/topology/?e2e=1&guides=off&realm=domain%3Aorder";
 const SAMPLES = 24;
+// Points under fixed-pixel labels and discs change by up to 26 levels while
+// the camera frames a selection; a point the reveal lights changes by more.
+const LIT_FLOOR = 30;
+const MIN_LIT_POINTS = 4;
 
 interface RevealFrame {
   t: number;
@@ -42,7 +48,8 @@ async function pickTarget(page: Page): Promise<{ id: string; label: string }> {
       if (!onScreen(e.sourceId) || !onScreen(e.targetId)) continue;
       if (Math.hypot(e.bx - e.ax, e.by - e.ay) < 60) continue;
       for (const end of [e.sourceId, e.targetId]) {
-        if (nodes.get(end)?.kind === "project") continue;
+        // The realm root only contains; a concept inside it carries the dependencies.
+        if (nodes.get(end)?.kind === "project" || nodes.get(end)?.kind === "domain") continue;
         const c = count.get(end) ?? { all: 0, outgoing: 0 };
         c.all += 1;
         if (end === e.sourceId) c.outgoing += 1;
@@ -195,7 +202,7 @@ function analyse(frames: RevealFrame[], targetId: string): Analysis {
     outgoing.map((k) =>
       frames[focusIndex - 1 + index].edges[k].map((v, i) => {
         const span = after.edges[k][i] - before.edges[k][i];
-        return Math.abs(span) < 1 ? Number.NaN : (v - before.edges[k][i]) / span;
+        return span < LIT_FLOOR ? Number.NaN : (v - before.edges[k][i]) / span;
       }),
     );
   return { focusIndex, progress, shares, pointProgress };
@@ -226,8 +233,12 @@ test("a keyboard selection draws its relations source to target without a cut", 
     expect(index, `the reveal passes ${q}`).toBeGreaterThan(0);
     const rows = pointProgress(index);
     const third = Math.floor(SAMPLES / 3);
-    const source = mean(rows.flatMap((r) => r.slice(0, third)));
-    const targetEnd = mean(rows.flatMap((r) => r.slice(-third)));
+    const sourcePoints = rows.flatMap((r) => r.slice(0, third));
+    const targetPoints = rows.flatMap((r) => r.slice(-third));
+    expect(sourcePoints.filter(Number.isFinite).length, "the source third holds points the reveal lights").toBeGreaterThanOrEqual(MIN_LIT_POINTS);
+    expect(targetPoints.filter(Number.isFinite).length, "the target third holds points the reveal lights").toBeGreaterThanOrEqual(MIN_LIT_POINTS);
+    const source = mean(sourcePoints);
+    const targetEnd = mean(targetPoints);
     test.info().annotations.push({ type: `reveal@${q}`, description: JSON.stringify({ source, target: targetEnd }) });
     expect(source, `at ${q} the source end is lit ahead of the target end`).toBeGreaterThan(targetEnd);
   }

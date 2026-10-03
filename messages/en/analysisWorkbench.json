@@ -80,7 +80,7 @@
   "measurementScope": "These counts describe the recorded scan and its declared rules. Read unknown coverage before drawing a conclusion about maintainability.",
   "observationDetails": "Measurement and dependency evidence",
   "showRelationMeaning": "Label relationship meanings on the map",
-  "captionGuide": "Overview labels directional connections first. Select a concept or point at a connection to also read its associations. Up to 24 labels appear where they fit.",
+  "captionGuide": "Labels the meaning of a selected concept's connections. Up to 24 labels appear where they fit.",
   "captionHelp": "How to read connection labels",
   "loadingHistory": "Loading analysis history…",
   "targetSelected": "The target is now selected on the map.",

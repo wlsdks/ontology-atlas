@@ -15,7 +15,7 @@ import { useTopologySurfaceState } from "./use-topology-surface-state";
 import { useTopologyVisibilityState } from "./use-topology-visibility-state";
 import { useTopologyWorldState } from "./use-topology-world-state";
 
-import type { UseTopologyLoopArgs } from "./topology-loop-contract";
+import type { FlatDialFrameProps, UseTopologyLoopArgs } from "./topology-loop-contract";
 export type { UseTopologyLoopArgs } from "./topology-loop-contract";
 
 import { useTopologyCameraNavigation } from "./use-topology-camera-navigation";
@@ -31,7 +31,6 @@ import { useTopologyMotionPreference } from "./use-topology-motion-preference";
 import { useTopologyRealmTransition } from "./use-topology-realm-transition";
 import { useTopologyWorldLifecycle } from "./use-topology-world-lifecycle";
 
-/** Compose map state owners, lifecycle transitions, input, and the frame pipeline. */
 
 import {
   useCallback,
@@ -66,11 +65,8 @@ const EMPTY_TRAIL: readonly string[] = [];
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
-  /** Walk to a neighbour with the arrow keys — the canvas's `onKeyDown`. */
   handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
-  /** Raise one Strata plane's ring — the tier legend's hover; null clears it. */
   raiseDomeTier: (kind: DomeViewKind | null) => void;
-  /** The tier names' rendered widths by kind, as they measured themselves; `{}` places none. */
   setDomeTierNameWidths: (widths: Readonly<Record<string, number>>) => void;
   readLayoutMarks: () => MapLayoutMark[];
 };
@@ -90,7 +86,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false,
     mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
     expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
-    onWalkDeadEnd = null,
+    onWalkDeadEnd = null, domeEvidence, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
+    relationCaptions, reviewQuestionIds, flatRingMemory = null, loadProgress = null, placingTierRead = false,
   } = args;
   const {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
@@ -112,7 +109,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     trailLensOpenedAtRef, onZoomTierChangeRef, onDrawnCountChangeRef, drawnNodeCountRef, lastZoomTierRef,
     tierRevealRef,
   } = useTopologyPresentationState({
-    args,
+    relationCaptions,
+    reviewQuestionIds,
     previewEdge,
     glyphSet,
     canvasBackground,
@@ -287,23 +285,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectedEdgeRef,
     selectedEdge,
     annotationRef,
-    args,
+    relationCaptions,
+    reviewQuestionIds,
   });
-  /*
-   * Lit 3D — the evidence states the light is drawn from. A new measurement is a static
-   * state change, so it wakes the idle gate for one more frame the way a selection does.
-   */
-  const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(args.domeEvidence ?? null);
+  const domeEvidenceRef = useRef<ReadonlyMap<string, "current" | "stale" | "unknown"> | null>(domeEvidence ?? null);
   const domeLodRef = useRef<StrataLodState>(createStrataLodState());
   useEffect(() => {
-    domeEvidenceRef.current = args.domeEvidence ?? null;
+    domeEvidenceRef.current = domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
-  }, [args.domeEvidence, lastActiveMsRef]);
-  const onHiddenDependenciesChangeRef = useRef(args.onHiddenDependenciesChange);
+  }, [domeEvidence, lastActiveMsRef]);
+  const flatDialRef = useRef<FlatDialFrameProps>({ labels: null, evidence: null, impactLens: false, onChange: undefined, sent: null });
+  useEffect(() => {
+    const dial = flatDialRef.current;
+    dial.labels = dialLabels ?? null;
+    dial.evidence = evidenceStates ?? null;
+    dial.impactLens = impactLens ?? false;
+    dial.onChange = onFlatDialChange;
+    lastActiveMsRef.current = performance.now();
+  }, [dialLabels, evidenceStates, impactLens, onFlatDialChange, lastActiveMsRef]);
+  const onHiddenDependenciesChangeRef = useRef(onHiddenDependenciesChange);
   const hiddenDependenciesSentRef = useRef(-1);
   useEffect(() => {
-    onHiddenDependenciesChangeRef.current = args.onHiddenDependenciesChange;
-  }, [args.onHiddenDependenciesChange]);
+    onHiddenDependenciesChangeRef.current = onHiddenDependenciesChange;
+  }, [onHiddenDependenciesChange]);
   useTopologyClusterExpansion({
     prevExpandedParentsRef,
     expandedParents,
@@ -418,6 +422,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
+    dialLabels: dialLabels ?? null,
+    flatRingMemory,
+    loadProgress,
+    placingTierRead,
   });
 
   useTopologyViewportLifecycle({
@@ -619,7 +627,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewScaleRef,
   });
 
-  // --- single rAF loop: physics -> altitude -> emphasis -> particles -> draw ---
   useTopologyFrameLoop({
     canvasRef,
     projection: { domeRuntimeRef, cameraRef, reducedMotionRef, neuralRampRef },
@@ -917,6 +924,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeLodRef,
       onHiddenDependenciesChangeRef,
       hiddenDependenciesSentRef,
+      flatDialRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({
@@ -1032,22 +1040,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     },
   });
 
-  /**
-   * Raise one Strata plane's ring — the legend rail's hover, arriving from a DOM
-   * row rather than from the canvas. It marks activity as well as setting the ref,
-   * because the idle gate is skipping frames whenever the map is at rest, which is
-   * exactly when someone reads the legend.
-   */
   const raiseDomeTier = useCallback((kind: DomeViewKind | null) => {
     if (domeTierRaisedKindRef.current === kind) return;
     domeTierRaisedKindRef.current = kind;
     lastActiveMsRef.current = performance.now();
   }, [domeTierRaisedKindRef, lastActiveMsRef]);
 
-  /**
-   * The tier names' widths, measured by the names themselves in their own type — the
-   * canvas cannot measure DOM text. Marks activity so a map at rest places them.
-   */
   const setDomeTierNameWidths = useCallback((widths: Readonly<Record<string, number>>) => {
     domeTierNameWidthsRef.current = widths;
     lastActiveMsRef.current = performance.now();

@@ -87,6 +87,7 @@ export function installMapLayoutMorphProbe(): void {
         : null,
     marks: (atMs?: number) =>
       liveRun?.plan ? sampleLayoutMorph(liveRun.plan, atMs ?? liveRun.elapsedMs).map(({ id, x, y }) => ({ id, x, y })) : [],
+    aims: () => (liveRun?.plan ? liveRun.plan.ids.map((id, i) => ({ id, x: liveRun!.plan!.x1[i]!, y: liveRun!.plan!.y1[i]! })) : []),
     delays: () => (liveRun?.plan ? Object.fromEntries(liveRun.plan.ids.map((id, i) => [id, liveRun!.plan!.glide.delayMs[i]!])) : {}),
     velocity: (atMs?: number) => (liveRun?.plan ? Object.fromEntries(glideVelocity(liveRun.plan.glide, liveRun.plan, atMs ?? liveRun.elapsedMs)) : {}),
     publishes: () => mapLayoutPublishCount(),

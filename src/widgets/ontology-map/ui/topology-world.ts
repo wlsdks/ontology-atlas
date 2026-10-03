@@ -11,6 +11,20 @@ import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
 import { starMagnitude } from "../model/galaxy";
 import { computeDensityGate, type DensityGateParentGeometry } from "../model/density-gate";
+import {
+  readContainmentTree,
+  rollDirectedDomainFlows,
+  rollDomainDependencies,
+  rollRelatesCapabilityPairs,
+  rollRelatesDomainPairs,
+  type TreeInputEdge,
+  type TreeInputNode,
+} from "../model/containment-tree";
+import { buildDialModel, resolveDialAttention } from "../dial/dial-model";
+import { dialOverviewPad } from "../dial/fit";
+import { layoutDial } from "../dial/layout";
+import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../dial/order";
+import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../dial/types";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
 import { fireflySeed } from "../render/edge-fireflies";
@@ -187,6 +201,32 @@ export interface TopologyWorld {
    * is drawn (`computeDrawnSpineBounds`).
    */
   spineBounds: Bounds;
+  dial?: DialWorld | null;
+  dialScaleMax?: number | null;
+}
+
+type DialBearing = { dial?: DialWorld | null };
+
+const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
+
+export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number } | undefined {
+  return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR } : undefined;
+}
+
+export interface DialFocusFrame {
+  ids: ReadonlySet<string>;
+  nameScale: number;
+}
+
+export function dialFocusFrame(world: DialBearing, focusId: string, tokens: Pick<DialTokens, "pitch" | "capName">): DialFocusFrame | undefined {
+  const model = world.dial?.model;
+  if (!model?.capabilityById.has(focusId)) return undefined;
+  const a = resolveDialAttention(model, null, focusId);
+  return { ids: new Set([focusId, ...a.needsCaps, ...a.usedByCaps, ...a.relatesCaps]), nameScale: tokens.capName / tokens.pitch };
+}
+
+function extentBounds(dial: DialWorld): Bounds {
+  return { ...dial.scene.extent };
 }
 
 export function radiusForKind(kind: WorldNodeKind, tokens: OntologyMapTokens): number {
@@ -259,9 +299,10 @@ export function computeSpineBounds(nodes: readonly WorldNode[], tokens: Ontology
  * set on arrival and another on the fit button.
  */
 export function computeFoldedIds(
-  world: Pick<TopologyWorld, "childrenByParent" | "nodeById">,
+  world: Pick<TopologyWorld, "childrenByParent" | "nodeById"> & DialBearing,
   expandedParents: ReadonlySet<string>,
 ): ReadonlySet<string> {
+  if (world.dial) return EMPTY_EXPANDED_PARENTS;
   return computeDensityGate({
     childrenByParent: world.childrenByParent,
     expandedParents,
@@ -286,11 +327,12 @@ export function computeFoldedIds(
  * Falls back to the whole spine when none of it would be drawn.
  */
 export function computeDrawnSpineBounds(
-  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById">,
+  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
   folded: ReadonlySet<string> = computeFoldedIds(world, expandedParents),
 ): Bounds {
+  if (world.dial) return extentBounds(world.dial);
   let bounds: Bounds | null = null;
   for (const node of world.nodeById.values()) {
     if (!isSpineNode(node) || folded.has(node.id)) continue;
@@ -316,11 +358,12 @@ export function computeDrawnSpineBounds(
  * spine.
  */
 export function computeRevealedBounds(
-  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById">,
+  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
   clustered: ReadonlySet<string> | null,
 ): Bounds {
+  if (world.dial) return extentBounds(world.dial);
   const folded = computeFoldedIds(world, expandedParents);
   const bounds = computeDrawnSpineBounds(world, tokens, expandedParents, folded);
   for (const parentId of expandedParents) {
@@ -346,7 +389,7 @@ export function computeRevealedBounds(
  * focus and counts; the source's own folded children stay behind its chip and do not.
  */
 export function computePathPickBounds(
-  world: Pick<TopologyWorld, "nodeById" | "neighborMap" | "childrenByParent">,
+  world: Pick<TopologyWorld, "nodeById" | "neighborMap" | "childrenByParent"> & DialBearing,
   tokens: OntologyMapTokens,
   sourceId: string,
   overview: Bounds,
@@ -396,11 +439,15 @@ export function computeEgoBounds(
     if (restrictIds && !restrictIds.has(id)) continue;
     egoIds.add(id);
   }
+  return computeIdsBounds(world, tokens, egoIds);
+}
+
+export function computeIdsBounds(world: Pick<TopologyWorld, "nodeById">, tokens: OntologyMapTokens, ids: Iterable<string>): Bounds | null {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const id of egoIds) {
+  for (const id of ids) {
     const n = world.nodeById.get(id);
     if (!n) continue;
     const r = radiusForKind(n.kind, tokens);
@@ -504,6 +551,8 @@ export function buildTopologyWorld(
    * the world-build effect's deps in `use-topology-loop`).
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
+  dialInput: DialWorldInput | null = null,
+  placeDial: ((model: DialModel) => DialModel) | null = null,
 ): TopologyWorld {
   /*
    * **A node is drawn under the last containment parent that keeps it in the domain the
@@ -565,22 +614,26 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
-  // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
-  // the density gate collapses (under a parent with more than 12 children) hides
-  // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
-  // coordinates are still computed for everything, so there is no coordinate hole
-  // when a tier opens or a chip expands.
-  //
-  // `expandedParents` is deliberately not passed — the world is rebuilt only when
-  // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
-  // every expansion resets the entry ramps and springs, making the screen jump.
-  // Expanded children appear at their seed positions, and local re-relaxation is a
-  // later slice's job.
-  const relaxScope = computeRelaxScope(layoutInput);
-  // Feed the real §2.3 node radii into the deterministic de-pileup so its
-  // collision min-distance matches what actually gets drawn.
-  const pointById = new Map(
-    computeConcentricLayout(layoutInput, rings, {
+  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
+  const pointById = new Map<string, { x: number; y: number }>();
+  if (dial && nodes.every((n) => dial.scene.positions.has(n.id))) {
+    for (const n of nodes) pointById.set(n.id, dial.scene.positions.get(n.id)!);
+  } else {
+    // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
+    // the density gate collapses (under a parent with more than 12 children) hides
+    // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
+    // coordinates are still computed for everything, so there is no coordinate hole
+    // when a tier opens or a chip expands.
+    //
+    // `expandedParents` is deliberately not passed — the world is rebuilt only when
+    // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
+    // every expansion resets the entry ramps and springs, making the screen jump.
+    // Expanded children appear at their seed positions, and local re-relaxation is a
+    // later slice's job.
+    const relaxScope = computeRelaxScope(layoutInput);
+    // Feed the real §2.3 node radii into the deterministic de-pileup so its
+    // collision min-distance matches what actually gets drawn.
+    const seeded = computeConcentricLayout(layoutInput, rings, {
       radii: {
         project: tokens.radiusProject,
         domain: tokens.radiusDomain,
@@ -589,8 +642,9 @@ export function buildTopologyWorld(
       },
       relaxScope,
       expandStructure,
-    }).map((p) => [p.id, p]),
-  );
+    });
+    for (const p of seeded) pointById.set(p.id, dial?.scene.positions.get(p.id) ?? p);
+  }
 
   const worldNodes: WorldNode[] = nodes.map((n) => {
     const point = pointById.get(n.id);
@@ -751,8 +805,36 @@ export function buildTopologyWorld(
     clusterMetaByParent,
     brightStarIds,
     bounds: computeFullBounds(worldNodes, tokens),
-    spineBounds: computeSpineBounds(worldNodes, tokens),
+    spineBounds: dial ? extentBounds(dial) : computeSpineBounds(worldNodes, tokens),
+    dial,
+    dialScaleMax: dial && dialInput
+      ? Math.max(dialInput.tokens.reachCap / dialInput.tokens.pitch, dialInput.tokens.reachElement / dial.scene.medianElementPitch)
+      : null,
   };
+}
+
+const DIAL_KINDS: ReadonlySet<string> = new Set(["project", "domain", "capability", "element"]);
+
+function buildDialWorld(
+  nodes: readonly OntologyMapNode[],
+  edges: readonly OntologyMapEdge[],
+  input: DialWorldInput,
+  placeDial: ((model: DialModel) => DialModel) | null,
+): DialWorld | null {
+  const treeNodes: TreeInputNode[] = [];
+  for (const n of nodes) if (DIAL_KINDS.has(n.kind)) treeNodes.push({ id: n.id, label: n.label, kind: n.kind });
+  if (!treeNodes.some((n) => n.kind === "domain")) return null;
+  const treeEdges: TreeInputEdge[] = edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType }));
+  const tree = readContainmentTree(treeNodes, treeEdges);
+  const dependencies = rollDomainDependencies(tree, treeEdges);
+  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
+  const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
+  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges) });
+  const model = placeDial ? placeDial(built) : built;
+  const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
+  if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
+  const scene = layoutDial(model, order, input.tokens, input.memory);
+  return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
 }
 
 /**
@@ -876,7 +958,7 @@ export function recomputeWorldGeometry(
     world.bounds.maxX = full.maxX;
     world.bounds.maxY = full.maxY;
   }
-  const spine = computeSpineBounds(world.nodes, tokens);
+  const spine = world.dial ? extentBounds(world.dial) : computeSpineBounds(world.nodes, tokens);
   world.spineBounds.minX = spine.minX;
   world.spineBounds.minY = spine.minY;
   world.spineBounds.maxX = spine.maxX;

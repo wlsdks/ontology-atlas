@@ -23,12 +23,16 @@ import {
   MapLayoutMorphOverlay,
   OntologyMap,
   PLAIN_TIER_REVEAL,
+  capabilityTierRead,
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
+  type FlatDialState,
 } from "@/widgets/ontology-map";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useCosmosPlacement } from "../model/use-cosmos-placement";
+import { useFlatRingMemory } from "../model/use-flat-ring-memory";
 import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
@@ -39,6 +43,7 @@ import { TopologyLightLegend } from "./TopologyLightLegend";
 import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
 export interface TopologyMapRendererProps {
+  onFlatDialShown?: (state: FlatDialState | null) => void;
   localGraphRoot: string | null;
   mapEntryTicket: number | null;
   expandAllActive: boolean;
@@ -107,11 +112,13 @@ export interface TopologyMapRendererProps {
     | "realmCaption"
     | "clusterBarLabels"
     | "domeTierLabels"
+    | "dialLabels"
   >;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug" | "handleContextMenuNode" | "panelHoverNodeIdRef">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "constellationFitToken" | "routedConstellation" | "spotlightExpandedParents">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "renderedIndexState">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "openCreateNode">;
+  impactLensActive: boolean;
 }
 
 export function TopologyMapRenderer({
@@ -120,20 +127,25 @@ export function TopologyMapRenderer({
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent,
+  topologyIndexPresentation, topologyCreateIntent, onFlatDialShown, impactLensActive,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const arrivingDocuments = vault.partialTotal;
   const arriving = arrivingDocuments > 0;
+  const loadProgress = useVaultLoadProgress();
+  const placingTierRead = useMemo(
+    () => arriving && capabilityTierRead((ontologyInsight?.nodes ?? []).flatMap((node) => node.evidenceIds)),
+    [arriving, ontologyInsight],
+  );
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
   } = topologyAuthoring;
   const {
     handleExpandRequest, handleMapFrameDrawn, handleTopologyGraphStatsChange, mapLensIds, mapLensKind,
-    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels,
+    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels,
   } = topologySceneControls;
   const { setFullDetailSlug, handleContextMenuNode, panelHoverNodeIdRef } = topologyCanvasFocus;
   const { constellationFitToken, routedConstellation, spotlightExpandedParents } = topologyExplorationLenses;
@@ -144,8 +156,13 @@ export function TopologyMapRenderer({
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
   const { tourAnchorNodeId, tourAnchorRef } = topologyKeyboardTour;
   const { nodePanelMounted } = topologyInspectorState;
-  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3d });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !galaxy && !hexBoard });
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
+  const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
+  const [flatDial, setFlatDial] = useState<FlatDialState>({ drawn: false, evidenceMeasured: false });
+  const onFlatDialChange = useCallback((state: FlatDialState) => {
+    setFlatDial(state);
+  }, []);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
@@ -156,6 +173,7 @@ export function TopologyMapRenderer({
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
   const cosmosPlacement = useCosmosPlacement(vaultIdentity);
+  const flatRingMemory = useFlatRingMemory(vaultIdentity);
   const morph = useMapLayoutMorph({
     view: layoutView,
     reducedMotion,
@@ -167,12 +185,16 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents, dialLabels, dialMemory: flatRingMemory.current() },
         host,
       ),
     frameRef,
   });
   const { onIncomingDrawn } = morph;
+  const flatDialShown = morph.surface === "map" && flatDial.drawn ? flatDial : null;
+  useEffect(() => {
+    onFlatDialShown?.(flatDialShown);
+  }, [flatDialShown, onFlatDialShown]);
   const onDrawnCountChange = useCallback(
     (drawn: number) => {
       handleMapFrameDrawn(drawn);
@@ -272,6 +294,13 @@ export function TopologyMapRenderer({
           <OntologyMap
             nodes={nodes}
             edges={edges}
+            flatRingMemory={flatRingMemory}
+            dialLabels={dialLabels}
+            evidenceStates={evidenceStates}
+            impactLens={impactLensActive}
+            onFlatDialChange={onFlatDialChange}
+            loadProgress={arriving ? loadProgress : null}
+            placingTierRead={placingTierRead}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
@@ -336,7 +365,7 @@ export function TopologyMapRenderer({
             view3d={view3d}
             galaxy={galaxy}
             mapArrangement={mapArrangement}
-            domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+            domeEvidence={evidenceStates}
             onHiddenDependenciesChange={setHiddenDependencyCount}
             domeLightLegend={
               <TopologyLightLegend

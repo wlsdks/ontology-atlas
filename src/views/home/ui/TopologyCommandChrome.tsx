@@ -338,7 +338,7 @@ export function TopologyCommandChrome({
             }}
             // Galaxy always renders every concept, so the Flat expand action is hidden rather than
             // inert.
-            onToggleExpandAll={galaxy ? undefined : handleToggleExpandAll}
+            onToggleExpandAll={!galaxy && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
             allExpanded={expandAllActive}
             realmChip={
               resolvedRealmSlug && realmTitle ? (

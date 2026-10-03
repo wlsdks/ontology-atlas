@@ -141,6 +141,26 @@ describe('progressive manifest build', () => {
     expect(progress.map((step) => step.read)).toEqual([...progress.map((step) => step.read)].sort((a, b) => a - b));
   });
 
+  it('publishes what was read once the delay passes, even while every later read stalls', async () => {
+    const files = makeVault();
+    const held = Promise.withResolvers<void>();
+    readTauriVaultTextFiles.mockImplementation(async (_root: string, paths: string[]) => {
+      if (paths.some((path) => path.startsWith('elements/') || path.startsWith('notes/'))) await held.promise;
+      return paths.map((relativePath) => ({ relativePath, text: files.get(relativePath)!, lastModified: 1_700_000_000_000, error: null }));
+    });
+    const partials: string[][] = [];
+    const built = buildLocalManifestWithEntries(makeRoot(files, [], '/vault'), {
+      partialAfterMs: 150,
+      onPartial: (partial) => partials.push(partial.manifest.docs.map((entry) => entry.path)),
+    });
+    await vi.waitFor(() => expect(partials.length).toBeGreaterThan(0), { timeout: 2_000, interval: 10 });
+    expect(partials[0]!.filter((path) => path.startsWith('capabilities/'))).toHaveLength(40);
+    expect(partials[0]!.some((path) => path.startsWith('elements/'))).toBe(false);
+    held.resolve();
+    const { build } = await built;
+    expect(build.manifest.docs).toHaveLength(675);
+  });
+
   it('publishes nothing when the read is over before the delay', async () => {
     const onPartial = vi.fn();
     await buildLocalManifestWithEntries(makeRoot(makeVault()), { onPartial, partialAfterMs: 60_000 });
