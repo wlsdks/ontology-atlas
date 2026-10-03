@@ -68,9 +68,9 @@ test("the play tile toggles the replay, survives pointer input, and stops on a s
   await expect(tile, "움직였다고 눌린 상태가 풀리지 않는다").toHaveAttribute("aria-pressed", "true");
 
   await tile.click();
-  await expect(tile, "멈추면 컨트롤도 쉰다").toHaveAttribute("aria-pressed", "false");
   const stopped = await page.evaluate(() => performance.now());
   expect(await causesSince(page, stopped), "두 번째 누름으로 재생이 끝난다").not.toContain("growthReplaying");
+  await expect(tile, "멈추면 컨트롤도 쉰다").toHaveAttribute("aria-pressed", "false");
 });
 
 test("Escape and a press on the canvas each end a running replay", async ({ page }) => {
@@ -84,16 +84,16 @@ test("Escape and a press on the canvas each end a running replay", async ({ page
   await tile.click();
   await expect.poll(() => lastActiveCauses(page)).toContain("growthReplaying");
   await page.keyboard.press("Escape");
-  await expect(tile).toHaveAttribute("aria-pressed", "false");
   const escaped = await page.evaluate(() => performance.now());
   expect(await causesSince(page, escaped), "Esc 로 재생이 끝난다").not.toContain("growthReplaying");
+  await expect(tile).toHaveAttribute("aria-pressed", "false");
 
   await tile.click();
   await expect.poll(() => lastActiveCauses(page)).toContain("growthReplaying");
   const canvas = page.locator('[data-testid="ontology-map-canvas"]');
   const box = (await canvas.boundingBox())!;
   await page.mouse.click(box.x + box.width - 60, box.y + box.height - 60);
-  await expect(tile).toHaveAttribute("aria-pressed", "false");
   const pressed = await page.evaluate(() => performance.now());
   expect(await causesSince(page, pressed), "캔버스를 누르면 재생이 끝난다").not.toContain("growthReplaying");
+  await expect(tile).toHaveAttribute("aria-pressed", "false");
 });
