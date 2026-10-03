@@ -13,7 +13,7 @@ import {
   type SpringOffset,
 } from "../expressive/release-offsets";
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly } from "../morph/tier-assembly";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
 import { initHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -88,6 +88,8 @@ interface Dependencies {
   placingTierRead: boolean;
 }
 
+const SIM_AFTER_ASSEMBLY_MS = 400;
+
 function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
   try {
     return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
@@ -156,6 +158,12 @@ export function useTopologyWorldLifecycle({
   const arrivalGlideRef = useRef(false);
   const [dialPlacement] = useState(createDialPlacement);
   const placementStateRef = useRef<DialPlacementState>("settled");
+  const pendingSimRef = useRef<{ world: TopologyWorld; nodes: { id: string; x: number; y: number }[]; edges: { source: string; target: string }[] } | null>(null);
+  const buildPendingSim = useCallback(() => {
+    const pending = pendingSimRef.current;
+    pendingSimRef.current = null;
+    if (pending && worldRef.current === pending.world && simRef.current === null) simRef.current = createForceSimulation(pending.nodes, pending.edges);
+  }, [simRef, worldRef]);
   const provisionalMemoryRef = useRef<DialMemory | null>(null);
 
   /**
@@ -343,11 +351,12 @@ export function useTopologyWorldLifecycle({
     // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
     simRef.current = null;
-    const simNodes = world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y }));
-    const simEdges = world.edges.map((e) => ({ source: e.sourceId, target: e.targetId }));
-    const simTask = setTimeout(() => {
-      if (worldRef.current === world && simRef.current === null) simRef.current = createForceSimulation(simNodes, simEdges);
-    }, 0);
+    pendingSimRef.current = {
+      world,
+      nodes: world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+      edges: world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+    };
+    const simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
     nodeDragRef.current = null;
     // No load-time settle: the sim stays cold until a node is pin-dragged. The
     // static default is the deterministic de-piled grid from `topology-world`.
@@ -434,6 +443,7 @@ export function useTopologyWorldLifecycle({
     const container = containerRef.current;
     if (!container) return;
     const settle = () => {
+      buildPendingSim();
       if (worldRef.current) settleTierAssembly(worldRef.current);
     };
     const events = ["pointerdown", "wheel", "touchstart"] as const;
@@ -443,7 +453,7 @@ export function useTopologyWorldLifecycle({
       for (const type of events) container.removeEventListener(type, settle, { capture: true });
       window.removeEventListener("keydown", settle, { capture: true });
     };
-  }, [containerRef, worldRef]);
+  }, [buildPendingSim, containerRef, worldRef]);
 
   return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
 }
