@@ -198,6 +198,10 @@ export function layoutMorphEffect(atMs: number): number {
   return easeMotion(Math.min(1, Math.max(0, atMs / EFFECT_MS)));
 }
 
+export function layoutMorphSize(from: number, to: number, position: number, effect: number): number {
+  return from + (to - from) * (to > from ? Math.min(1, position) : effect);
+}
+
 export function sampleLayoutMorphFrame(plan: LayoutMorphPlan, atMs: number, frame?: GlideFrame): GlideFrame {
   return sampleGlide(plan.glide, plan, atMs, frame ?? createGlideFrame(plan.ids.length));
 }
@@ -215,7 +219,7 @@ export function sampleLayoutMorph(plan: LayoutMorphPlan, atMs: number): MapLayou
         id: plan.ids[i]!,
         x: frame.x[i]!,
         y: frame.y[i]!,
-        size: plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * Math.min(1, frame.p[i]!),
+        size: layoutMorphSize(plan.s0[i]!, plan.s1[i]!, frame.p[i]!, e),
         shape: style.shape,
         fill: style.fill,
         stroke: style.stroke,
