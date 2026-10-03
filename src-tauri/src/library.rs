@@ -370,6 +370,10 @@ pub fn import_source_files(
                 break;
             }
         }
+        if root.join(SOURCES_DIR).join(&candidate).exists() {
+            results.push(failure("file-name-conflict-limit"));
+            continue;
+        }
         let renamed = candidate != base_name;
         let relative = format!("{SOURCES_DIR}/{candidate}");
         let copied = source
