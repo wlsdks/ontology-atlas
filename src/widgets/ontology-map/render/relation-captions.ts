@@ -1,4 +1,4 @@
-export interface CaptionBox { minX: number; minY: number; maxX: number; maxY: number }
+interface CaptionBox { minX: number; minY: number; maxX: number; maxY: number }
 export type CaptionReservation = CaptionBox & { sunk?: boolean };
 export interface RelationCaption { edgeId: string; text: string; x: number; y: number; priority: number; normal?: { x: number; y: number } }
 export type PlacedRelationCaption = Omit<RelationCaption, 'normal'> & CaptionBox;
