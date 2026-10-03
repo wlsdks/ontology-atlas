@@ -1069,7 +1069,7 @@ function createCouplingCloudRelaxer(
   };
 }
 
-export const DOME_BUILD_SLICE_MS = 28;
+export const DOME_BUILD_SLICE_MS = 4;
 
 export interface DomeModelBuild {
   /** Drawable from the start: a coupling build rewrites its coords after every finished iteration. */
