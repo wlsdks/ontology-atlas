@@ -24,7 +24,7 @@ const MAP = {
   canvasBgNear: "#101014", edgeDepends: "#8a8fa8", indigoBright: "#8b8cff", edgeSelected: "#7882ff", labelDomain: "#d0d2dc",
   labelElement: "#9a9caa", labelCapability: "#b8bac8", labelProject: "#e8e8f0", edgeContainsL2: "#3a3c48", nodeFillCapability: "#20222c",
   nodeStrokeCapability: "#7a7e96", nodeFillElement: "#1a1c24", nodeStrokeElement: "#6a6e80", nodeHoleFill: "#0c0c10", statusWarning: "#e0a040",
-  nodeStrokeDim: "#44465a", nodeFillDim: "#18181c", nodeFillDomain: "#262836", egoRestAlpha: 0.32, radiusProject: 22,
+  nodeStrokeDim: "#44465a", nodeFillDim: "#18181c", nodeFillDomain: "#262836", egoRestAlpha: 0.32, radiusProject: 22, cameraMaxZoomRatio: 3.2,
 } as unknown as OntologyMapTokens;
 const INKS = resolveDialInks(MAP, TOKENS);
 
@@ -106,7 +106,7 @@ function run(o: RunOptions = {}) {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: INKS, labels: LABELS,
     evidence: o.evidence === undefined ? null : dialEvidenceView(model, o.evidence),
     attention: resolveDialAttention(model, null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
-    scale, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
+    scale, zoomRatio: 1, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
@@ -218,6 +218,18 @@ describe("buildDialMarks", () => {
     const far = run({ scale: 0.15 });
     expect(far.out.discs).toHaveLength(0);
     expect(far.result.alphas.get("d0c0")).toBeUndefined();
+  });
+
+  it("recedes a focused capability's siblings to the rest alpha and keeps its partners", () => {
+    const { result, out } = run({ focusId: "d3c1" });
+    expect(result.alphas.get("d3c1")).toBe(1);
+    expect(result.alphas.get("d2c0")).toBe(1);
+    expect(result.alphas.get("d3c0")).toBe(MAP.egoRestAlpha);
+    expect(result.alphas.get("d3")).toBe(1);
+    const sibling = out.discs.find((d) => d.id === "d3c0")!;
+    const partner = out.discs.find((d) => d.id === "d2c0")!;
+    expect(out.inks[sibling.rim]).toBe(mixOver(INKS.capabilityReceded, INKS.bg, 1));
+    expect(out.inks[partner.rim]).toBe(INKS.usedBy);
   });
 
   it("colours rims by evidence only when evidence is measured", () => {

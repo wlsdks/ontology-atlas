@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerDisc, type LedgerInput } from "./ledger";
+import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerDisc, type LedgerInput } from "./ledger";
 
 const TOKENS = { ledgerRowPx: 14, ledgerGapPx: 24 };
 const measure = (text: string) => text.length * 6;
@@ -109,9 +109,30 @@ describe("buildLedger", () => {
 describe("ledgerWanted", () => {
   const tokens = { reachCap: 96 };
   it("shows only when names are missing and the pitch is below reach-cap", () => {
-    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 19, capabilityPitchPx: 40, tokens })).toBe(true);
-    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 20, capabilityPitchPx: 40, tokens })).toBe(false);
-    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 3, capabilityPitchPx: 96, tokens })).toBe(false);
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 19, capabilityPitchPx: 40, namesFitInPlace: false, tokens })).toBe(true);
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 20, capabilityPitchPx: 40, namesFitInPlace: false, tokens })).toBe(false);
+    expect(ledgerWanted({ capabilityCount: 20, namedInPlace: 3, capabilityPitchPx: 96, namesFitInPlace: false, tokens })).toBe(false);
+  });
+
+  it("stays away while zooming in would name every capability in place", () => {
+    expect(ledgerWanted({ capabilityCount: 8, namedInPlace: 0, capabilityPitchPx: 16, namesFitInPlace: true, tokens })).toBe(false);
+  });
+});
+
+describe("namesFitInPlace", () => {
+  const measure = (text: string) => text.length * 6.5;
+  const ring = (n: number, radius: number) =>
+    Array.from({ length: n }, (_, k) => ({ id: `c${k}`, x: Math.cos((k * 2 * Math.PI) / n) * radius, y: Math.sin((k * 2 * Math.PI) / n) * radius, direct: false, elements: 1, label: `Capability ${k}` }));
+  const input = (items: ReturnType<typeof ring>, scale: number) => ({
+    items, chip: { x: 0, y: 0 }, chipRadiusPx: 10, scale, discRadiusPx: () => 4, fontPx: 12, font: "12px sans-serif", measureText: measure,
+  });
+
+  it("finds room for a few names spread around the chip", () => {
+    expect(namesFitInPlace(input(ring(4, 60), 1.5))).toBe(true);
+  });
+
+  it("refuses a crowd whose names cannot all stand beside their discs", () => {
+    expect(namesFitInPlace(input(ring(40, 60), 1.5))).toBe(false);
   });
 });
 

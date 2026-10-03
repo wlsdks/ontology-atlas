@@ -1,4 +1,4 @@
-import { crossesBox, overlaps } from "./label-marks";
+import { capabilityNameTries, crossesBox, overlaps } from "./label-marks";
 import type { Box, DialTokens, Point } from "./types";
 
 export interface LedgerDisc {
@@ -27,11 +27,47 @@ export interface LedgerTriggerInput {
   capabilityCount: number;
   namedInPlace: number;
   capabilityPitchPx: number;
+  namesFitInPlace: boolean;
   tokens: Pick<DialTokens, "reachCap">;
 }
 
 export function ledgerWanted(input: LedgerTriggerInput): boolean {
-  return input.namedInPlace < input.capabilityCount && input.capabilityPitchPx < input.tokens.reachCap;
+  return !input.namesFitInPlace && input.namedInPlace < input.capabilityCount && input.capabilityPitchPx < input.tokens.reachCap;
+}
+
+export interface InPlaceNamesInput {
+  items: readonly { id: string; x: number; y: number; direct: boolean; elements: number; label: string | null }[];
+  chip: Point;
+  chipRadiusPx: number;
+  scale: number;
+  discRadiusPx(elements: number): number;
+  fontPx: number;
+  font: string;
+  measureText(text: string, font: string): number;
+}
+
+const circleBox = (x: number, y: number, r: number): Box => ({ minX: x - r - 1, maxX: x + r + 1, minY: y - r - 1, maxY: y + r + 1 });
+
+export function namesFitInPlace(input: InPlaceNamesInput): boolean {
+  const s = input.scale;
+  const at = (it: { x: number; y: number }) => ({ x: (it.x - input.chip.x) * s, y: (it.y - input.chip.y) * s });
+  const marks: Box[] = [circleBox(0, 0, input.chipRadiusPx)];
+  const named: { id: string; label: string; elements: number; disc: { x: number; y: number; r: number } }[] = [];
+  for (const it of input.items) {
+    const p = at(it);
+    const r = input.discRadiusPx(it.elements);
+    marks.push(circleBox(p.x, p.y, r));
+    if (!it.direct && it.label !== null) named.push({ id: it.id, label: it.label, elements: it.elements, disc: { ...p, r } });
+  }
+  named.sort((x, y) => y.elements - x.elements || (x.id < y.id ? -1 : 1));
+  const claimed: Box[] = [];
+  for (const { label, disc } of named) {
+    const pick = capabilityNameTries(disc, input.measureText(label, input.font), input.fontPx)
+      .find((t) => !marks.some((m) => overlaps(m, t.box)) && !claimed.some((c) => overlaps(c, t.box)));
+    if (!pick) return false;
+    claimed.push(pick.box);
+  }
+  return true;
 }
 
 interface LedgerRow {

@@ -119,7 +119,7 @@ function frame(model: DialModel, focusId: string | null, zoom = 1) {
   const input: DialMarksInput = {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
     attention: resolveDialAttention(model, null, focusId), previous: null, inkMix: 1, chordPresence: 1,
-    scale, labelScale: TOKENS.labelScale, viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 },
+    scale, zoomRatio: zoom, labelScale: TOKENS.labelScale, viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: () => 1, measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: "10k",

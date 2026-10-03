@@ -122,7 +122,7 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   const built = buildDialMarks({
     model, scene, tokens: input.dialTokens, mapTokens: input.mapTokens, inks: inksOf(input), labels: input.labels,
     evidence: evidenceOf(model, input.evidence), attention, previous, inkMix, chordPresence,
-    scale: input.scale, labelScale: input.labelScale, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
+    scale: input.scale, zoomRatio: input.zoomRatio, labelScale: input.labelScale, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
     freeRect: input.freeRect, nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText,
     elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, disclosure,
@@ -325,6 +325,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
   const ledger = built.ledger
     ? { domainId: built.ledger.plan.domainId, shown: built.ledger.plan.rows.length, total: built.ledger.plan.total, more: built.ledger.plan.more?.count ?? 0, leaderCrossings: built.ledger.leaderCrossings }
     : null;
+  const orphans = new Set(scene.orphans.ids);
   return {
     owns: true,
     zoomRatio: input.zoomRatio,
@@ -344,7 +345,8 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
     placement: { state: dialPlacementOf(input.dial).state, held: dialPlacementOf(input.dial).held },
     texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
     numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
-    discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r })),
+    discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "" })),
+    squares: marks.squares.filter((q) => q.id !== null && !orphans.has(q.id)).length,
     strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),
     ledger,
     crossings: countCrossings(lines, viewportWidth, viewportHeight),

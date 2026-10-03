@@ -149,6 +149,26 @@ describe("buildFlowMarks", () => {
     expect(run(model, { focusId: "d3", occupied: [WIDE] }).out.numerals).toHaveLength(0);
   });
 
+  it("sets a focus number beside its stroke when every slot on the stroke is taken", () => {
+    const model = modelOf([["d0c0", "d3c0"], ["d0c1", "d3c0"], ["d3c1", "d0c0"]]);
+    const first = run(model, { focusId: "d3" }).out;
+    const at = (s: (typeof first.strips)[number], t: number) => {
+      const u = 1 - t;
+      return { x: u * u * s.ax + 2 * u * t * s.cx + t * t * s.bx, y: u * u * s.ay + 2 * u * t * s.cy + t * t * s.by };
+    };
+    const blocked: Box[] = [];
+    for (const s of first.strips) {
+      for (let k = 0; k <= 20; k += 1) {
+        const p = at(s, k / 20);
+        blocked.push({ minX: p.x - 4, maxX: p.x + 4, minY: p.y - 4, maxY: p.y + 4 });
+      }
+    }
+    const { out } = run(model, { focusId: "d3", occupied: [...blocked] });
+    expect(out.numerals.map((n) => n.text).sort()).toEqual(["1", "2"]);
+    for (const n of out.numerals) expect(blocked.some((b) => overlap(b, n.box))).toBe(false);
+    for (const s of out.strips) expect([s.gapT0, s.gapT1]).toEqual([0, 0]);
+  });
+
   it("keeps rest numbers within clamp(0.6 × domains on screen, 4, 9), counts ≥ 2, off occupied boxes", () => {
     const model = modelOf(BASE);
     const { out } = run(model);
@@ -197,7 +217,7 @@ describe("buildFlowMarks", () => {
     expect(texts.length).toBeGreaterThanOrEqual(2);
     for (const t of texts) expect(expected.has(t)).toBe(true);
     expect(texts).toContain("Domain 1 →2 ←1");
-    expect(new Set(out.strips.map((s) => s.flowKey))).toEqual(new Set(["d0\0d1", "d0\0d4", "d0\0d5"]));
+    expect(new Set(out.strips.map((s) => s.flowKey))).toEqual(new Set(result.stubs.map((s) => s.flowKey)));
     expect(out.strips.every((s) => s.role === "stub")).toBe(true);
     for (const s of result.stubs) expect(s.box.minX >= free.minX && s.box.maxX <= free.maxX).toBe(true);
   });
@@ -212,8 +232,20 @@ describe("buildFlowMarks", () => {
     const model = modelOf([["d0c0", "d1c0"], ["d0c0", "d5c0"]]);
     const free = { minX: 350, minY: 20, maxX: 650, maxY: 300 };
     const long = (text: string) => (text.startsWith("Domain 5") ? 900 : text.length * 6);
-    const { result } = run(model, { freeRect: free, measureText: long, viewportWidth: 4000, viewportHeight: 4000 });
+    const { result, out } = run(model, { freeRect: free, measureText: long, viewportWidth: 4000, viewportHeight: 4000 });
     expect(result.stubs.map((s) => s.text)).toEqual(["Domain 1 →1"]);
+    expect(out.strips.map((s) => s.flowKey)).toEqual(["d0\0d1"]);
+    expect(result.drawn).toEqual(["d0\0d1"]);
+  });
+
+  it("draws no stub whose stroke would cross a placed name", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c0", "d5c0"]]);
+    const free = { minX: 350, minY: 20, maxX: 650, maxY: 300 };
+    const open = run(model, { freeRect: free, viewportWidth: 4000, viewportHeight: 4000 });
+    expect(open.result.stubs.length).toBeGreaterThan(0);
+    const blocked = run(model, { freeRect: free, viewportWidth: 4000, viewportHeight: 4000, avoidTexts: [{ minX: 0, minY: 0, maxX: 4000, maxY: 4000 }] });
+    expect(blocked.result.stubs).toEqual([]);
+    expect(blocked.out.strips).toEqual([]);
   });
 
   it("draws nothing at presence 0, and waits for the later end's appear", () => {
