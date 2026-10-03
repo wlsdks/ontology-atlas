@@ -728,6 +728,14 @@ until a local manifest, or the first part of one, exists.
                            local runners by address, Keychain keys, the experimental Jev
                            check and the sent-log count; the settings Agents pane keeps door
                            rows to it and to MCP (2026-10-02).
+                           Native sent-log reads use audit_read.rs: one caller-owned,
+                           generation-validated descriptor, raw pulls up to 1MiB,
+                           four aggregate slots and idle/total leases. Unsupported
+                           platforms retain existing file transport. Changed/failed/
+                           expired bounded reads remain unavailable with Retry;
+                           only complete scans publish count
+                           and five recent rows. Web retains FSA. Keychain presence
+                           lookups dispatch off the window event thread.
                            Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17

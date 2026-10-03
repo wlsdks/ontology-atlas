@@ -1,3 +1,5 @@
+import { openTauriAuditSource } from './tauri-vault-fs';
+
 /**
  * Parser for the LLM call audit log (`.ontology-atlas/llm-audit.jsonl`) —
  * **read-only**.
@@ -148,6 +150,11 @@ export function parseLlmAuditLog(
 
 export const LLM_AUDIT_LOG_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
 
+export type AuditReadFailure = 'changed' | 'expired' | 'failed';
+export class AuditReadError extends Error {
+  constructor(readonly reason: AuditReadFailure) { super(`audit-read-${reason}`); }
+}
+
 export interface LlmAuditSummary {
   total: number;
   entries: LlmAuditEntry[];
@@ -220,15 +227,21 @@ export async function readLlmAuditSummary(
   if (!Number.isSafeInteger(limit) || limit < 0) throw new RangeError('Audit tail limit must be a nonnegative safe integer');
   const empty = (): LlmAuditSummary => ({ total: 0, entries: [] });
   if (signal?.aborted) return empty();
+  let native: Awaited<ReturnType<typeof openTauriAuditSource>> = null;
   try {
-    const dir = await handle.getDirectoryHandle('.ontology-atlas');
-    if (signal?.aborted) return empty();
-    const fileHandle = await dir.getFileHandle('llm-audit.jsonl');
-    if (signal?.aborted) return empty();
-    const file = await fileHandle.getFile();
+    native = await openTauriAuditSource(handle, signal);
+    if (native?.missing) return empty();
+    let file: File | null = null;
+    if (!native) {
+      const dir = await handle.getDirectoryHandle('.ontology-atlas');
+      if (signal?.aborted) return empty();
+      const fileHandle = await dir.getFileHandle('llm-audit.jsonl');
+      if (signal?.aborted) return empty();
+      file = await fileHandle.getFile();
+    }
     if (signal?.aborted) return empty();
     const collector = new SummaryCollector(limit);
-    if (typeof file.stream !== 'function') {
+    if (file && typeof file.stream !== 'function') {
       const raw = await file.text();
       if (signal?.aborted) return empty();
       let sliceStart = performance.now();
@@ -239,7 +252,7 @@ export async function readLlmAuditSummary(
       }
       return collector.finish();
     }
-    const reader = file.stream().getReader();
+    const reader = (native?.stream ?? file!.stream()).getReader();
     const abort = () => { void reader.cancel().catch(() => undefined); };
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort();
@@ -260,11 +273,17 @@ export async function readLlmAuditSummary(
         }
       }
       collector.push(decoder.decode());
+      await native?.finish();
       return collector.finish();
     } finally {
       signal?.removeEventListener('abort', abort);
       await reader.cancel().catch(() => undefined);
       reader.releaseLock();
     }
-  } catch { return empty(); }
+  } catch (error) {
+    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) return empty();
+    if (!native && error instanceof DOMException && error.name === 'NotFoundError') return empty();
+    const message = String(error);
+    throw new AuditReadError(message.includes('audit-read-changed') ? 'changed' : message.includes('audit-read-expired') ? 'expired' : 'failed');
+  } finally { await native?.cancel(); }
 }
