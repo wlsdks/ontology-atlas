@@ -22,7 +22,8 @@ const BLOOM_HALO_WEIGHT = 0.3;
 
 interface Bloom {
   arrivedMs: number;
-  at: Point;
+  key: string;
+  fromA: boolean;
   radiusPx: number;
 }
 
@@ -57,6 +58,7 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
 
   return {
     id: "dial",
+    readsPaint: true,
     plan: () => current as LightPlan<never> | null,
     reset() {
       world = null;
@@ -82,16 +84,17 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       }
       if (current === null) return false;
       const { kinematics, tokens } = input;
+      const live = new Map(frame.chords.map((chord) => [chord.key, chord]));
       stepPlan(current, input.now, 1);
       for (const signal of current.signals) {
         const signalAt = signalFrame(signal, input.now, 1, kinematics);
         if (!signalAt.started) continue;
-        const chord = signal.edge;
+        const chord = live.get(signal.key) ?? signal.edge;
         const fromA = signal.from === "a";
         const departure = fromA ? chord.a : chord.b;
         const arrival = fromA ? chord.b : chord.a;
         if (signal.bloomId !== null && signalAt.arrived && !blooms.has(signal.bloomId)) {
-          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, at: arrival, radiusPx: chord.chipRadiusPx });
+          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, key: signal.key, fromA, radiusPx: chord.chipRadiusPx });
         }
         if (signalAt.done) continue;
         out.signalled(chord.a, chord.c, chord.b);
@@ -120,8 +123,11 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       for (const [domainId, bloom] of blooms) {
         const strength = bloomAt(input.now - bloom.arrivedMs, kinematics);
         if (!(strength > 0)) continue;
+        const chord = live.get(bloom.key);
+        if (!chord) continue;
+        const at = bloom.fromA ? chord.b : chord.a;
         const sigma = Math.max(tokens.lightHaloPx, bloom.radiusPx * BLOOM_SIGMA_PER_RADIUS);
-        out.bloom(`node:${domainId}`, bloom.at.x, bloom.at.y, sigma, sigma * BLOOM_HALO_SPREAD, BLOOM_HALO_WEIGHT, strength);
+        out.bloom(`node:${domainId}`, at.x, at.y, sigma, sigma * BLOOM_HALO_SPREAD, BLOOM_HALO_WEIGHT, strength);
       }
       const alive = isPlanAlive(current, input.now, 1, kinematics);
       if (!alive) current = null;

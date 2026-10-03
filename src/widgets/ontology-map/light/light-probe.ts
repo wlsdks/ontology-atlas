@@ -94,6 +94,25 @@ function isolated(values: readonly number[]): boolean {
   return values[0]! < half && values[values.length - 1]! < half;
 }
 
+function strokeCentre(values: readonly number[], offsets: readonly number[]): number {
+  let best = 0;
+  for (let i = 1; i < values.length; i += 1) if (values[i]! > values[best]!) best = i;
+  const floor = Math.min(...values);
+  const threshold = floor + 0.5 * (values[best]! - floor);
+  let lo = best;
+  let hi = best;
+  while (lo > 0 && values[lo - 1]! > threshold) lo -= 1;
+  while (hi < values.length - 1 && values[hi + 1]! > threshold) hi += 1;
+  let mass = 0;
+  let sum = 0;
+  for (let i = lo; i <= hi; i += 1) {
+    const w = values[i]! - threshold;
+    mass += w;
+    sum += w * offsets[i]!;
+  }
+  return mass > 0 ? sum / mass : offsets[best]!;
+}
+
 function singlePeak(values: readonly number[]): boolean {
   const floor = Math.min(...values);
   const threshold = floor + 0.5 * (Math.max(...values) - floor);
@@ -201,7 +220,7 @@ function measureGlue(
       t: head.t,
       ambiguous: !singlePeak(line) || !isolated(light),
       cameraShiftPx: cameraShiftAcross(slices[0]!, frame, previous),
-      offsetPx: Math.abs(peakAt(light, across) - peakAt(line, across)),
+      offsetPx: Math.abs(peakAt(light, across) - strokeCentre(line, across)),
       lineContrast: Math.max(...line) - Math.min(...line),
       lightPeak: Math.max(...light),
       headInk: Math.max(...around.map(ink)),

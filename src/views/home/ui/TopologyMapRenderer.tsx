@@ -171,7 +171,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents, dialMemory: flatRingMemory.current() },
         host,
       ),
     frameRef,

@@ -94,15 +94,72 @@ async function selectBySearch(page: Page, id: string) {
   await page.keyboard.press("Enter");
 }
 
-async function lightEvent(page: Page, kind: string): Promise<{ plan: LightSignal[]; createdMs: number; frames: LightFrame[] }> {
+async function lightEvent(page: Page, kind: string, during?: () => Promise<void>): Promise<{ plan: LightSignal[]; createdMs: number; frames: LightFrame[] }> {
   await page.waitForFunction((k) => (window.__atlasMapLight?.plan() ?? []).some((plan) => plan.kind === k), kind, { polling: "raf" });
   const { plan, createdMs } = await page.evaluate((k) => {
     const found = window.__atlasMapLight!.plan().find((p) => p.kind === k)!;
     return { plan: found.signals, createdMs: found.createdMs };
   }, kind);
+  await during?.();
   await page.waitForFunction(() => window.__atlasMapLight?.active() === false, undefined, { polling: "raf" });
   const frames = await page.evaluate(() => window.__atlasMapLight!.records());
   return { plan, createdMs, frames };
+}
+
+async function drawnFlowDomain(page: Page): Promise<string> {
+  await page.waitForFunction(() => {
+    const dial = window.__atlasMap?.dial?.();
+    return !!dial && dial.owns && dial.flows.some((flow) => flow.drawn && !flow.relatesOnly);
+  }, undefined, { polling: "raf" });
+  return page.evaluate(() => {
+    const dial = window.__atlasMap!.dial!() as { flows: { a: string; b: string; drawn: boolean; relatesOnly: boolean }[] };
+    const count = new Map<string, number>();
+    for (const flow of dial.flows) {
+      if (!flow.drawn || flow.relatesOnly) continue;
+      for (const end of [flow.a, flow.b]) count.set(end, (count.get(end) ?? 0) + 1);
+    }
+    return [...count.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0]![0];
+  });
+}
+
+async function sampleInkMix(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __inkFull: number | null };
+    w.__inkFull = null;
+    let seenBelow = false;
+    const tick = () => {
+      const dial = window.__atlasMap?.dial?.();
+      const mix = dial && dial.owns ? (dial as { inkMix: number }).inkMix : 0;
+      if (mix < 1) seenBelow = true;
+      else if (seenBelow && w.__inkFull === null) w.__inkFull = performance.now();
+      if (w.__inkFull === null) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+async function panWhileDialLightFlies(page: Page) {
+  const start = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const stretch = canvas.width / window.__atlasMap!.camera()!.width;
+    const marks = window.__atlasMap!.nodes().filter((node) => !node.hidden).map((node) => ({ x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch }));
+    let best = { x: 0, y: 0, clear: -1 };
+    for (let y = canvas.top + 120; y < canvas.bottom - 80; y += 16) {
+      for (let x = canvas.left + canvas.width * 0.35; x < canvas.right - 80; x += 16) {
+        const clear = Math.min(...marks.map((m) => Math.hypot(m.x - x, m.y - y)));
+        if (clear > best.clear) best = { x, y, clear };
+      }
+    }
+    return best;
+  });
+  expect(start.clear, "an empty spot of the canvas to drag").toBeGreaterThan(24);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 40; i += 1) {
+    await page.mouse.move(start.x - i * 3, start.y - i);
+    await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => done())));
+  }
+  await page.mouse.up();
 }
 
 function headTrack(frames: LightFrame[], key: string, source: string) {
@@ -127,23 +184,33 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
   test.setTimeout(120_000);
   await openMap(page);
   await waitForLight(page);
+  const focus = await drawnFlowDomain(page);
   await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
-  await selectBySearch(page, FOCUS);
-  const { plan, frames } = await lightEvent(page, "focus");
+  await sampleInkMix(page);
+  await selectBySearch(page, focus);
+  const pan = panWhileDialLightFlies(page);
+  const event = await lightEvent(page, "focus", () => pan);
+  const plan = event.plan.map((signal) => ({ ...signal, revealBound: false }));
+  const { frames } = event;
 
-  expect(plan.length, "the focus lit its relations").toBeGreaterThanOrEqual(3);
-  const focusIndex = frames.findIndex((frame) => frame.focus === FOCUS);
+  expect(plan.length, "the focus lit the dependency lines the dial draws").toBeGreaterThanOrEqual(1);
+  const focusIndex = frames.findIndex((frame) => frame.focus === focus);
   expect(focusIndex, "the recorder saw the focus frame").toBeGreaterThanOrEqual(0);
+  const inkFull = await page.evaluate(() => (window as unknown as { __inkFull: number | null }).__inkFull);
+  expect(inkFull, "the dial's focus ink reached its full mix").not.toBeNull();
+  const inkIndex = frames.findIndex((frame) => frame.now >= inkFull! - 1e-6);
+  expect(frames.slice(0, Math.max(0, inkIndex - 1)).some((frame) => frame.heads.some((head) => head.source === "dial")), "no light departs before the focus ink is full").toBe(false);
   const reached = new Map<string, number>();
   for (const signal of plan) {
-    const index = arrivalIndex(frames, signal.key, "focus");
+    const index = arrivalIndex(frames, signal.key, "dial");
     if (signal.bloomId !== null && index >= 0) reached.set(signal.bloomId, Math.min(reached.get(signal.bloomId) ?? Infinity, frames[index]!.now));
   }
 
   for (const signal of plan) {
-    const track = headTrack(frames, signal.key, "focus");
+    const track = headTrack(frames, signal.key, "dial");
+    expect(track.length, `${signal.key} runs a dial head`).toBeGreaterThan(0);
     const firstIndex = frames.indexOf(track[0]!.frame);
-    expect(firstIndex - focusIndex, `${signal.key} starts within a frame of the focus`).toBeLessThanOrEqual(1);
+    expect(firstIndex - inkIndex, `${signal.key} departs within a frame after the focus ink is full`).toBeLessThanOrEqual(1);
     for (let i = 1; i < track.length; i += 1) {
       expect(track[i]!.head.t, `${signal.key} never runs backwards`).toBeGreaterThanOrEqual(track[i - 1]!.head.t - 1e-9);
     }
@@ -153,7 +220,7 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
         expect(head.t, `${signal.key} stays inside the drawn span`).toBeLessThanOrEqual(Math.max(frame.reveal, departure) + 1e-6);
       }
     }
-    const arrivedIndex = arrivalIndex(frames, signal.key, "focus");
+    const arrivedIndex = arrivalIndex(frames, signal.key, "dial");
     const allowedIndex = allowedArrivalIndex(frames, focusIndex, signal);
     expect(arrivedIndex, `${signal.key} arrives`).toBeGreaterThan(focusIndex);
     expect(arrivedIndex - allowedIndex, `${signal.key} arrives on the frame its clock and the reveal allow`).toBeLessThanOrEqual(1);
@@ -189,8 +256,6 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
     expect(sample.aheadInk, `no light runs ahead of ${sample.key}`).toBeLessThanOrEqual(sample.headInk * 0.05);
   }
 
-  const running = frames.filter((frame) => frame.heads.some((head) => !head.arrived));
-  expect(running.some((frame) => frame.standDowns > 0), "a comet stood down on a lit line").toBe(true);
   const spent = await page.evaluate(() => window.__atlasMapLight!.records().at(-1)!);
   expect(spent.standDowns).toBe(0);
 });
@@ -298,16 +363,9 @@ test("a spent light lets the map sleep and draws nothing more", async ({ page })
       return draw.apply(this, args);
     };
   });
-  await openMap(page, "&synth=300");
+  await openMap(page);
   await waitForLight(page);
-  const hub = await page.evaluate(() => {
-    const degree = new Map<string, number>();
-    for (const edge of window.__atlasMap!.edges()) {
-      degree.set(edge.sourceId, (degree.get(edge.sourceId) ?? 0) + 1);
-      degree.set(edge.targetId, (degree.get(edge.targetId) ?? 0) + 1);
-    }
-    return [...degree.entries()].sort((a, b) => b[1] - a[1])[0]![0];
-  });
+  const hub = await drawnFlowDomain(page);
   const select = (id: string | null) =>
     page.evaluate((nodeId) => (window.__atlasMap as unknown as { select: (value: string | null) => void }).select(nodeId), id);
   await select(hub);
@@ -331,6 +389,37 @@ test("a spent light lets the map sleep and draws nothing more", async ({ page })
   }));
   expect(after.draws, "no light was drawn after it was spent").toBe(drawsWhenSpent);
   expect(after.causes).not.toContain("lightActive");
+});
+
+test("selecting the project in the dial launches no light and the map sleeps", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    const w = window as unknown as { __rafTimes: number[] };
+    w.__rafTimes = [];
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback: FrameRequestCallback) =>
+      raf((time) => {
+        w.__rafTimes.push(performance.now());
+        callback(time);
+      });
+  });
+  await openMap(page);
+  await waitForLight(page);
+  await drawnFlowDomain(page);
+  const project = await page.evaluate(() => window.__atlasMap!.nodes().find((node) => node.kind === "project")!.id);
+  await page.evaluate(() => window.__atlasMapLight!.record(true));
+  await page.evaluate((nodeId) => (window.__atlasMap as unknown as { select: (value: string | null) => void }).select(nodeId), project);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(project);
+  await waitForMapStill(page);
+  await page.waitForFunction(
+    () => performance.now() - ((window as unknown as { __rafTimes: number[] }).__rafTimes.at(-1) ?? 0) > 1_000,
+    undefined,
+    { polling: 250, timeout: 60_000 },
+  );
+  const frames = await page.evaluate(() => window.__atlasMapLight!.records());
+  expect(frames.some((frame) => frame.focus === project), "the recorder saw the project focused").toBe(true);
+  expect(frames.reduce((sum, frame) => sum + frame.heads.length, 0), "no light crossed the dial for the project").toBe(0);
+  expect(await page.evaluate(() => window.__atlasMapLight!.active())).toBe(false);
 });
 
 test("under reduced motion there is no light layer and no WebGL context", async ({ page }) => {

@@ -19,7 +19,9 @@ reduced motion.
 `prepare` runs after the reveal stage and before the presentation stage, so the
 lines a light runs on are known when the canvas-2D draw asks
 `isEdgeSignalled`: the ambient comet and the galaxy glint stand down on those
-lines. `render` runs after the presentation stage and draws in the same frame,
+lines. A source with `readsPaint` (the Flat dial's chord light) steps in
+`afterPaint` instead, right after the presentation stage, because its lines are
+the chords the dial painted in this frame. `render` runs after the presentation stage and draws in the same frame,
 from the same camera. The layer has no `requestAnimationFrame` of its own; while
 a light is alive the frame gate keeps the loop awake through `lightActive`, and
 once it is spent the layer clears once and makes no further call.
