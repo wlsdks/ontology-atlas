@@ -64,10 +64,7 @@ describe('wheel intent — 스크롤하는 문서 안의 지도', () => {
     expect(widget).toMatch(/wheelIntent = "zoom"/);
   });
 
-  it('관문만 page-scroll 을 옵트인한다', () => {
-    const stage = read('src/views/download/ui/StageMap.tsx');
-    expect(stage).toMatch(/wheelIntent="page-scroll"/);
-
+  it('워크벤치는 page-scroll 을 넘기지 않는다', () => {
     // The workbench (HomePage) does not pass it — doing so would kill map zoom.
     const home = read('src/views/home/ui/HomePage.tsx');
     expect(home).not.toMatch(/wheelIntent/);

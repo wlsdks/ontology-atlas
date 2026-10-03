@@ -164,7 +164,7 @@ test("desktop smoke copy contract refuses a message with an ICU placeholder", ()
     // probe throw "missing key" instead of "ICU rejected", so **it tests something
     // other than what it was written to test** (which happened on 2026-07-29 when
     // `macosPublishedBadge` disappeared in the gateway redesign).
-    () => resolveRouteText({ keysByRoute: { "/download": ["download.trustVerifyCommand"] } }),
+    () => resolveRouteText({ keysByRoute: { "/download": ["download.factShaLink"] } }),
     /ICU placeholder/,
   );
 });
@@ -174,7 +174,7 @@ test("desktop smoke chunks prove current route meaning", () => {
     "/download": [
       "gateway-hero-cta",
       "gateway-demo-section",
-      "gateway-agents-section",
+      "gateway-screens-section",
     ],
     "/docs": [
       "data-docs-header-zone",

@@ -14,7 +14,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 
 import { type ConeInputNode, type ConeKind, layoutCone } from '@/widgets/ontology-map';
 
-import { registerGatewayFrameClient } from './gateway-frame-loop';
+import { registerGatedFrameClient } from './gateway-frame-loop';
 import { echoCount, echoOrder } from './hero-echo';
 
 export interface AtlasNode {
@@ -92,10 +92,19 @@ interface RendererLease {
   release: () => void;
 }
 
+/** A kept drawing buffer costs a copy per frame; only `?e2e=1` reads the pixels back. */
+export function rendererOptions(search: string): THREE.WebGLRendererParameters {
+  return {
+    alpha: true,
+    antialias: true,
+    powerPreference: 'low-power',
+    preserveDrawingBuffer: new URLSearchParams(search).get('e2e') === '1',
+  };
+}
+
 function createRenderer(): THREE.WebGLRenderer | null {
   try {
-    // Keep the drawing buffer, or `download-gateway-grid.spec.ts` reads a blank copy of the frame.
-    return new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: true });
+    return new THREE.WebGLRenderer(rendererOptions(window.location.search));
   } catch {
     return null;
   }
@@ -456,10 +465,19 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
   };
 
   let unregister: (() => void) | null = null;
+  /** Reduced motion paints once per frame at most, so the mount and the typed headline share one still. */
+  let stillPending = 0;
+  const drawStill = (): void => {
+    if (stillPending) return;
+    stillPending = requestAnimationFrame(() => {
+      stillPending = 0;
+      if (!disposed) frame(16);
+    });
+  };
   if (reduced) {
-    frame(16);
+    drawStill();
   } else {
-    unregister = registerGatewayFrameClient(({ dtMs, factor }) => {
+    unregister = registerGatedFrameClient(host, ({ dtMs, factor }) => {
       if (disposed) return;
       frame(dtMs * Math.max(0.05, factor));
     });
@@ -496,14 +514,18 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
 
   return {
     setTyping: (typed, total) => {
-      litTarget = echoCount(typed, total, nodes.length);
+      const next = echoCount(typed, total, nodes.length);
+      const changed = next !== litTarget;
+      litTarget = next;
       echoing = true;
-      if (reduced) frame(16);
+      // Reduced motion draws only when the lit count moved, so a still page paints once.
+      if (reduced && changed) drawStill();
     },
     litCount: () => Math.min(litTarget, nodes.length),
     nodesOnScreen: () => nodes.map((n) => ({ s: n.s, k: n.k, x: lastScreen.get(n.s)?.x ?? 0, y: lastScreen.get(n.s)?.y ?? 0 })),
     dispose: () => {
       disposed = true;
+      cancelAnimationFrame(stillPending);
       unregister?.();
       ro.disconnect();
       canvas.removeEventListener('pointermove', onMove);

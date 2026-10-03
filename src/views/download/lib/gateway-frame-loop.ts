@@ -3,7 +3,8 @@
  * contract (`ambient-sleep.ts`, imported, never copied), or the gateway burns frames forever.
  * rAF never stops: idle is re-decided every frame, so no missed wake can freeze the screen.
  * Reduced motion never registers a client (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`),
- * and `tests/e2e/gateway-idle-sleep.spec.ts` measures the idle floor.
+ * and `tests/e2e/gateway-idle-sleep.spec.ts` measures the idle floor. Every client is gated by
+ * `registerGatedFrameClient`: it draws only while its section is in view in a visible tab.
  */
 import {
   ambientSleepFactor,
@@ -89,3 +90,60 @@ export function registerGatewayFrameClient(client: GatewayFrameClient): () => vo
   };
 }
 
+
+/** A drawing runs only while at least this share of its section is visible. */
+export const GATEWAY_VISIBLE_RATIO = 0.2;
+
+/**
+ * Registers `client` only while at least `GATEWAY_VISIBLE_RATIO` of `owner`'s section is visible
+ * and the tab is visible; otherwise the client is unregistered and its canvas holds the last
+ * frame. `onChange` hears each switch, so a caller can repaint or reset on return.
+ */
+export function registerGatedFrameClient(
+  owner: Element,
+  client: GatewayFrameClient,
+  onChange?: (live: boolean) => void,
+): () => void {
+  const section = owner.closest('section') ?? owner;
+  let inView = false;
+  let unregister: (() => void) | null = null;
+  const sync = (): void => {
+    const live = inView && document.visibilityState === 'visible';
+    if (live === (unregister !== null)) return;
+    if (live) unregister = registerGatewayFrameClient(client);
+    else {
+      unregister?.();
+      unregister = null;
+    }
+    onChange?.(live);
+  };
+  const io =
+    typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(
+          (entries) => {
+            const entry = entries[entries.length - 1];
+            if (!entry) return;
+            inView = entry.isIntersecting && entry.intersectionRatio >= GATEWAY_VISIBLE_RATIO;
+            sync();
+          },
+          { threshold: [0, GATEWAY_VISIBLE_RATIO] },
+        )
+      : null;
+  if (io) io.observe(section);
+  else {
+    inView = true;
+    sync();
+  }
+  document.addEventListener('visibilitychange', sync);
+  return () => {
+    io?.disconnect();
+    document.removeEventListener('visibilitychange', sync);
+    unregister?.();
+    unregister = null;
+  };
+}
+
+/** For the e2e gate probe: how many clients the shared loop holds right now. */
+export function gatewayFrameClientCount(): number {
+  return clients.size;
+}

@@ -169,7 +169,18 @@ export default function ConductionScene({
     let live = true;
     void Promise.all(created.map(({ animation }) => animation.finished)).then(
       () => {
-        if (live) callbacks.current.onFinished();
+        if (!live) return;
+        // At rest the finished frame is plain style: no running animation, no compositor layer.
+        for (const { animation } of created) {
+          try {
+            animation.commitStyles();
+          } catch {
+            // An element that left the tree has nothing to keep.
+          }
+          animation.cancel();
+        }
+        runningRef.current = [];
+        callbacks.current.onFinished();
       },
       () => undefined,
     );

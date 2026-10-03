@@ -14,7 +14,7 @@ import { TabBar } from '@/shared/ui/tab-bar';
 import { type GatewayScreenFile, gatewayScreenSrc } from '../model/gateway-screens';
 import { SurfaceCapture, type SurfaceHref } from './SurfaceCapture';
 
-/** The map is live further up and the agents have their own section, so neither is captured. */
+/** The map runs live in the browser, so its row links there instead of showing a capture. */
 const CAPTURED = ['architecture', 'library', 'automations', 'insights', 'projects', 'git'] as const;
 type CapturedId = (typeof CAPTURED)[number];
 
@@ -78,9 +78,9 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
         {intro}
       </div>
       <div className="flex min-w-0 items-end max-[90rem]:mb-3 min-[90rem]:col-start-1 min-[90rem]:row-start-2 min-[90rem]:flex-col min-[90rem]:items-stretch min-[90rem]:gap-0.5">
-        {/* The map row scrolls back up to the live map; the ↑ is a direction, not decoration (`.claude/rules/forbidden.md`). */}
-        <a
-          href="#evidence"
+        {/* The map row opens the live map in this browser. */}
+        <Link
+          href="/topology"
           data-testid="gateway-screens-map"
           aria-label={t('mapLink')}
           className={controlClass({
@@ -101,9 +101,9 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             aria-hidden
             className="text-body font-normal leading-body text-[color:var(--color-text-quaternary)]"
           >
-            ↑ {t('mapHint')}
+            {t('mapHint')}
           </span>
-        </a>
+        </Link>
         <div className="min-w-0 flex-1 min-[90rem]:flex-none">
           <TabBar
             ariaLabel={t('listLabel')}

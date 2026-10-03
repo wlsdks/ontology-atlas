@@ -1,0 +1,185 @@
+import { expect, test, type Page } from "@playwright/test";
+import { writeFileSync, mkdirSync } from "node:fs";
+import path from "node:path";
+import { seedFirstRunSeen } from "./first-run-seed";
+
+/**
+ * The download page's scroll budget (2026-10-03): on a real GPU, headed, at DPR 2, a scroll top
+ * to bottom drops at most 2% of frames and shows no frame interval and no long task over 50 ms.
+ * Before this rule the page dropped 8.9% at 1440×900 and 38.5% at 1040×720, GPU-bound, because
+ * drawings ran after they had left the viewport.
+ *
+ * Local only (`DOWNLOAD_SCROLL_BUDGET=1`): a CI runner has no GPU and runs headless, so its frame
+ * times say nothing about a visitor's. `DOWNLOAD_SCROLL_BUDGET_OUT` names a JSON file for the
+ * per-run numbers.
+ */
+test.skip(!process.env.DOWNLOAD_SCROLL_BUDGET, "local headed GPU measurement; set DOWNLOAD_SCROLL_BUDGET=1");
+test.use({ headless: false, deviceScaleFactor: 2 });
+test.describe.configure({ timeout: 240_000 });
+
+const VIEWPORTS = [
+  { width: 1440, height: 900 },
+  { width: 1040, height: 720 },
+  { width: 1920, height: 1080 },
+] as const;
+const RUNS = 3;
+const WHEEL_PX = 30;
+/** 30 px every 30 ms is ~1,000 px/s. */
+const WHEEL_MS = 30;
+
+interface Leg {
+  frames: number;
+  dropped: number;
+  droppedShare: number;
+  maxIntervalMs: number;
+  longTasks: number;
+  maxLongTaskMs: number;
+  periodMs: number;
+}
+
+async function arm(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as unknown as {
+      __budget: { intervals: number[]; longTasks: number[]; on: boolean; last: number };
+    };
+    w.__budget = { intervals: [], longTasks: [], on: true, last: 0 };
+    const tick = (t: number): void => {
+      if (!w.__budget.on) return;
+      if (w.__budget.last) w.__budget.intervals.push(t - w.__budget.last);
+      w.__budget.last = t;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) w.__budget.longTasks.push(entry.duration);
+    }).observe({ type: "longtask", buffered: false });
+  });
+}
+
+async function disarm(page: Page): Promise<Leg> {
+  return page.evaluate(() => {
+    const b = (window as unknown as { __budget: { intervals: number[]; longTasks: number[]; on: boolean } }).__budget;
+    b.on = false;
+    const sorted = [...b.intervals].sort((x, y) => x - y);
+    // The panel's period: the tenth percentile, so a slow run cannot raise its own bar.
+    const periodMs = sorted[Math.floor(sorted.length * 0.1)] ?? 16.7;
+    let dropped = 0;
+    for (const i of b.intervals) dropped += Math.max(0, Math.round(i / periodMs) - 1);
+    const frames = b.intervals.length;
+    return {
+      frames,
+      dropped,
+      droppedShare: frames ? dropped / (frames + dropped) : 0,
+      maxIntervalMs: Math.round(Math.max(0, ...b.intervals) * 10) / 10,
+      longTasks: b.longTasks.filter((d) => d > 50).length,
+      maxLongTaskMs: Math.round(Math.max(0, ...b.longTasks)),
+      periodMs: Math.round(periodMs * 100) / 100,
+    };
+  });
+}
+
+function scrollState(page: Page) {
+  return page.evaluate(() => {
+    const host =
+      [...document.querySelectorAll<HTMLElement>("*")].find(
+        (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
+      ) ?? document.scrollingElement!;
+    return { top: host.scrollTop, max: host.scrollHeight - host.clientHeight };
+  });
+}
+
+async function wheelTo(page: Page, stop: (top: number) => boolean): Promise<void> {
+  for (let i = 0; i < 2000; i += 1) {
+    const { top, max } = await scrollState(page);
+    if (top >= max - 1 || stop(top)) return;
+    await page.mouse.wheel(0, WHEEL_PX);
+    await page.waitForTimeout(WHEEL_MS);
+  }
+}
+
+async function openPage(page: Page, viewport: { width: number; height: number }): Promise<void> {
+  await page.setViewportSize(viewport);
+  await seedFirstRunSeen(page);
+  await page.goto("/en/download/?guides=off", { waitUntil: "load" });
+  await expect(page.getByTestId("gateway-hero")).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  // The headline types for a few seconds; the budget is for the scroll, not the arrival.
+  await page.waitForTimeout(3000);
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+}
+
+async function brisk(page: Page, viewport: { width: number; height: number }): Promise<Leg> {
+  await openPage(page, viewport);
+  await arm(page);
+  await wheelTo(page, () => false);
+  await page.waitForTimeout(300);
+  return disarm(page);
+}
+
+/** Stops on each figure until it rests, then moves on. */
+async function parked(page: Page, viewport: { width: number; height: number }): Promise<Leg> {
+  await openPage(page, viewport);
+  await arm(page);
+  await page.waitForTimeout(2000);
+  const figureTop = await page.evaluate(() => {
+    const host =
+      [...document.querySelectorAll<HTMLElement>("*")].find(
+        (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
+      ) ?? document.scrollingElement!;
+    const figure = document.querySelector('[data-testid="download-conduction-figure"]')!;
+    return figure.getBoundingClientRect().top + host.scrollTop - 80;
+  });
+  await wheelTo(page, (top) => top >= figureTop);
+  const figure = page.getByTestId("download-conduction-figure");
+  await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 90_000 });
+  const demoTop = await page.evaluate(() => {
+    const host =
+      [...document.querySelectorAll<HTMLElement>("*")].find(
+        (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
+      ) ?? document.scrollingElement!;
+    const demo = document.querySelector('[data-testid="gateway-demo-section"]')!;
+    return demo.getBoundingClientRect().top + host.scrollTop - 80;
+  });
+  await wheelTo(page, (top) => top >= demoTop);
+  // The demo plays on its own clock; parking a few seconds covers its playback cost.
+  await page.waitForTimeout(4000);
+  await wheelTo(page, () => false);
+  await page.waitForTimeout(1000);
+  return disarm(page);
+}
+
+function median(values: number[]): number {
+  const s = [...values].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)]!;
+}
+
+const results: Record<string, Leg[]> = {};
+
+for (const viewport of VIEWPORTS) {
+  for (const [name, leg] of [
+    ["brisk", brisk],
+    ["parked", parked],
+  ] as const) {
+    test(`${viewport.width}×${viewport.height} ${name}: ≤ 2% dropped, nothing over 50 ms`, async ({ browser }) => {
+      const runs: Leg[] = [];
+      for (let run = 0; run < RUNS; run += 1) {
+        const context = await browser.newContext({ deviceScaleFactor: 2, viewport });
+        const page = await context.newPage();
+        runs.push(await leg(page, viewport));
+        await context.close();
+      }
+      const key = `${viewport.width}x${viewport.height}-${name}`;
+      results[key] = runs;
+      const out = process.env.DOWNLOAD_SCROLL_BUDGET_OUT;
+      if (out) {
+        mkdirSync(path.dirname(out), { recursive: true });
+        writeFileSync(out, JSON.stringify(results, null, 2));
+      }
+      console.log(key, JSON.stringify(runs));
+      expect(runs.every((r) => r.frames > 60), "too few frames sampled — this leg would pass idle").toBe(true);
+      expect(median(runs.map((r) => r.droppedShare)), `${key}: dropped-frame share`).toBeLessThanOrEqual(0.02);
+      expect(median(runs.map((r) => r.maxIntervalMs)), `${key}: longest frame interval`).toBeLessThanOrEqual(50);
+      expect(median(runs.map((r) => r.longTasks)), `${key}: long tasks over 50 ms`).toBe(0);
+    });
+  }
+}
