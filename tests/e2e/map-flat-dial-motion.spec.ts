@@ -476,8 +476,8 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   const attendedInks = [...new Set(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!)).map((s) => s.split("|")[1]!) : [])];
   const numeralsAtFirst = focused.numerals.map((n) => n.split("|")[0]!);
   const signals = plan.flatMap((p) => p.signals);
-  const mixAt = full?.t ?? Infinity;
-  const earlyLights = signals.filter((s) => s.startMs < mixAt - FRAME_MS).length;
+  const mixAt = full?.at ?? Infinity;
+  const earlyLights = signals.filter((s) => s.startMs < mixAt).length;
   const verdict = {
     mixMs: full ? Math.round(full.at - focused.t) : null,
     gapMs: full ? Math.round(full.at - (all[all.indexOf(full) - 1]?.at ?? full.at)) : null,
