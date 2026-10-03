@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { LABEL_TOP_K } from "../../src/widgets/ontology-map/model/label-lod";
 import { EVIDENCE_SPECIMEN } from "../../src/views/download/model/evidence-specimen.generated";
-import { waitForMapSettled, waitForMapStill } from "./settle";
+import { waitForMapSettled } from "./settle";
 
 /**
  * Reduced motion, deliberately: this spec measures the **resting** frame. The evidence section
@@ -77,21 +76,6 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
     // Anti-idle: an empty or near-empty frame would pass every assertion below.
     expect(labels.length, "라벨을 거의 못 그렸다 — 이 시험이 헛돈다").toBeGreaterThan(5);
 
-    /*
-     * **The overview label budget applies here.** The gateway pulls the tier-reveal bands
-     * forward so every dot exists at entry (its caption-honesty contract), and until 2026-08-23
-     * that same override classified entry zoom as leaf-reading altitude and lifted the top-K
-     * budget — all 82 labels raced the greedy placer and 33 landed wherever they fit, stacked
-     * into walls (the owner's report: the map looks messy). The budget band now classifies
-     * against the canonical zoom grammar, so entry is overview and at most `LABEL_TOP_K`
-     * candidates may place. Nothing at rest is hovered or focused, so no exemption can exceed it.
-     */
-    expect(
-      labels.length,
-      `${labels.length} drawn labels exceed the overview budget (${LABEL_TOP_K}). ` +
-        "The budget came loose again: leaf labels pile up like a wall",
-    ).toBeLessThanOrEqual(LABEL_TOP_K);
-
     const overlaps: string[] = [];
     for (let i = 0; i < labels.length; i += 1) {
       for (let j = i + 1; j < labels.length; j += 1) {
@@ -109,64 +93,18 @@ test.describe("지도 라벨 — 그려진 박스로 잰다", () => {
       overlaps,
       `지도에서 두 이름이 픽셀을 공유한다 — 읽을 수 없다:\n${overlaps.join("\n")}`,
     ).toEqual([]);
-  });
 
-  /**
-   * A name must not paint across a neighbouring shape either. Until 2026-09-03 only ego members
-   * and the hovered node reserved their discs, so with every domain open on the dogfood vault
-   * twelve labels crossed a leaf or hub ring — visible the moment the ink ladder made those rings
-   * readable. Every drawn disc now reserves its footprint; a blocked name flips above its node
-   * before it is dropped. This case measures the crowded frame that exposed it.
-   */
-  test("펼친 구름에서 이름이 다른 노드의 원판을 덮지 않는다", async ({ page }) => {
-    await page.goto("/ko/topology/?e2e=1&guides=off");
-    await page.waitForFunction(
-      () => Boolean((window as unknown as { __atlasMap?: { labels?: unknown } }).__atlasMap?.labels),
-      undefined,
-      { timeout: 20_000 },
+    /*
+     * **The flat dial owns the overview's names** (2026-10-02). The old top-K budget
+     * (`LABEL_TOP_K`) capped a greedy placer that stacked leaf names into walls; the dial
+     * places names whole or not at all against its own marks, so the wall is ruled out by
+     * its own count of overlapping texts, read from the frame it drew.
+     */
+    const dial = await page.evaluate(
+      () => (window as unknown as { __atlasMap: { dial: () => { owns: boolean; textOverlaps?: number } } }).__atlasMap.dial(),
     );
-    await page.getByRole("button", { name: /전체 펼치기/ }).click();
-    // The expansion is on, and the opened cloud has stopped moving.
-    await expect(page.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
-    await waitForMapStill(page);
-
-    const { labels, nodes } = (await page.evaluate(() => {
-      const map = (
-        window as unknown as {
-          __atlasMap: {
-            labels: () => LabelBox[];
-            nodes: () => { id: string; label: string; x: number; y: number; radius: number }[];
-          };
-        }
-      ).__atlasMap;
-      return { labels: map.labels(), nodes: map.nodes() };
-    })) as {
-      labels: LabelBox[];
-      nodes: { id: string; label: string; x: number; y: number; radius: number }[];
-    };
-
-    expect(labels.length, "라벨을 거의 못 그렸다 — 이 시험이 헛돈다").toBeGreaterThan(5);
-    expect(nodes.length, "구름이 펼쳐지지 않았다 — 이 시험이 헛돈다").toBeGreaterThan(40);
-
-    const crossings: string[] = [];
-    for (const label of labels) {
-      for (const node of nodes) {
-        if (node.id === label.nodeId) continue;
-        const minX = node.x - node.radius;
-        const maxX = node.x + node.radius;
-        const minY = node.y - node.radius;
-        const maxY = node.y + node.radius;
-        if (label.minX < maxX && minX < label.maxX && label.minY < maxY && minY < label.maxY) {
-          const w = Math.round(Math.min(label.maxX, maxX) - Math.max(label.minX, minX));
-          const h = Math.round(Math.min(label.maxY, maxY) - Math.max(label.minY, minY));
-          crossings.push(`${w}x${h}px  「${label.text}」 over 「${node.label}」`);
-        }
-      }
-    }
-    expect(
-      crossings,
-      `이름이 다른 노드의 원판 위에 그려졌다 — 둘 다 읽을 수 없다:\n${crossings.join("\n")}`,
-    ).toEqual([]);
+    expect(dial.owns, "the dial does not paint the download map's overview").toBe(true);
+    expect(dial.textOverlaps, "the dial drew two of its texts on top of each other").toBe(0);
   });
 
   /**

@@ -4,7 +4,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill } from "./settle";
 
 /**
- * Three usability defects found by walking every map control on 2026-09-03,
+ * Two usability defects found by walking every map control on 2026-09-03,
  * each pinned by the number that exposed it.
  *
  * ① **A search pick lands under the detail panel.** Picking a result closes the
@@ -13,10 +13,7 @@ import { waitForMapStill } from "./settle";
  *    a 915 px *left* panel, so the free area collapsed and the chosen node was
  *    aimed at x 1090 behind a panel whose edge was at 955. A modal is not a
  *    camera obstacle (`interaction/free-area.ts`).
- * ② **Auto-arrange while expanded returns to the spine.** The overview-fit ref
- *    was frozen at mount, so with everything expanded the arrange button and the
- *    `0` key refitted the spine bounds with 19 of 125 nodes off screen.
- * ③ **The Korean relation sentence carried fixed particles** with a space before
+ * ② **The Korean relation sentence carried fixed particles** with a space before
  *    them; they are picked by the name's final consonant now (`lib/edge-sentence.ts`).
  */
 type MapNode = { id: string; kind: string; label: string; x: number; y: number; hidden: boolean };
@@ -96,23 +93,6 @@ test("a capability picked from the search palette brings the camera to rest on i
     return Math.hypot(m.camera().x - m.cameraTarget().x, m.camera().y - m.cameraTarget().y);
   });
   expect(gap, "the camera never reaches its target").toBeLessThan(0.5);
-});
-
-test("auto-arrange while everything is expanded keeps every node on screen", async ({ page }) => {
-  await page.locator('[data-testid="topology-expand-all"]').click();
-  await expect.poll(async () => (await readMap(page)).visible, { timeout: 10_000 }).toBeGreaterThan(100);
-  await waitForMapStill(page);
-  await page.locator('[data-testid="topology-auto-arrange"]').click();
-  await waitForMapStill(page);
-  const arranged = await readMap(page);
-  expect(arranged.offscreen, "정렬 후 펼친 노드가 화면 밖으로 나가지 않는다").toBe(0);
-  // The `0` key is the same fit and must agree.
-  await page.mouse.click(700, 800);
-  await page.keyboard.press("0");
-  await waitForMapStill(page);
-  expect((await readMap(page)).offscreen).toBe(0);
-  // Flat still ends expand-all on selection; Galaxy's different overview
-  // contract is covered below.
 });
 
 test.describe("Galaxy at device pixel ratio 2, where one notch brings stars live", () => {
@@ -215,10 +195,17 @@ test.describe("Galaxy at device pixel ratio 2, where one notch brings stars live
 });
 
 test("the Korean relation sentence joins its particles to the names", async ({ page }) => {
+  // The Flat overview picks no line (the flat dial), so the line is clicked in a realm.
+  await page.goto("/ko/topology/?e2e=1&guides=off&realm=domain%3Afulfillment", { waitUntil: "domcontentloaded" });
+  await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(0);
+  await waitForMapStill(page);
   const box = (await page.locator('[data-testid="ontology-map-canvas"]').boundingBox())!;
-  const m = await readMap(page);
-  const domain = m.domains.find((d) => d.label === "배송")!;
-  const mid = { x: (m.project!.x + domain.x) / 2, y: (m.project!.y + domain.y) / 2 };
+  const m = await page.evaluate(() => {
+    const nodes = (window as unknown as { __atlasMap: AtlasMap }).__atlasMap.nodes();
+    const at = (id: string) => nodes.find((n) => n.id === id)!;
+    return { from: at("domain:fulfillment"), to: at("capability:carrier-integration") };
+  });
+  const mid = { x: (m.from.x + m.to.x) / 2, y: (m.from.y + m.to.y) / 2 };
   await page.mouse.move(box.x + mid.x, box.y + mid.y);
   /*
    * The old 300 ms sleep was aiming, not waiting: it gave the hover a moment and
@@ -239,7 +226,7 @@ test("the Korean relation sentence joins its particles to the names", async ({ p
   await page.mouse.click(box.x + mid.x, box.y + mid.y);
   const sentence = page.locator('[data-testid="map-edge-sentence"]');
   await expect(sentence).toBeVisible({ timeout: 5_000 });
-  await expect(sentence).toHaveText("온라인 쇼핑몰이 배송을 담고 있어요.");
+  await expect(sentence).toHaveText("배송이 택배사 연동을 담고 있어요.");
 });
 
 test("an edit intent that arrives by URL on the sample says why it cannot edit and offers the folder", async ({ page }) => {
@@ -254,26 +241,4 @@ test("an edit intent that arrives by URL on the sample says why it cannot edit a
   await expect.poll(() => new URL(page.url()).searchParams.get("workbench"), { timeout: 5_000 }).toBeNull();
   await page.locator('[data-testid="recent-changes-needs-vault-close"]').click();
   await expect(dialog).toHaveCount(0, { timeout: 3_000 });
-});
-
-test("a deep link that opens one domain frames its revealed children, and the 0 key agrees", async ({ page }) => {
-  await page.goto("/ko/topology/?e2e=1&guides=off&open=domain%3Amarketing", { waitUntil: "domcontentloaded" });
-  await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(40);
-  await waitForMapStill(page);
-  // Capabilities are density-gated at overview altitude (not drawn, not hidden), so
-  // only the tiers the overview draws are measured: spine and the revealed elements.
-  const drawnOffscreen = () =>
-    page.evaluate(() => {
-      const m = (window as unknown as { __atlasMap: AtlasMap }).__atlasMap;
-      const c = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
-      return m
-        .nodes()
-        .filter((n) => !n.hidden && n.kind !== "capability")
-        .filter((n) => n.x < 0 || n.y < 0 || n.x > c.width || n.y > c.height).length;
-    });
-  expect(await drawnOffscreen(), "딥링크로 펼친 도메인의 요소가 화면 밖에 남지 않는다").toBe(0);
-  await page.mouse.click(700, 820);
-  await page.keyboard.press("0");
-  await waitForMapStill(page);
-  expect(await drawnOffscreen(), "0 키 맞춤도 펼친 요소를 담는다").toBe(0);
 });

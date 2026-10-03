@@ -4,7 +4,9 @@ import "./atlas-map-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill } from "./settle";
 
-const ROUTE = "/ko/topology/?e2e=1&guides=off";
+// The Flat overview counts lines between domains (the flat dial, 2026-10-02); one relation
+// at a time is drawn and revealed inside a realm.
+const ROUTE = "/ko/topology/?e2e=1&guides=off&realm=domain%3Aorder";
 const SAMPLES = 24;
 
 interface RevealFrame {
@@ -42,7 +44,8 @@ async function pickTarget(page: Page): Promise<{ id: string; label: string }> {
       if (!onScreen(e.sourceId) || !onScreen(e.targetId)) continue;
       if (Math.hypot(e.bx - e.ax, e.by - e.ay) < 60) continue;
       for (const end of [e.sourceId, e.targetId]) {
-        if (nodes.get(end)?.kind === "project") continue;
+        // The realm root only contains; a concept inside it carries the dependencies.
+        if (nodes.get(end)?.kind === "project" || nodes.get(end)?.kind === "domain") continue;
         const c = count.get(end) ?? { all: 0, outgoing: 0 };
         c.all += 1;
         if (end === e.sourceId) c.outgoing += 1;
