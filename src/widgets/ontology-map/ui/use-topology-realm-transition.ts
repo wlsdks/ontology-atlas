@@ -22,7 +22,7 @@ import {
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
-import { type TopologyWorld } from "./topology-world";
+import { dialOverviewFit, type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
   realmRootId: string | null;
@@ -217,10 +217,10 @@ export function useTopologyRealmTransition({
         // Return to "where the user was looking" if entry saved a keyframe,
         // falling back to the overview fit.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
-        const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 750 ms, matched to the choreography (inside reverse-FLIP 660,

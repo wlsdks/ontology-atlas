@@ -60,6 +60,27 @@ describe("tier assembly", () => {
     expect(isTierAssembling(world)).toBe(false);
   });
 
+  it("never lets a child near its parent while the parent is still rising", () => {
+    const nodes = [
+      { id: "p", kind: "project" as const, parentId: null, x: 0, y: 0 },
+      { id: "d", kind: "domain" as const, parentId: "p", x: 1000, y: 0 },
+      { id: "c", kind: "capability" as const, parentId: "d", x: 1030, y: 0 },
+    ];
+    const world = { nodes, nodeById: new Map(nodes.map((n) => [n.id, n])), bounds: { minX: 0, minY: 0, maxX: 1030, maxY: 0 }, spineBounds: { minX: 0, minY: 0, maxX: 1000, maxY: 0 } };
+    armTierAssembly(world, key(), false);
+    const [, d, c] = nodes;
+    let peak = 0;
+    let worst = 0;
+    for (let t = 0; t <= TIER_ASSEMBLE_TOTAL_MS; t += 10) {
+      stepTierAssembly(world, t);
+      const gap = Math.hypot(c.x - d.x, c.y - d.y);
+      worst = Math.max(worst, peak - gap);
+      peak = Math.max(peak, gap);
+    }
+    expect(worst).toBeLessThan(1e-9);
+    expect([c.x, c.y]).toEqual([1030, 0]);
+  });
+
   it("lands every node on the frame after a settle", () => {
     const world = makeWorld();
     armTierAssembly(world, key(), false);

@@ -12,7 +12,11 @@ import { waitForAnimationsDone, waitForBoxStill, waitForMapStill } from "./settl
  * card now tries the four corners around the pointer and takes the first that
  * covers no drawn disc or name.
  *
- * Measured, not eyeballed: for each domain-to-domain line, the pointer goes to
+ * The Flat overview draws counted domain lines with no edge pick (the flat dial,
+ * 2026-10-02), so the lines are hovered inside a realm, where the map still draws
+ * each relation and picks it.
+ *
+ * Measured, not eyeballed: for each line between two drawn nodes, the pointer goes to
  * the midpoint of the drawn curve, and the card's rect is compared with every
  * drawn disc and name. The assertion is conditional the same way the placement
  * is — when some corner of that pointer is clear, the card must be clear too; a
@@ -22,7 +26,7 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 806 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/topology/?e2e=1&guides=off&realm=domain%3Aorder", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
 
@@ -32,7 +36,7 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
     const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     return probe
       .edges()
-      .filter((edge) => edge.sourceId.startsWith("domain:") && edge.targetId.startsWith("domain:") && drawn.has(edge.sourceId) && drawn.has(edge.targetId))
+      .filter((edge) => drawn.has(edge.sourceId) && drawn.has(edge.targetId))
       .map((edge) => {
         const t = 0.5;
         const mx = (1 - t) * (1 - t) * edge.ax + 2 * (1 - t) * t * edge.controlX + t * t * edge.bx;
@@ -40,7 +44,7 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
         return { id: `${edge.sourceId}→${edge.targetId}`, x: box.left + mx, y: box.top + my };
       });
   });
-  expect(edges.length, "도메인 사이 선이 없으면 이 스펙은 공회전한다").toBeGreaterThan(3);
+  expect(edges.length, "그려진 선이 없으면 이 스펙은 공회전한다").toBeGreaterThan(3);
 
   let judged = 0;
   const covered: string[] = [];

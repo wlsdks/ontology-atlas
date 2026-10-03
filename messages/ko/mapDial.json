@@ -1,0 +1,17 @@
+{
+  "units": "역량 {capabilities, number} · 요소 {elements, number}",
+  "stale": "낡음 {count, number}",
+  "orphans": "{count, number}개 개념이 어느 도메인에도 속하지 않아요",
+  "more": "그 밖에 {count, number}",
+  "ringBetween": "다른 도메인 {min, number}–{max, number}곳이 사용",
+  "ringAtLeast": "다른 도메인 {min, number}곳 이상이 사용",
+  "ringAtMostOne": "다른 도메인 1곳 이하가 사용",
+  "linksShown": "링크 {total, number}개 중 {shown, number}개 표시",
+  "reading": "파일 {total, number}개 중 {read, number}개 읽는 중",
+  "settling": "모든 파일을 읽으면 고리가 자리를 잡습니다",
+  "legendFlows": "선 = 의존 · 숫자 = 개수",
+  "legendNeeds": "필요한 곳",
+  "legendUsers": "사용하는 곳",
+  "legendStale": "낡음",
+  "legendRings": "가운데에 가까울수록 다른 도메인이 더 많이 의존해요"
+}

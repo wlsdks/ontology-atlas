@@ -635,6 +635,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   if (reveal && span) {
     const base = normalInk(state, tokens, isDepends, clamp01(reveal.baseLift));
+    const baseDim = clamp01(reveal.baseDim ?? 0);
+    if (baseDim > 0) {
+      base.stroke = mixHex(base.stroke, state.galaxyInk ? mixHex(state.galaxyInk, tokens.edgeDim, 0.45) : tokens.edgeDim, baseDim);
+      base.width += (1 - base.width) * baseDim;
+    }
     const baseWidth = finishWidth(state, base.width, trailWalked);
     if (reveal.from === "a") {
       strokeBody(ctx, state, stroke, width, 0, span.hi);

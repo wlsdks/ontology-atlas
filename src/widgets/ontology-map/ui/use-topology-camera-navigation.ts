@@ -28,7 +28,8 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { computeDrawnSpineBounds, computePathPickBounds, type TopologyWorld } from "./topology-world";
+import { computeDrawnSpineBounds, computePathPickBounds, dialOverviewFit, type TopologyWorld } from "./topology-world";
+import { liveDialFocusFrame } from "./use-topology-focus-navigation";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -297,12 +298,14 @@ export function useTopologyCameraNavigation({
     const overviewBounds = galaxyRef.current && galaxyLayoutRef.current
       ? galaxyLayoutRef.current.bounds
       : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const dialFit = galaxyRef.current ? undefined : dialOverviewFit(world);
     overviewScaleRef.current = computeOverviewFitScale(
       overviewBounds,
       width,
       height,
       fitTokens,
       world.nodes.length,
+      dialFit,
     );
 
     const realmPhase = realmTransitionRef.current.phase;
@@ -354,6 +357,7 @@ export function useTopologyCameraNavigation({
         height,
         fitTokens,
         world.nodes.length,
+        dialFit,
       );
     } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
@@ -365,6 +369,8 @@ export function useTopologyCameraNavigation({
         focused,
         overviewScaleRef.current * tokens.overviewEntryRatio,
         realmActive ? realmData?.memberIds ?? null : null,
+        undefined,
+        realmActive ? undefined : liveDialFocusFrame(world, focused),
       );
     } else if (mode === "realm") {
       const realmData = realmDataRef.current;
@@ -393,6 +399,7 @@ export function useTopologyCameraNavigation({
         height,
         fitTokens,
         world.nodes.length,
+        dialFit,
       );
     }
 
