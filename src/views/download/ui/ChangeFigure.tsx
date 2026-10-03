@@ -33,6 +33,22 @@ const part = (key: string, extra?: CSSProperties) => ({
   style: { ...(changeRest(key) as CSSProperties), ...extra },
 });
 
+const breakable = (path: string) =>
+  path.split('/').flatMap((segment, index, all) =>
+    index < all.length - 1
+      ? [
+          <span key={`s${index}`} className="whitespace-nowrap">
+            {segment}/
+          </span>,
+          <wbr key={index} />,
+        ]
+      : [
+          <span key={`s${index}`} className="whitespace-nowrap">
+            {segment}
+          </span>,
+        ],
+  );
+
 const kindOf = (id: string) => id.slice(0, id.indexOf(':'));
 
 interface Thread {
@@ -224,12 +240,12 @@ function CommitCard({ wide, labelOf }: { wide: boolean; labelOf: (id: string) =>
       className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
     >
       <p
-        className="flex min-w-0 items-center justify-between gap-3 border-b border-[color:var(--color-divider)] pb-2.5 text-label leading-label"
+        className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[color:var(--color-divider)] pb-2.5 text-label leading-label"
         {...part('card')}
       >
-        <span className="flex min-w-0 items-center gap-2 text-[color:var(--color-text-secondary)]">
+        <span className="flex items-center gap-2 text-[color:var(--color-text-secondary)]">
           <SquareTerminal size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
-          <span className="truncate">{t('agentCommit')}</span>
+          <span>{t('agentCommit')}</span>
         </span>
         <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{t('filesChanged', { count: CHANGE_CAST.length })}</span>
       </p>
@@ -247,13 +263,13 @@ function CommitCard({ wide, labelOf }: { wide: boolean; labelOf: (id: string) =>
             <span className="min-w-0 flex-1 font-mono text-label leading-label">
               <span
                 data-anchor={wide ? undefined : `src-${index}`}
-                className="block truncate text-[color:var(--color-text-primary)]"
+                className="block text-[color:var(--color-text-primary)] [overflow-wrap:anywhere]"
               >
                 {fileName(row.file)}
               </span>
               {wide ? (
-                <span data-anchor={`src-${index}`} className="block truncate text-[color:var(--color-text-tertiary)]">
-                  {folderOf(row.file)}
+                <span data-anchor={`src-${index}`} className="block text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
+                  {breakable(folderOf(row.file))}
                 </span>
               ) : null}
             </span>
@@ -346,10 +362,10 @@ function BriefPanel({
             <span className="text-body leading-body text-[color:var(--color-indigo-text-strong)]">{labelOf(row.concept)}</span>
             <code
               data-anchor={`travel-${index}`}
-              className={cn('font-mono text-label leading-label text-[color:var(--color-text-tertiary)]', wide ? 'block break-all' : 'inline-block')}
+              className={cn('font-mono text-label leading-label text-[color:var(--color-text-tertiary)]', wide ? 'block [overflow-wrap:anywhere]' : 'inline-block [overflow-wrap:anywhere]')}
               {...part(`travel:${index}`)}
             >
-              {wide ? row.file : fileName(row.file)}
+              {wide ? breakable(row.file) : fileName(row.file)}
             </code>
             {wide ? <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-quaternary)]">{detail}</span> : null}
           </li>
