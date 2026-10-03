@@ -91,7 +91,7 @@ import {
   scaledLabelFontSize,
   scaledLabelFont,
 } from "../render/labels";
-import { captionWithinFlatBudget, placeRelationCaptions, relationCaptionText, type PlacedRelationCaption, type RelationCaption } from '../render/relation-captions';
+import { captionNormal, captionWithinFlatBudget, placeRelationCaptions, relationCaptionText, type PlacedRelationCaption, type RelationCaption } from '../render/relation-captions';
 import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
@@ -1573,6 +1573,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     pathLensActive: pathEdgeIds !== null && pathEdgeIds.size > 0,
     impactLensActive: dialProps?.impactLens === true,
     focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",
+    focusedRelationsCaptioned: focusedNodeId !== null && (relationCaptions?.size ?? 0) > 0,
   });
   if (!dialOwns) clearDialFrame();
   else if (paintOwnedDial(params, ctx, labelScale, dialProps)) return;
@@ -2573,7 +2574,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           folded: captionFoldedIds.has(edge.sourceId) || captionFoldedIds.has(edge.targetId),
         });
       if (caption && captionInFocus && captionBudgeted && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
-        captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1 });
+        captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1, normal: captionNormal(a, b) });
       }
       /**
        * Footprints beside the line — only when this relation was **walked
