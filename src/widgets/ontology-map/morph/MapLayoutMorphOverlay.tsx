@@ -144,7 +144,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, plan: LayoutMorphPlan, frame:
     const shape = e < 0.5 ? group.from.shape : group.to.shape;
     const path = new Path2D();
     for (const i of group.members) {
-      traceShape(path, shape, frame.x[i]!, frame.y[i]!, plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * Math.min(1, frame.p[i]!));
+      traceShape(path, shape, frame.x[i]!, frame.y[i]!, plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * e);
     }
     ctx.globalAlpha = alpha;
     ctx.fillStyle = mix(group.from.fill, group.to.fill, e);

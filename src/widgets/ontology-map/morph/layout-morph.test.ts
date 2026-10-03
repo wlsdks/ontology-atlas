@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { MapLayoutMark, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
 import { SPRING, springVisualMs } from "@/shared/motion/spring";
+import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
 const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "galaxy", "strata", "coupling"];
@@ -89,6 +90,19 @@ describe("planLayoutMorph", () => {
     const plan = planLayoutMorph([mark("domain:a", 10, 20)], [mark("domain:a", 110, 220)], parents);
     expect(at(sampleLayoutMorph(plan, 0), "domain:a")).toMatchObject({ x: 10, y: 20 });
     expect(at(sampleLayoutMorph(plan, END), "domain:a")).toMatchObject({ x: 110, y: 220 });
+  });
+
+  it("finishes shrinking a tile before painting it as a bright star while its position still glides", () => {
+    const plan = planLayoutMorph(
+      [{ ...mark("domain:a", 10, 20), size: 96, shape: "hex" }],
+      [{ ...mark("domain:a", 1010, 620), size: 4, shape: "disc", fill: "#c8dcff" }],
+      new Map(),
+    );
+    const moving = at(sampleLayoutMorph(plan, MOTION.base.duration * 1000), "domain:a")!;
+    expect(moving).toMatchObject({ size: 4, shape: "disc", fill: "#c8dcff" });
+    expect(moving.x).not.toBe(1010);
+    expect(at(sampleLayoutMorph(plan, 0), "domain:a")!.size).toBe(96);
+    expect(at(sampleLayoutMorph(plan, END), "domain:a")!.size).toBe(4);
   });
 
   it("sends a concept missing from the target into its nearest drawn ancestor, fading out", () => {

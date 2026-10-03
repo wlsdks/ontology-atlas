@@ -215,7 +215,7 @@ export function sampleLayoutMorph(plan: LayoutMorphPlan, atMs: number): MapLayou
         id: plan.ids[i]!,
         x: frame.x[i]!,
         y: frame.y[i]!,
-        size: plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * Math.min(1, frame.p[i]!),
+        size: plan.s0[i]! + (plan.s1[i]! - plan.s0[i]!) * e,
         shape: style.shape,
         fill: style.fill,
         stroke: style.stroke,
