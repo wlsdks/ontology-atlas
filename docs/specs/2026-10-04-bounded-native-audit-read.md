@@ -11,12 +11,9 @@ decisions: []
 
 ## Person and moment
 
-The owner wants ontology, wiki, harness, analysis and automation work to coexist
-as local data and history accumulate, with efficient CPU/memory and no broken
-behavior. They authorized investigation and improvement; retention preference
-is pending. The lead's brief and native allocation probe observed a remaining
-whole-file audit read after the renderer improvement landed in #2470/#2472.
-No installed-app measurement of this proposed native path exists yet.
+The owner authorized efficient CPU/memory across growing local ontology, wiki,
+harness, analysis and automation history without broken behavior. Retention is
+pending; the lead observed whole-file audit reading after #2470/#2472. Proposed app behavior is unmeasured.
 
 The outcome is **judge**: inspect the actual transfer count and latest evidence
 without a read that buffers the entire accumulated log or turns interrupted
@@ -49,11 +46,9 @@ human-correction boundaries remain constraints to prove, rather than assumptions
 - Current secure audit-write decisions retain no-follow directory/file opening,
   single-link verification, reservation locking and fsync: 2026-08-17 (52),
   plus `59f33326-5629-4cb7-8601-33c3b2f005fd`. This read changes none of them.
-- Primary concepts read: `docs/ontology/ontology-atlas.md`,
-  `docs/ontology/elements/bounded-source-read.md` and
-  `docs/ontology/elements/llm-provider-adapter.md`. They distinguish local source,
-  guarded evidence and provider adaptation; none authorizes a second data store.
-  The shared fixture is `tests/fixtures/llm-audit-log.sample.jsonl`.
+- Concepts read: `docs/ontology/ontology-atlas.md`, `docs/ontology/elements/bounded-source-read.md`
+  and `docs/ontology/elements/llm-provider-adapter.md`; no second data store is authorized.
+  Shared fixture: `tests/fixtures/llm-audit-log.sample.jsonl`.
 
 ## Problem and alternatives
 
@@ -100,8 +95,8 @@ must also avoid a false zero. No new audit-history size or record-admission cap.
    that read and closes it; a late response cannot enter its successor's state.
 7. When a read is abandoned without cancellation, its native lease expires after
    30 seconds without a pull, or five minutes total, and closes. If its owner is
-   still present, show `auditReadExpired` and Retry. These are cleanup policies,
-   not measured performance guarantees; no automatic retry or surviving queue.
+   still present, show `auditReadExpired` and Retry. These cleanup policies are
+   not performance guarantees; no automatic retry or surviving queue.
 
 The source contract is a **validated stable generation**, not an OS-atomic
 snapshot: retain opened identity, initial length and high-resolution modification
@@ -114,14 +109,20 @@ that hides changes; this limitation must not be described as a snapshot guarante
 Platform identity support, including stable Windows APIs, remains an implementation
 proof obligation; this draft makes no portability claim for the new reader.
 
-The reader is bound to its creating webview/caller and granted vault, with at most
-one session per registered reader owner; opaque IDs
-are not access grants. Reject arbitrary paths, cross-owner pulls, invalid/repeated
-cursor advancement and pulls after terminal cleanup. Native completion, cancel,
-error, owner retirement, lease expiry and app exit all release the descriptor and
-registry entry. Cancellation racing with begin/pull must reclaim the eventual
-resource. No audit writer lock is acquired. Native bytes remain raw IPC responses;
-verify the actual Tauri boundary rather than assume `Vec<u8>` is an ArrayBuffer.
+Native commands derive caller identity from Tauri's injected webview, never a
+frontend-supplied owner ID; each live webview owns at most one audit slot bound to
+its granted vault. A process-wide atomic admission limit of **four slots** covers
+pending begins, active sessions, pulls and retirement until their resources close.
+Four supports a small multiwindow workbench while bounding reader chunk buffers
+to 4MiB; this is an initial policy, not measured demand or a total-memory claim.
+Reserve a slot before file I/O/allocation; each owns one audit descriptor and at
+most one pull/buffer. Reject saturation without opening a descriptor, retaining
+an entry/queue, evicting another owner or publishing count/tail: use the failed-read
+state and Retry. Cleanup releases capacity only after all owned resources settle.
+Completion, cancel, error, owner retirement, lease expiry and app exit reclaim
+slots, including begin/pull cancellation races. Reject arbitrary paths, cross-owner
+IDs, invalid/repeated cursors and terminal pulls; IDs confer no grants. No writer
+lock is acquired. Verify raw Tauri IPC, never assume `Vec<u8>` is an ArrayBuffer.
 
 ## States
 
@@ -133,7 +134,7 @@ verify the actual Tauri boundary rather than assume `Vec<u8>` is an ArrayBuffer.
 | Complete / single row | `agents.models.auditSummary`, `auditRecent`; inspect supported facts | Same; `auditOpen` selects actual file in Finder |
 | Partial scan | Silent loading; no provisional evidence | Same; no count/tail until verified completion |
 | Source changed | FSA failure uses `auditReadFailed`; Retry | `agents.models.auditChanged`, `auditRetry`; new read |
-| Unreadable / unsafe | `agents.models.auditReadFailed`, `auditRetry`; check access and retry | Same; no outside-file read |
+| Unreadable / unsafe / admission rejected | `agents.models.auditReadFailed`, `auditRetry`; check access and retry; no native admission | Same; retry starts fresh after capacity frees; no outside-file read |
 | Expired | Out of scope — no native lease | `agents.models.auditReadExpired`, `auditRetry`; new read |
 | Cancelled / replaced owner | No message; destination owns current state | Same; cleanup with no replacement-state mutation |
 | Largest measured input | No measured FSA scalability claim; existing facts | 64MiB native allocation probe; 50,000-row renderer fixture separately; same complete/error states |
@@ -197,14 +198,17 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
    **then** the result is unavailable with no partial/zero publication. Native
    generation-race tests and `use-ai-connection.test.tsx` verify discard and a
    subsequent stable Retry returns only the current generation.
-4. **Given** cancellation during begin/pull, same-name folder switches and two owners,
-   **when** one retires or cancels repeatedly, **then** its eventual descriptor
-   and entry are released, its late results are ignored and the other survives.
-   Native ownership/cleanup tests and bridge tests cover each terminal path.
-5. **Given** abandoned sessions, **when** injected monotonic time crosses either
-   lease boundary, **then** descriptors/entries close and owned UI can retry;
-   expired/stale/cross-owner IDs cannot read. Native tests use a controllable clock,
-   not sleep; repeat cycles and assert no growing live-resource registry.
+4. **Given** simultaneous begins from repeated/supplied owners and five native
+   webviews, **when** admission/pulls race, **then** at most four slots, four audit
+   descriptors and four reader buffers exist, with one slot/pull per trusted caller;
+   saturation retains nothing, publishes no partial/zero facts and preserves others.
+   Native admission/ownership and bridge tests also cover cancellation during
+   begin/pull, same-name folder switches and ignored late results.
+5. **Given** saturation and abandoned sessions, **when** cancellation, retirement
+   or injected-time lease expiry settles cleanup, **then** capacity is freed and
+   a subsequently admitted read succeeds while other owners survive. Native tests
+   reject expired/stale/cross-owner IDs, use a controllable clock rather than sleep,
+   and repeat cycles to prove no growing registry, descriptor or buffer population.
 6. **Given** granted and unsafe/missing/unreadable paths, **when** reading runs,
    **then** only the fixed audit file is reachable, no external bytes are returned,
    only confirmed absence is empty, and reading does not acquire the writer lock
@@ -243,7 +247,4 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
 
 ## Owner question
 
-None — preserve history and scope the change to read transport plus truthful
-recovery. Lease budgets are explicit proposed policies for review, not benchmarks;
-reverting the reader requires no data migration. The lead fills the decision
-record after the required independent review; this draft is not implementation proof.
+None — preserve history; budgets are proposed policies, not benchmarks. Reversion needs no migration; the lead records the reviewed decision.
