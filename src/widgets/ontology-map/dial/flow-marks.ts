@@ -3,7 +3,7 @@ import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
-import { aggregateLinks, domainOfEnd, restBudget, type DialLink } from "./links";
+import { aggregateLinks, domainOfEnd, restBudget, type CrossingGuard, type DialLink } from "./links";
 import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./types";
 
 export interface FlowMarksInput {
@@ -195,12 +195,16 @@ function placeBeside(
   }
 }
 
-function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: Point; b: Point } | null {
-  const length = quadLength(s.p0, s.c, s.p1);
+function trimmedPiece(p0: Point, c: Point, p1: Point, trimStart: number, trimEnd: number): [Point, Point, Point] | null {
+  const length = quadLength(p0, c, p1);
   if (length < 1) return null;
-  const tStart = Math.min(0.45, s.trimStart / length);
-  const tEnd = Math.max(0.55, 1 - s.trimEnd / length);
-  const [a, c, b] = quadPiece(s.p0, s.c, s.p1, tStart, tEnd);
+  return quadPiece(p0, c, p1, Math.min(0.45, trimStart / length), Math.max(0.55, 1 - trimEnd / length));
+}
+
+function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: Point; b: Point } | null {
+  const piece = trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
+  if (!piece) return null;
+  const [a, c, b] = piece;
   const trimmed = quadLength(a, c, b);
   let gapT0 = 0;
   let gapT1 = 0;
@@ -479,14 +483,29 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     ends.add(l.u);
     ends.add(l.v);
   }
+  const within = (p: Point) => p.x >= free.minX - FREE_SLACK_PX && p.x <= free.maxX + FREE_SLACK_PX && p.y >= free.minY - FREE_SLACK_PX && p.y <= free.maxY + FREE_SLACK_PX;
+  const restLine = ({ l, a, b }: { l: DialLink; a: End; b: End }) => {
+    if (!within(a.p) || !within(b.p)) return null;
+    const s = restStroke(tokens, l, a, b);
+    return sampledPiece(trimmedPiece(s.p0, controlOf(input, l, a, b, hub), s.p1, s.trimStart, s.trimEnd));
+  };
+  const drawableByKey = new Map(drawable.map((d) => [d.l.key, d] as const));
+  const guard = restCrossingGuard(
+    (l) => {
+      const d = drawableByKey.get(l.key);
+      return d ? restLine(d) : null;
+    },
+    drawable.filter((d) => d.l.relatesOnly).map(restLine).filter((pts): pts is Point[] => pts !== null),
+    W,
+    H,
+  );
   const counted = drawable.filter((d) => !d.l.relatesOnly).map((d) => d.l);
-  const budget = restBudget(counted, ends.size, tokens);
+  const budget = restBudget(counted, ends.size, tokens, guard);
   result.budget = { shown: 0, total: budget.total, perEndCap: budget.perEndCap };
   const maxTotal = Math.max(1, ...counted.filter((l) => budget.keep.has(l.key) || l.attended).map((l) => l.total));
   const numberLimit = Math.max(tokens.restNumbersMin, Math.min(tokens.restNumbersMax, Math.round(tokens.restNumbersShare * onScreen)));
   const numberKeep = new Set(counted.filter((l) => budget.keep.has(l.key) && l.total >= tokens.restNumberMinCount).slice(0, numberLimit).map((l) => l.key));
 
-  const within = (p: Point) => p.x >= free.minX - FREE_SLACK_PX && p.x <= free.maxX + FREE_SLACK_PX && p.y >= free.minY - FREE_SLACK_PX && p.y <= free.maxY + FREE_SLACK_PX;
   const stubs: Stub[] = [];
   const toDraw: { l: DialLink; a: End; b: End; presence: number }[] = [];
   for (const { l, a, b } of drawable) {
@@ -541,9 +560,10 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
     return mixOver(crossfadeInk(was, now, input.inkMix), inks.bg, presence);
   };
   if (l.relatesOnly) {
+    const rest = restStroke(tokens, l, a, b);
     emit(input, out, {
-      key: l.key, role: "relates", p0: a.p, c: C, p1: b.p, w0: 1, w1: 1, ink: ink(l.u, false), headStart: false, headEnd: false,
-      trimStart: a.r + tokens.flowTrimStartPx, trimEnd: b.r + tokens.flowTrimStartPx, dashed: true, numeral: null, numeralInk: inks.numeral, slots: [], halo: false,
+      key: l.key, role: "relates", p0: rest.p0, c: C, p1: rest.p1, w0: 1, w1: 1, ink: ink(l.u, false), headStart: false, headEnd: false,
+      trimStart: rest.trimStart, trimEnd: rest.trimEnd, dashed: true, numeral: null, numeralInk: inks.numeral, slots: [], halo: false,
     });
     return;
   }
@@ -574,15 +594,94 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
     if (used > 0) run(themId, meId, them, me, used, -1, NEAR_START);
     return;
   }
+  const rest = restStroke(tokens, l, a, b);
+  const w = rampedRestWidth(tokens, l.total, maxTotal);
+  emit(input, out, {
+    key: l.key, role: "chord", p0: rest.p0, c: C, p1: rest.p1, w0: w, w1: rest.twoWay ? w : w * tokens.flowTaper, ink: ink(rest.from, false),
+    headStart: rest.twoWay, headEnd: true, trimStart: rest.trimStart, trimEnd: rest.trimEnd,
+    dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(rest.from, true), slots: REST_SLOTS, halo: false,
+  });
+}
+
+function restStroke(tokens: DialTokens, l: DialLink, a: End, b: End): { p0: Point; p1: Point; from: string; twoWay: boolean; trimStart: number; trimEnd: number } {
+  if (l.relatesOnly) return { p0: a.p, p1: b.p, from: l.u, twoWay: false, trimStart: a.r + tokens.flowTrimStartPx, trimEnd: b.r + tokens.flowTrimStartPx };
   const twoWay = l.uv > 0 && l.vu > 0;
   const forward = l.uv >= l.vu;
-  const w = rampedRestWidth(tokens, l.total, maxTotal);
-  const from = forward ? l.u : l.v;
   const p0 = forward ? a : b;
   const p1 = forward ? b : a;
-  emit(input, out, {
-    key: l.key, role: "chord", p0: p0.p, c: C, p1: p1.p, w0: w, w1: twoWay ? w : w * tokens.flowTaper, ink: ink(from, false),
-    headStart: twoWay, headEnd: true, trimStart: p0.r + (twoWay ? tokens.flowTrimEndPx : tokens.flowTrimStartPx), trimEnd: p1.r + tokens.flowTrimEndPx,
-    dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(from, true), slots: REST_SLOTS, halo: false,
-  });
+  return {
+    p0: p0.p, p1: p1.p, from: forward ? l.u : l.v, twoWay,
+    trimStart: p0.r + (twoWay ? tokens.flowTrimEndPx : tokens.flowTrimStartPx), trimEnd: p1.r + tokens.flowTrimEndPx,
+  };
+}
+
+const GUARD_SAMPLES = 16;
+const GUARD_END_CLEAR_PX = 16;
+const GUARD_CELL_PX = 48;
+
+function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obstacles: readonly (readonly Point[])[], width: number, height: number): CrossingGuard {
+  const lines: (readonly Point[])[] = [];
+  const segs: { line: number; k: number }[] = [];
+  const grid = new Map<number, number[]>();
+  const cells = (a: Point, b: Point, visit: (key: number) => void) => {
+    for (let gx = Math.floor(Math.min(a.x, b.x) / GUARD_CELL_PX); gx <= Math.floor(Math.max(a.x, b.x) / GUARD_CELL_PX); gx += 1) {
+      for (let gy = Math.floor(Math.min(a.y, b.y) / GUARD_CELL_PX); gy <= Math.floor(Math.max(a.y, b.y) / GUARD_CELL_PX); gy += 1) visit(gx * 100003 + gy);
+    }
+  };
+  const insert = (pts: readonly Point[]) => {
+    const line = lines.length;
+    lines.push(pts);
+    for (let k = 0; k < pts.length - 1; k += 1) {
+      const si = segs.length;
+      segs.push({ line, k });
+      cells(pts[k]!, pts[k + 1]!, (key) => {
+        const list = grid.get(key);
+        if (list) list.push(si);
+        else grid.set(key, [si]);
+      });
+    }
+  };
+  const nearEnd = (p: Point, pts: readonly Point[]) =>
+    Math.hypot(p.x - pts[0]!.x, p.y - pts[0]!.y) < GUARD_END_CLEAR_PX || Math.hypot(p.x - pts[pts.length - 1]!.x, p.y - pts[pts.length - 1]!.y) < GUARD_END_CLEAR_PX;
+  const memo = new Map<string, readonly Point[] | null>();
+  const lineFor = (link: DialLink): readonly Point[] | null => {
+    const hit = memo.get(link.key);
+    if (hit !== undefined) return hit;
+    const pts = lineOf(link);
+    memo.set(link.key, pts);
+    return pts;
+  };
+  for (const o of obstacles) insert(o);
+  return {
+    crosses(link) {
+      const pts = lineFor(link);
+      if (!pts) return false;
+      for (let k = 0; k < pts.length - 1; k += 1) {
+        let hit = false;
+        cells(pts[k]!, pts[k + 1]!, (key) => {
+          if (hit) return;
+          for (const si of grid.get(key) ?? []) {
+            const s = segs[si]!;
+            const other = lines[s.line]!;
+            const at = segmentsMeet(pts[k]!, pts[k + 1]!, other[s.k]!, other[s.k + 1]!);
+            if (!at || at.x < 0 || at.x > width || at.y < 0 || at.y > height || nearEnd(at, pts) || nearEnd(at, other)) continue;
+            hit = true;
+            return;
+          }
+        });
+        if (hit) return true;
+      }
+      return false;
+    },
+    add(link) {
+      const pts = lineFor(link);
+      if (pts) insert(pts);
+    },
+  };
+}
+
+function sampledPiece(piece: readonly [Point, Point, Point] | null): Point[] | null {
+  if (!piece) return null;
+  const [a, c, b] = piece;
+  return Array.from({ length: GUARD_SAMPLES + 1 }, (_, k) => quadAt(a, c, b, k / GUARD_SAMPLES));
 }

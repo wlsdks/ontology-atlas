@@ -13,6 +13,7 @@ import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { buildDialModel, resolveDialAttention } from "./dial-model";
 import { buildFlowMarks, fanAngles, flowHeadSize, focusFlowWidth, rampedFocusWidth, rampedRestWidth, restFlowWidth, stubText, type FlowMarksInput } from "./flow-marks";
 import { crossfadeInk, mixOver, resolveDialInks } from "./ink";
+import { countCrossings, sampleStrips } from "./frame/frame";
 import { resolveDialTokens } from "./tokens";
 import type { Box, DialAttention, DialCluster, DialItem, DialMarks, DialModel, DialScene, Point } from "./types";
 
@@ -291,6 +292,20 @@ describe("buildFlowMarks", () => {
     const fromCap = out.strips.filter((s) => s.flowKey.startsWith("d0c0\0"));
     expect(fromCap.length).toBeGreaterThan(0);
     expect(fromCap.some((s) => near({ x: s.ax, y: s.ay }, mid, 20) || near({ x: s.bx, y: s.by }, mid, 20))).toBe(true);
+  });
+
+  it("draws no two resting lines across each other once the budget chooses", () => {
+    const all: [string, string][] = [];
+    for (let i = 0; i < DOMAINS; i += 1) {
+      for (let j = i + 1; j < DOMAINS; j += 1) for (let k = 0; k <= (i * 7 + j * 3) % 4; k += 1) all.push([`d${i}c${k % 2}`, `d${j}c${(k + 1) % 2}`]);
+    }
+    const model = modelOf(all);
+    expect(model.flows.filter((f) => !f.relatesOnly).length).toBeGreaterThan(TOKENS.restLinksMin);
+    const { out, result } = run(model);
+    const rest = out.strips.filter((s) => s.role === "chord");
+    expect(rest.length).toBeGreaterThan(DOMAINS / 2);
+    expect(countCrossings(sampleStrips(rest), 1000, 800)).toBe(0);
+    expect(result.budget.shown).toBeLessThan(TOKENS.restLinksMin);
   });
 
   it("paints no ink outside the token set", () => {

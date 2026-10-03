@@ -124,25 +124,52 @@ export interface RestBudget {
   total: number;
 }
 
-export function restBudget(counted: readonly DialLink[], endsOnScreen: number, tokens: DialTokens): RestBudget {
+export interface CrossingGuard {
+  crosses(link: DialLink): boolean;
+  add(link: DialLink): void;
+}
+
+const NEAR_EQUAL = 1.1;
+
+export function restBudget(counted: readonly DialLink[], endsOnScreen: number, tokens: DialTokens, guard: CrossingGuard | null = null): RestBudget {
   const limit = counted.length <= tokens.restLinksMin
     ? counted.length
     : Math.max(tokens.restLinksMin, Math.min(tokens.restLinksMax, Math.round(tokens.restLinksPerEnd * endsOnScreen)));
   const perEndCap = endsOnScreen > tokens.perEndCapEnds ? tokens.perEndCap : Infinity;
+  const avoid = counted.length > limit || perEndCap !== Infinity ? guard : null;
   const keep = new Set<string>();
+  const dropped = new Set<string>();
   const perEnd = new Map<string, number>();
+  let slots = 0;
+  const open = (l: DialLink) => !keep.has(l.key) && !dropped.has(l.key) && (perEnd.get(l.u) ?? 0) < perEndCap && (perEnd.get(l.v) ?? 0) < perEndCap;
   const take = (l: DialLink) => {
-    if ((perEnd.get(l.u) ?? 0) >= perEndCap || (perEnd.get(l.v) ?? 0) >= perEndCap) return;
     keep.add(l.key);
     perEnd.set(l.u, (perEnd.get(l.u) ?? 0) + 1);
     perEnd.set(l.v, (perEnd.get(l.v) ?? 0) + 1);
+    avoid?.add(l);
   };
-  const strongestOf = new Map<string, DialLink>();
-  for (const l of counted) for (const end of [l.u, l.v]) if (!strongestOf.has(end)) strongestOf.set(end, l);
-  for (const l of strongestOf.values()) if (keep.size < limit && !keep.has(l.key)) take(l);
+  const fill = (head: DialLink, peers: readonly DialLink[]) => {
+    slots += 1;
+    if (!avoid?.crosses(head)) return take(head);
+    dropped.add(head.key);
+    const peer = peers.find((l) => l.total * NEAR_EQUAL >= head.total && open(l) && !avoid.crosses(l));
+    if (peer) take(peer);
+  };
+  const byEnd = new Map<string, DialLink[]>();
   for (const l of counted) {
-    if (keep.size >= limit) break;
-    if (!keep.has(l.key)) take(l);
+    for (const end of [l.u, l.v]) {
+      const list = byEnd.get(end);
+      if (list) list.push(l);
+      else byEnd.set(end, [l]);
+    }
+  }
+  for (const list of byEnd.values()) {
+    if (slots >= limit) break;
+    if (open(list[0]!)) fill(list[0]!, list);
+  }
+  for (const [i, l] of counted.entries()) {
+    if (slots >= limit) break;
+    if (open(l)) fill(l, counted.slice(i + 1));
   }
   return { keep, limit, perEndCap, total: counted.length };
 }
