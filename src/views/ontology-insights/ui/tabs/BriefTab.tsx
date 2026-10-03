@@ -549,7 +549,7 @@ function lineHref(lineId: string, availability: BriefCore['availability'], appRo
 /**
  * A door inside a sentence, after `DOOR_GAP`, with no side margin: a margin would indent a door wrapped onto its own
  * line. It has real width and height, not a transparent hit area, since two sit 12px apart and overlapping phantom hit
- * areas are rejected (`app/styles/gateway-map.css`); `atlas-touch-floor` gives a coarse pointer the 44px floor.
+ * areas are rejected (`app/styles/control-floors.css`); `atlas-touch-floor` gives a coarse pointer the 44px floor.
  */
 const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide whitespace-nowrap align-baseline text-[color:var(--color-indigo-text-strong)]';
 /** One em space: unlike a margin it stays at the end of the line when the door wraps. */

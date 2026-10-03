@@ -582,8 +582,7 @@
      * ⚠️ Must be inside `@layer base`, **after** the global kill rule —
      * `!important` outside the layer loses to the one inside (measurement in the toast comment above this file). Gate: `tests/contract/gateway-fx-exception.contract.test.ts`.
      */
-    .gateway-rise,
-    .gateway-map-after {
+    .gateway-rise {
       opacity: 1 !important;
       transform: none !important;
       transition: none !important;
@@ -593,10 +592,6 @@
      * forced back — `opacity: 1` would leave every character hidden. */
     .gateway-type-ch {
       visibility: visible !important;
-    }
-
-    .gateway-term-line {
-      opacity: 1 !important;
     }
 
     /* The hover caption is opacity-only, so it keeps its 120ms fade instead of the global

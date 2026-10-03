@@ -9,6 +9,8 @@ import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { createDomeFrameStage, type DomeFrameStageSources } from "./topology-dome-frame-stage";
 import { buildTopologyWorld, type TopologyWorld } from "./topology-world";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
+import { overviewBoundsFor } from "./topology-overview-fit";
 
 const tokens = {
   radiusProject: 20,
@@ -68,7 +70,7 @@ function stageSources(arrangement: MapArrangement, reducedMotion = false) {
     mapArrangementRef: { current: arrangement },
     domeFitPendingRef: { current: false },
     domeFitDurationRef: { current: undefined as number | undefined },
-    flatFitPendingRef: { current: false },
+    flatFitPendingRef: { current: false as boolean },
     domeFocusPendingRef: { current: null as { slug: string | null } | null },
     cameraRef: { current: camera },
     cameraTargetRef: { current: { tx: 0, ty: 0, tscale: 1 } as CameraTarget },
@@ -112,6 +114,29 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     vi.restoreAllMocks();
   });
 
+  it("returns to the flat overview using the live panel insets, once, during teardown", () => {
+    const world = neuralWorld();
+    const sources = stageSources("strata", true);
+    const fitTokens = { ...tokens, cameraScaleMax: 2.6, cameraScaleMin: 0.01,
+      cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95,
+      safeInsetLeft: 78, safeInsetRight: 120, safeInsetTop: 148, safeInsetBottom: 96 };
+    const measured = { ...fitTokens, safeInsetLeft: 324, safeInsetRight: 24 };
+    sources.cameraTokens = vi.fn(() => measured);
+    const run = createDomeFrameStage(sources);
+    run(nextFrameMs(), 1 / 60, fitTokens, world, 1400, 860);
+    sources.view3dRef.current = false;
+    sources.flatFitPendingRef.current = true;
+    sources.beginCameraTween.mockClear();
+    run(nextFrameMs(), 1 / 60, fitTokens, world, 1400, 860);
+    const bounds = overviewBoundsFor("spine", world, fitTokens, sources.expandedParentsRef.current, sources.clusteredIdsRef.current);
+    expect(sources.cameraTargetRef.current).toEqual(computeOverviewCameraTarget(bounds, 1400, 860, measured, world.nodes.length));
+    expect(sources.overviewScaleRef.current).toBe(computeOverviewFitScale(bounds, 1400, 860, measured, world.nodes.length));
+    expect(sources.cameraTokens).toHaveBeenCalledTimes(1);
+    expect(sources.beginCameraTween).toHaveBeenCalledTimes(1);
+    run(nextFrameMs(), 1 / 60, fitTokens, world, 1400, 860);
+    expect(sources.beginCameraTween).toHaveBeenCalledTimes(1);
+  });
+
   it("draws its concepts on the first frame and settles on the layout the pure build computes", () => {
     const world = neuralWorld();
     const sources = stageSources("coupling");
@@ -128,6 +153,23 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     expect(settlingFrames).toBeGreaterThan(1);
     expect(sources.domeRuntimeRef.current).toBe(dome);
     for (const [id, coord] of pureCloud(world).coords) expect(dome!.model.coords.get(id)).toEqual(coord);
+  });
+
+  it("waits for the cloud to settle before starting the automatic attention spin", () => {
+    const world = neuralWorld();
+    const sources = stageSources("coupling");
+    const run = createDomeFrameStage(sources);
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    const dome = sources.domeRuntimeRef.current!;
+    dome.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    dome.entryArmed = false;
+    const yaw = dome.yaw;
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    expect(dome.settling).toBe(true);
+    expect(dome.yaw).toBe(yaw);
+    while (sources.domeModelBuildRef.current !== null) run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    expect(dome.spinArmed).toBe(true);
+    expect(dome.yaw).toBeGreaterThan(yaw);
   });
 
   it("keeps the flat map under reduced motion until the layout is final, then shows it assembled", () => {
