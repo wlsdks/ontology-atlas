@@ -10,6 +10,8 @@ import type { CosmosCamera, CosmosRoom, GalaxyPose } from "./cosmos-types";
 const MAX_COSMOS_SCALE = 48 / MIN_STAR_SPACING;
 const FOCUS_SCALE_CAP = 16 / MIN_STAR_SPACING;
 const FLICK_REST_PX = 0.25;
+const REFIT_FRAME_MAX_MS = 1000 / 30;
+type CameraClock = "elapsed" | "presentation";
 
 export function galaxyMatrix(g: CosmosGalaxy, pose: GalaxyPose, camera: CosmosCamera, room: CosmosRoom, theta = pose.theta) {
   const k = camera.scale;
@@ -126,7 +128,7 @@ export function posedPoint(layout: CosmosLayout, poses: readonly GalaxyPose[], i
 }
 
 type CosmosMotion =
-  | { kind: "camera"; from: CosmosCamera; to: CosmosCamera; start: number; ms: number; width: number }
+  | { kind: "camera"; from: CosmosCamera; to: CosmosCamera; start: number; ms: number; width: number; presented?: { last: number; elapsed: number } }
   | { kind: "zoom"; from: number; to: number; start: number; screen: Point; world: Point }
   | { kind: "pan"; from: CosmosCamera; to: CosmosCamera; start: number };
 
@@ -170,11 +172,11 @@ export class CosmosCameraRig {
     else this.fit(false, 0);
   }
 
-  fit(glide: boolean, now: number): void {
+  fit(glide: boolean, now: number, clock: CameraClock = "elapsed"): void {
     if (!this.bounds) return;
     const { camera, overviewScale } = overviewCamera(this.bounds, this.room);
     this.overviewScale = overviewScale;
-    if (glide) this.travel(camera, now);
+    if (glide) this.travel(camera, now, clock);
     else this.camera = camera;
   }
 
@@ -196,11 +198,11 @@ export class CosmosCameraRig {
     return true;
   }
 
-  travel(to: CosmosCamera, now: number): void {
+  travel(to: CosmosCamera, now: number, clock: CameraClock = "elapsed"): void {
     if (this.reducedMotion) {
       this.motion = null;
       this.camera = { ...to };
-    } else this.motion = { kind: "camera", from: { ...this.camera }, to: { ...to }, start: now, ms: cameraTransitionDurationMs(this.camera, to), width: this.room.width };
+    } else this.motion = { kind: "camera", from: { ...this.camera }, to: { ...to }, start: now, ms: cameraTransitionDurationMs(this.camera, to), width: this.room.width, ...(clock === "presentation" ? { presented: { last: now, elapsed: 0 } } : {}) };
   }
 
   gesture(): void {
@@ -286,7 +288,11 @@ export class CosmosCameraRig {
     const m = this.motion;
     if (!m) return false;
     if (m.kind === "camera") {
-      const t = Math.min(1, Math.max(0, (now - m.start) / m.ms));
+      if (m.presented) {
+        m.presented.elapsed += Math.min(REFIT_FRAME_MAX_MS, Math.max(0, now - m.presented.last));
+        m.presented.last = Math.max(m.presented.last, now);
+      }
+      const t = Math.min(1, Math.max(0, (m.presented?.elapsed ?? now - m.start) / m.ms));
       this.camera = t >= 1 ? { ...m.to } : vanWijkCameraKeyframe(m.from, m.to, easeInOutCubic(t), m.width);
       if (t >= 1) this.motion = null;
     } else if (m.kind === "zoom") {

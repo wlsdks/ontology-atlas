@@ -200,7 +200,7 @@ export class CosmosEngine {
     }
     if ((this.roomHeld = this.arrival.active !== null)) return this.requestFrame();
     if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height), { final, keepView: glide });
-    if (!this.rig.user) this.rig.fit(glide, performance.now());
+    if (!this.rig.user) this.rig.fit(glide, performance.now(), glide ? "presentation" : "elapsed");
     this.requestFrame();
   }
 
