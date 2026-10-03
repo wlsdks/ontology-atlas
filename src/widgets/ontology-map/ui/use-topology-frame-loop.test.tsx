@@ -335,6 +335,23 @@ describe("a flat map where only the comets move", () => {
     unmount();
   });
 
+  it("asks for no frame after the last light lands when nothing else moves", () => {
+    pipeline.gate.mockImplementation(() => ({ ...readyFrame, awake: true, sceneStill: false, lightOnly: true }));
+    const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
+    const lightActive = vi.mocked(createFrameGate).mock.calls[0]![0].lightActiveRef;
+    lightActive.current = true;
+    runUntil(5000, 5032);
+    expect(nextFrame).not.toBeNull();
+    pipeline.lightRender.mockImplementationOnce(() => {
+      lightActive.current = false;
+    });
+    const due = nextFrame!;
+    nextFrame = null;
+    act(() => due(5048));
+    expect(nextFrame).toBeNull();
+    unmount();
+  });
+
   it("draws whole frames again the moment anything but the comets moves", () => {
     const { unmount } = renderHook(() => useTopologyFrameLoop(configuration(canvas)));
     runUntil(1000, 2400);

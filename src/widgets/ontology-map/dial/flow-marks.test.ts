@@ -202,6 +202,18 @@ describe("buildFlowMarks", () => {
     for (const s of result.stubs) expect(s.box.minX >= free.minX && s.box.maxX <= free.maxX).toBe(true);
   });
 
+  it("gives every attended stub stroke a light chord running in its own direction", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d1c0"], ["d1c1", "d0c0"]]);
+    const chip = { x: 500, y: 100 };
+    const free = { minX: chip.x - 150, minY: 20, maxX: chip.x + 150, maxY: 300 };
+    const { out, input } = run(model, { freeRect: free, viewportWidth: 4000, viewportHeight: 4000, focusId: "d0" });
+    const stubs = out.strips.filter((s) => s.role === "stub" && s.flowKey === "d0\0d1");
+    expect(stubs).toHaveLength(2);
+    expect(input.chords.map((c) => [c.sourceDomain, c.targetDomain]).sort()).toEqual([["d0", "d1"], ["d1", "d0"]]);
+    const outward = input.chords.find((c) => c.sourceDomain === "d0")!;
+    expect(Math.hypot(outward.a.x - chip.x, outward.a.y - chip.y)).toBeLessThan(Math.hypot(outward.b.x - chip.x, outward.b.y - chip.y));
+  });
+
   it("fans stubs at least stub-gap-deg apart", () => {
     const fanned = fanAngles([0.1, 0.12, 0.13, 2], TOKENS.stubGapDeg);
     const sorted = [...fanned].sort((a, b) => a - b);
