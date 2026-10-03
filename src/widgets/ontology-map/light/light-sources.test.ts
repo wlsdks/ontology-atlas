@@ -59,19 +59,22 @@ describe("focus light", () => {
     const skipped = emitter();
     expect(focus.step(input(16, "e0"), skipped.out)).toBe(false);
     expect(skipped.heads).toEqual([]);
-    const plan = focus.plan();
-    expect(plan?.anchorId).toBe("e0");
+    expect(focus.plan()).toBeNull();
     dial.frame = null;
     const classic = emitter();
     expect(focus.step(input(32, "e0"), classic.out)).toBe(true);
-    expect(focus.plan()).toBe(plan);
+    expect(focus.plan()?.anchorId).toBe("e0");
+    expect(focus.plan()?.createdMs).toBe(16);
     expect(classic.heads.map((h) => h.key).sort()).toEqual(["x2", "x4"]);
   });
 
-  it("does not keep the loop awake while the dial owns the paint", () => {
+  it("neither keeps the loop awake nor reports a plan while the dial owns the paint", () => {
     const focus = LIGHT_SOURCES[0]!();
     focus.step(input(0, null), emitter().out);
     dial.frame = DIAL_PAINTED;
-    for (let now = 16; now < 2000; now += 16) expect(focus.step(input(now, "d0"), emitter().out)).toBe(false);
+    for (let now = 16; now < 2000; now += 16) {
+      expect(focus.step(input(now, "d0"), emitter().out)).toBe(false);
+      expect(focus.plan()).toBeNull();
+    }
   });
 });
