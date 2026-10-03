@@ -192,6 +192,25 @@ describe('local Compile reads and applies the same current Wiki snapshot', () =>
     expect(mocks.saveDoc).not.toHaveBeenCalled();
     expect(mocks.createDoc).not.toHaveBeenCalled();
   });
+
+  it('retains confirmed saved pages and reload failure when a later write fails', async () => {
+    setPage('old human note');
+    replacementCard();
+    const target = mocks.card.proposal as { readNodesThisTurn?: string[]; changes: Array<Record<string, unknown>> };
+    target.readNodesThisTurn = ['wiki/records'];
+    target.changes.push({ id: 'page-2', tool: 'propose_wiki_page', summary: 'new page', selected: true,
+      files: [{ path: 'wiki/new.md', kind: 'create', before: null, after: 'new page' }] });
+    mocks.createDoc.mockRejectedValueOnce(new Error('disk full'));
+    mocks.refresh.mockRejectedValueOnce(new Error('cannot reload'));
+    const { result } = await start();
+    await act(async () => { mocks.resolveRun?.({ turn: { id: 'turn-1' } }); });
+    await act(async () => { await result.current.allow(); });
+    expect(result.current.status).toBe('failed');
+    expect(result.current.writtenPaths).toEqual(['wiki/records.md']);
+    expect(result.current.errorMessage).toBe('Error: disk full');
+    expect(result.current.refreshErrorMessage).toBe('Error: cannot reload');
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('useLocalCompile vault origin', () => {

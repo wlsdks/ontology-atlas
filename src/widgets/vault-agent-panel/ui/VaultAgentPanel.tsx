@@ -727,6 +727,8 @@ export function VaultAgentPanel({
                     cancelled: t('proposal.cancelled'),
                     conflict: t('proposal.conflict'),
                     failed: (message) => t('proposal.failed', { message }),
+                    partialWrites: (paths) => t('proposal.partialWrites', { paths }),
+                    refreshFailed: (message) => t('proposal.refreshFailed', { message }),
                     unreadWarning: t('proposal.unreadWarning'),
                     showOnMap: t('proposal.showOnMap'),
                     expandHint: t('proposal.expandHint'),
