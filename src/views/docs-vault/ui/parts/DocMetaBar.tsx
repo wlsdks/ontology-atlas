@@ -17,7 +17,7 @@ const actionLinkClass = controlClass({
   size: "md",
   tone: "muted",
   className:
-    "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none",
+    "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] underline-offset-2 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)]",
 });
 
 export function DocMetaBar({

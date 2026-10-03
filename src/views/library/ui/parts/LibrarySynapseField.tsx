@@ -140,34 +140,44 @@ export function LibrarySynapseField({
     // it is there when the cover lifts, and no loop is registered at all.
     if (reducedMotion || paused) return () => observer.disconnect();
 
-    let raf = 0;
+    let raf: number | null = null;
     let previous = performance.now();
-    let lastInput = performance.now();
-    const onInput = (): void => {
-      lastInput = performance.now();
-    };
-    const loop = (now: number): void => {
-      raf = requestAnimationFrame(loop);
+    let lastInput = previous;
+    function loop(now: number): void {
+      raf = null;
+      if (document.hidden) return;
+      const factor = ambientSleepFactor(now, lastInput);
+      if (isAmbientAsleep(factor)) return;
       const dt = now - previous;
       previous = now;
-      const factor = ambientSleepFactor(now, lastInput);
-      // Asleep: rAF keeps ticking so any input wakes it on the very next frame, but the
-      // field is neither stepped nor repainted. The map's own conservative rule.
-      if (isAmbientAsleep(factor)) return;
       stepSynapseField(nodes, dt * factor, width, height);
       draw();
+      raf = requestAnimationFrame(loop);
+    }
+    const onInput = (): void => {
+      lastInput = performance.now();
+      if (raf !== null || document.hidden) return;
+      previous = lastInput;
+      raf = requestAnimationFrame(loop);
+    };
+    const onVisibility = (): void => {
+      if (!document.hidden) { onInput(); return; }
+      if (raf !== null) cancelAnimationFrame(raf);
+      raf = null;
     };
     window.addEventListener("pointermove", onInput, { passive: true });
     window.addEventListener("keydown", onInput, { passive: true });
     window.addEventListener("wheel", onInput, { passive: true });
-    raf = requestAnimationFrame(loop);
+    document.addEventListener("visibilitychange", onVisibility);
+    onInput();
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf !== null) cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener("pointermove", onInput);
       window.removeEventListener("keydown", onInput);
       window.removeEventListener("wheel", onInput);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [reducedMotion, paused]);
 
