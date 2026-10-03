@@ -161,3 +161,45 @@ describe("synthesizeEvidenceStates", () => {
     expect(synthesizeEvidenceStates(ids, 0.85)).toEqual(states);
   });
 });
+
+function ladderStep(count: number): number {
+  if (count <= 1) return 0;
+  if (count <= 3) return 1;
+  if (count <= 7) return 2;
+  if (count <= 15) return 3;
+  if (count <= 31) return 4;
+  return 5;
+}
+
+function dependentLadderSteps(shape: "uniform" | "layered"): Set<number> {
+  const g = synthesizeVaultGraph(10000, { dependencies: true, shape });
+  const domainOf = new Map<string, string>();
+  for (const edge of g.edges) if (edge.type === "contains" && edge.from.startsWith("synth-domain-")) domainOf.set(edge.to, edge.from);
+  for (const edge of g.edges) {
+    if (edge.type !== "contains" || !edge.from.startsWith("synth-cap-")) continue;
+    const domain = domainOf.get(edge.from);
+    if (domain) domainOf.set(edge.to, domain);
+  }
+  const dependents = new Map<string, Set<string>>();
+  for (let d = 0; d < g.counts.domain; d += 1) dependents.set(`synth-domain-${d}`, new Set());
+  for (const edge of g.edges) {
+    if (edge.type !== "depends_on") continue;
+    const from = domainOf.get(edge.from);
+    const to = domainOf.get(edge.to);
+    if (from && to && from !== to) dependents.get(to)?.add(from);
+  }
+  return new Set([...dependents.values()].map((set) => ladderStep(set.size)));
+}
+
+describe("synth shape", () => {
+  it("keeps the counts and stays deterministic for the layered shape", () => {
+    const a = synthesizeVaultGraph(10000, { dependencies: true, shape: "layered" });
+    expect(a.counts).toEqual(computeSynthCounts(10000));
+    expect(synthesizeVaultGraph(10000, { dependencies: true, shape: "layered" })).toEqual(a);
+  });
+
+  it("uniform dependents sit on one ladder step, layered span at least three", () => {
+    expect(dependentLadderSteps("uniform").size).toBe(1);
+    expect(dependentLadderSteps("layered").size).toBeGreaterThanOrEqual(3);
+  });
+});

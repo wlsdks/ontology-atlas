@@ -40,6 +40,7 @@ export interface LightStageOptions {
 }
 
 export interface LightFrameStage {
+  afterPaint(): void;
   prepare(
     now: number,
     tokens: OntologyMapTokens,
@@ -107,6 +108,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
   let framePathOpen = false;
   let prepareMs = 0;
   let prepareStart = 0;
+  let paintInput: LightSourceInput | null = null;
 
   let probe: LightProbe | null = null;
   if (params.has("e2e") && typeof window !== "undefined") {
@@ -236,6 +238,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
   return {
     prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, clusteredIds) {
       if (probe) prepareStart = performance.now();
+      paintInput = null;
       heads.length = 0;
       probeBlooms.length = 0;
       clearSignalledLines();
@@ -305,10 +308,21 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         pathNodeIds: refs.spotlightIdsRef.current,
       };
       let alive = false;
-      for (const source of sources) alive = source.step(input, emitter) || alive;
+      for (const source of sources) if (!source.readsPaint) alive = source.step(input, emitter) || alive;
       sourcesQuiet = false;
       lightActiveRef.current = alive;
+      paintInput = input;
       if (probe) prepareMs = performance.now() - prepareStart;
+    },
+    afterPaint() {
+      const input = paintInput;
+      paintInput = null;
+      if (input === null) return;
+      const start = probe ? performance.now() : 0;
+      let alive = lightActiveRef.current;
+      for (const source of sources) if (source.readsPaint) alive = source.step(input, emitter) || alive;
+      lightActiveRef.current = alive;
+      if (probe) prepareMs += performance.now() - start;
     },
     render() {
       const renderStart = probe ? performance.now() : 0;

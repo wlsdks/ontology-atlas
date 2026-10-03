@@ -1,62 +1,91 @@
 import { expect, test } from "@playwright/test";
+import "./atlas-map-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForMapStill } from "./settle";
+import { waitForMapSettled, waitForMapStill } from "./settle";
+import type { Box, DialProbe } from "../../src/widgets/ontology-map/dial/types";
 
 /**
  * **A short window does not keep tall reservations** (2026-09-19).
  *
  * The overview fit reserves a tool lane on top (148) and a readout band on
- * the bottom (96 plus the label allowance) — 268 px, sized for a tall desktop
- * window. On the 14-inch MacBook the browser gives the map 806 px, on a
- * 1024×768 window 764: a third of the height went to reservations that hold
- * nothing that tall, and the spine ring filled 64 % and 51 % of the height.
+ * the bottom (96 plus the label allowance), sized for a tall desktop window.
  * Below 880 px the bands shrink to the tool lane plus a chip and the readout
- * plus a name, and the ring fills the window it was given.
+ * plus a name. The flat dial (2026-10-03) frames its clusters and their
+ * outward names, so the bar is the drawn extent (chips, discs and domain
+ * names) against the free map: on the binding axis it fills at least 85 %
+ * at 1512×806, and no name leaves the free rect.
  */
-async function ringFill(page: import("@playwright/test").Page, width: number, height: number) {
-  await page.setViewportSize({ width, height });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => document.fonts.ready);
-  await waitForMapStill(page);
+async function drawnFill(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const probe = window.__atlasMap!;
-    const camera = probe.camera()!;
-    const spine = probe.nodes().filter((n) => !n.hidden && (n.kind === "domain" || n.kind === "project"));
-    const minY = Math.min(...spine.map((n) => n.y - n.radius));
-    const maxY = Math.max(...spine.map((n) => n.y + n.radius));
+    const dial = probe.dial!() as DialProbe;
+    const free = dial.freeRect;
+    const chips = probe.nodes().filter((n) => !n.hidden && n.kind === "domain");
+    const boxes: Box[] = [
+      ...chips.map((n) => ({ minX: n.x - n.radius, maxX: n.x + n.radius, minY: n.y - n.radius, maxY: n.y + n.radius })),
+      ...dial.discs.map((d) => ({ minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r })),
+      ...dial.texts.filter((t) => t.role === "domain").map((t) => t.box),
+    ];
+    const minX = Math.min(...boxes.map((b) => b.minX));
+    const maxX = Math.max(...boxes.map((b) => b.maxX));
+    const minY = Math.min(...boxes.map((b) => b.minY));
+    const maxY = Math.max(...boxes.map((b) => b.maxY));
     const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     const controls = [...document.querySelectorAll<HTMLElement>("main button")]
+      .filter((el) => el.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.width > 0 && r.top < 120 && r.left > canvas.left);
     const toolbarBottom = Math.max(...controls.map((r) => r.bottom)) - canvas.top;
-    const labels = probe.labels();
+    const inside = (b: Box) => b.minX >= free.minX && b.maxX <= free.maxX && b.minY >= free.minY && b.maxY <= free.maxY;
     return {
-      fillH: (maxY - minY) / camera.height,
-      top: minY,
+      owns: dial.owns,
+      fill: Math.max((maxX - minX) / (free.maxX - free.minX), (maxY - minY) / (free.maxY - free.minY)),
+      chipTop: Math.min(...chips.map((n) => n.y - n.radius)),
       toolbarBottom,
-      labelsOff: labels.filter((l) => l.minY < 0 || l.maxY > camera.height).map((l) => l.text),
-      labelsUnderToolbar: labels.filter((l) => l.minY < toolbarBottom).map((l) => l.text),
+      height: probe.camera()!.height,
+      namesOutside: dial.texts.filter((t) => !inside(t.box)).map((t) => t.text),
+      labelsUnderToolbar: probe.labels().filter((l) => l.minY < toolbarBottom).map((l) => l.text),
     };
   });
 }
 
-test("the spine ring fills a short window instead of a tall reservation", async ({ page }) => {
+async function waitForDialSettled(page: import("@playwright/test").Page) {
+  await page.waitForFunction(
+    () => {
+      const dial = window.__atlasMap?.dial?.();
+      return !!dial && dial.owns && (dial as DialProbe).placement.state === "settled";
+    },
+    undefined,
+    { polling: "raf" },
+  );
+  await waitForMapStill(page);
+}
+
+async function open(page: import("@playwright/test").Page, width: number, height: number) {
+  await page.setViewportSize({ width, height });
+  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => document.fonts.ready);
+  await waitForMapSettled(page);
+  await waitForDialSettled(page);
+  return drawnFill(page);
+}
+
+test("the dial fills a short window's free map instead of a tall reservation", async ({ page }) => {
   test.setTimeout(90_000);
   await seedFirstRunSeen(page);
-  // At the app's 1040×720 floor the ring is bound by the side lanes, not the
-  // height, so only the 14-inch window carries a fill floor; both keep the
-  // clipping invariants.
+  // At the app's 1040×720 floor the side lanes bind, so only the 14-inch
+  // window carries a fill floor; both keep the clipping invariants.
   for (const [width, height, floor] of [
-    [1512, 806, 0.7],
+    [1512, 806, 0.85],
     [1040, 720, 0],
   ] as const) {
-    const fill = await ringFill(page, width, height);
-    if (floor > 0) {
-      expect(fill.fillH, `${width}×${height}: 링이 높이의 ${Math.round(fill.fillH * 100)}%만 채운다`).toBeGreaterThanOrEqual(floor);
-    }
-    expect(fill.top, `${width}×${height}: 링이 툴바 아래로 들어갔다`).toBeGreaterThan(fill.toolbarBottom);
-    expect(fill.labelsOff, `${width}×${height}: 화면 밖 이름`).toEqual([]);
-    expect(fill.labelsUnderToolbar, `${width}×${height}: 툴바 아래 이름`).toEqual([]);
+    const fill = await open(page, width, height);
+    console.log(`[short-fit] ${width}×${height} ${JSON.stringify(fill)}`);
+    expect(fill.owns, `${width}×${height}: the dial draws the overview`).toBe(true);
+    if (floor > 0) expect(fill.fill, `${width}×${height}: the drawing fills ${Math.round(fill.fill * 100)} % of the free map`).toBeGreaterThanOrEqual(floor);
+    expect(fill.chipTop, `${width}×${height}: a chip sits under the toolbar`).toBeGreaterThan(fill.toolbarBottom);
+    expect(fill.namesOutside, `${width}×${height}: names outside the free map`).toEqual([]);
+    expect(fill.labelsUnderToolbar, `${width}×${height}: names under the toolbar`).toEqual([]);
   }
 });
 
@@ -68,18 +97,13 @@ test("the spine ring fills a short window instead of a tall reservation", async 
 test("shrinking a tall window refits with the short lanes without a reload", async ({ page }) => {
   test.setTimeout(90_000);
   await seedFirstRunSeen(page);
-  const tall = await ringFill(page, 1512, 1000);
-  expect(tall.top, "큰 창은 원래 예약(148)을 지킨다").toBeGreaterThanOrEqual(148);
+  const tall = await open(page, 1512, 1000);
+  expect(tall.chipTop, "a tall window keeps the tall reservation (148)").toBeGreaterThanOrEqual(148);
   await page.setViewportSize({ width: 1512, height: 806 });
   await waitForMapStill(page);
-  const short = await page.evaluate(() => {
-    const probe = window.__atlasMap!;
-    const camera = probe.camera()!;
-    const spine = probe.nodes().filter((n) => !n.hidden && (n.kind === "domain" || n.kind === "project"));
-    const minY = Math.min(...spine.map((n) => n.y - n.radius));
-    const maxY = Math.max(...spine.map((n) => n.y + n.radius));
-    return { fillH: (maxY - minY) / camera.height, top: minY, height: camera.height };
-  });
+  const short = await drawnFill(page);
+  console.log(`[short-fit] 1512×1000 → 1512×806 ${JSON.stringify(short)}`);
   expect(short.height).toBeLessThan(880);
-  expect(short.fillH, `줄인 창에서 링이 높이의 ${Math.round(short.fillH * 100)}%만 채운다`).toBeGreaterThanOrEqual(0.7);
+  expect(short.fill, `after shrinking, the drawing fills ${Math.round(short.fill * 100)} % of the free map`).toBeGreaterThanOrEqual(0.85);
+  expect(short.namesOutside, "after shrinking, names outside the free map").toEqual([]);
 });

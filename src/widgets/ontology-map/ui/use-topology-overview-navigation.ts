@@ -25,7 +25,7 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
-import { type TopologyWorld } from "./topology-world";
+import { dialOverviewFit, type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
@@ -160,10 +160,10 @@ export function useTopologyOverviewNavigation({
       ? galaxyLayoutRef.current.bounds
       : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
-    const overviewTarget = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+    const overviewTarget = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, galaxyRef.current ? undefined : dialOverviewFit(world));
     cameraTargetRef.current = overviewTarget;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, galaxyRef.current ? undefined : dialOverviewFit(world));
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not

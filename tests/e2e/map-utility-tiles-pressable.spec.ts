@@ -25,6 +25,20 @@ test("no map utility tile is left visible under an open panel", async ({ page })
   await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await page.getByTestId("first-run-open").click();
   await waitForMapStill(page);
+  // The Flat overview picks no line (the flat dial, 2026-10-02): the relation card is opened
+  // inside a domain's realm, entered from its panel, with everything there expanded.
+  const domain = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ kind: string; hidden: boolean; x: number; y: number }> } }).__atlasMap;
+    const c = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const d = m.nodes().find((n) => !n.hidden && n.kind === "domain" && n.x > 420 && n.x < c.width - 420)!;
+    return { x: c.left + d.x, y: c.top + d.y };
+  });
+  await page.mouse.click(domain.x, domain.y);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await page.getByTestId("map-detail-panel-action-realm").click();
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
+  await waitForMapStill(page);
   await page.getByTestId("topology-expand-all").click();
   await waitForMapStill(page);
 
@@ -62,6 +76,7 @@ test("no map utility tile is left visible under an open panel", async ({ page })
       const x = 0.25 * e.ax + 0.5 * e.controlX + 0.25 * e.bx;
       const y = 0.25 * e.ay + 0.5 * e.controlY + 0.25 * e.by;
       if (x < insets.left + 20 || x > rect.width - insets.right - 20 || y < 20 || y > rect.height - 20) continue;
+      if (!m.edgeAt?.(x, y)) continue;
       return { x: Math.round(x), y: Math.round(y) };
     }
     return null;

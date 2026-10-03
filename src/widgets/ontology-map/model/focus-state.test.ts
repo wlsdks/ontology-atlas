@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   clusterMoreChipId,
+  createFocusRampClock,
   CLUSTER_MORE_CHIP_PREFIX,
   EGO_NEIGHBOR_LIMIT,
   isNodeEmphasisActive,
@@ -325,5 +326,21 @@ describe("egoRestSink", () => {
     expect(egoRestSink(0.5, 0.42)).toBeCloseTo(0.71, 9);
     expect(egoRestSink(-1, 0.42)).toBe(1);
     expect(egoRestSink(3, 0.42)).toBeCloseTo(0.42, 9);
+  });
+});
+
+describe("createFocusRampClock", () => {
+  it("starts a focus's ramps on the first frame drawn under it, however long that frame was", () => {
+    const clock = createFocusRampClock();
+    expect(clock("|", 0.016, 1000, Number.NaN)).toBe(0);
+    expect(clock("|", 0.016, 1016, 1004)).toBeCloseTo(0.012, 9);
+    expect(clock("|", 0.016, 1032, 1020)).toBe(0.016);
+    expect(clock("a|", 0.05, 1006, 1020)).toBe(0);
+    expect(clock("a|", 0.05, 1073, 1057)).toBeCloseTo(0.016, 9);
+    expect(clock("a|", 0.05, 1140, 1090)).toBe(0.05);
+    expect(clock("b|", 0.03, 1170, 1150)).toBe(0);
+    expect(clock("b|", 0.03, 1200, 1210)).toBe(0);
+    expect(clock("|", 0.02, 1220, 1215)).toBe(0);
+    expect(clock("|", 0.02, 1240, Number.NaN)).toBe(0.02);
   });
 });

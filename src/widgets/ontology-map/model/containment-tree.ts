@@ -132,3 +132,124 @@ export function rollDomainFlows(
     (x, y) => y.count - x.count || byString(x.fromDomain + x.toDomain, y.fromDomain + y.toDomain),
   );
 }
+
+export interface DomainDependency {
+  sourceId: string;
+  targetId: string;
+  fromDomain: string;
+  toDomain: string;
+  fromCapability: string | null;
+  toCapability: string | null;
+}
+
+export interface DirectedDomainFlow {
+  key: string;
+  a: string;
+  b: string;
+  ab: number;
+  ba: number;
+  total: number;
+  relatesOnly: boolean;
+}
+
+const pairKey = (a: string, b: string) => `${a}\0${b}`;
+
+function domainResolver(tree: ContainmentTree) {
+  const isDomain = new Set(tree.domains.map((d) => d.id));
+  const capabilityOf = (id: string): string | null => {
+    if (tree.capabilityDomain.has(id)) return id;
+    const owner = tree.elementParent.get(id);
+    return owner && tree.capabilityDomain.has(owner) ? owner : null;
+  };
+  const domainOf = (id: string): string | null => {
+    if (isDomain.has(id)) return id;
+    const cap = capabilityOf(id);
+    if (cap) return tree.capabilityDomain.get(cap) ?? null;
+    const owner = tree.elementParent.get(id);
+    return owner && isDomain.has(owner) ? owner : null;
+  };
+  return { capabilityOf, domainOf };
+}
+
+export function domainOfNode(tree: ContainmentTree, id: string): string | null {
+  return domainResolver(tree).domainOf(id);
+}
+
+export function rollDomainDependencies(tree: ContainmentTree, edges: readonly TreeInputEdge[]): DomainDependency[] {
+  const { capabilityOf, domainOf } = domainResolver(tree);
+  const out: DomainDependency[] = [];
+  const seen = new Set<string>();
+  for (const e of edges) {
+    if (e.kind === "contains" || e.relationType !== "depends_on") continue;
+    const key = pairKey(e.source, e.target);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const fromDomain = domainOf(e.source);
+    const toDomain = domainOf(e.target);
+    if (!fromDomain || !toDomain) continue;
+    out.push({
+      sourceId: e.source,
+      targetId: e.target,
+      fromDomain,
+      toDomain,
+      fromCapability: capabilityOf(e.source),
+      toCapability: capabilityOf(e.target),
+    });
+  }
+  return out;
+}
+
+export function rollRelatesDomainPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { a: string; b: string }[] {
+  const { domainOf } = domainResolver(tree);
+  const pairs = new Map<string, { a: string; b: string }>();
+  for (const e of edges) {
+    if (e.kind === "contains" || e.relationType !== "related_to") continue;
+    const x = domainOf(e.source);
+    const y = domainOf(e.target);
+    if (!x || !y || x === y) continue;
+    const [a, b] = x < y ? [x, y] : [y, x];
+    pairs.set(pairKey(a, b), { a, b });
+  }
+  return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
+}
+
+export function rollRelatesCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { a: string; b: string }[] {
+  const { capabilityOf } = domainResolver(tree);
+  const pairs = new Map<string, { a: string; b: string }>();
+  for (const e of edges) {
+    if (e.kind === "contains" || e.relationType !== "related_to") continue;
+    const x = capabilityOf(e.source);
+    const y = capabilityOf(e.target);
+    if (!x || !y || x === y) continue;
+    const [a, b] = x < y ? [x, y] : [y, x];
+    pairs.set(pairKey(a, b), { a, b });
+  }
+  return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
+}
+
+export function rollDirectedDomainFlows(
+  deps: readonly DomainDependency[],
+  relates: readonly { a: string; b: string }[],
+): DirectedDomainFlow[] {
+  const flows = new Map<string, DirectedDomainFlow>();
+  for (const dep of deps) {
+    if (dep.fromDomain === dep.toDomain) continue;
+    const forward = dep.fromDomain < dep.toDomain;
+    const [a, b] = forward ? [dep.fromDomain, dep.toDomain] : [dep.toDomain, dep.fromDomain];
+    const key = pairKey(a, b);
+    let flow = flows.get(key);
+    if (!flow) {
+      flow = { key, a, b, ab: 0, ba: 0, total: 0, relatesOnly: false };
+      flows.set(key, flow);
+    }
+    if (forward) flow.ab += 1;
+    else flow.ba += 1;
+    flow.total += 1;
+  }
+  for (const pair of relates) {
+    const [a, b] = pair.a < pair.b ? [pair.a, pair.b] : [pair.b, pair.a];
+    const key = pairKey(a, b);
+    if (!flows.has(key)) flows.set(key, { key, a, b, ab: 0, ba: 0, total: 0, relatesOnly: true });
+  }
+  return [...flows.values()].sort((x, y) => y.total - x.total || byString(x.key, y.key));
+}

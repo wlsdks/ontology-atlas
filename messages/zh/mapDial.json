@@ -1,0 +1,17 @@
+{
+  "units": "{capabilities, plural, other {# 项能力}} · {elements, plural, other {# 个元素}}",
+  "stale": "{count, number} 项过时",
+  "orphans": "{count, plural, other {# 个概念不属于任何领域}}",
+  "more": "另有 {count, number} 项",
+  "ringBetween": "被其他 {min, number}–{max, number} 个领域依赖",
+  "ringAtLeast": "被其他 {min, number} 个以上领域依赖",
+  "ringAtMostOne": "最多被其他 1 个领域依赖",
+  "linksShown": "共 {total, number} 条链接，显示 {shown, number} 条",
+  "reading": "正在读取文件：{read, number} / {total, number}",
+  "settling": "读完所有文件后，圆环才会确定",
+  "legendFlows": "线 = 依赖 · 数字 = 数量",
+  "legendNeeds": "依赖",
+  "legendUsers": "被依赖",
+  "legendStale": "过时",
+  "legendRings": "越靠近中心，被其他领域依赖越多"
+}

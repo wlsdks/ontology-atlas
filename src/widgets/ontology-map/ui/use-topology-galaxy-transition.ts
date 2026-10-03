@@ -18,7 +18,7 @@ import {
 } from "./topology-overview-fit";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
-import { type TopologyWorld } from "./topology-world";
+import { dialOverviewFit, type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
   overviewFit: "spine" | "full";
@@ -192,6 +192,7 @@ export function useTopologyGalaxyTransition({
         height,
         measuredTokens,
         nodeCount,
+        galaxy ? undefined : dialOverviewFit(world),
       );
       const savedCamera = galaxy
         ? galaxyModeCameraRef.current.galaxy
@@ -203,6 +204,7 @@ export function useTopologyGalaxyTransition({
         height,
         measuredTokens,
         nodeCount,
+        galaxy ? undefined : dialOverviewFit(world),
       );
       if (galaxy) {
         overviewScaleRef.current = overviewScale;

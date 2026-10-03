@@ -3,7 +3,7 @@ import type { Project } from "@/entities/project";
 import { useMemo, useState } from "react";
 import { buildOntologyMapGraph } from "../lib/map-adapter";
 import { resolveCanvasSelectedSlug } from "../lib/resolve-canvas-selection";
-import { clampSynthSize, synthesizeEvidenceStates, synthesizeVaultGraph } from "../lib/synth-vault";
+import { clampSynthSize, type SynthShape, synthesizeEvidenceStates, synthesizeVaultGraph } from "../lib/synth-vault";
 import type { MapEvidence } from "./use-map-evidence-states";
 import { resolveRealmNodeId } from "./url-state";
 
@@ -96,6 +96,14 @@ export function useTopologyGraphProjection({
       return false;
     }
   });
+  const [synthShape] = useState<SynthShape>(() => {
+    if (typeof window === "undefined") return "uniform";
+    try {
+      return new URLSearchParams(window.location.search).get("synthShape") === "layered" ? "layered" : "uniform";
+    } catch {
+      return "uniform";
+    }
+  });
   const [synthStaleShare] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -110,13 +118,13 @@ export function useTopologyGraphProjection({
   const freshChannelSlugs = spotlightOn ? recentNodeIds : changedSlugs;
   const graph = useMemo(() => {
     if (synthSize !== null) {
-      const synth = synthesizeVaultGraph(synthSize, { dependencies: synthDependencies });
+      const synth = synthesizeVaultGraph(synthSize, { dependencies: synthDependencies, shape: synthShape });
       return buildOntologyMapGraph(synth.nodes, synth.edges, { changedSlugs: freshChannelSlugs });
     }
     return insight
       ? buildOntologyMapGraph(insight.nodes, insight.edges, { changedSlugs: freshChannelSlugs, dustySlugs })
       : { nodes: [], edges: [] };
-  }, [dustySlugs, freshChannelSlugs, insight, synthDependencies, synthSize]);
+  }, [dustySlugs, freshChannelSlugs, insight, synthDependencies, synthShape, synthSize]);
   const synthEvidence = useMemo<MapEvidence | null>(() => {
     if (synthSize === null || synthStaleShare === null) return null;
     return {
