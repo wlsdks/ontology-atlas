@@ -147,6 +147,7 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
       if (bar.perEnd !== undefined) expect.soft(measured.perEnd, "lines per end").toBeLessThanOrEqual(bar.perEnd);
       expect.soft(dial.crossings, "line crossings").toBeLessThanOrEqual(bar.crossings);
       expect.soft(dial.namesCrossed, "names a line crosses").toBeLessThanOrEqual(bar.namesCrossed);
+      expect.soft(dial.textOverlaps, "names overlapping names").toBe(0);
       expect.soft(cut(dial), "every name whole").toEqual([]);
       if (vault === "synth 2,000") expect.soft(dial.numerals.length, "rest numerals").toBeLessThanOrEqual(9);
       if (vault === "storefront") expect.soft(dial.ledger, "no ledger on the storefront overview: zooming names its capabilities in place").toBeNull();
@@ -155,6 +156,17 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
 }
 
 for (const size of WIDTHS) {
+  test(`storefront at ${size.width}: the legend says what the rings mean, and ring labels name the ranges they have room for`, async ({ page }) => {
+    await openDial(page, "storefront", size);
+    const dial = await readDial(page);
+    const ringTexts = dial.texts.filter((t) => t.role === "ring").map((t) => t.text);
+    report(`storefront ${size.width} rings`, { ringLabels: ringTexts.length, rings: dial.rings.length, ringTexts });
+    await expect(page.getByTestId("flat-dial-legend-rings"), "the legend explains every ring").toHaveText("Closer to the centre: more other domains depend on it");
+    expect.soft(new Set(ringTexts).size, "one label per ring").toBe(ringTexts.length);
+    expect.soft(ringTexts.length, "ring labels").toBeLessThanOrEqual(dial.rings.length);
+    expect.soft(ringTexts.length, "ring labels").toBeGreaterThan(0);
+  });
+
   test(`storefront at ${size.width}: rest numerals rank inside their budget and touch no name`, async ({ page }) => {
     await openDial(page, "storefront", size);
     const dial = await readDial(page);

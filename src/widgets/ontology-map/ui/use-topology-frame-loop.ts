@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
+import { clearDialFrame } from "../dial/frame/frame";
 import type { CameraAxes } from "../engine/camera";
 import { createLightFrameStage } from "../light/light-frame-stage";
 import { ambientSleepFactor } from "../model/ambient-sleep";
@@ -51,6 +52,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
   const renderedRef = useRef(true);
+  useEffect(() => clearDialFrame, []);
   useEffect(() => {
     renderedRef.current = true;
     getConfiguration().recovery.wakeFrameLoopRef.current();

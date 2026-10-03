@@ -199,10 +199,11 @@ function createFocusSource(): LightSource {
   let world: TopologyWorld | null = null;
   let focus: string | null = null;
   let current: LightPlan<WorldEdge> | null = null;
+  let deferred = false;
 
   return {
     id: "focus",
-    plan: () => current,
+    plan: () => (deferred ? null : current),
     reset() {
       world = null;
       focus = null;
@@ -231,7 +232,9 @@ function createFocusSource(): LightSource {
           current = planFocusSignal(focus, candidates, input.now, input.kinematics, input.reducedMotion);
         }
       }
-      if (input.trailLensActive || dialLightFrame() !== null) current = null;
+      if (input.trailLensActive) current = null;
+      deferred = dialLightFrame() !== null;
+      if (deferred) return false;
       const alive = runner.run(current, input, input.revealProgress, out);
       if (!alive) current = null;
       return alive;

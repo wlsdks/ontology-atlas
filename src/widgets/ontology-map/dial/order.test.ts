@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { DirectedDomainFlow } from "../model/containment-tree";
-import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "./order";
+import { circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
 import type { DialDomain, DialModel } from "./types";
 
 const pad = (i: number) => `d${String(i).padStart(2, "0")}`;
@@ -138,5 +138,25 @@ describe("circularDomainOrder", () => {
   it("remembers one order in a module slot", () => {
     rememberDialOrder(["b", "a"]);
     expect(rememberedDialOrder()).toEqual(["b", "a"]);
+  });
+
+  it("inserts two new domains by the cost of placed pairs only, ignoring another folder's ids", () => {
+    const model = modelOf(5, [[1, 2, 4], [1, 3, 4], [2, 3, 3], [3, 4, 3]]);
+    const expected = ["d00", "d04", "d03", "d01", "d02"];
+    expect(circularDomainOrder(model, ["d00", "d01", "d02"]).order).toEqual(expected);
+    expect(circularDomainOrder(model, ["zz-a", "d00", "zz-b", "d01", "d02"]).order).toEqual(expected);
+    expect(ringCost(model, expected)).toBe(ringCost(model, circularDomainOrder(model, null).order));
+  });
+
+  it("forgets the module-level order when another folder opens", () => {
+    claimDialOrderFolder("folder-a");
+    rememberDialOrder(["d01", "d00"]);
+    claimDialOrderFolder("folder-a");
+    expect(rememberedDialOrder()).toEqual(["d01", "d00"]);
+    claimDialOrderFolder("folder-b");
+    expect(rememberedDialOrder()).toBeNull();
+    rememberDialOrder(["d02"]);
+    claimDialOrderFolder("folder-b");
+    expect(rememberedDialOrder()).toEqual(["d02"]);
   });
 });

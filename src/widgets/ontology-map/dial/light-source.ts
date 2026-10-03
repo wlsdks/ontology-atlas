@@ -65,11 +65,17 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       clear();
     },
     step(input, out: LightEmitter) {
+      const frame = read();
       if (input.world !== world) {
+        const held = attention;
         world = input.world;
         clear();
+        if (held !== null && frame !== null && frame.focused && frame.attentionKey === held) {
+          attention = held;
+          planned = true;
+          return false;
+        }
       }
-      const frame = read();
       if (frame === null || !frame.focused) {
         clear();
         return false;
@@ -89,14 +95,14 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       for (const signal of current.signals) {
         const signalAt = signalFrame(signal, input.now, 1, kinematics);
         if (!signalAt.started) continue;
-        const chord = live.get(signal.key) ?? signal.edge;
+        const chord = live.get(signal.key);
         const fromA = signal.from === "a";
+        if (signal.bloomId !== null && signalAt.arrived && !blooms.has(signal.bloomId)) {
+          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, key: signal.key, fromA, radiusPx: (chord ?? signal.edge).chipRadiusPx });
+        }
+        if (signalAt.done || chord === undefined) continue;
         const departure = fromA ? chord.a : chord.b;
         const arrival = fromA ? chord.b : chord.a;
-        if (signal.bloomId !== null && signalAt.arrived && !blooms.has(signal.bloomId)) {
-          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, key: signal.key, fromA, radiusPx: chord.chipRadiusPx });
-        }
-        if (signalAt.done) continue;
         out.signalled(chord.a, chord.c, chord.b);
         out.signal(departure, chord.c, arrival, signalAt.tailStart, signalAt.drawnEnd, signalAt.head, kinematics.intensity * signalAt.ignite);
         const t = Math.min(signalAt.head, signalAt.drawnEnd);

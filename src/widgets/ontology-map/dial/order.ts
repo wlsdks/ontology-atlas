@@ -11,9 +11,15 @@ interface Pair { i: number; j: number; w: number }
 export interface DialOrder { order: string[]; evaluations: number }
 
 let remembered: readonly string[] | null = null;
+let rememberedFolder: string | null = null;
 
 export function rememberDialOrder(order: readonly string[]): void {
   remembered = [...order];
+}
+
+export function claimDialOrderFolder(folder: string): void {
+  if (rememberedFolder !== null && rememberedFolder !== folder) remembered = null;
+  rememberedFolder = folder;
 }
 
 export function rememberedDialOrder(): readonly string[] | null {
@@ -116,14 +122,17 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
   }
   let evaluations = 0;
   const pos = new Int32Array(n);
+  const placedAt = new Int32Array(n);
   const cost = (order: readonly number[]) => {
     evaluations += 1;
     const m = order.length;
     order.forEach((node, slot) => {
       pos[node] = slot;
+      placedAt[node] = evaluations;
     });
     let total = 0;
     for (const p of pairs) {
+      if (placedAt[p.i] !== evaluations || placedAt[p.j] !== evaluations) continue;
       const d = Math.abs(pos[p.i]! - pos[p.j]!);
       total += p.w * Math.min(d, m - d);
     }

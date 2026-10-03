@@ -13,4 +13,9 @@ describe("FlatDialLegend", () => {
     rerender(<FlatDialLegend evidenceMeasured={false} linksShown={24} linksTotal={61} />);
     expect(screen.getByTestId("flat-dial-legend-links")).toHaveTextContent("linksShown 24/61");
   });
+
+  it("always says what the rings mean", () => {
+    render(<FlatDialLegend evidenceMeasured={false} linksShown={17} linksTotal={17} />);
+    expect(screen.getByTestId("flat-dial-legend-rings")).toHaveTextContent("legendRings");
+  });
 });

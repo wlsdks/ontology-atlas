@@ -12,11 +12,15 @@ describe("pickDial", () => {
     expect(pickDial([disc("cap", 10, 10, 6)], [row("ledger-cap", 5, 5, 40, 15)], 10, 10, HIT_TOUCH_SLACK_PX)).toBe("ledger-cap");
   });
 
-  it("lets the later-painted ink win where inks overlap", () => {
-    const picks = [disc("hub", 0, 0, 20), disc("chip", 8, 0, 10), disc("cap", 12, 0, 4)];
-    expect(pickDial(picks, [], 12, 0, HIT_TOUCH_SLACK_PX)).toBe("cap");
-    expect(pickDial(picks, [], 4, 0, HIT_TOUCH_SLACK_PX)).toBe("chip");
-    expect(pickDial(picks, [], -10, 0, HIT_TOUCH_SLACK_PX)).toBe("hub");
+  it("lets the later-painted ink win where inks overlap, in the dial's paint order", () => {
+    const picks = [disc("cap", 30, 0, 8), disc("element", 40, 0, 3), disc("hub", 0, 0, 20), disc("chip", 26, 0, 8), disc("focused", 34, 0, 6)];
+    expect(pickDial(picks, [], 22, 0, HIT_TOUCH_SLACK_PX)).toBe("chip");
+    expect(pickDial(picks, [], 19, 0, HIT_TOUCH_SLACK_PX)).toBe("chip");
+    expect(pickDial(picks, [], 10, 0, HIT_TOUCH_SLACK_PX)).toBe("hub");
+    expect(pickDial(picks, [], 35, 0, HIT_TOUCH_SLACK_PX)).toBe("focused");
+    expect(pickDial(picks, [], 39, 0, HIT_TOUCH_SLACK_PX)).toBe("focused");
+    expect(pickDial(picks, [], 42, 0, HIT_TOUCH_SLACK_PX)).toBe("element");
+    expect(pickDial(picks, [], 31, 7.8, HIT_TOUCH_SLACK_PX)).toBe("cap");
   });
 
   it("counts slack only when no ink is under the point", () => {

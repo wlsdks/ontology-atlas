@@ -70,6 +70,11 @@ const DISC_GAP_PX = 4;
 const HUB_CLEAR_PX = 14;
 const NAME_STEPS_PX = [0, 9, 18];
 const RING_OFFSETS = [0, 0.18, -0.18, 0.36, -0.36, 0.6, -0.6, 0.9, -0.9];
+const CIRCLE_SLOTS = 36;
+const RING_TRIES = [
+  ...RING_OFFSETS,
+  ...Array.from({ length: CIRCLE_SLOTS }, (_, i) => ((i + 1) * 2 * Math.PI) / CIRCLE_SLOTS - Math.PI).sort((a, b) => Math.abs(a) - Math.abs(b) || a - b),
+];
 
 export function overlaps(a: Box, b: Box): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
@@ -326,7 +331,7 @@ function ringLabels(ctx: Ctx): void {
   for (const ring of scene.rings) {
     const text = labels.ring(ring.min, ring.max);
     const width = input.measureText(text, font);
-    for (const da of RING_OFFSETS) {
+    for (const da of RING_TRIES) {
       const a = scene.axisAngle + da;
       const ca = Math.cos(a);
       const sa = Math.sin(a);

@@ -2,7 +2,7 @@ import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildFlowMarks, type FlowMarksResult } from "../flow-marks";
 import { inkIndex, mixOver, type DialInks } from "../ink";
-import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
+import { buildLabelMarks, overlaps, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
 import type { DialDisclosure } from "./disclosure";
 import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerPlan } from "../ledger";
 import type {
@@ -66,6 +66,7 @@ export interface DialMarksResult {
   chords: DialChordLight[];
   flows: FlowMarksResult;
   ledger: { plan: LedgerPlan; leaderCrossings: number } | null;
+  elementSquares: number;
 }
 
 const CULL_PX = 10;
@@ -296,9 +297,11 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     });
     if (!plan) return;
     const drop = new Set(ids);
+    const rowBoxes = [...plan.rows.map((r) => r.box), ...(plan.more ? [plan.more.row.box] : [])];
     for (let i = out.texts.length - 1; i >= 0; i -= 1) {
       const t = out.texts[i]!;
       if (t.role === "capability" && t.id !== null && drop.has(t.id)) out.texts.splice(i, 1);
+      else if (t.role === "units" && rowBoxes.some((b) => overlaps(b, t.box))) out.texts.splice(i, 1);
     }
     const rowInk = ink(inks.capabilityLabel);
     const leaderInk = ink(mixOver(inks.rail, inks.bg));
@@ -339,6 +342,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
   const measured = input.evidence?.measured === true;
   let drawnElements = 0;
+  let elementSquares = 0;
   if (capsDrawn) {
     const fill = ink(mixOver(map.nodeFillCapability, inks.bg, capAlpha));
     const rimRest = mixOver(inks.capabilityRim, inks.bg, capAlpha);
@@ -397,6 +401,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
           const sp = input.nodeScreen(el) ?? input.toScreen(p.x, p.y);
           if (!visible(sp, half, ELEMENT_CULL_PX)) continue;
           out.squares.push({ id: el, x: sp.x, y: sp.y, half, fill: fillI, rim: rimI });
+          elementSquares += 1;
           alphas.set(el, step > DRAWN_ALPHA ? 1 : 0);
           if (step > DRAWN_ALPHA) {
             picks.push({ id: el, x: sp.x, y: sp.y, r: half + 1 });
@@ -433,10 +438,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       fill: null, stroke: null, hovered: input.hoveredNodeId === model.projectId, agentFocus: input.agentFocusNodeId === model.projectId,
       selectionPulse: pulseOf(model.projectId), count: input.hubCount, stalePip: false,
     });
-    picks.unshift({ id: model.projectId, x: hub.x, y: hub.y, r: hub.r });
+    picks.push({ id: model.projectId, x: hub.x, y: hub.y, r: hub.r });
     alphas.set(model.projectId, 1);
   }
-  const chipPicks: DialPick[] = [];
   for (const c of scene.clusters) {
     const chip = chips.get(c.domainId);
     if (!chip) {
@@ -453,10 +457,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       hovered: input.hoveredNodeId === c.domainId, agentFocus: input.agentFocusNodeId === c.domainId,
       selectionPulse: pulseOf(c.domainId), count: null, stalePip: stale > 0,
     });
-    chipPicks.push({ id: c.domainId, x: chip.x, y: chip.y, r: chip.r });
+    picks.push({ id: c.domainId, x: chip.x, y: chip.y, r: chip.r });
     alphas.set(c.domainId, dimmed ? restAlpha : 1);
   }
-  picks.splice(hub ? 1 : 0, 0, ...chipPicks);
   if (attn.capabilityId) {
     const d = discs.get(attn.capabilityId);
     if (d) {
@@ -474,5 +477,5 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
   const discsDrawn = capAlpha > DRAWN_ALPHA ? [...discs.keys()].filter((id) => model.capabilityById.has(id)).length : 0;
   const drawnCount = (hub ? 1 : 0) + chips.size + discsDrawn + drawnElements;
-  return { drawnCount, tier: drawnElements > 0 ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger };
+  return { drawnCount, tier: drawnElements > 0 ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger, elementSquares };
 }

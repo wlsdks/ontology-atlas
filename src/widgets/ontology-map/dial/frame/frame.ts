@@ -1,10 +1,10 @@
 import { MOTION } from "@/shared/motion/tokens";
 import { easeOutCubic } from "../../model/camera-easing";
 import { dialConceptTotal, dialEvidenceView, resolveDialAttention } from "../dial-model";
-import { resolveDialDisclosure, smoothstep, type DialDisclosure } from "./disclosure";
+import { resolveDialDisclosure, smoothstep } from "./disclosure";
 import { createMeasureText } from "../fit";
 import { inkIndex, resolveDialInks, type DialInks } from "../ink";
-import { dialPlacementLine, dialPlacementOf } from "../placement";
+import { dialPlacementLine, dialPlacementOf, type DialPlacementState, type DialPlacementView } from "../placement";
 import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
 import { buildDialMarks, emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "./marks";
 import { paintDialMarks } from "./paint";
@@ -19,6 +19,8 @@ import type {
   DialModel,
   DialOwnershipInput,
   DialProbe,
+  DialRing,
+  DialScene,
   DialTokens,
   Point,
 } from "../types";
@@ -72,15 +74,37 @@ export function dialChordPresence(tokens: Pick<DialTokens, "chordArrival">, doma
   return smoothstep(tokens.chordArrival, 1, domainAppear);
 }
 
+interface ClusterProbe { domainId: string; step: number; chip: Point; capabilityIds: string[] }
+
 interface LastFrame {
-  input: DialFrameInput;
   result: DialFrameResult;
-  marks: DialFrameMarks;
-  built: DialMarksResult;
-  disclosure: DialDisclosure;
+  flows: DialMarksResult["flows"];
+  ledger: DialMarksResult["ledger"];
+  elementSquares: number;
+  disclosure: { capAlpha: number; elementsAlpha: number; entered: string | null; resolved: boolean };
+  zoomRatio: number;
+  domainAppear: number;
+  freeRect: Box;
+  origin: Point;
+  scale: number;
+  rings: DialRing[];
+  clusters: readonly ClusterProbe[];
+  placement: { state: DialPlacementState; held: number };
+  concepts: number;
+  domains: number;
 }
 
 let last: LastFrame | null = null;
+const clusterProbes = new WeakMap<DialScene, readonly ClusterProbe[]>();
+
+function clusterProbesOf(scene: DialScene): readonly ClusterProbe[] {
+  let hit = clusterProbes.get(scene);
+  if (!hit) {
+    hit = scene.clusters.map((c) => ({ domainId: c.domainId, step: c.step, chip: { x: c.chip.x, y: c.chip.y }, capabilityIds: c.items.filter((it) => !it.direct).map((it) => it.id) }));
+    clusterProbes.set(scene, hit);
+  }
+  return hit;
+}
 const pool = emptyDialFrameMarks();
 const measureText = createMeasureText();
 const inksCache = new WeakMap<object, { tokens: DialTokens; inks: DialInks }>();
@@ -134,7 +158,8 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, disclosure,
   }, pool);
-  pushPlacementLine(input, inksOf(input));
+  const placement = dialPlacementOf(input.dial);
+  pushPlacementLine(input, inksOf(input), placement);
   paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
   markFocusPainted(input.worldKey, performance.now());
 
@@ -145,14 +170,19 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     drawnCount: built.drawnCount, tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows,
     labelBoxes, light, inkMix, chordPresence, marks: pool,
   };
-  last = { input, result, marks: pool, built, disclosure };
+  last = {
+    result, flows: built.flows, ledger: built.ledger, elementSquares: built.elementSquares,
+    disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, entered: disclosure.entered, resolved: disclosure.resolved },
+    zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
+    rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
+    concepts: dialConceptTotal(model), domains: model.domains.length,
+  };
   return result;
 }
 
 const LINE_GAP_PX = 6;
 
-function pushPlacementLine(input: DialFrameInput, inks: DialInks): void {
-  const view = dialPlacementOf(input.dial);
+function pushPlacementLine(input: DialFrameInput, inks: DialInks, view: DialPlacementView): void {
   const text = dialPlacementLine(view.state, view.progress, input.labels);
   const projectId = input.dial.model.projectId;
   if (text === null || projectId === null) return;
@@ -184,10 +214,9 @@ export interface DialFrameSummary {
 
 export function dialFrameSummary(): DialFrameSummary | null {
   if (!last) return null;
-  const { model } = last.input.dial;
-  const { disclosure, built } = last;
+  const { disclosure, flows } = last;
   const tier = disclosure.entered !== null && disclosure.elementsAlpha > 0.5 ? "element" : disclosure.capAlpha > 0.5 ? "circuit" : "spine";
-  return { concepts: dialConceptTotal(model), domains: model.domains.length, tier, linksShown: built.flows.budget.shown, linksTotal: built.flows.budget.total };
+  return { concepts: last.concepts, domains: last.domains, tier, linksShown: flows.budget.shown, linksTotal: flows.budget.total };
 }
 
 export function clearDialFrame(): void {
@@ -321,40 +350,39 @@ function countTextOverlaps(texts: readonly { id: string | null; text: string; bo
 
 export function describeLastDialFrame(viewportWidth: number, viewportHeight: number): DialProbe | null {
   if (!last) return null;
-  const { input, result, marks, built, disclosure } = last;
-  const { scene } = input.dial;
+  const { result, flows, disclosure, origin, scale } = last;
+  const marks = result.marks as DialFrameMarks;
   const widthByKey = new Map<string, number>();
   for (const s of marks.strips) widthByKey.set(s.flowKey, Math.max(widthByKey.get(s.flowKey) ?? 0, s.w0, s.w1));
   const numeralByKey = new Map<string, string>();
   for (const n of marks.numerals) if (!numeralByKey.has(n.flowKey)) numeralByKey.set(n.flowKey, n.text);
-  const drawn = new Set(built.flows.drawn);
+  const drawn = new Set(flows.drawn);
   const lines = sampleStrips(marks.strips);
   const allTexts = [...marks.texts, ...marks.extraTexts];
-  const ledger = built.ledger
-    ? { domainId: built.ledger.plan.domainId, shown: built.ledger.plan.rows.length, total: built.ledger.plan.total, more: built.ledger.plan.more?.count ?? 0, leaderCrossings: built.ledger.leaderCrossings }
+  const ledger = last.ledger
+    ? { domainId: last.ledger.plan.domainId, shown: last.ledger.plan.rows.length, total: last.ledger.plan.total, more: last.ledger.plan.more?.count ?? 0, leaderCrossings: last.ledger.leaderCrossings }
     : null;
-  const orphans = new Set(scene.orphans.ids);
   return {
     owns: true,
-    zoomRatio: input.zoomRatio,
+    zoomRatio: last.zoomRatio,
     tier: result.tier,
     inkMix: result.inkMix,
-    domainAppear: input.domainAppear,
-    freeRect: input.freeRect,
-    flows: built.flows.links.map((l) => ({
+    domainAppear: last.domainAppear,
+    freeRect: last.freeRect,
+    flows: flows.links.map((l) => ({
       key: l.key, a: l.u, b: l.v, ab: l.uv, ba: l.vu, total: l.total, relatesOnly: l.relatesOnly,
       drawn: drawn.has(l.key), widthPx: widthByKey.get(l.key) ?? 0, numeral: numeralByKey.get(l.key) ?? null,
     })),
-    clusters: scene.clusters.map((c) => ({ domainId: c.domainId, step: c.step, chip: input.toScreen(c.chip.x, c.chip.y), capabilityIds: c.items.filter((it) => !it.direct).map((it) => it.id) })),
-    rings: scene.rings,
+    clusters: last.clusters.map((c) => ({ domainId: c.domainId, step: c.step, chip: { x: origin.x + c.chip.x * scale, y: origin.y + c.chip.y * scale }, capabilityIds: c.capabilityIds })),
+    rings: last.rings,
     disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, enteredDomain: disclosure.entered, resolved: disclosure.resolved },
-    budget: built.flows.budget,
-    stubs: built.flows.stubs,
-    placement: { state: dialPlacementOf(input.dial).state, held: dialPlacementOf(input.dial).held },
+    budget: flows.budget,
+    stubs: flows.stubs,
+    placement: last.placement,
     texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
     numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
     discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "" })),
-    squares: marks.squares.filter((q) => q.id !== null && !orphans.has(q.id)).length,
+    squares: last.elementSquares,
     strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),
     ledger,
     crossings: countCrossings(lines, viewportWidth, viewportHeight),
