@@ -1,8 +1,9 @@
-import { Check, Clipboard } from "lucide-react";
+import { Clipboard } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { controlClass } from '@/shared/ui/control-class';
+import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 
 /**
  * The insights copy button: clipboard copy, a success or failure tone, and a separate polite live region, since a
@@ -47,15 +48,16 @@ export function CopyAgentTextButton({
           size: "md",
           className: [
             // The class `text-label`, not `text-caption`: the smallest step is reserved for one uppercase eyebrow (`design.md`).
-            "shrink-0 justify-center text-label transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
+            "shrink-0 justify-center text-label",
             toneClass,
             compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
           ].join(" "),
         })}
         aria-label={ariaLabel}
         data-testid={testId}
+        data-feedback={copyState}
       >
-        {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
+        <FeedbackGlyph state={copyState} icon={<Clipboard size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} />
         {label}
       </button>
       {/* A separate polite live region announces the result (as in `CopyProjectLinkButton`); emptied while idle. */}

@@ -68,6 +68,8 @@ export function ArchitectureAgentDock({
 }) {
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
+  const [standing, setStanding] = useState(open);
+  if (open && !standing) setStanding(true);
   const capture = useAnalysisCapture(analysisContext);
   const [conversationActive, setConversationActive] = useState(false);
   const handleSectionChange = useCallback((tab: string) => setConversationActive(tab === 'conversation'), []);
@@ -93,6 +95,9 @@ export function ArchitectureAgentDock({
   return (
     <div
       data-testid="architecture-agent-dock-frame"
+      data-dock-state={open ? 'open' : standing ? 'put-away' : 'empty'}
+      inert={!open}
+      aria-hidden={!open || undefined}
       data-right-dock={open || presence.mounted ? 'architecture-agent' : undefined}
       onTransitionEnd={(event) => {
         if (
@@ -116,15 +121,19 @@ export function ArchitectureAgentDock({
           : 'pointer-events-none w-0 lg:w-0',
       )}
     >
-      {presence.mounted ? (
+      {standing ? (
         <Surface
-          open={open}
+          open={standing}
           as="aside"
           motion="overlay"
           data-testid="architecture-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={openingRequest?.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--architecture-agent-chat-width)-var(--chrome-inset))]`}
+          className={cn(
+            `${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--architecture-agent-chat-width)-var(--chrome-inset))]`,
+            !open && 'map-overlay-out',
+            !open && !presence.mounted && 'invisible',
+          )}
         >
           <div className="hidden lg:contents">
             <AcpChatResizeHandle
@@ -160,6 +169,7 @@ export function ArchitectureAgentDock({
               (openingRequest !== null || conversationActive) &&
               frameSettled
             }
+            putAway={!open}
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, analysisContext.scope.profileSlug])}
             onOpeningRequestSent={onOpeningRequestSent}

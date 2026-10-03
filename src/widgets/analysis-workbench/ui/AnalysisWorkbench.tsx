@@ -83,9 +83,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     closeRef.current?.focus({ preventScroll: true });
     return () => {
       /*
-       * Restore waits until the panel is gone and the target is focusable (inert for about three
-       * frames, exit about 220ms), gives up after about 0.66s, and stands down once focus moves
-       * elsewhere.
+       * Restore after the panel is gone or put away and the target is focusable;
+       * stand down once focus moves elsewhere, or after about 0.66s.
        */
       let frames = 0;
       const restore = () => {
@@ -93,7 +92,8 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
         if (current !== document.body && current?.isConnected && !panel?.contains(current)) return;
         const target = origin?.isConnected && !origin.closest('[inert]')
           ? origin : returnFocusSelector ? document.querySelector<HTMLElement>(returnFocusSelector) : null;
-        if (!panel?.isConnected && target?.isConnected && !target.closest('[inert]')) {
+        const putAway = !panel?.isConnected || !!panel.closest('[inert]');
+        if (putAway && target?.isConnected && !target.closest('[inert]')) {
           target.focus({ preventScroll: true });
           return;
         }

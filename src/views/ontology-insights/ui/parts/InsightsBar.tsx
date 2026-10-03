@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { STAGGER_MAX_STEPS } from '@/shared/motion/stagger';
 
 /**
- * An insights bar's fill, growing from 0 over `--motion-settle`, staggered 30ms per row; reduced motion starts at
- * the target. The consumer owns the track.
+ * A question's fill scales on the shared settle clock and capped stagger;
+ * reduced motion paints the target immediately. The consumer owns the track.
  */
 export function InsightsBar({
   pct,
@@ -17,8 +18,6 @@ export function InsightsBar({
   testId?: string;
 }) {
   const reduce = usePrefersReducedMotion();
-  // Starts at the target under reduced motion; otherwise it flips to the target in the next frame's rAF callback,
-  // so the width transition runs from empty without a synchronous re-render.
   const [filled, setFilled] = useState(reduce);
 
   useEffect(() => {
@@ -30,14 +29,18 @@ export function InsightsBar({
     <span
       className="block h-full rounded-full"
       data-testid={testId}
+      data-insights-fill={pct}
       style={{
-        width: filled ? `${pct}%` : "0%",
+        "--motion-stagger-index": reduce ? 0 : Math.min(Math.max(index, 0), STAGGER_MAX_STEPS),
+        width: "100%",
+        transform: `scaleX(${filled || reduce ? pct / 100 : 0})`,
+        transformOrigin: "left",
         backgroundColor: color,
-        transitionProperty: "width",
+        transitionProperty: reduce ? "none" : "transform",
         transitionDuration: "var(--motion-settle)",
         transitionTimingFunction: "var(--motion-ease)",
-        transitionDelay: `${index * 30}ms`,
-      }}
+        transitionDelay: "calc(var(--motion-stagger) * var(--motion-stagger-index))",
+      } as CSSProperties}
     />
   );
 }
