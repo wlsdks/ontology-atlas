@@ -10,7 +10,7 @@ import {
   type TreeInputNode,
 } from "../model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "./dial-model";
-import { aggregateLinks, domainOfEnd, ownLinkCount, restBudget, type DialLink } from "./links";
+import { aggregateLinks, domainOfEnd, ownLinkCount, restBudget, type CrossingGuard, type DialLink } from "./links";
 import { resolveDialTokens } from "./tokens";
 import type { DialModel } from "./types";
 
@@ -144,5 +144,52 @@ describe("restBudget", () => {
     const hidden = links.filter((l) => !b.keep.has(l.key));
     expect(b.keep.size + hidden.length).toBe(b.total);
     expect(b.keep.size).toBe(Math.round(TOKENS.restLinksPerEnd * 30));
+  });
+
+  describe("with a crossing guard", () => {
+    const link = (u: string, v: string, total: number): DialLink => ({ key: `${u}\0${v}`, u, v, uv: total, vu: 0, total, relatesOnly: false, attended: false });
+    const crossingPairs = [["a\0b", "c\0d"], ["a\0b", "f\0g"]].map((p) => p.sort().join("|"));
+    const guard = (): CrossingGuard & { chosen: DialLink[] } => {
+      const chosen: DialLink[] = [];
+      return {
+        chosen,
+        crosses: (l) => chosen.some((c) => crossingPairs.includes([l.key, c.key].sort().join("|"))),
+        add: (l) => void chosen.push(l),
+      };
+    };
+    const filler = Array.from({ length: 60 }, (_, i) => link(`r${i % 20}`, `r${(i % 20) + 1 + Math.floor(i / 20)}`, 1));
+    const choosing = [link("a", "b", 100), link("c", "d", 50), link("c", "e", 48), link("f", "g", 40), link("f", "h", 20), ...filler];
+    const ends = new Set(choosing.flatMap((l) => [l.u, l.v])).size;
+
+    it("prefers a near-equal line that crosses nothing, and drops one with no such alternative", () => {
+      expect(choosing.length).toBeGreaterThan(TOKENS.restLinksMax);
+      const g = guard();
+      const b = restBudget(choosing, ends, TOKENS, g);
+      expect([...b.keep].filter((k) => !k.startsWith("r"))).toEqual(["a\0b", "c\0e", "f\0h"]);
+      for (const x of g.chosen) for (const y of g.chosen) expect(crossingPairs).not.toContain([x.key, y.key].sort().join("|"));
+      const unguarded = restBudget(choosing, ends, TOKENS);
+      expect(unguarded.keep.has("c\0d") && unguarded.keep.has("f\0g")).toBe(true);
+    });
+
+    it("leaves a dropped slot empty instead of refilling it with a much weaker line", () => {
+      const ring = Array.from({ length: 30 }, (_, i) => link(`n${i % 16}`, `n${(i % 16) + 1 + Math.floor(i / 16)}`, i === 0 ? 100 : i === 1 ? 99 : 80 - i));
+      const g: CrossingGuard = {
+        crosses: (l) => l.key === ring[1]!.key && keep.has(ring[0]!.key),
+        add: (l) => void keep.add(l.key),
+      };
+      const keep = new Set<string>();
+      const ends = new Set(ring.flatMap((l) => [l.u, l.v])).size;
+      const b = restBudget(ring, ends, TOKENS, g);
+      const free = restBudget(ring, ends, TOKENS);
+      expect(free.keep.size).toBe(free.limit);
+      expect(b.keep.has(ring[1]!.key)).toBe(false);
+      expect(b.keep.size).toBe(free.limit - 1);
+      expect([...b.keep].every((k) => free.keep.has(k))).toBe(true);
+    });
+
+    it("keeps every line, crossing or not, while the budget does not choose", () => {
+      const few = [link("a", "b", 3), link("c", "d", 2), link("f", "g", 1)];
+      expect(restBudget(few, 6, TOKENS, guard()).keep.size).toBe(3);
+    });
   });
 });

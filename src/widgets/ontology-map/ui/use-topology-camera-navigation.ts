@@ -29,6 +29,7 @@ import {
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
 import { computeDrawnSpineBounds, computePathPickBounds, dialOverviewFit, type TopologyWorld } from "./topology-world";
+import { liveDialFocusFrame } from "./use-topology-focus-navigation";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -368,6 +369,8 @@ export function useTopologyCameraNavigation({
         focused,
         overviewScaleRef.current * tokens.overviewEntryRatio,
         realmActive ? realmData?.memberIds ?? null : null,
+        undefined,
+        realmActive ? undefined : liveDialFocusFrame(world, focused),
       );
     } else if (mode === "realm") {
       const realmData = realmDataRef.current;

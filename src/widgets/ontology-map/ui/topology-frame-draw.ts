@@ -458,6 +458,7 @@ export function setMapComets(on: boolean): void {
   mapCometsOn = on;
 }
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
+const edgeRestDimByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return drawnRelationCaptions; }
 let drawnSkyTimeMs = 0;
 export function lastDrawnSkyTimeMs(): number {
@@ -1962,6 +1963,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     edgeLiftReused = new Float64Array(world.edges.length);
     edgeLiftByEdges.set(world.edges, edgeLiftReused);
   }
+  let edgeRestDimReused = edgeRestDimByEdges.get(world.edges);
+  if (edgeRestDimReused === undefined) {
+    edgeRestDimReused = new Float64Array(world.edges.length);
+    edgeRestDimByEdges.set(world.edges, edgeRestDimReused);
+  }
   const focusRampId = trailLensActive ? null : focusedNodeId ?? selectedEdge?.sourceId ?? null;
   const edgeFocusRamp = focusRampId !== null ? Math.min(1, Math.max(0, focusRampById.get(focusRampId) ?? 0)) : 1;
   const edgeRevealAt =
@@ -2437,7 +2443,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           : 0;
       const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
       const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
-      if (focusedNodeId === null) edgeLiftReused[edgeOrigIndex] = hoverLift;
+      if (focusedNodeId === null) {
+        edgeLiftReused[edgeOrigIndex] = hoverLift;
+        edgeRestDimReused[edgeOrigIndex] = edgeEgoState === "dim" ? 1 : 0;
+      }
       const directional = isDirectionalRelation(edge.relationType);
       const hoverRecede =
         hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
@@ -2562,6 +2571,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
                   progress: edgeRevealAt,
                   from: directional || edge.sourceId === focusedNodeId ? "a" : "b",
                   baseLift: edgeLiftReused[edgeOrigIndex],
+                  baseDim: edgeRestDimReused[edgeOrigIndex] * (1 - edgeFocusRamp),
                 }
               : null,
           dimRamp: edgeFocusRamp,

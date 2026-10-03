@@ -16,7 +16,7 @@
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../engine/camera";
 import { LABEL_OFFSET } from "../render/labels";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type Bounds, type TopologyWorld } from "./topology-world";
+import { computeClusterDiscBounds, computeEgoBounds, computeIdsBounds, radiusForKind, type Bounds, type DialFocusFrame, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
 
 interface Point {
@@ -724,13 +724,14 @@ export function computeFocusCameraTarget(
    * same frame the fit button and the `0` key produce.
    */
   overviewBounds: Bounds = world.spineBounds,
+  dialFrame?: DialFocusFrame,
 ): CameraTarget | null {
   if (focusedSlug === null) {
     // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
     // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
     return computeOverviewCameraTarget(overviewBounds, viewportWidth, viewportHeight, tokens);
   }
-  const egoBounds = computeEgoBounds(world, tokens, focusedSlug, restrictIds);
+  const egoBounds = dialFrame ? computeIdsBounds(world, tokens, dialFrame.ids) : computeEgoBounds(world, tokens, focusedSlug, restrictIds);
   if (!egoBounds) return null;
 
   // Multiplicative margin (not additive px) so a wide ego cluster gets
@@ -792,13 +793,13 @@ export function computeFocusCameraTarget(
     // same on both sides after floating error.
     fitScale = Math.max(leashFitScale, overviewScale * (1 - 1e-6));
   }
-  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, dialFrame ? world.dialScaleMax ?? undefined : undefined);
   // Owner report (2026-07-24) — with neighbours hidden (spotlight and the like) the
   // ego bbox is small and the fit shoots up into a microscope zoom. Zooming in for
   // selection framing is capped at overviewEntryScale × focusMaxZoomRatio — ego
   // members are tier-exempt so they are all visible even at that zoom, and fitting
   // in the zoom-out direction is not limited.
-  const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
+  const focusZoomInCeiling = Math.max(overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY), dialFrame?.nameScale ?? 0);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
 
   /*

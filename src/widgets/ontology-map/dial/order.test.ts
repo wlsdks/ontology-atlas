@@ -37,6 +37,7 @@ function modelOf(n: number, links: readonly [number, number, number][]): DialMod
     flows: sorted,
     flowByKey: new Map(sorted.map((f) => [f.key, f])),
     capabilityDependencies: [],
+    capabilityRelates: [],
     orphanIds: [],
   };
 }

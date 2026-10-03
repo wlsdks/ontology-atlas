@@ -31,8 +31,8 @@ import {
 } from "@/widgets/ontology-map";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
-import { flatRingMemorySlot } from "../model/flat-ring-memory-store";
 import { useCosmosPlacement } from "../model/use-cosmos-placement";
+import { useFlatRingMemory } from "../model/use-flat-ring-memory";
 import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
@@ -173,7 +173,7 @@ export function TopologyMapRenderer({
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
   const cosmosPlacement = useCosmosPlacement(vaultIdentity);
-  const flatRingMemory = useMemo(() => flatRingMemorySlot(vaultIdentity), [vaultIdentity]);
+  const flatRingMemory = useFlatRingMemory(vaultIdentity);
   const morph = useMapLayoutMorph({
     view: layoutView,
     reducedMotion,

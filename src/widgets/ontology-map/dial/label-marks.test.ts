@@ -14,7 +14,7 @@ const LABELS: DialLabels = {
   linksShown: (s, t) => `${s} of ${t}`,
 };
 const measure = (text: string) => text.length * 6;
-const REST: DialAttention = { key: "||", domainId: null, capabilityId: null, needsCaps: new Set(), usedByCaps: new Set(), partnerDomains: new Set(), selected: false };
+const REST: DialAttention = { key: "||", domainId: null, capabilityId: null, needsCaps: new Set(), usedByCaps: new Set(), relatesCaps: new Set(), partnerDomains: new Set(), selected: false };
 const WIDE: Box = { minX: -5000, minY: -5000, maxX: 5000, maxY: 5000 };
 
 function fixture(names: string[], caps = 0, ring = 300) {
@@ -98,7 +98,7 @@ describe("wrapDialName", () => {
 
 describe("buildLabelMarks", () => {
   it("names a focused capability and its partners below the name pitch, and leaves its siblings unnamed", () => {
-    const focus: DialAttention = { key: "d0|d0c0|1", domainId: "d0", capabilityId: "d0c0", needsCaps: new Set(["d1c0"]), usedByCaps: new Set(), partnerDomains: new Set(["d1"]), selected: true };
+    const focus: DialAttention = { key: "d0|d0c0|1", domainId: "d0", capabilityId: "d0c0", needsCaps: new Set(["d1c0"]), usedByCaps: new Set(), relatesCaps: new Set(), partnerDomains: new Set(["d1"]), selected: true };
     const named = (attention: DialAttention) => run({ caps: 2, scale: 0.5, attention }).texts.filter((t) => t.role === "capability").map((t) => t.id).sort();
     expect(TOKENS.pitch * 0.5).toBeLessThan(TOKENS.capName);
     expect(named(focus)).toEqual(["d0c0", "d1c0"]);

@@ -269,58 +269,66 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   buildLabelMarks({ ...labelInput, occupied: labelOccupied, ledgerIds: new Set<string>() }, out);
 
   let ledger: DialMarksResult["ledger"] = null;
+  const font = scaledLabelFont("capability", tokens.labelScale);
+  const column = (domainId: string, ids: readonly string[], priority: ReadonlySet<string>, footprint: Circle | null): void => {
+    const plan = buildLedger({
+      domainId,
+      discs: ids.map((id) => {
+        const d = discs.get(id)!;
+        const cap = model.capabilityById.get(id);
+        return { id, label: cap?.label ?? id, x: d.x, y: d.y, r: d.r, degree: (cap?.needsAcross ?? 0) + (cap?.usedAcross ?? 0) };
+      }),
+      priority,
+      freeRect: input.freeRect,
+      font,
+      measureText: input.measureText,
+      moreText: (n) => input.labels?.more(n) ?? `+${n}`,
+      tokens,
+      footprint,
+      avoid: {
+        boxes: [
+          ...occupied,
+          ...out.texts.filter((t) => !(t.role === "capability" && t.id !== null && ids.includes(t.id))).map((t) => t.box),
+          ...out.extraTexts.map((t) => t.box),
+        ],
+        lines,
+      },
+    });
+    if (!plan) return;
+    const drop = new Set(ids);
+    for (let i = out.texts.length - 1; i >= 0; i -= 1) {
+      const t = out.texts[i]!;
+      if (t.role === "capability" && t.id !== null && drop.has(t.id)) out.texts.splice(i, 1);
+    }
+    const rowInk = ink(inks.capabilityLabel);
+    const leaderInk = ink(mixOver(inks.rail, inks.bg));
+    for (const row of plan.rows) {
+      out.texts.push({ id: row.id, role: "ledger", text: row.text, x: row.x, y: row.y, align: plan.align, font, ink: rowInk, box: row.box, parts: null });
+      rows.push({ id: row.id, box: row.box });
+    }
+    for (const l of plan.leaders) out.leaders.push({ id: l.id, x0: l.x0, y0: l.y0, x1: l.x1, y1: l.y1, ink: leaderInk });
+    if (plan.more) out.texts.push({ id: plan.domainId, role: "more", text: plan.more.row.text, x: plan.more.row.x, y: plan.more.row.y, align: plan.align, font, ink: ink(inks.units), box: plan.more.row.box, parts: null });
+    ledger = { plan, leaderCrossings: countLeaderCrossings(plan.leaders) };
+  };
+  const partners = new Set([...attn.needsCaps, ...attn.usedByCaps, ...attn.relatesCaps]);
   const enteredCluster = entered ? scene.clusterByDomain.get(entered) : undefined;
   if (enteredCluster && chips.has(enteredCluster.domainId)) {
     const capIds = enteredCluster.items.filter((it) => !it.direct && discs.has(it.id)).map((it) => it.id);
     const named = new Set(out.texts.filter((t) => t.role === "capability" && t.id !== null).map((t) => t.id!));
     const namedInPlace = capIds.filter((id) => named.has(id)).length;
-    const font = scaledLabelFont("capability", tokens.labelScale);
     const wanted = capIds.length > 0
       && namedInPlace < capIds.length
       && ledgerWanted({ capabilityCount: capIds.length, namedInPlace, capabilityPitchPx: pitchPx, namesFitInPlace: clusterNamesFit(input, enteredCluster, font), tokens });
     if (wanted) {
       const chip = chips.get(enteredCluster.domainId)!;
-      const priority = new Set([...capIds].filter((id) => id === attn.capabilityId || attn.needsCaps.has(id) || attn.usedByCaps.has(id)));
-      const plan = buildLedger({
-        domainId: enteredCluster.domainId,
-        discs: capIds.map((id) => {
-          const d = discs.get(id)!;
-          const cap = model.capabilityById.get(id);
-          return { id, label: cap?.label ?? id, x: d.x, y: d.y, r: d.r, degree: (cap?.needsAcross ?? 0) + (cap?.usedAcross ?? 0) };
-        }),
-        priority,
-        freeRect: input.freeRect,
-        font,
-        measureText: input.measureText,
-        moreText: (n) => input.labels?.more(n) ?? `+${n}`,
-        tokens,
-        footprint: { x: chip.x, y: chip.y, r: enteredCluster.footprint * s },
-        avoid: {
-          boxes: [
-            ...occupied,
-            ...out.texts.filter((t) => !(t.role === "capability" && t.id !== null && capIds.includes(t.id))).map((t) => t.box),
-            ...out.extraTexts.map((t) => t.box),
-          ],
-          lines,
-        },
-      });
-      if (plan) {
-        const drop = new Set(capIds);
-        for (let i = out.texts.length - 1; i >= 0; i -= 1) {
-          const t = out.texts[i]!;
-          if (t.role === "capability" && t.id !== null && drop.has(t.id)) out.texts.splice(i, 1);
-        }
-        const rowInk = ink(inks.capabilityLabel);
-        const leaderInk = ink(mixOver(inks.rail, inks.bg));
-        for (const row of plan.rows) {
-          out.texts.push({ id: row.id, role: "ledger", text: row.text, x: row.x, y: row.y, align: plan.align, font, ink: rowInk, box: row.box, parts: null });
-          rows.push({ id: row.id, box: row.box });
-        }
-        for (const l of plan.leaders) out.leaders.push({ id: l.id, x0: l.x0, y0: l.y0, x1: l.x1, y1: l.y1, ink: leaderInk });
-        if (plan.more) out.texts.push({ id: plan.domainId, role: "more", text: plan.more.row.text, x: plan.more.row.x, y: plan.more.row.y, align: plan.align, font, ink: ink(inks.units), box: plan.more.row.box, parts: null });
-        ledger = { plan, leaderCrossings: countLeaderCrossings(plan.leaders) };
-      }
+      column(enteredCluster.domainId, capIds, new Set(capIds.filter((id) => id === attn.capabilityId || partners.has(id))), { x: chip.x, y: chip.y, r: enteredCluster.footprint * s });
     }
+  }
+  if (ledger === null && attn.selected && attn.capabilityId !== null && attn.domainId !== null) {
+    const named = new Set(out.texts.filter((t) => t.role === "capability" && t.id !== null).map((t) => t.id!));
+    const inPlace = pitchPx >= tokens.capName;
+    const unnamed = [...partners].filter((id) => id !== attn.capabilityId && discs.has(id) && model.capabilityById.has(id) && !(inPlace && named.has(id)));
+    if (unnamed.length > 0) column(attn.domainId, unnamed, new Set(unnamed), null);
   }
 
   const flowOccupied = [...labelOccupied];
@@ -350,8 +358,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         }
         const isNeed = attn.needsCaps.has(it.id);
         const isUser = attn.usedByCaps.has(it.id);
+        const isRelated = attn.relatesCaps.has(it.id);
         const kept = attn.capabilityId !== null ? it.id === attn.capabilityId : own;
-        const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser;
+        const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser && !isRelated;
         alphas.set(it.id, capAlpha > DRAWN_ALPHA ? (dimmed ? restAlpha : 1) : 0);
         if (it.id === attn.capabilityId) continue;
         let rim = dimmed ? rimDim : rimRest;

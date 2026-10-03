@@ -213,6 +213,20 @@ export function rollRelatesDomainPairs(tree: ContainmentTree, edges: readonly Tr
   return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
 }
 
+export function rollRelatesCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { a: string; b: string }[] {
+  const { capabilityOf } = domainResolver(tree);
+  const pairs = new Map<string, { a: string; b: string }>();
+  for (const e of edges) {
+    if (e.kind === "contains" || e.relationType !== "related_to") continue;
+    const x = capabilityOf(e.source);
+    const y = capabilityOf(e.target);
+    if (!x || !y || x === y) continue;
+    const [a, b] = x < y ? [x, y] : [y, x];
+    pairs.set(pairKey(a, b), { a, b });
+  }
+  return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
+}
+
 export function rollDirectedDomainFlows(
   deps: readonly DomainDependency[],
   relates: readonly { a: string; b: string }[],

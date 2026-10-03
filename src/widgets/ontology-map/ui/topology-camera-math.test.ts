@@ -355,6 +355,43 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     expect(target!.tscale).toBeCloseTo(overviewEntryScale, 6);
   });
 
+  describe("a dial capability's frame", () => {
+    const tokens = { ...baseTokens, focusMaxZoomRatio: 1.8 } as unknown as OntologyMapTokens;
+    const nameScale = 22 / 34;
+    const dialWorld = (partnerX: number) => ({
+      ...egoWorld(
+        {
+          f: { x: 0, y: 0, kind: "capability" },
+          p1: { x: partnerX, y: 0, kind: "capability" },
+          p2: { x: -partnerX / 2, y: 30, kind: "capability" },
+          chip: { x: 0, y: -4000, kind: "domain" },
+        },
+        { f: ["p1", "p2", "chip"] },
+      ),
+      dialScaleMax: 3,
+    });
+
+    it("frames the focus and its partners, reaching the name pitch past the focus ceiling", () => {
+      const world = dialWorld(60);
+      const entry = 0.1;
+      const target = computeFocusCameraTarget(world, tokens, 1200, 800, "f", entry, null, undefined, { ids: new Set(["f", "p1", "p2"]), nameScale })!;
+      expect(entry * 1.8).toBeLessThan(nameScale);
+      expect(target.tscale).toBeCloseTo(nameScale, 6);
+      const classic = computeFocusCameraTarget(world, tokens, 1200, 800, "f", entry)!;
+      expect(classic.tscale).toBeLessThan(nameScale);
+    });
+
+    it("keeps partners too far apart in the frame, below the name pitch", () => {
+      const world = dialWorld(3000);
+      const target = computeFocusCameraTarget(world, tokens, 1200, 800, "f", 0.1, null, undefined, { ids: new Set(["f", "p1", "p2"]), nameScale })!;
+      expect(target.tscale).toBeLessThan(nameScale);
+      expect(target.tscale).toBeGreaterThan(0.1);
+      const half = 600 / target.tscale;
+      expect(Math.abs(3000 - target.tx)).toBeLessThan(half);
+      expect(Math.abs(-1500 - target.tx)).toBeLessThan(half);
+    });
+  });
+
   it("never exceeds the ratio-based effective max", () => {
     const world = egoWorld({ f: { x: 0, y: 0, kind: "domain" } }, { f: [] });
     const overviewEntryScale = 1.5;

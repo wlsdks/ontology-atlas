@@ -5,6 +5,7 @@ import {
   readContainmentTree,
   rollDirectedDomainFlows,
   rollDomainDependencies,
+  rollRelatesCapabilityPairs,
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
@@ -37,7 +38,7 @@ const DOMAINS = 9;
 const RING = 300;
 const CAP_OFFSET = 40;
 
-function modelOf(caps = 2): DialModel {
+function modelOf(caps = 2, relates: readonly [string, string][] = []): DialModel {
   const nodes: TreeInputNode[] = [{ id: "p", label: "P", kind: "project" }];
   const edges: TreeInputEdge[] = [];
   const contains = (s: string, t: string) => edges.push({ source: s, target: t, kind: "contains", relationType: "contains" });
@@ -54,9 +55,13 @@ function modelOf(caps = 2): DialModel {
     }
   }
   for (let d = 0; d < DOMAINS; d += 1) edges.push({ source: `d${d}c0`, target: `d${(d + 1) % DOMAINS}c1`, kind: "depends", relationType: "depends_on" });
+  for (const [s, t] of relates) edges.push({ source: s, target: t, kind: "depends", relationType: "related_to" });
   const tree = readContainmentTree(nodes, edges);
   const dependencies = rollDomainDependencies(tree, edges);
-  return buildDialModel({ tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)), elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
+  return buildDialModel({
+    tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)),
+    elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id), relates: rollRelatesCapabilityPairs(tree, edges),
+  });
 }
 
 function sceneOf(model: DialModel, capOffset = CAP_OFFSET): DialScene {
@@ -94,10 +99,12 @@ interface RunOptions {
   centre?: Point;
   disclosure?: Partial<DialDisclosureInput>;
   appearOf?: (id: string) => number;
+  relates?: [string, string][];
+  hoverId?: string | null;
 }
 
 function run(o: RunOptions = {}) {
-  const model = modelOf(o.caps ?? 2);
+  const model = modelOf(o.caps ?? 2, o.relates);
   const scene = sceneOf(model, o.capOffset);
   const scale = o.scale ?? 1;
   const centre = o.centre ?? { x: 500, y: 400 };
@@ -105,12 +112,12 @@ function run(o: RunOptions = {}) {
   const input: DialMarksInput = {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: INKS, labels: LABELS,
     evidence: o.evidence === undefined ? null : dialEvidenceView(model, o.evidence),
-    attention: resolveDialAttention(model, null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
+    attention: resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
     scale, zoomRatio: 1, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, null, o.focusId ?? null), TOKENS), ...o.disclosure },
+    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), TOKENS), ...o.disclosure },
   };
   const out = emptyDialFrameMarks();
   const result = buildDialMarks(input, out);
@@ -230,6 +237,33 @@ describe("buildDialMarks", () => {
     const partner = out.discs.find((d) => d.id === "d2c0")!;
     expect(out.inks[sibling.rim]).toBe(mixOver(INKS.capabilityReceded, INKS.bg, 1));
     expect(out.inks[partner.rim]).toBe(INKS.usedBy);
+  });
+
+  it("names a focused capability's partners in the ledger column below the name pitch, and in place above it", () => {
+    const partnerIds = ["d2c0", "d6c0"];
+    const placed = (r: ReturnType<typeof run>, role: string) => r.out.texts.filter((t) => t.role === role && partnerIds.includes(t.id ?? "")).map((t) => t.id).sort();
+    expect(TOKENS.pitch * 0.5).toBeLessThan(TOKENS.capName);
+    const below = run({ focusId: "d3c1", scale: 0.5, relates: [["d3c1", "d6c0"]] });
+    expect(placed(below, "ledger")).toEqual(partnerIds);
+    expect(placed(below, "capability")).toEqual([]);
+    expect(below.result.ledger?.leaderCrossings).toBe(0);
+    expect(below.result.rows.map((r) => r.id).sort()).toEqual(partnerIds);
+    const above = run({ focusId: "d3c1", scale: 1, relates: [["d3c1", "d6c0"]] });
+    expect(placed(above, "capability")).toEqual(partnerIds);
+    expect(placed(above, "ledger")).toEqual([]);
+    const hovered = run({ hoverId: "d3c1", scale: 0.5, relates: [["d3c1", "d6c0"]] });
+    expect(hovered.out.texts.filter((t) => t.role === "ledger")).toEqual([]);
+  });
+
+  it("keeps a focused capability's relates neighbours lit, in its domain or another, while siblings recede", () => {
+    const { result, out } = run({ caps: 3, focusId: "d3c1", relates: [["d3c2", "d3c1"], ["d3c1", "d5c0e1"]] });
+    expect(result.alphas.get("d3c2")).toBe(1);
+    expect(result.alphas.get("d5c0")).toBe(1);
+    expect(result.alphas.get("d5")).toBe(1);
+    expect(result.alphas.get("d3c0")).toBe(MAP.egoRestAlpha);
+    expect(result.alphas.get("d6c0")).toBe(MAP.egoRestAlpha);
+    const related = out.discs.find((d) => d.id === "d3c2")!;
+    expect(out.inks[related.rim]).toBe(mixOver(INKS.capabilityRim, INKS.bg, 1));
   });
 
   it("colours rims by evidence only when evidence is measured", () => {

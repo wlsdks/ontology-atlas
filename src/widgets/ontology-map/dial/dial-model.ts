@@ -14,9 +14,10 @@ export interface DialModelInput {
   dependencies: readonly DomainDependency[];
   flows: readonly DirectedDomainFlow[];
   elementIds?: readonly string[];
+  relates?: readonly { a: string; b: string }[];
 }
 
-export function buildDialModel({ tree, dependencies, flows, elementIds = [] }: DialModelInput): DialModel {
+export function buildDialModel({ tree, dependencies, flows, elementIds = [], relates = [] }: DialModelInput): DialModel {
   const domains: DialDomain[] = [];
   const domainById = new Map<string, DialDomain>();
   for (const d of tree.domains) {
@@ -104,6 +105,7 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [] }: D
     flows: flowList,
     flowByKey: new Map(flowList.map((f) => [f.key, f] as const)),
     capabilityDependencies,
+    capabilityRelates: relates.filter((r) => r.a !== r.b && capabilityById.has(r.a) && capabilityById.has(r.b)).map((r) => ({ a: r.a, b: r.b })),
     orphanIds: orphanIds.sort(),
     dependents: new Map([...sources].map(([id, set]) => [id, set.size] as const)),
   };
@@ -147,9 +149,19 @@ export function resolveDialAttention(model: DialModel, hoveredId: string | null,
   }
   const needsCaps = new Set<string>();
   const usedByCaps = new Set<string>();
+  const relatesCaps = new Set<string>();
   const partnerDomains = new Set<string>();
   if (domainId === null) {
-    return { key: `||${selected ? 1 : 0}`, domainId: null, capabilityId: null, needsCaps, usedByCaps, partnerDomains, selected };
+    return { key: `||${selected ? 1 : 0}`, domainId: null, capabilityId: null, needsCaps, usedByCaps, relatesCaps, partnerDomains, selected };
+  }
+  if (capabilityId !== null) {
+    for (const r of model.capabilityRelates) {
+      const other = r.a === capabilityId ? r.b : r.b === capabilityId ? r.a : null;
+      if (other === null) continue;
+      relatesCaps.add(other);
+      const otherDomain = model.capabilityById.get(other)?.domainId;
+      if (otherDomain && otherDomain !== domainId) partnerDomains.add(otherDomain);
+    }
   }
   for (const dep of model.capabilityDependencies) {
     if (capabilityId !== null) {
@@ -178,6 +190,7 @@ export function resolveDialAttention(model: DialModel, hoveredId: string | null,
     capabilityId,
     needsCaps,
     usedByCaps,
+    relatesCaps,
     partnerDomains,
     selected,
   };
