@@ -231,7 +231,8 @@ function createFocusSource(): LightSource {
           current = planFocusSignal(focus, candidates, input.now, input.kinematics, input.reducedMotion);
         }
       }
-      if (input.trailLensActive || dialLightFrame() !== null) current = null;
+      if (input.trailLensActive) current = null;
+      if (dialLightFrame() !== null) return false;
       const alive = runner.run(current, input, input.revealProgress, out);
       if (!alive) current = null;
       return alive;
