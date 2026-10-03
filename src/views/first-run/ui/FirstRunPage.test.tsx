@@ -134,13 +134,13 @@ describe('FirstRunPage', () => {
     toastMocks.show.mockClear();
   });
 
-  it('renders only local-vault actions and the trust line, with no demo or download CTA', () => {
+  it('renders only local-vault actions, with no trust footer, demo or download CTA', () => {
     render(<FirstRunPage />);
 
     expect(screen.getByTestId('first-run-open')).toBeInTheDocument();
     expect(screen.getByTestId('first-run-create')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-demo')).not.toBeInTheDocument();
-    expect(screen.getByText('trustLine')).toBeInTheDocument();
+    expect(screen.queryByText('trustLine')).not.toBeInTheDocument();
     expect(screen.queryByText(/download/i)).not.toBeInTheDocument();
   });
 
