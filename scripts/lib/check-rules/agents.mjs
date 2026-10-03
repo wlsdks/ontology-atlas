@@ -2,6 +2,13 @@
 
 export const rules = [
   {
+    order: 585,
+    command: 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts',
+    reason: 'the construction replay or its prompt extractor changed',
+    matches: [/^\.claude\/skills\/ontology-field-trial\/scripts\//,
+      /^scripts\/lib\/construction-prompts(?:\.test)?\.mjs$/],
+  },
+  {
     order: 590,
     command: 'pnpm test:claude:hooks',
     reason: 'agent hook wiring, a guard, or the commit-message gate changed',

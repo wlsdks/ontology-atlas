@@ -47,5 +47,5 @@ reader can answer without reopening the repository.
 - No explicit raise in a branch does not mean no exception escapes it. Inspect
   callbacks, callee errors and short circuits before using "always" or "never".
 
-See [MCP source continuations](../../mcp/README.md#exact-source-continuations-sourceonly)
-and [construction measurements](../benchmark/CONSTRUCTION.md).
+See [MCP source continuations](https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md#exact-source-continuations-sourceonly)
+and [construction measurements](https://github.com/wlsdks/ontology-atlas/blob/main/docs/benchmark/CONSTRUCTION.md).
