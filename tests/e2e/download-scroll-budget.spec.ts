@@ -4,14 +4,8 @@ import path from "node:path";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * The download page's scroll budget (2026-10-03): on a real GPU, headed, at DPR 2, a scroll top
- * to bottom drops at most 2% of frames and shows no frame interval and no long task over 50 ms.
- * Before this rule the page dropped 8.9% at 1440×900 and 38.5% at 1040×720, GPU-bound, because
- * drawings ran after they had left the viewport.
- *
- * Local only (`DOWNLOAD_SCROLL_BUDGET=1`): a CI runner has no GPU and runs headless, so its frame
- * times say nothing about a visitor's. `DOWNLOAD_SCROLL_BUDGET_OUT` names a JSON file for the
- * per-run numbers.
+ * Scroll budget, headed at DPR 2: ≤ 2% dropped frames, nothing over 50 ms. Local only
+ * (`DOWNLOAD_SCROLL_BUDGET=1`): a CI runner has no GPU. `DOWNLOAD_SCROLL_BUDGET_OUT` keeps the numbers.
  */
 test.skip(!process.env.DOWNLOAD_SCROLL_BUDGET, "local headed GPU measurement; set DOWNLOAD_SCROLL_BUDGET=1");
 test.use({ headless: false, deviceScaleFactor: 2 });
@@ -24,7 +18,6 @@ const VIEWPORTS = [
 ] as const;
 const RUNS = 3;
 const WHEEL_PX = 30;
-/** 30 px every 30 ms is ~1,000 px/s. */
 const WHEEL_MS = 30;
 
 interface Leg {
@@ -61,7 +54,6 @@ async function disarm(page: Page): Promise<Leg> {
     const b = (window as unknown as { __budget: { intervals: number[]; longTasks: number[]; on: boolean } }).__budget;
     b.on = false;
     const sorted = [...b.intervals].sort((x, y) => x - y);
-    // The panel's period: the tenth percentile, so a slow run cannot raise its own bar.
     const periodMs = sorted[Math.floor(sorted.length * 0.1)] ?? 16.7;
     let dropped = 0;
     for (const i of b.intervals) dropped += Math.max(0, Math.round(i / periodMs) - 1);
@@ -93,7 +85,7 @@ async function wheelTo(page: Page, stop: (top: number) => boolean): Promise<void
     const { top, max } = await scrollState(page);
     if (top >= max - 1 || stop(top)) return;
     await page.mouse.wheel(0, WHEEL_PX);
-    // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+    // measurement window: part of the leg
     await page.waitForTimeout(WHEEL_MS);
   }
 }
@@ -104,8 +96,7 @@ async function openPage(page: Page, viewport: { width: number; height: number })
   await page.goto("/en/download/?guides=off", { waitUntil: "load" });
   await expect(page.getByTestId("gateway-hero")).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  // The headline types for a few seconds; the budget is for the scroll, not the arrival.
-  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+  // measurement window: part of the leg
   await page.waitForTimeout(3000);
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
 }
@@ -114,16 +105,15 @@ async function brisk(page: Page, viewport: { width: number; height: number }): P
   await openPage(page, viewport);
   await arm(page);
   await wheelTo(page, () => false);
-  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+  // measurement window: part of the leg
   await page.waitForTimeout(300);
   return disarm(page);
 }
 
-/** Stops on each figure until it rests, then moves on. */
 async function parked(page: Page, viewport: { width: number; height: number }): Promise<Leg> {
   await openPage(page, viewport);
   await arm(page);
-  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+  // measurement window: part of the leg
   await page.waitForTimeout(2000);
   const figureTop = await page.evaluate(() => {
     const host =
@@ -134,7 +124,6 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
     return figure.getBoundingClientRect().top + host.scrollTop - 80;
   });
   await wheelTo(page, (top) => top >= figureTop);
-  // Wheel momentum can carry past the figure; park it fully in view.
   await page.getByTestId("download-conduction-figure").scrollIntoViewIfNeeded();
   const figure = page.getByTestId("download-conduction-figure");
   await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 150_000 });
@@ -147,11 +136,10 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
     return demo.getBoundingClientRect().top + host.scrollTop - 80;
   });
   await wheelTo(page, (top) => top >= demoTop);
-  // The demo plays on its own clock; parking a few seconds covers its playback cost.
-  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+  // measurement window: part of the leg
   await page.waitForTimeout(4000);
   await wheelTo(page, () => false);
-  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
+  // measurement window: part of the leg
   await page.waitForTimeout(1000);
   return disarm(page);
 }
@@ -178,7 +166,6 @@ for (const viewport of VIEWPORTS) {
       const key = `${viewport.width}x${viewport.height}-${name}`;
       const out = process.env.DOWNLOAD_SCROLL_BUDGET_OUT;
       if (out) {
-        // A failed test restarts the worker, so the file, not memory, holds earlier legs.
         mkdirSync(path.dirname(out), { recursive: true });
         const results = existsSync(out) ? (JSON.parse(readFileSync(out, "utf8")) as Record<string, Leg[]>) : {};
         results[key] = runs;

@@ -3,12 +3,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { waitFrames } from "./settle";
 import { installFrameProbe, readFrameProbe, scrollHostTo } from "./download-frame-probe";
 
-/**
- * The download page's one drawing rule (2026-10-03): a drawing runs only while at least 20% of
- * its section is visible in a visible tab, holds its last frame otherwise, and at rest holds no
- * running animation and no compositor layer. The page lagged because a map drew every frame
- * long after it had left the viewport; this spec is the instrument that says it cannot again.
- */
+/** A drawing runs only while ≥ 20% of its section is visible; at rest nothing animates or holds a layer. */
 
 async function open(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -18,7 +13,6 @@ async function open(page: Page): Promise<void> {
   await expect(page.getByTestId("gateway-hero")).toBeVisible();
 }
 
-/** Scrolls so that exactly `ratio` of the figure's height is inside the viewport's bottom. */
 async function showFigureShare(page: Page, ratio: number): Promise<void> {
   await page.evaluate((share) => {
     const figure = document.querySelector<HTMLElement>('[data-testid="download-conduction-figure"]')!;
@@ -30,7 +24,6 @@ async function showFigureShare(page: Page, ratio: number): Promise<void> {
     const rect = figure.getBoundingClientRect();
     const viewTop = host === document.scrollingElement ? 0 : host.getBoundingClientRect().top;
     const viewBottom = viewTop + Math.min(host.clientHeight, innerHeight - viewTop);
-    // The figure's top should sit `share × height` above the viewport's bottom edge.
     host.scrollTop += rect.top - (viewBottom - share * rect.height);
   }, ratio);
 }
@@ -60,8 +53,7 @@ test.describe("download — every drawing stops out of view", () => {
     const running = await page.evaluate(() =>
       document
         .getAnimations()
-        // Scroll entrances run on a view timeline, not time.
-        .filter((animation) => animation.playState === "running" && animation.timeline === document.timeline)
+            .filter((animation) => animation.playState === "running" && animation.timeline === document.timeline)
         .map((animation) => (animation as CSSAnimation).animationName || animation.id || "script"),
     );
     expect(running, "a time-based animation runs at the colophon").toEqual([]);
@@ -107,7 +99,6 @@ test.describe("download — every drawing stops out of view", () => {
       cdp.once("LayerTree.layerTreeDidChange", resolve),
     );
     await cdp.send("LayerTree.enable");
-    // A repaint makes Chromium send the current tree.
     await page.evaluate(() => document.body.style.setProperty("outline", "0 solid transparent"));
     const { layers = [] } = await tree;
     const owned: string[] = [];

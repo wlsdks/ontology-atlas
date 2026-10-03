@@ -1,11 +1,6 @@
 import type { Page } from "@playwright/test";
 
-/**
- * Counts, from inside the page, every frame request and every draw the download page's canvases
- * make, without a product hook: `requestAnimationFrame`, a 2D `clearRect` and a WebGL `clear`
- * are wrapped before any script runs. The hero canvas and the background field are told apart
- * by where they sit in the document.
- */
+/** Counts frame requests and canvas draws (2D `clearRect`, WebGL `clear`) without a product hook. */
 export async function installFrameProbe(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const probe = { raf: 0, hero: 0, field: 0, other: 0 };
@@ -47,7 +42,6 @@ export function readFrameProbe(page: Page): Promise<FrameProbe> {
   return page.evaluate(() => ({ ...(window as unknown as { __frameProbe: FrameProbe }).__frameProbe }));
 }
 
-/** The page scrolls inside the app shell's body slot, not the window. */
 export function scrollHostTo(page: Page, top: number | "bottom"): Promise<void> {
   return page.evaluate((target) => {
     const host =

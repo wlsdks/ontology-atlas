@@ -3,11 +3,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { waitFrames } from "./settle";
 import { installFrameProbe, readFrameProbe, scrollHostTo } from "./download-frame-probe";
 
-/**
- * The download page without motion and without scripting (2026-10-03). Reduced motion is fully
- * still: no animation exists, no frame loop starts, the hero and the field each draw one frame.
- * With scripting off every section's text is visible, the typed headline included.
- */
+/** Reduced motion is fully still; with scripting off every section's text is visible. */
 test.describe("download — still", () => {
   test("under reduced motion nothing animates and no frame loop starts", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -54,7 +50,6 @@ test.describe("download — still", () => {
         const section = page.getByTestId(id);
         await section.scrollIntoViewIfNeeded();
         await expect(section).toBeVisible();
-        // The hero's rise is CSS-only (`@starting-style`), so it lands without a script too.
         await expect
           .poll(
             () =>
