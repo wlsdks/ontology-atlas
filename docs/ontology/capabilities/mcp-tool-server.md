@@ -13,17 +13,21 @@ dependencies: [capabilities/construction-guidance, capabilities/import-dependenc
 relation_notes: { capabilities/meaning-write-safety: "You asked for what depends on what: every write an agent makes through the server passes the consent and overwrite guard.", elements/mcp-rpc-envelope: You asked for element nodes named by role under the capability that uses them; shaping a result or a typed error is this role., elements/mcp-server-runtime: You asked for element nodes named by role under the capability that uses them; holding the bound roots and the session cache is this role., elements/mcp-initialize-instructions: You asked for element nodes named by role under the capability that uses them; the guidance sent on connect is this role., capabilities/task-agent-brief: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing agent-brief-compact.mjs.", capabilities/construction-guidance: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing construction-rules.mjs, so the guidance reaches agents through the server.", capabilities/vault-validation: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing validate.mjs.", capabilities/import-dependency-inference: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing infer-imports.mjs.", elements/qualification-packet-evaluator: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing construction-qualification.mjs, which is how the gate reaches the tool surface.", elements/graph-engine: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing ontology-engine.mjs.", elements/vault-kind-schema: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing schema.mjs.", elements/vault-file-store: "You asked me to turn imports I actually witnessed into dependencies: the scan shows server/registry.mjs importing vault.mjs." }
 ---
 
-Serves the read and write tools an AI agent calls over JSON-RPC, advertising one inventory derived from a single registry so what an agent is told it can do matches what it can actually do. The public inventory of tools and their contracts lives in `mcp/README.md`.
+Serves canonical read and write tools over JSON-RPC and reports the discovery inventory and roots of each session. The public contracts live in `mcp/README.md`.
 
 ## Includes
-- The tool registry, the schemas it advertises, and the read-only mode that hides every write tool.
-- The runtime proof of which vault and repository roots the process is actually bound to.
-- Write results that say what a write could not settle: `reclassify_concept` and `merge_concepts` return an optional `warnings` list naming each entry left in a list the referrer's kind cannot hold.
+- The tool registry and schemas, with default full discovery and opt-in `OATLAS_TOOL_PROFILE=construction` discovery for first builds.
+- The construction profile advertises 20 existing tools, including source indexing, bounded analysis, small batch writes, validation, binding and finalization. It preserves the advertised schemas and composes with read-only mode to expose 15 reads.
+- Discovery filtering is separate from permission: omitted known tools remain callable under the existing read-only and consent guards. Invalid profile values refuse startup.
+- Runtime proof of the bound vault/repository and the advertised names, count and hash.
+- Write-result warnings naming containment entries that reclassification or merging could not move.
 
 ## Excludes
 - The graph schema and file format, which the meaning layer owns.
-- Any authority to write without the person's consent.
+- Authority to bypass the person's consent, or to treat successful validation as accepted meaning.
+- Automatic profile selection in the app or expansion of the internal local agent's source tools.
 
 ## Uncertainty
-- Read from `mcp/src/server/` and `mcp/src/tools/` by layout; no tool count is recorded here because the repository states the live `tools/list` owns that number. This session reached the server as a client, so the registry file itself was not opened.
-- Re-read 2026-09-26: the registry's schema additions for those two `warnings` fields (`mcp/src/server/registry.mjs`, bundle #1874).
+- Re-read the profile selection and annotation/list mapping in `mcp/src/server/registry.mjs` on 2026-10-03. Stdio integration checked default/full recovery, selected inventory, invalid startup and read-only direct-call rejection.
+- One unfamiliar-source ACP pair reduced advertised input bytes but lost a source-hidden answer and retained semantic/citation defects; general construction speed and quality improvement are unproven.
+- Installed-app profile wiring and rendered permission behavior were not measured in this change.

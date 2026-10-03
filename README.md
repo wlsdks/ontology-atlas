@@ -66,6 +66,41 @@ Read [What becomes a node?](docs/guide/what-becomes-a-node.md), [Relations](docs
 - **MCP** (Model Context Protocol): your agent starts the Atlas MCP server, which reads and writes the folder on disk, even with the app closed. [Connect an agent](docs/guide/connect-agent.md) · [MCP reference](mcp/README.md)
 - **ACP** (Agent Client Protocol): Claude Agent and Codex also run in the app's own chat. Reads go straight through; each Atlas write waits until you allow it once. [Agents screen](docs/features/agents.md)
 
+## Construction measurements
+
+The 2026-10-03 trial used one unfamiliar MIT Python configuration library, actual
+ACP sessions, and a separate source-hidden reader plus source audit. These are
+bounded workflow measurements, not a model ranking or semantic qualification.
+
+| Workflow | Measured result | Meaning evidence |
+|---|---|---|
+| Claude Sonnet 5.5, low · full → construction profile | 107.6 → 100.4 s; input-only tool definitions 24.0% smaller | Fully answered questions 3/6 → 2/6; verified reader claims 17/18 → 18/21; both need review |
+| Codex Luna low · initial ACP diagnostic | 250.2 s; 3 nodes; 4 failed calls out of 33 | Fully answered 1/6 questions; verified claims 13/13; coverage remains incomplete |
+| Codex Luna xhigh · full / construction ACP attempts | Both 900 s timeouts; 4 / 2 nodes; no finalizer receipt | Incomplete construction |
+| Local 27B · shipped empty-vault loop before → after repair | 4 → 2 model requests; 189.1 → 151.6 s | Explains missing source tools; zero constructed nodes |
+
+The optional `OATLAS_TOOL_PROFILE=construction` advertises 20 first-build tools;
+default `full` remains 40. Smaller discovery inputs did not improve handoff
+quality in this pair. Local source-MCP experiments also failed before persisted
+writes, so local code-to-ontology quality remains unmeasured. The internal local
+conversation and the ACP source builder have different tool capabilities. The
+local loop was measured through a Node HTTP shim; the installed native transport
+was not verified.
+
+Run `pnpm benchmark:construction <runs.json> [--json]` to keep wall time, usage,
+tool errors, graph/path checks, source-hidden answers, and audited claims separate.
+See [the protocol, failures and limits](docs/benchmark/CONSTRUCTION.md) and
+[profile registration](mcp/README.md#first-construction-discovery-oatlas_tool_profile).
+
+
+Body-evidence follow-up: the calibrated case fully answered **4/6** questions
+(previously 2/6), with **19/20** claims verified. A fresh retry-library case
+answered 4/6 but verified only 16/21 claims (4 failed, 1 unknown). Exact source
+continuations reduced one identical-evidence payload **11,105→2,042 bytes
+(81.6%)**. Calibration took 137.5 s, so this is not a build-speed win. General
+semantic quality, formal qualification and native local construction remain
+unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial).
+
 ## Local-first and privacy
 
 - Atlas has no backend, account or telemetry. Your folder stays plain Markdown on your disk.

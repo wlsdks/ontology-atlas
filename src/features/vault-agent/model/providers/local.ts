@@ -33,6 +33,9 @@ function verifiedDetailSlugs(exchanges: TurnAssembly['exchanges']): string[] {
 }
 
 function synthesisInstruction(exchanges: TurnAssembly['exchanges']): string {
+  if (hasVerifiedEmptyCensus(exchanges)) {
+    return `${LOCAL_SYNTHESIS_INSTRUCTION} The successful census contains zero documented or referenced concepts. This conversation has no source-inspection tool. Explain that limit; direct a code-to-ontology construction request to a coding-agent session. Do not claim you inspected code or constructed nodes.`;
+  }
   const slugs = verifiedDetailSlugs(exchanges);
   if (slugs.length === 0) return LOCAL_SYNTHESIS_INSTRUCTION;
   const receipt = slugs.map((slug) => `[[${slug}]]`).join(', ');
@@ -203,7 +206,21 @@ function completedReadRounds(exchanges: TurnAssembly['exchanges']): number {
   ).length;
 }
 
+function hasVerifiedEmptyCensus(exchanges: TurnAssembly['exchanges']): boolean {
+  const result = exchanges.flatMap((exchange) => exchange.toolResults)
+    .findLast((row) => row.name === 'list_kinds');
+  if (!result || result.isError) return false;
+  try {
+    const census = asRecord(JSON.parse(result.content));
+    return census.total === 0 && census.referencedOnlyTotal === 0 &&
+      census.conceptsIncludingReferenced === 0 &&
+      census.byKind !== null && typeof census.byKind === 'object' && !Array.isArray(census.byKind) &&
+      Object.values(asRecord(census.byKind)).every((count) => count === 0);
+  } catch { return false; }
+}
+
 function forcedReadTool(turn: TurnAssembly): string | null {
+  if (hasVerifiedEmptyCensus(turn.exchanges)) return null;
   const completed = completedReadRounds(turn.exchanges);
   if (completed === 0) return firstReadTool(turn.screenContextBlock);
   if (hasFocusedConcept(turn.screenContextBlock)) return null;
@@ -224,7 +241,8 @@ export const localAdapter: ProviderAdapter = {
 
   buildBody(turn: TurnAssembly): string {
     const shouldSynthesize =
-      turn.tools.length === 0 || completedReadRounds(turn.exchanges) >= LOCAL_TOOL_ROUND_CAP;
+      turn.tools.length === 0 || hasVerifiedEmptyCensus(turn.exchanges) ||
+      completedReadRounds(turn.exchanges) >= LOCAL_TOOL_ROUND_CAP;
     const forcedToolName = shouldSynthesize ? null : forcedReadTool(turn);
     const effectiveTurn = shouldSynthesize
       ? { ...turn, tools: [] }

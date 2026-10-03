@@ -337,6 +337,58 @@ triple is the same shape shown in the snippets above, standalone:
 (source checkout: swap `"command"` for `"node"` and `"args"` for
 `["/absolute/path/to/ontology-atlas/mcp/src/index.js"]`.)
 
+#### Exact source continuations (`sourceOnly`)
+
+After initial discovery, read an implementation body without another candidate
+analysis by calling the existing `analyze_repo_structure` tool:
+
+```json
+{
+  "sourceOnly": true,
+  "sourceReads": [{ "path": "src/policy.ts", "startLine": 80, "maxLines": 40 }]
+}
+```
+
+The response contains exactly `rootPath`, `delivery: "source_only"`,
+`canWrite: false`, and the existing `sourceEvidence` packet. The same roots,
+literal-path policy, sensitive-file/symlink refusals, stable reads, byte/line
+limits, hashes, outlines and continuation coordinates apply. An outline selects
+the next body read and supplies no citation or behavior proof. Copy a returned
+range/hash citation; request narrower lines before citing narrower numbers.
+
+`sourceOnly` requires one to eight selectors and cannot accompany `proposal`
+or `qualification`, including explicit null values. Omit it or set it to false
+for the unchanged full analysis and proposal/qualification lifecycle. Source-only
+results contain no candidates, review/write plan, or meaning acceptance. Reading
+one packet does not establish repository completeness. This source-checkout
+extension does not add source tools to the app's internal local conversation.
+
+#### First-construction discovery (`OATLAS_TOOL_PROFILE`)
+
+For a first codebase map, optionally set `"OATLAS_TOOL_PROFILE": "construction"`
+in the server registration's `env` and restart the host. Unset or `full` keeps
+the default 40-tool inventory. An unsupported value refuses startup and names
+the valid values. The construction profile advertises 20 tools:
+
+`connection_info`, `list_kinds`, `list_concepts`, `get_concept`, `get_concepts`,
+`find_evidence`, `find_path`, `find_backlinks`, `query_ontology`, `read_source`,
+`analyze_repo_structure`, `index_project`, `infer_imports`, `add_concepts`,
+`add_relations`, `patch_concept`, `validate_vault`, `compile_ontology`,
+`connect_project_source`, and `finalize_project_meaning`.
+
+Use one-row batches when only one concept or relation is needed. Restore `full`
+and restart for maintenance tools omitted from discovery. Verify the advertised
+names/count through initialize and `tools/list`, and the names/count/hash through
+`connection_info`; a cached host list does not prove the selected profile.
+
+This is a discovery optimization, not a permission boundary. Known or cached
+calls to omitted tools retain their normal behavior. `OATLAS_READ_ONLY=1`
+intersects the profile with the read tools (15 advertised, zero writes), and
+direct writes remain rejected. `OATLAS_WRITE_CONSENT` keeps its existing guard.
+The app's launcher and internal local conversation are unchanged. Smaller tool
+inputs do not establish better construction or semantic qualification. See the
+[measured construction protocol](../docs/benchmark/CONSTRUCTION.md).
+
 #### Read-only registration (`OATLAS_READ_ONLY`)
 
 When the registrant is **not** the vault owner — a shared dashboard, a review
@@ -364,7 +416,7 @@ direct call to a write tool is rejected even if the client cached an older
 tool list. This is the trust-charter-aligned surface for third-party
 registration: a read consumer gets zero paths to the user's disk. Accepted
 truthy values: `1`, `true`, `yes`, `on` (case-insensitive); anything else
-leaves the full read+write surface intact.
+disables read-only filtering without changing the selected discovery profile.
 
 This is also the measured performance profile for a coding session that needs
 Atlas context but will not write ontology Markdown. For a known task, call only

@@ -597,6 +597,36 @@ describe('vendor adapters fold into one shape', () => {
     });
   });
 
+  it('local endpoint closes tools after a verified empty census without asking for nonexistent concepts', () => {
+    const turn = assembly({ userText: 'Build an ontology from this folder.', exchanges: [{
+      assistant: { role: 'assistant', content: null },
+      toolResults: [{ id: 'empty', name: 'list_kinds', isError: false,
+        content: JSON.stringify({ total: 0, byKind: {}, referencedOnlyTotal: 0, conceptsIncludingReferenced: 0 }) }],
+    }] });
+    const body = JSON.parse(PROVIDER_ADAPTERS.local.buildBody(turn));
+    expect(body.tools).toEqual([]);
+    expect(body).not.toHaveProperty('tool_choice');
+    const response = PROVIDER_ADAPTERS.local.parseResponse(JSON.stringify({ choices: [{
+      message: { role: 'assistant', content: 'The vault has no concepts. Source inspection is unavailable here.' },
+      finish_reason: 'stop',
+    }] }));
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(turn, response)).toEqual({ action: 'accept' });
+
+    for (const content of ['{}', '{broken',
+      JSON.stringify({ total: 1, byKind: { domain: 1 }, referencedOnlyTotal: 0, conceptsIncludingReferenced: 1 }),
+      JSON.stringify({ total: 0, byKind: [], referencedOnlyTotal: 0, conceptsIncludingReferenced: 0 }),
+      JSON.stringify({ total: 0, byKind: {}, referencedOnlyTotal: 1, conceptsIncludingReferenced: 1 })]) {
+      const unverified = assembly({ ...turn, exchanges: [{ ...turn.exchanges[0], toolResults: [{
+        ...turn.exchanges[0].toolResults[0], content,
+      }] }] });
+      expect(JSON.parse(PROVIDER_ADAPTERS.local.buildBody(unverified)).tools).not.toEqual([]);
+    }
+    const failed = assembly({ ...turn, exchanges: [{ ...turn.exchanges[0], toolResults: [{
+      ...turn.exchanges[0].toolResults[0], isError: true,
+    }] }] });
+    expect(JSON.parse(PROVIDER_ADAPTERS.local.buildBody(failed)).tools).not.toEqual([]);
+  });
+
   it('local endpoint does not accept an answer that skipped required reads', () => {
     const turn = assembly({ model: 'qwen3:8b' });
     const response = PROVIDER_ADAPTERS.local.parseResponse(
