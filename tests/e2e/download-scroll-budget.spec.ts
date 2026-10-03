@@ -138,6 +138,18 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   await wheelTo(page, (top) => top >= demoTop);
   // measurement window: part of the leg
   await page.waitForTimeout(4000);
+  for (const id of ["download-change-figure", "download-start-figure"]) {
+    const showpiece = page.getByTestId(id);
+    const top = await showpiece.evaluate((element) => {
+      const host =
+        [...document.querySelectorAll<HTMLElement>("*")].find(
+          (el) => el.scrollHeight - el.clientHeight > 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowY),
+        ) ?? document.scrollingElement!;
+      return element.getBoundingClientRect().top + host.scrollTop - 80;
+    });
+    await wheelTo(page, (scrolled) => scrolled >= top);
+    await expect(showpiece).toHaveAttribute("data-showpiece-state", /finished|still/, { timeout: 60_000 });
+  }
   await wheelTo(page, () => false);
   // measurement window: part of the leg
   await page.waitForTimeout(1000);
