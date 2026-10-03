@@ -14,7 +14,7 @@ export function FlatDialLegend({ evidenceMeasured }: { evidenceMeasured: boolean
         <span className="flex items-center gap-1.5">
           <svg aria-hidden width="34" height="14" viewBox="0 0 34 14">
             <line x1="2" y1="7" x2="20" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-edge-depends)" }} />
-            <text x="24" y="11" fontSize="10" style={{ fill: "var(--map-panel-text-secondary)" }}>3</text>
+            <text x="24" y="11" className="text-caption" style={{ fill: "var(--map-panel-text-secondary)" }}>3</text>
           </svg>
           {t("legendFlows")}
         </span>

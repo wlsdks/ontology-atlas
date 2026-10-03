@@ -1,7 +1,7 @@
 {
-  "units": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
+  "units": "{capabilities, plural, other {# capabilities}} · {elements, plural, other {# elements}}",
   "stale": "{count, number} stale",
-  "orphans": "{count, plural, one {# element belongs} other {# elements belong}} to no domain",
+  "orphans": "{count, plural, other {# elements belong}} to no domain",
   "more": "+{count, number} more",
   "ringBetween": "used by {min, number}–{max, number} other domains",
   "ringAtLeast": "used by {min, number}+ other domains",
