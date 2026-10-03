@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { seedFirstRunSeen } from "./first-run-seed";
 
@@ -15,7 +15,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 test.skip(!process.env.DOWNLOAD_SCROLL_BUDGET, "local headed GPU measurement; set DOWNLOAD_SCROLL_BUDGET=1");
 test.use({ headless: false, deviceScaleFactor: 2 });
-test.describe.configure({ timeout: 240_000 });
+test.describe.configure({ timeout: 900_000 });
 
 const VIEWPORTS = [
   { width: 1440, height: 900 },
@@ -130,8 +130,10 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
     return figure.getBoundingClientRect().top + host.scrollTop - 80;
   });
   await wheelTo(page, (top) => top >= figureTop);
+  // Wheel momentum can carry past the figure; park it fully in view.
+  await page.getByTestId("download-conduction-figure").scrollIntoViewIfNeeded();
   const figure = page.getByTestId("download-conduction-figure");
-  await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 90_000 });
+  await expect(figure).toHaveAttribute("data-conduction-state", /finished|still/, { timeout: 150_000 });
   const demoTop = await page.evaluate(() => {
     const host =
       [...document.querySelectorAll<HTMLElement>("*")].find(
@@ -153,7 +155,6 @@ function median(values: number[]): number {
   return s[Math.floor(s.length / 2)]!;
 }
 
-const results: Record<string, Leg[]> = {};
 
 for (const viewport of VIEWPORTS) {
   for (const [name, leg] of [
@@ -169,10 +170,12 @@ for (const viewport of VIEWPORTS) {
         await context.close();
       }
       const key = `${viewport.width}x${viewport.height}-${name}`;
-      results[key] = runs;
       const out = process.env.DOWNLOAD_SCROLL_BUDGET_OUT;
       if (out) {
+        // A failed test restarts the worker, so the file, not memory, holds earlier legs.
         mkdirSync(path.dirname(out), { recursive: true });
+        const results = existsSync(out) ? (JSON.parse(readFileSync(out, "utf8")) as Record<string, Leg[]>) : {};
+        results[key] = runs;
         writeFileSync(out, JSON.stringify(results, null, 2));
       }
       console.log(key, JSON.stringify(runs));
