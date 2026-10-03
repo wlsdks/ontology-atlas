@@ -198,6 +198,10 @@ pnpm desktop:release-run -- --tag=<tag> --refresh-only
 
 Until it lands, `desktop:release-preflight` and the next release's admission
 fail at `download:release-facts:check`.
+A release cut while `main` carries a newer generator (v1.5.0 was cut before
+the Apple Silicon-only generator) is regenerated locally on `main` with
+`pnpm download:release-facts -- --tag=<tag>`, not applied from the artifact,
+which the older generator wrote.
 
 **6. Audit completion.**
 

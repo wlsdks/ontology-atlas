@@ -2,11 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-/**
- * Whose file the hero CTA offers. Only mac and windows have files, so Linux falls to the mac
- * default. The UA only answers "Windows or not": `navigator.platform` says `MacIntel` on Apple
- * Silicon too, so mac defaults to Apple Silicon with Intel one step down.
- */
+/** Whose file the hero CTA offers. Only mac and windows have files, so Linux falls to the mac default. */
 export type VisitorDesktopPlatform = 'mac' | 'windows' | 'handheld';
 
 /** A handheld cannot install a file, so it gets the browser map first. iPadOS reports a Mac UA and passes as a Mac. */

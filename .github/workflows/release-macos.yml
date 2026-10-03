@@ -106,10 +106,10 @@ jobs:
     needs: admit-release
     environment: release-signing
     runs-on: ${{ matrix.runner }}
-    # The arm64 runner finishes the cold release build plus notarization in
-    # about 15 minutes.
-    # budget: 2200s
-    timeout-minutes: 45
+    # Measured aarch64 lane: v1.4.0 20m37s, v1.5.0 16m53s (cold build plus
+    # notarization).
+    # budget: 1300s
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -675,9 +675,6 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # It is safe to merge here — staging includes version and architecture in the file names,
-          # so all eight assets have unique names. This step only creates a summary table;
-          # there is no need to split architectures again.
           merge-multiple: true
 
       - name: Download Windows artifact

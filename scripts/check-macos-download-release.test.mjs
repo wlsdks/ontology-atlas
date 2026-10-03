@@ -321,6 +321,33 @@ test("download release verifier requires the Apple Silicon DMG", async () => {
   });
 });
 
+test("download release verifier tolerates the x64 DMG of a release up to v1.5.0", async () => {
+  await withServer(
+    makeHandler({
+      tagName: "v1.5.0",
+      names: ["ontology-atlas_1.5.0_aarch64.dmg", "ontology-atlas_1.5.0_x64.dmg"],
+    }),
+    async (baseUrl) => {
+      const { stdout } = await runVerifier(baseUrl);
+      assert.match(stdout, /ontology-atlas_1\.5\.0_x64\.dmg/);
+    },
+  );
+});
+
+test("download release verifier refuses an x64 DMG after v1.5.0", async () => {
+  await withServer(
+    makeHandler({
+      tagName: "v1.6.0",
+      names: ["ontology-atlas_1.6.0_aarch64.dmg", "ontology-atlas_1.6.0_x64.dmg"],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(runVerifier(baseUrl), (error) =>
+        /v1\.6\.0 carries an Intel \(x64\) DMG, but v1\.5\.0 was the last Intel build/.test(error.stderr),
+      );
+    },
+  );
+});
+
 test("download release verifier no longer requires an Intel DMG", async () => {
   await withServer(makeHandler({ names: [dmgNames[0]] }), async (baseUrl) => {
     const { stdout } = await runVerifier(baseUrl);
@@ -748,6 +775,26 @@ test("updater gate refuses a URL that no asset answers", async () => {
     await assert.rejects(
       runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
       (error) => /is not an asset of v0\.1\.0/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses a platform key beyond the required ones", async () => {
+  const shared = archiveNames["darwin-aarch64"];
+  const manifest = updaterManifest({
+    "darwin-aarch64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${shared}`,
+    },
+    "darwin-x86_64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${shared}`,
+    },
+  });
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /platforms must be exactly darwin-aarch64; found darwin-aarch64, darwin-x86_64/.test(error.stderr),
     );
   });
 });
