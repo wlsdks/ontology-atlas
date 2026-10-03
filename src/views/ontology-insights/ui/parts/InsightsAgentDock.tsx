@@ -124,7 +124,11 @@ export function InsightsAgentDock({
           data-testid="insights-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={prefillRequest.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--insights-agent-chat-width)-var(--chrome-inset))]`}
+          className={cn(
+            `${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--insights-agent-chat-width)-var(--chrome-inset))]`,
+            !open && 'map-overlay-out',
+            !open && !presence.mounted && 'invisible',
+          )}
         >
           <div className="hidden lg:contents">
             <AcpChatResizeHandle

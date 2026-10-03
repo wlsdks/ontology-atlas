@@ -129,7 +129,11 @@ export function ArchitectureAgentDock({
           data-testid="architecture-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={openingRequest?.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--architecture-agent-chat-width)-var(--chrome-inset))]`}
+          className={cn(
+            `${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--architecture-agent-chat-width)-var(--chrome-inset))]`,
+            !open && 'map-overlay-out',
+            !open && !presence.mounted && 'invisible',
+          )}
         >
           <div className="hidden lg:contents">
             <AcpChatResizeHandle
