@@ -219,12 +219,12 @@ routes: [/topology]
     - otherwise it is a spiral with two to four arms.
 
     Its tilt and orientation are decoration.
-  - **Placement.** Galaxies are placed once per change of the data, by a deterministic settle that draws domains which depend on each other closer together. The settled places are kept per folder on this machine, so placed galaxies never move; **Auto-arrange** settles the sky again.
-  - **Names and strands.** At the overview, every galaxy shows its name and concept count, and counted strands join the domains that depend on each other ([domain flows](domain-flows.md)). Closer in, capability names appear, then element names.
+  - **Placement.** Galaxies are placed once per change of the data, by a deterministic settle that draws domains which depend on each other closer together. The settled places are kept per folder on this machine; a recorded galaxy moves only when the core grows into it, or when **Auto-arrange** settles the sky again.
+  - **Names and strands.** At the overview, galaxies show their name and concept count where the names fit without overlapping (a narrow window may drop a few: the accepted floor is 30 of 33 at 1040 × 720), and counted strands join the domains that depend on each other ([domain flows](domain-flows.md)). Closer in, capability names appear, then element names.
   - **Motion.** The first open of a folder replays the settle in about a second. While you work, the gas in each galaxy turns and breathes; it rests 12 seconds after your last input, never moves a concept, and is absent under reduced motion.
   - **Selection.** Selecting a star draws its real relations and approaches it in the free canvas beside the inspector. Closing returns to the earlier view unless you moved meanwhile.
   - **Leaving.** Flat returns to its own overview after a visit to Galaxy, as it does after the Hex board.
-  - **Where names go.** A galaxy's name stays beside its galaxy. A galaxy outside the free canvas, or under a card or the inspector, is not named; only the galaxy you are inside keeps its name pinned at the top.
+  - **Where names go.** A galaxy's name stays beside its galaxy. A galaxy whose centre is outside the free canvas is not named, and a name that would leave the free canvas, under a card or the inspector, is dropped; only the galaxy you are inside keeps its name pinned at the top.
   - **Not in Galaxy.** The trail draws no walk line, and realm, tour anchors, agent focus and the INDEX hover brush are not drawn, as on the Hex board.
 
   In Galaxy, **My constellations** saves a named set of current ontology concepts

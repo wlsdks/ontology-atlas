@@ -277,6 +277,7 @@ export function drawCosmosFrame(input: CosmosFrameInput): CosmosFrameStats {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const half = visualRadius(g) * Math.sqrt(Math.sin(g.angle) ** 2 + (g.tilt * Math.cos(g.angle)) ** 2) * camera.scale * condense;
+    if (index !== focused && (sc.x < room.x || sc.x > room.x + room.width || sc.y < room.y || sc.y > room.y + room.height)) return;
     let ly = sc.y + half + 14;
     let lx = sc.x;
     if (index === focused) {

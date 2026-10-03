@@ -64,7 +64,6 @@ export class CosmosHitIndex {
           }
         }
       }
-      if (!bestStar) bestGalaxy = index;
     });
     if (bestStar) return { id: bestStar, galaxy: -1 };
     if (bestGalaxy >= 0) return { id: null, galaxy: bestGalaxy };

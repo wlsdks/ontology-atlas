@@ -98,13 +98,26 @@ export function cosmosMarks(layout: CosmosLayout, poses: readonly GalaxyPose[], 
 
 interface CosmosMark { id: string; x: number; y: number; r: number; kind: "project" | "domain" | "capability" | "element" }
 
+const starIndexCache = new WeakMap<CosmosLayout, Map<string, number>>();
+
+export function starIndexOf(layout: CosmosLayout, id: string): number {
+  let index = starIndexCache.get(layout);
+  if (!index) {
+    index = new Map();
+    for (const g of layout.galaxies) g.starIds.forEach((s, i) => index!.set(s, i));
+    layout.core.starIds.forEach((s, i) => index!.set(s, i));
+    starIndexCache.set(layout, index);
+  }
+  return index.get(id) ?? -1;
+}
+
 export function posedPoint(layout: CosmosLayout, poses: readonly GalaxyPose[], id: string): { x: number; y: number } | null {
   const gi = layout.galaxyOf.get(id);
   if (gi === undefined) return null;
   if (gi < 0) return layout.points.get(id) ?? null;
   const g = layout.galaxies[gi]!;
   const pose = poses[gi]!;
-  const si = g.starIds.indexOf(id);
+  const si = starIndexOf(layout, id);
   if (si < 0) return null;
   const m = galaxyMatrix(g, pose, { x: 0, y: 0, scale: 1 }, { x: 0, y: 0, width: 0, height: 0 });
   const u = g.starU[si]! * pose.condense;

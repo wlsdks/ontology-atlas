@@ -1,7 +1,7 @@
 import { revealEnd } from "../../expressive/edge-reveal";
 import { easeOutCubic } from "../../model/camera-easing";
 import { arrowHead } from "../../render/tapered-arrow";
-import { worldToScreen } from "../cosmos-camera";
+import { starIndexOf, worldToScreen } from "../cosmos-camera";
 import { MIN_STAR_SPACING, STAR_KIND_CAPABILITY, STAR_KIND_ELEMENT, STAR_KIND_NUCLEUS, STAR_KIND_PROJECT, type CosmosLayout } from "../layout/cosmos-layout";
 import type {
   CosmosAttention,
@@ -135,19 +135,6 @@ function planCosmosRelations(input: Pick<CosmosRelationsInput, "attention" | "re
     }
   }
   return rows;
-}
-
-const starIndexCache = new WeakMap<CosmosLayout, Map<string, number>>();
-
-function starIndexOf(layout: CosmosLayout, id: string): number {
-  let index = starIndexCache.get(layout);
-  if (!index) {
-    index = new Map();
-    for (const g of layout.galaxies) g.starIds.forEach((s, i) => index!.set(s, i));
-    layout.core.starIds.forEach((s, i) => index!.set(s, i));
-    starIndexCache.set(layout, index);
-  }
-  return index.get(id) ?? -1;
 }
 
 function starOf(layout: CosmosLayout, id: string): { kind: number; magnitude: number } {

@@ -110,9 +110,9 @@ beforeAll(() => {
   poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
 });
 
-function frame(ctx: CanvasRenderingContext2D, camera: CosmosCamera, cache = new CosmosBitmapCache(), deepField: HTMLCanvasElement | null = fakeCanvas(512), lens: CosmosLens | null = null) {
+function frame(ctx: CanvasRenderingContext2D, camera: CosmosCamera, cache = new CosmosBitmapCache(), deepField: HTMLCanvasElement | null = fakeCanvas(512), lens: CosmosLens | null = null, overviewScale = camera.scale) {
   return drawCosmosFrame({
-    ctx, width: 1200, height: 800, dpr: 1, room, camera, overviewScale: camera.scale, layout, inks, poses,
+    ctx, width: 1200, height: 800, dpr: 1, room, camera, overviewScale, layout, inks, poses,
     attention: { selectedId: null, hoverId: null, hoverGalaxy: -1, focusGalaxy: -1, revealMs: 0 },
     relationsOf: () => [], pointOf: () => null, lens, trail: null, record: null, reducedMotion: false,
     cache, deepField, buildBudget: 100,
@@ -161,6 +161,17 @@ describe("drawCosmosFrame", () => {
     expect(frame(fakeContext().ctx, { x: g.x, y: g.y, scale: 400 / g.radius }).band).toBe("circuit");
     const element = Math.max(17 / MIN_STAR_SPACING, 700 / g.radius);
     expect(frame(fakeContext().ctx, { x: g.x, y: g.y, scale: element }).band).toBe("element");
+  });
+
+  it("does not name a galaxy whose centre is outside the room unless it is the one you are inside", () => {
+    const g = layout.galaxies[0]!;
+    const names = (camera: CosmosCamera) => frame(fakeContext().ctx, camera, undefined, undefined, null, overview().scale).labels.filter((l) => l.kind === "galaxy").map((l) => l.id);
+    const base = overview();
+    const at = (sx: number, sy: number): CosmosCamera => ({ ...base, x: g.x - (sx - room.width / 2) / base.scale, y: g.y - (sy - room.height / 2) / base.scale });
+    expect(names(at(600, 400))).toContain(g.id);
+    expect(names(at(-4, 400))).not.toContain(g.id);
+    expect(names(at(600, -4))).not.toContain(g.id);
+    expect(names({ x: g.x, y: g.y - (room.height / 2 + 40) / (2_000 / g.radius), scale: 2_000 / g.radius })).toContain(g.id);
   });
 
   it("places the relations' member candidates with the other names", () => {

@@ -96,7 +96,7 @@ export class CosmosEngine {
     listen("wheel", (e) => this.onWheel(e), { passive: false });
     listen("keydown", (e) => this.onKey(e));
     listen("contextmenu", (e) => this.onContextMenu(e));
-    listen("animationend", () => this.rig.roomFinal || this.resize(), undefined, document);
+    listen("animationend", () => this.rig.roomFinal || this.selectedId !== null || this.resize(), undefined, document);
     this.cleanups.push(listenForGesturePinch(canvas, (ratio, x, y) => this.zoomAt(this.local(x, y), ratio ** this.options.navigationSpeed.zoom, false)));
     const resize = new ResizeObserver(() => this.resize());
     resize.observe(canvas);
@@ -115,6 +115,7 @@ export class CosmosEngine {
   destroy(): void {
     cancelAnimationFrame(this.raf);
     for (const fn of this.cleanups) fn();
+    this.cache.clear();
   }
 
   setOptions(options: Partial<CosmosEngineOptions>): void {
@@ -139,7 +140,7 @@ export class CosmosEngine {
     this.hits.retain(kept);
     this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
     const starts = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0;
-    this.rig.setBounds(layout.bounds, arrival !== "none" || this.arrival.active !== null);
+    this.rig.setBounds(layout.bounds, arrival !== "none" || (this.arrival.active !== null && !this.rig.user));
     if (starts) this.arrival.begin(arrival, performance.now());
     this.drawnReported = false;
     this.requestFrame();
@@ -363,7 +364,7 @@ export class CosmosEngine {
     const p = this.local(e.clientX, e.clientY);
     const hit = this.hit(p.x, p.y);
     if (hit.id) this.options.onSelect?.(hit.id);
-    else if ((this.layout?.galaxies[hit.galaxy]?.radius ?? Infinity) * this.rig.camera.scale <= liveBandRadius(this.dpr)) this.flyToGalaxy(hit.galaxy);
+    else if (hit.galaxy >= 0 && (this.layout?.galaxies[hit.galaxy]?.radius ?? Infinity) * this.rig.camera.scale <= liveBandRadius(this.dpr)) this.flyToGalaxy(hit.galaxy);
     else this.options.onPaneClick?.();
   }
 

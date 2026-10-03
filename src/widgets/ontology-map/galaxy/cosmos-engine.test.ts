@@ -257,30 +257,101 @@ describe("cosmos engine", () => {
       canvas.dispatchEvent(new MouseEvent("pointerup", { clientX: x, clientY: y }));
     };
     const g = sky.galaxies[0]!;
-    const emptyIn = () => {
+    const emptyIn = (galaxy: number) => {
       for (let i = 0; i < 4_000; i += 1) {
         const r = 0.6 * g.radius * engine.rig.camera.scale * Math.sqrt(((i * 0.618034) % 1));
         const p = { x: 400 + Math.cos(i * 2.399) * r, y: 300 + Math.sin(i * 2.399) * r };
         const hit = engine.hit(p.x, p.y);
-        if (hit.id === null && hit.galaxy === 0) return p;
+        if (hit.id === null && hit.galaxy === galaxy) return p;
       }
       throw new Error("no empty point");
     };
     engine.rig.camera = { x: g.x, y: g.y, scale: (2 * liveBandRadius(1)) / g.radius };
     engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
     const live = { ...engine.rig.camera };
-    const p = emptyIn();
+    const p = emptyIn(-1);
+    canvas.dispatchEvent(new MouseEvent("pointermove", { clientX: p.x, clientY: p.y }));
+    expect(canvas.style.cursor).not.toBe("pointer");
+    expect(engine["hoverGalaxy"]).toBe(-1);
     click(p.x, p.y);
     expect(onPaneClick).toHaveBeenCalledTimes(1);
     runFrame(16);
     runFrame(400);
     expect(engine.rig.camera).toEqual(live);
     engine.rig.camera = { x: g.x, y: g.y, scale: (0.5 * liveBandRadius(1)) / g.radius };
-    const q = emptyIn();
+    const q = emptyIn(0);
     click(q.x, q.y);
     expect(onPaneClick).toHaveBeenCalledTimes(1);
     for (let t = 432; frames.length > 0 && t < 5_000; t += 16) runFrame(t);
     expect(engine.rig.camera.scale).toBeCloseTo(galaxyFitScale(g, engine.rig.room), 6);
+    engine.destroy();
+  });
+
+  it("does not read the room again on an animation end while a star is selected", () => {
+    const { engine } = mount();
+    engine.rig.roomFinal = false;
+    engine.setSelected("a");
+    const resize = vi.spyOn(engine as unknown as { resize: () => void }, "resize");
+    document.body.dispatchEvent(new Event("animationend", { bubbles: true }));
+    expect(resize).not.toHaveBeenCalled();
+    engine.destroy();
+  });
+
+  it("keeps a pan made during the arrival when the same sky is read again", () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(0);
+    const { engine } = mount();
+    engine.setOptions({ reducedMotion: false });
+    const sky = realSky();
+    engine.setLayout(sky, new Map(), [], "replay");
+    runFrame(16);
+    clock.mockReturnValue(300);
+    engine.rig.frame({ x: 40, y: -25, scale: 6 }, 300);
+    engine.setLayout(sky, new Map(), [], "none");
+    expect(engine.arrival.active).not.toBeNull();
+    expect(engine.rig.user).toBe(true);
+    engine.destroy();
+  });
+
+  it("frees its bitmaps on destroy", () => {
+    const { engine } = mount();
+    const bitmap = Object.assign(document.createElement("canvas"), { width: 256, height: 256 });
+    engine.cache.setImpostor("g", 256, bitmap);
+    engine.destroy();
+    expect([bitmap.width, bitmap.height]).toEqual([0, 0]);
+    expect(engine.cache.bytes()).toBe(0);
+  });
+
+  it("hits through a 2,000-member lens at 10k concepts within a millisecond", () => {
+    const nodes = [{ id: "p", label: "P", kind: "project" as const }];
+    const edges: { source: string; target: string; kind: "contains"; relationType: string }[] = [];
+    const add = (id: string, kind: string, parent: string) => {
+      nodes.push({ id, label: id, kind: kind as never });
+      edges.push({ source: parent, target: id, kind: "contains", relationType: "contains" });
+    };
+    for (let d = 0; d < 20; d += 1) {
+      add(`d${d}`, "domain", "p");
+      for (let c = 0; c < 10; c += 1) {
+        add(`d${d}c${c}`, "capability", `d${d}`);
+        for (let e = 0; e < 50; e += 1) add(`d${d}c${c}e${e}`, "element", `d${d}c${c}`);
+      }
+    }
+    const sky = computeCosmosLayout(nodes, edges);
+    const { engine } = mount();
+    engine.setLayout(sky, new Map(), [], "none");
+    engine.rig.room = { x: 0, y: 0, width: 800, height: 600 };
+    engine.rig.camera = overviewCamera(sky.bounds, engine.rig.room).camera;
+    const members = nodes.filter((n) => n.kind === ("element" as never)).filter((_, i) => i % 5 === 0).slice(0, 2_000).map((n) => n.id);
+    expect(members).toHaveLength(2_000);
+    engine.setLens({ kind: "recent", memberIds: new Set(members), edgeIds: null }, null);
+    for (let i = 0; i < 20; i += 1) engine.hit(i * 40, 300);
+    const runs: number[] = [];
+    for (let i = 0; i < 50; i += 1) {
+      const t0 = performance.now();
+      engine.hit((i * 16) % 800, (i * 12) % 600);
+      runs.push(performance.now() - t0);
+    }
+    runs.sort((x, y) => x - y);
+    expect(runs[25]!).toBeLessThan(1);
     engine.destroy();
   });
 
