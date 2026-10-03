@@ -594,7 +594,6 @@ jobs:
         uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           tag_name: ${{ needs.admit-release.outputs.release_tag }}
-          target_commitish: ${{ needs.admit-release.outputs.release_sha }}
           draft: true
           generate_release_notes: true
           files: |

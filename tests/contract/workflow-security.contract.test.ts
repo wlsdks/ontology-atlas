@@ -354,7 +354,7 @@ describe("워크플로 보안 계약", () => {
 
     const stage = jobBlock(release, "stage-macos");
     expect(stage).toContain("tag_name: ${{ needs.admit-release.outputs.release_tag }}");
-    expect(stage).toContain("target_commitish: ${{ needs.admit-release.outputs.release_sha }}");
+    expect(stage).not.toContain("target_commitish:");
     expect(stage).toContain("--mode=pin");
     expect(jobBlock(release, "publish-macos")).toContain("--mode=pin");
   });
