@@ -1,16 +1,17 @@
 {
   "units": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
   "stale": "{count, number} stale",
-  "orphans": "{count, plural, one {# element belongs} other {# elements belong}} to no domain",
+  "orphans": "{count, plural, one {# concept belongs} other {# concepts belong}} to no domain",
   "more": "+{count, number} more",
   "ringBetween": "used by {min, number}–{max, number} other domains",
   "ringAtLeast": "used by {min, number}+ other domains",
   "ringAtMostOne": "used by at most 1 other domain",
-  "linksShown": "{shown, number} strongest of {total, number} links shown",
+  "linksShown": "{shown, number} of {total, number} links shown",
   "reading": "Reading {read, number} of {total, number} files",
   "settling": "Rings settle when every file is read",
-  "legendFlows": "line = dependencies between two domains · number = how many",
+  "legendFlows": "Line = dependencies · number = count",
   "legendNeeds": "needs",
   "legendUsers": "used by",
-  "legendStale": "stale"
+  "legendStale": "stale",
+  "legendRings": "Closer to the centre: more other domains depend on it"
 }

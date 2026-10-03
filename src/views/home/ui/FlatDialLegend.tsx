@@ -38,6 +38,7 @@ export function FlatDialLegend({ evidenceMeasured, linksShown, linksTotal }: Fla
           </svg>
           {t("legendUsers")}
         </span>
+        <span data-testid="flat-dial-legend-rings">{t("legendRings")}</span>
         {linksShown < linksTotal ? (
           <span data-testid="flat-dial-legend-links">{t("linksShown", { shown: linksShown, total: linksTotal })}</span>
         ) : null}

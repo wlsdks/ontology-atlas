@@ -195,10 +195,19 @@ describe("buildLabelMarks", () => {
     expect(Math.abs(Math.atan2(ring!.y, ring!.x) - -Math.PI / 4)).toBeLessThan(1);
   });
 
-  it("leaves the ring label out when every slot on its axis crosses a line", () => {
+  it("leaves the ring label out when every slot on its circle crosses a line", () => {
     const lines: Point[][] = [];
     for (let y = -600; y <= 600; y += 5) lines.push([{ x: -600, y }, { x: 600, y }]);
     expect(run({ lines }).extraTexts.some((t) => t.role === "ring")).toBe(false);
+  });
+
+  it("moves the ring label around its circle when every slot on its axis crosses a line", () => {
+    const lines: Point[][] = [];
+    for (let y = -600; y <= 120; y += 5) lines.push([{ x: -600, y }, { x: 600, y }]);
+    const ring = run({ lines }).extraTexts.find((t) => t.role === "ring");
+    expect(ring?.text).toBe("used by 2–3");
+    expect(ring!.box.minY).toBeGreaterThan(120);
+    expect(Math.abs(Math.hypot(ring!.x, ring!.y + 11 * 0.9) - 300)).toBeLessThan(40);
   });
 
   it("names capabilities only from cap-name px of pitch, skipping the ledger", () => {
