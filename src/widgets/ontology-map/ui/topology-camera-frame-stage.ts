@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import type { PointerMachineState } from "../interaction/pointer-state-machine";
 import { ambientSleepFactor } from "../model/ambient-sleep";
+import { createFocusRampClock } from "../model/focus-state";
 import { easeAnchoredZoom, easeCameraKeyframe, type CameraTween, type ZoomEase } from "../model/camera-easing";
 import type { DomeRuntime } from "../model/dome-view";
 import type { GrowthReplay } from "../model/growth-replay";
@@ -150,6 +151,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     farT: 0,
     zoomRatio: 1,
   };
+  const focusRampDt = createFocusRampClock();
 
   return function runCameraFrameStage(
     now: number,
@@ -158,6 +160,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     world: TopologyWorld,
     width: number,
     height: number,
+    previousDrawnAt = Number.NaN,
   ): CameraFrameResult {
     const requestedFocusId = focusedSlugRef.current;
     const focusedNodeId =
@@ -272,6 +275,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
       tokens,
       cameraAngularFrequency: cameraAngularFreqRef.current ?? tokens.cameraSpringAngFreqTransition,
       dt,
+      rampDt: focusRampDt(`${focusedNodeId ?? ""}|${selectedEdgeRef.current ? `${selectedEdgeRef.current.sourceId}>${selectedEdgeRef.current.targetId}` : ""}`, dt, now, previousDrawnAt),
       now,
       // Ambient sleep factor multiplied into comet speed (1 awake, 0
       // asleep). Recomputed here because the idle-gate decision is in another
