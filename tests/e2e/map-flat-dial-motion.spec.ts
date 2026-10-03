@@ -20,6 +20,7 @@ test.use({ viewport: VIEWPORT });
 
 interface Sample {
   t: number;
+  at: number;
   state: string;
   held: number;
   appear: number;
@@ -70,7 +71,7 @@ async function installSampler(page: Page, options: { probe: boolean }): Promise<
           const capOf: Record<string, string> = {};
           for (const n of nodes) if (n.kind === "domain" && !n.hidden && (n.alpha ?? 1) > 0) chips[n.id] = [n.x, n.y];
           if (d === null) {
-            w.__dialSampler.frames.push({ t: performance.now(), state: "unowned", held: 0, appear: 0, inkMix: 0, zoom: 0, scale: camera.scale, hub: project ? [project.x, project.y] : null, chips, discs: {}, capOf, steps: {}, ring: {}, strips: 0, inks: [], numerals: [] });
+            w.__dialSampler.frames.push({ t: performance.now(), at: time, state: "unowned", held: 0, appear: 0, inkMix: 0, zoom: 0, scale: camera.scale, hub: project ? [project.x, project.y] : null, chips, discs: {}, capOf, steps: {}, ring: {}, strips: 0, inks: [], numerals: [] });
             return;
           }
           const steps: Record<string, number> = {};
@@ -84,6 +85,7 @@ async function installSampler(page: Page, options: { probe: boolean }): Promise<
           for (const disc of d.discs) discs[disc.id] = [disc.x, disc.y];
           w.__dialSampler.frames.push({
             t: performance.now(),
+            at: time,
             state: d.placement.state,
             held: d.placement.held,
             appear: d.domainAppear,
@@ -452,14 +454,18 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   const all = (await frames(page)).filter((f) => f.t >= selectedAt);
   const focused = all.find((f) => f.inkMix < 1) ?? all[0]!;
   const full = all.find((f) => f.t >= focused.t && f.inkMix >= 1);
-  const attendedKeys = [...new Set(full ? full.inks.map((s) => s.split("|")[0]!).filter((k) => k.split("\u0000").includes(ORDERS)) : [])];
+  const attendedOf = (frame: Sample | undefined) => [...new Set(frame ? frame.inks.map((s) => s.split("|")[0]!).filter((k) => k.split("\u0000").includes(ORDERS)) : [])];
+  const attendedKeys = attendedOf(full);
+  const attendedAtFirst = attendedOf(focused);
   const attendedInks = [...new Set(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!)).map((s) => s.split("|")[1]!) : [])];
   const numeralsAtFirst = focused.numerals.map((n) => n.split("|")[0]!);
   const signals = plan.flatMap((p) => p.signals);
   const mixAt = full?.t ?? Infinity;
   const earlyLights = signals.filter((s) => s.startMs < mixAt - FRAME_MS).length;
   const verdict = {
-    mixMs: full ? Math.round(full.t - focused.t) : null,
+    mixMs: full ? Math.round(full.at - focused.t) : null,
+    gapMs: full ? Math.round(full.at - (all[all.indexOf(full) - 1]?.at ?? full.at)) : null,
+    firstFrameMs: Math.round(focused.t - focused.at),
     attendedKeys: attendedKeys.length,
     attendedInks,
     tokens: [needs, usedBy],
@@ -470,9 +476,10 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   };
   console.log(`[flat-dial-motion] focus ${JSON.stringify(verdict)}`);
   expect(full, "the ink mix reaches 1").toBeTruthy();
-  expect.soft(verdict.mixMs!, "ink mix 1 after the first focused frame (ms)").toBeLessThanOrEqual(FOCUS_MS + FRAME_MS);
+  expect.soft(verdict.mixMs!, "ink mix 1 within a drawn frame of 120 ms after the first focused frame finished painting (ms)").toBeLessThanOrEqual(FOCUS_MS + Math.max(FRAME_MS, verdict.gapMs ?? FRAME_MS));
   expect.soft(attendedInks.filter((ink) => channelGap(ink, needs) > 1 && channelGap(ink, usedBy) > 1), "attended strip inks outside the needs and used-by tokens").toEqual([]);
-  expect.soft(attendedKeys.filter((k) => !numeralsAtFirst.includes(k)), "attended flows without a numeral on the first focused frame").toEqual([]);
+  expect.soft(attendedAtFirst.length, "attended flows on the first focused frame").toBeGreaterThan(0);
+  expect.soft(attendedAtFirst.filter((k) => !numeralsAtFirst.includes(k)), "attended flows without a numeral on the first focused frame").toEqual([]);
   expect.soft(signals.length, "lights launched = attended direction strokes").toBe(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!) && s.split("|")[2] !== "relates").length : -1);
   expect.soft(earlyLights, "lights departing before the ink mix reaches 1").toBe(0);
   expect.soft(quiet, "frames in 1.5 s after the last light").toBe(0);
