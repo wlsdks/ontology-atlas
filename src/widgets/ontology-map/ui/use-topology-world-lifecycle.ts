@@ -360,7 +360,10 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
       armAssembly = true;
     }
-    if (firstPlacement) armAssembly = true;
+    if (firstPlacement) {
+      armAssembly = true;
+      if (!userDrivenCameraRef.current) hasInitializedRef.current = false;
+    }
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
     arrivalGlideRef.current = grew;
