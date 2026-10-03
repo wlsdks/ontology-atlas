@@ -319,7 +319,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     realmSlug,
   });
   const { reverseDeps, ontologyMapGraph, canvasSelectedSlug } = topologyGraphProjection;
-  const topologyExplorationLenses = useTopologyExplorationLenses({ routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls });
+  const topologyExplorationLenses = useTopologyExplorationLenses({
+    routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls,
+    foldsApply: view3d || topologyGraphProjection.resolvedRealmSlug !== null,
+  });
 
   const {
     setFootprintTrail,
