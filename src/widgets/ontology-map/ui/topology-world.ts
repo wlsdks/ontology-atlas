@@ -15,6 +15,7 @@ import {
   readContainmentTree,
   rollDirectedDomainFlows,
   rollDomainDependencies,
+  rollRelatesCapabilityPairs,
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
@@ -812,7 +813,7 @@ function buildDialWorld(
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  const built = buildDialModel({ tree, dependencies, flows, elementIds });
+  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges) });
   const model = placeDial ? placeDial(built) : built;
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
   if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);

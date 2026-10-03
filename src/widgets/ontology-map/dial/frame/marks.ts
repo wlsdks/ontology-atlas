@@ -280,7 +280,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       && ledgerWanted({ capabilityCount: capIds.length, namedInPlace, capabilityPitchPx: pitchPx, namesFitInPlace: clusterNamesFit(input, enteredCluster, font), tokens });
     if (wanted) {
       const chip = chips.get(enteredCluster.domainId)!;
-      const priority = new Set([...capIds].filter((id) => id === attn.capabilityId || attn.needsCaps.has(id) || attn.usedByCaps.has(id)));
+      const priority = new Set([...capIds].filter((id) => id === attn.capabilityId || attn.needsCaps.has(id) || attn.usedByCaps.has(id) || attn.relatesCaps.has(id)));
       const plan = buildLedger({
         domainId: enteredCluster.domainId,
         discs: capIds.map((id) => {
@@ -350,8 +350,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         }
         const isNeed = attn.needsCaps.has(it.id);
         const isUser = attn.usedByCaps.has(it.id);
+        const isRelated = attn.relatesCaps.has(it.id);
         const kept = attn.capabilityId !== null ? it.id === attn.capabilityId : own;
-        const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser;
+        const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser && !isRelated;
         alphas.set(it.id, capAlpha > DRAWN_ALPHA ? (dimmed ? restAlpha : 1) : 0);
         if (it.id === attn.capabilityId) continue;
         let rim = dimmed ? rimDim : rimRest;

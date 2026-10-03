@@ -4,6 +4,7 @@ import {
   readContainmentTree,
   rollDirectedDomainFlows,
   rollDomainDependencies,
+  rollRelatesCapabilityPairs,
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
@@ -14,12 +15,13 @@ import type { DialEvidence } from "./types";
 const node = (id: string, kind: TreeInputNode["kind"]): TreeInputNode => ({ id, label: id.toUpperCase(), kind });
 const contains = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "contains", relationType: "contains" });
 const depends = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "depends", relationType: "depends_on" });
+const relates = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "depends", relationType: "related_to" });
 
 function modelOf(nodes: TreeInputNode[], edges: TreeInputEdge[]) {
   const tree = readContainmentTree(nodes, edges);
   const dependencies = rollDomainDependencies(tree, edges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges));
-  return buildDialModel({ tree, dependencies, flows, elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
+  return buildDialModel({ tree, dependencies, flows, elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id), relates: rollRelatesCapabilityPairs(tree, edges) });
 }
 
 const fixture = () =>
@@ -114,6 +116,19 @@ describe("resolveDialAttention", () => {
     expect(a.usedByCaps.size).toBe(0);
     expect(a.needsCaps.has("c2") || a.usedByCaps.has("c2")).toBe(false);
     expect([...a.partnerDomains]).toEqual(["d2"]);
+  });
+
+  it("keeps a capability's relates neighbours as partners, in its domain or another", () => {
+    const m = modelOf(
+      [node("d1", "domain"), node("d2", "domain"), node("c1", "capability"), node("c2", "capability"), node("c3", "capability"), node("c4", "capability"), node("e4", "element")],
+      [contains("d1", "c1"), contains("d1", "c2"), contains("d1", "c3"), contains("d2", "c4"), contains("c4", "e4"), relates("c2", "c1"), relates("c1", "e4"), relates("c3", "c2"), relates("c1", "d2")],
+    );
+    expect(m.capabilityRelates).toEqual([{ a: "c1", b: "c2" }, { a: "c1", b: "c4" }, { a: "c2", b: "c3" }]);
+    const a = resolveDialAttention(m, null, "c1");
+    expect([...a.relatesCaps].sort()).toEqual(["c2", "c4"]);
+    expect([...a.partnerDomains]).toEqual(["d2"]);
+    expect(a.needsCaps.size + a.usedByCaps.size).toBe(0);
+    expect(resolveDialAttention(m, "d1", null).relatesCaps.size).toBe(0);
   });
 
   it("resolves an element to its capability, and an orphan to nothing", () => {

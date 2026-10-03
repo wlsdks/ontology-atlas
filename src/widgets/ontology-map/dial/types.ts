@@ -83,11 +83,11 @@ export interface DialModel {
   domains: DialDomain[]; domainById: ReadonlyMap<string, DialDomain>; capabilityById: ReadonlyMap<string, DialCapability>;
   domainOf: ReadonlyMap<string, string | null>; capabilityOf: ReadonlyMap<string, string>;
   flows: DirectedDomainFlow[]; flowByKey: ReadonlyMap<string, DirectedDomainFlow>;
-  capabilityDependencies: DialCapabilityDependency[]; orphanIds: string[];
+  capabilityDependencies: DialCapabilityDependency[]; capabilityRelates: { a: string; b: string }[]; orphanIds: string[];
   dependents: ReadonlyMap<string, number>;
 }
 export interface DialEvidenceView { measured: boolean; stateOf(id: string): DialEvidence; staleByDomain: ReadonlyMap<string, number> }
-export interface DialAttention { key: string; domainId: string | null; capabilityId: string | null; needsCaps: ReadonlySet<string>; usedByCaps: ReadonlySet<string>; partnerDomains: ReadonlySet<string>; selected: boolean }
+export interface DialAttention { key: string; domainId: string | null; capabilityId: string | null; needsCaps: ReadonlySet<string>; usedByCaps: ReadonlySet<string>; relatesCaps: ReadonlySet<string>; partnerDomains: ReadonlySet<string>; selected: boolean }
 
 export interface DialRing { step: number; min: number; max: number | null; radius: number }
 export interface DialItem { id: string; direct: boolean; x: number; y: number; elementIds: string[]; elementPitch: number }

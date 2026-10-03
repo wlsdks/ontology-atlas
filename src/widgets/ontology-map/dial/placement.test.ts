@@ -10,7 +10,7 @@ function model(dependents: Record<string, number>): DialModel {
   return {
     projectId: "project", projectLabel: "P", domains, domainById: new Map(domains.map((d) => [d.id, d])),
     capabilityById: new Map(), domainOf: new Map(), capabilityOf: new Map(), flows: [], flowByKey: new Map(),
-    capabilityDependencies: [], orphanIds: [], dependents: new Map(Object.entries(dependents)),
+    capabilityDependencies: [], capabilityRelates: [], orphanIds: [], dependents: new Map(Object.entries(dependents)),
   };
 }
 

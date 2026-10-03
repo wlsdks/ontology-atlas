@@ -47,6 +47,7 @@ function emptyDialModel(model: DialModel): DialModel {
     flows: [],
     flowByKey: new Map(),
     capabilityDependencies: [],
+    capabilityRelates: [],
     orphanIds: [],
     dependents: new Map(),
   };

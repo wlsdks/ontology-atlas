@@ -109,7 +109,7 @@ export function aggregateLinks(model: DialModel, resolved: ReadonlySet<string>, 
   return links.sort((x, y) => y.total - x.total || (x.key < y.key ? -1 : 1));
 }
 
-const NO_ATTENTION: DialAttention = { key: "||0", domainId: null, capabilityId: null, needsCaps: new Set(), usedByCaps: new Set(), partnerDomains: new Set(), selected: false };
+const NO_ATTENTION: DialAttention = { key: "||0", domainId: null, capabilityId: null, needsCaps: new Set(), usedByCaps: new Set(), relatesCaps: new Set(), partnerDomains: new Set(), selected: false };
 
 export function ownLinkCount(model: DialModel, domainId: string): number {
   return aggregateLinks(model, new Set([domainId]), NO_ATTENTION).filter(

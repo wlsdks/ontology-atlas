@@ -392,7 +392,7 @@ function capabilityNames(ctx: Ctx): void {
       if (item.direct || input.ledgerIds.has(item.id)) continue;
       const disc = input.discs.get(item.id);
       if (!disc || !model.capabilityById.has(item.id)) continue;
-      const lit = attn.capabilityId === item.id || attn.needsCaps.has(item.id) || attn.usedByCaps.has(item.id);
+      const lit = attn.capabilityId === item.id || attn.needsCaps.has(item.id) || attn.usedByCaps.has(item.id) || attn.relatesCaps.has(item.id);
       if ((attn.domainId && !own && !lit) || (egoOnly && !lit)) continue;
       items.push({ id: item.id, disc, prio: (lit ? 1000 : 0) + (own ? 500 : 0) + item.elementIds.length });
     }
