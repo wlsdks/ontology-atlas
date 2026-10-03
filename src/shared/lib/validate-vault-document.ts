@@ -539,10 +539,7 @@ export interface VaultValidationSummary {
   issuesBySlug: Array<{ slug: string; issues: VaultDocumentIssue[] }>;
 }
 
-/**
- * Validates many vault documents' frontmatter at once and aggregates the result, so the UI
- * gets every number a banner or chip needs in one call.
- */
+/** Frontmatter validation and UID conflicts, in report order. */
 export function summarizeVaultValidation(
   items: ReadonlyArray<{
     slug: string;
@@ -579,17 +576,28 @@ export function summarizeVaultValidation(
       claims.set(value, owners);
     }
   }
+  let firstIssueBySlug: Map<string, (typeof issuesBySlug)[number]> | null = null;
   for (const [uid, owners] of claims) {
     if (owners.length < 2) continue;
+    if (firstIssueBySlug === null) {
+      firstIssueBySlug = new Map();
+      for (const row of issuesBySlug) {
+        if (!firstIssueBySlug.has(row.slug)) firstIssueBySlug.set(row.slug, row);
+      }
+    }
     for (const slug of owners) {
       const issue: VaultDocumentIssue = {
         code: "duplicate-uid",
         severity: "error",
         message: `UID ${uid}를 다른 노드도 정체성으로 주장합니다 (${owners.filter((owner) => owner !== slug).join(", ")}).`,
       };
-      const existing = issuesBySlug.find((entry) => entry.slug === slug);
+      const existing = firstIssueBySlug.get(slug);
       if (existing) existing.issues.push(issue);
-      else issuesBySlug.push({ slug, issues: [issue] });
+      else {
+        const row = { slug, issues: [issue] };
+        issuesBySlug.push(row);
+        firstIssueBySlug.set(slug, row);
+      }
       errorCount += 1;
     }
   }

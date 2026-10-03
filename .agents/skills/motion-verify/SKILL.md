@@ -20,6 +20,10 @@ proof for temporal output, not an optional craft review.
   report the proof as deferred.
 - Resolve available `ffmpeg` and `ffprobe` executables; the Homebrew path is
   an example, not a requirement. Report missing instrumentation before recording.
+- Inspect native motion at **60 fps minimum**. Verify the source recording's
+  frame rate and timestamps before extraction. A 30 fps recording resampled to
+  60 fps duplicates frames and cannot establish 60 fps smoothness; re-record it.
+  A 120 fps source may also be inspected at its native rate for a 120 Hz claim.
 - Put recordings and frames in an external session scratch directory.
 - Capture the same app/window/state through the computer-use capability so the accessibility
   owner and screenshot bind the recording to the reviewed surface.
@@ -40,9 +44,16 @@ guide itself is under test.
 cd <scratch-directory>
 screencapture -v -V 4 motion.mov
 mkdir -p vidframes
-ffmpeg -y -loglevel error -i motion.mov -vf fps=30 vidframes/f%03d.png
-ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 motion.mov
+ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,avg_frame_rate,nb_frames,duration -of json motion.mov
+ffprobe -v error -select_streams v:0 -show_entries frame=best_effort_timestamp_time -of csv=p=0 motion.mov > frame-times.csv
+ffmpeg -y -loglevel error -i motion.mov -vf fps=60 vidframes/f%04d.png
 ```
+
+Keep the original timestamps alongside the extracted frames. Check source-frame
+gaps against the 16.67 ms cadence as well as pixel changes: constant-rate
+extraction can hide a delayed source frame by repeating it. Report duplicates,
+consecutive frozen-frame runs, and their duration in milliseconds within the
+active motion interval. Exclude only observed intentional holds or rest states.
 
 ## 3. Find the crop carefully
 
@@ -60,8 +71,8 @@ Sample six frames 166ms apart and inspect them visually:
 from PIL import Image
 box = (x0, y0, x1, y1)
 strip = Image.new("RGB", (320 * 6, 320))
-for k, i in enumerate([1, 6, 11, 16, 21, 26]):
-    frame = Image.open(f"vidframes/f{i:03d}.png").convert("RGB")
+for k, i in enumerate([1, 11, 21, 31, 41, 51]):
+    frame = Image.open(f"vidframes/f{i:04d}.png").convert("RGB")
     strip.paste(frame.crop(box).resize((320, 320)), (k * 320, 0))
 strip.save("phase-strip.png")
 ```

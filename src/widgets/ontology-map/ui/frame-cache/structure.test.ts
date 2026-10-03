@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { indexedPulseEdges, rankedDiscChildren, rankedEgoNeighbors } from "./structure";
+import { domeFamily, indexedPulseEdges, rankedDiscChildren, rankedEgoNeighbors } from "./structure";
 import type { WorldEdge, WorldNode } from "../topology-world";
 
 function world(ids = ["element:a", "capability:b", "element:c"]) {
@@ -17,6 +17,38 @@ function world(ids = ["element:a", "capability:b", "element:c"]) {
 }
 
 describe("map frame structure reuse", () => {
+  it("reuses a focus family across frames while geometry moves and another focus fades", () => {
+    const graph = world();
+    const first = domeFamily(graph, "parent", true);
+    expect([...first.nodes]).toEqual(graph.nodes);
+    graph.nodeById.get("element:a")!.x = 500;
+    domeFamily(graph, "element:a", true);
+    expect(domeFamily(graph, "parent", true)).toBe(first);
+    expect(domeFamily(graph, "parent", false).nodes.size).toBe(0);
+  });
+
+  it("preserves ancestry, one-hop neighbors, cycles, and replacement worlds", () => {
+    const graph = world();
+    graph.nodeById.get("element:a")!.parentId = "capability:b";
+    graph.nodeById.get("capability:b")!.parentId = "element:a";
+    graph.childrenByParent.set("element:a", ["capability:b"]);
+    graph.childrenByParent.set("capability:b", ["element:a", "element:c"]);
+    const family = domeFamily(graph, "element:a", true);
+    expect([...family.nodes]).toEqual(["capability:b", "element:c"]);
+    expect([...family.edges]).toEqual(["capability:b\0element:a", "element:a\0capability:b", "capability:b\0element:c"]);
+    expect(family.neighbors.has("element:a")).toBe(false);
+    expect(domeFamily(graph, "element:c", false).neighbors).toEqual(new Set(["element:a", "capability:b"]));
+    expect(domeFamily(world(), "element:a", true).nodes.size).toBe(0);
+  });
+
+  it("bounds retained families when many nodes are selected", () => {
+    const graph = world();
+    const first = domeFamily(graph, "parent", true);
+    domeFamily(graph, "element:a", true);
+    domeFamily(graph, "element:c", true);
+    expect(domeFamily(graph, "parent", true)).not.toBe(first);
+  });
+
   it("preserves directed duplicate-pair lookup and reads the live edge geometry", () => {
     const graph = world();
     const index = indexedPulseEdges(graph);

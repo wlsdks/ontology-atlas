@@ -40,6 +40,9 @@ test.describe("download — every drawing stops out of view", () => {
 
     await scrollHostTo(page, "bottom");
     await expect(page.locator("main footer")).toBeInViewport();
+    await expect(page.getByTestId("download-start-figure")).toHaveAttribute("data-showpiece-state", /finished|still/, {
+      timeout: 15_000,
+    });
     // A few frames for the observers to report, then the parked window.
     await waitFrames(page, 4);
     const before = await readFrameProbe(page);

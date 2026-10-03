@@ -21,7 +21,7 @@ import {
  * that already has the map's. The maths is in the expressive module; this file owns the
  * frame, the device pixel ratio, the ink and the sleep.
  *
- * ## The three things that keep a background from becoming a nuisance
+ * ## The things that keep a background from becoming a nuisance
  *
  * - **It sleeps.** `ambientSleepFactor` is the map's own contract: full speed until 30s
  *   after the last input, then a 2s deceleration to a complete stop. A pane left open
@@ -31,18 +31,15 @@ import {
  * - **It never reaches the type.** The host fades it at the pane's rim and the copy has
  *   its own ground; the ink here is quaternary at a fraction of full alpha, which is
  *   under every contrast floor precisely because it is carrying no fact.
- * - **It stops when nobody can see it.** `paused` is set while the Library's graph stands
- *   over this pane. A field painting behind a full-viewport dialog is the "do not compute
- *   data for a surface that is not rendered" rule pointed the other way, and
- *   `library-graph-alive.spec.ts` measures exactly that: it counts every animation frame
- *   the page asks for once the graph has settled, and expects **zero**. A background is
- *   not an exception to that; it is a thing that should have stopped.
+ * - **It stops when covered.** `paused` releases the loop while a dialog covers the pane.
+ * - **It parks outside the viewport.** Returning resumes the same field with a fresh
+ *   clock, so time spent off-screen cannot jump its points forward.
  */
 export function LibrarySynapseField({
   paused = false,
   className,
 }: {
-  /** True while something covers this pane — the graph overlay, today. */
+  /** True while a dialog covers this pane. */
   paused?: boolean;
   className?: string;
 }) {
@@ -139,35 +136,58 @@ export function LibrarySynapseField({
     // One still frame is all a covered or reduced-motion pane gets: the field is drawn so
     // it is there when the cover lifts, and no loop is registered at all.
     if (reducedMotion || paused) return () => observer.disconnect();
+    if (typeof IntersectionObserver === "undefined") return () => observer.disconnect();
 
-    let raf = 0;
+    let raf: number | null = null;
+    let inViewport = false;
     let previous = performance.now();
-    let lastInput = performance.now();
-    const onInput = (): void => {
-      lastInput = performance.now();
-    };
-    const loop = (now: number): void => {
-      raf = requestAnimationFrame(loop);
+    let lastInput = previous;
+    function loop(now: number): void {
+      raf = null;
+      if (document.hidden || !inViewport) return;
+      const factor = ambientSleepFactor(now, lastInput);
+      if (isAmbientAsleep(factor)) return;
       const dt = now - previous;
       previous = now;
-      const factor = ambientSleepFactor(now, lastInput);
-      // Asleep: rAF keeps ticking so any input wakes it on the very next frame, but the
-      // field is neither stepped nor repainted. The map's own conservative rule.
-      if (isAmbientAsleep(factor)) return;
       stepSynapseField(nodes, dt * factor, width, height);
       draw();
+      raf = requestAnimationFrame(loop);
+    }
+    const onInput = (): void => {
+      lastInput = performance.now();
+      if (raf !== null || document.hidden || !inViewport) return;
+      previous = lastInput;
+      raf = requestAnimationFrame(loop);
     };
+    const park = (): void => {
+      if (raf !== null) cancelAnimationFrame(raf);
+      raf = null;
+    };
+    const onVisibility = (): void => {
+      if (!document.hidden) { onInput(); return; }
+      park();
+    };
+    const viewport = new IntersectionObserver((entries) => {
+      const entry = entries.at(-1);
+      if (!entry) return;
+      inViewport = entry.isIntersecting;
+      if (inViewport) onInput();
+      else park();
+    });
+    viewport.observe(canvas);
     window.addEventListener("pointermove", onInput, { passive: true });
     window.addEventListener("keydown", onInput, { passive: true });
     window.addEventListener("wheel", onInput, { passive: true });
-    raf = requestAnimationFrame(loop);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      cancelAnimationFrame(raf);
+      park();
+      viewport.disconnect();
       observer.disconnect();
       window.removeEventListener("pointermove", onInput);
       window.removeEventListener("keydown", onInput);
       window.removeEventListener("wheel", onInput);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [reducedMotion, paused]);
 

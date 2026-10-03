@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const chat = vi.hoisted(() => ({ props: vi.fn() }));
@@ -55,6 +55,18 @@ afterEach(() => {
 });
 
 describe('InsightsAgentDock', () => {
+  it('puts the conversation away after exit and reopens the same draft owner', () => {
+    vi.useFakeTimers();
+    const view = render(<InsightsAgentDock open {...baseProps} />);
+    const node = screen.getByTestId('mock-acp-chat');
+    view.rerender(<InsightsAgentDock open={false} {...baseProps} />);
+    act(() => vi.runOnlyPendingTimers());
+    expect(screen.getByTestId('mock-acp-chat')).toBe(node);
+    expect(screen.getByTestId('insights-agent-dock-frame')).toHaveAttribute('inert');
+    expect(node).toHaveAttribute('data-session-enabled', 'false');
+    view.rerender(<InsightsAgentDock open {...baseProps} />);
+    expect(screen.getByTestId('mock-acp-chat')).toBe(node);
+  });
   it('starts with reduced motion even when no width transition event fires', async () => {
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
       matches: query.includes('reduced-motion') || query.includes('min-width'),

@@ -7,28 +7,14 @@ import {
   useMapArrangement,
   useTerritories,
   useView3d,
-  writeGalaxy,
-  writeHexBoard,
-  writeMapArrangement,
-  writeTerritories,
-  writeView3d,
+  writeMapView,
 } from '@/shared/lib/appearance-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 
 /** Writes all the flags as the view picker does. */
 export function applyMapView(view: HomeMapView | null): void {
-  writeTerritories(view === 'territories');
-  writeHexBoard(view === 'hex');
-  if (view === null || view === 'territories' || view === 'galaxy' || view === 'hex') {
-    writeGalaxy(view === 'galaxy');
-    writeView3d(false);
-    return;
-  }
-  // The picker's own order, so the dome assembles once.
-  writeGalaxy(false);
-  writeMapArrangement(view);
-  writeView3d(true);
+  writeMapView(view ?? 'flat');
 }
 
 /**

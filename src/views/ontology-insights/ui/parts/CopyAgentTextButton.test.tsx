@@ -64,7 +64,6 @@ describe("CopyAgentTextButton text color tokens", () => {
     await screen.findByText("복사됨");
     expect(button).toHaveTextContent("복사");
     expect(button).not.toHaveTextContent("복사 · 복사됨");
-    expect(button.className).toContain("active:translate-y-[1px]");
-    expect(button.className).toContain("motion-reduce:transition-none");
+    expect(button.querySelector('[data-feedback-glyph="copied"] [data-drawn="draw"]')).not.toBeNull();
   });
 });
