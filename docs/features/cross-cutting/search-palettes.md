@@ -11,7 +11,7 @@ routes: []
 ### Search palettes (separate by design)
 - **`⌘K` `SearchPalette`** — a project page's own palette: projects ranked on the shared `rankProjectMatches` ladder (the global palette's) + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
 - **`⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized). The map mounts its own (a pick selects on the canvas); every other screen with the rail gets the shell's (`ShellKeyboardSurfaces`, 2026-09-26), mounted on the first ⌘K. Only the map's mount (`onMap`) calls itself "Search this map"; elsewhere the dialog is named for what it searches ("Search concepts"; a project is one), and its empty state and footer name the loaded project, or "this folder" when there are several. Shift is accepted and changes nothing, so the shortcut sheet lists ⌘K once. The ontology documents workspace keeps ⌘K for its unified palette.
-- Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
+- Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close. A project palette accepts these keys from its first visible mount, including Escape during its opening motion.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the

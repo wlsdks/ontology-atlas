@@ -6,6 +6,23 @@ vi.mock('@/shared/lib/tauri-secrets', () => ({ isSecretBridgeAvailable: () => fa
 vi.mock('@/shared/lib/tauri-jev', () => ({ jevSecretStatus: vi.fn() }));
 
 describe('audit loading lifecycle', () => {
+  it('reads a different same-name folder and exposes failure without inventing zero', async () => {
+    const folder = (provider: string, fail = false) => ({ name: 'same', getDirectoryHandle: async () => ({ getFileHandle: async () => ({ getFile: async () => ({ text: async () => {
+      if (fail) throw new Error('read denied');
+      return JSON.stringify({ v: 1, at: 'now', provider });
+    } }) }) }) }) as unknown as FileSystemDirectoryHandle;
+    const { result, rerender } = renderHook(({ vaultHandle }) => useAiConnection({ enabled: true, vaultHandle }), { initialProps: { vaultHandle: folder('first') } });
+    await waitFor(() => expect(result.current.auditEntries[0]?.provider).toBe('first'));
+    rerender({ vaultHandle: folder('second') });
+    await waitFor(() => expect(result.current.auditEntries[0]?.provider).toBe('second'));
+    const failing = folder('third', true);
+    rerender({ vaultHandle: failing });
+    await waitFor(() => expect(result.current.auditError).toBe('failed'));
+    expect(result.current.auditTotal).toBeNull(); expect(result.current.auditEntries).toEqual([]);
+    rerender({ vaultHandle: folder('recovered') });
+    await waitFor(() => expect(result.current.auditEntries[0]?.provider).toBe('recovered'));
+    expect(result.current.auditError).toBeNull();
+  });
   it('releases a superseded reader and shows only the completed current count', async () => {
     const cancel = vi.fn();
     const stream = vi.fn()

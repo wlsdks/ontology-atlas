@@ -301,7 +301,7 @@ export function ModelConnectionsPanel({
         />
       </ModelGroup>
 
-      <AuditSection entries={auditEntries} total={auditTotal} vaultRootPath={vaultRootPath} />
+      <AuditSection entries={auditEntries} total={auditTotal} vaultRootPath={vaultRootPath} error={connection.auditError} retry={connection.refreshAudit} />
 
       <p className="sr-only" aria-live="polite" data-testid="models-announcer">
         {announcement}
@@ -1303,13 +1303,17 @@ function AuditSection({
   entries,
   total,
   vaultRootPath,
+  error,
+  retry,
 }: {
   entries: LlmAuditEntry[];
   total: number | null;
   vaultRootPath: string | null;
+  error?: 'changed' | 'expired' | 'failed' | null;
+  retry: () => void;
 }) {
   const t = useTranslations('agents.models');
-  const hasLog = Boolean(vaultRootPath) && total !== null && total > 0;
+  const hasLog = !error && Boolean(vaultRootPath) && total !== null && total > 0;
   return (
     <section
       aria-label={t('auditTitle')}
@@ -1323,6 +1327,13 @@ function AuditSection({
           <p className="text-body text-[color:var(--color-text-tertiary)]" data-testid="ai-audit-no-vault">
             {t('auditNoVault')}
           </p>
+        ) : error ? (
+          <div className="flex min-w-0 items-center gap-2" data-testid="ai-audit-error">
+            <p className="text-body text-[color:var(--color-text-secondary)]" role="status">
+              {t(error === 'changed' ? 'auditChanged' : error === 'expired' ? 'auditReadExpired' : 'auditReadFailed')}
+            </p>
+            <Chip size="lg" tone="secondary" onClick={retry} data-testid="ai-audit-retry">{t('auditRetry')}</Chip>
+          </div>
         ) : total === null ? (
           // Not read yet: hold the line's height and say nothing rather than a false zero.
           <p aria-hidden className="min-h-[var(--leading-body)]" data-testid="ai-audit-reading" />

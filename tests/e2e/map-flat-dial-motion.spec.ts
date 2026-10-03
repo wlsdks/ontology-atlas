@@ -527,3 +527,26 @@ test("zoom ramps are functions of camera scale, whatever the path to it", async 
   expect.soft(round.cap, "capability alpha").toBeCloseTo(direct.cap, 3);
   expect.soft(round.elements, "element alpha").toBeCloseTo(direct.elements, 3);
 });
+
+test('a user camera move while reading survives first placement', async ({page}) => {
+  const files = streamedVault(false);
+  await installSampler(page, {probe:true});
+  await openStreamed(page, files, [...capabilityFiles(files), ...lateElements(files)]);
+  await expect.poll(() => page.evaluate(() => !!window.__atlasMap?.camera())).toBe(true);
+  await waitForMapStill(page, {what:'camera'});
+  await page.mouse.move(950, 300);
+  await page.mouse.down();
+  await page.mouse.move(1120, 360, {steps:8});
+  await page.mouse.up();
+  await waitForMapStill(page, {what:'camera'});
+  const before = await page.evaluate(() => window.__atlasMap?.camera());
+  await release(page);
+  await waitForDial(page);
+  const after = await page.evaluate(() => window.__atlasMap?.camera());
+  expect(before).toBeTruthy();
+  expect(after).toBeTruthy();
+  expect({ scale: after!.scale, width: after!.width, height: after!.height })
+    .toEqual({ scale: before!.scale, width: before!.width, height: before!.height });
+  expect(Math.hypot(after!.x - before!.x, after!.y - before!.y) * before!.scale)
+    .toBeLessThanOrEqual(TOLERANCE_PX);
+});
