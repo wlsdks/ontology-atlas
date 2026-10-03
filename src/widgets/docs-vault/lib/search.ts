@@ -1,6 +1,6 @@
 import type { VaultDoc } from '@/entities/docs-vault';
 import { buildPhraseMatcher } from '@/shared/lib/highlight-match';
-import type { DocsBodyIndex } from './body-index';
+import type { DocsBodyEntry, DocsBodyIndex } from './body-index';
 import { readDisplayLocales } from '@/shared/lib/locale-display-name';
 
 /** A body hit snippet — {@link BODY_SNIPPET_CONTEXT} characters of context on each
@@ -65,12 +65,59 @@ function bodyPhraseScore(idx: number): number {
   return 10 + Math.max(0, 6 - idx / 10000);
 }
 
+interface RankedDoc {
+  doc: VaultDoc;
+  score: number;
+  order: number;
+  titleIdx: number;
+  excerptIdx: number;
+  body: DocsBodyEntry | undefined;
+  bodyIdx: number;
+  bodyMatchLength: number;
+}
+
+function isWorse(a: RankedDoc, b: RankedDoc): boolean {
+  return a.score < b.score || (a.score === b.score && a.order > b.order);
+}
+
+function retain(heap: RankedDoc[], entry: RankedDoc, limit: number): void {
+  if (heap.length < limit) {
+    heap.push(entry);
+    let index = heap.length - 1;
+    while (index > 0) {
+      const parent = (index - 1) >>> 1;
+      if (!isWorse(heap[index], heap[parent])) break;
+      [heap[index], heap[parent]] = [heap[parent], heap[index]];
+      index = parent;
+    }
+    return;
+  }
+  heap[0] = entry;
+  let index = 0;
+  while (index * 2 + 1 < heap.length) {
+    let child = index * 2 + 1;
+    if (child + 1 < heap.length && isWorse(heap[child + 1], heap[child])) child += 1;
+    if (!isWorse(heap[child], heap[index])) break;
+    [heap[index], heap[child]] = [heap[child], heap[index]];
+    index = child;
+  }
+}
+
+function matchFor(
+  doc: VaultDoc, score: number, titleIdx: number, excerptIdx: number,
+  body: DocsBodyEntry | undefined, bodyIdx: number, bodyMatchLength: number, needleLength: number,
+): DocsSearchMatch {
+  return {
+    doc, score,
+    titleHit: titleIdx !== -1 ? { start: titleIdx, end: titleIdx + needleLength } : null,
+    excerptHit: excerptIdx !== -1 ? { start: excerptIdx, end: excerptIdx + needleLength } : null,
+    bodyHit: bodyIdx !== -1 && body !== undefined ? extractBodySnippet(body.raw, bodyIdx, bodyMatchLength) : null,
+  };
+}
+
 /**
- * Client-side full-text search with whitespace-separated AND tokens. Tiers: title 100 minus index
- * (min 20), slug 25, excerpt 20 minus min(index, 18), tag 15 each, body exact phrase 10-16,
- * scattered body about 1. The body tier is a linear indexOf scan over the pre-lowercased index
- * (`body-index.ts`), and phrase detection shares `buildPhraseMatcher` with the viewer so every
- * match can be marked and scrolled to.
+ * AND-token search. Tiers: title 20-100, slug 25, excerpt 2-20, tag 15, body phrase 10-16,
+ * scattered body about 1. Body text is pre-lowercased; phrase matching shares the viewer's matcher.
  */
 export function searchDocs(
   query: string,
@@ -83,7 +130,12 @@ export function searchDocs(
   const tokens = q.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return [];
   const out: DocsSearchMatch[] = [];
+  const bounded = Boolean(bodyIndex?.size) && Number.isInteger(maxResults) && maxResults > 0 && maxResults < docs.length;
+  const heap: RankedDoc[] = [];
+  let phraseRe: RegExp | null | undefined;
+  let order = 0;
   for (const doc of docs) {
+    const docOrder = order++;
     const titleLc = doc.title.toLowerCase();
     const excerptLc = doc.excerpt.toLowerCase();
     const slugLc = doc.slug.toLowerCase();
@@ -116,7 +168,7 @@ export function searchDocs(
     let bodyPhraseMatched = false;
     if (body !== undefined) {
       if (tokens.length > 1) {
-        const phraseRe = buildPhraseMatcher(q, 'i');
+        if (phraseRe === undefined) phraseRe = buildPhraseMatcher(q, 'i');
         const phraseMatch = phraseRe?.exec(body.raw) ?? null;
         if (phraseMatch) {
           bodyIdx = phraseMatch.index;
@@ -140,22 +192,18 @@ export function searchDocs(
         ? bodyPhraseScore(bodyIdx)
         : bodyTierScore(bodyIdx);
     }
-    out.push({
-      doc,
-      score,
-      titleHit:
-        titleIdx !== -1
-          ? { start: titleIdx, end: titleIdx + needle.length }
-          : null,
-      excerptHit:
-        excerptIdx !== -1
-          ? { start: excerptIdx, end: excerptIdx + needle.length }
-          : null,
-      bodyHit:
-        bodyIdx !== -1 && body !== undefined
-          ? extractBodySnippet(body.raw, bodyIdx, bodyMatchLength)
-          : null,
-    });
+    if (bounded) {
+      // Later ties cannot displace an earlier result. Build snippets only after the top prefix is known.
+      if (heap.length === maxResults && score <= heap[0].score) continue;
+      retain(heap, { doc, score, order: docOrder, titleIdx, excerptIdx, body, bodyIdx, bodyMatchLength }, maxResults);
+    } else {
+      out.push(matchFor(doc, score, titleIdx, excerptIdx, body, bodyIdx, bodyMatchLength, needle.length));
+    }
+  }
+  if (bounded) {
+    return heap.sort((a, b) => b.score - a.score || a.order - b.order)
+      .map(entry => matchFor(entry.doc, entry.score, entry.titleIdx, entry.excerptIdx,
+        entry.body, entry.bodyIdx, entry.bodyMatchLength, tokens[0].length));
   }
   out.sort((a, b) => b.score - a.score);
   return out.slice(0, maxResults);
