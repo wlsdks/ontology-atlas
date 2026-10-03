@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitFrames } from "./settle";
 import { installFrameProbe, readFrameProbe, scrollHostTo } from "./download-frame-probe";
 
 /**
@@ -37,16 +38,19 @@ async function showFigureShare(page: Page, ratio: number): Promise<void> {
 test.describe("download — every drawing stops out of view", () => {
   test("parked at the colophon, nothing draws, nothing animates and the loop has no client", async ({ page }) => {
     await open(page);
-    // Let the hero's field start (it waits a second) so there is a loop to stop.
-    await page.waitForTimeout(1500);
-    const live = await readFrameProbe(page);
-    expect(live.field, "the field drew nothing in view — this spec would pass idle").toBeGreaterThan(1);
+    // The hero's field starts after a second; there must be a loop to stop.
+    await expect
+      .poll(async () => (await readFrameProbe(page)).field, {
+        message: "the field drew nothing in view — this spec would pass idle",
+      })
+      .toBeGreaterThan(1);
 
     await scrollHostTo(page, "bottom");
     await expect(page.locator("main footer")).toBeInViewport();
-    // One frame for the observers to report, then the parked window.
-    await page.waitForTimeout(300);
+    // A few frames for the observers to report, then the parked window.
+    await waitFrames(page, 4);
     const before = await readFrameProbe(page);
+    // measurement window: AC-3 parks the page for 2 s and counts what draws in it.
     await page.waitForTimeout(2000);
     const after = await readFrameProbe(page);
 
@@ -70,9 +74,11 @@ test.describe("download — every drawing stops out of view", () => {
         ) ?? document.scrollingElement!;
       host.scrollTop = 0;
     });
-    await page.waitForTimeout(500);
-    const back = await readFrameProbe(page);
-    expect(back.field - after.field, "the field did not resume when the hero returned").toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await readFrameProbe(page)).field - after.field, {
+        message: "the field did not resume when the hero returned",
+      })
+      .toBeGreaterThan(0);
   });
 
   test("the conduction figure pauses at 19% visible and runs at 25%", async ({ page }) => {

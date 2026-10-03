@@ -93,6 +93,7 @@ async function wheelTo(page: Page, stop: (top: number) => boolean): Promise<void
     const { top, max } = await scrollState(page);
     if (top >= max - 1 || stop(top)) return;
     await page.mouse.wheel(0, WHEEL_PX);
+    // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
     await page.waitForTimeout(WHEEL_MS);
   }
 }
@@ -104,6 +105,7 @@ async function openPage(page: Page, viewport: { width: number; height: number })
   await expect(page.getByTestId("gateway-hero")).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   // The headline types for a few seconds; the budget is for the scroll, not the arrival.
+  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
   await page.waitForTimeout(3000);
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
 }
@@ -112,6 +114,7 @@ async function brisk(page: Page, viewport: { width: number; height: number }): P
   await openPage(page, viewport);
   await arm(page);
   await wheelTo(page, () => false);
+  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
   await page.waitForTimeout(300);
   return disarm(page);
 }
@@ -120,6 +123,7 @@ async function brisk(page: Page, viewport: { width: number; height: number }): P
 async function parked(page: Page, viewport: { width: number; height: number }): Promise<Leg> {
   await openPage(page, viewport);
   await arm(page);
+  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
   await page.waitForTimeout(2000);
   const figureTop = await page.evaluate(() => {
     const host =
@@ -144,8 +148,10 @@ async function parked(page: Page, viewport: { width: number; height: number }): 
   });
   await wheelTo(page, (top) => top >= demoTop);
   // The demo plays on its own clock; parking a few seconds covers its playback cost.
+  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
   await page.waitForTimeout(4000);
   await wheelTo(page, () => false);
+  // measurement window: the scroll budget is sampled over real time, so this pause is part of the leg.
   await page.waitForTimeout(1000);
   return disarm(page);
 }

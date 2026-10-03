@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitFrames } from "./settle";
 import { installFrameProbe, readFrameProbe, scrollHostTo } from "./download-frame-probe";
 
 /**
@@ -21,7 +22,7 @@ test.describe("download — still", () => {
     const height = await page.evaluate(() => document.querySelector("main")!.scrollHeight);
     for (let top = 0; top <= height; top += 600) {
       await scrollHostTo(page, top);
-      await page.waitForTimeout(120);
+      await waitFrames(page, 3);
       animationsSeen.push(
         ...(await page.evaluate(() =>
           document.getAnimations().map((animation) => (animation as CSSAnimation).animationName || "script"),
@@ -29,7 +30,7 @@ test.describe("download — still", () => {
       );
     }
     await scrollHostTo(page, "bottom");
-    await page.waitForTimeout(300);
+    await waitFrames(page, 3);
     expect(animationsSeen, "an animation exists under reduced motion").toEqual([]);
 
     const probe = await readFrameProbe(page);
