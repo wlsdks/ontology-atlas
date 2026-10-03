@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
@@ -30,7 +31,8 @@ import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type Topol
 import type { FlatRingMemoryStore } from "./topology-loop-contract";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
-import type { DialLabels, DialWorldInput } from "../dial/types";
+import { capabilityTierRead, createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
+import type { DialLabels, DialMemory, DialWorldInput } from "../dial/types";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
@@ -82,11 +84,12 @@ interface Dependencies {
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
   dialLabels: DialLabels | null;
   flatRingMemory: FlatRingMemoryStore | null;
+  loadProgress: { read: number; total: number } | null;
 }
 
-function dialWorldInput(labels: DialLabels | null, memory: FlatRingMemoryStore | null): DialWorldInput | null {
+function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
   try {
-    return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory: memory?.current() ?? null };
+    return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
   } catch {
     return null;
   }
@@ -143,11 +146,15 @@ export function useTopologyWorldLifecycle({
   pendingFlatCameraRef,
   dialLabels,
   flatRingMemory,
+  loadProgress,
 }: Dependencies) {
   const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
   const arrivalStillRef = useRef(false);
   const arrivalGlideRef = useRef(false);
+  const [dialPlacement] = useState(createDialPlacement);
+  const placementStateRef = useRef<DialPlacementState>("settled");
+  const provisionalMemoryRef = useRef<DialMemory | null>(null);
 
   /**
    * Safety net: if a resize or a monitor change leaves **no node on screen at
@@ -267,8 +274,20 @@ export function useTopologyWorldLifecycle({
     // input to the world build and appears in the dep array below: changing the
     // preference rebuilds the world and children move to the new placement.
     const ringMemory = dataSourceKey === null ? null : flatRingMemory;
-    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, ringMemory));
-    if (world.dial) ringMemory?.write(world.dial.scene.memory);
+    const stored = ringMemory?.current() ?? null;
+    let placed = { state: "settled" as DialPlacementState, held: 0 };
+    const placeDial = (model: Parameters<typeof dialPlacement.next>[0]["model"]) => {
+      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: capabilityTierRead(nodes.map((n) => n.id)), memory: stored });
+      placed = { state: step.state, held: step.held };
+      return step.model;
+    };
+    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    placementStateRef.current = placed.state;
+    if (world.dial) {
+      setDialPlacement(world.dial, { ...placed, progress: loadProgress });
+      if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
+      provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
+    }
     const galaxyLayout = computeGalaxyLayout(
       world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
       {
@@ -393,11 +412,17 @@ export function useTopologyWorldLifecycle({
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure, dialLabels]);
+  }, [nodes, edges, expand.structure, dialLabels, arriving]);
+  useEffect(() => {
+    const dial = worldRef.current?.dial;
+    if (!dial || placementStateRef.current === "settled") return;
+    setDialPlacement(dial, { ...dialPlacementOf(dial), progress: loadProgress });
+    lastActiveMsRef.current = performance.now();
+  }, [loadProgress, worldRef, lastActiveMsRef]);
   useEffect(() => {
     if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
     const dial = dataSourceKey === null ? null : worldRef.current?.dial;
-    if (dial) flatRingMemory?.write(dial.scene.memory);
+    if (dial && placementStateRef.current === "settled") flatRingMemory?.write(dial.scene.memory);
   }, [dataSourceKey, flatRingMemory, worldRef]);
 
   useEffect(() => {

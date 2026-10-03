@@ -1,0 +1,4 @@
+{
+  "reading": "파일 {total, number}개 중 {read, number}개 읽는 중",
+  "settling": "모든 파일을 읽으면 고리가 자리를 잡습니다"
+}

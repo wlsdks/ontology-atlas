@@ -3,7 +3,9 @@ import { easeOutCubic } from "../../model/camera-easing";
 import { dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { resolveDialDisclosure, smoothstep, type DialDisclosure } from "./disclosure";
 import { createMeasureText } from "../fit";
-import { resolveDialInks, type DialInks } from "../ink";
+import { inkIndex, resolveDialInks, type DialInks } from "../ink";
+import { dialPlacementLine, dialPlacementOf } from "../placement";
+import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
 import { buildDialMarks, emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "./marks";
 import { paintDialMarks } from "./paint";
 import type {
@@ -125,6 +127,7 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, disclosure,
   }, pool);
+  pushPlacementLine(input, inksOf(input));
   paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
 
   const labelBoxes: DialFrameResult["labelBoxes"] = [];
@@ -136,6 +139,27 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   };
   last = { input, result, marks: pool, built, disclosure };
   return result;
+}
+
+const LINE_GAP_PX = 6;
+
+function pushPlacementLine(input: DialFrameInput, inks: DialInks): void {
+  const view = dialPlacementOf(input.dial);
+  const text = dialPlacementLine(view.state, view.progress, input.labels);
+  const projectId = input.dial.model.projectId;
+  if (text === null || projectId === null) return;
+  const hub = input.nodeScreen(projectId) ?? input.toScreen(0, 0);
+  let top = hub.y;
+  for (const glyph of pool.glyphs) if (glyph.id === projectId) top = Math.max(top, glyph.y + glyph.r);
+  for (const t of pool.texts) if (t.role === "project") top = Math.max(top, t.box.maxY);
+  const font = scaledLabelFont("element", input.dialTokens.labelScale);
+  const size = scaledLabelFontSize("element", input.dialTokens.labelScale);
+  const width = measureText(text, font);
+  const y = top + LINE_GAP_PX + size / 2;
+  pool.texts.push({
+    id: null, role: "units", text, x: hub.x, y, align: "center", font, ink: inkIndex(pool, inks.units),
+    box: { minX: hub.x - width / 2, maxX: hub.x + width / 2, minY: y - size / 2, maxY: y + size / 2 }, parts: null,
+  });
 }
 
 export function lastDialFrame(): DialFrameResult | null {
@@ -301,7 +325,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
     disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, enteredDomain: disclosure.entered, resolved: disclosure.resolved },
     budget: built.flows.budget,
     stubs: built.flows.stubs,
-    placement: { state: "settled", held: 0 },
+    placement: { state: dialPlacementOf(input.dial).state, held: dialPlacementOf(input.dial).held },
     texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
     numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
     discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r })),

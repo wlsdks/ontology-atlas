@@ -28,6 +28,7 @@ import {
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useVaultLoadProgress } from "@/entities/vault-session";
 import { flatRingMemorySlot } from "../model/flat-ring-memory-store";
 import { useCosmosPlacement } from "../model/use-cosmos-placement";
 import { readHexRelief } from "@/shared/lib/appearance-preferences";
@@ -128,6 +129,7 @@ export function TopologyMapRenderer({
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const arrivingDocuments = vault.partialTotal;
   const arriving = arrivingDocuments > 0;
+  const loadProgress = useVaultLoadProgress();
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -275,6 +277,7 @@ export function TopologyMapRenderer({
             nodes={nodes}
             edges={edges}
             flatRingMemory={flatRingMemory}
+            loadProgress={arriving ? loadProgress : null}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
