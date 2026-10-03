@@ -20,7 +20,6 @@ import {
   dialLightFrame,
   dialOwnsFlatPaint,
   focusInkMix,
-  markFocusPainted,
   lastDialFrame,
   namesCrossed,
   paintDialFrame,
@@ -127,23 +126,13 @@ describe("focus clock", () => {
   const rest = resolveDialAttention(model, null, null);
   const onD1 = resolveDialAttention(model, "d1", null);
 
-  it("mixes inks from 0 at the first painted frame to 1 at 120 ms on easeOutCubic", () => {
+  it("mixes inks from 0 at the change to 1 at 120 ms on easeOutCubic", () => {
     const key = {};
     expect(focusInkMix(key, rest, 0, false).inkMix).toBe(1);
     expect(focusInkMix(key, onD1, 1000, false).inkMix).toBe(0);
-    markFocusPainted(key, 1000);
     expect(focusInkMix(key, onD1, 1060, false).inkMix).toBeCloseTo(easeOutCubic(0.5));
     expect(focusInkMix(key, onD1, 1120, false).inkMix).toBe(1);
     expect(focusInkMix(key, onD1, 1400, false).inkMix).toBe(1);
-  });
-
-  it("counts from when the first focused frame finished painting, so a long first frame skips nothing", () => {
-    const key = {};
-    focusInkMix(key, rest, 0, false);
-    expect(focusInkMix(key, onD1, 1006, false).inkMix).toBe(0);
-    markFocusPainted(key, 1057);
-    markFocusPainted(key, 1090);
-    expect(focusInkMix(key, onD1, 1073, false).inkMix).toBeCloseTo(easeOutCubic(16 / 120));
   });
 
   it("is 1 at once under reduced motion", () => {
@@ -157,7 +146,6 @@ describe("focus clock", () => {
     focusInkMix(key, onD1, 0, false);
     const onD2 = resolveDialAttention(model, "d2", null);
     expect(focusInkMix(key, onD2, 500, false).previous?.key).toBe(onD1.key);
-    markFocusPainted(key, 500);
     expect(focusInkMix(key, onD2, 560, false).previous?.key).toBe(onD1.key);
     expect(focusInkMix(key, onD2, 700, false).previous).toBeNull();
   });

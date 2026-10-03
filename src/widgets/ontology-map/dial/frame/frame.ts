@@ -55,17 +55,11 @@ export function focusInkMix(worldKey: object, attention: DialAttention, now: num
   } else if (clock.key !== attention.key) {
     clock.previous = clock.current;
     clock.key = attention.key;
-    clock.changedAt = Number.NaN;
+    clock.changedAt = now;
   }
   clock.current = attention;
-  const since = Number.isNaN(clock.changedAt) ? 0 : now - clock.changedAt;
-  const inkMix = reducedMotion ? 1 : easeOutCubic(Math.min(1, Math.max(0, since / FOCUS_MS)));
+  const inkMix = reducedMotion ? 1 : easeOutCubic(Math.min(1, Math.max(0, (now - clock.changedAt) / FOCUS_MS)));
   return { inkMix, previous: inkMix >= 1 ? null : clock.previous };
-}
-
-export function markFocusPainted(worldKey: object, at: number): void {
-  const clock = clocks.get(worldKey);
-  if (clock && Number.isNaN(clock.changedAt)) clock.changedAt = at;
 }
 
 export function dialChordPresence(tokens: Pick<DialTokens, "chordArrival">, domainAppear: number): number {
@@ -136,7 +130,6 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   }, pool);
   pushPlacementLine(input, inksOf(input));
   paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
-  markFocusPainted(input.worldKey, performance.now());
 
   const labelBoxes: DialFrameResult["labelBoxes"] = [];
   for (const t of pool.texts) if (t.id !== null && LABELLED_ROLES.has(t.role)) labelBoxes.push({ nodeId: t.id, text: t.text, ...t.box });
