@@ -34,7 +34,7 @@
   "factChangelogValue": "{tag}の変更内容",
   "factSourceLabel": "ソース",
   "factSourceValue": "wlsdks/ontology-atlas",
-  "factShaLink": "The checksum file for {file} on the release page",
+  "factShaLink": "リリースページにある{file}のチェックサムファイル",
   "demoTitle": "エージェントが読むコンテキストを確認",
   "demoSub": "この録画デモでは、概念とその根拠を選び、続けてCodexが同じフォルダ内で宣言済みのパスをたどります。範囲を限った参照を示すもので、変更影響の完全なチェックではありません。",
   "demoPromptLabel": "このテイクでCodexに出した依頼",
@@ -44,10 +44,10 @@
   "screens": {
     "eyebrow": "画面",
     "title": "1つのフォルダを7通りに読む",
-    "sub": "The same Markdown folder opens as seven screens in the app. Press a name to see that screen; Map opens live in this browser.",
+    "sub": "同じMarkdownフォルダが、アプリでは7つの画面として開きます。名前を押すとその画面が見られ、マップはこのブラウザですぐに開けます。",
     "listLabel": "アプリの画面",
-    "mapLink": "Map, opens the live map in this browser",
-    "mapHint": "in the browser",
+    "mapLink": "マップ、このブラウザで動くマップを開く",
+    "mapHint": "ブラウザで",
     "door": "{name}を開く",
     "alt": "Atlasアプリの{name}画面",
     "caption": {

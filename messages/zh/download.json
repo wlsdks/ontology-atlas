@@ -34,7 +34,7 @@
   "factChangelogValue": "{tag} 的变更内容",
   "factSourceLabel": "源码",
   "factSourceValue": "wlsdks/ontology-atlas",
-  "factShaLink": "The checksum file for {file} on the release page",
+  "factShaLink": "发布页面上 {file} 的校验和文件",
   "demoTitle": "查看智能体读取的上下文",
   "demoSub": "这段录制的演示选中一个概念及其依据，然后 Codex 沿同一个文件夹中声明的路径查找。它展示的是有边界的查询，而不是完整的变更影响检查。",
   "demoPromptLabel": "这一次录制中向 Codex 提出的问题",
@@ -44,10 +44,10 @@
   "screens": {
     "eyebrow": "界面",
     "title": "一个文件夹，七种读法",
-    "sub": "The same Markdown folder opens as seven screens in the app. Press a name to see that screen; Map opens live in this browser.",
+    "sub": "同一个 Markdown 文件夹在应用里会打开成七个界面。点一下名称就能看到对应界面，地图可直接在此浏览器中打开。",
     "listLabel": "应用的各个界面",
-    "mapLink": "Map, opens the live map in this browser",
-    "mapHint": "in the browser",
+    "mapLink": "地图，在此浏览器中打开可操作的地图",
+    "mapHint": "在浏览器中",
     "door": "打开 {name}",
     "alt": "Atlas 应用的 {name} 界面",
     "caption": {
