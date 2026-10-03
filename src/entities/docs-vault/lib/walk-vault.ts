@@ -1,3 +1,5 @@
+import { pendingSourceCopyPaths } from "./source-copy-publication";
+
 export interface WalkEntry {
   handle: FileSystemFileHandle;
   /** Path relative to the top-level handle — e.g. 'specs/hello.md'. */
@@ -149,5 +151,7 @@ async function walkInto(
 export async function walkVault(root: FileSystemDirectoryHandle): Promise<WalkResult> {
   const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [], sourceFileCount: 0 };
   await walkInto(root, '', 0, acc, await prefetchListings(root));
+  const pending = await pendingSourceCopyPaths(root);
+  if (pending.size > 0) acc.entries = acc.entries.filter(entry => entry.kind !== 'source' || !pending.has(entry.relativePath));
   return acc;
 }
