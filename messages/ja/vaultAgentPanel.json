@@ -62,7 +62,9 @@
     "createFile": "{path}を作成",
     "modifyFile": "{path}を編集",
     "addRelation": "{from} → {to}（{type}）をつなぐ",
-    "applying": "適用中…"
+    "applying": "適用中…",
+    "partialWrites": "失敗前に保存を確認したファイル：{paths}。",
+    "refreshFailed": "フォルダーを再読み込みできませんでした：{message}。再試行する前に保存されたファイルを確認してください。"
   },
   "notice": {
     "roundCap": "ここまでにして、まとめに入ります。",

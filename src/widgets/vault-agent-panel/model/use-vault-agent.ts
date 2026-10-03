@@ -365,6 +365,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
             appliedSnapshotSha:
               outcome.status === 'applied' ? (outcome.snapshotSha ?? undefined) : undefined,
             applyErrorMessage: outcome.status === 'failed' ? outcome.message : undefined,
+            writtenPaths: outcome.status === 'conflict' ? [] : outcome.writtenPaths,
+            refreshErrorMessage: outcome.status === 'failed' ? outcome.refreshError : undefined,
           }
         : current,
     );

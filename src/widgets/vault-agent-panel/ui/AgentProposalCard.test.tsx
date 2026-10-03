@@ -58,13 +58,15 @@ const labels = {
   snapshotLabel: "스냅샷",
 } as unknown as Parameters<typeof AgentProposalCard>[0]["labels"];
 
-function renderCard(status: AgentProposal["status"]) {
+function renderCard(status: AgentProposal["status"], overrides: Partial<AgentProposal> = {}) {
   const onApply = vi.fn();
   const onCancel = vi.fn();
   render(
     <AgentProposalCard
-      proposal={baseProposal(status)}
-      labels={labels}
+      proposal={{ ...baseProposal(status), ...overrides }}
+      labels={{ ...labels, failed: (message) => message,
+        partialWrites: (paths) => `Confirmed saved files: ${paths}`,
+        refreshFailed: (message) => `Reload failed: ${message}` }}
       canWrite
       vaultIsGit={false}
       expandedByDefault={false}
@@ -116,5 +118,18 @@ describe("AgentProposalCard — 적용 중 잠금", () => {
     expect(screen.queryByTestId("agent-proposal-apply")).not.toBeInTheDocument();
     expect(screen.queryByTestId("agent-proposal-cancel")).not.toBeInTheDocument();
     expect(screen.getByTestId("agent-proposal-outcome")).toBeInTheDocument();
+  });
+
+  it('keeps a partial write failed while naming only confirmed saved files and reload errors', () => {
+    renderCard('failed', {
+      applyErrorMessage: 'disk full', writtenPaths: ['capabilities/x.md'],
+      refreshErrorMessage: 'cannot reload',
+    });
+    const outcome = screen.getByTestId('agent-proposal-outcome');
+    expect(outcome).toHaveTextContent('disk full');
+    expect(outcome).toHaveTextContent('Confirmed saved files: capabilities/x.md');
+    expect(outcome).toHaveTextContent('Reload failed: cannot reload');
+    expect(screen.queryByTestId('agent-proposal-apply')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-proposal-show-on-map')).not.toBeInTheDocument();
   });
 });

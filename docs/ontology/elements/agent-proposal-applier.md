@@ -10,15 +10,22 @@ path: src/features/vault-agent/model/proposal-applier.ts
 created_by: "agent:claude-code"
 ---
 
-The single module that writes a consented proposal to disk, deliberately the only place where the in-app agent's changes can land.
+The shared applier writes the exact document diffs a person approved in the vault agent or local Compile flow and reports confirmed saves when application fails.
 
 ## Includes
-- Applying a proposal only after consent, from one call site.
-- The boundary that refuses a change touching competency qualification without source backing.
+- Preflight checks for competency-qualification changes and available modification timestamps before document writes.
+- Optional pre-write save points, one final write per selected file chain, and folder reload after writes.
+- A failed outcome with the paths whose writer calls completed, the available save-point receipt, and a separate reload error when recovery also fails.
 
 ## Excludes
-- Producing the proposal.
-- Being bypassable by the executor, which is exactly what concentrating writes here prevents.
+- Producing or automatically approving a proposal.
+- Rolling back an already completed write after a later failure.
+- Certifying semantic correctness or promoting project competency qualification from a vault-only conversation.
+
+## Evidence
+- `src/features/vault-agent/model/proposal-applier.ts` implements the shared write and recovery sequence; `use-vault-agent.ts` and `use-local-compile.ts` consume its outcomes.
+- Controlled failures cover a later writer failure, first writer failure, failed recovery reload, and a final reload failure after completed writes.
 
 ## Uncertainty
-- Read from the module header, which states the price of stopping the executor from writing is that writes gather in this one place and it should be called from exactly one site. Whether that single-call-site discipline currently holds was not verified.
+- A rejected writer may itself have changed bytes. The returned prefix names confirmed completed calls, not every possible mutation or a transactional rollback.
+- Installed native partial-write recovery and the accuracy of model-authored meaning are not established by these controlled tests.
