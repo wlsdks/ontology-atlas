@@ -189,6 +189,32 @@ const subscribe = (listener: () => void) => {
 const readOwner = () => owner;
 const serverOwner = () => null;
 
+export function useFigureTurn(eligible: boolean): boolean {
+  const id = useId();
+  const current = useSyncExternalStore(subscribe, readOwner, serverOwner);
+  const vacant = current === null;
+  useEffect(() => {
+    if (eligible && owner !== id) {
+      owner = id;
+      emit();
+    }
+    if (!eligible && owner === id) {
+      owner = null;
+      emit();
+    }
+  }, [eligible, id, vacant]);
+  useEffect(
+    () => () => {
+      if (owner === id) {
+        owner = null;
+        emit();
+      }
+    },
+    [id],
+  );
+  return eligible && current === id;
+}
+
 const unchanging = () => () => undefined;
 const animatesOnClient = () => typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
 const observesOnClient = () => typeof IntersectionObserver !== 'undefined';
@@ -203,7 +229,6 @@ interface ShowpieceOptions {
 }
 
 export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
-  const id = useId();
   const reduced = usePrefersReducedMotion();
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const [figure, setFigure] = useState<HTMLElement | null>(null);
@@ -224,10 +249,9 @@ export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
 
   const animates = useSyncExternalStore(unchanging, animatesOnClient, onServer);
   const observes = useSyncExternalStore(unchanging, observesOnClient, onServer);
-  const current = useSyncExternalStore(subscribe, readOwner, serverOwner);
   const canAnimate = animates && observes && !reduced && !refused;
   const eligible = canAnimate && started && !finished && !userPaused && seen && pageVisible;
-  const running = eligible && current === id;
+  const running = useFigureTurn(eligible);
 
   useEffect(() => {
     if (!figure) return;
@@ -264,28 +288,6 @@ export function useShowpiece({ duration, build, layoutKey }: ShowpieceOptions) {
       view.disconnect();
     };
   }, [figure, observes]);
-
-  const vacant = current === null;
-  useEffect(() => {
-    if (eligible && owner !== id) {
-      owner = id;
-      emit();
-    }
-    if (!eligible && owner === id) {
-      owner = null;
-      emit();
-    }
-  }, [eligible, id, vacant]);
-
-  useEffect(
-    () => () => {
-      if (owner === id) {
-        owner = null;
-        emit();
-      }
-    },
-    [id],
-  );
 
   const settle = useCallback(() => {
     for (const animation of animations.current) animation.cancel();

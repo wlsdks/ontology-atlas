@@ -12,6 +12,7 @@ import { IconButton } from '@/shared/ui/controls';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { StageGraph } from '../lib/stage-graph';
+import { useFigureTurn } from './showpiece-player';
 import { CONDUCTION_ANSWER, CONDUCTION_CAST, CONDUCTION_PROPOSAL, CONDUCTION_QUERY } from '../model/conduction-cast';
 
 const SCENE_PLACEHOLDER = <div aria-hidden className="h-[38rem] min-[70rem]:h-[22rem]" />;
@@ -58,7 +59,7 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
   const approached = near || !observes;
   const seen = inView || !observes;
   const canAnimate = animates && !reduced && !refused;
-  const running = canAnimate && !finished && !userPaused && seen && pageVisible;
+  const running = useFigureTurn(canAnimate && !finished && !userPaused && seen && pageVisible);
 
   useLayoutEffect(() => {
     if (!host) return;
