@@ -1,5 +1,6 @@
 "use client";
 
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
 import { useLocale, type useTranslations } from "next-intl";
 import { CloudDownload, FilePlus2, Search } from "lucide-react";
 
@@ -46,6 +47,7 @@ export function LibraryStartStage({
   vaultLabel,
   busy,
   onAddFiles,
+  addFilesFeedback = 'idle',
   onFindDocuments,
   onImportFromService,
   t,
@@ -54,6 +56,7 @@ export function LibraryStartStage({
   vaultLabel: string;
   busy: boolean;
   onAddFiles: () => void;
+  addFilesFeedback?: ActionFeedbackState;
   onFindDocuments: () => void;
   /** Opens the service picker: documents that are not on this computer yet. */
   onImportFromService: () => void;
@@ -105,6 +108,7 @@ export function LibraryStartStage({
           onClick={onAddFiles}
           disabled={busy}
           data-testid="library-start-add-files"
+              aria-busy={addFilesFeedback === 'working' || undefined}
           className={controlClass({
             shape: "chip",
             size: "lg",
@@ -114,7 +118,7 @@ export function LibraryStartStage({
             className: "gap-1.5",
           })}
         >
-          <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
+          <ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} />
           {t("sources.add")}
         </button>
         <button

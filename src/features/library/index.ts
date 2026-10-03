@@ -1,4 +1,5 @@
 export { addSources, addSourcesInBrowser, summarizeAddSources } from "./lib/add-sources";
+export { useSourceImportFeedback } from './model/use-source-import-feedback';
 export {
   discoverSources,
   withoutImportedNames,
