@@ -3,6 +3,7 @@ import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import type { CameraAxes } from "../engine/camera";
 import { createLightFrameStage } from "../light/light-frame-stage";
 import { ambientSleepFactor } from "../model/ambient-sleep";
+import { shouldSkipFrame } from "../model/idle-gate";
 import { projectDomeEdgeControl } from '../model/dome-edge';
 import { createStillFrame } from "./frame-cache/still-frame";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
@@ -206,6 +207,10 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         still.release();
         cancelAnimationFrame(handle);
         handle = 0;
+        return;
+      }
+      if (frameState.lightOnly && !lightActiveRef.current && shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
+        still.release();
         return;
       }
       requestFrame();

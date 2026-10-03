@@ -13,7 +13,7 @@ import {
   type SpringOffset,
 } from "../expressive/release-offsets";
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly } from "../morph/tier-assembly";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
 import { initHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -31,7 +31,7 @@ import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type Topol
 import type { FlatRingMemoryStore } from "./topology-loop-contract";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
-import { capabilityTierRead, createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
+import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../dial/types";
 
 interface Dependencies {
@@ -85,7 +85,10 @@ interface Dependencies {
   dialLabels: DialLabels | null;
   flatRingMemory: FlatRingMemoryStore | null;
   loadProgress: { read: number; total: number } | null;
+  placingTierRead: boolean;
 }
+
+const SIM_AFTER_ASSEMBLY_MS = 400;
 
 function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
   try {
@@ -147,6 +150,7 @@ export function useTopologyWorldLifecycle({
   dialLabels,
   flatRingMemory,
   loadProgress,
+  placingTierRead,
 }: Dependencies) {
   const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
@@ -154,6 +158,12 @@ export function useTopologyWorldLifecycle({
   const arrivalGlideRef = useRef(false);
   const [dialPlacement] = useState(createDialPlacement);
   const placementStateRef = useRef<DialPlacementState>("settled");
+  const pendingSimRef = useRef<{ world: TopologyWorld; nodes: { id: string; x: number; y: number }[]; edges: { source: string; target: string }[] } | null>(null);
+  const buildPendingSim = useCallback(() => {
+    const pending = pendingSimRef.current;
+    pendingSimRef.current = null;
+    if (pending && worldRef.current === pending.world && simRef.current === null) simRef.current = createForceSimulation(pending.nodes, pending.edges);
+  }, [simRef, worldRef]);
   const provisionalMemoryRef = useRef<DialMemory | null>(null);
 
   /**
@@ -277,11 +287,12 @@ export function useTopologyWorldLifecycle({
     const stored = ringMemory?.current() ?? null;
     let placed = { state: "settled" as DialPlacementState, held: 0 };
     const placeDial = (model: Parameters<typeof dialPlacement.next>[0]["model"]) => {
-      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: capabilityTierRead(nodes.map((n) => n.id)), memory: stored });
+      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: placingTierRead, memory: stored });
       placed = { state: step.state, held: step.held };
       return step.model;
     };
     const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
     placementStateRef.current = placed.state;
     if (world.dial) {
       setDialPlacement(world.dial, { ...placed, progress: loadProgress });
@@ -339,12 +350,13 @@ export function useTopologyWorldLifecycle({
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
     // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
-    // Seed the force sim off the concentric layout (spatial memory) and warm it
-    // so it settles into an organic layout that un-piles the fan-arcs.
-    simRef.current = createForceSimulation(
-      world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
-      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-    );
+    simRef.current = null;
+    pendingSimRef.current = {
+      world,
+      nodes: world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+      edges: world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+    };
+    const simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
     nodeDragRef.current = null;
     // No load-time settle: the sim stays cold until a node is pin-dragged. The
     // static default is the deterministic de-piled grid from `topology-world`.
@@ -392,6 +404,7 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
       armAssembly = true;
     }
+    if (firstPlacement) armAssembly = true;
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
     arrivalGlideRef.current = grew;
@@ -399,7 +412,7 @@ export function useTopologyWorldLifecycle({
     const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, arrivalStill || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
@@ -411,8 +424,9 @@ export function useTopologyWorldLifecycle({
     trySnapInitialCamera(tokens);
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
+    return () => clearTimeout(simTask);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure, dialLabels, arriving]);
+  }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
   useEffect(() => {
     const dial = worldRef.current?.dial;
     if (!dial || placementStateRef.current === "settled") return;
@@ -429,6 +443,7 @@ export function useTopologyWorldLifecycle({
     const container = containerRef.current;
     if (!container) return;
     const settle = () => {
+      buildPendingSim();
       if (worldRef.current) settleTierAssembly(worldRef.current);
     };
     const events = ["pointerdown", "wheel", "touchstart"] as const;
@@ -438,7 +453,7 @@ export function useTopologyWorldLifecycle({
       for (const type of events) container.removeEventListener(type, settle, { capture: true });
       window.removeEventListener("keydown", settle, { capture: true });
     };
-  }, [containerRef, worldRef]);
+  }, [buildPendingSim, containerRef, worldRef]);
 
   return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
 }

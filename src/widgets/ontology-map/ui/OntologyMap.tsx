@@ -390,9 +390,11 @@ export interface OntologyMapProps {
   onHiddenDependenciesChange?: (count: number) => void;
   dialLabels?: DialLabels | null;
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  impactLens?: boolean;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
   loadProgress?: { read: number; total: number } | null;
+  placingTierRead?: boolean;
   /**
    * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
    * shown only while 3D is on. The widget places it; it owns no copy.
@@ -619,9 +621,11 @@ export function OntologyMap(props: OntologyMapProps) {
       onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       dialLabels: props.dialLabels ?? null,
       evidenceStates: props.evidenceStates ?? null,
+      impactLens: props.impactLens ?? false,
       onFlatDialChange: props.onFlatDialChange,
       flatRingMemory: props.flatRingMemory ?? null,
       loadProgress: props.loadProgress ?? null,
+      placingTierRead: props.placingTierRead ?? false,
       detailPanelVisible,
       footprint,
       expand,

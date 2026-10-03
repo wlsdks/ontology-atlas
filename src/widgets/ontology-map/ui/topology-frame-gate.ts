@@ -3,6 +3,7 @@ import { MOTION } from "@/shared/motion";
 import {
   type RefObject
 } from "react";
+import { lastDialFrame } from "../dial/frame/frame";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { MAX_FRAME_DELTA_SECONDS } from "../engine/spring";
 import { type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -16,8 +17,8 @@ import {
 import { stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import type { StrataLodState } from "../model/strata-lod";
 import {
+  extendsGrace,
   isCameraUnsettled,
-  isCanvasActive,
   isDomeSpinAnimating,
   isEgoTailAnimating,
   isGalaxyAtmosphereAnimating,
@@ -110,6 +111,7 @@ interface FrameResult {
   dt: number;
   awake: boolean;
   sceneStill: boolean;
+  lightOnly: boolean;
 }
 
 /** Nothing to draw yet, or the screen is being left: the loop asks again next frame. */
@@ -418,10 +420,10 @@ export function createFrameGate({
         egoTailAnimating: isEgoTailAnimating({
           reducedMotion: reducedMotionRef.current,
           ambientAsleep,
-          hasDependsEdges: hasDependsEdgesRef.current,
+          hasDependsEdges: hasDependsEdgesRef.current && lastDialFrame() === null,
           edgePulseSpeed: tokens.edgePulseSpeed,
           focused: focusedSlugRef.current !== null,
-          hasContainsEdges: hasContainsEdgesRef.current,
+          hasContainsEdges: hasContainsEdgesRef.current && lastDialFrame() === null,
           livePulseCount: pulsesRef.current.length,
         }),
         // Lens brushing is an interaction in progress too: folding to idle
@@ -484,13 +486,15 @@ export function createFrameGate({
           Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
         lightActive: lightActiveRef.current,
       };
-      const active =
-        isCanvasActive(idleFlags) ||
+      const activeBesidesLight =
+        extendsGrace(idleFlags) ||
         previewTransitionRef.current !== null ||
         realmTransitionRef.current.phase === "entering" ||
         realmTransitionRef.current.phase === "exiting" ||
         domeMotion;
+      const active = activeBesidesLight || idleFlags.lightActive;
       result.awake = active;
+      result.lightOnly = !activeBesidesLight && idleFlags.lightActive;
       result.sceneStill =
         !isSceneActive(idleFlags, pulsesRef.current.length) &&
         previewTransitionRef.current === null &&
@@ -498,7 +502,7 @@ export function createFrameGate({
         realmTransitionRef.current.phase !== "exiting" &&
         !domeMotion;
       if (active) {
-        lastActiveMsRef.current = now;
+        if (activeBesidesLight) lastActiveMsRef.current = now;
         // e2e instrumentation: the names of the flags that just kept this
         // frame awake (see the `lastActiveCausesRef` doc-block). Recorded
         // only while the window is attached, so the product path pays zero.

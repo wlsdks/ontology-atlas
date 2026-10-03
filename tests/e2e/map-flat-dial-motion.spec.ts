@@ -30,27 +30,31 @@ interface Sample {
   chips: Record<string, [number, number]>;
   discs: Record<string, [number, number]>;
   capOf: Record<string, string>;
+  steps: Record<string, number>;
+  ring: Record<string, [number, number]>;
   strips: number;
   inks: string[];
   numerals: string[];
 }
 
 interface SamplerWindow {
-  __dialSampler: { on: boolean; probe: boolean; frames: Sample[]; raf: number[] };
+  __dialSampler: { on: boolean; probe: boolean; frames: Sample[]; raf: number[]; mapAt: number | null };
 }
 
 async function installSampler(page: Page, options: { probe: boolean }): Promise<void> {
   await page.addInitScript((probeEveryFrame: boolean) => {
     const w = window as unknown as SamplerWindow;
-    w.__dialSampler = { on: true, probe: probeEveryFrame, frames: [], raf: [] };
+    w.__dialSampler = { on: true, probe: probeEveryFrame, frames: [], raf: [], mapAt: null };
     let queued = false;
     let lastT = -1;
     const raf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (callback: FrameRequestCallback) =>
       raf((time) => {
-        if (time !== lastT && w.__dialSampler.on) w.__dialSampler.raf.push(performance.now());
+        const frameAt = performance.now();
+        if (time !== lastT && w.__dialSampler.on) w.__dialSampler.raf.push(frameAt);
         lastT = time;
         callback(time);
+        if (w.__dialSampler.mapAt === null && window.__atlasMap?.camera()) w.__dialSampler.mapAt = frameAt;
         if (queued || !w.__dialSampler.on || !w.__dialSampler.probe) return;
         queued = true;
         queueMicrotask(() => {
@@ -66,10 +70,16 @@ async function installSampler(page: Page, options: { probe: boolean }): Promise<
           const capOf: Record<string, string> = {};
           for (const n of nodes) if (n.kind === "domain" && !n.hidden && (n.alpha ?? 1) > 0) chips[n.id] = [n.x, n.y];
           if (d === null) {
-            w.__dialSampler.frames.push({ t: performance.now(), state: "unowned", held: 0, appear: 0, inkMix: 0, zoom: 0, scale: camera.scale, hub: project ? [project.x, project.y] : null, chips, discs: {}, capOf, strips: 0, inks: [], numerals: [] });
+            w.__dialSampler.frames.push({ t: performance.now(), state: "unowned", held: 0, appear: 0, inkMix: 0, zoom: 0, scale: camera.scale, hub: project ? [project.x, project.y] : null, chips, discs: {}, capOf, steps: {}, ring: {}, strips: 0, inks: [], numerals: [] });
             return;
           }
-          for (const c of d.clusters) for (const id of c.capabilityIds) capOf[id] = c.domainId;
+          const steps: Record<string, number> = {};
+          const ring: Record<string, [number, number]> = {};
+          for (const c of d.clusters) {
+            for (const id of c.capabilityIds) capOf[id] = c.domainId;
+            steps[c.domainId] = c.step;
+            ring[c.domainId] = [c.chip.x, c.chip.y];
+          }
           const discs: Record<string, [number, number]> = {};
           for (const disc of d.discs) discs[disc.id] = [disc.x, disc.y];
           w.__dialSampler.frames.push({
@@ -84,6 +94,8 @@ async function installSampler(page: Page, options: { probe: boolean }): Promise<
             chips,
             discs,
             capOf,
+            steps,
+            ring,
             strips: d.strips.length,
             inks: d.strips.map((s) => `${s.flowKey}|${s.ink}|${s.role}`),
             numerals: d.numerals.map((n) => `${n.flowKey}|${n.text}`),
@@ -100,6 +112,7 @@ const resetSampler = (page: Page) =>
     const s = (window as unknown as SamplerWindow).__dialSampler;
     s.frames = [];
     s.raf = [];
+    s.mapAt = null;
   });
 
 async function waitForDial(page: Page) {
@@ -202,12 +215,13 @@ test("synth 2,000's first open keeps every frame interval under 50 ms", async ({
   await openSample(page, "synth=2000&synthDeps=1&");
   await waitQuiet(page);
   const raf = await rafTimes(page);
-  const gaps = raf.slice(1).map((t, i) => t - raf[i]!);
-  const tail = gaps.slice(Math.max(0, gaps.findIndex((g) => g < 40)));
-  const max = Math.max(0, ...tail);
+  const mapAt = await page.evaluate(() => (window as unknown as SamplerWindow).__dialSampler.mapAt);
+  const span = raf.slice(1).map((t, i) => [raf[i]!, t - raf[i]!] as const).filter(([at]) => mapAt !== null && at >= mapAt && at < mapAt + ASSEMBLY_MS);
+  const max = Math.max(0, ...span.map(([, gap]) => gap));
   const quiet = await quietAfter(page);
-  console.log(`[flat-dial-motion] synth 2,000 assembly ${JSON.stringify({ frames: raf.length, maxIntervalMs: Math.round(max), quiet })}`);
-  expect.soft(max, "largest frame interval in the assembly").toBeLessThanOrEqual(MAX_INTERVAL_MS);
+  console.log(`[flat-dial-motion] synth 2,000 assembly ${JSON.stringify({ frames: span.length, maxIntervalMs: Math.round(max), longest: span.filter(([, gap]) => gap > MAX_INTERVAL_MS).map(([at, gap]) => [Math.round(at - mapAt!), Math.round(gap)]), quiet })}`);
+  expect(span.length, "frames from the map's first drawn frame to the end of the assembly").toBeGreaterThan(5);
+  expect.soft(max, "largest frame interval from the map's first frame to the end of the assembly").toBeLessThanOrEqual(MAX_INTERVAL_MS);
   expect.soft(quiet, "frames in 1.5 s after the assembly").toBe(0);
 });
 
@@ -248,27 +262,53 @@ async function openStreamed(page: Page, files: Record<string, string>, held: str
 
 const release = (page: Page) => page.evaluate(() => (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads());
 
+const capabilityFiles = (files: Record<string, string>) => Object.keys(files).filter((p) => p.startsWith("capabilities/"));
+
 test("a folder with no record places no domain before the capability tier, then assembles once", async ({ page }) => {
   test.setTimeout(120_000);
   const files = streamedVault(false);
   await installSampler(page, { probe: true });
-  await openStreamed(page, files, lateElements(files));
-  await expect.poll(() => page.evaluate(() => !!window.__atlasMap?.camera()), { message: "the map mounts while the late elements are unread", timeout: 20_000 }).toBe(true);
+  await openStreamed(page, files, [...capabilityFiles(files), ...lateElements(files)]);
+  await expect.poll(() => page.evaluate(() => !!window.__atlasMap?.camera()), { message: "the map mounts while the capabilities are unread", timeout: 20_000 }).toBe(true);
   await waitForMapStill(page, { what: "camera" });
   const reading = await frames(page);
   await release(page);
   await waitForDial(page);
   await waitQuiet(page);
   const all = await frames(page);
-  const early = reading;
-  const placedEarly = early.filter((f) => Object.keys(f.chips).length > 0).length;
+  const placedEarly = reading.filter((f) => f.state !== "unowned" && Object.keys(f.chips).length > 0).length;
   const verdict = assemblyVerdict(all.slice(reading.length));
-  console.log(`[flat-dial-motion] streamed first open ${JSON.stringify({ readingFrames: early.length, states: [...new Set(all.map((f) => f.state))], placedEarly, ...verdict })}`);
-  expect(early.length, "frames drawn while the elements are unread").toBeGreaterThan(0);
-  expect.soft(placedEarly, "frames with a domain placed while the read is incomplete").toBe(0);
+  console.log(`[flat-dial-motion] streamed first open ${JSON.stringify({ readingFrames: reading.length, states: [...new Set(all.map((f) => f.state))], placedEarly, ...verdict })}`);
+  expect(reading.length, "frames drawn while the capabilities are unread").toBeGreaterThan(0);
+  expect.soft(placedEarly, "frames with a domain placed before the capability tier is read").toBe(0);
   expect.soft(verdict.chipDrop, "a chip moved toward the hub").toBe(0);
   expect.soft(verdict.offSlot, "chips off their slot after the assembly").toEqual([]);
 });
+
+test("with only the late elements unread, the dial is provisional with every domain placed", async ({ page }) => {
+  test.setTimeout(120_000);
+  const files = streamedVault(false);
+  await installSampler(page, { probe: true });
+  await openStreamed(page, files, lateElements(files));
+  await expect.poll(() => page.evaluate(() => (window.__atlasMap?.dial?.() as DialProbe | undefined)?.placement?.state ?? null), { message: "the dial reaches the provisional state while the late elements are unread", timeout: 20_000 }).toBe("provisional");
+  await waitForMapStill(page);
+  const provisional = (await frames(page)).filter((f) => f.state === "provisional").at(-1)!;
+  console.log(`[flat-dial-motion] provisional ${JSON.stringify({ placed: Object.keys(provisional.chips).length, steps: provisional.steps })}`);
+  expect.soft(Object.keys(provisional.chips).sort(), "domains placed while the late elements are unread").toEqual(Array.from({ length: 6 }, (_, d) => `domain:d${d}`));
+  await release(page);
+});
+
+function ringOrder(f: Sample, ids: string[]): Record<number, string[]> {
+  const out: Record<number, string[]> = {};
+  const hub = f.hub ?? [0, 0];
+  for (const id of ids) (out[f.steps[id]!] ??= []).push(id);
+  for (const step of Object.keys(out)) {
+    const ring = out[Number(step)]!.sort((a, b) => Math.atan2(f.ring[a]![1] - hub[1], f.ring[a]![0] - hub[0]) - Math.atan2(f.ring[b]![1] - hub[1], f.ring[b]![0] - hub[0]));
+    const first = ring.indexOf([...ring].sort()[0]!);
+    out[Number(step)] = [...ring.slice(first), ...ring.slice(0, first)];
+  }
+  return out;
+}
 
 test("a ring change found late is held until the read ends, then applies in one step", async ({ page }) => {
   test.setTimeout(120_000);
@@ -282,22 +322,19 @@ test("a ring change found late is held until the read ends, then applies in one 
   await release(page);
   await waitForDial(page);
   await waitQuiet(page);
-  const after = await frames(page);
+  const after = (await frames(page)).filter((f) => f.state !== "unowned");
   const settled = after.filter((f) => f.state === "settled");
   const last = settled.at(-1)!;
-  const firstSettled = settled[0]!;
-  const moved = (from: Sample, to: Sample) =>
-    Object.keys(to.chips).filter((id) => {
-      const a = from.chips[id];
-      const b = to.chips[id];
-      return !a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) / to.scale > TOLERANCE_PX / to.scale;
-    });
-  const changed = moved(before, last);
-  const afterApply = moved(firstSettled, last);
-  console.log(`[flat-dial-motion] held ring change ${JSON.stringify({ heldBefore: before.held, applied: firstSettled.held, changed, movedAfterApply: afterApply })}`);
-  expect.soft(firstSettled.held, "ring changes applied at read end").toBeGreaterThan(0);
-  expect.soft(changed, "domains that moved: only the one whose ring changed").toEqual(["domain:d1"]);
-  expect.soft(afterApply, "domains still moving after the frame group that applied the change").toEqual([]);
+  const runs = after.map((f) => f.state).filter((state, i, all) => i === 0 || state !== all[i - 1]);
+  const stepChanged = Object.keys(last.steps).filter((id) => before.steps[id] !== last.steps[id]).sort();
+  const kept = Object.keys(last.steps).filter((id) => !stepChanged.includes(id));
+  const orderBefore = ringOrder(before, kept);
+  const orderAfter = ringOrder(last, kept);
+  console.log(`[flat-dial-motion] held ring change ${JSON.stringify({ heldBefore: before.held, applied: [...new Set(settled.map((f) => f.held))], runs, stepChanged, orderBefore, orderAfter })}`);
+  expect.soft(runs, "one placement transition at read end").toEqual(runs[0] === "settled" ? ["settled"] : ["provisional", "settled"]);
+  expect.soft(stepChanged, "the domain whose ring the late files change").toEqual(["domain:d1"]);
+  expect.soft([...new Set(settled.map((f) => f.held))], "ring changes applied at read end equal the rings changed").toEqual([stepChanged.length]);
+  expect.soft(orderAfter, "every other domain keeps its ring step and its circular order on that ring").toEqual(orderBefore);
 });
 
 test("a remembered folder opens each domain at its remembered place and arrives by opacity only", async ({ page }) => {

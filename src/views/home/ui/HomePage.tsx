@@ -665,6 +665,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyCreateIntent={topologyCreateIntent}
             topologyIndexPresentation={topologyIndexPresentation}
             topologyExplorationLenses={topologyExplorationLenses}
+            impactLensActive={impactMode !== "none" && selectedSlug !== null}
           />
           {/* The alert text is held through the exit window. */}
           <TopologyInspectorSurfaces

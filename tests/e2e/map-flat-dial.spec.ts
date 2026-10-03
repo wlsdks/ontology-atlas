@@ -271,7 +271,10 @@ test("a lens hands Flat back to the classic paint, and clearing it returns the d
   await waitForMapSettled(page);
   const owns = () => page.evaluate(() => window.__atlasMap?.dial?.().owns ?? null);
   await expect.poll(owns, { message: "the impact lens hands the paint back" }).toBe(false);
-  await page.keyboard.press("Escape");
+  await expect.poll(async () => {
+    await page.keyboard.press("Escape");
+    return page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
+  }, { message: "Escape walks the ladder down to no selection, which clears the lens" }).toBeNull();
   await expect.poll(owns, { message: "clearing the lens returns the dial" }).toBe(true);
 });
 

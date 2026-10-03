@@ -299,14 +299,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeEvidenceRef.current = args.domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
   }, [args.domeEvidence, lastActiveMsRef]);
-  const flatDialRef = useRef<FlatDialFrameProps>({ labels: null, evidence: null, onChange: undefined, sent: null });
+  const flatDialRef = useRef<FlatDialFrameProps>({ labels: null, evidence: null, impactLens: false, onChange: undefined, sent: null });
   useEffect(() => {
     const dial = flatDialRef.current;
     dial.labels = args.dialLabels ?? null;
     dial.evidence = args.evidenceStates ?? null;
+    dial.impactLens = args.impactLens ?? false;
     dial.onChange = args.onFlatDialChange;
     lastActiveMsRef.current = performance.now();
-  }, [args.dialLabels, args.evidenceStates, args.onFlatDialChange, lastActiveMsRef]);
+  }, [args.dialLabels, args.evidenceStates, args.impactLens, args.onFlatDialChange, lastActiveMsRef]);
   const onHiddenDependenciesChangeRef = useRef(args.onHiddenDependenciesChange);
   const hiddenDependenciesSentRef = useRef(-1);
   useEffect(() => {
@@ -429,6 +430,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dialLabels: args.dialLabels ?? null,
     flatRingMemory: args.flatRingMemory ?? null,
     loadProgress: args.loadProgress ?? null,
+    placingTierRead: args.placingTierRead ?? false,
   });
 
   useTopologyViewportLifecycle({

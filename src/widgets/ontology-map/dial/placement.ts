@@ -56,9 +56,11 @@ export function createDialPlacement(): { next(input: DialPlacementInput): DialPl
   let state: DialPlacementState | null = null;
   const baseline = new Map<string, number>();
   let held = 0;
+  let settledHeld = 0;
   return {
     next({ model, reading, capabilityTierRead: tierRead, memory }) {
       if (!reading) {
+        if (state === "settled") return { state, held: settledHeld, released: false, model };
         let applied = 0;
         if (state === "provisional") {
           for (const d of model.domains) {
@@ -69,9 +71,13 @@ export function createDialPlacement(): { next(input: DialPlacementInput): DialPl
         state = "settled";
         baseline.clear();
         held = 0;
+        settledHeld = applied;
         return { state, held: applied, released: applied > 0, model };
       }
-      if (state === "settled") baseline.clear();
+      if (state === "settled") {
+        baseline.clear();
+        settledHeld = 0;
+      }
       if (!tierRead && memory === null) {
         state = "reading";
         held = 0;

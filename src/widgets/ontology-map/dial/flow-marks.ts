@@ -306,15 +306,17 @@ function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result
       const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
       const off = needs > 0 && used > 0 ? tokens.flowSplitPx * 0.5 : 0;
       const shift = (p: Point, sign: number) => ({ x: p.x - sign * sin * off, y: p.y + sign * cos * off });
-      const stroke = (p0: Point, c: Point, p1: Point, count: number, ink: string) => {
+      const lit = st.link.attended && input.attention.domainId !== null;
+      const stroke = (p0: Point, c: Point, p1: Point, count: number, ink: string, from: string, to: string) => {
         const w0 = focusFlowWidth(tokens, count);
-        emit(input, out, {
+        const drawn = emit(input, out, {
           key: st.link.key, role: "stub", p0, c, p1, w0, w1: w0 * tokens.flowTaper, ink, headStart: false, headEnd: true,
           trimStart: 0, trimEnd: 0, dashed: false, numeral: null, numeralInk: ink, slots: [], halo: false,
         });
+        if (drawn && lit) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, a: drawn.a, c: drawn.c, b: drawn.b, widthPx: w0, chipRadiusPx: 0 });
       };
-      if (needs > 0) stroke(shift(start, 1), shift(mid, 1), shift(end, 1), needs, needsInk);
-      if (used > 0) stroke(shift(end, -1), shift(mid, -1), shift(start, -1), used, usedInk);
+      if (needs > 0) stroke(shift(start, 1), shift(mid, 1), shift(end, 1), needs, needsInk, st.nearId, st.farId);
+      if (used > 0) stroke(shift(end, -1), shift(mid, -1), shift(start, -1), used, usedInk, st.farId, st.nearId);
       const name = model.capabilityById.get(st.farId)?.label ?? model.domainById.get(st.farId)?.label ?? st.farId;
       const parts: { text: string; ink: number }[] = [{ text: name, ink: inkIndex(out, nameInk) }];
       if (needs > 0) parts.push({ text: ` →${needs}`, ink: inkIndex(out, needsInk) });

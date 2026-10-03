@@ -60,6 +60,9 @@ describe("dial placement", () => {
     const end = p.next({ model: model({ a: 9, b: 8 }), reading: false, capabilityTierRead: true, memory: null });
     expect(end).toMatchObject({ state: "settled", held: 2, released: true });
     expect(end.model.dependents.get("a")).toBe(9);
+    const rebuilt = p.next({ model: model({ a: 9, b: 8 }), reading: false, capabilityTierRead: true, memory: null });
+    expect(rebuilt).toMatchObject({ state: "settled", held: 2, released: false });
+    expect(p.next({ model: model({ a: 9, b: 8 }), reading: true, capabilityTierRead: true, memory: null }).held).toBe(0);
   });
 
   it.each([["en", en], ["ko", ko]] as const)("%s reading line: the loader's counts, never a percentage", (_, messages) => {

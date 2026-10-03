@@ -277,9 +277,11 @@ export interface UseTopologyLoopArgs {
   ambientSleepDelayMs?: number;
   dialLabels?: DialLabels | null;
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  impactLens?: boolean;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
   loadProgress?: { read: number; total: number } | null;
+  placingTierRead?: boolean;
 }
 
 export interface FlatDialState {
@@ -296,6 +298,7 @@ export interface FlatRingMemoryStore {
 export interface FlatDialFrameProps {
   labels: DialLabels | null;
   evidence: ReadonlyMap<string, DialEvidence> | null;
+  impactLens: boolean;
   onChange: ((state: FlatDialState) => void) | undefined;
   sent: FlatDialState | null;
 }

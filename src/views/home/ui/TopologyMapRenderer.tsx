@@ -23,6 +23,7 @@ import {
   MapLayoutMorphOverlay,
   OntologyMap,
   PLAIN_TIER_REVEAL,
+  capabilityTierRead,
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
@@ -117,6 +118,7 @@ export interface TopologyMapRendererProps {
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "constellationFitToken" | "routedConstellation" | "spotlightExpandedParents">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "renderedIndexState">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "openCreateNode">;
+  impactLensActive: boolean;
 }
 
 export function TopologyMapRenderer({
@@ -125,7 +127,7 @@ export function TopologyMapRenderer({
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent, onFlatDialShown,
+  topologyIndexPresentation, topologyCreateIntent, onFlatDialShown, impactLensActive,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
@@ -133,6 +135,10 @@ export function TopologyMapRenderer({
   const arrivingDocuments = vault.partialTotal;
   const arriving = arrivingDocuments > 0;
   const loadProgress = useVaultLoadProgress();
+  const placingTierRead = useMemo(
+    () => arriving && capabilityTierRead((ontologyInsight?.nodes ?? []).flatMap((node) => node.evidenceIds)),
+    [arriving, ontologyInsight],
+  );
   const {
     createNodeOpen, canCreateNode, mapRevealToken, setHoverEdge, setSelectedEdge, handleHoverEdge, selectedEdge,
     mapRelationPreview, setMeaningEditorState, agentFocusNodeId, handleHoverCluster,
@@ -291,8 +297,10 @@ export function TopologyMapRenderer({
             flatRingMemory={flatRingMemory}
             dialLabels={dialLabels}
             evidenceStates={evidenceStates}
+            impactLens={impactLensActive}
             onFlatDialChange={onFlatDialChange}
             loadProgress={arriving ? loadProgress : null}
+            placingTierRead={placingTierRead}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
