@@ -278,6 +278,7 @@ export interface UseTopologyLoopArgs {
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
+  loadProgress?: { read: number; total: number } | null;
 }
 
 export interface FlatDialState { drawn: boolean; evidenceMeasured: boolean }

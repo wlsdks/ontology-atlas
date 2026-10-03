@@ -428,6 +428,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     pendingFlatCameraRef,
     dialLabels: args.dialLabels ?? null,
     flatRingMemory: args.flatRingMemory ?? null,
+    loadProgress: args.loadProgress ?? null,
   });
 
   useTopologyViewportLifecycle({

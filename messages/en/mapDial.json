@@ -1,0 +1,4 @@
+{
+  "reading": "Reading {read, number} of {total, number} files",
+  "settling": "Rings settle when every file is read"
+}

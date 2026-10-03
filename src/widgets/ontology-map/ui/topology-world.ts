@@ -23,7 +23,7 @@ import { buildDialModel } from "../dial/dial-model";
 import { dialOverviewPad } from "../dial/fit";
 import { layoutDial } from "../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../dial/order";
-import type { DialWorld, DialWorldInput } from "../dial/types";
+import type { DialModel, DialWorld, DialWorldInput } from "../dial/types";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
 import { fireflySeed } from "../render/edge-fireflies";
@@ -535,6 +535,7 @@ export function buildTopologyWorld(
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
   dialInput: DialWorldInput | null = null,
+  placeDial: ((model: DialModel) => DialModel) | null = null,
 ): TopologyWorld {
   /*
    * **A node is drawn under the last containment parent that keeps it in the domain the
@@ -623,7 +624,7 @@ export function buildTopologyWorld(
     }).map((p) => [p.id, p]),
   );
 
-  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput) : null;
+  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
   if (dial) {
     for (const [id, p] of dial.scene.positions) {
       const seeded = pointById.get(id);
@@ -804,6 +805,7 @@ function buildDialWorld(
   nodes: readonly OntologyMapNode[],
   edges: readonly OntologyMapEdge[],
   input: DialWorldInput,
+  placeDial: ((model: DialModel) => DialModel) | null,
 ): DialWorld | null {
   const treeNodes: TreeInputNode[] = [];
   for (const n of nodes) if (DIAL_KINDS.has(n.kind)) treeNodes.push({ id: n.id, label: n.label, kind: n.kind });
@@ -813,9 +815,10 @@ function buildDialWorld(
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  const model = buildDialModel({ tree, dependencies, flows, elementIds });
+  const built = buildDialModel({ tree, dependencies, flows, elementIds });
+  const model = placeDial ? placeDial(built) : built;
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
-  if (input.rememberOrder) rememberDialOrder(order);
+  if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
   const scene = layoutDial(model, order, input.tokens, input.memory);
   return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
 }
