@@ -19,7 +19,7 @@ import {
   folderOf,
   measureChange,
 } from './change-scene';
-import { DRAWN_OUTLINE, DRAWN_PRIMARY, keyPhrase, ShowpieceFigure, ShowpieceSection } from './ShowpieceFrame';
+import { DRAWN_OUTLINE, keyPhrase, ShowpieceFigure, ShowpieceSection } from './ShowpieceFrame';
 import { layoutBox, LIGHT_LAYERS, SHOWPIECE_PART, useShowpiece, type ShowpieceEnv } from './showpiece-player';
 
 const CALM_ALPHA = 'var(--map-spotlight-rest-alpha)';
