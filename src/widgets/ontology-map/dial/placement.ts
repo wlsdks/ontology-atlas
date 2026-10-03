@@ -36,7 +36,7 @@ function stepCount(step: number): number {
   return step === 0 ? 0 : 2 ** step;
 }
 
-export function emptyDialModel(model: DialModel): DialModel {
+function emptyDialModel(model: DialModel): DialModel {
   return {
     ...model,
     domains: [],
