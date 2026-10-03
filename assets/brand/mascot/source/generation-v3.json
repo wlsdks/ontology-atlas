@@ -1,0 +1,31 @@
+{
+  "created": "2026-10-03",
+  "method": "Built-in image_gen. Current traveler-master-v2.png is identity authority; the owner-provided walk, reading and emote sheets guide poses only. Native 64px work cells share scale, palette, binary alpha and a 61px foot baseline; static portraits are separately authored at 32px.",
+  "prompts": [
+    {
+      "key": "walk",
+      "reference": "04_walk_sprite_sheet.png",
+      "file": "traveler-walk-v2.png",
+      "prompt": "Production sprite sheet for Ontology Atlas. Image 1 is the exact identity authority: preserve its rounded cream parchment hood, wide dark navy face, two cyan eyes, blue scarf, short brown boots, brown backpack and rolled parchment, golden lantern and map, plus the detached turquoise/blue planet with a thin GOLD ring. Do not use the blue boots or white planetary ring of the motion reference. Chibi body proportions, crisp square pixel clusters matching a 64x64 logical sprite. One 3-column by 2-row sheet, SIX equal SQUARE cells, ideally 1536x1024, strictly row-major order. Every figure is complete, centered, SAME camera and body/hood size, SAME foot-contact baseline, same planet position. Leave clear padding in every cell and between figures. Transparent alpha background. No cell lines, labels, letters, particles, stars around the figure, magic effects, glows outside the body, shadows, platforms or scenery. The warm lantern may have bright pixels inside the lamp only. Image 2 is gait reference only. Six distinct gradual walking poses, slightly front/three-quarter facing viewer: left contact, down, passing, right contact, up, settling to a calm upright stance. Legs and opposite arm swing subtly; keep holding the lantern on viewer left and map on viewer right. Preserve actual leg alternation and planted-foot logic, no large jump or floating. All six poses use the same gold-ringed planet and brown boots."
+    },
+    {
+      "key": "read",
+      "reference": "06_reading_sprite_sheet.png",
+      "file": "traveler-read-v2.png",
+      "prompt": "Production sprite sheet for Ontology Atlas. Image 1 is the exact identity authority: preserve its rounded cream parchment hood, wide dark navy face, two cyan eyes, blue scarf, short brown boots, brown backpack and rolled parchment, golden lantern and map, plus the detached turquoise/blue planet with a thin GOLD ring. Do not use the blue boots or white planetary ring of the motion reference. Chibi body proportions, crisp square pixel clusters matching a 64x64 logical sprite. One 3-column by 2-row sheet, SIX equal SQUARE cells, ideally 1536x1024, strictly row-major order. Every figure is complete, centered, SAME camera and body/hood size, SAME foot-contact baseline, same planet position. Leave clear padding in every cell and between figures. Transparent alpha background. No cell lines, labels, letters, particles, stars around the figure, magic effects, glows outside the body, shadows, platforms or scenery. The warm lantern may have bright pixels inside the lamp only. Image 2 is pose reference only. Six gradual MAP READING poses: calm upright with folded parchment, unfolding parchment, eyes looking down to map, finger tracing the map, slight thoughtful nod, calm upright with map still open. Lantern hangs from the viewer-left glove or belt while the map is at chest height. No quill writing or magic. All six frames share the same body, round hood, fixed feet and GOLD-ringed planet."
+    },
+    {
+      "key": "success",
+      "reference": "08_emote_sheet.png",
+      "file": "traveler-success-v2.png",
+      "prompt": "Production sprite sheet for Ontology Atlas. Image 1 is the exact identity authority: preserve its rounded cream parchment hood, wide dark navy face, two cyan eyes, blue scarf, short brown boots, brown backpack and rolled parchment, golden lantern and map, plus the detached turquoise/blue planet with a thin GOLD ring. Do not use the blue boots or white planetary ring of the motion reference. Chibi body proportions, crisp square pixel clusters matching a 64x64 logical sprite. One 3-column by 2-row sheet, SIX equal SQUARE cells, ideally 1536x1024, strictly row-major order. Every figure is complete, centered, SAME camera and body/hood size, SAME foot-contact baseline, same planet position. Leave clear padding in every cell and between figures. Transparent alpha background. No cell lines, labels, letters, particles, stars around the figure, magic effects, glows outside the body, shadows, platforms or scenery. The warm lantern may have bright pixels inside the lamp only. Image 2 is expression reference only. Six understated finished-reading poses: reading the open map, lifting gaze, gently closing the parchment, content smile with relaxed shoulders, a small friendly wave, calm friendly wave with tiny smile. Completion is a quiet nod and friendly expression, not a spell or victory celebration. Keep the lantern and backpack, gold-ringed planet, brown boots, consistent body scale and feet. No checkmark, trophy, hearts, exclamation marks or confetti."
+    },
+    {
+      "key": "portraits",
+      "reference": "08_emote_sheet.png",
+      "file": "traveler-portraits-v2.png",
+      "prompt": "Image 1 is the exact current Atlas mascot identity and Image 2 is expression reference only. Draw TWO separately authored COMPACT 32x32 logical pixel-art portraits, one in each half of a 2-column by 1-row transparent sheet. Match Image 1's rounded cream hood, wide navy face, cyan eyes, blue scarf and detached blue planet with thin GOLD ring. Head/hood/planet only; no full body or backpack. Left: gentle friendly welcome, tiny smile and softly curved cyan eyes; no celebration symbols. Right: curious searching expression, head tilted a little, two clear cyan eyes looking down, tiny folded parchment edge at bottom. Native 32-pixel detail, large crisp square clusters, simplified readable outlines and paired eyes. Both complete inside equal square cells with ample transparent separation. No text, border, cell line, icons, question marks, stars, particles, glow, scenery or background. These are two static portraits, not an animation."
+    }
+  ],
+  "scope": "WALK, READ, terminal completion; static welcome and curious portraits. No idle/game system, inferred work, approval claim, ambient particles, cursor theme or data-palette change."
+}

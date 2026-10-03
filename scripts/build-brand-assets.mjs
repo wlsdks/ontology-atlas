@@ -41,6 +41,22 @@ export const MASCOT_PRESENTATION_MASTER = Object.freeze({
   height: 128,
 });
 
+const MASCOT_PORTRAITS = Object.freeze({
+  welcome: Object.freeze({ path: 'assets/brand/mascot/mascot-welcome-32.png', width: 32, height: 32 }),
+  curious: Object.freeze({ path: 'assets/brand/mascot/mascot-curious-32.png', width: 32, height: 32 }),
+});
+
+export function readMascotPortraits(root = process.cwd()) {
+  return Object.fromEntries(Object.entries(MASCOT_PORTRAITS).map(([expression,spec]) => {
+    const bytes = readFileSync(join(root,spec.path));
+    const { width, height } = pngDimensions(bytes);
+    if (width !== spec.width || height !== spec.height || bytes[25] !== 6) {
+      throw new Error(`${spec.path} must be a ${spec.width}x${spec.height} RGBA portrait`);
+    }
+    return [expression,{ ...spec,base64: bytes.toString('base64') }];
+  }));
+}
+
 export const MASCOT_MOTION_ROWS = Object.freeze({
   walk: Object.freeze({
     path: 'assets/brand/mascot/mascot-walk-row-64.png',
