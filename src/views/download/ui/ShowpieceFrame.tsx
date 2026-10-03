@@ -12,9 +12,9 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { SHOWPIECE_PART, type ShowpieceState } from './showpiece-player';
 
 export const DRAWN_PRIMARY =
-  'inline-flex h-7 items-center rounded-chip bg-[color:var(--color-indigo-accent)] px-3 text-label leading-label text-[color:var(--color-text-on-accent)]';
+  'inline-flex min-h-7 items-center rounded-chip py-0.5 bg-[color:var(--color-indigo-accent)] px-3 text-label leading-label text-[color:var(--color-text-on-accent)]';
 export const DRAWN_OUTLINE =
-  'inline-flex h-7 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]';
+  'inline-flex min-h-7 items-center rounded-chip py-0.5 border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]';
 
 
 export function ShowpieceSection({

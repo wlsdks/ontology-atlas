@@ -275,7 +275,7 @@ function ConceptChip({ id, index, labelOf }: { id: string; index: number; labelO
       className={badgeClass({
         shape: 'pill',
         className:
-          'inline-flex h-8 min-w-0 shrink-0 items-center gap-2 border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 py-0 text-label leading-label text-[color:var(--color-text-primary)]',
+          'inline-flex min-h-8 min-w-0 shrink-0 items-center gap-2 border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3 py-1 text-label leading-label text-[color:var(--color-text-primary)]',
       })}
       {...part(`chip:${index}`)}
     >
@@ -299,7 +299,7 @@ function ConceptColumn({ labelOf }: { labelOf: (id: string) => string }) {
               className={badgeClass({
                 shape: 'pill',
                 className:
-                  'inline-flex h-8 min-w-0 items-center gap-2 border border-[color:var(--color-border-soft)] px-3 py-0 text-label leading-label text-[color:var(--color-text-secondary)]',
+                  'inline-flex min-h-8 min-w-0 items-center gap-2 border border-[color:var(--color-border-soft)] px-3 py-1 text-label leading-label text-[color:var(--color-text-secondary)]',
               })}
             >
               <OntologyMapKindGlyph kind={kindOf(id)} size={11} />
