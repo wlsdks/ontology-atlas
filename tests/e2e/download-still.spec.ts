@@ -21,7 +21,11 @@ test.describe("download — still", () => {
       await waitFrames(page, 3);
       animationsSeen.push(
         ...(await page.evaluate(() =>
-          document.getAnimations().map((animation) => (animation as CSSAnimation).animationName || "script"),
+          document
+            .getAnimations()
+            // A control's colour settling to its selected state is not motion.
+            .filter((a) => !(a instanceof CSSTransition && /color/i.test(a.transitionProperty)))
+            .map((a) => (a as CSSAnimation).animationName || (a as CSSTransition).transitionProperty || "script"),
         )),
       );
     }
