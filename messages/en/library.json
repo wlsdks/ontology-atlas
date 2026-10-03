@@ -615,7 +615,9 @@
     "written": "Written: {paths}",
     "failed": "Could not finish writing. {reason}",
     "noSnapshot": "No save point is created automatically.",
-    "nothing": "It finished without proposing a page."
+    "nothing": "It finished without proposing a page.",
+    "partialWrites": "Confirmed saved files before the failure: {paths}.",
+    "refreshFailed": "The folder could not be reloaded: {reason}. Inspect the saved files before retrying."
   },
   "ask": {
     "title": "Ask the agent about the selected passage",

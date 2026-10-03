@@ -62,7 +62,9 @@
     "createFile": "创建 {path}",
     "modifyFile": "编辑 {path}",
     "addRelation": "关联 {from} → {to}（{type}）",
-    "applying": "正在应用…"
+    "applying": "正在应用…",
+    "partialWrites": "失败前已确认保存的文件：{paths}。",
+    "refreshFailed": "无法重新读取文件夹：{message}。重试前请检查已保存的文件。"
   },
   "notice": {
     "roundCap": "我就做到这里，开始收尾。",
