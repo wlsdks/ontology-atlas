@@ -42,23 +42,23 @@
   "demoProvisionalNote": "来自一次录制的 {seconds} 秒。只剪掉了智能体的思考时间，没有加速，也没有声音。",
   "acpUserLabel": "你",
   "change": {
-    "eyebrow": "After a commit",
-    "title": "When your agent commits, you see <key>which meanings to recheck</key>",
-    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app's Insights lists that concept with the file and both dates. Reread it yourself or ask your agent to; its answer waits for you.",
-    "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
-    "agentCommit": "Your agent's commit",
-    "filesChanged": "{count, plural, other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark Insights gives a meaning whose code moved, and each file's path moves into the Insights brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example."
+    "eyebrow": "提交之后",
+    "title": "智能体提交代码后，你能看到 <key>“哪些含义需要重新核对”</key>",
+    "sub": "地图上的概念会写明它所说明的文件。概念上次写完之后，如果 Git 仓库里的某次提交改动了其中的文件，应用的分析页就会把这个概念连同文件和两个日期一并列出。你可以自己重读，也可以交给智能体；它的回答会等你确认。",
+    "label": "示意图 · 概念和文件来自本仓库的本体，提交仅为示例",
+    "agentCommit": "智能体的提交",
+    "filesChanged": "{count, plural, other {# 个文件已更改}}",
+    "description": "示意图。一位编码智能体的提交改动了本仓库的三个文件：{files}。每个文件都是地图上某个概念所写明的文件：{concepts}。一道光从每个被改动的文件射向它的概念，概念会带上分析页给“代码已移动”的含义打上的琥珀色标记，各文件的路径则移入分析简报，简报写着“{line}”，并提供“{askAgent}”。概念和文件是本仓库自己的，提交仅为示例。"
   },
   "start": {
-    "eyebrow": "After you install",
-    "title": "Open your project, and <key>let your agent draft the map</key>",
-    "sub": "The app opens by asking for a folder. Open your project's, and the first card offers to have your coding agent read the code and draft the map. Nothing is written until you allow it, and what is written is Markdown in that folder, never your code.",
-    "label": "Illustration · the app's own screens and words, drawn small",
-    "step1": "The first screen asks for a folder.",
-    "step2": "In a code folder, the first card offers your agent's draft.",
-    "step3": "The draft waits for your answer, then fills the map.",
-    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and Insights lists them as “{unreviewed}”."
+    "eyebrow": "安装之后",
+    "title": "打开你的项目，让 <key>“智能体起草地图”</key>",
+    "sub": "应用一打开就会询问文件夹。打开你项目所在的文件夹，第一张卡片会建议让你的编码智能体读取代码并起草地图。在你允许之前不会写入任何内容，写入的是该文件夹里的 Markdown，绝不会动你的代码。",
+    "label": "示意图 · 应用真实的界面和文字，缩小后绘制",
+    "step1": "第一个界面会询问文件夹。",
+    "step2": "如果是代码文件夹，第一张卡片会建议由智能体起草。",
+    "step3": "草稿会等你回答，然后填满地图。",
+    "description": "三个步骤的示意图。首先是应用的第一个界面“{firstTitle}”，上面有“{openFolder}”按钮。其次，打开代码文件夹后，第一张卡片显示“{draftTitle}”：{draftBody} 它的“{askAgent}”按钮会把请求交给编码智能体。最后，草稿以一张卡片“{headline}”的形式送达：{writeBody} 点击“{allowOnce}”后，卡片显示“{allowed}”，{count} 个概念填满地图，分析页则把它们列为“{unreviewed}”。"
   },
   "screens": {
     "eyebrow": "界面",

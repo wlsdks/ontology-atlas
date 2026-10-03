@@ -42,23 +42,23 @@
   "demoProvisionalNote": "1回のテイクで{seconds}秒。カットしたのはエージェントの思考時間だけで、早送りはしておらず、音声もありません。",
   "acpUserLabel": "あなた",
   "change": {
-    "eyebrow": "After a commit",
-    "title": "When your agent commits, you see <key>which meanings to recheck</key>",
-    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app's Insights lists that concept with the file and both dates. Reread it yourself or ask your agent to; its answer waits for you.",
-    "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
-    "agentCommit": "Your agent's commit",
-    "filesChanged": "{count, plural, other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark Insights gives a meaning whose code moved, and each file's path moves into the Insights brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example."
+    "eyebrow": "コミットのあとで",
+    "title": "エージェントがコミットすると、<key>見直すべき意味</key>がわかります",
+    "sub": "マップの概念には、その概念が説明するファイルが記されています。概念が最後に書かれたあとに、Gitリポジトリのコミットがそのファイルを変更すると、アプリの分析にその概念がファイルと2つの日付つきで並びます。自分で読み直しても、エージェントに任せても構いません。エージェントの答えは、あなたの確認を待ちます。",
+    "label": "イラスト · 概念とファイルはこのリポジトリのオントロジーのもので、コミットは例です",
+    "agentCommit": "エージェントのコミット",
+    "filesChanged": "{count, plural, other {#個のファイルを変更}}",
+    "description": "イラストです。コーディングエージェントのコミットが、このリポジトリのファイル3つを変更します。{files}。どれもマップの概念が記しているファイルです。{concepts}。変更されたファイルから概念へ光が走り、概念にはコードが動いた意味に分析が付ける琥珀色の印が付き、各ファイルのパスは分析ブリーフィングに移ります。ブリーフィングには「{line}」と表示され、「{askAgent}」が示されます。概念とファイルはこのリポジトリのもので、コミットは例です。"
   },
   "start": {
-    "eyebrow": "After you install",
-    "title": "Open your project, and <key>let your agent draft the map</key>",
-    "sub": "The app opens by asking for a folder. Open your project's, and the first card offers to have your coding agent read the code and draft the map. Nothing is written until you allow it, and what is written is Markdown in that folder, never your code.",
-    "label": "Illustration · the app's own screens and words, drawn small",
-    "step1": "The first screen asks for a folder.",
-    "step2": "In a code folder, the first card offers your agent's draft.",
-    "step3": "The draft waits for your answer, then fills the map.",
-    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and Insights lists them as “{unreviewed}”."
+    "eyebrow": "インストールのあとで",
+    "title": "プロジェクトを開いて、<key>マップの下書きはエージェントに任せましょう</key>",
+    "sub": "アプリは、まずフォルダを尋ねます。プロジェクトのフォルダを開くと、最初のカードが、コーディングエージェントにコードを読ませてマップの下書きを作ることを提案します。許可するまで何も書き込まれず、書き込まれるのはそのフォルダ内のMarkdownで、コードには触れません。",
+    "label": "イラスト · アプリの実際の画面と言葉を小さく描いています",
+    "step1": "最初の画面でフォルダを尋ねます。",
+    "step2": "コードのフォルダなら、最初のカードがエージェントの下書きを提案します。",
+    "step3": "下書きはあなたの答えを待ってから、マップを埋めます。",
+    "description": "3つのステップのイラストです。まず、アプリの最初の画面「{firstTitle}」と、「{openFolder}」ボタンがあります。次に、コードのフォルダを開くと、最初のカードに「{draftTitle}」と表示されます。{draftBody}「{askAgent}」ボタンで、依頼がコーディングエージェントに渡ります。最後に、下書きが「{headline}」というカード1枚で届きます。{writeBody}「{allowOnce}」を押すと、カードに「{allowed}」と表示され、{count}件の概念がマップを埋め、分析には「{unreviewed}」として並びます。"
   },
   "screens": {
     "eyebrow": "画面",
