@@ -32,6 +32,8 @@ The [download page](https://ontologyatlas.com/en/download/) lists each release's
 - **Keeps that meaning in Markdown you own.** An `atlas/` folder in your repository holds one file per concept. Git is its history and its review.
 - **Leaves the final say to you.** Proposed changes arrive as Markdown diffs you keep, correct or reject.
 - **Shows people the same folder.** Map, documents, Library, Insights and Git history all read those files.
+  Library's Add files control distinguishes selection from importing and shows real
+  success or failure; cancelled and duplicate-only actions remain neutral.
 - **Says what it does not know.** A line on the map is a declared relationship, not proof of runtime impact. Missing evidence shows as unknown, never as safe.
 
 **Not yet proven:** re-scored, our benchmark has not measured a difference in answer quality with Atlas, and Atlas was slower ([the correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
@@ -100,6 +102,8 @@ continuations reduced one identical-evidence payload **11,105→2,042 bytes
 (81.6%)**. Calibration took 137.5 s, so this is not a build-speed win. General
 semantic quality, formal qualification and native local construction remain
 unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial).
+
+When an approved model proposal fails during application, Atlas lists the files whose saves completed and attempts to reload the folder. A reload error is reported separately. The failed write may also have changed bytes; this is not an automatic rollback. Inspect the documents before retrying.
 
 ## Local-first and privacy
 

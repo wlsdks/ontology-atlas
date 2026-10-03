@@ -161,6 +161,56 @@ describe('proposal-applier', () => {
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
 
+  it('reports the saved prefix and refreshes after a later write fails', async () => {
+    const target = proposal({ snapshotRequested: true });
+    target.changes[0].files.push(
+      { path: 'elements/new.md', kind: 'create', before: null, after: 'new' },
+      { path: 'elements/later.md', kind: 'create', before: null, after: 'later' },
+    );
+    const order: string[] = [];
+    const port = makePort({
+      saveDoc: vi.fn(async (slug) => { order.push(slug); }),
+      createDoc: vi.fn(async () => { throw new Error('disk full'); }),
+      refresh: vi.fn(async () => { order.push('refresh'); }),
+    });
+    const result = await applyProposal(target, port, { snapshotLabel: 'x' });
+    expect(result).toEqual({
+      status: 'failed', message: 'Error: disk full',
+      writtenPaths: ['capabilities/payment.md'], snapshotSha: 'abc1234',
+    });
+    expect(order).toEqual(['capabilities/payment', 'refresh']);
+    expect(port.createDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves the write error and saved paths when recovery refresh also fails', async () => {
+    const target = proposal();
+    target.changes[0].files.push({ path: 'elements/new.md', kind: 'create', before: null, after: 'new' });
+    const port = makePort({
+      createDoc: vi.fn(async () => { throw new Error('disk full'); }),
+      refresh: vi.fn(async () => { throw new Error('reload failed'); }),
+    });
+    await expect(applyProposal(target, port, { snapshotLabel: 'x' })).resolves.toEqual({
+      status: 'failed', message: 'Error: disk full', refreshError: 'Error: reload failed',
+      writtenPaths: ['capabilities/payment.md'], snapshotSha: null,
+    });
+  });
+
+  it('reports saved files instead of rejecting when the final refresh fails', async () => {
+    const port = makePort({ refresh: vi.fn(async () => { throw new Error('reload failed'); }) });
+    await expect(applyProposal(proposal(), port, { snapshotLabel: 'x' })).resolves.toEqual({
+      status: 'failed', message: 'Error: reload failed',
+      writtenPaths: ['capabilities/payment.md'], snapshotSha: null,
+    });
+    expect(port.saveDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports no confirmed writes and attempts refresh when the first writer fails', async () => {
+    const port = makePort({ saveDoc: vi.fn(async () => { throw new Error('permission denied'); }) });
+    const result = await applyProposal(proposal(), port, { snapshotLabel: 'x' });
+    expect(result).toEqual({ status: 'failed', message: 'Error: permission denied', writtenPaths: [], snapshotSha: null });
+    expect(port.refresh).toHaveBeenCalledTimes(1);
+  });
+
   /* Chained changes to one file are written once, and a selection skipping an earlier one is refused. */
   it('writes once per file with the last after when two chained changes to one file are selected', async () => {
     const port = makePort();
@@ -266,6 +316,8 @@ describe('proposal-applier', () => {
     expect(result).toEqual({
       status: 'failed',
       message: 'Source-backed competency qualification must be created through the MCP builder.',
+      writtenPaths: [],
+      snapshotSha: null,
     });
     expect(port.snapshot).not.toHaveBeenCalled();
     expect(port.saveDoc).not.toHaveBeenCalled();

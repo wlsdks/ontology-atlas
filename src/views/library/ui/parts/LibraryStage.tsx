@@ -1,5 +1,6 @@
 "use client";
 
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
 import type { ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 import { BookText, FilePlus2, Search, Sparkles, Stethoscope } from "lucide-react";
@@ -88,6 +89,7 @@ export interface LibraryStageProps {
   /** True in the installed app. On the web, Compile has no runtime at all. */
   inApp: boolean;
   onAddFiles: () => void;
+  addFilesFeedback?: ActionFeedbackState;
   onFindDocuments: () => void;
   onCompile: () => void;
   /**
@@ -289,6 +291,7 @@ export function LibraryStage({
   onChooseBrain,
   inApp,
   onAddFiles,
+  addFilesFeedback = 'idle',
   onFindDocuments,
   onCompile,
   onLint,
@@ -447,9 +450,10 @@ export function LibraryStage({
                 onClick={onAddFiles}
                 disabled={busy}
                 data-testid="library-stage-add-files"
+              aria-busy={addFilesFeedback === 'working' || undefined}
                 className={controlClass({ shape: "chip", tone: "muted", hoverInk: "strong", className: "gap-1.5" })}
               >
-                <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
+                <ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} />
                 {t("sources.add")}
               </button>
               <button

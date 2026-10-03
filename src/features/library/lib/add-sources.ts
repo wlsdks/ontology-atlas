@@ -6,9 +6,8 @@ import {
 } from "@/shared/lib/tauri-vault-fs";
 
 /**
- * Copies raw sources into `sources/`: Rust copies in the app, the vault handle writes on the web.
- * No sidecar index (`.claude/rules/forbidden.md`), and a duplicate is refused by sha256,
- * naming the file that already holds those bytes.
+ * Raw originals copy into `sources/` through Rust or the granted browser folder handle.
+ * Duplicate bytes are refused by sha256; no sidecar index (`.claude/rules/forbidden.md`).
  */
 
 export interface AddSourcesOutcome {
@@ -112,6 +111,17 @@ export async function addSourcesInBrowser(
       candidate = `${stem} (${suffix})${extension}`;
       suffix += 1;
     }
+    if (takenNames.has(candidate)) {
+      results.push({
+        pickedName: file.name,
+        status: "failed",
+        relativePath: null,
+        sha256: hash,
+        size: file.size,
+        reason: "file-name-conflict-limit",
+      });
+      continue;
+    }
     try {
       const target = await sources.getFileHandle(candidate, { create: true });
       const writable = await target.createWritable();
@@ -152,14 +162,20 @@ export async function addSources({
   root,
   vaultRootPath,
   dialogTitle,
+  onImportStart,
 }: {
   root: FileSystemDirectoryHandle;
   vaultRootPath: string | null;
   dialogTitle: string;
+  onImportStart?: () => void;
 }): Promise<AddSourcesOutcome> {
+  const importing = () => {
+    try { onImportStart?.(); } catch { /* Feedback cannot change the file operation. */ }
+  };
   if (vaultRootPath) {
     const picked = await pickTauriSourceFiles(dialogTitle);
     if (!picked || picked.length === 0) return EMPTY;
+    importing();
     const results = await importTauriSourceFiles(vaultRootPath, picked);
     return { results: results ?? [], cancelled: false };
   }
@@ -176,6 +192,7 @@ export async function addSources({
     return EMPTY;
   }
   const files = await Promise.all(handles.map((handle) => handle.getFile()));
+  if (files.length > 0) importing();
   return addSourcesInBrowser(root, files);
 }
 

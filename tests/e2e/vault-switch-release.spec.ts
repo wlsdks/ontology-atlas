@@ -38,18 +38,39 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
   await seedFirstRunSeen(page);
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("HeapProfiler.enable");
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await page.addInitScript(() => {
+    const probe = window as unknown as { __vaultPartialArrivalCount: number };
+    probe.__vaultPartialArrivalCount = 0;
+    const observe = (value: string | null) => {
+      const match = /^(\d+)\/(\d+)$/.exec(value ?? '');
+      if (match && Number(match[1]) > 0 && Number(match[1]) < Number(match[2])) probe.__vaultPartialArrivalCount += 1;
+    };
+    new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type === 'attributes') observe(record.oldValue);
+      }
+      observe(document.querySelector('[data-vault-load-progress]')?.getAttribute('data-vault-load-progress') ?? null);
+    }).observe(document, { subtree: true, childList: true, attributes: true,
+      attributeFilter: ['data-vault-load-progress'], attributeOldValue: true });
+  });
   await page.goto("/en/topology/?guides=off");
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
   let label = await folderOpen(page, null);
+  const partialArrivals = () => page.evaluate(() => (window as unknown as { __vaultPartialArrivalCount: number }).__vaultPartialArrivalCount);
+  expect(await partialArrivals(), 'the initial folder must exercise partial arrival').toBeGreaterThan(0);
   const oneFolder = await retained(cdp);
   expect(oneFolder.fileHandles, "the open folder's files were read through handles").toBeGreaterThan(0);
   expect(oneFolder.largeArrays, "the open folder's graph is made of arrays this large").toBeGreaterThan(0);
+  expect(oneFolder.largeMaps, "the open folder has indexed maps this large").toBeGreaterThan(0);
 
   for (let switchCount = 1; switchCount <= 2; switchCount += 1) {
+    const beforeArrival = await partialArrivals();
     await page.getByTestId("vault-switch-rail-tile").click();
     await page.getByTestId("vault-switch-pick-other").click();
     label = await folderOpen(page, label);
+    expect(await partialArrivals(), 'each switched folder must exercise partial arrival').toBeGreaterThan(beforeArrival);
   }
 
   const afterSwitches = await retained(cdp);

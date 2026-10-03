@@ -17,6 +17,7 @@ import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import type { AcpEvent, AcpTurnActivity, AcpTurnCompletion, AcpTurnToolActivity } from "@/features/acp-session";
 import {
   addSources,
+  useSourceImportFeedback,
   addSourcesInBrowser,
   buildCompileBrief,
   appendWikiLog,
@@ -660,16 +661,20 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     [manifest],
   );
 
+  const { state: sourceImportFeedback, begin: beginSourceImport } = useSourceImportFeedback(nativeVaultRootPath ?? handle);
+
   const handleAddFiles = useCallback(() => {
     if (!handle || busy) return;
+    const feedback = beginSourceImport();
     setBusy(true);
     void addSources({
       root: handle,
       vaultRootPath: nativeVaultRootPath,
       dialogTitle: t("sources.addTooltip"),
+      onImportStart: feedback.importing,
     })
       .then(async (outcome) => {
-        if (outcome.cancelled) return;
+        if (outcome.cancelled) { feedback.finish(outcome); return; }
         const { added, duplicate, failed } = summarizeAddSources(outcome);
         // Three different things happened and the sentence says all three. "Imported 2
         // files" while one was silently refused is the kind of half-truth that teaches a
@@ -685,8 +690,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         if (failed > 0) toast.show(t("sources.failed", { count: failed }), "error");
         // The folder changed under us; the walk is what turns that into rows.
         await localVault.refresh();
+        feedback.finish(outcome);
       })
       .catch((error) => {
+        feedback.fail();
         toast.show(
           t("sources.failedReason", {
             reason: error instanceof Error ? error.message : String(error),
@@ -695,7 +702,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         );
       })
       .finally(() => setBusy(false));
-  }, [busy, handle, localVault, nativeVaultRootPath, t, toast]);
+  }, [busy, handle, localVault, nativeVaultRootPath, beginSourceImport, t, toast]);
 
   const runDiscovery = useCallback(async () => {
     if (!handle) return;
@@ -2436,6 +2443,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           vaultLabel={nativeVaultRootPath ?? handle.name}
           busy={busy}
           onAddFiles={handleAddFiles}
+          addFilesFeedback={sourceImportFeedback}
           onFindDocuments={handleFindDocuments}
           onImportFromService={openImport}
           t={t}
@@ -2452,6 +2460,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onAdd={handleAddCandidates}
           busy={busy}
           onAddFiles={handleAddFiles}
+          addFilesFeedback={sourceImportFeedback}
           addFilesLabel={t("sources.add")}
         />
       </main>
@@ -2780,6 +2789,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               if (anchor) setSourceCitation({ path: row.path, anchor });
             }}
             onAddFiles={handleAddFiles}
+          addFilesFeedback={sourceImportFeedback}
             onFindDocuments={handleFindDocuments}
             onImportFromService={openImport}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
@@ -3377,6 +3387,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onChooseBrain={agent.chooseBrain}
           inApp={nativeVaultRootPath !== null}
           onAddFiles={handleAddFiles}
+          addFilesFeedback={homeSurface === 'guide' ? sourceImportFeedback : 'idle'}
           onFindDocuments={handleFindDocuments}
           onCompile={handleCompile}
           onLint={agent.route === "agent" ? handleLint : null}
@@ -3638,6 +3649,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         onAdd={handleAddCandidates}
         busy={busy}
         onAddFiles={handleAddFiles}
+          addFilesFeedback={sourceImportFeedback}
         addFilesLabel={t("sources.add")}
       />
     </main>
