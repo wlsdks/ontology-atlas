@@ -15,6 +15,7 @@ vi.mock('../../expressive/synapse-field', () => ({
 describe('LibrarySynapseField frame ownership', () => {
   let now: number;
   let callbacks: Map<number, FrameRequestCallback>;
+  let intersect: IntersectionObserverCallback;
   function frame(time: number) {
     now = time;
     const pending = [...callbacks.values()];
@@ -23,6 +24,7 @@ describe('LibrarySynapseField frame ownership', () => {
   }
   beforeEach(() => {
     now = 0;
+    intersect = () => {};
     callbacks = new Map();
     let id = 0;
     state.asleep = false;
@@ -38,12 +40,17 @@ describe('LibrarySynapseField frame ownership', () => {
       setTransform: vi.fn(), clearRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
     vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback) { intersect = callback; }
+      observe() {} disconnect() {}
+    });
   });
   afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
   for (const fps of [60, 120]) {
     it(`parks asleep and resumes without consuming idle time at ${fps} fps`, () => {
       render(<LibrarySynapseField />);
+      intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
       const interval = 1000 / fps;
       frame(interval);
       state.asleep = true;
@@ -62,6 +69,7 @@ describe('LibrarySynapseField frame ownership', () => {
   }
   it('stops hidden frames and resumes from a fresh visible clock', () => {
     render(<LibrarySynapseField />);
+      intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
     frame(10);
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
     fireEvent(document, new Event('visibilitychange'));
@@ -75,4 +83,27 @@ describe('LibrarySynapseField frame ownership', () => {
     frame(now + 10);
     expect(state.step.mock.calls.at(-1)![1]).toBe(10);
   });
+  it('parks outside the viewport and resumes the same field without a catch-up jump', () => {
+    render(<LibrarySynapseField />);
+    expect(callbacks.size).toBe(0);
+    intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    frame(10);
+    intersect([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver);
+    expect(callbacks.size).toBe(0);
+    const steps = state.step.mock.calls.length;
+    now = 60_000;
+    fireEvent.pointerMove(window);
+    expect(callbacks.size).toBe(0);
+    intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    frame(now + 10);
+    expect(state.step.mock.calls.length).toBe(steps + 1);
+    expect(state.step.mock.calls.at(-1)![1]).toBe(10);
+  });
+  it('keeps the field still when the viewport observer is unavailable', () => {
+    vi.stubGlobal('IntersectionObserver', undefined);
+    render(<LibrarySynapseField />);
+    fireEvent.pointerMove(window);
+    expect(callbacks.size).toBe(0);
+  });
+
 });
