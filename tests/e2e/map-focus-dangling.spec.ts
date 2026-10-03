@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import "./atlas-map-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -69,6 +71,18 @@ async function readablePixelCount(page: import("@playwright/test").Page) {
   });
 }
 
+/** The bundled sample stays drawn for a few frames after a pick or a reload; readings wait for the picked vault. */
+async function waitForPickedVault(page: import("@playwright/test").Page) {
+  await page.waitForFunction(
+    (count) => {
+      const nodes = window.__atlasMap?.nodes() ?? [];
+      return nodes.length === count && nodes.some((n) => n.label === "Example domain");
+    },
+    Object.keys(VAULT).length,
+    { timeout: 30_000 },
+  );
+}
+
 async function openVault(page: import("@playwright/test").Page, query: string) {
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
@@ -77,6 +91,8 @@ async function openVault(page: import("@playwright/test").Page, query: string) {
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("ontology-map-canvas").first()).toBeVisible({ timeout: 30_000 });
+  await waitForPickedVault(page);
+  await waitForMapStill(page);
   if (query) {
     await page.goto(`/ko/topology/?e2e=1&guides=off&${query}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("ontology-map-canvas").first()).toBeVisible({ timeout: 30_000 });
@@ -101,6 +117,8 @@ test("문서함이 보내는 프로젝트 딥링크로 들어와도 지도가 �
   // produces (`topology-href.ts`: kind: project → `/topology/?p=<slug>`).
   await page.goto("/ko/topology/?e2e=1&guides=off&p=project", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("ontology-map-canvas").first()).toBeVisible({ timeout: 30_000 });
+  await waitForPickedVault(page);
+  await waitForMapStill(page, { what: "camera" });
   await expect
     .poll(() => readablePixelCount(page), {
       timeout: 30_000,
@@ -110,13 +128,11 @@ test("문서함이 보내는 프로젝트 딥링크로 들어와도 지도가 �
     })
     .toBeGreaterThan(0);
 
-  const viaProjectLink = await readablePixelCount(page);
   // Must reach half the baseline — "one pixel is enough to pass" would go green on a
   // state where only a label survives and every node has sunk.
-  expect(
-    viaProjectLink,
-    `프로젝트 딥링크(${viaProjectLink})가 파라미터 없는 화면(${plain})보다 크게 어둡다`,
-  ).toBeGreaterThan(plain / 2);
+  await expect
+    .poll(() => readablePixelCount(page), { timeout: 30_000, message: `프로젝트 딥링크가 파라미터 없는 화면(${plain})보다 크게 어둡다` })
+    .toBeGreaterThan(plain / 2);
 });
 
 test("지도에 없는 노드를 가리키는 딥링크는 아무것도 안 고른 것으로 떨어진다", async ({ page }) => {
@@ -136,6 +152,7 @@ test("지도에 없는 노드를 가리키는 딥링크는 아무것도 안 고�
     waitUntil: "domcontentloaded",
   });
   await expect(page.getByTestId("ontology-map-canvas").first()).toBeVisible({ timeout: 30_000 });
+  await waitForPickedVault(page);
   await expect
     .poll(() => readablePixelCount(page), {
       timeout: 30_000,
