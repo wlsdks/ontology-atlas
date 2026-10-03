@@ -81,7 +81,7 @@ function stop(): void {
 }
 
 /** The first registration starts the loop and listeners; the last cancellation removes them all. */
-export function registerGatewayFrameClient(client: GatewayFrameClient): () => void {
+function registerGatewayFrameClient(client: GatewayFrameClient): () => void {
   clients.add(client);
   if (!running) start();
   return () => {
@@ -92,7 +92,7 @@ export function registerGatewayFrameClient(client: GatewayFrameClient): () => vo
 
 
 /** A drawing runs only while at least this share of its section is visible. */
-export const GATEWAY_VISIBLE_RATIO = 0.2;
+const GATEWAY_VISIBLE_RATIO = 0.2;
 
 /**
  * Registers `client` only while at least `GATEWAY_VISIBLE_RATIO` of `owner`'s section is visible
@@ -141,9 +141,4 @@ export function registerGatedFrameClient(
     unregister?.();
     unregister = null;
   };
-}
-
-/** For the e2e gate probe: how many clients the shared loop holds right now. */
-export function gatewayFrameClientCount(): number {
-  return clients.size;
 }
