@@ -4214,7 +4214,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
   }
   if (captionCandidates.length) {
-    drawnRelationCaptions = placeRelationCaptions(captionCandidates, [...nodeDiscReservations.map((item) => item.bbox), ...chipReservations.map((item) => item.bbox), ...drawnLabelBoxes], safeRect, (text) => measureLabelWidth(ctx, 'capability', text, 1), scaledLabelFontSize('capability', 1) + 8);
+    const pathSinks = mapLensKind === "path" && spotlightIds !== null && (pathLensActive || (colorSelectedEdge !== null && colorFocusedNodeId === null));
+    const sunk = (id: string | undefined) => pathSinks && id !== undefined && id !== hoveredNodeId
+      && id !== colorSelectedEdge?.sourceId && id !== colorSelectedEdge?.targetId
+      && !isPreviewEndpoint(previewEdge, id) && !isPathLensNode(mapLensKind, id, spotlightIds);
+    drawnRelationCaptions = placeRelationCaptions(captionCandidates, [...nodeDiscReservations.map((item) => ({ ...item.bbox, sunk: sunk(item.ownerId) })), ...chipReservations.map((item) => item.bbox), ...drawnLabelBoxes.map((box) => ({ ...box, sunk: sunk(box.nodeId) }))], safeRect, (text) => measureLabelWidth(ctx, 'capability', text, 1), scaledLabelFontSize('capability', 1) + 8);
     ctx.save();
     ctx.font = scaledLabelFont('capability', 1);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = 1;

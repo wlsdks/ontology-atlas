@@ -29,7 +29,18 @@ describe('map relation meaning captions', () => {
     const [placed] = placeRelationCaptions([{ ...under, normal }], [label], safe, (text) => text.length * 6, 20);
     expect(placed).toMatchObject({ edgeId: 'depends', x: 150, y: 60, minY: 50, maxY: 70 });
     expect(placed).not.toHaveProperty('normal');
-    expect(placeRelationCaptions([{ ...under, normal }], [label, { minX: 0, maxX: 300, minY: 40, maxY: 72 }, { minX: 0, maxX: 300, minY: 88, maxY: 120 }], safe, (text) => text.length * 6, 20)).toEqual([]);
+    const [far] = placeRelationCaptions([{ ...under, normal }], [label, { minX: 0, maxX: 300, minY: 55, maxY: 72 }, { minX: 0, maxX: 300, minY: 88, maxY: 120 }], safe, (text) => text.length * 6, 20);
+    expect(far).toMatchObject({ x: 150, y: 40 });
+    expect(placeRelationCaptions([{ ...under, normal }], [label, { minX: 0, maxX: 300, minY: 20, maxY: 72 }, { minX: 0, maxX: 300, minY: 88, maxY: 140 }], safe, (text) => text.length * 6, 20)).toEqual([]);
+  });
+  it('under the path lens covers only what the lens sank, never a path member or another caption', () => {
+    const safe = { left: 16, right: 284, top: 16, bottom: 180 };
+    const measure = (text: string) => text.length * 6;
+    const caption = { edgeId: 'shown', text: 'depends on', x: 150, y: 80, priority: 5 };
+    const name = { minX: 140, maxX: 220, minY: 74, maxY: 86 };
+    expect(placeRelationCaptions([caption], [{ ...name, sunk: true }], safe, measure, 20).map((item) => item.edgeId)).toEqual(['shown']);
+    expect(placeRelationCaptions([caption], [{ ...name, sunk: false }], safe, measure, 20)).toEqual([]);
+    expect(placeRelationCaptions([caption, { ...caption, edgeId: 'later', priority: 1 }], [{ ...name, sunk: true }], safe, measure, 20).map((item) => item.edgeId)).toEqual(['shown']);
   });
   it('gives a contested spot to the same caption whatever the machine locale', () => {
     const place = () => placeRelationCaptions([
