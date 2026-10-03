@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 
-import { registerGatewayFrameClient } from '../lib/gateway-frame-loop';
+import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 
 /**
  * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped
  * by `--gateway-fx-*` tokens, still for the first second so the headline enters undisturbed, one
- * still frame under reduced motion (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`).
+ * still frame under reduced motion (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`),
+ * drawing only while the hero is in view.
  * The ring never hides the native cursor (`tests/e2e/cursor-affordance.spec.ts`); it grows over
  * pressable targets.
  */
@@ -175,19 +176,28 @@ export function GatewayFx() {
       startTimer = window.setTimeout(() => {
         let ampTime = 0;
         let lastPaint = 0;
-        unregisterFrame = registerGatewayFrameClient(({ t, dtMs, factor }) => {
-          if (disposed) return;
-          ambient = Math.min(ambient + dtMs / 1500, 1);
-          // The sleep factor scales speed, so idle decelerates to a stop without a phase jump.
-          ampTime += dtMs * ambient * factor;
-          fxLoopLive = true;
-          // 30fps for drift with a period of tens of seconds; only the cursor follows every frame.
-          if (t - lastPaint >= 33) {
-            lastPaint = t;
-            draw(ampTime);
-          }
-          cursorTick?.();
-        });
+        // The hero owns the field: below it the light holds its last frame at the intensity it had.
+        const owner = document.querySelector('[data-testid="gateway-hero"]') ?? canvas;
+        unregisterFrame = registerGatedFrameClient(
+          owner,
+          ({ t, dtMs, factor }) => {
+            if (disposed) return;
+            ambient = Math.min(ambient + dtMs / 1500, 1);
+            // The sleep factor scales speed, so idle decelerates to a stop without a phase jump.
+            ampTime += dtMs * ambient * factor;
+            fxLoopLive = true;
+            // 30fps for drift with a period of tens of seconds; only the cursor follows every frame.
+            if (t - lastPaint >= 33) {
+              lastPaint = t;
+              draw(ampTime);
+            }
+            cursorTick?.();
+          },
+          (live) => {
+            // Without the loop the ring attaches directly; a ring waiting on a stopped loop freezes.
+            if (!live) fxLoopLive = false;
+          },
+        );
       }, 1000);
     }
 

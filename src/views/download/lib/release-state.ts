@@ -39,6 +39,11 @@ export function windowsAsset(): WindowsReleaseAsset | null {
   return WINDOWS_RELEASE.assets[0] ?? null;
 }
 
+/** The release page that lists each file with its `.sha256` sibling. */
+export function releasePageUrl(platform: 'macos' | 'windows'): string {
+  return platform === 'windows' ? WINDOWS_RELEASE.releaseUrl : MACOS_RELEASE.releaseUrl;
+}
+
 /** Decimal MB with one decimal, matching what Finder and Safari show for the same file. */
 export function formatAssetSize(sizeBytes: number): string {
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) return '';

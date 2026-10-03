@@ -88,8 +88,7 @@ export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
   "/download": [
     "download.eyebrow",
     "download.demoTitle",
-    "download.evidenceTitle",
-    "download.agentsTitle",
+    "download.screens.title",
   ],
 };
 
@@ -148,12 +147,12 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   // marker names are not written here: the contract test reads this file as text, so
   // naming one even in prose is caught as "still present" — a text gate reads its own
   // documentation too.) When the install section disappeared on 2026-08-19 the trust
-  // section's marker retired with it, and the markers are now the three sections that
-  // make up this route today: the hero's download, the demo, and the agent.
+  // section's marker retired with it, and the markers are now three sections that
+  // make up this route today: the hero's download, the demo, and the screens.
   "/download": [
     "gateway-hero-cta",
     "gateway-demo-section",
-    "gateway-agents-section",
+    "gateway-screens-section",
   ],
   "/docs": [
     "data-docs-header-zone",

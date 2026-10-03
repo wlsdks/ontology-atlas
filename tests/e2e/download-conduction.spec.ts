@@ -95,7 +95,7 @@ test.describe("download — the conduction illustration", () => {
     const figure = await openFigure(page, "no-preference");
     await expect(figure).toHaveAttribute("data-conduction-state", "running");
 
-    await page.getByTestId("download-closing-band").scrollIntoViewIfNeeded();
+    await page.locator("main footer").scrollIntoViewIfNeeded();
     await expect(figure).not.toBeInViewport();
     await expect(figure).toHaveAttribute("data-conduction-state", "paused");
     const parked = await figure.evaluate((element) =>
