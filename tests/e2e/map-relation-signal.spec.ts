@@ -127,11 +127,11 @@ async function sampleInkMix(page: Page) {
     const w = window as unknown as { __inkFull: number | null };
     w.__inkFull = null;
     let seenBelow = false;
-    const tick = () => {
+    const tick = (time: number) => {
       const dial = window.__atlasMap?.dial?.();
       const mix = dial && dial.owns ? (dial as { inkMix: number }).inkMix : 0;
       if (mix < 1) seenBelow = true;
-      else if (seenBelow && w.__inkFull === null) w.__inkFull = performance.now();
+      else if (seenBelow && w.__inkFull === null) w.__inkFull = time;
       if (w.__inkFull === null) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
