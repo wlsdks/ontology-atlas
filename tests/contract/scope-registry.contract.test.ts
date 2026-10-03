@@ -157,6 +157,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "갤럭시 보기(평면 지도를 별하늘로) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
+  { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D 배치 기준: 소유(돔, 기본)/결합(힘 구름)" },
   { key: "atlas.appearance.map-drag-speed", kind: "storage", scope: "global", note: "Map drag speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.appearance.map-zoom-speed", kind: "storage", scope: "global", note: "Map zoom speed (0.5x-2x, default 1x), a hand preference of this machine" },
@@ -303,6 +304,15 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     file: "src/views/home/model/hex-board-placement-store.ts",
     provenBy: "src/views/home/model/hex-board-placement-store.test.ts",
     note: "Hex board placement (append-only tile cells) per folder — view state, never meaning",
+  },
+  {
+    key: "atlas.map.cosmos.v1:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/home/model/cosmos-placement-store.ts",
+    provenBy: "src/views/home/model/cosmos-placement-store.test.ts",
+    note: "Galaxy placement: settled galaxy centres per folder, kept for absent domains, so placed galaxies never move — view state, never meaning",
   },
   {
     key: "atlas.agentActivity.readAt:",

@@ -1,0 +1,115 @@
+{
+  "title": "エージェント",
+  "subtitle": "マップを一緒に見て、文書フォルダを直します",
+  "close": "パネルを閉じる",
+  "you": "あなた：",
+  "send": "送信",
+  "stop": "停止",
+  "placeholder": "続けてください…",
+  "placeholderFirst": "やりたいことを書いてください",
+  "thinking": "考え中",
+  "thinkingSeconds": "考え中・{seconds}秒",
+  "unsupported": "この回答はフォルダを読まずに作られました。事実として受け取らないでください。",
+  "charsLabel": "{chars}文字",
+  "footer": "{provider}・記録{rounds}件",
+  "boundary": "ソースコードが必要な作業は、お使いのターミナルのAIに任せるほうが向いています。ここでのエージェントは、文書フォルダを読むだけです。",
+  "handoffSummary": "ターミナルで続ける",
+  "handoffNote": "これをコピーして、お使いのターミナルに貼り付けてください。実行するのはご自身です。このアプリがコマンドを入力することはありません。",
+  "handoffCopy": "コピー",
+  "handoffCopied": "コピーしました",
+  "snapshotLabel": "エージェントの変更前のチェックポイント",
+  "provider": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI",
+    "gemini": "Gemini",
+    "local": "ローカルランナー"
+  },
+  "screenContext": {
+    "lookingAt": "画面：{title}を表示中",
+    "wholeMap": "画面：マップ全体"
+  },
+  "scope": {
+    "title": "送信される前に",
+    "body": "この会話では、エージェントは作業中に文書フォルダを読みます。読んだ内容は、そのたびに{provider}（{host}）へ送られます。",
+    "liveRows": "読み取りは1回ごとにここに1行表示され、送信した文字数も分かります。",
+    "recorded": "やり取りはすべて「{path}」に記録されます。",
+    "accept": "わかりました",
+    "cancel": "あとで",
+    "consent": "文書を変更する場合は、保存前に正確な編集内容が表示され、承認するまで反映されません。"
+  },
+  "promptDisclosure": {
+    "summary": "エージェントに渡される指示を見る",
+    "note": "下の文章は毎回送られます。編集はできませんが、いつでも読めます。"
+  },
+  "proposal": {
+    "title": "提案・変更するファイル{count}件",
+    "readOnlyTitle": "提案（このフォルダは読み取り専用です）",
+    "volume": "{files}ファイル・+{added} / −{removed}行",
+    "apply": "選択した{count}件を適用",
+    "cancel": "キャンセル",
+    "copy": "この変更をコピー",
+    "copied": "コピーしました",
+    "snapshot": "先にチェックポイントを作る（Git）",
+    "snapshotUnavailable": "このフォルダはGitリポジトリではないため、チェックポイントを作れません",
+    "applied": "適用しました・チェックポイント{sha}",
+    "appliedNoSnapshot": "適用しました",
+    "cancelled": "キャンセルしました。ファイルは1つも変更されていません。",
+    "conflict": "この文書がちょうど変更されたため、何も書き込まれませんでした。もう一度依頼してください。",
+    "failed": "適用に失敗しました：{message}　一部のファイルが変更された可能性があります。文書を確認してから、もう一度依頼してください。",
+    "unreadWarning": "この会話でエージェントが読んでいないファイルが変更されます。展開して確認してください。",
+    "showOnMap": "マップで表示",
+    "expandHint": "変更内容",
+    "createFile": "{path}を作成",
+    "modifyFile": "{path}を編集",
+    "addRelation": "{from} → {to}（{type}）をつなぐ",
+    "applying": "適用中…"
+  },
+  "notice": {
+    "roundCap": "ここまでにして、まとめに入ります。",
+    "aborted": "ここで止めました。",
+    "networkFailed": "接続に失敗しました。",
+    "timedOut": "制限時間内にモデルから応答がありませんでした。質問を絞るか、より速いモデルでお試しください。",
+    "rateLimited": "いまは利用回数の上限に達しています。少し待ってからもう一度お試しください。",
+    "rejected": "キーが拒否されました。エージェント → モデルで確認してください。",
+    "auditBlocked": "記録を書き込めなかったため、何も送信されていません。",
+    "providerRefused": "このリクエストは受け付けられませんでした。",
+    "failed": "問題が発生しました。",
+    "noToolCall": "エージェントは、このフォルダを一度も読まないまま、{cap}回中{round}回目で止まりました。もう一度依頼してください。"
+  },
+  "degraded": {
+    "webTitle": "デスクトップアプリでのみ使えます",
+    "webBody": "ブラウザには、キーを安全に保管できる場所がありません。デスクトップアプリでは、キーはこのコンピュータのOSの認証情報ストアに保存されます。",
+    "download": "アプリを入手",
+    "noVaultTitle": "先に文書フォルダを開いてください",
+    "noVaultBody": "エージェントが読むのは、開いているフォルダの文書だけです。フォルダを選ぶと、ここからそのまま続けられます。",
+    "noKeyTitle": "AIサービスのキーが1回だけ必要です",
+    "noKeyBody": "キーはこのコンピュータのキーチェーンにだけ保存されます。一度登録すれば、ここはすぐに接続され、再入力は不要です。Claude CodeやCodexをすでに使っている場合はキーは不要です。左のエージェントからそのツールを接続してください。",
+    "noVaultAction": "文書フォルダを開く",
+    "noKeyAction": "モデルでキーを追加"
+  },
+  "locked": {
+    "examplesTitle": "頼める内容の例",
+    "consentPromise": "文書を変更する場合は、先に正確な編集内容が表示されます。あなたが承認するまで、ディスク上は何も変わりません。"
+  },
+  "sessionSummary": "この会話：概念{concepts}件・つながり{relations}件",
+  "firstWords": {
+    "title": "どこから始めますか？",
+    "hint": "どれかを押すと、その文が下の入力欄に入ります。送信前に編集できます",
+    "missingDefinition": "「{title}」が何を指すのか、まだ誰も書いていません。下書きを作ってください",
+    "missingDomain": "「{title}」はまだどのグループにも入っていません。入れる場所を探してください",
+    "missingRelations": "「{title}」に足りないつながりがないか確認してください",
+    "mapReview": "いまこのマップで一番おかしいところはどこですか？",
+    "emptyVault": "このフォルダはまだ空です。まず、このプロダクトが何なのかを整理するのを手伝ってください"
+  },
+  "nextStep": {
+    "title": "次の一手"
+  },
+  "retry": {
+    "title": "もう一度試す"
+  },
+  "uncited": "今回読んだもの：",
+  "footerDetail": "今回のやり取りは{chars}文字でした。大半は、表示されない指示文です。",
+  "reground": {
+    "title": "{cap}回中{round}回目で止まりました。このフォルダを読み直して、もう一度答えさせます"
+  }
+}

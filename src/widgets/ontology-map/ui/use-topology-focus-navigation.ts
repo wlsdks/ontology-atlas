@@ -245,7 +245,6 @@ export function useTopologyFocusNavigation({
     const { width, height } = viewportRef.current;
     if (!effectTokens || !world || width <= 0 || height <= 0) return;
 
-    const overviewEntryScale = overviewScaleRef.current * effectTokens.overviewEntryRatio;
     // Inside a realm the ego bbox is restricted to realm members, so a
     // flung-out neighbour beyond the warding ring cannot inflate the bbox and
     // throw the camera off screen. The focus dive stays inside the ring.
@@ -278,6 +277,7 @@ export function useTopologyFocusNavigation({
        * the free map's centre at 1512×949 (measured 2026-09-26).
        */
       const tokens = readOntologyMapTokensOrNull() ?? effectTokens;
+      const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
       let target: CameraTarget | null;
       if (focusedSlug === null && realmActive && realmData) {
         const bounds = realmVisibleBounds(

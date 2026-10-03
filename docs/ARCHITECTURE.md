@@ -50,7 +50,7 @@ area: architecture
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
 │ ├─ Next.js 16 App Router                               │
-│ ├─ next-intl /[locale]/ (en, ko)                       │
+│ ├─ next-intl /[locale]/ (en, ko, ja, zh)               │
 │ ├─ output: 'export'  (static)                          │
 │ ├─ Tauri macOS shell (installed local workbench)        │
 │ └─ TaxonomyProvider · ToastProvider · MotionProvider   │
@@ -128,7 +128,8 @@ The public entrypoints remain stable while internal modules own narrower work:
 | Entrypoint | Internal responsibilities |
 |---|---|
 | `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
-| `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering; the light stage (`light/`) prepares before the presentation stage and renders after it on its own WebGL2 canvas, which draws light only, in Flat and Galaxy, for an event. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
+| `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering; the light stage (`light/`) prepares before the presentation stage and renders after it on its own WebGL2 canvas, which draws light only, in Flat, for an event. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
+| `src/widgets/ontology-map/galaxy/` | Galaxy's own surface: deterministic cosmos layout (`layout/`), bitmap-cached canvas-2D drawing (`draw/`), engine, camera, arrival, haze, keyboard walk and DOM mirror; mounted by `TopologyMapRenderer` when the view is Galaxy, as the Hex board is. |
 | `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
 | `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
 | `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation. Scheduling and execution authority remain in Library rounds. |
@@ -770,7 +771,7 @@ until a local manifest, or the first part of one, exists.
 /changelog                 renders the composed changelog (frozen history plus change/release fragments), most recent sections only
 ```
 
-All routes are wrapped under `/[locale]/` by next-intl (en, ko).
+All routes are wrapped under `/[locale]/` by next-intl (en, ko, ja, zh). Chinese is Simplified only, served as `zh` with `<html lang="zh-Hans">`; root `/` sends `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` browsers to `/en/`.
 
 > Removed in earlier rounds: `/admin/*`, `/review/*`, `/diagnostics/*`,
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,

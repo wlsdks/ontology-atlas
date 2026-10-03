@@ -1,0 +1,436 @@
+{
+  "ariaLabel": "{runtime}との会話",
+  "emptyHint": "エージェントはこのフォルダのファイルをもとに答えます。",
+  "emptySeatedHint": "この画面があなたの代わりに質問を書きました。下で編集するか、そのまま送信できます。",
+  "codeCopy": "コピー",
+  "codeCopied": "コピーしました",
+  "jumpToLatest": "最新へ移動",
+  "composerLabel": "依頼する内容を入力",
+  "send": "送信",
+  "stop": "停止",
+  "stoppedBeforeAnswer": "エージェントの回答前に停止しました。何も書き込まれていません。",
+  "turnSilent": "エージェントが{minutes}分間応答していません",
+  "turnSilentHint": "処理中か、通知なしに完了している可能性があります。「停止」を押すと再び入力できます。",
+  "status": {
+    "idle": "オフ",
+    "starting": "接続中",
+    "ready": "準備完了",
+    "thinking": "思考中",
+    "awaiting": "確認待ち",
+    "error": "問題あり",
+    "exited": "終了",
+    "stopped": "停止済み"
+  },
+  "firstRun": {
+    "title": "ツールを準備しています",
+    "body": "初回はツール（数百MB）をダウンロードするため、数分かかることがあります。アプリを開いたままにしてください。",
+    "progress": "{mb}MBをダウンロード済み"
+  },
+  "starting": {
+    "title": "ツールに接続中",
+    "body": "このコンピュータでツールを起動しています。準備ができたらすぐに質問できます。"
+  },
+  "connectStopped": {
+    "title": "接続を停止しました",
+    "body": "ツールは起動しておらず、何も送信していません。",
+    "again": "もう一度接続"
+  },
+  "permission": {
+    "title": "このフォルダの外のものに触れようとしています",
+    "body": "許可するまで何も実行されません。書き込み先を下で確認してください。",
+    "ontologyWriteTitle": "変更案を確認してください",
+    "ontologyWriteBody": "許可すると、このフォルダのMarkdownファイルに書き込まれます。それまでは何も変わりません。",
+    "consentTitle": "このフォルダに加えたい変更があります",
+    "consentBody": "許可するまで何も変わりません。変更したい内容は、エージェント自身の言葉で下に書かれています。",
+    "unknownTarget": "何をしようとしているか判別できません",
+    "reject": "拒否",
+    "allowOnce": "今回のみ許可",
+    "answered": {
+      "allow": "今回のみ許可しました。エージェントは処理を続けます。",
+      "allowNamed": "今回のみ許可しました。エージェントは「{name}」へのこの書き込みを実行します。",
+      "reject": "拒否しました。エージェントはこの操作を行いません。",
+      "rejectWrite": "拒否しました。何も書き込まれません。",
+      "rejectNamed": "拒否しました。「{name}」には何も書き込まれません。",
+      "correct": "拒否しました。修正依頼を入力欄に下書きしました（未送信）。",
+      "always": "この会話の間は許可しました。",
+      "failed": "回答が送信されませんでした。もう一度押してください。"
+    },
+    "taskReview": {
+      "eyebrow": "現在のタスク",
+      "nonGoalsUnstructured": "対象外の項目は個別に記録されていないため、不明のままです。",
+      "depthLabel": "確認の深さ",
+      "summary": "概要",
+      "compare": "比較",
+      "details": "詳細",
+      "scopeRelation": "{from} → {type} → {to}",
+      "scopeItem": "このバッチの{items}件中{selected}件目",
+      "batchRemaining": "バッチ内の他の{count}件は、この概要に含まれていません。",
+      "incomplete": "意味の確認が不完全です · 記録された意味単位{total}件中{inspected}件を表示 · {omitted}件を省略。完全な依頼内容は「詳細」にあります。",
+      "coverageNone": "この依頼には要約できる値がありません。完全な依頼内容は「詳細」に表示されます。",
+      "beforeUnavailable": "この依頼に含まれる値のみを表示しています。変更前の状態を推測で補うことはありません。",
+      "beforeUnknown": "変更前 · 取得不可",
+      "before": "変更前",
+      "after": "変更案",
+      "absent": "なし",
+      "comparisonCoverage": "信頼できる比較 · {total}件中{inspected}件を確認 · {omitted}件を省略",
+      "acknowledgeFullScope": "この意味の判断を、依頼された{count}件すべてに適用します。",
+      "acceptMeaning": "この意味の提案を承認",
+      "checkingBasis": "根拠を確認中…",
+      "meaningAccepted": "意味を承認済み",
+      "rootMismatchBody": "接続中のオントロジーがこのタスクと一致しません。書き込みはブロックされています。拒否して、現在のオントロジーから依頼を作り直してください。",
+      "rootMismatch": "接続中のオントロジー：{actual} · 想定：{expected}。この依頼を拒否し、想定のオントロジーから作り直してください。",
+      "reason": {
+        "unsupported_request": "この形式の依頼はまだ比較できません。",
+        "historical_basis_unavailable": "タスク開始時のスナップショットがありません。",
+        "source_basis_unavailable": "タスク開始時のソースの基準がありません。",
+        "target_before_unavailable": "対象はタスク開始時に取得されていません。",
+        "current_basis_unavailable": "現在の比較基準がありません。",
+        "intervening_change": "取得した提案の外で、対象が変更されました。",
+        "guard_mismatch": "書き込みガードが、取得した対象と一致しません。",
+        "parse_failed": "取得したMarkdownを安全に読み取れませんでした。",
+        "request_changed": "確認中に、保留中の依頼が変更されました。",
+        "acknowledgement_required": "依頼の全範囲への確認が必要です。",
+        "connection_unverified": "有効なMCPオントロジー接続を確認できませんでした。",
+        "connection_root_mismatch": "有効なMCPオントロジーのルートが異なります。",
+        "source_binding_changed": "このタスク中に、プロジェクトのソース紐づけが変更されました。",
+        "source_diff_unavailable": "このタスクのソース変更セットがありません。どの変更がこのタスクのものかは推測されません。"
+      },
+      "correct": "拒否して修正",
+      "defer": "保留にする",
+      "correctEffect": "この書き込みを拒否し、修正依頼を入力欄に下書きします。送信やコードのロールバックは行いません。",
+      "deferEffect": "回答を先送りします。依頼はこの会話の中でのみ待機し、保存されません。",
+      "provenance": "依頼の出所とガード",
+      "requestId": "依頼",
+      "userEvent": "ターン",
+      "toolCall": "ツール",
+      "generation": "世代",
+      "guardStatus": "書き込みガード",
+      "guard": {
+        "verified": "厳密に確認済み",
+        "compatible-coarse": "ファイル時刻の精度で互換",
+        "unknown": "不明"
+      },
+      "unknown": "不明",
+      "authority": {
+        "meaning": "意味",
+        "code": "コード検証",
+        "merge": "マージ",
+        "deployment": "デプロイ",
+        "unknown": "不明",
+        "pending": "確認待ち",
+        "accepted": "承認済み"
+      },
+      "delta": {
+        "added": "追加",
+        "removed": "削除",
+        "changed": "変更",
+        "unchanged": "変更なし",
+        "uncomparable": "比較不可"
+      },
+      "canonicalPreview": "書き込まれるMarkdownそのもの",
+      "canonicalPreviewNote": "ライターが書式とコメントを再構成します。意味を承認する前に、このバイト列全体を確認してください。",
+      "previewUnavailable": "ライターの正確な出力を取得できません。意味の承認には、既存のUIDと有効な単一文書のパッチが必要です。",
+      "decisionSave": {
+        "unsaved": "この判断は履歴に保存されていません。",
+        "saved": "意味の判断を保存しました。実行、コード検査、マージ、デプロイは別々に扱われます。",
+        "failed": "意味の判断を保存できませんでした。vaultを確認して、もう一度お試しください。"
+      },
+      "terminalSaveFailed": "意味の判断は保持されていますが、最新の実行結果を保存できませんでした。履歴では未検証と表示される場合があります。",
+      "noSemanticDelta": "この依頼では、解析された意味は変わりません。意味の判断の記録は不要です。",
+      "rationale": "この解釈を承認する理由（任意）",
+      "bodyInDetails": "本文の残りの変更は「詳細」にすべて表示されます。",
+      "detailsPointer": "「詳細」には、送信された依頼の全体が表示されます。",
+      "taskRest": "残り{count}行を表示",
+      "allowEffect": "この書き込みを1回だけ実行します。意味の承認や、コード検証、マージ、デプロイの確認は行いません。",
+      "allowEffectNamed": "「{name}」へのこの書き込みを1回だけ実行します。意味の承認や、コード検証、マージ、デプロイの確認は行いません。",
+      "allowEffectBatch": "このバッチの{count}件の書き込みをすべて一度に実行します。意味の承認や、コード検証、マージ、デプロイの確認は行いません。"
+    },
+    "deferredNotice": "この依頼はこの会話の中で保留中です。保存されておらず、閉じるかキャンセルすると拒否されます。",
+    "resumeReview": "確認を再開",
+    "correctionDraft": "前の提案は拒否されました。タスクの修正版を用意してください：{task}\n対象：{target}\n依頼：{requestId}\n修正してほしい点：[必要な修正を記入]",
+    "intent": {
+      "read": "読み取りを希望",
+      "edit": "変更を希望",
+      "delete": "削除を希望",
+      "execute": "実行を希望",
+      "unknown": "このツールは何をしたいのか示していません"
+    },
+    "allowAlwaysTool": "この会話の間、このツールを許可",
+    "allowAlwaysDirectory": "この会話の間、このフォルダを許可",
+    "allowAlwaysUnknown": "この会話の間は許可",
+    "scopeHint": "対象：{names}",
+    "scopeUnknownHint": "このツールは許可の対象範囲を示していません。今回のみ許可する方が安全です。",
+    "pageFits": "ページの形式は保たれています。すべての事実に出典があり、5つの節が順に並んでいます。",
+    "pageFails": "このページの形式に{count}件の問題があります。「許可」するとそのまま保存され、Wikiの一覧に問題が表示されます。",
+    "pageFailsRest": "これ以外にあと{count}件あります。すべてWikiの一覧に表示されます。",
+    "insideFolderTitle": "このフォルダ内のファイルを変更しようとしています",
+    "insideFolderBody": "パスは下のとおりです。許可するまで何も実行されません。",
+    "insideProjectTitle": "プロジェクト内のコードを確認しようとしています",
+    "insideProjectBody": "マップのフォルダの外ですが、選択したプロジェクトの内側です。許可するまで何も実行されません。",
+    "ontologyWriteUnverifiedBody": "この依頼は「今回のみ許可」を押した場合にのみ、提案されたオントロジーのファイルを書き込みます。許可する前に対象を確認してください。"
+  },
+  "close": "会話を閉じる",
+  "composerPlaceholder": "このフォルダについて質問するか、タスクを依頼します",
+  "composerPlaceholderSubject": "{subject}について質問するか、タスクを依頼します",
+  "startingSuggestions": "最初のおすすめ依頼",
+  "composerHint": "Enterで送信 · ⇧Enterで改行",
+  "history": "過去の会話",
+  "newChat": "新しい会話",
+  "newChatWhenReady": "ツールに接続すると、新しい会話を始められます",
+  "sendWhenReady": "ツールに接続すると送信できます",
+  "untitled": "無題の会話",
+  "model": "モデル",
+  "mode": "モード",
+  "modeUnverified": "{name} · 未確認",
+  "modeUnverifiedHint": "まだ測定されていません。",
+  "runtimePicker": "会話するツールを選択",
+  "tool": {
+    "connect": "フォルダに接続",
+    "read": "マップを読む",
+    "check": "マップを検査",
+    "addNode": "概念を追加",
+    "editNode": "概念を編集",
+    "renameNode": "概念の名前を変更",
+    "mergeNodes": "2つの概念を統合",
+    "addRelation": "つながりを追加",
+    "findEvidence": "根拠を探す",
+    "findOrphans": "未接続の概念を探す",
+    "readConstellation": "保存したブックマークを読む",
+    "readSource": "ソースを読む",
+    "readHistory": "フォルダの履歴を読む",
+    "readCode": "コードを見る",
+    "checkPages": "ページを検査",
+    "reclassifyNode": "概念の種類を変更",
+    "deleteNode": "概念を削除",
+    "removeRelation": "つながりを削除",
+    "replaceRelation": "つながりを置換",
+    "compile": "ファイルからマップを再構築",
+    "absorb": "文書を候補に仕分ける",
+    "connectSource": "ソースを接続",
+    "disconnectSource": "ソースを切断",
+    "judgeMeaning": "記録された意味を判定"
+  },
+  "toolKind": {
+    "read": "読み取り",
+    "edit": "編集",
+    "delete": "削除",
+    "move": "移動",
+    "search": "検索",
+    "execute": "実行",
+    "fetch": "取得"
+  },
+  "fullRequest": "依頼の全文",
+  "seatedDetail": "この画面が付けた指示{lines}件",
+  "toolRepeat": "同じ呼び出しを{count}回",
+  "toolOutcome": {
+    "foundUnit": "件ヒット",
+    "foundNone": "該当なし",
+    "running": "実行中",
+    "done": "完了",
+    "failed": "失敗",
+    "cancelled": "停止",
+    "unfinished": "未完了",
+    "declined": "拒否済み"
+  },
+  "workGroup": "作業の詳細 · {count}ステップ",
+  "workGroupActive": "作業中 · {count}ステップ",
+  "resize": "会話パネルの幅を調整",
+  "resizeHint": "ドラッグで幅を変えられます。矢印キーでも操作できます。",
+  "closeHistory": "過去の会話の一覧を閉じる",
+  "presentation": {
+    "ariaLabel": "オントロジーDNAのプレゼンテーション",
+    "eyebrow": "オントロジーDNA",
+    "title": "業務フローのプレゼンテーション",
+    "open": "この回答をプレゼン表示",
+    "openHint": "オントロジーだけに基づくこの回答を、{count}場面で順にたどります。",
+    "blocked": "この回答はまだプレゼン表示できません。{reason}",
+    "blockReason": {
+      "no_answer": "完成した説明がありません。",
+      "source_hidden_unproven": "ツールの記録からは、オントロジーのみの読み取りだったと確認できません。",
+      "no_full_body_reads": "本文を全文読んだ概念がありません。",
+      "full_body_read_budget_exceeded": "12件を超える概念の本文が読まれました。代表的な1つの流れに絞ってください。",
+      "scene_count_out_of_range": "回答に、3〜7の明示的な場面が含まれていません。",
+      "scene_uncited": "根拠のスラッグがない場面があります。",
+      "citation_not_read": "このターンで本文を全文読んでいない概念を、場面が引用しています。",
+      "relation_not_in_graph": "現在のオントロジーにないつながりが、説明で使われています。"
+    },
+    "progress": "場面{current}/{total}",
+    "progressAria": "プレゼンテーションの進行状況",
+    "sourceHidden": "オントロジーのみ · 本文全文{count}件",
+    "qualification": {
+      "cited": "このターンで読み取り済み",
+      "limited": "制約または不明点を含む"
+    },
+    "sceneFallback": "場面{current}",
+    "evidence": "この場面の根拠",
+    "backToChat": "会話に戻る",
+    "ask": "この場面について質問",
+    "askPrompt": "「{title}」の場面をもっと詳しく説明してください。オントロジーの根拠と制約は同じままにしてください。",
+    "previous": "前へ",
+    "next": "次へ",
+    "finish": "終了",
+    "openOnMap": "マップでたどる"
+  },
+  "trouble": {
+    "limit": {
+      "title": "このツールは利用上限に達しました",
+      "hint": "アプリの問題ではありません。ツール自体のプランの上限に達しています。「詳細」にリセット時刻が書かれていれば、その時刻に「もう一度試す」を押してください。それまでは、下から別のツールを選んで続けられます。",
+      "hintOnlyTool": "アプリの問題ではありません。ツール自体のプランの上限に達していて、ここで設定されているツールはこれだけです。「詳細」にリセット時刻が書かれていれば、その時刻に「もう一度試す」を押してください。エージェント画面で2つ目のツールを接続すると、続きを任せる先ができます。"
+    },
+    "auth": {
+      "title": "アプリ専用の古いサインインが邪魔をしています",
+      "hint": "別のサインインは必要ありません。このアプリは、ターミナルで使っているものと同じサインインを使います。邪魔をしているのは、以前のアプリ専用サインインのキーチェーン項目です。共有のサインインを隠していて、すでに期限切れです。下の「もう一度試す」を押すと、アプリがその項目を消して本来のサインインに戻ります。それでも失敗する場合は、「詳細」の下にある1行のコマンドをターミナルに貼り付けてください。"
+    },
+    "install": {
+      "title": "中断したダウンロードの残骸が邪魔をしています",
+      "hint": "初回のダウンロードが途中で切れ、残ったファイルのせいで毎回同じ箇所で失敗します。下の「もう一度試す」を押すと、アプリがそれらを消して最初からダウンロードし直します。インターネット接続を確認し、ダウンロード中（数百MB）はアプリを開いたままにしてください。"
+    },
+    "timeout": {
+      "title": "ツールが応答しません",
+      "hint": "ツールから45秒間、何も返ってきませんでした。ダウンロード中は待機が続くため、本当に止まっている可能性が高いです。下の「もう一度試す」を押してください。繰り返す場合は、ターミナルでツール単体が起動するか確認してください。"
+    },
+    "launch": {
+      "title": "ツールを起動できませんでした",
+      "hint": "エージェント画面で、このツールの状態を確認できます。下のボタンで開きます。",
+      "door": "エージェントを開く"
+    },
+    "network": {
+      "title": "外部に接続できません",
+      "hint": "インターネット接続を確認してから、下の「もう一度試す」を押してください。マップの読み取りと編集はオフラインでも使えます。"
+    },
+    "unknown": {
+      "title": "問題が発生しました",
+      "hint": "下の「もう一度試す」を押してください。繰り返す場合は、「詳細」の内容を添えて報告してください。"
+    },
+    "retry": "もう一度試す",
+    "details": "詳細",
+    "diagnosticsLabel": "ツールの出力"
+  },
+  "notice": {
+    "gateOff": "この会話では、このフォルダの外のファイルが操作される前に、Atlasが確認を求めることはできません。ツールは、あなたが直接設定した内容に従って動きます。",
+    "diedMidTurn": "エージェントが回答の途中で停止しました。表示されているのは、届いた分のすべてです。上で新しい会話を開いて、もう一度質問してください。",
+    "modeMoved": "ツールがこの会話を{mode}に切り替えました。このモードでは、確認なしでファイルの編集が受け入れられます。",
+    "modeMovedServerGate": "ツールがこの会話を{mode}に切り替えました。このモードでは、確認なしでファイルの編集が受け入れられます。Atlasのツールで行う変更は、引き続きサーバで止まり、あなたの承認を待ちます。",
+    "autoAllowed": "{detail}を確認なしで書き込みました。Wikiページの規約に合っているためです。",
+    "autoRefused": "確認なしで拒否しました · {detail}。この会話で行える範囲を超えています。",
+    "openPage": "開く",
+    "askNext": "次回は確認する"
+  },
+  "suggest": {
+    "heading": "マップで見つけたこと · 押すと入力欄に入ります",
+    "followUpHeading": "次のおすすめ操作",
+    "connectSource": {
+      "label": "先にコードのフォルダを接続",
+      "prompt": "まず、このプロジェクトを実際に実装しているコードのフォルダを接続してください。接続するまで、vaultのファイルをソースコードとして解析しないでください。"
+    },
+    "bootstrap": {
+      "label": "コードを読んでマップを作り始める",
+      "prompt": "接続したソースコードから、オントロジーの構築を始めてください。まず「connection_info」と「list_kinds」で状況を把握します。ソースから、ドメイン、ケイパビリティ、実装の要素、根拠のパスを提案してください。先に似た既存の概念を探し、私が確認するまで何も書き込まないでください。私が承認した候補だけをまとめて書き込み、その後「validate_vault」と「compile_ontology」の結果を報告してください。"
+    },
+    "island": {
+      "label": "「{firstLabel}」など{count}件が、他のどれとも接続されていません。接続先を探す",
+      "prompt": "「{firstLabel}」（{first}）を含む{count}件の概念が、マップの他の部分とつながっていません。コードを根拠にして、どこにつなぐべきかを調べ、その理由とあわせてつながりを提案してください。"
+    },
+    "containment": {
+      "label": "「{slugLabel}」の文書は「{domainLabel}」に属すると書いていますが、「{domainLabel}」の文書の一覧に「{slugLabel}」がありません。どちらが正しいか確認し、2つの文書をそろえる",
+      "prompt": "「{slugLabel}」（{slug}）は「{domainLabel}」（{domain}）に属すると書いていますが、ドメイン側のリンクがありません。その所属が正しいか確認し、正しければ両側をそろえてください。"
+    },
+    "evidence": {
+      "label": "どのコードが実装しているか未記載のケイパビリティが{count}件あります。「{firstLabel}」から始めて、そのコードを探す",
+      "prompt": "query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}') を実行し、まず「{firstLabel}」（{first}）を調べてください。これら{count}件のケイパビリティには、実装ファイルのパスも、リンクされた要素も、まだ書かれていません。実装の根拠を探し、最小限のパスまたは要素の更新を提案してください。私が確認するまで書き込まず、根拠が見つからない場合はそう伝えてください。"
+    },
+    "explain": {
+      "label": "マップだけから、このフォルダの役割を説明する",
+      "prompt": "マップ上の{count}件の概念とそのつながりだけを使って、初めて見る人にこのフォルダが何かを説明してください。マップにないことは作り出さず、説明が行き詰まる箇所があれば、それはマップの欠落なので指摘してください。"
+    },
+    "explainSubject": {
+      "label": "「{subject}」の役割を、記録とつながりから説明する",
+      "prompt": "「get_concept」と「find_neighbors」で「{subject}」（{slug}）を読み、何をするものか、何に属しているか、何に依存しているかを説明してください。フォルダに記録されていることだけを使い、記録がない部分は推測せず、記録がないと伝えてください。"
+    },
+    "subjectImpact": {
+      "label": "「{subject}」を変更すると影響が及ぶ範囲を調べる",
+      "prompt": "「{subject}」（{slug}）を起点に、「find_backlinks」と「find_neighbors」を使って、変更が及ぶ概念を、それぞれを結ぶつながりとともに一覧にしてください。何も書き込まず、最後に最初に確認すべき1か所とその理由を挙げてください。"
+    }
+  },
+  "modeName": {
+    "default": "先に確認",
+    "plan": "計画のみ",
+    "auto": "おまかせ",
+    "dontask": "確認しない",
+    "read-only": "読み取り専用"
+  },
+  "modeHint": {
+    "default": "リスクのある操作の前に確認します。",
+    "plan": "行う内容を計画します。実際には何も実行されません。",
+    "auto": "確認するかどうかをツールが自分で判断します。",
+    "dontask": "確認しません。事前に承認されていない操作は拒否されます。",
+    "read-only": "読み取りのみ。変更はAtlasのツール経由で行います。"
+  },
+  "doctor": {
+    "scan": "接続を確認",
+    "scanning": "確認中",
+    "fix": "修復",
+    "fixing": "修復中",
+    "reset": "再接続",
+    "resetting": "再接続中",
+    "install": "アプリ用にインストール",
+    "installing": "インストール中",
+    "installPlanTitle": "実行するコマンドはこちらです",
+    "installPlanNote": "このアプリ専用のフォルダにのみ入ります。システムには手を加えず、アプリを削除すると一緒に消えます。",
+    "installNode": "Nodeを入手",
+    "installingNode": "Nodeを入手中",
+    "nodePlanTitle": "ここからダウンロードし、完了後にハッシュを検証します",
+    "nodePlanNote": "このアプリ専用のフォルダにのみ入ります。システムのNodeには手を加えず、ハッシュが一致しない場合は中止されます。",
+    "failed": "確認を完了できませんでした。少し待ってからもう一度お試しください。",
+    "allClear": "現在、問題はありません",
+    "restFine": "残りは問題ありません",
+    "whatWeChecked": "確認した項目",
+    "state": {
+      "ok": "正常",
+      "problem": "ブロック中",
+      "unknown": "判定不能"
+    },
+    "check": {
+      "cli": "ツールがこのコンピュータにあるか",
+      "launcher": "起動できるか",
+      "npx-cache": "ダウンロードしたコピーが無事か",
+      "config-dir": "アプリ専用の設定が整っているか",
+      "credentials-link": "ターミナルのサインインを再利用しているか",
+      "shadow-keychain": "古いサインイン記録が邪魔をしていないか",
+      "login": "このフォルダでサインインしているか",
+      "gate": "フォルダ外の操作の前に確認するか"
+    },
+    "next": {
+      "cli": "この一覧からそのツールのインストールガイドを開いてインストールし、上の「接続を確認」を押してください。",
+      "launcher": "そのツールの起動にはNodeが必要です。Nodeをインストールしてから、「接続を確認」を押してください。",
+      "login": "そのツールに、ターミナルで一度サインインしてください。アプリはそのサインインを再利用します。",
+      "gate": "このツールでは、アプリがフォルダ外の操作の手前で止めることができません。これはこちら側で直すべき問題です。それまでは、別のツールを使う方が安全です。"
+    },
+    "progress": {
+      "node": {
+        "downloading": "Nodeをダウンロード中",
+        "verifying": "ダウンロードしたファイルをハッシュで検証中",
+        "extracting": "展開中",
+        "verifying-install": "導入結果を再測定して確認中",
+        "done": "Nodeを導入しました",
+        "failed": "Nodeをダウンロードできませんでした"
+      },
+      "cli": {
+        "installing": "インストール中",
+        "verifying": "検証中",
+        "extracting": "展開中",
+        "verifying-install": "導入結果を再測定して確認中",
+        "done": "インストール済み",
+        "failed": "インストールできませんでした"
+      }
+    }
+  },
+  "openingScopeChanged": "フォルダまたは解析範囲が変わったため、この依頼は送信されていません。別の解析を始める前に、現在のコンテキストを確認してください。",
+  "dockTitle": "会話",
+  "elapsedSeconds": "{seconds}秒",
+  "elapsedMinutes": "{minutes}分{seconds}秒",
+  "elapsedHours": "{hours}時間{minutes}分",
+  "checkAnswerLine": "検査結果は「検査結果」ページに、アプリ自身の検査と並べて表示されます。",
+  "checkAnswerDoor": "検査結果を開く",
+  "checkAnswerFull": "エージェントの報告（原文）"
+}

@@ -1,0 +1,45 @@
+{
+  "siteName": "Ontology Atlas",
+  "siteTagline": "人和 AI 智能体共享的代码库语义",
+  "homeTitle": "Ontology Atlas: 面向编码智能体的代码库本体 (MCP)",
+  "pages": {
+    "topology": "地图",
+    "docs": "本体 · 资料库",
+    "download": "下载",
+    "projects": "项目",
+    "ontology": "本体",
+    "ontologyInsights": "分析",
+    "projectNew": "新建项目",
+    "guide": "指南",
+    "changelog": "更新日志",
+    "agents": "智能体"
+  },
+  "descriptions": {
+    "home": "AI 智能体改动代码时，也能持续理解你的系统。共享任务上下文，查看已记录的语义和依据，并在本地 Markdown 文件夹中决定保留什么。",
+    "download": "下载 Ontology Atlas，与智能体共享代码库上下文，并查看已记录的语义、依据和未知项。macOS 应用已签名，Windows 测试版未签名，没有 Atlas 后端。",
+    "topology": "把项目的领域、能力、要素及其依赖画成一张地图。每个文件顶部的信息块就是地图，文件保留在你自己的磁盘上。",
+    "docs": "直接阅读和编辑 Markdown 文件夹。改动文件顶部的信息块，地图随之更新。",
+    "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",
+    "ontologyInsights": "按类型统计的概念数量、连线最多的枢纽，以及仍未连到任何东西的概念。扩充地图前先看这里。",
+    "guide": "从 Markdown 文件夹开始，连接你的编码智能体，学习如何在 Ontology Atlas 中查看已记录的语义、依据和未知项。",
+    "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。",
+    "library": "收集资料，整理成 Wiki 页面，并就内容提问，回答会标出引用的段落。全部在本地 Markdown 文件夹中完成。",
+    "agents": "查看这台电脑上的编码智能体，并通过 MCP 把它们连接到 Ontology Atlas。",
+    "automations": "可以定时安排本体审查和文档检查。它们在你的电脑上运行，结果以建议的形式留下，由你确认后再采纳。",
+    "git": "查看文件夹的 Git 历史，把每次变更当作文档来阅读，并可单独恢复某一个文件。"
+  },
+  "guideDescriptions": {
+    "firstFiveMinutes": "安装之前先看看 Ontology Atlas 是怎么动起来的：第一屏是只读的示例地图，展示 Markdown 文件夹会变成什么样。",
+    "readingTheMap": "读懂 Ontology Atlas 的地图：每个点和每条线代表什么，大小和数量为何不同，点击后如何聚焦一个概念及其相邻概念。",
+    "vaultStructure": "你的本体就是一个普通的 Markdown 文件夹。了解每个文件顶部信息块中的哪些字段把它变成图谱。",
+    "whatBecomesANode": "判断什么该成为概念：何时是领域、能力或元素，以及为什么一个文件不一定对应一个概念。",
+    "relations": "概念之间的关系在 Ontology Atlas 中如何运作：写在 Markdown 文件顶部信息块里的一行，而不是数据库中的一条记录。",
+    "studio": "在地图上选中的概念旁边直接编辑概念和关系，无需手写 YAML。",
+    "fromYourRepo": "从你已有的内容开始建立本体：代码、文件夹结构，以及 CLAUDE.md 或 AGENTS.md，由你的编码智能体帮你提取。",
+    "connectAgent": "一键通过 MCP 把编码智能体连接到 Ontology Atlas：Atlas 会用真实的绝对路径写入该工具的配置。",
+    "growingVault": "让不断变大的文件夹保持健康：找出重复项，查看改名会破坏什么，并知道在人和智能体每天新增概念时该修什么。",
+    "insights": "分析页面告诉你下一步该修什么：按类型统计的概念数量、连线最多的枢纽，以及未连到任何东西的概念。",
+    "cli": "Ontology Atlas CLI 是从源码检出目录使用的日常入口：在终端里检查文件夹、生成快照并查看内容。",
+    "trust": "Ontology Atlas 不做什么：没有后端、账号或遥测，你的文件始终留在自己的磁盘上。"
+  }
+}

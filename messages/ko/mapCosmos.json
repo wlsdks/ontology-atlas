@@ -1,0 +1,7 @@
+{
+  "list": "지도의 도메인과 그 역량",
+  "galaxyRow": "{name}, 개념 {count}개",
+  "strandList": "도메인끼리의 의존",
+  "strandRow": "{from} 쪽이 {to}에 의존, 의존 {count}개",
+  "strandRowBoth": "{from} 쪽과 {to} 쪽이 서로 의존, 의존 {count}개"
+}

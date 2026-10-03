@@ -26,10 +26,16 @@ test("default dev route smoke covers locale roots and source vault deeplinks", (
   assert.deepEqual(DEFAULT_DEV_ROUTE_PATHS, [
     "/",
     "/en/",
+    "/ja/",
     "/ko/",
+    "/zh/",
     "/en/docs/",
+    "/ja/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/ja/ontology/?node=capability%3Aagent-graph-readiness",
     "/ko/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
     "/ko/ontology/?node=capability%3Aagent-graph-readiness",
+    "/zh/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/zh/ontology/?node=capability%3Aagent-graph-readiness",
   ]);
 });
 
@@ -87,8 +93,16 @@ test("evaluateDevLocaleRoutes reports the exact locale route that returns 404", 
   }
 });
 
-test("dev route smoke paths follow an injected four-locale list", () => {
-  assert.deepEqual(devRoutePaths(["en", "ko"]), DEFAULT_DEV_ROUTE_PATHS);
+test("dev route smoke paths follow an injected locale list", () => {
+  assert.deepEqual(devRoutePaths(["en", "ja", "ko", "zh"]), DEFAULT_DEV_ROUTE_PATHS);
+  assert.deepEqual(devRoutePaths(["en", "ko"]), [
+    "/",
+    "/en/",
+    "/ko/",
+    "/en/docs/",
+    "/ko/docs/?slug=ontology%2Fcapabilities%2Fagent-graph-readiness",
+    "/ko/ontology/?node=capability%3Aagent-graph-readiness",
+  ]);
   assert.deepEqual(devRoutePaths(["en", "ja", "ko", "zh"]), [
     "/",
     "/en/",

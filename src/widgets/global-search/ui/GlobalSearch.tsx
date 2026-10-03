@@ -285,7 +285,7 @@ export function GlobalSearch({
             // If something took focus during the exit (the shortcut sheet), it keeps it.
             const holder = document.activeElement;
             if (holder && holder !== document.body && holder !== document.documentElement) return;
-            if (keyboardInteractionRef.current && previousFocusRef.current?.dataset.surfaceRole === MAP_CANVAS_SURFACE_ROLE) focusMapCanvasWhenReady(undefined, true);
+            if (keyboardInteractionRef.current && [previousFocusRef.current?.dataset.surfaceRole, previousFocusRef.current?.dataset.role].includes(MAP_CANVAS_SURFACE_ROLE)) focusMapCanvasWhenReady(undefined, true);
             else previousFocusRef.current?.focus?.({ preventScroll: true });
           }}
           onKeyDownCapture={() => { keyboardInteractionRef.current = true; }}

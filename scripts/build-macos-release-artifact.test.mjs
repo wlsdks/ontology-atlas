@@ -103,6 +103,21 @@ test("the build phase runs before any signing material and receives no credentia
   assert.equal(releaseArtifactSteps().length, phases.build.length + phases.sign.length + 1);
 });
 
+test("both static builds get a heap that four locales fit in on a 7 GB runner", () => {
+  const calls = [];
+  runReleaseArtifactPipeline({
+    env: { PATH: "/usr/bin:/bin" },
+    phase: "build",
+    spawn(command, args, options) {
+      calls.push({ script: args[0], env: options.env });
+      return { status: 0 };
+    },
+  });
+  assert.equal(calls.find((call) => call.script === "build").env.NODE_OPTIONS, "--max-old-space-size=4096");
+  assert.equal(calls.find((call) => call.script === "desktop:build:app").env.NODE_OPTIONS, "--max-old-space-size=4096");
+  assert.equal(calls.find((call) => call.script === "desktop:smoke").env.NODE_OPTIONS, undefined);
+});
+
 test("an unknown phase runs nothing", () => {
   assert.throws(() => releaseArtifactSteps("notarize"), /unknown --phase=notarize/);
   assert.equal(main(["--phase=notarize"], {}), 1);

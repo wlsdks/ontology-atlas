@@ -81,7 +81,7 @@ export function ScreenPane({
         label={t('motionLabel')}
         caption={isDesktopShell() ? t('motionCaptionApp') : t('motionCaptionWeb')}
         control={
-          <span className="text-body text-[color:var(--color-text-secondary)]">
+          <span className="text-label leading-label text-[color:var(--color-text-secondary)]">
             {reducedMotion ? t('motionReduced') : t('motionFull')}
           </span>
         }

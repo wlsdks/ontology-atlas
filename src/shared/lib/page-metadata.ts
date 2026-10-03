@@ -40,6 +40,7 @@ export interface PageMetadataInput {
    * while the page's own comment claimed the per-slug card would win).
    */
   hasFileConventionImage?: boolean;
+  absoluteTitle?: boolean;
 }
 
 /**
@@ -70,7 +71,7 @@ function absolute(locale: string, path: string): string {
 }
 
 export function buildPageMetadata(
-  { locale, path, title, description, ogImage, hasFileConventionImage }: PageMetadataInput,
+  { locale, path, title, description, ogImage, hasFileConventionImage, absoluteTitle }: PageMetadataInput,
   registry: PageMetadataLocales = ROUTED_LOCALES,
 ): Metadata {
   const canonical = absolute(locale, path);
@@ -86,7 +87,7 @@ export function buildPageMetadata(
   for (const l of registry.locales) languages[registry.meta[l]?.hreflang ?? l] = absolute(l, path);
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: { canonical, languages },
     openGraph: {

@@ -1,0 +1,12 @@
+{
+  "sectionAriaDefault": "プロジェクトの管理",
+  "sectionTitle": "プロジェクトの管理",
+  "infoHintLabel": "プロジェクトの管理：ヘルプ",
+  "infoHintBody": "プロジェクトを説明する文書を添付したり、プロジェクト情報を詳しく編集したりできます。",
+  "infoNewTitle": "新規プロジェクト",
+  "infoNewBody": "いまのワークスペースに新しいプロジェクトを追加します。",
+  "infoEditTitle": "詳細編集",
+  "infoEditBody": "状態、タグ、リンクなど、プロジェクトの詳細を編集します。",
+  "buttonNew": "新規プロジェクト",
+  "buttonEdit": "詳細編集"
+}

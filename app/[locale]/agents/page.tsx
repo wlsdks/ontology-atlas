@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { AgentsWorkspace } from '@/app-providers/agents-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
 
@@ -11,7 +12,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'agents' });
-  return { title: t('title') };
+  const tMeta = await getTranslations({ locale, namespace: 'metadata' });
+  return buildPageMetadata({
+    locale,
+    path: 'agents',
+    title: t('title'),
+    description: tMeta('descriptions.agents'),
+  });
 }
 
 /**

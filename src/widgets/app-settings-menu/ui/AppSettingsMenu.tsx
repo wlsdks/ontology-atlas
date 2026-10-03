@@ -30,7 +30,7 @@ import { FootprintSettings } from './FootprintSettings';
 import { AboutPane } from './panes/AboutPane';
 import { AgentsPane } from './panes/AgentsPane';
 import { MapPane } from './panes/MapPane';
-import { PrivacyPane } from './panes/PrivacyPane';
+import { PrivacyLead, PrivacyPane } from './panes/PrivacyPane';
 import { ScreenPane } from './panes/ScreenPane';
 import { WorkspacePane } from './panes/WorkspacePane';
 import { SettingsNav, useSettingsSearchItems } from './SettingsNav';
@@ -407,6 +407,7 @@ export function AppSettingsMenu({
                           testId="app-settings-pane-head"
                           title={t(`section.${section}`)}
                           description={t(`sectionPurpose.${section}`)}
+                          note={section === 'privacy' ? <PrivacyLead /> : undefined}
                         />
                         {section === 'screen' ? (
                           <ScreenPane

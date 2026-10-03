@@ -3,7 +3,8 @@ import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view";
-import { computeGalaxyLayout } from "../model/galaxy-layout";
+import { predictCosmosMarks } from "../galaxy/cosmos-marks";
+import type { CosmosPlacementRecord } from "../galaxy/layout/cosmos-layout";
 import type { HexPlacementRecord } from "../model/hex-board";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
@@ -18,7 +19,6 @@ import {
   computeFoldedIds,
   isSpineNode,
   radiusForKind,
-  recomputeWorldGeometry,
   type TopologyWorld,
   type WorldNodeKind,
 } from "../ui/topology-world";
@@ -134,7 +134,6 @@ function predictOntologyMapMarks({
   expandStructure,
   overviewFit,
   expandedParents,
-  galaxy,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -143,32 +142,16 @@ function predictOntologyMapMarks({
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
-  galaxy: boolean;
 }): MapLayoutMark[] | null {
   const box = host.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0 || nodes.length === 0) return null;
   const world = buildTopologyWorld(nodes, edges, tokens, expandStructure);
-  let bounds = overviewBoundsFor(overviewFit, world, tokens, expandedParents, null);
-  if (galaxy) {
-    const sky = computeGalaxyLayout(
-      world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
-      { domain: tokens.layoutRingDomain, capability: tokens.layoutRingCapability, element: tokens.layoutRingElement },
-    );
-    for (const node of world.nodes) {
-      const point = sky.points.get(node.id);
-      if (point) {
-        node.x = point.x;
-        node.y = point.y;
-      }
-    }
-    recomputeWorldGeometry(world, tokens);
-    bounds = sky.bounds;
-  }
+  const bounds = overviewBoundsFor(overviewFit, world, tokens, expandedParents, null);
   const target = computeOverviewCameraTarget(
     bounds,
     box.width,
     box.height,
-    overviewFitTokens(measuredCameraTokens(host, tokens), galaxy),
+    overviewFitTokens(measuredCameraTokens(host, tokens), false),
     world.nodes.length,
   );
   const camera: CameraAxes = {
@@ -180,11 +163,10 @@ function predictOntologyMapMarks({
   const drawn = (id: string) => {
     const node = world.nodeById.get(id);
     if (!node) return false;
-    if (galaxy) return true;
     if (folded.has(id)) return false;
     return isSpineNode(node) || (node.parentId !== null && expandedParents.has(node.parentId));
   };
-  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, galaxy, alphaOf: (id) => (drawn(id) ? 1 : 0), domeFrame: null });
+  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, galaxy: false, alphaOf: (id) => (drawn(id) ? 1 : 0), domeFrame: null });
 }
 
 export interface MapLayoutTargetInput {
@@ -192,6 +174,8 @@ export interface MapLayoutTargetInput {
   edges: readonly OntologyMapEdge[];
   territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null }) => { text: string };
   hexPlacement: HexPlacementRecord | null;
+  cosmosPlacement?: CosmosPlacementRecord | null;
+  hexRelief?: boolean;
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
@@ -203,7 +187,7 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
   const { nodes, edges } = input;
   if (view === "hex") {
     const hexTokens = readHexBoardTokensOrNull();
-    const marks = hexTokens ? predictHexMarks({ nodes, edges, prior: input.hexPlacement, host, tokens: hexTokens }) : null;
+    const marks = hexTokens ? predictHexMarks({ nodes, edges, prior: input.hexPlacement, host, tokens: hexTokens, relief: input.hexRelief }) : null;
     return marks && hexTokens ? { marks, ground: hexTokens.ground } : null;
   }
   if (view === "territories") {
@@ -216,6 +200,7 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
     });
     return target ? { ...target, ground: tokens.canvasBgNear } : null;
   }
-  const marks = view === "flat" || view === "galaxy" ? predictOntologyMapMarks({ ...input, host, tokens, galaxy: view === "galaxy" }) : null;
+  if (view === "galaxy") return predictCosmosMarks({ nodes, edges, placement: input.cosmosPlacement ?? null, host });
+  const marks = view === "flat" ? predictOntologyMapMarks({ ...input, host, tokens }) : null;
   return marks ? { marks, ground: tokens.canvasBgNear } : null;
 }

@@ -1,0 +1,72 @@
+{
+  "leadDesktop": "Atlas 的界面无法访问互联网，只有下面列表中的内容会离开。",
+  "leadWeb": "此网站会读取这台电脑上的文件夹。你的文件夹绝不会被上传。",
+  "outbound": {
+    "title": "哪些内容可能离开这台电脑",
+    "keywords": "网络 联网 发送 上传 外发 审计 日志 更新 检查",
+    "recorded": "已记录",
+    "recordedIn": "记录在 {file}",
+    "notRecorded": "未记录",
+    "unseen": "Atlas 看不到",
+    "recordedNote": "已记录：每次发送都会写入此文件夹中的 <file>{file}</file>。"
+  },
+  "trigger": {
+    "automatic": "自动",
+    "press": "按下时",
+    "agent-use": "智能体使用时"
+  },
+  "carries": {
+    "no-folder-content": "不含文件夹内容",
+    "what-you-send": "你发送的内容",
+    "provider-owned": "工具与服务商之间",
+    "agent-sends": "智能体发送的内容"
+  },
+  "destinations": {
+    "your-runner-address": "你填写的运行器地址",
+    "npm-registry": "npm 软件包注册表",
+    "python-package-index": "Python 包索引（PyPI）",
+    "your-connector-urls": "此文件夹中连接器的地址，或这台电脑上的程序",
+    "your-git-remote": "你的 Git 远程仓库",
+    "your-coding-tool-provider": "你的编码工具自己的服务商"
+  },
+  "paths": {
+    "update-check": "检查更新",
+    "update-download": "下载更新",
+    "model-providers": "模型服务商",
+    "local-runner": "本地运行器",
+    "jev": "外部检查",
+    "tool-downloads": "编码工具安装",
+    "adapter-packages": "对话适配器包",
+    "connectors": "MCP 连接",
+    "git-remote": "Git 推送、拉取和获取",
+    "coding-tools": "编码工具",
+    "website-files": "网站文件"
+  },
+  "updateOn": "自动检查已开",
+  "updateOff": "自动检查已关",
+  "updateChange": "更改",
+  "updateChangeAria": "在“关于”中更改自动检查更新",
+  "allowances": {
+    "title": "在这台电脑上已允许",
+    "keywords": "同意 批准 允许 撤销 忘记 连接器 计划",
+    "empty": "还没有允许任何内容。文件夹中的连接器和计划会等你允许后才生效。",
+    "counts": "{connectors, plural, =0 {} other {# 个连接器}}{both, select, yes { · } other { }}{rounds, plural, =0 {} other {# 个计划}}",
+    "forget": "忘记",
+    "forgetArmed": "再按一次以忘记",
+    "forgetAll": "全部忘记",
+    "forgetAllArmed": "再按一次以全部忘记",
+    "caption": "忘记后它们会停止，直到你再次允许；文件夹中的内容不会改变。",
+    "forgetAria": "忘记为 {name} 允许的内容"
+  },
+  "recent": {
+    "title": "这台电脑上记住的内容",
+    "keywords": "最近 文件夹 历史 忘记",
+    "label": "最近的文件夹",
+    "count": "{count, plural, =0 {没有记住的文件夹} other {已记住 # 个文件夹}}",
+    "captionWeb": "保存在这台电脑上。忘记不会影响文件夹本身。",
+    "captionDesktop": "保存在此应用中。忘记不会影响文件夹本身。",
+    "failed": "无法忘记该列表，请重试。",
+    "forgetAll": "全部忘记",
+    "forgetAllArmed": "再按一次以全部忘记"
+  }
+}

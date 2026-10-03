@@ -1,0 +1,20 @@
+{
+  "header": "智能体文件",
+  "headerHint": "哪个 AI 工具读取哪个指令文件：只读检测，不会改写任何内容",
+  "driftBadge": "不一致",
+  "driftCount": "{count} 个文件不同步",
+  "listAria": "智能体指令文件",
+  "drift": {
+    "missing-agents-import": "CLAUDE.md 没有导入 @AGENTS.md：Claude Code 与读取 AGENTS.md 的工具看到的指令不同",
+    "broken-agents-import": "CLAUDE.md 导入了 @AGENTS.md，但 AGENTS.md 不存在",
+    "at-ref-missing": "找不到被 @ 引用的文件",
+    "agents-md-over-codex-cap": "AGENTS.md 超过了 Codex 32 KiB 的项目文档上限",
+    "skill-copy-diverged": ".claude/skills 与 .agents/skills 中重复的 Skill 副本已不一致",
+    "skill-copy-file-missing": "某个 Skill 文件只存在于重复的 Skill 目录树之一",
+    "agent-copy-diverged": ".claude/agents 与 .agents/agents 中重复的智能体说明已不一致",
+    "agent-copy-file-missing": "某份智能体说明只存在于重复的目录树之一",
+    "non-english-agent-text": "某个智能体文件含有非英文文本，而被拦下或被引导的智能体读到的正是这些文本",
+    "mcp-config-unparseable": "存在 MCP 配置文件，但没有声明任何服务器，因此它旁边的所有授权都是未声明的",
+    "undeclared-mcp-server": "某份智能体说明授权使用了某个 MCP 服务器的工具，而其配置并未声明该服务器"
+  }
+}

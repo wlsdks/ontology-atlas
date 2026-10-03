@@ -28,10 +28,13 @@ import {
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
 import { useCallback, useRef, useState } from "react";
+import { useCosmosPlacement } from "../model/use-cosmos-placement";
+import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
+import { TopologyCosmosSurface } from "./TopologyCosmosSurface";
 import { TopologyLightLegend } from "./TopologyLightLegend";
 import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
@@ -152,6 +155,7 @@ export function TopologyMapRenderer({
   const overviewFit = expandAllActive ? "full" : "spine";
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
+  const cosmosPlacement = useCosmosPlacement(vaultIdentity);
   const morph = useMapLayoutMorph({
     view: layoutView,
     reducedMotion,
@@ -163,7 +167,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), expandStructure: expand.structure, overviewFit, expandedParents },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents },
         host,
       ),
     frameRef,
@@ -235,6 +239,35 @@ export function TopologyMapRenderer({
               navigationSpeed={navigationSpeed}
             />
             </ErrorBoundary>
+          ) : morph.surface === "galaxy" ? (
+            <TopologyCosmosSurface
+              nodes={nodes}
+              edges={edges}
+              vaultKey={vaultIdentity}
+              placement={cosmosPlacement}
+              selectedId={canvasSelectedSlug}
+              onSelect={select}
+              onPaneClick={clear}
+              onDrawnCountChange={onDrawnCountChange}
+              reducedMotion={reducedMotion}
+              arrivedByMorph={morph.arrivedByMorph}
+              navigationSpeed={navigationSpeed}
+              relayoutToken={topologyRelayoutToken}
+              fitToken={combinedFitToken}
+              lensFitToken={spotlightFitToken + constellationFitToken}
+              spotlightIds={mapLensIds}
+              mapLensKind={mapLensKind}
+              pathEdgeIds={pathLensEdgeIds}
+              visitedTrail={footprintVisitedIds}
+              trailLensActiveRef={footprintLensActiveRef}
+              canvasLabel={t('canvas.ariaLabel')}
+              walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
+              onVisibleCountChange={setTopologyVisibleCount}
+              onGraphStatsChange={handleTopologyGraphStatsChange}
+              onZoomTierChange={setMapZoomTier}
+              onContextMenuNode={handleContextMenuNode}
+              onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
+            />
           ) : (
           <OntologyMap
             nodes={nodes}
