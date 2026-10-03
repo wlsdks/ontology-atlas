@@ -1,5 +1,6 @@
 "use client";
 
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
@@ -162,6 +163,7 @@ export interface LibrarySectionProps {
   vaultScope: string;
   /** The one-click "add files" door. */
   onAddFiles: () => void;
+  addFilesFeedback?: ActionFeedbackState;
   /** Proposes candidates from the open folder and any bound project root. */
   onFindDocuments: () => void;
   /**
@@ -429,6 +431,7 @@ export function LibrarySection({
   sourceHandles,
   vaultScope,
   onAddFiles,
+  addFilesFeedback = 'idle',
   onFindDocuments,
   onImportFromService,
   onCompile,
@@ -767,12 +770,13 @@ export function LibrarySection({
           <Tooltip content={t("sources.addTooltip")} {...INDEX_LEFT_CELL_TIP}>
             <Chip
               data-testid="library-add-files"
+              aria-busy={addFilesFeedback === 'working' || undefined}
               onClick={onAddFiles}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
             >
-              <IndexGlyph><FilePlus2 size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
+              <IndexGlyph><ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.add")}</span>
             </Chip>
           </Tooltip>

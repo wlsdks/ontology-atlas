@@ -20,6 +20,15 @@ Sources remain original files; write-ups and filed answers remain wiki pages.
 Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
 
+The Add files control keeps its label and icon seat while showing actual work.
+The file picker remains neutral; a work ring starts after files are selected and
+lasts through importing and refreshing the listing. A transient check marks new
+files that landed without a failure; a failed result shows failure instead.
+Cancelled selection and duplicate-only results stay neutral. Existing notices
+retain the added, duplicate and failed counts. Reduced motion keeps the same
+states readable without spinning, and results from an earlier folder or attempt
+cannot animate the current control.
+
 **Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
 asks a question and searches locally only after a press. The complete inquiry group
 centers horizontally and vertically inside the reader pane, including its original-file

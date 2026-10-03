@@ -32,6 +32,8 @@ The [download page](https://ontologyatlas.com/en/download/) lists each release's
 - **Keeps that meaning in Markdown you own.** An `atlas/` folder in your repository holds one file per concept. Git is its history and its review.
 - **Leaves the final say to you.** Proposed changes arrive as Markdown diffs you keep, correct or reject.
 - **Shows people the same folder.** Map, documents, Library, Insights and Git history all read those files.
+  Library's Add files control distinguishes selection from importing and shows real
+  success or failure; cancelled and duplicate-only actions remain neutral.
 - **Says what it does not know.** A line on the map is a declared relationship, not proof of runtime impact. Missing evidence shows as unknown, never as safe.
 
 **Not yet proven:** re-scored, our benchmark has not measured a difference in answer quality with Atlas, and Atlas was slower ([the correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
