@@ -34,6 +34,7 @@ export type {
   VaultStampIndex,
 } from './lib/build-local-manifest';
 export { VAULT_SOURCES_DIR } from './lib/walk-vault';
+export { createSourceCopyBatch } from './lib/source-copy-publication';
 export {
   buildLibraryModel,
   selectWikiPages,
