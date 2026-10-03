@@ -188,7 +188,10 @@ export function layoutDial(model: DialModel, order: readonly string[], tokens: L
     extent.minY = Math.min(extent.minY, centre.y - r);
     extent.maxY = Math.max(extent.maxY, centre.y + r);
   };
-  for (const c of clusters) grow(c.chip, c.footprint);
+  for (const c of clusters) {
+    grow(c.chip, room);
+    for (const it of c.items) grow(it, room);
+  }
   if (orphanIds.length > 0) grow(orphanCentre, orphanRadius);
   extent.minX -= pad;
   extent.minY -= pad;

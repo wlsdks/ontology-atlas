@@ -188,6 +188,10 @@ describe("frame registry", () => {
     expect(probe.placement).toEqual({ state: "settled", held: 0 });
     expect(probe.clusters).toHaveLength(5);
     expect(probe.textOverlaps).toBe(0);
+    const last = lastDialFrame()!;
+    expect(probe.discs.map((d) => d.ink)).toEqual(last.marks.discs.map((d) => last.marks.inks[d.rim]));
+    expect(probe.discs.every((d) => d.ink.startsWith("#"))).toBe(true);
+    expect(probe.squares).toBe(last.marks.squares.filter((q) => q.id !== null && !input.dial.scene.orphans.ids.includes(q.id)).length);
   });
 });
 

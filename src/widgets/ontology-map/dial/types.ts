@@ -139,7 +139,7 @@ export interface DialProbe {
   placement: { state: "reading" | "provisional" | "settled"; held: number };
   texts: { id: string | null; role: TextRole; text: string; box: Box }[];
   numerals: { flowKey: string; text: string; box: Box }[];
-  discs: DialPick[]; strips: { flowKey: string; role: StripMark["role"]; ink: string }[];
+  discs: (DialPick & { ink: string })[]; squares: number; strips: { flowKey: string; role: StripMark["role"]; ink: string }[];
   ledger: { domainId: string; shown: number; total: number; more: number; leaderCrossings: number } | null;
   crossings: number; namesCrossed: number; textOverlaps: number;
 }

@@ -1,14 +1,15 @@
-import { scaledLabelFont } from "../../render/labels";
+import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildFlowMarks, type FlowMarksResult } from "../flow-marks";
 import { inkIndex, mixOver, type DialInks } from "../ink";
 import { buildLabelMarks, type Circle, type ExtraTextMark, type LabelInks, type MeasureText } from "../label-marks";
 import type { DialDisclosure } from "./disclosure";
-import { buildLedger, countLeaderCrossings, ledgerWanted, type LedgerPlan } from "../ledger";
+import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerPlan } from "../ledger";
 import type {
   Box,
   DialAttention,
   DialChordLight,
+  DialCluster,
   DialEvidenceView,
   DialLabels,
   DialMarks,
@@ -39,6 +40,7 @@ export interface DialMarksInput {
   inkMix: number;
   chordPresence: number;
   scale: number;
+  zoomRatio: number;
   labelScale: number;
   viewportWidth: number;
   viewportHeight: number;
@@ -147,6 +149,40 @@ function receded(attn: DialAttention, domainId: string): boolean {
   return attn.domainId !== null && attn.domainId !== domainId && !attn.partnerDomains.has(domainId);
 }
 
+const fitCache = new WeakMap<DialCluster, Map<string, boolean>>();
+const REACH_STEPS = 40;
+
+function quantizedScale(scale: number): number {
+  return Math.exp(Math.round(Math.log(scale) * REACH_STEPS) / REACH_STEPS);
+}
+
+function clusterNamesFit(input: DialMarksInput, cluster: DialCluster, font: string): boolean {
+  const { tokens, freeRect: free } = input;
+  const overview = input.scale / Math.max(1e-6, input.zoomRatio);
+  const fitScale = Math.min(free.maxX - free.minX, free.maxY - free.minY) / (2 * Math.max(1, cluster.footprint));
+  const reach = Math.min(tokens.reachCap / tokens.pitch, Math.max(input.scale, Math.min(overview * input.mapTokens.cameraMaxZoomRatio, fitScale)));
+  if (!Number.isFinite(reach) || tokens.pitch * reach < tokens.capName) return false;
+  const s = quantizedScale(reach);
+  const key = `${s}|${font}`;
+  let byKey = fitCache.get(cluster);
+  if (!byKey) fitCache.set(cluster, (byKey = new Map()));
+  const hit = byKey.get(key);
+  if (hit !== undefined) return hit;
+  const maxItems = maxItemsOf(input.scene);
+  const fits = namesFitInPlace({
+    items: cluster.items.map((it) => ({ id: it.id, x: it.x, y: it.y, direct: it.direct, elements: it.elementIds.length, label: input.model.capabilityById.get(it.id)?.label ?? null })),
+    chip: cluster.chip,
+    chipRadiusPx: dialChipRadiusPx(tokens, cluster.items.length, maxItems),
+    scale: s,
+    discRadiusPx: (elements) => dialDiscRadiusPx(tokens, s, elements),
+    fontPx: scaledLabelFontSize("capability", tokens.labelScale),
+    font,
+    measureText: input.measureText,
+  });
+  byKey.set(key, fits);
+  return fits;
+}
+
 export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): DialMarksResult {
   const { model, scene, tokens, mapTokens: map, inks, attention: attn, disclosure } = input;
   const W = input.viewportWidth;
@@ -238,9 +274,12 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     const capIds = enteredCluster.items.filter((it) => !it.direct && discs.has(it.id)).map((it) => it.id);
     const named = new Set(out.texts.filter((t) => t.role === "capability" && t.id !== null).map((t) => t.id!));
     const namedInPlace = capIds.filter((id) => named.has(id)).length;
-    if (capIds.length > 0 && ledgerWanted({ capabilityCount: capIds.length, namedInPlace, capabilityPitchPx: pitchPx, tokens })) {
+    const font = scaledLabelFont("capability", tokens.labelScale);
+    const wanted = capIds.length > 0
+      && namedInPlace < capIds.length
+      && ledgerWanted({ capabilityCount: capIds.length, namedInPlace, capabilityPitchPx: pitchPx, namesFitInPlace: clusterNamesFit(input, enteredCluster, font), tokens });
+    if (wanted) {
       const chip = chips.get(enteredCluster.domainId)!;
-      const font = scaledLabelFont("capability", tokens.labelScale);
       const priority = new Set([...capIds].filter((id) => id === attn.capabilityId || attn.needsCaps.has(id) || attn.usedByCaps.has(id)));
       const plan = buildLedger({
         domainId: enteredCluster.domainId,
@@ -285,10 +324,10 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   }
 
   const flowOccupied = [...labelOccupied];
-  for (const t of out.texts) flowOccupied.push(t.box);
-  for (const t of out.extraTexts) flowOccupied.push(t.box);
+  const textBoxes = [...out.texts.map((t) => t.box), ...out.extraTexts.map((t) => t.box)];
+  flowOccupied.push(...textBoxes);
   const chords: DialChordLight[] = [];
-  const flows = buildFlowMarks({ ...flowBase, occupied: flowOccupied, chords }, out);
+  const flows = buildFlowMarks({ ...flowBase, occupied: flowOccupied, avoidTexts: textBoxes, chords }, out);
 
   const measured = input.evidence?.measured === true;
   let drawnElements = 0;
@@ -311,7 +350,8 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         }
         const isNeed = attn.needsCaps.has(it.id);
         const isUser = attn.usedByCaps.has(it.id);
-        const dimmed = attn.domainId !== null && !own && !isNeed && !isUser;
+        const kept = attn.capabilityId !== null ? it.id === attn.capabilityId : own;
+        const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser;
         alphas.set(it.id, capAlpha > DRAWN_ALPHA ? (dimmed ? restAlpha : 1) : 0);
         if (it.id === attn.capabilityId) continue;
         let rim = dimmed ? rimDim : rimRest;

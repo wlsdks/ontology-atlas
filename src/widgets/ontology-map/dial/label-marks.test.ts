@@ -97,6 +97,15 @@ describe("wrapDialName", () => {
 });
 
 describe("buildLabelMarks", () => {
+  it("names a focused capability and its partners below the name pitch, and leaves its siblings unnamed", () => {
+    const focus: DialAttention = { key: "d0|d0c0|1", domainId: "d0", capabilityId: "d0c0", needsCaps: new Set(["d1c0"]), usedByCaps: new Set(), partnerDomains: new Set(["d1"]), selected: true };
+    const named = (attention: DialAttention) => run({ caps: 2, scale: 0.5, attention }).texts.filter((t) => t.role === "capability").map((t) => t.id).sort();
+    expect(TOKENS.pitch * 0.5).toBeLessThan(TOKENS.capName);
+    expect(named(focus)).toEqual(["d0c0", "d1c0"]);
+    expect(named(REST)).toEqual([]);
+    expect(run({ caps: 2, scale: 1, attention: focus }).texts.filter((t) => t.role === "capability").map((t) => t.id).sort()).toEqual(["d0c0", "d1c0"]);
+  });
+
   it("names the project and every domain with its units line, whole", () => {
     const { texts } = run();
     expect(texts.find((t) => t.role === "project")?.text).toBe("Project");

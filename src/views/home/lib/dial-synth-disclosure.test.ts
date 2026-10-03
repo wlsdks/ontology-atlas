@@ -114,7 +114,7 @@ function measure(name: string, width: number, zoom: number): Count {
   const out = emptyDialFrameMarks();
   const result = buildDialMarks({
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: INKS, labels: LABELS, evidence: null, attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, labelScale: TOKENS.labelScale, viewportWidth: width, viewportHeight: H, freeRect: free, nodeScreen, toScreen,
+    scale, zoomRatio: zoom, labelScale: TOKENS.labelScale, viewportWidth: width, viewportHeight: H, freeRect: free, nodeScreen, toScreen,
     appearOf: () => 1, measureText: text, elementLabel: (id) => labelOf.get(id) ?? null,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null, disclosure,
   }, out);

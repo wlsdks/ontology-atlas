@@ -363,47 +363,48 @@ function orphanCaption(ctx: Ctx): void {
   }
 }
 
+export interface NameTry { x: number; y: number; align: CanvasTextAlign; box: Box }
+
+export function capabilityNameTries(d: Circle, width: number, fontPx: number): NameTry[] {
+  const tries: [number, number, CanvasTextAlign][] = [
+    [d.x + d.r + 4, d.y, "left"],
+    [d.x - d.r - 4, d.y, "right"],
+    [d.x, d.y + d.r + fontPx * 0.75, "center"],
+    [d.x, d.y - d.r - fontPx * 0.75, "center"],
+  ];
+  return tries.map(([x, y, align]) => ({ x, y, align, box: textBox(width, x, y, align, fontPx, 1.5) }));
+}
+
 function capabilityNames(ctx: Ctx): void {
   const { input } = ctx;
   const { attention: attn, inks, model } = input;
-  if (input.capAlpha <= 0.5 || input.tokens.pitch * input.scale < input.tokens.capName) return;
+  if (input.capAlpha <= 0.5) return;
+  const egoOnly = input.tokens.pitch * input.scale < input.tokens.capName;
+  if (egoOnly && attn.capabilityId === null) return;
   const ls = input.tokens.labelScale;
   const font = scaledLabelFont("capability", ls);
   const fontPx = scaledLabelFontSize("capability", ls);
   const items: { id: string; disc: Circle; prio: number }[] = [];
   for (const cluster of input.scene.clusters) {
     if (!input.chips.has(cluster.domainId)) continue;
-    const own = attn.domainId === cluster.domainId;
+    const own = attn.domainId === cluster.domainId && attn.capabilityId === null;
     for (const item of cluster.items) {
       if (item.direct || input.ledgerIds.has(item.id)) continue;
       const disc = input.discs.get(item.id);
       if (!disc || !model.capabilityById.has(item.id)) continue;
       const lit = attn.capabilityId === item.id || attn.needsCaps.has(item.id) || attn.usedByCaps.has(item.id);
-      if (attn.domainId && !own && !lit) continue;
+      if ((attn.domainId && !own && !lit) || (egoOnly && !lit)) continue;
       items.push({ id: item.id, disc, prio: (lit ? 1000 : 0) + (own ? 500 : 0) + item.elementIds.length });
     }
   }
   items.sort((x, y) => y.prio - x.prio || (x.id < y.id ? -1 : 1));
   for (const { id, disc: d } of items) {
     const label = model.capabilityById.get(id)!.label;
-    const width = input.measureText(label, font);
-    const tries: [number, number, CanvasTextAlign][] = [
-      [d.x + d.r + 4, d.y, "left"],
-      [d.x - d.r - 4, d.y, "right"],
-      [d.x, d.y + d.r + fontPx * 0.75, "center"],
-      [d.x, d.y - d.r - fontPx * 0.75, "center"],
-    ];
-    const boxes = tries.map(([x, y, align]) => textBox(width, x, y, align, fontPx, 1.5));
-    let pick = -1;
-    for (let pass = 0; pass < 1 && pick < 0; pass += 1) {
-      pick = boxes.findIndex((box) => free(ctx, box) && (pass === 1 || !crossesBox(input.lines, box)));
-    }
-    if (pick < 0) continue;
-    const [x, y, align] = tries[pick]!;
-    const box = boxes[pick]!;
+    const pick = capabilityNameTries(d, input.measureText(label, font), fontPx).find((t) => free(ctx, t.box) && !crossesBox(input.lines, t.box));
+    if (!pick) continue;
     const ink = input.ink(attn.needsCaps.has(id) ? inks.needs : attn.usedByCaps.has(id) ? inks.usedBy : inks.capability);
-    ctx.out.texts.push({ id, role: "capability", text: label, x, y, align, font, ink, box, parts: null });
-    claim(ctx, box);
+    ctx.out.texts.push({ id, role: "capability", text: label, x: pick.x, y: pick.y, align: pick.align, font, ink, box: pick.box, parts: null });
+    claim(ctx, pick.box);
   }
 }
 

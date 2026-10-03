@@ -166,7 +166,10 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     for (const p of free.slice(0, 12)) {
       await page.mouse.move(p.x, p.y);
       const card = page.getByTestId("map-edge-hover-card");
+      // The card answers this pointer a frame later and settles once measured.
+      await waitFrames(page, 2);
       if (!(await card.isVisible().catch(() => false))) continue;
+      await waitForBoxStill(card);
       const box = (await rectOf(page, "map-edge-hover-card"))!;
       hovered += 1;
       for (const r of chrome) expect(intersects(box, r), `hover card ${JSON.stringify(box)} over chrome ${JSON.stringify(r)} at ${p.x},${p.y}`).toBe(false);
