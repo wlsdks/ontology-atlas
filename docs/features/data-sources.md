@@ -103,7 +103,7 @@ ingress paths converge on the same shape. The dialog never says "ontology".
 In the installed app (Tauri — detected via `isDesktopShell()`,
 `src/shared/lib/desktop-shell.ts`), `/` with no vault renders **FirstRunPage**
 (`src/views/first-run/`): local-only actions to open a vault folder or create
-one, plus a local-first trust line. **Just start** (`first-run-just-start` in
+one; the local-first sentence lives only in the chooser's help dialog. **Just start** (`first-run-just-start` in
 `FirstRunPage.tsx`, and the create menu of `FirstRunFolderActions.tsx` when
 known folders are listed) needs no picker: it creates `~/Ontology Atlas/<name>`
 on real disk, numbering `-2`/`-3` on a name clash, and seeds it like a new

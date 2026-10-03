@@ -367,16 +367,6 @@ export function FirstRunPage() {
           </p>
         ) : null}
 
-        <p
-          data-token="engraved-numeral"
-          className={`${styles.trust} shrink-0 text-center font-mono text-label uppercase tracking-[var(--tracking-caps-14)]`}
-          style={{
-            color: "var(--engraved-numeral-face)",
-            textShadow: "var(--engraved-numeral-text-shadow)",
-          }}
-        >
-          {t("trustLine")}
-        </p>
       </section>
       <Dialog open={chooserHelpOpen} onClose={()=>setChooserHelpOpen(false)} labelledBy="folder-chooser-help-title" size="sm">
         <h2 id="folder-chooser-help-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{tSwitch('choose.helpLabel')}</h2>
