@@ -52,6 +52,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
   const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
   const renderedRef = useRef(true);
+  useEffect(() => clearDialFrame, []);
   useEffect(() => {
     renderedRef.current = true;
     getConfiguration().recovery.wakeFrameLoopRef.current();
@@ -241,7 +242,6 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       canvas.removeEventListener("contextrestored", onContextRestored);
       still.release();
       light.dispose();
-      clearDialFrame();
     };
 
   }, [beginCameraTween, cameraTokens, domeFitTarget, endGrowthReplay]);
