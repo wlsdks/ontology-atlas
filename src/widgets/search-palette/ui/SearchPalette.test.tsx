@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
 import {
   fireEvent,
   render as rtlRender,
@@ -79,6 +79,19 @@ describe("SearchPalette", () => {
 
     // The exit unmounts only after the spring plays through (AnimatePresence).
     await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
+  });
+
+  it('accepts Escape during the visible mount before passive effects', () => {
+    const close = vi.fn();
+    function ImmediateEscape() {
+      useLayoutEffect(() => {
+        expect(document.querySelector('#project-search-input')).not.toBeNull();
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      }, []);
+      return null;
+    }
+    render(<><SearchPalette open onClose={close} projects={[]} onSelect={() => {}} /><ImmediateEscape /></>);
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it('returns focus to the trigger when closed', async () => {

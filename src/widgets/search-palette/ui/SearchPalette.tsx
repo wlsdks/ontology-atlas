@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Link, useRouter } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -271,7 +271,7 @@ function SearchPaletteDialog({
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (isImeComposing(e)) return;
       if (e.key === 'Escape') {
