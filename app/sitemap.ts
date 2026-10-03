@@ -8,14 +8,13 @@ import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
 
-// Canonical surfaces a user can reach directly. Compatibility redirects and vault-mode-only entry
-// points such as /project/new are excluded.
+// Canonical surfaces a user can reach directly. Compatibility redirects, vault-mode-only entry
+// points such as /project/new, and `/{locale}/` (canonical: `/{locale}/download/`) are excluded.
 const STATIC_ROUTES = [
-  '',
   'projects',
   'download',
   'topology',
-  'docs',
+  'library',
   'guide',
   'changelog',
   ...GUIDE_PAGES.slice(1).map(guideCanonicalPath),
@@ -49,11 +48,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // which Google uses to pick the right localized URL for a user.
   for (const locale of routing.locales) {
     for (const route of STATIC_ROUTES) {
-      const path = route ? `/${locale}/${route}/` : `/${locale}/`;
+      const path = `/${locale}/${route}/`;
       entries.push({
         url: `${SITE_URL}${path}`,
         changeFrequency: 'weekly',
-        priority: route === '' ? 1 : 0.8,
+        priority: route === 'download' ? 1 : 0.8,
         alternates: {
           // `x-default` is where we decide what to give a user in neither language (a French
           // browser, say). Without it the search engine picks for itself. It must say the same
@@ -63,10 +62,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             ...Object.fromEntries(
               routing.locales.map((l) => [
                 hreflangOf(l),
-                `${SITE_URL}${route ? `/${l}/${route}/` : `/${l}/`}`,
+                `${SITE_URL}/${l}/${route}/`,
               ])
             ),
-            'x-default': `${SITE_URL}${route ? `/${routing.defaultLocale}/${route}/` : `/${routing.defaultLocale}/`}`,
+            'x-default': `${SITE_URL}/${routing.defaultLocale}/${route}/`,
           },
         },
       });

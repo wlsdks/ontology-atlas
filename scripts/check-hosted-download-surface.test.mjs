@@ -17,13 +17,31 @@ const hostedUpdaterManifest = JSON.stringify({
   },
 });
 
+const SITE = "https://ontologyatlas.com";
+const homeAlternates = [
+  ["en", `${SITE}/en/download/`],
+  ["ko", `${SITE}/ko/download/`],
+  ["x-default", `${SITE}/en/download/`],
+];
+const homeSitemap = `<urlset><url><loc>${SITE}/en/download/</loc>${homeAlternates
+  .map(([lang, href]) => `<xhtml:link rel="alternate" hreflang="${lang}" href="${href}" />`)
+  .join("")}</url></urlset>`;
+function homeHead(canonical = `${SITE}/en/download/`) {
+  return `<!doctype html><head><link rel="canonical" href="${canonical}"/>${homeAlternates
+    .map(([lang, href]) => `<link rel="alternate" hrefLang="${lang}" href="${href}"/>`)
+    .join("")}</head><main>Ontology Atlas</main>`;
+}
+const defaultRoutes = {
+  "/update/latest.json": { body: hostedUpdaterManifest, contentType: "application/json" },
+  "/sitemap.xml": { body: homeSitemap, contentType: "application/xml" },
+  "/en/": { body: homeHead() },
+  "/en/download/": { body: homeHead() },
+};
+
 function startServer(routes) {
   const server = http.createServer((request, response) => {
-    const route =
-      routes[request.url ?? ""] ??
-      (request.url === "/update/latest.json"
-        ? { body: hostedUpdaterManifest, contentType: "application/json" }
-        : null);
+    const url = request.url ?? "";
+    const route = url in routes ? routes[url] : (defaultRoutes[url] ?? null);
     if (!route) {
       response.writeHead(404, { "content-type": "text/html" });
       response.end("not found");
@@ -309,6 +327,22 @@ test("hosted download surface CLI prints the deploy recovery path for live 404s"
     assert.match(result.stderr, /deploy-pages\.yml is merged into the default branch/);
     assert.match(result.stderr, /gh workflow run deploy-pages\.yml --repo wlsdks\/ontology-atlas/);
     assert.match(result.stderr, /pnpm desktop:verify-hosted/);
+  } finally {
+    await server.close();
+  }
+});
+
+test("hosted download surface check rejects an /en/ that canonicalizes to itself", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": { body: alignedDownload },
+    "/en/": { body: homeHead(`${SITE}/en/`) },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 2000 }),
+      /\/en\/: canonical https:\/\/ontologyatlas.com\/en\/ is not https:\/\/ontologyatlas.com\/en\/download\//,
+    );
   } finally {
     await server.close();
   }

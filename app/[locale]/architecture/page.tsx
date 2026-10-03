@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { buildPageMetadata } from '@/shared/lib/page-metadata';
 
 import { HarnessPage } from '@/views/architecture';
 import { RouteLoadingFallback } from '@/shared/ui';
@@ -12,7 +13,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'harness' });
-  return { title: t('title'), description: t('explainer') };
+  return buildPageMetadata({
+    locale,
+    path: 'architecture',
+    title: t('title'),
+    description: t('explainer'),
+  });
 }
 
 /**

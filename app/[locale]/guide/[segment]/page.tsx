@@ -33,7 +33,10 @@ export async function generateMetadata({
     locale,
     path: guideCanonicalPath(page),
     title: `${tNav(`guidePages.${page.titleKey}`)} · ${t('pages.guide')}`,
-    description: t('descriptions.guide'),
+    description:
+      page.segment === GUIDE_ENTRY_PAGE.segment
+        ? t('descriptions.guide')
+        : t(`guideDescriptions.${page.titleKey}`),
   });
 }
 

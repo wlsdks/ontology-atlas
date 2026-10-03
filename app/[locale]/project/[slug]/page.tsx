@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
 import { isAppLocale, LOCALE_META } from '@/i18n/locales';
-import { ProjectDetailPage } from '@/views/project-detail';
+import { getTranslations } from 'next-intl/server';
+import { ProjectDetailPage, projectBreadcrumb } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
@@ -143,31 +144,12 @@ export default async function Page({
     dateModified: project.updatedAt ?? undefined,
   };
 
-  // BreadcrumbList — surfaces the "Home › Projects › {name}" path in the SERP. Per Google's
-  // guidance the last item may omit its item URL.
-  const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: '홈',
-        item: absoluteUrl(`/${locale}/`),
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: '프로젝트',
-        item: absoluteUrl(`/${locale}/projects/`),
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: project.name,
-      },
-    ],
-  };
+  const tMeta = await getTranslations({ locale, namespace: 'metadata' });
+  const breadcrumbLd = projectBreadcrumb(
+    locale,
+    { home: tMeta('siteName'), projects: tMeta('pages.projects') },
+    project.name,
+  );
 
   // `ProjectDetailPage` uses `useSearchParams()` internally, so a Suspense boundary is required for
   // the prerender to pass under static export.

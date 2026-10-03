@@ -14,8 +14,9 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     path: 'download',
-    title: t('pages.download'),
-    description: t('descriptions.download'),
+    title: t('homeTitle'),
+    description: t('descriptions.home'),
+    absoluteTitle: true,
   });
 }
 
