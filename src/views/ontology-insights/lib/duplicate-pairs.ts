@@ -8,10 +8,8 @@ import {
 } from "@/entities/knowledge-graph";
 
 /**
- * Similar-name pairs for the "are these the same thing?" card. The scoring functions mirror the MCP engine's
- * helpers (`textTokens`, `setJaccard`, `similarityScore` in `mcp/src/ontology-engine/engine-helpers.mjs`), so the
- * screen and `similar_nodes` name the same pairs; `tests/contract/duplicate-pairs.contract.test.ts` catches divergence.
- * Weights match the engine (slug 0.35, title 0.35, kind 0.1, domain 0.1, neighbours 0.1), capping a name-only match at 0.7.
+ * Duplicate suggestions mirror `mcp/src/ontology-engine/engine-helpers.mjs` scoring.
+ * `tests/contract/duplicate-pairs.contract.test.ts` checks screen/MCP parity.
  */
 
 /** Mirror of the engine's `textTokens`: lowercase ASCII letter and digit runs of 2+ characters, so Hangul yields no token. */
@@ -208,11 +206,7 @@ export function buildDuplicatePairs(
   const candidates = buildSimilarityCandidates(nodes, edges);
   if (candidates.size < 2) return empty;
 
-  /**
-   * Each node is tokenized once. `scorePair` reproduces `scoreNodeSimilarity` term by term, rounding order included,
-   * and the engine comparison in `duplicate-pairs.contract.test.ts` catches divergence. Candidate pairs come from a
-   * word inverted index: O(sum of bucket sizes squared), O(n^2) when one shared word buckets every node.
-   */
+  // Cache tokens per node; exact bounds prune candidates, while genuine dense matches remain O(n^2).
   interface PairTokens {
     slug: Set<string>;
     title: Set<string>;
@@ -241,13 +235,19 @@ export function buildDuplicatePairs(
   // At or below the no-shared-word ceiling, narrowing could change the result, so compare every pair.
   const useTokenIndex = minScore > MAX_SCORE_WITHOUT_SHARED_TOKEN;
   interface IndexedCandidate {
-    id: string;
+    index: number;
     candidate: GraphSimilarityCandidate;
     tokens: PairTokens;
+    folders: ReadonlySet<string>;
   }
   const indexedCandidates: IndexedCandidate[] = [];
   for (const [id, candidate] of candidates) {
-    indexedCandidates.push({ id, candidate, tokens: tokenSetsOf.get(id)! });
+    indexedCandidates.push({
+      index: indexedCandidates.length,
+      candidate,
+      tokens: tokenSetsOf.get(id)!,
+      folders: new Set(slugFolders(candidate.slug)),
+    });
   }
   const nodesByToken = new Map<string, IndexedCandidate[]>();
   const tokenOrder = new Map<string, number>();
@@ -267,25 +267,47 @@ export function buildDuplicatePairs(
   const shownLimit = sliceCount(shown);
   const restEndLimit = sliceCount(shown + folded);
   const retainedLimit = Math.max(shownLimit, restEndLimit);
-  const scored: DuplicatePairRow[] = [];
+  interface ScoredPair {
+    row: DuplicatePairRow;
+    left: IndexedCandidate;
+    right: IndexedCandidate;
+    firstToken?: number;
+  }
+  const scored: ScoredPair[] = [];
   let suspectCount = 0;
 
   const compareRows = (a: DuplicatePairRow, b: DuplicatePairRow) =>
     b.score - a.score || a.id.localeCompare(b.id);
 
-  const retain = (row: DuplicatePairRow) => {
+  // Preserve legacy alias ties: first shared word's order, then input-ordered pairs.
+  const firstSharedToken = (pair: ScoredPair): number => {
+    if (pair.firstToken !== undefined) return pair.firstToken;
+    let first = Infinity;
+    for (const token of pair.left.tokens.all) {
+      if (pair.right.tokens.all.has(token)) first = Math.min(first, tokenOrder.get(token)!);
+      if (first === 0) break;
+    }
+    return pair.firstToken = first;
+  };
+  const comparePairs = (a: ScoredPair, b: ScoredPair) =>
+    compareRows(a.row, b.row)
+    || (useTokenIndex ? firstSharedToken(a) - firstSharedToken(b) : 0)
+    || a.left.index - b.left.index
+    || a.right.index - b.right.index;
+
+  const retain = (row: DuplicatePairRow, left: IndexedCandidate, right: IndexedCandidate) => {
     suspectCount += 1;
     if (retainedLimit === 0) return;
+    const pair: ScoredPair = { row, left, right };
     if (retainedLimit === Infinity || scored.length < retainedLimit) {
-      scored.push(row);
+      scored.push(pair);
       return;
     }
     let worst = 0;
     for (let index = 1; index < scored.length; index += 1) {
-      // On an exact tie evict the later row, so the kept prefix matches a stable full sort even with duplicate row ids.
-      if (compareRows(scored[worst], scored[index]) <= 0) worst = index;
+      if (comparePairs(scored[worst], scored[index]) <= 0) worst = index;
     }
-    if (compareRows(row, scored[worst]) < 0) scored[worst] = row;
+    if (comparePairs(pair, scored[worst]) < 0) scored[worst] = pair;
   };
 
   const consider = (leftEntry: IndexedCandidate, rightEntry: IndexedCandidate) => {
@@ -302,15 +324,10 @@ export function buildDuplicatePairs(
     const keep = leftKeeps ? left : right;
     const dissolve = leftKeeps ? right : left;
 
-    const folders = new Set([...slugFolders(keep.slug), ...slugFolders(dissolve.slug)]);
-    const keepTokens = new Set([
-      ...similarityTokens(keep.slug),
-      ...similarityTokens(keep.title),
-    ]);
-    const sharedTokens = [
-      ...new Set([...similarityTokens(dissolve.slug), ...similarityTokens(dissolve.title)]),
-    ]
-      .filter((token) => keepTokens.has(token) && !folders.has(token))
+    const keepEntry = leftKeeps ? leftEntry : rightEntry;
+    const dissolveEntry = leftKeeps ? rightEntry : leftEntry;
+    const sharedTokens = [...dissolveEntry.tokens.all]
+      .filter((token) => keepEntry.tokens.all.has(token) && !keepEntry.folders.has(token) && !dissolveEntry.folders.has(token))
       .sort((a, b) => b.length - a.length || a.localeCompare(b));
 
     retain({
@@ -324,25 +341,33 @@ export function buildDuplicatePairs(
       kind: keep.kind === dissolve.kind ? keep.kind : null,
       score: total,
       sharedTokens,
-    });
+    }, leftEntry, rightEntry);
   };
 
   if (useTokenIndex) {
-    for (const [token, bucket] of nodesByToken) {
-      const currentOrder = tokenOrder.get(token)!;
-      for (let i = 0; i < bucket.length; i += 1) {
-        const leftTokens = bucket[i].tokens.all;
-        for (let j = i + 1; j < bucket.length; j += 1) {
-          const rightTokens = bucket[j].tokens.all;
-          let visitedEarlier = false;
-          for (const shared of leftTokens) {
-            const order = tokenOrder.get(shared)!;
-            if (order < currentOrder && rightTokens.has(shared)) {
-              visitedEarlier = true;
-              break;
-            }
-          }
-          if (!visitedEarlier) consider(bucket[i], bucket[j]);
+    const visited = new Uint32Array(indexedCandidates.length);
+    for (const left of indexedCandidates) {
+      let remainingSlug = left.tokens.slug.size;
+      let remainingTitle = left.tokens.title.size;
+      const { kind, domain, neighbors } = left.candidate;
+      const words = [...left.tokens.all].sort((a, b) =>
+        nodesByToken.get(a)!.length - nodesByToken.get(b)!.length || tokenOrder.get(a)! - tokenOrder.get(b)!,
+      );
+      for (const word of words) {
+        // With no selected word shared, Jaccard <= remaining/left.size: the union contains all left words.
+        // Add maximum non-name signals and use the scorer's rounding; equality must stay eligible.
+        const upper = roundScore(
+          (left.tokens.slug.size ? remainingSlug / left.tokens.slug.size : 0) * 0.35
+          + (left.tokens.title.size ? remainingTitle / left.tokens.title.size : 0) * 0.35
+          + (kind ? 0.1 : 0) + (domain ? 0.1 : 0) + (neighbors.size ? 0.1 : 0),
+        );
+        if (upper < minScore) break;
+        if (left.tokens.slug.has(word)) remainingSlug -= 1;
+        if (left.tokens.title.has(word)) remainingTitle -= 1;
+        for (const right of nodesByToken.get(word)!) {
+          if (right.index <= left.index || visited[right.index] === left.index + 1) continue;
+          visited[right.index] = left.index + 1;
+          consider(left, right);
         }
       }
     }
@@ -354,11 +379,11 @@ export function buildDuplicatePairs(
     }
   }
 
-  scored.sort(compareRows);
+  scored.sort(comparePairs);
 
   return {
-    rows: scored.slice(0, shownLimit),
-    restRows: scored.slice(shownLimit, restEndLimit),
+    rows: scored.slice(0, shownLimit).map(pair => pair.row),
+    restRows: scored.slice(shownLimit, restEndLimit).map(pair => pair.row),
     suspectCount,
   };
 }
