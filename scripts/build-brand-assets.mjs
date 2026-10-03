@@ -35,6 +35,12 @@ export const MASCOT_MASTERS = Object.freeze({
   }),
 });
 
+export const MASCOT_PRESENTATION_MASTER = Object.freeze({
+  path: 'assets/brand/mascot/mascot-presentation-128.png',
+  width: 128,
+  height: 128,
+});
+
 export const MASCOT_MOTION_ROWS = Object.freeze({
   walk: Object.freeze({
     path: 'assets/brand/mascot/mascot-walk-row-64.png',
@@ -104,6 +110,17 @@ export function readMascotMasters(root = process.cwd()) {
       return [detail, { ...spec, base64: bytes.toString('base64') }];
     }),
   );
+}
+
+export function readMascotPresentationMaster(root = process.cwd()) {
+  const spec = MASCOT_PRESENTATION_MASTER;
+  const bytes = readFileSync(join(root, spec.path));
+  const { width, height } = pngDimensions(bytes);
+  if (width !== spec.width || height !== spec.height) {
+    throw new Error(`${spec.path} must be ${spec.width}x${spec.height}, got ${width}x${height}`);
+  }
+  if (bytes[25] !== 6) throw new Error(`${spec.path} must be an RGBA PNG`);
+  return { ...spec, base64: bytes.toString('base64') };
 }
 
 export function readMascotMotionRows(root = process.cwd()) {
