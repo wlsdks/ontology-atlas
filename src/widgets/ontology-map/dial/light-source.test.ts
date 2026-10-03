@@ -79,6 +79,23 @@ describe("createDialLightSource", () => {
     expect(heads[0]!.curve).toEqual([100, 340, 300, 240, 500, 340]);
   });
 
+  it("draws no head for a line the frame does not paint, and rides it again when it returns", () => {
+    let frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: CHORDS };
+    const source = createDialLightSource(() => frame);
+    source.step(input(0), emitter().out);
+    frame = { ...frame, chords: [CHORDS[1]!] };
+    const hidden = emitter();
+    const signalled: number[][] = [];
+    hidden.out.signalled = (a, c, b) => signalled.push([a.x, a.y, c.x, c.y, b.x, b.y]);
+    expect(source.step(input(40), hidden.out)).toBe(true);
+    expect(hidden.heads.map((h) => h.key)).toEqual(["cart>pay"]);
+    expect(signalled).toEqual([[600, 300, 350, 200, 100, 300]]);
+    frame = { ...frame, chords: CHORDS };
+    const back = emitter();
+    source.step(input(60), back.out);
+    expect(back.heads.map((h) => h.key).sort()).toEqual(["cart>pay", "pay>ship"]);
+  });
+
   it("sends one signal per chord, departing at its source domain", () => {
     const frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: CHORDS };
     const source = createDialLightSource(() => frame);
