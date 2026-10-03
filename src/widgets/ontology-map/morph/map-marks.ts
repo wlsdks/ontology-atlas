@@ -5,7 +5,7 @@ import { smoothstep } from "../dial/frame/disclosure";
 import { dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx } from "../dial/frame/marks";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
-import type { DialLabels, DialTokens, DialWorld } from "../dial/types";
+import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/types";
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view";
@@ -183,6 +183,7 @@ function predictOntologyMapMarks({
   overviewFit,
   expandedParents,
   dialLabels,
+  dialMemory,
 }: {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
@@ -192,11 +193,12 @@ function predictOntologyMapMarks({
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
   dialLabels?: DialLabels | null;
+  dialMemory?: DialMemory | null;
 }): MapLayoutMark[] | null {
   const box = host.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0 || nodes.length === 0) return null;
   const dialTokens = readDialTokensOrNull();
-  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: null } : null);
+  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: dialMemory ?? null } : null);
   const bounds = overviewBoundsFor(overviewFit, world, tokens, expandedParents, null);
   const target = computeOverviewCameraTarget(
     bounds,
@@ -233,6 +235,7 @@ export interface MapLayoutTargetInput {
   overviewFit: "spine" | "full";
   expandedParents: ReadonlySet<string>;
   dialLabels?: DialLabels | null;
+  dialMemory?: DialMemory | null;
 }
 
 export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTargetInput, host: HTMLCanvasElement): MapLayoutTarget | null {
