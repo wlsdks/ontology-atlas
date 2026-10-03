@@ -1,4 +1,5 @@
 import { act, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
@@ -73,7 +74,7 @@ describe('AgentMascotPresence', () => {
     expect(screen.queryByTestId('agent-mascot-presence')).toBeNull();
   });
 
-  it('walks into a verified read pose, then resolves that sequence to success', () => {
+  it('walks into a verified read pose after effect replay, then resolves to success', () => {
     mocks.feed = feed({
       work: {
         ...feed().work,
@@ -83,7 +84,8 @@ describe('AgentMascotPresence', () => {
         updatedAt: NOW,
       },
     });
-    const { rerender } = render(ui());
+    const strictUi = () => <StrictMode>{ui()}</StrictMode>;
+    const { rerender } = render(strictUi());
     const presence = screen.getByTestId('agent-mascot-presence');
     expect(presence).toHaveAttribute('data-state', 'walk');
     expect(presence).toHaveTextContent('Verified agent reading detected.');
@@ -95,7 +97,7 @@ describe('AgentMascotPresence', () => {
     mocks.feed = feed({
       work: { ...feed().work, mode: 'completed', updatedAt: NOW + 1 },
     });
-    rerender(ui());
+    rerender(strictUi());
     expect(screen.getByTestId('agent-mascot-presence')).toHaveAttribute('data-state', 'success');
     expect(screen.getByRole('status')).toHaveTextContent('The verified agent work completed.');
 
