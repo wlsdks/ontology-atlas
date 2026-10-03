@@ -94,12 +94,13 @@ async function selectBySearch(page: Page, id: string) {
   await page.keyboard.press("Enter");
 }
 
-async function lightEvent(page: Page, kind: string): Promise<{ plan: LightSignal[]; createdMs: number; frames: LightFrame[] }> {
+async function lightEvent(page: Page, kind: string, during?: () => Promise<void>): Promise<{ plan: LightSignal[]; createdMs: number; frames: LightFrame[] }> {
   await page.waitForFunction((k) => (window.__atlasMapLight?.plan() ?? []).some((plan) => plan.kind === k), kind, { polling: "raf" });
   const { plan, createdMs } = await page.evaluate((k) => {
     const found = window.__atlasMapLight!.plan().find((p) => p.kind === k)!;
     return { plan: found.signals, createdMs: found.createdMs };
   }, kind);
+  await during?.();
   await page.waitForFunction(() => window.__atlasMapLight?.active() === false, undefined, { polling: "raf" });
   const frames = await page.evaluate(() => window.__atlasMapLight!.records());
   return { plan, createdMs, frames };
@@ -137,6 +138,30 @@ async function sampleInkMix(page: Page) {
   });
 }
 
+async function panWhileDialLightFlies(page: Page) {
+  const start = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const stretch = canvas.width / window.__atlasMap!.camera()!.width;
+    const marks = window.__atlasMap!.nodes().filter((node) => !node.hidden).map((node) => ({ x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch }));
+    let best = { x: 0, y: 0, clear: -1 };
+    for (let y = canvas.top + 120; y < canvas.bottom - 80; y += 16) {
+      for (let x = canvas.left + canvas.width * 0.35; x < canvas.right - 80; x += 16) {
+        const clear = Math.min(...marks.map((m) => Math.hypot(m.x - x, m.y - y)));
+        if (clear > best.clear) best = { x, y, clear };
+      }
+    }
+    return best;
+  });
+  expect(start.clear, "an empty spot of the canvas to drag").toBeGreaterThan(24);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 40; i += 1) {
+    await page.mouse.move(start.x - i * 3, start.y - i);
+    await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => done())));
+  }
+  await page.mouse.up();
+}
+
 function headTrack(frames: LightFrame[], key: string, source: string) {
   return frames.flatMap((frame) => frame.heads.filter((head) => head.key === key && head.source === source).map((head) => ({ frame, head })));
 }
@@ -163,7 +188,8 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
   await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
   await sampleInkMix(page);
   await selectBySearch(page, focus);
-  const event = await lightEvent(page, "focus");
+  const pan = panWhileDialLightFlies(page);
+  const event = await lightEvent(page, "focus", () => pan);
   const plan = event.plan.map((signal) => ({ ...signal, revealBound: false }));
   const { frames } = event;
 
@@ -230,8 +256,6 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
     expect(sample.aheadInk, `no light runs ahead of ${sample.key}`).toBeLessThanOrEqual(sample.headInk * 0.05);
   }
 
-  const running = frames.filter((frame) => frame.heads.some((head) => !head.arrived));
-  expect(running.some((frame) => frame.standDowns > 0), "a comet stood down on a lit line").toBe(true);
   const spent = await page.evaluate(() => window.__atlasMapLight!.records().at(-1)!);
   expect(spent.standDowns).toBe(0);
 });

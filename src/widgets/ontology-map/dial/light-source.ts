@@ -22,7 +22,8 @@ const BLOOM_HALO_WEIGHT = 0.3;
 
 interface Bloom {
   arrivedMs: number;
-  at: Point;
+  key: string;
+  fromA: boolean;
   radiusPx: number;
 }
 
@@ -40,6 +41,19 @@ function chordEdge(chord: DialChordLight): SignalEdge<DialChordLight> {
   };
 }
 
+interface View { x: number; y: number; scale: number; width: number; height: number }
+
+function reproject(p: Point, from: View, to: View): Point {
+  return {
+    x: ((p.x - from.width / 2) / from.scale + from.x - to.x) * to.scale + to.width / 2,
+    y: ((p.y - from.height / 2) / from.scale + from.y - to.y) * to.scale + to.height / 2,
+  };
+}
+
+function viewOf(input: { camera: { x: { value: number }; y: { value: number }; scale: { value: number } }; width: number; height: number }): View {
+  return { x: input.camera.x.value, y: input.camera.y.value, scale: input.camera.scale.value, width: input.width, height: input.height };
+}
+
 export function createDialLightSource(read: () => DialLightFrame | null): LightSource {
   const head: Point = { x: 0, y: 0 };
   const blooms = new Map<string, Bloom>();
@@ -47,6 +61,7 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
   let attention: string | null = null;
   let planned = false;
   let current: LightPlan<DialChordLight> | null = null;
+  let painted: View | null = null;
 
   const clear = () => {
     attention = null;
@@ -67,6 +82,9 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
         world = input.world;
         clear();
       }
+      const view = viewOf(input);
+      const paintedWith = painted ?? view;
+      painted = view;
       const frame = read();
       if (frame === null || !frame.focused) {
         clear();
@@ -82,16 +100,19 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       }
       if (current === null) return false;
       const { kinematics, tokens } = input;
+      const live = new Map(frame.chords.map((chord) => [chord.key, {
+        ...chord, a: reproject(chord.a, paintedWith, view), c: reproject(chord.c, paintedWith, view), b: reproject(chord.b, paintedWith, view),
+      }]));
       stepPlan(current, input.now, 1);
       for (const signal of current.signals) {
         const signalAt = signalFrame(signal, input.now, 1, kinematics);
         if (!signalAt.started) continue;
-        const chord = signal.edge;
+        const chord = live.get(signal.key) ?? signal.edge;
         const fromA = signal.from === "a";
         const departure = fromA ? chord.a : chord.b;
         const arrival = fromA ? chord.b : chord.a;
         if (signal.bloomId !== null && signalAt.arrived && !blooms.has(signal.bloomId)) {
-          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, at: arrival, radiusPx: chord.chipRadiusPx });
+          blooms.set(signal.bloomId, { arrivedMs: signal.arrivedMs, key: signal.key, fromA, radiusPx: chord.chipRadiusPx });
         }
         if (signalAt.done) continue;
         out.signalled(chord.a, chord.c, chord.b);
@@ -120,8 +141,11 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       for (const [domainId, bloom] of blooms) {
         const strength = bloomAt(input.now - bloom.arrivedMs, kinematics);
         if (!(strength > 0)) continue;
+        const chord = live.get(bloom.key);
+        if (!chord) continue;
+        const at = bloom.fromA ? chord.b : chord.a;
         const sigma = Math.max(tokens.lightHaloPx, bloom.radiusPx * BLOOM_SIGMA_PER_RADIUS);
-        out.bloom(`node:${domainId}`, bloom.at.x, bloom.at.y, sigma, sigma * BLOOM_HALO_SPREAD, BLOOM_HALO_WEIGHT, strength);
+        out.bloom(`node:${domainId}`, at.x, at.y, sigma, sigma * BLOOM_HALO_SPREAD, BLOOM_HALO_WEIGHT, strength);
       }
       const alive = isPlanAlive(current, input.now, 1, kinematics);
       if (!alive) current = null;

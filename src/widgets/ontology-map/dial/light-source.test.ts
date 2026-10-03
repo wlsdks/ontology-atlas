@@ -69,6 +69,25 @@ describe("createDialLightSource", () => {
     expect(source.plan()?.createdMs).toBe(120);
   });
 
+  it("rides the chord the frame paints now, not the one it planned on", () => {
+    let frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: [CHORDS[0]!] };
+    const source = createDialLightSource(() => frame);
+    source.step(input(0), emitter().out);
+    frame = { ...frame, chords: [{ ...CHORDS[0]!, a: { x: 100, y: 340 }, c: { x: 300, y: 240 }, b: { x: 500, y: 340 } }] };
+    const { out, heads } = emitter();
+    source.step(input(80), out);
+    expect(heads[0]!.curve).toEqual([100, 340, 300, 240, 500, 340]);
+  });
+
+  it("carries the painted chord by the camera move since it was painted", () => {
+    const frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: [CHORDS[0]!] };
+    const source = createDialLightSource(() => frame);
+    source.step(input(0), emitter().out);
+    const { out, heads } = emitter();
+    source.step({ ...input(80), camera: { ...CAMERA, x: { value: 10, velocity: 0 } } }, out);
+    expect(heads[0]!.curve).toEqual([90, 300, 290, 200, 490, 300]);
+  });
+
   it("sends one signal per chord, departing at its source domain", () => {
     const frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: CHORDS };
     const source = createDialLightSource(() => frame);
