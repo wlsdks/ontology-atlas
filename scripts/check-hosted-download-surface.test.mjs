@@ -87,7 +87,9 @@ const alignedDownload = `<!doctype html>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>
   <p>${koDownloadCopy.trustLine}</p>
   <h2>${koDownloadCopy.demoTitle}</h2>
+  <h2>${koDownloadCopy.change.title.replace(/<\/?key>/g, "")}</h2>
   <h2>${koDownloadCopy.screens.title}</h2>
+  <h2>${koDownloadCopy.start.title.replace(/<\/?key>/g, "")}</h2>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {

@@ -32,6 +32,8 @@ import { GatewayFx } from './GatewayFx';
 import { HeroAtlas } from './HeroAtlas';
 import { ScreensStage } from './ScreensStage';
 import { ConductionSection } from './ConductionFigure';
+import { ChangeSection } from './ChangeFigure';
+import { StartSection } from './StartFigure';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
 
@@ -90,7 +92,9 @@ export function DownloadPage() {
         />
         <ConductionSection graph={graph} />
         <DemoSection />
+        <ChangeSection graph={graph} />
         <ScreensSection />
+        <StartSection />
 
         <div
           data-testid="download-bottom-band"
