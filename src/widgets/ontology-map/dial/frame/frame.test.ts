@@ -16,6 +16,7 @@ import {
   clearDialFrame,
   countCrossings,
   describeLastDialFrame,
+  dialFrameSummary,
   dialChordPresence,
   dialLightFrame,
   dialOwnsFlatPaint,
@@ -217,6 +218,36 @@ describe("frame registry", () => {
     expect(probe.discs.map((d) => d.ink)).toEqual(last.marks.discs.map((d) => last.marks.inks[d.rim]));
     expect(probe.discs.every((d) => d.ink.startsWith("#"))).toBe(true);
     expect(probe.squares).toBe(last.marks.squares.filter((q) => q.id !== null && !input.dial.scene.orphans.ids.includes(q.id)).length);
+  });
+});
+
+describe("frame slot", () => {
+  it("keeps nothing of the painted input: the context, the world and the closures can go once the frame is painted", () => {
+    const model = modelOf();
+    const input = frameInput(model, { focusedNodeId: "d1" });
+    const revokers: (() => void)[] = [];
+    const revocable = <T extends object>(target: T): T => {
+      const { proxy, revoke } = Proxy.revocable(target, {});
+      revokers.push(revoke);
+      return proxy;
+    };
+    paintDialFrame({
+      ...input,
+      ctx: revocable(input.ctx),
+      dial: { model: revocable(input.dial.model), scene: revocable(input.dial.scene), overviewPadPx: input.dial.overviewPadPx },
+      worldKey: revocable({}),
+      nodeScreen: revocable(input.nodeScreen),
+      toScreen: revocable(input.toScreen),
+      appearOf: revocable(input.appearOf),
+      elementLabel: revocable(input.elementLabel),
+    });
+    const probe = describeLastDialFrame(W, H);
+    const summary = dialFrameSummary();
+    expect(probe?.clusters).toHaveLength(5);
+    for (const revoke of revokers) revoke();
+    expect(describeLastDialFrame(W, H)).toEqual(probe);
+    expect(dialFrameSummary()).toEqual(summary);
+    expect(lastDialFrame()?.light.attentionKey).toBe(resolveDialAttention(model, null, "d1").key);
   });
 });
 

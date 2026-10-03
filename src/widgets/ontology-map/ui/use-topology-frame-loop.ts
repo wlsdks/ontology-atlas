@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
+import { clearDialFrame } from "../dial/frame/frame";
 import type { CameraAxes } from "../engine/camera";
 import { createLightFrameStage } from "../light/light-frame-stage";
 import { ambientSleepFactor } from "../model/ambient-sleep";
@@ -240,6 +241,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       canvas.removeEventListener("contextrestored", onContextRestored);
       still.release();
       light.dispose();
+      clearDialFrame();
     };
 
   }, [beginCameraTween, cameraTokens, domeFitTarget, endGrowthReplay]);

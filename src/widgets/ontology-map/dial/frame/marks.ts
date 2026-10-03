@@ -66,6 +66,7 @@ export interface DialMarksResult {
   chords: DialChordLight[];
   flows: FlowMarksResult;
   ledger: { plan: LedgerPlan; leaderCrossings: number } | null;
+  elementSquares: number;
 }
 
 const CULL_PX = 10;
@@ -341,6 +342,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
   const measured = input.evidence?.measured === true;
   let drawnElements = 0;
+  let elementSquares = 0;
   if (capsDrawn) {
     const fill = ink(mixOver(map.nodeFillCapability, inks.bg, capAlpha));
     const rimRest = mixOver(inks.capabilityRim, inks.bg, capAlpha);
@@ -399,6 +401,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
           const sp = input.nodeScreen(el) ?? input.toScreen(p.x, p.y);
           if (!visible(sp, half, ELEMENT_CULL_PX)) continue;
           out.squares.push({ id: el, x: sp.x, y: sp.y, half, fill: fillI, rim: rimI });
+          elementSquares += 1;
           alphas.set(el, step > DRAWN_ALPHA ? 1 : 0);
           if (step > DRAWN_ALPHA) {
             picks.push({ id: el, x: sp.x, y: sp.y, r: half + 1 });
@@ -474,5 +477,5 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
   const discsDrawn = capAlpha > DRAWN_ALPHA ? [...discs.keys()].filter((id) => model.capabilityById.has(id)).length : 0;
   const drawnCount = (hub ? 1 : 0) + chips.size + discsDrawn + drawnElements;
-  return { drawnCount, tier: drawnElements > 0 ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger };
+  return { drawnCount, tier: drawnElements > 0 ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger, elementSquares };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import {
   useCallback,
   useEffect,
@@ -258,7 +259,9 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = true;
   };
 
+  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange });
   useEffect(() => {
+    const live = latest.current;
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
     const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
@@ -275,7 +278,7 @@ export function useTopologyWorldLifecycle({
       placed = { state: step.state, held: step.held };
       return step.model;
     };
-    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    const world = buildTopologyWorld(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
     const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
     placementStateRef.current = placed.state;
     if (world.dial) {
@@ -348,8 +351,8 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = false;
     homeTargetOverrideRef.current = null;
     prevPinnedNodeIdRef.current = null;
-    onVisibleCountChange?.(nodes.length);
-    onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
+    live.onVisibleCountChange?.(live.nodes.length);
+    live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
       galaxyModeCameraRef.current = { flat: null, galaxy: null };
