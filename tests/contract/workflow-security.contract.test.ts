@@ -355,8 +355,15 @@ describe("워크플로 보안 계약", () => {
     const stage = jobBlock(release, "stage-macos");
     expect(stage).toContain("tag_name: ${{ needs.admit-release.outputs.release_tag }}");
     expect(stage).not.toContain("target_commitish:");
-    expect(stage).toContain("--mode=pin");
-    expect(jobBlock(release, "publish-macos")).toContain("--mode=pin");
+    const pin = "desktop:release-source -- --mode=pin";
+    expect(stage.indexOf(pin)).toBeGreaterThan(-1);
+    expect(stage.indexOf(pin)).toBeLessThan(stage.indexOf("softprops/action-gh-release"));
+    const publish = jobBlock(release, "publish-macos");
+    const edit = publish.indexOf("gh release edit");
+    expect(edit).toBeGreaterThan(-1);
+    expect(publish.indexOf(pin)).toBeGreaterThan(-1);
+    expect(publish.indexOf(pin)).toBeLessThan(edit);
+    expect(publish.indexOf(pin, edit)).toBeGreaterThan(edit);
   });
 
   it("keeps every signing secret out of the Windows job, which ships no in-app update", () => {

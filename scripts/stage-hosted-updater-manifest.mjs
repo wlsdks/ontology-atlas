@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { isAfterLastIntel } from './lib/last-intel-release.mjs';
+import { updaterArchiveName } from './stage-macos-release-assets.mjs';
+
 const DEFAULT_REPO = 'wlsdks/ontology-atlas';
 const DEFAULT_API_BASE = 'https://api.github.com';
 
@@ -36,7 +39,10 @@ export function pickPublishedRelease(releases, requestedTag = null) {
   return release;
 }
 
-export function validateHostedUpdaterManifest(value, releaseTag) {
+/** The installed app's platform key → the arch its staged archive name carries. */
+const ARCH_BY_PLATFORM = { 'darwin-aarch64': 'aarch64', 'darwin-x86_64': 'x64' };
+
+export function validateHostedUpdaterManifest(value, releaseTag, repo = DEFAULT_REPO) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     fail('latest.json must be an object');
   }
@@ -50,24 +56,21 @@ export function validateHostedUpdaterManifest(value, releaseTag) {
     fail('latest.json has no platforms object');
   }
   const entries = Object.entries(platforms);
-  if (entries.length === 0) fail('latest.json has zero platform entries');
+  if (!Object.hasOwn(platforms, 'darwin-aarch64')) fail('latest.json has no darwin-aarch64 entry');
+  const allowed = isAfterLastIntel(version) ? ['darwin-aarch64'] : ['darwin-aarch64', 'darwin-x86_64'];
   for (const [platform, entry] of entries) {
+    if (!allowed.includes(platform)) {
+      fail(`latest.json platform ${platform} is not one of ${allowed.join(', ')} for ${releaseTag}`);
+    }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       fail(`${platform} updater entry is not an object`);
     }
     if (typeof entry.signature !== 'string' || entry.signature.trim() === '') {
       fail(`${platform} updater entry has no signature`);
     }
-    if (typeof entry.url !== 'string') fail(`${platform} updater entry has no URL`);
-    let url;
-    try {
-      url = new URL(entry.url);
-    } catch {
-      fail(`${platform} updater URL is invalid`);
-    }
-    if (url.protocol !== 'https:') fail(`${platform} updater URL must use https`);
-    if (!url.pathname.includes(`/releases/download/${releaseTag}/`)) {
-      fail(`${platform} updater URL is not pinned to ${releaseTag}`);
+    const expectedUrl = `https://github.com/${repo}/releases/download/${releaseTag}/${updaterArchiveName(version, ARCH_BY_PLATFORM[platform])}`;
+    if (entry.url !== expectedUrl) {
+      fail(`${platform} updater URL is not pinned to ${releaseTag} as ${expectedUrl}`);
     }
   }
   return value;
@@ -117,7 +120,7 @@ export async function stageHostedUpdaterManifest({
     }),
     `${release.tag_name} latest.json`,
   );
-  validateHostedUpdaterManifest(manifest, release.tag_name);
+  validateHostedUpdaterManifest(manifest, release.tag_name, repo);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   return { tag: release.tag_name, version: manifest.version, out };

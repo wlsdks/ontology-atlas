@@ -18,7 +18,7 @@ const manifest = {
   platforms: {
     'darwin-aarch64': {
       signature: 'signed',
-      url: `https://github.com/wlsdks/ontology-atlas/releases/download/${tag}/app.tar.gz`,
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/${tag}/ontology-atlas_1.3.0_aarch64.app.tar.gz`,
     },
   },
 };
@@ -74,6 +74,71 @@ test('stages and validates the release latest.json at the stable Pages path', as
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
+});
+
+test('refuses a platform key beyond the Apple Silicon one', () => {
+  assert.throws(
+    () =>
+      validateHostedUpdaterManifest(
+        {
+          ...manifest,
+          platforms: {
+            ...manifest.platforms,
+            'darwin-aarch64-app': manifest.platforms['darwin-aarch64'],
+          },
+        },
+        tag,
+      ),
+    /darwin-aarch64-app is not one of darwin-aarch64, darwin-x86_64/,
+  );
+});
+
+test('refuses the right path on a foreign host', () => {
+  assert.throws(
+    () =>
+      validateHostedUpdaterManifest(
+        {
+          ...manifest,
+          platforms: {
+            'darwin-aarch64': {
+              signature: 'signed',
+              url: `https://github.example/wlsdks/ontology-atlas/releases/download/${tag}/ontology-atlas_1.3.0_aarch64.app.tar.gz`,
+            },
+          },
+        },
+        tag,
+      ),
+    /not pinned to v1\.3\.0 as https:\/\/github\.com\//,
+  );
+});
+
+const twoKeyManifest = (version) => ({
+  version,
+  notes: '',
+  pub_date: '2026-10-03T00:00:00Z',
+  platforms: Object.fromEntries(
+    [
+      ['darwin-aarch64', 'aarch64'],
+      ['darwin-x86_64', 'x64'],
+    ].map(([platform, arch]) => [
+      platform,
+      {
+        signature: 'signed',
+        url: `https://github.com/wlsdks/ontology-atlas/releases/download/v${version}/ontology-atlas_${version}_${arch}.app.tar.gz`,
+      },
+    ]),
+  ),
+});
+
+test("accepts v1.5.0's two-key manifest, the last with an Intel entry", () => {
+  assert.equal(validateHostedUpdaterManifest(twoKeyManifest('1.5.0'), 'v1.5.0').version, '1.5.0');
+});
+
+test('refuses an Intel entry after v1.5.0', () => {
+  assert.throws(
+    () => validateHostedUpdaterManifest(twoKeyManifest('1.6.0'), 'v1.6.0'),
+    /darwin-x86_64 is not one of darwin-aarch64 for v1\.6\.0/,
+  );
 });
 
 test('rejects a manifest whose version or asset URLs belong to another release', () => {

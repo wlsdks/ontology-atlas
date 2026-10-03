@@ -545,11 +545,8 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # Do not flatten — the manifest builder splits architectures by **folder**
-          # (`release-assets/ontology-atlas-macos-<arch>/`). Merging them mixes two
-          # architectures in one folder, making it impossible to know which archive
-          # belongs to which architecture, and incorrectly merging them causes users
-          # to receive apps for the wrong architecture.
+          # Do not flatten: the manifest builder finds each architecture by its
+          # folder (`release-assets/ontology-atlas-macos-<arch>/`).
           merge-multiple: false
 
       - name: Download Windows artifact
@@ -619,7 +616,7 @@ jobs:
           {
             echo "## Draft desktop release — awaiting approval"
             echo ""
-            echo "macOS DMGs and the unsigned Windows x64 beta are staged at ${release_url}."
+            echo "The Apple Silicon DMG and the unsigned Windows x64 beta are staged at ${release_url}."
             echo "The Windows artifact passed the native Windows Server 2022 build, Defender scan,"
             echo "silent install, app launch, and installed MCP sidecar smoke before this gate."
             echo "Windows 11 client SmartScreen UI remains explicitly unverified."
@@ -692,6 +689,11 @@ jobs:
           # Clears a pre-release flag set by hand on the draft: the hosted updater skips a GitHub
           # pre-release, and `desktop:verify-download` and `download:release-facts` below refuse one.
           gh release edit "${RELEASE_TAG}" --draft=false --prerelease=false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Recheck admitted release source after publication
+        run: pnpm desktop:release-source -- --mode=pin --tag="${RELEASE_TAG}" --sha="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
