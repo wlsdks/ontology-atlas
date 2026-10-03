@@ -9,7 +9,7 @@ import {
   type SecretStatus,
 } from '@/shared/lib/tauri-secrets';
 import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/tauri-jev';
-import { readLlmAuditLog, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
+import { readLlmAuditSummary, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 
 /**
  * State for the Agents destination's models tab, owned by the panel so the rows and the sent-log
@@ -111,15 +111,16 @@ export function useAiConnection({
       return undefined;
     }
     let cancelled = false;
+    const controller = new AbortController();
     void (async () => {
-      // The whole file is read once so the count is the file's, not the tail's.
-      const entries = await readLlmAuditLog(handle, { limit: Number.MAX_SAFE_INTEGER });
+      const summary = await readLlmAuditSummary(handle, { limit: AUDIT_TAIL, signal: controller.signal });
       if (cancelled) return;
-      setAuditTotal(entries.length);
-      setAuditEntries(entries.slice(-AUDIT_TAIL));
+      setAuditTotal(summary.total);
+      setAuditEntries(summary.entries);
     })();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [enabled, vaultKey, auditNonce]);
 
