@@ -46,3 +46,5 @@ What the dial draws, an agent can ask for:
 
 - `query_ontology({operation:"domain_matrix", types:["depends_on"]})` or `ontology-atlas domain-matrix --types depends_on`: the counted lines.
 - `query_ontology({operation:"blast_radius", slug, direction:"incoming"})` or `ontology-atlas blast-radius <slug> --direction incoming`: what a focused capability is used by.
+
+The first populated dial fits its overview before assembling, including when a folder arrives in intermediate batches. Panning while the folder is still being read keeps the person's camera position through that placement.

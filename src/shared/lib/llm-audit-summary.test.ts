@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MessageChannel } from 'node:worker_threads';
-import { parseLlmAuditLog, readLlmAuditSummary } from './llm-audit-log';
+import { AuditReadError, parseLlmAuditLog, readLlmAuditSummary } from './llm-audit-log';
 
 const row = (n: number) => JSON.stringify({ v: 1, at: String(n), provider: 'local', question: '결제 상태', scope: { nodes: ['elements/a', 42] }, durationMs: n });
 function handle(file: object) {
@@ -34,7 +34,8 @@ describe('audit count and tail reader', () => {
 
   it('falls back to text for older file adapters and returns empty on missing files', async () => {
     expect(await readLlmAuditSummary(handle({ text: async () => row(1) }))).toEqual({ total: 1, entries: parseLlmAuditLog(row(1)) });
-    expect(await readLlmAuditSummary(handle({ text: async () => { throw new Error('missing'); } }))).toEqual({ total: 0, entries: [] });
+    expect(await readLlmAuditSummary(handle({ text: async () => { throw new DOMException('missing', 'NotFoundError'); } }))).toEqual({ total: 0, entries: [] });
+    await expect(readLlmAuditSummary(handle({ text: async () => { throw new Error('denied'); } }))).rejects.toBeInstanceOf(AuditReadError);
   });
 
   it('does not begin file access for a cancelled request', async () => {
@@ -50,6 +51,7 @@ describe('audit count and tail reader', () => {
     let resolve!: (dir: { getFileHandle: typeof getFileHandle }) => void;
     const getDirectoryHandle = () => new Promise(done => { resolve = done; });
     const pending = readLlmAuditSummary({ getDirectoryHandle } as unknown as FileSystemDirectoryHandle, { signal: controller.signal });
+    await vi.waitFor(() => expect(resolve).toBeTypeOf('function'));
     controller.abort(); resolve({ getFileHandle });
     expect(await pending).toEqual({ total: 0, entries: [] });
     expect(getFileHandle).not.toHaveBeenCalled();
@@ -72,7 +74,7 @@ describe('audit count and tail reader', () => {
       if (pulled) controller.error(new Error('interrupted read'));
       else { pulled = true; controller.enqueue(new TextEncoder().encode(row(1) + '\n')); }
     } }) };
-    expect(await readLlmAuditSummary(handle(file))).toEqual({ total: 0, entries: [] });
+    await expect(readLlmAuditSummary(handle(file))).rejects.toBeInstanceOf(AuditReadError);
   });
 
   it.each([-1, Infinity, NaN, 1.5])('rejects invalid tail limit %s before file access', async limit => {

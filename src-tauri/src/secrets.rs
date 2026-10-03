@@ -60,7 +60,7 @@ pub fn secret_set(provider: String, secret: String) -> Result<SecretStatus, Stri
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn secret_status(provider: String) -> Result<SecretStatus, String> {
     let known = validate_provider(&provider)?;
     match entry(&provider)?.get_password() {
@@ -212,13 +212,31 @@ mod tests {
 
     #[test]
     fn there_is_no_command_that_returns_the_whole_secret() {
-        // No pub command may return the full key.
         let source = include_str!("secrets.rs");
-        let command_count = source.matches("#[tauri::command]").count();
-        let status_returns = source.matches("Result<SecretStatus, String>").count();
+        let signatures: Vec<_> = source
+            .split_inclusive('\n')
+            .scan(0usize, |offset, line| {
+                let start = *offset;
+                *offset += line.len();
+                Some((start, line))
+            })
+            .filter_map(|(start, line)| {
+                line.trim_start()
+                    .starts_with("#[tauri::command")
+                    .then(|| source[start..].split_once('{').unwrap().0)
+            })
+            .collect();
+        for signature in &signatures {
+            let compact: String = signature.chars().filter(|c| !c.is_whitespace()).collect();
+            assert!(
+                compact.ends_with("->Result<SecretStatus,String>"),
+                "a command returns a type outside SecretStatus: {signature}"
+            );
+        }
         assert_eq!(
-            command_count, status_returns,
-            "every command must return only SecretStatus"
+            signatures.len(),
+            3,
+            "set, status and clear must be inventoried"
         );
     }
 }

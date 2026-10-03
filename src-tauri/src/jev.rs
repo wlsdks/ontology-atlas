@@ -48,7 +48,7 @@ pub fn jev_secret_set(secret: String) -> Result<JevSecretStatus, String> {
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn jev_secret_status() -> Result<JevSecretStatus, String> {
     match entry()?.get_password() {
         Ok(secret) => Ok(JevSecretStatus {
