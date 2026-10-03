@@ -42,8 +42,8 @@
     "tier_element": "要素まで",
     "zoomHint": "ズームインすると要素が表示されます",
     "zoomHintPlain": "点をクリックすると要素が表示されます",
-    "dialCapabilitiesHint": "capabilities show as you zoom",
-    "dialElementsHint": "elements show inside the domain you enter"
+    "dialCapabilitiesHint": "ズームするとケイパビリティが表示されます",
+    "dialElementsHint": "入ったドメインの要素が表示されます"
   },
   "plainModeCta": "やさしい表示に切り替え",
   "reopenLabel": "スタートガイドを再表示",
