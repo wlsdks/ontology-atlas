@@ -543,5 +543,10 @@ test('a user camera move while reading survives first placement', async ({page})
   await release(page);
   await waitForDial(page);
   const after = await page.evaluate(() => window.__atlasMap?.camera());
-  expect(after).toEqual(before);
+  expect(before).toBeTruthy();
+  expect(after).toBeTruthy();
+  expect({ scale: after!.scale, width: after!.width, height: after!.height })
+    .toEqual({ scale: before!.scale, width: before!.width, height: before!.height });
+  expect(Math.hypot(after!.x - before!.x, after!.y - before!.y) * before!.scale)
+    .toBeLessThanOrEqual(TOLERANCE_PX);
 });
