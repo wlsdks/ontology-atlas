@@ -32,7 +32,7 @@ export function ledgerWanted(input: LedgerTriggerInput): boolean {
   return input.namedInPlace < input.capabilityCount && input.capabilityPitchPx < input.tokens.reachCap;
 }
 
-export interface LedgerRow {
+interface LedgerRow {
   id: string;
   text: string;
   x: number;
@@ -65,7 +65,7 @@ function cross(ax: number, ay: number, bx: number, by: number, cx: number, cy: n
   return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
 }
 
-export function segmentsCross(a: LedgerLeader, b: LedgerLeader): boolean {
+function segmentsCross(a: LedgerLeader, b: LedgerLeader): boolean {
   const d1 = cross(a.x0, a.y0, a.x1, a.y1, b.x0, b.y0);
   const d2 = cross(a.x0, a.y0, a.x1, a.y1, b.x1, b.y1);
   const d3 = cross(b.x0, b.y0, b.x1, b.y1, a.x0, a.y0);

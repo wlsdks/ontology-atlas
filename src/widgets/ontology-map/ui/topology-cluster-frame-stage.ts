@@ -161,7 +161,7 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
         (heldOpen ??= new Set<string>()).add(id);
       }
     }
-    const clusterState = computeTopologyClusterState(world, effectiveExpanded, heldOpen);
+    const clusterState = computeTopologyClusterState(world, effectiveExpanded, heldOpen, liveRealmRootId !== null);
 
     // Selective ego: when a focused node has more neighbours than the batch
     // limit, keep the top (revealedBatches × limit) by DOI and collapse the

@@ -17,11 +17,11 @@ const PACKING = 0.9069;
 const ROOM_FILL = 0.92;
 const MAX_STEP = 5;
 
-export function spiralRadius(k: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0">): number {
+function spiralRadius(k: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0">): number {
   return tokens.spiralC * tokens.pitch * Math.sqrt(k + tokens.spiralK0);
 }
 
-export function footprintOf(items: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0" | "elementRoom">): number {
+function footprintOf(items: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0" | "elementRoom">): number {
   return spiralRadius(Math.max(0, items - 1), tokens) + tokens.elementRoom * tokens.pitch;
 }
 

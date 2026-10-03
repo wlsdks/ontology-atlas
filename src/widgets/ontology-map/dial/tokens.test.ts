@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { DIAL_TOKEN_SPECS, resolveDialTokens } from "./tokens";
+import { DIAL_TOKEN_SPECS, readDialTokens, resolveDialTokens } from "./tokens";
 
 const values = (): Map<string, string> => {
   const m = new Map(DIAL_TOKEN_SPECS.map(({ cssVar }, i) => [cssVar, String(i + 1)]));
@@ -35,5 +35,22 @@ describe("resolveDialTokens", () => {
     const ink = values();
     ink.delete("--map-panel-text-primary");
     expect(() => resolveDialTokens((v) => ink.get(v) ?? "")).toThrow(/--map-panel-text-primary/);
+  });
+});
+
+describe("readDialTokens", () => {
+  it("reads again when the theme changes", () => {
+    let ink = "#111111";
+    const spy = vi.spyOn(window, "getComputedStyle").mockImplementation(
+      () => ({ getPropertyValue: (v: string) => (v === "--map-panel-text-primary" ? ink : (values().get(v) ?? "")) }) as CSSStyleDeclaration,
+    );
+    document.documentElement.setAttribute("data-theme", "dark");
+    expect(readDialTokens().attendedNameInk).toBe("#111111");
+    ink = "#222222";
+    expect(readDialTokens().attendedNameInk).toBe("#111111");
+    document.documentElement.setAttribute("data-theme", "light");
+    expect(readDialTokens().attendedNameInk).toBe("#222222");
+    document.documentElement.removeAttribute("data-theme");
+    spy.mockRestore();
   });
 });

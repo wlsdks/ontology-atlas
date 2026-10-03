@@ -282,7 +282,7 @@ export function namesCrossed(lines: readonly (readonly Point[])[], texts: readon
   return { count: crossed.size, names: [...crossed] };
 }
 
-export function countTextOverlaps(texts: readonly { id: string | null; text: string; box: Box }[]): number {
+function countTextOverlaps(texts: readonly { id: string | null; text: string; box: Box }[]): number {
   const pairs = new Set<string>();
   for (let i = 0; i < texts.length; i += 1) {
     for (let j = i + 1; j < texts.length; j += 1) {

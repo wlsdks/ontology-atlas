@@ -22,8 +22,9 @@ export function computeTopologyClusterState(
   expandedParents: ReadonlySet<string>,
   /** The focused node's cross-parent neighbours, drawn inside folded parents (`DensityGateInput.heldOpen`). */
   heldOpen?: ReadonlySet<string>,
+  inRealm = false,
 ): DensityGateResult {
-  if (world.dial) return { clusteredIds: new Set(), chips: [] };
+  if (world.dial && !inRealm) return { clusteredIds: new Set(), chips: [] };
   const parentGeometry = new Map<string, DensityGateParentGeometry>();
   for (const [parentId, meta] of world.clusterMetaByParent) {
     const parent = world.nodeById.get(parentId);

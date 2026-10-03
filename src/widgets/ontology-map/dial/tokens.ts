@@ -88,12 +88,19 @@ export function resolveDialTokens(get: (cssVar: string) => string): DialTokens {
   return out as unknown as DialTokens;
 }
 
-let cached: { doc: Document; tokens: DialTokens } | null = null;
+let cached: { doc: Document; theme: string; tokens: DialTokens } | null = null;
+let darkQuery: MediaQueryList | null = null;
+
+function themeKey(): string {
+  darkQuery ??= typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : null;
+  return `${document.documentElement.getAttribute("data-theme") ?? ""}|${darkQuery?.matches ? 1 : 0}`;
+}
 
 export function readDialTokens(): DialTokens {
-  if (cached && cached.doc === document) return cached.tokens;
+  const theme = themeKey();
+  if (cached && cached.doc === document && cached.theme === theme) return cached.tokens;
   const style = getComputedStyle(document.documentElement);
   const tokens = resolveDialTokens((v) => style.getPropertyValue(v));
-  cached = { doc: document, tokens };
+  cached = { doc: document, theme, tokens };
   return tokens;
 }
