@@ -43,8 +43,8 @@ import { waitForAnimationsDone, waitForBoxStill, waitFrames } from "./settle";
  *
  * **What is measured (revised 2026-08-19, after the install section was deleted).**
  *
- * 1. The x of the GNB logo, headline, **map section**, caption, and footer are
- *    **all identical** (five elements).
+ * 1. The x of the GNB logo, headline, and footer are **all identical** (three
+ *    elements; the map section and its caption left on 2026-10-03).
  * 2. **Left and right margins are equal** — `band.left === vw − band.right`.
  * 3. **The top bar's right group ends at `vw − origin`** (the owner's "the gap is
  *    long" report).
@@ -149,9 +149,6 @@ async function measure(page: import("@playwright/test").Page) {
       xs: {
         gnb: bx('[data-testid="download-gnb"] a'),
         headline: bx("h1"),
-        // Remake (2026-08-18): the map section stands at the same origin.
-        map: bx('[data-testid="download-stage-map-frame"]'),
-        caption: bx('[data-testid="download-portrait-caption"] span'),
         footer: bx("main footer > div"),
       },
       // The right edge of the band (the column inside the origin) — symmetry is measured
@@ -171,8 +168,6 @@ async function measure(page: import("@playwright/test").Page) {
        */
       stage: (() => {
         const demo = laidOut('[data-testid="demo-stage"]');
-        const agent = laidOut('[data-testid="gateway-agent-scene"]');
-        const mapFrame = laidOut('[data-testid="download-stage-map-frame"]');
         if (!demo) return null;
         const demoRect = demo.getBoundingClientRect();
         // The track the stage stands in, and the section's column around it (2026-09-25: from
@@ -190,8 +185,6 @@ async function measure(page: import("@playwright/test").Page) {
           colLeft: Math.round(colRect.left),
           colRight: Math.round(colRect.right),
           colW: Math.round(colRect.width),
-          agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
-          mapW: mapFrame ? Math.round(mapFrame.getBoundingClientRect().width) : null,
           /*
            * Where the head's **ink** starts, not its box. The `h2` box fills its track whichever
            * way the text is aligned, so a box edge would agree with the column even while the
@@ -318,22 +311,11 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     Math.abs(stage.demoRight - stage.colRight),
     `${label}: 시연 무대의 오른쪽(${stage.demoRight})이 컬럼 끝(${stage.colRight})에 닿지 않는다 — 비어 있는 오른쪽이 돌아왔다`,
   ).toBeLessThanOrEqual(1);
-  /*
-   * **The map frame is the column** (2026-09-08). Until then the map stood in an 11/20 column
-   * beside the file and the agent scene was held to that same width ("two sections, one grid",
-   * 2026-09-02). Now the map is the section's stage across the whole column and the file is a
-   * card standing on it at `lg`, so the relation to keep is with the column itself. The agent
-   * scene keeps its 11/20 beside its three cards; the demo stays the page's single centred stage.
-   */
-  expect(
-    stage.mapW,
-    `${label}: 근거 지도 프레임(${stage.mapW})이 기둥(${stage.colW})을 채우지 않는다 — 지도는 이 절의 무대다`,
-  ).toBe(stage.colW);
 }
 
 test.describe("관문 다운로드의 그리드", () => {
   for (const viewport of WIDTHS) {
-    test(`${viewport.width}×${viewport.height} — 다섯 원소가 같은 x 에 서고 좌우가 같다`, async ({
+    test(`${viewport.width}×${viewport.height} — 세 원소가 같은 x 에 서고 좌우가 같다`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport);
@@ -364,7 +346,7 @@ test.describe("관문 다운로드의 그리드", () => {
    * at each width is all of it. Both directions are measured: widening (the origin
    * grows) and narrowing (it returns to the gutter).
    */
-  test("리사이즈하면 다섯 원소가 새 원점을 따라간다", async ({ page }) => {
+  test("리사이즈하면 세 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
     // `load` plus an element wait — `networkidle` by definition never arrives at large
@@ -558,7 +540,7 @@ test.describe("the decision block reads over the stage at every split width", ()
     test(`${width}px (${engine}) — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await seedFirstRunSeen(page);
-      await page.goto(engine === "three" ? "/en/download/?hero=three" : "/en/download/", { waitUntil: "load" });
+      await page.goto(engine === "three" ? "/en/download/?hero=three&e2e=1" : "/en/download/", { waitUntil: "load" });
       if (engine === "three") {
         await page.waitForFunction(
           () => document.querySelector('[data-testid="gateway-hero-object"]')?.getAttribute("data-hero-engine") === "three",
@@ -584,8 +566,8 @@ test.describe("the decision block reads over the stage at every split width", ()
         const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
         // The hero is a WebGL canvas since 2026-09-08 (the 2D engine stays as its fallback), and a
-        // WebGL canvas has no 2D context to read; copy its last frame into one (the renderer keeps
-        // its drawing buffer so the copy is the frame just drawn).
+        // WebGL canvas has no 2D context to read; copy its last frame into one (`?e2e=1` keeps
+        // the drawing buffer so the copy is the frame just drawn).
         const ctx =
           canvas.getContext("2d") ??
           (() => {

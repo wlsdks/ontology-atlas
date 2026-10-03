@@ -124,7 +124,7 @@ describe('i18n message catalog', () => {
     // gate that "requires" them at some future point.
     assert.doesNotMatch(en.download.proofSigned, /Release gate requires/);
     assert.doesNotMatch(ko.download.proofSigned, /게이트가/);
-    assert.match(en.download.trustVerifyCommand, /\{file\}/);
+    assert.match(en.download.factShaLink, /\{file\}/);
 
     // 2026-07-27 — the Developer ID certificate exists (docs/DECISIONS.md),
     // so the unsigned-era copy is now false. It said "not signed yet" and
@@ -165,8 +165,7 @@ describe('i18n message catalog', () => {
     // row under a disclosure (`windowsPendingBadge`/`windowsPendingBody`); knowing it at
     // the point of download is what makes it timely, so it moved up into a single line
     // inside the panel (`platformStatus`), while the policy prose ("when it passes the
-    // same bar") went down into a footer disclosure (`windowsPolicy`) since it is not
-    // decision material. What the gate guards is not the key names but that **both facts
+    // same bar") went to the guide's On trust chapter since it is not decision material. What the gate guards is not the key names but that **both facts
     // exist somewhere**.
     assert.match(en.download.platformStatus, /Windows/);
     assert.match(ko.download.platformStatus, /Windows/);

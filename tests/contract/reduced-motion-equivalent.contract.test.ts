@@ -60,16 +60,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
-  // Gateway landing (2026-08-18 remake). An endless caret blink is the same family
-  // as an endless pulse on the first line — stopping exactly this is what reduced
-  // motion means, and the terminal output itself shows every line immediately under
-  // reduced motion (base-layer `.gateway-term-line` carve-out). The rest of the
-  // gateway choreography (rise, headline, caption, hero stage) is transition-based
-  // and therefore not a candidate for this scanner (which reads `animation:`); the
-  // base-layer carve-out gives it the "always visible" equivalent —
-  // gateway-fx-reduced-motion.contract.test.ts locks that carve-out's existence.
-  "gateway-term-caret":
-    "끝없는 캐럿 blink — 감속의 뜻이 이걸 멈추는 것이다. 줄 내용은 감속에서 전부 즉시 보인다.",
   // ── Two scroll timelines (2026-08-22) ───────────────────────────────────
   //
   // This scanner's model is "an animation driven by time must still have time under

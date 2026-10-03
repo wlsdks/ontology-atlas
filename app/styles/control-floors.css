@@ -1,0 +1,75 @@
+/*
+ * **Control finger base created by value layer — lives outside the layer** (2026-08-05).
+ *
+ * `controlClass` outputs height as Tailwind literals (`min-h-6`=24 · `min-h-8`=32 ·
+ * `min-h-9`=36) and ignores `--control-h-*`. So coarse block token promotion **didn't reach any** of
+ * chips·rows·pills — actual measurement: 38 places under 44px.
+ *
+ * Changing literals to token references moves desktop pixels too (5 literal types don't map 1:1 to 3 token levels). So we cut the base **only for fingers** via marker class.
+ *
+ * ## Why outside `@layer base` — caught once wrong and fixed with actual measurement
+ *
+ * Initially placed inside the `@media (pointer: coarse)` block (= `@layer base`). **Rules were
+ * included in build but nothing happened** — computed `min-height` remained 32px. It's not a specificity issue but a **layer issue**: Tailwind utilities are in `@layer utilities`, and **layer order beats specificity**. Even among same classes, the later layer always wins.
+ *
+ * Rules not belonging to any layer **beat all layers** (CSS cascade). So we place it at the end of this file, outside layers. This is also why we don't use `!important`.
+ *
+ * Since it's `min-height`, controls **actually grow and push each other** — unlike expanding transparent hit areas (`touch-hit-expand`), they can't overlap. That was the reason for rejecting that approach first: among 38 places, **21 were less than 12px apart from neighbors** (EN/KO toggle 1px), so invisible hit areas overlapped and caused **missed touches**.
+ */
+/*
+ * The expanded rail tile's shared width — **unlayered on purpose**, exactly like
+ * `.atlas-touch-floor` below and for the same reason. `ChromeTile`'s labelled shape
+ * carries `min-w-[var(--chrome-tile-size)]`, a Tailwind utility, and layer order
+ * beats specificity: written inside `@layer base` this rule would be built, shipped,
+ * and silently overridden. Rationale for the value: `--chrome-tile-expanded-min`.
+ */
+.chrome-tile-labelled {
+  transition-delay: var(--motion-base);
+}
+.chrome-rail:hover .chrome-tile-labelled,
+.chrome-rail:focus-within .chrome-tile-labelled {
+  min-width: var(--chrome-tile-expanded-min);
+  transition-delay: 0ms;
+}
+
+/*
+ * ⚠️ **`any-pointer`, not `pointer` — a hybrid machine has fingers too** (2026-09-12).
+ *
+ * `pointer: coarse` asks about the **primary** pointing device, so a touchscreen laptop,
+ * an iPad with a trackpad attached, or a Surface in laptop posture answers *fine* and
+ * every control here kept its 28/32px rest height — the mouse size — while the screen
+ * in front of the person is the thing they reach for. `any-pointer: coarse` asks whether
+ * **any** attached device is coarse, which is the question this floor exists to answer:
+ * can a finger hit it. It is strictly wider (a phone matches both), so nothing that
+ * promoted before stops promoting.
+ *
+ * Carried forward from the slice 1 guardian pass and again from the U2 council, which
+ * added two more finger targets inheriting the same floor.
+ *
+ * ⚠️ **No browser can be put in that state, so no rendered measurement can prove this
+ * line.** Measured 2026-09-12 in Chromium across three context shapes and four CDP calls
+ * (`Emulation.setTouchEmulationEnabled`, `setEmitTouchEventsForMouse` in both `desktop`
+ * and `mobile` configurations, `setDeviceMetricsOverride` with `mobile: false`): the
+ * moment touch exists at all, `(pointer: coarse)` **and** `(any-pointer: coarse)` both
+ * match and `(any-pointer: fine)` stops matching — there is no combination reporting a
+ * fine primary pointer beside an attached coarse one. Touch is not a planned surface
+ * (2026-09-27), so the static and browser gates on this query were retired with it.
+ *
+ * The values still come from `--touch-target-min`; only the question changed.
+ */
+@media (any-pointer: coarse) {
+  .atlas-touch-floor {
+    min-height: var(--touch-target-min);
+  }
+  /*
+   * Width pair (2026-08-15) — for controls where **labels are short and width is narrow** like segments.
+   * Same reason for rejecting touch-hit-expand (phantom hit): width also scales to actual size
+   * (min-width pushes neighbors, so no overlap even in gap-px dense areas).
+   * Actual measurement lineage: EN/KO segments remained 40×44 in coarse after phantom hit removal,
+   * and touch-target-contract caught it — half of the base with only height.
+   */
+  .atlas-touch-floor-wide {
+    min-width: var(--touch-target-min);
+  }
+}
+

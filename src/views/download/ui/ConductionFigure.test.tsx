@@ -15,7 +15,7 @@ import {
   CONDUCTION_QUERY,
 } from '../model/conduction-cast';
 import { ConductionFigure } from './ConductionFigure';
-import { useStageGraph } from './StageMap';
+import { useStageGraph } from '../lib/use-stage-graph';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const KIND_FOLDER = { capability: 'capabilities', element: 'elements', domain: 'domains' } as const;
