@@ -213,16 +213,19 @@ test("a remembered relief comes back on the next visit", async ({ page }) => {
   expect(await page.evaluate(() => localStorage.getItem("atlas.appearance.hex-relief"))).toBe("on");
 });
 
-async function landing(page: Page): Promise<Map<string, number>> {
+type Miss = { dx: number; dy: number };
+
+async function landing(page: Page, at: "end" | "aim" = "end"): Promise<Map<string, Miss>> {
   await page.getByTestId("topology-view-3d").click();
   await page.getByTestId("topology-view-3d-choice-hex").click();
   const finals = await page.waitForFunction(
-    () => {
-      const morph = (window as unknown as { __atlasMapMorph?: { live(): { durationMs: number } | null; marks(at?: number): { id: string; x: number; y: number }[] } }).__atlasMapMorph;
+    (sample) => {
+      const morph = (window as unknown as { __atlasMapMorph?: { live(): { durationMs: number } | null; marks(at?: number): { id: string; x: number; y: number }[]; aims(): { id: string; x: number; y: number }[] } }).__atlasMapMorph;
       const live = morph?.live();
-      return live && live.durationMs > 0 ? morph!.marks(live.durationMs) : null;
+      if (!live || !(live.durationMs > 0)) return null;
+      return sample === "aim" ? morph!.aims() : morph!.marks(live.durationMs);
     },
-    undefined,
+    at,
     { polling: "raf", timeout: 30_000 },
   );
   const ghost = new Map(((await finals.jsonValue()) as { id: string; x: number; y: number }[]).map((m) => [m.id, m]));
@@ -234,24 +237,29 @@ async function landing(page: Page): Promise<Map<string, number>> {
       return { id: el.dataset.hexId!, x, y };
     }),
   );
-  return new Map(mirror.filter((m) => ghost.has(m.id)).map((m) => [m.id, Math.hypot(ghost.get(m.id)!.x - m.x, ghost.get(m.id)!.y - m.y)]));
+  return new Map(mirror.filter((m) => ghost.has(m.id)).map((m) => [m.id, { dx: ghost.get(m.id)!.x - m.x, dy: ghost.get(m.id)!.y - m.y }]));
 }
+
+const distances = (misses: Map<string, Miss>) => new Map([...misses].map(([id, miss]) => [id, Math.hypot(miss.dx, miss.dy)]));
 
 test("the glide from Flat lands on the relief's drawn tops as closely as on the top-down board", async ({ page }) => {
   test.setTimeout(240_000);
   await openBoard(page, { reduced: false, relief: false, pick: "flat" });
   await waitForMapSettled(page);
-  const flat = await landing(page);
+  const flat = await landing(page, "aim");
   await page.getByTestId("topology-view-3d").click();
   await page.getByTestId("topology-view-3d-choice-flat").click();
   await expect(page.getByTestId("hex-board-map")).toHaveCount(0);
   await page.evaluate(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
   await waitForMapSettled(page);
-  const relief = await landing(page);
+  const relief = await landing(page, "aim");
   await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-relief-pitch", "0.750");
   expect(relief.size).toBeGreaterThan(20);
-  const worse = [...relief].filter(([id, d]) => d > 1.3 * (flat.get(id) ?? 0) + 1).map(([id, d]) => `${id}: ${d.toFixed(1)} px in relief, ${flat.get(id)?.toFixed(1)} px top-down`);
-  expect(worse, "ghost final marks further from the drawn tops in relief than top-down").toEqual([]);
+  const worse = [...relief].filter(([id, r]) => {
+    const f = flat.get(id);
+    return !f || Math.hypot(r.dx - f.dx, r.dy - f.dy) > Math.SQRT2;
+  }).map(([id, r]) => `${id}: misses by (${r.dx.toFixed(1)}, ${r.dy.toFixed(1)}) px in relief, (${flat.get(id)?.dx.toFixed(1)}, ${flat.get(id)?.dy.toFixed(1)}) px top-down`);
+  expect(worse, "the glide aims at the relief's drawn tops less closely than at the top-down board").toEqual([]);
 });
 
 test("the glide into a 10,000-concept board lands on its raised slabs as closely as top-down", async ({ page }) => {
@@ -260,13 +268,13 @@ test("the glide into a 10,000-concept board lands on its raised slabs as closely
   await seedFirstRunSeen(page);
   await page.goto("/en/topology/?synth=10000&synthDeps=1&guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
-  const flat = await landing(page);
+  const flat = distances(await landing(page));
   await page.getByTestId("topology-view-3d").click();
   await page.getByTestId("topology-view-3d-choice-flat").click();
   await expect(page.getByTestId("hex-board-map")).toHaveCount(0);
   await page.evaluate(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
   await waitForMapSettled(page);
-  const relief = await landing(page);
+  const relief = distances(await landing(page));
   expect((JSON.parse((await page.locator('[data-testid="hex-board-map"] canvas').getAttribute("data-frame"))!) as { slabs: boolean }).slabs).toBe(true);
   expect(relief.size).toBeGreaterThan(1000);
   const median = (values: number[]) => [...values].sort((x, y) => x - y)[values.length >> 1]!;

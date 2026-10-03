@@ -80,7 +80,7 @@
   "measurementScope": "这些数字描述的是已记录的扫描及其声明的规则。得出可维护性的结论之前，先看未知的覆盖范围。",
   "observationDetails": "度量与依赖依据",
   "showRelationMeaning": "在地图上标注关系语义",
-  "captionGuide": "概览优先标注有方向的关联。选中一个概念或指向某条关联，还能读到它的相关内容。空间允许时最多显示 24 个标签。",
+  "captionGuide": "Labels the meaning of a selected concept's connections. Up to 24 labels appear where they fit.",
   "captionHelp": "如何阅读关联标签",
   "loadingHistory": "正在加载分析历史…",
   "targetSelected": "目标已在地图上选中。",

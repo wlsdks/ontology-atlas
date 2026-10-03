@@ -113,7 +113,7 @@ export interface DialRowPick { id: string; box: Box }
 export interface DialChordLight { key: string; sourceDomain: string; targetDomain: string; a: Point; c: Point; b: Point; widthPx: number; chipRadiusPx: number }
 export interface DialLightFrame { attentionKey: string; focused: boolean; inkMix: number; chords: DialChordLight[] }
 
-export interface DialOwnershipInput { hasDial: boolean; galaxyOn: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean }
+export interface DialOwnershipInput { hasDial: boolean; galaxyOn: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean; focusedRelationsCaptioned: boolean }
 export interface DialFrameInput {
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
   nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; labelScale: number; zoomRatio: number;

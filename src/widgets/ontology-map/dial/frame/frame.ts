@@ -42,7 +42,8 @@ export function dialOwnsFlatPaint(input: DialOwnershipInput): boolean {
     && !input.spotlightActive
     && !input.pathLensActive
     && !input.impactLensActive
-    && !input.focusedIsElement;
+    && !input.focusedIsElement
+    && !input.focusedRelationsCaptioned;
 }
 
 interface FocusClock { key: string; changedAt: number; current: DialAttention; previous: DialAttention | null }
