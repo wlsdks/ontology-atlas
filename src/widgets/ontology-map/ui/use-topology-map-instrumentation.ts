@@ -32,6 +32,8 @@ import type {
   TopologyPointerHandlers,
 } from "./topology-pointer-handlers";
 import { lastTierPlanes } from "./topology-presentation-frame-stage";
+import { describeLastDialFrame } from "../dial/frame/frame";
+import type { DialProbe } from "../dial/types";
 import { requestOntologyMapFrame } from "./use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import {
@@ -561,6 +563,10 @@ export function useTopologyMapInstrumentation({
         requestOntologyMapFrame();
       },
       labels: () => lastDrawnLabelBoxes(),
+      dial: (): DialProbe | { owns: false } => {
+        const { width, height } = viewportRef.current;
+        return describeLastDialFrame(width, height) ?? { owns: false };
+      },
       relationCaptions: () => lastDrawnRelationCaptions(),
       /** Strata's planes as the last frame drew them — what the tier names are placed against. */
       tierPlanes: () => lastTierPlanes(),

@@ -1,5 +1,7 @@
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import type { RefObject } from "react";
+import type { DialFrameSummary } from "../dial/frame/frame";
+import type { DialEvidence, DialLabels, DialMemory } from "../dial/types";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { type TierNameAnchor } from "../model/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
@@ -273,5 +275,45 @@ export interface UseTopologyLoopArgs {
   navigationSpeed?: MapNavigationSpeed;
   /** Ambient sleep delay — see `ambientSleepDelayMs` on `OntologyMap`. */
   ambientSleepDelayMs?: number;
+  dialLabels?: DialLabels | null;
+  evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  impactLens?: boolean;
+  onFlatDialChange?: (state: FlatDialState) => void;
+  flatRingMemory?: FlatRingMemoryStore | null;
+  loadProgress?: { read: number; total: number } | null;
+  placingTierRead?: boolean;
+}
+
+export interface FlatDialState {
+  drawn: boolean;
+  evidenceMeasured: boolean;
+  summary?: DialFrameSummary | null;
+}
+
+export interface FlatRingMemoryStore {
+  current(): DialMemory | null;
+  write(next: DialMemory): void;
+}
+
+export interface FlatDialFrameProps {
+  labels: DialLabels | null;
+  evidence: ReadonlyMap<string, DialEvidence> | null;
+  impactLens: boolean;
+  onChange: ((state: FlatDialState) => void) | undefined;
+  sent: FlatDialState | null;
+}
+
+export function reportFlatDial(props: FlatDialFrameProps, summary: DialFrameSummary | null): void {
+  const drawn = summary !== null;
+  const evidenceMeasured = drawn && props.evidence !== null;
+  const sent = props.sent;
+  if (sent && sent.drawn === drawn && sent.evidenceMeasured === evidenceMeasured && sameSummary(sent.summary ?? null, summary)) return;
+  props.sent = { drawn, evidenceMeasured, summary };
+  props.onChange?.(props.sent);
+}
+
+function sameSummary(a: DialFrameSummary | null, b: DialFrameSummary | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.concepts === b.concepts && a.domains === b.domains && a.tier === b.tier && a.linksShown === b.linksShown && a.linksTotal === b.linksTotal;
 }
 

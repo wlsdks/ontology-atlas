@@ -80,7 +80,7 @@
   "measurementScope": "기록 당시 검사와 선언된 규칙의 결과예요. 유지보수성을 판단하기 전에 분석하지 못한 범위도 확인하세요.",
   "observationDetails": "측정과 의존 관계 근거",
   "showRelationMeaning": "지도에 연결의 뜻 표시",
-  "captionGuide": "전체 보기에서는 방향이 있는 연결을 먼저 표시해요. 개념이나 선을 고르면 방향 없는 연결도 설명해요. 글자가 겹치지 않는 곳에 최대 24개를 표시해요.",
+  "captionGuide": "고른 개념의 연결마다 뜻을 표시해요. 글자가 겹치지 않는 곳에 최대 24개를 표시해요.",
   "captionHelp": "연결 표시 읽는 법",
   "loadingHistory": "분석 기록을 읽고 있어요…",
   "targetSelected": "지도에서 해당 항목을 선택했어요.",

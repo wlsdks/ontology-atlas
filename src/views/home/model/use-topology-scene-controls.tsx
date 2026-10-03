@@ -10,6 +10,8 @@ import { useProjects } from "@/features/project-data-source";
 import { completeMapNavigation } from "@/shared/lib/map-navigation-pending";
 import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import { useToast } from "@/shared/ui";
+import type { DialLabels } from "@/widgets/ontology-map";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { countProjectRelationsWithinGraph, resolveTopologyOverlayState, resolveTopologyRenderState } from "../lib/topology-render-state";
 import { selectTopologyNodeRouteState } from "./url-state";
@@ -177,6 +179,21 @@ export function useTopologySceneControls({
     }),
     [tKinds],
   );
+  const tDial = useTranslations("mapDial");
+  const dialLabels = useMemo<DialLabels>(
+    () => ({
+      units: (capabilities, elements) => tDial("units", { capabilities, elements }),
+      stale: (count) => tDial("stale", { count }),
+      orphans: (count) => tDial("orphans", { count }),
+      more: (count) => tDial("more", { count }),
+      ring: (min, max) =>
+        max === null ? tDial("ringAtLeast", { min }) : min === 0 ? tDial("ringAtMostOne") : tDial("ringBetween", { min, max }),
+      reading: (read, total) => tDial("reading", { read, total }),
+      settling: () => tDial("settling"),
+      linksShown: (shown, total) => tDial("linksShown", { shown, total }),
+    }),
+    [tDial],
+  );
   // `drawnConceptCount` comes from the map's last frame and the total from the
   // same `ontologyInsight`, so the two cannot drift.
   const [drawnConceptCount, setDrawnConceptCount] = useState(0);
@@ -262,7 +279,7 @@ export function useTopologySceneControls({
     handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount, clearTopologyFilters,
     topologyRenderState, mapMountTaskReady, handleExpandRequest, handleMapFrameDrawn,
     handleTopologyGraphStatsChange, mapLensIds, mapLensKind, pathLensEdgeIds, pathExpandedParents,
-    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, drawnConceptCount,
+    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels, drawnConceptCount,
     totalConceptCount
   } as const;
 }

@@ -2,12 +2,6 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapStill, waitFrames } from "./settle";
 
-/**
- * Resolve once the lens's sink ramp has arrived. It steps only inside the frame body, and while
- * it has not arrived the frame gate records `spotlightSettling` among the causes that kept the
- * frame awake (`idleDebug`, e2e only). Arrived is a frame awake for other reasons only, or two
- * samples with no awake frame at all; then one more painted frame carries the arrived value.
- */
 async function waitForSinkArrived(page: import("@playwright/test").Page) {
   await page.evaluate(() => {
     (window as unknown as { __sinkSeen?: unknown }).__sinkSeen = undefined;
@@ -31,20 +25,6 @@ async function waitForSinkArrived(page: import("@playwright/test").Page) {
   await waitFrames(page, 2);
 }
 
-/**
- * **A path is the only bright thing while a path is asked for** (2026-09-19).
- *
- * The path lens sank everything off the path to the recent-changes lens's rest
- * alpha (0.65), chosen so that a whole-map lens keeps its context readable. A
- * path is two ends and a line; at 0.65 the off-path domain rings measured 123
- * against 143 on the path and every drawn name measured the same 185, so a
- * still frame did not say which two the person had asked about. The path lens
- * now has its own rest alpha (`--map-path-rest-alpha`).
- *
- * Read from the canvas pixels, because alpha is not in the DOM: the brightest
- * pixel under an off-path domain's name against the brightest under an on-path
- * one.
- */
 test("off the path, a domain's name is at most half as bright as one on it", async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1512, height: 806 });
@@ -55,7 +35,6 @@ test("off the path, a domain's name is at most half as bright as one on it", asy
   await page.evaluate(() => document.fonts.ready);
   await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
   await waitForMapStill(page);
-  // The sink ramps on its own clock; wait for the frame it has arrived in.
   await waitForSinkArrived(page);
 
   const reading = await page.evaluate(() => {
@@ -89,41 +68,13 @@ test("off the path, a domain's name is at most half as bright as one on it", asy
   expect(offMax / onMin, `경로 밖 이름(${Math.round(offMax)})이 경로 위 이름(${Math.round(onMin)})의 절반보다 밝다`).toBeLessThanOrEqual(0.5);
 });
 
-/**
- * **One sink, one meaning of dimmed** (2026-09-21).
- *
- * The lens sink used to be folded into a label's `revealAlpha` *and* applied again as a
- * multiplier at the draw. A domain name ignores `revealAlpha`, so it sank once; a capability
- * or element name ran the sunk value through the child ramp's smoothstep first and sank
- * again, landing near the square of the rest alpha. Off the path the two kinds therefore
- * disagreed about what dimmed means.
- *
- * Measured as **each name against itself**: the same camera and the same open folder, once
- * with the lens and once without. Comparing a name to its own unsunk self cancels the
- * per-kind ink token, which is what makes a capability's sink comparable to a domain's.
- *
- * Two choices that come from measurement (2026-09-21):
- *
- * - **`open=domain:inventory`.** Children are anonymous dots at this altitude otherwise. Of
- *   the seven folders tried, this one's three names — one capability, two elements — are the
- *   ones the placer keeps in *both* frames, and a name missing from one frame cannot be
- *   compared to itself.
- * - **The 90th percentile of the box, not its brightest pixel.** A child's label box also
- *   holds its disc, which is far brighter than the glyphs and saturates the maximum: the
- *   brightest pixel read 52 against 52 for the defect and the repair alike. The p90 tracks
- *   the glyphs: off-path children measured 0.19, 0.19 and 0.25 of their own unsunk selves
- *   with the sink charged twice, 0.35, 0.42 and 0.44 with it charged once, against 0.31–0.37
- *   for the domains beside them.
- */
 const LENS_URL =
   "/ko/topology/?e2e=1&guides=off&open=domain:inventory&mode=path&pathFrom=domain:order&pathTo=domain:fulfillment";
-const PLAIN_URL = "/ko/topology/?e2e=1&guides=off&open=domain:inventory";
 
 async function namePresencePerNode(page: import("@playwright/test").Page, url: string) {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
-  // The sink ramps on its own clock; wait for the frame it has arrived in.
   await waitForSinkArrived(page);
   return page.evaluate(() => {
     const probe = window.__atlasMap!;
@@ -151,7 +102,19 @@ test("the lens sinks a capability or element name no further than a domain name"
   await page.setViewportSize({ width: 1512, height: 806 });
   await seedFirstRunSeen(page);
   const lens = await namePresencePerNode(page, LENS_URL);
-  const plain = await namePresencePerNode(page, PLAIN_URL);
+  await page.addInitScript(() => {
+    const unsunk = () => {
+      const root = document.documentElement;
+      root?.style.setProperty("--map-path-rest-alpha", "1");
+      return root !== null;
+    };
+    if (unsunk()) return;
+    const observer = new MutationObserver(() => {
+      if (unsunk()) observer.disconnect();
+    });
+    observer.observe(document, { childList: true });
+  });
+  const plain = await namePresencePerNode(page, LENS_URL);
 
   const sunk = new Map<"domain" | "child", number[]>();
   for (const [nodeId, lit] of Object.entries(lens)) {
@@ -169,7 +132,6 @@ test("the lens sinks a capability or element name no further than a domain name"
   expect(children.length, "두 프레임에 모두 선 자식 이름이 없으면 잴 게 없다").toBeGreaterThan(1);
   const deepestDomain = Math.min(...domains);
   const deepestChild = Math.min(...children);
-  // The case only says something while the lens really is sinking names.
   expect(deepestDomain, "렌즈가 도메인 이름을 전혀 안 가라앉혔다 — 이 프레임은 아무것도 증명하지 않는다").toBeLessThan(0.6);
   expect(
     deepestChild,

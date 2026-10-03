@@ -461,7 +461,7 @@ export function useTopologyInput({
       if (!tokens) return;
       const target = cameraTargetRef.current;
       const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-      const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+      const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, worldRef.current?.dialScaleMax ?? undefined);
       let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
       const dome = domeRuntimeRef.current;
       if (dome !== null && dome.active) {

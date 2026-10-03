@@ -100,7 +100,7 @@ function collectVisibleMemberTargets(
   insideTargets: ReadonlyMap<string, { x: number; y: number }>,
   expandedParents: ReadonlySet<string>,
 ): Array<[string, { x: number; y: number }]> {
-  const { clusteredIds } = computeTopologyClusterState(world, expandedParents);
+  const { clusteredIds } = computeTopologyClusterState(world, expandedParents, undefined, true);
   const out: Array<[string, { x: number; y: number }]> = [];
   for (const id of memberIds) {
     if (clusteredIds.has(id)) {

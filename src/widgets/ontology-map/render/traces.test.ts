@@ -615,6 +615,13 @@ describe("draw — relation reveal on selection", () => {
     expect(Math.max(...lit.map((s) => s.to.x))).toBeLessThanOrEqual(Math.min(...rest.map((s) => s.from.x)) + 1e-9);
   });
 
+  it("keeps the rest of a line dimmed before the focus in its dim ink, so the first frame cuts nothing", () => {
+    const dim = "rgb(26, 26, 31)";
+    expect(record({ ...contains, reveal: { progress: 0.5, from: "a", baseLift: 0, baseDim: 1 } }).strokes.map((s) => s.style)).toEqual([TOKENS.indigo, dim]);
+    expect(record({ ...contains, reveal: { progress: 0, from: "a", baseLift: 0, baseDim: 1 } }).strokes.map((s) => s.style)).toEqual([dim]);
+    expect(record({ ...contains, reveal: { progress: 0, from: "a", baseLift: 0, baseDim: 0 } }).strokes.map((s) => s.style)).toEqual([TOKENS.edgeContains]);
+  });
+
   it("draws one stroke once the reveal is done", () => {
     expect(record({ ...contains, reveal: { progress: 1, from: "a", baseLift: 0 } }).strokes).toHaveLength(1);
   });

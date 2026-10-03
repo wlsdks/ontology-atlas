@@ -51,6 +51,8 @@ interface AssemblyEntry {
   parent: AssemblyNode | null;
   fx: number;
   fy: number;
+  dx: number;
+  dy: number;
 }
 
 interface AssemblySchedule {
@@ -83,7 +85,7 @@ function armSchedule(world: AssemblyWorld, sourceKey: string | null, reducedMoti
     for (const node of world.nodes) {
       if (node.kind !== kind) continue;
       const parent = node.parentId === null ? null : world.nodeById.get(node.parentId) ?? null;
-      entries.push({ node, parent, fx: node.x, fy: node.y });
+      entries.push({ node, parent, fx: node.x, fy: node.y, dx: node.x - (parent?.x ?? node.x), dy: node.y - (parent?.y ?? node.y) });
     }
   }
   schedules.set(world, {
@@ -156,8 +158,8 @@ export function stepTierAssembly(world: AssemblyWorld, nowMs: number): boolean {
       continue;
     }
     const e = easeOutCubic(tierProgress(elapsed, node.kind));
-    node.x = parent.x + (entry.fx - parent.x) * e;
-    node.y = parent.y + (entry.fy - parent.y) * e;
+    node.x = parent.x + entry.dx * e;
+    node.y = parent.y + entry.dy * e;
   }
   if (done && (schedule.settled || elapsed >= total)) {
     schedules.delete(world);

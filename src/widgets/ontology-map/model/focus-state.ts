@@ -276,3 +276,19 @@ export function stepFocusRamp(current: number, focusActive: boolean, dt: number,
   const target = focusActive ? 1 : 0;
   return current + (target - current) * (1 - Math.exp(-dt / tau));
 }
+
+export function createFocusRampClock(): (focusKey: string, dt: number, now: number, previousDrawnAt: number) => number {
+  let last: string | null = null;
+  let afterFirst = false;
+  return (focusKey, dt, now, previousDrawnAt) => {
+    if (focusKey !== last) {
+      last = focusKey;
+      afterFirst = true;
+      return 0;
+    }
+    if (!afterFirst) return dt;
+    afterFirst = false;
+    const since = (now - previousDrawnAt) / 1000;
+    return Number.isFinite(since) ? Math.min(dt, Math.max(0, since)) : dt;
+  };
+}
