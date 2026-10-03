@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
-  useEffectEvent,
   useLayoutEffect,
+  useMemo,
   type RefObject
 } from "react";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { type CameraTween } from "../model/camera-easing";
 import {
@@ -75,6 +75,14 @@ interface Dependencies {
   selectedEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType?: string; } | null>;
   domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
   reframeViewportRef: RefObject<((motion: ViewportReframeMotion) => boolean) | null>;
+}
+
+type SpotlightMotion = "tween" | "follow" | "snap";
+function invokeSpotlightFit(ref: RefObject<(motion?: SpotlightMotion) => boolean>, motion?: SpotlightMotion) {
+  return ref.current(motion);
+}
+function invokeViewportReframe(ref: RefObject<(motion: ViewportReframeMotion) => boolean>, motion: ViewportReframeMotion) {
+  return ref.current(motion);
 }
 
 /** Own overview, spotlight, constellation, and viewport camera navigation. */
@@ -148,7 +156,7 @@ export function useTopologyCameraNavigation({
    * ends there — debt recorded then could never be paid, and a session with no
    * spotlit nodes would retry on every initialization.
    */
-  const runSpotlightFit = useCallback((motion: "tween" | "follow" | "snap" = "tween"): boolean => {
+  const spotlightFitImplementation = (motion: SpotlightMotion = "tween"): boolean => {
     const ids = spotlightIdsRef.current;
     if (ids === null || ids.size === 0) return true; // No debt to record.
     const tokens = readOntologyMapTokensOrNull();
@@ -235,12 +243,13 @@ export function useTopologyCameraNavigation({
     } else if (motion === "follow") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, constellationCameraRef, constellationFocusId, dampingRef, dataSourceKey, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, mapLensKindRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
-
-  const getRunSpotlightFit = useEffectEvent(() => runSpotlightFit);
+  };
+  const spotlightImplementationRef = useLatestRef(spotlightFitImplementation);
+  const runSpotlightFit = useMemo(() => invokeSpotlightFit.bind(null, spotlightImplementationRef), [spotlightImplementationRef]);
 
   useLayoutEffect(() => {
-    runSpotlightFitRef.current = getRunSpotlightFit();
+    runSpotlightFitRef.current = runSpotlightFit;
+    return () => { runSpotlightFitRef.current = null; };
   }, [runSpotlightFit, runSpotlightFitRef]);
 
   useEffect(() => {
@@ -284,7 +293,7 @@ export function useTopologyCameraNavigation({
    // owned by each selection/area/path-full lens/3D, preserving screens panned/zoomed
    // directly.
    */
-  const reframeViewport = useCallback((motion: ViewportReframeMotion): boolean => {
+  const viewportReframeImplementation = (motion: ViewportReframeMotion): boolean => {
     const rawTokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -422,7 +431,9 @@ export function useTopologyCameraNavigation({
     } else if (motion === "tracking") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween, cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, cameraTweenRef, clusteredIdsRef, dampingRef, domeFocusPendingRef, domeRuntimeRef, expandedParentsRef, focusedSlugRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, lastActiveMsRef, mapLensKindRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFit, selectedEdgeRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  };
+  const viewportImplementationRef = useLatestRef(viewportReframeImplementation);
+  const reframeViewport = useMemo(() => invokeViewportReframe.bind(null, viewportImplementationRef), [viewportImplementationRef]);
 
   useEffect(() => {
     reframeViewportRef.current = reframeViewport;

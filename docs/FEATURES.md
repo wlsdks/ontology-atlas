@@ -43,6 +43,8 @@ Direct model conversations reject malformed response structures with a bounded
 `invalid-provider-response` diagnostic. No tool call from that response executes;
 the existing retry flow remains available for cloud and local endpoints. The local conversation stops evidence reads after a strictly verified empty census and explains its source-access limit; it does not construct a codebase map from an empty vault.
 
+Approved model proposals retain their confirmed saved-file prefix after a write failure, attempt a folder reload, and report reload errors separately. Normal agent and local Compile failure messages expose that prefix; no automatic rollback is claimed.
+
 ## Destinations
 
 The desktop rail's order and hrefs come from

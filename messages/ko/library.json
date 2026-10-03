@@ -615,7 +615,9 @@
     "written": "썼어요: {paths}",
     "failed": "저장을 마치지 못했어요. {reason}",
     "noSnapshot": "저장 지점을 자동으로 만들지는 않아요.",
-    "nothing": "문서를 제안하지 않고 끝났어요."
+    "nothing": "문서를 제안하지 않고 끝났어요.",
+    "partialWrites": "실패 전에 저장을 확인한 파일: {paths}.",
+    "refreshFailed": "폴더를 다시 읽지 못했어요: {reason}. 다시 시도하기 전에 저장된 파일을 확인해 주세요."
   },
   "ask": {
     "title": "선택한 문장을 에이전트에게 물어요",

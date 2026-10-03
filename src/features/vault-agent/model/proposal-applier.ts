@@ -5,9 +5,8 @@ import {
 } from './competency-qualification-boundary';
 
 /**
- * The only module that writes a consented proposal, called only from the card's [apply]. Order:
- * check every mtime, take the save point, write each `after` verbatim, refresh. Any block
- * leaves zero files changed.
+ * Applies consented diffs: preflight, checkpoint, exact writes, refresh.
+ * Preflight blocks write nothing. Later failures report the confirmed saved prefix.
  */
 
 export interface VaultWritePort {
@@ -26,7 +25,7 @@ export interface VaultWritePort {
 export type ApplyOutcome =
   | { status: 'applied'; snapshotSha: string | null; writtenPaths: string[] }
   | { status: 'conflict'; conflictedPaths: string[] }
-  | { status: 'failed'; message: string };
+  | { status: 'failed'; message: string; writtenPaths: string[]; snapshotSha: string | null; refreshError?: string };
 
 function slugOf(path: string): string {
   return path.replace(/\.md$/, '');
@@ -46,7 +45,7 @@ export async function applyProposal(
     return { status: 'applied', snapshotSha: null, writtenPaths: [] };
   }
   if (selected.some(proposalChangesCompetencyQualification)) {
-    return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE };
+    return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE, writtenPaths: [], snapshotSha: null };
   }
 
   const conflicted: string[] = [];
@@ -71,7 +70,7 @@ export async function applyProposal(
       snapshotSha = await port.snapshot(options.snapshotLabel);
     } catch (error) {
     // Writing after failing to create a save point makes the promise "this can be undone" false.
-      return { status: 'failed', message: String(error) };
+      return { status: 'failed', message: String(error), writtenPaths: [], snapshotSha: null };
     }
   }
 
@@ -98,6 +97,8 @@ export async function applyProposal(
     if (gap) {
       return {
         status: 'failed',
+        writtenPaths: [],
+        snapshotSha,
         message:
           `"${gap.change.summary}" is unchecked, but a later selected change to ${path} ` +
           'builds on it. Select it as well, or uncheck the later change.',
@@ -122,10 +123,21 @@ export async function applyProposal(
       written.push(write.path);
     }
   } catch (error) {
-    return { status: 'failed', message: String(error) };
+    let refreshError: string | undefined;
+    try {
+      await port.refresh();
+    } catch (reloadError) {
+      refreshError = String(reloadError);
+    }
+    return { status: 'failed', message: String(error), writtenPaths: written, snapshotSha,
+      ...(refreshError ? { refreshError } : {}) };
   }
 
-  await port.refresh();
+  try {
+    await port.refresh();
+  } catch (error) {
+    return { status: 'failed', message: String(error), writtenPaths: written, snapshotSha };
+  }
   return { status: 'applied', snapshotSha, writtenPaths: written };
 }
 

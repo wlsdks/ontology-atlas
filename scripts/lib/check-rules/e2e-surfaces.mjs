@@ -133,6 +133,7 @@ export const rules = [
       /^src\/views\/home\/model\/use-(?:topology-agent-orchestration|topology-keyboard-tour|topology-vault-read-model|past-trails|footprint-trail)\.tsx?$/,
       /^src\/views\/library\/lib\/use-rounds-runner\.ts$/,
       /^src\/shared\/lib\/(?:use-latest-ref|derived-hook)\.ts$/,
+      /^src\/widgets\/ontology-map\/ui\/use-topology-(?:camera-navigation|overview-navigation|viewport-lifecycle)\.ts$/,
       /^tests\/e2e\/(?:vault-switch-release\.spec|heap-census)\.ts$/,
     ],
   },

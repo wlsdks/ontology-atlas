@@ -41,6 +41,8 @@ export interface AgentProposalLabels {
   cancelled: string;
   conflict: string;
   failed: (message: string) => string;
+  partialWrites: (paths: string) => string;
+  refreshFailed: (message: string) => string;
   unreadWarning: string;
   showOnMap: string;
   expandHint: string;
@@ -161,6 +163,12 @@ export function AgentProposalCard({
               : proposal.status === 'failed'
                 ? labels.failed(proposal.applyErrorMessage ?? '')
                 : labels.cancelled}
+          {proposal.status === 'failed' && proposal.writtenPaths?.length ? (
+            <> {' '}{labels.partialWrites(proposal.writtenPaths.join(', '))}</>
+          ) : null}
+          {proposal.status === 'failed' && proposal.refreshErrorMessage ? (
+            <> {' '}{labels.refreshFailed(proposal.refreshErrorMessage)}</>
+          ) : null}
           {proposal.status === 'applied' ? (
             <>
               {' '}

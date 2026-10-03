@@ -83,6 +83,8 @@ export interface AgentProposal {
   appliedSnapshotSha?: string;
   /** Why the apply failed — shown on the card while status is 'failed'. */
   applyErrorMessage?: string;
+  writtenPaths?: string[];
+  refreshErrorMessage?: string;
   /** Nodes read this turn; a proposal editing another file gets a warning row, narrowing injection-laundered consent. */
   readNodesThisTurn: string[];
 }
