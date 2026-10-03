@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: agents
 date: 2026-10-04
-decisions: []
+decisions: [b8e1b4cb-a6f8-4fa0-ba5a-a861d9db7518]
 ---
 
 # Bounded native reads of the sent log
@@ -106,17 +106,20 @@ short read, same-length edit, same-inode finalize and path/root replacement must
 fail closed. Unsupported identity/change detection is unavailable, not assumed
 stable. Metadata checks cannot prove immutability against an adversarial filesystem
 that hides changes; this limitation must not be described as a snapshot guarantee.
-Platform identity support, including stable Windows APIs, remains an implementation
-proof obligation; this draft makes no portability claim for the new reader.
+Unix identity supports the bounded path. Other native platforms explicitly return
+an unsupported capability and retain existing file transport, preserving Windows
+reads until stable identity APIs are proved. Errors on the bounded path never fall
+back. This exception follows the owner's behavior-preservation constraint.
 
 Native commands derive caller identity from Tauri's injected webview, never a
 frontend-supplied owner ID; each live webview owns at most one audit slot bound to
 its granted vault. A process-wide atomic admission limit of **four slots** covers
 pending begins, active sessions, pulls and retirement until their resources close.
-Four supports a small multiwindow workbench while bounding reader chunk buffers
-to 4MiB; this is an initial policy, not measured demand or a total-memory claim.
-Reserve a slot before file I/O/allocation; each owns one audit descriptor and at
-most one pull/buffer. Reject saturation without opening a descriptor, retaining
+Four supports a small multiwindow workbench and bounds simultaneously executing
+source-read allocations to 4MiB. Tauri owns returned response buffers after each
+command; queued transport responses and browser-retained bytes are outside this
+bound. Sequential bridge pulls prevent application prefetch, but do not establish
+an aggregate IPC or RSS cap. Reserve before I/O; each owns one descriptor and pull. Reject saturation without opening a descriptor, retaining
 an entry/queue, evicting another owner or publishing count/tail: use the failed-read
 state and Retry. Cleanup releases capacity only after all owned resources settle.
 Completion, cancel, error, owner retirement, lease expiry and app exit reclaim
@@ -200,7 +203,8 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
    subsequent stable Retry returns only the current generation.
 4. **Given** simultaneous begins from repeated/supplied owners and five native
    webviews, **when** admission/pulls race, **then** at most four slots, four audit
-   descriptors and four reader buffers exist, with one slot/pull per trusted caller;
+   descriptors and four executing source reads exist, each allocating at most 1MiB,
+   with one slot/pull per trusted caller;
    saturation retains nothing, publishes no partial/zero facts and preserves others.
    Native admission/ownership and bridge tests also cover cancellation during
    begin/pull, same-name folder switches and ignored late results.
@@ -216,7 +220,7 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
    and grant-revocation probes plus existing audit-writer tests provide evidence.
 7. **Given** a person with the installed app and a fixture knowledge state,
    **when** they inspect, invalidate and Retry the sent log without a whole-file
-   fallback, **then** they can judge the exact count/latest five and distinguish
+   fallback on the supported bounded path, **then** they can judge the exact count/latest five and distinguish
    unavailable evidence from no transfers, citing displayed facts and disk rows.
    Codex Computer Use captures/recovery readback fail this proof if a false zero,
    stale row, lost history or unresponsive cancellation/retry appears.
@@ -228,6 +232,11 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
 
 ## Risks
 
+Tauri response ownership outlives the registry operation. A staged-response probe
+must retain responses across cancellation/re-admission to make that distinction
+observable; four slots are not a transport-buffer cap. This narrowed claim replaces
+the draft's unproven aggregate-buffer statement after independent review.
+
 1. In-place finalize or replacement escapes source validation. Probe same-length
    edits and races at every boundary; do not label descriptor ownership a snapshot.
 2. Cancel/begin races or missing owner cleanup leak descriptors or cross folders.
@@ -235,15 +244,6 @@ and `messages/zh/agents.json` for existing locale key parity. Reuse `auditTitle`
 3. Hidden buffering or parser drift makes bounded delivery look sufficient.
    Measure all layers, reuse JS admission, and disclose largest-record memory and
    full-scan CPU rather than claim constant total memory or instant counting.
-
-## Later
-
-1. Broader read-path profiling after this native proof identifies the next actual
-   high-cost workflow; do not generalize these audit measurements to ontology/wiki.
-2. Retention/history policy after the owner chooses what must remain inspectable;
-   require recovery/readback before any archival or deletion work.
-3. Native summary or incremental count indexing only if scan CPU is observed to
-   dominate and cross-language parity/source invalidation can be proven.
 
 ## Owner question
 
