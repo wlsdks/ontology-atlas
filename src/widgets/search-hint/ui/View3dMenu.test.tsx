@@ -82,6 +82,21 @@ describe("View3dMenu view picker", () => {
     expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBe("coupling");
   });
 
+  it("publishes one coherent map choice instead of exposing intermediate flag combinations", () => {
+    mount();
+    const observed: Array<Array<string | null>> = [];
+    const read = () => observed.push([
+      "territories", "hex-board", "galaxy", "map-arrangement", "view3d",
+    ].map((key) => window.localStorage.getItem(`atlas.appearance.${key}`)));
+    window.addEventListener("ontology-atlas:appearance-preference-change", read);
+    try {
+      fireEvent.click(screen.getByTestId("topology-view-3d-choice-coupling"));
+      expect(observed).toEqual([["off", "off", "off", "coupling", "on"]]);
+    } finally {
+      window.removeEventListener("ontology-atlas:appearance-preference-change", read);
+    }
+  });
+
   /**
    * The map's 3D contrast floors assume the flat sky is not also painted
    * (`tests/e2e/map-3d-relation-ink.spec.ts`), so the picker never leaves both on.
