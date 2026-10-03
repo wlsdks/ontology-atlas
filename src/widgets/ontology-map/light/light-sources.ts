@@ -1,5 +1,7 @@
 import { isDirectionalRelation } from "@/entities/knowledge-graph";
 
+import { dialLightFrame } from "../dial/frame/frame";
+import { createDialLightSource } from "../dial/light-source";
 import type { CameraAxes } from "../engine/camera";
 import type { Point } from "../expressive/edge-reveal";
 import type { TopologyMapLensKind } from "../model/path-lens";
@@ -63,7 +65,7 @@ export interface LightEmitter {
 export interface LightSource {
   readonly id: string;
   step(input: LightSourceInput, out: LightEmitter): boolean;
-  plan(): LightPlan<WorldEdge> | null;
+  plan(): LightPlan<unknown> | null;
   reset(): void;
 }
 
@@ -228,7 +230,7 @@ function createFocusSource(): LightSource {
           current = planFocusSignal(focus, candidates, input.now, input.kinematics, input.reducedMotion);
         }
       }
-      if (input.trailLensActive) current = null;
+      if (input.trailLensActive || dialLightFrame() !== null) current = null;
       const alive = runner.run(current, input, input.revealProgress, out);
       if (!alive) current = null;
       return alive;
@@ -322,4 +324,4 @@ function createPathSource(): LightSource {
   };
 }
 
-export const LIGHT_SOURCES: readonly (() => LightSource)[] = [createFocusSource, createPathSource];
+export const LIGHT_SOURCES: readonly (() => LightSource)[] = [createFocusSource, createPathSource, () => createDialLightSource(dialLightFrame)];
