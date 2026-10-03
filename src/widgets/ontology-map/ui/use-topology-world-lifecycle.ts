@@ -284,6 +284,7 @@ export function useTopologyWorldLifecycle({
       return step.model;
     };
     const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
     placementStateRef.current = placed.state;
     if (world.dial) {
       setDialPlacement(world.dial, { ...placed, progress: loadProgress });
@@ -394,6 +395,7 @@ export function useTopologyWorldLifecycle({
       hasInitializedRef.current = false;
       armAssembly = true;
     }
+    if (firstPlacement) armAssembly = true;
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
     arrivalGlideRef.current = grew;
@@ -401,7 +403,7 @@ export function useTopologyWorldLifecycle({
     const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
