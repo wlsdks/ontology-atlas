@@ -20,7 +20,7 @@ import type {
   Point,
 } from "../types";
 
-export interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
+interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
 
 export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[] }
 

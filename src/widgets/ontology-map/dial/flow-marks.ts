@@ -73,7 +73,7 @@ export function flowHeadSize(tokens: DialTokens, w0: number, w1: number): number
   return tokens.flowHeadBasePx + tokens.flowHeadGain * Math.max(w0, w1);
 }
 
-export function dialNumeralFont(tokens: DialTokens, labelScale: number): string {
+function dialNumeralFont(tokens: DialTokens, labelScale: number): string {
   return `${FONT_WEIGHT.strong} ${Math.round(tokens.numeralSize * labelScale * 2) / 2}px ui-monospace, SFMono-Regular, Menlo, monospace`;
 }
 
@@ -112,7 +112,7 @@ function quadLength(p0: Point, c: Point, p1: Point): number {
   return len;
 }
 
-export function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameRing: boolean): Point {
+function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameRing: boolean): Point {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -243,7 +243,7 @@ function segmentHitsBox(x0: number, y0: number, x1: number, y1: number, b: Box):
   return clip(-dx, x0 - b.minX) && clip(dx, b.maxX - x0) && clip(-dy, y0 - b.minY) && clip(dy, b.maxY - y0);
 }
 
-export function stubLength(tokens: DialTokens, free: Box): number {
+function stubLength(tokens: DialTokens, free: Box): number {
   return Math.max(tokens.stubMinPx, Math.min(tokens.stubMaxPx, tokens.stubFreeShare * Math.min(free.maxX - free.minX, free.maxY - free.minY)));
 }
 

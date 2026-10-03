@@ -98,15 +98,15 @@ export interface DialWorld { model: DialModel; scene: DialScene; overviewPadPx: 
 export interface DialWorldInput { labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null }
 
 export interface StripMark { flowKey: string; role: "chord" | "stub" | "relates"; ink: number; ax: number; ay: number; cx: number; cy: number; bx: number; by: number; w0: number; w1: number; gapT0: number; gapT1: number; dashed: boolean; headStart: boolean; headEnd: boolean; headSize: number }
-export interface DiscMark { id: string; x: number; y: number; r: number; fill: number; rim: number; dashed: boolean; lineWidth: number }
-export interface SquareMark { id: string | null; x: number; y: number; half: number; fill: number; rim: number }
-export interface TickMark { ink: number; x0: number; y0: number; x1: number; y1: number }
-export interface RailMark { ink: number; cx: number; cy: number; r: number; a0: number; a1: number }
+interface DiscMark { id: string; x: number; y: number; r: number; fill: number; rim: number; dashed: boolean; lineWidth: number }
+interface SquareMark { id: string | null; x: number; y: number; half: number; fill: number; rim: number }
+interface TickMark { ink: number; x0: number; y0: number; x1: number; y1: number }
+interface RailMark { ink: number; cx: number; cy: number; r: number; a0: number; a1: number }
 export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number } | null; count: string | null; stalePip: boolean }
-export type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element";
+type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element";
 export interface TextMark { id: string | null; role: TextRole; text: string; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number }[] | null }
-export interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box }
-export interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: number; ink: number }
+interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box }
+interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: number; ink: number }
 export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMark[]; squares: SquareMark[]; ticks: TickMark[]; rails: RailMark[]; glyphs: GlyphMark[]; texts: TextMark[]; numerals: NumeralMark[]; leaders: LeaderMark[] }
 export interface DialPick { id: string; x: number; y: number; r: number }
 export interface DialRowPick { id: string; box: Box }

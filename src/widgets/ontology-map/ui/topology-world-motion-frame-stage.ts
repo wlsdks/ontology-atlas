@@ -41,6 +41,7 @@ import { holdTierAssemblyBounds, isTierAssembling, settleTierAssembly, stepTierA
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeOverviewFitScale } from "./topology-camera-math";
+import { dialReleaseHoming } from "./topology-dial-release";
 import { overviewBoundsFor } from "./topology-overview-fit";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import type { RealmRuntimeData } from "./topology-realm-runtime";
@@ -239,6 +240,16 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
           );
         }
+      }
+      if (releasedId !== null && realmData === null && world.dial) {
+        const homing = dialReleaseHoming(world, world.dial.scene.positions, homeSpringsRef.current, homeTargetOverrideRef.current);
+        heatRef.current = 0;
+        dragAffectedSetRef.current = null;
+        dragTugOffsetsRef.current.clear();
+        homeSpringsRef.current = homing.springs;
+        homeTargetOverrideRef.current = homing.override;
+        homingActiveRef.current = true;
+        simRef.current = homing.sim;
       }
     }
     /*

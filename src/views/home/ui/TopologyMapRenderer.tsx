@@ -26,6 +26,7 @@ import {
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
+  type FlatDialState,
 } from "@/widgets/ontology-map";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
@@ -35,6 +36,7 @@ import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";
+import { FlatDialLegend } from "./FlatDialLegend";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { TopologyCosmosSurface } from "./TopologyCosmosSurface";
 import { TopologyLightLegend } from "./TopologyLightLegend";
@@ -109,6 +111,7 @@ export interface TopologyMapRendererProps {
     | "realmCaption"
     | "clusterBarLabels"
     | "domeTierLabels"
+    | "dialLabels"
   >;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug" | "handleContextMenuNode" | "panelHoverNodeIdRef">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "constellationFitToken" | "routedConstellation" | "spotlightExpandedParents">;
@@ -136,7 +139,7 @@ export function TopologyMapRenderer({
   } = topologyAuthoring;
   const {
     handleExpandRequest, handleMapFrameDrawn, handleTopologyGraphStatsChange, mapLensIds, mapLensKind,
-    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels,
+    pathLensEdgeIds, pathExpandedParents, allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels,
   } = topologySceneControls;
   const { setFullDetailSlug, handleContextMenuNode, panelHoverNodeIdRef } = topologyCanvasFocus;
   const { constellationFitToken, routedConstellation, spotlightExpandedParents } = topologyExplorationLenses;
@@ -147,8 +150,13 @@ export function TopologyMapRenderer({
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
   const { tourAnchorNodeId, tourAnchorRef } = topologyKeyboardTour;
   const { nodePanelMounted } = topologyInspectorState;
-  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: view3d });
+  const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !galaxy && !hexBoard });
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
+  const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
+  const [flatDial, setFlatDial] = useState<FlatDialState>({ drawn: false, evidenceMeasured: false });
+  const onFlatDialChange = useCallback((state: FlatDialState) => {
+    setFlatDial((current) => (current.drawn === state.drawn && current.evidenceMeasured === state.evidenceMeasured ? current : state));
+  }, []);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
@@ -171,7 +179,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents, dialMemory: flatRingMemory.current() },
+        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), cosmosPlacement: cosmosPlacement.current(), expandStructure: expand.structure, overviewFit, expandedParents, dialLabels, dialMemory: flatRingMemory.current() },
         host,
       ),
     frameRef,
@@ -277,6 +285,9 @@ export function TopologyMapRenderer({
             nodes={nodes}
             edges={edges}
             flatRingMemory={flatRingMemory}
+            dialLabels={dialLabels}
+            evidenceStates={evidenceStates}
+            onFlatDialChange={onFlatDialChange}
             loadProgress={arriving ? loadProgress : null}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
@@ -342,7 +353,7 @@ export function TopologyMapRenderer({
             view3d={view3d}
             galaxy={galaxy}
             mapArrangement={mapArrangement}
-            domeEvidence={mapEvidence.availability === "measured" ? mapEvidence.states : null}
+            domeEvidence={evidenceStates}
             onHiddenDependenciesChange={setHiddenDependencyCount}
             domeLightLegend={
               <TopologyLightLegend
@@ -358,6 +369,7 @@ export function TopologyMapRenderer({
             navigationSpeed={navigationSpeed}
           />
           )}
+          {morph.surface === "map" && flatDial.drawn ? <FlatDialLegend evidenceMeasured={flatDial.evidenceMeasured} /> : null}
         </div>
       ) : null}
       {morph.overlay ? (
