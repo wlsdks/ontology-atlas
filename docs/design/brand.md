@@ -36,15 +36,16 @@ in the message catalogs rather than raster assets.
 
 ## Character
 
-The mascot is a curious planet traveler: a cream parchment hood and coat, a dark navy face with two cyan eyes, a blue scarf and boots, and a floating ringed blue planet. Compact and micro forms retain the hood and eyes while simplifying the planet and removing the body. The owner supplied the reference pack on 2026-10-02.
+The mascot is a curious planet traveler: a cream parchment hood and coat, a dark navy face with two cyan eyes, a blue scarf, brown traveling boots, and a floating ringed blue planet. Compact and micro forms retain the hood and eyes while simplifying the planet and removing the body. The owner supplied the reference pack on 2026-10-02.
 
 The owner's additional 2026-10-03 references refine the static art to a rounded
 hood, broad face, short body, brown traveling boots, lantern, map, and backpack.
 The full figure and separately drawn compact/micro portraits live in the
 `source/traveler-{master,small}-v2.png` inputs. Each tier trims transparent
 presentation padding, preserves the drawing's aspect ratio, and registers a
-clear integer-pixel margin. Existing work-state sprite rows retain their poses
-and timing; their state meanings do not change with this static-art refinement.
+clear integer-pixel margin. The work-state rows now share the rounded hood,
+gold planet ring, brown boots, lantern, map, and backpack of that static art.
+Their activity meanings and timing remain unchanged.
 
 This is a character, not an ontology kind, an assistant persona, or a claim that
 work is happening. Static brand surfaces are state-free.
@@ -59,6 +60,7 @@ The source masters live under `assets/brand/mascot/`.
 | Compact | `mascot-compact-32.png` | 20–48px; hood, eyes, scarf, and planet |
 | Micro | `mascot-micro-16.png` | 16–18px; hood, paired cyan eyes, and simplified planet |
 | Presentation | `mascot-presentation-128.png` | 128–1024px static desktop/PWA icons and Open Graph; detailed face, lantern, map, and backpack with an 8px clear margin |
+| Portraits | `mascot-{welcome,curious}-32.png` | 32px static expressions in the folder entry and missing-page icon slots |
 | macOS template | `mascot-tray-template-{16,32}.png` | black/clear menu-bar mask at 1×/2× |
 
 Each tier is authored separately. Do not downscale the full body to make a
@@ -103,8 +105,9 @@ SUCCESS requires a timestamped terminal projection. Visual state,
 This verified work sequence is finite. There is no idle loop, random map traversal, inferred work,
 particle cloud, glow, or separate mascot event bus. Under reduced motion, travel
 and frame stepping stop while the static pose and status text preserve the fact.
-At desktop widths the 64×64 stage stays in a measured clear lane at the map's
-right edge. Six poses share five 120ms frame transitions with continuous travel; WALK's terminal
+The activity status lane contains a 32×32 mark made from the 64px work cells
+at half scale. Pending marks retain their separate native 64px stage.
+Six poses share five 120ms frame transitions; WALK's terminal
 frame equals READ's first frame, and READ's terminal frame equals SUCCESS's first,
 so a truthful state change does not teleport the character.
 
@@ -133,7 +136,7 @@ artwork. Existing personal/game save bytes remain untouched.
 | Surface | Asset |
 |---|---|
 | In-app mark | `public/brand/mascot-{full,compact,micro}.png` through `<BrandMark>` |
-| Gateway chrome and download hero | compact and full `<BrandMark>` tiers; static and state-free |
+| Gateway chrome | compact `<BrandMark>` tier in the header; static and state-free |
 | Browser favicon | `app/icon.png` |
 | Apple Touch | `app/apple-icon.png` |
 | PWA | `public/brand-icon-512.png` |
@@ -141,6 +144,18 @@ artwork. Existing personal/game save bytes remain untouched.
 | README / presentations | `public/brand/lockup*.png` |
 | macOS / Windows / mobile package trees | `src-tauri/icons/**` |
 | macOS menu bar | `src-tauri/icons/tray-template.png` (static template image) |
+
+`BrandPortrait` places a static welcome expression beside the existing Atlas
+wordmark in the first-run/folder chooser, and a curious map-search expression
+in the existing 404 icon tile. Both are decorative and carry no work-status
+or acceptance claim. Labels and recovery actions retain their existing roles.
+Like busy micro marks, these portraits compensate only actual workbench UI
+zoom ancestors, so their authored 32px grid stays native.
+
+Work sources are three six-cell, 3×2 sheets. Each cell uses one common scale,
+binary alpha, the shared raster palette, and a 61px foot baseline. The boundary
+frames are shared exactly between WALK/READ and READ/SUCCESS. Completion is a
+quiet expression and wave with no spell, particles, or confetti.
 
 The OS plate is a neutral dark squircle. The character remains native pixel art
 inside that smoothly masked platform shape.

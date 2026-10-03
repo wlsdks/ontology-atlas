@@ -85,6 +85,8 @@ const COPY_PLAN = [
   ['public/brand/mascot-full.png', 'mark-full'],
   ['public/brand/mascot-compact.png', 'mark-compact'],
   ['public/brand/mascot-micro.png', 'mark-micro'],
+  ['public/brand/mascot-welcome.png', 'mark-welcome'],
+  ['public/brand/mascot-curious.png', 'mark-curious'],
   ['public/brand/lockup.png', 'lockup'],
   ['public/brand/lockup@2x.png', 'lockup@2x'],
   ['public/brand/lockup-light@2x.png', 'lockup-light@2x'],
