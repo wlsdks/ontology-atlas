@@ -65,11 +65,17 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       clear();
     },
     step(input, out: LightEmitter) {
+      const frame = read();
       if (input.world !== world) {
+        const held = attention;
         world = input.world;
         clear();
+        if (held !== null && frame !== null && frame.focused && frame.attentionKey === held) {
+          attention = held;
+          planned = true;
+          return false;
+        }
       }
-      const frame = read();
       if (frame === null || !frame.focused) {
         clear();
         return false;

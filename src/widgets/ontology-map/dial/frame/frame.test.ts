@@ -163,6 +163,19 @@ describe("focus clock", () => {
   });
 });
 
+describe("focus on a new world", () => {
+  it("keeps an unchanged focus settled: the ink stays mixed and nothing crossfades", () => {
+    const model = modelOf();
+    const first = frameInput(model, { focusedNodeId: "d1", now: 0, worldKey: {} });
+    paintDialFrame(first);
+    expect(paintDialFrame({ ...first, now: 400 }).inkMix).toBe(1);
+    const refreshed = paintDialFrame({ ...first, worldKey: {}, now: 416 });
+    expect(refreshed.inkMix).toBe(1);
+    expect(refreshed.light).toMatchObject({ focused: true, inkMix: 1 });
+    expect(focusInkMix(first.worldKey, resolveDialAttention(model, null, "d1"), 420, false)).toEqual({ inkMix: 1, previous: null });
+  });
+});
+
 describe("dialChordPresence", () => {
   it("is 0 until the chord arrival share of the domain rise, then eases to 1", () => {
     expect(dialChordPresence(TOKENS, 0)).toBe(0);

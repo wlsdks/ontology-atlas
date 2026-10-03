@@ -126,6 +126,32 @@ describe("createDialLightSource", () => {
     expect(source.plan()!.signals).toHaveLength(1);
   });
 
+  it("takes an unchanged focus on a new world without replaying its lights", () => {
+    let frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: CHORDS };
+    const source = createDialLightSource(() => frame);
+    source.step(input(0), emitter().out);
+    expect(source.plan()).not.toBeNull();
+    const refreshed = { ...input(2000), world: {} as TopologyWorld };
+    const { out, heads } = emitter();
+    expect(source.step(refreshed, out)).toBe(false);
+    expect(source.plan()).toBeNull();
+    expect(source.step({ ...refreshed, now: 2016 }, out)).toBe(false);
+    expect(source.plan()).toBeNull();
+    expect(heads).toEqual([]);
+    frame = { ...frame, attentionKey: "ship" };
+    expect(source.step({ ...refreshed, now: 2032 }, out)).toBe(true);
+    expect(source.plan()!.anchorId).toBe("ship");
+  });
+
+  it("plans a focus that changed with the world", () => {
+    let frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: CHORDS };
+    const source = createDialLightSource(() => frame);
+    source.step(input(0), emitter().out);
+    frame = { ...frame, attentionKey: "ship" };
+    expect(source.step({ ...input(500), world: {} as TopologyWorld }, emitter().out)).toBe(true);
+    expect(source.plan()!.anchorId).toBe("ship");
+  });
+
   it("plans nothing when there are no chords", () => {
     const frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: [] };
     const source = createDialLightSource(() => frame);
