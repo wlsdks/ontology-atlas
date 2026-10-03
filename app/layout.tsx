@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { SITE_URL } from '@/shared/config';
+import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
 import { jetbrainsMono, pretendard, pretendardLatin } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
@@ -111,13 +112,15 @@ export default function RootLayout({
             '@type': 'WebSite',
             name: 'Ontology Atlas',
             alternateName: 'ontology-atlas',
-            url: SITE_URL,
+            url: `${SITE_URL}/`,
             description:
               'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
             inLanguage: Object.values(LOCALE_META).map((meta) => meta.htmlLang),
             publisher: {
               '@type': 'Organization',
               name: 'ontology-atlas contributors',
+              url: SITE_URL,
+              sameAs: [GITHUB_REPO_URL],
             },
           }}
         />

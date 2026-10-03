@@ -14,7 +14,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'metadata' });
   return buildPageMetadata({
     locale,
-    path: 'docs',
+    path: 'library',
     title: t('pages.docs'),
     description: t('descriptions.docs'),
   });

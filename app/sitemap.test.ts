@@ -41,11 +41,10 @@ vi.mock('@/i18n/locales', async (importOriginal) => {
 });
 
 const PUBLIC_STATIC_PATHS = [
-  '',
   'projects',
   'download',
   'topology',
-  'docs',
+  'library',
   'ontology/insights',
   'guide',
   'changelog',

@@ -112,6 +112,7 @@ Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- -
 | `pnpm pr:ci <n>` | Fire CI on a draft now |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a landing, or run trains until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train, and show the queue |
+| `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
 
 </details>
