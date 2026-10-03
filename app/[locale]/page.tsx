@@ -6,10 +6,8 @@ import { routing } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { GatewayEntryFallback } from "@/shared/ui/gateway-entry-fallback";
 
-// Each locale page's canonical must be **its own URL** for the hreflang group to work. Every locale
-// used to be unified onto `/`, which gave `/en/` and `/ko/` the same canonical and let the search
-// engine index only one of them (deduplicating the other). This is the same direction of correction
-// as the trailing-slash alignment of the hreflang map — an explicit per-locale canonical.
+// The indexed face of each locale is `/{locale}/download/`, which renders the same gateway with full
+// static HTML; this page canonicalizes there per locale so the hreflang group stays intact.
 export async function generateMetadata({
   params,
 }: {
@@ -22,9 +20,10 @@ export async function generateMetadata({
   const t = await getTranslations({ locale: safeLocale, namespace: 'metadata' });
   return buildPageMetadata({
     locale: safeLocale,
-    path: '',
-    title: t('siteName'),
-    description: t('descriptions.download'),
+    path: 'download',
+    title: t('homeTitle'),
+    description: t('descriptions.home'),
+    absoluteTitle: true,
   });
 }
 

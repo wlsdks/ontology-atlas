@@ -68,6 +68,8 @@ jobs:
           # that side's console registration. If unset, `app/layout.tsx` does not emit the tag.
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
+      - name: Check sitemap, canonicals and titles in the export
+        run: pnpm seo:check
       - name: Stage the newest published updater manifest
         run: pnpm desktop:stage-hosted-updater
         env:

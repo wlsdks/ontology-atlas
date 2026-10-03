@@ -1,4 +1,11 @@
+import type { Metadata } from 'next';
+import { absoluteUrl } from '@/shared/config';
+import { routing } from '@/i18n/routing';
 import { LocaleRedirect } from '@/shared/ui/locale-redirect';
+
+export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl(`/${routing.defaultLocale}/download/`) },
+};
 
 /**
  * Root entry — static-export-friendly client-side locale detection.
