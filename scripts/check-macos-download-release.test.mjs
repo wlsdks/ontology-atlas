@@ -6,10 +6,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const dmgNames = [
-  "ontology-atlas_0.1.0_aarch64.dmg",
-  "ontology-atlas_0.1.0_x64.dmg",
-];
+const dmgNames = ["ontology-atlas_0.1.0_aarch64.dmg"];
 const dmgBody = (dmgName) => Buffer.from(`fake dmg bytes for ${dmgName}`);
 const dmgHash = (dmgName) => crypto.createHash("sha256").update(dmgBody(dmgName)).digest("hex");
 const validChecksum = (dmgName) => `${dmgHash(dmgName)}  ${dmgName}\n`;
@@ -210,7 +207,6 @@ test("download release verifier checks reachable DMG and checksum contents", asy
 
     assert.match(stdout, /exposes reachable public macOS download assets/);
     assert.match(stdout, new RegExp(`/download/${dmgNames[0]}`));
-    assert.match(stdout, new RegExp(`/download/${dmgNames[1]}`));
     assert.match(stdout, new RegExp(`/download/${windowsName}`));
   });
 });
@@ -223,7 +219,7 @@ test("download release verifier accepts pnpm forwarded argument separator", asyn
   });
 });
 
-test("download release verifier help describes the two architecture contract", async () => {
+test("download release verifier help describes the Apple Silicon contract", async () => {
   const { stdout } = await execFileAsync(
     process.execPath,
     ["scripts/check-macos-download-release.mjs", "--help"],
@@ -235,9 +231,8 @@ test("download release verifier help describes the two architecture contract", a
 
   assert.match(stdout, /Apple Silicon/);
   assert.match(stdout, /aarch64/);
-  assert.match(stdout, /Intel/);
-  assert.match(stdout, /x64/);
-  assert.match(stdout, /exactly one DMG per architecture/);
+  assert.doesNotMatch(stdout, /Intel/);
+  assert.match(stdout, /exactly one per architecture/);
   assert.match(stdout, /one Windows x64 setup executable/);
   assert.match(stdout, /matching \.sha256 checksums/);
 });
@@ -314,15 +309,49 @@ test("download release verifier requires the Windows checksum sibling", async ()
   );
 });
 
-test("download release verifier requires Apple Silicon and Intel assets", async () => {
-  await withServer(makeHandler({ names: [dmgNames[0]] }), async (baseUrl) => {
+test("download release verifier requires the Apple Silicon DMG", async () => {
+  await withServer(makeHandler({ names: ["ontology-atlas_0.1.0_x64.dmg"] }), async (baseUrl) => {
     await assert.rejects(
       runVerifier(baseUrl),
       (error) => {
-        assert.match(error.stderr, /missing macOS DMG assets for: x64/);
+        assert.match(error.stderr, /missing macOS DMG assets for: aarch64/);
         return true;
       },
     );
+  });
+});
+
+test("download release verifier tolerates the x64 DMG of a release up to v1.5.0", async () => {
+  await withServer(
+    makeHandler({
+      tagName: "v1.5.0",
+      names: ["ontology-atlas_1.5.0_aarch64.dmg", "ontology-atlas_1.5.0_x64.dmg"],
+    }),
+    async (baseUrl) => {
+      const { stdout } = await runVerifier(baseUrl);
+      assert.match(stdout, /ontology-atlas_1\.5\.0_x64\.dmg/);
+    },
+  );
+});
+
+test("download release verifier refuses an x64 DMG after v1.5.0", async () => {
+  await withServer(
+    makeHandler({
+      tagName: "v1.6.0",
+      names: ["ontology-atlas_1.6.0_aarch64.dmg", "ontology-atlas_1.6.0_x64.dmg"],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(runVerifier(baseUrl), (error) =>
+        /v1\.6\.0 carries an Intel \(x64\) DMG, but v1\.5\.0 was the last Intel build/.test(error.stderr),
+      );
+    },
+  );
+});
+
+test("download release verifier no longer requires an Intel DMG", async () => {
+  await withServer(makeHandler({ names: [dmgNames[0]] }), async (baseUrl) => {
+    const { stdout } = await runVerifier(baseUrl);
+    assert.match(stdout, /ontology-atlas_0\.1\.0_aarch64\.dmg/);
   });
 });
 
@@ -331,7 +360,6 @@ test("download release verifier rejects duplicate architecture DMG assets", asyn
     makeHandler({
       names: [
         "ontology-atlas_0.1.0_aarch64.dmg",
-        "ontology-atlas_0.1.0_x64.dmg",
         "ontology-atlas_0.1.0-a_aarch64.dmg",
       ],
     }),
@@ -349,28 +377,6 @@ test("download release verifier rejects duplicate architecture DMG assets", asyn
   );
 });
 
-test("download release verifier rejects mixed-version architecture assets", async () => {
-  await withServer(
-    makeHandler({
-      names: [
-        "ontology-atlas_0.1.0_aarch64.dmg",
-        "ontology-atlas_0.0.9_x64.dmg",
-      ],
-    }),
-    async (baseUrl) => {
-      await assert.rejects(
-        runVerifier(baseUrl),
-        (error) => {
-          assert.match(error.stderr, /mismatched macOS DMG versions/);
-          assert.match(error.stderr, /aarch64=0\.1\.0/);
-          assert.match(error.stderr, /x64=0\.0\.9/);
-          return true;
-        },
-      );
-    },
-  );
-});
-
 test("download release verifier rejects DMG versions that do not match the release tag", async () => {
   await withServer(makeHandler({ tagName: "v0.2.0" }), async (baseUrl) => {
     await assert.rejects(
@@ -378,7 +384,6 @@ test("download release verifier rejects DMG versions that do not match the relea
       (error) => {
         assert.match(error.stderr, /do not match the tag version 0\.2\.0/);
         assert.match(error.stderr, /aarch64=0\.1\.0/);
-        assert.match(error.stderr, /x64=0\.1\.0/);
         return true;
       },
     );
@@ -404,7 +409,7 @@ test("download release verifier rejects unsupported ontology-atlas DMG asset nam
   );
 });
 
-test("download release verifier rejects universal DMGs so both release lanes stay explicit", async () => {
+test("download release verifier rejects universal DMGs so the release lane stays explicit", async () => {
   await withServer(
     makeHandler({
       names: ["ontology-atlas_0.1.0_universal.dmg"],
@@ -703,7 +708,6 @@ test("download release verifier has no flag that accepts a pre-release", async (
  */
 const archiveNames = {
   "darwin-aarch64": "ontology-atlas_0.1.0_aarch64.app.tar.gz",
-  "darwin-x86_64": "ontology-atlas_0.1.0_x64.app.tar.gz",
 };
 
 function updaterAssets(names = Object.values(archiveNames)) {
@@ -766,10 +770,6 @@ test("updater gate refuses a URL that no asset answers", async () => {
       signature: "sig",
       url: "https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/Ontology%20Atlas.app.tar.gz",
     },
-    "darwin-x86_64": {
-      signature: "sig",
-      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${archiveNames["darwin-x86_64"]}`,
-    },
   });
   await withServer(withUpdater({ manifest }), async (baseUrl) => {
     await assert.rejects(
@@ -779,9 +779,7 @@ test("updater gate refuses a URL that no asset answers", async () => {
   });
 });
 
-test("updater gate refuses both platforms pointing at one archive", async () => {
-  // Shipped that way, users on one architecture receive the other architecture's
-  // app.
+test("updater gate refuses a platform key beyond the required ones", async () => {
   const shared = archiveNames["darwin-aarch64"];
   const manifest = updaterManifest({
     "darwin-aarch64": {
@@ -796,7 +794,7 @@ test("updater gate refuses both platforms pointing at one archive", async () => 
   await withServer(withUpdater({ manifest }), async (baseUrl) => {
     await assert.rejects(
       runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
-      (error) => /points both platforms at/.test(error.stderr),
+      (error) => /platforms must be exactly darwin-aarch64; found darwin-aarch64, darwin-x86_64/.test(error.stderr),
     );
   });
 });
@@ -816,10 +814,6 @@ test("updater gate refuses a URL pinned to another tag", async () => {
     "darwin-aarch64": {
       signature: "sig",
       url: `https://github.com/wlsdks/ontology-atlas/releases/latest/download/${archiveNames["darwin-aarch64"]}`,
-    },
-    "darwin-x86_64": {
-      signature: "sig",
-      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${archiveNames["darwin-x86_64"]}`,
     },
   });
   await withServer(withUpdater({ manifest }), async (baseUrl) => {

@@ -5,17 +5,20 @@ import https from "node:https";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
-const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
+const REQUIRED_MACOS_ARCHES = ["aarch64"];
+/** v1.5.0 is the last release with an Intel DMG; a later one carrying it is refused. */
+const LAST_INTEL_VERSION = [1, 5, 0];
+const DMG_NAME_PATTERN = /^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/;
 const WINDOWS_NAME_PATTERN = /^ontology-atlas_([^/]+)_windows_(x64)-setup\.exe$/;
 /** The key an installed app uses to find its own slot in `latest.json`. A Rust target name. */
-const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
+const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater]
 
-Verifies that a public GitHub Release exposes reachable Apple Silicon
-(aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
+Verifies that a public GitHub Release exposes a reachable Apple Silicon
+(aarch64) macOS DMG, exactly one per architecture, and
 one Windows x64 setup executable, all with matching .sha256 checksums. With
 --require-updater it also opens latest.json and
 checks that every platform URL points at an archive (and .sig) that actually
@@ -247,7 +250,7 @@ function isDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^ontology-atlas_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
+    DMG_NAME_PATTERN.test(asset.name) &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -261,7 +264,7 @@ function isAnyDmgAsset(asset) {
 }
 
 function parseDmgName(name) {
-  const match = name.match(/^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(DMG_NAME_PATTERN);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
 }
@@ -279,6 +282,14 @@ function parseWindowsInstallerName(name) {
   const match = name.match(WINDOWS_NAME_PATTERN);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
+}
+
+function isAfterLastIntel(version) {
+  const parts = version.split(/[.-]/).slice(0, 3).map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if (parts[index] !== LAST_INTEL_VERSION[index]) return !(parts[index] < LAST_INTEL_VERSION[index]);
+  }
+  return false;
 }
 
 function releaseVersionFromTag(tagName) {
@@ -420,7 +431,7 @@ try {
   const message = error instanceof Error ? error.message : String(error);
   if (options.tag && /\b404\b/.test(message)) {
     fail(
-      `release tag ${options.tag} was not found for ${options.repo}. Push the v-prefixed tag and let .github/workflows/release-macos.yml publish signed, notarized Apple Silicon and Intel DMGs before running desktop:verify-download.`,
+      `release tag ${options.tag} was not found for ${options.repo}. Push the v-prefixed tag and let .github/workflows/release-macos.yml publish the signed, notarized Apple Silicon DMG before running desktop:verify-download.`,
     );
   }
   if (/rate limit exceeded/i.test(message) || /\b403\b/.test(message)) {
@@ -479,22 +490,14 @@ if (duplicateArches.length > 0) {
       .join(", ")}. Keep exactly one DMG per architecture.`,
   );
 }
-const requiredVersionByArch = new Map(
-  parsedDmgs
-    .filter((dmg) => REQUIRED_MACOS_ARCHES.includes(dmg.arch))
-    .map((dmg) => [dmg.arch, dmg.version]),
-);
-const versions = new Set(requiredVersionByArch.values());
-if (versions.size > 1) {
-  fail(
-    `release ${release.tag_name ?? "(unknown tag)"} has mismatched macOS DMG versions: ${Array.from(requiredVersionByArch.entries())
-      .map(([arch, version]) => `${arch}=${version}`)
-      .join(", ")}.`,
-  );
-}
 const releaseVersion = releaseVersionFromTag(release.tag_name);
 if (!releaseVersion) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} must use a v-prefixed tag so DMG versions can be verified.`);
+}
+if (parsedDmgs.some((dmg) => dmg.arch === "x64") && isAfterLastIntel(releaseVersion)) {
+  fail(
+    `release ${release.tag_name} carries an Intel (x64) DMG, but v${LAST_INTEL_VERSION.join(".")} was the last Intel build.`,
+  );
 }
 const mismatchedReleaseVersions = parsedDmgs
   .filter((dmg) => dmg.version !== releaseVersion)
@@ -551,14 +554,10 @@ try {
  *
  * An installed app finds updates through this one file. If the URL is off by a
  * single character the app **raises no error** — the user simply sees "you are up
- * to date". With only the DMG check, this whole path was unverified: a missing
- * manifest, a manifest pointing at a non-existent file, and both architectures
- * pointing at the same file were all green.
- *
- * Two ways of going wrong were real. Tauri emits `<product name>.app.tar.gz` for
- * both architectures, so ① the identical name makes one overwrite the other and
- * ② GitHub replaces spaces in the name with dots, so the manifest URL and the
- * actual asset name diverge.
+ * to date". GitHub replaces spaces in asset names with dots, so a manifest URL
+ * built from Tauri's `<product name>.app.tar.gz` diverges from the real asset.
+ * The platform keys must be exactly the required ones: an extra key is an entry
+ * nothing verified, which could hand an app another architecture's archive.
  */
 async function verifyUpdaterManifest() {
   const manifestAsset = assets.find((asset) => asset?.name === "latest.json");
@@ -578,7 +577,13 @@ async function verifyUpdaterManifest() {
   }
 
   const assetNames = new Set(assets.map((asset) => asset?.name).filter(Boolean));
-  const seenArchives = new Set();
+  const platformKeys = Object.keys(manifest?.platforms ?? {}).sort();
+  if (platformKeys.join(",") !== [...REQUIRED_UPDATER_PLATFORMS].sort().join(",")) {
+    fail(
+      `latest.json platforms must be exactly ${REQUIRED_UPDATER_PLATFORMS.join(", ")}; found ${platformKeys.join(", ") || "none"}.`,
+    );
+  }
+  const archives = [];
   for (const platform of REQUIRED_UPDATER_PLATFORMS) {
     const entry = manifest?.platforms?.[platform];
     if (!entry?.url || !entry?.signature) {
@@ -598,14 +603,9 @@ async function verifyUpdaterManifest() {
     if (!assetNames.has(`${archiveName}.sig`)) {
       fail(`release ${release.tag_name} is missing ${archiveName}.sig; the app refuses unsigned update packages.`);
     }
-    if (seenArchives.has(archiveName)) {
-      fail(
-        `latest.json points both platforms at ${archiveName}. One architecture would download the other's app.`,
-      );
-    }
-    seenArchives.add(archiveName);
+    archives.push(archiveName);
   }
-  return [...seenArchives];
+  return archives;
 }
 
 let updaterArchives = [];

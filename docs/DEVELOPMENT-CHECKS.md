@@ -965,7 +965,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Public download asset verification
 
 **Run**: `pnpm desktop:verify-download`
-**Proves**: The public GitHub Release exposes reachable same-version Apple Silicon and Intel DMGs with matching `.sha256` contents and downloaded bytes, and rejects unsupported or duplicate-architecture assets.
+**Proves**: The public GitHub Release exposes a reachable Apple Silicon DMG, at the tag version, with matching `.sha256` contents and downloaded bytes, and rejects unsupported or duplicate-architecture assets.
 **Escalate**: none.
 **Fix**: Draft releases need `--allow-draft`; the hosted map cannot serve them to users otherwise.
 

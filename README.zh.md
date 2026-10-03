@@ -20,7 +20,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
 
-- **macOS**（Apple Silicon 和 Intel）版已签名并通过公证，应用内置 MCP 服务器。
+- **macOS**（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器。
 - **Windows x64** 是未签名的测试版：SmartScreen 可能会发出警告，受管理的电脑也可能阻止运行。
 - **Linux** 暂时没有应用：请使用浏览器版，或在[源码检出](cli/README.md#set-up-from-a-source-checkout)中运行 CLI 和 MCP 服务器。
 

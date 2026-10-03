@@ -114,7 +114,6 @@ export const VOCABULARY = {
         'agents.models.localBaseUrlPlaceholder': "a URL",
         'agents.models.runnerLmStudio': "a product name",
         'agents.models.runnerLlamaCpp': "a product name",
-        'download.heroMacSilicon': "Apple's own chip name, the row beside it reads Intel",
         'library.rounds.sheet.wherePlaceholder': "example locations, spelled the way each service spells them",
         'agents.models.keysTitle': "a term kept as developers say it; the TermHint beside it carries the explanation",
         'agents.models.keyLabel': "a term kept as developers say it; the TermHint beside it carries the explanation",

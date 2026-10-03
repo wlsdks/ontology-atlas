@@ -30,10 +30,9 @@ import { pathToFileURL } from "node:url";
 /** The platform keys Tauri uses on macOS. These are Rust target names, not our arch notation. */
 export const PLATFORM_BY_ARCH = {
   aarch64: "darwin-aarch64",
-  x64: "darwin-x86_64",
 };
 
-export const REQUIRED_ARCHES = ["aarch64", "x64"];
+export const REQUIRED_ARCHES = ["aarch64"];
 
 function fail(message) {
   console.error(`[updater-manifest] ${message}`);

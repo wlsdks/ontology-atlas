@@ -20,7 +20,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
 
-- **macOS** (Apple Silicon and Intel) is signed and notarized, and carries the MCP server inside the app.
+- **macOS** (Apple Silicon) is signed and notarized, and carries the MCP server inside the app.
 - **Windows x64** is an unsigned beta: SmartScreen may warn, and a managed PC may block it.
 - **Linux** has no app yet: use the browser version, or run the CLI and MCP server from a [source checkout](cli/README.md#set-up-from-a-source-checkout).
 

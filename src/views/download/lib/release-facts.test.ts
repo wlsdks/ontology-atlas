@@ -54,9 +54,8 @@ describe("release-facts", () => {
 
   it("builds DMG names matching the real check-macos-download-release.mjs naming convention", () => {
     expect(buildDmgName("aarch64")).toBe(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
-    expect(buildDmgName("x64")).toBe(`ontology-atlas_${RELEASE_VERSION}_x64.dmg`);
     for (const arch of RELEASE_ARCHES) {
-      expect(buildDmgName(arch)).toMatch(/^ontology-atlas_[^/]+_(aarch64|x64)\.dmg$/);
+      expect(buildDmgName(arch)).toMatch(/^ontology-atlas_[^/]+_aarch64\.dmg$/);
     }
   });
 

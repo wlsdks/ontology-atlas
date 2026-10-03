@@ -32,7 +32,6 @@ import {
 import { StageMap, useStageGraph, type StageScriptedFocus } from './StageMap';
 import { GatewayFx } from './GatewayFx';
 import { HeroAtlas } from './HeroAtlas';
-import { HeroMacMenu } from './HeroMacMenu';
 import { ScreensStage } from './ScreensStage';
 import { AcpChatScene } from './AcpChatScene';
 import { ConductionSection } from './ConductionFigure';
@@ -233,6 +232,49 @@ function HeroSection({
     { text: t('heroTitleLine2') },
   ];
 
+  const macLink = primaryAsset ? (
+    <a
+      href={primaryAsset.downloadUrl}
+      data-testid={heroWindowsPrimary ? 'gateway-hero-mac' : 'gateway-hero-cta'}
+      className={cn(
+        buttonVariants(heroWindowsPrimary ? { variant: 'outline', size: 'lg' } : { size: 'lg' }),
+        heroWindowsPrimary && 'px-4 sm:px-6',
+        HERO_CTA_WRAP,
+      )}
+    >
+      <Download size={ICON_SIZE.lg} aria-hidden />
+      {t('primaryCtaPublished')}
+      <AssetSize bytes={primaryAsset.sizeBytes} onFill={!heroWindowsPrimary} />
+    </a>
+  ) : null;
+  /* As the outlined control the unsigned marker rides on the button: it is needed before downloading. */
+  const windowsLink = windowsInstaller ? (
+    <a
+      href={windowsInstaller.downloadUrl}
+      data-testid={heroWindowsPrimary ? 'gateway-hero-cta' : 'gateway-hero-windows'}
+      className={cn(
+        buttonVariants(heroWindowsPrimary ? { size: 'lg' } : { variant: 'outline', size: 'lg' }),
+        !heroWindowsPrimary && 'px-4 sm:px-6',
+        HERO_CTA_WRAP,
+      )}
+    >
+      <Download size={ICON_SIZE.lg} aria-hidden />
+      {heroWindowsPrimary ? (
+        <>
+          {t('windowsDownloadCta')}
+          <AssetSize bytes={windowsInstaller.sizeBytes} onFill />
+        </>
+      ) : (
+        <>
+          {t('heroWindowsCta')}
+          <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t('windowsUnsignedShort')}
+          </span>
+        </>
+      )}
+    </a>
+  ) : null;
+
   return (
     /* As tall as its copy, not the viewport, or the fold holds an empty band instead of the demo. */
     <section
@@ -289,38 +331,11 @@ function HeroSection({
           {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
           <div className={cn(rise('gateway-t320'), 'mt-9 flex flex-wrap items-center gap-3')}>
             {fileWins ? (
-              heroWindowsPrimary ? (
-                <>
-                  <a
-                    href={windowsInstaller!.downloadUrl}
-                    data-testid="gateway-hero-cta"
-                    className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
-                  >
-                    <Download size={ICON_SIZE.lg} aria-hidden />
-                    {t('windowsDownloadCta')}
-                    <AssetSize bytes={windowsInstaller!.sizeBytes} onFill />
-                  </a>
-                  <HeroMacMenu variant="outline" testId="gateway-hero-mac" />
-                </>
-              ) : (
-                <>
-                  <HeroMacMenu variant="primary" testId="gateway-hero-cta" />
-                  {windowsInstaller ? (
-                    /* Needed before downloading, so the unsigned marker rides on the button. */
-                    <a
-                      href={windowsInstaller.downloadUrl}
-                      data-testid="gateway-hero-windows"
-                      className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'px-4 sm:px-6', HERO_CTA_WRAP)}
-                    >
-                      <Download size={ICON_SIZE.lg} aria-hidden />
-                      {t('heroWindowsCta')}
-                      <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
-                        {t('windowsUnsignedShort')}
-                      </span>
-                    </a>
-                  ) : null}
-                </>
-              )
+              <>
+                {heroWindowsPrimary ? windowsLink : null}
+                {macLink}
+                {heroWindowsPrimary ? null : windowsLink}
+              </>
             ) : (
               <Link
                 href="/topology"
@@ -428,7 +443,9 @@ function FactsStrip({
     { label: t('factVersionLabel'), value: version },
     {
       label: t('factRequiresLabel'),
-      value: `${subjectIsWindows ? RELEASE_MIN_WINDOWS : RELEASE_MIN_MACOS}${t('factMinOsSuffix')}`,
+      value: subjectIsWindows
+        ? `${RELEASE_MIN_WINDOWS}${t('factMinOsSuffix')}`
+        : `${RELEASE_MIN_MACOS}${t('factMinOsSuffix')} · Apple Silicon`,
     },
   ];
   if (published && subject) {

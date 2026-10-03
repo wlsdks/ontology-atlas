@@ -20,7 +20,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
 
-- **macOS**(Apple Silicon·Intel)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요.
+- **macOS**(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요.
 - **Windows x64**는 서명하지 않은 베타예요. SmartScreen이 경고할 수 있고, 회사에서 관리하는 PC는 실행을 막을 수 있어요.
 - **Linux**용 앱은 아직 없어요. 브라우저 버전을 쓰거나, [소스 체크아웃](cli/README.md#set-up-from-a-source-checkout)에서 CLI와 MCP 서버를 실행하세요.
 
