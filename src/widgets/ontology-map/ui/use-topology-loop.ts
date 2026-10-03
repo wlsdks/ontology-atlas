@@ -15,7 +15,7 @@ import { useTopologySurfaceState } from "./use-topology-surface-state";
 import { useTopologyVisibilityState } from "./use-topology-visibility-state";
 import { useTopologyWorldState } from "./use-topology-world-state";
 
-import type { UseTopologyLoopArgs } from "./topology-loop-contract";
+import type { FlatDialFrameProps, UseTopologyLoopArgs } from "./topology-loop-contract";
 export type { UseTopologyLoopArgs } from "./topology-loop-contract";
 
 import { useTopologyCameraNavigation } from "./use-topology-camera-navigation";
@@ -299,6 +299,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeEvidenceRef.current = args.domeEvidence ?? null;
     lastActiveMsRef.current = performance.now();
   }, [args.domeEvidence, lastActiveMsRef]);
+  const flatDialRef = useRef<FlatDialFrameProps>({ labels: null, evidence: null, onChange: undefined, sent: null });
+  useEffect(() => {
+    const dial = flatDialRef.current;
+    dial.labels = args.dialLabels ?? null;
+    dial.evidence = args.evidenceStates ?? null;
+    dial.onChange = args.onFlatDialChange;
+    lastActiveMsRef.current = performance.now();
+  }, [args.dialLabels, args.evidenceStates, args.onFlatDialChange, lastActiveMsRef]);
   const onHiddenDependenciesChangeRef = useRef(args.onHiddenDependenciesChange);
   const hiddenDependenciesSentRef = useRef(-1);
   useEffect(() => {
@@ -418,6 +426,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     fittedDataSourceKeyRef,
     galaxyModeCameraRef,
     pendingFlatCameraRef,
+    dialLabels: args.dialLabels ?? null,
+    flatRingMemory: args.flatRingMemory ?? null,
   });
 
   useTopologyViewportLifecycle({
@@ -917,6 +927,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeLodRef,
       onHiddenDependenciesChangeRef,
       hiddenDependenciesSentRef,
+      flatDialRef,
     },
   });
   const { handlersRef, handlers, wrappedHandlers } = useTopologyInput({

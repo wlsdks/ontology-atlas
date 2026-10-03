@@ -27,7 +27,8 @@ import {
   containmentParents,
   predictMapLayoutTarget,
 } from "@/widgets/ontology-map";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { flatRingMemorySlot } from "../model/flat-ring-memory-store";
 import { useCosmosPlacement } from "../model/use-cosmos-placement";
 import { readHexRelief } from "@/shared/lib/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
@@ -156,6 +157,7 @@ export function TopologyMapRenderer({
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
   const cosmosPlacement = useCosmosPlacement(vaultIdentity);
+  const flatRingMemory = useMemo(() => flatRingMemorySlot(vaultIdentity), [vaultIdentity]);
   const morph = useMapLayoutMorph({
     view: layoutView,
     reducedMotion,
@@ -272,6 +274,7 @@ export function TopologyMapRenderer({
           <OntologyMap
             nodes={nodes}
             edges={edges}
+            flatRingMemory={flatRingMemory}
             relationCaptions={mapRelationCaptions}
             reviewQuestionIds={mapReviewQuestionIds}
             walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}

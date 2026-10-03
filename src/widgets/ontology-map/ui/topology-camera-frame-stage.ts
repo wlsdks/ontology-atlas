@@ -20,6 +20,7 @@ import {
   type ZoomTier,
 } from "../model/tier-visibility";
 import { updatePulses, type Pulse } from "../render/edge-fireflies";
+import { lastDialFrame } from "../dial/frame/frame";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { FocusLeashPx } from "./topology-camera-math";
 import { stepTopologyPhysics } from "./topology-physics-step";
@@ -405,7 +406,7 @@ export function createCameraFrameStage(sources: CameraFrameStageSources) {
     // once.
     const realmTransitioning =
       realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
-    const nextZoomTier = classifyZoomTier(zoomRatio, tierRevealRef.current);
+    const nextZoomTier = lastDialFrame()?.tier ?? classifyZoomTier(zoomRatio, tierRevealRef.current);
     if (!realmTransitioning && nextZoomTier !== lastZoomTierRef.current) {
       lastZoomTierRef.current = nextZoomTier;
       onZoomTierChangeRef.current?.(nextZoomTier);

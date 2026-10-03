@@ -26,7 +26,11 @@ import {
 } from "./topology-overview-fit";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
-import { buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import type { FlatRingMemoryStore } from "./topology-loop-contract";
+import { createMeasureText } from "../dial/fit";
+import { readDialTokens } from "../dial/tokens";
+import type { DialLabels, DialWorldInput } from "../dial/types";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
@@ -76,6 +80,16 @@ interface Dependencies {
   fittedDataSourceKeyRef: RefObject<string | null>;
   galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
+  dialLabels: DialLabels | null;
+  flatRingMemory: FlatRingMemoryStore | null;
+}
+
+function dialWorldInput(labels: DialLabels | null, memory: FlatRingMemoryStore | null): DialWorldInput | null {
+  try {
+    return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory: memory?.current() ?? null };
+  } catch {
+    return null;
+  }
 }
 
 /** Construct the world and simulation; own initial fit, source changes, and disposal. */
@@ -127,6 +141,8 @@ export function useTopologyWorldLifecycle({
   fittedDataSourceKeyRef,
   galaxyModeCameraRef,
   pendingFlatCameraRef,
+  dialLabels,
+  flatRingMemory,
 }: Dependencies) {
   const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
@@ -158,6 +174,7 @@ export function useTopologyWorldLifecycle({
       height,
       overviewFitTokens(cameraTokens(tokens), galaxyRef.current),
       world.nodes.length,
+      galaxyRef.current ? undefined : dialOverviewFit(world),
     );
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
@@ -172,12 +189,14 @@ export function useTopologyWorldLifecycle({
       ? galaxyLayoutRef.current.bounds
       : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
+    const dialFit = galaxyRef.current ? undefined : dialOverviewFit(world);
     const target = computeOverviewCameraTarget(
       fitBounds,
       width,
       height,
       measuredTokens,
       world.nodes.length,
+      dialFit,
     );
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
@@ -192,6 +211,7 @@ export function useTopologyWorldLifecycle({
       height,
       measuredTokens,
       world.nodes.length,
+      dialFit,
     );
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
@@ -205,9 +225,9 @@ export function useTopologyWorldLifecycle({
     if (!userDrivenCameraRef.current && width > 0 && height > 0) {
       const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
       const measuredTokens = overviewFitTokens(cameraTokens(tokens), false);
-      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
       cameraTargetRef.current = target;
-      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
+      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
       if (still) {
         cameraRef.current = {
           x: { value: target.tx, velocity: 0 },
@@ -246,7 +266,9 @@ export function useTopologyWorldLifecycle({
     // The expansion structure decides the **seed coordinates**, so it is an
     // input to the world build and appears in the dep array below: changing the
     // preference rebuilds the world and children move to the new placement.
-    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure);
+    const ringMemory = dataSourceKey === null ? null : flatRingMemory;
+    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure, dialWorldInput(dialLabels, ringMemory));
+    if (world.dial) ringMemory?.write(world.dial.scene.memory);
     const galaxyLayout = computeGalaxyLayout(
       world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
       {
@@ -371,7 +393,7 @@ export function useTopologyWorldLifecycle({
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure]);
+  }, [nodes, edges, expand.structure, dialLabels]);
   useEffect(() => {
     if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
   }, [dataSourceKey, worldRef]);

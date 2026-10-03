@@ -1,4 +1,4 @@
-import type { DialMemory } from "@/widgets/ontology-map";
+import type { DialMemory, FlatRingMemoryStore } from "@/widgets/ontology-map";
 
 const MEMORY_PREFIX = "atlas.map.flat-rings.v1:";
 const MAX_RECORD_BYTES = 256 * 1024;
@@ -67,4 +67,23 @@ export function writeFlatRingMemory(vaultIdentity: string, memory: DialMemory): 
   } catch {
     return;
   }
+}
+
+export function flatRingMemorySlot(vaultIdentity: string): FlatRingMemoryStore {
+  let loaded = false;
+  let memory: DialMemory | null = null;
+  return {
+    current() {
+      if (!loaded) {
+        loaded = true;
+        memory = typeof window === "undefined" ? null : readFlatRingMemory(vaultIdentity);
+      }
+      return memory;
+    },
+    write(next) {
+      loaded = true;
+      memory = next;
+      writeFlatRingMemory(vaultIdentity, next);
+    },
+  };
 }

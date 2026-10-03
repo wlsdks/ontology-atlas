@@ -600,9 +600,10 @@ export function computeEffectiveCameraScaleMax(
   overviewEntryScale: number,
   maxZoomRatio: number,
   absoluteFallback: number,
+  contentScaleMax?: number,
 ): number {
   if (!(overviewEntryScale > 0)) return absoluteFallback;
-  return overviewEntryScale * maxZoomRatio;
+  return Math.max(overviewEntryScale * maxZoomRatio, contentScaleMax ?? 0);
 }
 
 /**

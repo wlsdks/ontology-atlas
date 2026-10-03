@@ -201,11 +201,12 @@ export interface TopologyWorld {
    */
   spineBounds: Bounds;
   dial?: DialWorld | null;
+  dialScaleMax?: number | null;
 }
 
 type DialBearing = { dial?: DialWorld | null };
 
-export const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
+const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
 
 export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number } | undefined {
   return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR } : undefined;
@@ -791,6 +792,9 @@ export function buildTopologyWorld(
     bounds: computeFullBounds(worldNodes, tokens),
     spineBounds: dial ? extentBounds(dial) : computeSpineBounds(worldNodes, tokens),
     dial,
+    dialScaleMax: dial && dialInput
+      ? Math.max(dialInput.tokens.reachCap / dialInput.tokens.pitch, dialInput.tokens.reachElement / dial.scene.medianElementPitch)
+      : null,
   };
 }
 
