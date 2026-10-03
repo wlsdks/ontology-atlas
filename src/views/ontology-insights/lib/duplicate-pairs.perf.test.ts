@@ -4,6 +4,8 @@ import {
   buildDuplicatePairs,
   buildSimilarityCandidates,
   scoreNodeSimilarity,
+  similarityTokens,
+  tokenSetJaccard,
 } from "./duplicate-pairs";
 
 /**
@@ -26,6 +28,55 @@ function node(id: string, kind: string, title: string, slug: string): KnowledgeG
 }
 
 describe("buildDuplicatePairs performance gate", () => {
+  it("avoids an exhaustive scan when only folder words connect 1000 unrelated documents", () => {
+    const nodes = Array.from({ length: 1000 }, (_, i) =>
+      node(`element:u${i}x`, "element", `u${i}a u${i}b u${i}c u${i}d u${i}e`, `elements/u${i}x`),
+    );
+    nodes.push(node("element:node-drawer", "element", "Node drawer", "elements/node-drawer"));
+    nodes.push(node("element:node-drawer-copy", "element", "Node drawer", "elements/node-drawer-copy"));
+    const candidates = [...buildSimilarityCandidates(nodes, []).values()].map(candidate => ({
+      ...candidate,
+      slugTokens: new Set(similarityTokens(candidate.slug)),
+      titleTokens: new Set(similarityTokens(candidate.title)),
+    }));
+    // Both sides tokenize once. This baseline isolates candidate pruning from the existing token cache.
+    const exhaustive = () => {
+      let suspects = 0;
+      for (let i = 0; i < candidates.length; i += 1) {
+        for (let j = i + 1; j < candidates.length; j += 1) {
+          const left = candidates[i];
+          const right = candidates[j];
+          const score = tokenSetJaccard(left.slugTokens, right.slugTokens) * 0.35
+            + tokenSetJaccard(left.titleTokens, right.titleTokens) * 0.35
+            + (left.kind && left.kind === right.kind ? 0.1 : 0)
+            + (left.domain && left.domain === right.domain ? 0.1 : 0)
+            + tokenSetJaccard(left.neighbors, right.neighbors) * 0.1;
+          if (Number(score.toFixed(6)) >= 0.6) suspects += 1;
+        }
+      }
+      return suspects;
+    };
+    buildDuplicatePairs(nodes, [], 3);
+    exhaustive();
+    let bestBuild = Infinity;
+    let bestExhaustive = Infinity;
+    for (let run = 0; run < 3; run += 1) {
+      let start = performance.now();
+      const result = buildDuplicatePairs(nodes, [], 3);
+      bestBuild = Math.min(bestBuild, performance.now() - start);
+      start = performance.now();
+      const count = exhaustive();
+      bestExhaustive = Math.min(bestExhaustive, performance.now() - start);
+      expect(result.suspectCount).toBe(1);
+      expect(result.rows[0].dissolveSlug).toBe("elements/node-drawer-copy");
+      expect(count).toBe(result.suspectCount);
+    }
+    const ratio = bestExhaustive / bestBuild;
+    console.info(`[duplicate-pairs] pruned=${bestBuild.toFixed(2)}ms cached-exhaustive=${bestExhaustive.toFixed(2)}ms ratio=${ratio.toFixed(2)}`);
+    // A relative comparison on the same quiet runner; the pre-pruning implementation must fail this gate.
+    expect(ratio, "Folder-only overlap should not trigger an exhaustive duplicate scan").toBeGreaterThan(3);
+  });
+
   it("finishes without per-pair retokenizing when a shared folder word buckets all 600 nodes (about 180k pairs)", () => {
     const N = 600;
     const nodes: KnowledgeGraphNode[] = [];
