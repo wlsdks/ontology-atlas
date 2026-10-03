@@ -1574,6 +1574,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     impactLensActive: dialProps?.impactLens === true,
     focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",
     focusedRelationsCaptioned: focusedNodeId !== null && (relationCaptions?.size ?? 0) > 0,
+    // Under a focus the hover is a panel row brushing the map; an element has no dial glyph to point with.
+    brushedIsElement: focusedNodeId !== null && hoveredNodeId !== null && world.nodeById.get(hoveredNodeId)?.kind === "element",
   });
   if (!dialOwns) clearDialFrame();
   else if (paintOwnedDial(params, ctx, labelScale, dialProps)) return;

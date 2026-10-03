@@ -18,6 +18,7 @@ import type {
   DialRowPick,
   DialScene,
   DialTokens,
+  GlyphMark,
   Point,
 } from "../types";
 
@@ -341,6 +342,11 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   const flows = buildFlowMarks({ ...flowBase, occupied: flowOccupied, avoidTexts: textBoxes, chords }, out);
 
   const measured = input.evidence?.measured === true;
+  // A hover the attention does not follow: under a focus the only hover is a panel
+  // row brushing the map, and the dial points at that capability with its glyph.
+  const brushed = input.hoveredNodeId !== null && input.hoveredNodeId !== attn.capabilityId && model.capabilityById.has(input.hoveredNodeId)
+    ? input.hoveredNodeId
+    : null;
   let drawnElements = 0;
   let elementSquares = 0;
   if (capsDrawn) {
@@ -366,7 +372,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         const kept = attn.capabilityId !== null ? it.id === attn.capabilityId : own;
         const dimmed = attn.domainId !== null && !kept && !isNeed && !isUser && !isRelated;
         alphas.set(it.id, capAlpha > DRAWN_ALPHA ? (dimmed ? restAlpha : 1) : 0);
-        if (it.id === attn.capabilityId) continue;
+        if (it.id === attn.capabilityId || it.id === brushed) continue;
         let rim = dimmed ? rimDim : rimRest;
         let dashed = false;
         if (isNeed) rim = inks.needs;
@@ -448,7 +454,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       continue;
     }
     const attended = attn.domainId === c.domainId;
-    const dimmed = receded(attn, c.domainId);
+    const dimmed = receded(attn, c.domainId) && input.hoveredNodeId !== c.domainId;
     const stale = measured ? input.evidence!.staleByDomain.get(c.domainId) ?? 0 : 0;
     out.glyphs.push({
       id: c.domainId, kind: "domain", x: chip.x, y: chip.y, r: chip.r,
@@ -460,19 +466,20 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     picks.push({ id: c.domainId, x: chip.x, y: chip.y, r: chip.r });
     alphas.set(c.domainId, dimmed ? restAlpha : 1);
   }
-  if (attn.capabilityId) {
-    const d = discs.get(attn.capabilityId);
-    if (d) {
-      const r = Math.max(d.r, tokens.discGlyphPx);
-      out.glyphs.push({
-        id: attn.capabilityId, kind: "capability", x: d.x, y: d.y, r, egoState: attn.selected ? "center" : "normal",
-        fill: null, stroke: null, hovered: input.hoveredNodeId === attn.capabilityId, agentFocus: input.agentFocusNodeId === attn.capabilityId,
-        selectionPulse: pulseOf(attn.capabilityId), count: null, stalePip: measured && input.evidence!.stateOf(attn.capabilityId) === "stale",
-      });
-      picks.push({ id: attn.capabilityId, x: d.x, y: d.y, r });
-      alphas.set(attn.capabilityId, 1);
-    }
-  }
+  const capabilityGlyph = (id: string, egoState: GlyphMark["egoState"], stroke: string | null) => {
+    const d = discs.get(id);
+    if (!d) return;
+    const r = Math.max(d.r, tokens.discGlyphPx);
+    out.glyphs.push({
+      id, kind: "capability", x: d.x, y: d.y, r, egoState,
+      fill: null, stroke, hovered: input.hoveredNodeId === id, agentFocus: input.agentFocusNodeId === id,
+      selectionPulse: pulseOf(id), count: null, stalePip: measured && input.evidence!.stateOf(id) === "stale",
+    });
+    picks.push({ id, x: d.x, y: d.y, r });
+    alphas.set(id, 1);
+  };
+  if (attn.capabilityId) capabilityGlyph(attn.capabilityId, attn.selected ? "center" : "normal", null);
+  if (brushed) capabilityGlyph(brushed, "normal", attn.needsCaps.has(brushed) ? inks.needs : attn.usedByCaps.has(brushed) ? inks.usedBy : null);
   for (const id of model.orphanIds) if (!alphas.has(id)) alphas.set(id, 0);
 
   const discsDrawn = capAlpha > DRAWN_ALPHA ? [...discs.keys()].filter((id) => model.capabilityById.has(id)).length : 0;

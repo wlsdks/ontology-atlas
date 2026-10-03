@@ -102,6 +102,7 @@ interface RunOptions {
   appearOf?: (id: string) => number;
   relates?: [string, string][];
   hoverId?: string | null;
+  brushId?: string | null;
 }
 
 function run(o: RunOptions = {}) {
@@ -117,7 +118,7 @@ function run(o: RunOptions = {}) {
     scale, zoomRatio: 1, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
-    hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
+    hoveredNodeId: o.brushId ?? o.hoverId ?? null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
     disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), TOKENS), ...o.disclosure },
   };
   const out = emptyDialFrameMarks();
@@ -195,6 +196,27 @@ describe("buildDialMarks", () => {
     expect(caps.map((g) => g.id)).toEqual(["d3c1"]);
     expect(caps[0]!.egoState).toBe("center");
     expect(focused.out.discs.some((d) => d.id === "d3c1")).toBe(false);
+  });
+
+  it("points at a capability a panel row brushes under a focus, and lets go with the row", () => {
+    const focused = run({ focusId: "d0" });
+    const brushed = run({ focusId: "d0", brushId: "d0c1" });
+    const glyph = brushed.out.glyphs.find((g) => g.id === "d0c1");
+    expect(glyph).toMatchObject({ kind: "capability", hovered: true, egoState: "normal" });
+    expect(brushed.out.discs.some((d) => d.id === "d0c1")).toBe(false);
+    expect(brushed.result.alphas.get("d0c1")).toBe(1);
+    expect(brushed.input.attention.key).toBe(focused.input.attention.key);
+    expect(focused.out.glyphs.some((g) => g.id === "d0c1")).toBe(false);
+    expect(focused.out.discs.some((d) => d.id === "d0c1")).toBe(true);
+  });
+
+  it("lifts a receded chip a panel row brushes, so its hover ring can show", () => {
+    const { model } = run({ focusId: "d0" });
+    const partners = resolveDialAttention(model, null, "d0").partnerDomains;
+    const quiet = model.domains.map((d) => d.id).find((id) => id !== "d0" && !partners.has(id))!;
+    expect(run({ focusId: "d0" }).out.glyphs.find((g) => g.id === quiet)!.egoState).toBe("dim");
+    const brushed = run({ focusId: "d0", brushId: quiet }).out.glyphs.find((g) => g.id === quiet)!;
+    expect(brushed).toMatchObject({ hovered: true, egoState: "normal", fill: null });
   });
 
   it("shows the ledger only when in-place names leave some unnamed below reach-cap", () => {

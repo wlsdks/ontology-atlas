@@ -323,6 +323,7 @@ export function createPresentationFrameStage({
     realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset; } | null,
     realmDustParallax: number,
     realmOutsideReturnAlphaById: Map<string, number> | null,
+    captionGateFold: ReadonlySet<string> | null = null,
   ) {
 
     const modeShowsEveryNode =
@@ -529,7 +530,7 @@ export function createPresentationFrameStage({
       selectedEdge: selectedEdgeRef.current,
       relationCaptions: annotationRef.current.captions,
       // A view that draws every concept still captions only what the flat map would.
-      captionFoldedIds: modeShowsEveryNode ? frameClusteredIds : null,
+      captionFoldedIds: modeShowsEveryNode ? (captionGateFold ?? frameClusteredIds) : null,
       reviewQuestionIds: annotationRef.current.questions,
       previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
         ? {

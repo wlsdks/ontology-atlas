@@ -111,13 +111,13 @@ afterEach(() => clearDialFrame());
 describe("dialOwnsFlatPaint", () => {
   const owning: DialOwnershipInput = {
     hasDial: true, galaxyOn: false, realmActive: false, edgeSelected: false, edgePreviewed: false,
-    trailLensOpen: false, spotlightActive: false, pathLensActive: false, impactLensActive: false, focusedIsElement: false, focusedRelationsCaptioned: false,
+    trailLensOpen: false, spotlightActive: false, pathLensActive: false, impactLensActive: false, focusedIsElement: false, focusedRelationsCaptioned: false, brushedIsElement: false,
   };
 
   it("owns Flat only when the dial exists and nothing else claims the paint", () => {
     expect(dialOwnsFlatPaint(owning)).toBe(true);
     expect(dialOwnsFlatPaint({ ...owning, hasDial: false })).toBe(false);
-    for (const key of ["galaxyOn", "realmActive", "edgeSelected", "edgePreviewed", "trailLensOpen", "spotlightActive", "pathLensActive", "impactLensActive", "focusedIsElement", "focusedRelationsCaptioned"] as const) {
+    for (const key of ["galaxyOn", "realmActive", "edgeSelected", "edgePreviewed", "trailLensOpen", "spotlightActive", "pathLensActive", "impactLensActive", "focusedIsElement", "focusedRelationsCaptioned", "brushedIsElement"] as const) {
       expect(dialOwnsFlatPaint({ ...owning, [key]: true }), key).toBe(false);
     }
   });
