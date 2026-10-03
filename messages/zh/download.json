@@ -71,6 +71,25 @@
   "agentsSub": "Atlas 会在这台电脑上找到 Claude Agent 和 Codex，两者都能在应用自带的聊天中工作。读取直接通过；每次 Atlas 写入都要等你允许一次。无需 Atlas 账号，也无需新的 API key。",
   "acpSceneTab": "应用内聊天 · 写入等你确认",
   "acpUserLabel": "你",
+  "change": {
+    "eyebrow": "After a commit",
+    "title": "When your agent commits, you see <key>which meanings to recheck</key>",
+    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app's Insights lists that concept with the file and both dates. Reread it yourself or ask your agent to; its answer waits for you.",
+    "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
+    "agentCommit": "Your agent's commit",
+    "filesChanged": "{count, plural, other {# files changed}}",
+    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark Insights gives a meaning whose code moved, and each file's path moves into the Insights brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example."
+  },
+  "start": {
+    "eyebrow": "After you install",
+    "title": "Open your project, and <key>let your agent draft the map</key>",
+    "sub": "The app opens by asking for a folder. Open your project's, and the first card offers to have your coding agent read the code and draft the map. Nothing is written until you allow it, and what is written is Markdown in that folder, never your code.",
+    "label": "Illustration · the app's own screens and words, drawn small",
+    "step1": "The first screen asks for a folder.",
+    "step2": "In a code folder, the first card offers your agent's draft.",
+    "step3": "The draft waits for your answer, then fills the map.",
+    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and Insights lists them as “{unreviewed}”."
+  },
   "acpUserMsg": "支付功能依赖用户认证；认证一旦宕机，支付也会跟着宕机",
   "acpToolCaption": "智能体的 Atlas 写入请求 · 运行前需要审阅",
   "acpToolWhy": "用户备注：支付功能依赖用户认证，认证宕机时支付也会宕机（2026-08-16）",

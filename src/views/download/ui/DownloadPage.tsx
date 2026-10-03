@@ -35,6 +35,8 @@ import { HeroAtlas } from './HeroAtlas';
 import { ScreensStage } from './ScreensStage';
 import { AcpChatScene } from './AcpChatScene';
 import { ConductionSection } from './ConductionFigure';
+import { ChangeSection } from './ChangeFigure';
+import { StartSection } from './StartFigure';
 import { useInViewOnce } from '../lib/use-in-view-once';
 import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
 import type { StageGraph } from '../lib/stage-graph';
@@ -94,8 +96,10 @@ export function DownloadPage() {
         />
         <ConductionSection graph={graph} />
         <DemoSection />
+        <ChangeSection graph={graph} />
         <EvidenceSection graph={graph} />
         <ScreensSection />
+        <StartSection />
         <AgentSection />
 
         <div
