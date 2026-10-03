@@ -95,7 +95,7 @@ test.describe("download — every drawing stops out of view", () => {
 
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("DOM.getDocument", { depth: -1 });
-    const tree = new Promise<{ layers?: { backendNodeId?: number }[] }>((resolve) =>
+    const tree = new Promise<{ layers?: { layerId: string; backendNodeId?: number }[] }>((resolve) =>
       cdp.once("LayerTree.layerTreeDidChange", resolve),
     );
     await cdp.send("LayerTree.enable");
@@ -112,7 +112,10 @@ test.describe("download — every drawing stops out of view", () => {
           "function () { const f = document.querySelector('[data-testid=\"download-conduction-figure\"]'); return f && f.contains(this) ? (this.getAttribute && (this.getAttribute('data-conduction-part') || this.tagName)) || 'node' : null; }",
         returnByValue: true,
       });
-      if (result.value) owned.push(String(result.value));
+      if (!result.value) continue;
+      const { compositingReasonIds = [] } = await cdp.send("LayerTree.compositingReasons", { layerId: layer.layerId });
+      const held = compositingReasonIds.filter((reason) => !/overlap|squash|root|scroll|clip/i.test(reason));
+      if (held.length > 0) owned.push(`${String(result.value)}: ${held.join(",")}`);
     }
     expect(layers.length, "no layer tree came back — this spec would pass idle").toBeGreaterThan(0);
     expect(owned, "the resting figure still holds a composited layer").toEqual([]);
