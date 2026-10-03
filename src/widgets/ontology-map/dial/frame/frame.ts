@@ -39,6 +39,7 @@ export function dialOwnsFlatPaint(input: DialOwnershipInput): boolean {
     && !input.trailLensOpen
     && !input.spotlightActive
     && !input.pathLensActive
+    && !input.impactLensActive
     && !input.focusedIsElement;
 }
 

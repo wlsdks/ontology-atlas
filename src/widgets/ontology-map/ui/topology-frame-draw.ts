@@ -1206,7 +1206,7 @@ export interface FrameDrawParams {
    * `trailLensIds` is set.
    */
   trailLensRamp?: number;
-  dial?: Pick<FlatDialFrameProps, "labels" | "evidence"> | null;
+  dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -1578,6 +1578,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     trailLensOpen: trailLensKeepIds !== null,
     spotlightActive: spotlightIds !== null && spotlightIds.size > 0,
     pathLensActive: pathEdgeIds !== null && pathEdgeIds.size > 0,
+    impactLensActive: dialProps?.impactLens === true,
     focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",
   });
   if (!dialOwns) clearDialFrame();
@@ -4265,7 +4266,7 @@ function paintOwnedDial(
   params: FrameDrawParams,
   ctx: CanvasRenderingContext2D,
   labelScale: number,
-  dialProps: Pick<FlatDialFrameProps, "labels" | "evidence"> | null,
+  dialProps: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null,
 ): boolean {
   const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse } = params;
   const dial = world.dial;

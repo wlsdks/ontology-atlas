@@ -117,6 +117,7 @@ export interface TopologyMapRendererProps {
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "constellationFitToken" | "routedConstellation" | "spotlightExpandedParents">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "renderedIndexState">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "openCreateNode">;
+  impactLensActive: boolean;
 }
 
 export function TopologyMapRenderer({
@@ -125,7 +126,7 @@ export function TopologyMapRenderer({
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent,
+  topologyIndexPresentation, topologyCreateIntent, impactLensActive,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, galaxy, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
@@ -287,6 +288,7 @@ export function TopologyMapRenderer({
             flatRingMemory={flatRingMemory}
             dialLabels={dialLabels}
             evidenceStates={evidenceStates}
+            impactLens={impactLensActive}
             onFlatDialChange={onFlatDialChange}
             loadProgress={arriving ? loadProgress : null}
             relationCaptions={mapRelationCaptions}

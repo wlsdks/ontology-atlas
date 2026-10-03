@@ -390,6 +390,7 @@ export interface OntologyMapProps {
   onHiddenDependenciesChange?: (count: number) => void;
   dialLabels?: DialLabels | null;
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
+  impactLens?: boolean;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
   loadProgress?: { read: number; total: number } | null;
@@ -619,6 +620,7 @@ export function OntologyMap(props: OntologyMapProps) {
       onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       dialLabels: props.dialLabels ?? null,
       evidenceStates: props.evidenceStates ?? null,
+      impactLens: props.impactLens ?? false,
       onFlatDialChange: props.onFlatDialChange,
       flatRingMemory: props.flatRingMemory ?? null,
       loadProgress: props.loadProgress ?? null,
