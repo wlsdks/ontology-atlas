@@ -597,22 +597,26 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
-  // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
-  // the density gate collapses (under a parent with more than 12 children) hides
-  // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
-  // coordinates are still computed for everything, so there is no coordinate hole
-  // when a tier opens or a chip expands.
-  //
-  // `expandedParents` is deliberately not passed — the world is rebuilt only when
-  // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
-  // every expansion resets the entry ramps and springs, making the screen jump.
-  // Expanded children appear at their seed positions, and local re-relaxation is a
-  // later slice's job.
-  const relaxScope = computeRelaxScope(layoutInput);
-  // Feed the real §2.3 node radii into the deterministic de-pileup so its
-  // collision min-distance matches what actually gets drawn.
-  const pointById = new Map(
-    computeConcentricLayout(layoutInput, rings, {
+  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
+  const pointById = new Map<string, { x: number; y: number }>();
+  if (dial && nodes.every((n) => dial.scene.positions.has(n.id))) {
+    for (const n of nodes) pointById.set(n.id, dial.scene.positions.get(n.id)!);
+  } else {
+    // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
+    // the density gate collapses (under a parent with more than 12 children) hides
+    // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
+    // coordinates are still computed for everything, so there is no coordinate hole
+    // when a tier opens or a chip expands.
+    //
+    // `expandedParents` is deliberately not passed — the world is rebuilt only when
+    // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
+    // every expansion resets the entry ramps and springs, making the screen jump.
+    // Expanded children appear at their seed positions, and local re-relaxation is a
+    // later slice's job.
+    const relaxScope = computeRelaxScope(layoutInput);
+    // Feed the real §2.3 node radii into the deterministic de-pileup so its
+    // collision min-distance matches what actually gets drawn.
+    const seeded = computeConcentricLayout(layoutInput, rings, {
       radii: {
         project: tokens.radiusProject,
         domain: tokens.radiusDomain,
@@ -621,15 +625,8 @@ export function buildTopologyWorld(
       },
       relaxScope,
       expandStructure,
-    }).map((p) => [p.id, p]),
-  );
-
-  const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
-  if (dial) {
-    for (const [id, p] of dial.scene.positions) {
-      const seeded = pointById.get(id);
-      if (seeded) pointById.set(id, { ...seeded, x: p.x, y: p.y });
-    }
+    });
+    for (const p of seeded) pointById.set(p.id, dial?.scene.positions.get(p.id) ?? p);
   }
 
   const worldNodes: WorldNode[] = nodes.map((n) => {

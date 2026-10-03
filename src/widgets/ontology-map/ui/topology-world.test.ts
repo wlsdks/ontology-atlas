@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { computeConcentricLayout } from "../model/layout";
 import { resolveDialTokens } from "../dial/tokens";
 import type { DialMemory, DialWorldInput } from "../dial/types";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
@@ -22,6 +23,11 @@ import {
 } from "./topology-world";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { computeTopologyClusterState } from "./topology-cluster-state";
+
+vi.mock("../model/layout", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../model/layout")>();
+  return { ...actual, computeConcentricLayout: vi.fn(actual.computeConcentricLayout) };
+});
 
 /**
  * Spine bounds (fit-fix): the overview camera must fit to the level-0 spine
@@ -562,6 +568,14 @@ describe("buildTopologyWorld with the Flat dial", () => {
     recomputeWorldGeometry(world, fullTokens);
     expect(world.spineBounds).toEqual(extent);
     expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.02 });
+  });
+
+  it("spends nothing on the classic layout when the scene places every node", () => {
+    vi.mocked(computeConcentricLayout).mockClear();
+    buildTopologyWorld(nodes, edges, fullTokens, "disc", input(null));
+    expect(computeConcentricLayout).not.toHaveBeenCalled();
+    buildTopologyWorld(nodes, edges, fullTokens);
+    expect(computeConcentricLayout).toHaveBeenCalledOnce();
   });
 
   it("leaves the world as it was without dial input", () => {

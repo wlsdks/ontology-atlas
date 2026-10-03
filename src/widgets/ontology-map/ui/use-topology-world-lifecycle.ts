@@ -341,12 +341,12 @@ export function useTopologyWorldLifecycle({
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
     // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
-    // Seed the force sim off the concentric layout (spatial memory) and warm it
-    // so it settles into an organic layout that un-piles the fan-arcs.
-    simRef.current = createForceSimulation(
-      world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
-      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-    );
+    simRef.current = null;
+    const simNodes = world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y }));
+    const simEdges = world.edges.map((e) => ({ source: e.sourceId, target: e.targetId }));
+    const simTask = setTimeout(() => {
+      if (worldRef.current === world && simRef.current === null) simRef.current = createForceSimulation(simNodes, simEdges);
+    }, 0);
     nodeDragRef.current = null;
     // No load-time settle: the sim stays cold until a node is pin-dragged. The
     // static default is the deterministic de-piled grid from `topology-world`.
@@ -413,6 +413,7 @@ export function useTopologyWorldLifecycle({
     trySnapInitialCamera(tokens);
     // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
+    return () => clearTimeout(simTask);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
   useEffect(() => {
