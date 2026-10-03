@@ -44,19 +44,22 @@ describe("chooseLayoutSwitch", () => {
     }
   });
 
-  it("leaves the map's own four views to their native morphs", () => {
-    for (const from of ["flat", "galaxy", "strata", "coupling"] as const) {
-      for (const to of ["flat", "galaxy", "strata", "coupling"] as const) {
+  it("leaves the map's own three views to their native morphs", () => {
+    for (const from of ["flat", "strata", "coupling"] as const) {
+      for (const to of ["flat", "strata", "coupling"] as const) {
         if (from !== to) expect(chooseLayoutSwitch({ ...base, from, to })).toBe("native");
       }
     }
   });
 
-  it("carries ghosts through every pair with Territories or Hex whose targets are ready", () => {
+  it("carries ghosts through every pair with Territories, Hex or Galaxy whose targets are ready", () => {
     expect(chooseLayoutSwitch({ ...base, from: "flat", to: "hex" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, from: "hex", to: "territories" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, from: "territories", to: "galaxy" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, from: "strata", to: "territories" })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "galaxy" })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, from: "galaxy", to: "flat" })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, from: "galaxy", to: "strata" })).toBe("ghost");
   });
 
   it("crossfades into and out of Coupling, and into the map's views past their measured ceilings", () => {

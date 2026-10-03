@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type {} from "./atlas-map-probe";
+import { waitForCosmosStill } from "./atlas-cosmos-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapSettled, waitForMapStill } from "./settle";
 
@@ -125,6 +126,46 @@ test("at 0.5x drag speed a 200 px drag moves the hex board 100 px", async ({ pag
   await page.mouse.up();
   expect(moved.x - start.x).toBeCloseTo(DRAG_PX * 0.5, 0);
   expect(moved.y).toBe(start.y);
+});
+
+test("at 2x speeds a 200 px drag moves Galaxy 400 px and = zooms it by 1.5625", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 860 });
+  await seedFirstRunSeen(page);
+  await seedSpeeds(page, { drag: "2", zoom: "2" });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/ko/topology/?view=galaxy&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => window.__atlasCosmos?.layout()?.galaxies.length ?? 0), { timeout: 20_000 }).toBeGreaterThan(0);
+  await waitForCosmosStill(page);
+  const from = await page.evaluate((selector) => {
+    const canvas = document.querySelector(selector)!;
+    const box = canvas.getBoundingClientRect();
+    const room = window.__atlasCosmos!.room();
+    for (let fy = 0.3; fy <= 0.7; fy += 0.05) {
+      for (let fx = 0.2; fx <= 0.6; fx += 0.05) {
+        const x = box.x + room.x + room.width * fx;
+        const y = box.y + room.y + room.height * fy;
+        if (document.elementFromPoint(x, y) === canvas && document.elementFromPoint(x + 200, y) === canvas) return { x, y };
+      }
+    }
+    return null;
+  }, CANVAS);
+  expect(from, "no open stretch of sky to start a pan on").not.toBeNull();
+  const before = await page.evaluate(() => window.__atlasCosmos!.camera());
+  await page.mouse.move(from!.x, from!.y);
+  await page.mouse.down();
+  await page.mouse.move(from!.x + DRAG_PX, from!.y, { steps: 20 });
+  const held = await page.evaluate(() => ({ camera: window.__atlasCosmos!.camera(), kind: window.__atlasCosmos!.interaction().kind }));
+  await page.mouse.up();
+  expect(held.kind).toBe("pan");
+  expect((before.x - held.camera.x) * before.scale).toBeCloseTo(DRAG_PX * 2, 0);
+
+  await waitForCosmosStill(page);
+  const rest = await page.evaluate(() => window.__atlasCosmos!.camera());
+  await page.locator(CANVAS).focus();
+  await page.keyboard.press("=");
+  await waitForCosmosStill(page);
+  const zoomed = await page.evaluate(() => window.__atlasCosmos!.camera());
+  expect(zoomed.scale / rest.scale).toBeCloseTo(1.25 ** 2, 3);
 });
 
 async function pinchWithGestures(page: Page, selector: string, at: { x: number; y: number }, scale: number) {

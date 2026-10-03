@@ -1,0 +1,399 @@
+import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { isImeComposing } from "@/shared/lib/ime-composition";
+import { listenForGesturePinch } from "../interaction/gesture-pinch";
+import { readHexRoom } from "../morph/hex-marks";
+import type { OntologyMapEdge } from "../ui/OntologyMap";
+import { readOntologyMapTokensOrNull } from "../ui/topology-read-tokens";
+import { applyHaze, createHazeState, hazeWindowStart, stepHaze } from "./cosmos-ambient";
+import { CosmosArrivalRun } from "./cosmos-arrival";
+import { CosmosCameraRig, cosmosMarks, framingCamera, galaxyFitScale, liveBandRadius, memberBounds, posedPoint } from "./cosmos-camera";
+import { CosmosCameraRestWatch, CosmosRevealClock, relationsByConcept, surfaceSize } from "./cosmos-engine-watch";
+import { CosmosHitIndex, litHit } from "./cosmos-hit";
+import { installCosmosProbe, writeProbeFrame } from "./cosmos-probe";
+import type { CosmosArrivalMode, CosmosBand, CosmosFrameStats, CosmosInks, CosmosLens, CosmosPaintRecord, CosmosRelation, CosmosTrail, GalaxyPose } from "./cosmos-types";
+import { cosmosKeyAction } from "./cosmos-walk";
+import { CosmosBitmapCache, galaxyKey } from "./draw/cosmos-bitmap-cache";
+import { drawCosmosFrame } from "./draw/cosmos-frame";
+import { registerCosmosLabels } from "./draw/cosmos-labels";
+import { buildDeepField } from "./draw/cosmos-paint";
+import { RELATION_REVEAL_MS } from "./draw/cosmos-relations";
+import type { CosmosLayout } from "./layout/cosmos-layout";
+
+interface CosmosEngineOptions {
+  onSelect?: (id: string) => void;
+  onPaneClick?: () => void;
+  onDrawn?: (count: number) => void;
+  onBand?: (band: CosmosBand) => void;
+  onRest?: () => void;
+  onCameraRest?: () => void;
+  onWalkDeadEnd?: () => void;
+  onContextMenuNode?: (id: string, position: { x: number; y: number }) => void;
+  onContextMenuPane?: (position: { x: number; y: number }) => void;
+  reducedMotion: boolean;
+  navigationSpeed: MapNavigationSpeed;
+}
+
+const CHROME_SETTLE_MS = 450;
+const APPROACH_READS_MS = [60, 420];
+const FAILED_FRAME_LIMIT = 3;
+
+export class CosmosEngine {
+  private readonly ctx: CanvasRenderingContext2D;
+  private dpr = 1;
+  width = 0;
+  height = 0;
+  readonly rig = new CosmosCameraRig();
+  private readonly hits = new CosmosHitIndex();
+  layout: CosmosLayout | null = null;
+  private inks: CosmosInks | null = null;
+  poses: GalaxyPose[] = [];
+  cache = new CosmosBitmapCache();
+  private deepField: HTMLCanvasElement | null = null;
+  raf = 0;
+  private lastNow = 0;
+  readonly arrival = new CosmosArrivalRun();
+  readonly haze = createHazeState();
+  hazeAwake = false;
+  private band: CosmosBand | null = null;
+  private lens: CosmosLens | null = null;
+  private trail: CosmosTrail | null = null;
+  private trailActive: { readonly current: boolean } | null = null;
+  paintLog: CosmosPaintRecord[] | null = null;
+  private readonly probed = new URLSearchParams(window.location.search).has("e2e");
+  private lastInput = 0;
+  private lastPointer: { x: number; y: number } | null = null;
+  private hoverId: string | null = null;
+  private hoverGalaxy = -1;
+  selectedId: string | null = null;
+  private relations = new Map<string, CosmosRelation[]>();
+  lastStats: CosmosFrameStats | null = null;
+  frames = 0;
+  frameLog: { t: number; ms: number; builds: number; firstDraws: number; why: number; sinceInput: number }[] = [];
+  private drawnReported = false;
+  private failures = 0;
+  private roomHeld = false;
+  private readonly reveal = new CosmosRevealClock();
+  private readonly cameraRest = new CosmosCameraRestWatch();
+  private approachTimers: number[] = [];
+  private settleTimer = 0;
+  private readonly cleanups: (() => void)[] = [];
+
+  constructor(private readonly canvas: HTMLCanvasElement, private options: CosmosEngineOptions) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("cosmos: no 2d context");
+    this.ctx = ctx;
+    this.rig.reducedMotion = options.reducedMotion;
+    const listen = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void, opts?: AddEventListenerOptions, target: EventTarget = canvas) => {
+      target.addEventListener(type, fn as EventListener, opts);
+      this.cleanups.push(() => target.removeEventListener(type, fn as EventListener, opts));
+    };
+    listen("pointerdown", (e) => this.onPointerDown(e));
+    listen("blur", () => delete canvas.dataset.keyboardFocus);
+    listen("pointermove", (e) => this.onPointerMove(e));
+    listen("pointerup", (e) => this.onPointerUp(e));
+    listen("pointercancel", () => this.rig.cancelDrag());
+    listen("pointerleave", () => this.setHover(null, -1));
+    listen("wheel", (e) => this.onWheel(e), { passive: false });
+    listen("keydown", (e) => this.onKey(e));
+    listen("contextmenu", (e) => this.onContextMenu(e));
+    listen("animationend", () => this.rig.roomFinal || this.selectedId !== null || this.resize(), undefined, document);
+    this.cleanups.push(listenForGesturePinch(canvas, (ratio, x, y) => this.zoomAt(this.local(x, y), ratio ** this.options.navigationSpeed.zoom, false)));
+    const resize = new ResizeObserver(() => this.resize());
+    resize.observe(canvas);
+    const chrome = new MutationObserver(() => this.readWhenSettled());
+    chrome.observe(document.documentElement, { attributes: true, attributeFilter: ["data-topology-index"] });
+    this.cleanups.push(() => {
+      resize.disconnect();
+      chrome.disconnect();
+      window.clearTimeout(this.settleTimer);
+      this.clearApproach();
+    });
+    this.resize();
+    if (this.probed) this.cleanups.push(installCosmosProbe(this));
+  }
+
+  destroy(): void {
+    cancelAnimationFrame(this.raf);
+    for (const fn of this.cleanups) fn();
+    this.cache.clear();
+  }
+
+  setOptions(options: Partial<CosmosEngineOptions>): void {
+    this.options = { ...this.options, ...options };
+    this.rig.reducedMotion = this.options.reducedMotion;
+    this.requestFrame();
+  }
+
+  setInks(inks: CosmosInks): void {
+    this.inks = inks;
+    this.deepField = buildDeepField(inks);
+    this.cache = new CosmosBitmapCache();
+    this.requestFrame();
+  }
+
+  setLayout(layout: CosmosLayout, labels: ReadonlyMap<string, string>, edges: readonly OntologyMapEdge[], arrival: CosmosArrivalMode): void {
+    this.layout = layout;
+    registerCosmosLabels(layout, labels);
+    this.relations = relationsByConcept(edges);
+    const kept = new Set(layout.galaxies.map(galaxyKey));
+    this.cache.retain(kept);
+    this.hits.retain(kept);
+    this.poses = layout.galaxies.map((g) => ({ x: g.x, y: g.y, theta: 0, wispTheta: 0, wispLight: 1, presence: 1, condense: 1 }));
+    const starts = arrival !== "none" && !this.options.reducedMotion && layout.settle.keyframes.length > 0;
+    this.rig.setBounds(layout.bounds, arrival !== "none" || (this.arrival.active !== null && !this.rig.user));
+    if (starts) this.arrival.begin(arrival, performance.now());
+    this.drawnReported = false;
+    this.requestFrame();
+  }
+
+  setSelected(id: string | null): void {
+    const previous = this.selectedId;
+    this.selectedId = id;
+    this.clearApproach();
+    if (id === null) {
+      if (previous !== null) this.rig.releaseReturn(performance.now());
+      this.readWhenSettled();
+    } else if (id !== previous) {
+      if (previous === null) this.rig.holdReturn();
+      this.approachTimers = APPROACH_READS_MS.map((ms) => window.setTimeout(() => this.approach(id), ms));
+    }
+    this.requestFrame();
+  }
+
+  setLens(lens: CosmosLens | null, trail: CosmosTrail | null, trailActive: { readonly current: boolean } | null = null): void {
+    [this.lens, this.trail, this.trailActive] = [lens, trail, trailActive];
+    this.requestFrame();
+  }
+
+  private activeTrail(): CosmosTrail | null {
+    return this.trail && this.trailActive?.current === true ? this.trail : null;
+  }
+
+  requestFit(): void {
+    if (!this.lens?.memberIds.size) this.overview();
+    else this.requestLensFit();
+  }
+
+  requestLensFit(): void {
+    const b = this.layout && this.lens && memberBounds(this.layout, this.poses, this.lens.memberIds);
+    if (!b) return;
+    this.rig.frame(framingCamera(b, this.rig.room, this.rig.overviewScale), performance.now());
+    this.requestFrame();
+  }
+
+  marks() {
+    return this.layout ? cosmosMarks(this.layout, this.poses, this.rig.camera, this.rig.room) : [];
+  }
+
+  requestFrame(): void {
+    if (this.raf) return;
+    this.raf = requestAnimationFrame((now) => this.frame(now));
+  }
+
+  private resize(glide = false): void {
+    const { width, height, final } = surfaceSize(this.canvas);
+    const dpr = window.devicePixelRatio || 1;
+    if (width !== this.width || height !== this.height || dpr !== this.dpr) {
+      [this.width, this.height, this.dpr] = [width, height, dpr];
+      this.canvas.width = Math.round(width * dpr);
+      this.canvas.height = Math.round(height * dpr);
+    }
+    if ((this.roomHeld = this.arrival.active !== null)) return this.requestFrame();
+    if (this.selectedId === null) this.rig.readRoom(readHexRoom(this.canvas, width, height), { final, keepView: glide });
+    if (!this.rig.user) this.rig.fit(glide, performance.now());
+    this.requestFrame();
+  }
+
+  private readWhenSettled(): void {
+    window.clearTimeout(this.settleTimer);
+    this.settleTimer = window.setTimeout(() => this.resize(), CHROME_SETTLE_MS);
+  }
+
+  overview(): void {
+    this.rig.overview(performance.now());
+    this.requestFrame();
+  }
+
+  flyToGalaxy(index: number): void {
+    const g = this.layout?.galaxies[index];
+    if (!g) return;
+    this.rig.frame({ x: this.poses[index]!.x, y: this.poses[index]!.y, scale: galaxyFitScale(g, this.rig.room) }, performance.now());
+    this.requestFrame();
+  }
+
+  private approach(id: string): void {
+    const { layout } = this;
+    const point = layout && this.selectedId === id && posedPoint(layout, this.poses, id);
+    if (!point) return;
+    this.rig.approach(point, layout.galaxies[layout.galaxyOf.get(id) ?? -1] ?? null, readHexRoom(this.canvas, this.width, this.height), performance.now());
+    this.requestFrame();
+  }
+
+  private clearApproach(): void {
+    for (const t of this.approachTimers) window.clearTimeout(t);
+    this.approachTimers = [];
+  }
+
+  private frame(now: number): void {
+    this.raf = 0;
+    let again = ++this.failures < FAILED_FRAME_LIMIT;
+    try {
+      again = this.draw(now);
+      this.failures = 0;
+    } finally {
+      if (again) this.requestFrame();
+    }
+  }
+
+  private draw(now: number): boolean {
+    const { layout, inks, rig } = this;
+    if (!layout || !inks || this.width <= 1) return false;
+    const started = performance.now();
+    const dt = this.lastNow ? Math.min(64, Math.max(0, now - this.lastNow)) : 16;
+    this.lastNow = now;
+    let why = rig.step(now) ? 1 : 0;
+    this.hazeAwake = stepHaze(this.haze, { now, dt, windowStart: hazeWindowStart(this.lastInput, this.arrival.end), reducedMotion: this.options.reducedMotion, visible: document.visibilityState === "visible" });
+    if (this.hazeAwake) why |= 4;
+    const arriving = this.arrival.step(layout, now, this.poses);
+    if (!arriving && this.roomHeld) this.resize(true);
+    applyHaze(layout, this.haze, this.poses, this.options.reducedMotion);
+    if (arriving) why |= 8;
+    const attended = this.selectedId ?? this.hoverId;
+    const revealMs = this.reveal.revealMs(attended, now);
+    if (attended && !this.options.reducedMotion && revealMs < RELATION_REVEAL_MS) why |= 32;
+    const paintLog: CosmosPaintRecord[] | null = this.paintLog ? (this.paintLog = []) : null;
+    const stats = drawCosmosFrame({
+      ctx: this.ctx, width: this.width, height: this.height, dpr: this.dpr, room: rig.room, camera: rig.camera, overviewScale: rig.overviewScale,
+      layout, inks, poses: this.poses, lens: this.lens, trail: this.activeTrail(), reducedMotion: this.options.reducedMotion,
+      attention: { selectedId: this.selectedId, hoverId: this.hoverId, hoverGalaxy: this.hoverGalaxy, focusGalaxy: -1, revealMs },
+      relationsOf: (id) => this.relations.get(id) ?? [],
+      pointOf: (id) => posedPoint(layout, this.poses, id),
+      record: paintLog ? (id, x, y, r) => paintLog.push({ id, x, y, r }) : null,
+      cache: this.cache, deepField: this.deepField, buildBudget: 4,
+    });
+    if (stats.pendingBuilds > 0) why |= 16;
+    const rest = this.cameraRest.step(rig.camera, rig.room, rig.held() || arriving || stats.pendingBuilds > 0);
+    if (rest === "moving") why |= 64;
+    else if (rest === "rest") this.options.onCameraRest?.();
+    this.lastStats = stats;
+    this.frames += 1;
+    this.frameLog.push({ t: now, ms: performance.now() - started, builds: stats.buildsStarted, firstDraws: stats.firstDraws, why, sinceInput: now - this.lastInput });
+    if (this.frameLog.length > 600) this.frameLog.splice(0, this.frameLog.length - 600);
+    if (!this.drawnReported && stats.pendingBuilds === 0) {
+      this.drawnReported = true;
+      this.options.onDrawn?.(layout.points.size);
+    }
+    if (this.probed) writeProbeFrame(this.canvas, this);
+    if (stats.band !== this.band) this.options.onBand?.((this.band = stats.band));
+    if (why === 0) {
+      this.options.onBand?.(stats.band);
+      this.options.onRest?.();
+    }
+    return why !== 0;
+  }
+
+  private local(clientX: number, clientY: number): { x: number; y: number } {
+    const { left, top } = this.canvas.getBoundingClientRect();
+    return { x: clientX - left, y: clientY - top };
+  }
+
+  hit(sx: number, sy: number): { id: string | null; galaxy: number } {
+    const { layout, rig } = this;
+    if (!layout) return { id: null, galaxy: -1 };
+    const lit = litHit([this.lens?.memberIds, this.activeTrail()?.visitedIds], (id) => posedPoint(layout, this.poses, id), rig.camera, rig.room, sx, sy);
+    return lit ? { id: lit, galaxy: -1 } : this.hits.hit(layout, this.poses, this.rig.camera, this.rig.room, this.dpr, sx, sy);
+  }
+
+  private gesture(): void {
+    this.lastInput = performance.now();
+    this.clearApproach();
+  }
+
+  private zoomAt(screen: { x: number; y: number }, factor: number, animate: boolean): void {
+    this.gesture();
+    this.rig.zoomAt(screen, factor, animate, performance.now());
+    this.requestFrame();
+  }
+
+  private onWheel(e: WheelEvent): void {
+    e.preventDefault();
+    if (!this.rig.wheel(e, this.local(e.clientX, e.clientY), this.height, this.options.navigationSpeed.zoom, performance.now())) return;
+    this.gesture();
+    this.requestFrame();
+  }
+
+  private onPointerDown(e: PointerEvent): void {
+    delete this.canvas.dataset.keyboardFocus;
+    if (e.button !== 0) return;
+    this.lastInput = performance.now();
+    this.canvas.focus({ preventScroll: true });
+    this.canvas.setPointerCapture?.(e.pointerId);
+    this.rig.dragStart(e.pointerId, this.local(e.clientX, e.clientY), e.timeStamp);
+  }
+
+  private onPointerMove(e: PointerEvent): void {
+    const motionless = this.lastPointer !== null && e.clientX === this.lastPointer.x && e.clientY === this.lastPointer.y;
+    this.lastPointer = { x: e.clientX, y: e.clientY };
+    if (motionless) return;
+    this.lastInput = performance.now();
+    const p = this.local(e.clientX, e.clientY);
+    const step = this.rig.dragMove(e.pointerId, p, e.timeStamp, this.options.navigationSpeed.drag);
+    if (step) {
+      if (step === "started") this.gesture();
+      if (step !== "held") this.requestFrame();
+      return;
+    }
+    const hit = this.hit(p.x, p.y);
+    if (!this.setHover(hit.id, hit.galaxy)) this.requestFrame();
+  }
+
+  private setHover(id: string | null, galaxy: number): boolean {
+    if (id === this.hoverId && galaxy === this.hoverGalaxy) return false;
+    this.hoverId = id;
+    this.hoverGalaxy = galaxy;
+    this.canvas.style.cursor = id || galaxy >= 0 ? "pointer" : "grab";
+    this.requestFrame();
+    return true;
+  }
+
+  private onPointerUp(e: PointerEvent): void {
+    const t = readOntologyMapTokensOrNull();
+    const end = this.rig.dragEnd(e.pointerId, e.timeStamp, this.options.navigationSpeed.drag, t && { windowMs: t.cameraReleaseVelocityWindowMs, minSpeed: t.cameraFlickMinSpeed });
+    this.requestFrame();
+    if (end !== "click") return;
+    const p = this.local(e.clientX, e.clientY);
+    const hit = this.hit(p.x, p.y);
+    if (hit.id) this.options.onSelect?.(hit.id);
+    else if (hit.galaxy >= 0 && (this.layout?.galaxies[hit.galaxy]?.radius ?? Infinity) * this.rig.camera.scale <= liveBandRadius(this.dpr)) this.flyToGalaxy(hit.galaxy);
+    else this.options.onPaneClick?.();
+  }
+
+  private onKey(e: KeyboardEvent): void {
+    this.lastInput = performance.now();
+    const { layout, rig } = this;
+    if (!layout || isImeComposing(e)) return;
+    const { room, camera } = rig;
+    const act = cosmosKeyAction(e, { layout, poses: this.poses, camera, room, dpr: this.dpr, selectedId: this.selectedId, zoomSpeed: this.options.navigationSpeed.zoom });
+    if (act?.kind === "zoom") this.zoomAt({ x: room.x + room.width / 2, y: room.y + room.height / 2 }, act.factor, true);
+    else if (act?.kind === "fit") this.fit();
+    else if (act?.kind === "overview") this.overview();
+    else if (act?.kind === "pane") this.options.onPaneClick?.();
+    else if (act?.kind === "fly") this.flyToGalaxy(act.galaxy);
+    else if (act?.kind === "select") this.options.onSelect?.(act.id);
+    else if (act?.kind === "deadEnd") this.options.onWalkDeadEnd?.();
+  }
+
+  private fit(): void {
+    this.gesture();
+    this.rig.gesture();
+    this.overview();
+  }
+
+  private onContextMenu(e: MouseEvent): void {
+    e.preventDefault();
+    const p = this.local(e.clientX, e.clientY);
+    const [id, position] = [this.hit(p.x, p.y).id, { x: e.clientX, y: e.clientY }];
+    if (id) this.options.onContextMenuNode?.(id, position);
+    else this.options.onContextMenuPane?.(position);
+  }
+}

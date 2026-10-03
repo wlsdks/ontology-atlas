@@ -12,3 +12,4 @@ area: map
 `/topology` renders `HomePage`; `/` renders it after a vault is loaded (`/` = home/back-link target, `/topology` = explicit deep-link namespace). Without a vault, `/` follows the gateway/desktop first-run branches above.
 
 Relation light on focus and path: [`light.md`](light.md).
+Counted strands between domains in Galaxy: [`domain-flows.md`](domain-flows.md).

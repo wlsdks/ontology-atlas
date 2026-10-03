@@ -3,7 +3,7 @@
 One WebGL2 canvas that draws light and nothing else: a travelling light along a
 relation, a point of light at its head, and a bloom on the concept it reaches.
 Concepts, labels, lines and hit-testing stay on the canvas-2D renderer. The
-layer runs only in the Flat and Galaxy views, only for an event, and never under
+layer runs only in the Flat view, only for an event, and never under
 reduced motion.
 
 | Module | What it owns | Host call |

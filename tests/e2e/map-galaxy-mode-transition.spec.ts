@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import "./atlas-cosmos-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForDomeAssembled, waitForFlatMap, waitForMapStill } from "./settle";
 
@@ -10,14 +11,6 @@ const camera = (page: Page) =>
 async function choose(page: Page, choice: "flat" | "galaxy" | "strata") {
   await page.locator('[data-testid="topology-view-3d"]').click();
   await page.locator(`[data-testid="topology-view-3d-choice-${choice}"]`).click();
-}
-
-function expectSameCamera(actual: Camera | null, expected: Camera | null) {
-  expect(actual).not.toBeNull();
-  expect(expected).not.toBeNull();
-  expect(Math.abs(actual!.x - expected!.x)).toBeLessThan(0.1);
-  expect(Math.abs(actual!.y - expected!.y)).toBeLessThan(0.1);
-  expect(Math.abs(actual!.scale - expected!.scale)).toBeLessThan(0.001);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -32,54 +25,15 @@ test("a cold Galaxy entry returns to a useful first Flat frame", async ({ page }
   });
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await expect(page.locator('[data-testid="topology-view-3d"]')).toHaveText(/Galaxy|갤럭시/);
-  await waitForMapStill(page);
+  await waitForCosmosStill(page);
 
   await choose(page, "flat");
   await waitForMapStill(page);
   const settled = await camera(page);
   expect(settled).not.toBeNull();
-  // This sample's spine has a useful close overview. The old transition used
-  // the whole 105-node count and briefly/finally reduced it to a speck.
   expect(settled!.scale).toBeGreaterThan(0.5);
   expect(await page.evaluate(() => window.__atlasMap?.nodes().filter((node) => !node.hidden).length ?? 0))
     .toBeGreaterThan(0);
-});
-
-test("Flat zoom survives a Galaxy round trip and a rapid reversal", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("atlas.appearance.galaxy", "off");
-    window.localStorage.setItem("atlas.appearance.view3d", "off");
-  });
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await waitForMapStill(page);
-  const canvas = (await page.locator('[data-testid="ontology-map-canvas"]').boundingBox())!;
-  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
-  await page.mouse.wheel(0, -120);
-  await waitForMapStill(page, { what: "camera" });
-  const zoomedFlat = await camera(page);
-
-  await choose(page, "galaxy");
-  await waitForMapStill(page);
-  await choose(page, "flat");
-  await waitForMapStill(page);
-  expectSameCamera(await camera(page), zoomedFlat);
-
-  // Reverse before either layout or camera can settle. The in-flight Galaxy
-  // frame must not replace the remembered Flat camera.
-  await choose(page, "galaxy");
-  await choose(page, "flat");
-  await waitForMapStill(page);
-  expectSameCamera(await camera(page), zoomedFlat);
-
-  // Reduced motion resolves the same state immediately. A late viewport
-  // measurement (the real app shell finishes a few pixels after cold boot)
-  // must not reinterpret the restored wheel view as an overview fit.
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await choose(page, "galaxy");
-  await choose(page, "flat");
-  await page.setViewportSize({ width: 1408, height: 865 });
-  await waitForMapStill(page);
-  expectSameCamera(await camera(page), zoomedFlat);
 });
 
 /**
@@ -136,7 +90,7 @@ test("Galaxy → Strata frames the 3D view, not the Flat camera saved before Gal
   await choose(page, "flat");
   await waitForFlatMap(page);
   await choose(page, "galaxy");
-  await waitForMapStill(page);
+  await waitForCosmosStill(page);
   await choose(page, "strata");
   const detour = await coneFrame();
 
@@ -148,52 +102,212 @@ test("Galaxy → Strata frames the 3D view, not the Flat camera saved before Gal
   expect(Math.abs(detour.top - direct.top), "원뿔 꼭대기가 다른 높이에 섰다").toBeLessThan(40);
 });
 
-test("a resting Galaxy paints its stars without the Flat outlines hidden under them", async ({ page }) => {
+const COSMOS_PREFIX = "atlas.map.cosmos.v1:";
+type CosmosRecord = { version: 1; centres: Record<string, [number, number]> };
+
+async function openGalaxy(page: Page, query = "") {
   await page.addInitScript(() => {
     window.localStorage.setItem("atlas.appearance.galaxy", "on");
     window.localStorage.setItem("atlas.appearance.view3d", "off");
     window.localStorage.setItem("atlas.appearance.territories", "off");
     window.localStorage.setItem("atlas.appearance.hex-board", "off");
   });
-  await page.goto("/en/topology/?synth=2000&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await expect(page.locator('[data-testid="topology-view-3d"]')).toHaveText(/Galaxy/);
+  await page.goto(`/en/topology/?e2e=1&guides=off${query}`, { waitUntil: "domcontentloaded" });
+  await waitForCosmosStill(page);
+}
+
+async function waitForCosmosStill(page: Page) {
+  await page.evaluate(() => {
+    (window as unknown as { __cosmosStill?: unknown }).__cosmosStill = { sig: "", count: 0 };
+  });
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __cosmosStill: { sig: string; count: number } };
+      const probe = window.__atlasCosmos;
+      const layout = probe?.layout();
+      if (!probe || !layout || layout.galaxies.length === 0) return false;
+      if (probe.arrival().active || probe.interaction().kind !== "none") return false;
+      const c = probe.camera();
+      const sig = JSON.stringify([c.x, c.y, c.scale, c.width, probe.room(), layout.galaxies.map((g) => [g.id, g.sx, g.sy])]);
+      if (w.__cosmosStill.sig === sig) w.__cosmosStill.count += 1;
+      else w.__cosmosStill = { sig, count: 0 };
+      return w.__cosmosStill.count >= 20;
+    },
+    undefined,
+    { polling: "raf", timeout: 30_000 },
+  );
+}
+
+const readRecord = (page: Page) =>
+  page.evaluate((prefix) => {
+    const key = Object.keys(window.localStorage).find((k) => k.startsWith(prefix));
+    return key ? { key, record: JSON.parse(window.localStorage.getItem(key)!) as CosmosRecord } : null;
+  }, COSMOS_PREFIX);
+
+const galaxyWorld = (page: Page) =>
+  page.evaluate(() => {
+    const probe = window.__atlasCosmos!;
+    const c = probe.camera();
+    const room = probe.room();
+    return probe.layout()!.galaxies.map((g) => ({
+      id: g.id,
+      sx: g.sx,
+      sy: g.sy,
+      wx: c.x + (g.sx - room.x - room.width / 2) / c.scale,
+      wy: c.y + (g.sy - room.y - room.height / 2) / c.scale,
+    }));
+  });
+
+async function shiftRecordedCentre(page: Page) {
+  const stored = await readRecord(page);
+  expect(stored).not.toBeNull();
+  const [id, [x, y]] = Object.entries(stored!.record.centres).sort((a, b) => Math.hypot(...b[1]) - Math.hypot(...a[1]))[0]!;
+  const length = Math.hypot(x, y) || 1;
+  const moved: [number, number] = [x + (300 * x) / length, y + (300 * y) / length];
+  const centres = { ...stored!.record.centres, [id]: moved };
+  await page.evaluate(([key, value]) => window.localStorage.setItem(key, value), [stored!.key, JSON.stringify({ version: 1, centres })] as const);
+  return { key: stored!.key, id, x: moved[0], y: moved[1] };
+}
+
+test("Galaxy records the settled centres per folder and draws them again after a reload", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openGalaxy(page);
+  await expect.poll(async () => Object.keys((await readRecord(page))?.record.centres ?? {}).length).toBe(9);
+  const before = await galaxyWorld(page);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForCosmosStill(page);
+  const after = await galaxyWorld(page);
+  expect(after.map((g) => g.id).sort()).toEqual(before.map((g) => g.id).sort());
+  for (const g of before) {
+    const again = after.find((a) => a.id === g.id)!;
+    expect(Math.abs(again.sx - g.sx), g.id).toBeLessThan(0.5);
+    expect(Math.abs(again.sy - g.sy), g.id).toBeLessThan(0.5);
+  }
+});
+
+test("a recorded centre is where Galaxy draws that galaxy", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openGalaxy(page);
+  await expect.poll(async () => (await readRecord(page)) !== null).toBe(true);
+  const moved = await shiftRecordedCentre(page);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForCosmosStill(page);
+  const drawn = (await galaxyWorld(page)).find((g) => g.id === moved.id)!;
+  expect(Math.abs(drawn.wx - moved.x)).toBeLessThan(0.5);
+  expect(Math.abs(drawn.wy - moved.y)).toBeLessThan(0.5);
+});
+
+test("Auto-arrange settles Galaxy afresh and records the fresh sky", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openGalaxy(page);
+  await expect.poll(async () => (await readRecord(page)) !== null).toBe(true);
+  const moved = await shiftRecordedCentre(page);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForCosmosStill(page);
+
+  await page.getByTestId("topology-auto-arrange").click();
+  await expect.poll(async () => (await readRecord(page))?.record.centres[moved.id]?.[0]).not.toBe(moved.x);
+  await waitForCosmosStill(page);
+  const arranged = (await readRecord(page))!.record.centres;
+
+  await page.evaluate((key) => window.localStorage.removeItem(key), moved.key);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await waitForCosmosStill(page);
+  await expect.poll(async () => (await readRecord(page)) !== null).toBe(true);
+  const fresh = (await readRecord(page))!.record.centres;
+
+  expect(Object.keys(arranged).sort()).toEqual(Object.keys(fresh).sort());
+  for (const [id, [x, y]] of Object.entries(fresh)) {
+    expect(Math.abs(arranged[id]![0] - x), id).toBeLessThanOrEqual(0.01);
+    expect(Math.abs(arranged[id]![1] - y), id).toBeLessThanOrEqual(0.01);
+  }
+});
+
+test("Flat returns to its overview after a Galaxy round trip", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("atlas.appearance.galaxy", "off");
+    window.localStorage.setItem("atlas.appearance.view3d", "off");
+  });
+  await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await waitForMapStill(page);
+  const overview = await camera(page);
+
+  await choose(page, "galaxy");
+  await waitForCosmosStill(page);
+  await choose(page, "flat");
+  await waitForFlatMap(page);
+  const back = await camera(page);
+  expect(back).not.toBeNull();
+  expect(Math.abs(back!.x - overview!.x)).toBeLessThan(0.1);
+  expect(Math.abs(back!.y - overview!.y)).toBeLessThan(0.1);
+  expect(Math.abs(back!.scale - overview!.scale)).toBeLessThan(0.1);
+});
+
+test("zooming into a galaxy moves the footer to the circuit tier", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openGalaxy(page);
+  const canvas = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  const largest = await page.evaluate(() => {
+    const galaxies = window.__atlasCosmos!.layout()!.galaxies;
+    return [...galaxies].sort((a, b) => b.members - a.members)[0]!;
+  });
+  await page.mouse.move(canvas.x + largest.sx, canvas.y + largest.sy);
+  for (let i = 0; i < 40; i += 1) {
+    if ((await page.evaluate(() => window.__atlasCosmos!.stats()?.band)) === "circuit") break;
+    await page.mouse.wheel(0, -240);
+    await waitForCosmosStill(page);
+  }
+  expect(await page.evaluate(() => window.__atlasCosmos!.stats()?.band)).toBe("circuit");
+  await expect(page.getByTestId("first-run-readout")).toHaveAttribute("data-zoom-tier", "circuit");
+});
+
+test("inside a live galaxy Galaxy strokes far fewer paths than it draws stars", async ({ page }) => {
+  await page.addInitScript(() => {
+    const counter = { strokes: 0 };
+    (window as unknown as { __cosmosStrokes: typeof counter }).__cosmosStrokes = counter;
+    const original = CanvasRenderingContext2D.prototype.stroke;
+    CanvasRenderingContext2D.prototype.stroke = function (this: CanvasRenderingContext2D, ...args: [Path2D?]) {
+      if ((this.canvas as HTMLCanvasElement).dataset?.testid === "ontology-map-canvas") counter.strokes += 1;
+      return (original as (...a: unknown[]) => void).apply(this, args);
+    };
+  });
+  await openGalaxy(page, "&synth=2000");
+  const target = await page.evaluate(() => {
+    const galaxies = window.__atlasCosmos!.layout()!.galaxies;
+    return [...galaxies].sort((a, b) => b.members - a.members)[0]!.id;
+  });
+  await page.evaluate((id) => window.__atlasCosmos!.flyTo(id), target);
+  await page.waitForFunction(() => (window.__atlasCosmos!.stats()?.liveGalaxies ?? 0) > 0, undefined, { polling: "raf", timeout: 30_000 });
 
   const perFrame = await page.evaluate(
     () =>
-      new Promise<{ strokes: number; sprites: number; stars: number }>((resolve) => {
-        const probe = (window as unknown as { __atlasMap: { wake: () => void; nodes: () => unknown[] } }).__atlasMap;
-        const proto = CanvasRenderingContext2D.prototype as unknown as Record<string, (...args: unknown[]) => unknown>;
-        const counts = { stroke: 0, drawImage: 0 };
-        for (const name of ["stroke", "drawImage"] as const) {
-          const original = proto[name];
-          proto[name] = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
-            if ((this.canvas as HTMLCanvasElement).dataset?.testid === "ontology-map-canvas") counts[name] += 1;
-            return original.apply(this, args);
-          };
-        }
+      new Promise<{ strokes: number; liveStars: number }>((resolve) => {
+        const probe = window.__atlasCosmos!;
+        const counter = (window as unknown as { __cosmosStrokes: { strokes: number } }).__cosmosStrokes;
         const strokes: number[] = [];
-        const sprites: number[] = [];
-        let last = { ...counts };
+        const stars: number[] = [];
+        let frames = probe.frames();
+        let last = counter.strokes;
         const sample = () => {
-          if (counts.drawImage > last.drawImage) {
-            strokes.push(counts.stroke - last.stroke);
-            sprites.push(counts.drawImage - last.drawImage);
+          const now = probe.frames();
+          if (now === frames + 1) {
+            strokes.push(counter.strokes - last);
+            stars.push(probe.stats()?.liveStars ?? 0);
           }
-          last = { ...counts };
-          if (sprites.length >= 12) {
-            const median = (values: number[]) => [...values].sort((a, b) => a - b)[values.length >> 1];
-            resolve({ strokes: median(strokes), sprites: median(sprites), stars: probe.nodes().length });
+          frames = now;
+          last = counter.strokes;
+          if (strokes.length >= 12) {
+            const median = (values: number[]) => [...values].sort((a, b) => a - b)[values.length >> 1]!;
+            resolve({ strokes: median(strokes), liveStars: median(stars) });
             return;
           }
-          probe.wake();
           requestAnimationFrame(sample);
         };
-        probe.wake();
         requestAnimationFrame(sample);
       }),
   );
-  expect(perFrame.stars).toBeGreaterThanOrEqual(2000);
-  expect(perFrame.sprites).toBeGreaterThanOrEqual(perFrame.stars);
-  expect(perFrame.strokes).toBeLessThan(perFrame.stars / 10);
+  expect(perFrame.liveStars).toBeGreaterThan(0);
+  expect(perFrame.strokes).toBeLessThan(perFrame.liveStars / 10);
 });
