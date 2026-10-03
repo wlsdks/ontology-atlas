@@ -12,15 +12,19 @@ dependencies: [elements/source-declaration-outline]
 relation_notes: { elements/source-declaration-outline: "You asked me to witness the import: mcp/src/source-evidence.mjs:14 imports outlineSource from source-outline.mjs, which is what mode outline returns." }
 ---
 
-Hands a builder the exact lines of a repository file it names, under fixed ceilings on how many requests, lines and bytes one turn may spend, so a proposal can quote real code without anyone loading the repository into the conversation.
+Returns exact repository source lines or declaration outlines under fixed request, line, file and packet budgets so a builder can inspect actual implementation evidence.
 
 ## Includes
-- A line-range read pinned to the file's digest, and a table-of-contents read that returns the file's declarations instead of a range.
-- Refusal of what is not source, is too large, or is shaped like a credential, and one stated aggregate budget that an outline spends from just as a range does.
+- Range reads with complete-file hashes, actual ranges and continuation selectors.
+- Outline rows without source text or claim citations.
+- The same guarded evidence packet in full analysis and opt-in source-only continuations; the caller can avoid repeated candidate scans without changing the evidence.
+- Refusal and omission states for unsafe, missing, changed, unreadable or over-budget source, kept visible rather than reported as complete coverage.
 
 ## Excludes
-- Deciding what the lines mean; a returned range is evidence a person still has to read, and an outline carries no citation at all.
-- Reading anything outside the bound repository.
+- Reading outside the bound repository or interpreting source as accepted meaning.
+- Inferring behavior from a declaration or treating an individual packet as a repository-wide snapshot.
+- Write plans, human approval or semantic qualification.
 
 ## Uncertainty
-- Read the limits table and the selector validation that now accepts `mode` (`mcp/src/source-evidence.mjs:16-28` and `:85-130`), the outline row it assembles (`:232-256`), and its one caller (`mcp/src/tools/repo-analysis.mjs:19`). The refusal, digest and traversal-guard paths were read by name only, and no read was executed against a repository in this pass.
+- The limits, stable-read and selector implementation is in `mcp/src/source-evidence.mjs`; source-only dispatch is in `mcp/src/tools/repo-analysis.mjs`. Sixteen existing source-evidence unit cases and MCP source-only parity/refusal cases ran on 2026-10-03.
+- Exact evidence equality and smaller delivery were measured on one calibration range. General host token savings, runtime correctness and ontology quality do not follow from those measurements.

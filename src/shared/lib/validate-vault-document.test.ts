@@ -224,6 +224,33 @@ describe("validateVaultDocFrontmatter (parsed-only fast path)", () => {
 });
 
 describe("summarizeVaultValidation", () => {
+  it("appends identity conflicts after existing issues without changing row order", () => {
+    const summary = summarizeVaultValidation([
+      { slug: "b", frontmatter: { uid: VALID_UID, kind: "project", title: "B" } },
+      { slug: "a", frontmatter: { uid: VALID_UID, kind: "weird" } },
+      { slug: "c", frontmatter: { uid: "00000000-0000-4000-8000-000000000002", merged_uids: [VALID_UID], kind: "project", title: "C" } },
+    ]);
+    expect(summary.issuesBySlug.map(row => row.slug)).toEqual(["a", "b", "c"]);
+    expect(summary.issuesBySlug.map(row => row.issues.map(issue => issue.code))).toEqual([
+      ["unknown-kind", "duplicate-uid"], ["duplicate-uid"], ["duplicate-uid"],
+    ]);
+    expect(summary.errorCount).toBe(3);
+    expect(summary.warningCount).toBe(1);
+    expect(summary.ok).toBe(false);
+  });
+
+  it("attaches repeated-slug conflicts to the first pre-existing issue row", () => {
+    const summary = summarizeVaultValidation([
+      { slug: "same", frontmatter: { uid: VALID_UID, kind: "weird" } },
+      { slug: "same", frontmatter: { uid: VALID_UID, kind: "weird" } },
+    ]);
+    expect(summary.issuesBySlug.map(row => row.issues.map(issue => issue.code))).toEqual([
+      ["unknown-kind", "duplicate-uid", "duplicate-uid"], ["unknown-kind"],
+    ]);
+    expect(summary.errorCount).toBe(2);
+    expect(summary.warningCount).toBe(2);
+  });
+
   it("clean docs — ok / counts 0", () => {
     const summary = summarizeVaultValidation([
       {

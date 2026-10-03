@@ -84,7 +84,10 @@ describe('field trial replay scripts', () => {
 
   it('acp-replay.sh reads the prompts from the two files the app sends them from', () => {
     const script = read('acp-replay.sh');
-    expect(script).toContain('src/features/acp-session/model/use-acp-session.ts');
-    expect(script).toContain('src/features/first-run-starter/model/build-from-code-prompt.ts');
+    expect(script).toContain('scripts/lib/construction-prompts.mjs');
+    expect(script).toMatch(/constructionPrompts\(repoRoot,\s*targetRoot\)/);
+    const helper = readFileSync(join(ROOT, 'scripts/lib/construction-prompts.mjs'), 'utf8');
+    expect(helper).toContain('src/features/acp-session/model/use-acp-session.ts');
+    expect(helper).toContain('src/features/first-run-starter/model/build-from-code-prompt.ts');
   });
 });

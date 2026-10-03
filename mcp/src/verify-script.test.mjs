@@ -1964,13 +1964,31 @@ describe('verify.mjs first-contact gates', () => {
               description: 'Repository root to analyze. Defaults to the MCP server cwd.',
             },
             maxDepth: { type: 'integer', minimum: 0, maximum: 10 },
+            sourceOnly: { type: 'boolean' },
           },
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'],
+          required: ['rootPath'],
+          oneOf: [
+            {
+              required: ['delivery', 'canWrite', 'sourceEvidence'],
+              not: { anyOf: ['project', 'framework', 'domains', 'capabilities', 'elements',
+                'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence',
+                'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
+            },
+            {
+              required: ['framework', 'domains', 'capabilities', 'elements', 'meaningGate',
+                'extractionContract', 'semanticEvidence', 'configurationEvidence',
+                'proposalValidation', 'suggestedRelations', 'skipped'],
+              not: { anyOf: [{ required: ['delivery'] }, { required: ['canWrite'] }] },
+            },
+          ],
           properties: {
             rootPath: { type: 'string' },
+            delivery: { type: 'string', const: 'source_only' },
+            canWrite: { type: 'boolean', const: false },
+            sourceEvidence: { type: 'object' },
             project: {
               type: 'object',
               required: ['slug', 'title'],
@@ -3950,11 +3968,31 @@ describe('verify.mjs first-contact gates', () => {
         ...analyzeRepoTool,
         outputSchema: {
           ...analyzeRepoTool.outputSchema,
-          required: analyzeRepoTool.outputSchema.required.filter((field) => field !== 'meaningGate'),
+          oneOf: analyzeRepoTool.outputSchema.oneOf.map((branch, index) => index === 1
+            ? { ...branch, required: branch.required.filter((field) => field !== 'meaningGate') }
+            : branch),
         },
       })),
-      'analyze_repo_structure outputSchema required drift',
+      'analyze_repo_structure outputSchema full branch drift',
     );
+    for (const [property, value] of [['canWrite', true], ['delivery', 'full']]) {
+      const schema = structuredClone(analyzeRepoTool.outputSchema);
+      schema.properties[property].const = value;
+      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
+        'analyze_repo_structure outputSchema source-only discriminator drift');
+    }
+    for (const field of analyzeRepoTool.outputSchema.oneOf[0].not.anyOf.map((rule) => rule.required[0])) {
+      const schema = structuredClone(analyzeRepoTool.outputSchema);
+      schema.oneOf[0].not.anyOf = schema.oneOf[0].not.anyOf.filter((rule) => rule.required[0] !== field);
+      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
+        'analyze_repo_structure outputSchema source-only branch drift');
+    }
+    for (const field of ['delivery', 'canWrite', 'sourceEvidence']) {
+      const schema = structuredClone(analyzeRepoTool.outputSchema);
+      schema.oneOf[0].required = schema.oneOf[0].required.filter((key) => key !== field);
+      assert.equal(toolsListSchemaFailure(withAnalyzeRepoTool({ ...analyzeRepoTool, outputSchema: schema })),
+        'analyze_repo_structure outputSchema source-only branch drift');
+    }
     assert.equal(
       toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'analyze_repo_structure'),

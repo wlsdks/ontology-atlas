@@ -46,7 +46,7 @@ export const rules = [
     command: 'pnpm test:mcp:unit',
     reason: 'MCP source or unit contract changed',
     matches: [
-      /^mcp\/src\/(?!integration\.test\.mjs$)[^/]+\.(?:mjs|js)$/,
+      /^mcp\/src\/(?!integration\.test\.mjs$).+\.(?:mjs|js)$/,
       /^tests\/fixtures\/source-hidden-field-trial\/v1\.json$/,
     ],
   },
@@ -54,7 +54,7 @@ export const rules = [
     order: 460,
     command: 'pnpm integration:mcp:surface',
     reason: 'MCP JSON-RPC tool registry or handler surface changed',
-    matches: [/^mcp\/src\/index\.js$/],
+    matches: [/^mcp\/src\/index\.js$/, /^mcp\/src\/server\/registry\.mjs$/],
   },
   {
     order: 470,
@@ -72,7 +72,7 @@ export const rules = [
     order: 490,
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^mcp\/src\/tools\/repo-analysis\.mjs$/, /^tsconfig\.json$/],
   },
   {
     order: 500,
@@ -92,7 +92,7 @@ export const rules = [
     order: 520,
     command: 'pnpm integration:mcp:write',
     reason: 'MCP write tool handler surface changed',
-    matches: [/^mcp\/src\/(?:index|vault)\.(?:mjs|js)$/],
+    matches: [/^mcp\/src\/(?:index|vault)\.(?:mjs|js)$/, /^mcp\/src\/server\/registry\.mjs$/],
   },
   {
     order: 1090,

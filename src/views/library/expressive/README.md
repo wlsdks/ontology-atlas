@@ -46,9 +46,9 @@ beside the object now, not on it — and its three tokens (`--color-panel-a80`,
 whose only consumers were the shelf's coloured rims. An unused token is misinformation.
 
 Ink comes from the existing ramps and is read at mount:
-`--color-text-tertiary` (sources), `--color-text-primary` (pages),
-`--color-indigo-accent` (page emission, synapse links), `--color-indigo-brand`
-(citation lines), `--color-text-quaternary` (synapse points).
+`--color-text-secondary` (sources), `--color-text-primary` (pages),
+`--color-indigo-accent` (page emission), `--color-indigo-brand`
+(citation lines), `--color-text-quaternary` (synapse points and links).
 
 ## Contracts the pieces keep
 
@@ -57,7 +57,12 @@ Ink comes from the existing ramps and is read at mount:
   per second** under `prefers-reduced-motion: reduce`, against 120 with it off.
 - **They sleep.** Both use `ambientSleepFactor` from the map — full speed until 30s after
   the last input, a 2s deceleration to a complete stop, and any input restores them on the
-  next frame. A pane left open costs nothing.
+  next frame. Both release their frame callbacks while asleep, hidden or outside the
+  viewport; the synapse field also parks when covered. A returning constellation resumes
+  assembly at its visible-time phase, including a model replaced while hidden. Both use
+  a fresh wake clock and keep the settled still if viewport observation is unavailable.
+  Resizing a sleeping constellation repaints the canvas instead of leaving its cleared
+  backing buffer blank.
 - **Nothing moves fast.** The constellation takes four minutes for one turn; a synapse
   point travels under a tenth of a pixel per frame. Nothing crosses the eye while a
   sentence is being read — which is the rule the Library's own 2D graph was corrected on

@@ -4150,6 +4150,7 @@ const TOOLS = [
       'authentication. Do not call write tools unless proposalValidation.canWrite is true and a ' +
       '`writePlan` is present; write every concept row successfully before writing relations.\n\n' +
       'Use the initial discovery call when a user asks "이 codebase 분석해줘" / "bootstrap the ontology"; repeat the same analysis call only for explicit source continuations and digest-bound proposal or qualification replay. ' +
+      'For an evidence continuation only, set sourceOnly:true with sourceReads: the response keeps identical bounded sourceEvidence and returns no candidates or lifecycle data. Source-only cannot accompany proposal or qualification and never grants write authority. ' +
       'Single source of truth preserved — only the user (via your subsequent add_concept calls) ' +
       'writes to the vault.',
     inputSchema: {
@@ -4191,6 +4192,10 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        sourceOnly: {
+          type: 'boolean',
+          description: 'Return only rootPath, delivery:"source_only", canWrite:false and sourceEvidence, without rescanning the repository. Requires sourceReads; forbids proposal and qualification even when null. Default false keeps full analysis and lifecycle behavior.',
+        },
         proposal: {
           ...MEANING_PROPOSAL_INPUT_SCHEMA,
           description:
@@ -4208,6 +4213,8 @@ const TOOLS = [
       type: 'object',
       properties: {
         rootPath: NON_BLANK_STRING_SCHEMA,
+        delivery: { type: 'string', const: 'source_only' },
+        canWrite: { type: 'boolean', const: false },
         framework: {
           type: 'string',
           enum: ['fsd', 'next', 'generic'],
@@ -4477,19 +4484,20 @@ const TOOLS = [
           },
         },
       },
-      required: [
-        'rootPath',
-        'framework',
-        'domains',
-        'capabilities',
-        'elements',
-        'meaningGate',
-        'extractionContract',
-        'semanticEvidence',
-        'configurationEvidence',
-        'proposalValidation',
-        'suggestedRelations',
-        'skipped',
+      required: ['rootPath'],
+      oneOf: [
+        {
+          required: ['delivery', 'canWrite', 'sourceEvidence'],
+          not: { anyOf: ['project', 'framework', 'domains', 'capabilities', 'elements',
+            'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence',
+            'proposalValidation', 'suggestedRelations', 'skipped'].map((key) => ({ required: [key] })) },
+        },
+        {
+          required: ['framework', 'domains', 'capabilities', 'elements', 'meaningGate',
+            'extractionContract', 'semanticEvidence', 'configurationEvidence',
+            'proposalValidation', 'suggestedRelations', 'skipped'],
+          not: { anyOf: [{ required: ['delivery'] }, { required: ['canWrite'] }] },
+        },
       ],
       additionalProperties: false,
     },
@@ -4880,6 +4888,17 @@ function parseReadOnlyEnv(value) {
 }
 const READ_ONLY_MODE = parseReadOnlyEnv(process.env.OATLAS_READ_ONLY);
 
+const TOOL_PROFILE = process.env.OATLAS_TOOL_PROFILE ?? 'full';
+if (!['full', 'construction'].includes(TOOL_PROFILE)) {
+  throw new Error(`Invalid OATLAS_TOOL_PROFILE ${JSON.stringify(TOOL_PROFILE)}; use full or construction, or unset it, then restart the server.`);
+}
+const CONSTRUCTION_TOOL_NAMES = new Set([
+  'connection_info', 'list_kinds', 'list_concepts', 'get_concept', 'get_concepts',
+  'find_evidence', 'find_path', 'find_backlinks', 'query_ontology', 'read_source',
+  'analyze_repo_structure', 'index_project', 'infer_imports', 'add_concepts', 'add_relations',
+  'patch_concept', 'validate_vault', 'compile_ontology', 'connect_project_source', 'finalize_project_meaning',
+]);
+
 // The app-owned write checkpoint (rationale in `write-consent.mjs`). Off unless the
 // launcher asks for it, so a vault whose client already owns the gate is unchanged.
 const WRITE_CONSENT_MODE = parseConsentEnv(process.env.OATLAS_WRITE_CONSENT);
@@ -4899,10 +4918,9 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
     additionalProperties: false,
   },
 }));
-// tools/list surface — filtered down to read tools in read-only mode.
-const TOOLS_FOR_LIST = READ_ONLY_MODE
-  ? TOOLS_FOR_LIST_ALL.filter((tool) => READ_TOOL_NAMES.has(tool.name))
-  : TOOLS_FOR_LIST_ALL;
+const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
+  (!READ_ONLY_MODE || READ_TOOL_NAMES.has(tool.name)) &&
+  (TOOL_PROFILE === 'full' || CONSTRUCTION_TOOL_NAMES.has(tool.name)));
 // Full registry stays complete so unknown-tool suggestions + the read-only
 // guard can reason about every tool name regardless of what tools/list shows.
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));

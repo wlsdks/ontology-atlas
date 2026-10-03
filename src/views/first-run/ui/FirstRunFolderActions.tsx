@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type RefObject } from 'react';
-import { ChevronDown, FolderOpen } from 'lucide-react';
+import { ChevronDown, FolderOpen, FolderPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useDismissibleMenu } from '@/shared/lib/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
@@ -39,9 +39,10 @@ export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, t
         {busy ? tFirstRun('busy') : t('openAction')}
       </Button>
       <div ref={ref}>
-        <Button ref={trigger} size="sm" className="atlas-touch-floor" variant="ghost" disabled={busy} aria-expanded={open}
+        <Button ref={trigger} size="sm" className="atlas-touch-floor" variant="outline" disabled={busy} aria-expanded={open}
           aria-controls="first-run-create-options" onClick={() => setOpen(!open)}
           data-testid="first-run-create-menu">
+          <FolderPlus size={ICON_SIZE.sm} aria-hidden />
           {t('createAction')}
           <ChevronDown size={ICON_SIZE.sm} aria-hidden />
         </Button>
