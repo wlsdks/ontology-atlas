@@ -95,6 +95,23 @@ async function pickDomain(page: Page) {
   return pick!;
 }
 
+/**
+ * Enters the realm of a drawn domain through its panel's own action. The Flat overview
+ * picks no line (the flat dial, 2026-10-02); inside a realm each relation is drawn and picked.
+ */
+async function enterRealmOf(page: Page, domain: { x: number; y: number }) {
+  if (!(await page.getByTestId("map-detail-panel").isVisible().catch(() => false))) {
+    await page.mouse.click(domain.x, domain.y);
+    await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  }
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await page.getByTestId("map-detail-panel-action-realm").click();
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  // Entering closes the panel; an Escape here would leave the realm again.
+  await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
+  await waitForMapStill(page).catch(() => {});
+}
+
 test.describe("map canvas interactions on the dogfood vault", () => {
   test.setTimeout(150_000);
 
@@ -125,10 +142,12 @@ test.describe("map canvas interactions on the dogfood vault", () => {
 
   test("MC-04: the edge hover card never lands on INDEX or the utility tiles", async ({ page }) => {
     await arrive(page, { width: 1040, height: 720 });
-    const index = await rectOf(page, "topology-index-panel");
+    await enterRealmOf(page, await pickDomain(page));
+    // In a realm the INDEX column holds the realm's ledger.
+    const index = (await rectOf(page, "topology-index-panel")) ?? (await rectOf(page, "topology-realm-ledger"));
     expect(index, "INDEX is open at arrival").not.toBeNull();
     const chrome = (await Promise.all(
-      ["topology-index-panel", "topology-replay-growth", "topology-shortcuts-help-button", "topology-tour-button"].map((t) => rectOf(page, t)),
+      ["topology-index-panel", "topology-realm-ledger", "topology-replay-growth", "topology-shortcuts-help-button", "topology-tour-button"].map((t) => rectOf(page, t)),
     )).filter((r): r is Box => r !== null);
     const midpoints = await page.evaluate(() => {
       const m = (window as unknown as {
@@ -273,20 +292,24 @@ test.describe("map canvas interactions on the dogfood vault", () => {
     }
     const nodePanelWidth = (await rectOf(page, "map-detail-panel"))!.w;
     await capture(page, "mc07-detail-panel");
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
 
-    // The same slot for an edge: same width, same primary grammar. The two Escapes reframe the
-    // camera, so the line is read where it rests, not mid-flight.
-    await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-    await waitForMapStill(page).catch(() => {});
+    // The same slot for an edge: same width, same primary grammar, read in the domain's realm
+    // once the camera rests, not mid-flight.
+    await enterRealmOf(page, domain);
     const edge = await page.evaluate(() => {
       const m = (window as unknown as {
-        __atlasMap: { edges: () => Array<{ visible: boolean; hidden: boolean; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number; kind: string }> };
+        __atlasMap: {
+          edges: () => Array<{ visible: boolean; hidden: boolean; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number; kind: string }>;
+          edgeAt: (x: number, y: number) => unknown;
+        };
       }).__atlasMap;
       const c = document.querySelector('[data-surface-role="map-canvas"]')!.getBoundingClientRect();
-      const e = m.edges().find((x) => x.visible && !x.hidden && Math.hypot(x.bx - x.ax, x.by - x.ay) > 160)!;
-      return { x: c.x + 0.25 * e.ax + 0.5 * e.controlX + 0.25 * e.bx, y: c.y + 0.25 * e.ay + 0.5 * e.controlY + 0.25 * e.by };
+      const mid = (x: { ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number }) => ({
+        x: 0.25 * x.ax + 0.5 * x.controlX + 0.25 * x.bx,
+        y: 0.25 * x.ay + 0.5 * x.controlY + 0.25 * x.by,
+      });
+      const e = m.edges().find((x) => x.visible && !x.hidden && Math.hypot(x.bx - x.ax, x.by - x.ay) > 60 && Boolean(m.edgeAt(mid(x).x, mid(x).y)))!;
+      return { x: c.x + mid(e).x, y: c.y + mid(e).y };
     });
     await page.mouse.click(edge.x, edge.y);
     const edgePanel = page.getByTestId("map-edge-panel");
