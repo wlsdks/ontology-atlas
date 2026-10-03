@@ -72,6 +72,8 @@ export function LocalCompileCard({
         className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] text-label leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
       >
         {t("localCompile.failed", { reason: session.errorMessage ?? "" })}
+        {session.writtenPaths.length ? <> {t("localCompile.partialWrites", { paths: session.writtenPaths.join(", ") })}</> : null}
+        {session.refreshErrorMessage ? <> {t("localCompile.refreshFailed", { reason: session.refreshErrorMessage })}</> : null}
       </p>
     );
   }

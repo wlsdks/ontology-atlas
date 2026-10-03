@@ -62,7 +62,9 @@
     "createFile": "만들기 {path}",
     "modifyFile": "고치기 {path}",
     "addRelation": "{from} → {to} 연결 ({type})",
-    "applying": "적용 중…"
+    "applying": "적용 중…",
+    "partialWrites": "실패 전에 저장을 확인한 파일: {paths}.",
+    "refreshFailed": "폴더를 다시 읽지 못했어요: {message}. 다시 시도하기 전에 저장된 파일을 확인해 주세요."
   },
   "notice": {
     "roundCap": "여기까지 하고 정리할게요.",

@@ -36,6 +36,7 @@ export interface LocalCompileSession {
   card: CompileConsentCard | null;
   /** The one sentence shown when the turn or the write failed. */
   errorMessage: string | null;
+  refreshErrorMessage: string | null;
   /** Pages actually written by the last `allow()`. */
   writtenPaths: string[];
   /** The files this turn would take on, already capped. */
@@ -108,6 +109,7 @@ export function useLocalCompile({
   const [turn, setTurn] = useState<AgentTurn | null>(null);
   const [card, setCard] = useState<CompileConsentCard | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [refreshErrorMessage, setRefreshErrorMessage] = useState<string | null>(null);
   const [writtenPaths, setWrittenPaths] = useState<string[]>([]);
   const [toolActivity, setToolActivity] = useState<LocalCompileSession["toolActivity"]>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -176,6 +178,7 @@ export function useLocalCompile({
       setStatus("running");
       setCard(null);
       setErrorMessage(null);
+      setRefreshErrorMessage(null);
       setWrittenPaths([]);
       setToolActivity(null);
 
@@ -326,6 +329,10 @@ export function useLocalCompile({
       setStatus("written");
       return;
     }
+    if (outcome.status === "failed") {
+      setWrittenPaths(outcome.writtenPaths);
+      setRefreshErrorMessage(outcome.refreshError ?? null);
+    }
     setErrorMessage(
       outcome.status === "conflict"
         ? `${outcome.conflictedPaths.join(", ")}`
@@ -337,11 +344,12 @@ export function useLocalCompile({
   const dismiss = useCallback(() => {
     setCard(null);
     setErrorMessage(null);
+    setRefreshErrorMessage(null);
     setWrittenPaths([]);
     setStatus("idle");
   }, []);
 
-  return { status, originVaultScope, turn, card, errorMessage, writtenPaths, targets, toolActivity, run, allow, dismiss, stop };
+  return { status, originVaultScope, turn, card, errorMessage, refreshErrorMessage, writtenPaths, targets, toolActivity, run, allow, dismiss, stop };
 }
 
 /** English: the model may see these as instructions, and `system-prompt.ts` keeps that channel English. */

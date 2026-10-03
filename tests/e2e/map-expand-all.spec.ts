@@ -221,6 +221,15 @@ test("상단 전체 펼치기는 전 노드를 드러내고 자동으로 화면 
     `자동 정렬이 펼친 지도를 다른 배율(${scaleAfterArrange.toFixed(3)} vs ${scaleAfterExpand.toFixed(3)})로 다시 맞췄다`,
   ).toBeLessThan(0.01);
 
+  await page.getByTestId("ontology-map-canvas").focus();
+  await page.keyboard.press("=");
+  await settleLayout(page);
+  expect(await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0), "keyboard zoom must move the expanded lens before fit").toBeGreaterThan(scaleAfterArrange);
+  await page.keyboard.press("0");
+  await settleLayout(page);
+  const scaleAfterKeyboardFit = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
+  expect(Math.abs(scaleAfterKeyboardFit - scaleAfterArrange), "keyboard fit must restore the expanded lens frame").toBeLessThan(0.01);
+
   await action.click();
   await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens");
 });
