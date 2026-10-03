@@ -41,25 +41,6 @@
   "demoAgentPrompt": "`get_concept`と`find_path`だけを使って、`capabilities/mcp-tool-server`から`capabilities/ontology-map`までのパスを1文で説明してください。ファイルは変更しないでください。",
   "demoProvisionalNote": "1回のテイクで{seconds}秒。カットしたのはエージェントの思考時間だけで、早送りはしておらず、音声もありません。",
   "acpUserLabel": "あなた",
-  "change": {
-    "eyebrow": "After a commit",
-    "title": "When your agent commits, you see <key>which meanings to recheck</key>",
-    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app's Insights lists that concept with the file and both dates. Reread it yourself or ask your agent to; its answer waits for you.",
-    "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
-    "agentCommit": "Your agent's commit",
-    "filesChanged": "{count, plural, other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark Insights gives a meaning whose code moved, and each file's path moves into the Insights brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example."
-  },
-  "start": {
-    "eyebrow": "After you install",
-    "title": "Open your project, and <key>let your agent draft the map</key>",
-    "sub": "The app opens by asking for a folder. Open your project's, and the first card offers to have your coding agent read the code and draft the map. Nothing is written until you allow it, and what is written is Markdown in that folder, never your code.",
-    "label": "Illustration · the app's own screens and words, drawn small",
-    "step1": "The first screen asks for a folder.",
-    "step2": "In a code folder, the first card offers your agent's draft.",
-    "step3": "The draft waits for your answer, then fills the map.",
-    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and Insights lists them as “{unreviewed}”."
-  },
   "screens": {
     "eyebrow": "画面",
     "title": "1つのフォルダを7通りに読む",
