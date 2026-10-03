@@ -1,6 +1,10 @@
 export { OntologyMap } from './ui/OntologyMap';
 export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
 export { OntologyHexBoardMap } from './ui/OntologyHexBoardMap';
+export { OntologyCosmosMap } from './galaxy/OntologyCosmosMap';
+export type { CosmosMirrorLabels } from './galaxy/CosmosMirror';
+export type { CosmosPlacementRecord } from './galaxy/layout/cosmos-layout';
+export type { CosmosPlacementStore } from './galaxy/OntologyCosmosMap';
 export { MapLayoutMorphOverlay, installMapLayoutMorphProbe } from './morph/MapLayoutMorphOverlay';
 export type { MapLayoutMorphJob } from './morph/MapLayoutMorphOverlay';
 export { chooseLayoutSwitch, containmentParents } from './morph/layout-morph';

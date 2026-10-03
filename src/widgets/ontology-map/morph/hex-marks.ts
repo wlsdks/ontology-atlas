@@ -48,11 +48,12 @@ export function hexMapChrome(canvas: HTMLCanvasElement | null): MapChrome | null
   let top = free.y;
   const right = free.x + free.width;
   const bottom = free.y + free.height;
+  const floor = Math.min(bottom, r.y + r.height - ROOM_BOTTOM);
   for (const b of lane) {
     if (b.y <= canvasRect.y + TOP_LANE_REACH) top = Math.max(top, b.y + b.height);
   }
   for (const b of lane) {
-    if (b.y + b.height <= top) continue;
+    if (b.y + b.height <= top || b.y >= floor) continue;
     if (b.x <= left + EDGE_REACH && b.x + b.width > left) left = Math.max(left, b.x + b.width);
   }
   const rel = (b: Rect): Rect => ({ x: b.x - r.x, y: b.y - r.y, width: b.width, height: b.height });

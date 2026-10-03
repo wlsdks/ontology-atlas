@@ -10,7 +10,7 @@ routes: [/topology]
 
 The map lights a relation while something is happening on it, then settles back
 to its static ink. The light runs along the relation's own line, never across
-empty space, and only in the Flat and Galaxy views. With nothing happening, the
+empty space, and only in the Flat view. With nothing happening, the
 map draws no frame. Under reduced motion there is no light at all; the reveal's
 ink and the static glow under the focused concept carry the same facts.
 

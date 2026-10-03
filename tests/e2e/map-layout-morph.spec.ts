@@ -49,11 +49,20 @@ interface Sampler {
   recording: boolean;
   ink: boolean;
   finals: Map<string, [number, number]> | null;
+  ends: Array<[string, [number, number]]>;
   span: number;
   velocity: boolean;
 }
 
-type SamplerWindow = Window & { __morph: Sampler; __atlasMapMorph?: MorphProbe };
+interface CosmosProbe {
+  camera: () => { x: number; y: number; scale: number };
+  marks: () => Array<{ id: string; x: number; y: number }>;
+  arrival: () => { active: boolean };
+  stats: () => { pendingBuilds: number } | null;
+  layoutRuns: () => number;
+}
+
+type SamplerWindow = Window & { __morph: Sampler; __atlasMapMorph?: MorphProbe; __atlasCosmos?: CosmosProbe };
 
 const SYNTH = 300;
 const INK_FLOOR = 0.9;
@@ -74,7 +83,7 @@ const TURN_AFTER_MS = 150;
 async function installSampler(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const w = window as unknown as SamplerWindow;
-    w.__morph = { frames: [], recording: false, ink: false, finals: null, span: 0, velocity: false };
+    w.__morph = { frames: [], recording: false, ink: false, finals: null, ends: [], span: 0, velocity: false };
     const s = w.__morph;
     const scratch = document.createElement("canvas");
     const sctx = scratch.getContext("2d", { willReadFrequently: true })!;
@@ -113,6 +122,7 @@ async function installSampler(page: Page): Promise<void> {
       if (!s.finals) {
         const start = new Map(probe.marks(0).map((m) => [m.id, [m.x, m.y] as [number, number]]));
         s.finals = new Map();
+        s.ends = probe.marks(probe.live()!.durationMs + 2000).map((m) => [m.id, [m.x, m.y]]);
         s.span = 0;
         for (const m of probe.marks(probe.live()!.durationMs)) {
           const from = start.get(m.id);
@@ -147,9 +157,10 @@ async function installSampler(page: Page): Promise<void> {
           };
         }
       ).__atlasMap;
-      const camera = document.querySelector('[data-testid="ontology-map"]') ? (map?.camera() ?? null) : null;
+      const cosmos = document.querySelector('[data-testid="cosmos-map"]') ? (window as unknown as { __atlasCosmos?: CosmosProbe }).__atlasCosmos : undefined;
+      const camera = cosmos ? cosmos.camera() : document.querySelector('[data-testid="ontology-map"]') ? (map?.camera() ?? null) : null;
       const stats = document.querySelector<HTMLCanvasElement>('[data-testid="topology-map-view"] canvas')?.dataset.frame;
-      const drawn = stats ? (JSON.parse(stats) as { arrived?: boolean; arrivalT?: number }) : null;
+      const drawn = cosmos ? { arrived: !cosmos.arrival().active } : stats ? (JSON.parse(stats) as { arrived?: boolean; arrivalT?: number }) : null;
       s.frames.push({
         t: frameTime,
         wall: performance.now(),
@@ -168,7 +179,9 @@ async function installSampler(page: Page): Promise<void> {
         lifted: live?.lifted ?? null,
         velocity: s.velocity && traveling ? probe.velocity() : null,
         arrived: drawn?.arrived ?? (drawn?.arrivalT === undefined ? null : drawn.arrivalT >= 1),
-        positions: camera
+        positions: cosmos
+          ? Object.fromEntries(cosmos.marks().slice(0, 60).map((m) => [m.id, [m.x, m.y] as [number, number]]))
+          : camera
           ? Object.fromEntries(
               (map?.nodes() ?? [])
                 .filter((n) => !n.hidden)
@@ -211,8 +224,20 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
 async function settled(page: Page, view: View): Promise<void> {
   if (view === "territories") await waitForTerritoriesStill(page);
   else if (view === "hex") await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
+  else if (view === "galaxy") await cosmosSettled(page);
   else if (view === "strata" || view === "coupling") await waitForDomeEntered(page);
   else await waitForMapSettled(page);
+}
+
+async function cosmosSettled(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const cosmos = (window as unknown as SamplerWindow).__atlasCosmos;
+      return cosmos !== undefined && !cosmos.arrival().active && cosmos.stats()?.pendingBuilds === 0;
+    },
+    undefined,
+    { polling: "raf" },
+  );
 }
 
 async function pick(page: Page, view: View): Promise<void> {
@@ -225,7 +250,7 @@ async function startRecording(page: Page, ink: boolean, velocity = false): Promi
   return page.evaluate(
     ({ withInk, withVelocity }) => {
       const w = window as unknown as SamplerWindow;
-      Object.assign(w.__morph, { frames: [], finals: null, span: 0, ink: withInk, velocity: withVelocity, recording: true });
+      Object.assign(w.__morph, { frames: [], finals: null, ends: [], span: 0, ink: withInk, velocity: withVelocity, recording: true });
       return w.__atlasMapMorph?.records().length ?? 0;
     },
     { withInk: ink, withVelocity: velocity },
@@ -279,6 +304,9 @@ test.describe("map layout morph", () => {
     ["territories", "galaxy"],
     ["strata", "territories"],
     ["hex", "flat"],
+    ["flat", "galaxy"],
+    ["galaxy", "flat"],
+    ["galaxy", "hex"],
     ["flat", "hex", true],
     ["hex", "galaxy", true],
   ];
@@ -292,6 +320,7 @@ test.describe("map layout morph", () => {
       const run = await morphDone(page, before);
       await settled(page, to);
       const frames = await stopRecording(page);
+      const ends = await page.evaluate(() => (window as unknown as SamplerWindow).__morph.ends);
 
       expect(run.mode).toBe("ghost");
       expect(run.count).toBeGreaterThan(0);
@@ -325,7 +354,20 @@ test.describe("map layout morph", () => {
       const dips = frames.slice(start).filter((f) => f.ink! < floor).map((f) => `${Math.round(f.t - run.travelStartMs)} ms: ${f.ink} (${f.phase})`);
       expect(dips, `ink fell under ${Math.round(floor)} (start ${startInk}, end ${endInk})`).toEqual([]);
 
-      const arrival = to === "territories" || to === "hex" ? to : "map";
+      if (to === "galaxy") {
+        const sky = await page.evaluate(() => {
+          const cosmos = (window as unknown as SamplerWindow).__atlasCosmos!;
+          return { marks: cosmos.marks(), runs: cosmos.layoutRuns() };
+        });
+        const ghostAt = new Map(ends);
+        const matched = sky.marks.filter((m) => ghostAt.has(m.id));
+        const off = matched.map((m) => ({ id: m.id, px: Math.hypot(m.x - ghostAt.get(m.id)![0], m.y - ghostAt.get(m.id)![1]) })).filter((m) => m.px > 1);
+        expect(matched.length, "no ghost landed on a drawn galaxy mark").toBeGreaterThan(0);
+        expect(off, "ghosts landed away from the drawn sky").toEqual([]);
+        if (from === "flat") expect(sky.runs, "the sky was laid out more than once for one pick").toBe(1);
+      }
+
+      const arrival = to === "territories" || to === "hex" || to === "galaxy" ? to : "map";
       const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
       expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
       expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
