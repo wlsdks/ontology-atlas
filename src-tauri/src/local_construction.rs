@@ -232,6 +232,24 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         std::fs::canonicalize(root).unwrap()
     }
+    #[cfg(not(unix))]
+    #[test]
+    fn unsupported_hosts_refuse_source_preview_and_reads() {
+        let root = folder();
+        let vault = root.join("vault");
+        std::fs::create_dir(&vault).unwrap();
+        assert_eq!(
+            preview(&root, &vault).err().as_deref(),
+            Some("unsupported_platform")
+        );
+        assert_eq!(
+            read_range(&root, &vault, "basis", "input.ts", 1)
+                .err()
+                .as_deref(),
+            Some("unsupported_platform")
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn a_vault_grant_does_not_replace_an_exact_source_picker_selection() {
         let root = folder();
@@ -247,6 +265,7 @@ mod tests {
         std::fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_listed_range_keeps_unicode_bytes_and_exact_snapshot_hash() {
         let root = folder();
@@ -267,6 +286,7 @@ mod tests {
         assert!(read_range(&root, &vault, &prepared.fingerprint, "vault/private.ts", 1).is_err());
         std::fs::remove_dir_all(root).unwrap();
     }
+    #[cfg(unix)]
     #[test]
     fn source_changes_paths_and_unlisted_files_are_refused() {
         let root = folder();
@@ -280,6 +300,7 @@ mod tests {
         assert!(read_range(&root, &vault, &prepared.fingerprint, "input.ts", 1).is_err());
         std::fs::remove_dir_all(root).unwrap();
     }
+    #[cfg(unix)]
     #[test]
     fn same_length_readme_edits_invalidate_the_preview() {
         let root = folder();
@@ -295,6 +316,7 @@ mod tests {
         assert!(read_range(&root, &vault, &before.fingerprint, "README.md", 1).is_err());
         std::fs::remove_dir_all(root).unwrap();
     }
+    #[cfg(unix)]
     #[test]
     fn excluded_entries_share_the_inventory_budget() {
         let root = folder();
@@ -309,6 +331,7 @@ mod tests {
         assert!(observed.files.len() + observed.excluded.len() <= 500);
         std::fs::remove_dir_all(root).unwrap();
     }
+    #[cfg(unix)]
     #[test]
     fn a_range_stops_at_a_real_line_boundary_without_cutting_utf8() {
         let root = folder();

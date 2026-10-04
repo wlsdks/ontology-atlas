@@ -12,6 +12,7 @@ fn construction_folder(label: &str) -> PathBuf {
     fs::canonicalize(path).unwrap()
 }
 
+#[cfg(unix)]
 #[test]
 fn construction_excludes_a_nested_destination_before_capturing_its_text() {
     let root = construction_folder("destination");
@@ -42,6 +43,7 @@ fn construction_refuses_the_destination_itself_and_source_inside_it() {
     fs::remove_dir_all(vault).unwrap();
 }
 
+#[cfg(unix)]
 #[test]
 fn construction_keeps_a_sibling_with_the_same_prefix_and_excludes_unsafe_files() {
     let root = construction_folder("prefix");
@@ -52,8 +54,7 @@ fn construction_keeps_a_sibling_with_the_same_prefix_and_excludes_unsafe_files()
     fs::write(root.join("secret.py"), "SECRET_TOKEN").unwrap();
     fs::write(root.join("binary.py"), b"x\0y").unwrap();
     #[cfg(unix)]
-    std::os::unix::fs::symlink(root.join("atlas-code/role.py"), root.join("linked.py"))
-        .unwrap();
+    std::os::unix::fs::symlink(root.join("atlas-code/role.py"), root.join("linked.py")).unwrap();
     let captured = observe_construction_source(&root, &vault).unwrap();
     assert!(captured
         .entries
