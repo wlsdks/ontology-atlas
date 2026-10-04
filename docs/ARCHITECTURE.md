@@ -944,7 +944,10 @@ a bounded, no-follow, exclusive native archive on Unix platforms with stable
 vault identity. Windows currently reports this capability unavailable rather
 than substituting path identity. Artifacts are published and
 read back before the immutable transition record becomes visible; malformed
-history members remain reported. Browser builds expose no archive write fallback.
+history members remain reported on their requested page. Each history request
+enumerates bounded member names, then opens and validates only that page;
+completed membership or record values are not cached. Browser builds expose
+no archive write fallback.
 Archive integrity proves only that the supplied bytes were retained: it does not
 authenticate a human decision, verify a writer or check, or grant Git, merge,
 deployment, ontology-write, or source-repository authority. Existing analysis
