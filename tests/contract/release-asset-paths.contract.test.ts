@@ -1,6 +1,6 @@
 import { globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, relative } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -104,8 +104,7 @@ const REPO = "wlsdks/ontology-atlas";
 const scratch = mkdtempSync(join(tmpdir(), "oa-release-paths-"));
 
 /**
- * Builds exactly what the workflow builds: runs staging per architecture and places
- * the results where `download-artifact` (`merge-multiple: false`) puts them.
+ * Replays staging with the configured download path and single-artifact behavior.
  */
 function replayDownloadRoot(arches: string[]): { root: string; staged: Map<string, string[]> } {
   const home = mkdtempSync(join(scratch, "run-"));
@@ -114,12 +113,14 @@ function replayDownloadRoot(arches: string[]): { root: string; staged: Map<strin
   const staged = new Map<string, string[]>();
   for (const arch of arches) {
     const bundleDir = fakeBundle(home, VERSION, arch);
-    const result = stageReleaseAssets({
-      bundleDir,
-      outDir: join(root, artifactNameForArch(arch)),
-      expectArch: arch,
-    });
-    staged.set(arch, result.files);
+    const download = step(stageJob, "Download macOS artifacts");
+    const named = yamlValues(download, "name")[0];
+    const path = yamlValues(download, "path")[0];
+    const merged = yamlValues(download, "merge-multiple")[0] === "true";
+    const directory = !named && arches.length > 1 && !merged ? artifactNameForArch(arch) : "";
+    const outDir = join(home, path, directory);
+    const result = stageReleaseAssets({ bundleDir, outDir, expectArch: arch });
+    staged.set(arch, result.files.map((file) => relative(home, join(outDir, file)).split("\\").join("/")));
   }
   return { root, staged };
 }
@@ -211,10 +212,8 @@ describe("릴리스 자산 경로 계약", () => {
     writeFileSync(join(mcpDir, `${bundleName}.sha256`), `${"b".repeat(64)}  ${bundleName}\n`);
 
     const expected = new Set<string>(["release-assets/latest.json"]);
-    for (const [arch, files] of staged) {
-      for (const file of files) {
-        expected.add(`release-assets/${artifactNameForArch(arch)}/${file}`);
-      }
+    for (const files of staged.values()) {
+      for (const file of files) expected.add(file);
     }
     for (const file of windows.files) expected.add(`release-assets/windows/${file}`);
     expected.add(`release-assets/mcp/${bundleName}`);
@@ -235,10 +234,12 @@ describe("릴리스 자산 경로 계약", () => {
     );
   });
 
-  it("스테이징 잡은 아치별 폴더로 내려받는다", () => {
+  it("the sole macOS artifact downloads into its explicit architecture folder", () => {
     const download = step(stageJob, "Download macOS artifacts");
+    const artifact = artifactNameForArch("aarch64");
+    expect(yamlValues(download, "name")).toEqual([artifact]);
     expect(yamlValues(download, "merge-multiple")).toEqual(["false"]);
-    expect(yamlValues(download, "path")).toEqual(["release-assets"]);
+    expect(yamlValues(download, "path")).toEqual([`release-assets/${artifact}`]);
   });
 
   it("발행 잡의 요약 글롭도 자기 레이아웃에 맞는다", () => {
@@ -255,15 +256,12 @@ describe("릴리스 자산 경로 계약", () => {
     const flat = join(merged, "release-assets");
     mkdirSync(flat, { recursive: true });
     const names = new Set<string>();
-    for (const [arch, files] of staged) {
+    for (const files of staged.values()) {
       for (const file of files) {
-        // Colliding names silently overwrite one another — caught before the merge.
-        expect(names.has(file)).toBe(false);
-        names.add(file);
-        writeFileSync(
-          join(flat, file),
-          readFileSync(join(root, artifactNameForArch(arch), file)),
-        );
+        const name = basename(file);
+        expect(names.has(name)).toBe(false);
+        names.add(name);
+        writeFileSync(join(flat, name), readFileSync(join(root, "..", file)));
       }
     }
     expect(globSync(summaryGlob!, { cwd: merged })).toHaveLength(1);
@@ -289,7 +287,7 @@ describe("릴리스 자산 경로 계약", () => {
       platforms,
     });
 
-    const uploaded = new Set([...staged.values()].flat());
+    const uploaded = new Set([...staged.values()].flat().map((file) => basename(file)));
     const urls = (Object.values(manifest.platforms) as { url: string }[]).map(
       (platform) => platform.url,
     );
