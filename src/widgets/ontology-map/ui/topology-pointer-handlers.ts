@@ -43,7 +43,6 @@ import {
 } from "../interaction/pointer-state-machine";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide, type PinchWheelStream } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
-import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
@@ -95,9 +94,11 @@ function collectHoverAvoidRects(
   tokens: OntologyMapTokens,
   clustered: ReadonlySet<string> | null,
   domeFrame: ReadonlyMap<string, DomeNodeFrame> | null,
-  canvasOrigin: { x: number; y: number },
-  pointer: { x: number; y: number },
-): HoverAvoidRect[] {
+  canvasOrigin: { x: number; y: number;
+}, pointer: {
+    x: number;
+    y: number;
+}): HoverAvoidRect[] {
   const out: HoverAvoidRect[] = [];
   const alphas = lastDrawnNodeAlphas();
   const dialFrame = lastDialFrame();
@@ -183,17 +184,25 @@ export interface PointerHandlerRefs {
    * `null` is a valid "not yet set" state (the rAF loop's own fallback).
    */
   cameraAngularFreqRef: Ref<number | null>;
-  viewportRef: Ref<{ width: number; height: number; dpr: number }>;
+  viewportRef: Ref<{ width: number; height: number; dpr: number;
+    }>;
   pointerMachineRef: Ref<PointerMachineState>;
-  dragHistoryRef: Ref<{ x: number; y: number; t: number }[]>;
-  camStartAtDownRef: Ref<{ x: number; y: number }>;
-  /**
-   * Cached canvas bounding rect. `getBoundingClientRect()` forces a synchronous
-   * layout/reflow; calling it on every `pointermove` was a per-drag-frame
-   * reflow (a real source of the owner-reported "pan is janky"). We snapshot it
-   * once at `pointerdown` and reuse it for the whole gesture instead.
-   */
-  canvasRectRef: Ref<{ left: number; top: number } | null>;
+  dragHistoryRef: Ref<{ x: number; y: number; t: number;
+    }[]>;
+    camStartAtDownRef: Ref<{
+        x: number;
+        y: number;
+    }>;
+    /**
+     * Cached canvas bounding rect. `getBoundingClientRect()` forces a synchronous
+     * layout/reflow; calling it on every `pointermove` was a per-drag-frame
+     * reflow (a real source of the owner-reported "pan is janky"). We snapshot it
+     * once at `pointerdown` and reuse it for the whole gesture instead.
+     */
+    canvasRectRef: Ref<{
+        left: number;
+        top: number;
+    } | null>;
   /**
    * rank4 — the canvas element itself, so `pointerup`/`pointercancel` (which
    * carry no event target of their own here) can restore the cursor after a
@@ -232,9 +241,13 @@ export interface PointerHandlerRefs {
    * only cleared once that burst's heat reaches 0 (`use-topology-loop.ts`) or a
    * NEW drag starts.
    */
-  dragAffectedSetRef: Ref<{ draggedId: string; oneHop: DragTugSets["oneHop"]; twoHop: DragTugSets["twoHop"] } | null>;
-  /** C1 B1 — the dragged node's world position at grab time, for computing this drag's total displacement (Δ). Null once the drag ends (post-release tug decays toward 0, no more Δ to track). */
-  dragStartPosRef: Ref<{ x: number; y: number } | null>;
+  dragAffectedSetRef: Ref<{ draggedId: string; oneHop: DragTugSets["oneHop"]; twoHop: DragTugSets["twoHop"];
+    } | null>;
+    /** C1 B1 — the dragged node's world position at grab time, for computing this drag's total displacement (Δ). Null once the drag ends (post-release tug decays toward 0, no more Δ to track). */
+    dragStartPosRef: Ref<{
+        x: number;
+        y: number;
+    } | null>;
   /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
   overviewScaleRef: Ref<number>;
   /**
@@ -244,17 +257,20 @@ export interface PointerHandlerRefs {
    * a re-render mid-gesture. Omitting it disables pinch (backwards compatible — no
    * existing test or call site changes).
    */
-  activeTouchesRef?: Ref<Map<number, { x: number; y: number }>>;
+  activeTouchesRef?: Ref<Map<number, { x: number; y: number;
+    }>>;
   /**
    * rank4 — the previous frame's state of an in-flight pinch (two-finger distance
    * plus midpoint). null means no pinch. The zoom factor derives from the distance
    * ratio and the pan from the midpoint's movement.
    */
-  pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
+  pinchRef?: Ref<{ dist: number; midX: number; midY: number;
+    } | null>;
   pinchWheelRef?: Ref<PinchWheelStream>;
   onSelect?: (slug: string) => void;
   /** P3b — a click at a point with no node hit that is close to an edge. */
-  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
+  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+    }) => void;
   /**
    * P3c — the edge hover microcard. Fires when an idle move lands on a
    * node-miss point close to an edge (only when the identity changes) and null on
@@ -262,13 +278,18 @@ export interface PointerHandlerRefs {
    * preview separate from the click (P3b detail) — gated open after confirming usage
    * signals (owner request).
    */
-  hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>;
-  /** Mirror of the edge-selection (pair focus) state — needed to decide ground-click deselection. */
-  selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
+  hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+    } | null>;
+    /** Mirror of the edge-selection (pair focus) state — needed to decide ground-click deselection. */
+    selectedEdgeRef?: Ref<{
+        sourceId: string;
+        targetId: string;
+    } | null>;
   /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
   /** The last committed node tap, so the next one can be read as a double-click. */
-  lastTapRef?: Ref<{ nodeId: string; at: number; x?: number; y?: number } | null>;
+  lastTapRef?: Ref<{ nodeId: string; at: number; x?: number; y?: number;
+    } | null>;
   /**
    * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
@@ -332,14 +353,13 @@ export interface PointerHandlerRefs {
    * lockstep with what was drawn). Omitted defaults to `DEFAULT_TIER_REVEAL`.
    */
   tierRevealRef?: Ref<TierRevealConfig>;
-  /** Galaxy hides the default wiring field; edge hit candidates must match. */
-  galaxyRef?: Ref<boolean>;
-  pathEdgeIdsRef?: Ref<ReadonlySet<string> | null>;
+    pathEdgeIdsRef?: Ref<ReadonlySet<string> | null>;
   visitedTrailRef?: Ref<readonly string[]>;
   onHoverEdge?: (
-    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
-  ) => void;
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+    } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[];
+    } | null) => void;
   onPaneClick?: () => void;
   /** Density gate — a cluster chip click toggles the parent's expansion (a URL round trip). */
   onToggleCluster?: (parentId: string) => void;
@@ -357,9 +377,9 @@ export interface PointerHandlerRefs {
       /** Panel3-S6 number contract — the parent's total descendant count (the same source as the node badge). */
       descendantTotal: number;
       expanded: boolean;
-      position: { x: number; y: number };
-    } | null,
-  ) => void;
+      position: { x: number; y: number;
+        };
+    } | null) => void;
   /** S2 part 3a — clicking the `Neighbor +N` chip lights the next batch of neighbours (separate from the URL toggle). */
   onExpandEgoNeighbors?: () => void;
   /**
@@ -376,18 +396,22 @@ export interface PointerHandlerRefs {
    * a no-op over nodes too (browser default menu still suppressed off-node
    * only — see that handler's own doc).
    */
-  onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
-  /**
-   * **Right-click on empty canvas** — called at a point with no node (2026-08-03).
-   *
-   * This position used to be simply ignored (`if (!hitNodeId) return;`). But a
-   * right-click on empty canvas is the idiom for «create something here» in every
-   * tool, and above all **the clicked coordinate is where the new node goes**, which
-   * is more definite than a button in the top chrome.
-   *
-   * Omitted, it is a no-op as before, and the browser's default menu still appears.
-   */
-  onContextMenuPane?: (position: { x: number; y: number }) => void;
+  onContextMenuNode?: (slug: string, position: { x: number; y: number;
+    }) => void;
+    /**
+     * **Right-click on empty canvas** — called at a point with no node (2026-08-03).
+     *
+     * This position used to be simply ignored (`if (!hitNodeId) return;`). But a
+     * right-click on empty canvas is the idiom for «create something here» in every
+     * tool, and above all **the clicked coordinate is where the new node goes**, which
+     * is more definite than a button in the top chrome.
+     *
+     * Omitted, it is a no-op as before, and the browser's default menu still appears.
+     */
+    onContextMenuPane?: (position: {
+        x: number;
+        y: number;
+    }) => void;
 }
 
 export interface TopologyPointerHandlers {
@@ -483,7 +507,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     neuralRampRef,
     domeGripRef = { current: false },
     tierRevealRef,
-    galaxyRef,
     pathEdgeIdsRef,
     visitedTrailRef,
     onSelect,
@@ -596,15 +619,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
                   batchSize,
                   labels: barLabels,
                 }),
-                scale,
-              )
+                scale)
             : clusterBadgeRect(
                 parentScreen.x,
                 parentScreen.y,
                 nodeScreenRadius,
                 clusterBadgeLabel(chip.count, chip.expanded),
-                scale,
-              );
+                scale);
       } else {
         const chipOff = chipDomeFrame?.get(chip.parentId);
         const screen = worldToScreen(camera, width, height, chip.anchor.x + (chipOff?.dx ?? 0), chip.anchor.y + (chipOff?.dy ?? 0));
@@ -627,8 +648,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     camera: CameraAxes,
     tokens: ReturnType<typeof readOntologyMapTokensOrNull>,
     px: number,
-    py: number,
-  ): string | null => {
+    py: number): string | null => {
     if (!tokens) return null;
     const dialFrame = lastDialFrame();
     if (dialFrame) return pickDial(dialFrame.picks, dialFrame.rows, px, py, HIT_TOUCH_SLACK_PX);
@@ -658,7 +678,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const domeFrame = domeFrameNow();
     const renderOffsetForNode =
       parallax || domeFrame
-        ? (node: { id: string; x: number; y: number; kind: "project" | "domain" | "capability" | "element" }) => {
+        ? (node: { id: string; x: number; y: number; kind: "project" | "domain" | "capability" | "element";
+            }) => {
             const pOff = parallax
               ? depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
               : ZERO_PARALLAX;
@@ -684,18 +705,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           clusteredIds,
           realmTierKinds,
           // The alpha the draw used this frame — every see-through channel from one source.
-          lastDrawnNodeAlphas(),
-        ),
+          lastDrawnNodeAlphas()),
       renderOffsetForNode,
           // 3D perspective factor — the same s the draw multiplied by, applied to the hit disc too.
       domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
           // 3D depth — among overlapping discs the nearer (brighter, larger) node wins.
-      domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined,
-    );
+      domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined);
   };
 
   /** Reuse the cached rect during a gesture; refresh lazily if we somehow don't have one yet. */
-  const currentRect = (el: HTMLCanvasElement): { left: number; top: number } => {
+  const currentRect = (el: HTMLCanvasElement): { left: number; top: number;
+    } => {
     const cached = canvasRectRef.current;
     if (cached) return cached;
     const rect = el.getBoundingClientRect();
@@ -762,996 +782,926 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       zoomRatio,
       focusedNodeId ?? "",
       hoveredNodeIdRef.current ?? "",
-      galaxyRef?.current ? "galaxy" : "flat",
-      selectedEdge ? `${selectedEdge.sourceId}>${selectedEdge.targetId}` : "",
-      pathIds ? [...pathIds].sort().join(",") : "",
-      visited.join(","),
-      domeEpoch,
-    ].join("|");
-    // Sets and maps are compared **by reference** — comparing only sizes lets a
-    // different collection of the same size through, which is the quietest kind of
-    // cache error. These values are replaced with new objects rather than mutated in
-    // place, so reference comparison is exact.
-    const clusteredIds = clusteredIdsRef?.current;
-    const realmTierKinds = realmTierKindsRef?.current ?? null;
-    const tierReveal = tierRevealRef?.current ?? DEFAULT_TIER_REVEAL;
-    if (
-      edgeCandidateCache &&
-      edgeCandidateCache.world === world &&
-      edgeCandidateCache.key === cacheKey &&
-      edgeCandidateCache.clusteredIds === clusteredIds &&
-      edgeCandidateCache.realmTierKinds === realmTierKinds &&
-      edgeCandidateCache.tierReveal === tierReveal
-    ) {
-      return edgeCandidateCache.value;
-    }
-
-    const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
-    const hittable = new Set(
-      world.nodes
-        .filter((n) =>
-          isNodeHittable(
-            n,
-            zoomRatio,
-            focusedNodeId,
-            neighborsOfFocused,
-            tierReveal,
-            clusteredIds,
-            realmTierKinds,
-            lastDrawnNodeAlphas(),
-          ),
-        )
-        .map((n) => n.id),
-    );
-    // Hit-test inversion guard (panel3-S3) — the end nodes' body radius in screen px
-    // is computed with **the same formula** as `hitTestWorld`
-    // (radiusForKind × magnitudeScale × scale + 5) and passed through. It meshes
-    // exactly with the node hit area so a click on or near a node body cannot leak to
-    // a radial edge (node body > edge).
-    const scale = cameraRef.current.scale.value;
-    const bodyRadius = (id: string): number | undefined => {
-      const node = world.nodeById.get(id);
-      if (!node) return undefined;
-    // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
-      const domeS = domeFrame?.get(id)?.s ?? 1;
-      return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
-    };
-    const candidates: EdgeHitCandidate[] = [];
-    // The same live projected curve as paint, including assembly and orbit.
-    // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
-    const cam = cameraRef.current;
-    const ZERO = { dx: 0, dy: 0, s: 1 };
-    for (const edge of world.edges) {
-      if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
-      if (galaxyRef?.current) {
-        let walked = false;
-        for (let index = 1; index < visited.length; index += 1) {
-          const left = visited[index - 1];
-          const right = visited[index];
-          if (
-            (left === edge.sourceId && right === edge.targetId) ||
-            (left === edge.targetId && right === edge.sourceId)
-          ) {
-            walked = true;
-            break;
-          }
+            selectedEdge ? `${selectedEdge.sourceId}>${selectedEdge.targetId}` : "",
+            pathIds ? [...pathIds].sort().join(",") : "",
+            visited.join(","),
+            domeEpoch
+        ].join("|");
+        // Sets and maps are compared **by reference** — comparing only sizes lets a
+        // different collection of the same size through, which is the quietest kind of
+        // cache error. These values are replaced with new objects rather than mutated in
+        // place, so reference comparison is exact.
+        const clusteredIds = clusteredIdsRef?.current;
+        const realmTierKinds = realmTierKindsRef?.current ?? null;
+        const tierReveal = tierRevealRef?.current ?? DEFAULT_TIER_REVEAL;
+        if (edgeCandidateCache &&
+            edgeCandidateCache.world === world &&
+            edgeCandidateCache.key === cacheKey &&
+            edgeCandidateCache.clusteredIds === clusteredIds &&
+            edgeCandidateCache.realmTierKinds === realmTierKinds &&
+            edgeCandidateCache.tierReveal === tierReveal) {
+            return edgeCandidateCache.value;
         }
-        const selected =
-          selectedEdge !== null &&
-          ((selectedEdge.sourceId === edge.sourceId && selectedEdge.targetId === edge.targetId) ||
-            (selectedEdge.sourceId === edge.targetId && selectedEdge.targetId === edge.sourceId));
-        if (
-          !isGalaxyEdgeVisible(edge, {
-            focusedNodeId,
-            hoveredNodeId: hoveredNodeIdRef.current,
-            selected,
-            path: edge.id !== undefined && pathIds?.has(edge.id) === true,
-            walked,
-          })
-        ) {
-          continue;
-        }
-      }
-      const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
-      const offB = domeFrame?.get(edge.targetId) ?? ZERO;
-      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
-      candidates.push({
-        edge,
-        a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
-        b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
-        control: worldToScreen(cam, width, height, control.x, control.y),
-        aRadius: bodyRadius(edge.sourceId),
-        bRadius: bodyRadius(edge.targetId),
-      });
-    }
-    edgeCandidateCache = { key: cacheKey, world, clusteredIds, realmTierKinds, tierReveal, value: candidates };
-    return candidates;
-  };
-
-  const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    // Only the primary button presses the map. A right press used to run the
-    // same press machine, so a right-click selected the node under it and
-    // reframed the camera while the menu stayed where the pointer was — 47 px
-    // (headless) to 268 px (14-inch, INDEX folding) away from the node it
-    // belongs to (measured 2026-09-19). The context menu is the whole of what
-    // a secondary button does here (`handleContextMenu`).
-    if (e.button !== undefined && e.button !== 0) return;
-    const tokens = readOntologyMapTokensOrNull();
-    const world = worldRef.current;
-    if (!tokens || !world) return;
-    if (cameraTweenRef) cameraTweenRef.current = null;
-    {
-      const cam = cameraRef.current;
-      if (zoomEaseRef.current !== null) {
-        zoomEaseRef.current = null;
-        cameraTargetRef.current = { tx: cam.x.value, ty: cam.y.value, tscale: cam.scale.value };
-      }
-      if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
-        cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
-        cameraTargetRef.current = { ...cameraTargetRef.current, tx: cam.x.value, ty: cam.y.value };
-        dampingRef.current = tokens.cameraDampingDefault;
-      }
-    }
-    // Capture the pointer for the whole gesture — without this, releasing over
-    // the analysis rail / outside the window never delivers `pointerup` to the
-    // canvas, the state machine sticks in `dragging`, and the camera then
-    // follows a button-less mouse until it strands off-graph (owner's
-    // "Dragging makes the canvas disappear";
-    // QA loss B). Implicit release on pointerup/cancel is per-spec automatic.
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // jsdom / test envs may not implement pointer capture — the buttons===0
-      // guard in `handlePointerMove` covers the fallback.
-    }
-    // Snapshot the rect once per gesture (see `canvasRectRef` JSDoc).
-    const domRect = e.currentTarget.getBoundingClientRect();
-    canvasRectRef.current = { left: domRect.left, top: domRect.top };
-    const rect = canvasRectRef.current;
-    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // rank4 touch pinch zoom — register the touch pointer. The instant a second finger
-    // lands, any single-finger gesture in flight (press or pan) is cancelled without
-    // committing a click and switches to pinch (putting two fingers down must not
-    // select a node). A third or further finger is ignored — pinch reads only the first
-    // two pointers' coordinates (Map insertion order is preserved).
-    if (activeTouchesRef && e.pointerType === "touch") {
-      activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
-      if (activeTouchesRef.current.size === 2 && pinchRef) {
-        handlePointerCancel();
-        const pts = [...activeTouchesRef.current.values()];
-        pinchRef.current = {
-          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-          midX: (pts[0].x + pts[1].x) / 2,
-          midY: (pts[0].y + pts[1].y) / 2,
+        const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+        const hittable = new Set(world.nodes
+            .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierReveal, clusteredIds, realmTierKinds, lastDrawnNodeAlphas()))
+            .map((n) => n.id));
+        // Hit-test inversion guard (panel3-S3) — the end nodes' body radius in screen px
+        // is computed with **the same formula** as `hitTestWorld`
+        // (radiusForKind × magnitudeScale × scale + 5) and passed through. It meshes
+        // exactly with the node hit area so a click on or near a node body cannot leak to
+        // a radial edge (node body > edge).
+        const scale = cameraRef.current.scale.value;
+        const bodyRadius = (id: string): number | undefined => {
+            const node = world.nodeById.get(id);
+            if (!node)
+                return undefined;
+            // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
+            const domeS = domeFrame?.get(id)?.s ?? 1;
+            return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
         };
-        return; // No machine transition — this gesture is camera-only.
-      }
-      if (activeTouchesRef.current.size > 2) return;
-    }
-    // 3D — catch any orbit momentum in flight immediately (the same iOS contract as
-    // the camera flick catch). The act of catching *is* «stop right here».
-    {
-      const dome = domeInteractive();
-      if (dome) {
-        dome.yawVel = 0;
-        // Drop the landing aim too — new input and an explicit reset always win.
-        dome.yawSnap = null;
-        dome.pitchVel = 0;
-        // A programmatic pose move in flight ("Return to Origin" or a selection reframe) is
-        // dropped here too — the same contract as pointerdown dropping the camera
-        // tween: the gesture takes over immediately from the current pose (④'s
-        // interruptibility requirement).
-        dome.poseTween = null;
-        // Sync the smoothing target to the current pose, so the «stop right here» of
-        // the catch does not slide on the remaining target gap.
-        dome.yawTarget = dome.yaw;
-        dome.pitchTarget = dome.pitch;
-      }
-    }
-    /*
-     * 3D — **whether this drag is a rotation or a move is decided once, here.**
-     *
-     * Deciding per move flips the gesture's identity the moment the hand grazes the
-     * dome's boundary (you are rotating and suddenly the map comes along). A
-     * gesture's identity is fixed at the start and unchanged until the end — the
-     * convention the pointer state machine already uses. The rule and its rationale:
-     * the `DOME_GRIP_MARGIN` doc-block in `model/dome-view.ts`.
-     */
-    {
-      const dome = domeInteractive();
-      if (dome === null) {
-        domeGripRef.current = false;
-      } else {
-        const view = viewportRef.current;
-        const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
-        domeGripRef.current = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y);
-      }
-    }
-    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
-    const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
-    pointerMachineRef.current = next;
-    camStartAtDownRef.current = { x: cameraRef.current.x.value, y: cameraRef.current.y.value };
-    dragHistoryRef.current = [{ x: point.x, y: point.y, t: performance.now() }];
-  };
-
-  const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    const tokens = readOntologyMapTokensOrNull();
-    const world = worldRef.current;
-    if (!tokens || !world) return;
-    const rect = currentRect(e.currentTarget);
-    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-
-    if (activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
-      activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
-      const pinch = pinchRef?.current;
-      if (pinch && pinchRef && activeTouchesRef.current.size >= 2) {
-        const pts = [...activeTouchesRef.current.values()];
-        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-        const midX = (pts[0].x + pts[1].x) / 2;
-        const midY = (pts[0].y + pts[1].y) / 2;
-        if (pinch.dist > 0 && dist > 0) {
-          releaseCameraForZoom();
-          const { width, height } = viewportRef.current;
-          const cam = cameraRef.current;
-          const spread = Math.pow(dist / pinch.dist, navigationSpeedRef.current.zoom);
-          const newScale = scaleWithinZoomBounds(tokens, cam.scale.value * spread);
-          const worldAtPrevMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
-          const worldAtPrevMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
-          const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
-          const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
-          cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
-          cameraRef.current = {
-            x: { value: afterX, velocity: 0 },
-            y: { value: afterY, velocity: 0 },
-            scale: { value: newScale, velocity: 0 },
-          };
-          noteUserCameraGesture();
-          dampingRef.current = tokens.cameraDampingDefault;
-          cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+        const candidates: EdgeHitCandidate[] = [];
+        // The same live projected curve as paint, including assembly and orbit.
+        // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
+        const cam = cameraRef.current;
+        const ZERO = { dx: 0, dy: 0, s: 1 };
+        for (const edge of world.edges) {
+            if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId))
+                continue;
+            const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
+            const offB = domeFrame?.get(edge.targetId) ?? ZERO;
+            const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
+            candidates.push({
+                edge,
+                a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
+                b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
+                control: worldToScreen(cam, width, height, control.x, control.y),
+                aRadius: bodyRadius(edge.sourceId),
+                bRadius: bodyRadius(edge.targetId),
+            });
         }
-        pinchRef.current = { dist, midX, midY };
-        return;
-      }
-    }
-
-    // Stuck-drag guard (QA loss B fallback): a button-less move during an
-    // active gesture means we missed the real `pointerup` (capture unsupported
-    // or interrupted). Treat it as that pointerup — the stationary-release path
-    // holds the camera exactly where it is — and let the NEXT move resume as a
-    // plain hover on the now-idle machine.
-    if (pointerMachineRef.current.phase !== "idle" && e.buttons === 0) {
-      handlePointerUp();
-      return;
-    }
-
-    // Capture the pressed node BEFORE the transition — the pressed→dragging
-    // transition clears `pressedNodeId`, but we need it to know whether this
-    // drag grabbed a node (pin-drag) or empty space (camera pan).
-    const pressedNodeId = pointerMachineRef.current.pressedNodeId;
-    const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointermove", point }, tokens.hysteresisPx);
-    pointerMachineRef.current = next;
-
-    if (next.phase === "dragging") {
-      const sim = simRef.current;
-      const { width, height } = viewportRef.current;
-      const dome = domeInteractive();
-      // A settling layout rewrites every coordinate, so a drag begun on one of its nodes drags the dome.
-      const grabbedNodeId = dome?.settling ? null : pressedNodeId;
-
-      // 3D in-plane node drag — the node vs empty-space decision (pressedNodeId) was
-      // already made by the same hit test as 2D. One screen point corresponds to
-      // infinitely many depths, so a node moves **only within its own kind plane**
-      // (`solveDomePlanePoint`) — preserving z's typed fact (the kind tier). The force
-      // simulation belongs to the 2D layout and is untouched here (only the dome
-      // coordinates move — session only, the 2D arrangement is unchanged).
-      if (dome && nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
-        const grabNode = world.nodeById.get(grabbedNodeId);
-        const coord = dome.model.coords.get(grabbedNodeId);
-        if (grabNode && coord) {
-          const grabFrame = dome.frame.get(grabbedNodeId);
-          const renderedX = grabNode.x + (grabFrame?.dx ?? 0);
-          const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
-          const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
-          const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
-          // Grabbing a node is intervention — release the attention spin (①).
-          dome.spinArmed = false;
-          commitDomeEntrySweep(dome);
-          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
-          dome.drag = {
-            nodeId: grabbedNodeId,
-            spring: { px: coord.px, pz: coord.pz, vx: 0, vz: 0 },
-            targetPx: coord.px,
-            targetPz: coord.pz,
-          };
+        edgeCandidateCache = { key: cacheKey, world, clusteredIds, realmTierKinds, tierReveal, value: candidates };
+        return candidates;
+    };
+    const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+        // Only the primary button presses the map. A right press used to run the
+        // same press machine, so a right-click selected the node under it and
+        // reframed the camera while the menu stayed where the pointer was — 47 px
+        // (headless) to 268 px (14-inch, INDEX folding) away from the node it
+        // belongs to (measured 2026-09-19). The context menu is the whole of what
+        // a secondary button does here (`handleContextMenu`).
+        if (e.button !== undefined && e.button !== 0)
+            return;
+        const tokens = readOntologyMapTokensOrNull();
+        const world = worldRef.current;
+        if (!tokens || !world)
+            return;
+        if (cameraTweenRef)
+            cameraTweenRef.current = null;
+        {
+            const cam = cameraRef.current;
+            if (zoomEaseRef.current !== null) {
+                zoomEaseRef.current = null;
+                cameraTargetRef.current = { tx: cam.x.value, ty: cam.y.value, tscale: cam.scale.value };
+            }
+            if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
+                cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
+                cameraTargetRef.current = { ...cameraTargetRef.current, tx: cam.x.value, ty: cam.y.value };
+                dampingRef.current = tokens.cameraDampingDefault;
+            }
         }
-      }
-
-      if (dome && nodeDragRef.current !== null && dome.drag !== null) {
+        // Capture the pointer for the whole gesture — without this, releasing over
+        // the analysis rail / outside the window never delivers `pointerup` to the
+        // canvas, the state machine sticks in `dragging`, and the camera then
+        // follows a button-less mouse until it strands off-graph (owner's
+        // "Dragging makes the canvas disappear";
+        // QA loss B). Implicit release on pointerup/cancel is per-spec automatic.
+        try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+        }
+        catch {
+        }
+        // Snapshot the rect once per gesture (see `canvasRectRef` JSDoc).
+        const domRect = e.currentTarget.getBoundingClientRect();
+        canvasRectRef.current = { left: domRect.left, top: domRect.top };
+        const rect = canvasRectRef.current;
+        const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        // rank4 touch pinch zoom — register the touch pointer. The instant a second finger
+        // lands, any single-finger gesture in flight (press or pan) is cancelled without
+        // committing a click and switches to pinch (putting two fingers down must not
+        // select a node). A third or further finger is ignored — pinch reads only the first
+        // two pointers' coordinates (Map insertion order is preserved).
+        if (activeTouchesRef && e.pointerType === "touch") {
+            activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
+            if (activeTouchesRef.current.size === 2 && pinchRef) {
+                handlePointerCancel();
+                const pts = [...activeTouchesRef.current.values()];
+                pinchRef.current = {
+                    dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+                    midX: (pts[0].x + pts[1].x) / 2,
+                    midY: (pts[0].y + pts[1].y) / 2,
+                };
+                return; // No machine transition — this gesture is camera-only.
+            }
+            if (activeTouchesRef.current.size > 2)
+                return;
+        }
+        // 3D — catch any orbit momentum in flight immediately (the same iOS contract as
+        // the camera flick catch). The act of catching *is* «stop right here».
+        {
+            const dome = domeInteractive();
+            if (dome) {
+                dome.yawVel = 0;
+                // Drop the landing aim too — new input and an explicit reset always win.
+                dome.yawSnap = null;
+                dome.pitchVel = 0;
+                // A programmatic pose move in flight ("Return to Origin" or a selection reframe) is
+                // dropped here too — the same contract as pointerdown dropping the camera
+                // tween: the gesture takes over immediately from the current pose (④'s
+                // interruptibility requirement).
+                dome.poseTween = null;
+                // Sync the smoothing target to the current pose, so the «stop right here» of
+                // the catch does not slide on the remaining target gap.
+                dome.yawTarget = dome.yaw;
+                dome.pitchTarget = dome.pitch;
+            }
+        }
+        /*
+         * 3D — **whether this drag is a rotation or a move is decided once, here.**
+         *
+         * Deciding per move flips the gesture's identity the moment the hand grazes the
+         * dome's boundary (you are rotating and suddenly the map comes along). A
+         * gesture's identity is fixed at the start and unchanged until the end — the
+         * convention the pointer state machine already uses. The rule and its rationale:
+         * the `DOME_GRIP_MARGIN` doc-block in `model/dome-view.ts`.
+         */
+        {
+            const dome = domeInteractive();
+            if (dome === null) {
+                domeGripRef.current = false;
+            }
+            else {
+                const view = viewportRef.current;
+                const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
+                domeGripRef.current = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y);
+            }
+        }
+        const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
+        const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
+        pointerMachineRef.current = next;
+        camStartAtDownRef.current = { x: cameraRef.current.x.value, y: cameraRef.current.y.value };
+        dragHistoryRef.current = [{ x: point.x, y: point.y, t: performance.now() }];
+    };
+    const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+        const tokens = readOntologyMapTokensOrNull();
+        const world = worldRef.current;
+        if (!tokens || !world)
+            return;
+        const rect = currentRect(e.currentTarget);
+        const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        if (activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+            activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
+            const pinch = pinchRef?.current;
+            if (pinch && pinchRef && activeTouchesRef.current.size >= 2) {
+                const pts = [...activeTouchesRef.current.values()];
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                const midX = (pts[0].x + pts[1].x) / 2;
+                const midY = (pts[0].y + pts[1].y) / 2;
+                if (pinch.dist > 0 && dist > 0) {
+                    releaseCameraForZoom();
+                    const { width, height } = viewportRef.current;
+                    const cam = cameraRef.current;
+                    const spread = Math.pow(dist / pinch.dist, navigationSpeedRef.current.zoom);
+                    const newScale = scaleWithinZoomBounds(tokens, cam.scale.value * spread);
+                    const worldAtPrevMidX = (pinch.midX - width / 2) / cam.scale.value + cam.x.value;
+                    const worldAtPrevMidY = (pinch.midY - height / 2) / cam.scale.value + cam.y.value;
+                    const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
+                    const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
+                    cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+                    cameraRef.current = {
+                        x: { value: afterX, velocity: 0 },
+                        y: { value: afterY, velocity: 0 },
+                        scale: { value: newScale, velocity: 0 },
+                    };
+                    noteUserCameraGesture();
+                    dampingRef.current = tokens.cameraDampingDefault;
+                    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+                }
+                pinchRef.current = { dist, midX, midY };
+                return;
+            }
+        }
+        // Stuck-drag guard (QA loss B fallback): a button-less move during an
+        // active gesture means we missed the real `pointerup` (capture unsupported
+        // or interrupted). Treat it as that pointerup — the stationary-release path
+        // holds the camera exactly where it is — and let the NEXT move resume as a
+        // plain hover on the now-idle machine.
+        if (pointerMachineRef.current.phase !== "idle" && e.buttons === 0) {
+            handlePointerUp();
+            return;
+        }
+        // Capture the pressed node BEFORE the transition — the pressed→dragging
+        // transition clears `pressedNodeId`, but we need it to know whether this
+        // drag grabbed a node (pin-drag) or empty space (camera pan).
+        const pressedNodeId = pointerMachineRef.current.pressedNodeId;
+        const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointermove", point }, tokens.hysteresisPx);
+        pointerMachineRef.current = next;
+        if (next.phase === "dragging") {
+            const sim = simRef.current;
+            const { width, height } = viewportRef.current;
+            const dome = domeInteractive();
+            // A settling layout rewrites every coordinate, so a drag begun on one of its nodes drags the dome.
+            const grabbedNodeId = dome?.settling ? null : pressedNodeId;
+            // 3D in-plane node drag — the node vs empty-space decision (pressedNodeId) was
+            // already made by the same hit test as 2D. One screen point corresponds to
+            // infinitely many depths, so a node moves **only within its own kind plane**
+            // (`solveDomePlanePoint`) — preserving z's typed fact (the kind tier). The force
+            // simulation belongs to the 2D layout and is untouched here (only the dome
+            // coordinates move — session only, the 2D arrangement is unchanged).
+            if (dome && nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+                const grabNode = world.nodeById.get(grabbedNodeId);
+                const coord = dome.model.coords.get(grabbedNodeId);
+                if (grabNode && coord) {
+                    const grabFrame = dome.frame.get(grabbedNodeId);
+                    const renderedX = grabNode.x + (grabFrame?.dx ?? 0);
+                    const renderedY = grabNode.y + (grabFrame?.dy ?? 0);
+                    const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+                    const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
+                    // Grabbing a node is intervention — release the attention spin (①).
+                    dome.spinArmed = false;
+                    commitDomeEntrySweep(dome);
+                    nodeDragRef.current = { nodeId: grabbedNodeId, offset };
+                    dome.drag = {
+                        nodeId: grabbedNodeId,
+                        spring: { px: coord.px, pz: coord.pz, vx: 0, vz: 0 },
+                        targetPx: coord.px,
+                        targetPz: coord.pz,
+                    };
+                }
+            }
+            if (dome && nodeDragRef.current !== null && dome.drag !== null) {
+                clearEdgeHover();
+                clearClusterHover();
+                const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+                const pin = computePinWorld(pw.x, pw.y, nodeDragRef.current.offset);
+                const coord = dome.model.coords.get(dome.drag.nodeId);
+                if (coord) {
+                    const solved = solveDomePlanePoint(dome.model, coord.py, pin.x, pin.y, dome.yaw + dome.lag[world.nodeById.get(dome.drag.nodeId)?.kind ?? "element"], dome.pitch);
+                    if (solved) {
+                        dome.drag.targetPx = solved.px;
+                        dome.drag.targetPz = solved.pz;
+                    }
+                }
+                e.currentTarget.style.cursor = "grabbing";
+                return;
+            }
+            // Start a node pin-drag the moment we cross into dragging on a node.
+            if (nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
+                const grabNode = world.nodeById.get(grabbedNodeId);
+                if (grabNode) {
+                    const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+                    const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
+                    sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
+                    nodeDragRef.current = { nodeId: grabbedNodeId, offset };
+                    heatRef.current = NODE_DRAG_HEAT_MS;
+                    // C1 B1/B2 — capture the tug/settle-restriction set + start position
+                    // once, at grab time (not recomputed per frame).
+                    const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
+                    dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
+                    dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
+                }
+            }
+            // Active node pin-drag: move the pin 1:1 in world space, keep the sim
+            // warm so neighbors reflow. The camera does NOT pan (headline fix — a
+            // node drag moves the NODE, not the whole viewport).
+            clearEdgeHover(); // Stop a card lingering mid-drag.
+            clearClusterHover();
+            const drag = nodeDragRef.current;
+            if (drag && sim) {
+                const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+                const pin = computePinWorld(pw.x, pw.y, drag.offset);
+                sim.movePin(pin.x, pin.y);
+                heatRef.current = NODE_DRAG_HEAT_MS;
+                // rank4 — the "grabbing" cursor while a node is held and moved (pure CSS).
+                // Releasing restores it on pointerup/cancel.
+                e.currentTarget.style.cursor = "grabbing";
+                return;
+            }
+            // `grabbing` while pushing — the same response as a node drag (the branch
+            // above), so "something is in my hand right now" reads as the same word in both cases.
+            e.currentTarget.style.cursor = "grabbing";
+            const dragSpeed = navigationSpeedRef.current.drag;
+            if (dome && domeGripRef.current) {
+                const history = dragHistoryRef.current;
+                const last = history[history.length - 1];
+                const dx = last ? point.x - last.x : 0;
+                const dy = last ? point.y - last.y : 0;
+                dome.yawTarget += dx * ORBIT_YAW_PER_PX * dragSpeed;
+                dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX * dragSpeed);
+                dome.orbiting = true;
+                dome.spinArmed = false;
+                commitDomeEntrySweep(dome);
+                dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
+                if (dragHistoryRef.current.length > 10)
+                    dragHistoryRef.current.shift();
+                return;
+            }
+            // Panning is intervention too: the dome must not resume idle rotation on release.
+            if (dome) {
+                dome.spinArmed = false;
+                commitDomeEntrySweep(dome);
+            }
+            const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
+                ?? next.downPoint
+                ?? point;
+            const scale = cameraRef.current.scale.value;
+            const worldDX = ((point.x - previous.x) * dragSpeed) / scale;
+            const worldDY = ((point.y - previous.y) * dragSpeed) / scale;
+            const nextX = cameraRef.current.x.value - worldDX;
+            const nextY = cameraRef.current.y.value - worldDY;
+            cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
+            cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
+            noteUserCameraGesture();
+            dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
+            if (dragHistoryRef.current.length > 10)
+                dragHistoryRef.current.shift();
+            return;
+        }
+        // A drag (pan or node move) already returned in the block above, so only
+        // idle|pressed reaches here. Edge hover works during focus (ego) too — an edge
+        // click (P3b) works during focus, so hover has to match ("if you can grab it you
+        // can read it"; the root of the user report "With a node clicked, the edge hover tooltip does not appear"). The
+        // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
+        const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
+        // P3c — proximity to an edge at a node-miss point is a hover microcard. It fires
+        // only when the identity changes (moving along the same edge does not re-fire, so
+        // the card is stable). Moving onto a node clears the edge hover immediately (the
+        // node wins).
+        // The edge hit is also used for the cursor decision, so it is computed **outside**
+        // the hover block below — if the cursor affordance rode on the edge-hover wiring
+        // (`hoveredEdgeRef && onHoverEdge`), a consumer without that wiring would get no
+        // cursor at all (2026-07-28: it really was inside that guard).
+        const edgeHit = hitNodeId === null && hoveredEdgeRef && onHoverEdge
+            ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6)
+            : null;
+        if (hoveredEdgeRef && onHoverEdge) {
+            const prev = hoveredEdgeRef.current;
+            const sameEdge = edgeHit !== null &&
+                prev !== null &&
+                prev.sourceId === edgeHit.sourceId &&
+                prev.targetId === edgeHit.targetId &&
+                prev.relationType === edgeHit.relationType;
+            if (!sameEdge && (edgeHit !== null || prev !== null)) {
+                const payload = edgeHit
+                    ? {
+                        sourceId: edgeHit.sourceId,
+                        targetId: edgeHit.targetId,
+                        relationType: edgeHit.relationType,
+                        declaredBySlug: edgeHit.declaredBySlug,
+                    }
+                    : null;
+                hoveredEdgeRef.current = payload;
+                onHoverEdge(payload, payload
+                    ? {
+                        x: e.clientX,
+                        y: e.clientY,
+                        avoid: collectHoverAvoidRects(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, clusteredIdsRef?.current ?? null, domeFrameNow(), { x: e.clientX - point.x, y: e.clientY - point.y }, point),
+                    }
+                    : null);
+            }
+        }
+        // Cursor affordance — **each surface shows its own primary action** (design
+        // council "Interaction" prescription plus a measured correction, 2026-07-28).
+        //
+        // Before: node = `grab`, edge = `pointer`, **background = nothing**. The node's
+        // `grab` was not a lie (it really does pin-drag). The real defect was the
+        // background — **it is pannable and offered no affordance at all** (measured: the
+        // background hover cursor was `auto`). So nobody was told "you can push this map",
+        // while the grabbing hand appeared only over nodes, which cannot be pushed.
+        //
+        // Now it splits by primary action:
+        // - node, edge, chip → `pointer` (press and it opens — the action the hint bar names)
+        // - background → `grab` (push and the map follows), `grabbing` while pushing
+        // Node dragging still works and still answers with `grabbing` — as an enhancement
+        // it yields the affordance in the primary position (the council's ruling being that
+        // it belongs to the class where drag-only discovery is acceptable).
+        //
+        // That this assignment sits **outside** the hover block above is also contractual —
+        // inside it, a consumer with no edge-hover wiring would get no cursor at all.
+        e.currentTarget.style.cursor =
+            hitNodeId !== null || edgeHit !== null ? "pointer" : "grab";
+        // Density gate — cluster chip hover: cursor pointer plus a border emphasis mirror
+        // (node-miss points only; the node wins). The node-click = ego-focus contract is
+        // unchanged, and a chip stands in the empty space its children left, so they only
+        // overlap here.
+        if (hoveredClusterIdRef) {
+            const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
+            if (hoveredClusterIdRef.current !== chipHit) {
+                hoveredClusterIdRef.current = chipHit;
+                // S2 part 5C — the tooltip fires only when the hover target changes (stability).
+                // A chip hit clears the edge hover immediately (both live in empty space and can
+                // overlap — the chip wins).
+                if (onHoverCluster) {
+                    if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
+                        // An ego `Neighbor +N` chip has no parent title, so no tooltip is raised (cursor and border only).
+                        onHoverCluster(null);
+                    }
+                    else {
+                        clearEdgeHover();
+                        const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
+                        if (chip) {
+                            // High-fanout batch reveal — a `+N More` chip has a synthetic id, so it
+                            // is resolved to the real parent for the tooltip to find the parent's
+                            // title and descendant count (reusing the existing collapsed-tooltip copy —
+                            // "Collapsed N · All Descendants M", no new i18n). expanded is already false (a
+                            // collapsed pill), so the collapsed wording appears.
+                            const realParent = parseClusterMoreChipId(chip.parentId) ?? chip.parentId;
+                            onHoverCluster({
+                                parentId: realParent,
+                                count: chip.count,
+                                // Panel3-S6 — the parent's total descendant count (the same source as the
+                                // node badge, `WorldNode.count` = descendantCount), looked up in the live world.
+                                descendantTotal: world.nodeById.get(realParent)?.count ?? chip.count,
+                                expanded: chip.expanded,
+                                position: { x: e.clientX, y: e.clientY },
+                            });
+                        }
+                    }
+                }
+            }
+            if (chipHit !== null)
+                e.currentTarget.style.cursor = "pointer";
+            /*
+             * 3D — over empty space **the cursor names two zones.** The rule differs by
+             * position (inside the dome = rotate, outside = move), and with nothing on
+             * screen saying so, that rule may as well not exist. A feature you can only
+             * discover by dragging is the «drag-only discovery» this repository forbids.
+             *
+             * `grab` = grab and rotate (over the dome) · `move` = grab and move (outside).
+             * Over a node or chip their own cursors have already won, so those are untouched.
+             */
+            if (chipHit === null && hitNodeId === null) {
+                const dome = domeInteractive();
+                if (dome !== null) {
+                    const view = viewportRef.current;
+                    const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
+                    e.currentTarget.style.cursor = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y) ? "grab" : "move";
+                }
+            }
+        }
+        if (next.phase !== "idle" || focusedSlugRef.current)
+            return; // The ripple is idle plus unfocused only (existing contract).
+        if (hitNodeId === hoveredNodeIdRef.current)
+            return;
+        hoveredNodeIdRef.current = hitNodeId;
+        if (hitNodeId) {
+            const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
+            const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
+            for (const entry of schedule)
+                rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
+        }
+    };
+    const handlePointerUp = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
+        // rank4 touch pinch zoom — touch release bookkeeping. A pinch up (or the leftover
+        // finger of one) does not take the click/flick paths: entering a pinch already
+        // cancelled the machine to idle, while an ordinary single tap is in phase
+        // pressed/dragging at up time and does not hit this early return. (The internal
+        // no-arg call — the stuck-drag guard — skips the bookkeeping.)
+        if (e && activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+            activeTouchesRef.current.delete(e.pointerId);
+            if (pinchRef?.current && activeTouchesRef.current.size < 2)
+                pinchRef.current = null;
+            if (pointerMachineRef.current.phase === "idle")
+                return;
+        }
+        const tokens = readOntologyMapTokensOrNull();
+        if (!tokens)
+            return;
+        // P3b — snapshot of the click point (outside a drag, downPoint *is* the click coordinate).
+        const clickPoint = pointerMachineRef.current.downPoint;
+        const wasDragging = pointerMachineRef.current.phase === "dragging";
+        const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
+        pointerMachineRef.current = next;
+        // Let go of the grabbing shape once the hand lets go (2026-07-28). It used to be
+        // restored **only in the node-drag branch**, so pushing the background and then
+        // leaving the mouse still left the cursor as `grabbing` — released, while the
+        // screen still said it was held. Clearing it with `""` falls back to the canvas's
+        // default `grab` (a true signal that it is pannable), and the next pointermove over
+        // a node overrides it with `pointer`.
+        if (canvasRef?.current)
+            canvasRef.current.style.cursor = "";
+        // Node pin-drag release: unpin and give the graph a settle burst so it
+        // (and the dropped node) relaxes around the drop, Obsidian-style. No
+        // camera flick, no click commit (the state machine already suppressed the
+        // click for a drag).
+        if (nodeDragRef.current !== null) {
+            // 3D in-plane drag release — there is no simulation pin (none was set on grab).
+            // Only `released` is marked so the spring settles onto the last target point (the
+            // loop clears it once it sees the settle) — the velocity is not reset to 0 on release.
+            {
+                const dome = domeInteractive();
+                if (dome && dome.drag !== null && dome.drag.nodeId === nodeDragRef.current.nodeId) {
+                    dome.drag.released = true;
+                    nodeDragRef.current = null;
+                    if (canvasRef?.current)
+                        canvasRef.current.style.cursor = "";
+                    return;
+                }
+            }
+            simRef.current?.clearPin();
+            nodeDragRef.current = null;
+            heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
+            // C1 B1: stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
+            // through the settle burst above (B2), cleared once heat reaches 0
+            // (`use-topology-loop.ts`'s rAF loop).
+            dragStartPosRef.current = null;
+            // rank4 — the drag has ended, so the "grabbing" cursor is cleared (the next
+            // pointermove sets grab/pointer/"" again depending on hover).
+            if (canvasRef?.current)
+                canvasRef.current.style.cursor = "";
+            return;
+        }
+        if (wasDragging) {
+            const dragSpeed = navigationSpeedRef.current.drag;
+            {
+                const dome = domeInteractive();
+                if (dome && dome.orbiting) {
+                    dome.orbiting = false;
+                    dome.yaw = dome.yawTarget;
+                    dome.pitch = dome.pitchTarget;
+                    if (!reducedMotionRef.current) {
+                        const release = sampleReleaseVelocity({
+                            history: dragHistoryRef.current,
+                            releaseTime: performance.now(),
+                            windowMs: tokens.cameraReleaseVelocityWindowMs,
+                            minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+                        });
+                        if (release.isFlick) {
+                            dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX * dragSpeed);
+                            dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX * dragSpeed);
+                            const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
+                            dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
+                        }
+                        else {
+                            dome.yawSnap = null;
+                        }
+                    }
+                    return;
+                }
+            }
+            const release = sampleReleaseVelocity({
+                history: dragHistoryRef.current,
+                releaseTime: performance.now(),
+                windowMs: tokens.cameraReleaseVelocityWindowMs,
+                minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+            });
+            if (reducedMotionRef.current || !release.isFlick) {
+                cameraTargetRef.current = { tx: cameraRef.current.x.value, ty: cameraRef.current.y.value, tscale: cameraTargetRef.current.tscale };
+                cameraRef.current = {
+                    ...cameraRef.current,
+                    x: { value: cameraRef.current.x.value, velocity: 0 },
+                    y: { value: cameraRef.current.y.value, velocity: 0 },
+                };
+                dampingRef.current = tokens.cameraDampingDefault;
+                return;
+            }
+            const px = projectFlickLanding({
+                velocityPxPerMs: release.vx * dragSpeed,
+                cameraPosition: cameraRef.current.x.value,
+                cameraScale: cameraRef.current.scale.value,
+                timeConstantMs: MOMENTUM_TAU_MS,
+            });
+            const py = projectFlickLanding({
+                velocityPxPerMs: release.vy * dragSpeed,
+                cameraPosition: cameraRef.current.y.value,
+                cameraScale: cameraRef.current.scale.value,
+                timeConstantMs: MOMENTUM_TAU_MS,
+            });
+            const world = worldRef.current;
+            let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
+            if (world) {
+                const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+                const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
+                const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
+                clampedLanding = clampPointToPanBounds(px.landingTarget, py.landingTarget, computeUnfocusedPanBounds(boundsSource, cameraRef.current.scale.value, tokens));
+            }
+            cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
+            noteUserCameraGesture();
+            cameraRef.current = {
+                ...cameraRef.current,
+                x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
+                y: { value: cameraRef.current.y.value, velocity: py.worldVelocity },
+            };
+            dampingRef.current = MOMENTUM_SPRING.damping;
+            cameraAngularFreqRef.current = springAngularFrequency(MOMENTUM_SPRING);
+            return;
+        }
+        // A double-click on a node opens its children and keeps it selected. A second
+        // quick tap on a leaf keeps the selection too: a repeated click is never an undo.
+        if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
+            const now = performance.now();
+            const last = lastTapRef.current;
+            /*
+             * 3D: a double-click belongs to the node the **first** click hit. That click selects,
+             * and a selection names its neighbours — one of those names can land under the
+             * cursor, and a hit test that prefers the name would hand the second click to a
+             * different node (measured 2026-09-25 on the sample vault in Neural: a domain's
+             * double-click selected a capability 80 px away and never flew). Two presses within
+             * a few pixels are one gesture on one thing.
+             */
+            const sameSpot = domeInteractive() !== null &&
+                last !== null &&
+                clickPoint !== null &&
+                last.x !== undefined &&
+                last.y !== undefined &&
+                Math.hypot(clickPoint.x - last.x, clickPoint.y - last.y) <= DOUBLE_TAP_SLOP_PX;
+            const nodeId = sameSpot && last !== null ? last.nodeId : commitClick.nodeId;
+            if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
+                lastTapRef.current = null;
+                if (focusedSlugRef.current !== nodeId)
+                    onSelect?.(nodeId);
+                // 3D: the double-click is the fly-to — the one gesture that moves the view to a node
+                // (`DOME_FLY_MS`). The single click before it only selected.
+                const flyDome = domeInteractive();
+                if (flyDome !== null) {
+                    flyDome.flyRequest = { slug: nodeId };
+                    return;
+                }
+                const chip = lastDialFrame() ? undefined : clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
+                if (chip && onToggleCluster) {
+                    onToggleCluster(nodeId);
+                    clearClusterHover();
+                }
+                return;
+            }
+            lastTapRef.current = { nodeId, at: now, x: clickPoint?.x, y: clickPoint?.y };
+        }
+        const action = resolveClickAction(commitClick, focusedSlugRef.current);
+        if (action.type === "select") {
+            onSelect?.(action.nodeId);
+            return;
+        }
+        // 3D dome — re-clicking a selected node is **re-selection, not deselection**
+        // (2026-08-18, second pass): in the dome the panel's X leaves the selection intact
+        // and only collapses the panel (HomePage `handleDatasheetClose`), so the natural
+        // gesture for reopening a collapsed panel is re-clicking that node. Keeping the
+        // re-click = deselect toggle would remove that route — deselection stays the job of
+        // an empty-background click or Escape. 2D keeps the previous toggle.
+        if (action.type === "deselect" && commitClick !== null && commitClick.nodeId !== null && domeInteractive() !== null) {
+            onSelect?.(commitClick.nodeId);
+            return;
+        }
+        // Density gate — an empty-space click (node miss) over a cluster chip toggles
+        // expansion. It takes priority over edge selection and ground deselection (a chip is
+        // explicit interactive chrome). The node-click = ego-focus contract was already
+        // handled in the select branch above and does not reach here.
+        if (commitClick &&
+            commitClick.nodeId === null &&
+            clickPoint &&
+            (onToggleCluster || onExpandEgoNeighbors || onExpandClusterBatch)) {
+            const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
+            if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
+                // S2 part 3a — the `Neighbor +N` chip lights the next neighbour batch rather than toggling the URL.
+                onExpandEgoNeighbors?.();
+                clearClusterHover();
+                return;
+            }
+            // High-fanout batch reveal — a `+N More` chip (synthetic id) lights that
+            // parent's next batch rather than toggling the URL (collapse). Resolved to the
+            // real parent id before dispatch.
+            const moreParent = chipParent === null ? null : parseClusterMoreChipId(chipParent);
+            if (moreParent !== null) {
+                onExpandClusterBatch?.(moreParent);
+                clearClusterHover();
+                return;
+            }
+            if (chipParent !== null && onToggleCluster) {
+                onToggleCluster(chipParent);
+                // The toggle changed the state (collapsed ↔ expanded), so the tooltip closes — a re-hover gets fresh copy.
+                clearClusterHover();
+                return;
+            }
+        }
+        // P3b — an empty-space click near an edge selects that edge (edges are first-class
+        // objects). Candidates are limited to edges whose endpoints are both hittable at
+        // the current tier, preventing the contract violation of clicking an invisible edge.
+        // Only on failure does the existing deselect run.
+        if (commitClick && commitClick.nodeId === null && clickPoint && onSelectEdge) {
+            const hit = hitTestEdges(buildEdgeCandidates(), clickPoint.x, clickPoint.y, 7);
+            if (hit) {
+                onSelectEdge({
+                    sourceId: hit.sourceId,
+                    targetId: hit.targetId,
+                    relationType: hit.relationType,
+                    declaredBySlug: hit.declaredBySlug,
+                });
+                return;
+            }
+        }
+        // A ground click with only an edge selected (no node focus) is a deselection too —
+        // `resolveClickAction` looks only at node focus, so it is reinforced here (user
+        // report: "After clicking a line,
+        // clicking the ground should return things to normal").
+        const emptyGroundWithEdgeSelected = commitClick !== null && commitClick.nodeId === null && (selectedEdgeRef?.current ?? null) !== null;
+        if (action.type === "deselect" || emptyGroundWithEdgeSelected)
+            onPaneClick?.();
+    };
+    const clearEdgeHover = () => {
+        if (hoveredEdgeRef && hoveredEdgeRef.current !== null) {
+            hoveredEdgeRef.current = null;
+            onHoverEdge?.(null, null);
+        }
+    };
+    /** S2 part 5C — clear the cluster chip hover tooltip (on drag, cancel or toggle). */
+    const clearClusterHover = () => {
+        if (hoveredClusterIdRef && hoveredClusterIdRef.current !== null) {
+            hoveredClusterIdRef.current = null;
+            onHoverCluster?.(null);
+        }
+    };
+    const handlePointerLeave = () => {
         clearEdgeHover();
         clearClusterHover();
-        const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
-        const pin = computePinWorld(pw.x, pw.y, nodeDragRef.current.offset);
-        const coord = dome.model.coords.get(dome.drag.nodeId);
-        if (coord) {
-          const solved = solveDomePlanePoint(dome.model, coord.py, pin.x, pin.y, dome.yaw + dome.lag[world.nodeById.get(dome.drag.nodeId)?.kind ?? "element"], dome.pitch);
-          if (solved) {
-            dome.drag.targetPx = solved.px;
-            dome.drag.targetPz = solved.pz;
-          }
+    };
+    const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
+        // rank4 touch pinch zoom — bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
+        if (e && activeTouchesRef && e.pointerType === "touch") {
+            activeTouchesRef.current.delete(e.pointerId);
+            if (pinchRef?.current && activeTouchesRef.current.size < 2)
+                pinchRef.current = null;
         }
-        e.currentTarget.style.cursor = "grabbing";
-        return;
-      }
-
-      // Start a node pin-drag the moment we cross into dragging on a node.
-      if (nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
-        const grabNode = world.nodeById.get(grabbedNodeId);
-        if (grabNode) {
-          const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
-          const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
-          sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
-          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
-          heatRef.current = NODE_DRAG_HEAT_MS;
-          // C1 B1/B2 — capture the tug/settle-restriction set + start position
-          // once, at grab time (not recomputed per frame).
-          const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
-          dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
-          dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
-        }
-      }
-
-      // Active node pin-drag: move the pin 1:1 in world space, keep the sim
-      // warm so neighbors reflow. The camera does NOT pan (headline fix — a
-      // node drag moves the NODE, not the whole viewport).
-      clearEdgeHover(); // Stop a card lingering mid-drag.
-      clearClusterHover();
-      const drag = nodeDragRef.current;
-      if (drag && sim) {
-        const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
-        const pin = computePinWorld(pw.x, pw.y, drag.offset);
-        sim.movePin(pin.x, pin.y);
-        heatRef.current = NODE_DRAG_HEAT_MS;
-        // rank4 — the "grabbing" cursor while a node is held and moved (pure CSS).
-        // Releasing restores it on pointerup/cancel.
-        e.currentTarget.style.cursor = "grabbing";
-        return;
-      }
-
-      // `grabbing` while pushing — the same response as a node drag (the branch
-      // above), so "something is in my hand right now" reads as the same word in both cases.
-      e.currentTarget.style.cursor = "grabbing";
-
-      const dragSpeed = navigationSpeedRef.current.drag;
-      if (dome && domeGripRef.current) {
-        const history = dragHistoryRef.current;
-        const last = history[history.length - 1];
-        const dx = last ? point.x - last.x : 0;
-        const dy = last ? point.y - last.y : 0;
-        dome.yawTarget += dx * ORBIT_YAW_PER_PX * dragSpeed;
-        dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX * dragSpeed);
-        dome.orbiting = true;
-        dome.spinArmed = false;
-        commitDomeEntrySweep(dome);
-        dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
-        if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
-        return;
-      }
-
-      const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
-        ?? next.downPoint
-        ?? point;
-      const scale = cameraRef.current.scale.value;
-      const worldDX = ((point.x - previous.x) * dragSpeed) / scale;
-      const worldDY = ((point.y - previous.y) * dragSpeed) / scale;
-      const nextX = cameraRef.current.x.value - worldDX;
-      const nextY = cameraRef.current.y.value - worldDY;
-      cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
-      cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
-      noteUserCameraGesture();
-      dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
-      if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
-      return;
-    }
-
-    // A drag (pan or node move) already returned in the block above, so only
-    // idle|pressed reaches here. Edge hover works during focus (ego) too — an edge
-    // click (P3b) works during focus, so hover has to match ("if you can grab it you
-    // can read it"; the root of the user report "With a node clicked, the edge hover tooltip does not appear"). The
-    // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
-    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
-
-    // P3c — proximity to an edge at a node-miss point is a hover microcard. It fires
-    // only when the identity changes (moving along the same edge does not re-fire, so
-    // the card is stable). Moving onto a node clears the edge hover immediately (the
-    // node wins).
-    // The edge hit is also used for the cursor decision, so it is computed **outside**
-    // the hover block below — if the cursor affordance rode on the edge-hover wiring
-    // (`hoveredEdgeRef && onHoverEdge`), a consumer without that wiring would get no
-    // cursor at all (2026-07-28: it really was inside that guard).
-    const edgeHit =
-      hitNodeId === null && hoveredEdgeRef && onHoverEdge
-        ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6)
-        : null;
-
-    if (hoveredEdgeRef && onHoverEdge) {
-      const prev = hoveredEdgeRef.current;
-      const sameEdge =
-        edgeHit !== null &&
-        prev !== null &&
-        prev.sourceId === edgeHit.sourceId &&
-        prev.targetId === edgeHit.targetId &&
-        prev.relationType === edgeHit.relationType;
-      if (!sameEdge && (edgeHit !== null || prev !== null)) {
-        const payload = edgeHit
-          ? {
-              sourceId: edgeHit.sourceId,
-              targetId: edgeHit.targetId,
-              relationType: edgeHit.relationType,
-              declaredBySlug: edgeHit.declaredBySlug,
+        clearEdgeHover();
+        clearClusterHover();
+        const tokens = readOntologyMapTokensOrNull();
+        // 3D — cleanly end any orbit or in-plane drag in flight (the spring runs to settle).
+        // There is no simulation pin, so it is not handed to the 2D pin cleanup block below
+        // (keeping free heat from shaking the hidden 2D layout).
+        {
+            const dome = domeInteractive();
+            if (dome) {
+                dome.orbiting = false;
+                dome.yawTarget = dome.yaw;
+                dome.pitchTarget = dome.pitch;
+                if (dome.drag !== null) {
+                    dome.drag.released = true;
+                    nodeDragRef.current = null;
+                    if (canvasRef?.current)
+                        canvasRef.current.style.cursor = "";
+                }
             }
-          : null;
-        hoveredEdgeRef.current = payload;
-        onHoverEdge(
-          payload,
-          payload
-            ? {
-                x: e.clientX,
-                y: e.clientY,
-                avoid: collectHoverAvoidRects(
-                  world,
-                  cameraRef.current,
-                  viewportRef.current.width,
-                  viewportRef.current.height,
-                  tokens,
-                  clusteredIdsRef?.current ?? null,
-                  domeFrameNow(),
-                  { x: e.clientX - point.x, y: e.clientY - point.y },
-                  point,
-                ),
-              }
-            : null,
-        );
-      }
-    }
-
-    // Cursor affordance — **each surface shows its own primary action** (design
-   // council "Interaction" prescription plus a measured correction, 2026-07-28).
-   //
-   // Before: node = `grab`, edge = `pointer`, **background = nothing**. The node's
-   // `grab` was not a lie (it really does pin-drag). The real defect was the
-   // background — **it is pannable and offered no affordance at all** (measured: the
-   // background hover cursor was `auto`). So nobody was told "you can push this map",
-   // while the grabbing hand appeared only over nodes, which cannot be pushed.
-   //
-   // Now it splits by primary action:
-   // - node, edge, chip → `pointer` (press and it opens — the action the hint bar names)
-   // - background → `grab` (push and the map follows), `grabbing` while pushing
-   // Node dragging still works and still answers with `grabbing` — as an enhancement
-   // it yields the affordance in the primary position (the council's ruling being that
-   // it belongs to the class where drag-only discovery is acceptable).
-   //
-   // That this assignment sits **outside** the hover block above is also contractual —
-   // inside it, a consumer with no edge-hover wiring would get no cursor at all.
-    e.currentTarget.style.cursor =
-      hitNodeId !== null || edgeHit !== null ? "pointer" : "grab";
-
-    // Density gate — cluster chip hover: cursor pointer plus a border emphasis mirror
-    // (node-miss points only; the node wins). The node-click = ego-focus contract is
-    // unchanged, and a chip stands in the empty space its children left, so they only
-    // overlap here.
-    if (hoveredClusterIdRef) {
-      const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
-      if (hoveredClusterIdRef.current !== chipHit) {
-        hoveredClusterIdRef.current = chipHit;
-        // S2 part 5C — the tooltip fires only when the hover target changes (stability).
-        // A chip hit clears the edge hover immediately (both live in empty space and can
-        // overlap — the chip wins).
-        if (onHoverCluster) {
-          if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
-        // An ego `Neighbor +N` chip has no parent title, so no tooltip is raised (cursor and border only).
-            onHoverCluster(null);
-          } else {
-            clearEdgeHover();
-            const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
-            if (chip) {
-              // High-fanout batch reveal — a `+N More` chip has a synthetic id, so it
-              // is resolved to the real parent for the tooltip to find the parent's
-              // title and descendant count (reusing the existing collapsed-tooltip copy —
-              // "Collapsed N · All Descendants M", no new i18n). expanded is already false (a
-              // collapsed pill), so the collapsed wording appears.
-              const realParent = parseClusterMoreChipId(chip.parentId) ?? chip.parentId;
-              onHoverCluster({
-                parentId: realParent,
-                count: chip.count,
-                // Panel3-S6 — the parent's total descendant count (the same source as the
-                // node badge, `WorldNode.count` = descendantCount), looked up in the live world.
-                descendantTotal: world.nodeById.get(realParent)?.count ?? chip.count,
-                expanded: chip.expanded,
-                position: { x: e.clientX, y: e.clientY },
-              });
-            }
-          }
         }
-      }
-      if (chipHit !== null) e.currentTarget.style.cursor = "pointer";
-      /*
-       * 3D — over empty space **the cursor names two zones.** The rule differs by
-       * position (inside the dome = rotate, outside = move), and with nothing on
-       * screen saying so, that rule may as well not exist. A feature you can only
-       * discover by dragging is the «drag-only discovery» this repository forbids.
-       *
-       * `grab` = grab and rotate (over the dome) · `move` = grab and move (outside).
-       * Over a node or chip their own cursors have already won, so those are untouched.
-       */
-      if (chipHit === null && hitNodeId === null) {
+        // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
+        if (nodeDragRef.current !== null) {
+            simRef.current?.clearPin();
+            nodeDragRef.current = null;
+            heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
+            dragStartPosRef.current = null;
+            // rank4 — a cancel restores the "grabbing" cursor too.
+            if (canvasRef?.current)
+                canvasRef.current.style.cursor = "";
+        }
+        if (!tokens) {
+            pointerMachineRef.current = INITIAL_POINTER_MACHINE_STATE;
+            return;
+        }
+        const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointercancel" }, tokens.hysteresisPx);
+        pointerMachineRef.current = next;
+    };
+    const releaseCameraForZoom = () => {
+        clearEdgeHover();
+        clearClusterHover();
+        if (cameraTweenRef)
+            cameraTweenRef.current = null;
+        zoomEaseRef.current = null;
         const dome = domeInteractive();
-        if (dome !== null) {
-          const view = viewportRef.current;
-          const pw = screenToWorld(cameraRef.current, view.width, view.height, point.x, point.y);
-          e.currentTarget.style.cursor = isInsideDomeGrip(dome.drawnBounds, pw.x, pw.y) ? "grab" : "move";
+        if (dome) {
+            dome.spinArmed = false;
+            commitDomeEntrySweep(dome);
+            dome.poseTween = null;
         }
-      }
-    }
-
-    if (next.phase !== "idle" || focusedSlugRef.current) return; // The ripple is idle plus unfocused only (existing contract).
-    if (hitNodeId === hoveredNodeIdRef.current) return;
-    hoveredNodeIdRef.current = hitNodeId;
-    if (hitNodeId) {
-      const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
-      const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
-      for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
-      // The hover pulse was retired on an owner report (*"Flying grains of rice effect — remove it,
-      // it looks wrong"* — the flying grains of rice effect: remove it, it looks wrong;
-      // 2026-07-23). Only the permanent comets remain — ripple and cursor are enough
-      // of a hover response.
-    }
-  };
-
-  const handlePointerUp = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 touch pinch zoom — touch release bookkeeping. A pinch up (or the leftover
-    // finger of one) does not take the click/flick paths: entering a pinch already
-    // cancelled the machine to idle, while an ordinary single tap is in phase
-    // pressed/dragging at up time and does not hit this early return. (The internal
-    // no-arg call — the stuck-drag guard — skips the bookkeeping.)
-    if (e && activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
-      activeTouchesRef.current.delete(e.pointerId);
-      if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
-      if (pointerMachineRef.current.phase === "idle") return;
-    }
-    const tokens = readOntologyMapTokensOrNull();
-    if (!tokens) return;
-    // P3b — snapshot of the click point (outside a drag, downPoint *is* the click coordinate).
-    const clickPoint = pointerMachineRef.current.downPoint;
-    const wasDragging = pointerMachineRef.current.phase === "dragging";
-    const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
-    pointerMachineRef.current = next;
-
-    // Let go of the grabbing shape once the hand lets go (2026-07-28). It used to be
-    // restored **only in the node-drag branch**, so pushing the background and then
-    // leaving the mouse still left the cursor as `grabbing` — released, while the
-    // screen still said it was held. Clearing it with `""` falls back to the canvas's
-    // default `grab` (a true signal that it is pannable), and the next pointermove over
-    // a node overrides it with `pointer`.
-    if (canvasRef?.current) canvasRef.current.style.cursor = "";
-
-    // Node pin-drag release: unpin and give the graph a settle burst so it
-    // (and the dropped node) relaxes around the drop, Obsidian-style. No
-    // camera flick, no click commit (the state machine already suppressed the
-    // click for a drag).
-    if (nodeDragRef.current !== null) {
-      // 3D in-plane drag release — there is no simulation pin (none was set on grab).
-      // Only `released` is marked so the spring settles onto the last target point (the
-      // loop clears it once it sees the settle) — the velocity is not reset to 0 on release.
-      {
-        const dome = domeInteractive();
-        if (dome && dome.drag !== null && dome.drag.nodeId === nodeDragRef.current.nodeId) {
-          dome.drag.released = true;
-          nodeDragRef.current = null;
-          if (canvasRef?.current) canvasRef.current.style.cursor = "";
-          return;
-        }
-      }
-      simRef.current?.clearPin();
-      nodeDragRef.current = null;
-      heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
-      // C1 B1: stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
-      // through the settle burst above (B2), cleared once heat reaches 0
-      // (`use-topology-loop.ts`'s rAF loop).
-      dragStartPosRef.current = null;
-      // rank4 — the drag has ended, so the "grabbing" cursor is cleared (the next
-      // pointermove sets grab/pointer/"" again depending on hover).
-      if (canvasRef?.current) canvasRef.current.style.cursor = "";
-      return;
-    }
-
-    if (wasDragging) {
-      const dragSpeed = navigationSpeedRef.current.drag;
-      {
-        const dome = domeInteractive();
-        if (dome && dome.orbiting) {
-          dome.orbiting = false;
-          dome.yaw = dome.yawTarget;
-          dome.pitch = dome.pitchTarget;
-          if (!reducedMotionRef.current) {
-            const release = sampleReleaseVelocity({
-              history: dragHistoryRef.current,
-              releaseTime: performance.now(),
-              windowMs: tokens.cameraReleaseVelocityWindowMs,
-              minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
-            });
-            if (release.isFlick) {
-              dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX * dragSpeed);
-              dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX * dragSpeed);
-              const landing = projectOrbitLanding(dome.yaw, dome.yawVel);
-              dome.yawSnap = snapOrbitLanding(landing, domeFacingYaws(dome.model));
-            } else {
-              dome.yawSnap = null;
-            }
-          }
-          return;
-        }
-      }
-      const release = sampleReleaseVelocity({
-        history: dragHistoryRef.current,
-        releaseTime: performance.now(),
-        windowMs: tokens.cameraReleaseVelocityWindowMs,
-        minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
-      });
-
-      if (reducedMotionRef.current || !release.isFlick) {
-        cameraTargetRef.current = { tx: cameraRef.current.x.value, ty: cameraRef.current.y.value, tscale: cameraTargetRef.current.tscale };
+    };
+    const zoomAtPoint = (tokens: OntologyMapTokens, sx: number, sy: number, factor: number) => {
+        const { width, height } = viewportRef.current;
+        const camera = cameraRef.current;
+        const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
+        const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
+        const scale = scaleWithinZoomBounds(tokens, camera.scale.value * factor);
+        const x = worldX - (sx - width / 2) / scale;
+        const y = worldY - (sy - height / 2) / scale;
+        cameraTargetRef.current = { tx: x, ty: y, tscale: scale };
         cameraRef.current = {
-          ...cameraRef.current,
-          x: { value: cameraRef.current.x.value, velocity: 0 },
-          y: { value: cameraRef.current.y.value, velocity: 0 },
+            x: { value: x, velocity: 0 },
+            y: { value: y, velocity: 0 },
+            scale: { value: scale, velocity: 0 },
         };
+        noteUserCameraGesture();
         dampingRef.current = tokens.cameraDampingDefault;
-        return;
-      }
-      const px = projectFlickLanding({
-        velocityPxPerMs: release.vx * dragSpeed,
-        cameraPosition: cameraRef.current.x.value,
-        cameraScale: cameraRef.current.scale.value,
-        timeConstantMs: MOMENTUM_TAU_MS,
-      });
-      const py = projectFlickLanding({
-        velocityPxPerMs: release.vy * dragSpeed,
-        cameraPosition: cameraRef.current.y.value,
-        cameraScale: cameraRef.current.scale.value,
-        timeConstantMs: MOMENTUM_TAU_MS,
-      });
-      const world = worldRef.current;
-      let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
-      if (world) {
-        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-        const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
-        const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
-        clampedLanding = clampPointToPanBounds(
-          px.landingTarget,
-          py.landingTarget,
-          computeUnfocusedPanBounds(boundsSource, cameraRef.current.scale.value, tokens),
-        );
-      }
-      cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
-      noteUserCameraGesture();
-      cameraRef.current = {
-        ...cameraRef.current,
-        x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
-        y: { value: cameraRef.current.y.value, velocity: py.worldVelocity },
-      };
-      dampingRef.current = MOMENTUM_SPRING.damping;
-      cameraAngularFreqRef.current = springAngularFrequency(MOMENTUM_SPRING);
-      return;
-    }
-
-    // A double-click on a node opens its children and keeps it selected. A second
-    // quick tap on a leaf keeps the selection too: a repeated click is never an undo.
-    if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
-      const now = performance.now();
-      const last = lastTapRef.current;
-      /*
-       * 3D: a double-click belongs to the node the **first** click hit. That click selects,
-       * and a selection names its neighbours — one of those names can land under the
-       * cursor, and a hit test that prefers the name would hand the second click to a
-       * different node (measured 2026-09-25 on the sample vault in Neural: a domain's
-       * double-click selected a capability 80 px away and never flew). Two presses within
-       * a few pixels are one gesture on one thing.
-       */
-      const sameSpot =
-        domeInteractive() !== null &&
-        last !== null &&
-        clickPoint !== null &&
-        last.x !== undefined &&
-        last.y !== undefined &&
-        Math.hypot(clickPoint.x - last.x, clickPoint.y - last.y) <= DOUBLE_TAP_SLOP_PX;
-      const nodeId = sameSpot && last !== null ? last.nodeId : commitClick.nodeId;
-      if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
-        lastTapRef.current = null;
-        if (focusedSlugRef.current !== nodeId) onSelect?.(nodeId);
-        // 3D: the double-click is the fly-to — the one gesture that moves the view to a node
-        // (`DOME_FLY_MS`). The single click before it only selected.
-        const flyDome = domeInteractive();
-        if (flyDome !== null) {
-          flyDome.flyRequest = { slug: nodeId };
-          return;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+    };
+    const handleGesturePinch = (ratio: number, clientX: number, clientY: number) => {
+        if (activeTouchesRef && activeTouchesRef.current.size >= 2)
+            return;
+        const tokens = readOntologyMapTokensOrNull();
+        const canvas = canvasRef?.current;
+        if (!tokens || !canvas)
+            return;
+        releaseCameraForZoom();
+        const rect = currentRect(canvas);
+        zoomAtPoint(tokens, clientX - rect.left, clientY - rect.top, ratio ** navigationSpeedRef.current.zoom);
+    };
+    const handleWheel = (e: WheelEvent) => {
+        if (wheelIntent === "page-scroll" && !e.ctrlKey)
+            return;
+        e.preventDefault();
+        const tokens = readOntologyMapTokensOrNull();
+        if (!tokens)
+            return;
+        const { width, height } = viewportRef.current;
+        const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
+        if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey))
+            return;
+        releaseCameraForZoom();
+        const rect = currentRect(e.currentTarget as HTMLCanvasElement);
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const camera = cameraRef.current;
+        const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
+        const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
+        const pinch = readPinchWheel(pinchWheelRef.current, e);
+        const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeedRef.current.zoom });
+        if (pinch) {
+            zoomAtPoint(tokens, sx, sy, factor);
+            return;
         }
-        const chip = lastDialFrame() ? undefined : clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
-        if (chip && onToggleCluster) {
-          onToggleCluster(nodeId);
-          clearClusterHover();
+        const newScale = scaleWithinZoomBounds(tokens, cameraTargetRef.current.tscale * factor);
+        const next: CameraTarget = {
+            tx: worldX - (sx - width / 2) / newScale,
+            ty: worldY - (sy - height / 2) / newScale,
+            tscale: newScale,
+        };
+        cameraTargetRef.current = next;
+        noteUserCameraGesture();
+        dampingRef.current = tokens.cameraDampingDefault;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+        zoomEaseRef.current = {
+            target: next,
+            anchorX: sx,
+            anchorY: sy,
+            worldX,
+            worldY,
+            fromScale: camera.scale.value,
+            startMs: Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity),
+        };
+        cameraRef.current = {
+            ...camera,
+            x: { value: camera.x.value, velocity: 0 },
+            y: { value: camera.y.value, velocity: 0 },
+        };
+    };
+    // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown
+    // (`hitVisibleNode`), so the menu only opens over nodes actually hittable
+    // at the current altitude/focus (never a semantic-zoom-hidden one). The
+    // browser's own context menu is prevented ONLY on that hit path — an
+    // off-node right-click (empty canvas) falls through untouched, so users can
+    // still reach the OS/browser menu there.
+    const handleContextMenu = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+        const tokens = readOntologyMapTokensOrNull();
+        const world = worldRef.current;
+        if (!tokens || !world || (!onContextMenuNode && !onContextMenuPane))
+            return;
+        const rect = currentRect(e.currentTarget);
+        const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
+        if (!hitNodeId) {
+            // Empty space — "Create a concept here" (create a concept here). With no consumer it is a no-op, as before.
+            if (!onContextMenuPane)
+                return;
+            e.preventDefault();
+            onContextMenuPane({ x: e.clientX, y: e.clientY });
+            return;
         }
-        return;
-      }
-      lastTapRef.current = { nodeId, at: now, x: clickPoint?.x, y: clickPoint?.y };
-    }
-    const action = resolveClickAction(commitClick, focusedSlugRef.current);
-    if (action.type === "select") {
-      onSelect?.(action.nodeId);
-      return;
-    }
-    // 3D dome — re-clicking a selected node is **re-selection, not deselection**
-    // (2026-08-18, second pass): in the dome the panel's X leaves the selection intact
-    // and only collapses the panel (HomePage `handleDatasheetClose`), so the natural
-    // gesture for reopening a collapsed panel is re-clicking that node. Keeping the
-    // re-click = deselect toggle would remove that route — deselection stays the job of
-    // an empty-background click or Escape. 2D keeps the previous toggle.
-    if (action.type === "deselect" && commitClick !== null && commitClick.nodeId !== null && domeInteractive() !== null) {
-      onSelect?.(commitClick.nodeId);
-      return;
-    }
-    // Density gate — an empty-space click (node miss) over a cluster chip toggles
-    // expansion. It takes priority over edge selection and ground deselection (a chip is
-    // explicit interactive chrome). The node-click = ego-focus contract was already
-    // handled in the select branch above and does not reach here.
-    if (
-      commitClick &&
-      commitClick.nodeId === null &&
-      clickPoint &&
-      (onToggleCluster || onExpandEgoNeighbors || onExpandClusterBatch)
-    ) {
-      const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
-      if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
-        // S2 part 3a — the `Neighbor +N` chip lights the next neighbour batch rather than toggling the URL.
-        onExpandEgoNeighbors?.();
-        clearClusterHover();
-        return;
-      }
-      // High-fanout batch reveal — a `+N More` chip (synthetic id) lights that
-      // parent's next batch rather than toggling the URL (collapse). Resolved to the
-      // real parent id before dispatch.
-      const moreParent = chipParent === null ? null : parseClusterMoreChipId(chipParent);
-      if (moreParent !== null) {
-        onExpandClusterBatch?.(moreParent);
-        clearClusterHover();
-        return;
-      }
-      if (chipParent !== null && onToggleCluster) {
-        onToggleCluster(chipParent);
-        // The toggle changed the state (collapsed ↔ expanded), so the tooltip closes — a re-hover gets fresh copy.
-        clearClusterHover();
-        return;
-      }
-    }
-    // P3b — an empty-space click near an edge selects that edge (edges are first-class
-    // objects). Candidates are limited to edges whose endpoints are both hittable at
-    // the current tier, preventing the contract violation of clicking an invisible edge.
-    // Only on failure does the existing deselect run.
-    if (commitClick && commitClick.nodeId === null && clickPoint && onSelectEdge) {
-      const hit = hitTestEdges(buildEdgeCandidates(), clickPoint.x, clickPoint.y, 7);
-      if (hit) {
-        onSelectEdge({
-          sourceId: hit.sourceId,
-          targetId: hit.targetId,
-          relationType: hit.relationType,
-          declaredBySlug: hit.declaredBySlug,
-        });
-        return;
-      }
-    }
-    // A ground click with only an edge selected (no node focus) is a deselection too —
-    // `resolveClickAction` looks only at node focus, so it is reinforced here (user
-    // report: "After clicking a line,
-    // clicking the ground should return things to normal").
-    const emptyGroundWithEdgeSelected =
-      commitClick !== null && commitClick.nodeId === null && (selectedEdgeRef?.current ?? null) !== null;
-    if (action.type === "deselect" || emptyGroundWithEdgeSelected) onPaneClick?.();
-  };
-
-  const clearEdgeHover = () => {
-    if (hoveredEdgeRef && hoveredEdgeRef.current !== null) {
-      hoveredEdgeRef.current = null;
-      onHoverEdge?.(null, null);
-    }
-  };
-
-  /** S2 part 5C — clear the cluster chip hover tooltip (on drag, cancel or toggle). */
-  const clearClusterHover = () => {
-    if (hoveredClusterIdRef && hoveredClusterIdRef.current !== null) {
-      hoveredClusterIdRef.current = null;
-      onHoverCluster?.(null);
-    }
-  };
-
-  const handlePointerLeave = () => {
-    clearEdgeHover();
-    clearClusterHover();
-  };
-
-  const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 touch pinch zoom — bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
-    if (e && activeTouchesRef && e.pointerType === "touch") {
-      activeTouchesRef.current.delete(e.pointerId);
-      if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
-    }
-    clearEdgeHover();
-    clearClusterHover();
-    const tokens = readOntologyMapTokensOrNull();
-    // 3D — cleanly end any orbit or in-plane drag in flight (the spring runs to settle).
-    // There is no simulation pin, so it is not handed to the 2D pin cleanup block below
-    // (keeping free heat from shaking the hidden 2D layout).
-    {
-      const dome = domeInteractive();
-      if (dome) {
-        dome.orbiting = false;
-        dome.yawTarget = dome.yaw;
-        dome.pitchTarget = dome.pitch;
-        if (dome.drag !== null) {
-          dome.drag.released = true;
-          nodeDragRef.current = null;
-          if (canvasRef?.current) canvasRef.current.style.cursor = "";
-        }
-      }
-    }
-    // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
-    if (nodeDragRef.current !== null) {
-      simRef.current?.clearPin();
-      nodeDragRef.current = null;
-      heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
-      dragStartPosRef.current = null;
-      // rank4 — a cancel restores the "grabbing" cursor too.
-      if (canvasRef?.current) canvasRef.current.style.cursor = "";
-    }
-    if (!tokens) {
-      pointerMachineRef.current = INITIAL_POINTER_MACHINE_STATE;
-      return;
-    }
-    const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointercancel" }, tokens.hysteresisPx);
-    pointerMachineRef.current = next;
-  };
-
-  const releaseCameraForZoom = () => {
-    clearEdgeHover();
-    clearClusterHover();
-    if (cameraTweenRef) cameraTweenRef.current = null;
-    zoomEaseRef.current = null;
-    const dome = domeInteractive();
-    if (dome) {
-      dome.spinArmed = false;
-      commitDomeEntrySweep(dome);
-      dome.poseTween = null;
-    }
-  };
-
-  const zoomAtPoint = (tokens: OntologyMapTokens, sx: number, sy: number, factor: number) => {
-    const { width, height } = viewportRef.current;
-    const camera = cameraRef.current;
-    const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
-    const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
-    const scale = scaleWithinZoomBounds(tokens, camera.scale.value * factor);
-    const x = worldX - (sx - width / 2) / scale;
-    const y = worldY - (sy - height / 2) / scale;
-    cameraTargetRef.current = { tx: x, ty: y, tscale: scale };
-    cameraRef.current = {
-      x: { value: x, velocity: 0 },
-      y: { value: y, velocity: 0 },
-      scale: { value: scale, velocity: 0 },
+        if (!onContextMenuNode)
+            return;
+        e.preventDefault();
+        onContextMenuNode(hitNodeId, { x: e.clientX, y: e.clientY });
     };
-    noteUserCameraGesture();
-    dampingRef.current = tokens.cameraDampingDefault;
-    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-  };
-
-  const handleGesturePinch = (ratio: number, clientX: number, clientY: number) => {
-    if (activeTouchesRef && activeTouchesRef.current.size >= 2) return;
-    const tokens = readOntologyMapTokensOrNull();
-    const canvas = canvasRef?.current;
-    if (!tokens || !canvas) return;
-    releaseCameraForZoom();
-    const rect = currentRect(canvas);
-    zoomAtPoint(tokens, clientX - rect.left, clientY - rect.top, ratio ** navigationSpeedRef.current.zoom);
-  };
-
-  const handleWheel = (e: WheelEvent) => {
-    if (wheelIntent === "page-scroll" && !e.ctrlKey) return;
-    e.preventDefault();
-    const tokens = readOntologyMapTokensOrNull();
-    if (!tokens) return;
-    const { width, height } = viewportRef.current;
-    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
-    if (shouldIgnoreWheelGlide(pixelDeltaY, e.ctrlKey)) return;
-    releaseCameraForZoom();
-    const rect = currentRect(e.currentTarget as HTMLCanvasElement);
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const camera = cameraRef.current;
-    const worldX = (sx - width / 2) / camera.scale.value + camera.x.value;
-    const worldY = (sy - height / 2) / camera.scale.value + camera.y.value;
-    const pinch = readPinchWheel(pinchWheelRef.current, e);
-    const factor = computeWheelZoomFactor(pixelDeltaY, { pinch, speed: navigationSpeedRef.current.zoom });
-    if (pinch) {
-      zoomAtPoint(tokens, sx, sy, factor);
-      return;
-    }
-    const newScale = scaleWithinZoomBounds(tokens, cameraTargetRef.current.tscale * factor);
-    const next: CameraTarget = {
-      tx: worldX - (sx - width / 2) / newScale,
-      ty: worldY - (sy - height / 2) / newScale,
-      tscale: newScale,
-    };
-    cameraTargetRef.current = next;
-    noteUserCameraGesture();
-    dampingRef.current = tokens.cameraDampingDefault;
-    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-    zoomEaseRef.current = {
-      target: next,
-      anchorX: sx,
-      anchorY: sy,
-      worldX,
-      worldY,
-      fromScale: camera.scale.value,
-      startMs: Math.min(performance.now(), e.timeStamp > 0 ? e.timeStamp : Infinity),
-    };
-    cameraRef.current = {
-      ...camera,
-      x: { value: camera.x.value, velocity: 0 },
-      y: { value: camera.y.value, velocity: 0 },
-    };
-  };
-
-  // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown
-  // (`hitVisibleNode`), so the menu only opens over nodes actually hittable
-  // at the current altitude/focus (never a semantic-zoom-hidden one). The
-  // browser's own context menu is prevented ONLY on that hit path — an
-  // off-node right-click (empty canvas) falls through untouched, so users can
-  // still reach the OS/browser menu there.
-  const handleContextMenu = (e: ReactMouseEvent<HTMLCanvasElement>) => {
-    const tokens = readOntologyMapTokensOrNull();
-    const world = worldRef.current;
-    if (!tokens || !world || (!onContextMenuNode && !onContextMenuPane)) return;
-    const rect = currentRect(e.currentTarget);
-    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
-    if (!hitNodeId) {
-      // Empty space — "Create a concept here" (create a concept here). With no consumer it is a no-op, as before.
-      if (!onContextMenuPane) return;
-      e.preventDefault();
-      onContextMenuPane({ x: e.clientX, y: e.clientY });
-      return;
-    }
-    if (!onContextMenuNode) return;
-    e.preventDefault();
-    onContextMenuNode(hitNodeId, { x: e.clientX, y: e.clientY });
-  };
-
-  /**
-   * ★ **Expose the app's own edge decision verbatim** (2026-08-03).
-   *
-   * Why: nodes can be driven from outside through `__atlasMap.nodes()`, which gives
-   * coordinates and `draggable`, but **edges could not be.** Measured — clicking 101
-   * points along a curve's midline across 3 offsets still left `selection().edge`
-   * null. The threshold is 7px and the inside of a node body is excluded, so from
-   * outside there is no way to guess "where do I have to press".
-   *
-   * The result was that **no change involving edges could be verified automatically** —
-   * attaching entry and exit to the edge panel hit that wall and was reverted
-   * (2026-08-03).
-   *
-   * It does not recompute the coordinates but calls **the same functions**
-   * (`buildEdgeCandidates` plus `hitTestEdges`). An instrument using a different
-   * formula from the app measures its own imagination rather than the screen.
-   */
-  const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
-    hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
-
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt };
+    /**
+     * ★ **Expose the app's own edge decision verbatim** (2026-08-03).
+     *
+     * Why: nodes can be driven from outside through `__atlasMap.nodes()`, which gives
+     * coordinates and `draggable`, but **edges could not be.** Measured — clicking 101
+     * points along a curve's midline across 3 offsets still left `selection().edge`
+     * null. The threshold is 7px and the inside of a node body is excluded, so from
+     * outside there is no way to guess "where do I have to press".
+     *
+     * The result was that **no change involving edges could be verified automatically** —
+     * attaching entry and exit to the edge panel hit that wall and was reverted
+     * (2026-08-03).
+     *
+     * It does not recompute the coordinates but calls **the same functions**
+     * (`buildEdgeCandidates` plus `hitTestEdges`). An instrument using a different
+     * formula from the app measures its own imagination rather than the screen.
+     */
+    const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) => hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
+    return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt };
 }

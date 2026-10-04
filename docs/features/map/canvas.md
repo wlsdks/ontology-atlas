@@ -14,8 +14,8 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
 - **Click node** → right-side panel opens: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
-- **Drag empty canvas** → the map moves with the pointer in every view; in Strata and Neural a drag that starts on the structure turns it instead, and one that starts beside it pans. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Strata every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex and Territories do not glide.
-- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, Galaxy, Strata, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers. Territories never zooms; scrolling pans it.
+- **Drag empty canvas** → the map moves with the pointer in every view; in Strata and Neural a drag that starts on the structure turns it instead, and one that starts beside it pans. Panning in Strata or Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Strata every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex and Territories do not glide.
+- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, Strata, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers. Territories never zooms; scrolling pans it.
 - **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or Strata's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
 - **Double-click node** → on the Flat overview, selects (the dial folds nothing); inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
@@ -164,7 +164,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 - **Six map views, chosen in one picker** — the current-view chip in the top tool
   lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Hex board**,
-  **Galaxy**, **Strata**, and **Neural**. Territories is the flat plane with nothing
+  **Domain structure**, **Strata**, and **Neural**. Territories is the flat plane with nothing
   folded: every capability is drawn and named on open shelves fanning out from its
   domain's mark, each domain in its own angular territory around the project, with
   no hull around any of them. A capability's disc grows with its element count;
@@ -208,29 +208,21 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   rises out of, its nearest drawn ancestor, and the arriving view takes over
   without replaying its own entrance. A press, a wheel, a key, a resize, a display
   change or a hidden tab lands the travel at once. Into Strata or Neural, out of
-  Neural, and into Flat or Galaxy past 6,500 or 6,300 concepts, the old picture
+  Neural, and into Flat past 6,500 or 6,300 concepts, the old picture
   crossfades instead, as every pick does under reduced motion; a view reached by
   address or from another tab switches without motion. Gate:
   `tests/e2e/map-layout-morph.spec.ts`.
   The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
 
-  **Galaxy** draws the ontology as a cosmos.
-  - **The picture.** The project is the bright core. Each domain is a galaxy of its own, separated by dark space; capabilities are star clusters and elements are stars. Concepts that belong to no domain form the core's halo.
-  - **Shape.** A galaxy's shape comes from its own data:
-    - under ten concepts it is irregular;
-    - it is elliptical when one capability holds at least 40 % of its elements, or when it has about one internal dependency per concept;
-    - otherwise it is a spiral with two to four arms.
+  **Domain structure** opens named project/domain/capability/element membership
+  without spatial zoom. Press a container to browse its direct children and use
+  the breadcrumb to return. Read opens the existing concept/document workbench.
+  Membership follows recorded contains and belongs_to directions, retaining
+  multiple parents, direct levels, and disconnected concepts. Child lists are
+  paged, and reduced motion settles immediately. Old Galaxy choices resolve to
+  structure; its renderer, placement, sky, and dedicated probes are removed.
 
-    Its tilt and orientation are decoration.
-  - **Placement.** Galaxies are placed once per change of the data, by a deterministic settle that draws domains which depend on each other closer together. The settled places are kept per folder on this machine; a recorded galaxy moves only when the core grows into it, or when **Auto-arrange** settles the sky again.
-  - **Names and strands.** At the overview, galaxies show their name and concept count where the names fit without overlapping (a narrow window may drop a few: the accepted floor is 30 of 33 at 1040 × 720), and counted strands join the domains that depend on each other ([domain flows](domain-flows.md)). Closer in, capability names appear, then element names.
-  - **Motion.** The first open of a folder replays the settle in about a second. While you work, the gas in each galaxy turns and breathes; it rests 12 seconds after your last input, never moves a concept, and is absent under reduced motion.
-  - **Selection.** Selecting a star draws its real relations and approaches it in the free canvas beside the inspector. Closing returns to the earlier view unless you moved meanwhile.
-  - **Leaving.** Flat returns to its own overview after a visit to Galaxy, as it does after the Hex board.
-  - **Where names go.** A galaxy's name stays beside its galaxy. A galaxy whose centre is outside the free canvas is not named, and a name that would leave the free canvas, under a card or the inspector, is dropped; only the galaxy you are inside keeps its name pinned at the top.
-  - **Not in Galaxy.** The trail draws no walk line, and realm, tour anchors, agent focus and the INDEX hover brush are not drawn, as on the Hex board.
-
-  In Galaxy, **My constellations** saves a named set of current ontology concepts
+  In Map, **My constellations** saves a named set of current ontology concepts
   with its purpose. Opening a saved constellation focuses that whole set through
   `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.
   The set is durable task context, not a new graph kind or relation.

@@ -28,8 +28,8 @@ function node(id: string, kind: WorldNode["kind"], x: number, y: number): WorldN
     fresh: false,
     stale: false,
     count: 0,
-    magnitudeScale: 1, starMagnitude: 0
-  };
+    magnitudeScale: 1
+    };
 }
 
 function worldFixture(): TopologyWorld {

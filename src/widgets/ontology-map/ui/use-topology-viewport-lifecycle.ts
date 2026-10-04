@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../render/grid";
 import {
   buildDustPoints,
-  buildRealmCosmosPoints,
+  buildRealmStarPoints,
   computeStarDustCount,
   type DustPoint,
 } from "../render/starfield";
@@ -45,7 +45,7 @@ export interface TopologyViewportLifecycleSources {
     depthDotCanvasRef: SourceRef<HTMLCanvasElement[]>;
     depthDotPatternsRef: SourceRef<(CanvasPattern | null)[]>;
     dustPointsRef: SourceRef<DustPoint[]>;
-    cosmosPointsRef: SourceRef<DustPoint[]>;
+    realmStarPointsRef: SourceRef<DustPoint[]>;
   };
   frameBridge: {
     commitViewportSizeRef: SourceRef<(() => boolean) | null>;
@@ -81,7 +81,7 @@ export function useTopologyViewportLifecycle({
     depthDotCanvasRef,
     depthDotPatternsRef,
     dustPointsRef,
-    cosmosPointsRef,
+    realmStarPointsRef,
   } = layers;
   const {
     commitViewportSizeRef,
@@ -208,9 +208,8 @@ export function useTopologyViewportLifecycle({
         );
       }
       dustPointsRef.current = buildDustPoints(width, height, computeStarDustCount(width, height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
-      // Cosmos dots are twice the density of the dust (two layers), counted off
       // the same areaPerPoint token and doubled.
-      cosmosPointsRef.current = buildRealmCosmosPoints(
+      realmStarPointsRef.current = buildRealmStarPoints(
         width,
         height,
         computeStarDustCount(width, height, tokens.dustAreaPerPoint) * 2,
@@ -283,7 +282,7 @@ export function useTopologyViewportLifecycle({
     canvasRef,
     commitViewportSizeRef,
     containerRef,
-    cosmosPointsRef,
+    realmStarPointsRef,
     depthDotCanvasRef,
     depthDotPatternsRef,
     dustPointsRef,

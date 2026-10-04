@@ -119,6 +119,9 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   );
 
   /* ── ① Drag outside the dome = camera pan ──────────────────────────────── */
+  // Hover pauses the idle spin; read the drag baseline after the pointer arrives.
+  await page.mouse.move(outsideX, outsideY);
+  await waitForMapStill(page, { what: "dome" });
   const before1 = await readPose(page);
   expect(before1).not.toBeNull();
   await page.mouse.move(outsideX, outsideY);

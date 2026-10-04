@@ -176,26 +176,7 @@
     /* Static double ring for selected node (not glow, mechanical ring) + hover preview ring.
        rgb(94,106,210) = same hue as --color-indigo-brand(#5e6ad2), only
        alpha differs — not violating "no multiple coloring systems" (maintain single indigo). */
-    /* ── Galaxy colour temperature ────────────────────────────────────────────
-       Galaxy is an explicit map-view picker state. It paints borderless light
-       cores in a three-arm field; it does not reuse Flat's kind silhouettes.
-       Kind remains explicit in INDEX and the inspector through their glyph and
-       text. This warm-to-cool containment ramp helps connect the project core,
-       domain neighborhoods, capabilities, and elements without becoming the
-       sole kind channel. Baseline luminance still follows the graph magnitude
-       model; deterministic atmospheric twinkle modulates corona and glints, so
-       instantaneous brightness is not a live activity or recency measurement.
-
-       Measured in the accepted 2026-09-15 actual-window cycle: 105/105 star
-       cores stayed at or above 3:1 (minimum 3.040:1), while all nine overview
-       labels measured 9.32–10.29:1. The selected indigo remains a separate
-       emphasis channel. The owner-selected living-sky and three-arm decisions
-       supersede the 2026-09-10 shared-silhouette/no-toggle direction. */
-    --map-galaxy-project: #f0c77b;
-    --map-galaxy-domain: #f0d4a4;
-    --map-galaxy-capability: #c8dcff;
-    --map-galaxy-element: #91b5ff;
-    /* ── Hex board material (owner decision 2026-09-25, spec "F2") ─────────────
+        /* ── Hex board material (owner decision 2026-09-25, spec "F2") ─────────────
        Spent only by `render/hex-board.ts` through `tokens/read-hex-board-tokens.ts`,
        only in the Hex board view. One tile = one capability. The face ladder is
        the element-count bucket (0, 1–2, 3–4, 5–6, 7+): luminance only, never

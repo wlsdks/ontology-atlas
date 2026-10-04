@@ -61,7 +61,7 @@ describe("parseHomeRouteState", () => {
   });
 
   it("round-trips every map view the picker offers, and drops any other value", () => {
-    for (const view of ["territories", "galaxy", "strata", "coupling"] as const) {
+    for (const view of ["territories", "structure", "strata", "coupling"] as const) {
       const state = parseHomeRouteState(new URLSearchParams(`view=${view}`));
       expect(state.mapView).toBe(view);
       expect(applyHomeRouteState(new URLSearchParams(), state).get("view")).toBe(view);

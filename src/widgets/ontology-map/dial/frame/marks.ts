@@ -288,6 +288,9 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
       tokens,
       footprint,
       avoid: {
+        nameBoxes: [...out.texts, ...out.extraTexts]
+          .filter((t) => t.role !== "units" && !(t.role === "capability" && t.id !== null && ids.includes(t.id)))
+          .map((t) => t.box),
         boxes: [
           ...occupied,
           ...out.texts.filter((t) => !(t.role === "capability" && t.id !== null && ids.includes(t.id))).map((t) => t.box),

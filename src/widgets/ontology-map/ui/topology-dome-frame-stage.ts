@@ -720,7 +720,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             }
           }
           // Auto-spin (48 s per turn) is an attention loop, so it runs
-          // **only while armed**: any interaction — orbit, zoom, pinch, node
+          // **only while armed**: any interaction — pan, orbit, zoom, pinch, node
           // drag, selection — lowers `spinArmed` and it never turns by itself
           // again. Owner: "Stop it turning after I click." It is rearmed by auto-align or by re-entering 3D.
           // It also stops while the pointer is over the canvas, and stays 0
