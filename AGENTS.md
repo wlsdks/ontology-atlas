@@ -1,6 +1,6 @@
 # AGENTS.md — ontology-atlas
 
-Canonical contract. Read the task's authority, not every linked document.
+Read only the task's authority.
 
 ## Product and architecture
 
@@ -19,6 +19,7 @@ meaning to source evidence. Structural health is not accepted meaning.
 - The renderer is custom canvas-2D `ontology-map`; one WebGL2 light layer
   draws light only; Graphology supplies ForceAtlas2 only. Another renderer
   needs a decision.
+- MCP internals split by responsibility.
 - State is React/URL/in-memory; IndexedDB stores only the vault handle.
   App and web share parser/data contracts, not identical screens.
 
