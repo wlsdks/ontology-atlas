@@ -1,5 +1,8 @@
 # Build from the design system
 
+For inspectors with long evidence, read the [reading-panel reference](reading-panels.md)
+when choosing clearance, scrolling and the proof surface.
+
 - A **primitive** is a shared UI part such as a button or chip.
 - A **ramp** is the finite set of allowed type, radius, shadow, and motion values.
 - A **hard cut** is a surface appearing or disappearing in one frame.

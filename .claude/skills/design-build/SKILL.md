@@ -1,6 +1,6 @@
 ---
 name: design-build
-description: Implement or revise Atlas UI using existing primitives and tokens, with the proof selected by design routing.
+description: Implement or revise Atlas UI using existing primitives and tokens, with routed proof and reading-panel clearance and scroll ownership.
 ---
 
 # design-build

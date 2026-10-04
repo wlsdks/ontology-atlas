@@ -1,6 +1,6 @@
 ---
 name: design-audit
-description: Audit a rendered Atlas UI change when design routing requests geometry and visual evidence, or when the user requests a design audit.
+description: Audit rendered Atlas UI geometry and visual evidence at the requested or routed scope, including reading-panel clearance and scroll ownership.
 ---
 
 # design-audit

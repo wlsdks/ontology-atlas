@@ -1,5 +1,8 @@
 # Measure a finished UI change
 
+For inspectors with long evidence, read the [reading-panel reference](../design-build/reading-panels.md)
+when choosing clearance, scrolling and the proof surface.
+
 People and models localize small spacing, alignment, and overlap defects poorly
 by sight. An unlocalized feeling cannot become a reliable fix, while imagined
 defects damage healthy code. The fixed order is: measure → list violations →
