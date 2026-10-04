@@ -18,7 +18,7 @@ const nodes: DomeInputNode[] = [
   { id: "c", kind: "capability", x: 120, y: 0, parentId: "d" },
 ];
 
-function pressOnNode(settling: boolean) {
+function pressOnNode(settling: boolean, grip = true, nodeId: string | null = "c") {
   const dome = createDomeRuntime(buildDomeModel(nodes));
   dome.active = true;
   dome.settling = settling;
@@ -34,7 +34,7 @@ function pressOnNode(settling: boolean) {
     dampingRef: ref(1),
     cameraAngularFreqRef: ref(null),
     viewportRef: ref({ width: 800, height: 600, dpr: 1 }),
-    pointerMachineRef: ref({ phase: "pressed", downPoint: { x: 100, y: 100 }, pressedNodeId: "c" }),
+    pointerMachineRef: ref({ phase: "pressed", downPoint: { x: 100, y: 100 }, pressedNodeId: nodeId }),
     dragHistoryRef: ref([{ x: 100, y: 100, t: 0 }]),
     camStartAtDownRef: ref({ x: 0, y: 0 }),
     canvasRectRef: ref({ left: 0, top: 0 }),
@@ -49,7 +49,7 @@ function pressOnNode(settling: boolean) {
     dragStartPosRef: ref(null),
     overviewScaleRef: ref(1),
     domeRuntimeRef: ref(dome),
-    domeGripRef: ref(true),
+    domeGripRef: ref(grip),
   };
   createTopologyPointerHandlers(refs).handlePointerMove({
     clientX: 140,
@@ -74,5 +74,17 @@ describe("a drag begun on a node of the 3D map", () => {
     expect(final.dome.drag?.nodeId).toBe("c");
     expect(final.refs.nodeDragRef.current?.nodeId).toBe("c");
     expect(final.dome.orbiting).toBe(false);
+  });
+});
+
+
+describe("a pan begun outside the 3D dome", () => {
+  it("disarms idle rotation while moving only the camera", () => {
+    const pan = pressOnNode(false, false, null);
+    expect(pan.dome.spinArmed).toBe(false);
+    expect(pan.dome.orbiting).toBe(false);
+    expect(pan.dome.drag).toBeNull();
+    expect(pan.refs.cameraRef.current.x.value).toBeLessThan(0);
+    expect(pan.dome.yawTarget).toBe(pan.dome.yaw);
   });
 });

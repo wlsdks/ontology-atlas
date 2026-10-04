@@ -1106,6 +1106,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
                     dragHistoryRef.current.shift();
                 return;
             }
+            // Panning is intervention too: the dome must not resume idle rotation on release.
+            if (dome) {
+                dome.spinArmed = false;
+                commitDomeEntrySweep(dome);
+            }
             const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
                 ?? next.downPoint
                 ?? point;
