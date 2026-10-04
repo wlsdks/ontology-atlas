@@ -22,6 +22,7 @@ import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../src/features/vault-agent/model/system-prompt";
 import { githubAnchorSlug } from "../../src/shared/lib/github-anchor-slug";
+import { readSkillProcedure } from "../helpers/read-skill-procedure";
 
 const ROOT = resolve(__dirname, "../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
@@ -67,7 +68,7 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     ".claude/skills/ontology-bootstrap/guides/construction.md",
   ])("%s uses array-shaped boundary fields in its proposal template", (path) => {
     // Inspect the payload example, not the author's explanatory sentence.
-    const templates = [...read(path).matchAll(/```text\n([\s\S]*?)```/g)]
+    const templates = [...readSkillProcedure(resolve(ROOT, path)).matchAll(/```text\n([\s\S]*?)```/g)]
       .map((match) => match[1]).filter((block) => /^includes:/m.test(block));
     expect(templates.length, `${path}: missing proposal template`).toBeGreaterThan(0);
     for (const template of templates) {

@@ -11,9 +11,7 @@ import {
   DOME_ASSEMBLE_TOTAL_MS,
   type DomeRuntime,
 } from "../model/dome-view";
-import { buildWalkedEdgeKeys } from "../model/footprint-steps";
 import type { ForceSimulation } from "../model/force-layout";
-import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import type { OntologyMapProps } from "./OntologyMap";
@@ -55,7 +53,6 @@ export interface TopologyMapInstrumentationSources {
     domeRuntimeRef: SourceRef<DomeRuntime | null>;
     domeModelBuildRef: SourceRef<unknown>;
     domeLodRef: SourceRef<StrataLodState>;
-    galaxyRampRef: SourceRef<number>;
     neuralRampRef: SourceRef<number>;
     reducedMotionRef: SourceRef<boolean>;
     appearRef: SourceRef<Map<string, number>>;
@@ -111,7 +108,6 @@ export function useTopologyMapInstrumentation({
     domeRuntimeRef,
     domeModelBuildRef,
     domeLodRef,
-    galaxyRampRef,
     neuralRampRef,
     reducedMotionRef,
     appearRef,
@@ -302,344 +298,329 @@ export function useTopologyMapInstrumentation({
             : null;
         const EDGE_ZERO = { dx: 0, dy: 0, s: 1 };
         const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
-        const selected = selectedEdgeRef.current;
-        const pathEdges = pathEdgeIdsRef.current;
-        const constellationIds =
-          mapLensKindRef.current === "constellation" ? spotlightIdsRef.current : null;
-        const walkedEdges = buildWalkedEdgeKeys(visitedTrailRef.current);
-        const trailVisible = trailLensRampRef.current > 0.001;
-        return world.edges
+                return world.edges
           .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
           .map((e) => {
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
             const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
-            const walkedKey = e.sourceId < e.targetId
-              ? `${e.sourceId} ${e.targetId}`
-              : `${e.targetId} ${e.sourceId}`;
-            const isSelected = selected !== null &&
-              selected.sourceId === e.sourceId &&
-              selected.targetId === e.targetId &&
-              (selected.relationType === undefined || selected.relationType === e.kind);
-            const visible =
-              galaxyRampRef.current <= 0.001 ||
-              isGalaxyEdgeVisible(e, {
-                focusedNodeId: focusedSlugRef.current,
-                hoveredNodeId: drawnHoveredNodeIdRef.current,
-                selected: isSelected,
-                path:
-                  (e.id !== undefined && (pathEdges?.has(e.id) ?? false)) ||
-                  (constellationIds?.has(e.sourceId) === true &&
-                    constellationIds.has(e.targetId)),
-                walked: trailVisible && walkedEdges.has(walkedKey),
-              });
-            return {
-              sourceId: e.sourceId,
-              targetId: e.targetId,
-              kind: e.kind,
-              visible,
-              hidden: !visible,
-              ax: toScreenX(e.ax + offA.dx),
-              ay: toScreenY(e.ay + offA.dy),
-              bx: toScreenX(e.bx + offB.dx),
-              by: toScreenY(e.by + offB.dy),
-              /**
-               * ★ So the instrument measures **the curve that is drawn**, not its
-               * chord. The draw path is `quadraticCurveTo(control, b)`
-               * (`topology-frame-draw.ts`); joining endpoints instead counts
-               * crossings that are not on screen and misses crossings that are —
-               * measuring an approximation rather than the map.
-               */
-              controlX: toScreenX(control.x),
-              controlY: toScreenY(control.y),
-            };
-          });
-      },
-      /**
-       * **The edge the app would select** at `(x, y)`, or null on no hit.
-       *
-       * Why it has to exist (2026-08-03): nodes can be driven from outside via
-       * `nodes()` coordinates, but **edges could not be**. Measured: clicking
-       * 101 points along a curve's midline across 3 offsets left
-       * `selection().edge` null every time (7 px threshold, excluding node
-       * bodies). So **no change touching edges could be verified
-       * automatically**, and an attempt to give the edge panel enter/exit
-       * motion was reverted at that wall.
-       *
-       * It calls **the same function as the pointer handlers** rather than
-       * recomputing coordinates: an instrument with its own formula measures
-       * its imagination, not the screen.
-       */
-      edgeAt: (x: number, y: number, thresholdPx?: number) => {
-        const e = handlersRef.current?.probeEdgeAt(x, y, thresholdPx);
-        return e ? { sourceId: e.sourceId, targetId: e.targetId, kind: e.kind } : null;
-      },
-      /** What is being dragged, since a node and the background look identical on screen. */
-      interaction: () => {
-        const drag = nodeDragRef.current;
-        if (drag) return { kind: "node" as const, nodeId: drag.nodeId };
-        if (pointerMachineRef.current.phase === "dragging") return { kind: "pan" as const, nodeId: null };
-        return { kind: "idle" as const, nodeId: null };
-      },
-      /** Canvas backing size, to confirm the interaction resolution cap actually applied. */
-      backing: () => {
-        const c = canvasRef.current;
-        return c ? { width: c.width, height: c.height, dpr: window.devicePixelRatio } : null;
-      },
-      /** Where the map is looking — for verifying deep links, dives and fit-view. */
-      /**
-       * The altitude the last frame drew, 0 (circuit) to 1 (constellation).
-       *
-       * Exposed because it is the axis the galaxy rides on and the canvas has no DOM a test can
-       * read it from — the same reason every other entry here exists.
-       */
-      altitude: () => drawnFarTRef.current,
-      skyTime: () => lastDrawnSkyTimeMs(),
-      camera: () => {
-        const camera = cameraRef.current;
-        const { width, height } = viewportRef.current;
-        if (!camera) return null;
-        return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
-      },
-      /**
-       * **Where the map is heading**, as opposed to where it currently is.
-       *
-       * The destination is set in one step when something changes the available
-       * area; the position then interpolates toward it over several frames. A
-       * test that samples the position has to pick a wall-clock moment and
-       * therefore measures the machine as much as the product —
-       * `design-gates.md` says as much: gate by call count, not milliseconds.
-       * Reading the target instead makes "did the resize aim the camera at the
-       * new area" answerable without timing anything.
-       */
-      cameraTarget: () => {
-        const target = cameraTargetRef.current;
-        return { x: target.tx, y: target.ty, scale: target.tscale };
-      },
-      /**
-       * Live horizontal obstruction measured by the same product function the
-       * camera consumes. This distinguishes a desktop side inspector from a
-       * mobile full-width sheet without copying the classification into E2E.
-       */
-      obstacleInsets: () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return null;
-        const box = canvas.getBoundingClientRect();
-        if (box.width <= 0 || box.height <= 0) return null;
-        return measureCanvasInsets(canvas, {
-          x: box.x,
-          y: box.y,
-          width: box.width,
-          height: box.height,
-        });
-      },
-      /**
-       * Dome pose — where the dome is looking and whether it still spins by
-       * itself. Canvas pixels cannot distinguish yaw, pitch or the armed state
-       * from outside, so this is the window for verifying the auto-spin stop,
-       * the pitch range and the selection reframe. Null in 2D (dome off), which
-       * is distinguishable from the instrument being absent.
-       */
-      dome: () => {
-        const d = domeRuntimeRef.current;
-        if (d === null) return null;
-        return {
-          yaw: d.yaw,
-          pitch: d.pitch,
-          /*
-           * The pose the pointer **commanded**. Its gap from `yaw` is how far
-           * behind the hand the dome trails, and there is no way to see that
-           * from outside the canvas — pixels show "the dome turns", never "the
-           * dome turns late". Lowering the smoothing τ from 45 to 14 ms on
-           * 2026-08-19 was decided by measuring this value.
-           */
-          yawTarget: d.yawTarget,
-          pitchTarget: d.pitchTarget,
-          yawVel: d.yawVel,
-          pitchVel: d.pitchVel,
-          orbiting: d.orbiting,
-          spinArmed: d.spinArmed,
-          /*
-           * Tier torsion (follow-through) — **from outside the canvas this is
-           * the only thing that says whether the dome reacts to its own
-           * motion.** Pixels cannot tell a ring that lagged from a ring simply
-           * drawn that way. Requiring this to be non-zero during a
-           * programmatic pose move is what makes "a click reframe does not turn
-           * as a rigid block" verifiable from outside.
-           */
-          lag: { ...d.lag },
-          /*
-           * The meaningful landing a release aimed at. From outside the canvas
-           * there is no way to tell inertia that happened to stop from a stop
-           * that was aimed; this value is that distinction.
-           */
-          yawSnap: d.yawSnap,
-          poseTween: d.poseTween !== null,
-          active: d.active,
-          ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
-          /*
-           * Is the entry sweep still putting the pose down? It has its **own**
-           * clock, 1500 ms against the assembly's 1120 ms (`dome-view.ts`), so
-           * `ramp >= 1` is not "the dome has arrived" — the last 380 ms of turning
-           * happens after it. E2E had no way to see that and slept 4 seconds to
-           * cover both, which asserts the machine's speed rather than the dome's
-           * state; the idle gate already reads this flag for the same reason.
-           */
-          entryArmed: d.entryArmed,
-          settling: domeModelBuildRef.current !== null,
-          /*
-           * Lit 3D (2026-09-25) — the fly-to in effect (the node it framed) and how many
-           * drawn nodes wore each evidence light in the last frame. What the frame
-           * painted, so a spec compares it with the legend's measured counts.
-           */
-          flight: d.flight?.slug ?? null,
-          flyPending: d.flyRequest !== null,
-          light: lastLitStateCounts(),
-          lod: {
-            active: domeLodRef.current.active,
-            capability: domeLodRef.current.planeResolve.capability,
-            element: domeLodRef.current.planeResolve.element,
-            spacingPx: { ...domeLodRef.current.spacingPx },
-            gap: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeGap },
-            count: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeCount },
-            hoverSlot: domeLodRef.current.hoverSlot,
-            hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
-            focusSlot: domeLodRef.current.focusSlot,
-            sheets: domeLodRef.current.shapeCount,
-            dust: lastDrawnLod().dust,
-            dustStates: lastDrawnLod().dustStates,
-            evidenceRamp: domeLodRef.current.evidenceRamp,
-            chords: lastDrawnLod().chords,
-            chordEdges: lastDrawnLod().represented,
-            hiddenEdges: lastDrawnLod().hidden,
-            settling: domeLodRef.current.settling,
-          },
+            const visible = true;
+                    return {
+                        sourceId: e.sourceId,
+                        targetId: e.targetId,
+                        kind: e.kind,
+                        visible,
+                        hidden: !visible,
+                        ax: toScreenX(e.ax + offA.dx),
+                        ay: toScreenY(e.ay + offA.dy),
+                        bx: toScreenX(e.bx + offB.dx),
+                        by: toScreenY(e.by + offB.dy),
+                        /**
+                         * ★ So the instrument measures **the curve that is drawn**, not its
+                         * chord. The draw path is `quadraticCurveTo(control, b)`
+                         * (`topology-frame-draw.ts`); joining endpoints instead counts
+                         * crossings that are not on screen and misses crossings that are —
+                         * measuring an approximation rather than the map.
+                         */
+                        controlX: toScreenX(control.x),
+                        controlY: toScreenY(control.y),
+                    };
+                });
+            },
+            /**
+             * **The edge the app would select** at `(x, y)`, or null on no hit.
+             *
+             * Why it has to exist (2026-08-03): nodes can be driven from outside via
+             * `nodes()` coordinates, but **edges could not be**. Measured: clicking
+             * 101 points along a curve's midline across 3 offsets left
+             * `selection().edge` null every time (7 px threshold, excluding node
+             * bodies). So **no change touching edges could be verified
+             * automatically**, and an attempt to give the edge panel enter/exit
+             * motion was reverted at that wall.
+             *
+             * It calls **the same function as the pointer handlers** rather than
+             * recomputing coordinates: an instrument with its own formula measures
+             * its imagination, not the screen.
+             */
+            edgeAt: (x: number, y: number, thresholdPx?: number) => {
+                const e = handlersRef.current?.probeEdgeAt(x, y, thresholdPx);
+                return e ? { sourceId: e.sourceId, targetId: e.targetId, kind: e.kind } : null;
+            },
+            /** What is being dragged, since a node and the background look identical on screen. */
+            interaction: () => {
+                const drag = nodeDragRef.current;
+                if (drag)
+                    return { kind: "node" as const, nodeId: drag.nodeId };
+                if (pointerMachineRef.current.phase === "dragging")
+                    return { kind: "pan" as const, nodeId: null };
+                return { kind: "idle" as const, nodeId: null };
+            },
+            /** Canvas backing size, to confirm the interaction resolution cap actually applied. */
+            backing: () => {
+                const c = canvasRef.current;
+                return c ? { width: c.width, height: c.height, dpr: window.devicePixelRatio } : null;
+            },
+            /** Where the map is looking — for verifying deep links, dives and fit-view. */
+            altitude: () => drawnFarTRef.current,
+            skyTime: () => lastDrawnSkyTimeMs(),
+            camera: () => {
+                const camera = cameraRef.current;
+                const { width, height } = viewportRef.current;
+                if (!camera)
+                    return null;
+                return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
+            },
+            /**
+             * **Where the map is heading**, as opposed to where it currently is.
+             *
+             * The destination is set in one step when something changes the available
+             * area; the position then interpolates toward it over several frames. A
+             * test that samples the position has to pick a wall-clock moment and
+             * therefore measures the machine as much as the product —
+             * `design-gates.md` says as much: gate by call count, not milliseconds.
+             * Reading the target instead makes "did the resize aim the camera at the
+             * new area" answerable without timing anything.
+             */
+            cameraTarget: () => {
+                const target = cameraTargetRef.current;
+                return { x: target.tx, y: target.ty, scale: target.tscale };
+            },
+            /**
+             * Live horizontal obstruction measured by the same product function the
+             * camera consumes. This distinguishes a desktop side inspector from a
+             * mobile full-width sheet without copying the classification into E2E.
+             */
+            obstacleInsets: () => {
+                const canvas = canvasRef.current;
+                if (!canvas)
+                    return null;
+                const box = canvas.getBoundingClientRect();
+                if (box.width <= 0 || box.height <= 0)
+                    return null;
+                return measureCanvasInsets(canvas, {
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                });
+            },
+            /**
+             * Dome pose — where the dome is looking and whether it still spins by
+             * itself. Canvas pixels cannot distinguish yaw, pitch or the armed state
+             * from outside, so this is the window for verifying the auto-spin stop,
+             * the pitch range and the selection reframe. Null in 2D (dome off), which
+             * is distinguishable from the instrument being absent.
+             */
+            dome: () => {
+                const d = domeRuntimeRef.current;
+                if (d === null)
+                    return null;
+                return {
+                    yaw: d.yaw,
+                    pitch: d.pitch,
+                    /*
+                     * The pose the pointer **commanded**. Its gap from `yaw` is how far
+                     * behind the hand the dome trails, and there is no way to see that
+                     * from outside the canvas — pixels show "the dome turns", never "the
+                     * dome turns late". Lowering the smoothing τ from 45 to 14 ms on
+                     * 2026-08-19 was decided by measuring this value.
+                     */
+                    yawTarget: d.yawTarget,
+                    pitchTarget: d.pitchTarget,
+                    yawVel: d.yawVel,
+                    pitchVel: d.pitchVel,
+                    orbiting: d.orbiting,
+                    spinArmed: d.spinArmed,
+                    /*
+                     * Tier torsion (follow-through) — **from outside the canvas this is
+                     * the only thing that says whether the dome reacts to its own
+                     * motion.** Pixels cannot tell a ring that lagged from a ring simply
+                     * drawn that way. Requiring this to be non-zero during a
+                     * programmatic pose move is what makes "a click reframe does not turn
+                     * as a rigid block" verifiable from outside.
+                     */
+                    lag: { ...d.lag },
+                    /*
+                     * The meaningful landing a release aimed at. From outside the canvas
+                     * there is no way to tell inertia that happened to stop from a stop
+                     * that was aimed; this value is that distinction.
+                     */
+                    yawSnap: d.yawSnap,
+                    poseTween: d.poseTween !== null,
+                    active: d.active,
+                    ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
+                    /*
+                     * Is the entry sweep still putting the pose down? It has its **own**
+                     * clock, 1500 ms against the assembly's 1120 ms (`dome-view.ts`), so
+                     * `ramp >= 1` is not "the dome has arrived" — the last 380 ms of turning
+                     * happens after it. E2E had no way to see that and slept 4 seconds to
+                     * cover both, which asserts the machine's speed rather than the dome's
+                     * state; the idle gate already reads this flag for the same reason.
+                     */
+                    entryArmed: d.entryArmed,
+                    settling: domeModelBuildRef.current !== null,
+                    /*
+                     * Lit 3D (2026-09-25) — the fly-to in effect (the node it framed) and how many
+                     * drawn nodes wore each evidence light in the last frame. What the frame
+                     * painted, so a spec compares it with the legend's measured counts.
+                     */
+                    flight: d.flight?.slug ?? null,
+                    flyPending: d.flyRequest !== null,
+                    light: lastLitStateCounts(),
+                    lod: {
+                        active: domeLodRef.current.active,
+                        capability: domeLodRef.current.planeResolve.capability,
+                        element: domeLodRef.current.planeResolve.element,
+                        spacingPx: { ...domeLodRef.current.spacingPx },
+                        gap: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeGap },
+                        count: domeLodRef.current.index === null ? null : { ...domeLodRef.current.index.planeCount },
+                        hoverSlot: domeLodRef.current.hoverSlot,
+                        hoverRamp: domeLodRef.current.hoverSlot >= 0 ? domeLodRef.current.ramps[domeLodRef.current.hoverSlot] ?? 0 : 0,
+                        focusSlot: domeLodRef.current.focusSlot,
+                        sheets: domeLodRef.current.shapeCount,
+                        dust: lastDrawnLod().dust,
+                        dustStates: lastDrawnLod().dustStates,
+                        evidenceRamp: domeLodRef.current.evidenceRamp,
+                        chords: lastDrawnLod().chords,
+                        chordEdges: lastDrawnLod().represented,
+                        hiddenEdges: lastDrawnLod().hidden,
+                        settling: domeLodRef.current.settling,
+                    },
+                };
+            },
+            /**
+             * The node the map is **pointing at via hover** — the same value whether
+             * the cursor is over the canvas or over a row in a side panel (chat, data
+             * sheet).
+             *
+             * Why it exists (2026-08-17): there was **no way from outside** to check
+             * the contract that hovering a panel row makes the map point at that
+             * node. The canvas has no DOM, leaving only pixel comparison, and pixels
+             * say "something changed" but never "that node" — pointing at the wrong
+             * node would still pass green.
+             */
+            hover: () => drawnHoveredNodeIdRef.current,
+            /** What is selected: one node, or one edge's endpoint pair. */
+            selection: () => ({
+                nodeId: focusedSlugRef.current,
+                edge: selectedEdgeRef.current,
+            }),
+            select: (id: string | null) => {
+                focusedSlugRef.current = id;
+                hoveredNodeIdRef.current = null;
+                lastInputMsRef.current = performance.now();
+                lastActiveMsRef.current = lastInputMsRef.current;
+            },
+            /**
+             * Density-gate chips — where "+24 really reveals 24" is verified. A chip
+             * once claimed 24 while exactly 1 was drawn, because the tier gate did
+             * not honour the chip expansion. Reporting the claim (`count`) beside the
+             * reality (`shownChildren`) is what makes that mismatch catchable from
+             * outside.
+             */
+            /**
+             * The label boxes the last frame drew, in CSS pixels — the only way to see
+             * label collision from outside. The canvas has no DOM, so a spec can
+             * otherwise only diff pixels, which reports "something changed" and never
+             * "these two names sit on top of each other". Node centres are not a
+             * substitute: a frame measured **zero** disc overlaps while names visibly
+             * crossed (2026-08-22). Names collide long before discs do.
+             */
+            setComets: (on: boolean) => {
+                setMapComets(on);
+                lastActiveMsRef.current = performance.now();
+            },
+            wake: () => {
+                lastActiveMsRef.current = performance.now();
+                requestOntologyMapFrame();
+            },
+            labels: () => lastDrawnLabelBoxes(),
+            dial: (): DialProbe | {
+                owns: false;
+            } => {
+                const { width, height } = viewportRef.current;
+                return describeLastDialFrame(width, height) ?? { owns: false };
+            },
+            relationCaptions: () => lastDrawnRelationCaptions(),
+            /** Strata's planes as the last frame drew them — what the tier names are placed against. */
+            tierPlanes: () => lastTierPlanes(),
+            chips: () => {
+                const world = worldRef.current;
+                const clustered = clusteredIdsRef.current;
+                return clusterChipsRef.current.map((chip) => {
+                    // The chip claims its whole folded subtree, so reality has to be read
+                    // over the same span: counting the first rank alone reported 10 against
+                    // a claim of 18 and would have called an honest chip a liar.
+                    const seen = new Set<string>();
+                    const stack = [...(world?.childrenByParent.get(chip.parentId) ?? [])];
+                    let shown = 0;
+                    while (stack.length > 0) {
+                        const id = stack.pop() as string;
+                        if (seen.has(id))
+                            continue;
+                        // Domains are exempt from folding, so they are not the chip's to show.
+                        if (world?.nodeById.get(id)?.kind === "domain")
+                            continue;
+                        seen.add(id);
+                        if (!clustered.has(id))
+                            shown += 1;
+                        const grandChildren = world?.childrenByParent.get(id);
+                        if (grandChildren)
+                            stack.push(...grandChildren);
+                    }
+                    return {
+                        parentId: chip.parentId,
+                        claimedCount: chip.count,
+                        expanded: chip.expanded,
+                        /** Descendants of this parent that are not collapsed, i.e. can be drawn. */
+                        shownChildren: shown,
+                    };
+                });
+            },
         };
-      },
-      /**
-       * The node the map is **pointing at via hover** — the same value whether
-       * the cursor is over the canvas or over a row in a side panel (chat, data
-       * sheet).
-       *
-       * Why it exists (2026-08-17): there was **no way from outside** to check
-       * the contract that hovering a panel row makes the map point at that
-       * node. The canvas has no DOM, leaving only pixel comparison, and pixels
-       * say "something changed" but never "that node" — pointing at the wrong
-       * node would still pass green.
-       */
-      hover: () => drawnHoveredNodeIdRef.current,
-      /** What is selected: one node, or one edge's endpoint pair. */
-      selection: () => ({
-        nodeId: focusedSlugRef.current,
-        edge: selectedEdgeRef.current,
-      }),
-      select: (id: string | null) => {
-        focusedSlugRef.current = id;
-        hoveredNodeIdRef.current = null;
-        lastInputMsRef.current = performance.now();
-        lastActiveMsRef.current = lastInputMsRef.current;
-      },
-      /**
-       * Density-gate chips — where "+24 really reveals 24" is verified. A chip
-       * once claimed 24 while exactly 1 was drawn, because the tier gate did
-       * not honour the chip expansion. Reporting the claim (`count`) beside the
-       * reality (`shownChildren`) is what makes that mismatch catchable from
-       * outside.
-       */
-      /**
-       * The label boxes the last frame drew, in CSS pixels — the only way to see
-       * label collision from outside. The canvas has no DOM, so a spec can
-       * otherwise only diff pixels, which reports "something changed" and never
-       * "these two names sit on top of each other". Node centres are not a
-       * substitute: a frame measured **zero** disc overlaps while names visibly
-       * crossed (2026-08-22). Names collide long before discs do.
-       */
-      setComets: (on: boolean) => {
-        setMapComets(on);
-        lastActiveMsRef.current = performance.now();
-      },
-      wake: () => {
-        lastActiveMsRef.current = performance.now();
-        requestOntologyMapFrame();
-      },
-      labels: () => lastDrawnLabelBoxes(),
-      dial: (): DialProbe | { owns: false } => {
-        const { width, height } = viewportRef.current;
-        return describeLastDialFrame(width, height) ?? { owns: false };
-      },
-      relationCaptions: () => lastDrawnRelationCaptions(),
-      /** Strata's planes as the last frame drew them — what the tier names are placed against. */
-      tierPlanes: () => lastTierPlanes(),
-      chips: () => {
-        const world = worldRef.current;
-        const clustered = clusteredIdsRef.current;
-        return clusterChipsRef.current.map((chip) => {
-          // The chip claims its whole folded subtree, so reality has to be read
-          // over the same span: counting the first rank alone reported 10 against
-          // a claim of 18 and would have called an honest chip a liar.
-          const seen = new Set<string>();
-          const stack = [...(world?.childrenByParent.get(chip.parentId) ?? [])];
-          let shown = 0;
-          while (stack.length > 0) {
-            const id = stack.pop() as string;
-            if (seen.has(id)) continue;
-            // Domains are exempt from folding, so they are not the chip's to show.
-            if (world?.nodeById.get(id)?.kind === "domain") continue;
-            seen.add(id);
-            if (!clustered.has(id)) shown += 1;
-            const grandChildren = world?.childrenByParent.get(id);
-            if (grandChildren) stack.push(...grandChildren);
-          }
-          return {
-            parentId: chip.parentId,
-            claimedCount: chip.count,
-            expanded: chip.expanded,
-            /** Descendants of this parent that are not collapsed, i.e. can be drawn. */
-            shownChildren: shown,
-          };
-        });
-      },
-    };
-    (window as unknown as { __atlasMap?: typeof hook; }).__atlasMap = hook;
-    return () => {
-      delete (window as unknown as { __atlasMap?: typeof hook; }).__atlasMap;
-    };
-  }, [
-    agentFocusNodeIdRef,
-    appearRef,
-    cameraRef,
-    cameraTargetRef,
-    canvasRef,
-    clusterChipsRef,
-    clusteredIdsRef,
-    domeLodRef,
-    domeModelBuildRef,
-    domeRuntimeRef,
-    drawnFarTRef,
-    drawnHoveredNodeIdRef,
-    focusedSlugRef,
-    galaxyRampRef,
-    handlersRef,
-    heatRef,
-    homeSpringsRef,
-    hoveredNodeIdRef,
-    idleDebugEnabledRef,
-    lastActiveCausesRef,
-    lastActiveMsRef,
-    lastInputMsRef,
-    mapLensKindRef,
-    neuralRampRef,
-    nodeDragRef,
-    pathEdgeIdsRef,
-    pointerMachineRef,
-    previewEdgeHeldRef,
-    reducedMotionRef,
-    selectedEdgeRef,
-    simRef,
-    spotlightIdsRef,
-    trailLensRampRef,
-    viewportRef,
-    visitedTrailRef,
-    worldRef,
-  ]);
+        (window as unknown as {
+            __atlasMap?: typeof hook;
+        }).__atlasMap = hook;
+        return () => {
+            delete (window as unknown as {
+                __atlasMap?: typeof hook;
+            }).__atlasMap;
+        };
+    }, [
+        agentFocusNodeIdRef,
+        appearRef,
+        cameraRef,
+        cameraTargetRef,
+        canvasRef,
+        clusterChipsRef,
+        clusteredIdsRef,
+        domeLodRef,
+        domeModelBuildRef,
+        domeRuntimeRef,
+        drawnFarTRef,
+        drawnHoveredNodeIdRef,
+        focusedSlugRef,
+        handlersRef,
+        heatRef,
+        homeSpringsRef,
+        hoveredNodeIdRef,
+        idleDebugEnabledRef,
+        lastActiveCausesRef,
+        lastActiveMsRef,
+        lastInputMsRef,
+        mapLensKindRef,
+        neuralRampRef,
+        nodeDragRef,
+        pathEdgeIdsRef,
+        pointerMachineRef,
+        previewEdgeHeldRef,
+        reducedMotionRef,
+        selectedEdgeRef,
+        simRef,
+        spotlightIdsRef,
+        trailLensRampRef,
+        viewportRef,
+        visitedTrailRef,
+        worldRef
+    ]);
 }

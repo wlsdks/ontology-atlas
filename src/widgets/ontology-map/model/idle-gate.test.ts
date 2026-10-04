@@ -5,13 +5,7 @@ import {
   isCameraUnsettled,
   isCanvasActive,
   isDomeSpinAnimating,
-  isEgoTailAnimating,
-  isGalaxyAtmosphereAnimating,
-  shouldSkipFrame,
-  type CanvasActivityFlags,
-  type DomeSpinInput,
-  type EgoTailActivityInput,
-} from "./idle-gate";
+  isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type DomeSpinInput, type EgoTailActivityInput } from "./idle-gate";
 import { stepFocusRamp } from "./focus-state";
 
 const IDLE: CanvasActivityFlags = {
@@ -27,8 +21,6 @@ const IDLE: CanvasActivityFlags = {
   spotlightSettling: false,
   trailLensSettling: false,
   trailMotionActive: false,
-  galaxySettling: false,
-  galaxyAtmosphereActive: false,
   lightActive: false,
 };
 
@@ -170,8 +162,7 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
 
   it("the depends branch is inactive asleep too", () => {
     expect(
-      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, ambientAsleep: true }),
-    ).toBe(false);
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, ambientAsleep: true })).toBe(false);
   });
 
   it("reduced motion is inactive whether awake or not (still contract)", () => {
@@ -190,14 +181,12 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
    */
   it("still draws a live hover pulse while asleep", () => {
     expect(
-      isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true, livePulseCount: 1 }),
-    ).toBe(true);
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true, livePulseCount: 1 })).toBe(true);
   });
 
   it("the depends branch is inactive when the comet speed token is 0", () => {
     expect(
-      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, edgePulseSpeed: 0 }),
-    ).toBe(false);
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, edgePulseSpeed: 0 })).toBe(false);
   });
 
   it("the contains branch is inactive when the selection has no contains edge", () => {
@@ -206,8 +195,7 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
         ...AWAKE_FOCUSED,
         hasDependsEdges: false,
         hasContainsEdges: false,
-      }),
-    ).toBe(false);
+      })).toBe(false);
   });
 });
 
@@ -251,23 +239,6 @@ describe("isDomeSpinAnimating", () => {
   });
 });
 
-describe("isGalaxyAtmosphereAnimating", () => {
-  const AWAKE = { galaxyOn: true, reducedMotion: false, ambientAsleep: false };
-
-  it("keeps the sky moving while Galaxy is on and input is recent", () => {
-    expect(isGalaxyAtmosphereAnimating(AWAKE)).toBe(true);
-  });
-
-  it("lets the sky sleep once ambient sleep has run its ramp", () => {
-    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, ambientAsleep: true })).toBe(false);
-  });
-
-  it("never runs under reduced motion or outside Galaxy", () => {
-    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, reducedMotion: true })).toBe(false);
-    expect(isGalaxyAtmosphereAnimating({ ...AWAKE, galaxyOn: false })).toBe(false);
-  });
-});
-
 describe("keeps the loop awake while the walked trail is open", () => {
   /*
    * The `trailLensSettling` flag buys one frame per toggle; without this the twinkle and the light
@@ -279,7 +250,6 @@ describe("keeps the loop awake while the walked trail is open", () => {
 
   it("does not wake on the settling flag alone, which was what froze it", () => {
     expect(isCanvasActive({ ...IDLE, trailLensSettling: false, trailMotionActive: false })).toBe(
-      false,
-    );
-  });
+      false);
+    });
 });

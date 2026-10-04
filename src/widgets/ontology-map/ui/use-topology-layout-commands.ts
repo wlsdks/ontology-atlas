@@ -9,7 +9,6 @@ import {
   type SpringOffset,
 } from "../expressive/release-offsets";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
-import { type GalaxyLayout } from "../model/galaxy-layout";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
@@ -35,10 +34,7 @@ interface Dependencies {
   homeSpringsRef: RefObject<Map<string, HomeSpringState>>;
   homeTargetOverrideRef: RefObject<ReadonlyMap<string, { x: number; y: number; }> | null>;
   homingActiveRef: RefObject<boolean>;
-  galaxyRef: RefObject<boolean>;
-  galaxyLayoutRef: RefObject<GalaxyLayout | null>;
-  galaxyLayoutHandoffRef: RefObject<"flat" | "galaxy" | null>;
-  revealToken: number;
+    revealToken: number;
 }
 
 /** Apply explicit relayout and reveal commands without rebuilding the graph. */
@@ -57,9 +53,6 @@ export function useTopologyLayoutCommands({
   homeSpringsRef,
   homeTargetOverrideRef,
   homingActiveRef,
-  galaxyRef,
-  galaxyLayoutRef,
-  galaxyLayoutHandoffRef,
   revealToken,
 }: Dependencies) {
 
@@ -103,8 +96,7 @@ export function useTopologyLayoutCommands({
           const t = realmData.insideTargets.get(n.id);
           return { id: n.id, x: t?.x ?? n.x, y: t?.y ?? n.y };
         }),
-        world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-      );
+        world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })));
       const springs = new Map<string, HomeSpringState>();
       for (const node of world.nodes) {
         if (realmData.insideTargets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
@@ -114,35 +106,9 @@ export function useTopologyLayoutCommands({
       homingActiveRef.current = true;
       return;
     }
-
-    // Galaxy has its own canonical arrangement. Auto-arrange returns the real
-    // stars to that stable three-arm layout rather than sending them to Flat's
-    // containment fan. Re-seed the simulation at the same targets so a drag
-    // after the spring settles begins exactly where the star was painted.
-    if (galaxyRef.current && galaxyLayoutRef.current !== null) {
-      const targets = galaxyLayoutRef.current.points;
-      simRef.current = createForceSimulation(
-        world.nodes.map((node) => {
-          const target = targets.get(node.id);
-          return { id: node.id, x: target?.x ?? node.x, y: target?.y ?? node.y };
-        }),
-        world.edges.map((edge) => ({ source: edge.sourceId, target: edge.targetId })),
-      );
-      const springs = new Map<string, HomeSpringState>();
-      for (const node of world.nodes) {
-        if (targets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
-      }
-      homeSpringsRef.current = springs;
-      homeTargetOverrideRef.current = targets;
-      galaxyLayoutHandoffRef.current = "galaxy";
-      homingActiveRef.current = springs.size > 0;
-      return;
-    }
-
-    simRef.current = createForceSimulation(
+        simRef.current = createForceSimulation(
       world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
-      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-    );
+      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })));
 
     const springs = new Map<string, HomeSpringState>();
     for (const node of world.nodes) {
@@ -151,7 +117,7 @@ export function useTopologyLayoutCommands({
     homeSpringsRef.current = springs;
     homeTargetOverrideRef.current = null;
     homingActiveRef.current = true;
-  }, [dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, galaxyLayoutHandoffRef, galaxyLayoutRef, galaxyRef, heatRef, homeSpringsRef, homeTargetOverrideRef, homingActiveRef, initialRelayoutTokenRef, nodeDragRef, realmDataRef, realmTransitionRef, relayoutToken, simRef, worldRef]);
+  }, [dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, heatRef, homeSpringsRef, homeTargetOverrideRef, homingActiveRef, initialRelayoutTokenRef, nodeDragRef, realmDataRef, realmTransitionRef, relayoutToken, simRef, worldRef]);
 
   // --- First-map reveal: right after bootstrap, every node gathers out of the
   // spine centre and settles home. It rides the existing homing springs

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeStarDustCount, buildDustPoints, buildRealmCosmosPoints } from "./starfield";
+import { computeStarDustCount, buildDustPoints, buildRealmStarPoints } from "./starfield";
 
 const AREA_PER_POINT = 5200; // --map-dust-area-per-point
 
@@ -26,16 +26,16 @@ describe("computeStarDustCount", () => {
   });
 });
 
-/** Cosmos dots inside the ward: deterministic, two depth layers (0.3/0.6), alpha ≤ 0.12. */
-describe("buildRealmCosmosPoints", () => {
+
+describe("buildRealmStarPoints", () => {
   it("두 번 생성해도 동일하다 (seed 결정론)", () => {
-    const a = buildRealmCosmosPoints(800, 600, 40);
-    const b = buildRealmCosmosPoints(800, 600, 40);
+    const a = buildRealmStarPoints(800, 600, 40);
+    const b = buildRealmStarPoints(800, 600, 40);
     expect(a).toEqual(b);
     expect(a).toHaveLength(40);
   });
   it("깊이는 0.3/0.6 두 레이어, 알파는 ≤0.12(무채, 어지럽지 않게)", () => {
-    const points = buildRealmCosmosPoints(800, 600, 40);
+    const points = buildRealmStarPoints(800, 600, 40);
     for (const p of points) {
       expect([0.3, 0.6]).toContain(p.depth);
       expect(p.alpha).toBeGreaterThan(0);

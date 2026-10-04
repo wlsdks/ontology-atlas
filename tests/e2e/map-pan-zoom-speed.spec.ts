@@ -1,20 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
-import type {} from "./atlas-map-probe";
-import { waitForCosmosStill } from "./atlas-cosmos-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForMapSettled, waitForMapStill } from "./settle";
 
 const DRAG_PX = 200;
 const CANVAS = '[data-testid="ontology-map-canvas"]';
 
-async function seedSpeeds(page: Page, speeds: { drag?: string; zoom?: string }) {
-  await page.addInitScript((stored: { drag?: string; zoom?: string }) => {
+async function seedSpeeds(page: Page, speeds: { drag?: string; zoom?: string;
+}) {
+  await page.addInitScript((stored: { drag?: string; zoom?: string;
+    }) => {
     if (stored.drag) window.localStorage.setItem("atlas.appearance.map-drag-speed", stored.drag);
     if (stored.zoom) window.localStorage.setItem("atlas.appearance.map-zoom-speed", stored.zoom);
   }, speeds);
 }
 
-async function emptyCanvasPoint(page: Page, span: number): Promise<{ x: number; y: number }> {
+async function emptyCanvasPoint(page: Page, span: number): Promise<{ x: number; y: number;
+}> {
   const point = await page.evaluate(
     ({ selector, span }) => {
       const canvas = document.querySelector(selector)!;
@@ -40,8 +41,7 @@ async function emptyCanvasPoint(page: Page, span: number): Promise<{ x: number; 
       }
       return null;
     },
-    { selector: CANVAS, span },
-  );
+    { selector: CANVAS, span });
   expect(point, "no empty stretch of map to start a pan on").not.toBeNull();
   return point!;
 }
@@ -50,7 +50,8 @@ async function readCamera(page: Page) {
   return page.evaluate(() => window.__atlasMap!.camera()!);
 }
 
-async function dragMap(page: Page, from: { x: number; y: number }, dx: number) {
+async function dragMap(page: Page, from: { x: number; y: number;
+}, dx: number) {
   const before = await readCamera(page);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
@@ -97,8 +98,7 @@ test("at 0.5x drag speed a 200 px drag moves the hex board 100 px", async ({ pag
     const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="hex-board-map"] canvas')!;
     const box = canvas.getBoundingClientRect();
     const marks = [...document.querySelectorAll<HTMLElement>("[data-hex-id][data-mark]")].map((el) =>
-      el.dataset.mark!.split(",").map(Number),
-    );
+      el.dataset.mark!.split(",").map(Number));
     for (let fy = 0.3; fy <= 0.75; fy += 0.025) {
       for (let fx = 0.15; fx <= 0.6; fx += 0.02) {
         const x = box.x + box.width * fx;
@@ -120,55 +120,14 @@ test("at 0.5x drag speed a 200 px drag moves the hex board 100 px", async ({ pag
       return board?.dataset.hexReady === "true" && Number(tile?.dataset.mark?.split(",")[0]) !== before.x;
     },
     start,
-    { polling: "raf" },
-  );
+    { polling: "raf" });
   const moved = await readTile();
   await page.mouse.up();
   expect(moved.x - start.x).toBeCloseTo(DRAG_PX * 0.5, 0);
   expect(moved.y).toBe(start.y);
 });
-
-test("at 2x speeds a 200 px drag moves Galaxy 400 px and = zooms it by 1.5625", async ({ page }) => {
-  await page.setViewportSize({ width: 1400, height: 860 });
-  await seedFirstRunSeen(page);
-  await seedSpeeds(page, { drag: "2", zoom: "2" });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/ko/topology/?view=galaxy&e2e=1&guides=off", { waitUntil: "domcontentloaded" });
-  await expect.poll(() => page.evaluate(() => window.__atlasCosmos?.layout()?.galaxies.length ?? 0), { timeout: 20_000 }).toBeGreaterThan(0);
-  await waitForCosmosStill(page);
-  const from = await page.evaluate((selector) => {
-    const canvas = document.querySelector(selector)!;
-    const box = canvas.getBoundingClientRect();
-    const room = window.__atlasCosmos!.room();
-    for (let fy = 0.3; fy <= 0.7; fy += 0.05) {
-      for (let fx = 0.2; fx <= 0.6; fx += 0.05) {
-        const x = box.x + room.x + room.width * fx;
-        const y = box.y + room.y + room.height * fy;
-        if (document.elementFromPoint(x, y) === canvas && document.elementFromPoint(x + 200, y) === canvas) return { x, y };
-      }
-    }
-    return null;
-  }, CANVAS);
-  expect(from, "no open stretch of sky to start a pan on").not.toBeNull();
-  const before = await page.evaluate(() => window.__atlasCosmos!.camera());
-  await page.mouse.move(from!.x, from!.y);
-  await page.mouse.down();
-  await page.mouse.move(from!.x + DRAG_PX, from!.y, { steps: 20 });
-  const held = await page.evaluate(() => ({ camera: window.__atlasCosmos!.camera(), kind: window.__atlasCosmos!.interaction().kind }));
-  await page.mouse.up();
-  expect(held.kind).toBe("pan");
-  expect((before.x - held.camera.x) * before.scale).toBeCloseTo(DRAG_PX * 2, 0);
-
-  await waitForCosmosStill(page);
-  const rest = await page.evaluate(() => window.__atlasCosmos!.camera());
-  await page.locator(CANVAS).focus();
-  await page.keyboard.press("=");
-  await waitForCosmosStill(page);
-  const zoomed = await page.evaluate(() => window.__atlasCosmos!.camera());
-  expect(zoomed.scale / rest.scale).toBeCloseTo(1.25 ** 2, 3);
-});
-
-async function pinchWithGestures(page: Page, selector: string, at: { x: number; y: number }, scale: number) {
+async function pinchWithGestures(page: Page, selector: string, at: { x: number; y: number;
+}, scale: number) {
   return page.evaluate(
     ({ selector, at, scale }) => {
       const target = document.querySelector(selector)!;
@@ -176,15 +135,13 @@ async function pinchWithGestures(page: Page, selector: string, at: { x: number; 
         ["gesturestart", 1],
         ["gesturechange", Math.sqrt(scale)],
         ["gesturechange", scale],
-        ["gestureend", scale],
-      ].map(([type, value]) =>
-        Object.assign(new Event(type as string, { bubbles: true, cancelable: true }), { scale: value, clientX: at.x, clientY: at.y }),
-      );
+        ["gestureend", scale]
+        ].map(([type, value]) =>
+        Object.assign(new Event(type as string, { bubbles: true, cancelable: true }), { scale: value, clientX: at.x, clientY: at.y }));
       for (const event of events) target.dispatchEvent(event);
       return events.every((event) => event.defaultPrevented);
     },
-    { selector, at, scale },
-  );
+    { selector, at, scale });
 }
 
 test("a WebKit gesture pinch zooms the flat map and the hex board about the fingers", async ({ page }) => {
@@ -222,8 +179,7 @@ test("a WebKit gesture pinch zooms the flat map and the hex board about the fing
       return Number(mark?.split(",")[2]) !== r;
     },
     tile.r,
-    { polling: "raf" },
-  );
+    { polling: "raf" });
   const zoomed = await readTile();
   expect(zoomed.r / tile.r).toBeCloseTo(1.5, 1);
   expect(Math.abs(zoomed.x - tile.x), "the mirror rounds marks to whole pixels").toBeLessThanOrEqual(1);
@@ -243,9 +199,8 @@ test("choosing speeds in Settings changes how far a drag and a zoom key move the
   expect(
     await page.evaluate(() => [
       window.localStorage.getItem("atlas.appearance.map-drag-speed"),
-      window.localStorage.getItem("atlas.appearance.map-zoom-speed"),
-    ]),
-  ).toEqual(["0.5", "2"]);
+      window.localStorage.getItem("atlas.appearance.map-zoom-speed")
+    ])).toEqual(["0.5", "2"]);
 
   await page.locator(CANVAS).focus();
   await waitForMapStill(page, { what: "camera" });

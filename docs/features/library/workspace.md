@@ -126,8 +126,8 @@ parameters and the fragment. `ontologyView` is independent of the document
 reader's legacy `view` parameter; drafts survive switching between documents and sets.
 The set view stays available even when the folder currently has no ontology nodes. Expanding a row resolves
 members by immutable UID against the current manifest; resolved names open the actual
-Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.
-The Galaxy candidate keeps a separate `mapId` for map focus; the compatible `v1`
+Ontology document, unresolved members stay visible, and the whole set opens in Map.
+The Map candidate keeps a separate `mapId` for map focus; the compatible `v1`
 sidecar stores immutable UID identity and the manifest's exact `document.path` as
 display-only `lastKnownPath`. Source and Wiki attachments stay
 distinguishable from ontology members. Empty, loading, corrupt, and read-only states remain

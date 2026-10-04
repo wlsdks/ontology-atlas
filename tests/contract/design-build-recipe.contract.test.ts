@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readSkillProcedure } from '../helpers/read-skill-procedure';
+
 /**
  * Checks that the `/design-build` recipe **points only at things that exist**.
  *
@@ -22,7 +24,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 describe.each(['.claude', '.agents'])('design-build references in %s', (tree) => {
-  const recipe = read(`${tree}/skills/design-build/SKILL.md`);
+  const recipe = readSkillProcedure(join(ROOT, `${tree}/skills/design-build/SKILL.md`));
 
   /** What the recipe tells you to use. One missing entry makes the recipe a lie. */
   const PRESCRIBED_PRIMITIVES: Array<[name: string, file: string]> = [

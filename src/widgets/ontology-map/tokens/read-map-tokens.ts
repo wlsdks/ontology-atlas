@@ -13,7 +13,6 @@
  * `OntologyMapTokenError` rather than silently falling back to a default, so a
  * missing token is never absorbed on a hunch.
  */
-
 export interface OntologyMapTokens {
   // 2.1 Node surfaces (per-kind fill/stroke tier)
   nodeFillProject: string;
@@ -65,15 +64,6 @@ export interface OntologyMapTokens {
   projectHairlineInner: string;
   /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
   projectPinTick: string;
-  /**
-   * The galaxy's colour temperature, one step per kind, warm to cool down the containment
-   * ladder. It carries kind at altitudes where the silhouette has converged to a circle and the
-   * shape channel no longer exists — see `model/galaxy.ts`.
-   */
-  galaxyProject: string;
-  galaxyDomain: string;
-  galaxyCapability: string;
-  galaxyElement: string;
   /** Canvas-emphasis slice — the selected node's static 2px ring color (spec §B1). */
   selectionRingIndigo: string;
   /** Canvas-emphasis slice — the selected node's outer 6px hairline ring color (spec §B1). */
@@ -375,10 +365,6 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "nodeSheenBlend", cssVar: "--map-node-sheen-blend", kind: "number" },
   { key: "projectHairlineInner", cssVar: "--map-project-hairline-inner", kind: "color" },
   { key: "projectPinTick", cssVar: "--map-project-pin-tick", kind: "color" },
-  { key: "galaxyProject", cssVar: "--map-galaxy-project", kind: "color" },
-  { key: "galaxyDomain", cssVar: "--map-galaxy-domain", kind: "color" },
-  { key: "galaxyCapability", cssVar: "--map-galaxy-capability", kind: "color" },
-  { key: "galaxyElement", cssVar: "--map-galaxy-element", kind: "color" },
   { key: "selectionRingIndigo", cssVar: "--map-selection-ring-indigo", kind: "color" },
   { key: "selectionRingHairline", cssVar: "--map-selection-ring-hairline", kind: "color" },
   { key: "hoverRing", cssVar: "--map-hover-ring", kind: "color" },
@@ -502,7 +488,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "safeInsetLeft", cssVar: "--map-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--map-safe-inset-right", kind: "number" },
   { key: "safeInsetTop", cssVar: "--map-safe-inset-top", kind: "number" },
-  { key: "safeInsetBottom", cssVar: "--map-safe-inset-bottom", kind: "number" },
+  { key: "safeInsetBottom", cssVar: "--map-safe-inset-bottom", kind: "number" }
 ];
 
 /** The token-count contract — this value, not a number in a comment, is the source of truth (the test pins fixture coverage to it). */
@@ -513,73 +499,63 @@ export class OntologyMapTokenError extends Error {
     super(
       `OntologyMap token drift: missing/empty CSS custom propert${
         missing.length === 1 ? "y" : "ies"
-      } — ${missing.join(", ")}. Check app/globals.css.`,
-    );
-    this.name = "OntologyMapTokenError";
-  }
+      } — ${missing.join(", ")}. Check app/globals.css.`);
+        this.name = "OntologyMapTokenError";
+    }
 }
-
 /**
  * Resolve every token in TOKEN_SPECS from a `getComputedStyle` result (or a test
  * substitute). Any one of them resolving to an empty string throws a
  * `OntologyMapTokenError` — that is the §2.3 "fail explicitly on a missing token"
  * contract.
  */
-export function resolveOntologyMapTokens(
-  getPropertyValue: (name: string) => string,
-): OntologyMapTokens {
-  const missing: string[] = [];
-  const result = {} as Record<string, string | number>;
-
-  for (const spec of TOKEN_SPECS) {
-    const raw = getPropertyValue(spec.cssVar).trim();
-    if (raw === "") {
-      missing.push(spec.cssVar);
-      continue;
+export function resolveOntologyMapTokens(getPropertyValue: (name: string) => string): OntologyMapTokens {
+    const missing: string[] = [];
+    const result = {} as Record<string, string | number>;
+    for (const spec of TOKEN_SPECS) {
+        const raw = getPropertyValue(spec.cssVar).trim();
+        if (raw === "") {
+            missing.push(spec.cssVar);
+            continue;
+        }
+        if (spec.kind === "number") {
+            const parsed = Number(raw);
+            if (Number.isNaN(parsed)) {
+                missing.push(`${spec.cssVar} (non-numeric: "${raw}")`);
+                continue;
+            }
+            result[spec.key] = parsed;
+        }
+        else {
+            result[spec.key] = raw;
+        }
     }
-    if (spec.kind === "number") {
-      const parsed = Number(raw);
-      if (Number.isNaN(parsed)) {
-        missing.push(`${spec.cssVar} (non-numeric: "${raw}")`);
-        continue;
-      }
-      result[spec.key] = parsed;
-    } else {
-      result[spec.key] = raw;
+    if (missing.length > 0) {
+        throw new OntologyMapTokenError(missing);
     }
-  }
-
-  if (missing.length > 0) {
-    throw new OntologyMapTokenError(missing);
-  }
-
-  return result as unknown as OntologyMapTokens;
+    return result as unknown as OntologyMapTokens;
 }
-
 /** Wraps `document.documentElement`'s computed style as an adapter. */
 function readFromElement(element: Element): OntologyMapTokens {
-  const styles = getComputedStyle(element);
-  return resolveOntologyMapTokens((name) => styles.getPropertyValue(name));
+    const styles = getComputedStyle(element);
+    return resolveOntologyMapTokens((name) => styles.getPropertyValue(name));
 }
-
 let cached: OntologyMapTokens | null = null;
-
 /**
  * Cached token reads — `getComputedStyle` is called once at mount and the cache is
  * returned thereafter. Call `clearOntologyMapTokensCache()` first at any point where
  * the token values can change, such as a dark/light theme switch.
  */
 export function getOntologyMapTokens(element?: Element): OntologyMapTokens {
-  if (cached) return cached;
-  cached = readFromElement(element ?? document.documentElement);
-  return cached;
+    if (cached)
+        return cached;
+    cached = readFromElement(element ?? document.documentElement);
+    return cached;
 }
-
 /** Cache invalidation for theme switches and test isolation. */
 export function clearOntologyMapTokensCache(): void {
-  cached = null;
+    cached = null;
 }
-
 /**
  * The tokens `html[data-topology-index]` actually changes — **this list is the
  * contract**.
@@ -596,7 +572,6 @@ export function clearOntologyMapTokensCache(): void {
 // left lane on every viewport commit — four reads, not the 115 of a blanket
 // refresh.
 const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft", "safeInsetRight", "safeInsetTop", "safeInsetBottom"] as const;
-
 /**
  * After an INDEX state (`data-topology-index`) transition, re-read **only the tokens
  * that can have changed**.
@@ -615,21 +590,27 @@ const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft", "safeInsetRight", "safeInse
  * With no cache yet it does nothing — the next read fetches current values anyway.
  */
 export function refreshIndexDependentTokens(element?: Element): void {
-  if (!cached) return;
-  if (typeof document === "undefined") return;
-  const styles = getComputedStyle(element ?? document.documentElement);
-  const patch: Record<string, string | number> = {};
-  for (const key of INDEX_DEPENDENT_TOKEN_KEYS) {
-    const spec = TOKEN_SPECS.find((s) => s.key === key);
-    if (!spec) continue;
-    const raw = styles.getPropertyValue(spec.cssVar).trim();
-    if (raw === "") continue;
-    if (spec.kind === "number") {
-      const parsed = Number(raw);
-      if (!Number.isNaN(parsed)) patch[spec.key] = parsed;
-    } else {
-      patch[spec.key] = raw;
+    if (!cached)
+        return;
+    if (typeof document === "undefined")
+        return;
+    const styles = getComputedStyle(element ?? document.documentElement);
+    const patch: Record<string, string | number> = {};
+    for (const key of INDEX_DEPENDENT_TOKEN_KEYS) {
+        const spec = TOKEN_SPECS.find((s) => s.key === key);
+        if (!spec)
+            continue;
+        const raw = styles.getPropertyValue(spec.cssVar).trim();
+        if (raw === "")
+            continue;
+        if (spec.kind === "number") {
+            const parsed = Number(raw);
+            if (!Number.isNaN(parsed))
+                patch[spec.key] = parsed;
+        }
+        else {
+            patch[spec.key] = raw;
+        }
     }
-  }
-  cached = { ...cached, ...patch } as OntologyMapTokens;
+    cached = { ...cached, ...patch } as OntologyMapTokens;
 }

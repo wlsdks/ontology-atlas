@@ -4,7 +4,6 @@ import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model"
 
 import { resolveNodeDocument } from "@/entities/knowledge-graph";
 import { type ConstellationCandidate } from "@/features/saved-constellations";
-import { computeGalaxyLayout } from "@/widgets/ontology-map";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildContainmentParentMap, deriveDeeplinkAncestorExpansion } from "./url-state";
 
@@ -23,19 +22,6 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
 
   const constellationCandidates = useMemo<ConstellationCandidate[]>(() => {
     if (vault.status !== 'loaded' || !vault.manifest || !ontologyInsight) return [];
-    const containmentParentById = new Map(
-      ontologyMapGraph.edges
-        .filter((edge) => edge.kind === 'contains')
-        .map((edge) => [edge.target, edge.source]),
-    );
-    const galaxyLayout = computeGalaxyLayout(
-      ontologyMapGraph.nodes.map((node) => ({
-        id: node.id,
-        kind: node.kind,
-        parentId: containmentParentById.get(node.id) ?? null,
-      })),
-      { domain: 250, capability: 145, element: 90 },
-    );
     const insightById = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
     const docsBySlug = new Map(vault.manifest.docs.map((document) => [document.slug, document]));
     return ontologyMapGraph.nodes.flatMap((mapNode) => {
@@ -54,10 +40,9 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
         lastKnownPath: document.path,
         label: mapNode.label,
         kind: mapNode.kind,
-        galaxyPoint: galaxyLayout.points.get(mapNode.id) ?? { x: 0, y: 0 },
       }];
     });
-  }, [ontologyInsight, ontologyMapGraph.edges, ontologyMapGraph.nodes, vault]);
+  }, [ontologyInsight, ontologyMapGraph.nodes, vault]);
   const [activeConstellation, setActiveConstellation] = useState<{
     id: string;
     memberSlugs: ReadonlySet<string>;

@@ -41,13 +41,13 @@ describe("SearchHint", () => {
     expect(picker).toHaveTextContent("Flat");
   });
 
-  it("shows Galaxy as the current flat map view", () => {
-    window.localStorage.setItem("atlas.appearance.galaxy", "on");
+  it("shows Domain structure as the current flat map view", () => {
+    window.localStorage.setItem("atlas.appearance.structure", "on");
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
     const picker = screen.getByTestId("topology-view-3d");
-    expect(picker).toHaveTextContent("Galaxy");
-    expect(picker).toHaveAccessibleName("Map view: Galaxy");
-    expect(picker).toHaveAttribute("data-map-view", "galaxy");
+    expect(picker).toHaveTextContent("Domain structure");
+    expect(picker).toHaveAccessibleName("Map view: Domain structure");
+    expect(picker).toHaveAttribute("data-map-view", "structure");
   });
 
   it("exposes utility-lane token contracts on search and auto-arrange actions", () => {

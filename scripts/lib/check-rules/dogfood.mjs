@@ -20,9 +20,9 @@ export const rules = [
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
       /^scripts\/migrations\/README\.md$/,
-      /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
+      /^\.agents\/skills\/[^/]+\/(?:SKILL|workflow)\.md$/,
       /^\.claude\/rules\/[^/]+\.md$/,
-      /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
+      /^\.claude\/skills\/[^/]+\/(?:SKILL|workflow)\.md$/,
     ],
   },
   {

@@ -240,6 +240,7 @@ export function OntologyHexBoardMap({
   const pendingRiseRef = useRef(false);
   const pivotRef = useRef(0);
   const tiltRef = useRef<{ id: number; y: number; pitch: number } | null>(null);
+  const dragRef = useRef<{ x: number; y: number; cam: Camera; moved: boolean; id: number } | null>(null);
   const facesRef = useRef<{ armed: boolean; last: PaintedFace[] }>({ armed: false, last: [] });
   const framesRef = useRef(0);
   const viewOf = useCallback((): ReliefView => ({ pitch: pose.pitch, pivotY: pivotRef.current }), [pose]);
@@ -735,6 +736,8 @@ export function OntologyHexBoardMap({
 
   const moveCamera = useCallback(
     (to: Camera) => {
+      // A late room/layout reading must not reset the camera held by a pointer.
+      if (dragRef.current) return;
       const from = camRef.current;
       if (!from) return;
       // Routes are laid for where the camera is going, so they do not re-route on arrival.
@@ -969,7 +972,6 @@ export function OntologyHexBoardMap({
     placeTip(hoverId);
   }, [hoverId, selectedId, placeTip]);
 
-  const dragRef = useRef<{ x: number; y: number; cam: Camera; moved: boolean; id: number } | null>(null);
   const wheelFrameRef = useRef<number | null>(null);
   const local = (e: { clientX: number; clientY: number; currentTarget: Element }) => {
     const r = e.currentTarget.getBoundingClientRect();
