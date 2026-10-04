@@ -314,6 +314,10 @@ test.describe("map layout morph", () => {
   for (const [from, to, relief = false] of DIRECTIONS) {
     test(`${from} to ${to}${relief ? " in relief" : ""} carries each concept on the camera clock without a blank frame`, async ({ page }) => {
       test.setTimeout(120_000);
+      if (from === "territories" && to === "galaxy") {
+        const session = await page.context().newCDPSession(page);
+        await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+      }
       await openAt(page, from, false, SYNTH, relief);
       const before = await startRecording(page, true);
       await pick(page, to);
