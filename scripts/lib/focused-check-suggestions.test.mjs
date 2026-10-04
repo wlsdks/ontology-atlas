@@ -51,6 +51,22 @@ function domainCommands(result) {
 }
 
 describe('focused check suggestions', () => {
+  it('routes shared skill procedures and recording guidance to their existing checks', () => {
+    const subjects = [
+      ['.agents/skills/design-build/workflow.md', 'pnpm test:design-gates'],
+      ['.agents/skills/motion-verify/workflow.md', 'pnpm test:design-gates'],
+      ['docs/engineering/motion-recording.md', 'pnpm test:design-gates'],
+      ['.agents/skills/po-pass/workflow.md', 'pnpm test:po'],
+      ['.agents/skills/po-pass/workflow.md', 'pnpm po:pilot -- --check'],
+      ['.agents/skills/ontology-bootstrap/workflow.md', 'pnpm test:dogfood:script-refs'],
+    ];
+    assert.ok(subjects.length > 0);
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      const commands = commandNames(suggestFocusedChecks([path]));
+      assert.ok(commands.includes(command), `${path} -> ${command}`);
+    }
+  });
   it('covers construction registry, replay delegation and rendered guide consumers', () => {
     const subjects = [
       ['mcp/src/server/registry.mjs', 'pnpm test:mcp:unit'],

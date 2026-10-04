@@ -91,6 +91,8 @@
     "src/architecture-profile.mjs",
     "src/architecture-record.mjs",
     "src/rust-feature-evidence.mjs",
+    "src/rust-feature-evidence/collect.mjs",
+    "src/rust-feature-evidence/attributes.mjs",
     "src/reconcile-imports.mjs",
     "src/detect-drift.mjs",
     "src/growth-hint.mjs",
