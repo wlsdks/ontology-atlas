@@ -205,3 +205,30 @@ test("x64 does not match the aarch64 folder", () => {
 test("returns null when the root does not exist", () => {
   assert.equal(resolveArchDir("/definitely/not/here", "aarch64"), null);
 });
+
+
+test("resolves a sole macOS artifact flattened by the downloader", () => {
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-flat-"));
+  try {
+    const archive = "ontology-atlas_1.6.0_aarch64.app.tar.gz";
+    writeFileSync(join(root, archive), "archive");
+    writeFileSync(join(root, `${archive}.sig`), "signature-line\n");
+    mkdirSync(join(root, "windows"));
+    writeFileSync(join(root, "windows", "setup.exe"), "installer");
+    assert.equal(resolveArchDir(root, "aarch64"), root);
+    assert.equal(findUpdaterArtifacts(resolveArchDir(root, "aarch64")).archiveName, archive);
+    assert.equal(resolveArchDir(root, "x64"), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("does not infer a flattened archive's architecture from the requested target", () => {
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-flat-wrong-"));
+  try {
+    writeFileSync(join(root, "ontology-atlas_1.6.0_x64.app.tar.gz"), "archive");
+    assert.equal(resolveArchDir(root, "aarch64"), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
