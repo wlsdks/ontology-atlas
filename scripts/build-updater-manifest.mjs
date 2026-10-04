@@ -40,9 +40,8 @@ function fail(message) {
 }
 
 /**
- * Finds the per-arch artifact folder. CI names it after the artifact
- * (`ontology-atlas-macos-aarch64`), so exactly one folder ending in the arch must
- * match: with several, a wrong-architecture app could ship.
+ * Finds an arch folder or a flattened archive whose filename names that arch.
+ * The downloader flattens a sole artifact; signatures and duplicate refusal still apply.
  */
 export function resolveArchDir(root, arch) {
   if (!fs.existsSync(root)) return null;
@@ -57,7 +56,10 @@ export function resolveArchDir(root, arch) {
   if (matches.length > 1) {
     fail(`${matches.length} folders match ${arch}: ${matches.join(", ")} — cannot decide which one.`);
   }
-  return matches.length === 1 ? path.join(root, matches[0]) : null;
+  if (matches.length === 1) return path.join(root, matches[0]);
+  const flat = fs.readdirSync(root, { withFileTypes: true })
+    .some((entry) => entry.isFile() && entry.name.endsWith(`_${arch}.app.tar.gz`));
+  return flat ? root : null;
 }
 
 /** Collects every `.app.tar.gz` under a folder, at any depth. */
@@ -157,9 +159,7 @@ function main() {
 
   const platforms = {};
   for (const arch of REQUIRED_ARCHES) {
-    // The folder name is the artifact name (`ontology-atlas-macos-<arch>`), so look for
-    // a folder ending in the arch. Merging them flat makes the two arches
-    // indistinguishable.
+    // The downloader retains an arch folder or flattens the sole named archive.
     const found = findUpdaterArtifacts(resolveArchDir(options.dir, arch));
     if (!found) continue;
     platforms[arch] = {
