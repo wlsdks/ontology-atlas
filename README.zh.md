@@ -63,6 +63,8 @@ frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `ui
 - **MCP**（Model Context Protocol）：你的智能体会启动 Atlas MCP 服务器，由它直接读写磁盘上的文件夹，应用关闭时也能工作。[连接智能体](docs/guide/connect-agent.md) · [MCP 参考](mcp/README.md)
 - **ACP**（Agent Client Protocol）：Claude Agent 和 Codex 也可以在应用自带的对话中工作。读取直接放行，每次 Atlas 写入都要等你允许一次后才会执行。[Agents 界面](docs/features/agents.md)
 
+**持续完善地图。** 地图始终显示分析状态。在 macOS 应用中检查已连接的代码文件夹，选择一个问题并点击追加分析，即可向 ACP 代理发送一次请求。可以查看带日期的结果，或准备单独的可编辑改进草稿。打开地图不会启动付费分析；回答和代理报告的任务进度不代表语义认可或完成率。本地模型的原生源码构建尚未支持。[持续分析](docs/features/map/README.md#optional-continued-analysis)
+
 ## 构建测量
 
 2026-10-03，我们用实际 ACP 会话构建了一个此前未读的 MIT Python 配置库，并通过无法访问源码的独立读取会话及源码审计进行评估。这是单个仓库的有限结果，不是模型排名或语义质量认证。
@@ -80,6 +82,8 @@ frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `ui
 
 
 正文证据改进试验中，已知配置库的完整回答由 **2/6→4/6**，已验证声明为 **19/20**。新的重试库回答了4/6问题，但21条声明仅16条得到验证，4条错误、1条未确认。相同源码证据的后续响应从 **11,105降至2,042字节（减少81.6%）**。配置库构建耗时137.5秒，因此并非整体速度提升；一般语义质量、正式认证及原生本地构建仍未证明。[正文证据试验](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
+
+持续分析试验：在一个新的TypeScript表达式库上，ACP追加调查及经审查的正文更新使无源码读者的回答从 **完整0 / 部分5 / 未知1** 变为 **1 / 4 / 1**。调查耗时22.8秒，构建及调查的提供商费用无法获取。21条带哈希的引用均匹配源码，但无依据的批准文字和其他节点的旧不确定性记录仍然存在。这是有限的补强证据，并非正式认证或模型排名。[测量与失败](docs/benchmark/CONSTRUCTION.md#continued-analysis-and-reuse-trial)
 
 应用已批准的模型提案失败时，Atlas 会列出已确认保存完成的文件，并尝试重新读取文件夹。重新读取的错误会单独报告。失败的保存本身也可能改变了内容，系统不会自动回滚。重试前请检查文档。
 

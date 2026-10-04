@@ -17,6 +17,7 @@ import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useTranslations } from 'next-intl';
 import { subjectSuggestions } from "@/features/acp-session";
 import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 const VaultAgentPanel = dynamic(
@@ -59,6 +60,7 @@ interface TopologyAgentDockProps {
     | "acpRuntimes"
     | "setAcpRuntimeId"
     | "setAcpPresentationVisible"
+    | "investigationBasis"
   >;
   homeWorkbenchController: Pick<
     ReturnType<typeof useHomeWorkbenchController>,
@@ -106,6 +108,8 @@ export function TopologyAgentDock({
   topologyAgentOrchestration, topologyNavigationActions, homeWorkbenchController, acpRuntimeController,
   topologyAgentActivity, topologyAnalysisReview, topologyAuthoring, topologyCanvasFocus
 }: TopologyAgentDockProps) {
+  const tGray=useTranslations('grayArea');
+  const [investigationRefused,setInvestigationRefused]=useState(false);
   const { llmBridgeAvailable, gitVaultPath, ontologyInsight, vault, selectedOntologyNode } = topologyVaultReadModel;
   const vaultAgentPrefill=incomingPrefill?.context&&incomingPrefill.context.vaultPath!==gitVaultPath?null:incomingPrefill;
   const { t, activeLocale, tWorkbench } = topologyPreferences;
@@ -122,7 +126,7 @@ export function TopologyAgentDock({
   } = homeWorkbenchController;
   const {
     chatMounted, chatWidth, scheduleAcpSessionStart, setChatMounted, agentOpeningRequest,
-    setAgentOpeningRequest, acpRuntime, acpRuntimes, setAcpRuntimeId, setAcpPresentationVisible
+    setAgentOpeningRequest, acpRuntime, acpRuntimes, setAcpRuntimeId, setAcpPresentationVisible,investigationBasis
   } = acpRuntimeController;
   const { acpTurnStartedAtRef, acpMcpServers, handleAcpTurnActivityChange, handleAcpWorkReceipt } = topologyAgentActivity;
   const {
@@ -151,7 +155,8 @@ export function TopologyAgentDock({
   });},[draftContextKey,gitVaultPath]);
   const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
   // One subject for header, composer and asks: a picked concept, or the folder.
-  const composerSubject = preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
+  const investigationLabel=investigationBasis?.vaultPath===gitVaultPath?investigationBasis.label:null;
+  const composerSubject = investigationLabel??preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
   const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
   const dockSuggestions = useMemo(
     () => composerSubject && subjectRef ? subjectSuggestions({ slug: subjectRef, label: composerSubject }) : chatSuggestions,
@@ -257,8 +262,8 @@ export function TopologyAgentDock({
                 returnFocusSelector={'[data-testid="topology-meaning-workbench-toggle"]'}
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
-                conversationLabel={preparedContext}
-                contextLabel={edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
+                conversationLabel={investigationLabel??preparedContext}
+                contextLabel={investigationLabel??edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
                 contextKind={edgePanelModel ? null : selectedOntologyNode?.kind ?? null}
                 open={acpDockFrameOpen || meaningWorkbenchOpen}
                 requestNonce={agentOpeningRequest?.nonce}
@@ -305,9 +310,11 @@ export function TopologyAgentDock({
                     showAnalysisRelation({ sourceId: edge.from, targetId: edge.to, relationType: edge.type, declaredBySlug: edge.evidenceIds[0] ?? null });
                   }}
                 />}
-                conversation={acpRuntime && gitVaultPath ? <AcpChatPanel
+                conversation={acpRuntime && gitVaultPath ? <>
+                  {investigationRefused?<p role="status" className="mb-2 text-caption text-[color:var(--color-text-secondary)]">{tGray('continuation.refused')}</p>:null}
+                  <AcpChatPanel
                   // A session is bound to one process, so changing the runtime rebuilds the panel.
-                  key={`${gitVaultPath}:${acpRuntime.id}`}
+                  key={`${gitVaultPath}:${acpRuntime.id}:${investigationBasis?.vaultPath===gitVaultPath?investigationBasis.sourceRoot??'':''}`}
                   runtimeId={acpRuntime.id}
                   runtimeLabel={acpRuntime.label}
                   runtimes={acpRuntimes}
@@ -320,7 +327,8 @@ export function TopologyAgentDock({
                   openingRequest={agentOpeningRequest}
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
                   draftStore={draftStore}
-                  onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
+                  onOpeningRequestSent={(nonce) => {setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current);setInvestigationRefused(false);}}
+                  onOpeningRequestRejected={(nonce) => {setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current);setInvestigationRefused(true);}}
                   suggestions={dockSuggestions}
                   // The composer names what the header names.
                   composerSubject={composerSubject}
@@ -341,7 +349,7 @@ export function TopologyAgentDock({
                   // The workbench owns the one close button and the `h2` context label, so the
                   // panel repeats neither.
                   onTurnStarted={analysisCapture.onTurnStarted}
-                /> : undefined}
+                /></> : undefined}
               />
             </ErrorBoundary>
           </Surface>

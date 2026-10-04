@@ -42,6 +42,7 @@ import { TopologyTrailChip } from "./TopologyTrailChip";
 
 interface TopologyCommandChromeProps {
   grayAreaAction?: {label:string;onOpen:()=>void};
+  grayAreaContinuation?: {label:string;subject:string;description:string;countLabel?:string;onOpen:()=>void};
   routeState: import("@/views/home/model/url-state").HomeRouteState;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   setVaultAgentPrefill: React.Dispatch<React.SetStateAction<{ text: string; nonce: number; } | null>>;
@@ -121,7 +122,7 @@ interface TopologyCommandChromeProps {
 }
 
 export function TopologyCommandChrome({
-  grayAreaAction,
+  grayAreaAction, grayAreaContinuation,
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
   expandAllActive, insightsReturnTab, insightsReturnReviewId, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
@@ -273,6 +274,11 @@ export function TopologyCommandChrome({
               renderedIndexState === "expanded" ? "recenter-in-remaining-map" : undefined
             }
           >
+          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
+            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
+              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
+            </ChromeChip>
+          </Tooltip> : null}
           <SearchHint
             // No auto margin: from `xl` this lane holds the free map's left edge and the utility
             // lane's `ml-auto` the right, and it stays put while the inspector owns the right

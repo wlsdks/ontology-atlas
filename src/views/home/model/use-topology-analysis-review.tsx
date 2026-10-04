@@ -4,18 +4,21 @@ import type { useTopologyCanvasFocus } from "./use-topology-canvas-focus";
 import type { useTopologyNavigationActions } from "./use-topology-navigation-actions";
 import type { useTopologyPreferences } from "./use-topology-preferences";
 import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model";
+import type { useAcpRuntimeController } from './use-acp-runtime-controller';
 
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import type { AnalysisCaptureContext } from "@/features/acp-session";
 import { analysisGraphFromInsight, useAnalysisCapture } from "@/features/acp-session";
+import { investigationCaptureContext } from './gray-area/investigation-context';
 import { useRouter } from "@/i18n/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../lib/edge-sentence";
 import { selectTopologyPathRouteState } from "./url-state";
 import { useTaskReviewBaseline } from "./use-task-review-baseline";
 
 interface Options {
+  investigationBasis?:ReturnType<typeof useAcpRuntimeController>['investigationBasis'];
   router: ReturnType<typeof useRouter>;
   setExpandAllActive: React.Dispatch<React.SetStateAction<boolean>>;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
@@ -42,7 +45,7 @@ interface Options {
 }
 export function useTopologyAnalysisReview({
   router, setExpandAllActive, setRouteState, topologyVaultReadModel, homeWorkbenchController,
-  topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions
+  topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions, investigationBasis
 }: Options) {
   const { ontologyInsight, vault, gitVaultPath, selectedOntologyNode } = topologyVaultReadModel;
   const { analysisParentRunId, analysisParentRequestText, meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, analysisFindings } = homeWorkbenchController;
@@ -76,7 +79,18 @@ export function useTopologyAnalysisReview({
     nodes: ontologyInsight?.nodes ?? [],
     projectSlug: meaningAnalysisContext.scope.projectSlug,
   });
-  const analysisCapture = useAnalysisCapture(meaningAnalysisContext);
+  const investigationContext = useMemo(()=>investigationCaptureContext(meaningAnalysisContext,investigationBasis,gitVaultPath,vault.manifest?.docs??[]),[investigationBasis,gitVaultPath,vault.manifest,meaningAnalysisContext]);
+  const ordinaryCapture = useAnalysisCapture(meaningAnalysisContext);
+  const investigationCapture = useAnalysisCapture(investigationContext??meaningAnalysisContext);
+  const [captureKind,setCaptureKind] = useState<'meaning'|'investigation'>('meaning');
+  const analysisCapture = {
+    ...(captureKind==='investigation'?investigationCapture:ordinaryCapture),
+    onTurnStarted:useCallback((start:import('@/features/acp-session').AcpTurnStart)=>{
+      const investigate=Boolean(investigationContext&&investigationBasis?.text===start.text);
+      setCaptureKind(investigate?'investigation':'meaning');
+      return (investigate?investigationCapture:ordinaryCapture).onTurnStarted(start);
+    },[investigationContext,investigationBasis,investigationCapture,ordinaryCapture]),
+  };
   const meaningRelations = useMemo(() => {
     if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return [];
     const focus = selectedOntologyNode?.id;

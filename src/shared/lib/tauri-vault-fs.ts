@@ -453,6 +453,11 @@ export async function pickTauriVaultDirectory(
   return rootPath ? createTauriVaultHandle(rootPath) : null;
 }
 
+export async function pickTauriSourceDirectory(dialogTitle?:string):Promise<string|null> {
+  const invoke=getInvoke();
+  return invoke?invoke<string|null>('pick_source_directory',dialogTitle?{dialogTitle}:undefined):null;
+}
+
 export async function tauriVaultPathExists(
   rootPath: string,
   kind: 'file' | 'directory' = 'directory',

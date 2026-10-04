@@ -175,3 +175,19 @@ describe('볼트 항목은 이름으로 찾는다 — 목록이 우리 것만은
     expect(vaultWriteConsentOn(servers)).toBe(true);
   });
 });
+
+it('binds an explicit connected source without changing the vault or consent boundary',()=>{
+ const [server]=vaultMcpServers(launch,VAULT,null,{sourceRoot:'/connected/code',ownsWriteGate:false});
+ expect(server.env).toContainEqual({name:'OATLAS_REPO_ROOT',value:'/connected/code'});
+ expect(server.env).toContainEqual({name:'OATLAS_VAULT',value:VAULT});
+ expect(vaultWriteConsentOn([server])).toBe(true);
+});
+
+it('does not reuse a vault registration whose source root has not been verified for the selected analysis',()=>{
+ const registration={command:BINARY,validForCurrentVault:true};
+ expect(vaultMcpServers(launch,VAULT,registration)).toEqual([]);
+ const [scoped]=vaultMcpServers(launch,VAULT,registration,{sourceRoot:'/connected/code'});
+ expect(scoped.name).toBe('atlas-vault');
+ expect(scoped.env).toContainEqual({name:'OATLAS_REPO_ROOT',value:'/connected/code'});
+ expect(vaultWriteConsentOn([scoped])).toBe(true);
+});
