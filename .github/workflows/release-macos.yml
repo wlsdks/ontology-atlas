@@ -543,10 +543,8 @@ jobs:
       - name: Download macOS artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          pattern: ontology-atlas-macos-*
-          path: release-assets
-          # Do not flatten: the manifest builder finds each architecture by its
-          # folder (`release-assets/ontology-atlas-macos-<arch>/`).
+          name: ontology-atlas-macos-aarch64
+          path: release-assets/ontology-atlas-macos-aarch64
           merge-multiple: false
 
       - name: Download Windows artifact
