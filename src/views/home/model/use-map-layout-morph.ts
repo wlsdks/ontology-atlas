@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { disarmMapLayoutMorph, isMapLayoutMorphArmed, type MapLayoutView } from "@/shared/lib/map-layout-morph-store";
 import { chooseLayoutSwitch, installMapLayoutMorphProbe, type MapLayoutMorphJob } from "@/widgets/ontology-map";
 
@@ -53,35 +53,38 @@ export function useMapLayoutMorph({
   const [shownVault, setShownVault] = useState(vaultKey);
   const [transition, setTransition] = useState<MorphTransition | null>(null);
 
-  if (shownVault !== vaultKey) {
-    setShownVault(vaultKey);
-    setShown(view);
-    if (transition) setTransition(null);
-  } else if (shown !== view) {
-    setShown(view);
-    const fromOverlay = transition?.phase === "travel";
-    const kind = chooseLayoutSwitch({ from: shown, to: view, armed: isMapLayoutMorphArmed(), reducedMotion, conceptCount, fromOverlay });
-    const swapsSurface = fromOverlay || surfaceOf(shown) !== surfaceOf(view);
-    if (kind === "ghost" || kind === "fade") {
-      const job: MapLayoutMorphJob = {
-        mode: kind,
-        reducedMotion,
-        parentOf,
-        anchorId,
-        degreeOf,
-        target: kind === "ghost" ? targetFor(view) : null,
-        source: swapsSurface ? null : () => frameRef.current?.querySelector("canvas") ?? null,
-      };
-      setTransition((prev) => ({
-        id: (prev?.id ?? 0) + 1,
-        job,
-        phase: kind === "ghost" ? "travel" : "handoff",
-        drawn: !swapsSurface,
-      }));
-    } else if (transition) {
-      setTransition(null);
+  useLayoutEffect(() => {
+    if (shownVault !== vaultKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- canvas handoff must commit before paint; render-phase state loses queued rebases.
+      setShownVault(vaultKey);
+      setShown(view);
+      if (transition) setTransition(null);
+    } else if (shown !== view) {
+      setShown(view);
+      const fromOverlay = transition?.phase === "travel";
+      const kind = chooseLayoutSwitch({ from: shown, to: view, armed: isMapLayoutMorphArmed(), reducedMotion, conceptCount, fromOverlay });
+      const swapsSurface = fromOverlay || surfaceOf(shown) !== surfaceOf(view);
+      if (kind === "ghost" || kind === "fade") {
+        const job: MapLayoutMorphJob = {
+          mode: kind,
+          reducedMotion,
+          parentOf,
+          anchorId,
+          degreeOf,
+          target: kind === "ghost" ? targetFor(view) : null,
+          source: swapsSurface ? null : () => frameRef.current?.querySelector("canvas") ?? null,
+        };
+        setTransition((prev) => ({
+          id: (prev?.id ?? 0) + 1,
+          job,
+          phase: kind === "ghost" ? "travel" : "handoff",
+          drawn: !swapsSurface,
+        }));
+      } else if (transition) {
+        setTransition(null);
+      }
     }
-  }
+  }, [view, vaultKey, shownVault, shown, transition, reducedMotion, conceptCount, parentOf, anchorId, degreeOf, targetFor, frameRef]);
 
   useEffect(() => {
     installMapLayoutMorphProbe();
@@ -100,7 +103,7 @@ export function useMapLayoutMorph({
   }, []);
 
   return {
-    surface: transition?.phase === "travel" ? null : surfaceOf(view),
+    surface: transition?.phase === "travel" ? null : surfaceOf(shown),
     arrivedByMorph: transition !== null,
     overlay: transition ? { id: transition.id, job: transition.job, holding: !transition.drawn, onTravelEnd, onDone } : null,
     onIncomingDrawn,

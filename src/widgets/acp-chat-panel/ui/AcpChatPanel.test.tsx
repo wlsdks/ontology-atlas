@@ -124,6 +124,7 @@ function replyTo(method: string, result: unknown) {
  */
 async function bootSession(
   props: Partial<ComponentProps<typeof AcpChatPanel>> = {},
+  modes?: Record<string, unknown>,
 ) {
   const baseProps = {
     runtimeId: 'claude-acp',
@@ -140,7 +141,7 @@ async function bootSession(
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
   replyTo('initialize', { protocolVersion: 1 });
   await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
-  replyTo('session/new', { sessionId: 's-1' });
+  replyTo('session/new', { sessionId: 's-1', ...(modes ? {modes} : {}) });
   await waitFor(() =>
     expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
   );
@@ -4371,4 +4372,76 @@ describe('AcpChatPanel composer — IME composition', () => {
     expect(box.value).toBe('');
     await waitFor(() => expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true));
   });
+});
+
+describe('guarded investigation opening request',()=>{
+ const modes={currentModeId:'default',availableModes:[{id:'default',name:'Manual',_meta:{kind:'standard'}}]};
+ it('sends exactly once after source revalidation and retains ordinary permission review',async()=>{
+   const view=await bootSession({},modes);const consumed=vi.fn();const rejected=vi.fn();
+   const revalidate=vi.fn(async()=>true);
+   const openingRequest={text:'Investigate the selected evidence.',nonce:601,scopeKey:'scope-A',investigation:{runtimeId:'claude-acp',revalidate}};
+   const props={openingRequest,requestScopeKey:'scope-A',onOpeningRequestSent:consumed,onOpeningRequestRejected:rejected};
+   view.rerenderPanel(props);view.rerenderPanel(props);
+   await waitFor(()=>expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(1));
+   expect(revalidate).toHaveBeenCalledOnce();
+   emit(permissionRequest('/vault/ontology/concept.md',901));
+   await screen.findByTestId('acp-permission-allow');
+   expect(answerFor(901)).toBeUndefined();
+   fireEvent.click(screen.getByTestId('acp-permission-reject'));
+   await waitFor(()=>expect(answerFor(901)).toEqual({outcome:'selected',optionId:'reject'}));
+   replyTo('session/prompt',{stopReason:'end_turn'});
+   await waitFor(()=>expect(consumed).toHaveBeenCalledExactlyOnceWith(601));
+   expect(rejected).not.toHaveBeenCalled();
+   view.rerenderPanel(props);
+   expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(1);
+ });
+ it('consumes a scope mismatch so returning to that scope cannot send delayed work',async()=>{
+   const view=await bootSession({},modes);const rejected=vi.fn();const revalidate=vi.fn(async()=>true);
+   const openingRequest={text:'Old scope.',nonce:602,scopeKey:'scope-A',investigation:{runtimeId:'claude-acp',revalidate}};
+   view.rerenderPanel({openingRequest,requestScopeKey:'scope-B',onOpeningRequestRejected:rejected});
+   await waitFor(()=>expect(rejected).toHaveBeenCalledExactlyOnceWith(602));
+   view.rerenderPanel({openingRequest,requestScopeKey:'scope-A',onOpeningRequestRejected:rejected});
+   expect(revalidate).not.toHaveBeenCalled();expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+ });
+ it('refuses busy work instead of queueing another analysis',async()=>{
+   const view=await bootSession({},modes);const rejected=vi.fn();
+   await startUserTurn('Current work.');
+   const openingRequest={text:'Unwanted queue.',nonce:603,investigation:{runtimeId:'claude-acp',revalidate:async()=>true}};
+   view.rerenderPanel({openingRequest,onOpeningRequestRejected:rejected});
+   await waitFor(()=>expect(rejected).toHaveBeenCalledExactlyOnceWith(603));
+   replyTo('session/prompt',{stopReason:'end_turn'});
+   await waitFor(()=>expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status','ready'));
+   expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(1);
+ });
+ it('reports a stale source refusal without using ordinary send as fallback',async()=>{
+   const view=await bootSession({},modes);const rejected=vi.fn();
+   view.rerenderPanel({openingRequest:{text:'Stale source.',nonce:604,investigation:{runtimeId:'claude-acp',revalidate:async()=>false}},onOpeningRequestRejected:rejected});
+   await waitFor(()=>expect(rejected).toHaveBeenCalledExactlyOnceWith(604));
+   expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+ });
+ it('withdraws a pending investigation when the dock closes during source revalidation',async()=>{
+   const view=await bootSession({},modes);const rejected=vi.fn();
+   let release!:(current:boolean)=>void;
+   const revalidate=vi.fn(()=>new Promise<boolean>(resolve=>{release=resolve;}));
+   const openingRequest={text:'Withdrawn evidence.',nonce:605,investigation:{runtimeId:'claude-acp',revalidate}};
+   view.rerenderPanel({openingRequest,onOpeningRequestRejected:rejected});
+   await waitFor(()=>expect(revalidate).toHaveBeenCalledOnce());
+   view.rerenderPanel({openingRequest:null,sessionEnabled:false,onOpeningRequestRejected:rejected});
+   await act(async()=>{release(true);});
+   await waitFor(()=>expect(rejected).toHaveBeenCalledExactlyOnceWith(605));
+   expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+ });
+});
+
+it('shows only live agent-reported plan counts and labels denominator changes',async()=>{
+ await bootSession();
+ const entry=(status='pending')=>({content:'Read a current condition.',priority:'high',status});
+ emit({jsonrpc:'2.0',method:'session/update',params:{update:{sessionUpdate:'plan',entries:[entry('completed')]}}});
+ expect(screen.queryByTestId('acp-reported-plan')).toBeNull();
+ await startUserTurn('Investigate this question.');
+ emit({jsonrpc:'2.0',method:'session/update',params:{update:{sessionUpdate:'plan',entries:[entry('completed'),entry(),entry()]}}});
+ await waitFor(()=>expect(screen.getByTestId('acp-reported-plan')).toHaveTextContent('"done":1,"total":3'));
+ emit({jsonrpc:'2.0',method:'session/update',params:{update:{sessionUpdate:'plan',entries:[entry('completed'),entry('completed')]}}});
+ await waitFor(()=>expect(screen.getByTestId('acp-reported-plan')).toHaveTextContent('continuation.replanned'));
+ expect(screen.getByTestId('acp-reported-plan')).toHaveTextContent('"done":2,"total":2');
 });

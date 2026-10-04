@@ -2,6 +2,23 @@ use super::*;
 use crate::gray_area_scope::observe_source;
 use std::fs;
 use std::path::PathBuf;
+
+#[test]
+fn oversized_scopes_can_be_recovered_with_a_narrower_selection() {
+    let mut nodes = vec![json!({"uid":"project-id","slug":"project","kind":"project"})];
+    let mut edges = Vec::new();
+    for index in 0..40 {
+        let slug = format!("elements/member-{index}");
+        nodes.push(json!({"uid":format!("member-{index}"),"slug":slug,"kind":"element"}));
+        edges.push(json!({"from":"project","to":slug,"via":"contains"}));
+    }
+    assert_eq!(selected_scope(&nodes, &edges, "project", &["project-id".into()]).unwrap_err(), "scope_limit");
+    let oversized: Vec<_> = (0..13).map(|index| format!("member-{index}")).collect();
+    assert_eq!(selected_scope(&nodes, &edges, "project", &oversized).unwrap_err(), "scope_invalid");
+    let (scope, _) = selected_scope(&nodes, &edges, "project", &["member-0".into()]).unwrap();
+    assert_eq!(scope, vec!["elements/member-0"]);
+}
+
 struct Fixture {
     root: PathBuf,
     vault: PathBuf,
@@ -185,7 +202,7 @@ fn source_recovery_preserves_the_content_grant_and_binding() {
                 f.basis.binding_digest.clone()
             )
             .unwrap_err(),
-            "vault-root-not-granted"
+            "source-root-not-granted"
         );
     }
     {
@@ -232,6 +249,25 @@ fn source_recovery_preserves_the_content_grant_and_binding() {
     assert_eq!(
         fs::read(f.vault.join(".ontology-atlas/project-sources.json")).unwrap(),
         before
+    );
+}
+
+#[test]
+fn source_only_selection_recovers_preview_without_granting_code_writes() {
+    let f = Fixture::new();
+    let _scope = crate::vault_grants::EnforcedScope::granting(&[f.vault.clone()]);
+    crate::vault_grants::grant_source_root(&f.code);
+    assert!(preview_gray_area_scope(
+        f.vault.to_string_lossy().into_owned(),
+        "project".into(),
+        Some(f.code.to_string_lossy().into_owned()),
+        Some(f.basis.binding_digest.clone()),
+    )
+    .is_ok());
+    assert!(resolve_binding(&f.vault, "project").is_ok());
+    assert_eq!(
+        crate::canonical_root(f.code.to_str().unwrap()).unwrap_err(),
+        "vault-root-not-granted"
     );
 }
 #[test]

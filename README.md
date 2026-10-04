@@ -68,6 +68,8 @@ Read [What becomes a node?](docs/guide/what-becomes-a-node.md), [Relations](docs
 - **MCP** (Model Context Protocol): your agent starts the Atlas MCP server, which reads and writes the folder on disk, even with the app closed. [Connect an agent](docs/guide/connect-agent.md) · [MCP reference](mcp/README.md)
 - **ACP** (Agent Client Protocol): Claude Agent and Codex also run in the app's own chat. Reads go straight through; each Atlas write waits until you allow it once. [Agents screen](docs/features/agents.md)
 
+**Continue improving the map.** Analysis status stays visible on the map. In the macOS app, inspect the connected code folder, choose a question and press Analyze next to send it once to your ACP agent. Revisit its dated result or prepare a separate editable improvement. Opening the map starts no paid analysis; saved answers and reported task progress are not meaning acceptance or a completeness score. Native local-model source construction remains unavailable. [Continued analysis](docs/features/map/README.md#optional-continued-analysis)
+
 ## Construction measurements
 
 The 2026-10-03 trial used one unfamiliar MIT Python configuration library, actual
@@ -101,7 +103,15 @@ answered 4/6 but verified only 16/21 claims (4 failed, 1 unknown). Exact source
 continuations reduced one identical-evidence payload **11,105→2,042 bytes
 (81.6%)**. Calibration took 137.5 s, so this is not a build-speed win. General
 semantic quality, formal qualification and native local construction remain
-unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial).
+unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
+
+Continued-analysis trial: on one fresh TypeScript expression library, a selected
+ACP investigation and reviewed body update changed source-hidden answers from
+**0 answered / 5 partial / 1 unknown** to **1 / 4 / 1**. The investigation took
+22.8 s; builder/provider cost was unavailable. All 21 hash-anchored citations
+matched source, but unsupported approval notes and stale cross-node uncertainty
+remained. This is bounded enrichment evidence, not qualification or a model
+ranking. [Measurements and failures](docs/benchmark/CONSTRUCTION.md#continued-analysis-and-reuse-trial).
 
 When an approved model proposal fails during application, Atlas lists the files whose saves completed and attempts to reload the folder. A reload error is reported separately. The failed write may also have changed bytes; this is not an automatic rollback. Inspect the documents before retrying.
 

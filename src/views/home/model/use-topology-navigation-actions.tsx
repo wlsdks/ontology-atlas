@@ -9,7 +9,8 @@ import type { useTopologySourceReadiness } from "./use-topology-source-readiness
 
 import type { ChatSuggestion } from "@/features/acp-session";
 import { type AcpMapIntent } from "@/widgets/acp-chat-panel";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { resolveTopologyNodeClickRouteState, selectTopologyPathRouteState } from "./url-state";
 
@@ -33,6 +34,32 @@ interface Options {
     | "chatNodeIndex"
   >;
 }
+
+type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean };
+type SelectionContext = {
+  interactionSelectedSlugRef: Options['topologyCanvasFocus']['interactionSelectedSlugRef'];
+  structure:boolean;
+  setExpandAllActive:Options['setExpandAllActive'];
+  setHoverEdge:Options['topologyAuthoring']['setHoverEdge'];
+  setFullDetailSlug:Options['topologyCanvasFocus']['setFullDetailSlug'];
+  setSelectedRelationActive:Options['topologyCanvasFocus']['setSelectedRelationActive'];
+  setNodePopoverDismissed:Options['topologyCanvasFocus']['setNodePopoverDismissed'];
+  projectBySlug:Options['topologyGraphProjection']['projectBySlug'];
+  setRouteState:Options['setRouteState'];
+  beginExpandedIndexSelection:Options['topologyIndexPresentation']['beginExpandedIndexSelection'];
+};
+function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug:string,options?:SelectOptions) {
+  const current=context.current;
+  current.interactionSelectedSlugRef.current=slug;
+  if(!current.structure)current.setExpandAllActive(false);
+  current.setHoverEdge(null);
+  current.setFullDetailSlug(null);
+  current.setSelectedRelationActive(false);
+  current.setNodePopoverDismissed(false);
+  const isHub=Boolean(current.projectBySlug.get(slug)?.isHub);
+  current.setRouteState(route=>resolveTopologyNodeClickRouteState(route,slug,{isHub,preserveImpact:options?.preserveImpact}));
+  if(options?.keepIndexOpen)current.beginExpandedIndexSelection();
+}
 export function useTopologyNavigationActions({
   setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
   topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
@@ -48,39 +75,11 @@ export function useTopologyNavigationActions({
   const { panelDatasheetModel } = topologyInspectorState;
 
 
-  const handleSelect = useCallback(
-    (
-      slug: string,
-      options?: {
-        preserveImpact?: boolean;
-        /**
-         * A row picked in the INDEX tree keeps the panel open, since the reader is reading the
-         * list; a map selection still collapses it.
-         */
-        keepIndexOpen?: boolean;
-      },
-    ) => {
-      // Selection resolves against `ontologyInsight`.
-      interactionSelectedSlugRef.current = slug;
-      if (!structure) setExpandAllActive(false);
-      setHoverEdge(null);
-      setFullDetailSlug(null);
-      setSelectedRelationActive(false);
-      setNodePopoverDismissed(false);
-      const project = projectBySlug.get(slug);
-      // `resolveTopologyNodeClickRouteState` owns the path-mode branch (`../model/url-state.ts`).
-      setRouteState((current) =>
-        resolveTopologyNodeClickRouteState(current, slug, {
-          isHub: Boolean(project?.isHub),
-          preserveImpact: options?.preserveImpact,
-        }),
-      );
-      // `setRouteState` publishes synchronously, so the expanded session starts after it and
-      // survives the transition.
-      if (options?.keepIndexOpen) beginExpandedIndexSelection();
-    },
-    [interactionSelectedSlugRef, structure, setExpandAllActive, setHoverEdge, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed, projectBySlug, setRouteState, beginExpandedIndexSelection],
-  );
+  const selectionContext=useLatestRef({interactionSelectedSlugRef,structure,setExpandAllActive,setHoverEdge,
+    setFullDetailSlug,setSelectedRelationActive,setNodePopoverDismissed,projectBySlug,setRouteState,beginExpandedIndexSelection});
+  // Renderers may cache this callback across equally shaped folders. It resolves
+  // only the current committed selection context, without pinning an old index.
+  const handleSelect=useMemo(()=>selectFromCurrentContext.bind(null,selectionContext),[selectionContext]);
 
   const handleAcpMapIntent = useAcpMapIntent({
     chatNodeIndex: topologyCanvasFocus.chatNodeIndex, handleSelect, interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug,
