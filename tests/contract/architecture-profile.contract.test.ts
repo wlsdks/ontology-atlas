@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -12,6 +13,7 @@ import {
   deriveArchitectureProfiles as deriveWebProfiles,
   deriveArchitectureProfilesReport as deriveWebReport,
   matchesArchitecturePath as matchesWebPath,
+  createArchitecturePathMatcher,
 } from '@/entities/architecture-profile';
 import {
   parseArchitectureProfile as parseMcpProfile,
@@ -20,6 +22,69 @@ import {
 } from '../../mcp/src/architecture-profile.mjs';
 
 describe('architecture-profile/v1 cross-surface contract', () => {
+  it('rejects a deep nonmatch with repeated directory wildcards in both runtimes', () => {
+    const path = `src/${'segment/'.repeat(28)}actual.ts`;
+    const pattern = `src/${'**/'.repeat(16)}absent.ts`;
+    const surfaces = [
+      [new URL('../../mcp/src/architecture-profile.mjs', import.meta.url), 'matchesPathPattern'],
+      [new URL('../../src/entities/architecture-profile/model/architecture-occupants.ts', import.meta.url), 'matchesArchitecturePath'],
+    ] as const;
+    for (const [moduleUrl, name] of surfaces) {
+      const script = `import {${name} as match} from ${JSON.stringify(moduleUrl.href)}; process.stdout.write(JSON.stringify(match(${JSON.stringify(path)}, ${JSON.stringify(pattern)})));`;
+      const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+        encoding: 'utf8', timeout: 10_000,
+      });
+      expect(child.error, `${name}: spawned matcher must finish`).toBeUndefined();
+      expect(child.status).toBe(0);
+      expect(child.stdout).toBe('false');
+    }
+  });
+
+  it.each([
+    ['separated directory', `src/${'segment/'.repeat(30)}actual.ts`, `src/${'**/segment/'.repeat(12)}absent.ts`],
+    ['same-component', `${'a'.repeat(64)}x`, `${'*a'.repeat(12)}b`],
+  ])('rejects %s wildcard ambiguity without stalling either runtime', (_kind, path, pattern) => {
+    const surfaces = [
+      [new URL('../../mcp/src/architecture-profile.mjs', import.meta.url), 'matchesPathPattern'],
+      [new URL('../../src/entities/architecture-profile/model/architecture-occupants.ts', import.meta.url), 'matchesArchitecturePath'],
+    ] as const;
+    for (const [moduleUrl, name] of surfaces) {
+      const script = `import {${name} as match} from ${JSON.stringify(moduleUrl.href)}; process.stdout.write(JSON.stringify(match(${JSON.stringify(path)}, ${JSON.stringify(pattern)})));`;
+      const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 10_000 });
+      expect(child.error, `${name}: spawned matcher must finish`).toBeUndefined();
+      expect(child.status).toBe(0);
+      expect(child.stdout).toBe('false');
+    }
+  });
+
+  it('resets reused ambiguous matchers across positive, negative and UTF16 paths', () => {
+    const match = createArchitecturePathMatcher();
+    const cases = [
+      ['src/a/bx', 'src/**/a/**/b?', true],
+      ['src/a/z/bx', 'src/**/a/**/b?', true],
+      ['src/a/z/b💡', 'src/**/a/**/b?', false],
+      ['src/\na/z/bx', 'src/**/a/**/b?', false],
+      ['aaab', '*a*a*b', true],
+      ['ab', '*a*a*b', false],
+      ['a\nab', '*a*a*b', true],
+      ['a/b', '*a*a*b', false],
+    ] as const;
+    for (let pass = 0; pass < 3; pass += 1) for (const [path, pattern, expected] of cases) {
+      expect(match(path, pattern)).toBe(expected);
+      expect(matchesMcpPath(path, pattern)).toBe(expected);
+    }
+  });
+
+  it('keeps a traversal matcher equivalent across repeated positive and negative paths', () => {
+    const match = createArchitecturePathMatcher();
+    for (let pass = 0; pass < 3; pass += 1) {
+      for (const row of PATH_MATCH_CASES) {
+        expect(match(row.path, row.pattern)).toBe(row.matches);
+        expect(match(row.path, row.pattern)).toBe(matchesMcpPath(row.path, row.pattern));
+      }
+    }
+  });
+
   it.each([
     ['fsd', FSD_PROFILE_FRONTMATTER],
     ['hexagonal', HEXAGONAL_PROFILE_FRONTMATTER],

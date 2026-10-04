@@ -36,6 +36,64 @@ describe("cosmos camera", () => {
     expect(Math.hypot(end.x - at.x, end.y - at.y)).toBeGreaterThan(20);
   });
 
+  it("presents intermediate refit positions across delayed frames and still lands exactly", () => {
+    const r = new CosmosCameraRig();
+    r.room = { x: 0, y: 0, width: 1441, height: 977 };
+    r.setBounds(bounds, true);
+    const at = worldToScreen(r.camera, r.room, 120, -80);
+    r.readRoom({ x: 0, y: 0, width: 1300, height: 860 }, { final: true, keepView: true });
+    const target = new CosmosCameraRig();
+    target.room = r.room;
+    target.setBounds(bounds, true);
+    const end = worldToScreen(target.camera, target.room, 120, -80);
+    const travel = Math.hypot(end.x - at.x, end.y - at.y);
+    r.fit(true, 0, "presentation");
+    let previous = at;
+    let moving = true;
+    let frames = 0;
+    for (const now of [16, 108, 191, 10_000, 10_120, 10_240, 10_360, 10_480, 10_600, 10_720, 10_840]) {
+      moving = r.step(now);
+      const next = worldToScreen(r.camera, r.room, 120, -80);
+      expect(Math.hypot(next.x - previous.x, next.y - previous.y)).toBeLessThanOrEqual(travel * 0.5);
+      previous = next;
+      frames += 1;
+      if (!moving) break;
+    }
+    expect(frames).toBeGreaterThan(4);
+    expect(moving).toBe(false);
+    expect(r.camera).toEqual(target.camera);
+  });
+
+  it.each([60, 120])("keeps the normal refit path and duration at %i Hz", (hz) => {
+    const presented = rig({ x: 100, y: -50, scale: 0.7 });
+    const elapsed = rig({ x: 100, y: -50, scale: 0.7 });
+    presented.fit(true, 0, "presentation");
+    elapsed.fit(true, 0);
+    for (let frame = 0; frame <= hz; frame += 1) {
+      const now = frame * 1000 / hz;
+      expect(presented.step(now)).toBe(elapsed.step(now));
+      expect(presented.camera).toEqual(elapsed.camera);
+    }
+  });
+
+  it("lets a drag replace a delayed refit and fits immediately with reduced motion", () => {
+    const r = rig({ x: 100, y: -50, scale: 0.7 });
+    r.fit(true, 0, "presentation");
+    r.step(1_000);
+    r.dragStart(1, { x: 300, y: 300 }, 1_000);
+    r.dragMove(1, { x: 330, y: 340 }, 1_016, 1);
+    const dragged = { ...r.camera };
+    expect(r.step(10_000)).toBe(false);
+    expect(r.camera).toEqual(dragged);
+    r.cancelDrag();
+    r.reducedMotion = true;
+    r.fit(true, 10_000, "presentation");
+    const fitted = rig();
+    fitted.fit(false, 0);
+    expect(r.camera).toEqual(fitted.camera);
+    expect(r.step(20_000)).toBe(false);
+  });
+
   it("never approaches a star by zooming out", () => {
     const galaxy = { extent: 400 };
     const fit = galaxyFitScale(galaxy, room);

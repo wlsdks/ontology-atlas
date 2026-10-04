@@ -80,31 +80,25 @@ export function usePanelPresence(
   exitMs: number = EXIT_WINDOW_MS,
 ): { mounted: boolean; exiting: boolean } {
   const [mounted, setMounted] = useState(open);
-  const [exiting, setExiting] = useState(false);
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- a presence gate is by definition "sync React state with an external system, the timer". Deriving it during render removes the exit window and the surface goes back to vanishing in one frame (measured 2026-07-28: INDEX panel delta 13.25 @17ms).
       setMounted(true);
-      setExiting(false);
       return;
     }
     // open=false: open the exit-animation window instead of unmounting now.
-    setExiting(true);
     const id = setTimeout(() => {
       setMounted(false);
-      setExiting(false);
     }, exitMs);
     return () => clearTimeout(id);
   }, [open, exitMs]);
   /*
-   * **Exiting only while something is on screen and closed.** The effect above also runs on
-   * mount with `open=false`, which set `exiting` for the first exit window of every surface
-   * that had never opened, and `exiting` lags one commit behind a reopen. A surface opened in
-   * either gap rendered its first commit `inert`, so the focus trap's `focus()` on that commit
-   * failed silently and focus stayed on `<body>` - the settings sheet reopened after a language
-   * switch did exactly that (inspection, 2026-09-25).
+   * Closed mounted frames are exiting immediately, before passive effects. An
+   * effect-owned flag left the first close commit interactive. Open frames must
+   * never inherit exit lockout on an immediate reopen (locale-switch focus loss,
+   * 2026-09-25); the timer owns mounting only.
    */
-  return { mounted, exiting: exiting && mounted && !open };
+  return { mounted, exiting: mounted && !open };
 }
 
 /**

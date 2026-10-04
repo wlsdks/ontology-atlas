@@ -182,6 +182,8 @@ export async function installDesktopRailRuntime(
         paths.some((path) => held.has(path)) ? heldReads.promise.then(read) : read();
       if (input.writable) (window as unknown as { __stubFiles: typeof files }).__stubFiles = files;
       const AUDIT = ".ontology-atlas/llm-audit.jsonl";
+      const auditReads = new Map<string, { raw: string; bytes: Uint8Array; cursor: number } | null>();
+      let auditReadId = 0;
       const keys: Record<string, string> = { ...(input.models?.keys ?? {}) };
       let jevKey: string | null = input.models?.jevKey ?? null;
       if (input.models?.audit?.length) {
@@ -294,6 +296,42 @@ export async function installDesktopRailRuntime(
               ),
             );
           }
+          case "audit_read_prepare": {
+            if (auditReads.size) return Promise.reject(new Error("audit-read-failed"));
+            const id = String(++auditReadId);
+            auditReads.set(id, null);
+            return slow(id);
+          }
+          case "audit_read_begin": {
+            const id = String(args.readerId);
+            if (!auditReads.has(id)) return Promise.reject(new Error("audit-read-expired"));
+            if (!(AUDIT in files)) { auditReads.delete(id); return slow({ missing: true, size: 0 }); }
+            const raw = files[AUDIT];
+            const bytes = new TextEncoder().encode(raw);
+            auditReads.set(id, { raw, bytes, cursor: 0 });
+            return slow({ missing: false, size: bytes.length });
+          }
+          case "audit_read_pull": {
+            const read = auditReads.get(String(args.readerId));
+            if (!read) return Promise.reject(new Error("audit-read-expired"));
+            if (files[AUDIT] !== read.raw) return Promise.reject(new Error("audit-read-changed"));
+            if (args.cursor !== read.cursor) return Promise.reject(new Error("audit-read-failed"));
+            const bytes = read.bytes.slice(read.cursor, read.cursor + 1048576);
+            read.cursor += bytes.length;
+            return slow(bytes.buffer);
+          }
+          case "audit_read_finish": {
+            const id = String(args.readerId);
+            const read = auditReads.get(id);
+            auditReads.delete(id);
+            if (!read) return Promise.reject(new Error("audit-read-expired"));
+            if (files[AUDIT] !== read.raw) return Promise.reject(new Error("audit-read-changed"));
+            if (read.cursor !== read.bytes.length) return Promise.reject(new Error("audit-read-failed"));
+            return slow(null);
+          }
+          case "audit_read_cancel":
+            auditReads.delete(String(args.readerId));
+            return slow(null);
           case "read_vault_binary_file": {
             const path = relative(args.relativePath);
             if (!(path in files)) return Promise.reject(new Error(`missing ${path}`));

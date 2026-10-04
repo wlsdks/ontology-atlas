@@ -65,7 +65,7 @@ export function useTopologyNavigationActions({
   topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
-  const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed, chatNodeIndex } = topologyCanvasFocus;
+  const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed } = topologyCanvasFocus;
   const { galaxy, view3d } = topologyPreferences;
   const { setHoverEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { projectBySlug } = topologyGraphProjection;
@@ -81,36 +81,10 @@ export function useTopologyNavigationActions({
   // only the current committed selection context, without pinning an old index.
   const handleSelect=useMemo(()=>selectFromCurrentContext.bind(null,selectionContext),[selectionContext]);
 
-  const handleAcpMapIntent = useCallback(
-    (intent: AcpMapIntent) => {
-      if (intent.kind === "focus") {
-        const nodeId = chatNodeIndex.get(intent.slug);
-        if (!nodeId) return;
-        setMeaningEditorState(null);
-        setExpandAllActive(false);
-        setSelectedEdge(null);
-        handleSelect(nodeId);
-        return;
-      }
-
-      const sourceId = chatNodeIndex.get(intent.from);
-      const targetId = chatNodeIndex.get(intent.to);
-      if (!sourceId || !targetId || sourceId === targetId) return;
-      interactionSelectedSlugRef.current = null;
-      setExpandAllActive(false);
-      setMeaningEditorState(null);
-      setSelectedEdge(null);
-      setFullDetailSlug(null);
-      setSelectedRelationActive(false);
-      setRouteState((current) =>
-        selectTopologyPathRouteState(current, {
-          sourceSlug: sourceId,
-          targetSlug: targetId,
-        }),
-      );
-    },
-    [chatNodeIndex, handleSelect, interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive],
-  );
+  const handleAcpMapIntent = useAcpMapIntent({
+    chatNodeIndex: topologyCanvasFocus.chatNodeIndex, handleSelect, interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug,
+    setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive,
+  });
 
   const handleChatSuggestionAction = useCallback((suggestion: ChatSuggestion): boolean => {
     if (suggestion.kind !== 'connectSource' || !unboundProjectSource) return false;
@@ -164,4 +138,50 @@ export function useTopologyNavigationActions({
     });
   }, [handleClose, panelDatasheetModel?.nodeId, view3d, setNodePopoverDismissed]);
   return { handleClose, handleSelect, handleReplayPastWalk, handleDatasheetClose, handleChatSuggestionAction, handleAcpMapIntent } as const;
+}
+
+function useAcpMapIntent({
+  chatNodeIndex, handleSelect, interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug,
+  setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive,
+}: {
+  chatNodeIndex: ReadonlyMap<string, string>;
+  handleSelect: (slug: string) => void;
+  interactionSelectedSlugRef: { current: string | null };
+  setExpandAllActive: Options["setExpandAllActive"];
+  setFullDetailSlug: (slug: string | null) => void;
+  setMeaningEditorState: Options["topologyAuthoring"]["setMeaningEditorState"];
+  setRouteState: Options["setRouteState"];
+  setSelectedEdge: Options["topologyAuthoring"]["setSelectedEdge"];
+  setSelectedRelationActive: (active: boolean) => void;
+}) {
+  return useCallback(
+    (intent: AcpMapIntent) => {
+      if (intent.kind === "focus") {
+        const nodeId = chatNodeIndex.get(intent.slug);
+        if (!nodeId) return;
+        setMeaningEditorState(null);
+        setExpandAllActive(false);
+        setSelectedEdge(null);
+        handleSelect(nodeId);
+        return;
+      }
+
+      const sourceId = chatNodeIndex.get(intent.from);
+      const targetId = chatNodeIndex.get(intent.to);
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      interactionSelectedSlugRef.current = null;
+      setExpandAllActive(false);
+      setMeaningEditorState(null);
+      setSelectedEdge(null);
+      setFullDetailSlug(null);
+      setSelectedRelationActive(false);
+      setRouteState((current) =>
+        selectTopologyPathRouteState(current, {
+          sourceSlug: sourceId,
+          targetSlug: targetId,
+        }),
+      );
+    },
+    [chatNodeIndex, handleSelect, interactionSelectedSlugRef, setExpandAllActive, setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive],
+  );
 }

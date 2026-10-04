@@ -1,10 +1,12 @@
 "use client";
 
 import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
@@ -12,7 +14,7 @@ import {
   type SpringOffset,
 } from "../expressive/release-offsets";
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly } from "../morph/tier-assembly";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
 import { initHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -26,7 +28,13 @@ import {
 } from "./topology-overview-fit";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
-import { buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import type { FlatRingMemoryStore } from "./topology-loop-contract";
+import { createMeasureText } from "../dial/fit";
+import { readDialTokens } from "../dial/tokens";
+import { claimDialOrderFolder } from "../dial/order";
+import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../dial/placement";
+import type { DialLabels, DialMemory, DialWorldInput } from "../dial/types";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
@@ -76,9 +84,22 @@ interface Dependencies {
   fittedDataSourceKeyRef: RefObject<string | null>;
   galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
   pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
+  dialLabels: DialLabels | null;
+  flatRingMemory: FlatRingMemoryStore | null;
+  loadProgress: { read: number; total: number } | null;
+  placingTierRead: boolean;
 }
 
-/** Construct the world and simulation; own initial fit, source changes, and disposal. */
+const SIM_AFTER_ASSEMBLY_MS = 400;
+
+function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
+  try {
+    return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
+  } catch {
+    return null;
+  }
+}
+
 export function useTopologyWorldLifecycle({
   worldRef,
   viewportRef,
@@ -127,23 +148,25 @@ export function useTopologyWorldLifecycle({
   fittedDataSourceKeyRef,
   galaxyModeCameraRef,
   pendingFlatCameraRef,
+  dialLabels,
+  flatRingMemory,
+  loadProgress,
+  placingTierRead,
 }: Dependencies) {
   const arriving = arrivingDocuments > 0;
   const arrivingRef = useRef(arriving);
   const arrivalStillRef = useRef(false);
   const arrivalGlideRef = useRef(false);
+  const [dialPlacement] = useState(createDialPlacement);
+  const placementStateRef = useRef<DialPlacementState>("settled");
+  const pendingSimRef = useRef<{ world: TopologyWorld; nodes: { id: string; x: number; y: number }[]; edges: { source: string; target: string }[] } | null>(null);
+  const buildPendingSim = useCallback(() => {
+    const pending = pendingSimRef.current;
+    pendingSimRef.current = null;
+    if (pending && worldRef.current === pending.world && simRef.current === null) simRef.current = createForceSimulation(pending.nodes, pending.edges);
+  }, [simRef, worldRef]);
+  const provisionalMemoryRef = useRef<DialMemory | null>(null);
 
-  /**
-   * Safety net: if a resize or a monitor change leaves **no node on screen at
-   * all**, return to the overview fit.
-   *
-   * The discipline is not to refit on every resize. A zoom and position the
-   * user set are intent, and erasing them is its own kind of defect. This
-   * intervenes only in the unambiguous "the map looks empty" state
-   * (`hasAnyNodeOnScreen === false`), and moves the spring target rather than
-   * the value so nothing jumps; reduced-motion is already honoured by the
-   * camera tween contract.
-   */
   const rescueCameraIfEverythingOffscreen = useCallback((tokens: OntologyMapTokens) => {
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -158,6 +181,7 @@ export function useTopologyWorldLifecycle({
       height,
       overviewFitTokens(cameraTokens(tokens), galaxyRef.current),
       world.nodes.length,
+      galaxyRef.current ? undefined : dialOverviewFit(world),
     );
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
@@ -172,12 +196,14 @@ export function useTopologyWorldLifecycle({
       ? galaxyLayoutRef.current.bounds
       : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
+    const dialFit = galaxyRef.current ? undefined : dialOverviewFit(world);
     const target = computeOverviewCameraTarget(
       fitBounds,
       width,
       height,
       measuredTokens,
       world.nodes.length,
+      dialFit,
     );
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
@@ -192,6 +218,7 @@ export function useTopologyWorldLifecycle({
       height,
       measuredTokens,
       world.nodes.length,
+      dialFit,
     );
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
@@ -205,9 +232,9 @@ export function useTopologyWorldLifecycle({
     if (!userDrivenCameraRef.current && width > 0 && height > 0) {
       const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
       const measuredTokens = overviewFitTokens(cameraTokens(tokens), false);
-      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
+      const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
       cameraTargetRef.current = target;
-      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
+      overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
       if (still) {
         cameraRef.current = {
           x: { value: target.tx, velocity: 0 },
@@ -232,21 +259,33 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = true;
   };
 
-  // --- world (layout + adjacency) — rebuilt whenever the graph itself changes ---
+  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange });
   useEffect(() => {
+    const live = latest.current;
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
     const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
-    // Contract point for installed-app proof: desktop WebView verification
-    // reads the click-cancel hysteresis from here. Exposes the token verbatim.
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx),
     );
-    // The expansion structure decides the **seed coordinates**, so it is an
-    // input to the world build and appears in the dep array below: changing the
-    // preference rebuilds the world and children move to the new placement.
-    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure);
+    if (dataSourceKey !== null) claimDialOrderFolder(dataSourceKey);
+    const ringMemory = dataSourceKey === null ? null : flatRingMemory;
+    const stored = ringMemory?.current() ?? null;
+    let placed = { state: "settled" as DialPlacementState, held: 0 };
+    const placeDial = (model: Parameters<typeof dialPlacement.next>[0]["model"]) => {
+      const step = dialPlacement.next({ model, reading: arriving, capabilityTierRead: placingTierRead, memory: stored });
+      placed = { state: step.state, held: step.held };
+      return step.model;
+    };
+    const world = buildTopologyWorld(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
+    placementStateRef.current = placed.state;
+    if (world.dial) {
+      setDialPlacement(world.dial, { ...placed, progress: loadProgress });
+      if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
+      provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
+    }
     const galaxyLayout = computeGalaxyLayout(
       world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
       {
@@ -285,31 +324,26 @@ export function useTopologyWorldLifecycle({
         if (isFirstBuild || prevIds.has(n.id)) {
           if (!appear.has(n.id)) appear.set(n.id, 1);
         } else {
-          appear.set(n.id, 0); // New node — swells into view from 0.
-          bornNodeIdsRef.current.add(n.id); // Tier-gate exemption; see `bornNodeIdsRef`.
+          appear.set(n.id, 0);
+          bornNodeIdsRef.current.add(n.id);
         }
       }
       for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
       for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
       prevNodeIdsRef.current = nextIds;
     }
-    // Cache whether comets can ever run, so the idle gate can decide.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
-    // A new world invalidates pulses aimed at the old world's edges.
     pulsesRef.current = [];
-    // Seed the force sim off the concentric layout (spatial memory) and warm it
-    // so it settles into an organic layout that un-piles the fan-arcs.
-    simRef.current = createForceSimulation(
-      world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
-      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-    );
+    simRef.current = null;
+    pendingSimRef.current = {
+      world,
+      nodes: world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+      edges: world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+    };
+    const simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
     nodeDragRef.current = null;
-    // No load-time settle: the sim stays cold until a node is pin-dragged. The
-    // static default is the deterministic de-piled grid from `topology-world`.
     heatRef.current = 0;
-    // A graph rebuild invalidates any in-flight drag/tug/homing state — those
-    // ids/refs point at the OLD world's nodes.
     dragAffectedSetRef.current = null;
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
@@ -317,39 +351,18 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = false;
     homeTargetOverrideRef.current = null;
     prevPinnedNodeIdRef.current = null;
-    onVisibleCountChange?.(nodes.length);
-    onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
-    /*
-     * **A different data source refits the overview** (decision ledger
-     * 2026-08-08 (3) ②).
-     *
-     * `trySnapInitialCamera` ran once, guarded by `hasInitializedRef`, so
-     * opening a vault mid-session (sample → local) **drew the new graph with
-     * the previous graph's camera**, leaving the new world's outermost nodes
-     * outside the chrome safe area.
-     *
-     * The single trigger is source identity; triggering on node count would
-     * hijack the camera every time the user adds one. Lowering the
-     * initialization flag reuses the **same overview fit path**, so safe-area
-     * fit, the `overviewScaleRef` anchor and reduced-motion handling all come
-     * along for free.
-     *
-     * ⚠️ **`null` means "not known yet", not "changed".** The vault identity
-     * string **lies while loading**: every live refresh sends `load()` back to
-     * status `'loading'` (`use-local-vault.ts`), so the identity computed then
-     * is `sample:<sample>` rather than `local:<folder>`. Counting that as a
-     * change **hijacks the camera on every file saved into the vault** —
-     * measured 2026-08-08: adding one node jumped it dx −3.93, dy −10.66,
-     * scale −0.0327. So the caller passes `null` until it settles (HomePage's
-     * `deeplinkSourceReady`) and this compares only against the last value it
-     * knew.
-     */
+    live.onVisibleCountChange?.(live.nodes.length);
+    live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
       galaxyModeCameraRef.current = { flat: null, galaxy: null };
       pendingFlatCameraRef.current = null;
       hasInitializedRef.current = false;
       armAssembly = true;
+    }
+    if (firstPlacement) {
+      armAssembly = true;
+      if (!userDrivenCameraRef.current) hasInitializedRef.current = false;
     }
     const grew = arriving || arrivingRef.current || glidingFromArrival;
     arrivingRef.current = arriving;
@@ -358,7 +371,7 @@ export function useTopologyWorldLifecycle({
     const arrivalStill = grew && arrivalStillRef.current;
     if (!galaxyRef.current) {
       if (armAssembly) {
-        armTierAssembly(world, dataSourceKey, arrivalStill || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
@@ -368,18 +381,27 @@ export function useTopologyWorldLifecycle({
       glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
     }
     trySnapInitialCamera(tokens);
-    // New data is a static state change: draw it even when the map sleeps.
     lastActiveMsRef.current = performance.now();
+    return () => clearTimeout(simTask);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure]);
+  }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
+  useEffect(() => {
+    const dial = worldRef.current?.dial;
+    if (!dial || placementStateRef.current === "settled") return;
+    setDialPlacement(dial, { ...dialPlacementOf(dial), progress: loadProgress });
+    lastActiveMsRef.current = performance.now();
+  }, [loadProgress, worldRef, lastActiveMsRef]);
   useEffect(() => {
     if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
-  }, [dataSourceKey, worldRef]);
+    const dial = dataSourceKey === null ? null : worldRef.current?.dial;
+    if (dial && placementStateRef.current === "settled") flatRingMemory?.write(dial.scene.memory);
+  }, [dataSourceKey, flatRingMemory, worldRef]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const settle = () => {
+      buildPendingSim();
       if (worldRef.current) settleTierAssembly(worldRef.current);
     };
     const events = ["pointerdown", "wheel", "touchstart"] as const;
@@ -389,7 +411,7 @@ export function useTopologyWorldLifecycle({
       for (const type of events) container.removeEventListener(type, settle, { capture: true });
       window.removeEventListener("keydown", settle, { capture: true });
     };
-  }, [containerRef, worldRef]);
+  }, [buildPendingSim, containerRef, worldRef]);
 
   return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
 }

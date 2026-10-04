@@ -1,7 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { addSourcesInBrowser } from './add-sources';
 
-vi.mock('@/entities/docs-vault', () => ({ VAULT_SOURCES_DIR: 'sources' }));
+vi.mock('@/entities/docs-vault', async () => ({
+  VAULT_SOURCES_DIR: 'sources',
+  ...(await vi.importActual('@/entities/docs-vault/lib/source-copy-publication')),
+}));
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({ importTauriSourceFiles: vi.fn(), pickTauriSourceFiles: vi.fn() }));
 afterEach(() => vi.unstubAllGlobals());
 

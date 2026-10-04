@@ -74,6 +74,15 @@ export function LibraryWorkspace() {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const ontologyRef = useRef<HTMLDivElement | null>(null);
   const previousTab = useRef(tab);
+  const resourceCount = (vault.manifest?.sources?.length ?? 0) + wikiCount;
+  const previousResources = useRef({ handle, count: resourceCount });
+  useLayoutEffect(() => {
+    const previous = previousResources.current;
+    previousResources.current = { handle, count: resourceCount };
+    if (previous.handle !== handle || previous.count !== 0 || resourceCount === 0 || (tab !== 'sources' && tab !== 'wiki') || prefersReducedMotion()) return;
+    const panel = panelRef.current;
+    if (panel) fadeIn(panel, '--motion-base');
+  }, [handle, resourceCount, tab]);
   useLayoutEffect(() => {
     const from = previousTab.current;
     previousTab.current = tab;

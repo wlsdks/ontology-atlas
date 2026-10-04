@@ -1,4 +1,4 @@
-import { VAULT_SOURCES_DIR } from "@/entities/docs-vault";
+import { createSourceCopyBatch, VAULT_SOURCES_DIR } from "@/entities/docs-vault";
 import {
   importTauriSourceFiles,
   pickTauriSourceFiles,
@@ -63,93 +63,99 @@ export async function addSourcesInBrowser(
   }
 
   const results: TauriSourceImportResult[] = [];
-  for (const file of picked) {
-    const base = safeName(file.name);
-    if (!base) {
+  const publication = createSourceCopyBatch(root);
+  try {
+    for (const file of picked) {
+      const base = safeName(file.name);
+      if (!base) {
+        results.push({
+          pickedName: file.name,
+          status: "failed",
+          relativePath: null,
+          sha256: null,
+          size: null,
+          reason: "unusable-file-name",
+        });
+        continue;
+      }
+      let bytes: ArrayBuffer;
+      try {
+        bytes = await file.arrayBuffer();
+      } catch (error) {
+        results.push({
+          pickedName: file.name,
+          status: "failed",
+          relativePath: null,
+          sha256: null,
+          size: null,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      const hash = await sha256Hex(bytes);
+      const already = hash ? existing.get(hash) : undefined;
+      if (already) {
+        results.push({
+          pickedName: file.name,
+          status: "duplicate",
+          relativePath: already,
+          sha256: hash,
+          size: file.size,
+          reason: null,
+        });
+        continue;
+      }
+
+      const [stem, extension] = splitName(base);
+      let candidate = base;
+      let suffix = 2;
+      while (takenNames.has(candidate) && suffix <= 999) {
+        candidate = `${stem} (${suffix})${extension}`;
+        suffix += 1;
+      }
+      if (takenNames.has(candidate)) {
+        results.push({
+          pickedName: file.name,
+          status: "failed",
+          relativePath: null,
+          sha256: hash,
+          size: file.size,
+          reason: "file-name-conflict-limit",
+        });
+        continue;
+      }
+      publication.hold(candidate, takenNames.has(`${candidate}.crswap`) ? [] : [`${candidate}.crswap`]);
+      let writable: FileSystemWritableFileStream | null = null;
+      try {
+        const target = await sources.getFileHandle(candidate, { create: true });
+        writable = await target.createWritable();
+        await writable.write(bytes);
+        await writable.close();
+      } catch (error) {
+        try { await writable?.abort(); } catch {}
+        results.push({
+          pickedName: file.name,
+          status: "failed",
+          relativePath: null,
+          sha256: hash,
+          size: file.size,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      takenNames.add(candidate);
+      if (hash) existing.set(hash, `${VAULT_SOURCES_DIR}/${candidate}`);
       results.push({
         pickedName: file.name,
-        status: "failed",
-        relativePath: null,
-        sha256: null,
-        size: null,
-        reason: "unusable-file-name",
-      });
-      continue;
-    }
-    let bytes: ArrayBuffer;
-    try {
-      bytes = await file.arrayBuffer();
-    } catch (error) {
-      results.push({
-        pickedName: file.name,
-        status: "failed",
-        relativePath: null,
-        sha256: null,
-        size: null,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      continue;
-    }
-    const hash = await sha256Hex(bytes);
-    const already = hash ? existing.get(hash) : undefined;
-    if (already) {
-      results.push({
-        pickedName: file.name,
-        status: "duplicate",
-        relativePath: already,
+        status: candidate === base ? "added" : "renamed",
+        relativePath: `${VAULT_SOURCES_DIR}/${candidate}`,
         sha256: hash,
         size: file.size,
         reason: null,
       });
-      continue;
     }
-
-    const [stem, extension] = splitName(base);
-    let candidate = base;
-    let suffix = 2;
-    while (takenNames.has(candidate) && suffix <= 999) {
-      candidate = `${stem} (${suffix})${extension}`;
-      suffix += 1;
-    }
-    if (takenNames.has(candidate)) {
-      results.push({
-        pickedName: file.name,
-        status: "failed",
-        relativePath: null,
-        sha256: hash,
-        size: file.size,
-        reason: "file-name-conflict-limit",
-      });
-      continue;
-    }
-    try {
-      const target = await sources.getFileHandle(candidate, { create: true });
-      const writable = await target.createWritable();
-      await writable.write(bytes);
-      await writable.close();
-    } catch (error) {
-      results.push({
-        pickedName: file.name,
-        status: "failed",
-        relativePath: null,
-        sha256: hash,
-        size: file.size,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      continue;
-    }
-    takenNames.add(candidate);
-    if (hash) existing.set(hash, `${VAULT_SOURCES_DIR}/${candidate}`);
-    results.push({
-      pickedName: file.name,
-      status: candidate === base ? "added" : "renamed",
-      relativePath: `${VAULT_SOURCES_DIR}/${candidate}`,
-      sha256: hash,
-      size: file.size,
-      reason: null,
-    });
-  }
-  return { results, cancelled: false };
+    return { results, cancelled: false };
+  } finally { publication.finish(); }
 }
 
 /** Whether this browser can open a file picker at all. */

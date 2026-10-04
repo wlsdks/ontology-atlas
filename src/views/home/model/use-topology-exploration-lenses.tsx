@@ -14,8 +14,9 @@ interface Options {
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "expandedParentSet" | "selectedProject">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "spotlightIds" | "canvasSelectedSlug">;
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "vault" | "ontologyInsight">;
+  foldsApply: boolean;
 }
-export function useTopologyExplorationLenses({ routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls }: Options) {
+export function useTopologyExplorationLenses({ routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls, foldsApply }: Options) {
   const { vault, ontologyInsight } = topologyVaultReadModel;
   const { ontologyMapGraph, spotlightIds, canvasSelectedSlug } = topologyGraphProjection;
   const { expandedParentSet, selectedProject } = topologyRouteControls;
@@ -92,10 +93,10 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
 
   // Derives the collapsed ancestors of a `?p=` target into `open=`, at most once per slug (ref
   // guard), so a parent the user collapses later stays collapsed. With zero edges the ref stays
-  // unset to retry.
+  // unset to retry. The flat overview folds nothing, so only a realm or a 3D view asks for it.
   const deeplinkExpandedForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!canvasSelectedSlug) return;
+    if (!canvasSelectedSlug || !foldsApply) return;
     if (deeplinkExpandedForRef.current === canvasSelectedSlug) return;
     if (ontologyMapGraph.edges.length === 0) return;
     const parentOf = buildContainmentParentMap(ontologyMapGraph.edges);
@@ -110,7 +111,7 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
       if (nextExpanded.length === current.expandedParents.length) return current;
       return { ...current, expandedParents: nextExpanded };
     }, { replace: true });
-  }, [canvasSelectedSlug, ontologyMapGraph, setRouteState]);
+  }, [canvasSelectedSlug, ontologyMapGraph, setRouteState, foldsApply]);
   return {
     routedConstellation, setActiveConstellation, drawerProject, constellationCandidates,
     setConstellationFitToken, constellationFitToken, spotlightExpandedParents

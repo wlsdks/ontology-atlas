@@ -81,6 +81,7 @@ function makeConnection(overrides: Partial<AiConnectionState> = {}): AiConnectio
     keysRead: true,
     auditEntries: [],
     auditTotal: 0,
+    auditError: null,
     refreshAudit: vi.fn(),
     ...overrides,
   };
@@ -545,6 +546,15 @@ describe('Jev evidence check (experimental)', () => {
 });
 
 describe('sent log', () => {
+  it.each(['changed', 'expired', 'failed'] as const)('offers retry for %s evidence without presenting stale counts', async auditError => {
+    const refreshAudit = vi.fn();
+    renderPanel(makeConnection({ auditError, auditTotal: 12, refreshAudit }));
+    expect(screen.getByTestId('ai-audit-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-audit-count')).toBeNull();
+    expect(screen.queryByTestId('ai-audit-row')).toBeNull();
+    fireEvent.click(screen.getByTestId('ai-audit-retry'));
+    expect(refreshAudit).toHaveBeenCalledTimes(1);
+  });
   const entry: LlmAuditEntry = {
     v: 1,
     at: '2026-07-26T09:12:33.120Z',

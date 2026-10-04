@@ -306,6 +306,15 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "Hex board placement (append-only tile cells) per folder — view state, never meaning",
   },
   {
+    key: "atlas.map.flat-rings.v1:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/home/model/flat-ring-memory-store.ts",
+    provenBy: "src/views/home/model/flat-ring-memory-store.test.ts",
+    note: "Flat dial memory per folder: ring radii, domain angles and order, capability order — view state, never meaning",
+  },
+  {
     key: "atlas.map.cosmos.v1:",
     kind: "storage",
     scope: "vault-scoped",

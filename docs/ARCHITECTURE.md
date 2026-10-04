@@ -129,6 +129,7 @@ The public entrypoints remain stable while internal modules own narrower work:
 |---|---|
 | `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
 | `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering; the light stage (`light/`) prepares before the presentation stage and renders after it on its own WebGL2 canvas, which draws light only, in Flat, for an event. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
+| `src/widgets/ontology-map/dial/` | The Flat dial paints the Flat overview: the dial model and its `domain_matrix`-equal counts, rings by dependents, order and spatial memory, layout, links and stubs, labels, ledger, placement, fit, picking and the light source; `frame/` turns the world-space scene into pooled marks per frame and paints them. It owns Flat's paint only with no realm, lens, edge or Galaxy (`frame/frame.ts`); otherwise the Flat pass draws on the dial's positions. |
 | `src/widgets/ontology-map/galaxy/` | Galaxy's own surface: deterministic cosmos layout (`layout/`), bitmap-cached canvas-2D drawing (`draw/`), engine, camera, arrival, haze, keyboard walk and DOM mirror; mounted by `TopologyMapRenderer` when the view is Galaxy, as the Hex board is. |
 | `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
 | `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
@@ -179,7 +180,15 @@ dependency rules govern; missing v1 fields preserve value plus type-only
 behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
 unsupported languages, incomplete scans, unknown usages, unmapped edges,
-unruled edges, and empty roles prevent a false green result. The
+unruled edges, and empty roles prevent a false green result. Each conformance
+evaluation and app role traversal lazily reuses compiled path patterns only
+within that call; paths and classification results are not cached. Compilation
+coalesces adjacent directory-wildcard tokens without changing declared pattern
+text or the glob dialect. Patterns with overlapping unbounded wildcards use
+a UTF-16 state program with one reusable byte buffer per compiled pattern;
+ordinary patterns retain the regex path. State-program matching takes
+O(path length × program length) work and O(program length) retained working
+space, without recursive backtracking or path-result caches. The
 `/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default
@@ -728,6 +737,17 @@ until a local manifest, or the first part of one, exists.
                            local runners by address, Keychain keys, the experimental Jev
                            check and the sent-log count; the settings Agents pane keeps door
                            rows to it and to MCP (2026-10-02).
+                           Native sent-log reads use audit_read.rs: one caller-owned,
+                           generation-validated descriptor, raw pulls up to 1MiB,
+                           four aggregate slots and idle/total leases. Unsupported
+                           platforms retain existing file transport. Changed/failed/
+                           expired bounded reads remain unavailable with Retry;
+                           only complete scans publish count
+                           and five recent rows. Web retains FSA. Keychain presence
+                           lookups dispatch off the window event thread. A renderer
+                           shares only pending lookups per provider; mutation
+                           boundaries detach older reads and completed values are
+                           never cached.
                            Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
                            left this screen on 2026-09-05 for /mcp, came back on 2026-09-17
@@ -828,7 +848,7 @@ to an agent.
 | Param | Screen(s) | Meaning | Value shape |
 |---|---|---|---|
 | `p` | `/`, `/topology` | focused/selected node | canonical `<kind>:<slug>` (bare slug tolerated) |
-| `open` | `/`, `/topology` | density-gate expanded parents | comma list of node ids |
+| `open` | `/`, `/topology` | density-gate expanded parents inside a realm | comma list of node ids |
 | `realm` | `/`, `/topology` | "realm" containment-subtree root | canonical `<kind>:<slug>` (bare slug promoted) |
 | `mode` | `/`, `/topology` | analysis mode | `overview` \| `focus` \| `path` \| `health` |
 | `pathFrom` / `pathTo` (aliases `from` / `to`) | `/`, `/topology` | path source / target | node id |
@@ -932,7 +952,10 @@ a bounded, no-follow, exclusive native archive on Unix platforms with stable
 vault identity. Windows currently reports this capability unavailable rather
 than substituting path identity. Artifacts are published and
 read back before the immutable transition record becomes visible; malformed
-history members remain reported. Browser builds expose no archive write fallback.
+history members remain reported on their requested page. Each history request
+enumerates bounded member names, then opens and validates only that page;
+completed membership or record values are not cached. Browser builds expose
+no archive write fallback.
 Archive integrity proves only that the supplied bytes were retained: it does not
 authenticate a human decision, verify a writer or check, or grant Git, merge,
 deployment, ontology-write, or source-repository authority. Existing analysis

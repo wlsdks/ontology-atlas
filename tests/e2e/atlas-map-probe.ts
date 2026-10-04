@@ -22,6 +22,8 @@
  * This hook opens only on pages carrying `?e2e=1` (`use-topology-loop.ts`).
  */
 
+import type { DialProbe } from "../../src/widgets/ontology-map/dial/types";
+
 export interface AtlasMapCamera {
   x: number;
   y: number;
@@ -48,6 +50,7 @@ export interface AtlasMapNode {
 
 export interface AtlasMapProbe {
   camera: () => AtlasMapCamera | null;
+  dial?: () => DialProbe | { owns: false };
   /**
    * Where the camera is heading, as opposed to where it is. Timing-free, so a
    * test can ask "did this aim the camera at the right place" without sampling

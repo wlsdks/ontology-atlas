@@ -41,12 +41,14 @@ import { holdTierAssemblyBounds, isTierAssembling, settleTierAssembly, stepTierA
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeOverviewFitScale } from "./topology-camera-math";
+import { dialReleaseHoming } from "./topology-dial-release";
 import { overviewBoundsFor } from "./topology-overview-fit";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import type { RealmRuntimeData } from "./topology-realm-runtime";
 import { fallbackAngleFor } from "./topology-realm-runtime";
 import {
   applyForcePositions,
+  dialOverviewFit,
   radiusForKind,
   recomputeWorldGeometry,
   type TopologyWorld,
@@ -238,6 +240,16 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
           );
         }
+      }
+      if (releasedId !== null && realmData === null && world.dial) {
+        const homing = dialReleaseHoming(world, world.dial.scene.positions, homeSpringsRef.current, homeTargetOverrideRef.current);
+        heatRef.current = 0;
+        dragAffectedSetRef.current = null;
+        dragTugOffsetsRef.current.clear();
+        homeSpringsRef.current = homing.springs;
+        homeTargetOverrideRef.current = homing.override;
+        homingActiveRef.current = true;
+        simRef.current = homing.sim;
       }
     }
     /*
@@ -747,13 +759,13 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         // ceiling anchor is recomputed live and cannot suppress the target at
         // the tween → spring handover — equivalent to the fresh and deselect
         // paths.
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
       } else if (rt.phase === "idle" && realmDataRef.current !== null) {
         // Exit complete: reverse playback returned everything home, so drop
         // the realm data and settle the overview anchor against the home
         // spineBounds — the close of the recomputation above.
         realmDataRef.current = null;
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
       }
     }
 

@@ -179,3 +179,42 @@ test('profile discovery ignores ontology docs and rejects duplicate profile slug
       && error.message.includes('architecture/b'),
   );
 });
+
+test('conformance reuses compiled patterns only within one evaluation', () => {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  const input = { edges: Array.from({ length: 100 }, (_, index) => ({
+    from: `src/features/feature-${index}/model.ts`,
+    to: `src/entities/entity-${index}/model.ts`,
+    kind: 'import', importUsage: 'value',
+  })) };
+  const expected = evaluateArchitectureConformance(profile, input);
+  const limit = new Set([...profile.scopePaths, ...profile.excludePaths,
+    ...profile.roles.flatMap((role) => role.paths)]).size;
+  const OriginalRegExp = globalThis.RegExp;
+  let constructions = 0;
+  globalThis.RegExp = class extends OriginalRegExp {
+    constructor(...args) { super(...args); constructions += 1; }
+  };
+  let actual;
+  try { actual = evaluateArchitectureConformance(profile, input); }
+  finally { globalThis.RegExp = OriginalRegExp; }
+  assert.deepEqual(actual, expected);
+  assert.ok(constructions > 0, 'the input must exercise path matching');
+  assert.ok(constructions <= limit, `constructed ${constructions} matchers for ${limit} patterns`);
+  profile.excludePaths.push('src/features/**');
+  assert.equal(evaluateArchitectureConformance(profile, input).observedRoleEdges.length, 0);
+});
+
+test('one conformance evaluation resets an ambiguous MCP matcher between paths', () => {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  profile.scopePaths = ['**'];
+  profile.excludePaths = [];
+  profile.roles = [{ id: 'entities', paths: ['*a*a*b'], summaries: {} }];
+  const result = evaluateArchitectureConformance(profile, { edges: [
+    { from: 'aaab', to: 'aaab', kind: 'static', importUsage: 'value' },
+    { from: 'ab', to: 'aaab', kind: 'static', importUsage: 'value' },
+  ] });
+  assert.equal(result.observedRoleEdges[0].count, 1);
+  assert.equal(result.unknown.unmappedEdges, 1);
+  assert.equal(result.roles[0].matchedFileCount, 1);
+});

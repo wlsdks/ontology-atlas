@@ -19,6 +19,19 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("a cold Galaxy entry returns to a useful first Flat frame", async ({ page }) => {
+  const flatPage = await page.context().newPage();
+  await flatPage.setViewportSize({ width: 1400, height: 860 });
+  await seedFirstRunSeen(flatPage);
+  await flatPage.addInitScript(() => {
+    window.localStorage.setItem("atlas.appearance.galaxy", "off");
+    window.localStorage.setItem("atlas.appearance.view3d", "off");
+  });
+  await flatPage.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await waitForMapStill(flatPage);
+  const coldFlat = await camera(flatPage);
+  expect(coldFlat).not.toBeNull();
+  await flatPage.close();
+
   await page.addInitScript(() => {
     window.localStorage.setItem("atlas.appearance.galaxy", "on");
     window.localStorage.setItem("atlas.appearance.view3d", "off");
@@ -31,7 +44,7 @@ test("a cold Galaxy entry returns to a useful first Flat frame", async ({ page }
   await waitForMapStill(page);
   const settled = await camera(page);
   expect(settled).not.toBeNull();
-  expect(settled!.scale).toBeGreaterThan(0.5);
+  expect(Math.abs(settled!.scale - coldFlat!.scale), "the round trip lands on the cold Flat entry's scale").toBeLessThanOrEqual(0.01);
   expect(await page.evaluate(() => window.__atlasMap?.nodes().filter((node) => !node.hidden).length ?? 0))
     .toBeGreaterThan(0);
 });

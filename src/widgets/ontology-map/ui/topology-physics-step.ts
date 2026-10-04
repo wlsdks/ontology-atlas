@@ -41,6 +41,7 @@ export interface PhysicsStepInput {
    */
   cameraAngularFrequency: number;
   dt: number;
+  rampDt?: number;
   now: number;
   focusedNodeId: string | null;
   /**
@@ -221,6 +222,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     tokens,
     cameraAngularFrequency,
     dt,
+    rampDt = dt,
     now,
     focusedNodeId,
     pairFocusActive,
@@ -291,7 +293,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // relative), not the absolute `cameraScaleMax` token — see
   // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
-  const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, world.dialScaleMax ?? undefined);
   const effectiveScaleMin = Math.min(
     computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin),
     // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
@@ -351,7 +353,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
       node.id,
       reducedMotion
         ? (isInActiveEgoSet && rippleHasStarted ? 1 : 0)
-        : stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
+        : stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, rampDt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
     );
 
     // C1 A2 — ego tier-reveal ramp: while a node is focused, it + its 1-hop
@@ -371,7 +373,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
       node.id,
       reducedMotion
         ? (isEgoMember ? 1 : 0)
-        : stepEmphasis(previousReveal, isEgoMember, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau),
+        : stepEmphasis(previousReveal, isEgoMember, true, rampDt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau),
     );
 
     // Click-focus color ramp — one exp-smoothing step toward "scene focused"
@@ -380,7 +382,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     const previousFocusRamp = focusRampById.get(node.id) ?? 0;
     focusRampById.set(
       node.id,
-      reducedMotion ? (focusActive ? 1 : 0) : stepFocusRamp(previousFocusRamp, focusActive, dt, tokens.focusDimTau),
+      reducedMotion ? (focusActive ? 1 : 0) : stepFocusRamp(previousFocusRamp, focusActive, rampDt, tokens.focusDimTau),
     );
 
     // rank8 — new-node appear ramp: rise every present node's value toward 1

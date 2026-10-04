@@ -1,4 +1,4 @@
-import { matchesArchitecturePath, type ArchitectureProfile } from '@/entities/architecture-profile';
+import { createArchitecturePathMatcher, type ArchitectureProfile } from '@/entities/architecture-profile';
 
 /**
  * The blueprint's occupants are source modules from a read-only directory listing of the bound
@@ -129,12 +129,13 @@ export async function deriveRoleSourceModules(
   profile: ArchitectureProfile,
   listDir: SourceDirLister,
 ): Promise<Record<string, RoleSourceModule[]>> {
+  const match = createArchitecturePathMatcher();
   const byRole: Record<string, RoleSourceModule[]> = {};
   for (const role of profile.roles) {
     const seen = new Map<string, RoleSourceModule>();
     for (const pattern of role.paths) {
       for (const found of await listPatternModules(pattern, listDir)) {
-        if (profile.excludePaths.some((exclude) => matchesArchitecturePath(found.path, exclude))) {
+        if (profile.excludePaths.some((exclude) => match(found.path, exclude))) {
           continue;
         }
         if (!seen.has(found.path)) seen.set(found.path, found);

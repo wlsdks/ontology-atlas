@@ -136,4 +136,20 @@ describe("cluster frame stage", () => {
       expect(observed(keptFrame, kept), `frame ${frame}`).toEqual(observed(freshFrame, fresh));
     });
   });
+
+  it("keeps the classic gate's fold as the caption budget while the dial folds nothing", () => {
+    const classic = crowdedWorld();
+    const classicFrame = createClusterFrameStage(stageSources())(1000, worldTokens, classic);
+    expect(classicFrame.frameClusteredIds.size).toBeGreaterThan(0);
+    expect(classicFrame.captionFoldedIds).toBeNull();
+
+    const dialWorld = { ...crowdedWorld(), dial: {} } as unknown as typeof classic;
+    const dialFrame = createClusterFrameStage(stageSources())(1000, worldTokens, dialWorld);
+    expect(dialFrame.frameClusteredIds.size).toBe(0);
+    expect([...(dialFrame.captionFoldedIds ?? [])].sort()).toEqual([...classicFrame.frameClusteredIds].sort());
+
+    const inRealm = stageSources();
+    inRealm.realmDataRef.current = { rootId: "d1", memberIds: new Set(["d1"]) } as unknown as RealmRuntimeData;
+    expect(createClusterFrameStage(inRealm)(1000, worldTokens, dialWorld).captionFoldedIds).toBeNull();
+  });
 });

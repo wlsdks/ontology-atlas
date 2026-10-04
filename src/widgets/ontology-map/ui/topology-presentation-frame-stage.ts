@@ -39,6 +39,8 @@ import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapProps } from "./OntologyMap";
 import { worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "./topology-frame-draw";
+import { reportFlatDial, type FlatDialFrameProps } from "./topology-loop-contract";
+import { dialFrameSummary } from "../dial/frame/frame";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
@@ -138,6 +140,7 @@ interface Dependencies {
   domeLodRef: RefObject<StrataLodState>;
   onHiddenDependenciesChangeRef: RefObject<((count: number) => void) | undefined>;
   hiddenDependenciesSentRef: RefObject<number>;
+  flatDialRef: RefObject<FlatDialFrameProps>;
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
@@ -224,6 +227,7 @@ export function createPresentationFrameStage({
   domeLodRef,
   onHiddenDependenciesChangeRef,
   hiddenDependenciesSentRef,
+  flatDialRef,
 }: Dependencies) {
   /*
    * Lit 3D (2026-09-25) — the stage buffers and parsed inks live for the stage's lifetime;
@@ -319,6 +323,7 @@ export function createPresentationFrameStage({
     realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset; } | null,
     realmDustParallax: number,
     realmOutsideReturnAlphaById: Map<string, number> | null,
+    captionGateFold: ReadonlySet<string> | null = null,
   ) {
 
     const modeShowsEveryNode =
@@ -525,7 +530,7 @@ export function createPresentationFrameStage({
       selectedEdge: selectedEdgeRef.current,
       relationCaptions: annotationRef.current.captions,
       // A view that draws every concept still captions only what the flat map would.
-      captionFoldedIds: modeShowsEveryNode ? frameClusteredIds : null,
+      captionFoldedIds: modeShowsEveryNode ? (captionGateFold ?? frameClusteredIds) : null,
       reviewQuestionIds: annotationRef.current.questions,
       previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
         ? {
@@ -613,7 +618,9 @@ export function createPresentationFrameStage({
       domeTierRaisedKind: domeTierRaisedKindRef.current,
       // Concept names give way to the tier names placed last frame (`model/tier-names.ts`).
       tierNameBoxes: domeTierAnchorsSentRef.current,
+      dial: flatDialRef.current,
     });
+    reportFlatDial(flatDialRef.current, dialFrameSummary());
 
     // Record which lens state this frame drew; the idle gate compares
     // against it next frame to decide whether the lens changed.

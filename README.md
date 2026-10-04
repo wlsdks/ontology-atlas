@@ -110,7 +110,7 @@ When an approved model proposal fails during application, Atlas lists the files 
 ## Local-first and privacy
 
 - Atlas has no backend, account or telemetry. Your folder stays plain Markdown on your disk.
-- Calls Atlas makes to a model with your API key or a local model are opt-in, and each records its destination in `.ontology-atlas/llm-audit.jsonl`.
+- Calls Atlas makes to a model with your API key or a local model are opt-in, and each records its destination in `.ontology-atlas/llm-audit.jsonl`. Agents → Models shows the exact count and five recent records after a complete read; unavailable reads offer Retry instead of reporting zero.
 - A connected coding agent may send your prompt and the context it reads to its own provider; that log does not cover those transfers.
 
 [Trust](docs/guide/trust.md) · [Security](SECURITY.md)

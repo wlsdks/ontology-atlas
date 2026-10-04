@@ -1,8 +1,13 @@
 export function closestAllowedValue(input, allowed) {
   if (!input || !Array.isArray(allowed) || allowed.length === 0) return null;
   let best = null;
+  let thresholdLimit = Infinity;
+  if (typeof input === 'string' && allowed.every(value => typeof value === 'string')) {
+    thresholdLimit = allowed.reduce((limit, value) => Math.max(limit, Math.floor(value.length / 3)), 2);
+  }
   for (const candidate of allowed) {
-    const distance = levenshteinDistance(input, candidate);
+    const cutoff = best ? Math.min(thresholdLimit, best.distance - 1) : thresholdLimit;
+    const distance = distanceWithin(input, candidate, cutoff);
     if (!best || distance < best.distance) {
       best = { candidate, distance };
     }
@@ -21,12 +26,7 @@ export function formatAllowedValueError(name, value, allowed) {
   return `${name} must be one of: ${allowed.join(', ')}.${receivedText}${suggestionText}`;
 }
 
-/**
- * Near-miss candidates for an unresolved slug, over the compiled in-memory slug
- * set. Levenshtein catches tail typos including transpositions, tail equality
- * catches a different folder, and substring catches partial input. Only ever
- * called on an error path, so O(n·len²) is acceptable.
- */
+/** Unresolved-name hints preserve exact-tail, edit-distance and substring tiers. */
 export function suggestCompiledSlugs(input, slugs, limit = 3) {
   if (typeof input !== 'string' || !input.trim() || !Array.isArray(slugs) || slugs.length === 0) {
     return [];
@@ -45,7 +45,8 @@ export function suggestCompiledSlugs(input, slugs, limit = 3) {
       exactTail.push(slug);
       continue;
     }
-    const distance = levenshteinDistance(lowerTail, candTail);
+    const cutoff = Math.max(2, Math.floor(candTail.length / 3));
+    const distance = distanceWithin(lowerTail, candTail, cutoff);
     if (distance <= Math.max(2, Math.floor(candTail.length / 3))) {
       typoTail.push({ slug, distance });
       continue;
@@ -83,4 +84,29 @@ function levenshteinDistance(a, b) {
     }
   }
   return prev[b.length];
+}
+
+// Exact within the cutoff; larger distances cannot change the selected result.
+function distanceWithin(a, b, cutoff) {
+  if (!Number.isFinite(cutoff) || typeof a !== 'string' || typeof b !== 'string') return levenshteinDistance(a, b);
+  if (Math.abs(a.length - b.length) > cutoff) return cutoff + 1;
+  let previous = Array.from({ length: b.length + 1 }, (_, j) => j <= cutoff ? j : cutoff + 1);
+  let current = Array(b.length + 1).fill(cutoff + 1);
+  for (let i = 1; i <= a.length; i++) {
+    current[0] = i <= cutoff ? i : cutoff + 1;
+    const left = Math.max(1, i - cutoff);
+    const right = Math.min(b.length, i + cutoff);
+    if (left > 1) current[left - 1] = cutoff + 1;
+    let minimum = current[0];
+    for (let j = left; j <= right; j++) {
+      current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      minimum = Math.min(minimum, current[j]);
+    }
+    if (right < b.length) current[right + 1] = cutoff + 1;
+    if (minimum > cutoff) return cutoff + 1;
+    const held = previous;
+    previous = current;
+    current = held;
+  }
+  return previous[b.length];
 }

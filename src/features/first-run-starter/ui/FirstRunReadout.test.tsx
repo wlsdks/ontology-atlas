@@ -101,4 +101,21 @@ describe('FirstRunReadout', () => {
       expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHint');
     });
   });
+
+  describe('with the Flat dial', () => {
+    it('reads the dial model, not the drawn count, and names what each level reveals', () => {
+      const { rerender } = render(
+        <FirstRunReadout conceptCount={84} totalConceptCount={125} domainCount={6} dial={{ concepts: 125, domains: 9, tier: 'spine' }} />,
+      );
+      expect(screen.getByTestId('first-run-readout-concepts')).toHaveTextContent('125');
+      expect(screen.getByText('9')).toBeInTheDocument();
+      expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_spine');
+      expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('dialCapabilitiesHint');
+      rerender(<FirstRunReadout conceptCount={84} totalConceptCount={125} domainCount={6} dial={{ concepts: 125, domains: 9, tier: 'circuit' }} />);
+      expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('dialElementsHint');
+      rerender(<FirstRunReadout conceptCount={125} totalConceptCount={125} domainCount={6} dial={{ concepts: 125, domains: 9, tier: 'element' }} />);
+      expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_element');
+      expect(screen.queryByTestId('first-run-readout-zoom-hint')).not.toBeInTheDocument();
+    });
+  });
 });

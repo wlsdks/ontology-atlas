@@ -1,9 +1,10 @@
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
 
+import "./atlas-map-probe";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { liveInstances } from "./heap-census";
 import { syntheticVault } from "./hex-board-vaults";
-import { waitForDomQuiet } from "./settle";
+import { waitForDomQuiet, waitForMapStill } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 const DOCS = syntheticVault(990, 10);
@@ -20,6 +21,16 @@ async function folderOpen(page: Page, previous: string | null): Promise<string> 
   );
   await expect(tile).not.toHaveAttribute("data-busy", "true");
   await waitForDomQuiet(page);
+  await page.waitForFunction(
+    () => {
+      const map = window.__atlasMap;
+      const dial = map?.dial?.();
+      return !!dial && dial.owns && dial.placement.state === "settled" && map!.nodes().some((node) => node.draggable);
+    },
+    undefined,
+    { polling: "raf", timeout: 60_000 },
+  );
+  await waitForMapStill(page);
   return (await tile.getAttribute("aria-label")) ?? "";
 }
 
@@ -54,7 +65,7 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
     }).observe(document, { subtree: true, childList: true, attributes: true,
       attributeFilter: ['data-vault-load-progress'], attributeOldValue: true });
   });
-  await page.goto("/en/topology/?guides=off");
+  await page.goto("/en/topology/?guides=off&e2e=1");
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
   let label = await folderOpen(page, null);

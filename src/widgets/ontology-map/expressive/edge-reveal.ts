@@ -9,6 +9,7 @@ export interface EdgeReveal {
   progress: number;
   from: RevealEnd;
   baseLift: number;
+  baseDim?: number;
 }
 
 const REVEAL_DONE = 0.995;

@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
@@ -47,3 +48,30 @@ describe('suggestions', () => {
     assert.deepEqual(suggestCompiledSlugs('x', []), []);
   });
 });
+
+it('suggestions: retains the nearest allowed value decision even when another candidate has a wider threshold', () => {
+  assert.equal(closestAllowedValue('a'.repeat(12), ['b' + 'a'.repeat(8), 'a'.repeat(12) + 'b'.repeat(5)]), null);
+  assert.equal(closestAllowedValue('abc', ['abx', 'aby']), 'abx');
+});
+
+it('suggestions: keeps typo-tier precedence, exact thresholds and unusual slice limits', () => {
+  const slugs = ['elements/abcd', 'domains/abce', 'capabilities/abcde-more', 'documents/abc'];
+  assert.deepEqual(suggestCompiledSlugs('abc', slugs), ['documents/abc', 'domains/abce', 'elements/abcd']);
+  assert.deepEqual(suggestCompiledSlugs('abc', slugs, 0), []);
+  assert.deepEqual(suggestCompiledSlugs('abc', slugs, -1), ['documents/abc', 'domains/abce', 'elements/abcd']);
+  assert.deepEqual(suggestCompiledSlugs('abc', slugs, 1.5), ['documents/abc']);
+  assert.equal(closestAllowedValue('abc', ['axy']), 'axy');
+  assert.equal(closestAllowedValue('ab', ['abcd']), 'abcd');
+  assert.equal(closestAllowedValue('abc', ['xyz']), null);
+});
+
+for (const method of ['suggestCompiledSlugs', 'closestAllowedValue']) {
+  it(`suggestions: ${method} rejects a long impossible name without stalling`, () => {
+    const moduleUrl = new URL('./suggestions.mjs', import.meta.url);
+    const script = `import {${method} as suggest} from ${JSON.stringify(moduleUrl.href)}; const names = Array.from({length: 1000}, (_, i) => 'elements/long-document-name-' + i); process.stdout.write(JSON.stringify(suggest('z'.repeat(2_000_000), names)));`;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 10_000 });
+    assert.equal(child.error, undefined, `${method}: spawned suggestion must finish`);
+    assert.equal(child.status, 0);
+    assert.equal(child.stdout, method === 'suggestCompiledSlugs' ? '[]' : 'null');
+  });
+}

@@ -20,6 +20,14 @@ Sources remain original files; write-ups and filed answers remain wiki pages.
 Documents-only folders need no code nodes or separate mode switch. The ontology
 retains its codebase scope.
 
+During a browser import, the renderer withholds only the new paths belonging to
+that copy batch and its newly created Chromium swap files until the batch settles.
+Existing originals and unrelated folder changes remain live. This is transient
+read coordination, not a persistent index or a filesystem transaction: a failed
+browser copy can still leave a newly created empty target, and failures remain
+explicit. The first completed collection enters with a finite opacity transition;
+reduced motion skips it.
+
 The Add files control keeps its label and icon seat while showing actual work.
 The file picker remains neutral; a work ring starts after files are selected and
 lasts through importing and refreshing the listing. A transient check marks new
