@@ -137,6 +137,12 @@ export const PATH_MATCH_CASES = Object.freeze([
   { path: './src/entities/project/', pattern: 'src/entities/**', matches: true },
   { path: 'src\\entities\\project', pattern: 'src/entities/**', matches: true },
   { path: 'app/[locale]/topology/page.tsx', pattern: 'app/**', matches: true },
+  { path: 'src/file.ts', pattern: 'src/**/**/**/file.ts', matches: true },
+  { path: 'src/a/b/file.ts', pattern: 'src/**/**/**/file.ts', matches: true },
+  { path: 'src/a/b/other.ts', pattern: 'src/**/**/**/file.ts', matches: false },
+  { path: 'a\nb/c/x', pattern: '***/**/x', matches: true },
+  { path: 'a\nb/c/x', pattern: '**/**/x', matches: false },
+  { path: 'a/b/c/x\n', pattern: '**/**/x', matches: false },
   { path: 'src/views/home', pattern: '', matches: false },
 ]);
 

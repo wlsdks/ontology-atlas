@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -21,6 +22,24 @@ import {
 } from '../../mcp/src/architecture-profile.mjs';
 
 describe('architecture-profile/v1 cross-surface contract', () => {
+  it('rejects a deep nonmatch with repeated directory wildcards in both runtimes', () => {
+    const path = `src/${'segment/'.repeat(28)}actual.ts`;
+    const pattern = `src/${'**/'.repeat(16)}absent.ts`;
+    const surfaces = [
+      [new URL('../../mcp/src/architecture-profile.mjs', import.meta.url), 'matchesPathPattern'],
+      [new URL('../../src/entities/architecture-profile/model/architecture-occupants.ts', import.meta.url), 'matchesArchitecturePath'],
+    ] as const;
+    for (const [moduleUrl, name] of surfaces) {
+      const script = `import {${name} as match} from ${JSON.stringify(moduleUrl.href)}; process.stdout.write(JSON.stringify(match(${JSON.stringify(path)}, ${JSON.stringify(pattern)})));`;
+      const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+        encoding: 'utf8', timeout: 10_000,
+      });
+      expect(child.error, `${name}: spawned matcher must finish`).toBeUndefined();
+      expect(child.status).toBe(0);
+      expect(child.stdout).toBe('false');
+    }
+  });
+
   it('keeps a traversal matcher equivalent across repeated positive and negative paths', () => {
     const match = createArchitecturePathMatcher();
     for (let pass = 0; pass < 3; pass += 1) {
