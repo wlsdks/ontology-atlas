@@ -248,8 +248,7 @@ export function TopologyCommandChrome({
           ) : null}
           <div
             className={cn(
-              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)]",
-              renderedIndexState === "expanded" ? "xl:flex-col-reverse xl:flex-nowrap" : "xl:flex-row xl:flex-wrap-reverse",
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap",
               structure && "md:right-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
@@ -441,11 +440,7 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
-          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
-            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
-              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
-            </ChromeChip>
-          </Tooltip> : null}
+          <div className="flex shrink-0 flex-col items-end gap-2 xl:ml-auto">
           {inspectorOwnsRightRail ? null : (
               <div
                 className={`topology-chrome-in pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
@@ -667,6 +662,12 @@ export function TopologyCommandChrome({
                 </div>
               </div>
           )}
+          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
+            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
+              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
+            </ChromeChip>
+          </Tooltip> : null}
+          </div>
           </div>
         </>
       ) : null}
