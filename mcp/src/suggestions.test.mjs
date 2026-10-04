@@ -49,12 +49,12 @@ describe('suggestions', () => {
   });
 });
 
-it('retains the nearest allowed value decision even when another candidate has a wider threshold', () => {
+it('suggestions: retains the nearest allowed value decision even when another candidate has a wider threshold', () => {
   assert.equal(closestAllowedValue('a'.repeat(12), ['b' + 'a'.repeat(8), 'a'.repeat(12) + 'b'.repeat(5)]), null);
   assert.equal(closestAllowedValue('abc', ['abx', 'aby']), 'abx');
 });
 
-it('keeps typo-tier precedence, exact thresholds and unusual slice limits', () => {
+it('suggestions: keeps typo-tier precedence, exact thresholds and unusual slice limits', () => {
   const slugs = ['elements/abcd', 'domains/abce', 'capabilities/abcde-more', 'documents/abc'];
   assert.deepEqual(suggestCompiledSlugs('abc', slugs), ['documents/abc', 'domains/abce', 'elements/abcd']);
   assert.deepEqual(suggestCompiledSlugs('abc', slugs, 0), []);
@@ -66,7 +66,7 @@ it('keeps typo-tier precedence, exact thresholds and unusual slice limits', () =
 });
 
 for (const method of ['suggestCompiledSlugs', 'closestAllowedValue']) {
-  it(`${method} rejects a long impossible name without stalling`, () => {
+  it(`suggestions: ${method} rejects a long impossible name without stalling`, () => {
     const moduleUrl = new URL('./suggestions.mjs', import.meta.url);
     const script = `import {${method} as suggest} from ${JSON.stringify(moduleUrl.href)}; const names = Array.from({length: 1000}, (_, i) => 'elements/long-document-name-' + i); process.stdout.write(JSON.stringify(suggest('z'.repeat(2_000_000), names)));`;
     const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 10_000 });
