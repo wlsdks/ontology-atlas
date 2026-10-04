@@ -531,6 +531,10 @@ bucket / next-action formatter checks.
 `test:mcp:package` checks package-script, CLI entrypoint, dependency, and
 tarball contract drift without running unrelated UI or E2E gates.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
+Near-name matching stops edit-distance work outside the existing acceptance
+cutoff; exact-tail, typo-distance and substring priority, tie order and returned
+limits remain unchanged. Long impossible inputs are rejected by length before
+allocating edit-distance rows.
 `test:mcp:verify` covers the MCP verify helper contract, including
 missing/extra/duplicate/invalid `tools/list` names, without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
