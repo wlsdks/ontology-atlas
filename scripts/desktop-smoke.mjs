@@ -45,20 +45,21 @@ export const DESKTOP_SMOKE_ROUTE_TITLE_KEYS = {
   "/ontology/insights": "ontologyInsights",
 };
 
-// Route pages read metadata.pages; the locale layout supplies metadata.siteName.
-// Derive expected output from those same sources so renamed pages cannot leave
-// a release-only gate demanding yesterday's title.
+// Download uses absolute homeTitle; workbenches template pages with siteName.
+// Follow route metadata so release checks cannot demand a retired title.
 export function resolveRouteTitles({ root = process.cwd(), locales = DESKTOP_SMOKE_LOCALES } = {}) {
   if (locales.length === 0) throw new Error("Desktop title inventory requires at least one locale");
   return Object.fromEntries(locales.flatMap((locale) => {
     const { metadata } = JSON.parse(fs.readFileSync(path.join(root, "messages", `${locale}.json`), "utf8"));
     return Object.entries(DESKTOP_SMOKE_ROUTE_TITLE_KEYS).map(([route, key]) => {
-      const title = metadata?.pages?.[key];
+      const absolute = route === "/download";
+      const titlePath = absolute ? "homeTitle" : `pages.${key}`;
+      const title = absolute ? metadata?.homeTitle : metadata?.pages?.[key];
       const siteName = metadata?.siteName;
       if (typeof title !== "string" || !title.trim() || typeof siteName !== "string" || !siteName.trim()) {
-        throw new Error(`Missing route metadata for ${locale}:${route} (metadata.pages.${key}, metadata.siteName)`);
+        throw new Error(`Missing route metadata for ${locale}:${route} (metadata.${titlePath}, metadata.siteName)`);
       }
-      return [`${locale}:${route}`, `${title} · ${siteName}`];
+      return [`${locale}:${route}`, absolute ? title : `${title} · ${siteName}`];
     });
   }));
 }
