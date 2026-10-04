@@ -12,6 +12,7 @@ import {
   deriveArchitectureProfiles as deriveWebProfiles,
   deriveArchitectureProfilesReport as deriveWebReport,
   matchesArchitecturePath as matchesWebPath,
+  createArchitecturePathMatcher,
 } from '@/entities/architecture-profile';
 import {
   parseArchitectureProfile as parseMcpProfile,
@@ -20,6 +21,16 @@ import {
 } from '../../mcp/src/architecture-profile.mjs';
 
 describe('architecture-profile/v1 cross-surface contract', () => {
+  it('keeps a traversal matcher equivalent across repeated positive and negative paths', () => {
+    const match = createArchitecturePathMatcher();
+    for (let pass = 0; pass < 3; pass += 1) {
+      for (const row of PATH_MATCH_CASES) {
+        expect(match(row.path, row.pattern)).toBe(row.matches);
+        expect(match(row.path, row.pattern)).toBe(matchesMcpPath(row.path, row.pattern));
+      }
+    }
+  });
+
   it.each([
     ['fsd', FSD_PROFILE_FRONTMATTER],
     ['hexagonal', HEXAGONAL_PROFILE_FRONTMATTER],
