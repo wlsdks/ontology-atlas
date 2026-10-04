@@ -54,7 +54,9 @@ bounded, no-follow, exclusive and bound to stable vault identity. Windows
 currently refuses this capability instead of treating a canonical path as
 directory identity. Every artifact is published and read back before the
 record is published last. History reports malformed members and missing or
-mutated artifacts as problems. Browser builds have no write fallback.
+mutated artifacts as problems on the requested page. Native listing sorts the
+bounded member-name inventory before reading that page, so older records do not
+add content-read work to every page request. Browser builds have no write fallback.
 
 Successful archival proves byte integrity only. It does not authenticate the
 supplied human action, verify referenced checks, grant ontology or Git authority,
