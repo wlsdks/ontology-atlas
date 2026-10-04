@@ -148,16 +148,19 @@ export interface OntologyMapProps {
   /** P3d(E1) — the first-map reveal trigger (incremented when bootstrap completes). */
   revealToken?: number;
   /** P3b — an edge click (at a point that missed every node). */
-  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
+  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+    }) => void;
   /** Edge selection = pair focus — only the two ends stay lit, everything else dims, and the selected edge is pale indigo. */
-  selectedEdge?: { sourceId: string; targetId: string; relationType?: string } | null;
+  selectedEdge?: { sourceId: string; targetId: string; relationType?: string;
+    } | null;
   /** Pre-write relation overlay. It never enters the force/layout graph. */
   previewEdge?: OntologyMapPreviewEdge | null;
   /** P3c — the edge hover microcard (fires on an identity change; null clears it). */
   onHoverEdge?: (
-    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
-  ) => void;
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+    } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[];
+    } | null) => void;
   /**
    * The connected-node slug the user is hovering in the detail panel's
    * "connected nodes" (connected nodes) list. Under focus, that node and its connecting
@@ -168,11 +171,13 @@ export interface OntologyMapProps {
   emphasizedNeighborSlug?: string | null;
   onSelect?: (slug: string) => void;
   /** An arrow key was pressed with nowhere to go in that direction. The page decides the copy. */
-  onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
+  onWalkDeadEnd?: ((point: { x: number; y: number;
+    } | null) => void) | null;
   onOpen?: (slug: string) => void;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
-  onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
+  onGraphStatsChange?: (stats: { nodes: number; relations: number;
+    }) => void;
   /** How many concepts the frame just painted — the bottom readout's own number. */
   onDrawnCountChange?: (drawn: number) => void;
   /**
@@ -186,9 +191,13 @@ export interface OntologyMapProps {
    * viewport-space cursor position. Omitted keeps right-click behavior
    * unchanged (browser default menu everywhere, same as before this slice).
    */
-  onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
-  /** Right-click on empty canvas — "create a concept here" (create a concept here). Omitted, it is a no-op as before. */
-  onContextMenuPane?: (position: { x: number; y: number }) => void;
+  onContextMenuNode?: (slug: string, position: { x: number; y: number;
+    }) => void;
+    /** Right-click on empty canvas — "create a concept here" (create a concept here). Omitted, it is a no-op as before. */
+    onContextMenuPane?: (position: {
+        x: number;
+        y: number;
+    }) => void;
   /**
    * Density gate — the set of parent slugs the user has expanded (URL `?open=`).
    * A parent with more children than the threshold (12) is collapsed by default (a
@@ -207,9 +216,9 @@ export interface OntologyMapProps {
   /** Panel3-S6 — the parent's total descendant count (the node badge = descendantCount). */
       descendantTotal: number;
       expanded: boolean;
-      position: { x: number; y: number };
-    } | null,
-  ) => void;
+      position: { x: number; y: number;
+        };
+    } | null) => void;
   /**
    * Density gate — the accessibility hint for the cluster chip affordance (i18n,
    * injected by HomePage). Chips are canvas glyphs and cannot carry individual aria,
@@ -373,15 +382,13 @@ export interface OntologyMapProps {
    * omitted is false (2D, the default).
    */
   view3d?: boolean;
-  /** The flat map drawn as a sky. One of the two flat views; never combined with `view3d`. */
-  galaxy?: boolean;
-  /**
-   * Which structural question places nodes in 3D — `strata` stacks the containment
-   * tiers as lit planes (default); `coupling` lets relations determine all three
-   * Neural axes. The rationale and geometry live in `model/dome-view.ts`. Ignored
-   * in 2D.
-   */
-  mapArrangement?: MapArrangement;
+    /**
+     * Which structural question places nodes in 3D — `strata` stacks the containment
+     * tiers as lit planes (default); `coupling` lets relations determine all three
+     * Neural axes. The rationale and geometry live in `model/dome-view.ts`. Ignored
+     * in 2D.
+     */
+    mapArrangement?: MapArrangement;
   /**
    * Lit 3D (2026-09-25) — node id → evidence state from the product's one rule. It sets how
    * much light each node emits; an absent id, or null, is unknown and emits none.
@@ -393,7 +400,8 @@ export interface OntologyMapProps {
   impactLens?: boolean;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
-  loadProgress?: { read: number; total: number } | null;
+  loadProgress?: { read: number; total: number;
+    } | null;
   placingTierRead?: boolean;
   /**
    * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
@@ -442,7 +450,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -461,14 +469,12 @@ export function OntologyMap(props: OntologyMapProps) {
       const edge =
         edges.find(
           (candidate) =>
-            candidate.source === preferredNodeId || candidate.target === preferredNodeId,
-        ) ?? edges[0];
+            candidate.source === preferredNodeId || candidate.target === preferredNodeId) ?? edges[0];
       if (!edge) {
         window.dispatchEvent(
           new CustomEvent("ontology-atlas:verify-edge-selected", {
             detail: { error: "missing-edge" },
-          }),
-        );
+          }));
         return;
       }
       onSelectEdge({
@@ -484,8 +490,7 @@ export function OntologyMap(props: OntologyMapProps) {
             targetId: edge.target,
             relationType: edge.relationType,
           },
-        }),
-      );
+        }));
     };
     window.addEventListener("ontology-atlas:verify-select-edge", handleVerifySelectEdge);
     return () => {
@@ -521,12 +526,14 @@ export function OntologyMap(props: OntologyMapProps) {
    * `overlay-spring-surface` (`overlay-fade-only` for reduced motion). Zero new
    * keyframes, zero new tokens.
    */
-  const [notice, setNotice] = useState<{ x: number; y: number; key: number } | null>(null);
+  const [notice, setNotice] = useState<{ x: number; y: number; key: number;
+    } | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const reducedMotion = useReducedMotion();
   const noticePresence = usePanelPresence(notice !== null);
   const handleWalkDeadEnd = useCallback(
-    (point: { x: number; y: number } | null) => {
+    (point: { x: number; y: number;
+    } | null) => {
       onWalkDeadEnd?.(point);
       if (!walkNoticeLabel || !point) return;
       if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
@@ -536,14 +543,12 @@ export function OntologyMap(props: OntologyMapProps) {
         setNotice(null);
       }, WALK_NOTICE_HOLD_MS);
     },
-    [onWalkDeadEnd, walkNoticeLabel],
-  );
+    [onWalkDeadEnd, walkNoticeLabel]);
   useEffect(
     () => () => {
       if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     },
-    [],
-  );
+    []);
 
   /*
    * ── Strata's tier names ────────────────────────────────────────────────────
@@ -615,7 +620,6 @@ export function OntologyMap(props: OntologyMapProps) {
       glyphSet,
       canvasBackground,
       view3d,
-      galaxy,
       mapArrangement,
       domeEvidence: props.domeEvidence ?? null,
       onHiddenDependenciesChange: props.onHiddenDependenciesChange,
@@ -657,234 +661,158 @@ export function OntologyMap(props: OntologyMapProps) {
       if (box.width <= 0 || box.height <= 0) return;
       const insets = measureCanvasInsets(canvas, { x: box.x, y: box.y, width: box.width, height: box.height });
       container.style.setProperty("--map-live-inset-left", `${insets.left}px`);
-      container.style.setProperty("--map-live-inset-right", `${insets.right}px`);
-    };
-    publish();
-    const settled = window.setTimeout(publish, 360);
-    window.addEventListener("resize", publish);
-    return () => {
-      window.clearTimeout(settled);
-      window.removeEventListener("resize", publish);
-    };
-  }, [canvasRef, containerRef, detailPanelVisible]);
-
-  return (
-    <div
-      ref={containerRef}
-      data-testid="ontology-map"
-      data-map-engine="v2"
-      data-minimal={minimal ? "true" : "false"}
-      data-source-node-count={nodes.length}
-      data-map-lens={spotlightIds ? mapLensKind : undefined}
-      data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined}
-      data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined}
-      data-preview-edge={
-        previewEdge
-          ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`
-          : undefined
-      }
-      data-preview-phase={previewEdge?.phase}
-      // rank18 — while an overlay is open the canvas is excluded from the aria tree
-      // and Tab traversal (inert blocks the pointer too). INDEX and the datasheet
-      // are the alternative list.
-      aria-hidden={overlayOpen}
-      inert={overlayOpen}
-      style={{ position: "relative", width: "100%", height: "100%" }}
-    >
-      <canvas
-        ref={canvasRef}
-        data-testid="ontology-map-canvas"
-        /* The marker `G M` uses to find this canvas and focus it — the full reason is
-           in `shared/lib/focus-map-canvas.ts`. `data-testid` belongs to the tests and
-           is never used as a runtime selector. */
-        data-surface-role={MAP_CANVAS_SURFACE_ROLE}
-        /**
-         * **Something you can drag is not a picture** (motion seat P3, 2026-07-28).
-         *
-         * It used to declare `role="img"` — a still image — to assistive technology
-         * while the label said "you can drag it around". The affordance contradiction
-         * was written straight into the accessibility tree. There was no `tabIndex`
-         * either, so a keyboard user got **zero** signals.
-         *
-         * Why `group` rather than `role="application"`: `application` takes away the
-         * assistive technology's default key handling entirely. The old reasoning was
-         * *"this canvas offers no keyboard traversal of its own, so taking the keys
-         * away and giving nothing back is the worst option"*.
-         *
-         * ⚠️ **That premise stopped being true on 2026-08-09** — arrow-key traversal
-         * of neighbours was added (`onKeyDown`). `group` stays anyway: the only keys
-         * we swallow are **the four arrows**, and leaving the rest to assistive
-         * technology loses less than taking all key handling. If an environment is
-         * observed where a screen reader's browse mode claims the arrow keys first,
-         * `application` gets another look then — nothing is taken away pre-emptively
-         * without measuring against real assistive technology.
-         *
-         * The focus ring is **also an affordance of the still frame** — zero motion budget.
-         */
-        role={canvasLabel ? "group" : undefined}
-        aria-label={canvasLabel}
-        tabIndex={canvasLabel ? 0 : undefined}
-        // Why `cursor-grab` is the **default state** (council "Interaction" —
-        // interaction — 2026-07-28): this canvas's primary action is panning. The
-        // pointer handlers override it inline with `pointer` over a node or edge, and
-        // `grabbing` while pushing.
-        //
-        // **It has to be a class, not an inline style.** When a drag ends and resets
-        // with `style.cursor = ""`, an inline default erases itself and falls to
-        // `auto` (measured). As a class, the cascade restores `grab` where the inline
-        // value was lifted — the reset becomes correct by itself.
-        className="cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]"
-        style={{
-          display: "block",
-          width: "100%",
-          height: "100%",
-          // `none` swallows a vertical swipe too — inside a scrolling document the
-          // page then will not move at all on a phone. With `pan-y` the page takes
-          // vertical and the map takes a horizontal drag.
-          touchAction: wheelIntent === "page-scroll" ? "pan-y" : "none",
-        }}
-        onPointerDown={(event) => {
-          delete event.currentTarget.dataset.keyboardFocus;
-          handlePointerDown(event);
-        }}
-        onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onPointerLeave={handlePointerLeave}
-        onContextMenu={handleContextMenu}
-        /**
-         * Walk neighbours with the arrow keys (2026-08-09, option B). The rules are in
-         * `../interaction/keyboard-walk` and the wiring is `use-topology-loop`'s
-         * `handleKeyDown`. Until this was added, the canvas could take focus but there
-         * were **zero things a key could do**.
-         */
-        onKeyDown={handleKeyDown}
-      />
+            container.style.setProperty("--map-live-inset-right", `${insets.right}px`);
+        };
+        publish();
+        const settled = window.setTimeout(publish, 360);
+        window.addEventListener("resize", publish);
+        return () => {
+            window.clearTimeout(settled);
+            window.removeEventListener("resize", publish);
+        };
+    }, [canvasRef, containerRef, detailPanelVisible]);
+    return (<div ref={containerRef} data-testid="ontology-map" data-map-engine="v2" data-minimal={minimal ? "true" : "false"} data-source-node-count={nodes.length} data-map-lens={spotlightIds ? mapLensKind : undefined} data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined} data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined} data-preview-edge={previewEdge
+            ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`
+            : undefined} data-preview-phase={previewEdge?.phase} 
+    // rank18 — while an overlay is open the canvas is excluded from the aria tree
+    // and Tab traversal (inert blocks the pointer too). INDEX and the datasheet
+    // are the alternative list.
+    aria-hidden={overlayOpen} inert={overlayOpen} style={{ position: "relative", width: "100%", height: "100%" }}>
+      <canvas ref={canvasRef} data-testid="ontology-map-canvas" 
+    /* The marker `G M` uses to find this canvas and focus it — the full reason is
+       in `shared/lib/focus-map-canvas.ts`. `data-testid` belongs to the tests and
+       is never used as a runtime selector. */
+    data-surface-role={MAP_CANVAS_SURFACE_ROLE} 
+    /**
+     * **Something you can drag is not a picture** (motion seat P3, 2026-07-28).
+     *
+     * It used to declare `role="img"` — a still image — to assistive technology
+     * while the label said "you can drag it around". The affordance contradiction
+     * was written straight into the accessibility tree. There was no `tabIndex`
+     * either, so a keyboard user got **zero** signals.
+     *
+     * Why `group` rather than `role="application"`: `application` takes away the
+     * assistive technology's default key handling entirely. The old reasoning was
+     * *"this canvas offers no keyboard traversal of its own, so taking the keys
+     * away and giving nothing back is the worst option"*.
+     *
+     * ⚠️ **That premise stopped being true on 2026-08-09** — arrow-key traversal
+     * of neighbours was added (`onKeyDown`). `group` stays anyway: the only keys
+     * we swallow are **the four arrows**, and leaving the rest to assistive
+     * technology loses less than taking all key handling. If an environment is
+     * observed where a screen reader's browse mode claims the arrow keys first,
+     * `application` gets another look then — nothing is taken away pre-emptively
+     * without measuring against real assistive technology.
+     *
+     * The focus ring is **also an affordance of the still frame** — zero motion budget.
+     */
+    role={canvasLabel ? "group" : undefined} aria-label={canvasLabel} tabIndex={canvasLabel ? 0 : undefined} 
+    // Why `cursor-grab` is the **default state** (council "Interaction" —
+    // interaction — 2026-07-28): this canvas's primary action is panning. The
+    // pointer handlers override it inline with `pointer` over a node or edge, and
+    // `grabbing` while pushing.
+    //
+    // **It has to be a class, not an inline style.** When a drag ends and resets
+    // with `style.cursor = ""`, an inline default erases itself and falls to
+    // `auto` (measured). As a class, the cascade restores `grab` where the inline
+    // value was lifted — the reset becomes correct by itself.
+    className="cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]" style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            // `none` swallows a vertical swipe too — inside a scrolling document the
+            // page then will not move at all on a phone. With `pan-y` the page takes
+            // vertical and the map takes a horizontal drag.
+            touchAction: wheelIntent === "page-scroll" ? "pan-y" : "none",
+        }} onPointerDown={(event) => {
+            delete event.currentTarget.dataset.keyboardFocus;
+            handlePointerDown(event);
+        }} onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerCancel} onPointerLeave={handlePointerLeave} onContextMenu={handleContextMenu} 
+    /**
+     * Walk neighbours with the arrow keys (2026-08-09, option B). The rules are in
+     * `../interaction/keyboard-walk` and the wiring is `use-topology-loop`'s
+     * `handleKeyDown`. Until this was added, the canvas could take focus but there
+     * were **zero things a key could do**.
+     */
+    onKeyDown={handleKeyDown}/>
       {/* The S4 orbit "expand" button — anchored to canvas coordinates (the loop
-          refreshes the transform every frame). Hidden by default; shown only when the
-          focused node has children and sits outside a realm. No radial menu — one
-          button. A microtooltip on hover (one plain line). */}
-      {onEnterRealm && !detailPanelVisible ? (
-        <button
-          ref={realmEnterButtonRef}
-          type="button"
-          data-testid="topology-realm-enter-button"
-          aria-label={realmEnterLabel}
-          /**
-           * **While invisible it is not a tab stop** (keyboard measurement, 2026-07-29).
-           *
-           * This button appears and disappears every frame through `opacity` and
-           * `pointerEvents` alone (to preserve layout), and `opacity: 0` **does not
-           * turn off focusability.** So the 26th Tab on the map stopped here: the ring
-           * draws at alpha 0 and is nowhere on screen, and pressing Enter does nothing
-           * (the click decision lives in the canvas's hit test). To a keyboard user it
-           * is **a slot where focus vanishes**.
-           *
-           * Paired with `pointer-events: none`, it drops out of the tab order and hides
-           * from screen readers too. Both come back when it is visible.
-           */
-          tabIndex={-1}
-          aria-hidden
-          className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] hover:bg-[color:var(--map-panel-row-hover)]` })}
-          style={{ opacity: 0, pointerEvents: "none" }}
-        >
-          <Orbit size={ICON_SIZE.md} aria-hidden />
+                  refreshes the transform every frame). Hidden by default; shown only when the
+                  focused node has children and sits outside a realm. No radial menu — one
+                  button. A microtooltip on hover (one plain line). */}
+      {onEnterRealm && !detailPanelVisible ? (<button ref={realmEnterButtonRef} type="button" data-testid="topology-realm-enter-button" aria-label={realmEnterLabel} 
+        /**
+         * **While invisible it is not a tab stop** (keyboard measurement, 2026-07-29).
+         *
+         * This button appears and disappears every frame through `opacity` and
+         * `pointerEvents` alone (to preserve layout), and `opacity: 0` **does not
+         * turn off focusability.** So the 26th Tab on the map stopped here: the ring
+         * draws at alpha 0 and is nowhere on screen, and pressing Enter does nothing
+         * (the click decision lives in the canvas's hit test). To a keyboard user it
+         * is **a slot where focus vanishes**.
+         *
+         * Paired with `pointer-events: none`, it drops out of the tab order and hides
+         * from screen readers too. Both come back when it is visible.
+         */
+        tabIndex={-1} aria-hidden className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] hover:bg-[color:var(--map-panel-row-hover)]` })} style={{ opacity: 0, pointerEvents: "none" }}>
+          <Orbit size={ICON_SIZE.md} aria-hidden/>
           {/*
-           * **This tooltip is not drawn in 3D** (owner instruction, 2026-08-18).
-           *
-           * This button moves to the node's **projected** position every frame. In 2D
-           * a still camera means a still position, so the text box below it stays put;
-           * in the dome the node keeps moving with rotation and perspective, so the
-           * same text box slides across the scene — by the time your eyes settle to
-           * read it, it has gone elsewhere.
-           *
-           * It disables **the explanation, not the feature**: the button and its
-           * `aria-label` ("Show only this") are unchanged, so mouse and
-           * assistive technology reach it exactly as before.
-           */}
-          {realmEnterTooltip && !view3d ? (
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)] group-hover:block"
-            >
+                   * **This tooltip is not drawn in 3D** (owner instruction, 2026-08-18).
+                   *
+                   * This button moves to the node's **projected** position every frame. In 2D
+                   * a still camera means a still position, so the text box below it stays put;
+                   * in the dome the node keeps moving with rotation and perspective, so the
+                   * same text box slides across the scene — by the time your eyes settle to
+                   * read it, it has gone elsewhere.
+                   *
+                   * It disables **the explanation, not the feature**: the button and its
+                   * `aria-label` ("Show only this") are unchanged, so mouse and
+                   * assistive technology reach it exactly as before.
+                   */}
+          {realmEnterTooltip && !view3d ? (<span role="tooltip" className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)] group-hover:block">
               {realmEnterTooltip}
-            </span>
-          ) : null}
-        </button>
-      ) : null}
+            </span>) : null}
+        </button>) : null}
       {view3d && props.domeLightLegend ? props.domeLightLegend : null}
       {/* The inspector docks against the same right edge the names favour, and the
-          reader is looking at one concept, so the names step aside while it is open. */}
-      {tierNamesActive && !detailPanelVisible ? (
-        <OntologyMapTierLegend
-          names={tierNames ?? []}
-          labels={domeTierLabels!}
-          onRaise={raiseDomeTier}
-          onWidths={setDomeTierNameWidths}
-        />
-      ) : null}
+                  reader is looking at one concept, so the names step aside while it is open. */}
+      {tierNamesActive && !detailPanelVisible ? (<OntologyMapTierLegend names={tierNames ?? []} labels={domeTierLabels!} onRaise={raiseDomeTier} onWidths={setDomeTierNameWidths}/>) : null}
       {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection
-          technique as the realm button (the loop refreshes the transform and
-          `--tour-anchor-r` every frame). It is a **measurement probe** with no paint:
-          the scrim and cutout are painted by GuidedTourOverlay, which reads this rect
-          from the z-70 overlay layer (Guardian correction 2026-07-23 — painting the
-          scrim at z-40 inside the widget left outer chrome such as the top toolbar
-          floating above the scrim, so the testid step and the dimming layered wrongly). */}
-      {tourAnchorRef ? (
-        <div
-          ref={tourAnchorRef}
-          data-testid="topology-tour-anchor"
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 z-40"
-          style={{
-            width: "calc(var(--tour-anchor-r, 0px) * 2)",
-            height: "calc(var(--tour-anchor-r, 0px) * 2)",
-            visibility: tourAnchorNodeId ? "visible" : "hidden",
-          }}
-        />
-      ) : null}
-      {noticePresence.mounted && notice ? (
-        <div
-          key={notice.key}
-          data-walk-notice=""
-          {...transientSurface("notice")}
-          /* Read by assistive technology, and non-existent to pointer and focus. */
-          role="status"
-          aria-live="polite"
-          data-state={noticePresence.exiting ? "closed" : "open"}
-          className={[
-            reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
-            "pointer-events-none absolute z-40 max-w-[240px] -translate-x-1/2 -translate-y-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2.5 py-1.5 text-label text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)]",
-          ].join(" ")}
-          style={{
-            left: notice.x,
-            // Raised **above** the node — below it is the label's place (`LABEL_OFFSET`).
-            top: notice.y - WALK_NOTICE_NODE_GAP,
-            ["--overlay-spring-origin" as string]: "center bottom",
-          }}
-        >
+                  technique as the realm button (the loop refreshes the transform and
+                  `--tour-anchor-r` every frame). It is a **measurement probe** with no paint:
+                  the scrim and cutout are painted by GuidedTourOverlay, which reads this rect
+                  from the z-70 overlay layer (Guardian correction 2026-07-23 — painting the
+                  scrim at z-40 inside the widget left outer chrome such as the top toolbar
+                  floating above the scrim, so the testid step and the dimming layered wrongly). */}
+      {tourAnchorRef ? (<div ref={tourAnchorRef} data-testid="topology-tour-anchor" aria-hidden className="pointer-events-none absolute left-0 top-0 z-40" style={{
+                width: "calc(var(--tour-anchor-r, 0px) * 2)",
+                height: "calc(var(--tour-anchor-r, 0px) * 2)",
+                visibility: tourAnchorNodeId ? "visible" : "hidden",
+            }}/>) : null}
+      {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")} 
+        /* Read by assistive technology, and non-existent to pointer and focus. */
+        role="status" aria-live="polite" data-state={noticePresence.exiting ? "closed" : "open"} className={[
+                reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
+                "pointer-events-none absolute z-40 max-w-[240px] -translate-x-1/2 -translate-y-full rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2.5 py-1.5 text-label text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)]"
+            ].join(" ")} style={{
+                left: notice.x,
+                // Raised **above** the node — below it is the label's place (`LABEL_OFFSET`).
+                top: notice.y - WALK_NOTICE_NODE_GAP,
+                ["--overlay-spring-origin" as string]: "center bottom",
+            }}>
           {walkNoticeLabel}
-        </div>
-      ) : null}
-      {clusterHint ? (
-        <span
-          data-testid="topology-cluster-hint"
-          style={{
-            position: "absolute",
-            width: 1,
-            height: 1,
-            padding: 0,
-            margin: -1,
-            overflow: "hidden",
-            clip: "rect(0 0 0 0)",
-            whiteSpace: "nowrap",
-            border: 0,
-          }}
-        >
+        </div>) : null}
+      {clusterHint ? (<span data-testid="topology-cluster-hint" style={{
+                position: "absolute",
+                width: 1,
+                height: 1,
+                padding: 0,
+                margin: -1,
+                overflow: "hidden",
+                clip: "rect(0 0 0 0)",
+                whiteSpace: "nowrap",
+                border: 0,
+            }}>
           {clusterHint}
-        </span>
-      ) : null}
-    </div>
-  );
+        </span>) : null}
+    </div>);
 }

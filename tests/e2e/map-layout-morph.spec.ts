@@ -5,7 +5,7 @@ import { MOTION, STAGGER } from "../../src/shared/motion/tokens";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForDomeEntered, waitForMapSettled, waitForTerritoriesStill } from "./settle";
 
-type View = "flat" | "territories" | "hex" | "galaxy" | "strata" | "coupling";
+type View = "flat" | "territories" | "hex" | "strata" | "coupling";
 
 interface Frame {
   t: number;
@@ -21,7 +21,8 @@ interface Frame {
   arrived: boolean | null;
   positions: Record<string, [number, number]> | null;
   lifted: boolean | null;
-  velocity: Record<string, { vx: number; vy: number }> | null;
+  velocity: Record<string, { vx: number; vy: number;
+    }> | null;
 }
 
 interface MorphRecord {
@@ -37,10 +38,13 @@ interface MorphRecord {
 
 interface MorphProbe {
   records: () => MorphRecord[];
-  live: () => { mode: string; phase: string; progress: number; elapsedMs: number; durationMs: number; lifted: boolean; startMs: number | null; at: number } | null;
-  marks: (atMs?: number) => Array<{ id: string; x: number; y: number }>;
+  live: () => { mode: string; phase: string; progress: number; elapsedMs: number; durationMs: number; lifted: boolean; startMs: number | null; at: number;
+    } | null;
+  marks: (atMs?: number) => Array<{ id: string; x: number; y: number;
+    }>;
   delays: () => Record<string, number>;
-  velocity: (atMs?: number) => Record<string, { vx: number; vy: number }>;
+  velocity: (atMs?: number) => Record<string, { vx: number; vy: number;
+    }>;
   publishes: () => number;
 }
 
@@ -53,16 +57,10 @@ interface Sampler {
   span: number;
   velocity: boolean;
 }
-
-interface CosmosProbe {
-  camera: () => { x: number; y: number; scale: number };
-  marks: () => Array<{ id: string; x: number; y: number }>;
-  arrival: () => { active: boolean };
-  stats: () => { pendingBuilds: number } | null;
-  layoutRuns: () => number;
-}
-
-type SamplerWindow = Window & { __morph: Sampler; __atlasMapMorph?: MorphProbe; __atlasCosmos?: CosmosProbe };
+type SamplerWindow = Window & {
+    __morph: Sampler;
+    __atlasMapMorph?: MorphProbe;
+};
 
 const SYNTH = 300;
 const INK_FLOOR = 0.9;
@@ -152,15 +150,16 @@ async function installSampler(page: Page): Promise<void> {
       const map = (
         window as unknown as {
           __atlasMap?: {
-            camera: () => { x: number; y: number; scale: number } | null;
-            nodes: () => Array<{ id: string; x: number; y: number; hidden: boolean }>;
-          };
-        }
-      ).__atlasMap;
-      const cosmos = document.querySelector('[data-testid="cosmos-map"]') ? (window as unknown as { __atlasCosmos?: CosmosProbe }).__atlasCosmos : undefined;
-      const camera = cosmos ? cosmos.camera() : document.querySelector('[data-testid="ontology-map"]') ? (map?.camera() ?? null) : null;
+            camera: () => { x: number; y: number; scale: number;
+                    } | null;
+            nodes: () => Array<{ id: string; x: number; y: number; hidden: boolean;
+                    }>;
+                };
+            }).__atlasMap;
+            const camera = document.querySelector('[data-testid="ontology-map"]') ? (map?.camera() ?? null) : null;
       const stats = document.querySelector<HTMLCanvasElement>('[data-testid="topology-map-view"] canvas')?.dataset.frame;
-      const drawn = cosmos ? { arrived: !cosmos.arrival().active } : stats ? (JSON.parse(stats) as { arrived?: boolean; arrivalT?: number }) : null;
+      const drawn = stats ? (JSON.parse(stats) as { arrived?: boolean; arrivalT?: number;
+            }) : null;
       s.frames.push({
         t: frameTime,
         wall: performance.now(),
@@ -173,71 +172,66 @@ async function installSampler(page: Page): Promise<void> {
         ghosts: traveling ? probe.marks().length : 0,
         camera: camera
           ? `${camera.x.toFixed(2)},${camera.y.toFixed(2)},${camera.scale.toFixed(4)}`
-          : stats
-            ? JSON.stringify((JSON.parse(stats) as { offset?: unknown; R?: unknown }).offset ?? null)
-            : null,
-        lifted: live?.lifted ?? null,
-        velocity: s.velocity && traveling ? probe.velocity() : null,
-        arrived: drawn?.arrived ?? (drawn?.arrivalT === undefined ? null : drawn.arrivalT >= 1),
-        positions: cosmos
-          ? Object.fromEntries(cosmos.marks().slice(0, 60).map((m) => [m.id, [m.x, m.y] as [number, number]]))
-          : camera
-          ? Object.fromEntries(
-              (map?.nodes() ?? [])
-                .filter((n) => !n.hidden)
-                .slice(0, 60)
-                .map((n) => [n.id, [n.x, n.y] as [number, number]]),
-            )
-          : null,
-      });
-    };
-    const raf = window.requestAnimationFrame.bind(window);
-    window.requestAnimationFrame = (callback: FrameRequestCallback) =>
-      raf((time) => {
-        frameTime = time;
-        callback(time);
-        if (queued) return;
-        queued = true;
-        channel.port2.postMessage(0);
-      });
-  });
+                    : stats
+                        ? JSON.stringify((JSON.parse(stats) as {
+                            offset?: unknown;
+                            R?: unknown;
+                        }).offset ?? null)
+                        : null,
+                lifted: live?.lifted ?? null,
+                velocity: s.velocity && traveling ? probe.velocity() : null,
+                arrived: drawn?.arrived ?? (drawn?.arrivalT === undefined ? null : drawn.arrivalT >= 1),
+                positions: camera
+                        ? Object.fromEntries((map?.nodes() ?? [])
+                            .filter((n) => !n.hidden)
+                            .slice(0, 60)
+                            .map((n) => [n.id, [n.x, n.y] as [
+                                number,
+                                number
+                            ]]))
+                        : null,
+            });
+        };
+        const raf = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = (callback: FrameRequestCallback) => raf((time) => {
+            frameTime = time;
+            callback(time);
+            if (queued)
+                return;
+            queued = true;
+            channel.port2.postMessage(0);
+        });
+    });
 }
-
 async function openAt(page: Page, view: View, reduced = false, synth: number | null = SYNTH, relief = false): Promise<void> {
-  await page.setViewportSize({ width: 1400, height: 860 });
-  if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
-  await seedFirstRunSeen(page);
-  await page.addInitScript(({ initial, tilted }: { initial: View; tilted: boolean }) => {
-    const flag = (key: string, on: boolean) => window.localStorage.setItem(`atlas.appearance.${key}`, on ? "on" : "off");
-    flag("hex-relief", tilted);
-    flag("territories", initial === "territories");
-    flag("hex-board", initial === "hex");
-    flag("galaxy", initial === "galaxy");
-    flag("view3d", initial === "strata" || initial === "coupling");
-    window.localStorage.setItem("atlas.appearance.map-arrangement", initial === "coupling" ? "coupling" : "strata");
-  }, { initial: view, tilted: relief });
-  await installSampler(page);
-  await page.goto(`/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
+    await page.setViewportSize({ width: 1400, height: 860 });
+    if (reduced)
+        await page.emulateMedia({ reducedMotion: "reduce" });
+    await seedFirstRunSeen(page);
+    await page.addInitScript(({ initial, tilted }: {
+        initial: View;
+        tilted: boolean;
+    }) => {
+        const flag = (key: string, on: boolean) => window.localStorage.setItem(`atlas.appearance.${key}`, on ? "on" : "off");
+        flag("hex-relief", tilted);
+        flag("territories", initial === "territories");
+        flag("hex-board", initial === "hex");
+        flag("structure", false);
+        flag("view3d", initial === "strata" || initial === "coupling");
+        window.localStorage.setItem("atlas.appearance.map-arrangement", initial === "coupling" ? "coupling" : "strata");
+    }, { initial: view, tilted: relief });
+    await installSampler(page);
+    await page.goto(`/ko/topology/?${synth === null ? "" : `synth=${synth}&`}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await settled(page, view);
 }
 
 async function settled(page: Page, view: View): Promise<void> {
   if (view === "territories") await waitForTerritoriesStill(page);
   else if (view === "hex") await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
-  else if (view === "galaxy") await cosmosSettled(page);
-  else if (view === "strata" || view === "coupling") await waitForDomeEntered(page);
-  else await waitForMapSettled(page);
-}
-
-async function cosmosSettled(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const cosmos = (window as unknown as SamplerWindow).__atlasCosmos;
-      return cosmos !== undefined && !cosmos.arrival().active && cosmos.stats()?.pendingBuilds === 0;
-    },
-    undefined,
-    { polling: "raf" },
-  );
+  else if (view === "strata" || view === "coupling")
+        await waitForDomeEntered(page);
+    else
+        await waitForMapSettled(page);
 }
 
 async function pick(page: Page, view: View): Promise<void> {
@@ -245,390 +239,365 @@ async function pick(page: Page, view: View): Promise<void> {
   await waitForAnimationsDone(page.getByTestId("topology-view-3d-menu"));
   await page.getByTestId(`topology-view-3d-choice-${view}`).click();
 }
-
 async function startRecording(page: Page, ink: boolean, velocity = false): Promise<number> {
-  return page.evaluate(
-    ({ withInk, withVelocity }) => {
-      const w = window as unknown as SamplerWindow;
-      Object.assign(w.__morph, { frames: [], finals: null, ends: [], span: 0, ink: withInk, velocity: withVelocity, recording: true });
-      return w.__atlasMapMorph?.records().length ?? 0;
-    },
-    { withInk: ink, withVelocity: velocity },
-  );
+    return page.evaluate(({ withInk, withVelocity }) => {
+        const w = window as unknown as SamplerWindow;
+        Object.assign(w.__morph, { frames: [], finals: null, ends: [], span: 0, ink: withInk, velocity: withVelocity, recording: true });
+        return w.__atlasMapMorph?.records().length ?? 0;
+    }, { withInk: ink, withVelocity: velocity });
 }
-
 async function stopRecording(page: Page): Promise<Frame[]> {
-  return page.evaluate(() => {
-    const s = (window as unknown as SamplerWindow).__morph;
-    s.recording = false;
-    return s.frames;
-  });
+    return page.evaluate(() => {
+        const s = (window as unknown as SamplerWindow).__morph;
+        s.recording = false;
+        return s.frames;
+    });
 }
-
 async function morphDone(page: Page, before: number): Promise<MorphRecord> {
-  await page.waitForFunction(
-    (count) => {
-      const records = (window as unknown as SamplerWindow).__atlasMapMorph?.records() ?? [];
-      return records.length > count && records.at(-1)!.doneMs !== null && !document.querySelector('[data-testid="map-layout-morph"]');
-    },
-    before,
-    { polling: "raf" },
-  );
-  return page.evaluate(() => (window as unknown as SamplerWindow).__atlasMapMorph!.records().at(-1)!);
+    await page.waitForFunction((count) => {
+        const records = (window as unknown as SamplerWindow).__atlasMapMorph?.records() ?? [];
+        return records.length > count && records.at(-1)!.doneMs !== null && !document.querySelector('[data-testid="map-layout-morph"]');
+    }, before, { polling: "raf" });
+    return page.evaluate(() => (window as unknown as SamplerWindow).__atlasMapMorph!.records().at(-1)!);
 }
-
 async function inTravel(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
-      return live?.phase === "travel" && live.progress > 0.1;
-    },
-    undefined,
-    { polling: "raf" },
-  );
+    await page.waitForFunction(() => {
+        const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
+        return live?.phase === "travel" && live.progress > 0.1;
+    }, undefined, { polling: "raf" });
 }
-
 function medianFrameMs(frames: readonly Frame[]): number {
-  const gaps = frames
-    .slice(1)
-    .map((f, i) => f.t - frames[i]!.t)
-    .filter((gap) => gap > 0)
-    .sort((a, b) => a - b);
-  return gaps[Math.floor(gaps.length / 2)] ?? 16.7;
+    const gaps = frames
+        .slice(1)
+        .map((f, i) => f.t - frames[i]!.t)
+        .filter((gap) => gap > 0)
+        .sort((a, b) => a - b);
+    return gaps[Math.floor(gaps.length / 2)] ?? 16.7;
 }
-
 test.describe("map layout morph", () => {
-  const DIRECTIONS: Array<[View, View, boolean?]> = [
-    ["flat", "hex"],
-    ["hex", "territories"],
-    ["territories", "galaxy"],
-    ["strata", "territories"],
-    ["hex", "flat"],
-    ["flat", "galaxy"],
-    ["galaxy", "flat"],
-    ["galaxy", "hex"],
-    ["flat", "hex", true],
-    ["hex", "galaxy", true],
-  ];
-
-  for (const [from, to, relief = false] of DIRECTIONS) {
-    test(`${from} to ${to}${relief ? " in relief" : ""} carries each concept on the camera clock without a blank frame`, async ({ page }) => {
-      test.setTimeout(120_000);
-      await openAt(page, from, false, SYNTH, relief);
-      const before = await startRecording(page, true);
-      await pick(page, to);
-      const run = await morphDone(page, before);
-      await settled(page, to);
-      const frames = await stopRecording(page);
-      const ends = await page.evaluate(() => (window as unknown as SamplerWindow).__morph.ends);
-
-      expect(run.mode).toBe("ghost");
-      expect(run.count).toBeGreaterThan(0);
-
-      expect(run.plannedMs).toBeGreaterThanOrEqual(GLIDE_MIN_MS);
-      expect(run.plannedMs).toBeLessThanOrEqual(GLIDE_MAX_MS + 1);
-      const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null && f.at !== null);
-      const travelMs = run.travelEndMs! - run.travelStartMs;
-      expect(travelMs, `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(run.plannedMs);
-      expect(Math.max(0, ...travel.map((f) => f.at! - run.travelStartMs)), `travel still running past its plan of ${run.plannedMs} ms`).toBeLessThan(run.plannedMs);
-
-      const shares: number[] = [];
-      let previous = { at: run.travelStartMs, remaining: 1 };
-      for (const f of travel) {
-        const interval = f.at! - previous.at;
-        if (interval > 0) shares.push(((previous.remaining - f.remaining!) * 16.7) / interval);
-        previous = { at: f.at!, remaining: f.remaining! };
-      }
-      const ninety = travel.find((f) => f.remaining! <= 0.1);
-      expect(ninety, "the painted travel never covered ninety percent").toBeDefined();
-      expect(ninety!.at! - run.travelStartMs, "ninety percent of the painted travel").toBeLessThanOrEqual(NINETY_BY_MS);
-      expect(shares.length).toBeGreaterThan(2);
-      expect(shares[0]!).toBeGreaterThan(0);
-      expect(shares[0]!).toBeLessThanOrEqual(FIRST_SHARE_CEILING);
-      expect(Math.max(...shares)).toBeLessThanOrEqual(MAX_SHARE_CEILING);
-
-      const start = frames.findIndex((f) => f.phase !== null);
-      const startInk = frames[Math.max(0, start - 1)]!.ink!;
-      const endInk = frames.at(-1)!.ink!;
-      const floor = INK_FLOOR * Math.min(startInk, endInk);
-      const dips = frames.slice(start).filter((f) => f.ink! < floor).map((f) => `${Math.round(f.t - run.travelStartMs)} ms: ${f.ink} (${f.phase})`);
-      expect(dips, `ink fell under ${Math.round(floor)} (start ${startInk}, end ${endInk})`).toEqual([]);
-
-      if (to === "galaxy") {
-        const sky = await page.evaluate(() => {
-          const cosmos = (window as unknown as SamplerWindow).__atlasCosmos!;
-          return { marks: cosmos.marks(), runs: cosmos.layoutRuns() };
+    const DIRECTIONS: Array<[
+        View,
+        View,
+        boolean?
+    ]> = [
+        ["flat", "hex"],
+        ["hex", "territories"],
+        ["strata", "territories"],
+        ["hex", "flat"],
+        ["flat", "hex", true]
+    ];
+    for (const [from, to, relief = false] of DIRECTIONS) {
+        test(`${from} to ${to}${relief ? " in relief" : ""} carries each concept on the camera clock without a blank frame`, async ({ page }) => {
+            test.setTimeout(120000);
+            await openAt(page, from, false, SYNTH, relief);
+            const before = await startRecording(page, true);
+            await pick(page, to);
+            const run = await morphDone(page, before);
+            await settled(page, to);
+            const frames = await stopRecording(page);
+            expect(run.mode).toBe("ghost");
+            expect(run.count).toBeGreaterThan(0);
+            expect(run.plannedMs).toBeGreaterThanOrEqual(GLIDE_MIN_MS);
+            expect(run.plannedMs).toBeLessThanOrEqual(GLIDE_MAX_MS + 1);
+            const travel = frames.filter((f) => f.phase === "travel" && f.remaining !== null && f.at !== null);
+            const travelMs = run.travelEndMs! - run.travelStartMs;
+            expect(travelMs, `travel ${travelMs} ms against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(run.plannedMs);
+            expect(Math.max(0, ...travel.map((f) => f.at! - run.travelStartMs)), `travel still running past its plan of ${run.plannedMs} ms`).toBeLessThan(run.plannedMs);
+            const shares: number[] = [];
+            let previous = { at: run.travelStartMs, remaining: 1 };
+            for (const f of travel) {
+                const interval = f.at! - previous.at;
+                if (interval > 0)
+                    shares.push(((previous.remaining - f.remaining!) * 16.7) / interval);
+                previous = { at: f.at!, remaining: f.remaining! };
+            }
+            const ninety = travel.find((f) => f.remaining! <= 0.1);
+            expect(ninety, "the painted travel never covered ninety percent").toBeDefined();
+            expect(ninety!.at! - run.travelStartMs, "ninety percent of the painted travel").toBeLessThanOrEqual(NINETY_BY_MS);
+            expect(shares.length).toBeGreaterThan(2);
+            expect(shares[0]!).toBeGreaterThan(0);
+            expect(shares[0]!).toBeLessThanOrEqual(FIRST_SHARE_CEILING);
+            expect(Math.max(...shares)).toBeLessThanOrEqual(MAX_SHARE_CEILING);
+            const start = frames.findIndex((f) => f.phase !== null);
+            const startInk = frames[Math.max(0, start - 1)]!.ink!;
+            const endInk = frames.at(-1)!.ink!;
+            const floor = INK_FLOOR * Math.min(startInk, endInk);
+            const dips = frames.slice(start).filter((f) => f.ink! < floor).map((f) => `${Math.round(f.t - run.travelStartMs)} ms: ${f.ink} (${f.phase})`);
+            expect(dips, `ink fell under ${Math.round(floor)} (start ${startInk}, end ${endInk})`).toEqual([]);
+            const arrival = to === "territories" || to === "hex" ? to : "map";
+            const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
+            expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
+            expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
+            const landed = frames.at(-1)!.positions ?? {};
+            const drift = frames
+                .slice(handoff)
+                .flatMap((f) => Object.entries(f.positions ?? {}).map(([id, [x, y]]) => (landed[id] ? Math.hypot(x - landed[id][0], y - landed[id][1]) : 0)));
+            expect(Math.max(0, ...drift), "the incoming map moved its concepts after the handoff").toBeLessThanOrEqual(ARRIVAL_DRIFT_CEILING_PX);
+            const replayed = frames.slice(handoff).filter((f) => f.arrived === false).map((f) => Math.round(f.t - run.travelStartMs));
+            expect(replayed, "the incoming view replayed its own arrival after the handoff").toEqual([]);
         });
-        const ghostAt = new Map(ends);
-        const matched = sky.marks.filter((m) => ghostAt.has(m.id));
-        const off = matched.map((m) => ({ id: m.id, px: Math.hypot(m.x - ghostAt.get(m.id)![0], m.y - ghostAt.get(m.id)![1]) })).filter((m) => m.px > 1);
-        expect(matched.length, "no ghost landed on a drawn galaxy mark").toBeGreaterThan(0);
-        expect(off, "ghosts landed away from the drawn sky").toEqual([]);
-        if (from === "flat") expect(sky.runs, "the sky was laid out more than once for one pick").toBe(1);
-      }
-
-      const arrival = to === "territories" || to === "hex" || to === "galaxy" ? to : "map";
-      const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
-      expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
-      expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
-      const landed = frames.at(-1)!.positions ?? {};
-      const drift = frames
-        .slice(handoff)
-        .flatMap((f) => Object.entries(f.positions ?? {}).map(([id, [x, y]]) => (landed[id] ? Math.hypot(x - landed[id][0], y - landed[id][1]) : 0)));
-      expect(Math.max(0, ...drift), "the incoming map moved its concepts after the handoff").toBeLessThanOrEqual(ARRIVAL_DRIFT_CEILING_PX);
-      const replayed = frames.slice(handoff).filter((f) => f.arrived === false).map((f) => Math.round(f.t - run.travelStartMs));
-      expect(replayed, "the incoming view replayed its own arrival after the handoff").toEqual([]);
-    });
-  }
-
-  test("the glide plan settles every concept within half a percent by 950 ms", async ({ page }) => {
-    await openAt(page, "flat");
-    const before = await startRecording(page, false);
-    await pick(page, "hex");
-    await inTravel(page);
-    const worst = await page.evaluate((settled) => {
-      const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      const end = new Map(probe.marks(probe.live()!.durationMs + 2000).map((m) => [m.id, [m.x, m.y] as const]));
-      const start = new Map(probe.marks(0).map((m) => [m.id, [m.x, m.y] as const]));
-      const rows = probe.marks(settled).flatMap((m) => {
-        const [a, b] = [start.get(m.id), end.get(m.id)];
-        if (!a || !b) return [];
-        const span = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        return span > 1 ? [Math.hypot(m.x - b[0], m.y - b[1]) / span] : [];
-      });
-      return { tracks: rows.length, worst: Math.max(0, ...rows) };
-    }, SETTLED_BY_MS);
-    await morphDone(page, before);
-    await stopRecording(page);
-    expect(worst.tracks).toBeGreaterThan(0);
-    expect(worst.worst).toBeLessThanOrEqual(SETTLE_BAND);
-  });
-
-  test("a selected concept leads the glide and moves on the first travel frame", async ({ page }) => {
-    await openAt(page, "flat", false, null);
-    const selection = () =>
-      page.evaluate(() => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId);
-    const target = { id: "domain:order" };
-    const label = await page.evaluate(
-      (nodeId) => (window as unknown as { __atlasMap: { nodes: () => Array<{ id: string; label: string }> } }).__atlasMap.nodes().find((node) => node.id === nodeId)!.label,
-      target.id,
-    );
-    const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
-    await page.getByTestId("topology-concept-search").click();
-    await expect(palette).toBeVisible();
-    await page.keyboard.type(label);
-    await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText(label);
-    await page.keyboard.press("Enter");
-    await expect.poll(selection).toBe(target.id);
-    await waitForMapSettled(page);
-    const before = await startRecording(page, false);
-    await pick(page, "hex");
-    await page.waitForFunction(
-      () => {
-        const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
-        return live?.phase === "travel" && live.elapsedMs > 0;
-      },
-      undefined,
-      { polling: "raf" },
-    );
-    const first = await page.evaluate((id) => {
-      const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      const at = (ms: number) => probe.marks(ms).find((m) => m.id === id);
-      const [start, now] = [at(0), at(probe.live()!.elapsedMs)];
-      return { delay: probe.delays()[id], moved: start && now ? Math.hypot(now.x - start.x, now.y - start.y) : -1 };
-    }, target.id);
-    await morphDone(page, before);
-    await stopRecording(page);
-    expect(first.delay).toBe(0);
-    expect(first.moved).toBeGreaterThan(0);
-  });
-
-  test("a pick whose commit stalls still travels the planned time once frames resume", async ({ page }) => {
-    await openAt(page, "flat");
-    await page.evaluate((stallMs) => {
-      const observer = new MutationObserver(() => {
-        if (!document.querySelector('[data-testid="map-layout-morph"]')) return;
-        observer.disconnect();
-        const until = performance.now() + stallMs;
-        while (performance.now() < until);
-        (window as unknown as { __pickStallEnd?: number }).__pickStallEnd = performance.now();
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-    }, PICK_STALL_MS);
-    const before = await startRecording(page, false);
-    await pick(page, "hex");
-    const run = await morphDone(page, before);
-    const frames = await stopRecording(page);
-    const stallEnd = await page.evaluate(() => (window as unknown as { __pickStallEnd?: number }).__pickStallEnd);
-    expect(stallEnd, "the pick's commit never stalled").toBeDefined();
-    expect(run.mode).toBe("ghost");
-    expect(run.travelEndMs! - stallEnd!, `travel after the stall against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(
-      run.plannedMs - 2 * medianFrameMs(frames),
-    );
-  });
-
-  test("an incoming view that stalls on mount still gets the whole fade once it has drawn", async ({ page }) => {
-    await openAt(page, "flat");
-    await page.evaluate((stallMs) => {
-      const observer = new MutationObserver(() => {
-        if (!document.querySelector('[data-testid="territories-map"]')) return;
-        observer.disconnect();
-        const until = performance.now() + stallMs;
-        while (performance.now() < until);
-        (window as unknown as { __incomingStalled?: boolean }).__incomingStalled = true;
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-    }, INCOMING_STALL_MS);
-    const before = await startRecording(page, false);
-    await pick(page, "territories");
-    const run = await morphDone(page, before);
-    const frames = await stopRecording(page);
-    expect(await page.evaluate(() => (window as unknown as { __incomingStalled?: boolean }).__incomingStalled)).toBe(true);
-    expect(run.mode).toBe("ghost");
-
-    const steps: string[] = [];
-    for (let i = 1; i < frames.length; i += 1) {
-      const [a, b] = [frames[i - 1]!, frames[i]!];
-      if (a.opacity === null) continue;
-      const interval = a.at !== null && b.at !== null ? b.at - a.at : b.wall - a.wall;
-      if (interval <= 0) continue;
-      const drop = ((a.opacity - (b.opacity ?? 0)) * 16.7) / interval;
-      if (drop > FADE_STEP_CEILING) steps.push(`${Math.round(interval)} ms: ${a.opacity.toFixed(2)} → ${(b.opacity ?? 0).toFixed(2)}`);
     }
-    expect(steps, "the fade jumped after the stall").toEqual([]);
-  });
-
-  test("reduced motion crossfades every pick on the fast clock and moves nothing", async ({ page }) => {
-    test.setTimeout(180_000);
-    await openAt(page, "flat", true);
-    for (const view of ["territories", "hex", "galaxy", "strata", "coupling", "flat"] as const) {
-      const before = await startRecording(page, false);
-      await pick(page, view);
-      const run = await morphDone(page, before);
-      await settled(page, view);
-      const frames = await stopRecording(page);
-      expect(run.mode, `the pick of ${view}`).toBe("fade");
-      expect(frames.filter((f) => f.ghosts > 0), `ghosts moved on the way to ${view}`).toEqual([]);
-      const fadeMs = MOTION.fast.duration * 1000;
-      const fadeSteps = frames.filter((f) => f.phase === "fade" && f.at !== null).map((f) => f.at! - run.fadeStartMs!);
-      expect(run.doneMs! - run.fadeStartMs!, `the fade into ${view} ended before --motion-fast`).toBeGreaterThanOrEqual(fadeMs);
-      expect(Math.max(0, ...fadeSteps), `the fade into ${view} was still running after --motion-fast`).toBeLessThan(fadeMs);
-    }
-  });
-
-  test("a view change no pick asked for cuts without publishing a snapshot", async ({ page }) => {
-    await openAt(page, "flat");
-    const counts = await page.evaluate(() => {
-      const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      return { publishes: probe.publishes(), records: probe.records().length };
+    test("the glide plan settles every concept within half a percent by 950 ms", async ({ page }) => {
+        await openAt(page, "flat");
+        const before = await startRecording(page, false);
+        await pick(page, "hex");
+        await inTravel(page);
+        const worst = await page.evaluate((settled) => {
+            const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+            const end = new Map(probe.marks(probe.live()!.durationMs + 2000).map((m) => [m.id, [m.x, m.y] as const]));
+            const start = new Map(probe.marks(0).map((m) => [m.id, [m.x, m.y] as const]));
+            const rows = probe.marks(settled).flatMap((m) => {
+                const [a, b] = [start.get(m.id), end.get(m.id)];
+                if (!a || !b)
+                    return [];
+                const span = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                return span > 1 ? [Math.hypot(m.x - b[0], m.y - b[1]) / span] : [];
+            });
+            return { tracks: rows.length, worst: Math.max(0, ...rows) };
+        }, SETTLED_BY_MS);
+        await morphDone(page, before);
+        await stopRecording(page);
+        expect(worst.tracks).toBeGreaterThan(0);
+        expect(worst.worst).toBeLessThanOrEqual(SETTLE_BAND);
     });
-    await page.evaluate(() => {
-      window.localStorage.setItem("atlas.appearance.territories", "on");
-      window.dispatchEvent(new StorageEvent("storage", { key: "atlas.appearance.territories", newValue: "on" }));
+    test("a selected concept leads the glide and moves on the first travel frame", async ({ page }) => {
+        await openAt(page, "flat", false, null);
+        const selection = () => page.evaluate(() => (window as unknown as {
+            __atlasMap: {
+                selection: () => {
+                    nodeId: string | null;
+                };
+            };
+        }).__atlasMap.selection().nodeId);
+        const target = { id: "domain:order" };
+        const label = await page.evaluate((nodeId) => (window as unknown as {
+            __atlasMap: {
+                nodes: () => Array<{
+                    id: string;
+                    label: string;
+                }>;
+            };
+        }).__atlasMap.nodes().find((node) => node.id === nodeId)!.label, target.id);
+        const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+        await page.getByTestId("topology-concept-search").click();
+        await expect(palette).toBeVisible();
+        await page.keyboard.type(label);
+        await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText(label);
+        await page.keyboard.press("Enter");
+        await expect.poll(selection).toBe(target.id);
+        await waitForMapSettled(page);
+        const before = await startRecording(page, false);
+        await pick(page, "hex");
+        await page.waitForFunction(() => {
+            const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
+            return live?.phase === "travel" && live.elapsedMs > 0;
+        }, undefined, { polling: "raf" });
+        const first = await page.evaluate((id) => {
+            const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+            const at = (ms: number) => probe.marks(ms).find((m) => m.id === id);
+            const [start, now] = [at(0), at(probe.live()!.elapsedMs)];
+            return { delay: probe.delays()[id], moved: start && now ? Math.hypot(now.x - start.x, now.y - start.y) : -1 };
+        }, target.id);
+        await morphDone(page, before);
+        await stopRecording(page);
+        expect(first.delay).toBe(0);
+        expect(first.moved).toBeGreaterThan(0);
     });
-    await expect(page.getByTestId("territories-map")).toBeVisible();
-    await waitForTerritoriesStill(page);
-    const after = await page.evaluate(() => {
-      const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      return { publishes: probe.publishes(), records: probe.records().length };
+    test("a pick whose commit stalls still travels the planned time once frames resume", async ({ page }) => {
+        await openAt(page, "flat");
+        await page.evaluate((stallMs) => {
+            const observer = new MutationObserver(() => {
+                if (!document.querySelector('[data-testid="map-layout-morph"]'))
+                    return;
+                observer.disconnect();
+                const until = performance.now() + stallMs;
+                while (performance.now() < until)
+                    ;
+                (window as unknown as {
+                    __pickStallEnd?: number;
+                }).__pickStallEnd = performance.now();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }, PICK_STALL_MS);
+        const before = await startRecording(page, false);
+        await pick(page, "hex");
+        const run = await morphDone(page, before);
+        const frames = await stopRecording(page);
+        const stallEnd = await page.evaluate(() => (window as unknown as {
+            __pickStallEnd?: number;
+        }).__pickStallEnd);
+        expect(stallEnd, "the pick's commit never stalled").toBeDefined();
+        expect(run.mode).toBe("ghost");
+        expect(run.travelEndMs! - stallEnd!, `travel after the stall against a plan of ${run.plannedMs} ms`).toBeGreaterThanOrEqual(run.plannedMs - 2 * medianFrameMs(frames));
     });
-    expect(after).toEqual(counts);
-    await expect(page.getByTestId("map-layout-morph")).toHaveCount(0);
-  });
-
-  for (const cause of ["pointerdown", "resize", "hidden", "dpr"] as const) {
-    test(`${cause} mid-travel settles the concepts at once`, async ({ page }) => {
-      await openAt(page, "flat");
-      const cdp = cause === "dpr" ? await page.context().newCDPSession(page) : null;
-      const before = await startRecording(page, false);
-      await pick(page, "hex");
-      await inTravel(page);
-      if (cause === "pointerdown") {
-        const box = (await page.getByTestId("topology-map-surface").boundingBox())!;
-        await page.mouse.move(box.x + box.width / 2, box.y + box.height - 40);
-        await page.mouse.down();
-        await page.mouse.up();
-      } else if (cause === "resize") {
-        await page.setViewportSize({ width: 1320, height: 860 });
-      } else if (cause === "hidden") {
+    test("an incoming view that stalls on mount still gets the whole fade once it has drawn", async ({ page }) => {
+        await openAt(page, "flat");
+        await page.evaluate((stallMs) => {
+            const observer = new MutationObserver(() => {
+                if (!document.querySelector('[data-testid="territories-map"]'))
+                    return;
+                observer.disconnect();
+                const until = performance.now() + stallMs;
+                while (performance.now() < until)
+                    ;
+                (window as unknown as {
+                    __incomingStalled?: boolean;
+                }).__incomingStalled = true;
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }, INCOMING_STALL_MS);
+        const before = await startRecording(page, false);
+        await pick(page, "territories");
+        const run = await morphDone(page, before);
+        const frames = await stopRecording(page);
+        expect(await page.evaluate(() => (window as unknown as {
+            __incomingStalled?: boolean;
+        }).__incomingStalled)).toBe(true);
+        expect(run.mode).toBe("ghost");
+        const steps: string[] = [];
+        for (let i = 1; i < frames.length; i += 1) {
+            const [a, b] = [frames[i - 1]!, frames[i]!];
+            if (a.opacity === null)
+                continue;
+            const interval = a.at !== null && b.at !== null ? b.at - a.at : b.wall - a.wall;
+            if (interval <= 0)
+                continue;
+            const drop = ((a.opacity - (b.opacity ?? 0)) * 16.7) / interval;
+            if (drop > FADE_STEP_CEILING)
+                steps.push(`${Math.round(interval)} ms: ${a.opacity.toFixed(2)} → ${(b.opacity ?? 0).toFixed(2)}`);
+        }
+        expect(steps, "the fade jumped after the stall").toEqual([]);
+    });
+    test("reduced motion crossfades every pick on the fast clock and moves nothing", async ({ page }) => {
+        test.setTimeout(180000);
+        await openAt(page, "flat", true);
+        for (const view of ["territories", "hex", "strata", "coupling", "flat"] as const) {
+            const before = await startRecording(page, false);
+            await pick(page, view);
+            const run = await morphDone(page, before);
+            await settled(page, view);
+            const frames = await stopRecording(page);
+            expect(run.mode, `the pick of ${view}`).toBe("fade");
+            expect(frames.filter((f) => f.ghosts > 0), `ghosts moved on the way to ${view}`).toEqual([]);
+            const fadeMs = MOTION.fast.duration * 1000;
+            const fadeSteps = frames.filter((f) => f.phase === "fade" && f.at !== null).map((f) => f.at! - run.fadeStartMs!);
+            expect(run.doneMs! - run.fadeStartMs!, `the fade into ${view} ended before --motion-fast`).toBeGreaterThanOrEqual(fadeMs);
+            expect(Math.max(0, ...fadeSteps), `the fade into ${view} was still running after --motion-fast`).toBeLessThan(fadeMs);
+        }
+    });
+    test("a view change no pick asked for cuts without publishing a snapshot", async ({ page }) => {
+        await openAt(page, "flat");
+        const counts = await page.evaluate(() => {
+            const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+            return { publishes: probe.publishes(), records: probe.records().length };
+        });
         await page.evaluate(() => {
-          Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
-          document.dispatchEvent(new Event("visibilitychange"));
+            window.localStorage.setItem("atlas.appearance.territories", "on");
+            window.dispatchEvent(new StorageEvent("storage", { key: "atlas.appearance.territories", newValue: "on" }));
         });
-      } else {
-        await cdp!.send("Emulation.setDeviceMetricsOverride", { width: 1400, height: 860, deviceScaleFactor: 3, mobile: false });
-      }
-      const run = await morphDone(page, before);
-      await stopRecording(page);
-      expect(run.settledBy).toBe(cause);
-      expect(run.travelEndMs! - run.travelStartMs).toBeLessThan(run.plannedMs);
+        await expect(page.getByTestId("territories-map")).toBeVisible();
+        await waitForTerritoriesStill(page);
+        const after = await page.evaluate(() => {
+            const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+            return { publishes: probe.publishes(), records: probe.records().length };
+        });
+        expect(after).toEqual(counts);
+        await expect(page.getByTestId("map-layout-morph")).toHaveCount(0);
     });
-  }
-
-  test("a pick in flight turns the concepts around from where they are", async ({ page }) => {
-    await openAt(page, "flat");
-    const before = await startRecording(page, false, true);
-    await page.getByTestId("topology-view-3d").click();
-    await waitForAnimationsDone(page.getByTestId("topology-view-3d-menu"));
-    await page.keyboard.press("ArrowDown");
-    await page.waitForFunction(
-      (leftMs) => {
-        const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
-        return live?.phase === "travel" && live.elapsedMs > leftMs;
-      },
-      TURN_AFTER_MS,
-      { polling: "raf" },
-    );
-    const outbound = await page.evaluate(() => {
-      const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
-      const at = (ms: number) => Object.fromEntries(probe.marks(ms).map((m) => [m.id, [m.x, m.y] as [number, number]]));
-      return { from: at(0), to: at(probe.live()!.durationMs) };
+    for (const cause of ["pointerdown", "resize", "hidden", "dpr"] as const) {
+        test(`${cause} mid-travel settles the concepts at once`, async ({ page }) => {
+            await openAt(page, "flat");
+            const cdp = cause === "dpr" ? await page.context().newCDPSession(page) : null;
+            const before = await startRecording(page, false);
+            await pick(page, "hex");
+            await inTravel(page);
+            if (cause === "pointerdown") {
+                const box = (await page.getByTestId("topology-map-surface").boundingBox())!;
+                await page.mouse.move(box.x + box.width / 2, box.y + box.height - 40);
+                await page.mouse.down();
+                await page.mouse.up();
+            }
+            else if (cause === "resize") {
+                await page.setViewportSize({ width: 1320, height: 860 });
+            }
+            else if (cause === "hidden") {
+                await page.evaluate(() => {
+                    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+                    document.dispatchEvent(new Event("visibilitychange"));
+                });
+            }
+            else {
+                await cdp!.send("Emulation.setDeviceMetricsOverride", { width: 1400, height: 860, deviceScaleFactor: 3, mobile: false });
+            }
+            const run = await morphDone(page, before);
+            await stopRecording(page);
+            expect(run.settledBy).toBe(cause);
+            expect(run.travelEndMs! - run.travelStartMs).toBeLessThan(run.plannedMs);
+        });
+    }
+    test("a pick in flight turns the concepts around from where they are", async ({ page }) => {
+        await openAt(page, "flat");
+        const before = await startRecording(page, false, true);
+        await page.getByTestId("topology-view-3d").click();
+        await waitForAnimationsDone(page.getByTestId("topology-view-3d-menu"));
+        await page.keyboard.press("ArrowDown");
+        await page.waitForFunction((leftMs) => {
+            const live = (window as unknown as SamplerWindow).__atlasMapMorph?.live();
+            return live?.phase === "travel" && live.elapsedMs > leftMs;
+        }, TURN_AFTER_MS, { polling: "raf" });
+        const outbound = await page.evaluate(() => {
+            const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
+            const at = (ms: number) => Object.fromEntries(probe.marks(ms).map((m) => [m.id, [m.x, m.y] as [
+                    number,
+                    number
+                ]]));
+            return { from: at(0), to: at(probe.live()!.durationMs) };
+        });
+        await page.keyboard.press("ArrowDown");
+        await page.waitForFunction((count) => ((window as unknown as SamplerWindow).__atlasMapMorph?.records().length ?? 0) >= count + 2, before, { polling: "raf" });
+        const restart = await page.evaluate(() => Object.fromEntries((window as unknown as SamplerWindow).__atlasMapMorph!.marks(0).map((m) => [m.id, [m.x, m.y] as [
+                number,
+                number
+            ]])));
+        await morphDone(page, before + 1);
+        const frames = await stopRecording(page);
+        const withVelocity = frames.filter((f) => f.velocity !== null);
+        const turn = withVelocity.findIndex((f) => f.lifted === true);
+        expect(turn, "the second travel never started lifted").toBeGreaterThan(0);
+        const [last, next] = [withVelocity[turn - 1]!, withVelocity[turn]!];
+        const dt = (next.at! - last.at!) / 1000;
+        const kinked = Object.keys(last.velocity!).filter((id) => {
+            const [a, b] = [last.velocity![id]!, next.velocity![id]];
+            const speed = Math.hypot(a.vx, a.vy);
+            if (!b || speed < 200)
+                return false;
+            return Math.hypot(b.vx - a.vx, b.vy - a.vy) > 0.25 * speed + SPRING.canvas.stiffness * TURN_REACH_PX * dt;
+        });
+        expect(Object.keys(last.velocity!).length).toBeGreaterThan(0);
+        expect(kinked, "concepts lost their velocity at the turn").toEqual([]);
+        const far = Object.keys(restart).filter((id) => {
+            const [from, to] = [outbound.from[id], outbound.to[id]];
+            return from && to && Math.hypot(to[0] - from[0], to[1] - from[1]) > 50;
+        });
+        expect(far.length).toBeGreaterThan(0);
+        const gap = (id: string, point: [
+            number,
+            number
+        ]) => Math.hypot(restart[id]![0] - point[0], restart[id]![1] - point[1]);
+        expect(far.filter((id) => gap(id, outbound.from[id]!) < 5), "concepts restarted from where the first travel began").toEqual([]);
+        expect(far.filter((id) => gap(id, outbound.to[id]!) >= 5).length, "the first travel snapped to its end before turning").toBeGreaterThan(0);
     });
-    await page.keyboard.press("ArrowDown");
-    await page.waitForFunction(
-      (count) => ((window as unknown as SamplerWindow).__atlasMapMorph?.records().length ?? 0) >= count + 2,
-      before,
-      { polling: "raf" },
-    );
-    const restart = await page.evaluate(() =>
-      Object.fromEntries((window as unknown as SamplerWindow).__atlasMapMorph!.marks(0).map((m) => [m.id, [m.x, m.y] as [number, number]])),
-    );
-    await morphDone(page, before + 1);
-    const frames = await stopRecording(page);
-    const withVelocity = frames.filter((f) => f.velocity !== null);
-    const turn = withVelocity.findIndex((f) => f.lifted === true);
-    expect(turn, "the second travel never started lifted").toBeGreaterThan(0);
-    const [last, next] = [withVelocity[turn - 1]!, withVelocity[turn]!];
-    const dt = (next.at! - last.at!) / 1000;
-    const kinked = Object.keys(last.velocity!).filter((id) => {
-      const [a, b] = [last.velocity![id]!, next.velocity![id]];
-      const speed = Math.hypot(a.vx, a.vy);
-      if (!b || speed < 200) return false;
-      return Math.hypot(b.vx - a.vx, b.vy - a.vy) > 0.25 * speed + SPRING.canvas.stiffness * TURN_REACH_PX * dt;
+    test("leaving the map mid-travel frees the overlay and returns to a drawn map", async ({ page }) => {
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        await openAt(page, "flat");
+        await pick(page, "hex");
+        await inTravel(page);
+        await page.getByTestId("app-nav-rail").getByTestId("app-nav-rail-item-library").click();
+        await expect(page).toHaveURL(/\/library/);
+        await expect(page.getByTestId("map-layout-morph")).toHaveCount(0);
+        await page.goBack();
+        await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
+        expect(errors).toEqual([]);
     });
-    expect(Object.keys(last.velocity!).length).toBeGreaterThan(0);
-    expect(kinked, "concepts lost their velocity at the turn").toEqual([]);
-    const far = Object.keys(restart).filter((id) => {
-      const [from, to] = [outbound.from[id], outbound.to[id]];
-      return from && to && Math.hypot(to[0] - from[0], to[1] - from[1]) > 50;
-    });
-    expect(far.length).toBeGreaterThan(0);
-    const gap = (id: string, point: [number, number]) => Math.hypot(restart[id]![0] - point[0], restart[id]![1] - point[1]);
-    expect(far.filter((id) => gap(id, outbound.from[id]!) < 5), "concepts restarted from where the first travel began").toEqual([]);
-    expect(far.filter((id) => gap(id, outbound.to[id]!) >= 5).length, "the first travel snapped to its end before turning").toBeGreaterThan(0);
-  });
-
-  test("leaving the map mid-travel frees the overlay and returns to a drawn map", async ({ page }) => {
-    const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await openAt(page, "flat");
-    await pick(page, "hex");
-    await inTravel(page);
-    await page.getByTestId("app-nav-rail").getByTestId("app-nav-rail-item-library").click();
-    await expect(page).toHaveURL(/\/library/);
-    await expect(page.getByTestId("map-layout-morph")).toHaveCount(0);
-    await page.goBack();
-    await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
-    expect(errors).toEqual([]);
-  });
 });

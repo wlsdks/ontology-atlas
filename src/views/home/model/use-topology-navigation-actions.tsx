@@ -23,7 +23,7 @@ interface Options {
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "beginExpandedIndexSelection">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "projectBySlug">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setHoverEdge" | "setMeaningEditorState" | "setSelectedEdge">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "galaxy" | "view3d">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "structure" | "view3d">;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
     | "interactionSelectedSlugRef"
@@ -39,7 +39,7 @@ export function useTopologyNavigationActions({
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
   const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed } = topologyCanvasFocus;
-  const { galaxy, view3d } = topologyPreferences;
+  const { structure, view3d } = topologyPreferences;
   const { setHoverEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { projectBySlug } = topologyGraphProjection;
   const { beginExpandedIndexSelection } = topologyIndexPresentation;
@@ -62,8 +62,7 @@ export function useTopologyNavigationActions({
     ) => {
       // Selection resolves against `ontologyInsight`.
       interactionSelectedSlugRef.current = slug;
-      // Galaxy is a chosen overview, so selecting a star keeps it; Flat keeps select = collapse.
-      if (!galaxy) setExpandAllActive(false);
+      if (!structure) setExpandAllActive(false);
       setHoverEdge(null);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
@@ -80,7 +79,7 @@ export function useTopologyNavigationActions({
       // survives the transition.
       if (options?.keepIndexOpen) beginExpandedIndexSelection();
     },
-    [interactionSelectedSlugRef, galaxy, setExpandAllActive, setHoverEdge, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed, projectBySlug, setRouteState, beginExpandedIndexSelection],
+    [interactionSelectedSlugRef, structure, setExpandAllActive, setHoverEdge, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed, projectBySlug, setRouteState, beginExpandedIndexSelection],
   );
 
   const handleAcpMapIntent = useAcpMapIntent({

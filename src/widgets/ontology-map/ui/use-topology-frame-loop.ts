@@ -86,16 +86,16 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const lightActiveRef = { current: false };
     const runFrameGate = createFrameGate({ ...configuration.frameGate, lightActiveRef });
 
-    const nodeLayerRef: { current: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null } = { current: null };
+    const nodeLayerRef: { current: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
+        } = { current: null };
     const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame, nodeLayerRef });
     const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame });
 
-    const { galaxyRef, view3dRef, galaxyRampRef, trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
+    const { view3dRef, trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
     const { animatedBgRef, tourAnchorNodeIdRef } = configuration.presentationFrameStage;
     const flatAndPlain = () =>
-      !galaxyRef.current &&
-      !view3dRef.current &&
-      galaxyRampRef.current <= 0.001 &&
+      !view3dRef.current
+            &&
       neuralRampRef.current <= 0.001 &&
       (domeRuntimeRef.current?.rampClock ?? 0) <= 0 &&
       animatedBgRef.current === null &&
@@ -134,8 +134,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         height,
         effectiveExpanded,
         frameClusteredIds,
-        frameChips,
-      );
+        frameChips);
       frameClusteredIds = realmFrame.frameClusteredIds;
       frameChips = realmFrame.frameChips;
       const {
@@ -154,8 +153,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         effectiveExpanded,
         frameClusteredIds,
         frameChips,
-        batchAppearVisible,
-      );
+        batchAppearVisible);
       light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
       runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds);
       light.afterPaint();

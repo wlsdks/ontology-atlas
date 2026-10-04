@@ -6,10 +6,8 @@
  * — never per animation frame, matching the prototype's "layout precomputed
  * once" invariant (`model/layout.ts`'s own contract).
  */
-
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
-import { starMagnitude } from "../model/galaxy";
 import { computeDensityGate, type DensityGateParentGeometry } from "../model/density-gate";
 import {
   readContainmentTree,
@@ -79,14 +77,7 @@ export interface WorldNode {
    * pre-attentive, the badge is for reading.
    */
   magnitudeScale: number;
-  /**
-   * 0–1 star magnitude, from `size + fullDegree * 18` normalised across the graph.
-   *
-   * The same expression `brightStarIds` is ranked by, kept per node instead of thresholded, so
-   * the galaxy's brightness is the continuous form of a fact this map already had rather than a
-   * new one invented for it (`model/galaxy.ts`).
-   */
-  starMagnitude: number;
+    
 }
 
 export interface WorldEdge {
@@ -134,8 +125,7 @@ export function computeMagnitudeScale(
   kind: WorldNodeKind,
   childCount: number,
   maxChildCount: number,
-  k: number,
-): number {
+  k: number): number {
   if (kind !== "domain" && kind !== "capability") return 1;
   if (maxChildCount <= 0 || childCount <= 0 || k <= 0) return 1;
   const raw = 1 + (k * (Math.sqrt(childCount) - 1)) / Math.sqrt(maxChildCount);
@@ -205,11 +195,13 @@ export interface TopologyWorld {
   dialScaleMax?: number | null;
 }
 
-type DialBearing = { dial?: DialWorld | null };
+type DialBearing = { dial?: DialWorld | null;
+};
 
 const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
 
-export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number } | undefined {
+export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number;
+} | undefined {
   return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR } : undefined;
 }
 
@@ -257,8 +249,7 @@ export function isSpineNode(node: Pick<WorldNode, "kind" | "isHub">): boolean {
 function accumulateBounds(
   nodes: readonly WorldNode[],
   tokens: OntologyMapTokens,
-  include?: (node: WorldNode) => boolean,
-): Bounds | null {
+  include?: (node: WorldNode) => boolean): Bounds | null {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -300,8 +291,7 @@ export function computeSpineBounds(nodes: readonly WorldNode[], tokens: Ontology
  */
 export function computeFoldedIds(
   world: Pick<TopologyWorld, "childrenByParent" | "nodeById"> & DialBearing,
-  expandedParents: ReadonlySet<string>,
-): ReadonlySet<string> {
+  expandedParents: ReadonlySet<string>): ReadonlySet<string> {
   if (world.dial) return EMPTY_EXPANDED_PARENTS;
   return computeDensityGate({
     childrenByParent: world.childrenByParent,
@@ -330,8 +320,7 @@ export function computeDrawnSpineBounds(
   world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
-  folded: ReadonlySet<string> = computeFoldedIds(world, expandedParents),
-): Bounds {
+  folded: ReadonlySet<string> = computeFoldedIds(world, expandedParents)): Bounds {
   if (world.dial) return extentBounds(world.dial);
   let bounds: Bounds | null = null;
   for (const node of world.nodeById.values()) {
@@ -361,8 +350,7 @@ export function computeRevealedBounds(
   world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
-  clustered: ReadonlySet<string> | null,
-): Bounds {
+  clustered: ReadonlySet<string> | null): Bounds {
   if (world.dial) return extentBounds(world.dial);
   const folded = computeFoldedIds(world, expandedParents);
   const bounds = computeDrawnSpineBounds(world, tokens, expandedParents, folded);
@@ -393,8 +381,7 @@ export function computePathPickBounds(
   tokens: OntologyMapTokens,
   sourceId: string,
   overview: Bounds,
-  expandedParents: ReadonlySet<string>,
-): Bounds {
+  expandedParents: ReadonlySet<string>): Bounds {
   const bounds = { ...overview };
   const source = world.nodeById.get(sourceId);
   if (!source) return bounds;
@@ -430,8 +417,7 @@ export function computeEgoBounds(
    * plus the neighbours **inside it** enter the bbox, so the focus dive moves only
    * within the warding circle. Omitted means global.
    */
-  restrictIds?: ReadonlySet<string> | null,
-): Bounds | null {
+  restrictIds?: ReadonlySet<string> | null): Bounds | null {
   const focusNode = world.nodeById.get(focusedSlug);
   if (!focusNode) return null;
   const egoIds = new Set<string>([focusedSlug]);
@@ -477,8 +463,7 @@ export function computeClusterDiscBounds(
    * bbox (the parent plus this batch's children). null or omitted means the parent
    * plus every direct child (zero regression).
    */
-  restrictIds?: ReadonlySet<string> | null,
-): Bounds | null {
+  restrictIds?: ReadonlySet<string> | null): Bounds | null {
   const parent = world.nodeById.get(parentId);
   if (!parent) return null;
   const ids = new Set<string>([parentId]);
@@ -552,8 +537,7 @@ export function buildTopologyWorld(
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
   dialInput: DialWorldInput | null = null,
-  placeDial: ((model: DialModel) => DialModel) | null = null,
-): TopologyWorld {
+  placeDial: ((model: DialModel) => DialModel) | null = null): TopologyWorld {
   /*
    * **A node is drawn under the last containment parent that keeps it in the domain the
    * spine put it in** (2026-09-21).
@@ -600,8 +584,7 @@ export function buildTopologyWorld(
     const lastParent = lastContainsParentById.get(childId) ?? firstParent;
     containsParentById.set(
       childId,
-      spineDomainOf(lastParent) === spineDomainOf(childId) ? lastParent : firstParent,
-    );
+      spineDomainOf(lastParent) === spineDomainOf(childId) ? lastParent : firstParent);
   }
 
   const layoutInput: LayoutGraphNode[] = nodes.map((n) => ({
@@ -615,7 +598,8 @@ export function buildTopologyWorld(
     element: tokens.layoutRingElement,
   };
   const dial = dialInput ? buildDialWorld(nodes, edges, dialInput, placeDial) : null;
-  const pointById = new Map<string, { x: number; y: number }>();
+  const pointById = new Map<string, { x: number; y: number;
+    }>();
   if (dial && nodes.every((n) => dial.scene.positions.has(n.id))) {
     for (const n of nodes) pointById.set(n.id, dial.scene.positions.get(n.id)!);
   } else {
@@ -739,8 +723,7 @@ export function buildTopologyWorld(
             { x: a.x, y: a.y },
             { x: b.x, y: b.y },
             tokens.edgeBowContains,
-            tokens.edgeBlendContains,
-          );
+            tokens.edgeBlendContains);
     worldEdges.push({
       id: edge.id,
       sourceId: a.id,
@@ -766,25 +749,15 @@ export function buildTopologyWorld(
   // magnitude = size + fullDegree*18, ported from the prototype's `count +
   // degree*18` — the adapter has no separate "count" field, `size` is its
   // closest analog (follow-up: confirm with the HomePage adapter contract).
-  const rawMagnitude = (n: { size: number; fullDegree: number }) => n.size + n.fullDegree * 18;
+  const rawMagnitude = (n: { size: number; fullDegree: number;
+    }) => n.size + n.fullDegree * 18;
   const ranked = [...nodes].sort((x, y) => rawMagnitude(y) - rawMagnitude(x));
   const brightStarIds = new Set(ranked.slice(0, Math.max(0, Math.round(tokens.starCount))).map((n) => n.id));
-  /*
-   * The same ranking, kept rather than thresholded. `brightStarIds` answers "which twelve wear a
-   * diffraction cross"; this answers "how bright is each of them", which is what a sky needs
-   * (`model/galaxy.ts`). Normalising against the brightest node rather than a constant keeps a
-   * small vault's own hub at full magnitude instead of leaving every star in it dim.
-   */
-  const brightestRaw = ranked.length > 0 ? rawMagnitude(ranked[0]!) : 0;
-  const rawById = new Map(nodes.map((n) => [n.id, rawMagnitude(n)]));
-  for (const node of worldNodes) {
-    node.starMagnitude = starMagnitude(rawById.get(node.id) ?? 0, 0, brightestRaw);
-  }
-
-  // Node → the index of the edges attached to it. Built once at build time, it makes
-  // the frame path that refreshes «only the moved nodes' edges» possible
-  // (`recomputeWorldGeometry`).
-  const edgeIndexByNode = new Map<string, number[]>();
+    
+    // Node → the index of the edges attached to it. Built once at build time, it makes
+    // the frame path that refreshes «only the moved nodes' edges» possible
+    // (`recomputeWorldGeometry`).
+    const edgeIndexByNode = new Map<string, number[]>();
   const indexEdge = (nodeId: string, edgeIndex: number) => {
     const list = edgeIndexByNode.get(nodeId);
     if (list) list.push(edgeIndex);
@@ -819,8 +792,7 @@ function buildDialWorld(
   nodes: readonly OntologyMapNode[],
   edges: readonly OntologyMapEdge[],
   input: DialWorldInput,
-  placeDial: ((model: DialModel) => DialModel) | null,
-): DialWorld | null {
+  placeDial: ((model: DialModel) => DialModel) | null): DialWorld | null {
   const treeNodes: TreeInputNode[] = [];
   for (const n of nodes) if (DIAL_KINDS.has(n.kind)) treeNodes.push({ id: n.id, label: n.label, kind: n.kind });
   if (!treeNodes.some((n) => n.kind === "domain")) return null;
@@ -842,7 +814,8 @@ function buildDialWorld(
  * Positions the sim didn't produce (non-finite, guarded out in
  * `force-layout.ts#positions`) leave the node's last-good coordinate intact.
  */
-export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number }>): void {
+export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number;
+}>): void {
   // **Iterate over what was given.** This used to walk all 3000 of the world's nodes
   // calling `positions.get`, while a throttled tick actually moved a few dozen of
   // them. With the map carrying only those few dozen
@@ -876,8 +849,7 @@ function recomputeEdgeGeometry(world: TopologyWorld, tokens: OntologyMapTokens, 
           { x: a.x, y: a.y },
           { x: b.x, y: b.y },
           tokens.edgeBowContains,
-          tokens.edgeBlendContains,
-        );
+          tokens.edgeBlendContains);
   edge.controlX = control.x;
   edge.controlY = control.y;
 }
@@ -935,8 +907,7 @@ function recomputeMovedGeometry(world: TopologyWorld, tokens: OntologyMapTokens,
 export function recomputeWorldGeometry(
   world: TopologyWorld,
   tokens: OntologyMapTokens,
-  movedIds?: ReadonlySet<string> | null,
-): void {
+  movedIds?: ReadonlySet<string> | null): void {
   if (movedIds) {
     // Past half moved, routing through the index costs more than it saves (map
     // lookups plus duplicate computation). Above that boundary the full path is

@@ -27,7 +27,7 @@ the shared mental model between the humans building Atlas and you.
   two agent surfaces: `capabilities/mcp-tool-server` (the JSON-RPC tool
   registry in `mcp/`) and `capabilities/cli-commands` (the local commands in
   `cli/`). `capabilities/saved-constellations` records the durable task scope
-  shared by Galaxy, Library, MCP, and CLI without making saved membership a
+  shared by Map, Library, MCP, and CLI without making saved membership a
   graph edge.
 - `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.

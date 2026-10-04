@@ -1,7 +1,0 @@
-{
-  "list": "地图上的领域及其能力",
-  "galaxyRow": "{name}，{count, plural, other {# 个}}概念",
-  "strandList": "领域之间的依赖关系",
-  "strandRow": "{from} 依赖 {to}，共 {count} 处依赖。",
-  "strandRowBoth": "{from} 与 {to} 相互依赖，共 {count} 处依赖。"
-}

@@ -27,7 +27,7 @@ export const CONDUCTION_CAST: readonly CastConcept[] = [
   cast('domain:meaning-layer', PROJECT),
   cast('domain:code-evidence', PROJECT),
   cast('domain:agent-access', PROJECT),
-  cast('capability:ontology-map', 'domain:human-workbench', 'src/widgets/ontology-map/ui/OntologyMap.tsx'),
+  cast('capability:ontology-map', 'domain:human-workbench', 'src/views/home/ui/TopologyMapRenderer.tsx'),
   cast('capability:meaning-write-review', 'domain:human-workbench', 'src/features/ontology-change-review/index.ts'),
   cast('capability:meaning-write-safety', 'domain:meaning-layer', 'mcp/src/write-consent.mjs'),
   cast('capability:construction-guidance', 'domain:meaning-layer', 'mcp/src/construction-rules.mjs'),

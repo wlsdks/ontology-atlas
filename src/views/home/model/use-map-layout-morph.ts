@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 import { disarmMapLayoutMorph, isMapLayoutMorphArmed, type MapLayoutView } from "@/shared/lib/map-layout-morph-store";
 import { chooseLayoutSwitch, installMapLayoutMorphProbe, type MapLayoutMorphJob } from "@/widgets/ontology-map";
 
-type MapSurfaceView = "map" | "territories" | "hex" | "galaxy";
+type MapSurfaceView = "map" | "territories" | "hex" | "structure";
 
-const surfaceOf = (view: MapLayoutView): MapSurfaceView => (view === "territories" || view === "hex" || view === "galaxy" ? view : "map");
+const surfaceOf = (view: MapLayoutView): MapSurfaceView => (view === "territories" || view === "hex" || view === "structure" ? view : "map");
 
 interface MorphTransition {
   id: number;

@@ -39,8 +39,8 @@ export function useTopologySurfaceState() {
 
   const dustPointsRef = useRef<DustPoint[]>([]);
 
-  /** Cosmos dots inside the warding ring while a realm is active — built once per viewport, refreshed on resize. */
-  const cosmosPointsRef = useRef<DustPoint[]>([]);
+  
+  const realmStarPointsRef = useRef<DustPoint[]>([]);
 
   const gridPatternRef = useRef<CanvasPattern | null>(null);
 
@@ -62,7 +62,7 @@ export function useTopologySurfaceState() {
   return {
     canvasRef, containerRef, gridCanvasRef, viewportRef, pendingViewportRef, viewportRebuildPendingRef,
     appliedDprScaleRef, viewportSettleFramesRef, commitViewportSizeRef, rebuildViewportLayersRef,
-    dustPointsRef, cosmosPointsRef, gridPatternRef, animatedBgRef, bgPointerRef, depthDotPatternsRef,
+    dustPointsRef, realmStarPointsRef, gridPatternRef, animatedBgRef, bgPointerRef, depthDotPatternsRef,
     depthDotCanvasRef,
   };
 }

@@ -379,6 +379,22 @@
   /* S7 "Area Chief" left panel crossfade — short fade-in (<200ms) of the incoming surface
      when switching between global INDEX ↔ Area Chief. Since both surfaces occupy the same box,
      the fade-in reads as a crossfade. prefers-reduced-motion is automatically neutralized by the global rule in the base layer below (animation-duration 0.01ms) → immediate swap. */
+  @keyframes structureLinkIn {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+  .structure-link-in {
+    stroke-dasharray: 1;
+    animation: structureLinkIn var(--motion-base) var(--motion-ease) both;
+  }
+  @keyframes structureItemIn {
+    from { opacity: 0; transform: translateY(var(--overlay-enter-translate)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .structure-item-in {
+    animation: structureItemIn var(--motion-base) var(--motion-ease) var(--structure-item-delay, 0s) both;
+  }
+
   @keyframes panelCrossfadeIn {
     from {
       opacity: 0;

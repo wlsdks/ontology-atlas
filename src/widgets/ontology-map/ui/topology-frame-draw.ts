@@ -4,12 +4,9 @@
  * `render()` §13). Camera-space conversions live in `topology-camera-math.ts`
  * (this file only consumes `worldToScreen`, it doesn't own the convention).
  */
-
 import type { CameraAxes } from "../engine/camera";
 import { domeAncestryEdgeKey } from "../model/dome-ancestry";
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
-import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
-import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState, egoRestSink } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
@@ -106,11 +103,10 @@ import {
   type LabelCandidate,
   type ReservedBox,
   type SafeRect, floorFlipBaseline } from "../render/label-layout";
-import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
+import { draw as nodeShapesDraw, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
-import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
-import { drawGalaxyMeteor, drawGalaxyNebula } from "../render/galaxy-atmosphere";
+import { drawDiffractionSpike, drawRealmStars, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
 import {
@@ -214,7 +210,8 @@ const litSectorIdsReused = new Set<string>();
 const domeRingScreenReused: {
   kind: DomeViewKind;
   a: number;
-  points: { x: number; y: number; u: number }[];
+  points: { x: number; y: number; u: number;
+    }[];
 }[] = [];
 /**
  * perf 2026-08-19 — one `DomeNodeFrame` lookup per node per frame.
@@ -259,8 +256,10 @@ const lodDust = createStrataLodDust();
 const lodChords = createStrataLodChords();
 const lodChordPool: StrataLodChordDraw[] = [];
 const lodHoverEgoReused = new Set<string>();
-let lodContainsInk: { hex: string; rgb: readonly [number, number, number] } | null = null;
-let lodDependsInk: { hex: string; rgb: readonly [number, number, number] } | null = null;
+let lodContainsInk: { hex: string; rgb: readonly [number, number, number];
+} | null = null;
+let lodDependsInk: { hex: string; rgb: readonly [number, number, number];
+} | null = null;
 /** The radius the node pass actually drew — reused each frame via `.clear()`. */
 const drawnScreenRadiusByIdReused = new Map<string, number>();
 const ambientDependsCometsReused = new Set<string>();
@@ -295,8 +294,10 @@ let sheenTopCacheBlend = -1;
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 /** Each edge's alpha by edge index, written once per frame; -1 marks an edge folded away. */
 const edgeAlphaByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
-const edgeEndsByWorld = new WeakMap<TopologyWorld, { source: Int32Array; target: Int32Array }>();
-function edgeEndsFor(world: TopologyWorld): { source: Int32Array; target: Int32Array } {
+const edgeEndsByWorld = new WeakMap<TopologyWorld, { source: Int32Array; target: Int32Array;
+}>();
+function edgeEndsFor(world: TopologyWorld): { source: Int32Array; target: Int32Array;
+} {
   const known = edgeEndsByWorld.get(world);
   if (known !== undefined && known.source.length === world.edges.length) return known;
   const indexOf = new Map<string, number>();
@@ -323,7 +324,8 @@ let effectiveAlphaByIndexReused = new Float64Array(0);
  */
 const nodeVisualCache: (NodeVisual | undefined)[] = new Array(16);
 /** Resting nodes share NodeVisual objects; tint each palette once, not once per node. */
-const neuralPaletteCache = new WeakMap<NodeVisual, { ramp: number; ink: string; fill: string; stroke: string }>();
+const neuralPaletteCache = new WeakMap<NodeVisual, { ramp: number; ink: string; fill: string; stroke: string;
+}>();
 let nodeVisualCacheTokens: OntologyMapTokens | null = null;
 let nodeVisualCacheReducedMotion: boolean | null = null;
 const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
@@ -394,7 +396,8 @@ const LIT_KIND_STRENGTH: Readonly<Record<DomeViewKind, number>> = {
 };
 
 /** The lit body per (fill, stroke, kind colour, state, quantised ramp) — strings built once. */
-const litBodyCache = new Map<string, { fill: string; stroke: string }>();
+const litBodyCache = new Map<string, { fill: string; stroke: string;
+}>();
 const WHITE_RGB = [255, 255, 255] as const;
 
 function litBodyInk(
@@ -402,31 +405,37 @@ function litBodyInk(
   stroke: string,
   rgb: readonly [number, number, number],
   state: "current" | "stale",
-  ramp: number,
-): { fill: string; stroke: string } {
+  ramp: number): {
+    fill: string;
+    stroke: string;
+} {
   const q = Math.round(Math.min(1, Math.max(0, ramp)) * 20) / 20;
   const key = `${fill}|${stroke}|${rgb[0]},${rgb[1]},${rgb[2]}|${state}|${q}`;
-  const hit = litBodyCache.get(key);
-  if (hit) return hit;
-  const base = hexToRgbOrNull(fill) ?? [20, 20, 26];
-  const rim = hexToRgbOrNull(stroke) ?? base;
-  // A current core is the kind colour lifted toward white — the emissive centre. A stale
-  // core stops a third of the way, which reads as light that is still there but weaker.
-  const core = state === "current" ? hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.18)) ?? rgb : rgb;
-  const t = (state === "current" ? 0.94 : 0.38) * q;
-  const out = {
-    fill: mixRgbHex(base, core, t),
-    stroke: mixRgbHex(rim, state === "current" ? (hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.35)) ?? rgb) : rgb, (state === "current" ? 0.9 : 0.5) * q),
-  };
-  if (litBodyCache.size > 512) litBodyCache.clear();
-  litBodyCache.set(key, out);
-  return out;
+    const hit = litBodyCache.get(key);
+    if (hit)
+        return hit;
+    const base = hexToRgbOrNull(fill) ?? [20, 20, 26];
+    const rim = hexToRgbOrNull(stroke) ?? base;
+    // A current core is the kind colour lifted toward white — the emissive centre. A stale
+    // core stops a third of the way, which reads as light that is still there but weaker.
+    const core = state === "current" ? hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.18)) ?? rgb : rgb;
+    const t = (state === "current" ? 0.94 : 0.38) * q;
+    const out = {
+        fill: mixRgbHex(base, core, t),
+        stroke: mixRgbHex(rim, state === "current" ? (hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.35)) ?? rgb) : rgb, (state === "current" ? 0.9 : 0.5) * q),
+    };
+    if (litBodyCache.size > 512)
+        litBodyCache.clear();
+    litBodyCache.set(key, out);
+    return out;
 }
-
-function hexToRgbOrNull(hex: string): readonly [number, number, number] | null {
-  return hexToRgb(hex);
+function hexToRgbOrNull(hex: string): readonly [
+    number,
+    number,
+    number
+] | null {
+    return hexToRgb(hex);
 }
-
 /**
  * The label boxes this frame actually **drew**, in CSS pixels.
  *
@@ -442,36 +451,45 @@ function hexToRgbOrNull(hex: string): readonly [number, number, number] | null {
  * presence ramp) can still put a candidate on screen. What matters for readability
  * is what was painted.
  */
-let drawnLabelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number }[] = [];
+let drawnLabelBoxes: {
+    nodeId: string;
+    text: string;
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+}[] = [];
 let drawnRelationCaptions: PlacedRelationCaption[] = [];
 let mapCometsOn = true;
 export function setMapComets(on: boolean): void {
-  mapCometsOn = on;
+    mapCometsOn = on;
 }
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 const edgeRestDimByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return drawnRelationCaptions; }
 let drawnSkyTimeMs = 0;
 export function lastDrawnSkyTimeMs(): number {
-  return drawnSkyTimeMs;
+    return drawnSkyTimeMs;
 }
-
 export function lastDrawnLabelBoxes(): readonly {
-  nodeId: string;
-  text: string;
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
+    nodeId: string;
+    text: string;
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
 }[] {
-  return drawnLabelBoxes;
+    return drawnLabelBoxes;
 }
 // Cluster-chip hover colour easing anchor: which chip has been hovered since
 // when (only one can be hovered at a time). The rest→hover colour transition
 // (~150ms) is driven from this start time. Under reduced-motion the colour snaps,
 // so the anchor goes unused.
 const CLUSTER_CHIP_HOVER_MS = 150;
-let clusterChipHoverAnim: { id: string; startAt: number } | null = null;
+let clusterChipHoverAnim: {
+    id: string;
+    startAt: number;
+} | null = null;
 // Label ids placed on the previous frame (hysteresis: within one priority band,
 // prefer what was placed last frame) plus the previous timestamp used to derive
 // dt for the presence ramp (`now` is monotonic). Module state — the same
@@ -483,26 +501,29 @@ let lastLabelRampNow = 0;
 // project (see `resolveNodeVisual` below), so its width is specified
 // independently of the other kinds' tier-neutral outlines.
 const LINE_WIDTH_BY_KIND: Record<WorldNode["kind"], number> = {
-  project: 1.5,
-  domain: 1.6,
-  capability: 1.3,
-  element: 1,
+    project: 1.5,
+    domain: 1.6,
+    capability: 1.3,
+    element: 1,
 };
-
 function tierFill(kind: WorldNode["kind"], tokens: OntologyMapTokens): string {
-  if (kind === "project") return tokens.nodeFillProject;
-  if (kind === "domain") return tokens.nodeFillDomain;
-  if (kind === "capability") return tokens.nodeFillCapability;
-  return tokens.nodeFillElement;
+    if (kind === "project")
+        return tokens.nodeFillProject;
+    if (kind === "domain")
+        return tokens.nodeFillDomain;
+    if (kind === "capability")
+        return tokens.nodeFillCapability;
+    return tokens.nodeFillElement;
 }
-
 function tierStroke(kind: WorldNode["kind"], tokens: OntologyMapTokens): string {
-  if (kind === "project") return tokens.nodeStrokeProject;
-  if (kind === "domain") return tokens.nodeStrokeDomain;
-  if (kind === "capability") return tokens.nodeStrokeCapability;
-  return tokens.nodeStrokeElement;
+    if (kind === "project")
+        return tokens.nodeStrokeProject;
+    if (kind === "domain")
+        return tokens.nodeStrokeDomain;
+    if (kind === "capability")
+        return tokens.nodeStrokeCapability;
+    return tokens.nodeStrokeElement;
 }
-
 // perf sweep 2026-07 — `id` never changes for a node's lifetime (graph
 // rebuild replaces the whole `TopologyWorld`, never mutates an id in place),
 // so the hash below is a pure function of a value that's constant across
@@ -511,26 +532,25 @@ function tierStroke(kind: WorldNode["kind"], tokens: OntologyMapTokens): string 
 // its own, but free (no invalidation to get wrong: a new id simply misses
 // once and gets cached).
 const phaseCache = new Map<string, number>();
-
 /** Deterministic per-node breathe-phase offset — a stable hash stands in for the prototype's seeded-RNG phase (layout has no PRNG in this contract, `model/layout.ts` JSDoc). */
 function phaseForId(id: string): number {
-  const cached = phaseCache.get(id);
-  if (cached !== undefined) return cached;
-  let hash = 0;
-  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  const phase = ((Math.abs(hash) % 1000) / 1000) * Math.PI * 2;
-  phaseCache.set(id, phase);
-  return phase;
+    const cached = phaseCache.get(id);
+    if (cached !== undefined)
+        return cached;
+    let hash = 0;
+    for (let i = 0; i < id.length; i += 1)
+        hash = (hash * 31 + id.charCodeAt(i)) | 0;
+    const phase = ((Math.abs(hash) % 1000) / 1000) * Math.PI * 2;
+    phaseCache.set(id, phase);
+    return phase;
 }
-
 interface NodeVisual {
-  fill: string;
-  stroke: string;
-  dash: readonly number[];
-  lineWidth: number;
-  breatheEnabled: boolean;
+    fill: string;
+    stroke: string;
+    dash: readonly number[];
+    lineWidth: number;
+    breatheEnabled: boolean;
 }
-
 /**
  * The one place the click-focus color signature lives. Instead of hard-
  * switching to the dim/ego palette the instant a focus commits, it computes
@@ -544,90 +564,87 @@ interface NodeVisual {
  * radius easing is in the draw loop. No new hue — every lerp target is an
  * existing token.
  */
-function resolveNodeVisual(
-  node: WorldNode,
-  colorEgoState: NodeEgoState,
-  emphasis: number,
-  colorFocusedNodeId: string | null,
-  isEmphasizedNeighbor: boolean,
-  tokens: OntologyMapTokens,
-  reducedMotion: boolean,
-  focusRamp: number,
-): NodeVisual {
-  const freshness = resolveFreshnessVisual({ fresh: node.fresh, stale: node.stale, hub: node.isHub }, reducedMotion);
-  const lineWidth = LINE_WIDTH_BY_KIND[node.kind];
-  const dash = freshness.dash;
-
-  // --- Normal (no-focus) target: the look a node holds when nothing is
-  // focused. Canvas-emphasis slice §A1 — project keeps its hardcoded amber
-  // outer stroke (design.md reserves amber for Layer-0 containers); its
-  // selection/neighbor emphasis lives in the ring overlays, never a body
-  // indigo lerp, so the amber identity is never muddied.
-  let normalFill: string;
-  let normalStroke: string;
-  let normalBreathe = freshness.breatheEnabled;
-  if (freshness.useStaleFillStroke) {
-    normalFill = tokens.nodeFillStale;
-    normalStroke = tokens.nodeStrokeStale;
-    normalBreathe = false;
-  } else if (node.kind === "project") {
-    normalFill = tierFill(node.kind, tokens);
-    normalStroke = tokens.amberHub;
-  } else {
-    normalFill = tierFill(node.kind, tokens);
-    let stroke = tierStroke(node.kind, tokens);
-    if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
-    // No-focus hover ripple — only when there is no focus classification at all
-    // (live or retained); focus owns emphasis otherwise.
-    if (!colorFocusedNodeId && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
-    normalStroke = stroke;
-  }
-
-  const ramp = Math.min(1, Math.max(0, focusRamp));
-  // Fast path: no focus intensity → byte-identical to the pre-ramp no-focus look.
-  if (ramp <= 0.001) {
-    return { fill: normalFill, stroke: normalStroke, dash, lineWidth, breatheEnabled: normalBreathe };
-  }
-
-  // --- Focused-state target: dim / neighbor / center, keyed on the (retained)
-  // color ego state so the target survives a deselect while the ramp decays.
-  let focusedFill: string;
-  let focusedStroke: string;
-  let focusedBreathe = normalBreathe;
-  if (colorEgoState === "dim") {
-    focusedFill = tokens.nodeFillDim;
-    focusedStroke = tokens.nodeStrokeDim;
-    focusedBreathe = false;
-  } else if (freshness.useStaleFillStroke) {
-    focusedFill = tokens.nodeFillStale;
-    focusedStroke = tokens.nodeStrokeStale;
-    focusedBreathe = false;
-  } else if (node.kind === "project") {
-    focusedFill = tierFill(node.kind, tokens);
-    focusedStroke = tokens.amberHub;
-  } else {
-    focusedFill = tierFill(node.kind, tokens);
-    let stroke = tierStroke(node.kind, tokens);
-    if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
-    if (colorEgoState === "neighbor") stroke = lerpColorHex(stroke, tokens.indigo, 0.5);
-    // Panel-linked ripple: the hovered detail-row's neighbor pushes past the
-    // flat 0.5 neighbor tint toward the brightest indigo, tracking its emphasis.
-    if (isEmphasizedNeighbor && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigoBright, Math.min(1, emphasis));
-    if (colorEgoState === "center") stroke = tokens.indigoBright;
-    focusedStroke = stroke;
-  }
-
-  return {
-    fill: lerpColorHex(normalFill, focusedFill, ramp),
-    stroke: lerpColorHex(normalStroke, focusedStroke, ramp),
-    dash,
-    lineWidth,
-    // dash/breathe can't tween — they cross over once the ramp is mostly to the
-    // focused side (a dimmed node stops breathing, etc.).
-    breatheEnabled: ramp > 0.5 ? focusedBreathe : normalBreathe,
-  };
+function resolveNodeVisual(node: WorldNode, colorEgoState: NodeEgoState, emphasis: number, colorFocusedNodeId: string | null, isEmphasizedNeighbor: boolean, tokens: OntologyMapTokens, reducedMotion: boolean, focusRamp: number): NodeVisual {
+    const freshness = resolveFreshnessVisual({ fresh: node.fresh, stale: node.stale, hub: node.isHub }, reducedMotion);
+    const lineWidth = LINE_WIDTH_BY_KIND[node.kind];
+    const dash = freshness.dash;
+    // --- Normal (no-focus) target: the look a node holds when nothing is
+    // focused. Canvas-emphasis slice §A1 — project keeps its hardcoded amber
+    // outer stroke (design.md reserves amber for Layer-0 containers); its
+    // selection/neighbor emphasis lives in the ring overlays, never a body
+    // indigo lerp, so the amber identity is never muddied.
+    let normalFill: string;
+    let normalStroke: string;
+    let normalBreathe = freshness.breatheEnabled;
+    if (freshness.useStaleFillStroke) {
+        normalFill = tokens.nodeFillStale;
+        normalStroke = tokens.nodeStrokeStale;
+        normalBreathe = false;
+    }
+    else if (node.kind === "project") {
+        normalFill = tierFill(node.kind, tokens);
+        normalStroke = tokens.amberHub;
+    }
+    else {
+        normalFill = tierFill(node.kind, tokens);
+        let stroke = tierStroke(node.kind, tokens);
+        if (freshness.strokeIndigoLerp > 0)
+            stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
+        // No-focus hover ripple — only when there is no focus classification at all
+        // (live or retained); focus owns emphasis otherwise.
+        if (!colorFocusedNodeId && emphasis > 0.02)
+            stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
+        normalStroke = stroke;
+    }
+    const ramp = Math.min(1, Math.max(0, focusRamp));
+    // Fast path: no focus intensity → byte-identical to the pre-ramp no-focus look.
+    if (ramp <= 0.001) {
+        return { fill: normalFill, stroke: normalStroke, dash, lineWidth, breatheEnabled: normalBreathe };
+    }
+    // --- Focused-state target: dim / neighbor / center, keyed on the (retained)
+    // color ego state so the target survives a deselect while the ramp decays.
+    let focusedFill: string;
+    let focusedStroke: string;
+    let focusedBreathe = normalBreathe;
+    if (colorEgoState === "dim") {
+        focusedFill = tokens.nodeFillDim;
+        focusedStroke = tokens.nodeStrokeDim;
+        focusedBreathe = false;
+    }
+    else if (freshness.useStaleFillStroke) {
+        focusedFill = tokens.nodeFillStale;
+        focusedStroke = tokens.nodeStrokeStale;
+        focusedBreathe = false;
+    }
+    else if (node.kind === "project") {
+        focusedFill = tierFill(node.kind, tokens);
+        focusedStroke = tokens.amberHub;
+    }
+    else {
+        focusedFill = tierFill(node.kind, tokens);
+        let stroke = tierStroke(node.kind, tokens);
+        if (freshness.strokeIndigoLerp > 0)
+            stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
+        if (colorEgoState === "neighbor")
+            stroke = lerpColorHex(stroke, tokens.indigo, 0.5);
+        // Panel-linked ripple: the hovered detail-row's neighbor pushes past the
+        // flat 0.5 neighbor tint toward the brightest indigo, tracking its emphasis.
+        if (isEmphasizedNeighbor && emphasis > 0.02)
+            stroke = lerpColorHex(stroke, tokens.indigoBright, Math.min(1, emphasis));
+        if (colorEgoState === "center")
+            stroke = tokens.indigoBright;
+        focusedStroke = stroke;
+    }
+    return {
+        fill: lerpColorHex(normalFill, focusedFill, ramp),
+        stroke: lerpColorHex(normalStroke, focusedStroke, ramp),
+        dash,
+        lineWidth,
+        // dash/breathe can't tween — they cross over once the ramp is mostly to the
+        // focused side (a dimmed node stops breathing, etc.).
+        breatheEnabled: ramp > 0.5 ? focusedBreathe : normalBreathe,
+    };
 }
-
 /**
  * How long the trail light takes to travel one relation.
  *
@@ -637,7 +654,6 @@ function resolveNodeVisual(
  * trying to read the path.
  */
 const TRAIL_GLINT_PERIOD_MS = 4000;
-
 /**
  * How far the bloom swells at the peak of its ignition, as a fraction of its reach.
  *
@@ -657,7 +673,6 @@ const TRAIL_STAR_SWELL = 0.7;
  */
 const TRAIL_IGNITE_MS = 360;
 const TRAIL_IGNITE_SPAN_MS = 900;
-
 /**
  * When the star at step `n` of an `total`-stop walk starts coming up, in ms after the lens
  * opened.
@@ -678,10 +693,9 @@ const TRAIL_IGNITE_SPAN_MS = 900;
  * grow into a wait.
  */
 function trailIgniteStartMs(step: number, total: number): number {
-  const stride = (TRAIL_IGNITE_SPAN_MS - TRAIL_IGNITE_MS) / Math.max(1, total - 1);
-  return Math.max(0, step - 1) * stride;
+    const stride = (TRAIL_IGNITE_SPAN_MS - TRAIL_IGNITE_MS) / Math.max(1, total - 1);
+    return Math.max(0, step - 1) * stride;
 }
-
 /**
  * The ignition curve — a star coming out of the dark, not a value going from 0 to 1.
  *
@@ -691,10 +705,9 @@ function trailIgniteStartMs(step: number, total: number): number {
  * appeared" and "something lit" is which of the two curves the alpha rode.
  */
 function igniteCurve(t: number): number {
-  const u = t < 0 ? 0 : t > 1 ? 1 : t;
-  return u * u * (3 - 2 * u);
+    const u = t < 0 ? 0 : t > 1 ? 1 : t;
+    return u * u * (3 - 2 * u);
 }
-
 /**
  * The star's own core, which lights faster than it settles.
  *
@@ -705,11 +718,10 @@ function igniteCurve(t: number): number {
  * The bloom keeps the smoothstep, so the core arrives ahead of the light it throws.
  */
 function starAttackCurve(t: number): number {
-  const u = t < 0 ? 0 : t > 1 ? 1 : t;
-  const inv = 1 - u;
-  return 1 - inv * inv * inv;
+    const u = t < 0 ? 0 : t > 1 ? 1 : t;
+    const inv = 1 - u;
+    return 1 - inv * inv * inv;
 }
-
 /**
  * The swell — how far the bloom reaches, over the star's rise.
  *
@@ -720,10 +732,9 @@ function starAttackCurve(t: number): number {
  * light *after* it lights (design-motion, 2026-09-10).
  */
 function starSwellCurve(t: number): number {
-  const u = t < 0 ? 0 : t > 1 ? 1 : t;
-  return Math.sin(Math.PI * Math.pow(u, TRAIL_SWELL_PHASE_EXP));
+    const u = t < 0 ? 0 : t > 1 ? 1 : t;
+    return Math.sin(Math.PI * Math.pow(u, TRAIL_SWELL_PHASE_EXP));
 }
-
 /** `0.72 ** e = 0.5` — the exponent that puts the half-sine's peak at 0.72 of the rise. */
 const TRAIL_SWELL_PHASE_EXP = 2.11;
 /**
@@ -764,994 +775,839 @@ const TRAIL_STAR_TWINKLE_SPREAD_MS = 1400;
 /** The walked line's halo — a wider copy of the curve laid under the ink, in star ink. */
 const TRAIL_HALO_PX = 3.2;
 const TRAIL_HALO_ALPHA = 0.3;
-
 export interface FrameDrawParams {
-  ctx: CanvasRenderingContext2D;
-  world: TopologyWorld;
-  camera: CameraAxes;
-  /** Visual-expression axis (constellation ↔ circuit) — node/edge/label morph, diffraction, vignette. */
-  farT: number;
-  /**
-   * Calm atmosphere/background ramp, 0 (flat) to 1 (sky). Node identity is
-   * separate so a selected Galaxy frame never exposes a moving Flat outline.
-   */
-  galaxyRamp?: number;
-  /**
-   * The chosen mode's optical identity. It changes with the mode selection,
-   * while `galaxyRamp` is reserved for the calm background/exit crossfade.
-   */
-  galaxyIdentityActive?: boolean;
-  /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
-  galaxyElapsedMs?: number;
-  galaxyAtmosphereLagMs?: number;
-  galaxyAtmosphereLive?: number;
-  galaxyMeteorQuietUntilMs?: number;
-  /** One entry-scoped seed; meteor paths remain stable throughout each apparition. */
-  galaxyAtmosphereSeed?: number;
-  /** Shared world radius of the real-node spiral; aligns the cached sky texture. */
-  galaxyLayoutRadius?: number;
-  /** Coupling view material: lit cell bodies and softly tapered connections. */
-  neuralRamp?: number;
-  /** Semantic-zoom axis (`cameraScale / overviewEntryScale`) — drives tier visibility only. */
-  zoomRatio: number;
-  now: number;
-  viewportWidth: number;
-  viewportHeight: number;
-  /**
-   * What a panel actually covers on each side, in CSS px, measured rather than
-   * assumed. `safeInsetLeft`/`safeInsetRight` are static tokens, so the label
-   * cull believed the right edge was 120 px away while the open inspector was
-   * 352 px wide from x=1128: measured at 1512x982 on the sample folder, two of
-   * five selections painted a concept's name underneath that panel, where it
-   * cannot be read and where it still spent one of the limited label slots.
-   * The camera has taken the larger of token and measurement since 2026-08-10
-   * (`use-topology-loop.ts#cameraTokens`); this gives the names the same truth.
-   *
-   * Left and right only, for the reason that note gives: the top inset is the
-   * tool lane and the bottom one is a label reservation, and both are layout
-   * promises rather than something covering the canvas.
-   */
-  panelInsets?: { left: number; right: number } | null;
-  /**
-   * The ratio `ctx` is transformed by, so a length in CSS px can be converted to
-   * device pixels. Only the 3D resting relation line's width floor reads it
-   * (`domeEdgeMinWidthPx`); everything else on this canvas is a CSS quantity by
-   * design. Defaults to 1 — the value a caller that never scales the context has.
-   */
-  devicePixelRatio?: number;
-  gridPattern: CanvasPattern | null;
-  dustPoints: readonly DustPoint[];
-  tokens: OntologyMapTokens;
-  focusedNodeId: string | null;
-  hoveredNodeId: string | null;
-  /**
-   * The node the press just left, or null. Its swell keeps the press's radius
-   * coefficient while its emphasis decays, so a hover-out eases out instead of
-   * stepping down by half the bump in one frame (design council, 2026-09-08).
-   */
-  hoverReleasedNodeId?: string | null;
-  /**
-   * Press (2026-09-08, direction B): the ms clock at which the current hover began, or
-   * null. The hovered node's swell runs the underdamped step response
-   * (`expressive/mass-spring.ts#pressResponse`) from that instant instead of the critical
-   * emphasis ramp, so a hover reads as a press that gives. Omitted keeps the ramp.
-   */
-  hoverStartedAt?: number | null;
-  /**
-   * Under focus, the one neighbor whose detail-panel row the user is hovering.
-   * Its node + the ego edge that connects it to the focused node get an extra
-   * "emphasis ripple" brightening so panel and map read as one (lead spec §4).
-   * Null in the common case (no panel hover).
-   */
-  emphasizedNeighborId: string | null;
-  /** The hovered edge (same state the microcard shows) — brightens that edge's ink. */
-  hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
-  /** Edge selection = pair focus — only the two endpoints stay lit, the rest dims, and the selected edge goes pale indigo. */
-  selectedEdge: EdgePairFocus | null;
-  relationCaptions?: ReadonlyMap<string, string> | null;
-  /**
-   * In a view that draws every concept (Strata, Neural, Galaxy): what the flat map's density
-   * gate folds at this expansion, so captions keep the flat map's budget
-   * (`render/relation-captions.ts#captionWithinFlatBudget`). Null on the flat map, whose own
-   * drawing already is that budget.
-   */
-  captionFoldedIds?: ReadonlySet<string> | null;
-  reviewQuestionIds?: ReadonlySet<string> | null;
-  previewEdge: {
-    sourceId: string;
-    targetId: string;
-    relationType: string;
-    phase: "draft" | "committing";
-    alpha: number;
-    commitProgress: number;
-  } | null;
-  emphasisById: ReadonlyMap<string, number>;
-  /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
-  egoRevealById: ReadonlyMap<string, number>;
-  /**
-   * Click-focus signature — per-node 0..1 ramp stepped by `stepTopologyPhysics`.
-   * `resolveNodeVisual` lerps normal→dim/ego color by it and the draw loop eases
-   * the center node's radius 1→1.12, so the dim/ego swap eases in with the
-   * camera dive and back out on deselect. Empty/missing = 0 (no focus intensity,
-   * regression-free).
-   */
-  focusRampById: ReadonlyMap<string, number>;
-  /**
-   * rank8 — new-node appear ramp (nodeId → 0..1), stepped by `stepTopologyPhysics`.
-   * The node draw multiplies effRadius (0.6→1 micro scale) and globalAlpha (0→1)
-   * by it so a node introduced on a world rebuild swells in instead of hard-
-   * popping. Missing entry = 1 (untracked/existing nodes never fade). Omitted map
-   * = no appear animation (regression-free).
-   */
-  appearById?: ReadonlyMap<string, number>;
-  /**
-   * Ids of **nodes born during this session** (filled by `use-topology-loop`'s
-   * world diff). The appear ramp (`appearById`) already existed, but at overview
-   * zoom a new capability's tier alpha is 0, so **the whole animation was being
-   * multiplied by zero** — an agent could create a node and the only on-screen
-   * change was the domain's child count going 2 → 3 (measured 2026-08-17). Born
-   * nodes therefore get the same class of tier exemption as an ego click or a
-   * chip expansion, and rise through that existing ramp, swelling from 0.6×.
-   *
-   * The set persists for the session: appearing and then vanishing IS a flicker.
-   */
-  bornNodeIds?: ReadonlySet<string> | null;
-  /**
-   * rank7 — cluster expand/collapse reveal ramp (parentId → 0..1), stepped by the
-   * loop. The node pass multiplies a just-expanded disc child's globalAlpha by its
-   * nearest expanded-ancestor parent's ramp (fade IN on expand); `drawClusterChip`
-   * fades the pill/badge form in by it. Missing/omitted = 1 (no fade).
-   */
-  chipRevealById?: ReadonlyMap<string, number>;
-  /**
-   * High-fan batch reveal (2026-07) — per-child batch reveal ramp (childId → 0..1),
-   * stepped by the loop with a DOI-ordered center-out stagger. For a batch-
-   * revealed disc child this REPLACES the per-parent group fade (`chipRevealById`)
-   * as the node's reveal multiplier + drives the micro appearScale (0.6→1), so an
-   * expanded parent's first batch resolves child-by-child in DOI order instead of
-   * all-at-once. Only children currently in a visible batch have an entry; every
-   * other node falls back to the group/world-appear path (regression-free).
-   */
-  batchAppearById?: ReadonlyMap<string, number>;
-  /**
-   * rank9 — per-label present ramp (nodeId → 0..1), MUTATED in place by the label
-   * pass: rises toward 1 while a label is greedily placed this frame, decays
-   * toward 0 while its on-screen candidate loses placement, so LOD churn fades
-   * instead of flickering. Omitted = labels draw at full alpha (regression-free).
-   */
-  labelPresentById?: Map<string, number>;
-  /**
-   * The node id whose focus classification drives the COLOR ramp — normally the
-   * live `focusedNodeId`, but RETAINED by the caller for the ~160ms after a
-   * deselect while `focusRampById` decays, so the dim/ego target the colors fade
-   * FROM persists instead of snapping to normal (the selection ring and the
-   * background dim fade out together).
-   * `null` once nothing is focused and the ramp has reached 0. Kept separate
-   * from live `focusedNodeId` so labels / tier-reveal / camera never inherit the
-   * retention lag — only node body color + rings do.
-   */
-  colorFocusedNodeId: string | null;
-  /** Edge-pair analogue of `colorFocusedNodeId` — the retained selected edge for the color ramp (⑨). */
-  colorSelectedEdge: EdgePairFocus | null;
-  reducedMotion: boolean;
-  /**
-   * Live one-shot hover pulses fired by a node hover (`use-topology-loop.ts` owns
-   * their lifetime). Drawn as a head plus trail riding the edge curve. Under
-   * reduced-motion nothing fires, so this stays empty.
-   */
-  pulses: readonly Pulse[];
-  /**
-   * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
-   * commit-pulse anchor: which node was just clicked and when
-   * (`performance.now()`-compatible timestamp), captured once by
-   * `ui/use-topology-loop.ts` on every `focusedSlug` change. `null` when
-   * nothing has ever been selected. This frame's elapsed-since-commit is
-   * derived here (`now - startAtMs`) and fed through
-   * `model/selection-pulse.ts#computeSelectionPulse` — `null`/expired pulses
-   * draw nothing extra, leaving only the permanent static selection ring.
-   */
-  selectionPulse: { nodeId: string; startAtMs: number } | null;
-  /**
-   * W6 agent visibility — the node id matching the agent heartbeat's current
-   * `focus.ontologySlug`, already resolved to the graph's `kind:slug` id
-   * form by `views/home/lib/resolve-agent-focus-node.ts`, or `null` when
-   * there's no fresh heartbeat / no resolvable focus. Drives the amber
-   * agent-focus ring (`render/node-shapes.ts`) and the label-side activity
-   * mark (`render/labels.ts`) — both no-op when this is `null`.
-   */
-  agentFocusNodeId: string | null;
-  /**
-   * Density condition — ids of nodes inside a collapsed parent's subtree, which
-   * this frame will **not** draw. The node, edge, and label passes all skip them.
-   */
-  clusteredIds: ReadonlySet<string>;
-  /** Density condition — the cluster chips this frame draws (world-space anchor, inheriting the parent's tier alpha). */
-  clusterChips: readonly ClusterChip[];
-  /** Density condition — the hovered cluster parent's id (brightens the chip border), or null. */
-  hoveredClusterId: string | null;
-  /**
-   * The warding ring of a realm expansion. While a realm is entering or active,
-   * a 1px indigo hairline circle is drawn at the subtree's bounding radius,
-   * self-drawing its stroke over `drawProgress` 0..1 (~200ms at the start of the
-   * transition). Null draws nothing.
-   */
-  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null;
-  /** Per-member tier-kind override by depth — inside a realm, tier means re-layout depth. */
-  realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
-  /**
-   * The fifth tier-piercing channel — a 0..1 ramp for children revealed by
-   * expanding a chip, stepped by `use-topology-loop.ts`. Same shape as the other
-   * four, so hit testing follows automatically through `effectiveAlphaById` with
-   * no extra wiring.
-   */
-  expandRevealById?: ReadonlyMap<string, number> | null;
-  /**
-   * Per-member depth from the realm root (root = 0). While a realm is entering or
-   * active this drives depth clarity (alpha and size differentiation) and which
-   * parallax band a node belongs to. Null means no depth treatment.
-   */
-  realmDepthById: ReadonlyMap<string, number> | null;
-  /**
-   * Depth parallax band offsets (world units). While a realm is active, camera
-   * input pushes the RENDER coordinates of depth2 / depth3+ nodes by these — the
-   * world coordinates never move. Null means no parallax (at rest, entering, or
-   * reduced-motion). Hit testing applies the same offset.
-   */
-  realmDepthParallax: { depth2: { x: number; y: number }; depth3: { x: number; y: number } } | null;
-  /** Radial dust parallax factor 0..1 at the moment of expansion (>0 only during the transition). */
-  realmDustParallax: number;
-  /**
-   * Materialize alpha for outside nodes returning after being hard-culled during
-   * a realm exit, computed by `realm-transition.ts#realmOutsideReturnAlpha`:
-   * fully away = 0 (invisible) → home = 1 (full alpha). Multiplied into the node's
-   * `effectiveAlphaById` entry, so it ramps both the node and — through
-   * `edgeTierAlpha`'s min combination — every edge reaching it. This fixes the
-   * defect where such a node popped in at full alpha the instant it crossed the
-   * viewport cull boundary. Null while entering/active/idle.
-   */
-  realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
-  /**
-   * Footprints — the **visit ordinals** (1-based) per node; a revisited node has
-   * several. Built by `views/home/lib/footprint-trail.ts#buildFootprintSteps`.
-   * The caller excludes the currently focused node so its footprint does not
-   * double up with the selection ring. An empty map draws no footprints.
-   */
-  footprintStepsById: ReadonlyMap<string, readonly number[]>;
-  /** Footprint appearance preference. Null draws nothing. */
-  footprintPref?: FootprintPreference | null;
-  /**
-   * Keys of consecutively visited node pairs
-   * (`model/footprint-steps.ts#buildWalkedEdgeKeys`). Beside-the-line footprints
-   * are laid only on those pairs that are real edges. Null = no edge footprints.
-   */
-  walkedEdgeKeys?: ReadonlySet<string> | null;
-  /**
-   * Which way the walk crossed each relation, same keys as `walkedEdgeKeys`.
-   *
-   * The star mark has no heading, so direction travels the line instead
-   * (`model/footprint-steps.ts#buildWalkedEdgeDirections`, 2026-09-10).
-   */
-  walkedEdgeDirections?: ReadonlyMap<string, boolean> | null;
-  /** Step at which the walk arrived along each relation — the line's place in the sweep. */
-  walkedEdgeArrivalStep?: ReadonlyMap<string, number> | null;
-  /** Footprint ink RGB — the caller reads it from `--color-footprint-trail` or the indigo token. */
-  footprintInk?: FootprintInk;
-  /** Ordinal text colour — one step brighter than the footprint ink; small glyphs need more contrast. */
-  footprintStepColor?: string;
-  /**
-   * The node id of the most recent step, plus that step's appear progress [0,1].
-   * Only this node's footprint animates; every other sits at 1 (settled) — one
-   * input produces one event.
-   */
-  footprintNewestId?: string | null;
-  footprintAppear?: number;
-  /**
-   * Star ink for the walked path's light, as `#rrggbb`. `null` keeps the map dark — the
-   * light is the whole notation now, so an absent ink means no trail marking at all.
-   */
-  trailStarInk?: string | null;
-  /** The highest step ordinal in the walk, so recency can be a fraction of it. */
-  footprintNewestStep?: number;
-  /**
-   * When the trail lens opened (`performance.now()`), or 0 while closed.
-   *
-   * Opening the lens **replays the walk**: stars ignite in the order they were made and the
-   * lines follow them. That is the one motion on this canvas that is also an answer — the
-   * order and the direction of the path are stated by the sweep itself, not only by the
-   * ordinals beside the nodes.
-   */
-  trailLensOpenedAtMs?: number;
-  /**
-   * The trail lens — non-null **only** while the trail popover is open. The visited
-   * nodes (including the current focus) replace the ego keep-set: they hold their
-   * colour and label while every other node, cluster chip, label, and **edge —
-   * ego-emphasised edges included** — retreats to the existing ego dim values.
-   * No new tokens, no new motion, and deliberately no trail polyline, because in
-   * this product a line means a relation.
-   *
-   * Not rebuilt per frame: the loop hands over a Set it refreshes only when
-   * `visitedTrail` changes, so the 60fps loop allocates nothing.
-   */
-  trailLensIds?: ReadonlySet<string> | null;
-  /**
-   * The cosmos dust layer inside the warding circle (viewport space, parallaxed
-   * from the camera origin). Drawn clipped to the warding circle, and only while a
-   * realm is active (`wardingRing` present). Null draws nothing.
-   */
-  realmCosmosPoints: readonly DustPoint[] | null;
-  /**
-   * Recent-change spotlight (council design, 2026-07-23) — non-null turns the lens
-   * ON: nodes **outside** this set (and edges without both endpoints inside it)
-   * sink toward `tokens.spotlightRestAlpha` as `spotlightRamp` advances. Nodes
-   * inside are NOT brightened here; the adapter already lights them by swapping the
-   * fresh channel's key to an mtime window. The lens sinks, it does not shine.
-   * Suspended while an ego or edge focus is active (attention layer order:
-   * selection beats lens, never dim twice), and the hovered node is exempt.
-   */
-  spotlightIds: ReadonlySet<string> | null;
-  mapLensKind: TopologyMapLensKind;
-  pathEdgeIds: ReadonlySet<string> | null;
-  /** Spotlight on/off index ramp 0..1 — loop steps via `stepFocusRamp` (reuses focusDimTau). */
-  spotlightRamp: number;
-  /** Spotlight dash phase — advanced only during the transition, then held fixed. */
-  spotlightDashOffset: number;
-  /**
-   * Tier-visibility config for the developer / plain mode toggle; defaults to
-   * `DEFAULT_TIER_REVEAL` (developer mode). In plain mode `HomePage` passes
-   * `PLAIN_TIER_REVEAL` (elements always hidden). The draw must read the same
-   * config as hit testing and pan clamping, or the three fall out of lockstep.
-   */
-  tierReveal?: TierRevealConfig;
-  /**
-   * Node body render style: `"fill"` (solid geometry, the default) or `"line"`
-   * (stroke only). The kind → silhouette mapping is independent of this and never
-   * changes. Reads the same store as the DOM glyphs so both surfaces swap together.
-   */
-  glyphStyle?: "fill" | "line";
-  /**
-   * Canvas background variant, forwarded to `gridDraw`: dots (the default
-   * blueprint grid), constellation, or contour.
-   */
-  backgroundVariant?: CanvasBackgroundVariant;
-  /** Callback that paints the animated background buffer — consumed only by the non-dot variants. See `render/grid.ts`. */
-  paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
-  nodeLayer?: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
-  /** Patterns for the three depth-dot layers (consumed only when `variant === "depth"`). Their origins are computed here. */
-  depthDotPatterns?: readonly (CanvasPattern | null)[];
-  /**
-   * Expand preference. This frame uses two of its fields: the expand affordance
-   * (whether a chip draws as a pill, bar, or badge) and the label attempt count
-   * (the label budget for an expanded disc).
-   */
-  expand?: ExpandPreference;
-  /**
-   * Translated bar copy. The canvas renderer never composes strings — the caller
-   * translates and passes them in, exactly as the warding caption
-   * (`wardingRing.caption`) already does.
-   */
-  clusterBarLabels?: ClusterBarLabels | null;
-  /**
-   * 3D projection frame (2026-08-18, opt-in) — ownership draws the Dome and
-   * coupling draws the Cloud (`model/dome-view.ts`). This per-node transform map
-   * (offset + perspective factor) is refreshed every frame. Nodes, labels, edges,
-   * chips, hit testing, and `__atlasMap` all read **the same map**, so a click
-   * follows the drawn position even mid-rotation. During a realm expansion the
-   * loop rewinds the ramp to null, so realm depth is never encoded twice. Null is
-   * pixel-identical to the 2D screen.
-   */
-  domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
-  /**
-   * Overall progress 0..1 of the dome assembly — the interpolator for
-   * presentation-layer switches such as extinguishing the background grid.
-   * Per-node progress is carried by `domeFrame`'s `a`. 0 = the 2D presentation.
-   */
-  domeRamp?: number;
-  /**
-   * 3D — this frame's **latitude rings** (world coordinates + normalized depth).
-   * Why the rings are needed: the `DOME_RING_KINDS` doc-block in
-   * `model/dome-view.ts`. Null draws none.
-   */
-  domeRings?:
-    | readonly {
+    ctx: CanvasRenderingContext2D;
+    world: TopologyWorld;
+    camera: CameraAxes;
+    /** Visual-expression axis (constellation ↔ circuit) — node/edge/label morph, diffraction, vignette. */
+    farT: number;
+    /** Coupling view material: lit cell bodies and softly tapered connections. */
+    neuralRamp?: number;
+    /** Semantic-zoom axis (`cameraScale / overviewEntryScale`) — drives tier visibility only. */
+    zoomRatio: number;
+    now: number;
+    viewportWidth: number;
+    viewportHeight: number;
+    /**
+     * What a panel actually covers on each side, in CSS px, measured rather than
+     * assumed. `safeInsetLeft`/`safeInsetRight` are static tokens, so the label
+     * cull believed the right edge was 120 px away while the open inspector was
+     * 352 px wide from x=1128: measured at 1512x982 on the sample folder, two of
+     * five selections painted a concept's name underneath that panel, where it
+     * cannot be read and where it still spent one of the limited label slots.
+     * The camera has taken the larger of token and measurement since 2026-08-10
+     * (`use-topology-loop.ts#cameraTokens`); this gives the names the same truth.
+     *
+     * Left and right only, for the reason that note gives: the top inset is the
+     * tool lane and the bottom one is a label reservation, and both are layout
+     * promises rather than something covering the canvas.
+     */
+    panelInsets?: {
+        left: number;
+        right: number;
+    } | null;
+    /**
+     * The ratio `ctx` is transformed by, so a length in CSS px can be converted to
+     * device pixels. Only the 3D resting relation line's width floor reads it
+     * (`domeEdgeMinWidthPx`); everything else on this canvas is a CSS quantity by
+     * design. Defaults to 1 — the value a caller that never scales the context has.
+     */
+    devicePixelRatio?: number;
+    gridPattern: CanvasPattern | null;
+    dustPoints: readonly DustPoint[];
+    tokens: OntologyMapTokens;
+    focusedNodeId: string | null;
+    hoveredNodeId: string | null;
+    /**
+     * The node the press just left, or null. Its swell keeps the press's radius
+     * coefficient while its emphasis decays, so a hover-out eases out instead of
+     * stepping down by half the bump in one frame (design council, 2026-09-08).
+     */
+    hoverReleasedNodeId?: string | null;
+    /**
+     * Press (2026-09-08, direction B): the ms clock at which the current hover began, or
+     * null. The hovered node's swell runs the underdamped step response
+     * (`expressive/mass-spring.ts#pressResponse`) from that instant instead of the critical
+     * emphasis ramp, so a hover reads as a press that gives. Omitted keeps the ramp.
+     */
+    hoverStartedAt?: number | null;
+    /**
+     * Under focus, the one neighbor whose detail-panel row the user is hovering.
+     * Its node + the ego edge that connects it to the focused node get an extra
+     * "emphasis ripple" brightening so panel and map read as one (lead spec §4).
+     * Null in the common case (no panel hover).
+     */
+    emphasizedNeighborId: string | null;
+    /** The hovered edge (same state the microcard shows) — brightens that edge's ink. */
+    hoveredEdge: {
+        sourceId: string;
+        targetId: string;
+        relationType: string;
+    } | null;
+    /** Edge selection = pair focus — only the two endpoints stay lit, the rest dims, and the selected edge goes pale indigo. */
+    selectedEdge: EdgePairFocus | null;
+    relationCaptions?: ReadonlyMap<string, string> | null;
+    captionFoldedIds?: ReadonlySet<string> | null;
+    reviewQuestionIds?: ReadonlySet<string> | null;
+    previewEdge: {
+        sourceId: string;
+        targetId: string;
+        relationType: string;
+        phase: "draft" | "committing";
+        alpha: number;
+        commitProgress: number;
+    } | null;
+    emphasisById: ReadonlyMap<string, number>;
+    /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
+    egoRevealById: ReadonlyMap<string, number>;
+    /**
+     * Click-focus signature — per-node 0..1 ramp stepped by `stepTopologyPhysics`.
+     * `resolveNodeVisual` lerps normal→dim/ego color by it and the draw loop eases
+     * the center node's radius 1→1.12, so the dim/ego swap eases in with the
+     * camera dive and back out on deselect. Empty/missing = 0 (no focus intensity,
+     * regression-free).
+     */
+    focusRampById: ReadonlyMap<string, number>;
+    /**
+     * rank8 — new-node appear ramp (nodeId → 0..1), stepped by `stepTopologyPhysics`.
+     * The node draw multiplies effRadius (0.6→1 micro scale) and globalAlpha (0→1)
+     * by it so a node introduced on a world rebuild swells in instead of hard-
+     * popping. Missing entry = 1 (untracked/existing nodes never fade). Omitted map
+     * = no appear animation (regression-free).
+     */
+    appearById?: ReadonlyMap<string, number>;
+    /**
+     * Ids of **nodes born during this session** (filled by `use-topology-loop`'s
+     * world diff). The appear ramp (`appearById`) already existed, but at overview
+     * zoom a new capability's tier alpha is 0, so **the whole animation was being
+     * multiplied by zero** — an agent could create a node and the only on-screen
+     * change was the domain's child count going 2 → 3 (measured 2026-08-17). Born
+     * nodes therefore get the same class of tier exemption as an ego click or a
+     * chip expansion, and rise through that existing ramp, swelling from 0.6×.
+     *
+     * The set persists for the session: appearing and then vanishing IS a flicker.
+     */
+    bornNodeIds?: ReadonlySet<string> | null;
+    /**
+     * rank7 — cluster expand/collapse reveal ramp (parentId → 0..1), stepped by the
+     * loop. The node pass multiplies a just-expanded disc child's globalAlpha by its
+     * nearest expanded-ancestor parent's ramp (fade IN on expand); `drawClusterChip`
+     * fades the pill/badge form in by it. Missing/omitted = 1 (no fade).
+     */
+    chipRevealById?: ReadonlyMap<string, number>;
+    /**
+     * High-fan batch reveal (2026-07) — per-child batch reveal ramp (childId → 0..1),
+     * stepped by the loop with a DOI-ordered center-out stagger. For a batch-
+     * revealed disc child this REPLACES the per-parent group fade (`chipRevealById`)
+     * as the node's reveal multiplier + drives the micro appearScale (0.6→1), so an
+     * expanded parent's first batch resolves child-by-child in DOI order instead of
+     * all-at-once. Only children currently in a visible batch have an entry; every
+     * other node falls back to the group/world-appear path (regression-free).
+     */
+    batchAppearById?: ReadonlyMap<string, number>;
+    /**
+     * rank9 — per-label present ramp (nodeId → 0..1), MUTATED in place by the label
+     * pass: rises toward 1 while a label is greedily placed this frame, decays
+     * toward 0 while its on-screen candidate loses placement, so LOD churn fades
+     * instead of flickering. Omitted = labels draw at full alpha (regression-free).
+     */
+    labelPresentById?: Map<string, number>;
+    /**
+     * The node id whose focus classification drives the COLOR ramp — normally the
+     * live `focusedNodeId`, but RETAINED by the caller for the ~160ms after a
+     * deselect while `focusRampById` decays, so the dim/ego target the colors fade
+     * FROM persists instead of snapping to normal (the selection ring and the
+     * background dim fade out together).
+     * `null` once nothing is focused and the ramp has reached 0. Kept separate
+     * from live `focusedNodeId` so labels / tier-reveal / camera never inherit the
+     * retention lag — only node body color + rings do.
+     */
+    colorFocusedNodeId: string | null;
+    /** Edge-pair analogue of `colorFocusedNodeId` — the retained selected edge for the color ramp (⑨). */
+    colorSelectedEdge: EdgePairFocus | null;
+    reducedMotion: boolean;
+    /**
+     * Live one-shot hover pulses fired by a node hover (`use-topology-loop.ts` owns
+     * their lifetime). Drawn as a head plus trail riding the edge curve. Under
+     * reduced-motion nothing fires, so this stays empty.
+     */
+    pulses: readonly Pulse[];
+    /**
+     * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
+     * commit-pulse anchor: which node was just clicked and when
+     * (`performance.now()`-compatible timestamp), captured once by
+     * `ui/use-topology-loop.ts` on every `focusedSlug` change. `null` when
+     * nothing has ever been selected. This frame's elapsed-since-commit is
+     * derived here (`now - startAtMs`) and fed through
+     * `model/selection-pulse.ts#computeSelectionPulse` — `null`/expired pulses
+     * draw nothing extra, leaving only the permanent static selection ring.
+     */
+    selectionPulse: {
+        nodeId: string;
+        startAtMs: number;
+    } | null;
+    /**
+     * W6 agent visibility — the node id matching the agent heartbeat's current
+     * `focus.ontologySlug`, already resolved to the graph's `kind:slug` id
+     * form by `views/home/lib/resolve-agent-focus-node.ts`, or `null` when
+     * there's no fresh heartbeat / no resolvable focus. Drives the amber
+     * agent-focus ring (`render/node-shapes.ts`) and the label-side activity
+     * mark (`render/labels.ts`) — both no-op when this is `null`.
+     */
+    agentFocusNodeId: string | null;
+    /**
+     * Density condition — ids of nodes inside a collapsed parent's subtree, which
+     * this frame will **not** draw. The node, edge, and label passes all skip them.
+     */
+    clusteredIds: ReadonlySet<string>;
+    /** Density condition — the cluster chips this frame draws (world-space anchor, inheriting the parent's tier alpha). */
+    clusterChips: readonly ClusterChip[];
+    /** Density condition — the hovered cluster parent's id (brightens the chip border), or null. */
+    hoveredClusterId: string | null;
+    /**
+     * The warding ring of a realm expansion. While a realm is entering or active,
+     * a 1px indigo hairline circle is drawn at the subtree's bounding radius,
+     * self-drawing its stroke over `drawProgress` 0..1 (~200ms at the start of the
+     * transition). Null draws nothing.
+     */
+    wardingRing: {
+        centerX: number;
+        centerY: number;
+        radius: number;
+        drawProgress: number;
+        caption: string | null;
+    } | null;
+    /** Per-member tier-kind override by depth — inside a realm, tier means re-layout depth. */
+    realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
+    /**
+     * The fifth tier-piercing channel — a 0..1 ramp for children revealed by
+     * expanding a chip, stepped by `use-topology-loop.ts`. Same shape as the other
+     * four, so hit testing follows automatically through `effectiveAlphaById` with
+     * no extra wiring.
+     */
+    expandRevealById?: ReadonlyMap<string, number> | null;
+    /**
+     * Per-member depth from the realm root (root = 0). While a realm is entering or
+     * active this drives depth clarity (alpha and size differentiation) and which
+     * parallax band a node belongs to. Null means no depth treatment.
+     */
+    realmDepthById: ReadonlyMap<string, number> | null;
+    /**
+     * Depth parallax band offsets (world units). While a realm is active, camera
+     * input pushes the RENDER coordinates of depth2 / depth3+ nodes by these — the
+     * world coordinates never move. Null means no parallax (at rest, entering, or
+     * reduced-motion). Hit testing applies the same offset.
+     */
+    realmDepthParallax: {
+        depth2: {
+            x: number;
+            y: number;
+        };
+        depth3: {
+            x: number;
+            y: number;
+        };
+    } | null;
+    /** Radial dust parallax factor 0..1 at the moment of expansion (>0 only during the transition). */
+    realmDustParallax: number;
+    /**
+     * Materialize alpha for outside nodes returning after being hard-culled during
+     * a realm exit, computed by `realm-transition.ts#realmOutsideReturnAlpha`:
+     * fully away = 0 (invisible) → home = 1 (full alpha). Multiplied into the node's
+     * `effectiveAlphaById` entry, so it ramps both the node and — through
+     * `edgeTierAlpha`'s min combination — every edge reaching it. This fixes the
+     * defect where such a node popped in at full alpha the instant it crossed the
+     * viewport cull boundary. Null while entering/active/idle.
+     */
+    realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
+    /**
+     * Footprints — the **visit ordinals** (1-based) per node; a revisited node has
+     * several. Built by `views/home/lib/footprint-trail.ts#buildFootprintSteps`.
+     * The caller excludes the currently focused node so its footprint does not
+     * double up with the selection ring. An empty map draws no footprints.
+     */
+    footprintStepsById: ReadonlyMap<string, readonly number[]>;
+    /** Footprint appearance preference. Null draws nothing. */
+    footprintPref?: FootprintPreference | null;
+    /**
+     * Keys of consecutively visited node pairs
+     * (`model/footprint-steps.ts#buildWalkedEdgeKeys`). Beside-the-line footprints
+     * are laid only on those pairs that are real edges. Null = no edge footprints.
+     */
+    walkedEdgeKeys?: ReadonlySet<string> | null;
+    /**
+     * Which way the walk crossed each relation, same keys as `walkedEdgeKeys`.
+     *
+     * The star mark has no heading, so direction travels the line instead
+     * (`model/footprint-steps.ts#buildWalkedEdgeDirections`, 2026-09-10).
+     */
+    walkedEdgeDirections?: ReadonlyMap<string, boolean> | null;
+    /** Step at which the walk arrived along each relation — the line's place in the sweep. */
+    walkedEdgeArrivalStep?: ReadonlyMap<string, number> | null;
+    /** Footprint ink RGB — the caller reads it from `--color-footprint-trail` or the indigo token. */
+    footprintInk?: FootprintInk;
+    /** Ordinal text colour — one step brighter than the footprint ink; small glyphs need more contrast. */
+    footprintStepColor?: string;
+    /**
+     * The node id of the most recent step, plus that step's appear progress [0,1].
+     * Only this node's footprint animates; every other sits at 1 (settled) — one
+     * input produces one event.
+     */
+    footprintNewestId?: string | null;
+    footprintAppear?: number;
+    /**
+     * Star ink for the walked path's light, as `#rrggbb`. `null` keeps the map dark — the
+     * light is the whole notation now, so an absent ink means no trail marking at all.
+     */
+    trailStarInk?: string | null;
+    /** The highest step ordinal in the walk, so recency can be a fraction of it. */
+    footprintNewestStep?: number;
+    /**
+     * When the trail lens opened (`performance.now()`), or 0 while closed.
+     *
+     * Opening the lens **replays the walk**: stars ignite in the order they were made and the
+     * lines follow them. That is the one motion on this canvas that is also an answer — the
+     * order and the direction of the path are stated by the sweep itself, not only by the
+     * ordinals beside the nodes.
+     */
+    trailLensOpenedAtMs?: number;
+    /**
+     * The trail lens — non-null **only** while the trail popover is open. The visited
+     * nodes (including the current focus) replace the ego keep-set: they hold their
+     * colour and label while every other node, cluster chip, label, and **edge —
+     * ego-emphasised edges included** — retreats to the existing ego dim values.
+     * No new tokens, no new motion, and deliberately no trail polyline, because in
+     * this product a line means a relation.
+     *
+     * Not rebuilt per frame: the loop hands over a Set it refreshes only when
+     * `visitedTrail` changes, so the 60fps loop allocates nothing.
+     */
+    trailLensIds?: ReadonlySet<string> | null;
+    realmStarPoints: readonly DustPoint[] | null;
+    /**
+     * Recent-change spotlight (council design, 2026-07-23) — non-null turns the lens
+     * ON: nodes **outside** this set (and edges without both endpoints inside it)
+     * sink toward `tokens.spotlightRestAlpha` as `spotlightRamp` advances. Nodes
+     * inside are NOT brightened here; the adapter already lights them by swapping the
+     * fresh channel's key to an mtime window. The lens sinks, it does not shine.
+     * Suspended while an ego or edge focus is active (attention layer order:
+     * selection beats lens, never dim twice), and the hovered node is exempt.
+     */
+    spotlightIds: ReadonlySet<string> | null;
+    mapLensKind: TopologyMapLensKind;
+    pathEdgeIds: ReadonlySet<string> | null;
+    /** Spotlight on/off index ramp 0..1 — loop steps via `stepFocusRamp` (reuses focusDimTau). */
+    spotlightRamp: number;
+    /** Spotlight dash phase — advanced only during the transition, then held fixed. */
+    spotlightDashOffset: number;
+    /**
+     * Tier-visibility config for the developer / plain mode toggle; defaults to
+     * `DEFAULT_TIER_REVEAL` (developer mode). In plain mode `HomePage` passes
+     * `PLAIN_TIER_REVEAL` (elements always hidden). The draw must read the same
+     * config as hit testing and pan clamping, or the three fall out of lockstep.
+     */
+    tierReveal?: TierRevealConfig;
+    /**
+     * Node body render style: `"fill"` (solid geometry, the default) or `"line"`
+     * (stroke only). The kind → silhouette mapping is independent of this and never
+     * changes. Reads the same store as the DOM glyphs so both surfaces swap together.
+     */
+    glyphStyle?: "fill" | "line";
+    /**
+     * Canvas background variant, forwarded to `gridDraw`: dots (the default
+     * blueprint grid), constellation, or contour.
+     */
+    backgroundVariant?: CanvasBackgroundVariant;
+    /** Callback that paints the animated background buffer — consumed only by the non-dot variants. See `render/grid.ts`. */
+    paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
+    nodeLayer?: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
+    /** Patterns for the three depth-dot layers (consumed only when `variant === "depth"`). Their origins are computed here. */
+    depthDotPatterns?: readonly (CanvasPattern | null)[];
+    /**
+     * Expand preference. This frame uses two of its fields: the expand affordance
+     * (whether a chip draws as a pill, bar, or badge) and the label attempt count
+     * (the label budget for an expanded disc).
+     */
+    expand?: ExpandPreference;
+    /**
+     * Translated bar copy. The canvas renderer never composes strings — the caller
+     * translates and passes them in, exactly as the warding caption
+     * (`wardingRing.caption`) already does.
+     */
+    clusterBarLabels?: ClusterBarLabels | null;
+    /**
+     * 3D projection frame (2026-08-18, opt-in) — ownership draws the Dome and
+     * coupling draws the Cloud (`model/dome-view.ts`). This per-node transform map
+     * (offset + perspective factor) is refreshed every frame. Nodes, labels, edges,
+     * chips, hit testing, and `__atlasMap` all read **the same map**, so a click
+     * follows the drawn position even mid-rotation. During a realm expansion the
+     * loop rewinds the ramp to null, so realm depth is never encoded twice. Null is
+     * pixel-identical to the 2D screen.
+     */
+    domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
+    /**
+     * Overall progress 0..1 of the dome assembly — the interpolator for
+     * presentation-layer switches such as extinguishing the background grid.
+     * Per-node progress is carried by `domeFrame`'s `a`. 0 = the 2D presentation.
+     */
+    domeRamp?: number;
+    /**
+     * 3D — this frame's **latitude rings** (world coordinates + normalized depth).
+     * Why the rings are needed: the `DOME_RING_KINDS` doc-block in
+     * `model/dome-view.ts`. Null draws none.
+     */
+    domeRings?: readonly {
         kind: DomeViewKind;
         a: number;
-        points: readonly { wx: number; wy: number; u: number }[];
+        points: readonly {
+            wx: number;
+            wy: number;
+            u: number;
+        }[];
         /** Set only on a Strata plane ring — where that tier's name hangs. */
-        label?: { wx: number; wy: number } | null;
-      }[]
-    | null;
-  /**
-   * 3D — base opacity for the rings this frame. The cone's small bases and
-   * Strata's four full-width planes cannot share one value; `domeRingAlphaFor` in
-   * `model/dome-view.ts` owns which is which.
-   */
-  domeRingAlpha?: number;
-  /**
-   * Strata's tier names as they stand beside their rims, canvas CSS px
-   * (`model/tier-names.ts`). Concept names and relation captions give way to them,
-   * so a label passing a rim never lands on its plane's name.
-   */
-  tierNameBoxes?: readonly { minX: number; maxX: number; minY: number; maxY: number }[] | null;
-  /**
-   * The Strata tier whose plane ring is raised — the legend row under the pointer
-   * (`OntologyMapTierLegend`). Null raises nothing.
-   */
-  domeTierRaisedKind?: DomeViewKind | null;
-  /**
-   * 3D — the live projected control point, shared with picking and measurement.
-   * Returning null leaves that edge on its planar assembly starting point.
-   */
-  domeControlFor?:
-    | ((edge: WorldEdge) => { x: number; y: number } | null)
-    | null;
-  /**
-   * 3D lit hologram (2026-09-25) — the inks and facts the light is drawn from. Null keeps
-   * the pre-light 3D look (the download hero and any caller that does not light).
-   * `render/dome-light.ts` owns what each state emits.
-   */
-  domeLight?: DomeLightFrame | null;
-  /**
-   * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
-   *
-   * Not a boolean: the trail colour hard-cutting in and out reads as decoration
-   * jumping out at you. The two earlier lenses (agent-focus ring, recent-change
-   * spotlight) already established ramping. Omitted falls back to 0/1 by whether
-   * `trailLensIds` is set.
-   */
-  trailLensRamp?: number;
-  dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
+        label?: {
+            wx: number;
+            wy: number;
+        } | null;
+    }[] | null;
+    /**
+     * 3D — base opacity for the rings this frame. The cone's small bases and
+     * Strata's four full-width planes cannot share one value; `domeRingAlphaFor` in
+     * `model/dome-view.ts` owns which is which.
+     */
+    domeRingAlpha?: number;
+    /**
+     * Strata's tier names as they stand beside their rims, canvas CSS px
+     * (`model/tier-names.ts`). Concept names and relation captions give way to them,
+     * so a label passing a rim never lands on its plane's name.
+     */
+    tierNameBoxes?: readonly {
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+    }[] | null;
+    /**
+     * The Strata tier whose plane ring is raised — the legend row under the pointer
+     * (`OntologyMapTierLegend`). Null raises nothing.
+     */
+    domeTierRaisedKind?: DomeViewKind | null;
+    /**
+     * 3D — the live projected control point, shared with picking and measurement.
+     * Returning null leaves that edge on its planar assembly starting point.
+     */
+    domeControlFor?: ((edge: WorldEdge) => {
+        x: number;
+        y: number;
+    } | null) | null;
+    /**
+     * 3D lit hologram (2026-09-25) — the inks and facts the light is drawn from. Null keeps
+     * the pre-light 3D look (the download hero and any caller that does not light).
+     * `render/dome-light.ts` owns what each state emits.
+     */
+    domeLight?: DomeLightFrame | null;
+    /**
+     * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
+     *
+     * Not a boolean: the trail colour hard-cutting in and out reads as decoration
+     * jumping out at you. The two earlier lenses (agent-focus ring, recent-change
+     * spotlight) already established ramping. Omitted falls back to 0/1 by whether
+     * `trailLensIds` is set.
+     */
+    trailLensRamp?: number;
+    dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
 }
-
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
 export function drawTopologyFrame(params: FrameDrawParams): void {
-  const {
-    ctx: baseCtx,
-    world,
-    camera,
-    farT,
-    galaxyRamp: galaxyRampProp = 0,
-    galaxyIdentityActive = galaxyRampProp > 0.001,
-    galaxyElapsedMs = 0,
-    galaxyAtmosphereLagMs = 0,
-    galaxyAtmosphereLive = 1,
-    galaxyMeteorQuietUntilMs = Number.NEGATIVE_INFINITY,
-    galaxyAtmosphereSeed = 0,
-    galaxyLayoutRadius = 0,
-    neuralRamp: neuralRampProp = 0,
-    zoomRatio,
-    now,
-    viewportWidth,
-    viewportHeight,
-    panelInsets = null,
-    devicePixelRatio: canvasDpr = 1,
-    gridPattern,
-    dustPoints,
-    tokens,
-    focusedNodeId,
-    hoveredNodeId,
-    hoverReleasedNodeId = null,
-    hoverStartedAt = null,
-    emphasizedNeighborId,
-    hoveredEdge,
-    selectedEdge,
-    relationCaptions,
-    captionFoldedIds = null,
-    reviewQuestionIds,
-    previewEdge,
-    emphasisById,
-    egoRevealById,
-    focusRampById,
-    appearById,
-    bornNodeIds,
-    chipRevealById,
-    batchAppearById,
-    labelPresentById,
-    colorFocusedNodeId,
-    colorSelectedEdge,
-    reducedMotion,
-    pulses,
-    selectionPulse,
-    agentFocusNodeId,
-    clusteredIds,
-    clusterChips,
-    hoveredClusterId,
-    wardingRing,
-    realmTierKinds,
-    expandRevealById,
-    realmDepthById,
-    realmDepthParallax,
-    realmDustParallax,
-    realmOutsideReturnAlphaById,
-    realmCosmosPoints,
-    footprintStepsById,
-    footprintPref = null,
-    walkedEdgeKeys = null,
-    walkedEdgeDirections = null,
-    walkedEdgeArrivalStep = null,
-    footprintInk = [232, 196, 122],
-    footprintStepColor = "#e8c47a",
-    footprintNewestId = null,
-    footprintAppear = 1,
-    trailStarInk = null,
-    footprintNewestStep = 1,
-    trailLensOpenedAtMs = 0,
-    trailLensIds = null,
-    spotlightIds,
-    mapLensKind,
-    pathEdgeIds,
-    spotlightRamp,
-    spotlightDashOffset,
-    tierReveal = DEFAULT_TIER_REVEAL,
-    glyphStyle = "fill",
-    backgroundVariant = "dot",
-    paintAnimatedBackground = null,
-    depthDotPatterns,
-    expand = DEFAULT_EXPAND,
-    clusterBarLabels = null,
-    domeFrame = null,
-    domeRamp = 0,
-    domeRings = null,
-    domeRingAlpha = DOME_RING_ALPHA,
-    tierNameBoxes = null,
-    domeTierRaisedKind = null,
-    domeControlFor = null,
-    domeLight = null,
-    trailLensRamp,
-    dial: dialProps = null,
-  } = params;
-  let ctx = baseCtx;
-
-  // Spotlight sink multiplier — live only while the lens is on, the ramp is
-  // advancing, and no node/edge focus is active (selection outranks lens). Applied
-  // to everything with `inSpotlight === false`.
-  const spotlightLensActive =
-    spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
-  const pathLensActive = spotlightLensActive && mapLensKind === "path";
-  const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
-  const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
-  // A path sinks its surroundings deeper than the whole-map lenses do: two
-  // ends and a line have no context to keep readable, and at the spotlight's
-  // rest the still frame did not say which two were asked about (2026-09-19).
-  const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
-  const spotlightSink = (inSpotlight: boolean): number =>
-    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
-
-  // Trail lens — active only while the trail popover is open. It swaps the ego
-  // keep-set from "1-hop neighbours" to "visited nodes" (see `lensNodeEgoState`
-  // below) and sinks every edge to dim. It reuses the existing dim values, adding
-  // no token and no ramp, so on/off stays within the 200ms contract and closing
-  // the popover restores the ego emphasis exactly.
-  const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
-  const trailLensActive = trailLensKeepIds !== null;
-  /**
-   * The lens's **strength** — at 0 there is no trail ink at all.
-   *
-   * On/off (does the set exist) is kept separate from strength (the ramp) because
-   * emptying the set the instant the popover closes would hard-cut the colour
-   * away. The loop keeps passing the set until the ramp reaches 0; only this value
-   * falls.
-   */
-  const trailRamp = trailLensActive
-    ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
-    : 0;
-  /*
-   * Phase of the light travelling every walked relation, 0-1.
-   *
-   * One clock for the whole trail rather than one per edge, so the path reads as a single
-   * thing being retraced instead of a scatter of dots each on its own errand. Four seconds
-   * a lap: slow enough that it never competes with reading.
-   *
-   * ⚠️ **This is a lap position, not a per-line position.** `buildTrailGlintLegs` cuts the lap
-   * into slices proportional to each walked relation's length, so exactly one light exists at
-   * a time and it walks the path in order at one constant speed. The previous shape — this
-   * same number handed to every line at once — put three lights on screen simultaneously at a
-   * 2.9x speed spread; the arithmetic is in that function's header.
-   *
-   * ⚠️ The claim that once stood here — that four seconds is "the rule this canvas lives under
-   * since the ambient drift came off it on 2026-09-08" — was a **misattributed citation**. That
-   * decision is *"The Library graph stands still; hover changes ink, never position"*, it
-   * governs the Library's canvas rather than this one, and its own falsifier is "any rAF over
-   * three idle seconds on a settled canvas" — which this loop fails for as long as the lens is
-   * open (design-motion, 2026-09-10). The real licence is narrower and is stated where it
-   * belongs, on the travelling light itself in `render/traces.ts`: a lens the person
-   * deliberately opened may animate; a canvas nobody asked about may not.
-   */
-  const trailGlint = trailRamp > 0.001 ? ((now % TRAIL_GLINT_PERIOD_MS) / TRAIL_GLINT_PERIOD_MS) : 0;
-  /*
-   * The lap's division between the walked relations, rebuilt per frame from world-space chords
-   * (the camera scales every edge alike, so world proportions are screen proportions). Null
-   * with the lens shut, which is also the cheap path: no allocation on an ordinary frame.
-   */
-  const trailGlintLegs =
-    trailRamp > 0.001 && walkedEdgeArrivalStep !== null && walkedEdgeArrivalStep.size > 0
-      ? buildTrailGlintLegs(
-          [...walkedEdgeArrivalStep.entries()]
+    const { ctx: baseCtx, world, camera, farT, neuralRamp: neuralRampProp = 0, zoomRatio, now, viewportWidth, viewportHeight, panelInsets = null, devicePixelRatio: canvasDpr = 1, gridPattern, dustPoints, tokens, focusedNodeId, hoveredNodeId, hoverReleasedNodeId = null, hoverStartedAt = null, emphasizedNeighborId, hoveredEdge, selectedEdge, relationCaptions, captionFoldedIds = null, reviewQuestionIds, previewEdge, emphasisById, egoRevealById, focusRampById, appearById, bornNodeIds, chipRevealById, batchAppearById, labelPresentById, colorFocusedNodeId, colorSelectedEdge, reducedMotion, pulses, selectionPulse, agentFocusNodeId, clusteredIds, clusterChips, hoveredClusterId, wardingRing, realmTierKinds, expandRevealById, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, realmStarPoints, footprintStepsById, footprintPref = null, walkedEdgeKeys = null, walkedEdgeDirections = null, walkedEdgeArrivalStep = null, footprintInk = [232, 196, 122], footprintStepColor = "#e8c47a", footprintNewestId = null, footprintAppear = 1, trailStarInk = null, footprintNewestStep = 1, trailLensOpenedAtMs = 0, trailLensIds = null, spotlightIds, mapLensKind, pathEdgeIds, spotlightRamp, spotlightDashOffset, tierReveal = DEFAULT_TIER_REVEAL, glyphStyle = "fill", backgroundVariant = "dot", paintAnimatedBackground = null, depthDotPatterns, expand = DEFAULT_EXPAND, clusterBarLabels = null, domeFrame = null, domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null, domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial: dialProps = null, } = params;
+    let ctx = baseCtx;
+    // Spotlight sink multiplier — live only while the lens is on, the ramp is
+    // advancing, and no node/edge focus is active (selection outranks lens). Applied
+    // to everything with `inSpotlight === false`.
+    const spotlightLensActive = spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
+    const pathLensActive = spotlightLensActive && mapLensKind === "path";
+    const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
+    const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
+    // A path sinks its surroundings deeper than the whole-map lenses do: two
+    // ends and a line have no context to keep readable, and at the spotlight's
+    // rest the still frame did not say which two were asked about (2026-09-19).
+    const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
+    const spotlightSink = (inSpotlight: boolean): number => spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
+    // Trail lens — active only while the trail popover is open. It swaps the ego
+    // keep-set from "1-hop neighbours" to "visited nodes" (see `lensNodeEgoState`
+    // below) and sinks every edge to dim. It reuses the existing dim values, adding
+    // no token and no ramp, so on/off stays within the 200ms contract and closing
+    // the popover restores the ego emphasis exactly.
+    const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
+    const trailLensActive = trailLensKeepIds !== null;
+    /**
+     * The lens's **strength** — at 0 there is no trail ink at all.
+     *
+     * On/off (does the set exist) is kept separate from strength (the ramp) because
+     * emptying the set the instant the popover closes would hard-cut the colour
+     * away. The loop keeps passing the set until the ramp reaches 0; only this value
+     * falls.
+     */
+    const trailRamp = trailLensActive
+        ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
+        : 0;
+    /*
+     * Phase of the light travelling every walked relation, 0-1.
+     *
+     * One clock for the whole trail rather than one per edge, so the path reads as a single
+     * thing being retraced instead of a scatter of dots each on its own errand. Four seconds
+     * a lap: slow enough that it never competes with reading.
+     *
+     * ⚠️ **This is a lap position, not a per-line position.** `buildTrailGlintLegs` cuts the lap
+     * into slices proportional to each walked relation's length, so exactly one light exists at
+     * a time and it walks the path in order at one constant speed. The previous shape — this
+     * same number handed to every line at once — put three lights on screen simultaneously at a
+     * 2.9x speed spread; the arithmetic is in that function's header.
+     *
+     * ⚠️ The claim that once stood here — that four seconds is "the rule this canvas lives under
+     * since the ambient drift came off it on 2026-09-08" — was a **misattributed citation**. That
+     * decision is *"The Library graph stands still; hover changes ink, never position"*, it
+     * governs the Library's canvas rather than this one, and its own falsifier is "any rAF over
+     * three idle seconds on a settled canvas" — which this loop fails for as long as the lens is
+     * open (design-motion, 2026-09-10). The real licence is narrower and is stated where it
+     * belongs, on the travelling light itself in `render/traces.ts`: a lens the person
+     * deliberately opened may animate; a canvas nobody asked about may not.
+     */
+    const trailGlint = trailRamp > 0.001 ? ((now % TRAIL_GLINT_PERIOD_MS) / TRAIL_GLINT_PERIOD_MS) : 0;
+    /*
+     * The lap's division between the walked relations, rebuilt per frame from world-space chords
+     * (the camera scales every edge alike, so world proportions are screen proportions). Null
+     * with the lens shut, which is also the cheap path: no allocation on an ordinary frame.
+     */
+    const trailGlintLegs = trailRamp > 0.001 && walkedEdgeArrivalStep !== null && walkedEdgeArrivalStep.size > 0
+        ? buildTrailGlintLegs([...walkedEdgeArrivalStep.entries()]
             .sort((left, right) => left[1] - right[1])
             .map(([key]) => {
-              const [sourceId, targetId] = key.split(" ");
-              const from = world.nodeById.get(sourceId ?? "");
-              const to = world.nodeById.get(targetId ?? "");
-              return {
+            const [sourceId, targetId] = key.split(" ");
+            const from = world.nodeById.get(sourceId ?? "");
+            const to = world.nodeById.get(targetId ?? "");
+            return {
                 key,
                 length: from && to ? Math.hypot(to.x - from.x, to.y - from.y) : 0,
-              };
-            }),
-        )
-      : null;
-  const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
-  /** Lens on: classify against the visited keep-set. Lens off: the usual ego/pair classification. */
-  const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState =>
-    trailLensKeepIds !== null
-      ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
-      : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
-
-  // Realm depth treatment — one place computes a node's render offset (world
-  // units, parallax) and its depth clarity multiplier so the whole draw agrees.
-  // Outside the realm (absent from `realmDepthById`) or depth ≤ 1 yields offset 0
-  // and multiplier 1, i.e. no effect.
-  const realmDepthOf = (nodeId: string): number | undefined => realmDepthById?.get(nodeId);
-  const realmParallaxOffsetFor = (nodeId: string): { x: number; y: number } => {
-    if (!realmDepthParallax || !realmDepthById) return ZERO_PARALLAX;
-    return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
-  };
-
-  // 3D view — at ramp 0 the loop passes null, so this frame takes the 2D path.
-  const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
-  const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
-
-  /*
-   * **How much of the sky is out.** One number for the whole frame, because the galaxy is an
-   * *altitude* and not a property of any node: the owner picked distance over a toggle, so there
-   * is nothing here to switch and nothing to keep in sync. `model/galaxy.ts` owns the maths and
-   * the reasoning; this file only spends it.
-   *
-   * ⚠️ **2D only.** The galaxy is one of the two *flat* views, and the dome is a different view
-   * with its own contract — it carries contrast floors that assume relations stay readable
-   * against its ground. While it shipped as an altitude the two collided outright:
-   * `filamentPresence` thinned containment lines in every 3D arrangement to a measured
-   * **1.22:1 against a 1.9:1 floor** (`tests/e2e/map-3d-relation-ink.spec.ts`, caught on CI
-   * 2026-09-10). The picker cannot produce that state any more — choosing a dome writes the
-   * galaxy off — but the guard stays, because a preference pair that *can* disagree eventually
-   * will.
-   */
-  const galaxy = domeOn ? 0 : galaxyRampProp;
-  const galaxyAtmosphereOn = galaxy > 0.001;
-  const galaxyIdentityOn = !domeOn && galaxyIdentityActive;
-  const galaxyOn = galaxyIdentityOn || galaxyAtmosphereOn;
-  const galaxyPhase = galaxyAppearance(galaxy);
-  const skyTimeMs = now - galaxyAtmosphereLagMs;
-  drawnSkyTimeMs = skyTimeMs;
-  /**
-   * One node's 3D transform (world offset + perspective factor). Nodes, labels,
-   * edge endpoints, and chip anchors all pass through this map, so every mark on a
-   * frame shares **one pose** — and hit testing (`renderOffsetForNode`) and the
-   * instrument read the same map.
-   */
-  const domeFrameFor = (nodeId: string): DomeNodeFrame =>
-    (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
-  // perf 2026-08-19 — look each node's frame up once, keyed by original index;
-  // the alpha loop, node sort, node draw, and label pass all read this array
-  // afterwards (see the `domeNodeFrameReused` doc-block). Same objects as
-  // `domeFrameFor` returns.
-  if (domeOn) {
-    domeNodeFrameReused.length = 0;
-    for (let i = 0; i < world.nodes.length; i += 1) {
-      domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
+            };
+        }))
+        : null;
+    const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
+    /** Lens on: classify against the visited keep-set. Lens off: the usual ego/pair classification. */
+    const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState => trailLensKeepIds !== null
+        ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
+        : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
+    // Realm depth treatment — one place computes a node's render offset (world
+    // units, parallax) and its depth clarity multiplier so the whole draw agrees.
+    // Outside the realm (absent from `realmDepthById`) or depth ≤ 1 yields offset 0
+    // and multiplier 1, i.e. no effect.
+    const realmDepthOf = (nodeId: string): number | undefined => realmDepthById?.get(nodeId);
+    const realmParallaxOffsetFor = (nodeId: string): {
+        x: number;
+        y: number;
+    } => {
+        if (!realmDepthParallax || !realmDepthById)
+            return ZERO_PARALLAX;
+        return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
+    };
+    // 3D view — at ramp 0 the loop passes null, so this frame takes the 2D path.
+    const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
+    const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
+    const skyTimeMs = now - 0;
+    drawnSkyTimeMs = skyTimeMs;
+    /**
+     * One node's 3D transform (world offset + perspective factor). Nodes, labels,
+     * edge endpoints, and chip anchors all pass through this map, so every mark on a
+     * frame shares **one pose** — and hit testing (`renderOffsetForNode`) and the
+     * instrument read the same map.
+     */
+    const domeFrameFor = (nodeId: string): DomeNodeFrame => (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
+    // perf 2026-08-19 — look each node's frame up once, keyed by original index;
+    // the alpha loop, node sort, node draw, and label pass all read this array
+    // afterwards (see the `domeNodeFrameReused` doc-block). Same objects as
+    // `domeFrameFor` returns.
+    if (domeOn) {
+        domeNodeFrameReused.length = 0;
+        for (let i = 0; i < world.nodes.length; i += 1) {
+            domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
+        }
     }
-  }
-
-  const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
-
-  // Where world (0,0) currently lands on screen — the blueprint grid rides
-  // this so the background belongs to the world, not the display (B3).
-  const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
-  // Footprint size factor — shrinks with the camera so footprints never blanket
-  // the graph when zoomed out.
-  const footprintScale = footprintScaleFor(camera.scale.value);
-  // Label zoom factor — computed once per frame, shared by every label.
-  const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
-
-  // Only the constellation background drifts on a **far layer**. Council
-  // 2026-07-28, owner: "make it look inertial, like space" (it should carry inertia, like
-  // space). Grid and contour are ground, so they stay at factor 1, welded to the
-  // world. Zero autonomous motion: purely a function of the camera origin, so when
-  // the camera stops the background stops. The whole decision lives in one pure
-  // function in `model/background-parallax.ts`, leaving only the line that hands
-  // its result to `gridDraw` untested here.
-  const bgOrigin = resolveBackgroundOrigin(
-    gridOrigin,
-    { width: viewportWidth, height: viewportHeight },
-    backgroundVariant,
-    tokens.canvasBgParallax,
-    reducedMotion,
-  );
-
-  gridDraw(
-    ctx,
-    {
-      viewportWidth,
-      viewportHeight,
-      // 3D — the background grid and dots recede into **void**: with a grid
-      // present the object reads as resting on a floor rather than floating. The
-      // base fill and vignette stay; the pattern layers fold away **on the
-      // assembly ramp** (2026-09-02 recording: they used to cut in one frame
-      // while the tiers took 1,120 ms to rise — the background hard-cutting
-      // under an easing protagonist is the defect the motion rules name). The
-      // The grid already fades with altitude. Galaxy uses the same established
-      // depth path so the blueprint recedes behind stars and relations instead
-      // of competing with them; no separate background style is introduced.
-      farT: Math.max(farT, domeRamp, galaxy),
-      variant: backgroundVariant,
-      gridPattern,
-      paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
-      // Each layer derives its parallax origin from the **grid** origin, not the
-      // background origin — the latter is already parallaxed once, and applying it
-      // twice collapses the layers together.
-      depthLayersAlpha: 1 - domeRamp,
-      depthLayers:
-        depthDotPatterns && domeRamp < 0.999
-          ? DEPTH_DOT_LAYERS.map((layer, i) => {
-              const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
-                reducedMotion ? 1 : layer.parallax);
-              return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
+    const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
+    // Where world (0,0) currently lands on screen — the blueprint grid rides
+    // this so the background belongs to the world, not the display (B3).
+    const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+    // Footprint size factor — shrinks with the camera so footprints never blanket
+    // the graph when zoomed out.
+    const footprintScale = footprintScaleFor(camera.scale.value);
+    // Label zoom factor — computed once per frame, shared by every label.
+    const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
+    // Only the constellation background drifts on a **far layer**. Council
+    // 2026-07-28, owner: "make it look inertial, like space" (it should carry inertia, like
+    // space). Grid and contour are ground, so they stay at factor 1, welded to the
+    // world. Zero autonomous motion: purely a function of the camera origin, so when
+    // the camera stops the background stops. The whole decision lives in one pure
+    // function in `model/background-parallax.ts`, leaving only the line that hands
+    // its result to `gridDraw` untested here.
+    const bgOrigin = resolveBackgroundOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, backgroundVariant, tokens.canvasBgParallax, reducedMotion);
+    gridDraw(ctx, {
+        viewportWidth,
+        viewportHeight,
+        // 3D — the background grid and dots recede into **void**: with a grid
+        // present the object reads as resting on a floor rather than floating. The
+        // base fill and vignette stay; the pattern layers fold away **on the
+        // assembly ramp** (2026-09-02 recording: they used to cut in one frame
+        // while the tiers took 1,120 ms to rise — the background hard-cutting
+        // under an easing protagonist is the defect the motion rules name). The
+        // depth path so the blueprint recedes behind stars and relations instead
+        // of competing with them; no separate background style is introduced.
+        farT: Math.max(farT, domeRamp, 0),
+        variant: backgroundVariant,
+        gridPattern,
+        paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
+        // Each layer derives its parallax origin from the **grid** origin, not the
+        // background origin — the latter is already parallaxed once, and applying it
+        // twice collapses the layers together.
+        depthLayersAlpha: 1 - domeRamp,
+        depthLayers: depthDotPatterns && domeRamp < 0.999
+            ? DEPTH_DOT_LAYERS.map((layer, i) => {
+                const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, reducedMotion ? 1 : layer.parallax);
+                return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
             })
-          : undefined,
-      originX: bgOrigin.x,
-      originY: bgOrigin.y,
-    },
-    {
-      canvasBgNear: tokens.canvasBgNear,
-      canvasBgFar: tokens.canvasBgFar,
-      vignetteBaseAlpha: tokens.vignetteBaseAlpha,
-      vignetteFarAlpha: tokens.vignetteFarAlpha,
-    },
-  );
-  if (galaxyAtmosphereOn && galaxyLayoutRadius > 0) {
-    const core = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
-    drawGalaxyNebula(ctx, {
-      centerX: core.x,
-      centerY: core.y,
-      radius: galaxyLayoutRadius * camera.scale.value,
-      alpha: Math.max(galaxyPhase.field * 0.88, galaxyPhase.corona * 0.7),
-      warmInk: tokens.galaxyProject,
-      coolInk: tokens.galaxyElement,
-      accentInk: tokens.indigo,
-      elapsedMs: galaxyElapsedMs,
-      reducedMotion,
+            : undefined,
+        originX: bgOrigin.x,
+        originY: bgOrigin.y,
+    }, {
+        canvasBgNear: tokens.canvasBgNear,
+        canvasBgFar: tokens.canvasBgFar,
+        vignetteBaseAlpha: tokens.vignetteBaseAlpha,
+        vignetteFarAlpha: tokens.vignetteFarAlpha,
     });
-  }
-  // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
-  // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
-  // must not be scaled a second time.
-  drawStarDust(ctx, {
-    points: dustPoints,
-    // Galaxy borrows the existing seeded depth texture while its grid recedes.
-    // Point count, ink, and alpha remain the far-field contract; this only lets
-    // the chosen mode reach it without requiring an altitude change.
-    farT: Math.max(farT, galaxy),
-    devicePixelRatio: 1,
-    opacityScale: galaxyAtmosphereOn ? 1.8 : 1,
-    originX: reducedMotion ? 0 : gridOrigin.x,
-    originY: reducedMotion ? 0 : gridOrigin.y,
-    radialParallax: reducedMotion ? 0 : realmDustParallax,
-  });
-  if (galaxyAtmosphereOn && !reducedMotion) {
-    drawGalaxyMeteor(
-      ctx,
-      galaxyMeteorPhase(galaxyElapsedMs, galaxyAtmosphereSeed, galaxyMeteorQuietUntilMs),
-      viewportWidth,
-      viewportHeight,
-      tokens.galaxyCapability,
-      galaxyPhase.corona * 0.82 * galaxyAtmosphereLive,
-    );
-  }
-
-  // While a realm is active, the space **inside** the warding circle becomes
-  // cosmos; outside it is clipped away. Independent of `farT` (a realm sits at
-  // circuit altitude, where dust is off). Fully still when the camera is still.
-  if (wardingRing !== null && realmCosmosPoints !== null && realmCosmosPoints.length > 0) {
-    const wc = worldToScreen(camera, viewportWidth, viewportHeight, wardingRing.centerX, wardingRing.centerY);
-    drawRealmCosmos(ctx, {
-      points: realmCosmosPoints,
-      originX: gridOrigin.x,
-      originY: gridOrigin.y,
-      clip: { cx: wc.x, cy: wc.y, radius: wardingRing.radius * camera.scale.value },
-      devicePixelRatio: 1,
-      radialParallax: realmDustParallax,
-      reducedMotion,
+    // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
+    // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
+    // must not be scaled a second time.
+    drawStarDust(ctx, {
+        points: dustPoints,
+        // Point count, ink, and alpha remain the far-field contract; this only lets
+        // the chosen mode reach it without requiring an altitude change.
+        farT: Math.max(farT, 0),
+        devicePixelRatio: 1,
+        opacityScale: 1,
+        originX: reducedMotion ? 0 : gridOrigin.x,
+        originY: reducedMotion ? 0 : gridOrigin.y,
+        radialParallax: reducedMotion ? 0 : realmDustParallax,
     });
-  }
-
-  const dialOwns = world.dial != null && dialOwnsFlatPaint({
-    hasDial: !domeOn,
-    galaxyOn,
-    realmActive: realmDepthById !== null || wardingRing !== null,
-    edgeSelected: selectedEdge !== null,
-    edgePreviewed: previewEdge !== null,
-    trailLensOpen: trailLensKeepIds !== null,
-    spotlightActive: spotlightIds !== null && spotlightIds.size > 0,
-    pathLensActive: pathEdgeIds !== null && pathEdgeIds.size > 0,
-    impactLensActive: dialProps?.impactLens === true,
-    focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",
-    focusedRelationsCaptioned: focusedNodeId !== null && (relationCaptions?.size ?? 0) > 0,
-    // Under a focus the hover is a panel row brushing the map; an element has no dial glyph to point with.
-    brushedIsElement: focusedNodeId !== null && hoveredNodeId !== null && world.nodeById.get(hoveredNodeId)?.kind === "element",
-  });
-  if (!dialOwns) clearDialFrame();
-  else if (paintOwnedDial(params, ctx, labelScale, dialProps)) return;
-
-  const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
-  // perf 2026-08-19 — the hot passes (edges, nodes, labels) inline **the same
-  // formula** `worldToScreen` uses: `(w - cam) * scale + viewport/2`. This removes
-  // a call plus a returned object (thousands per frame) and leaves the coordinates
-  // identical. The draw is synchronous, so the camera cannot change mid-frame.
-  const camX = camera.x.value;
-  const camY = camera.y.value;
-  const camScale = camera.scale.value;
-  const halfW = viewportWidth / 2;
-  const halfH = viewportHeight / 2;
-  /**
-   * Screen projection of an edge's endpoints and control point. In 3D each
-   * endpoint follows **its own end node's kind-depth offset**, so it sits on the
-   * same layer as that node's disc, and the control point averages the two offsets
-   * so the curve bridges the layers. With 3D off the offsets are 0. The edge draw
-   * and the hover pulses share this function.
-   *
-   * perf 2026-08-19 — the return value is the reused `edgePointsScratch` object,
-   * consumed before the next call. The edge draw loop passes the endpoint frames it
-   * already fetched during depth sorting as `offA`/`offB`, removing the map
-   * re-lookup; the pulse resolver omits them and looks them up itself.
-   */
-  const projectEdgePoints = (
-    edge: WorldEdge,
-    knownOffA?: DomeNodeFrame,
-    knownOffB?: DomeNodeFrame,
-  ): { a: { x: number; y: number }; b: { x: number; y: number }; control: { x: number; y: number } } => {
-    const out = edgePointsScratch;
-    if (!domeOn) {
-      out.a.x = (edge.ax - camX) * camScale + halfW;
-      out.a.y = (edge.ay - camY) * camScale + halfH;
-      out.b.x = (edge.bx - camX) * camScale + halfW;
-      out.b.y = (edge.by - camY) * camScale + halfH;
-      out.control.x = (edge.controlX - camX) * camScale + halfW;
-      out.control.y = (edge.controlY - camY) * camScale + halfH;
-      return out;
+    // While a realm is active, the space **inside** the warding circle becomes
+    // circuit altitude, where dust is off). Fully still when the camera is still.
+    if (wardingRing !== null && realmStarPoints !== null && realmStarPoints.length > 0) {
+        const wc = worldToScreen(camera, viewportWidth, viewportHeight, wardingRing.centerX, wardingRing.centerY);
+        drawRealmStars(ctx, {
+            points: realmStarPoints,
+            originX: gridOrigin.x,
+            originY: gridOrigin.y,
+            clip: { cx: wc.x, cy: wc.y, radius: wardingRing.radius * camera.scale.value },
+            devicePixelRatio: 1,
+            radialParallax: realmDustParallax,
+            reducedMotion,
+        });
     }
-    const offA = knownOffA ?? domeFrameFor(edge.sourceId);
-    const offB = knownOffB ?? domeFrameFor(edge.targetId);
-    // The shared projection resolves the live frame once for drawing, picking,
-    // and graph measurements; the planar curve remains the assembly starting point.
-    const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
-    const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
-    const curve = domeControlFor === null ? null : domeControlFor(edge);
-    const controlX = curve?.x ?? flatControlX;
-    const controlY = curve?.y ?? flatControlY;
-    out.a.x = (edge.ax + offA.dx - camX) * camScale + halfW;
-    out.a.y = (edge.ay + offA.dy - camY) * camScale + halfH;
-    out.b.x = (edge.bx + offB.dx - camX) * camScale + halfW;
-    out.b.y = (edge.by + offB.dy - camY) * camScale + halfH;
-    out.control.x = (controlX - camX) * camScale + halfW;
-    out.control.y = (controlY - camY) * camScale + halfH;
-    return out;
-  };
-  // Reach was drawn here until the design council of 2026-09-08 cut it: a ground halo
-  // sized by the farthest 1-hop neighbour enclosed 290 non-neighbours out of 410 nodes
-  // across 36 focus states, and a degree-3 node produced the same radius as a degree-15
-  // one, so the disc lit whatever the layout happened to put inside it. The 1-hop fact
-  // stays with the edge glow below, which can only touch a real relation.
-  // Ego light (2026-09-08): the glow under the focused node's lines and the bloom under the
-  // node ride the centre's focus ramp, so they arrive with the dive and leave with the fade.
-  const egoGlowRamp =
-    (!domeOn || neural > 0.001) && colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
-  const neighborsOfFocusedRaw = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
-  /*
-   * Dome ancestry (2026-08-23, `docs/DECISIONS.md` (107)). In the dome, height IS the containment
-   * tier, so a selection's clearest "where am I" is the meridian to the apex. The chain joins the
-   * **existing ego grammar** rather than getting its own: ancestors enter the neighbour set (they
-   * stay lit and labelled like neighbours), and below, the chain's edges take the same "ego"
-   * state a focused relation edge takes. No new ink, alpha, or token — the family line lights the
-   * way the neighbourhood already lights. 2D is untouched: the flat map's ego stays 1-hop.
-   */
-  const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
-  // Containment and one-hop neighbors are static for this world. Keep the live
-  // focus and retained colour focus separate so deselection still fades normally.
-  const litOn = domeOn && domeLight !== null;
-  const family = domeOn && focusedNodeId !== null ? domeFamily(world, focusedNodeId, litOn) : null;
-  const colorFamily = domeOn && colorFocusedNodeId !== null ? domeFamily(world, colorFocusedNodeId, litOn) : null;
-  const domeAncestryOn = family !== null && family.nodes.size > 0;
-  const domeAncestryEdges = family?.edges ?? EMPTY_NEIGHBOR_SET;
-  const domeAncestryColorNodes = colorFamily?.nodes ?? EMPTY_NEIGHBOR_SET;
-  const neighborsOfFocused = domeAncestryOn ? family.neighbors : neighborsOfFocusedRaw;
-  const colorNeighborsRaw = colorFocusedNodeId
-    ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
-    : EMPTY_NEIGHBOR_SET;
-  const colorNeighbors = colorFamily !== null && colorFamily.nodes.size > 0 ? colorFamily.neighbors : colorNeighborsRaw;
-  /*
-   * The lit line and its ramp — the retained colour focus, so the light leaves with the same
-   * fade the ego dim takes. `inLitLine` is the family the focus lights; everything else takes
-   * the deeper focus fog (`focusFogFactor`) and gives up its light.
-   */
-  const litFocusId = litOn ? colorFocusedNodeId : null;
-  const litFocusRamp =
-    litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
-  const inLitLine = (id: string): boolean =>
-    litFocusId !== null && (id === litFocusId || domeAncestryColorNodes.has(id));
-  litSectorIdsReused.clear();
-  if (litFocusId !== null) {
-    // The focus and its ancestors own the lit sectors — a descendant's band would light a
-    // slice of the floor the focus did not ask about.
-    let cursor: string | null | undefined = litFocusId;
-    for (let hop = 0; cursor && hop < 8; hop += 1) {
-      const kind = world.nodeById.get(cursor)?.kind;
-      if (kind === "domain" || kind === "capability") litSectorIdsReused.add(cursor);
-      cursor = parentOf(cursor);
+    const dialOwns = world.dial != null && dialOwnsFlatPaint({
+        hasDial: !domeOn,
+        realmActive: realmDepthById !== null || wardingRing !== null,
+        edgeSelected: selectedEdge !== null,
+        edgePreviewed: previewEdge !== null,
+        trailLensOpen: trailLensKeepIds !== null,
+        spotlightActive: spotlightIds !== null && spotlightIds.size > 0,
+        pathLensActive: pathEdgeIds !== null && pathEdgeIds.size > 0,
+        impactLensActive: dialProps?.impactLens === true,
+        focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",
+        focusedRelationsCaptioned: focusedNodeId !== null && (relationCaptions?.size ?? 0) > 0,
+        // Under a focus the hover is a panel row brushing the map; an element has no dial glyph to point with.
+        brushedIsElement: focusedNodeId !== null && hoveredNodeId !== null && world.nodeById.get(hoveredNodeId)?.kind === "element",
+    });
+    if (!dialOwns)
+        clearDialFrame();
+    else if (paintOwnedDial(params, ctx, labelScale, dialProps))
+        return;
+    const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
+    // perf 2026-08-19 — the hot passes (edges, nodes, labels) inline **the same
+    // formula** `worldToScreen` uses: `(w - cam) * scale + viewport/2`. This removes
+    // a call plus a returned object (thousands per frame) and leaves the coordinates
+    // identical. The draw is synchronous, so the camera cannot change mid-frame.
+    const camX = camera.x.value;
+    const camY = camera.y.value;
+    const camScale = camera.scale.value;
+    const halfW = viewportWidth / 2;
+    const halfH = viewportHeight / 2;
+    /**
+     * Screen projection of an edge's endpoints and control point. In 3D each
+     * endpoint follows **its own end node's kind-depth offset**, so it sits on the
+     * same layer as that node's disc, and the control point averages the two offsets
+     * so the curve bridges the layers. With 3D off the offsets are 0. The edge draw
+     * and the hover pulses share this function.
+     *
+     * perf 2026-08-19 — the return value is the reused `edgePointsScratch` object,
+     * consumed before the next call. The edge draw loop passes the endpoint frames it
+     * already fetched during depth sorting as `offA`/`offB`, removing the map
+     * re-lookup; the pulse resolver omits them and looks them up itself.
+     */
+    const projectEdgePoints = (edge: WorldEdge, knownOffA?: DomeNodeFrame, knownOffB?: DomeNodeFrame): {
+        a: {
+            x: number;
+            y: number;
+        };
+        b: {
+            x: number;
+            y: number;
+        };
+        control: {
+            x: number;
+            y: number;
+        };
+    } => {
+        const out = edgePointsScratch;
+        if (!domeOn) {
+            out.a.x = (edge.ax - camX) * camScale + halfW;
+            out.a.y = (edge.ay - camY) * camScale + halfH;
+            out.b.x = (edge.bx - camX) * camScale + halfW;
+            out.b.y = (edge.by - camY) * camScale + halfH;
+            out.control.x = (edge.controlX - camX) * camScale + halfW;
+            out.control.y = (edge.controlY - camY) * camScale + halfH;
+            return out;
+        }
+        const offA = knownOffA ?? domeFrameFor(edge.sourceId);
+        const offB = knownOffB ?? domeFrameFor(edge.targetId);
+        // The shared projection resolves the live frame once for drawing, picking,
+        // and graph measurements; the planar curve remains the assembly starting point.
+        const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
+        const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
+        const curve = domeControlFor === null ? null : domeControlFor(edge);
+        const controlX = curve?.x ?? flatControlX;
+        const controlY = curve?.y ?? flatControlY;
+        out.a.x = (edge.ax + offA.dx - camX) * camScale + halfW;
+        out.a.y = (edge.ay + offA.dy - camY) * camScale + halfH;
+        out.b.x = (edge.bx + offB.dx - camX) * camScale + halfW;
+        out.b.y = (edge.by + offB.dy - camY) * camScale + halfH;
+        out.control.x = (controlX - camX) * camScale + halfW;
+        out.control.y = (controlY - camY) * camScale + halfH;
+        return out;
+    };
+    // Reach was drawn here until the design council of 2026-09-08 cut it: a ground halo
+    // sized by the farthest 1-hop neighbour enclosed 290 non-neighbours out of 410 nodes
+    // across 36 focus states, and a degree-3 node produced the same radius as a degree-15
+    // one, so the disc lit whatever the layout happened to put inside it. The 1-hop fact
+    // stays with the edge glow below, which can only touch a real relation.
+    // Ego light (2026-09-08): the glow under the focused node's lines and the bloom under the
+    // node ride the centre's focus ramp, so they arrive with the dive and leave with the fade.
+    const egoGlowRamp = (!domeOn || neural > 0.001) && colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
+    const neighborsOfFocusedRaw = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
+    /*
+     * Dome ancestry (2026-08-23, `docs/DECISIONS.md` (107)). In the dome, height IS the containment
+     * tier, so a selection's clearest "where am I" is the meridian to the apex. The chain joins the
+     * **existing ego grammar** rather than getting its own: ancestors enter the neighbour set (they
+     * stay lit and labelled like neighbours), and below, the chain's edges take the same "ego"
+     * state a focused relation edge takes. No new ink, alpha, or token — the family line lights the
+     * way the neighbourhood already lights. 2D is untouched: the flat map's ego stays 1-hop.
+     */
+    const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
+    // Containment and one-hop neighbors are static for this world. Keep the live
+    // focus and retained colour focus separate so deselection still fades normally.
+    const litOn = domeOn && domeLight !== null;
+    const family = domeOn && focusedNodeId !== null ? domeFamily(world, focusedNodeId, litOn) : null;
+    const colorFamily = domeOn && colorFocusedNodeId !== null ? domeFamily(world, colorFocusedNodeId, litOn) : null;
+    const domeAncestryOn = family !== null && family.nodes.size > 0;
+    const domeAncestryEdges = family?.edges ?? EMPTY_NEIGHBOR_SET;
+    const domeAncestryColorNodes = colorFamily?.nodes ?? EMPTY_NEIGHBOR_SET;
+    const neighborsOfFocused = domeAncestryOn ? family.neighbors : neighborsOfFocusedRaw;
+    const colorNeighborsRaw = colorFocusedNodeId
+        ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
+        : EMPTY_NEIGHBOR_SET;
+    const colorNeighbors = colorFamily !== null && colorFamily.nodes.size > 0 ? colorFamily.neighbors : colorNeighborsRaw;
+    /*
+     * The lit line and its ramp — the retained colour focus, so the light leaves with the same
+     * fade the ego dim takes. `inLitLine` is the family the focus lights; everything else takes
+     * the deeper focus fog (`focusFogFactor`) and gives up its light.
+     */
+    const litFocusId = litOn ? colorFocusedNodeId : null;
+    const litFocusRamp = litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
+    const inLitLine = (id: string): boolean => litFocusId !== null && (id === litFocusId || domeAncestryColorNodes.has(id));
+    litSectorIdsReused.clear();
+    if (litFocusId !== null) {
+        // The focus and its ancestors own the lit sectors — a descendant's band would light a
+        // slice of the floor the focus did not ask about.
+        let cursor: string | null | undefined = litFocusId;
+        for (let hop = 0; cursor && hop < 8; hop += 1) {
+            const kind = world.nodeById.get(cursor)?.kind;
+            if (kind === "domain" || kind === "capability")
+                litSectorIdsReused.add(cursor);
+            cursor = parentOf(cursor);
+        }
     }
-  }
-  const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
-  if (lod !== null) {
-    if (lodPresenceReused.length < world.nodes.length) lodPresenceReused = new Float32Array(world.nodes.length);
-    lodHoverEgoReused.clear();
-    if (hoveredNodeId !== null) {
-      lodHoverEgoReused.add(hoveredNodeId);
-      for (const id of world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET) lodHoverEgoReused.add(id);
+    const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
+    if (lod !== null) {
+        if (lodPresenceReused.length < world.nodes.length)
+            lodPresenceReused = new Float32Array(world.nodes.length);
+        lodHoverEgoReused.clear();
+        if (hoveredNodeId !== null) {
+            lodHoverEgoReused.add(hoveredNodeId);
+            for (const id of world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET)
+                lodHoverEgoReused.add(id);
+        }
     }
-  }
-  const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
-  const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
-  // perf 2026-08-19 — invalidate the focus-free `NodeVisual` cache when tokens or
-  // the motion preference change.
-  if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
-    nodeVisualCache.fill(undefined);
-    nodeVisualCacheTokens = tokens;
-    nodeVisualCacheReducedMotion = reducedMotion;
-  }
-  // perf 2026-08-19 — one token argument object per frame; it is frame-invariant.
-  const traceTokensFrame = {
-    edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
-    edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),
-    edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.indigo, neural * 0.12),
-    edgeDepends: tokens.edgeDepends,
-    edgeDim: tokens.edgeDim,
-    indigo: tokens.indigo,
-    indigoBright: tokens.indigoBright,
-    edgeSelected: tokens.edgeSelected,
-    // Trail ink is not a token but **the exact colour the footprints use** — the
-    // user's yellow/indigo choice has to reach the footprints and the lines at
-    // once, or the two stop reading as two notations of one fact.
-    edgeTrail: footprintStepColor,
-  };
-  const nodeShapeTokensFrame = {
-    amberHub: tokens.amberHub,
-    recentChange: tokens.recentChange,
-    numeralShadow: tokens.numeralShadow,
-    numeralFace: tokens.numeralFace,
-    holeFill: tokens.nodeHoleFill,
-    projectHairlineInner: tokens.projectHairlineInner,
-    projectPinTick: tokens.projectPinTick,
-    selectionIndigo: tokens.selectionRingIndigo,
-    selectionHairline: tokens.selectionRingHairline,
-    neighborRing: tokens.edgeSelected,
-    hoverRing: tokens.hoverRing,
-    hoverShimmerSeg: tokens.hoverShimmerSeg,
-    hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
-    hoverShimmerColor: tokens.indigoBright,
-  };
-
-  // Semantic-zoom tier gating (`model/tier-visibility.ts`): at the overview
-  // entry only project + domain + hub draw; capabilities/elements (and any edge
-  // touching a hidden one) fade in as you zoom IN. Driven by `zoomRatio`, NOT
-  // `farT`, so the default circuit expression (farT ≈ 0) still shows only the
-  // spine. Precomputed once per frame so nodes/edges/labels agree.
-  //
-  // C1 A2 — focus ego tier exemption: a node the tier gate would otherwise hide
-  // (e.g. a capability at overview zoom) still becomes visible once it's the
-  // focused node or a 1-hop neighbor, via `effectiveNodeAlpha` (max of the
-  // gate's own alpha and the ego-reveal ramp). `effectiveAlphaById` is what
-  // edges/nodes/labels actually draw with; the raw gate value (`tierAlpha`,
-  // still `effectiveNodeAlpha`'s first argument) stays a loop local — the old
-  // `tierAlphaById` map had no reader left, so its per-node `.set` was a dead
-  // store removed in the 2026-08-19 perf pass.
-  // perf sweep 2026-07 — reused across frames (`.clear()` instead of `new
+    const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
+    const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
+    // perf 2026-08-19 — invalidate the focus-free `NodeVisual` cache when tokens or
+    // the motion preference change.
+    if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
+        nodeVisualCache.fill(undefined);
+        nodeVisualCacheTokens = tokens;
+        nodeVisualCacheReducedMotion = reducedMotion;
+    }
+    // perf 2026-08-19 — one token argument object per frame; it is frame-invariant.
+    const traceTokensFrame = {
+        edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
+        edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),
+        edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.indigo, neural * 0.12),
+        edgeDepends: tokens.edgeDepends,
+        edgeDim: tokens.edgeDim,
+        indigo: tokens.indigo,
+        indigoBright: tokens.indigoBright,
+        edgeSelected: tokens.edgeSelected,
+        // Trail ink is not a token but **the exact colour the footprints use** — the
+        // user's yellow/indigo choice has to reach the footprints and the lines at
+        // once, or the two stop reading as two notations of one fact.
+        edgeTrail: footprintStepColor,
+    };
+    const nodeShapeTokensFrame = {
+        amberHub: tokens.amberHub,
+        recentChange: tokens.recentChange,
+        numeralShadow: tokens.numeralShadow,
+        numeralFace: tokens.numeralFace,
+        holeFill: tokens.nodeHoleFill,
+        projectHairlineInner: tokens.projectHairlineInner,
+        projectPinTick: tokens.projectPinTick,
+        selectionIndigo: tokens.selectionRingIndigo,
+        selectionHairline: tokens.selectionRingHairline,
+        neighborRing: tokens.edgeSelected,
+        hoverRing: tokens.hoverRing,
+        hoverShimmerSeg: tokens.hoverShimmerSeg,
+        hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
+        hoverShimmerColor: tokens.indigoBright,
+    };
+    // Semantic-zoom tier gating (`model/tier-visibility.ts`): at the overview
+    // entry only project + domain + hub draw; capabilities/elements (and any edge
+    // touching a hidden one) fade in as you zoom IN. Driven by `zoomRatio`, NOT
+    // `farT`, so the default circuit expression (farT ≈ 0) still shows only the
+    // spine. Precomputed once per frame so nodes/edges/labels agree.
+    //
+    // C1 A2 — focus ego tier exemption: a node the tier gate would otherwise hide
+    // (e.g. a capability at overview zoom) still becomes visible once it's the
+    // focused node or a 1-hop neighbor, via `effectiveNodeAlpha` (max of the
+    // gate's own alpha and the ego-reveal ramp). `effectiveAlphaById` is what
+    // edges/nodes/labels actually draw with; the raw gate value (`tierAlpha`,
+    // still `effectiveNodeAlpha`'s first argument) stays a loop local — the old
+    // `tierAlphaById` map had no reader left, so its per-node `.set` was a dead
+    // store removed in the 2026-08-19 perf pass.
+    // perf sweep 2026-07 — reused across frames (`.clear()` instead of `new
   // Map()`) to cut two allocations + hashtable growth per frame off the
   // paint hot path. Safe because `drawTopologyFrame` only ever runs
   // synchronously from the single active rAF loop (`use-topology-loop.ts`) —
@@ -1823,9 +1679,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         spotlightReveal,
         chipExpandReveal,
         bornReveal,
-        previewEndpoint ? previewEdge?.alpha ?? 1 : 0,
-      ),
-    );
+        previewEndpoint ? previewEdge?.alpha ?? 1 : 0));
     // An outside node returning during a realm exit is held back by this ramp.
     // Edges reaching it follow automatically on the same frame through
     // `edgeTierAlpha`'s min combination — one node alpha suffices, no separate
@@ -1850,19 +1704,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               : 0,
             lodHoverEgoReused.has(node.id) ? (emphasisById.get(node.id) ?? 0) : 0,
             spotlightReveal,
-            bornReveal,
-          );
+            bornReveal);
           if (attended > presence) presence = attended;
         }
         lodPresenceReused[nodeIndex] = presence;
       }
       if (domeA > 0) outAlpha = outAlpha + (presence - outAlpha) * domeA;
-    }
-    // Galaxy's overview is the complete star field. The mode ramp reveals
-    // every real concept while Flat keeps its semantic-zoom tiers unchanged.
-    if (galaxyOn) {
-      const reveal = galaxyIdentityOn ? 1 : galaxy;
-      outAlpha = outAlpha + (1 - outAlpha) * reveal;
     }
     effectiveAlphaById.set(node.id, outAlpha);
     effectiveAlphaByIndex[nodeIndex] = outAlpha;
@@ -1947,8 +1794,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ? -1
         : edgeTierAlpha(
             sourceIndex >= 0 ? effectiveAlphaByIndex[sourceIndex] : 1,
-            targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1,
-          );
+            targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1);
   }
   /*
    * Lit 3D (2026-09-25): particles run **only along the focused subtree's dependency edges**
@@ -1973,8 +1819,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (edge.kind !== "depends" || edgeAlphaReused[i] <= 0.02) return false;
       return !litOn || (litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)));
     },
-    ambientDependsCometsReused,
-  );
+    ambientDependsCometsReused);
 
   /*
    * ── 3D painter's ordering + depth halos ──────────────────────────────
@@ -2051,8 +1896,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       { kindRgb: domeLight.kindRgb, focusRgb: domeLight.focusRgb },
       project,
       domeFogAlpha,
-      1 - 0.55 * litFocusRamp,
-    );
+      1 - 0.55 * litFocusRamp);
   }
 
   let domeRingsState: Parameters<typeof domeRingsDraw>[1] | null = null;
@@ -2125,8 +1969,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       edgeEnds.target,
       (i) => lodPresenceReused[i],
       (i) => domeNodeFrameReused[i].a,
-      (slot) => lod.ramps[slot] ?? 0,
-    );
+      (slot) => lod.ramps[slot] ?? 0);
     let chordCount = 0;
     for (let key = 0; key < slots * slots; key += 1) {
       const count = lodChords.count[key];
@@ -2184,38 +2027,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
-      if (
-        galaxyIdentityOn &&
-        !isGalaxyEdgeVisible(edge, {
-          focusedNodeId,
-          hoveredNodeId,
-          selected:
-            selectedEdge !== null && edge.sourceId === selectedEdge.sourceId && edge.targetId === selectedEdge.targetId,
-          path:
-            isPathLensEdge(mapLensKind, edge.id, pathEdgeIds) ||
-            (constellationLensActive &&
-              spotlightIds !== null &&
-              spotlightIds.has(edge.sourceId) &&
-              spotlightIds.has(edge.targetId)),
-          walked: trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.size > 0,
-        })
-      ) {
-        continue;
-      }
-      const sourceNode = galaxyOn ? world.nodeById.get(edge.sourceId) : undefined;
-      const targetNode = galaxyOn ? world.nodeById.get(edge.targetId) : undefined;
-      const galaxyFilamentInk =
-        galaxyOn && sourceNode && targetNode
-          ? galaxySelectionInk(
-              tokens[galaxyTemperatureKey(sourceNode.kind)],
-              tokens[galaxyTemperatureKey(targetNode.kind)],
-              0.5,
-            )
-          : undefined;
-      // perf 2026-08-19 — read the precomputed alpha by original index (in dome
-      // mode dereference the sort index; in 2D they coincide). -1 = collapsed by
-      // the density condition, ≤0.02 = rejected by tier — both skip, as before.
-      const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
+            // perf 2026-08-19 — read the precomputed alpha by original index (in dome
+            // mode dereference the sort index; in 2D they coincide). -1 = collapsed by
+            // the density condition, ≤0.02 = rejected by tier — both skip, as before.
+            const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
       const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
       if (edgeAlpha <= 0.02) continue;
       // Endpoint frames come back by original index from the depth-sort pass.
@@ -2268,11 +2083,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         edge.targetId === selectedEdge.targetId &&
         (!selectedEdge.relationType || edge.relationType === selectedEdge.relationType);
       const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
-      const isConstellationEdge =
-        constellationLensActive &&
-        spotlightIds !== null &&
-        spotlightIds.has(edge.sourceId) &&
-        spotlightIds.has(edge.targetId);
       const hovered =
         hoveredEdge !== null &&
         edge.sourceId === hoveredEdge.sourceId &&
@@ -2327,749 +2137,681 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ? isPathEdge
           : spotlightIds !== null &&
               spotlightIds.has(edge.sourceId) &&
-              spotlightIds.has(edge.targetId),
-      );
+              spotlightIds.has(edge.targetId));
       const walkedKey = !trailKeysLive
         ? ""
         : edge.sourceId < edge.targetId
           ? `${edge.sourceId} ${edge.targetId}`
-          : `${edge.targetId} ${edge.sourceId}`;
-      /*
-       * A line waits for the star it arrives at. During the ignition sweep the path draws
-       * itself node by node, so the eye follows the walk in the order it happened instead of
-       * being handed the finished shape all at once — which is the difference between a
-       * picture of a path and a replay of one.
-       */
-      const walkedSweep =
-        trailLensOpenedAtMs > 0 && footprintNewestStep > 0
-          ? igniteCurve(
-              (now -
-                trailLensOpenedAtMs -
-                trailIgniteStartMs(walkedEdgeArrivalStep?.get(walkedKey) ?? 1, footprintNewestStep)) /
-                TRAIL_IGNITE_MS,
-            )
-          : 1;
-      const walkedTrail =
-        trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
-          ? trailRamp * walkedSweep
-          : 0;
-      const galaxyEdgeReturn =
-        galaxyOn &&
-        !isGalaxyEdgeVisible(edge, {
-          focusedNodeId,
-          hoveredNodeId,
-          selected: isSelectedEdge,
-          path: isPathEdge || isConstellationEdge,
-          walked: walkedTrail > 0.01,
-        })
-          ? galaxyIdentityOn
-            ? 0
-            : bodyPresence(galaxy)
-          : 1;
-      if (galaxyEdgeReturn <= 0.001) continue;
-      /*
-       * The stored direction is in key order (low id → high id); the line is drawn from
-       * `edge.sourceId` to `edge.targetId`. When those disagree the light has to run the
-       * other way, or it would confidently point at the wrong end.
-       */
-      const walkedLowToHigh = walkedEdgeDirections?.get(walkedKey);
-      const trailDirection =
-        walkedLowToHigh === undefined
-          ? undefined
-          : edge.sourceId < edge.targetId
-            ? walkedLowToHigh
-            : !walkedLowToHigh;
-      // 3D fog exemption — relationships highlighted by interaction are not buried by depth.
-      const domeEdgeExempt = emphasized || isSelectedEdge || isPathEdge || edgeEgoState === "ego";
-      // Omit distant details — same rule as fog exemption: relationships brightened for reading
-      // also reclaim their halo (if exempt edges cannot cut through tangled tangles, the exemption is half-hearted).
-      if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
-      /*
-       * Hover lift (2026-09-02) — with nothing focused, the lines of the hovered
-       * node rise toward the ego ink and every other line recedes a step, both on
-       * the hovered node's own emphasis ramp (`emphasisById`, τ 90 ms), so the
-       * change eases in with the ring and eases out when the cursor leaves. The
-       * recede is deliberately mild: a focus dims to hide, a hover only points.
-       * Nodes keep their ink — only lines move, which is what makes a hover read
-       * as "these are its connections" without the screen changing under the
-       * cursor. Suppressed under focus and lenses, which own attention there.
-       */
-      const hoverRamp =
-        focusedNodeId === null && hoveredNodeId !== null && !trailLensActive && !pathLensActive
-          ? Math.min(1, Math.max(0, emphasisById.get(hoveredNodeId) ?? 0))
-          : 0;
-      const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
-      const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
-      if (focusedNodeId === null) {
-        edgeLiftReused[edgeOrigIndex] = hoverLift;
-        edgeRestDimReused[edgeOrigIndex] = edgeEgoState === "dim" ? 1 : 0;
-      }
-      const directional = isDirectionalRelation(edge.relationType);
-      const hoverRecede =
-        hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
-      // In 3D the hovered node's lines also climb out of the depth fog on the
-      // same ramp — the fog (near 1.0 → far 0.09) otherwise swallows the lift on
-      // the far side of the cone tree, and a hover that lights only the near
-      // half reads as broken rather than as depth.
-      const domeEdgeFogForEdge =
-        (domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift)) *
-        // Lit 3D: a focus deepens the fog on every line outside the lit line.
-        (litOn && !domeEdgeExempt ? focusFogFactor((edgeFrameA.u + edgeFrameB.u) / 2, litFocusRamp) : 1);
-      // A line is never brighter than its dimmer endpoint's appear ramp: a node
-      // swelling into view (new node, growth replay) brings its lines with it
-      // instead of the lines arriving first.
-      const edgeAppear = appearById
-        ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
-        : 1;
-      /*
-       * Relations thin to **filaments** as the sky comes out — gas between the stars rather
-       * than wiring between components. They are floored well above invisibility on purpose:
-       * a galaxy with no structure between its stars is a scatter plot, and the structure is
-       * the thing Atlas exists to show (`model/galaxy.ts`). A walked relation is exempt, since
-       * it is the answer to a question the reader asked by opening the lens.
-       */
-      const filament = galaxyOn && walkedTrail <= 0.01 ? filamentPresence(galaxyPhase.filament) : 1;
-      ctx.globalAlpha =
-        (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
-        edgeSpotlightSink *
-        hoverRecede *
-        edgeAppear *
-        filament *
-        galaxyEdgeReturn *
-        domeEdgeFogForEdge;
-      /*
-       * A halo's strength follows **how strong this line currently is**: a near
-       * (strong) line cuts hard, a far line buried in fog barely cuts at all, which
-       * is what keeps the halo from asserting "I am in front". An edge exempted by
-       * interaction takes no fog, so it cuts hardest of all.
-       *
-       * perf 2026-08-19 — the halo argument is reused scratch
-       * (`edgeHaloScratch`), the token argument is one per frame
-       * (`traceTokensFrame`), and the pair key is computed once per edge object and
-       * cached (`edgePairMeta`). The state literals themselves stay spelled out
-       * because contract gates (footprint-trail-ink, review-ring-authorship)
-       * pin that wiring.
-       */
-      if (domeHaloWidthPx > 0.05) {
-        edgeHaloScratch.color = domeHaloColor;
-        edgeHaloScratch.px = domeHaloWidthPx;
-        edgeHaloScratch.alpha = Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN);
-      }
-      /*
-       * ⚠️ **The walked line's own light, laid under it.** A canvas shadow alone was measured
-       * too faint to read as glow on a dashed relation — the line came out white but flat.
-       * The depth halo already strokes a wider copy of the exact same curve beneath the ink,
-       * which is a real light rather than a blur hint, so a walked relation borrows it in
-       * star ink. It overrides the dome halo for the same edge on purpose: while the lens is
-       * open, what this line is *for* outranks how far away it is.
-       */
-      if (walkedTrail > 0.01 && trailStarInk !== null) {
-        edgeHaloScratch.color = trailStarInk;
-        edgeHaloScratch.px = TRAIL_HALO_PX * walkedTrail;
-        edgeHaloScratch.alpha = TRAIL_HALO_ALPHA * walkedTrail;
-      }
-      const galaxyEdgeInk = galaxyFilamentInk
-        ? hoverLift > 0 || edgeEgoState === "ego" || isSelectedEdge
-          ? tokens.indigoBright
-          : galaxyFilamentInk
-        : undefined;
-      // Ego line glow — a blurred copy of the line under itself, indigo, on the centre's
-      // focus ramp. Only the ego lines carry it (≤ degree per frame), so the blur's cost
-      // stays bounded; everything else draws exactly as before.
-      /*
-       * ⚠️ **The walked line glows, and it is the only line that does while the lens is on.**
-       * The owner asked for the connecting lines to light up with the nodes; the ego glow
-       * stands down under the lens for the reason it always did — two glows in two inks on
-       * one canvas would make the reader decide which light they are being shown.
-       */
-      const edgeGlows =
-        walkedTrail > 0.01 && trailStarInk !== null
-          ? beginEdgeGlow(
-              ctx,
-              walkedTrail,
-              // The trail's own glow values, not the ego's — a constellation line is light,
-              // and at the ego alpha it read as a slightly brighter dash.
-              {
-                ...tokens,
-                egoGlowAlpha: tokens.trailGlowAlpha,
-                egoGlowBlurPx: tokens.trailGlowBlurPx,
-              },
-              trailStarInk,
-            )
-          : edgeEgoState === "ego" && !trailLensActive
-            ? beginEdgeGlow(ctx, egoGlowRamp, tokens)
-            : galaxyEdgeInk
-              ? beginEdgeGlow(
-                  ctx,
-                  galaxyPhase.filament * (hoverLift > 0 ? 0.82 : 0.36),
-                  {
+                    : `${edge.targetId} ${edge.sourceId}`;
+            /*
+             * A line waits for the star it arrives at. During the ignition sweep the path draws
+             * itself node by node, so the eye follows the walk in the order it happened instead of
+             * being handed the finished shape all at once — which is the difference between a
+             * picture of a path and a replay of one.
+             */
+            const walkedSweep = trailLensOpenedAtMs > 0 && footprintNewestStep > 0
+                ? igniteCurve((now -
+                    trailLensOpenedAtMs -
+                    trailIgniteStartMs(walkedEdgeArrivalStep?.get(walkedKey) ?? 1, footprintNewestStep)) /
+                    TRAIL_IGNITE_MS)
+                : 1;
+            const walkedTrail = trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
+                ? trailRamp * walkedSweep
+                : 0;
+            /*
+             * The stored direction is in key order (low id → high id); the line is drawn from
+             * `edge.sourceId` to `edge.targetId`. When those disagree the light has to run the
+             * other way, or it would confidently point at the wrong end.
+             */
+            const walkedLowToHigh = walkedEdgeDirections?.get(walkedKey);
+            const trailDirection = walkedLowToHigh === undefined
+                ? undefined
+                : edge.sourceId < edge.targetId
+                    ? walkedLowToHigh
+                    : !walkedLowToHigh;
+            // 3D fog exemption — relationships highlighted by interaction are not buried by depth.
+            const domeEdgeExempt = emphasized || isSelectedEdge || isPathEdge || edgeEgoState === "ego";
+            // Omit distant details — same rule as fog exemption: relationships brightened for reading
+            // also reclaim their halo (if exempt edges cannot cut through tangled tangles, the exemption is half-hearted).
+            if (!domeEdgeExempt && domeEdgeDetail < 1)
+                domeHaloWidthPx *= domeEdgeDetail;
+            /*
+             * Hover lift (2026-09-02) — with nothing focused, the lines of the hovered
+             * node rise toward the ego ink and every other line recedes a step, both on
+             * the hovered node's own emphasis ramp (`emphasisById`, τ 90 ms), so the
+             * change eases in with the ring and eases out when the cursor leaves. The
+             * recede is deliberately mild: a focus dims to hide, a hover only points.
+             * Nodes keep their ink — only lines move, which is what makes a hover read
+             * as "these are its connections" without the screen changing under the
+             * cursor. Suppressed under focus and lenses, which own attention there.
+             */
+            const hoverRamp = focusedNodeId === null && hoveredNodeId !== null && !trailLensActive && !pathLensActive
+                ? Math.min(1, Math.max(0, emphasisById.get(hoveredNodeId) ?? 0))
+                : 0;
+            const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
+            const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
+            if (focusedNodeId === null) {
+                edgeLiftReused[edgeOrigIndex] = hoverLift;
+                edgeRestDimReused[edgeOrigIndex] = edgeEgoState === "dim" ? 1 : 0;
+            }
+            const directional = isDirectionalRelation(edge.relationType);
+            const hoverRecede = hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
+            // In 3D the hovered node's lines also climb out of the depth fog on the
+            // same ramp — the fog (near 1.0 → far 0.09) otherwise swallows the lift on
+            // the far side of the cone tree, and a hover that lights only the near
+            // half reads as broken rather than as depth.
+            const domeEdgeFogForEdge = (domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift)) *
+                // Lit 3D: a focus deepens the fog on every line outside the lit line.
+                (litOn && !domeEdgeExempt ? focusFogFactor((edgeFrameA.u + edgeFrameB.u) / 2, litFocusRamp) : 1);
+            // A line is never brighter than its dimmer endpoint's appear ramp: a node
+            // swelling into view (new node, growth replay) brings its lines with it
+            // instead of the lines arriving first.
+            const edgeAppear = appearById
+                ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
+                : 1;
+            const filament = 1;
+            ctx.globalAlpha =
+                (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
+                    edgeSpotlightSink *
+                    hoverRecede *
+                    edgeAppear *
+                    filament
+                    *
+                        domeEdgeFogForEdge;
+            /*
+             * A halo's strength follows **how strong this line currently is**: a near
+             * (strong) line cuts hard, a far line buried in fog barely cuts at all, which
+             * is what keeps the halo from asserting "I am in front". An edge exempted by
+             * interaction takes no fog, so it cuts hardest of all.
+             *
+             * perf 2026-08-19 — the halo argument is reused scratch
+             * (`edgeHaloScratch`), the token argument is one per frame
+             * (`traceTokensFrame`), and the pair key is computed once per edge object and
+             * cached (`edgePairMeta`). The state literals themselves stay spelled out
+             * because contract gates (footprint-trail-ink, review-ring-authorship)
+             * pin that wiring.
+             */
+            if (domeHaloWidthPx > 0.05) {
+                edgeHaloScratch.color = domeHaloColor;
+                edgeHaloScratch.px = domeHaloWidthPx;
+                edgeHaloScratch.alpha = Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN);
+            }
+            /*
+             * ⚠️ **The walked line's own light, laid under it.** A canvas shadow alone was measured
+             * too faint to read as glow on a dashed relation — the line came out white but flat.
+             * The depth halo already strokes a wider copy of the exact same curve beneath the ink,
+             * which is a real light rather than a blur hint, so a walked relation borrows it in
+             * star ink. It overrides the dome halo for the same edge on purpose: while the lens is
+             * open, what this line is *for* outranks how far away it is.
+             */
+            if (walkedTrail > 0.01 && trailStarInk !== null) {
+                edgeHaloScratch.color = trailStarInk;
+                edgeHaloScratch.px = TRAIL_HALO_PX * walkedTrail;
+                edgeHaloScratch.alpha = TRAIL_HALO_ALPHA * walkedTrail;
+            }
+            // Ego line glow — a blurred copy of the line under itself, indigo, on the centre's
+            // focus ramp. Only the ego lines carry it (≤ degree per frame), so the blur's cost
+            // stays bounded; everything else draws exactly as before.
+            /*
+             * ⚠️ **The walked line glows, and it is the only line that does while the lens is on.**
+             * The owner asked for the connecting lines to light up with the nodes; the ego glow
+             * stands down under the lens for the reason it always did — two glows in two inks on
+             * one canvas would make the reader decide which light they are being shown.
+             */
+            const edgeGlows = walkedTrail > 0.01 && trailStarInk !== null
+                ? beginEdgeGlow(ctx, walkedTrail, 
+                // The trail's own glow values, not the ego's — a constellation line is light,
+                // and at the ego alpha it read as a slightly brighter dash.
+                {
                     ...tokens,
-                    egoGlowAlpha: tokens.egoGlowAlpha * 0.7,
-                    egoGlowBlurPx: tokens.egoGlowBlurPx * 0.8,
-                  },
-                  galaxyEdgeInk,
-                )
-              : false;
-      tracesDraw(
-        ctx,
-        {
-          a,
-          b,
-          control,
-          relationType: kind,
-          // The binary `kind` lumps everything that is not containment into
-          // `depends`. Whether a directional taper may be drawn is decided by the
-          // **original relation type**, not by `kind`.
-          directional,
-          egoState: edgeEgoState,
-          reveal:
-            touches && edgeRevealAt < 1
-              ? {
-                  progress: edgeRevealAt,
-                  from: directional || edge.sourceId === focusedNodeId ? "a" : "b",
-                  baseLift: edgeLiftReused[edgeOrigIndex],
-                  baseDim: edgeRestDimReused[edgeOrigIndex] * (1 - edgeFocusRamp),
-                }
-              : null,
-          dimRamp: edgeFocusRamp,
-          selected: (isSelectedEdge || isPathEdge) && !trailLensActive,
-          trailWalked: walkedTrail,
-          trailDirection,
-          trailGlint:
-            trailGlintLegs === null
-              ? null
-              : trailGlintLocalPhase(trailGlintLegs.get(walkedKey), trailGlint),
-          farT,
-          t: edge.t,
-          emphasized,
-          hoverLift,
-          galaxyInk: galaxyEdgeInk,
-          galaxyGlint:
-            kind === "depends" && galaxyEdgeInk && !reducedMotion
-              ? galaxyPhase.filament * (hoverLift > 0 || edgeEgoState === "ego" ? 0.78 : 0.32)
-              : 0,
-          reducedMotion,
-          level: edge.level,
-          widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
-          // The device-pixel floor rides the same population and the same ramp as
-          // the depth width factor above it: only the lines depth is allowed to
-          // thin, and only as far as the assembly ramp has brought them into 3D,
-          // so the 2D↔3D morph cannot step a stroke.
-          minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
-          halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
-          containsCometEligible: kind === "contains" ? mapCometsOn && egoCometEdges.has(edge) : undefined,
-          dependsCometEligible: kind === "depends" ? mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
-          cometOwner: edge,
-        },
-        traceTokensFrame,
-      );
-      if (edgeGlows) endEdgeGlow(ctx);
-      const caption = edge.id ? relationCaptions?.get(edge.id) : null;
-      const directionalCaption = isDirectionalRelation(edge.relationType);
-      const captionInFocus = selectedEdge ? isSelectedEdge : focusedNodeId ? touches : true;
-      const captionBudgeted =
-        captionFoldedIds === null ||
-        captionWithinFlatBudget({
-          attended: isSelectedEdge || hovered || isPathEdge,
-          touchesFocus: touches,
-          spine: isSpineEndpoint(edge.sourceId) && isSpineEndpoint(edge.targetId),
-          folded: captionFoldedIds.has(edge.sourceId) || captionFoldedIds.has(edge.targetId),
-        });
-      if (caption && captionInFocus && captionBudgeted && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
-        captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1, normal: captionNormal(a, b) });
-      }
-      /**
-       * Footprints beside the line — only when this relation was **walked
-       * consecutively**. Stamped along the normal, offset from the line rather
-       * than on it: a relation line is the channel carrying a typed fact
-       * (containment / dependency), and a mark laid on top would make two facts
-       * fight over one ink.
-       *
-       * That only **real edges** among the candidate pairs receive them is
-       * guaranteed here, because this loop iterates `world.edges`. Two unrelated
-       * nodes visited back to back never reach this point.
-       */
-      /*
-       * ⚠️ **No marks along the line.** Marks strung down a relation were the last of the
-       * footprint notation — small objects a reader had to find and tie back to the line
-       * they sat on. The owner cut them on 2026-09-10 (*"get rid of the footprint thing"*),
-       * and the line does the work instead: a walked relation glows in star ink, which is
-       * what a constellation line is. Nothing is drawn here at all now; the paint happens
-       * in `tracesDraw` above, under the edge glow this frame turns on for it.
-       */
-      // Always-on comets: the tail is drawn by `tracesDraw` off `edge.t`, together
-      // with the edge curve, regardless of focus (dim edges excluded). This pass
-      // no longer lays separate firefly points on top.
-      ctx.globalAlpha = 1;
+                    egoGlowAlpha: tokens.trailGlowAlpha,
+                    egoGlowBlurPx: tokens.trailGlowBlurPx,
+                }, trailStarInk)
+                : edgeEgoState === "ego" && !trailLensActive
+                    ? beginEdgeGlow(ctx, egoGlowRamp, tokens)
+                    :
+                        false;
+            tracesDraw(ctx, {
+                a,
+                b,
+                control,
+                relationType: kind,
+                // The binary `kind` lumps everything that is not containment into
+                // `depends`. Whether a directional taper may be drawn is decided by the
+                // **original relation type**, not by `kind`.
+                directional,
+                egoState: edgeEgoState,
+                reveal: touches && edgeRevealAt < 1
+                    ? {
+                        progress: edgeRevealAt,
+                        from: directional || edge.sourceId === focusedNodeId ? "a" : "b",
+                        baseLift: edgeLiftReused[edgeOrigIndex],
+                        baseDim: edgeRestDimReused[edgeOrigIndex] * (1 - edgeFocusRamp),
+                    }
+                    : null,
+                dimRamp: edgeFocusRamp,
+                selected: (isSelectedEdge || isPathEdge) && !trailLensActive,
+                trailWalked: walkedTrail,
+                trailDirection,
+                trailGlint: trailGlintLegs === null
+                    ? null
+                    : trailGlintLocalPhase(trailGlintLegs.get(walkedKey), trailGlint),
+                farT,
+                t: edge.t,
+                emphasized,
+                hoverLift,
+                reducedMotion,
+                level: edge.level,
+                widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
+                // The device-pixel floor rides the same population and the same ramp as
+                // the depth width factor above it: only the lines depth is allowed to
+                // thin, and only as far as the assembly ramp has brought them into 3D,
+                // so the 2D↔3D morph cannot step a stroke.
+                minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
+                halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
+                containsCometEligible: kind === "contains" ? mapCometsOn && egoCometEdges.has(edge) : undefined,
+                dependsCometEligible: kind === "depends" ? mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
+                cometOwner: edge,
+            }, traceTokensFrame);
+            if (edgeGlows)
+                endEdgeGlow(ctx);
+            const caption = edge.id ? relationCaptions?.get(edge.id) : null;
+            const directionalCaption = isDirectionalRelation(edge.relationType);
+            const captionInFocus = selectedEdge ? isSelectedEdge : focusedNodeId ? touches : true;
+            const captionBudgeted = captionFoldedIds === null ||
+                captionWithinFlatBudget({
+                    attended: isSelectedEdge || hovered || isPathEdge,
+                    touchesFocus: touches,
+                    spine: isSpineEndpoint(edge.sourceId) && isSpineEndpoint(edge.targetId),
+                    folded: captionFoldedIds.has(edge.sourceId) || captionFoldedIds.has(edge.targetId),
+                });
+            if (caption && captionInFocus && captionBudgeted && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
+                captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1, normal: captionNormal(a, b) });
+            }
+            /**
+             * Footprints beside the line — only when this relation was **walked
+             * consecutively**. Stamped along the normal, offset from the line rather
+             * than on it: a relation line is the channel carrying a typed fact
+             * (containment / dependency), and a mark laid on top would make two facts
+             * fight over one ink.
+             *
+             * That only **real edges** among the candidate pairs receive them is
+             * guaranteed here, because this loop iterates `world.edges`. Two unrelated
+             * nodes visited back to back never reach this point.
+             */
+            /*
+             * ⚠️ **No marks along the line.** Marks strung down a relation were the last of the
+             * footprint notation — small objects a reader had to find and tie back to the line
+             * they sat on. The owner cut them on 2026-09-10 (*"get rid of the footprint thing"*),
+             * and the line does the work instead: a walked relation glows in star ink, which is
+             * what a constellation line is. Nothing is drawn here at all now; the paint happens
+             * in `tracesDraw` above, under the edge glow this frame turns on for it.
+             */
+            // Always-on comets: the tail is drawn by `tracesDraw` off `edge.t`, together
+            // with the edge curve, regardless of focus (dim edges excluded). This pass
+            // no longer lays separate firefly points on top.
+            ctx.globalAlpha = 1;
+        }
     }
-  }
-
-  // Draft relation uses the live endpoint geometry but never enters `world.edges`.
-  // It therefore cannot pull nodes, heat physics, or alter graph statistics.
-  if (previewEdge) {
-    const source = world.nodeById.get(previewEdge.sourceId);
-    const target = world.nodeById.get(previewEdge.targetId);
-    if (source && target) {
-      const sourceFrame = domeFrameFor(source.id);
-      const targetFrame = domeFrameFor(target.id);
-      drawPreviewEdge(ctx, {
-        source: project(source.x + sourceFrame.dx, source.y + sourceFrame.dy),
-        target: project(target.x + targetFrame.dx, target.y + targetFrame.dy),
-        sourceRadius:
-          radiusForKind(source.kind, tokens) * source.magnitudeScale * sourceFrame.s * camera.scale.value,
-        targetRadius:
-          radiusForKind(target.kind, tokens) * target.magnitudeScale * targetFrame.s * camera.scale.value,
-        alpha: previewEdge.alpha,
-        solid: previewEdge.phase === "committing",
-        solidProgress: previewEdge.commitProgress,
-        color: tokens.selectionRingIndigo,
-      });
+    // Draft relation uses the live endpoint geometry but never enters `world.edges`.
+    // It therefore cannot pull nodes, heat physics, or alter graph statistics.
+    if (previewEdge) {
+        const source = world.nodeById.get(previewEdge.sourceId);
+        const target = world.nodeById.get(previewEdge.targetId);
+        if (source && target) {
+            const sourceFrame = domeFrameFor(source.id);
+            const targetFrame = domeFrameFor(target.id);
+            drawPreviewEdge(ctx, {
+                source: project(source.x + sourceFrame.dx, source.y + sourceFrame.dy),
+                target: project(target.x + targetFrame.dx, target.y + targetFrame.dy),
+                sourceRadius: radiusForKind(source.kind, tokens) * source.magnitudeScale * sourceFrame.s * camera.scale.value,
+                targetRadius: radiusForKind(target.kind, tokens) * target.magnitudeScale * targetFrame.s * camera.scale.value,
+                alpha: previewEdge.alpha,
+                solid: previewEdge.phase === "committing",
+                solidProgress: previewEdge.commitProgress,
+                color: tokens.selectionRingIndigo,
+            });
+        }
     }
-  }
-
-  // Hover pulses — one-shot signals (420ms) fired by a node hover, drawn above the
-  // edge curves and below the nodes. Under reduced-motion nothing fires, so
-  // `pulses` is empty and nothing draws. The curve projects live edge coordinates,
-  // so it follows dragging and a settling graph.
-  if (pulses.length > 0) {
-    const edgeByPair = indexedPulseEdges(world);
-    drawPulses(
-      ctx,
-      pulses,
-      now,
-      (pulse) => {
-        const edge = edgeByPair.get(`${pulse.sourceId} ${pulse.targetId}`);
-        if (!edge) return null;
-        const points = projectEdgePoints(edge);
-        return { a: points.a, control: points.control, b: points.b };
-      },
-      { head: tokens.indigoBright, trail: tokens.indigo },
-    );
-    ctx.globalAlpha = 1;
-  }
-  ctx = params.nodeLayer?.(ctx) ?? ctx;
-
-  // rank7 — a just-expanded disc child's reveal multiplier = its NEAREST
-  // expanded-ancestor parent's ramp (walk contains-parent chain up). Already-
-  // expanded parents sit at ramp 1 → multiply-by-1 (no regression); a parent
-  // still ramping fades its direct children (and deeper descendants) IN. Nodes
-  // outside any expanded disc → 1.
-  const nearestExpandedRevealMul = (nodeId: string): number => {
-    if (!chipRevealById || expandedParentIds.size === 0) return 1;
-    let cursor = world.nodeById.get(nodeId)?.parentId ?? null;
-    let guard = 0;
-    while (cursor && guard < 64) {
-      if (expandedParentIds.has(cursor)) return chipRevealById.get(cursor) ?? 1;
-      cursor = world.nodeById.get(cursor)?.parentId ?? null;
-      guard += 1;
+    // Hover pulses — one-shot signals (420ms) fired by a node hover, drawn above the
+    // edge curves and below the nodes. Under reduced-motion nothing fires, so
+    // `pulses` is empty and nothing draws. The curve projects live edge coordinates,
+    // so it follows dragging and a settling graph.
+    if (pulses.length > 0) {
+        const edgeByPair = indexedPulseEdges(world);
+        drawPulses(ctx, pulses, now, (pulse) => {
+            const edge = edgeByPair.get(`${pulse.sourceId} ${pulse.targetId}`);
+            if (!edge)
+                return null;
+            const points = projectEdgePoints(edge);
+            return { a: points.a, control: points.control, b: points.b };
+        }, { head: tokens.indigoBright, trail: tokens.indigo });
+        ctx.globalAlpha = 1;
     }
-    return 1;
-  };
-
-  // A label anchor has to follow the disc that was **actually drawn**. The label
-  // pass used `radiusForKind × cameraScale`, which omits the node's
-  // `magnitudeScale`, its breathe, its appear ramp, and the **1.12 growth on
-  // selection**. So a selected node laid its label on its own border (measured:
-  // border bottom 215 vs label top 216) and a large node pulled its name inside the
-  // shape. Handing over what this pass computed makes both passes see one shape.
-  // perf 2026-08-19 — reused instead of a new Map per frame (see
-  // `effectiveAlphaByIdReused`).
-  drawnScreenRadiusByIdReused.clear();
-  const drawnScreenRadiusById = drawnScreenRadiusByIdReused;
-  // Discs occupied by ego members and the hovered node, handed to the label placer
-  // as reservations so a passive label cannot lay text over them (the same
-  // mechanism the chip reservations use).
-  const nodeDiscReservations: ReservedBox[] = [];
-
-  lodDustByState.current = 0;
-  lodDustByState.stale = 0;
-  lodDustByState.unknown = 0;
-  if (lod !== null && domeLight !== null) {
-    resetStrataLodDust(lodDust);
-    const shown = lod.evidence;
-    const was = lod.evidenceWas;
-    const evidenceRamp = lod.evidenceRamp;
-    for (let i = 0; i < world.nodes.length; i += 1) {
-      const node = world.nodes[i];
-      if (node.kind !== "capability" && node.kind !== "element") continue;
-      const frame = domeNodeFrameReused[i];
-      if (frame.a <= 0.01) continue;
-      const weight = frame.a * (1 - lodPresenceReused[i]);
-      if (weight <= 0.01) continue;
-      if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
-      const x = (node.x + frame.dx - camX) * camScale + halfW;
-      const y = (node.y + frame.dy - camY) * camScale + halfH;
-      if (x < -4 || y < -4 || x > viewportWidth + 4 || y > viewportHeight + 4) continue;
-      const to = shown?.get(node.id) ?? "unknown";
-      const from = evidenceRamp >= 1 ? to : (was?.get(node.id) ?? "unknown");
-      if (from === to) {
-        addStrataLodDust(lodDust, node.kind, to, frame.u, weight, x, y);
-      } else {
-        addStrataLodDust(lodDust, node.kind, from, frame.u, weight * (1 - evidenceRamp), x, y);
-        addStrataLodDust(lodDust, node.kind, to, frame.u, weight * evidenceRamp, x, y);
-      }
+    ctx = params.nodeLayer?.(ctx) ?? ctx;
+    // rank7 — a just-expanded disc child's reveal multiplier = its NEAREST
+    // expanded-ancestor parent's ramp (walk contains-parent chain up). Already-
+    // expanded parents sit at ramp 1 → multiply-by-1 (no regression); a parent
+    // still ramping fades its direct children (and deeper descendants) IN. Nodes
+    // outside any expanded disc → 1.
+    const nearestExpandedRevealMul = (nodeId: string): number => {
+        if (!chipRevealById || expandedParentIds.size === 0)
+            return 1;
+        let cursor = world.nodeById.get(nodeId)?.parentId ?? null;
+        let guard = 0;
+        while (cursor && guard < 64) {
+            if (expandedParentIds.has(cursor))
+                return chipRevealById.get(cursor) ?? 1;
+            cursor = world.nodeById.get(cursor)?.parentId ?? null;
+            guard += 1;
+        }
+        return 1;
+    };
+    // A label anchor has to follow the disc that was **actually drawn**. The label
+    // pass used `radiusForKind × cameraScale`, which omits the node's
+    // `magnitudeScale`, its breathe, its appear ramp, and the **1.12 growth on
+    // selection**. So a selected node laid its label on its own border (measured:
+    // border bottom 215 vs label top 216) and a large node pulled its name inside the
+    // shape. Handing over what this pass computed makes both passes see one shape.
+    // perf 2026-08-19 — reused instead of a new Map per frame (see
+    // `effectiveAlphaByIdReused`).
+    drawnScreenRadiusByIdReused.clear();
+    const drawnScreenRadiusById = drawnScreenRadiusByIdReused;
+    // Discs occupied by ego members and the hovered node, handed to the label placer
+    // as reservations so a passive label cannot lay text over them (the same
+    // mechanism the chip reservations use).
+    const nodeDiscReservations: ReservedBox[] = [];
+    lodDustByState.current = 0;
+    lodDustByState.stale = 0;
+    lodDustByState.unknown = 0;
+    if (lod !== null && domeLight !== null) {
+        resetStrataLodDust(lodDust);
+        const shown = lod.evidence;
+        const was = lod.evidenceWas;
+        const evidenceRamp = lod.evidenceRamp;
+        for (let i = 0; i < world.nodes.length; i += 1) {
+            const node = world.nodes[i];
+            if (node.kind !== "capability" && node.kind !== "element")
+                continue;
+            const frame = domeNodeFrameReused[i];
+            if (frame.a <= 0.01)
+                continue;
+            const weight = frame.a * (1 - lodPresenceReused[i]);
+            if (weight <= 0.01)
+                continue;
+            if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id))
+                continue;
+            const x = (node.x + frame.dx - camX) * camScale + halfW;
+            const y = (node.y + frame.dy - camY) * camScale + halfH;
+            if (x < -4 || y < -4 || x > viewportWidth + 4 || y > viewportHeight + 4)
+                continue;
+            const to = shown?.get(node.id) ?? "unknown";
+            const from = evidenceRamp >= 1 ? to : (was?.get(node.id) ?? "unknown");
+            if (from === to) {
+                addStrataLodDust(lodDust, node.kind, to, frame.u, weight, x, y);
+            }
+            else {
+                addStrataLodDust(lodDust, node.kind, from, frame.u, weight * (1 - evidenceRamp), x, y);
+                addStrataLodDust(lodDust, node.kind, to, frame.u, weight * evidenceRamp, x, y);
+            }
+        }
+        lodDustDrawn = drawStrataLodDust(ctx, lodDust, { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb }, domeFogAlpha, 1 - 0.55 * litFocusRamp, lodDustByState);
     }
-    lodDustDrawn = drawStrataLodDust(
-      ctx,
-      lodDust,
-      { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb },
-      domeFogAlpha,
-      1 - 0.55 * litFocusRamp,
-      lodDustByState,
-    );
-  } else {
-    lodDustDrawn = 0;
-  }
-
-  let nodeDrawOrder: readonly WorldNode[] = world.nodes;
-  if (domeOn) {
-    domeNodeDepthReused.length = 0;
-    domeNodeIndexReused.length = 0;
-    for (let i = 0; i < world.nodes.length; i += 1) {
-      domeNodeDepthReused.push(domeNodeFrameReused[i].u);
-      if (effectiveAlphaByIndex[i] <= HITTABLE_MIN_TIER_ALPHA) continue;
-      const id = world.nodes[i].id;
-      if (isPreviewEndpointHidden(clusteredIds.has(id), previewEdge, id)) continue;
-      domeNodeIndexReused.push(i);
+    else {
+        lodDustDrawn = 0;
     }
-    domeNodeIndexReused.sort((x, y) => domeNodeDepthReused[y] - domeNodeDepthReused[x]);
-    domeNodeOrderReused.length = 0;
-    for (let i = 0; i < domeNodeIndexReused.length; i += 1) domeNodeOrderReused.push(world.nodes[domeNodeIndexReused[i]]);
-    nodeDrawOrder = domeNodeOrderReused;
-  }
-
-  drawnNodeCount = 0;
-  litDrawnStateCounts.current = 0;
-  litDrawnStateCounts.stale = 0;
-  litDrawnStateCounts.unknown = 0;
-  for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
-    const node = nodeDrawOrder[drawPos];
-    const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
-    const previewTarget = node.id === previewEdge?.targetId;
-    // Density condition: nodes inside a collapsed parent's subtree are replaced by
-    // a chip and not drawn.
-    if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
-    const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
-    // The same constant the hit test and the label ramp floor on — a node that
-    // survives this line is grabbable and nameable by construction.
-    if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA) continue;
-    drawnNodeCount += 1;
-    const egoState = previewTarget
-      ? "neighbor"
-      : egoAllNormal
-        ? "normal"
-        : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
-    // Color signature uses the RETAINED focus classification (persists through a
-    // deselect fade) + this node's focus ramp — everything else keeps the live
-    // `egoState`.
-    const colorEgoState = previewTarget
-      ? "neighbor"
-      : colorAllNormal
-        ? "normal"
-        : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
-    // The lens introduces no easing of its own: it feeds the exponential ramp the
-    // spotlight already uses (`focusDimTau`) straight into the colour ramp. Opening
-    // the popover ramps the background down and closing it ramps back up, never a
-    // hard cut. On the ordinary focused path the lens is off and nothing changes.
-    const focusRamp = trailLensActive ? trailRamp : (focusRampById.get(node.id) ?? 0);
-    const emphasis = emphasisById.get(node.id) ?? 0;
-    const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
-    // perf 2026-08-19 — on a focus-free frame the visual is a function of
-    // (kind, fresh, stale) alone and hits the cache (`nodeVisualCache` doc-block).
-    // If any condition fails (focus ramp, hover ripple, lens) it is recomputed on
-    // the original path.
-    let visual: NodeVisual;
-    const visualCacheable =
-      colorEgoState === "normal" &&
-      colorFocusedNodeId === null &&
-      !trailLensActive &&
-      emphasis <= 0.02 &&
-      focusRamp <= 0.001 &&
-      !isEmphasizedNeighbor;
-    if (visualCacheable) {
-      const cacheKey =
-        KIND_CACHE_INDEX[node.kind] * 4 + (node.fresh && !node.stale ? 2 : 0) + (node.stale ? 1 : 0);
-      const cached = nodeVisualCache[cacheKey];
-      if (cached !== undefined) {
-        visual = cached;
-      } else {
-        visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
-        nodeVisualCache[cacheKey] = visual;
-      }
-    } else {
-      visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
-    }
-    /**
-     * The trail — **the visited node itself** reads in the trail colour. The
-     * earlier lens only left visited nodes at `"normal"`, marking a visit solely
-     * with the footprint **beside** the node, so on the screen the owner saw,
-     * neither the trail's nodes nor its lines were marked.
-     *
-     * No new circle (a fourth ring): only the colour of the stroke channel the node
-     * **already has** changes, so no orbit and no ink are added. This is what "make
-     * it glow" looks like inside the charter — **value and colour contrast** on a
-     * darkened field, not a glow (bloom exists only as the opt-in exception in the
-     * one footprint-glyph file).
-     */
-    // perf 2026-08-19 — with the lens off, `kept` is false and the result is always
-    // 0 (`trailNodeInkStrength`'s first branch), so it is only called on active
-    // frames and no argument object is built per node. Same values.
-    const trailInk = trailLensActive
-      ? trailNodeInkStrength({
-          kept: isTrailKept(node.id),
-          ramp: trailRamp,
-          colorEgoState,
-        })
-      : 0;
-    if (trailInk > 0.001) {
-      visual.stroke = lerpColorHex(visual.stroke, footprintStepColor, trailInk);
-    }
-
-    const baseRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale;
-    // rank8 — new-node appear ramp: micro scale 0.6→1 + alpha 0→1. rank7 —
-    // just-expanded disc child reveal: alpha ×= nearest expanded parent's ramp.
-    // Both default to 1 (no map / existing node / not in an expanding disc), so
-    // steady state is unchanged (regression 0).
-    const appear = Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1));
-    // High-fan batch reveal — for a child surfacing in a batch, the per-child
-    // stagger ramp (`batchAppearById`) REPLACES the parent group fade
-    // (`nearestExpandedRevealMul`) so it never fades twice, and it also drives the
-    // micro appear scale. A node outside a batch takes the existing group /
-    // world-appear path.
-    const batchAppear = batchAppearById?.get(node.id);
-    // The fifth tier-piercing channel **replaces the group fade** too, for the same
-    // reason as `batchAppear` — it was added later and missed that guard. This
-    // node's `tierAlpha` already came through `effectiveAlphaById`, which has the
-    // chip-expand ramp folded in (`chipExpandReveal`), so multiplying the group fade
-    // in again would make the alpha a **product of two exponentials** and children
-    // would keep arriving long after the chip said "expanded" — measured: chip at
-    // 90% in 391ms vs children at 621ms, a 230ms gap, past the 120ms "one input =
-    // one event" threshold in `.claude/rules/design.md`. Both ramps use the same
-    // `clusterRevealTau`, so replacing does not remove the fade — it happens once.
-    const chipExpandReveal = expandRevealById?.get(node.id);
-    const revealMul =
-      batchAppear !== undefined
-        ? Math.min(1, Math.max(0, batchAppear))
-        : chipExpandReveal !== undefined
-          ? 1
-          : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
-    const scaleDriver = batchAppear !== undefined ? Math.min(1, Math.max(0, batchAppear)) : appear;
-    const appearScale = 0.6 + 0.4 * scaleDriver;
-    const appearRevealAlpha = appear * revealMul;
-    let breathe = 1;
-    if (visual.breatheEnabled) {
-      breathe = 1 + tokens.breatheAmplitude * Math.sin((now / 1000) * tokens.breatheFreqRad + phaseForId(node.id));
-    }
-    let effRadius = baseRadius * breathe * appearScale;
-    // Center node grows 1→1.12 ON the focus ramp (eases in with the dive, back
-    // out on deselect) — retained `colorEgoState` so the shrink survives the
-    // deselect fade.
-    if (colorEgoState === "center") effRadius *= 1 + 0.12 * Math.min(1, Math.max(0, focusRamp));
-    /*
-     * Hover-out. The press bump is 0.16·r and the ripple bump is 0.08·r, so handing a
-     * released node straight back to the ripple halved its bump in one frame — a ~1.4px
-     * hard cut on the one mark the hand had just been on, while everything around it
-     * eased (design council, 2026-09-08). The node the press left keeps the press
-     * coefficient AND its bloom and rides its own emphasis decay to 0 (the bloom used to
-     * be keyed to the live hover alone, so the re-recording after the council still
-     * stepped 25.5 → 22.0 px in one frame at hover-out). It gives both up the moment it
-     * becomes a neighbour of the NEW hover, because then it is a ripple member and 0.08
-     * is what it is.
-     */
-    const releasedPress =
-      node.id === hoverReleasedNodeId &&
-      node.id !== hoveredNodeId &&
-      !(hoveredNodeId !== null && (world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET).has(node.id));
-    if (!focusedNodeId) {
-      if (node.id === hoveredNodeId && !reducedMotion && hoverStartedAt !== null) {
-        // Press: the underdamped step from the hover's first instant — it swells past
-        // its rest (peak ≈ 1.31× at ζ 0.35) and settles, a press that gives. Hover-out
-        // hands the node to the emphasis decay at the same coefficient (see below), so
-        // the two curves meet without a step.
-        const press = pressResponse((now - hoverStartedAt) / 1000, { omega: tokens.pressAngFreq, zeta: tokens.pressZeta });
-        effRadius += Math.max(0, press) * baseRadius * 0.16;
-      } else {
-        effRadius +=
-          emphasis * (node.id === hoveredNodeId || releasedPress ? baseRadius * 0.16 : baseRadius * 0.08);
-      }
-    } else if (isEmphasizedNeighbor) {
-      effRadius += emphasis * baseRadius * 0.12;
-    }
-
-    // Realm depth clarity — while a realm is active, deeper rings drop slightly in
-    // alpha and size. Hovered and ego members (center/neighbor) return to 100%:
-    // whatever the interaction is on stays crisp.
-    const isHoveredNode = node.id === hoveredNodeId;
-    let realmClarityAlpha = 1;
-    if (realmDepthById !== null && !isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
-      const depth = realmDepthOf(node.id);
-      if (depth !== undefined) {
-        realmClarityAlpha = realmDepthClarityAlpha(depth);
-        effRadius *= realmDepthClarityScale(depth);
-      }
-    }
-    // 3D view — the dot radius (perspective already folded into `s`) is geometry,
-    // so it is always applied, while depth fog (near 1.0 → far 0.09) exempts
-    // whatever the interaction is on (hover, ego, trail): anything that must be
-    // read brightens again. The 3D waiver that let this attenuation run past the
-    // 2D 3:1 ink floor (`docs/DECISIONS.md`, the 3D waiver list) now stops at the
-    // node's **rim**: the fill may still sink to 0.09, the edge may not
-    // (`DOME_RIM_FOG_FLOOR`, 2026-09-05).
-    // perf 2026-08-19 — recovers the buffered frame by sort index, no map re-lookup.
-    const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
-    // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the extra strokes
-    // of back-hemisphere nodes (depth halo, depth shading, metallic sheen, domain
-    // pin tick) away continuously with depth. The outline left that list on
-    // 2026-09-05 and is held at the rim floor instead. Same exemption rule as the
-    // fog: hovered, trail, and ego nodes stay at 1.
-    let domeDetail = 1;
-    /*
-     * The rim's share of its unfogged alpha (`NodeShapeDrawState.rimAlphaScale`).
-     * Fog multiplies the whole node and bottoms out at 0.09, which left the
-     * median rim at 1.15 : 1 against the background beside it and 117 of 125
-     * nodes under 3 : 1 (measured 2026-09-05, sample vault at 1920). The fill,
-     * shading, halo, line width, perspective size and draw order still carry
-     * depth; only the edge gets a floor.
-     */
-    let domeRimAlphaScale = 1;
+    let nodeDrawOrder: readonly WorldNode[] = world.nodes;
     if (domeOn) {
-      effRadius *= nodeDome.s;
-      if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
-        // Neural depth keeps a visible cell body rather than leaving a bright
-        // rim around an almost-black centre. Perspective and shading retain depth.
-        const fog = Math.max(domeFogAlpha(nodeDome.u), neural * DOME_RIM_FOG_FLOOR);
-        const domeFog = 1 + (fog - 1) * nodeDome.a;
-        realmClarityAlpha *= domeFog;
-        domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
-        domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
-      }
-      // Lit 3D: a focus sinks everything outside the lit line and its relations deeper by depth.
-      if (litOn && litFocusRamp > 0.001 && !isHoveredNode && egoState !== "center" && egoState !== "neighbor" && !inLitLine(node.id)) {
-        realmClarityAlpha *= focusFogFactor(nodeDome.u, litFocusRamp);
-      }
+        domeNodeDepthReused.length = 0;
+        domeNodeIndexReused.length = 0;
+        for (let i = 0; i < world.nodes.length; i += 1) {
+            domeNodeDepthReused.push(domeNodeFrameReused[i].u);
+            if (effectiveAlphaByIndex[i] <= HITTABLE_MIN_TIER_ALPHA)
+                continue;
+            const id = world.nodes[i].id;
+            if (isPreviewEndpointHidden(clusteredIds.has(id), previewEdge, id))
+                continue;
+            domeNodeIndexReused.push(i);
+        }
+        domeNodeIndexReused.sort((x, y) => domeNodeDepthReused[y] - domeNodeDepthReused[x]);
+        domeNodeOrderReused.length = 0;
+        for (let i = 0; i < domeNodeIndexReused.length; i += 1)
+            domeNodeOrderReused.push(world.nodes[domeNodeIndexReused[i]]);
+        nodeDrawOrder = domeNodeOrderReused;
     }
-
-    // Depth parallax adds the band offset (in world units) to the RENDER
-    // coordinates only; the world coordinates never move. The 3D offset follows the
-    // same grammar, and hit testing reads the same map.
-    const pOff = realmParallaxOffsetFor(node.id);
-    // perf 2026-08-19 — `project` inlined plus scratch reuse; identical formula.
-    const screen = nodeScreenScratch;
-    screen.x = (node.x + pOff.x + nodeDome.dx - camX) * camScale + halfW;
-    screen.y = (node.y + pOff.y + nodeDome.dy - camY) * camScale + halfH;
-    const screenRadius = effRadius * camera.scale.value;
-    // Rings/pulses/labels all key off this same disc, so one guard here drops
-    // the whole off-screen node cost (see `render/viewport-cull.ts`).
-    if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
-    drawnScreenRadiusById.set(node.id, screenRadius);
-    // Every drawn disc reserves its own footprint, so a passive label never
-    // paints across a neighbouring shape. This used to cover only ego members and
-    // the hovered node, to leave the overview's label density alone; measured
-    // 2026-09-03 on the sample vault with every domain open, twelve labels
-    // crossed a leaf or hub ring once the ink ladder made those rings readable,
-    // and a name over a shape makes both unreadable. A label blocked below flips
-    // above before it is dropped (the placement further down), so the overview
-    // keeps its names wherever a slot exists. Ego members and the hovered node
-    // reserve the ring clearance too, because the selection ring and expand
-    // badge sit just outside the disc.
-    const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
-    // A changed node wears the recent-changes ring outside its disc; reserve it
-    // too, or a neighbour's name is laid across the ring (2026-09-19).
-    const wearsSpotlightRing = recentSpotlightActive && spotlightIds !== null && spotlightIds.has(node.id);
-    const reservedHalf = attended
-      ? screenRadius + EXPANDED_AURA_RING_OFFSET
-      : screenRadius + (wearsSpotlightRing ? SPOTLIGHT_RING_OFFSET + 1 : 1);
-    nodeDiscReservations.push({
-      ownerId: node.id,
-      priority: NODE_DISC_LABEL_PRIORITY,
-      bbox: {
-        minX: screen.x - reservedHalf,
-        maxX: screen.x + reservedHalf,
-        minY: screen.y - reservedHalf,
-        maxY: screen.y + reservedHalf,
-      },
-    });
-
-    // Slight dim on background nodes unrelated to the expansion (disc members,
-    // spine, and ego excluded).
-    const backgroundDim =
-      anyExpanded && !previewEndpoint && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
-        ? BACKGROUND_DIM_WHEN_EXPANDED
-        : 1;
-
-    // Spotlight — nodes outside the window sink; the hovered one is exempt.
-    const nodeSpotlightSink = spotlightSink(
-      (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
-    );
-    const nodeLayerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
-    const bodyAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
-    ctx.globalAlpha = bodyAlpha;
-    // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
-    // so `render/node-shapes.ts` stays token-free and pure.
-    // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
-    // token constants), so this caches per fill instead of re-parsing hex and
-    // rebuilding a string per node. Invalidated wholesale when the tokens change.
-    if (sheenTopCacheTint !== tokens.nodeSheenTint || sheenTopCacheBlend !== tokens.nodeSheenBlend) {
-      sheenTopCache.clear();
-      sheenTopCacheTint = tokens.nodeSheenTint;
-      sheenTopCacheBlend = tokens.nodeSheenBlend;
-    }
-    let bodyFill = visual.fill;
-    let bodyStroke = visual.stroke;
-    /*
-     * Lit 3D — **evidence decides how much a node emits** (`render/dome-light.ts`). A current
-     * node's core takes its kind colour; a stale one keeps a dimmer core; an unknown one keeps
-     * the dark body and emits nothing. The mix rides the assembly ramp, so the light rises
-     * with the structure instead of switching on.
-     */
-    let litState: EvidenceLight | null = null;
-    let litRgb: readonly [number, number, number] | null = null;
-    if (litOn && domeLight !== null && nodeDome.a > 0.01) {
-      litRgb = domeLight.kindRgb[node.kind] ?? null;
-      litState = domeLight.evidence?.get(node.id) ?? "unknown";
-      if (litRgb !== null && colorEgoState !== "dim" && litState !== "unknown") {
-        const body = litBodyInk(visual.fill, visual.stroke, litRgb, litState, nodeDome.a);
-        bodyFill = body.fill;
-        bodyStroke = body.stroke;
-      }
-    }
-    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
-      const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
-      let palette = neuralPaletteCache.get(visual);
-      if (!palette || palette.ramp !== neural || palette.ink !== ink) {
-        const fill = lerpColorHex(visual.fill, ink, neural * 0.85);
-        palette = { ramp: neural, ink, fill, stroke: lerpColorHex(visual.stroke, fill, neural * 0.85) };
-        neuralPaletteCache.set(visual, palette);
-      }
-      bodyFill = palette.fill;
-      if (colorEgoState === "normal") bodyStroke = palette.stroke;
-    }
-    let sheenTop = sheenTopCache.get(bodyFill);
-    if (sheenTop === undefined) {
-      sheenTop = lerpColorHex(bodyFill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
-      if (sheenTopCache.size > 256) sheenTopCache.clear();
-      sheenTopCache.set(bodyFill, sheenTop);
-    }
-    // Far-side detail ramp — converges the metallic sheen gradient toward the flat
-    // fill continuously with depth. At detail 0, `sheenTop === fill` (the same
-    // string) and `resolveBodyFill` returns early with a flat fill, building no
-    // gradient at all. In between it is a colour interpolation that kills the blend
-    // factor by detail, so there is no hard cut (detail 1 = the same formula and
-    // the same string as the cached value).
-    if (domeDetail < 1) {
-      sheenTop =
-        domeDetail <= 0.01
-          ? visual.fill
-          : lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend * domeDetail);
-    }
-    // Engraved numeral: project/domain only, and only when there's a count to
-    // show (prototype `if (n.count && (project||domain) ...)`).
-    // 3D — no numeral is engraved on a dot: this layer is about form, not a data table.
-    const showCount =
-      (node.kind === "project" || node.kind === "domain") && node.count > 0 && !(domeOn && nodeDome.a > 0.5);
-    // Canvas-emphasis slice §C — hover ring eligibility. `hoveredNodeId` is
-    // already nulled by the caller (`use-topology-loop.ts`) whenever a focus
-    // is active, so this is never true at the same time as `egoState ===
+    drawnNodeCount = 0;
+    litDrawnStateCounts.current = 0;
+    litDrawnStateCounts.stale = 0;
+    litDrawnStateCounts.unknown = 0;
+    for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
+        const node = nodeDrawOrder[drawPos];
+        const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
+        const previewTarget = node.id === previewEdge?.targetId;
+        // Density condition: nodes inside a collapsed parent's subtree are replaced by
+        // a chip and not drawn.
+        if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id))
+            continue;
+        const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
+        // The same constant the hit test and the label ramp floor on — a node that
+        // survives this line is grabbable and nameable by construction.
+        if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA)
+            continue;
+        drawnNodeCount += 1;
+        const egoState = previewTarget
+            ? "neighbor"
+            : egoAllNormal
+                ? "normal"
+                : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+        // Color signature uses the RETAINED focus classification (persists through a
+        // deselect fade) + this node's focus ramp — everything else keeps the live
+        // `egoState`.
+        const colorEgoState = previewTarget
+            ? "neighbor"
+            : colorAllNormal
+                ? "normal"
+                : lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
+        // The lens introduces no easing of its own: it feeds the exponential ramp the
+        // spotlight already uses (`focusDimTau`) straight into the colour ramp. Opening
+        // the popover ramps the background down and closing it ramps back up, never a
+        // hard cut. On the ordinary focused path the lens is off and nothing changes.
+        const focusRamp = trailLensActive ? trailRamp : (focusRampById.get(node.id) ?? 0);
+        const emphasis = emphasisById.get(node.id) ?? 0;
+        const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
+        // perf 2026-08-19 — on a focus-free frame the visual is a function of
+        // (kind, fresh, stale) alone and hits the cache (`nodeVisualCache` doc-block).
+        // If any condition fails (focus ramp, hover ripple, lens) it is recomputed on
+        // the original path.
+        let visual: NodeVisual;
+        const visualCacheable = colorEgoState === "normal" &&
+            colorFocusedNodeId === null &&
+            !trailLensActive &&
+            emphasis <= 0.02 &&
+            focusRamp <= 0.001 &&
+            !isEmphasizedNeighbor;
+        if (visualCacheable) {
+            const cacheKey = KIND_CACHE_INDEX[node.kind] * 4 + (node.fresh && !node.stale ? 2 : 0) + (node.stale ? 1 : 0);
+            const cached = nodeVisualCache[cacheKey];
+            if (cached !== undefined) {
+                visual = cached;
+            }
+            else {
+                visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+                nodeVisualCache[cacheKey] = visual;
+            }
+        }
+        else {
+            visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+        }
+        /**
+         * The trail — **the visited node itself** reads in the trail colour. The
+         * earlier lens only left visited nodes at `"normal"`, marking a visit solely
+         * with the footprint **beside** the node, so on the screen the owner saw,
+         * neither the trail's nodes nor its lines were marked.
+         *
+         * No new circle (a fourth ring): only the colour of the stroke channel the node
+         * **already has** changes, so no orbit and no ink are added. This is what "make
+         * it glow" looks like inside the charter — **value and colour contrast** on a
+         * darkened field, not a glow (bloom exists only as the opt-in exception in the
+         * one footprint-glyph file).
+         */
+        // perf 2026-08-19 — with the lens off, `kept` is false and the result is always
+        // 0 (`trailNodeInkStrength`'s first branch), so it is only called on active
+        // frames and no argument object is built per node. Same values.
+        const trailInk = trailLensActive
+            ? trailNodeInkStrength({
+                kept: isTrailKept(node.id),
+                ramp: trailRamp,
+                colorEgoState,
+            })
+            : 0;
+        if (trailInk > 0.001) {
+            visual.stroke = lerpColorHex(visual.stroke, footprintStepColor, trailInk);
+        }
+        const baseRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale;
+        // rank8 — new-node appear ramp: micro scale 0.6→1 + alpha 0→1. rank7 —
+        // just-expanded disc child reveal: alpha ×= nearest expanded parent's ramp.
+        // Both default to 1 (no map / existing node / not in an expanding disc), so
+        // steady state is unchanged (regression 0).
+        const appear = Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1));
+        // High-fan batch reveal — for a child surfacing in a batch, the per-child
+        // stagger ramp (`batchAppearById`) REPLACES the parent group fade
+        // (`nearestExpandedRevealMul`) so it never fades twice, and it also drives the
+        // micro appear scale. A node outside a batch takes the existing group /
+        // world-appear path.
+        const batchAppear = batchAppearById?.get(node.id);
+        // The fifth tier-piercing channel **replaces the group fade** too, for the same
+        // reason as `batchAppear` — it was added later and missed that guard. This
+        // node's `tierAlpha` already came through `effectiveAlphaById`, which has the
+        // chip-expand ramp folded in (`chipExpandReveal`), so multiplying the group fade
+        // in again would make the alpha a **product of two exponentials** and children
+        // would keep arriving long after the chip said "expanded" — measured: chip at
+        // 90% in 391ms vs children at 621ms, a 230ms gap, past the 120ms "one input =
+        // one event" threshold in `.claude/rules/design.md`. Both ramps use the same
+        // `clusterRevealTau`, so replacing does not remove the fade — it happens once.
+        const chipExpandReveal = expandRevealById?.get(node.id);
+        const revealMul = batchAppear !== undefined
+            ? Math.min(1, Math.max(0, batchAppear))
+            : chipExpandReveal !== undefined
+                ? 1
+                : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
+        const scaleDriver = batchAppear !== undefined ? Math.min(1, Math.max(0, batchAppear)) : appear;
+        const appearScale = 0.6 + 0.4 * scaleDriver;
+        const appearRevealAlpha = appear * revealMul;
+        let breathe = 1;
+        if (visual.breatheEnabled) {
+            breathe = 1 + tokens.breatheAmplitude * Math.sin((now / 1000) * tokens.breatheFreqRad + phaseForId(node.id));
+        }
+        let effRadius = baseRadius * breathe * appearScale;
+        // Center node grows 1→1.12 ON the focus ramp (eases in with the dive, back
+        // out on deselect) — retained `colorEgoState` so the shrink survives the
+        // deselect fade.
+        if (colorEgoState === "center")
+            effRadius *= 1 + 0.12 * Math.min(1, Math.max(0, focusRamp));
+        /*
+         * Hover-out. The press bump is 0.16·r and the ripple bump is 0.08·r, so handing a
+         * released node straight back to the ripple halved its bump in one frame — a ~1.4px
+         * hard cut on the one mark the hand had just been on, while everything around it
+         * eased (design council, 2026-09-08). The node the press left keeps the press
+         * coefficient AND its bloom and rides its own emphasis decay to 0 (the bloom used to
+         * be keyed to the live hover alone, so the re-recording after the council still
+         * stepped 25.5 → 22.0 px in one frame at hover-out). It gives both up the moment it
+         * becomes a neighbour of the NEW hover, because then it is a ripple member and 0.08
+         * is what it is.
+         */
+        const releasedPress = node.id === hoverReleasedNodeId &&
+            node.id !== hoveredNodeId &&
+            !(hoveredNodeId !== null && (world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET).has(node.id));
+        if (!focusedNodeId) {
+            if (node.id === hoveredNodeId && !reducedMotion && hoverStartedAt !== null) {
+                // Press: the underdamped step from the hover's first instant — it swells past
+                // its rest (peak ≈ 1.31× at ζ 0.35) and settles, a press that gives. Hover-out
+                // hands the node to the emphasis decay at the same coefficient (see below), so
+                // the two curves meet without a step.
+                const press = pressResponse((now - hoverStartedAt) / 1000, { omega: tokens.pressAngFreq, zeta: tokens.pressZeta });
+                effRadius += Math.max(0, press) * baseRadius * 0.16;
+            }
+            else {
+                effRadius +=
+                    emphasis * (node.id === hoveredNodeId || releasedPress ? baseRadius * 0.16 : baseRadius * 0.08);
+            }
+        }
+        else if (isEmphasizedNeighbor) {
+            effRadius += emphasis * baseRadius * 0.12;
+        }
+        // Realm depth clarity — while a realm is active, deeper rings drop slightly in
+        // alpha and size. Hovered and ego members (center/neighbor) return to 100%:
+        // whatever the interaction is on stays crisp.
+        const isHoveredNode = node.id === hoveredNodeId;
+        let realmClarityAlpha = 1;
+        if (realmDepthById !== null && !isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
+            const depth = realmDepthOf(node.id);
+            if (depth !== undefined) {
+                realmClarityAlpha = realmDepthClarityAlpha(depth);
+                effRadius *= realmDepthClarityScale(depth);
+            }
+        }
+        // 3D view — the dot radius (perspective already folded into `s`) is geometry,
+        // so it is always applied, while depth fog (near 1.0 → far 0.09) exempts
+        // whatever the interaction is on (hover, ego, trail): anything that must be
+        // read brightens again. The 3D waiver that let this attenuation run past the
+        // 2D 3:1 ink floor (`docs/DECISIONS.md`, the 3D waiver list) now stops at the
+        // node's **rim**: the fill may still sink to 0.09, the edge may not
+        // (`DOME_RIM_FOG_FLOOR`, 2026-09-05).
+        // perf 2026-08-19 — recovers the buffered frame by sort index, no map re-lookup.
+        const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
+        // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the extra strokes
+        // of back-hemisphere nodes (depth halo, depth shading, metallic sheen, domain
+        // pin tick) away continuously with depth. The outline left that list on
+        // 2026-09-05 and is held at the rim floor instead. Same exemption rule as the
+        // fog: hovered, trail, and ego nodes stay at 1.
+        let domeDetail = 1;
+        /*
+         * The rim's share of its unfogged alpha (`NodeShapeDrawState.rimAlphaScale`).
+         * Fog multiplies the whole node and bottoms out at 0.09, which left the
+         * median rim at 1.15 : 1 against the background beside it and 117 of 125
+         * nodes under 3 : 1 (measured 2026-09-05, sample vault at 1920). The fill,
+         * shading, halo, line width, perspective size and draw order still carry
+         * depth; only the edge gets a floor.
+         */
+        let domeRimAlphaScale = 1;
+        if (domeOn) {
+            effRadius *= nodeDome.s;
+            if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
+                // Neural depth keeps a visible cell body rather than leaving a bright
+                // rim around an almost-black centre. Perspective and shading retain depth.
+                const fog = Math.max(domeFogAlpha(nodeDome.u), neural * DOME_RIM_FOG_FLOOR);
+                const domeFog = 1 + (fog - 1) * nodeDome.a;
+                realmClarityAlpha *= domeFog;
+                domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
+                domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
+            }
+            // Lit 3D: a focus sinks everything outside the lit line and its relations deeper by depth.
+            if (litOn && litFocusRamp > 0.001 && !isHoveredNode && egoState !== "center" && egoState !== "neighbor" && !inLitLine(node.id)) {
+                realmClarityAlpha *= focusFogFactor(nodeDome.u, litFocusRamp);
+            }
+        }
+        // Depth parallax adds the band offset (in world units) to the RENDER
+        // coordinates only; the world coordinates never move. The 3D offset follows the
+        // same grammar, and hit testing reads the same map.
+        const pOff = realmParallaxOffsetFor(node.id);
+        // perf 2026-08-19 — `project` inlined plus scratch reuse; identical formula.
+        const screen = nodeScreenScratch;
+        screen.x = (node.x + pOff.x + nodeDome.dx - camX) * camScale + halfW;
+        screen.y = (node.y + pOff.y + nodeDome.dy - camY) * camScale + halfH;
+        const screenRadius = effRadius * camera.scale.value;
+        // Rings/pulses/labels all key off this same disc, so one guard here drops
+        // the whole off-screen node cost (see `render/viewport-cull.ts`).
+        if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight))
+            continue;
+        drawnScreenRadiusById.set(node.id, screenRadius);
+        // Every drawn disc reserves its own footprint, so a passive label never
+        // paints across a neighbouring shape. This used to cover only ego members and
+        // the hovered node, to leave the overview's label density alone; measured
+        // 2026-09-03 on the sample vault with every domain open, twelve labels
+        // crossed a leaf or hub ring once the ink ladder made those rings readable,
+        // and a name over a shape makes both unreadable. A label blocked below flips
+        // above before it is dropped (the placement further down), so the overview
+        // keeps its names wherever a slot exists. Ego members and the hovered node
+        // reserve the ring clearance too, because the selection ring and expand
+        // badge sit just outside the disc.
+        const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
+        // A changed node wears the recent-changes ring outside its disc; reserve it
+        // too, or a neighbour's name is laid across the ring (2026-09-19).
+        const wearsSpotlightRing = recentSpotlightActive && spotlightIds !== null && spotlightIds.has(node.id);
+        const reservedHalf = attended
+            ? screenRadius + EXPANDED_AURA_RING_OFFSET
+            : screenRadius + (wearsSpotlightRing ? SPOTLIGHT_RING_OFFSET + 1 : 1);
+        nodeDiscReservations.push({
+            ownerId: node.id,
+            priority: NODE_DISC_LABEL_PRIORITY,
+            bbox: {
+                minX: screen.x - reservedHalf,
+                maxX: screen.x + reservedHalf,
+                minY: screen.y - reservedHalf,
+                maxY: screen.y + reservedHalf,
+            },
+        });
+        // Slight dim on background nodes unrelated to the expansion (disc members,
+        // spine, and ego excluded).
+        const backgroundDim = anyExpanded && !previewEndpoint && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
+            ? BACKGROUND_DIM_WHEN_EXPANDED
+            : 1;
+        // Spotlight — nodes outside the window sink; the hovered one is exempt.
+        const nodeSpotlightSink = spotlightSink((spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint);
+        const nodeLayerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
+        const bodyAlpha = nodeLayerAlpha;
+        ctx.globalAlpha = bodyAlpha;
+        // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
+        // so `render/node-shapes.ts` stays token-free and pure.
+        // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
+        // token constants), so this caches per fill instead of re-parsing hex and
+        // rebuilding a string per node. Invalidated wholesale when the tokens change.
+        if (sheenTopCacheTint !== tokens.nodeSheenTint || sheenTopCacheBlend !== tokens.nodeSheenBlend) {
+            sheenTopCache.clear();
+            sheenTopCacheTint = tokens.nodeSheenTint;
+            sheenTopCacheBlend = tokens.nodeSheenBlend;
+        }
+        let bodyFill = visual.fill;
+        let bodyStroke = visual.stroke;
+        /*
+         * Lit 3D — **evidence decides how much a node emits** (`render/dome-light.ts`). A current
+         * node's core takes its kind colour; a stale one keeps a dimmer core; an unknown one keeps
+         * the dark body and emits nothing. The mix rides the assembly ramp, so the light rises
+         * with the structure instead of switching on.
+         */
+        let litState: EvidenceLight | null = null;
+        let litRgb: readonly [
+            number,
+            number,
+            number
+        ] | null = null;
+        if (litOn && domeLight !== null && nodeDome.a > 0.01) {
+            litRgb = domeLight.kindRgb[node.kind] ?? null;
+            litState = domeLight.evidence?.get(node.id) ?? "unknown";
+            if (litRgb !== null && colorEgoState !== "dim" && litState !== "unknown") {
+                const body = litBodyInk(visual.fill, visual.stroke, litRgb, litState, nodeDome.a);
+                bodyFill = body.fill;
+                bodyStroke = body.stroke;
+            }
+        }
+        if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
+            const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
+            let palette = neuralPaletteCache.get(visual);
+            if (!palette || palette.ramp !== neural || palette.ink !== ink) {
+                const fill = lerpColorHex(visual.fill, ink, neural * 0.85);
+                palette = { ramp: neural, ink, fill, stroke: lerpColorHex(visual.stroke, fill, neural * 0.85) };
+                neuralPaletteCache.set(visual, palette);
+            }
+            bodyFill = palette.fill;
+            if (colorEgoState === "normal")
+                bodyStroke = palette.stroke;
+        }
+        let sheenTop = sheenTopCache.get(bodyFill);
+        if (sheenTop === undefined) {
+            sheenTop = lerpColorHex(bodyFill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
+            if (sheenTopCache.size > 256)
+                sheenTopCache.clear();
+            sheenTopCache.set(bodyFill, sheenTop);
+        }
+        // Far-side detail ramp — converges the metallic sheen gradient toward the flat
+        // fill continuously with depth. At detail 0, `sheenTop === fill` (the same
+        // string) and `resolveBodyFill` returns early with a flat fill, building no
+        // gradient at all. In between it is a colour interpolation that kills the blend
+        // factor by detail, so there is no hard cut (detail 1 = the same formula and
+        // the same string as the cached value).
+        if (domeDetail < 1) {
+            sheenTop =
+                domeDetail <= 0.01
+                    ? visual.fill
+                    : lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend * domeDetail);
+        }
+        // Engraved numeral: project/domain only, and only when there's a count to
+        // show (prototype `if (n.count && (project||domain) ...)`).
+        // 3D — no numeral is engraved on a dot: this layer is about form, not a data table.
+        const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0 && !(domeOn && nodeDome.a > 0.5);
+        // Canvas-emphasis slice §C — hover ring eligibility. `hoveredNodeId` is
+        // already nulled by the caller (`use-topology-loop.ts`) whenever a focus
+        // is active, so this is never true at the same time as `egoState ===
     // "center"` in practice.
     const isHovered = node.id === hoveredNodeId;
     // Canvas-emphasis slice §B2 — this node's one-shot commit-pulse visual,
@@ -3107,7 +2849,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Bloom — a blurred indigo disc under the focused node (on the focus ramp) or the
     // hovered node (on its emphasis ramp): light marks the one thing the hand is on.
     // 2D only; the 3D views keep their depth grammar.
-    if (!domeOn && !galaxyOn) {
+    if (!domeOn) {
       const bloomRamp =
         colorEgoState === "center"
           ? egoGlowRamp
@@ -3190,8 +2932,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         reducedMotion,
         glyphStyle,
       },
-      nodeShapeTokensFrame,
-    );
+      nodeShapeTokensFrame);
     // Lit 3D — the one mark that says why a node emits less (stale amber, unknown dashed).
     if (litRgb !== null && litState !== null && litState !== "current" && domeLight !== null) {
       drawEvidenceRing(
@@ -3202,28 +2943,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         litState,
         litRgb,
         domeLight.warningRgb,
-        nodeLayerAlpha * nodeDome.a * (colorEgoState === "dim" ? 0.45 : 1),
-      );
-    }
-    if (litState !== null) litDrawnStateCounts[litState] += 1;
-
-    // Diffraction spike: the ranked "bright star" set PLUS the project node
-    // unconditionally — reusing the pattern hub nodes already use, i.e. the exact
-    // same far-field-only overlay hub/magnitude stars get, just widening
-    // eligibility so the Layer-0 anchor reads as luminous too. Colour still derives
-    // from `visual.stroke`, hardcoded amber for project, so the spike is amber for
-    // free.
-    // perf 2026-08-19 — the `farT` test moved first, so at circuit altitude
-    // (farT = 0) even the Set lookup is skipped. Same logic.
-    /*
-     * ⚠️ **This spike used to stand down on a walked node, and no longer needs to.** For one day
-     * the walked star wore this same four-point cross, so a node that was both walked and bright
-     * drew two of them at one point in two inks (design-system, 2026-09-10) and the walked one
-     * won. The walked star has no cross now — `shared/lib/star-emission.ts` says why — so there
-     * is nothing to collide with, and suppressing magnitude here would delete a fact to avoid a
-     * conflict that has already been removed.
-     */
-    if (!galaxyOn && farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
+        nodeLayerAlpha * nodeDome.a * (colorEgoState === "dim" ? 0.45 : 1));
+        }
+        if (litState !== null)
+            litDrawnStateCounts[litState] += 1;
+        // Diffraction spike: the ranked "bright star" set PLUS the project node
+        // unconditionally — reusing the pattern hub nodes already use, i.e. the exact
+        // same far-field-only overlay hub/magnitude stars get, just widening
+        // eligibility so the Layer-0 anchor reads as luminous too. Colour still derives
+        // from `visual.stroke`, hardcoded amber for project, so the spike is amber for
+        // free.
+        // perf 2026-08-19 — the `farT` test moved first, so at circuit altitude
+        // (farT = 0) even the Set lookup is skipped. Same logic.
+        /*
+         * ⚠️ **This spike used to stand down on a walked node, and no longer needs to.** For one day
+         * the walked star wore this same four-point cross, so a node that was both walked and bright
+         * drew two of them at one point in two inks (design-system, 2026-09-10) and the walked one
+         * won. The walked star has no cross now — `shared/lib/star-emission.ts` says why — so there
+         * is nothing to collide with, and suppressing magnitude here would delete a fact to avoid a
+         * conflict that has already been removed.
+         */
+        if (farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
         screenY: screen.y,
@@ -3234,81 +2974,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
          * kind ink is a near-black on this canvas, and a solid fill over an additive star reads
          * as a scratch on it rather than as light coming off it (measured 2026-09-10).
          */
-        color: galaxyOn
-          ? lerpColorHex(
-              egoState === "dim" ? tokens.nodeStrokeDim : visual.stroke,
-              tokens[galaxyTemperatureKey(node.kind)],
-              galaxy,
-            )
-          : egoState === "dim"
+        color: egoState === "dim"
             ? tokens.nodeStrokeDim
             : visual.stroke,
         alpha: farT * tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha,
-      });
-    }
-
-    /*
-     * **Every node is a star up here.**
-     *
-     * Not a second mark beside the node and not a mode: the same emitter the walked path uses
-     * (`shared/lib/star-emission.ts`), spent on the whole field as altitude rises. Brightness is
-     * `starMagnitude` — the very expression `brightStarIds` is ranked by, kept per node instead
-     * of thresholded — and the ink is the kind's colour temperature, which is where kind goes
-     * once `interpolateCornerRadius` and `FULL_CIRCLE_FAR_T` have melted every silhouette into
-     * the same circle. Radius is untouched, so how much a node contains still reads as size.
-     *
-     * Drawn before the walked star so that a node which is both keeps the walk's own ink on top:
-     * inside an open trail lens, "you were here" outranks "this is how connected you are", the
-     * same precedence this file already applies to the ambient comet on a walked relation.
-     */
-    if (galaxyOn) {
-      // Selection borrows the existing indigo state channel. The remaining
-      // stars keep their kind temperature, so the inspected fact is distinct
-      // from ordinary variation in magnitude.
-      const temperatureInk = tokens[galaxyTemperatureKey(node.kind)];
-      const galaxyInk = colorEgoState === "center"
-        ? galaxySelectionInk(temperatureInk, tokens.indigoBright, focusRamp)
-        : temperatureInk;
-      const attention = colorEgoState === "center"
-        ? focusRamp
-        : isHovered
-          ? Math.min(1, Math.max(0, emphasis))
-          : 0;
-      const luminance = nodeLayerAlpha * starLuminance(node.starMagnitude);
-      const atmosphere = galaxyTwinkle(node.id, skyTimeMs, reducedMotion);
-      const atmosphericLuminance = luminance * atmosphere.intensity;
-      drawGalaxyNodeStar(ctx, {
-        x: screen.x,
-        y: screen.y,
-        // Paint expands on the existing focus ramp while canonical hit and
-        // label geometry remain unchanged. A low-magnitude selected concept
-        // must still read as the protagonist beside brighter hubs.
-        radius: screenRadius * (1 + 0.32 * attention),
-        ink: galaxyInk,
-        lit: Math.min(
-          1,
-          Math.max(
-            atmosphericLuminance * (galaxyIdentityOn ? 1 : galaxyPhase.core) * (1 + 0.3 * attention),
-            0.82 * attention * (galaxyIdentityOn ? 1 : galaxyPhase.core),
-          ),
-        ),
-        coronaLit: Math.min(
-          1,
-          Math.max(
-            atmosphericLuminance * galaxyPhase.corona * (1 + 0.55 * attention),
-            0.72 * attention * galaxyPhase.corona,
-          ),
-        ),
-        presence: nodeLayerAlpha * (galaxyIdentityOn ? 1 : galaxyPhase.field),
-        glint: (
-          !reducedMotion || world.brightStarIds.has(node.id) || attention > 0
-            ? Math.max(
-                atmosphere.glint,
-                world.brightStarIds.has(node.id) || attention > 0 ? 0.16 : 0,
-              ) * galaxyPhase.corona
-            : 0
-        ),
-        glintRotation: atmosphere.rotation,
       });
     }
 
@@ -3401,20 +3070,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
        * ink, at 2.95:1 against that indigo and clipping to white over it, did.
        */
       const starInk = node.id === focusedNodeId ? tokens.selectionRingIndigo : trailStarInk;
-      if (galaxyOn) {
-        const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
-        drawGalaxyNodeStar(ctx, {
-          x: screen.x,
-          y: screen.y,
-          radius: screenRadius,
-          ink: starInk,
-          lit: Math.min(1, lit * atmosphere.intensity),
-          coronaLit: Math.min(1, lit * atmosphere.intensity),
-          presence: layerAlpha * trailRamp,
-          glint: atmosphere.glint * trailRamp,
-          glintRotation: atmosphere.rotation,
-        });
-      } else {
+            {
         drawNodeStar(
           ctx,
           node.kind,
@@ -3427,8 +3083,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           farT,
           starInk,
           lit,
-          1 + TRAIL_STAR_SWELL * starSwellCurve(sweepT),
-        );
+          1 + TRAIL_STAR_SWELL * starSwellCurve(sweepT));
       }
       /*
        * ⚠️ Gated on the ramp, not only on the ink. With the lens closed these survived their
@@ -3442,8 +3097,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenRadius,
         layerAlpha,
         footprintSteps,
-        footprintStepColor,
-      );
+        footprintStepColor);
       ctx.globalAlpha = 1;
     }
 
@@ -3463,7 +3117,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA;
       ctx.strokeStyle = tokens.indigo;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3497,7 +3151,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
+      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA;
       ctx.strokeStyle = tokens.expandedCohort;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3560,8 +3214,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         center.x,
         center.y + screenRadius + WARDING_CAPTION_OFFSET_PX,
         tokens.labelDomain,
-        WARDING_CAPTION_ALPHA * wardingRing.drawProgress,
-      );
+        WARDING_CAPTION_ALPHA * wardingRing.drawProgress);
     }
   }
 
@@ -3622,8 +3275,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha =
       parentAlpha *
       spotlightSink(
-        (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
-      ) *
+        (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered) *
       // Trail lens — **an expand control is not part of the trajectory.** The
       // earlier exception kept chips attached to visited nodes at full strength;
       // once the default affordance became the overhead bar, that exception turned
@@ -3696,100 +3348,91 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverSurface: tokens.nodeFillCapability,
         hoverBorder: tokens.indigo,
         hoverInk: tokens.indigoBright,
-      },
-    );
-    ctx.globalAlpha = 1;
-  }
-
-  /*
-   * Strata's tier names stand beside their rims as DOM rows over the canvas
-   * (`OntologyMapTierLegend`). They reserve their boxes like a disc does, so a
-   * passive concept name passing a rim flips or yields instead of being covered,
-   * and a relation caption keeps off them too. A name the person is pointing at
-   * (selected or hovered) still draws.
-   */
-  if (domeOn && tierNameBoxes !== null) {
-    for (const box of tierNameBoxes) {
-      nodeDiscReservations.push({
-        priority: NODE_DISC_LABEL_PRIORITY,
-        bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
       });
+        ctx.globalAlpha = 1;
     }
-  }
-
-  // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---
-  // (Design Guardian readability rejection.) Labels used to leak behind the left ReaderLens
-  // panel, clip off the right edge, and collide horizontally. Build a candidate
-  // per still-visible label, drop any whose anchor is outside the safe rect,
-  // word-boundary-ellipsize long titles, then greedily place by priority so no
-  // two boxes overlap.
-  const safeRect: SafeRect = {
-    left: Math.max(tokens.safeInsetLeft, panelInsets?.left ?? 0),
-    right: viewportWidth - Math.max(tokens.safeInsetRight, panelInsets?.right ?? 0),
-    top: tokens.safeInsetTop,
-    bottom: viewportHeight - tokens.safeInsetBottom,
-  };
-  interface LabelPayload {
-    nodeId: string;
-    kind: WorldNode["kind"];
-    text: string;
-    screenX: number;
-    screenY: number;
-    screenRadius: number;
-    /** The baseline the placer settled on, including a slot flipped above the node. */
-    baselineY: number;
-    egoState: NodeEgoState;
-    isHovered: boolean;
-    revealAlpha: number;
-    emphasisAlpha: number;
-    /**
-     * The lens sink the name takes as a multiplier. It used to ride
-     * `revealAlpha`, which a project or domain name ignores by rule (always 1),
-     * so under the path lens every domain name stayed at full ink while the
-     * discs sank (measured 2026-09-19: 185 for every name, on or off the path).
-     *
-     * It is a multiplier **only**: `revealAlpha` here is the node's own, exactly as the
-     * node pass drew it. Carrying the sink in both fields charged it twice to a capability
-     * or element, whose alpha does read `revealAlpha` (`computeLensLabelAlpha`).
+    /*
+     * Strata's tier names stand beside their rims as DOM rows over the canvas
+     * (`OntologyMapTierLegend`). They reserve their boxes like a disc does, so a
+     * passive concept name passing a rim flips or yields instead of being covered,
+     * and a relation caption keeps off them too. A name the person is pointing at
+     * (selected or hovered) still draws.
      */
-    lensSink: number;
-    /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
-    agentFocus: boolean;
-    /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
-    depthU: number;
-  }
-  // Label top-K LOD: at the overview/spine and mid (circuit) bands the label budget
-  // goes to the highest-degree nodes; at the deepest element zoom the budget lifts
-  // and every label returns. Exempt from the budget: ego focus members and the
-  // hovered node only.
-  //
-  // The band is classified against the CANONICAL zoom grammar (DEFAULT_TIER_REVEAL),
-  // not the caller's `tierReveal` override. The two answer different questions:
-  // the override decides which DOTS exist at this zoom, the budget asks whether the
-  // READER is at leaf-reading altitude — and only the camera knows that. The gateway
-  // stage conflated them (measured 2026-08-23): it pulls the element band down to 0.45
-  // so every dot is drawn at entry (its caption-honesty contract), which silently
-  // classified entry zoom as "element", lifted the budget, and let all 82 labels race
-  // the greedy placer — 33 landed wherever they fit, leaf labels stacked into walls.
-  // The workbench passes no override, so for it this line is byte-identical.
-  const labelZoomTier = classifyZoomTier(zoomRatio);
-  const applyLabelTopK = labelZoomTier !== "element";
-  // At Galaxy overview altitude the named constellations are the project and
-  // its real domains. Capability/element names return when the reader leans in
-  // or points/focuses, so the initial sky does not promote whichever leaves
-  // happened to win a global degree ranking over the domain anchors.
-  const galaxyOverviewLabelsOnly =
-    galaxyOn && labelZoomTier === "spine" && focusedNodeId === null && selectedEdge === null;
-  // High-fan disc density prescription: an expanded phyllotaxis disc can hold dozens–
-  // hundreds of children. Blanket-exempting them all (the old behavior) punched
-  // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K
-  // children (rankEgoNeighborsByDOI: domain > capability > element → degree →
-  // slug) are eligible to carry a label; they still compete in the normal
-  // LABEL_TOP_K budget, and every child past the cut renders as a dot (hover/ego
-  // re-labels it individually). `expandedDiscChildIds` = all expanded children
-  // (to force the non-eligible ones to dots); `discLabelEligibleIds` = the
-  // per-disc DOI winners.
-  const expandedDiscChildIds = new Set<string>();
+    if (domeOn && tierNameBoxes !== null) {
+        for (const box of tierNameBoxes) {
+            nodeDiscReservations.push({
+                priority: NODE_DISC_LABEL_PRIORITY,
+                bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
+            });
+        }
+    }
+    // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---
+    // (Design Guardian readability rejection.) Labels used to leak behind the left ReaderLens
+    // panel, clip off the right edge, and collide horizontally. Build a candidate
+    // per still-visible label, drop any whose anchor is outside the safe rect,
+    // word-boundary-ellipsize long titles, then greedily place by priority so no
+    // two boxes overlap.
+    const safeRect: SafeRect = {
+        left: Math.max(tokens.safeInsetLeft, panelInsets?.left ?? 0),
+        right: viewportWidth - Math.max(tokens.safeInsetRight, panelInsets?.right ?? 0),
+        top: tokens.safeInsetTop,
+        bottom: viewportHeight - tokens.safeInsetBottom,
+    };
+    interface LabelPayload {
+        nodeId: string;
+        kind: WorldNode["kind"];
+        text: string;
+        screenX: number;
+        screenY: number;
+        screenRadius: number;
+        /** The baseline the placer settled on, including a slot flipped above the node. */
+        baselineY: number;
+        egoState: NodeEgoState;
+        isHovered: boolean;
+        revealAlpha: number;
+        emphasisAlpha: number;
+        /**
+         * The lens sink the name takes as a multiplier. It used to ride
+         * `revealAlpha`, which a project or domain name ignores by rule (always 1),
+         * so under the path lens every domain name stayed at full ink while the
+         * discs sank (measured 2026-09-19: 185 for every name, on or off the path).
+         *
+         * It is a multiplier **only**: `revealAlpha` here is the node's own, exactly as the
+         * node pass drew it. Carrying the sink in both fields charged it twice to a capability
+         * or element, whose alpha does read `revealAlpha` (`computeLensLabelAlpha`).
+         */
+        lensSink: number;
+        /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
+        agentFocus: boolean;
+        /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
+        depthU: number;
+    }
+    // Label top-K LOD: at the overview/spine and mid (circuit) bands the label budget
+    // goes to the highest-degree nodes; at the deepest element zoom the budget lifts
+    // and every label returns. Exempt from the budget: ego focus members and the
+    // hovered node only.
+    //
+    // The band is classified against the CANONICAL zoom grammar (DEFAULT_TIER_REVEAL),
+    // not the caller's `tierReveal` override. The two answer different questions:
+    // the override decides which DOTS exist at this zoom, the budget asks whether the
+    // READER is at leaf-reading altitude — and only the camera knows that. The gateway
+    // stage conflated them (measured 2026-08-23): it pulls the element band down to 0.45
+    // so every dot is drawn at entry (its caption-honesty contract), which silently
+    // classified entry zoom as "element", lifted the budget, and let all 82 labels race
+    // the greedy placer — 33 landed wherever they fit, leaf labels stacked into walls.
+    // The workbench passes no override, so for it this line is byte-identical.
+    const labelZoomTier = classifyZoomTier(zoomRatio);
+    const applyLabelTopK = labelZoomTier !== "element";
+    // High-fan disc density prescription: an expanded phyllotaxis disc can hold dozens–
+    // hundreds of children. Blanket-exempting them all (the old behavior) punched
+    // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K
+    // children (rankEgoNeighborsByDOI: domain > capability > element → degree →
+    // slug) are eligible to carry a label; they still compete in the normal
+    // LABEL_TOP_K budget, and every child past the cut renders as a dot (hover/ego
+    // re-labels it individually). `expandedDiscChildIds` = all expanded children
+    // (to force the non-eligible ones to dots); `discLabelEligibleIds` = the
+    // per-disc DOI winners.
+    const expandedDiscChildIds = new Set<string>();
   const discLabelEligibleIds = (() => {
     if (!applyLabelTopK) return new Set<string>();
     const rankedByDisc: (readonly string[])[] = [];
@@ -3815,15 +3458,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > expand.labelAttempts
       ? selectDiscLabelEligible(
           [rankedEgoNeighbors(world, neighborsOfFocused)],
-          expand.labelAttempts,
-        )
+          expand.labelAttempts)
       : null;
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   /** Per-frame bbox by node id — the instrument reads this after the draw. */
-  const labelBboxById = new Map<string, { minX: number; minY: number; maxX: number; maxY: number }>();
+  const labelBboxById = new Map<string, { minX: number; minY: number; maxX: number; maxY: number;
+    }>();
   /** Per candidate: the slot above its node, in case the one below is blocked. */
-  const labelFlipSlots = new Map<string, { baselineY: number; ascent: number; descent: number }>();
+  const labelFlipSlots = new Map<string, { baselineY: number; ascent: number; descent: number;
+    }>();
   for (let index = 0; index < world.nodes.length; index += 1) {
     const node = world.nodes[index];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
@@ -3847,23 +3491,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const constellationKept =
       mapLensKind === "constellation" && spotlightIds?.has(node.id) === true;
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
-    if (
-      galaxyOverviewLabelsOnly &&
-      node.kind !== "project" &&
-      node.kind !== "domain" &&
-      !isHovered &&
-      !previewEndpoint &&
-      !trailKept &&
-      !pathKept &&
-      !constellationKept
-    ) {
-      continue;
-    }
-    // High-fan disc density gate: an expanded-disc child that didn't make its
-    // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
-    // hovered node or an ego member, which re-earn a label. Skipping here (before
-    // the text measure) also avoids the wasted layout work for the dropped ones.
-    if (
+        // High-fan disc density gate: an expanded-disc child that didn't make its
+        // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
+        // hovered node or an ego member, which re-earn a label. Skipping here (before
+        // the text measure) also avoids the wasted layout work for the dropped ones.
+        if (
       applyLabelTopK &&
       expandedDiscChildIds.has(node.id) &&
       !discLabelEligibleIds.has(node.id) &&
@@ -3935,360 +3567,351 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // bbox left the offset unscaled while the paint scaled it, so the box and the
     // glyphs drifted apart.
     const anchorY = resolveLabelBaselineY(node.kind, screen.y, screenRadius, labelScale);
-    const text = ellipsizeToWidth(reviewQuestionIds?.has(node.id) ? `? ${node.label}` : node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
-      measureLabelWidth(ctx, node.kind, candidate, labelScale),
-    );
-    const width = measureLabelWidth(ctx, node.kind, text, labelScale);
-    const fontSize = scaledLabelFontSize(node.kind, labelScale);
-    const agentFocus = agentFocusNodeId !== null && node.id === agentFocusNodeId;
-    // W6 agent visibility — reserve room for the activity mark past the
-    // text's own width so greedy suppression doesn't let a neighboring
-    // label overlap it.
-    const markReserve = agentFocus ? ACTIVITY_MARK_GAP * 2 + ACTIVITY_MARK_RADIUS * 2 : 0;
-    // Safe-rect gate — but selected/hovered/ego labels are PROTECTED: instead
-    // of dropping (which defeated the "selected → alpha 1" guarantee under the
-    // left chrome inset, Guardian follow-up A) their anchor clamps to the
-    // nearest safe edge. Everything else culls as before.
-    let anchorX = screen.x;
-    let clampedAnchorY = anchorY;
-    let baselineY = anchorY;
-    const floorFlip = isWithinSafeRect(anchorX, anchorY, safeRect)
-      ? null
-      : floorFlipBaseline(anchorX, anchorY, resolveFlippedLabelBaselineY(screen.y, screenRadius), screen.y, safeRect, viewportHeight);
-    if (floorFlip !== null) {
-      // Under the floor band but on screen: the name goes above the node.
-      baselineY = floorFlip;
-    } else if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      // If protected, pull to the inset edge instead of discarding. The check is
-      // just `render/label-layout.ts#isSafeRectProtectedLabel` — keeping it inline here
-      // would make it impossible to write unit tests that prevent regression, as there's no place
-      // to measure outside the canvas — and why project/hub is on that list is also documented there.
-      // With only two tiers having few clamp targets, the original concern that "everything stacks in the inset"
-      // does not resurface, and collisions are still handled by greedy suppression.
-      if (!(galaxyOn && node.kind === "domain") && !isSafeRectProtectedLabel({
-        egoState,
-        isHovered,
-        trailKept: trailKept || pathKept || constellationKept,
-        kind: node.kind,
-        isHub: node.isHub,
-      })) {
-        continue;
-      }
-      const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
-      anchorX = clamped.x;
-      clampedAnchorY = clamped.y;
-      baselineY = clampedAnchorY;
-    }
-    const shiftX = anchorX - screen.x;
-    const shiftY = clampedAnchorY - anchorY;
-    if (applyLabelTopK) {
-      // Real exempt = the focused center + the hovered node, always. An ego
-      // NEIGHBOR is exempt too unless the focus is over the readable DOI-top-K
-      // band, in which case only the DOI winners keep the exemption (node audit
-      // prescription — see `isEgoNeighborLabelExempt`).
-      // Under the lens, visited nodes sit outside the top-K budget: removing the
-      // "anonymous box wearing a ring" is the point of this lens, so the name has
-      // to stand.
-      const exempt =
-        (galaxyOn && (node.kind === "project" || node.kind === "domain")) ||
-        egoState === "center" ||
-        isHovered ||
-        trailKept ||
-        pathKept ||
-        constellationKept ||
-        (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
-      labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
-    }
-    const priority =
-      galaxyOn && (node.kind === "project" || node.kind === "domain") && !pathKept && !constellationKept
-        ? 1
-        : resolveLabelPriority({
+    const text = ellipsizeToWidth(reviewQuestionIds?.has(node.id) ? `? ${node.label}` : node.label, tokens.labelMaxWidth * labelScale, (candidate) => measureLabelWidth(ctx, node.kind, candidate, labelScale));
+        const width = measureLabelWidth(ctx, node.kind, text, labelScale);
+        const fontSize = scaledLabelFontSize(node.kind, labelScale);
+        const agentFocus = agentFocusNodeId !== null && node.id === agentFocusNodeId;
+        // W6 agent visibility — reserve room for the activity mark past the
+        // text's own width so greedy suppression doesn't let a neighboring
+        // label overlap it.
+        const markReserve = agentFocus ? ACTIVITY_MARK_GAP * 2 + ACTIVITY_MARK_RADIUS * 2 : 0;
+        // Safe-rect gate — but selected/hovered/ego labels are PROTECTED: instead
+        // of dropping (which defeated the "selected → alpha 1" guarantee under the
+        // left chrome inset, Guardian follow-up A) their anchor clamps to the
+        // nearest safe edge. Everything else culls as before.
+        let anchorX = screen.x;
+        let clampedAnchorY = anchorY;
+        let baselineY = anchorY;
+        const floorFlip = isWithinSafeRect(anchorX, anchorY, safeRect)
+            ? null
+            : floorFlipBaseline(anchorX, anchorY, resolveFlippedLabelBaselineY(screen.y, screenRadius), screen.y, safeRect, viewportHeight);
+        if (floorFlip !== null) {
+            // Under the floor band but on screen: the name goes above the node.
+            baselineY = floorFlip;
+        }
+        else if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
+            // If protected, pull to the inset edge instead of discarding. The check is
+            // just `render/label-layout.ts#isSafeRectProtectedLabel` — keeping it inline here
+            // would make it impossible to write unit tests that prevent regression, as there's no place
+            // to measure outside the canvas — and why project/hub is on that list is also documented there.
+            // With only two tiers having few clamp targets, the original concern that "everything stacks in the inset"
+            // does not resurface, and collisions are still handled by greedy suppression.
+            if (!isSafeRectProtectedLabel({
+                egoState,
+                isHovered,
+                trailKept: trailKept || pathKept || constellationKept,
+                kind: node.kind,
+                isHub: node.isHub,
+            })) {
+                continue;
+            }
+            const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
+            anchorX = clamped.x;
+            clampedAnchorY = clamped.y;
+            baselineY = clampedAnchorY;
+        }
+        const shiftX = anchorX - screen.x;
+        const shiftY = clampedAnchorY - anchorY;
+        if (applyLabelTopK) {
+            // Real exempt = the focused center + the hovered node, always. An ego
+            // NEIGHBOR is exempt too unless the focus is over the readable DOI-top-K
+            // band, in which case only the DOI winners keep the exemption (node audit
+            // prescription — see `isEgoNeighborLabelExempt`).
+            // Under the lens, visited nodes sit outside the top-K budget: removing the
+            // "anonymous box wearing a ring" is the point of this lens, so the name has
+            // to stand.
+            const exempt = egoState === "center" ||
+                isHovered ||
+                trailKept ||
+                pathKept ||
+                constellationKept ||
+                (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
+            labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
+        }
+        const priority = resolveLabelPriority({
             kind: node.kind,
             isSelected: egoState === "center",
             isHovered,
             isHub: node.isHub,
             // A lens was opened to show these; they win the slot (`resolveLabelPriority`).
             isLensSubject: pathKept || constellationKept,
-          });
-    // The vertical extent is **measured from the font**. The old approximation
-    // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot
-    // below, and because the descent was constant while `fontSize` grew with zoom,
-    // **the further you zoomed in the more the bottom leaked**. Measured once per
-    // font and cached (`measureLabelVerticalMetrics`); contexts where measurement
-    // is unavailable fall back to the old approximation.
-    const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
-    const boxAt = (baselineY: number) => ({
-      // Reserve `LABEL_SIDE_GAP` extra on each side — **two labels that touch read
-      // as one word.** The overlap test (`bboxesOverlap`) does not count touching
-      // as overlapping, so in a measurement on 2026-08-02 (fan expansion) "Kakao
-      // Alimtok" and "Accumulated Points Ledger" stood side by side 0.7px apart and read as a
-      // single string. Same prescription as the mockup's reserved box of
-      // `measured width + 6`.
-      minX: anchorX - width / 2 - LABEL_SIDE_GAP,
-      maxX: anchorX + width / 2 + markReserve + LABEL_SIDE_GAP,
-      minY: baselineY - vertical.ascent,
-      maxY: baselineY + vertical.descent,
-    });
-    const candidateBbox = boxAt(baselineY);
-    labelBboxById.set(node.id, candidateBbox);
+        });
+        // The vertical extent is **measured from the font**. The old approximation
+        // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot
+        // below, and because the descent was constant while `fontSize` grew with zoom,
+        // **the further you zoomed in the more the bottom leaked**. Measured once per
+        // font and cached (`measureLabelVerticalMetrics`); contexts where measurement
+        // is unavailable fall back to the old approximation.
+        const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
+        const boxAt = (baselineY: number) => ({
+            // Reserve `LABEL_SIDE_GAP` extra on each side — **two labels that touch read
+            // as one word.** The overlap test (`bboxesOverlap`) does not count touching
+            // as overlapping, so in a measurement on 2026-08-02 (fan expansion) "Kakao
+            // Alimtok" and "Accumulated Points Ledger" stood side by side 0.7px apart and read as a
+            // single string. Same prescription as the mockup's reserved box of
+            // `measured width + 6`.
+            minX: anchorX - width / 2 - LABEL_SIDE_GAP,
+            maxX: anchorX + width / 2 + markReserve + LABEL_SIDE_GAP,
+            minY: baselineY - vertical.ascent,
+            maxY: baselineY + vertical.descent,
+        });
+        const candidateBbox = boxAt(baselineY);
+        labelBboxById.set(node.id, candidateBbox);
+        /*
+         * The upper slot this label would take if the lower one turns out to be
+         * blocked. Deciding that here would mean scanning **every** node's disc
+         * reservation for **every** candidate — O(n²), and on a 2,000-node vault it
+         * took the 3D drag frame from 8.8 ms to 37 ms p95 (measured 2026-09-05, the
+         * frame the cone's resting labels were switched on). The decision moves below
+         * the top-K budget instead, where it runs for the labels that can still be
+         * placed rather than for every node on screen. The slot itself is unchanged.
+         */
+        labelFlipSlots.set(node.id, {
+            baselineY: resolveFlippedLabelBaselineY(screen.y, screenRadius) + (clampedAnchorY - anchorY),
+            ascent: vertical.ascent,
+            descent: vertical.descent,
+        });
+        const flipSlot = labelFlipSlots.get(node.id);
+        labelCandidates.push({
+            priority,
+            // The slot above the node, offered to the placer for when the one below
+            // is taken (`LabelCandidate.altBbox`).
+            altBbox: flipSlot
+                ? { minX: candidateBbox.minX, maxX: candidateBbox.maxX, minY: flipSlot.baselineY - flipSlot.ascent, maxY: flipSlot.baselineY + flipSlot.descent }
+                : undefined,
+            /*
+             * **Nearer wins the slot.** Within one priority band the placer settles ties
+             * by `order`, so in the cone that order is depth: a node at the front of the
+             * structure keeps its name and the one behind it yields, which is the same
+             * answer occlusion already gives the eye. In 2D there is no depth and the
+             * array index stands, exactly as before.
+             */
+            order: domeOn ? Math.round(labelDome.u * 100000) : index,
+            ownerId: node.id,
+            bbox: candidateBbox,
+            payload: {
+                nodeId: node.id,
+                kind: node.kind,
+                text,
+                screenX: screen.x + shiftX,
+                screenY: screen.y + shiftY,
+                // Pass the baseline the placer settled on: recomputing it inside `draw()`
+                // would undo the flipped slot. Rewritten by the flip pass below when the
+                // lower slot turns out to be blocked.
+                baselineY,
+                screenRadius,
+                egoState,
+                isHovered,
+                revealAlpha,
+                lensSink: pathLabelSink,
+                emphasisAlpha: constellationKept ? spotlightRamp : 0,
+                agentFocus,
+                depthU: domeOn ? labelDome.u : 0,
+            },
+        });
+    }
+    // Apply the top-K budget over the frame's already-viewport/safe-rect-filtered
+    // candidates (so "top K" means "top K currently on screen"). Skipped entirely
+    // at the element tier — `applyLabelTopK` gates both the entry collection above
+    // and the filter here, so no work is done when the budget is lifted.
+    const placedLabelCandidates = applyLabelTopK
+        ? (() => {
+            const allowed = selectTopKLabels(labelRankEntries, LABEL_TOP_K);
+            return labelCandidates.filter((candidate) => allowed.has(candidate.payload.nodeId));
+        })()
+        : labelCandidates;
+    const discIndex = new ReservedBoxIndex(nodeDiscReservations);
+    for (const candidate of placedLabelCandidates) {
+        const nodeId = candidate.payload.nodeId;
+        if (!discIndex.overlapsForeign(candidate.bbox, nodeId, candidate.priority)) {
+            continue;
+        }
+        const slot = labelFlipSlots.get(nodeId);
+        if (slot === undefined)
+            continue;
+        const flipped = {
+            minX: candidate.bbox.minX,
+            maxX: candidate.bbox.maxX,
+            minY: slot.baselineY - slot.ascent,
+            maxY: slot.baselineY + slot.descent,
+        };
+        if (discIndex.overlapsForeign(flipped, nodeId, candidate.priority))
+            continue;
+        candidate.bbox = flipped;
+        candidate.payload.baselineY = slot.baselineY;
+        labelBboxById.set(nodeId, flipped);
+    }
+    const placedResult = greedyPlaceLabels(placedLabelCandidates, (c) => prevPlacedLabelIds.has(c.payload.nodeId), chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations]);
+    // A name the placer moved to its upper slot has to be drawn there too.
+    for (const candidate of placedResult) {
+        if (!candidate.usedAlt)
+            continue;
+        const slot = labelFlipSlots.get(candidate.payload.nodeId);
+        if (slot === undefined)
+            continue;
+        candidate.payload.baselineY = slot.baselineY;
+        labelBboxById.set(candidate.payload.nodeId, candidate.bbox);
+    }
+    const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
+    // LOD presence ramp. Each on-screen candidate fades linearly toward placed (1)
+    // or unplaced (0) over `tipFadeMs` (120ms, reused): placed candidates fade in,
+    // and a candidate that just lost placement while still on screen fades out on its
+    // remaining ramp instead of hard-cutting. Ids that leave the screen are culled
+    // from the ramp, so they rise from 0 again next time. Without `labelPresentById`
+    // (the existing test path) only placed labels draw, at alpha 1.
+    const presenceById = labelPresentById;
+    let drawList: {
+        payload: LabelPayload;
+        presenceAlpha: number;
+    }[] = [];
+    if (presenceById) {
+        const dtSec = lastLabelRampNow === 0 ? 0 : Math.min((now - lastLabelRampNow) / 1000, 0.05);
+        lastLabelRampNow = now;
+        const stepPer = tokens.tipFadeMs > 0 ? dtSec / (tokens.tipFadeMs / 1000) : 1;
+        const onScreenIds = new Set<string>();
+        for (const candidate of labelCandidates) {
+            const id = candidate.payload.nodeId;
+            onScreenIds.add(id);
+            const target = placedIds.has(id) ? 1 : 0;
+            const prev = presenceById.get(id) ?? (target === 1 && prevPlacedLabelIds.has(id) ? 1 : 0);
+            const next = reducedMotion
+                ? target
+                : Math.min(1, Math.max(0, prev + (target === 1 ? stepPer : -stepPer)));
+            presenceById.set(id, next);
+            if (next > 0.02)
+                drawList.push({ payload: candidate.payload, presenceAlpha: next });
+        }
+        for (const id of [...presenceById.keys()])
+            if (!onScreenIds.has(id))
+                presenceById.delete(id);
+    }
+    else {
+        for (const c of placedResult)
+            drawList.push({ payload: c.payload, presenceAlpha: 1 });
+    }
+    if (domeOn) {
+        // A departing label may fade in empty space, but cannot keep painting over
+        // a placed label during a 3D fit/morph. Legibility wins at the collision.
+        drawList = filterFadingLabelCollisions(drawList, entry => placedIds.has(entry.payload.nodeId), entry => labelBboxById.get(entry.payload.nodeId));
+    }
+    prevPlacedLabelIds = placedIds;
     /*
-     * The upper slot this label would take if the lower one turns out to be
-     * blocked. Deciding that here would mean scanning **every** node's disc
-     * reservation for **every** candidate — O(n²), and on a 2,000-node vault it
-     * took the 3D drag frame from 8.8 ms to 37 ms p95 (measured 2026-09-05, the
-     * frame the cone's resting labels were switched on). The decision moves below
-     * the top-K budget instead, where it runs for the labels that can still be
-     * placed rather than for every node on screen. The slot itself is unchanged.
+     * Nearer names land on top of farther ones, the same painter's order the node
+     * pass uses. Without it the paint order was the world array's, so a label from
+     * the back of the cone could cross one at the front and read as the front
+     * node's name. Stable, and a no-op in 2D where every `depthU` is 0.
      */
-    labelFlipSlots.set(node.id, {
-      baselineY: resolveFlippedLabelBaselineY(screen.y, screenRadius) + (clampedAnchorY - anchorY),
-      ascent: vertical.ascent,
-      descent: vertical.descent,
-    });
-    const flipSlot = labelFlipSlots.get(node.id);
-    labelCandidates.push({
-      priority,
-      // The slot above the node, offered to the placer for when the one below
-      // is taken (`LabelCandidate.altBbox`).
-      altBbox: flipSlot
-        ? { minX: candidateBbox.minX, maxX: candidateBbox.maxX, minY: flipSlot.baselineY - flipSlot.ascent, maxY: flipSlot.baselineY + flipSlot.descent }
-        : undefined,
-      /*
-       * **Nearer wins the slot.** Within one priority band the placer settles ties
-       * by `order`, so in the cone that order is depth: a node at the front of the
-       * structure keeps its name and the one behind it yields, which is the same
-       * answer occlusion already gives the eye. In 2D there is no depth and the
-       * array index stands, exactly as before.
-       */
-      order: domeOn ? Math.round(labelDome.u * 100000) : index,
-      ownerId: node.id,
-      bbox: candidateBbox,
-      payload: {
-        nodeId: node.id,
-        kind: node.kind,
-        text,
-        screenX: screen.x + shiftX,
-        screenY: screen.y + shiftY,
-        // Pass the baseline the placer settled on: recomputing it inside `draw()`
-        // would undo the flipped slot. Rewritten by the flip pass below when the
-        // lower slot turns out to be blocked.
-        baselineY,
-        screenRadius,
-        egoState,
-        isHovered,
-        revealAlpha,
-        lensSink: pathLabelSink,
-        emphasisAlpha: constellationKept ? spotlightRamp : 0,
-        agentFocus,
-        depthU: domeOn ? labelDome.u : 0,
-      },
-    });
-  }
-
-  // Apply the top-K budget over the frame's already-viewport/safe-rect-filtered
-  // candidates (so "top K" means "top K currently on screen"). Skipped entirely
-  // at the element tier — `applyLabelTopK` gates both the entry collection above
-  // and the filter here, so no work is done when the budget is lifted.
-  const placedLabelCandidates = applyLabelTopK
-    ? (() => {
-        const allowed = selectTopKLabels(labelRankEntries, LABEL_TOP_K);
-        return labelCandidates.filter((candidate) => allowed.has(candidate.payload.nodeId));
-      })()
-    : labelCandidates;
-
-  const discIndex = new ReservedBoxIndex(nodeDiscReservations);
-  for (const candidate of placedLabelCandidates) {
-    const nodeId = candidate.payload.nodeId;
-    if (!discIndex.overlapsForeign(candidate.bbox, nodeId, candidate.priority)) {
-      continue;
+    if (domeOn)
+        drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
+    drawnLabelBoxes = [];
+    for (const { payload, presenceAlpha } of drawList) {
+        // Only a label the eye can actually read counts as drawn — below this the
+        // glyphs are a smudge and cannot collide with anything in a way a reader sees.
+        if (presenceAlpha > 0.5) {
+            const box = labelBboxById.get(payload.nodeId);
+            if (box)
+                drawnLabelBoxes.push({ nodeId: payload.nodeId, text: payload.text, ...box });
+        }
+        labelsDraw(ctx, {
+            kind: payload.kind,
+            text: payload.text,
+            screenX: payload.screenX,
+            screenY: payload.screenY,
+            screenRadius: payload.screenRadius,
+            baselineY: payload.baselineY,
+            egoState: payload.egoState,
+            isHovered: payload.isHovered,
+            revealAlpha: payload.revealAlpha,
+            emphasisAlpha: payload.emphasisAlpha,
+            agentFocus: payload.agentFocus,
+            fontScale: labelScale,
+            // A label is never brighter than its node's appear ramp — a node still
+            // swelling in (new node, growth replay) must not be named before it is there.
+            presenceAlpha: presenceAlpha *
+                payload.lensSink *
+                (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
+        }, {
+            labelProject: tokens.labelProject,
+            labelDomain: tokens.labelDomain,
+            labelCapability: tokens.labelCapability,
+            labelElement: tokens.labelElement,
+            amberHub: tokens.amberHub,
+            labelHalo: tokens.canvasBgNear,
+        });
     }
-    const slot = labelFlipSlots.get(nodeId);
-    if (slot === undefined) continue;
-    const flipped = {
-      minX: candidate.bbox.minX,
-      maxX: candidate.bbox.maxX,
-      minY: slot.baselineY - slot.ascent,
-      maxY: slot.baselineY + slot.descent,
-    };
-    if (discIndex.overlapsForeign(flipped, nodeId, candidate.priority)) continue;
-    candidate.bbox = flipped;
-    candidate.payload.baselineY = slot.baselineY;
-    labelBboxById.set(nodeId, flipped);
-  }
-
-  const placedResult = greedyPlaceLabels(
-    placedLabelCandidates,
-    (c) => prevPlacedLabelIds.has(c.payload.nodeId),
-    chipReservations.length === 0 ? discIndex : [...chipReservations, ...nodeDiscReservations],
-  );
-  // A name the placer moved to its upper slot has to be drawn there too.
-  for (const candidate of placedResult) {
-    if (!candidate.usedAlt) continue;
-    const slot = labelFlipSlots.get(candidate.payload.nodeId);
-    if (slot === undefined) continue;
-    candidate.payload.baselineY = slot.baselineY;
-    labelBboxById.set(candidate.payload.nodeId, candidate.bbox);
-  }
-  const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
-
-  // LOD presence ramp. Each on-screen candidate fades linearly toward placed (1)
-  // or unplaced (0) over `tipFadeMs` (120ms, reused): placed candidates fade in,
-  // and a candidate that just lost placement while still on screen fades out on its
-  // remaining ramp instead of hard-cutting. Ids that leave the screen are culled
-  // from the ramp, so they rise from 0 again next time. Without `labelPresentById`
-  // (the existing test path) only placed labels draw, at alpha 1.
-  const presenceById = labelPresentById;
-  let drawList: { payload: LabelPayload; presenceAlpha: number }[] = [];
-  if (presenceById) {
-    const dtSec = lastLabelRampNow === 0 ? 0 : Math.min((now - lastLabelRampNow) / 1000, 0.05);
-    lastLabelRampNow = now;
-    const stepPer = tokens.tipFadeMs > 0 ? dtSec / (tokens.tipFadeMs / 1000) : 1;
-    const onScreenIds = new Set<string>();
-    for (const candidate of labelCandidates) {
-      const id = candidate.payload.nodeId;
-      onScreenIds.add(id);
-      const target = placedIds.has(id) ? 1 : 0;
-      const prev = presenceById.get(id) ?? (target === 1 && prevPlacedLabelIds.has(id) ? 1 : 0);
-      const next = reducedMotion
-        ? target
-        : Math.min(1, Math.max(0, prev + (target === 1 ? stepPer : -stepPer)));
-      presenceById.set(id, next);
-      if (next > 0.02) drawList.push({ payload: candidate.payload, presenceAlpha: next });
+    if (captionCandidates.length) {
+        const pathSinks = mapLensKind === "path" && spotlightIds !== null && (pathLensActive || (colorSelectedEdge !== null && colorFocusedNodeId === null));
+        const sunk = (id: string | undefined) => pathSinks && id !== undefined && id !== hoveredNodeId
+            && id !== colorSelectedEdge?.sourceId && id !== colorSelectedEdge?.targetId
+            && !isPreviewEndpoint(previewEdge, id) && !isPathLensNode(mapLensKind, id, spotlightIds);
+        drawnRelationCaptions = placeRelationCaptions(captionCandidates, [...nodeDiscReservations.map((item) => ({ ...item.bbox, sunk: sunk(item.ownerId) })), ...chipReservations.map((item) => item.bbox), ...drawnLabelBoxes.map((box) => ({ ...box, sunk: sunk(box.nodeId) }))], safeRect, (text) => measureLabelWidth(ctx, 'capability', text, 1), scaledLabelFontSize('capability', 1) + 8);
+        ctx.save();
+        ctx.font = scaledLabelFont('capability', 1);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 1;
+        for (const caption of drawnRelationCaptions) {
+            ctx.fillStyle = tokens.canvasBgNear;
+            ctx.fillRect(caption.minX, caption.minY, caption.maxX - caption.minX, caption.maxY - caption.minY);
+            ctx.fillStyle = tokens.labelCapability;
+            ctx.fillText(caption.text, caption.x, caption.y);
+        }
+        ctx.restore();
     }
-    for (const id of [...presenceById.keys()]) if (!onScreenIds.has(id)) presenceById.delete(id);
-  } else {
-    for (const c of placedResult) drawList.push({ payload: c.payload, presenceAlpha: 1 });
-  }
-  if (domeOn) {
-    // A departing label may fade in empty space, but cannot keep painting over
-    // a placed label during a 3D fit/morph. Legibility wins at the collision.
-    drawList = filterFadingLabelCollisions(drawList,
-      entry => placedIds.has(entry.payload.nodeId), entry => labelBboxById.get(entry.payload.nodeId));
-  }
-  prevPlacedLabelIds = placedIds;
-
-  /*
-   * Nearer names land on top of farther ones, the same painter's order the node
-   * pass uses. Without it the paint order was the world array's, so a label from
-   * the back of the cone could cross one at the front and read as the front
-   * node's name. Stable, and a no-op in 2D where every `depthU` is 0.
-   */
-  if (domeOn) drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
-
-  drawnLabelBoxes = [];
-  for (const { payload, presenceAlpha } of drawList) {
-    // Only a label the eye can actually read counts as drawn — below this the
-    // glyphs are a smudge and cannot collide with anything in a way a reader sees.
-    if (presenceAlpha > 0.5) {
-      const box = labelBboxById.get(payload.nodeId);
-      if (box) drawnLabelBoxes.push({ nodeId: payload.nodeId, text: payload.text, ...box });
-    }
-    labelsDraw(
-      ctx,
-      {
-        kind: payload.kind,
-        text: payload.text,
-        screenX: payload.screenX,
-        screenY: payload.screenY,
-        screenRadius: payload.screenRadius,
-        baselineY: payload.baselineY,
-        egoState: payload.egoState,
-        isHovered: payload.isHovered,
-        revealAlpha: payload.revealAlpha,
-        emphasisAlpha: payload.emphasisAlpha,
-        agentFocus: payload.agentFocus,
-        fontScale: labelScale,
-        // A label is never brighter than its node's appear ramp — a node still
-        // swelling in (new node, growth replay) must not be named before it is there.
-        presenceAlpha:
-          presenceAlpha *
-          payload.lensSink *
-          (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
-      },
-      {
-        labelProject: tokens.labelProject,
-        labelDomain: tokens.labelDomain,
-        labelCapability: tokens.labelCapability,
-        labelElement: tokens.labelElement,
-        amberHub: tokens.amberHub,
-        labelHalo: tokens.canvasBgNear,
-      },
-    );
-  }
-  if (captionCandidates.length) {
-    const pathSinks = mapLensKind === "path" && spotlightIds !== null && (pathLensActive || (colorSelectedEdge !== null && colorFocusedNodeId === null));
-    const sunk = (id: string | undefined) => pathSinks && id !== undefined && id !== hoveredNodeId
-      && id !== colorSelectedEdge?.sourceId && id !== colorSelectedEdge?.targetId
-      && !isPreviewEndpoint(previewEdge, id) && !isPathLensNode(mapLensKind, id, spotlightIds);
-    drawnRelationCaptions = placeRelationCaptions(captionCandidates, [...nodeDiscReservations.map((item) => ({ ...item.bbox, sunk: sunk(item.ownerId) })), ...chipReservations.map((item) => item.bbox), ...drawnLabelBoxes.map((box) => ({ ...box, sunk: sunk(box.nodeId) }))], safeRect, (text) => measureLabelWidth(ctx, 'capability', text, 1), scaledLabelFontSize('capability', 1) + 8);
-    ctx.save();
-    ctx.font = scaledLabelFont('capability', 1);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = 1;
-    for (const caption of drawnRelationCaptions) {
-      ctx.fillStyle = tokens.canvasBgNear;
-      ctx.fillRect(caption.minX, caption.minY, caption.maxX - caption.minX, caption.maxY - caption.minY);
-      ctx.fillStyle = tokens.labelCapability;
-      ctx.fillText(caption.text, caption.x, caption.y);
-    }
-    ctx.restore();
-  }
 }
-
-function paintOwnedDial(
-  params: FrameDrawParams,
-  ctx: CanvasRenderingContext2D,
-  labelScale: number,
-  dialProps: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null,
-): boolean {
-  const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse } = params;
-  const dial = world.dial;
-  if (!dial) return false;
-  let dialTokens;
-  try {
-    dialTokens = readDialTokens();
-  } catch {
-    clearDialFrame();
-    return false;
-  }
-  const camX = camera.x.value;
-  const camY = camera.y.value;
-  const scale = camera.scale.value;
-  const halfW = viewportWidth / 2;
-  const halfH = viewportHeight / 2;
-  const toScreen = (x: number, y: number) => ({ x: (x - camX) * scale + halfW, y: (y - camY) * scale + halfH });
-  const insets = params.panelInsets ?? { left: 0, right: 0 };
-  const hub = dial.model.projectId === null ? undefined : world.nodeById.get(dial.model.projectId);
-  const pulse = !reducedMotion && selectionPulse !== null
-    ? computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta)
-    : null;
-  const result = paintDialFrame({
-    ctx, dial, worldKey: world,
-    nodeScreen: (id) => {
-      const node = world.nodeById.get(id);
-      return node ? toScreen(node.x, node.y) : null;
-    },
-    toScreen, scale, labelScale, zoomRatio: params.zoomRatio,
-    viewportWidth, viewportHeight,
-    freeRect: {
-      minX: Math.max(0, insets.left),
-      minY: tokens.safeInsetTop,
-      maxX: viewportWidth - Math.max(0, insets.right),
-      maxY: viewportHeight - tokens.safeInsetBottom,
-    },
-    mapTokens: tokens, dialTokens, labels: dialProps?.labels ?? null, evidence: dialProps?.evidence ?? null,
-    hoveredNodeId: params.hoveredNodeId, focusedNodeId: params.focusedNodeId, agentFocusNodeId: params.agentFocusNodeId,
-    selectionPulse: pulse && selectionPulse ? { nodeId: selectionPulse.nodeId, ...pulse } : null,
-    appearOf: (id) => Math.min(1, Math.max(0, appearById?.get(id) ?? 1)),
-    hubCount: hub ? String(dialConceptTotal(dial.model)) : null,
-    elementLabel: (id) => world.nodeById.get(id)?.label ?? null,
-    now, reducedMotion,
-    domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,
-  });
-  effectiveAlphaByIdReused.clear();
-  effectiveAlphaWorld = new WeakRef(world);
-  for (const node of world.nodes) effectiveAlphaByIdReused.set(node.id, result.alphas.get(node.id) ?? 0);
-  drawnLabelBoxes = result.labelBoxes;
-  drawnRelationCaptions = [];
-  drawnNodeCount = result.drawnCount;
-  return true;
+function paintOwnedDial(params: FrameDrawParams, ctx: CanvasRenderingContext2D, labelScale: number, dialProps: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null): boolean {
+    const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse } = params;
+    const dial = world.dial;
+    if (!dial)
+        return false;
+    let dialTokens;
+    try {
+        dialTokens = readDialTokens();
+    }
+    catch {
+        clearDialFrame();
+        return false;
+    }
+    const camX = camera.x.value;
+    const camY = camera.y.value;
+    const scale = camera.scale.value;
+    const halfW = viewportWidth / 2;
+    const halfH = viewportHeight / 2;
+    const toScreen = (x: number, y: number) => ({ x: (x - camX) * scale + halfW, y: (y - camY) * scale + halfH });
+    const insets = params.panelInsets ?? { left: 0, right: 0 };
+    const hub = dial.model.projectId === null ? undefined : world.nodeById.get(dial.model.projectId);
+    const pulse = !reducedMotion && selectionPulse !== null
+        ? computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta)
+        : null;
+    const result = paintDialFrame({
+        ctx, dial, worldKey: world,
+        nodeScreen: (id) => {
+            const node = world.nodeById.get(id);
+            return node ? toScreen(node.x, node.y) : null;
+        },
+        toScreen, scale, labelScale, zoomRatio: params.zoomRatio,
+        viewportWidth, viewportHeight,
+        freeRect: {
+            minX: Math.max(0, insets.left),
+            minY: tokens.safeInsetTop,
+            maxX: viewportWidth - Math.max(0, insets.right),
+            maxY: viewportHeight - tokens.safeInsetBottom,
+        },
+        mapTokens: tokens, dialTokens, labels: dialProps?.labels ?? null, evidence: dialProps?.evidence ?? null,
+        hoveredNodeId: params.hoveredNodeId, focusedNodeId: params.focusedNodeId, agentFocusNodeId: params.agentFocusNodeId,
+        selectionPulse: pulse && selectionPulse ? { nodeId: selectionPulse.nodeId, ...pulse } : null,
+        appearOf: (id) => Math.min(1, Math.max(0, appearById?.get(id) ?? 1)),
+        hubCount: hub ? String(dialConceptTotal(dial.model)) : null,
+        elementLabel: (id) => world.nodeById.get(id)?.label ?? null,
+        now, reducedMotion,
+        domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,
+    });
+    effectiveAlphaByIdReused.clear();
+    effectiveAlphaWorld = new WeakRef(world);
+    for (const node of world.nodes)
+        effectiveAlphaByIdReused.set(node.id, result.alphas.get(node.id) ?? 0);
+    drawnLabelBoxes = result.labelBoxes;
+    drawnRelationCaptions = [];
+    drawnNodeCount = result.drawnCount;
+    return true;
 }

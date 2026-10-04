@@ -5,21 +5,12 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../engine/camera";
-import {
-  collectCanvasObstacles,
-  computeFreeArea,
-  type Rect
-} from "../interaction/free-area";
-import {
-  commitDomeEntrySweep,
-  type DomeRuntime
-} from "../model/dome-view";
-import { galaxyInspectionTarget } from "../model/galaxy-inspection-camera";
+import { commitDomeEntrySweep, type DomeRuntime } from "../model/dome-view";
 import { isPathTargetPick, type TopologyMapLensKind } from "../model/path-lens";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
-import { computeEffectiveCameraScaleMax, computeFocusCameraTarget, computeOverviewCameraTarget, focusLeashPx, type FocusLeashPx } from "./topology-camera-math";
+import { computeFocusCameraTarget, computeOverviewCameraTarget, focusLeashPx, type FocusLeashPx } from "./topology-camera-math";
 import {
   overviewBoundsFor
 } from "./topology-overview-fit";
@@ -43,9 +34,7 @@ interface Dependencies {
   focusedSlug: string | null;
   egoRevealBatchesRef: RefObject<number>;
   selectionPulseRef: RefObject<{ nodeId: string; startAtMs: number; } | null>;
-  galaxyRef: RefObject<boolean>;
-  cameraTargetRef: RefObject<CameraTarget>;
-  galaxyInspectionCameraRef: RefObject<{ returnTarget: CameraTarget; focusTarget: CameraTarget; gestureRevision: number; } | null>;
+    cameraTargetRef: RefObject<CameraTarget>;
   constellationFocusId: string | null;
   cameraGestureRevisionRef: RefObject<number>;
   userDrivenCameraRef: RefObject<boolean>;
@@ -76,10 +65,7 @@ export function useTopologyFocusNavigation({
   lastFocusedSlugRef,
   focusedSlug,
   egoRevealBatchesRef,
-  selectionPulseRef,
-  galaxyRef,
-  cameraTargetRef,
-  galaxyInspectionCameraRef,
+  selectionPulseRef, cameraTargetRef,
   constellationFocusId,
   cameraGestureRevisionRef,
   userDrivenCameraRef,
@@ -119,126 +105,23 @@ export function useTopologyFocusNavigation({
     // skipped even if the camera-target computation bails out for some
     // reason.
     selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
-
-    /*
-     * Galaxy inspection approaches the selected star without rebuilding or
-     * collapsing the graph. It never zooms out a camera the reader already
-     * brought closer. Its paired return target is retained here, so close
-     * reverses the approach; if another camera action changes the target
-     * meanwhile, it wins and the saved context is discarded.
-     */
-    if (galaxyRef.current) {
-      const sameTarget = (a: CameraTarget, b: CameraTarget) =>
-        Math.abs(a.tx - b.tx) < 0.01 &&
-        Math.abs(a.ty - b.ty) < 0.01 &&
-        Math.abs(a.tscale - b.tscale) < 0.0001;
-      const currentTarget = cameraTargetRef.current;
-
-      if (focusedSlug === null) {
-        const inspection = galaxyInspectionCameraRef.current;
-        galaxyInspectionCameraRef.current = null;
-        // A saved-constellation focus intentionally replaces single-node
-        // inspection in the same render. Let its safe-area fit own the camera;
-        // restoring the inspection target here would race and overwrite it.
-        if (constellationFocusId !== null) return;
-        if (!inspection || inspection.gestureRevision !== cameraGestureRevisionRef.current) return;
-        if (sameTarget(currentTarget, inspection.returnTarget)) return;
-        const tokens = readOntologyMapTokensOrNull();
-        if (!tokens) return;
-        cameraTargetRef.current = inspection.returnTarget;
-        userDrivenCameraRef.current = false;
-        dampingRef.current = tokens.cameraDampingDefault;
-        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        lastActiveMsRef.current = performance.now();
-        beginCameraTween(inspection.returnTarget);
-        return;
-      }
-
-      /*
-       * A path's source is selected so the target can be picked, and every other star is a
-       * candidate: approaching the source would carry the candidates off the frame. The
-       * camera the reader has stays (`computePathPickBounds` is the flat map's answer).
-       */
-      if (isPathTargetPick(mapLensKindRef.current, focusedSlug, spotlightIdsRef.current)) return;
-
-      const previous = galaxyInspectionCameraRef.current;
-      const returnTarget =
-        previous && previous.gestureRevision === cameraGestureRevisionRef.current
-          ? previous.returnTarget
-          : { ...currentTarget };
-      galaxyInspectionCameraRef.current = {
-        returnTarget,
-        focusTarget: { ...currentTarget },
-        gestureRevision: cameraGestureRevisionRef.current,
-      };
-
-      // Wait one frame for the selected-node inspector to enter the DOM, then
-      // measure the actual free rectangle. No panel width is baked into canvas
-      // logic, and an already-clear star produces the identical target.
-      const raf = requestAnimationFrame(() => {
-        if (focusedSlugRef.current !== focusedSlug) return;
-        const canvasEl = canvasRef.current;
-        const world = worldRef.current;
-        const tokens = readOntologyMapTokensOrNull();
-        const node = world?.nodeById.get(focusedSlug);
-        const { width, height } = viewportRef.current;
-        if (!canvasEl || !world || !tokens || !node || width <= 0 || height <= 0) return;
-        const box = canvasEl.getBoundingClientRect();
-        const canvasRect: Rect = { x: box.x, y: box.y, width: box.width, height: box.height };
-        const freeArea = computeFreeArea(canvasRect, collectCanvasObstacles(canvasEl, canvasRect));
-        const source = cameraTargetRef.current;
-        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-        const focusScale = Math.min(
-          computeEffectiveCameraScaleMax(
-            overviewEntryScale,
-            tokens.cameraMaxZoomRatio,
-            tokens.cameraScaleMax,
-          ),
-          overviewEntryScale * (tokens.focusMaxZoomRatio ?? 1),
-        );
-        const target = galaxyInspectionTarget({
-          camera: source,
-          node,
-          viewport: { width, height },
-          canvasRect,
-          freeArea,
-          targetScale: focusScale,
-        });
-        const inspection = galaxyInspectionCameraRef.current;
-        if (!inspection || focusedSlugRef.current !== focusedSlug) return;
-        // A direct camera gesture during the one-frame panel measurement wins.
-        // Internal world rebuilds may change camera targets, but they do not
-        // advance this revision and therefore cannot replace return context.
-        if (inspection.gestureRevision !== cameraGestureRevisionRef.current) return;
-        inspection.focusTarget = target;
-        if (sameTarget(source, target)) return;
-        cameraTargetRef.current = target;
-        userDrivenCameraRef.current = false;
-        dampingRef.current = tokens.cameraDampingDefault;
-        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        lastActiveMsRef.current = performance.now();
-        beginCameraTween(target);
-      });
-      return () => cancelAnimationFrame(raf);
-    }
-
-    // In 3D the camera target is NOT computed here. The 2D formula
-    // (`computeFocusCameraTarget`) works from a node's **2D coordinates**,
-    // which differ from where the dome drew it; and at this point the selection
-    // may still be expanding ancestor clusters while the world rebuilds, so it
-    // fails silently (measured 2026-08-18: selecting in 3D never moved the
-    // camera scale once). Record a ticket instead, and let the loop's dome step
-    // set up the yaw reframe and camera tween together against the live world.
-    /*
-     * **In 3D a click only selects** (2026-09-25, lit 3D). The camera and the pose stay where
-     * the reader put them; flying to a node is its own gesture — a double-click or Enter,
-     * consumed by the dome frame (`DOME_FLY_MS`). A selection still stops the attention
-     * spin ("stop it turning after I click"), so nothing slides out from under a focus.
-     * The only click-made move, the nudge off the inspector, is undone on deselect.
-     * A deselect does not fly back either: Esc and Home do, and a click on empty space is a
-     * click.
-     */
-    if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
+        // In 3D the camera target is NOT computed here. The 2D formula
+        // (`computeFocusCameraTarget`) works from a node's **2D coordinates**,
+        // which differ from where the dome drew it; and at this point the selection
+        // may still be expanding ancestor clusters while the world rebuilds, so it
+        // fails silently (measured 2026-08-18: selecting in 3D never moved the
+        // camera scale once). Record a ticket instead, and let the loop's dome step
+        // set up the yaw reframe and camera tween together against the live world.
+        /*
+         * **In 3D a click only selects** (2026-09-25, lit 3D). The camera and the pose stay where
+         * the reader put them; flying to a node is its own gesture — a double-click or Enter,
+         * consumed by the dome frame (`DOME_FLY_MS`). A selection still stops the attention
+         * spin ("stop it turning after I click"), so nothing slides out from under a focus.
+         * The only click-made move, the nudge off the inspector, is undone on deselect.
+         * A deselect does not fly back either: Esc and Home do, and a click on empty space is a
+         * click.
+         */
+        if (view3dRef.current && realmTransitionRef.current.phase === "idle" && domeRuntimeRef.current !== null) {
       const dome = domeRuntimeRef.current;
       if (focusedSlug !== null) {
         dome.spinArmed = false;
@@ -295,8 +178,7 @@ export function useTopologyFocusNavigation({
           world,
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
-          tokens,
-        );
+          tokens);
         target = realmCameraTarget(bounds, tokens, width, height);
       } else {
         const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
@@ -332,8 +214,7 @@ export function useTopologyFocusNavigation({
                 width,
                 height,
                 focusTokens,
-                world.nodes.length,
-              )
+                world.nodes.length)
             : computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBounds, realmActive || focusedSlug === null ? undefined : liveDialFocusFrame(world, focusedSlug));
       }
       if (!target) return;
@@ -365,6 +246,6 @@ export function useTopologyFocusNavigation({
       beginCameraTween(finalTarget);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, galaxyRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, galaxyInspectionCameraRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef]);
+  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef]);
 
 }

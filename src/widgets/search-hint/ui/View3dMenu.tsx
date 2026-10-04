@@ -10,7 +10,7 @@ import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import {
-  useGalaxy,
+  useDomainStructure,
   useHexBoard,
   useMapArrangement,
   useTerritories,
@@ -26,14 +26,14 @@ import {
  */
 
 /** One row: the flat views plus the 3D arrangements; "how does the map look" is one question. */
-type View3dChoice = 'flat' | 'territories' | 'hex' | 'galaxy' | MapArrangement;
+type View3dChoice = 'flat' | 'territories' | 'hex' | 'structure' | MapArrangement;
 
 /*
  * Ordered by distance from the flat map: the flat-plane views first, then Strata
  * (containment as levels) before Neural (no containment). A stored Cone opens
  * Strata (`resolveStoredMapArrangement`).
  */
-const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'hex', 'galaxy', 'strata', 'coupling'];
+const CHOICES: readonly View3dChoice[] = ['flat', 'territories', 'hex', 'structure', 'strata', 'coupling'];
 
 /**
  * The canvas is the one surface a dismissing press must not also act on. Matched by
@@ -61,10 +61,10 @@ export function View3dMenu({
   const t = useTranslations('searchWidgets.hint');
   const view3d = useView3d();
   const arrangement = useMapArrangement();
-  const galaxy = useGalaxy();
+  const structure = useDomainStructure();
   const territories = useTerritories();
   const hexBoard = useHexBoard();
-  const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
+  const value: View3dChoice = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : structure ? 'structure' : 'flat';
   const boxRef = useRef<HTMLDivElement | null>(null);
   const presence = usePanelPresence(open);
   const reducedMotion = usePrefersReducedMotion();

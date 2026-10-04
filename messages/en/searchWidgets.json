@@ -223,17 +223,17 @@
       "flat": "Flat",
       "territories": "Territories",
       "hex": "Hex board",
-      "galaxy": "Galaxy",
       "strata": "Strata",
-      "coupling": "Neural"
+      "coupling": "Neural",
+      "structure": "Domain structure"
     },
     "view3dChoiceHint": {
       "flat": "the ordinary 2D map",
       "territories": "every capability named, gathered around its domain",
       "hex": "one tile per capability, one region per domain",
-      "galaxy": "the whole map drawn as a sky of stars",
       "strata": "containment, read level by lit level",
-      "coupling": "clustered by what relates to what"
+      "coupling": "clustered by what relates to what",
+      "structure": "recorded membership, with readable names"
     },
     "mapViewAriaLabel": "Map view",
     "view3dPickerHelp": "Choose a map view. Current: {view}.",

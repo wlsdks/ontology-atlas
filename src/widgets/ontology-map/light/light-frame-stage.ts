@@ -19,8 +19,7 @@ type LightStageState = "idle" | "pending" | "ready" | "off" | "lost";
 interface LightStageRefs {
   reducedMotionRef: RefObject<boolean>;
   egoRevealRef: RefObject<Map<string, number>>;
-  galaxyRef: RefObject<boolean>;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
+    domeRuntimeRef: RefObject<DomeRuntime | null>;
   mapLensKindRef: RefObject<TopologyMapLensKind>;
   pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -29,7 +28,8 @@ interface LightStageRefs {
 export interface LightStageDependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   refs: LightStageRefs;
-  lightActiveRef: { current: boolean };
+  lightActiveRef: { current: boolean;
+    };
   requestFrame: () => void;
 }
 
@@ -50,13 +50,10 @@ export interface LightFrameStage {
     height: number,
     focusedNodeId: string | null,
     trailLensActive: boolean,
-    clusteredIds: ReadonlySet<string>,
-  ): void;
-  render(): void;
-  dispose(): void;
+    clusteredIds: ReadonlySet<string>): void;
+    render(): void;
+    dispose(): void;
 }
-
-const EMPTY_IDS: ReadonlySet<string> = new Set();
 const INK_FLOATS = 12;
 
 function idleScheduler(callback: () => void): () => void {
@@ -77,6 +74,7 @@ function writeInk(token: string, out: Float32Array, slot: number): void {
   const rgb = hexToRgb(token);
   for (let channel = 0; channel < 3; channel += 1) out[slot * 3 + channel] = rgb ? rgb[channel]! / 255 : 0;
 }
+
 
 export function createLightFrameStage(dependencies: LightStageDependencies, options: LightStageOptions = {}): LightFrameStage {
   const { canvasRef, refs, lightActiveRef, requestFrame } = dependencies;
@@ -220,7 +218,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         corePx: 0,
         haloPx: 0,
       };
-      state = "ready";
+        state = "ready";
       requestFrame();
     } catch {
       if (state === "pending") state = "off";
@@ -273,15 +271,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       }
       if (tokens !== tokensSeen) {
         tokensSeen = tokens;
-        kinematics = {
-          speed: tokens.lightSpeed,
-          hopMinMs: tokens.lightHopMinMs,
-          hopMaxMs: tokens.lightHopMaxMs,
-          pathMaxMs: tokens.lightPathMaxMs,
-          tail: tokens.lightTail,
-          intensity: tokens.lightIntensity,
-          bloomTauMs: tokens.lightBloomTau * 1000,
-        };
+        kinematics = { speed: tokens.lightSpeed, hopMinMs: tokens.lightHopMinMs, hopMaxMs: tokens.lightHopMaxMs, pathMaxMs: tokens.lightPathMaxMs, tail: tokens.lightTail, intensity: tokens.lightIntensity, bloomTauMs: tokens.lightBloomTau * 1000 };
         writeInk(tokens.indigoBright, inks, 0);
         batch.corePx = tokens.lightCorePx;
         batch.haloPx = tokens.lightHaloPx;
@@ -302,7 +292,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         trailLensActive,
         reducedMotion,
         revealProgress: frameReveal,
-        clusteredIds: refs.galaxyRef.current ? EMPTY_IDS : clusteredIds,
+        clusteredIds: clusteredIds,
         mapLensKind: refs.mapLensKindRef.current,
         pathEdgeIds: refs.pathEdgeIdsRef.current,
         pathNodeIds: refs.spotlightIdsRef.current,
@@ -361,8 +351,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
           blooms: probeBlooms.slice(),
         },
         layer,
-        canvasRef.current,
-      );
+        canvasRef.current);
     },
     dispose() {
       disposed = true;
