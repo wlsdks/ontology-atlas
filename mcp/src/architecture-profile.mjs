@@ -43,6 +43,9 @@ function compilePathPattern(pattern) {
       if (normalized[index + 2] === '/') {
         source += '(?:.*/)?';
         index += 2;
+        while (normalized[index + 1] === '*' && normalized[index + 2] === '*' && normalized[index + 3] === '/') {
+          index += 3;
+        }
       } else {
         source += '.*';
         index += 1;

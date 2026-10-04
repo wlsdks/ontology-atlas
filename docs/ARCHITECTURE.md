@@ -182,7 +182,9 @@ behaviour, while unclassified usage can never be declared away. Their
 unsupported languages, incomplete scans, unknown usages, unmapped edges,
 unruled edges, and empty roles prevent a false green result. Each conformance
 evaluation and app role traversal lazily reuses compiled path patterns only
-within that call; paths and classification results are not cached. The
+within that call; paths and classification results are not cached. Compilation
+coalesces adjacent directory-wildcard tokens without changing declared pattern
+text or the glob dialect. The
 `/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default
