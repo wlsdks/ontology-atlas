@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  useGalaxy,
+  useDomainStructure,
   useHexBoard,
   useMapArrangement,
   useTerritories,
@@ -49,7 +49,7 @@ export function useMapViewSync(
 ): void {
   const territories = useTerritories();
   const hexBoard = useHexBoard();
-  const galaxy = useGalaxy();
+  const structure = useDomainStructure();
   const view3d = useView3d();
   const arrangement = useMapArrangement();
   // The picker's precedence (`View3dMenu`), so both read one view from the same flags.
@@ -59,8 +59,8 @@ export function useMapViewSync(
       ? 'hex'
       : territories
         ? 'territories'
-        : galaxy
-          ? 'galaxy'
+        : structure
+          ? 'structure'
           : null;
   const lastRef = useRef<{ stored: HomeMapView | null; address: HomeMapView | null } | null>(null);
   useEffect(() => {

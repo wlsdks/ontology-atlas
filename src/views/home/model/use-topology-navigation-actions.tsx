@@ -24,7 +24,7 @@ interface Options {
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "beginExpandedIndexSelection">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "projectBySlug">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setHoverEdge" | "setMeaningEditorState" | "setSelectedEdge">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "galaxy" | "view3d">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "structure" | "view3d">;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
     | "interactionSelectedSlugRef"
@@ -38,7 +38,7 @@ interface Options {
 type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean };
 type SelectionContext = {
   interactionSelectedSlugRef: Options['topologyCanvasFocus']['interactionSelectedSlugRef'];
-  galaxy:boolean;
+  structure:boolean;
   setExpandAllActive:Options['setExpandAllActive'];
   setHoverEdge:Options['topologyAuthoring']['setHoverEdge'];
   setFullDetailSlug:Options['topologyCanvasFocus']['setFullDetailSlug'];
@@ -51,7 +51,7 @@ type SelectionContext = {
 function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug:string,options?:SelectOptions) {
   const current=context.current;
   current.interactionSelectedSlugRef.current=slug;
-  if(!current.galaxy)current.setExpandAllActive(false);
+  if(!current.structure)current.setExpandAllActive(false);
   current.setHoverEdge(null);
   current.setFullDetailSlug(null);
   current.setSelectedRelationActive(false);
@@ -66,7 +66,7 @@ export function useTopologyNavigationActions({
   topologyAgentOrchestration, topologyInspectorState
 }: Options) {
   const { interactionSelectedSlugRef, setFullDetailSlug, setSelectedRelationActive, setNodePopoverDismissed } = topologyCanvasFocus;
-  const { galaxy, view3d } = topologyPreferences;
+  const { structure, view3d } = topologyPreferences;
   const { setHoverEdge, setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { projectBySlug } = topologyGraphProjection;
   const { beginExpandedIndexSelection } = topologyIndexPresentation;
@@ -75,7 +75,7 @@ export function useTopologyNavigationActions({
   const { panelDatasheetModel } = topologyInspectorState;
 
 
-  const selectionContext=useLatestRef({interactionSelectedSlugRef,galaxy,setExpandAllActive,setHoverEdge,
+  const selectionContext=useLatestRef({interactionSelectedSlugRef,structure,setExpandAllActive,setHoverEdge,
     setFullDetailSlug,setSelectedRelationActive,setNodePopoverDismissed,projectBySlug,setRouteState,beginExpandedIndexSelection});
   // Renderers may cache this callback across equally shaped folders. It resolves
   // only the current committed selection context, without pinning an old index.

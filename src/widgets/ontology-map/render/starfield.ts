@@ -87,15 +87,8 @@ export function buildDustPoints(
   return points;
 }
 
-/**
- * Two denser dot layers (depths 0.3 and 0.6) that turn the space **inside** the
- * ward into cosmos while realm expansion is active. Denser than the
- * dust and capped at alpha 0.12, greyscale — depth comes from plain dots, never
- * glow or blur. Fixing depth to exactly two values makes the two planes drift at
- * different speeds under camera pan/zoom, so the parallax responds to input.
- * Deterministic (fixed seed).
- */
-export function buildRealmCosmosPoints(
+
+export function buildRealmStarPoints(
   viewportWidth: number,
   viewportHeight: number,
   count: number,
@@ -116,7 +109,7 @@ export function buildRealmCosmosPoints(
   return points;
 }
 
-export interface RealmCosmosDrawState {
+export interface RealmStarDrawState {
   points: readonly DustPoint[];
   /** Screen coordinates of the camera origin — the same parallax source the dust uses. */
   originX: number;
@@ -130,14 +123,8 @@ export interface RealmCosmosDrawState {
   reducedMotion?: boolean;
 }
 
-/**
- * The cosmos dots inside the ward — clipped to the ward circle, with the two
- * layers drifting at different speeds via camera-origin depth parallax. No
- * continuous animation: an unchanged origin means unmoving dots, which is what
- * keeps the idle condition satisfied. No farT condition either, since the realm
- * lives at circuit altitude.
- */
-export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmosDrawState): void {
+
+export function drawRealmStars(ctx: CanvasRenderingContext2D, state: RealmStarDrawState): void {
   const { points, clip, devicePixelRatio } = state;
   if (clip.radius <= 0 || points.length === 0) return;
   const reduced = state.reducedMotion === true;
@@ -148,7 +135,6 @@ export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmo
   const rp = reduced ? 0 : state.radialParallax ?? 0;
   const maxShift = Math.min(w, h) * 0.03;
   ctx.save();
-  // Clip to the ward circle — cosmos inside only, so it reads as a different space.
   ctx.beginPath();
   ctx.arc(clip.cx * devicePixelRatio, clip.cy * devicePixelRatio, clip.radius * devicePixelRatio, 0, Math.PI * 2);
   ctx.clip();

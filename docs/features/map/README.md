@@ -13,7 +13,7 @@ area: map
 
 The Flat overview, a dial of counted domain dependencies: [`flat-dial.md`](flat-dial.md).
 Relation light on focus and path: [`light.md`](light.md).
-Counted strands between domains in Galaxy: [`domain-flows.md`](domain-flows.md).
+Domain structure uses recorded direct membership and named breadcrumbs.
 
 ### Optional continued analysis
 

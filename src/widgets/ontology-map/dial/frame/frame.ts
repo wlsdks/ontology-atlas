@@ -34,7 +34,6 @@ const LABELLED_ROLES = new Set(["project", "domain", "capability", "ledger"]);
 
 export function dialOwnsFlatPaint(input: DialOwnershipInput): boolean {
   return input.hasDial
-    && !input.galaxyOn
     && !input.realmActive
     && !input.edgeSelected
     && !input.edgePreviewed
@@ -47,11 +46,13 @@ export function dialOwnsFlatPaint(input: DialOwnershipInput): boolean {
     && !input.brushedIsElement;
 }
 
-interface FocusClock { key: string; changedAt: number; current: DialAttention; previous: DialAttention | null }
+interface FocusClock { key: string; changedAt: number; current: DialAttention; previous: DialAttention | null;
+}
 
 const clocks = new WeakMap<object, FocusClock>();
 
-export function focusInkMix(worldKey: object, attention: DialAttention, now: number, reducedMotion: boolean): { inkMix: number; previous: DialAttention | null } {
+export function focusInkMix(worldKey: object, attention: DialAttention, now: number, reducedMotion: boolean): { inkMix: number; previous: DialAttention | null;
+} {
   let clock = clocks.get(worldKey);
   if (!clock) {
     clock = { key: attention.key, changedAt: -Infinity, current: attention, previous: null };
@@ -76,14 +77,16 @@ export function dialChordPresence(tokens: Pick<DialTokens, "chordArrival">, doma
   return smoothstep(tokens.chordArrival, 1, domainAppear);
 }
 
-interface ClusterProbe { domainId: string; step: number; chip: Point; capabilityIds: string[] }
+interface ClusterProbe { domainId: string; step: number; chip: Point; capabilityIds: string[];
+}
 
 interface LastFrame {
   result: DialFrameResult;
   flows: DialMarksResult["flows"];
   ledger: DialMarksResult["ledger"];
   elementSquares: number;
-  disclosure: { capAlpha: number; elementsAlpha: number; entered: string | null; resolved: boolean };
+  disclosure: { capAlpha: number; elementsAlpha: number; entered: string | null; resolved: boolean;
+    };
   zoomRatio: number;
   domainAppear: number;
   freeRect: Box;
@@ -91,7 +94,8 @@ interface LastFrame {
   scale: number;
   rings: DialRing[];
   clusters: readonly ClusterProbe[];
-  placement: { state: DialPlacementState; held: number };
+  placement: { state: DialPlacementState; held: number;
+    };
   concepts: number;
   domains: number;
 }
@@ -109,8 +113,10 @@ function clusterProbesOf(scene: DialScene): readonly ClusterProbe[] {
 }
 const pool = emptyDialFrameMarks();
 const measureText = createMeasureText();
-const inksCache = new WeakMap<object, { tokens: DialTokens; inks: DialInks }>();
-const evidenceCache = new WeakMap<DialModel, { evidence: ReadonlyMap<string, DialEvidence> | null; view: DialEvidenceView }>();
+const inksCache = new WeakMap<object, { tokens: DialTokens; inks: DialInks;
+}>();
+const evidenceCache = new WeakMap<DialModel, { evidence: ReadonlyMap<string, DialEvidence> | null; view: DialEvidenceView;
+}>();
 
 function resetMarks(m: DialFrameMarks): void {
   m.inks.length = 0;
@@ -234,7 +240,8 @@ function quadAt(ax: number, ay: number, cx: number, cy: number, bx: number, by: 
   return { x: u * u * ax + 2 * u * t * cx + t * t * bx, y: u * u * ay + 2 * u * t * cy + t * t * by };
 }
 
-export function sampleStrips(strips: readonly { ax: number; ay: number; cx: number; cy: number; bx: number; by: number }[]): Point[][] {
+export function sampleStrips(strips: readonly { ax: number; ay: number; cx: number; cy: number; bx: number; by: number;
+}[]): Point[][] {
   return strips.map((s) => Array.from({ length: CURVE_STEPS + 1 }, (_, k) => quadAt(s.ax, s.ay, s.cx, s.cy, s.bx, s.by, k / CURVE_STEPS)));
 }
 
@@ -246,9 +253,11 @@ function segmentCross(a: Point, b: Point, c: Point, d: Point): Point | null {
   return t > 0 && t < 1 && u > 0 && u < 1 ? { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) } : null;
 }
 
-interface Segment { line: number; a: Point; b: Point }
+interface Segment { line: number; a: Point; b: Point;
+}
 
-function bucket(lines: readonly (readonly Point[])[]): { segs: Segment[]; grid: Map<number, number[]> } {
+function bucket(lines: readonly (readonly Point[])[]): { segs: Segment[]; grid: Map<number, number[]>;
+} {
   const segs: Segment[] = [];
   const grid = new Map<number, number[]>();
   lines.forEach((pts, line) => {
@@ -283,112 +292,135 @@ export function countCrossings(lines: readonly (readonly Point[])[], viewportWid
         const q = segs[list[j]!]!;
         if (p.line === q.line) continue;
         const pair = list[i]! < list[j]! ? `${list[i]}:${list[j]}` : `${list[j]}:${list[i]}`;
-        if (seen.has(pair)) continue;
-        seen.add(pair);
-        const x = segmentCross(p.a, p.b, q.a, q.b);
-        if (!x || x.x < 0 || x.x > viewportWidth || x.y < 0 || x.y > viewportHeight) continue;
-        if (nearEnd(x, p.line) || nearEnd(x, q.line)) continue;
-        crossings += 1;
-      }
+                if (seen.has(pair))
+                    continue;
+                seen.add(pair);
+                const x = segmentCross(p.a, p.b, q.a, q.b);
+                if (!x || x.x < 0 || x.x > viewportWidth || x.y < 0 || x.y > viewportHeight)
+                    continue;
+                if (nearEnd(x, p.line) || nearEnd(x, q.line))
+                    continue;
+                crossings += 1;
+            }
+        }
     }
-  }
-  return crossings;
+    return crossings;
 }
-
 function segmentEntersBox(a: Point, b: Point, box: Box): boolean {
-  let t0 = 0;
-  let t1 = 1;
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  for (const [pp, qq] of [[-dx, a.x - box.minX], [dx, box.maxX - a.x], [-dy, a.y - box.minY], [dy, box.maxY - a.y]] as const) {
-    if (pp === 0) {
-      if (qq < 0) return false;
-      continue;
+    let t0 = 0;
+    let t1 = 1;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    for (const [pp, qq] of [[-dx, a.x - box.minX], [dx, box.maxX - a.x], [-dy, a.y - box.minY], [dy, box.maxY - a.y]] as const) {
+        if (pp === 0) {
+            if (qq < 0)
+                return false;
+            continue;
+        }
+        const r = qq / pp;
+        if (pp < 0) {
+            if (r > t1)
+                return false;
+            if (r > t0)
+                t0 = r;
+        }
+        else {
+            if (r < t0)
+                return false;
+            if (r < t1)
+                t1 = r;
+        }
     }
-    const r = qq / pp;
-    if (pp < 0) {
-      if (r > t1) return false;
-      if (r > t0) t0 = r;
-    } else {
-      if (r < t0) return false;
-      if (r < t1) t1 = r;
-    }
-  }
-  return true;
+    return true;
 }
-
-export function namesCrossed(lines: readonly (readonly Point[])[], texts: readonly { text: string; box: Box }[]): { count: number; names: string[] } {
-  const { segs, grid } = bucket(lines);
-  const crossed = new Set<string>();
-  for (const t of texts) {
-    const box = { minX: t.box.minX + NAME_INSET_PX, maxX: t.box.maxX - NAME_INSET_PX, minY: t.box.minY + NAME_INSET_PX, maxY: t.box.maxY - NAME_INSET_PX };
-    const cand = new Set<number>();
-    for (let gx = Math.floor(box.minX / CELL); gx <= Math.floor(box.maxX / CELL); gx += 1) {
-      for (let gy = Math.floor(box.minY / CELL); gy <= Math.floor(box.maxY / CELL); gy += 1) for (const si of grid.get(gx * 100003 + gy) ?? []) cand.add(si);
+export function namesCrossed(lines: readonly (readonly Point[])[], texts: readonly {
+    text: string;
+    box: Box;
+}[]): {
+    count: number;
+    names: string[];
+} {
+    const { segs, grid } = bucket(lines);
+    const crossed = new Set<string>();
+    for (const t of texts) {
+        const box = { minX: t.box.minX + NAME_INSET_PX, maxX: t.box.maxX - NAME_INSET_PX, minY: t.box.minY + NAME_INSET_PX, maxY: t.box.maxY - NAME_INSET_PX };
+        const cand = new Set<number>();
+        for (let gx = Math.floor(box.minX / CELL); gx <= Math.floor(box.maxX / CELL); gx += 1) {
+            for (let gy = Math.floor(box.minY / CELL); gy <= Math.floor(box.maxY / CELL); gy += 1)
+                for (const si of grid.get(gx * 100003 + gy) ?? [])
+                    cand.add(si);
+        }
+        for (const si of cand) {
+            const { a, b } = segs[si]!;
+            if (segmentEntersBox(a, b, box)) {
+                crossed.add(t.text);
+                break;
+            }
+        }
     }
-    for (const si of cand) {
-      const { a, b } = segs[si]!;
-      if (segmentEntersBox(a, b, box)) {
-        crossed.add(t.text);
-        break;
-      }
-    }
-  }
-  return { count: crossed.size, names: [...crossed] };
+    return { count: crossed.size, names: [...crossed] };
 }
-
-function countTextOverlaps(texts: readonly { id: string | null; text: string; box: Box }[]): number {
-  const pairs = new Set<string>();
-  for (let i = 0; i < texts.length; i += 1) {
-    for (let j = i + 1; j < texts.length; j += 1) {
-      const a = texts[i]!;
-      const b = texts[j]!;
-      if (a.text === b.text || (a.id !== null && a.id === b.id)) continue;
-      if (a.box.minX < b.box.maxX && a.box.maxX > b.box.minX && a.box.minY < b.box.maxY && a.box.maxY > b.box.minY) pairs.add([a.text, b.text].sort().join("\0"));
+function countTextOverlaps(texts: readonly {
+    id: string | null;
+    text: string;
+    box: Box;
+}[]): number {
+    const pairs = new Set<string>();
+    for (let i = 0; i < texts.length; i += 1) {
+        for (let j = i + 1; j < texts.length; j += 1) {
+            const a = texts[i]!;
+            const b = texts[j]!;
+            if (a.text === b.text || (a.id !== null && a.id === b.id))
+                continue;
+            if (a.box.minX < b.box.maxX && a.box.maxX > b.box.minX && a.box.minY < b.box.maxY && a.box.maxY > b.box.minY)
+                pairs.add([a.text, b.text].sort().join("\0"));
+        }
     }
-  }
-  return pairs.size;
+    return pairs.size;
 }
-
 export function describeLastDialFrame(viewportWidth: number, viewportHeight: number): DialProbe | null {
-  if (!last) return null;
-  const { result, flows, disclosure, origin, scale } = last;
-  const marks = result.marks as DialFrameMarks;
-  const widthByKey = new Map<string, number>();
-  for (const s of marks.strips) widthByKey.set(s.flowKey, Math.max(widthByKey.get(s.flowKey) ?? 0, s.w0, s.w1));
-  const numeralByKey = new Map<string, string>();
-  for (const n of marks.numerals) if (!numeralByKey.has(n.flowKey)) numeralByKey.set(n.flowKey, n.text);
-  const drawn = new Set(flows.drawn);
-  const lines = sampleStrips(marks.strips);
-  const allTexts = [...marks.texts, ...marks.extraTexts];
-  const ledger = last.ledger
-    ? { domainId: last.ledger.plan.domainId, shown: last.ledger.plan.rows.length, total: last.ledger.plan.total, more: last.ledger.plan.more?.count ?? 0, leaderCrossings: last.ledger.leaderCrossings }
-    : null;
-  return {
-    owns: true,
-    zoomRatio: last.zoomRatio,
-    tier: result.tier,
-    inkMix: result.inkMix,
-    domainAppear: last.domainAppear,
-    freeRect: last.freeRect,
-    flows: flows.links.map((l) => ({
-      key: l.key, a: l.u, b: l.v, ab: l.uv, ba: l.vu, total: l.total, relatesOnly: l.relatesOnly,
-      drawn: drawn.has(l.key), widthPx: widthByKey.get(l.key) ?? 0, numeral: numeralByKey.get(l.key) ?? null,
-    })),
-    clusters: last.clusters.map((c) => ({ domainId: c.domainId, step: c.step, chip: { x: origin.x + c.chip.x * scale, y: origin.y + c.chip.y * scale }, capabilityIds: c.capabilityIds })),
-    rings: last.rings,
-    disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, enteredDomain: disclosure.entered, resolved: disclosure.resolved },
-    budget: flows.budget,
-    stubs: flows.stubs,
-    placement: last.placement,
-    texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
-    numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
-    discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "" })),
-    squares: last.elementSquares,
-    strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),
-    ledger,
-    crossings: countCrossings(lines, viewportWidth, viewportHeight),
-    namesCrossed: namesCrossed(lines, allTexts).count,
-    textOverlaps: countTextOverlaps(allTexts),
-  };
+    if (!last)
+        return null;
+    const { result, flows, disclosure, origin, scale } = last;
+    const marks = result.marks as DialFrameMarks;
+    const widthByKey = new Map<string, number>();
+    for (const s of marks.strips)
+        widthByKey.set(s.flowKey, Math.max(widthByKey.get(s.flowKey) ?? 0, s.w0, s.w1));
+    const numeralByKey = new Map<string, string>();
+    for (const n of marks.numerals)
+        if (!numeralByKey.has(n.flowKey))
+            numeralByKey.set(n.flowKey, n.text);
+    const drawn = new Set(flows.drawn);
+    const lines = sampleStrips(marks.strips);
+    const allTexts = [...marks.texts, ...marks.extraTexts];
+    const ledger = last.ledger
+        ? { domainId: last.ledger.plan.domainId, shown: last.ledger.plan.rows.length, total: last.ledger.plan.total, more: last.ledger.plan.more?.count ?? 0, leaderCrossings: last.ledger.leaderCrossings }
+        : null;
+    return {
+        owns: true,
+        zoomRatio: last.zoomRatio,
+        tier: result.tier,
+        inkMix: result.inkMix,
+        domainAppear: last.domainAppear,
+        freeRect: last.freeRect,
+        flows: flows.links.map((l) => ({
+            key: l.key, a: l.u, b: l.v, ab: l.uv, ba: l.vu, total: l.total, relatesOnly: l.relatesOnly,
+            drawn: drawn.has(l.key), widthPx: widthByKey.get(l.key) ?? 0, numeral: numeralByKey.get(l.key) ?? null,
+        })),
+        clusters: last.clusters.map((c) => ({ domainId: c.domainId, step: c.step, chip: { x: origin.x + c.chip.x * scale, y: origin.y + c.chip.y * scale }, capabilityIds: c.capabilityIds })),
+        rings: last.rings,
+        disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, enteredDomain: disclosure.entered, resolved: disclosure.resolved },
+        budget: flows.budget,
+        stubs: flows.stubs,
+        placement: last.placement,
+        texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box })),
+        numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box })),
+        discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "" })),
+        squares: last.elementSquares,
+        strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),
+        ledger,
+        crossings: countCrossings(lines, viewportWidth, viewportHeight),
+        namesCrossed: namesCrossed(lines, allTexts).count,
+        textOverlaps: countTextOverlaps(allTexts),
+    };
 }

@@ -7,8 +7,6 @@ export interface ConstellationCandidate {
   lastKnownPath: string;
   label: string;
   kind: 'project' | 'domain' | 'capability' | 'element';
-  /** The same stable Galaxy world coordinate used by the canvas. */
-  galaxyPoint: { x: number; y: number };
 }
 
 export type CandidateIdentityResolution =

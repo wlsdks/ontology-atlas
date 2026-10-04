@@ -100,9 +100,7 @@ export interface WorldMotionFrameStageSources {
     gestureRevision: number;
     userDriven: boolean;
   } | null>;
-  galaxyLayoutHandoffRef: SourceRef<"galaxy" | "flat" | null>;
-  galaxyFlatReturnPositionsRef: SourceRef<ReadonlyMap<string, { x: number; y: number; }> | null>;
-  cameraGestureRevisionRef: SourceRef<number>;
+    cameraGestureRevisionRef: SourceRef<number>;
   cameraRef: SourceRef<CameraAxes>;
   cameraTargetRef: SourceRef<CameraTarget>;
   cameraTweenRef: SourceRef<CameraTween | null>;
@@ -140,20 +138,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
     realmTransitionRef,
     realmActiveHandedOffRef,
     wardingFitRef,
-    reducedMotionRef,
-    pendingFlatCameraRef,
-    galaxyLayoutHandoffRef,
-    galaxyFlatReturnPositionsRef,
-    cameraGestureRevisionRef,
-    cameraRef,
-    cameraTargetRef,
-    cameraTweenRef,
-    cameraAngularFreqRef,
-    dampingRef,
-    userDrivenCameraRef,
-    overviewScaleRef,
-    overviewFitRef,
-    beginCameraTween,
+    reducedMotionRef, overviewScaleRef, overviewFitRef,
   } = sources;
 
   return function runWorldMotionFrameStage(
@@ -162,8 +147,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
     tokens: OntologyMapTokens,
     world: TopologyWorld,
     width: number,
-    height: number,
-  ): void {
+    height: number): void {
     // --- force simulation: tick ONLY while a node is pin-dragged (or its
     // brief release settle). Never on load — the static default is the
     // deterministic grid, and the camera is NOT auto-reframed here (that
@@ -237,8 +221,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
               const t = override.get(n.id);
               return { id: n.id, x: t?.x ?? n.x, y: t?.y ?? n.y };
             }),
-            world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-          );
+            world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })));
         }
       }
       if (releasedId !== null && realmData === null && world.dial) {
@@ -298,9 +281,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       const restrictToIds = affected
         ? new Set<string>(
           [affected.draggedId, ...affected.oneHop, ...affected.twoHop].filter(
-            (id) => !clustered.has(id),
-          ),
-        )
+            (id) => !clustered.has(id)))
         : null;
       // **The narrowed path wins only when the set is sparse** (measured per
       // block, 2026-07-31).
@@ -352,8 +333,8 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             affected.draggedId,
             ...affected.oneHop,
             ...affected.twoHop,
-            ...sepDisplacedIdsRef.current,
-          ])
+            ...sepDisplacedIdsRef.current
+                ])
           : null;
       applyForcePositions(world, sim.positions(applyOnly));
 
@@ -388,231 +369,187 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
           if (!reducedMotionRef.current) {
             dragTugOffsetsRef.current.set(
               affected.draggedId,
-              seedDropOffset(dragVelRef.current.x, dragVelRef.current.y, springFor(affected.draggedId), tokens.massDropMaxPx),
-            );
-          }
-          dragVelRef.current = { x: 0, y: 0 };
-          dragPrevPosRef.current = null;
-        }
-        for (const id of tugIds) {
-          const hop = affected.oneHop.has(id) ? 1 : 2;
-          const tugged = world.nodeById.get(id);
-          // Hop count says WHO may be tugged; world distance from the grab
-          // point says HOW MUCH. Without the distance term a hub-and-spoke
-          // vault (everything within 2 hops) drags the whole map along.
-          // Measured from `dragStart`, not the dragged node's live position,
-          // so the elastic neighborhood is fixed at grab time and neighbors
-          // never fade in/out mid-drag.
-          const falloff =
-            tugged && dragStart
-              ? tugFalloffForDistance(Math.hypot(tugged.x - dragStart.x, tugged.y - dragStart.y), tokens.dragTugRadius)
-              : 0;
-          const factor = tugFactorForHop(hop, factors) * falloff;
-          let targetX = 0;
-          let targetY = 0;
-          if (pinned && draggedNode && dragStart) {
-            targetX = (draggedNode.x - dragStart.x) * factor;
-            targetY = (draggedNode.y - dragStart.y) * factor;
-          }
-          const prevOffset = dragTugOffsetsRef.current.get(id) ?? REST_OFFSET;
-          // Reduced motion tracks the pointer 1:1; a live drag lags on the exponential as
-          // before; a release springs home on this neighbour's own mass.
-          const nextOffset = reducedMotionRef.current
-            ? snapOffset(targetX, targetY)
-            : pinned
-              ? stepLagOffset(prevOffset, targetX, targetY, dt, DRAG_TUG_EASE_TAU)
-              : stepHomeOffset(prevOffset, dt, springFor(id));
-          dragTugOffsetsRef.current.set(id, nextOffset);
-          if (tugged) {
-            tugged.x += nextOffset.x;
-            tugged.y += nextOffset.y;
-          }
-        }
-        // The drop itself: step the released node's spring and add its excursion on
-        // top of the sim's position, until it is at rest.
-        const drop = !pinned && draggedNode ? dragTugOffsetsRef.current.get(affected.draggedId) : undefined;
-        if (drop && draggedNode) {
-          const next = stepHomeOffset(drop, dt, springFor(affected.draggedId));
-          if (isOffsetAtRest(next)) {
-            dragTugOffsetsRef.current.delete(affected.draggedId);
-          } else {
-            dragTugOffsetsRef.current.set(affected.draggedId, next);
-            draggedNode.x += next.x;
-            draggedNode.y += next.y;
-          }
-        }
-        /*
-         * Grabbing a second node replaces `dragAffectedSetRef` while the first group's
-         * offsets are still in flight. Nothing above iterates them any more, so those
-         * nodes stopped being offset and jumped home in a single frame — up to 21 px on
-         * the sample vault, on nodes the hand never touched. They keep their own spring
-         * until they are at rest (`expressive/release-offsets.ts#orphanedOffsetIds`).
-         */
-        const stepped = new Set<string>(tugIds);
-        stepped.add(affected.draggedId);
-        for (const id of orphanedOffsetIds(dragTugOffsetsRef.current, stepped)) {
-          const prev = dragTugOffsetsRef.current.get(id);
-          if (!prev) continue;
-          const next = stepHomeOffset(prev, dt, springFor(id));
-          if (isOffsetAtRest(next)) {
-            dragTugOffsetsRef.current.delete(id);
-            continue;
-          }
-          dragTugOffsetsRef.current.set(id, next);
-          const orphan = world.nodeById.get(id);
-          if (orphan) {
-            orphan.x += next.x;
-            orphan.y += next.y;
-          }
-        }
-      }
-
-      // Relax the overlap a drag or settle created, in the same frame. This
-      // block is not reached while homing, so the first-map reveal's
-      // deliberate gathering is protected.
-      {
-        // ★ **A node that is not drawn cannot overlap.**
-        //
-        // A subtree collapsed by the density gate is replaced by one chip and
-        // is not on screen (measured at synth=3000: **2,820 of 3,000 (94%)
-        // collapsed, 118 on screen**). Resolving overlaps among the invisible
-        // is pure waste whose result appears nowhere, and because pair count
-        // is N² that waste took 78% of the frame (109.3 ms).
-        //
-        // This is exactly what the owner asked three times: "Only 20 are on screen — why
-        // compute all 3,000?" What you hold as data and what you feed into
-        // per-frame computation are different things, and here they were
-        // indistinguishably the same.
-        const drawnIdx: number[] = [];
-        const sepNodes: SeparationNode[] = [];
-        for (let i = 0; i < world.nodes.length; i += 1) {
-          const n = world.nodes[i];
-          if (clusteredIdsRef.current.has(n.id)) continue;
-          drawnIdx.push(i);
-          sepNodes.push({
-            id: n.id,
-            x: n.x,
-            y: n.y,
-            r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
-          });
-        }
-        // **Only test what actually moved this frame.** A still-still pair
-        // did not overlap last frame, so it cannot overlap now.
-        //
-        // The force sim **already received** this set
-        // (`dragAffectedSetRef`); only separation did not. At 3,000 nodes,
-        // 99.99% of the 9 million distance computations per frame were
-        // "both still" (measured 2026-07-31: 109.3 ms, 78% of the frame).
-        // With no set — after a settle ends, say — it falls back to every
-        // node, identical to the previous behaviour.
-        const sepActive = affected
-          ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
-          : null;
-        relaxNodeSeparation(sepNodes, {
-          ratio: tokens.nodeMinSeparationRatio,
-          iterations: 2,
-          pinnedId: nodeDragRef.current?.nodeId ?? null,
-          activeIds: sepActive,
-        });
-        // Record the displaced nodes here so the next frame's narrowed
-        // write-back does not omit their revert (see `applyOnly` above).
-        const sepDisplaced = sepDisplacedIdsRef.current;
-        sepDisplaced.clear();
-        for (let i = 0; i < sepNodes.length; i += 1) {
-          const target = world.nodes[drawnIdx[i]];
-          if (scoped && (target.x !== sepNodes[i].x || target.y !== sepNodes[i].y)) {
-            sepDisplaced.add(target.id);
-          }
-          target.x = sepNodes[i].x;
-          target.y = sepNodes[i].y;
-        }
-      }
-      // Only the nodes whose coordinates really changed this frame. Judging
-      // by result rather than by author means none of the three writers
-      // (force, tug, separation) can be missed.
-      let movedIds: Set<string> | null = null;
-      if (prevX && prevY) {
-        movedIds = new Set<string>();
-        for (let i = 0; i < nodeCount; i += 1) {
-          const node = world.nodes[i];
-          if (node.x !== prevX[i] || node.y !== prevY[i]) movedIds.add(node.id);
-        }
-      }
-      recomputeWorldGeometry(world, tokens, movedIds);
-      // Heat is a TIME budget (ms), not a frame count, so the release
-      // settle lasts `--map-node-release-settle-ms` on every display.
-      if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
-      if (!pinned && heatRef.current <= 0) {
-        // Settle burst finished — release the affected-set restriction and
-        // drop any residual (by-now-decayed-near-0) tug offsets.
-        dragAffectedSetRef.current = null;
-        dragTugOffsetsRef.current.clear();
-        dropSeededRef.current = false;
-        dragPrevPosRef.current = null;
-        sepDisplacedIdsRef.current.clear();
-        // During a drag the bbox only ever grew, because it feeds the pan
-        // clamp and erring generous is the safe direction. This one frame,
-        // where the settle ends, restores the exact value so a graph that
-        // gathered inward does not keep a looser clamp than before the drag.
-        recomputeWorldGeometry(world, tokens);
-      }
-    }
-
-    // Auto-arrange homing: springs every node back to its own
-    // `homeX`/`homeY` over a short critically-damped transition, independent
-    // of the FA2/tug block above (relayout resets heat/pin, so the two never
-    // run in the same frame in practice).
-    if (homingActiveRef.current) {
-      const finishGalaxyLayoutHandoff = () => {
-        const handoff = galaxyLayoutHandoffRef.current;
-        if (handoff === null) return;
-        // ForceSimulation owns a separate coordinate store. Reseed it at the
-        // arrived mode positions so the first drag cannot snap a star back to
-        // the previous view's coordinates.
-        simRef.current = createForceSimulation(
-          world.nodes.map((node) => ({ id: node.id, x: node.x, y: node.y })),
-          world.edges.map((edge) => ({ source: edge.sourceId, target: edge.targetId })),
-        );
-        if (handoff === "flat") {
-          galaxyFlatReturnPositionsRef.current = null;
-          const pending = pendingFlatCameraRef.current;
-          pendingFlatCameraRef.current = null;
-          // A wheel/pan during coordinate return is newer intent than the
-          // mode's saved camera. Otherwise restore the exact Flat view (or
-          // the first-entry fit) only now that those bounds are real.
-          // A 3D view chosen on the same switch has already fitted its cone
-          // or strata (`domeFitPendingRef`); the Flat camera saved on the way
-          // into Galaxy belongs to the view that was left. Restoring it over
-          // the dome put the cone 286 px down with five nodes under the
-          // viewport (Flat → Galaxy → Cone at 1512×806, measured 2026-09-19).
-          if (pending && !view3dRef.current && pending.gestureRevision === cameraGestureRevisionRef.current) {
-            overviewScaleRef.current = pending.overviewScale;
-            cameraTargetRef.current = pending.target;
-            // Preserve the authorship of the saved view. A later resize may
-            // re-fit an overview, but it must not overwrite a wheel/pan view
-            // merely because that view crossed a mode boundary.
-            userDrivenCameraRef.current = pending.userDriven;
-            dampingRef.current = tokens.cameraDampingDefault;
-            cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-            if (reducedMotionRef.current) {
-              cameraTweenRef.current = null;
-              cameraRef.current = {
-                x: { value: pending.target.tx, velocity: 0 },
-                y: { value: pending.target.ty, velocity: 0 },
-                scale: { value: pending.target.tscale, velocity: 0 },
-              };
-            } else {
-              beginCameraTween(pending.target, undefined, undefined, "held-at-target");
+              seedDropOffset(dragVelRef.current.x, dragVelRef.current.y, springFor(affected.draggedId), tokens.massDropMaxPx));
+                    }
+                    dragVelRef.current = { x: 0, y: 0 };
+                    dragPrevPosRef.current = null;
+                }
+                for (const id of tugIds) {
+                    const hop = affected.oneHop.has(id) ? 1 : 2;
+                    const tugged = world.nodeById.get(id);
+                    // Hop count says WHO may be tugged; world distance from the grab
+                    // point says HOW MUCH. Without the distance term a hub-and-spoke
+                    // vault (everything within 2 hops) drags the whole map along.
+                    // Measured from `dragStart`, not the dragged node's live position,
+                    // so the elastic neighborhood is fixed at grab time and neighbors
+                    // never fade in/out mid-drag.
+                    const falloff = tugged && dragStart
+                        ? tugFalloffForDistance(Math.hypot(tugged.x - dragStart.x, tugged.y - dragStart.y), tokens.dragTugRadius)
+                        : 0;
+                    const factor = tugFactorForHop(hop, factors) * falloff;
+                    let targetX = 0;
+                    let targetY = 0;
+                    if (pinned && draggedNode && dragStart) {
+                        targetX = (draggedNode.x - dragStart.x) * factor;
+                        targetY = (draggedNode.y - dragStart.y) * factor;
+                    }
+                    const prevOffset = dragTugOffsetsRef.current.get(id) ?? REST_OFFSET;
+                    // Reduced motion tracks the pointer 1:1; a live drag lags on the exponential as
+                    // before; a release springs home on this neighbour's own mass.
+                    const nextOffset = reducedMotionRef.current
+                        ? snapOffset(targetX, targetY)
+                        : pinned
+                            ? stepLagOffset(prevOffset, targetX, targetY, dt, DRAG_TUG_EASE_TAU)
+                            : stepHomeOffset(prevOffset, dt, springFor(id));
+                    dragTugOffsetsRef.current.set(id, nextOffset);
+                    if (tugged) {
+                        tugged.x += nextOffset.x;
+                        tugged.y += nextOffset.y;
+                    }
+                }
+                // The drop itself: step the released node's spring and add its excursion on
+                // top of the sim's position, until it is at rest.
+                const drop = !pinned && draggedNode ? dragTugOffsetsRef.current.get(affected.draggedId) : undefined;
+                if (drop && draggedNode) {
+                    const next = stepHomeOffset(drop, dt, springFor(affected.draggedId));
+                    if (isOffsetAtRest(next)) {
+                        dragTugOffsetsRef.current.delete(affected.draggedId);
+                    }
+                    else {
+                        dragTugOffsetsRef.current.set(affected.draggedId, next);
+                        draggedNode.x += next.x;
+                        draggedNode.y += next.y;
+                    }
+                }
+                /*
+                 * Grabbing a second node replaces `dragAffectedSetRef` while the first group's
+                 * offsets are still in flight. Nothing above iterates them any more, so those
+                 * nodes stopped being offset and jumped home in a single frame — up to 21 px on
+                 * the sample vault, on nodes the hand never touched. They keep their own spring
+                 * until they are at rest (`expressive/release-offsets.ts#orphanedOffsetIds`).
+                 */
+                const stepped = new Set<string>(tugIds);
+                stepped.add(affected.draggedId);
+                for (const id of orphanedOffsetIds(dragTugOffsetsRef.current, stepped)) {
+                    const prev = dragTugOffsetsRef.current.get(id);
+                    if (!prev)
+                        continue;
+                    const next = stepHomeOffset(prev, dt, springFor(id));
+                    if (isOffsetAtRest(next)) {
+                        dragTugOffsetsRef.current.delete(id);
+                        continue;
+                    }
+                    dragTugOffsetsRef.current.set(id, next);
+                    const orphan = world.nodeById.get(id);
+                    if (orphan) {
+                        orphan.x += next.x;
+                        orphan.y += next.y;
+                    }
+                }
             }
-          }
+            // Relax the overlap a drag or settle created, in the same frame. This
+            // block is not reached while homing, so the first-map reveal's
+            // deliberate gathering is protected.
+            {
+                // ★ **A node that is not drawn cannot overlap.**
+                //
+                // A subtree collapsed by the density gate is replaced by one chip and
+                // is not on screen (measured at synth=3000: **2,820 of 3,000 (94%)
+                // collapsed, 118 on screen**). Resolving overlaps among the invisible
+                // is pure waste whose result appears nowhere, and because pair count
+                // is N² that waste took 78% of the frame (109.3 ms).
+                //
+                // This is exactly what the owner asked three times: "Only 20 are on screen — why
+                // compute all 3,000?" What you hold as data and what you feed into
+                // per-frame computation are different things, and here they were
+                // indistinguishably the same.
+                const drawnIdx: number[] = [];
+                const sepNodes: SeparationNode[] = [];
+                for (let i = 0; i < world.nodes.length; i += 1) {
+                    const n = world.nodes[i];
+                    if (clusteredIdsRef.current.has(n.id))
+                        continue;
+                    drawnIdx.push(i);
+                    sepNodes.push({
+                        id: n.id,
+                        x: n.x,
+                        y: n.y,
+                        r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
+                    });
+                }
+                // **Only test what actually moved this frame.** A still-still pair
+                // did not overlap last frame, so it cannot overlap now.
+                //
+                // The force sim **already received** this set
+                // (`dragAffectedSetRef`); only separation did not. At 3,000 nodes,
+                // 99.99% of the 9 million distance computations per frame were
+                // "both still" (measured 2026-07-31: 109.3 ms, 78% of the frame).
+                // With no set — after a settle ends, say — it falls back to every
+                // node, identical to the previous behaviour.
+                const sepActive = affected
+                    ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
+                    : null;
+                relaxNodeSeparation(sepNodes, {
+                    ratio: tokens.nodeMinSeparationRatio,
+                    iterations: 2,
+                    pinnedId: nodeDragRef.current?.nodeId ?? null,
+                    activeIds: sepActive,
+                });
+                // Record the displaced nodes here so the next frame's narrowed
+                // write-back does not omit their revert (see `applyOnly` above).
+                const sepDisplaced = sepDisplacedIdsRef.current;
+                sepDisplaced.clear();
+                for (let i = 0; i < sepNodes.length; i += 1) {
+                    const target = world.nodes[drawnIdx[i]];
+                    if (scoped && (target.x !== sepNodes[i].x || target.y !== sepNodes[i].y)) {
+                        sepDisplaced.add(target.id);
+                    }
+                    target.x = sepNodes[i].x;
+                    target.y = sepNodes[i].y;
+                }
+            }
+            // Only the nodes whose coordinates really changed this frame. Judging
+            // by result rather than by author means none of the three writers
+            // (force, tug, separation) can be missed.
+            let movedIds: Set<string> | null = null;
+            if (prevX && prevY) {
+                movedIds = new Set<string>();
+                for (let i = 0; i < nodeCount; i += 1) {
+                    const node = world.nodes[i];
+                    if (node.x !== prevX[i] || node.y !== prevY[i])
+                        movedIds.add(node.id);
+                }
+            }
+            recomputeWorldGeometry(world, tokens, movedIds);
+            // Heat is a TIME budget (ms), not a frame count, so the release
+            // settle lasts `--map-node-release-settle-ms` on every display.
+            if (!pinned && heatRef.current > 0)
+                heatRef.current = Math.max(0, heatRef.current - dt * 1000);
+            if (!pinned && heatRef.current <= 0) {
+                // Settle burst finished — release the affected-set restriction and
+                // drop any residual (by-now-decayed-near-0) tug offsets.
+                dragAffectedSetRef.current = null;
+                dragTugOffsetsRef.current.clear();
+                dropSeededRef.current = false;
+                dragPrevPosRef.current = null;
+                sepDisplacedIdsRef.current.clear();
+                // During a drag the bbox only ever grew, because it feeds the pan
+                // clamp and erring generous is the safe direction. This one frame,
+                // where the settle ends, restores the exact value so a graph that
+                // gathered inward does not keep a looser clamp than before the drag.
+                recomputeWorldGeometry(world, tokens);
+            }
         }
-        galaxyLayoutHandoffRef.current = null;
-      };
-      // Reduced-motion users get the relayout RESULT, not the journey.
-      // Warding invariant: inside a realm the override (the realm's
-      // `insideTargets`) wins as the homing target; null keeps the global
-      // homeX/homeY contract.
-      const homeOverride = homeTargetOverrideRef.current;
+        // Auto-arrange homing: springs every node back to its own
+        // `homeX`/`homeY` over a short critically-damped transition, independent
+        // of the FA2/tug block above (relayout resets heat/pin, so the two never
+        // run in the same frame in practice).
+        if (homingActiveRef.current) {
+            // Reduced-motion users get the relayout RESULT, not the journey.
+            // Warding invariant: inside a realm the override (the realm's
+            // `insideTargets`) wins as the homing target; null keeps the global
+            // homeX/homeY contract.
+            const homeOverride = homeTargetOverrideRef.current;
       if (reducedMotionRef.current) {
         for (const node of world.nodes) {
           if (!homeSpringsRef.current.has(node.id)) continue;
@@ -624,7 +561,6 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
         homeTargetOverrideRef.current = null;
-        finishGalaxyLayoutHandoff();
       } else {
         let allConverged = true;
         for (const node of world.nodes) {
@@ -647,7 +583,6 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
           homingActiveRef.current = false;
           homeSpringsRef.current.clear();
           homeTargetOverrideRef.current = null;
-          finishGalaxyLayoutHandoff();
         }
       }
     }
@@ -716,78 +651,59 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
           // coordinates from build time and the members jump.
           simRef.current = createForceSimulation(
             world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
-            world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-          );
-          realmActiveHandedOffRef.current = true;
-          recomputeWorldGeometry(world, tokens);
-        }
-      } else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
-        // Exit reverse-playback: inside nodes reverse-FLIP (deepest layer
-        // first, target → home) and outside nodes return against gravity
-        // (fling position → home) — the deterministic inverse of the entry
-        // step. Reduced-motion never reaches here: the exit effect above
-        // already snapped home and went idle with duration 0.
-        const elapsed = now - rt.startMs;
-        for (const node of world.nodes) {
-          const target = data.insideTargets.get(node.id);
-          if (target) {
-            const home = data.insideFrom.get(node.id) ?? target;
-            const delay = realmExitFlipDelayFor(data.depthById.get(node.id) ?? 1);
-            const p = realmInsidePosition(target, home, elapsed - delay, REALM_EXIT_FLIP_MS);
-            node.x = p.x;
-            node.y = p.y;
-          } else {
-            const from = data.outsideFrom.get(node.id);
-            if (from) {
-              const p = realmOutsideReturnPosition(from, data.flingCenter, elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, {
-                duration: REALM_EXIT_OUTSIDE_RETURN_MS,
-                fallbackAngle: fallbackAngleFor(node.id),
-              });
-              node.x = p.x;
-              node.y = p.y;
+            world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })));
+                    realmActiveHandedOffRef.current = true;
+                    recomputeWorldGeometry(world, tokens);
+                }
             }
-          }
+            else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
+                // Exit reverse-playback: inside nodes reverse-FLIP (deepest layer
+                // first, target → home) and outside nodes return against gravity
+                // (fling position → home) — the deterministic inverse of the entry
+                // step. Reduced-motion never reaches here: the exit effect above
+                // already snapped home and went idle with duration 0.
+                const elapsed = now - rt.startMs;
+                for (const node of world.nodes) {
+                    const target = data.insideTargets.get(node.id);
+                    if (target) {
+                        const home = data.insideFrom.get(node.id) ?? target;
+                        const delay = realmExitFlipDelayFor(data.depthById.get(node.id) ?? 1);
+                        const p = realmInsidePosition(target, home, elapsed - delay, REALM_EXIT_FLIP_MS);
+                        node.x = p.x;
+                        node.y = p.y;
+                    }
+                    else {
+                        const from = data.outsideFrom.get(node.id);
+                        if (from) {
+                            const p = realmOutsideReturnPosition(from, data.flingCenter, elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, {
+                                duration: REALM_EXIT_OUTSIDE_RETURN_MS,
+                                fallbackAngle: fallbackAngleFor(node.id),
+                            });
+                            node.x = p.x;
+                            node.y = p.y;
+                        }
+                    }
+                }
+                recomputeWorldGeometry(world, tokens);
+                // Exit framing defect (node audit 2026-07-24): in the collapsed
+                // realm layout at entry, `overviewScaleRef` froze at the collapsed
+                // spine fit (≈0.24), which pushed stepCamera's scale ceiling
+                // (overviewEntryScale × maxZoomRatio) down to ≈0.73 after exit. The
+                // camera then could not climb back to the canonical overview (≈1.14)
+                // and stuck in a shrunken frame. Reverse playback restores
+                // spineBounds a little more each frame as nodes return home, so the
+                // ceiling anchor is recomputed live and cannot suppress the target at
+                // the tween → spring handover — equivalent to the fresh and deselect
+                // paths.
+                overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
+            }
+            else if (rt.phase === "idle" && realmDataRef.current !== null) {
+                // Exit complete: reverse playback returned everything home, so drop
+                // the realm data and settle the overview anchor against the home
+                // spineBounds — the close of the recomputation above.
+                realmDataRef.current = null;
+                overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
+            }
         }
-        recomputeWorldGeometry(world, tokens);
-        // Exit framing defect (node audit 2026-07-24): in the collapsed
-        // realm layout at entry, `overviewScaleRef` froze at the collapsed
-        // spine fit (≈0.24), which pushed stepCamera's scale ceiling
-        // (overviewEntryScale × maxZoomRatio) down to ≈0.73 after exit. The
-        // camera then could not climb back to the canonical overview (≈1.14)
-        // and stuck in a shrunken frame. Reverse playback restores
-        // spineBounds a little more each frame as nodes return home, so the
-        // ceiling anchor is recomputed live and cannot suppress the target at
-        // the tween → spring handover — equivalent to the fresh and deselect
-        // paths.
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
-      } else if (rt.phase === "idle" && realmDataRef.current !== null) {
-        // Exit complete: reverse playback returned everything home, so drop
-        // the realm data and settle the overview anchor against the home
-        // spineBounds — the close of the recomputation above.
-        realmDataRef.current = null;
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
-      }
-    }
-
-    /*
-     * ★ **A focus cannot stand on a name this graph does not have**
-     * (2026-08-17).
-     *
-     * Owner report: "open in map" on a project document made the map look as
-     * if it had vanished. **Everything had been dimmed** — measured, the
-     * brightest node sat at 1.40:1 against the background (3:1 is the minimum
-     * for a shape), and the 125-node sample vault produced zero bright pixels.
-     *
-     * The cause was a naming mismatch (project slug `project` vs node id
-     * `project:project`), fixed in `HomePage`. But the hazard is not that one
-     * path — it is **the rule translating "selected a node that does not
-     * exist" into "dim everything"**, which the next path would hit again.
-     *
-     * So a focus id absent from this frame's node list counts as **nothing
-     * selected**: a screen with no selection always beats a selection that
-     * shows nothing. Costs one `world.nodeById` lookup.
-     * Gate: `tests/e2e/map-focus-dangling.spec.ts`.
-     */
-
-  };
+    };
 }

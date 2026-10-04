@@ -12,38 +12,22 @@ import {
 
 interface Dependencies {
   constellationFocusId: string | null;
-  galaxy: boolean;
-  relayoutToken: number;
+    relayoutToken: number;
   fitViewToken: number;
   overviewFit: "full" | "spine";
 }
 
 /** Own camera axes, navigation intents, and fit bookkeeping. */
 export function useTopologyCameraState({
-  constellationFocusId,
-  galaxy,
-  relayoutToken,
-  fitViewToken,
-  overviewFit,
-}: Dependencies) {
-
-  const cameraRef = useRef<CameraAxes>({
-    x: { value: 0, velocity: 0 },
-    y: { value: 0, velocity: 0 },
-    scale: { value: 1, velocity: 0 },
-  });
-
-  const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
-
-  /** Galaxy focus approach and the exact camera context it must yield back to. */
-  const galaxyInspectionCameraRef = useRef<{
-    returnTarget: CameraTarget;
-    focusTarget: CameraTarget;
-    gestureRevision: number;
-  } | null>(null);
-
-  /** Camera context paired with an explicit saved-constellation focus. */
-  const constellationCameraRef = useRef<{
+  constellationFocusId, relayoutToken, fitViewToken, overviewFit, }: Dependencies) {
+    const cameraRef = useRef<CameraAxes>({
+        x: { value: 0, velocity: 0 },
+        y: { value: 0, velocity: 0 },
+        scale: { value: 1, velocity: 0 },
+    });
+    const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
+    /** Camera context paired with an explicit saved-constellation focus. */
+    const constellationCameraRef = useRef<{
     returnTarget: CameraTarget;
     dataSourceKey: string | null;
   } | null>(null);
@@ -51,8 +35,7 @@ export function useTopologyCameraState({
   const previousConstellationFocusIdRef = useRef<string | null>(constellationFocusId);
 
   useEffect(() => {
-    if (!galaxy) galaxyInspectionCameraRef.current = null;
-  }, [galaxy]);
+    }, []);
 
   /**
    * WCAG 2.2 §2.3.3 — "who moved the camera last". Pointer-handler gestures
@@ -187,7 +170,7 @@ export function useTopologyCameraState({
   const overviewFitRef = useRef(overviewFit);
 
   return {
-    cameraRef, cameraTargetRef, galaxyInspectionCameraRef, constellationCameraRef,
+    cameraRef, cameraTargetRef, constellationCameraRef,
     previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,

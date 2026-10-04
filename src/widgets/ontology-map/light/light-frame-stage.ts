@@ -19,8 +19,7 @@ type LightStageState = "idle" | "pending" | "ready" | "off" | "lost";
 interface LightStageRefs {
   reducedMotionRef: RefObject<boolean>;
   egoRevealRef: RefObject<Map<string, number>>;
-  galaxyRef: RefObject<boolean>;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
+    domeRuntimeRef: RefObject<DomeRuntime | null>;
   mapLensKindRef: RefObject<TopologyMapLensKind>;
   pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -29,7 +28,8 @@ interface LightStageRefs {
 export interface LightStageDependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   refs: LightStageRefs;
-  lightActiveRef: { current: boolean };
+  lightActiveRef: { current: boolean;
+    };
   requestFrame: () => void;
 }
 
@@ -50,13 +50,10 @@ export interface LightFrameStage {
     height: number,
     focusedNodeId: string | null,
     trailLensActive: boolean,
-    clusteredIds: ReadonlySet<string>,
-  ): void;
-  render(): void;
-  dispose(): void;
+    clusteredIds: ReadonlySet<string>): void;
+    render(): void;
+    dispose(): void;
 }
-
-const EMPTY_IDS: ReadonlySet<string> = new Set();
 const INK_FLOATS = 12;
 
 function idleScheduler(callback: () => void): () => void {
@@ -76,6 +73,10 @@ async function loadLightLayer(): Promise<LightLayerModule> {
 function writeInk(token: string, out: Float32Array, slot: number): void {
   const rgb = hexToRgb(token);
   for (let channel = 0; channel < 3; channel += 1) out[slot * 3 + channel] = rgb ? rgb[channel]! / 255 : 0;
+}
+
+function lightKinematics(tokens: OntologyMapTokens): LightKinematics {
+  return { speed: tokens.lightSpeed, hopMinMs: tokens.lightHopMinMs, hopMaxMs: tokens.lightHopMaxMs, pathMaxMs: tokens.lightPathMaxMs, tail: tokens.lightTail, intensity: tokens.lightIntensity, bloomTauMs: tokens.lightBloomTau * 1000 };
 }
 
 export function createLightFrameStage(dependencies: LightStageDependencies, options: LightStageOptions = {}): LightFrameStage {
@@ -109,6 +110,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
   let prepareMs = 0;
   let prepareStart = 0;
   let paintInput: LightSourceInput | null = null;
+  let initialInput: LightSourceInput | null = null;
 
   let probe: LightProbe | null = null;
   if (params.has("e2e") && typeof window !== "undefined") {
@@ -181,6 +183,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
     layer?.dispose();
     layer = null;
     drewLast = false;
+    initialInput = null;
   };
 
   const create = async () => {
@@ -220,6 +223,11 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         corePx: 0,
         haloPx: 0,
       };
+      if (initialInput) {
+        for (const source of sources) if (!source.readsPaint) source.step(initialInput, emitter);
+        sourcesQuiet = false;
+      }
+      initialInput = null;
       state = "ready";
       requestFrame();
     } catch {
@@ -266,6 +274,9 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       }
       const dome = refs.domeRuntimeRef.current;
       const flat = dome === null || dome.rampClock <= 0;
+      if (state === "idle" && flat && width > 0 && height > 0 && initialInput === null) {
+        initialInput = { now, world, camera, width, height, tokens, kinematics: lightKinematics(tokens), focusedNodeId, trailLensActive, reducedMotion, revealProgress: 1, clusteredIds, mapLensKind: refs.mapLensKindRef.current, pathEdgeIds: refs.pathEdgeIdsRef.current, pathNodeIds: refs.spotlightIdsRef.current };
+      }
       if (state === "idle" && flat && width > 0 && height > 0) schedule();
       if (state !== "ready" || !flat || !batch) {
         quiet();
@@ -273,15 +284,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       }
       if (tokens !== tokensSeen) {
         tokensSeen = tokens;
-        kinematics = {
-          speed: tokens.lightSpeed,
-          hopMinMs: tokens.lightHopMinMs,
-          hopMaxMs: tokens.lightHopMaxMs,
-          pathMaxMs: tokens.lightPathMaxMs,
-          tail: tokens.lightTail,
-          intensity: tokens.lightIntensity,
-          bloomTauMs: tokens.lightBloomTau * 1000,
-        };
+        kinematics = lightKinematics(tokens);
         writeInk(tokens.indigoBright, inks, 0);
         batch.corePx = tokens.lightCorePx;
         batch.haloPx = tokens.lightHaloPx;
@@ -302,7 +305,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         trailLensActive,
         reducedMotion,
         revealProgress: frameReveal,
-        clusteredIds: refs.galaxyRef.current ? EMPTY_IDS : clusteredIds,
+        clusteredIds: clusteredIds,
         mapLensKind: refs.mapLensKindRef.current,
         pathEdgeIds: refs.pathEdgeIdsRef.current,
         pathNodeIds: refs.spotlightIdsRef.current,
@@ -361,8 +364,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
           blooms: probeBlooms.slice(),
         },
         layer,
-        canvasRef.current,
-      );
+        canvasRef.current);
     },
     dispose() {
       disposed = true;

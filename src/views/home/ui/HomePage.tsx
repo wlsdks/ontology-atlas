@@ -107,7 +107,7 @@ export function HomePage() {
 
 function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
-  const { t, siteT, relationLabelInRegister, activeLocale, view3d, galaxy } = topologyPreferences;
+  const { t, siteT, relationLabelInRegister, activeLocale, view3d, structure } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
   // since the array identity changes every render.
@@ -441,10 +441,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     // costly style recalc.
     refreshIndexDependentTokens(root);
     let cancelled = false;
-    // A microtask avoids a synchronous setState (cascading-render warning). The dome and Galaxy
-    // skip this re-fit, since it runs on every selection and Galaxy keeps the reader's pan and
     // zoom.
-    if (!view3d && !galaxy && !acpDockFrameOpen) {
+    if (!view3d && !structure && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
@@ -453,7 +451,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d, galaxy, acpDockFrameOpen]);
+  }, [renderedIndexState, view3d, structure, acpDockFrameOpen]);
   const topologySourceActions = useTopologySourceActions({ toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus });
   const topologyInspectorState = useTopologyInspectorState({
     setExpandAllActive, setRouteState, nodeFocus, v2DatasheetModel, analysisMode, selectedSlug,
@@ -544,7 +542,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             {t('srHeading')}
           </h1>
           <GestureHint
-            disabled={drawerOpen}
+            disabled={drawerOpen || structure}
           />
           <LiveAnnouncer
             message={(() => {

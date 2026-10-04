@@ -71,7 +71,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "openGuidedTour" | "tour">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d" | "structure">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
     ReturnType<typeof useTopologyVaultReadModel>,
@@ -137,7 +137,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, audiencePlain, view3d } = topologyPreferences;
+  const { t, audiencePlain, view3d, structure } = topologyPreferences;
   const { canvasSelectedSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { openGuidedTour, tour } = topologyKeyboardTour;
@@ -260,7 +260,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
            on `selectedEdgeOwnsRightRail`, like the other right-rail tiles, or they stay
            visible under the relation card and cannot be pressed. */}
         <div className="contents" data-testid="topology-utility-rail">
-          {createNodeOpen ||
+          {structure || createNodeOpen ||
             topologyBlockingOverlayActive ||
             selectedEdgeOwnsRightRail ||
             (selectedNodeFocusActive && (!view3d || !nodePopoverDismissed)) ? null : (
@@ -274,7 +274,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             />
           )}
           {/* Directly above the "?" tile; the tour is `md`+ only. */}
-          {createNodeOpen ||
+          {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
             selectedNodeFocusActive ? null : (
@@ -293,7 +293,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           )}
           {/* Two slots below the fit tile; on phones only in overview and focus, clear of the
              path/health rail. */}
-          {createNodeOpen ||
+          {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
             selectedNodeFocusActive ? null : (
@@ -346,7 +346,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           )}
           {/* Replays the ontology appearing in containment order
              (`ontology-map/model/growth-replay.ts`); desktop only. */}
-          {createNodeOpen ||
+          {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
             selectedNodeFocusActive ? null : (
@@ -450,7 +450,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
            the utility rail. */}
         {/* Ambient, so it steps aside while the datasheet or a right dock is open instead of
            sharing a baseline. */}
-        <div
+        {!structure && <div
           ref={readoutStackRef}
           data-testid="topology-readout-stack"
           // A toast stands above this reading (`src/shared/ui/toast-walls.ts`).
@@ -482,12 +482,12 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           />
           {/* The frame meter joins the instrument stack instead of claiming a new corner. */}
           <FrameMeter />
-        </div>
+        </div>}
 
         {/* Pointer-transparent; the first selection that exists dismisses it for good
            (`features/first-run-starter`), so a ghost slug cannot
            (see `resolvedSelectionSlug`). */}
-        <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open || hintInline} />
+        <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open || hintInline || structure} />
 
         {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
            elsewhere. */}

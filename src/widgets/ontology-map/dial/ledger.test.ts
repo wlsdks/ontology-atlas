@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import regression from "./ledger-regression.fixture.json";
+import { overlaps } from "./label-marks";
+import type { Point } from "./types";
 import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerDisc, type LedgerInput } from "./ledger";
 
 const TOKENS = { ledgerRowPx: 14, ledgerGapPx: 24 };
@@ -31,6 +34,24 @@ function input(over: Partial<LedgerInput> = {}): LedgerInput {
 }
 
 describe("buildLedger", () => {
+  it("keeps every row clear of a protected project name even when strokes cost more", () => {
+    const plan = buildLedger(input({
+      ...regression,
+      priority: new Set(regression.priority),
+      measureText: () => regression.measureWidth,
+      avoid: { boxes: regression.avoid.boxes, nameBoxes: regression.avoid.names, lines: regression.avoid.lines as Point[][] },
+    }))!;
+    expect(plan.rows).toHaveLength(regression.discs.length);
+    expect(new Set(plan.rows.map(row => row.id))).toEqual(new Set(regression.discs.map(disc => disc.id)));
+    expect(plan.rows.some(row => regression.avoid.names.some(name => overlaps(row.box, name)))).toBe(false);
+    expect(countLeaderCrossings(plan.leaders)).toBe(0);
+  });
+
+  it("keeps existing names when every ledger column is occupied", () => {
+    const baseline = input();
+    expect(buildLedger({ ...baseline, avoid: { boxes: [], nameBoxes: [baseline.freeRect], lines: [] } })).toBeNull();
+  });
+
   it("moves its column off planned strokes and placed names", () => {
     const set = discs(4);
     const free = buildLedger(input({ discs: set }))!;

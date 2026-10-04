@@ -1,7 +1,0 @@
-{
-  "list": "地図上のドメインと、それぞれのケイパビリティ",
-  "galaxyRow": "{name}、概念{count, plural, other {#件}}",
-  "strandList": "ドメイン同士の依存関係",
-  "strandRow": "{from}は{to}に依存しています。依存は{count}件です。",
-  "strandRowBoth": "{from}と{to}は互いに依存しています。依存は{count}件です。"
-}

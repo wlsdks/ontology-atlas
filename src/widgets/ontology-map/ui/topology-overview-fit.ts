@@ -12,32 +12,24 @@ export function overviewBoundsFor(
   world: TopologyWorld,
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
-  clustered: ReadonlySet<string> | null,
-) {
+  clustered: ReadonlySet<string> | null) {
   return fit === "full"
     ? world.bounds
     : computeRevealedBounds(world, tokens, expandedParents, clustered);
 }
 
 export function overviewFitTokens<T extends { cameraScaleMin: number; }>(
-  tokens: T,
-  galaxyActive: boolean,
-): T {
-  return galaxyActive ? { ...tokens, cameraScaleMin: 0 } : tokens;
+  tokens: T): T {
+    return tokens;
 }
 
-/**
- * The overview frame at the coordinates a view transition is heading for (the return
- * from Galaxy), built from the same set `overviewBoundsFor` frames: the spine the map
- * draws plus the children a person expanded, never a node the density gate folded.
- */
+
 export function overviewForPositionTargets(
   fit: "spine" | "full",
   world: TopologyWorld,
   tokens: OntologyMapTokens,
   targets: ReadonlyMap<string, { x: number; y: number; }>,
-  expandedParents: ReadonlySet<string>,
-): {
+  expandedParents: ReadonlySet<string>): {
   bounds: { minX: number; minY: number; maxX: number; maxY: number; };
 } {
   const included = new Set<string>();

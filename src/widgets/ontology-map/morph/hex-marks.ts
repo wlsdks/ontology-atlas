@@ -83,7 +83,8 @@ export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, hei
   const x = free.x + ROOM_LEFT_PAD;
   const y = Math.max(free.y + ROOM_UNDER_TOOLBAR, ROOM_TOP);
   const right = Math.min(free.x + free.width, width - ROOM_RIGHT);
-  const bottom = Math.min(free.y + free.height, height - ROOM_BOTTOM);
+  // Reserve the footer and the same clearance used below the toolbar before it mounts.
+  const bottom = Math.min(free.y + free.height, height - ROOM_BOTTOM - ROOM_UNDER_TOOLBAR);
   return { x: Math.round(x), y: Math.round(y), width: Math.max(80, Math.round(right - x)), height: Math.max(80, Math.round(bottom - y)) };
 }
 

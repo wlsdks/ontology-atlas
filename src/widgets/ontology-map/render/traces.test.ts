@@ -234,7 +234,8 @@ describe("draw — ego contains comet (Guardian E)", () => {
       quadraticCurveTo() {},
       stroke() {},
       fill() {
-        fillStyle = String((this as { fillStyle?: unknown }).fillStyle);
+        fillStyle = String((this as { fillStyle?: unknown;
+                }).fillStyle);
       },
       setLineDash() {},
       arc() {},
@@ -277,7 +278,8 @@ describe("draw — depends 방향 테이퍼", () => {
     const widths: number[] = [];
     const ctx = {
       beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
-      stroke() { widths.push(Number((this as { lineWidth?: unknown }).lineWidth)); },
+      stroke() { widths.push(Number((this as { lineWidth?: unknown;
+            }).lineWidth)); },
       strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
     } as unknown as CanvasRenderingContext2D;
     draw(ctx, state, TOKENS);
@@ -315,7 +317,10 @@ describe("draw — containment ink ladder", () => {
     let stroke = ""; let width = 0;
     const ctx = {
       beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
-      stroke() { stroke = String((this as { strokeStyle?: unknown }).strokeStyle); width = Number((this as { lineWidth?: unknown }).lineWidth); },
+      stroke() { stroke = String((this as { strokeStyle?: unknown;
+            }).strokeStyle); width = Number((this as {
+                lineWidth?: unknown;
+            }).lineWidth); },
       strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
     } as unknown as CanvasRenderingContext2D;
     draw(ctx, {
@@ -377,10 +382,12 @@ describe("hover lift — a hovered node's lines rise toward the ego ink on the r
     indigo: "#5e6ad2",
     indigoBright: "#8b97ff",
   };
-  function drawAndRead(state: TraceDrawState): { stroke: string; width: number } {
+  function drawAndRead(state: TraceDrawState): { stroke: string; width: number;
+    } {
     let stroke = "";
     let width = 0;
-    const ctx: Record<string, unknown> & { strokeStyle: string; lineWidth: number } = {
+    const ctx: Record<string, unknown> & { strokeStyle: string; lineWidth: number;
+        } = {
       beginPath() {},
       moveTo() {},
       lineTo() {},
@@ -475,7 +482,8 @@ describe("draw — the resting line's device-pixel width floor", () => {
     const out: number[] = [];
     const ctx = {
       beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
-      stroke() { out.push(Number((this as { lineWidth?: unknown }).lineWidth)); },
+      stroke() { out.push(Number((this as { lineWidth?: unknown;
+            }).lineWidth)); },
       strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
     } as unknown as CanvasRenderingContext2D;
     draw(ctx, state, TOKENS);
@@ -529,12 +537,14 @@ describe("draw — relation reveal on selection", () => {
     to: Point;
   }
 
-  function record(state: TraceDrawState): { strokes: Stroke[]; dots: Point[] } {
+  function record(state: TraceDrawState): { strokes: Stroke[]; dots: Point[];
+    } {
     const strokes: Stroke[] = [];
     const dots: Point[] = [];
     let from: Point = { x: 0, y: 0 };
     let to: Point = { x: 0, y: 0 };
-    const ctx: Record<string, unknown> & { strokeStyle: string } = {
+    const ctx: Record<string, unknown> & { strokeStyle: string;
+        } = {
       beginPath() {},
       moveTo(x: number, y: number) {
         from = { x, y };
@@ -693,13 +703,6 @@ describe("draw — one light per line", () => {
     const contains: TraceDrawState = { ...depends, relationType: "contains", containsCometEligible: true };
     markSignalledLine(contains.a, contains.control, contains.b);
     expect(countDots(contains)).toBe(0);
-  });
-
-  it("stands the galaxy glint down on a signalled line", () => {
-    const galaxy: TraceDrawState = { ...depends, galaxyInk: "#8890e0", galaxyGlint: 0.8 };
-    expect(countDots(galaxy)).toBe(1);
-    markSignalledLine(galaxy.a, galaxy.control, galaxy.b);
-    expect(countDots(galaxy)).toBe(0);
   });
 
   it("leaves a second relation between the same two concepts its comet", () => {

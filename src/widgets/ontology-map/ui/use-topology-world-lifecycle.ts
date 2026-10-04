@@ -16,7 +16,6 @@ import {
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../morph/layout-morph";
 import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
-import { computeGalaxyLayout, type GalaxyLayout } from "../model/galaxy-layout";
 import { initHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { Pulse } from "../render/edge-fireflies";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
@@ -40,9 +39,7 @@ interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
   cameraRef: RefObject<CameraAxes>;
-  galaxyRef: RefObject<boolean>;
-  galaxyLayoutRef: RefObject<GalaxyLayout | null>;
-  overviewFitRef: RefObject<"full" | "spine">;
+    overviewFitRef: RefObject<"full" | "spine">;
   expandedParentsRef: RefObject<ReadonlySet<string>>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   cameraTokens: <T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T) => T;
@@ -57,8 +54,6 @@ interface Dependencies {
   nodes: UseTopologyLoopArgs["nodes"];
   edges: UseTopologyLoopArgs["edges"];
   expand: ExpandPreference;
-  galaxyFlatReturnPositionsRef: RefObject<ReadonlyMap<string, { x: number; y: number; }> | null>;
-  galaxyLayoutHandoffRef: RefObject<"flat" | "galaxy" | null>;
   prevNodeIdsRef: RefObject<Set<string>>;
   appearRef: RefObject<Map<string, number>>;
   bornNodeIdsRef: RefObject<Set<string>>;
@@ -82,11 +77,11 @@ interface Dependencies {
   assembleOnOpen: boolean;
   arrivingDocuments: number;
   fittedDataSourceKeyRef: RefObject<string | null>;
-  galaxyModeCameraRef: RefObject<{ flat: { target: CameraTarget; userDriven: boolean; } | null; galaxy: { target: CameraTarget; userDriven: boolean; } | null; }>;
-  pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
+    pendingFlatCameraRef: RefObject<{ target: CameraTarget; overviewScale: number; gestureRevision: number; userDriven: boolean; } | null>;
   dialLabels: DialLabels | null;
   flatRingMemory: FlatRingMemoryStore | null;
-  loadProgress: { read: number; total: number } | null;
+  loadProgress: { read: number; total: number;
+    } | null;
   placingTierRead: boolean;
 }
 
@@ -103,10 +98,7 @@ function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): D
 export function useTopologyWorldLifecycle({
   worldRef,
   viewportRef,
-  cameraRef,
-  galaxyRef,
-  galaxyLayoutRef,
-  overviewFitRef,
+  cameraRef, overviewFitRef,
   expandedParentsRef,
   clusteredIdsRef,
   cameraTokens,
@@ -121,8 +113,6 @@ export function useTopologyWorldLifecycle({
   nodes,
   edges,
   expand,
-  galaxyFlatReturnPositionsRef,
-  galaxyLayoutHandoffRef,
   prevNodeIdsRef,
   appearRef,
   bornNodeIdsRef,
@@ -146,7 +136,6 @@ export function useTopologyWorldLifecycle({
   assembleOnOpen,
   arrivingDocuments,
   fittedDataSourceKeyRef,
-  galaxyModeCameraRef,
   pendingFlatCameraRef,
   dialLabels,
   flatRingMemory,
@@ -159,7 +148,13 @@ export function useTopologyWorldLifecycle({
   const arrivalGlideRef = useRef(false);
   const [dialPlacement] = useState(createDialPlacement);
   const placementStateRef = useRef<DialPlacementState>("settled");
-  const pendingSimRef = useRef<{ world: TopologyWorld; nodes: { id: string; x: number; y: number }[]; edges: { source: string; target: string }[] } | null>(null);
+  const pendingSimRef = useRef<{ world: TopologyWorld; nodes: { id: string; x: number; y: number;
+        }[];
+        edges: {
+            source: string;
+            target: string;
+        }[];
+    } | null>(null);
   const buildPendingSim = useCallback(() => {
     const pending = pendingSimRef.current;
     pendingSimRef.current = null;
@@ -172,39 +167,31 @@ export function useTopologyWorldLifecycle({
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
-    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
-      ? galaxyLayoutRef.current.bounds
-      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const target = computeOverviewCameraTarget(
       fitBounds,
       width,
       height,
-      overviewFitTokens(cameraTokens(tokens), galaxyRef.current),
-      world.nodes.length,
-      galaxyRef.current ? undefined : dialOverviewFit(world),
-    );
+      overviewFitTokens(cameraTokens(tokens)), world.nodes.length, dialOverviewFit(world));
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
-  }, [cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, galaxyLayoutRef, galaxyRef, overviewFitRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, overviewFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
   const trySnapInitialCamera = useCallback((tokens: OntologyMapTokens) => {
     if (hasInitializedRef.current) return;
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
-    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
-      ? galaxyLayoutRef.current.bounds
-      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-    const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
-    const dialFit = galaxyRef.current ? undefined : dialOverviewFit(world);
+    const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const measuredTokens = overviewFitTokens(cameraTokens(tokens));
+        const dialFit = dialOverviewFit(world);
     const target = computeOverviewCameraTarget(
       fitBounds,
       width,
       height,
       measuredTokens,
       world.nodes.length,
-      dialFit,
-    );
+      dialFit);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
@@ -218,20 +205,19 @@ export function useTopologyWorldLifecycle({
       height,
       measuredTokens,
       world.nodes.length,
-      dialFit,
-    );
+      dialFit);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
     if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
       pendingSpotlightFitRef.current = false;
     }
-  }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
   const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
     const { width, height } = viewportRef.current;
     if (!userDrivenCameraRef.current && width > 0 && height > 0) {
       const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-      const measuredTokens = overviewFitTokens(cameraTokens(tokens), false);
+      const measuredTokens = overviewFitTokens(cameraTokens(tokens));
       const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
       cameraTargetRef.current = target;
       overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
@@ -267,8 +253,7 @@ export function useTopologyWorldLifecycle({
     const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
-      String(tokens.hysteresisPx),
-    );
+      String(tokens.hysteresisPx));
     if (dataSourceKey !== null) claimDialOrderFolder(dataSourceKey);
     const ringMemory = dataSourceKey === null ? null : flatRingMemory;
     const stored = ringMemory?.current() ?? null;
@@ -285,31 +270,6 @@ export function useTopologyWorldLifecycle({
       setDialPlacement(world.dial, { ...placed, progress: loadProgress });
       if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
       provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
-    }
-    const galaxyLayout = computeGalaxyLayout(
-      world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
-      {
-        domain: tokens.layoutRingDomain,
-        capability: tokens.layoutRingCapability,
-        element: tokens.layoutRingElement,
-      },
-    );
-    galaxyLayoutRef.current = galaxyLayout;
-    if (galaxyRef.current) {
-      galaxyFlatReturnPositionsRef.current = new Map(
-        world.nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
-      );
-      for (const node of world.nodes) {
-        const target = galaxyLayout.points.get(node.id);
-        if (!target) continue;
-        node.x = target.x;
-        node.y = target.y;
-      }
-      recomputeWorldGeometry(world, tokens);
-      galaxyLayoutHandoffRef.current = null;
-    } else {
-      galaxyFlatReturnPositionsRef.current = null;
-      galaxyLayoutHandoffRef.current = null;
     }
     const previousWorld = worldRef.current;
     worldRef.current = world;
@@ -355,8 +315,7 @@ export function useTopologyWorldLifecycle({
     live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
-      galaxyModeCameraRef.current = { flat: null, galaxy: null };
-      pendingFlatCameraRef.current = null;
+            pendingFlatCameraRef.current = null;
       hasInitializedRef.current = false;
       armAssembly = true;
     }
@@ -369,7 +328,7 @@ export function useTopologyWorldLifecycle({
     arrivalGlideRef.current = grew;
     if (arriving) arrivalStillRef.current = arrivingDocuments > ARRIVAL_GLIDE_CONCEPT_CEILING;
     const arrivalStill = grew && arrivalStillRef.current;
-    if (!galaxyRef.current) {
+        {
       if (armAssembly) {
         armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (!assembleOnOpen) settleTierAssembly(world);
@@ -377,41 +336,46 @@ export function useTopologyWorldLifecycle({
         carryTierAssembly(previousWorld, world);
       }
     }
-    if (grew && !armAssembly && previousWorld && hasInitializedRef.current && !galaxyRef.current) {
-      glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
-    }
-    trySnapInitialCamera(tokens);
-    lastActiveMsRef.current = performance.now();
-    return () => clearTimeout(simTask);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
-  useEffect(() => {
-    const dial = worldRef.current?.dial;
-    if (!dial || placementStateRef.current === "settled") return;
-    setDialPlacement(dial, { ...dialPlacementOf(dial), progress: loadProgress });
-    lastActiveMsRef.current = performance.now();
-  }, [loadProgress, worldRef, lastActiveMsRef]);
-  useEffect(() => {
-    if (dataSourceKey !== null && worldRef.current) claimTierAssembly(worldRef.current, dataSourceKey);
-    const dial = dataSourceKey === null ? null : worldRef.current?.dial;
-    if (dial && placementStateRef.current === "settled") flatRingMemory?.write(dial.scene.memory);
-  }, [dataSourceKey, flatRingMemory, worldRef]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const settle = () => {
-      buildPendingSim();
-      if (worldRef.current) settleTierAssembly(worldRef.current);
-    };
-    const events = ["pointerdown", "wheel", "touchstart"] as const;
-    for (const type of events) container.addEventListener(type, settle, { capture: true, passive: true });
-    window.addEventListener("keydown", settle, { capture: true });
-    return () => {
-      for (const type of events) container.removeEventListener(type, settle, { capture: true });
-      window.removeEventListener("keydown", settle, { capture: true });
-    };
-  }, [buildPendingSim, containerRef, worldRef]);
-
-  return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
+    if (grew && !armAssembly && previousWorld && hasInitializedRef.current) {
+            glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
+        }
+        trySnapInitialCamera(tokens);
+        lastActiveMsRef.current = performance.now();
+        return () => clearTimeout(simTask);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only graph and placement inputs rebuild the world; commands and progress have separate effects.
+    }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
+    useEffect(() => {
+        const dial = worldRef.current?.dial;
+        if (!dial || placementStateRef.current === "settled")
+            return;
+        setDialPlacement(dial, { ...dialPlacementOf(dial), progress: loadProgress });
+        lastActiveMsRef.current = performance.now();
+    }, [loadProgress, worldRef, lastActiveMsRef]);
+    useEffect(() => {
+        if (dataSourceKey !== null && worldRef.current)
+            claimTierAssembly(worldRef.current, dataSourceKey);
+        const dial = dataSourceKey === null ? null : worldRef.current?.dial;
+        if (dial && placementStateRef.current === "settled")
+            flatRingMemory?.write(dial.scene.memory);
+    }, [dataSourceKey, flatRingMemory, worldRef]);
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container)
+            return;
+        const settle = () => {
+            buildPendingSim();
+            if (worldRef.current)
+                settleTierAssembly(worldRef.current);
+        };
+        const events = ["pointerdown", "wheel", "touchstart"] as const;
+        for (const type of events)
+            container.addEventListener(type, settle, { capture: true, passive: true });
+        window.addEventListener("keydown", settle, { capture: true });
+        return () => {
+            for (const type of events)
+                container.removeEventListener(type, settle, { capture: true });
+            window.removeEventListener("keydown", settle, { capture: true });
+        };
+    }, [buildPendingSim, containerRef, worldRef]);
+    return { rescueCameraIfEverythingOffscreen, trySnapInitialCamera };
 }

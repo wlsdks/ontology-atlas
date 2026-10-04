@@ -4,7 +4,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraAxes } from "../engine/camera";
-import { ambientSleepFactor, createAmbientClock, stepAmbientClock } from "../model/ambient-sleep";
+import { ambientSleepFactor } from "../model/ambient-sleep";
 import type { ClusterChip } from "../model/density-gate";
 import {
   DOME_ASSEMBLE_TOTAL_MS,
@@ -22,7 +22,6 @@ import {
   buildWalkedEdgeDirections,
   buildWalkedEdgeKeys,
 } from "../model/footprint-steps";
-import { type GalaxyLayout } from "../model/galaxy-layout";
 import { type GrowthReplay } from "../model/growth-replay";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import {
@@ -57,8 +56,7 @@ export function lastTierPlanes(): readonly TierPlane[] {
 }
 
 interface Dependencies {
-  galaxyRef: RefObject<boolean>;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
+    domeRuntimeRef: RefObject<DomeRuntime | null>;
   clusterChipsRef: RefObject<readonly ClusterChip[]>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
@@ -73,16 +71,11 @@ interface Dependencies {
   trailLensRampRef: RefObject<number>;
   view3dRef: RefObject<boolean>;
   neuralRampRef: RefObject<number>;
-  galaxyLayoutHandoffRef: RefObject<"flat" | "galaxy" | null>;
-  galaxyRampRef: RefObject<number>;
-  animatedBgRef: RefObject<AnimatedBackground | null>;
+    animatedBgRef: RefObject<AnimatedBackground | null>;
   lastInputMsRef: RefObject<number>;
   ambientSleepDelayRef: RefObject<number | undefined>;
   bgPointerRef: RefObject<{ x: number; y: number; } | null>;
   ctx: CanvasRenderingContext2D;
-  galaxyLayoutRef: RefObject<GalaxyLayout | null>;
-  galaxyEnteredAtRef: RefObject<number>;
-  galaxyAtmosphereSeedRef: RefObject<number>;
   panelInsetsRef: RefObject<{ left: number; right: number; } | null>;
   gridPatternRef: RefObject<CanvasPattern | null>;
   dustPointsRef: RefObject<DustPoint[]>;
@@ -110,7 +103,7 @@ interface Dependencies {
   selectionPulseRef: RefObject<{ nodeId: string; startAtMs: number; } | null>;
   agentFocusNodeIdRef: RefObject<string | null>;
   hoveredClusterIdRef: RefObject<string | null>;
-  cosmosPointsRef: RefObject<DustPoint[]>;
+    realmStarPointsRef: RefObject<DustPoint[]>;
   footprintPrefRef: RefObject<FootprintPreference | null>;
   footprintStepColorRef: RefObject<string>;
   footprintInkRef: RefObject<FootprintInk>;
@@ -144,9 +137,7 @@ interface Dependencies {
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
-export function createPresentationFrameStage({
-  galaxyRef,
-  domeRuntimeRef,
+export function createPresentationFrameStage({ domeRuntimeRef,
   clusterChipsRef,
   clusteredIdsRef,
   realmTierKindsRef,
@@ -160,17 +151,7 @@ export function createPresentationFrameStage({
   trailLensOpenedAtRef,
   trailLensRampRef,
   view3dRef,
-  neuralRampRef,
-  galaxyLayoutHandoffRef,
-  galaxyRampRef,
-  animatedBgRef,
-  lastInputMsRef,
-  ambientSleepDelayRef,
-  bgPointerRef,
-  ctx,
-  galaxyLayoutRef,
-  galaxyEnteredAtRef,
-  galaxyAtmosphereSeedRef,
+  neuralRampRef, animatedBgRef, lastInputMsRef, ambientSleepDelayRef, bgPointerRef, ctx,
   panelInsetsRef,
   gridPatternRef,
   dustPointsRef,
@@ -197,8 +178,7 @@ export function createPresentationFrameStage({
   pulsesRef,
   selectionPulseRef,
   agentFocusNodeIdRef,
-  hoveredClusterIdRef,
-  cosmosPointsRef,
+  hoveredClusterIdRef, realmStarPointsRef,
   footprintPrefRef,
   footprintStepColorRef,
   footprintInkRef,
@@ -234,490 +214,420 @@ export function createPresentationFrameStage({
    * the inks are re-parsed only when the token strings change.
    */
   const strataStage = createStrataStage();
-  const atmosphereClock = createAmbientClock();
   let litInkKey = "";
   let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
   const resolveLitInks = (tokens: OntologyMapTokens) => {
     const key = `${tokens.kindRgbProject}|${tokens.kindRgbDomain}|${tokens.kindRgbCapability}|${tokens.kindRgbElement}|${tokens.statusWarning}|${tokens.indigoBright}`;
-    if (key === litInkKey && litInks !== null) return litInks;
-    const fallback: Rgb = [128, 128, 140];
-    litInks = {
-      kindRgb: {
-        project: parseRgbTriple(tokens.kindRgbProject) ?? fallback,
-        domain: parseRgbTriple(tokens.kindRgbDomain) ?? fallback,
-        capability: parseRgbTriple(tokens.kindRgbCapability) ?? fallback,
-        element: parseRgbTriple(tokens.kindRgbElement) ?? fallback,
-      },
-      warningRgb: hexToRgb(tokens.statusWarning) ?? parseRgbTriple(tokens.statusWarning) ?? fallback,
-      focusRgb: hexToRgb(tokens.indigoBright) ?? fallback,
+        if (key === litInkKey && litInks !== null)
+            return litInks;
+        const fallback: Rgb = [128, 128, 140];
+        litInks = {
+            kindRgb: {
+                project: parseRgbTriple(tokens.kindRgbProject) ?? fallback,
+                domain: parseRgbTriple(tokens.kindRgbDomain) ?? fallback,
+                capability: parseRgbTriple(tokens.kindRgbCapability) ?? fallback,
+                element: parseRgbTriple(tokens.kindRgbElement) ?? fallback,
+            },
+            warningRgb: hexToRgb(tokens.statusWarning) ?? parseRgbTriple(tokens.statusWarning) ?? fallback,
+            focusRgb: hexToRgb(tokens.indigoBright) ?? fallback,
+        };
+        litInkKey = key;
+        return litInks;
     };
-    litInkKey = key;
-    return litInks;
-  };
-  const stepDomeLod = (
-    dt: number,
-    tokens: OntologyMapTokens,
-    camera: CameraAxes,
-    width: number,
-    height: number,
-    world: TopologyWorld,
-    hoveredNodeId: string | null,
-  ): StrataLodState | null => {
-    const dome = domeRuntimeRef.current;
-    const state = domeLodRef.current;
-    if (dome === null || dome.rampClock <= 0) {
-      if (state.active || state.settling || state.primed) restStrataLod(state);
-      return null;
-    }
-    if (dome.model.arrangement !== "strata") {
-      return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs, domeEvidenceRef.current) ? state : null;
-    }
-    return stepStrataLod(state, {
-      runtime: dome,
-      world,
-      camera: { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height },
-      hoveredId: hoveredNodeId,
-      focusedId: colorFocusRef.current?.focusedNodeId ?? null,
-      pointer: bgPointerRef.current,
-      evidence: domeEvidenceRef.current,
-      dtMs: dt * 1000,
-      fadeMs: tokens.tipFadeMs,
-    });
-  };
-  const domeLightFor = (tokens: OntologyMapTokens, lod: StrataLodState | null): DomeLightFrame | null => {
-    const dome = domeRuntimeRef.current;
-    if (dome === null || dome.rampClock <= 0) return null;
-    const inks = resolveLitInks(tokens);
-    return {
-      ...inks,
-      evidence: domeEvidenceRef.current,
-      reducedMotion: reducedMotionRef.current,
-      sampleStage:
-        dome.model.arrangement === "strata"
-          ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
-          : null,
-      lod,
+    const stepDomeLod = (dt: number, tokens: OntologyMapTokens, camera: CameraAxes, width: number, height: number, world: TopologyWorld, hoveredNodeId: string | null): StrataLodState | null => {
+        const dome = domeRuntimeRef.current;
+        const state = domeLodRef.current;
+        if (dome === null || dome.rampClock <= 0) {
+            if (state.active || state.settling || state.primed)
+                restStrataLod(state);
+            return null;
+        }
+        if (dome.model.arrangement !== "strata") {
+            return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs, domeEvidenceRef.current) ? state : null;
+        }
+        return stepStrataLod(state, {
+            runtime: dome,
+            world,
+            camera: { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height },
+            hoveredId: hoveredNodeId,
+            focusedId: colorFocusRef.current?.focusedNodeId ?? null,
+            pointer: bgPointerRef.current,
+            evidence: domeEvidenceRef.current,
+            dtMs: dt * 1000,
+            fadeMs: tokens.tipFadeMs,
+        });
     };
-  };
-
-  return function runPresentationFrameStage(
-    frameChips: readonly ClusterChip[],
-    frameClusteredIds: ReadonlySet<string>,
-    realmTierKinds: ReadonlyMap<string, DomeViewKind> | null,
-    now: number,
-    dt: number,
-    tokens: OntologyMapTokens,
-    trailLensActive: boolean,
-    camera: CameraAxes,
-    width: number,
-    height: number,
-    dpr: number,
-    world: TopologyWorld,
-    farT: number,
-    zoomRatio: number,
-    focusedNodeId: string | null,
-    hoveredNodeId: string | null,
-    panelEmphasisNodeId: string | null,
-    realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null; } | null,
-    realmDepthById: ReadonlyMap<string, number> | null,
-    realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset; } | null,
-    realmDustParallax: number,
-    realmOutsideReturnAlphaById: Map<string, number> | null,
-    captionGateFold: ReadonlySet<string> | null = null,
-  ) {
-
-    const modeShowsEveryNode =
-      galaxyRef.current ||
-      (domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0);
-
-    clusterChipsRef.current = modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips;
-
-    // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
-    // collapsed plus selective-ego hidden neighbours), so draw and hit see
-    // the same set.
-    clusteredIdsRef.current = modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
-
-    // Publish the depth override the draw used for this frame's tier alphas
-    // to hit-testing as well (null when no realm is active), keeping draw and
-    // hit in lockstep.
-    realmTierKindsRef.current = realmTierKinds;
-
-    /*
-     * Footprint trail: this frame's visit ordinal per node, starting at 1. The array is
-     * short (≤30), so recomputing it per frame costs nothing.
-     *
-     * ⚠️ **The focused node used to be deleted from this map and is not any more.** The
-     * reason it was — "the selection ring already holds that position" — was true of a
-     * shoe print, which sat *beside* the node in the ring's own orbit. Since 2026-09-10 the
-     * mark is the node emitting, and the two occupy different geometry: the ring strokes
-     * the silhouette and the r+6 hairline, the star throws light outward from it. Keeping
-     * the deletion after that cost the walk its last stop — usually the node the person had
-     * just clicked — so the end of the path was a hole, and the "here is where the walk
-     * ends" cross could almost never draw because the star it rides on was missing.
-     * `topology-frame-draw` separates the two by ink instead: indigo on the focused node,
-     * star ink on the rest.
-     */
-    const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
-
-    // A longer trail stamps the arrival motion's start time; a shorter one
-    // (cleared) drops the ramp.
-    const trailLen = visitedTrailRef.current.length;
-
-    if (trailLen > footprintTrailLenRef.current) footprintAppearAtRef.current = now;
-
-    footprintTrailLenRef.current = trailLen;
-
-    const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
-
-    // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
-    // taking its place.
-    const footprintAppear = reducedMotionRef.current
-      ? 1
-      : Math.min(1, Math.max(0, (now - footprintAppearAtRef.current) / 180));
-
-    // Spotlight on/off exponential ramp, reusing focusDimTau so no new
-    // easing is introduced. Reduced-motion arrives immediately: static
-    // contrast alone carries the information.
-    spotlightRampRef.current = reducedMotionRef.current
-      ? (spotlightIdsRef.current !== null ? 1 : 0)
-      : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
-
-    spotlightDashOffsetRef.current = stepSpotlightPhase({
-      dashOffset: spotlightDashOffsetRef.current,
-      settling: Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
-      reducedMotion: reducedMotionRef.current,
-      dtSeconds: dt,
-      speedPxPerMs: tokens.spotlightRingSpeed,
-    });
-
-    /*
-     * Trail lens on/off ramp, reusing the same easing and token. Reduced-motion arrives
-     * immediately — same contract as the spotlight.
-     *
-     * ⚠️ **The clock outlives the close, and that is the whole fix for the interruption
-     * flash.** It used to zero on the closing frame, which made `sweep` fall back to its
-     * default of 1 for every star the ignition had not reached yet — so closing the lens
-     * *mid-sweep* lit the entire constellation for the two or three frames the ramp took to
-     * fade it. design-motion recorded it: a star jumped 28.2 → 42.6 luminance in one 33 ms
-     * frame, **+51%**, on the way out (2026-09-10). Holding the clock until the ramp is
-     * spent lets an interrupted open fade from wherever the sweep actually got to, which is
-     * the difference between a transition that can be interrupted and one that must be
-     * waited out.
-     */
-    if (trailLensActive && trailLensOpenedAtRef.current === 0) trailLensOpenedAtRef.current = now;
-    else if (!trailLensActive && trailLensRampRef.current < 0.01) trailLensOpenedAtRef.current = 0;
-
-    /*
-     * The galaxy view's crossfade. Reduced motion takes it immediately, the same contract the
-     * spotlight and the trail lens follow: what the preference removes is travel, and a
-     * brightness crossfade on a settled canvas is not travel — but the ramp below it *is* the
-     * trail lens, which does move, so the two are answered separately.
-     */
-    const neuralTarget = view3dRef.current && domeRuntimeRef.current?.model.arrangement === "coupling";
-
-    // Reduced motion keeps geometry at its destination; only the cell material
-    // crossfades. Curve projection separately uses the destination mix above.
-    if (reducedMotionRef.current) {
-      const target = neuralTarget ? 1 : 0;
-      const delta = target - neuralRampRef.current;
-      const stride = dt * 1000 / Math.max(1, tokens.trailReducedFadeMs);
-      neuralRampRef.current = Math.abs(delta) <= stride
-        ? target : neuralRampRef.current + Math.sign(delta) * stride;
-    } else {
-      neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
-    }
-
-    const galaxyIdentityActive =
-      galaxyRef.current || galaxyLayoutHandoffRef.current === "flat";
-
-    galaxyRampRef.current = reducedMotionRef.current
-      ? (galaxyIdentityActive ? 1 : 0)
-      : stepFocusRamp(galaxyRampRef.current, galaxyIdentityActive, dt, tokens.focusDimTau);
-
-    if (reducedMotionRef.current) {
-      /*
-       * ⚠️ **Reduced motion asked for no travel, not for a cut.** This used to be
-       * `trailLensActive ? 1 : 0`, and design-motion measured the result: the constellation
-       * went 22.25 → 51.9 luminance **in one 33 ms frame** (2026-09-10). Everything the
-       * preference is actually for is still suppressed — the ignition sweep, the twinkle,
-       * the travelling light — and none of them comes back here. What comes back is an
-       * opacity crossfade over `--motion-settle`, which carries no position, no scale and
-       * no vestibular signal; it is the same fade a `prefers-reduced-motion` stylesheet
-       * would leave in place of a slide.
-       */
-      const stepPerMs = 1 / Math.max(1, tokens.trailReducedFadeMs);
-      const target = trailLensActive ? 1 : 0;
-      const delta = target - trailLensRampRef.current;
-      const stride = dt * 1000 * stepPerMs;
-      trailLensRampRef.current =
-        Math.abs(delta) <= stride ? target : trailLensRampRef.current + Math.sign(delta) * stride;
-    } else {
-      trailLensRampRef.current = stepFocusRamp(trailLensRampRef.current, trailLensActive, dt, tokens.focusDimTau);
-    }
-
-    const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
-    const atmosphereLagMs = stepAmbientClock(atmosphereClock, galaxyEnteredAtRef.current, now, dt * 1000, ambientFactor);
-
-    {
-      const bg = animatedBgRef.current;
-      if (bg) {
-        const origin = worldToScreen(camera, width, height, 0, 0);
-        bg.step({
-          width,
-          height,
-          dpr,
-          originX: origin.x,
-          originY: origin.y,
-          ambientFactor,
-          pointerX: bgPointerRef.current?.x ?? null,
-          pointerY: bgPointerRef.current?.y ?? null,
-          dtMs: dt * 1000,
-          reducedMotion: reducedMotionRef.current,
+    const domeLightFor = (tokens: OntologyMapTokens, lod: StrataLodState | null): DomeLightFrame | null => {
+        const dome = domeRuntimeRef.current;
+        if (dome === null || dome.rampClock <= 0)
+            return null;
+        const inks = resolveLitInks(tokens);
+        return {
+            ...inks,
+            evidence: domeEvidenceRef.current,
+            reducedMotion: reducedMotionRef.current,
+            sampleStage: dome.model.arrangement === "strata"
+                ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
+                : null,
+            lod,
+        };
+    };
+    return function runPresentationFrameStage(frameChips: readonly ClusterChip[], frameClusteredIds: ReadonlySet<string>, realmTierKinds: ReadonlyMap<string, DomeViewKind> | null, now: number, dt: number, tokens: OntologyMapTokens, trailLensActive: boolean, camera: CameraAxes, width: number, height: number, dpr: number, world: TopologyWorld, farT: number, zoomRatio: number, focusedNodeId: string | null, hoveredNodeId: string | null, panelEmphasisNodeId: string | null, realmWarding: {
+        centerX: number;
+        centerY: number;
+        radius: number;
+        drawProgress: number;
+        caption: string | null;
+    } | null, realmDepthById: ReadonlyMap<string, number> | null, realmDepthParallax: {
+        depth2: DepthParallaxOffset;
+        depth3: DepthParallaxOffset;
+    } | null, realmDustParallax: number, realmOutsideReturnAlphaById: Map<string, number> | null, captionGateFold: ReadonlySet<string> | null = null) {
+        const modeShowsEveryNode = (domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0);
+        clusterChipsRef.current = modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips;
+        // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
+        // collapsed plus selective-ego hidden neighbours), so draw and hit see
+        // the same set.
+        clusteredIdsRef.current = modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
+        // Publish the depth override the draw used for this frame's tier alphas
+        // to hit-testing as well (null when no realm is active), keeping draw and
+        // hit in lockstep.
+        realmTierKindsRef.current = realmTierKinds;
+        /*
+         * Footprint trail: this frame's visit ordinal per node, starting at 1. The array is
+         * short (≤30), so recomputing it per frame costs nothing.
+         *
+         * ⚠️ **The focused node used to be deleted from this map and is not any more.** The
+         * reason it was — "the selection ring already holds that position" — was true of a
+         * shoe print, which sat *beside* the node in the ring's own orbit. Since 2026-09-10 the
+         * mark is the node emitting, and the two occupy different geometry: the ring strokes
+         * the silhouette and the r+6 hairline, the star throws light outward from it. Keeping
+         * the deletion after that cost the walk its last stop — usually the node the person had
+         * just clicked — so the end of the path was a hole, and the "here is where the walk
+         * ends" cross could almost never draw because the star it rides on was missing.
+         * `topology-frame-draw` separates the two by ink instead: indigo on the focused node,
+         * star ink on the rest.
+         */
+        const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
+        // A longer trail stamps the arrival motion's start time; a shorter one
+        // (cleared) drops the ramp.
+        const trailLen = visitedTrailRef.current.length;
+        if (trailLen > footprintTrailLenRef.current)
+            footprintAppearAtRef.current = now;
+        footprintTrailLenRef.current = trailLen;
+        const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
+        // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
+        // taking its place.
+        const footprintAppear = reducedMotionRef.current
+            ? 1
+            : Math.min(1, Math.max(0, (now - footprintAppearAtRef.current) / 180));
+        // Spotlight on/off exponential ramp, reusing focusDimTau so no new
+        // easing is introduced. Reduced-motion arrives immediately: static
+        // contrast alone carries the information.
+        spotlightRampRef.current = reducedMotionRef.current
+            ? (spotlightIdsRef.current !== null ? 1 : 0)
+            : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
+        spotlightDashOffsetRef.current = stepSpotlightPhase({
+            dashOffset: spotlightDashOffsetRef.current,
+            settling: Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
+            reducedMotion: reducedMotionRef.current,
+            dtSeconds: dt,
+            speedPxPerMs: tokens.spotlightRingSpeed,
         });
-      }
-    }
-
-    const domeLod = stepDomeLod(dt, tokens, camera, width, height, world, hoveredNodeId);
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    ctx.clearRect(0, 0, width, height);
-
-    drawTopologyFrame({
-      ctx,
-      world,
-      camera,
-      farT,
-      galaxyRamp: galaxyRampRef.current,
-      galaxyIdentityActive,
-      galaxyLayoutRadius: galaxyLayoutRef.current?.radius ?? 0,
-      galaxyElapsedMs:
-        galaxyRampRef.current > 0.001 && galaxyEnteredAtRef.current > 0
-          ? Math.max(0, now - galaxyEnteredAtRef.current - atmosphereLagMs)
-          : 0,
-      galaxyAtmosphereLagMs: atmosphereLagMs,
-      galaxyAtmosphereLive: ambientFactor,
-      galaxyMeteorQuietUntilMs: ambientFactor < 1 ? Number.NEGATIVE_INFINITY : atmosphereClock.quietUntilMs,
-      galaxyAtmosphereSeed: galaxyAtmosphereSeedRef.current,
-      neuralRamp: neuralRampRef.current,
-      zoomRatio,
-      now,
-      viewportWidth: width,
-      viewportHeight: height,
-      panelInsets: panelInsetsRef.current,
-      // The ratio this frame is really rasterising at — the adaptive one while a
-      // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
-      // line's width floor reads it.
-      devicePixelRatio: dpr,
-      gridPattern: gridPatternRef.current,
-      dustPoints: dustPointsRef.current,
-      tokens,
-      focusedNodeId,
-      hoveredNodeId,
-      // Press (2026-09-08): when this hover began, so the draw can run the
-      // underdamped step response from that instant.
-      hoverStartedAt: (() => {
-        if (hoverStartRef.current.id !== hoveredNodeId) {
-          hoverReleasedRef.current = hoverStartRef.current.id;
-          hoverStartRef.current = { id: hoveredNodeId, at: now };
+        /*
+         * Trail lens on/off ramp, reusing the same easing and token. Reduced-motion arrives
+         * immediately — same contract as the spotlight.
+         *
+         * ⚠️ **The clock outlives the close, and that is the whole fix for the interruption
+         * flash.** It used to zero on the closing frame, which made `sweep` fall back to its
+         * default of 1 for every star the ignition had not reached yet — so closing the lens
+         * *mid-sweep* lit the entire constellation for the two or three frames the ramp took to
+         * fade it. design-motion recorded it: a star jumped 28.2 → 42.6 luminance in one 33 ms
+         * frame, **+51%**, on the way out (2026-09-10). Holding the clock until the ramp is
+         * spent lets an interrupted open fade from wherever the sweep actually got to, which is
+         * the difference between a transition that can be interrupted and one that must be
+         * waited out.
+         */
+        if (trailLensActive && trailLensOpenedAtRef.current === 0)
+            trailLensOpenedAtRef.current = now;
+        else if (!trailLensActive && trailLensRampRef.current < 0.01)
+            trailLensOpenedAtRef.current = 0;
+        const neuralTarget = view3dRef.current && domeRuntimeRef.current?.model.arrangement === "coupling";
+        // Reduced motion keeps geometry at its destination; only the cell material
+        // crossfades. Curve projection separately uses the destination mix above.
+        if (reducedMotionRef.current) {
+            const target = neuralTarget ? 1 : 0;
+            const delta = target - neuralRampRef.current;
+            const stride = dt * 1000 / Math.max(1, tokens.trailReducedFadeMs);
+            neuralRampRef.current = Math.abs(delta) <= stride
+                ? target : neuralRampRef.current + Math.sign(delta) * stride;
         }
-        return hoveredNodeId === null ? null : hoverStartRef.current.at;
-      })(),
-      // The node the press left, so its swell decays instead of stepping down.
-      hoverReleasedNodeId: hoverReleasedRef.current,
-      emphasizedNeighborId: panelEmphasisNodeId,
-      hoveredEdge: hoveredEdgeRef.current,
-      selectedEdge: selectedEdgeRef.current,
-      relationCaptions: annotationRef.current.captions,
-      // A view that draws every concept still captions only what the flat map would.
-      captionFoldedIds: modeShowsEveryNode ? (captionGateFold ?? frameClusteredIds) : null,
-      reviewQuestionIds: annotationRef.current.questions,
-      previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
-        ? {
-          ...previewEdgeHeldRef.current,
-          alpha: previewAlphaRef.current,
-          commitProgress: previewCommitRef.current,
+        else {
+            neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
         }
-        : null,
-      emphasisById: emphasisRef.current,
-      egoRevealById: egoRevealRef.current,
-      focusRampById: focusRampRef.current,
-      appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
-      bornNodeIds: bornNodeIdsRef.current,
-      chipRevealById: chipRevealRef.current,
-      expandRevealById: expandRevealRef.current,
-      batchAppearById: batchAppearRef.current,
-      labelPresentById: labelPresentRef.current,
-      colorFocusedNodeId: colorFocusRef.current?.focusedNodeId ?? null,
-      colorSelectedEdge: colorFocusRef.current?.selectedEdge ?? null,
-      reducedMotion: reducedMotionRef.current,
-      pulses: pulsesRef.current,
-      selectionPulse: selectionPulseRef.current,
-      agentFocusNodeId: agentFocusNodeIdRef.current,
-      clusteredIds: modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
-      clusterChips: modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips,
-      hoveredClusterId: hoveredClusterIdRef.current,
-      wardingRing: realmWarding,
-      realmTierKinds,
-      realmDepthById,
-      realmDepthParallax,
-      realmDustParallax,
-      realmOutsideReturnAlphaById,
-      // Cosmos dots are passed only while a realm is active; they are
-      // clipped by the warding ring.
-      realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
-      footprintStepsById,
-      footprintPref: footprintPrefRef.current,
-      trailStarInk: footprintStepColorRef.current,
-      footprintNewestStep: visitedTrailRef.current.length,
-      walkedEdgeKeys: buildWalkedEdgeKeys(visitedTrailRef.current),
-      walkedEdgeDirections: buildWalkedEdgeDirections(visitedTrailRef.current),
-      walkedEdgeArrivalStep: buildWalkedEdgeArrivalSteps(visitedTrailRef.current),
-      footprintInk: footprintInkRef.current,
-      footprintStepColor: footprintStepColorRef.current,
-      footprintNewestId,
-      footprintAppear,
-      // The lens keep-set is passed only while the popover is open; closed
-      // sends null. After the lens turns off the set keeps being passed until
-      // the ramp reaches 0, so the trail ink and background dim *fade down*
-      // rather than *disappear*.
-      trailLensIds:
-        trailLensActive || trailLensRampRef.current > 0.01 ? visitedTrailSetRef.current : null,
-      trailLensRamp: trailLensRampRef.current,
-      trailLensOpenedAtMs: trailLensOpenedAtRef.current,
-      spotlightIds: spotlightIdsRef.current,
-      mapLensKind: mapLensKindRef.current,
-      pathEdgeIds: pathEdgeIdsRef.current,
-      spotlightRamp: spotlightRampRef.current,
-      spotlightDashOffset: spotlightDashOffsetRef.current,
-      tierReveal: tierRevealRef.current,
-      glyphStyle: glyphStyleRef.current,
-      backgroundVariant: canvasBackgroundRef.current,
-      domeFrame:
-        domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-          ? domeRuntimeRef.current.frame
-          : null,
-      domeRamp: domeRuntimeRef.current !== null ? domeRuntimeRef.current.rampClock / DOME_ASSEMBLE_TOTAL_MS : 0,
-      domeRings:
-        domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-          ? domeRuntimeRef.current.rings
-          : null,
-      domeControlFor:
-        domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-          ? domeEdgeControlForFrame
-          : null,
-      domeLight: domeLightFor(tokens, domeLod),
-      paintAnimatedBackground: animatedBgRef.current
-        ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
-        : null,
-      nodeLayer: nodeLayerRef.current,
-      depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
-      expand: expandPrefRef.current,
-      clusterBarLabels: getClusterBarLabels(),
-      domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
-      domeTierRaisedKind: domeTierRaisedKindRef.current,
-      // Concept names give way to the tier names placed last frame (`model/tier-names.ts`).
-      tierNameBoxes: domeTierAnchorsSentRef.current,
-      dial: flatDialRef.current,
-    });
-    reportFlatDial(flatDialRef.current, dialFrameSummary());
-
-    // Record which lens state this frame drew; the idle gate compares
-    // against it next frame to decide whether the lens changed.
-    drawnTrailLensRef.current = trailLensActive;
-
-    // Guided-tour spotlight ring, drawn by the engine onto the frame rather
-    // than as an overlay DOM circle. Owner bug report 2026-07-24: the DOM
-    // circle was slightly offset and a slightly different shape from the
-    // node, so it looked misaligned. Using the same `worldToScreen` in the
-    // same frame makes agreement with the drawn node structural. The scrim
-    // cutout stays with the GuidedTourOverlay.
-    {
-      const anchorId = tourAnchorNodeIdRef.current;
-      const node = anchorId ? world.nodeById.get(anchorId) : undefined;
-      if (node) {
-        const dFrame = domeRuntimeRef.current?.frame.get(node.id);
-        const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
-        const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, rr + 10, 0, Math.PI * 2);
-        ctx.strokeStyle = tokens.selectionRingIndigo;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    // What the frame actually painted, reported only on change — the readout is
-    // an instrument, and an instrument that restates a rule instead of the
-    // screen is the defect this replaces.
-    const painted = lastDrawnNodeCount();
-
-    if (painted !== drawnNodeCountRef.current) {
-      drawnNodeCountRef.current = painted;
-      onDrawnCountChangeRef.current?.(painted);
-    }
-    const hiddenDependencies = domeLod !== null && domeLod.active ? lastHiddenDependencies() : 0;
-    if (hiddenDependencies !== hiddenDependenciesSentRef.current) {
-      hiddenDependenciesSentRef.current = hiddenDependencies;
-      onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
-    }
-
-    /*
-     * **Where each Strata tier name stands this frame** (`model/tier-names.ts`). The
-     * planes are the rings the frame just drew, not the model: during an orbit or a
-     * morph the two are different numbers. The room is the fit's own free box — the
-     * canvas minus the chrome it measured on each side — so a name never lands where
-     * the drawing was kept from.
-     */
-    {
-      const runtime = domeRuntimeRef.current;
-      let names: TierNameAnchor[] | null = null;
-      lastPlanes = [];
-      if (runtime !== null && runtime.rampClock > 0 && runtime.model.arrangement === "strata") {
-        const strongest = new Map<DomeViewKind, (typeof runtime.rings)[number]>();
-        for (const ring of runtime.rings) {
-          if (ring.label === null || ring.a <= 0.01) continue;
-          const seen = strongest.get(ring.kind);
-          // A morph draws the old model's rings behind the new ones; the tier
-          // belongs to whichever of the two is currently the stronger.
-          if (seen && seen.a >= ring.a) continue;
-          strongest.set(ring.kind, ring);
+        if (reducedMotionRef.current) {
+            /*
+             * ⚠️ **Reduced motion asked for no travel, not for a cut.** This used to be
+             * `trailLensActive ? 1 : 0`, and design-motion measured the result: the constellation
+             * went 22.25 → 51.9 luminance **in one 33 ms frame** (2026-09-10). Everything the
+             * preference is actually for is still suppressed — the ignition sweep, the twinkle,
+             * the travelling light — and none of them comes back here. What comes back is an
+             * opacity crossfade over `--motion-settle`, which carries no position, no scale and
+             * no vestibular signal; it is the same fade a `prefers-reduced-motion` stylesheet
+             * would leave in place of a slide.
+             */
+            const stepPerMs = 1 / Math.max(1, tokens.trailReducedFadeMs);
+            const target = trailLensActive ? 1 : 0;
+            const delta = target - trailLensRampRef.current;
+            const stride = dt * 1000 * stepPerMs;
+            trailLensRampRef.current =
+                Math.abs(delta) <= stride ? target : trailLensRampRef.current + Math.sign(delta) * stride;
         }
-        const planes: TierPlane[] = [];
-        for (const kind of DOME_LEGEND_KINDS) {
-          const ring = strongest.get(kind);
-          if (!ring || ring.label === null) continue;
-          let left = Infinity;
-          let right = -Infinity;
-          let top = Infinity;
-          let bottom = -Infinity;
-          for (const point of ring.points) {
-            const at = worldToScreen(camera, width, height, point.wx, point.wy);
-            if (at.x < left) left = at.x;
-            if (at.x > right) right = at.x;
-            if (at.y < top) top = at.y;
-            if (at.y > bottom) bottom = at.y;
-          }
-          if (!Number.isFinite(left)) continue;
-          const y = worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y;
-          planes.push({ kind, left, right, top, bottom, y, a: ring.a });
+        else {
+            trailLensRampRef.current = stepFocusRamp(trailLensRampRef.current, trailLensActive, dt, tokens.focusDimTau);
         }
-        lastPlanes = planes;
-        const fit = domeFitInsetsRef.current;
-        names = placeTierNames(planes, domeTierNameWidthsRef.current, {
-          left: fit?.left ?? tokens.safeInsetLeft,
-          right: width - (fit?.right ?? tokens.safeInsetRight),
-          top: fit?.top ?? tokens.domeFitInsetTop,
-          bottom: height - (fit?.bottom ?? tokens.domeFitInsetBottom),
+        const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
+        {
+            const bg = animatedBgRef.current;
+            if (bg) {
+                const origin = worldToScreen(camera, width, height, 0, 0);
+                bg.step({
+                    width,
+                    height,
+                    dpr,
+                    originX: origin.x,
+                    originY: origin.y,
+                    ambientFactor,
+                    pointerX: bgPointerRef.current?.x ?? null,
+                    pointerY: bgPointerRef.current?.y ?? null,
+                    dtMs: dt * 1000,
+                    reducedMotion: reducedMotionRef.current,
+                });
+            }
+        }
+        const domeLod = stepDomeLod(dt, tokens, camera, width, height, world, hoveredNodeId);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        drawTopologyFrame({
+            ctx,
+            world,
+            camera,
+            farT,
+            neuralRamp: neuralRampRef.current,
+            zoomRatio,
+            now,
+            viewportWidth: width,
+            viewportHeight: height,
+            panelInsets: panelInsetsRef.current,
+            // The ratio this frame is really rasterising at — the adaptive one while a
+            // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
+            // line's width floor reads it.
+            devicePixelRatio: dpr,
+            gridPattern: gridPatternRef.current,
+            dustPoints: dustPointsRef.current,
+            tokens,
+            focusedNodeId,
+            hoveredNodeId,
+            // Press (2026-09-08): when this hover began, so the draw can run the
+            // underdamped step response from that instant.
+            hoverStartedAt: (() => {
+                if (hoverStartRef.current.id !== hoveredNodeId) {
+                    hoverReleasedRef.current = hoverStartRef.current.id;
+                    hoverStartRef.current = { id: hoveredNodeId, at: now };
+                }
+                return hoveredNodeId === null ? null : hoverStartRef.current.at;
+            })(),
+            // The node the press left, so its swell decays instead of stepping down.
+            hoverReleasedNodeId: hoverReleasedRef.current,
+            emphasizedNeighborId: panelEmphasisNodeId,
+            hoveredEdge: hoveredEdgeRef.current,
+            selectedEdge: selectedEdgeRef.current,
+            relationCaptions: annotationRef.current.captions,
+            // A view that draws every concept still captions only what the flat map would.
+            captionFoldedIds: modeShowsEveryNode ? (captionGateFold ?? frameClusteredIds) : null,
+            reviewQuestionIds: annotationRef.current.questions,
+            previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
+                ? {
+                    ...previewEdgeHeldRef.current,
+                    alpha: previewAlphaRef.current,
+                    commitProgress: previewCommitRef.current,
+                }
+                : null,
+            emphasisById: emphasisRef.current,
+            egoRevealById: egoRevealRef.current,
+            focusRampById: focusRampRef.current,
+            appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
+            bornNodeIds: bornNodeIdsRef.current,
+            chipRevealById: chipRevealRef.current,
+            expandRevealById: expandRevealRef.current,
+            batchAppearById: batchAppearRef.current,
+            labelPresentById: labelPresentRef.current,
+            colorFocusedNodeId: colorFocusRef.current?.focusedNodeId ?? null,
+            colorSelectedEdge: colorFocusRef.current?.selectedEdge ?? null,
+            reducedMotion: reducedMotionRef.current,
+            pulses: pulsesRef.current,
+            selectionPulse: selectionPulseRef.current,
+            agentFocusNodeId: agentFocusNodeIdRef.current,
+            clusteredIds: modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
+            clusterChips: modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips,
+            hoveredClusterId: hoveredClusterIdRef.current,
+            wardingRing: realmWarding,
+            realmTierKinds,
+            realmDepthById,
+            realmDepthParallax,
+            realmDustParallax,
+            realmOutsideReturnAlphaById,
+            // clipped by the warding ring.
+            realmStarPoints: realmWarding ? realmStarPointsRef.current : null,
+            footprintStepsById,
+            footprintPref: footprintPrefRef.current,
+            trailStarInk: footprintStepColorRef.current,
+            footprintNewestStep: visitedTrailRef.current.length,
+            walkedEdgeKeys: buildWalkedEdgeKeys(visitedTrailRef.current),
+            walkedEdgeDirections: buildWalkedEdgeDirections(visitedTrailRef.current),
+            walkedEdgeArrivalStep: buildWalkedEdgeArrivalSteps(visitedTrailRef.current),
+            footprintInk: footprintInkRef.current,
+            footprintStepColor: footprintStepColorRef.current,
+            footprintNewestId,
+            footprintAppear,
+            // The lens keep-set is passed only while the popover is open; closed
+            // sends null. After the lens turns off the set keeps being passed until
+            // the ramp reaches 0, so the trail ink and background dim *fade down*
+            // rather than *disappear*.
+            trailLensIds: trailLensActive || trailLensRampRef.current > 0.01 ? visitedTrailSetRef.current : null,
+            trailLensRamp: trailLensRampRef.current,
+            trailLensOpenedAtMs: trailLensOpenedAtRef.current,
+            spotlightIds: spotlightIdsRef.current,
+            mapLensKind: mapLensKindRef.current,
+            pathEdgeIds: pathEdgeIdsRef.current,
+            spotlightRamp: spotlightRampRef.current,
+            spotlightDashOffset: spotlightDashOffsetRef.current,
+            tierReveal: tierRevealRef.current,
+            glyphStyle: glyphStyleRef.current,
+            backgroundVariant: canvasBackgroundRef.current,
+            domeFrame: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+                ? domeRuntimeRef.current.frame
+                : null,
+            domeRamp: domeRuntimeRef.current !== null ? domeRuntimeRef.current.rampClock / DOME_ASSEMBLE_TOTAL_MS : 0,
+            domeRings: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+                ? domeRuntimeRef.current.rings
+                : null,
+            domeControlFor: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
+                ? domeEdgeControlForFrame
+                : null,
+            domeLight: domeLightFor(tokens, domeLod),
+            paintAnimatedBackground: animatedBgRef.current
+                ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
+                : null,
+            nodeLayer: nodeLayerRef.current,
+            depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
+            expand: expandPrefRef.current,
+            clusterBarLabels: getClusterBarLabels(),
+            domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
+            domeTierRaisedKind: domeTierRaisedKindRef.current,
+            // Concept names give way to the tier names placed last frame (`model/tier-names.ts`).
+            tierNameBoxes: domeTierAnchorsSentRef.current,
+            dial: flatDialRef.current,
         });
-      }
-      if (!sameTierNames(domeTierAnchorsSentRef.current, names)) {
-        domeTierAnchorsSentRef.current = names;
-        onDomeTierAnchorsChangeRef.current?.(names);
-      }
-    }
-
-  };
+        reportFlatDial(flatDialRef.current, dialFrameSummary());
+        // Record which lens state this frame drew; the idle gate compares
+        // against it next frame to decide whether the lens changed.
+        drawnTrailLensRef.current = trailLensActive;
+        // Guided-tour spotlight ring, drawn by the engine onto the frame rather
+        // than as an overlay DOM circle. Owner bug report 2026-07-24: the DOM
+        // circle was slightly offset and a slightly different shape from the
+        // node, so it looked misaligned. Using the same `worldToScreen` in the
+        // same frame makes agreement with the drawn node structural. The scrim
+        // cutout stays with the GuidedTourOverlay.
+        {
+            const anchorId = tourAnchorNodeIdRef.current;
+            const node = anchorId ? world.nodeById.get(anchorId) : undefined;
+            if (node) {
+                const dFrame = domeRuntimeRef.current?.frame.get(node.id);
+                const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
+                const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, rr + 10, 0, Math.PI * 2);
+                ctx.strokeStyle = tokens.selectionRingIndigo;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+        // What the frame actually painted, reported only on change — the readout is
+        // an instrument, and an instrument that restates a rule instead of the
+        // screen is the defect this replaces.
+        const painted = lastDrawnNodeCount();
+        if (painted !== drawnNodeCountRef.current) {
+            drawnNodeCountRef.current = painted;
+            onDrawnCountChangeRef.current?.(painted);
+        }
+        const hiddenDependencies = domeLod !== null && domeLod.active ? lastHiddenDependencies() : 0;
+        if (hiddenDependencies !== hiddenDependenciesSentRef.current) {
+            hiddenDependenciesSentRef.current = hiddenDependencies;
+            onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
+        }
+        /*
+         * **Where each Strata tier name stands this frame** (`model/tier-names.ts`). The
+         * planes are the rings the frame just drew, not the model: during an orbit or a
+         * morph the two are different numbers. The room is the fit's own free box — the
+         * canvas minus the chrome it measured on each side — so a name never lands where
+         * the drawing was kept from.
+         */
+        {
+            const runtime = domeRuntimeRef.current;
+            let names: TierNameAnchor[] | null = null;
+            lastPlanes = [];
+            if (runtime !== null && runtime.rampClock > 0 && runtime.model.arrangement === "strata") {
+                const strongest = new Map<DomeViewKind, (typeof runtime.rings)[number]>();
+                for (const ring of runtime.rings) {
+                    if (ring.label === null || ring.a <= 0.01)
+                        continue;
+                    const seen = strongest.get(ring.kind);
+                    // A morph draws the old model's rings behind the new ones; the tier
+                    // belongs to whichever of the two is currently the stronger.
+                    if (seen && seen.a >= ring.a)
+                        continue;
+                    strongest.set(ring.kind, ring);
+                }
+                const planes: TierPlane[] = [];
+                for (const kind of DOME_LEGEND_KINDS) {
+                    const ring = strongest.get(kind);
+                    if (!ring || ring.label === null)
+                        continue;
+                    let left = Infinity;
+                    let right = -Infinity;
+                    let top = Infinity;
+                    let bottom = -Infinity;
+                    for (const point of ring.points) {
+                        const at = worldToScreen(camera, width, height, point.wx, point.wy);
+                        if (at.x < left)
+                            left = at.x;
+                        if (at.x > right)
+                            right = at.x;
+                        if (at.y < top)
+                            top = at.y;
+                        if (at.y > bottom)
+                            bottom = at.y;
+                    }
+                    if (!Number.isFinite(left))
+                        continue;
+                    const y = worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y;
+                    planes.push({ kind, left, right, top, bottom, y, a: ring.a });
+                }
+                lastPlanes = planes;
+                const fit = domeFitInsetsRef.current;
+                names = placeTierNames(planes, domeTierNameWidthsRef.current, {
+                    left: fit?.left ?? tokens.safeInsetLeft,
+                    right: width - (fit?.right ?? tokens.safeInsetRight),
+                    top: fit?.top ?? tokens.domeFitInsetTop,
+                    bottom: height - (fit?.bottom ?? tokens.domeFitInsetBottom),
+                });
+            }
+            if (!sameTierNames(domeTierAnchorsSentRef.current, names)) {
+                domeTierAnchorsSentRef.current = names;
+                onDomeTierAnchorsChangeRef.current?.(names);
+            }
+        }
+    };
 }
