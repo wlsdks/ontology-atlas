@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 
@@ -132,9 +132,38 @@ export function AgentActivityChip({
   const [renderedSurface, setRenderedSurface] = useState<'status' | 'notifications'>('notifications');
   const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const [panelVersion, setPanelVersion] = useState(0);
+  const attachPanel = useCallback((node: HTMLElement | null) => {
+    panelRef.current = node;
+    setPanelVersion(value => value + 1);
+  }, []);
   const statusRef = useRef<HTMLButtonElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
   const openTriggerRef = useRef<'status' | 'bell'>('status');
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    const toolbar = rootRef.current?.closest<HTMLElement>('[data-popover-boundary="free-map"]');
+    const parent = panel?.offsetParent;
+    if (!open || !panel || !toolbar || !(parent instanceof HTMLElement)) return;
+    const place = () => {
+      const parentRect = parent.getBoundingClientRect();
+      const scale = parent.offsetWidth > 0 ? parentRect.width / parent.offsetWidth : 1;
+      const toolbarBottom = toolbar.getBoundingClientRect().bottom;
+      const top = (toolbarBottom - parentRect.top) / scale + 8;
+      panel.style.top = `${top}px`;
+      panel.style.maxHeight = `calc(100dvh / ${scale} - ${(toolbarBottom / scale) + 8}px - var(--map-panel-bottom-reserve))`;
+    };
+    const observer = new ResizeObserver(place);
+    observer.observe(toolbar);
+    window.addEventListener('resize', place);
+    place();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  }, [open, panelVersion]);
 
   useEffect(() => {
     onOpenChange?.(open);
@@ -402,6 +431,7 @@ export function AgentActivityChip({
       ) : null}
 
       <Surface
+        ref={attachPanel}
         open={open}
         origin="top right"
         role="group"

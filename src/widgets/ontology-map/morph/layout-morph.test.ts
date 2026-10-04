@@ -5,7 +5,7 @@ import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
-const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "galaxy", "strata", "coupling"];
+const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "strata", "coupling"];
 
 const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = {}): MapLayoutMark => ({
   id,
@@ -53,28 +53,18 @@ describe("chooseLayoutSwitch", () => {
     }
   });
 
-  it("carries ghosts through every pair with Territories, Hex or Galaxy whose targets are ready", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "hex" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "hex", to: "territories" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "territories", to: "galaxy" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "strata", to: "territories" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "galaxy" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "galaxy", to: "flat" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, from: "galaxy", to: "strata" })).toBe("ghost");
-  });
-
   it("crossfades into and out of Coupling, and into the map's views past their measured ceilings", () => {
     expect(chooseLayoutSwitch({ ...base, from: "hex", to: "coupling" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, from: "coupling", to: "territories" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "flat" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "galaxy" })).toBe("fade");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "structure" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "strata" })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "territories" })).toBe("ghost");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "galaxy", to: "hex" })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "structure", to: "hex" })).toBe("fade");
   });
 
   it("retargets a travel in flight instead of handing it to a native morph", () => {
-    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "galaxy", fromOverlay: true })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "structure", fromOverlay: true })).toBe("fade");
     expect(chooseLayoutSwitch({ ...base, from: "hex", to: "coupling", fromOverlay: true })).toBe("fade");
   });
 });
@@ -83,8 +73,8 @@ describe("planLayoutMorph", () => {
   const parents = new Map([
     ["domain:a", "project:p"],
     ["capability:a1", "domain:a"],
-    ["element:a1x", "capability:a1"],
-  ]);
+    ["element:a1x", "capability:a1"]
+    ]);
 
   it("moves a concept drawn in both views from its old place to its new one", () => {
     const plan = planLayoutMorph([mark("domain:a", 10, 20)], [mark("domain:a", 110, 220)], parents);
@@ -96,8 +86,7 @@ describe("planLayoutMorph", () => {
     const plan = planLayoutMorph(
       [{ ...mark("domain:a", 10, 20), size: 96, shape: "hex" }],
       [{ ...mark("domain:a", 1010, 620), size: 4, shape: "disc", fill: "#c8dcff" }],
-      new Map(),
-    );
+      new Map());
     const moving = at(sampleLayoutMorph(plan, MOTION.base.duration * 1000), "domain:a")!;
     expect(moving).toMatchObject({ size: 4, shape: "disc", fill: "#c8dcff" });
     expect(moving.x).not.toBe(1010);
@@ -109,8 +98,7 @@ describe("planLayoutMorph", () => {
     const plan = planLayoutMorph(
       [{ ...mark("domain:a", 10, 20), size: 4 }],
       [{ ...mark("domain:a", 1010, 620), size: 96, shape: "hex" }],
-      new Map(),
-    );
+      new Map());
     const moving = at(sampleLayoutMorph(plan, MOTION.base.duration * 1000), "domain:a")!;
     expect(moving.size).toBeGreaterThan(4);
     expect(moving.size).toBeLessThan(96);
@@ -121,8 +109,7 @@ describe("planLayoutMorph", () => {
     const plan = planLayoutMorph(
       [mark("domain:a", 0, 0), mark("element:a1x", 50, 50)],
       [mark("domain:a", 300, 100)],
-      parents,
-    );
+      parents);
     const middle = at(sampleLayoutMorph(plan, 120), "element:a1x")!;
     expect(middle.x).toBeGreaterThan(50);
     expect(middle.alpha).toBeLessThan(1);
@@ -153,8 +140,7 @@ describe("planLayoutMorph", () => {
     const plan = planLayoutMorph(
       [mark("domain:a", 0, 0), mark("domain:a", 999, 999), mark("domain:b", Number.NaN, 0), mark("domain:c", 0, Number.POSITIVE_INFINITY)],
       [mark("domain:a", 10, 0)],
-      parents,
-    );
+      parents);
     expect(plan.ids).toEqual(["domain:a"]);
     expect(at(sampleLayoutMorph(plan, 0), "domain:a")).toMatchObject({ x: 0, y: 0 });
   });
@@ -162,8 +148,8 @@ describe("planLayoutMorph", () => {
   it("stops walking a containment cycle and falls back to fading in place", () => {
     const cyclic = new Map([
       ["capability:x", "capability:y"],
-      ["capability:y", "capability:x"],
-    ]);
+      ["capability:y", "capability:x"]
+        ]);
     const plan = planLayoutMorph([mark("capability:x", 5, 5)], [mark("domain:z", 500, 500)], cyclic);
     expect(at(sampleLayoutMorph(plan, 120), "capability:x")).toMatchObject({ x: 5, y: 5 });
   });
@@ -194,8 +180,8 @@ describe("containmentParents", () => {
       { id: "project:p", label: "P", kind: "project" as const },
       { id: "domain:a", label: "A", kind: "domain" as const },
       { id: "domain:b", label: "B", kind: "domain" as const },
-      { id: "capability:c", label: "C", kind: "capability" as const },
-    ];
+      { id: "capability:c", label: "C", kind: "capability" as const }
+        ];
     const contains = (source: string, target: string) => ({ source, target, kind: "contains" as const, relationType: "contains" });
     const parents = containmentParents(nodes, [contains("domain:b", "capability:c"), contains("domain:a", "capability:c")]);
     expect(parents.get("capability:c")).toBe("domain:a");

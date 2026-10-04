@@ -382,7 +382,7 @@
     {
       "key": "scripts:runtime:files:scripts/perf-node-drag.mjs:scripts/perf-node-drag.mjs",
       "reason": "Manual drag-performance probe is consumed by the map-performance operating skill.",
-      "consumer": ".agents/skills/map-perf/SKILL.md",
+      "consumer": ".agents/skills/map-perf/workflow.md",
       "witness": "scripts/perf-node-drag.mjs"
     },
     {

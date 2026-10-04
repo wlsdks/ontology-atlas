@@ -6,8 +6,7 @@ import {
   refreshIndexDependentTokens,
   resolveOntologyMapTokens,
   ONTOLOGY_MAP_TOKEN_COUNT,
-  OntologyMapTokenError,
-} from "./read-map-tokens";
+  OntologyMapTokenError } from "./read-map-tokens";
 
 /**
  * A fixture matching every §2 value 1:1 against the prototype's constants. It has to
@@ -46,10 +45,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-node-sheen-blend": "0.6",
   "--map-project-hairline-inner": "rgba(212, 180, 120, .35)",
   "--map-project-pin-tick": "rgba(212, 180, 120, .5)",
-  "--map-galaxy-project": "#f0d5a4",
-  "--map-galaxy-domain": "#f2e6d2",
-  "--map-galaxy-capability": "#e5eaf3",
-  "--map-galaxy-element": "#cdd6f0",
   "--map-selection-ring-indigo": "#8890e0",
   "--map-selection-ring-hairline": "rgba(94, 106, 210, .45)",
   "--map-hover-ring": "rgba(94, 106, 210, .55)",

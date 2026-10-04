@@ -1,6 +1,6 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useTerritories, useView3d, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useTerritories, useView3d, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -40,7 +40,7 @@ export function useTopologyPreferences() {
   const canvasBackground = useCanvasBackground();
   // Opt-in: the ownership Cone tree or the relation-driven Cloud.
   const view3d = useView3d();
-  const galaxy = useGalaxy();
+  const structure = useDomainStructure();
   /** `OntologyTerritoriesMap`. */
   const territories = useTerritories();
   /** `OntologyHexBoardMap`. */
@@ -65,7 +65,7 @@ export function useTopologyPreferences() {
   );
   return {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
-    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, galaxy, territories, hexBoard, businessFlowRequestText,
+    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, structure, territories, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
     mapArrangement, footprint, navigationSpeed
   };

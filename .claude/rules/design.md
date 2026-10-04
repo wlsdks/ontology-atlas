@@ -75,13 +75,6 @@ a composition.
   use neutrals plus one indigo, separated by a 1px track gap.
 - No coloured left-edge stripe on a new card or row ("No left-edge selection
   stripe" in `docs/DESIGN-SYSTEM.md`).
-- Galaxy paints glows, circular cores and coronas only: no polygon or outline
-  round a galaxy, and round a star only one indigo selection ring and one
-  hover ring; counted strands between domains at the overview are data marks,
-  not the relation mesh. Nothing twinkles; the haze is the only ambient
-  motion and reduced motion removes it. Flat and Dome keep canonical shapes. Details:
-  `docs/DESIGN-SYSTEM.md`, "v2 Language Definition" and "Galaxy reference
-  translation".
 - Workflow categories differ by shape (active underline, planned dashed), not
   colour alone. Selection stays in one indigo family; edge selection uses
   `--map-edge-selected` on both endpoints.
@@ -114,13 +107,12 @@ One accurate word per thing. Canonical spellings live in
   map research through a `reviewer` with the `map-marks` lens.
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
   is licensed only where the mark is light: the gateway hero, the walked-path
-  star (`shared/lib/star-emission.ts`) inside an opened lens, and Galaxy
-  star/meteor atmosphere. Restore the previous operation in the same function;
+  star (`shared/lib/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
   a node carries at most one diffraction cross per frame. Gate:
   `tests/contract/canvas-composite-license.contract.test.ts`.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
   with identity, composites `plus-lighter` (licensed only there), and runs only
-  for an event in Flat and Galaxy. Gates: the composite licence and
+  for an event in Flat. Gates: the composite licence and
   `webgl-context-census`.
 
 ## Absolute rules point to one source

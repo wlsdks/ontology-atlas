@@ -303,11 +303,14 @@ function createPathSource(): LightSource {
     step(input, out) {
       const open = signatureOf(input);
       if (input.world !== world) {
+        const firstWorld = world === null;
         world = input.world;
-        lit = open;
         current = null;
         runner.reset();
-        return false;
+        if (firstWorld || open === lit) {
+          lit = open;
+          return false;
+        }
       }
       if (open === null) {
         lit = null;

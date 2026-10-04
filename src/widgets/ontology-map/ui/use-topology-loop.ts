@@ -23,7 +23,6 @@ import { useTopologyCameraPolicy } from "./use-topology-camera-policy";
 import { useTopologyClusterExpansion } from "./use-topology-cluster-expansion";
 import { useTopologyDomeTransitions } from "./use-topology-dome-transitions";
 import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
-import { useTopologyGalaxyTransition } from "./use-topology-galaxy-transition";
 import { useTopologyGrowthReplay } from "./use-topology-growth-replay";
 import { useTopologyInput } from "./use-topology-input";
 import { useTopologyLayoutCommands } from "./use-topology-layout-commands";
@@ -83,8 +82,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null,
     visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null,
     trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null,
-    tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false,
-    mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
+    tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
     expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
     onWalkDeadEnd = null, domeEvidence, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
     relationCaptions, reviewQuestionIds, flatRingMemory = null, loadProgress = null, placingTierRead = false,
@@ -132,7 +130,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const {
     canvasRef, containerRef, gridCanvasRef, viewportRef, pendingViewportRef, viewportRebuildPendingRef,
     appliedDprScaleRef, viewportSettleFramesRef, commitViewportSizeRef, rebuildViewportLayersRef,
-    dustPointsRef, cosmosPointsRef, gridPatternRef, animatedBgRef, bgPointerRef, depthDotPatternsRef,
+    dustPointsRef, realmStarPointsRef, gridPatternRef, animatedBgRef, bgPointerRef, depthDotPatternsRef,
     depthDotCanvasRef,
   } = useTopologySurfaceState();
   const {
@@ -142,15 +140,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     prevPinnedNodeIdRef,
   } = useTopologyWorldState();
   const {
-    view3dRef, galaxyRef, galaxyEnteredAtRef, galaxyAtmosphereSeedRef, galaxyLayoutRef,
-    galaxyFlatReturnPositionsRef, galaxyLayoutHandoffRef, galaxyModeCameraRef, pendingFlatCameraRef,
-    galaxyRampRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
+    view3dRef, pendingFlatCameraRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
     domeFocusPendingRef, domeFitPendingRef, domeFitDurationRef, flatFitPendingRef, onDomeTierAnchorsChangeRef,
     domeTierRaisedKindRef, domeTierAnchorsSentRef, domeTierNameWidthsRef,
     domeFitInsetsRef,
   } = useTopologyDomeState({
     view3d,
-    galaxy,
     mapArrangement,
     onDomeTierAnchorsChange,
   });
@@ -172,7 +167,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onGrowthReplayingChange,
   });
   const {
-    cameraRef, cameraTargetRef, galaxyInspectionCameraRef, constellationCameraRef,
+    cameraRef, cameraTargetRef, constellationCameraRef,
     previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
@@ -180,7 +175,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewFitRef,
   } = useTopologyCameraState({
     constellationFocusId,
-    galaxy,
     relayoutToken,
     fitViewToken,
     overviewFit,
@@ -204,10 +198,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraRef,
   });
   useTopologyObserverBindings({
-    galaxy,
-    galaxyEnteredAtRef,
-    galaxyAtmosphereSeedRef,
-    onGrowthReplayingChangeRef,
+        onGrowthReplayingChangeRef,
     onGrowthReplayingChange,
     onZoomTierChangeRef,
     onZoomTierChange,
@@ -337,49 +328,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useTopologyMotionPreference({
     reducedMotionRef,
   });
-  useTopologyGalaxyTransition({
-    overviewFit,
-    galaxyRef,
-    galaxy,
-    galaxyLayoutHandoffRef,
-    galaxyModeCameraRef,
-    cameraTargetRef,
-    userDrivenCameraRef,
-    pendingFlatCameraRef,
-    galaxyEnteredAtRef,
-    galaxyAtmosphereSeedRef,
-    worldRef,
-    galaxyLayoutRef,
-    galaxyFlatReturnPositionsRef,
-    nodeDragRef,
-    heatRef,
-    dragAffectedSetRef,
-    dragStartPosRef,
-    dragTugOffsetsRef,
-    homeSpringsRef,
-    homeTargetOverrideRef,
-    homingActiveRef,
-    lastActiveMsRef,
-    viewportRef,
-    hasInitializedRef,
-    overviewFitRef,
-    expandedParentsRef,
-    cameraTokens,
-    overviewScaleRef,
-    dampingRef,
-    cameraAngularFreqRef,
-    reducedMotionRef,
-    cameraTweenRef,
-    cameraRef,
-    beginCameraTween,
-    cameraGestureRevisionRef,
-  });
-  const { rescueCameraIfEverythingOffscreen, trySnapInitialCamera } = useTopologyWorldLifecycle({
-    worldRef,
-    viewportRef,
-    cameraRef,
-    galaxyRef,
-    galaxyLayoutRef,
+    const { rescueCameraIfEverythingOffscreen, trySnapInitialCamera } = useTopologyWorldLifecycle({
+        worldRef,
+        viewportRef,
+        cameraRef,
     overviewFitRef,
     expandedParentsRef,
     clusteredIdsRef,
@@ -395,8 +347,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     nodes,
     edges,
     expand,
-    galaxyFlatReturnPositionsRef,
-    galaxyLayoutHandoffRef,
     prevNodeIdsRef,
     appearRef,
     bornNodeIdsRef,
@@ -420,7 +370,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     assembleOnOpen,
     arrivingDocuments,
     fittedDataSourceKeyRef,
-    galaxyModeCameraRef,
     pendingFlatCameraRef,
     dialLabels: dialLabels ?? null,
     flatRingMemory,
@@ -447,7 +396,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       depthDotCanvasRef,
       depthDotPatternsRef,
       dustPointsRef,
-      cosmosPointsRef,
+            realmStarPointsRef,
     },
     frameBridge: {
       commitViewportSizeRef,
@@ -476,8 +425,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewFitRef,
     spotlightIdsRef,
     runSpotlightFitRef,
-    galaxyRef,
-    galaxyLayoutRef,
     clusteredIdsRef,
     cameraTokens,
     overviewScaleRef,
@@ -519,9 +466,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewFitRef,
     spotlightIdsRef,
     runSpotlightFitRef,
-    galaxyRef,
-    galaxyLayoutRef,
-    clusteredIdsRef,
+        clusteredIdsRef,
     cameraTokens,
     overviewScaleRef,
     initialFitTokensRef,
@@ -557,19 +502,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     homeSpringsRef,
     homeTargetOverrideRef,
     homingActiveRef,
-    galaxyRef,
-    galaxyLayoutRef,
-    galaxyLayoutHandoffRef,
-    revealToken,
-  });
-  useTopologyFocusNavigation({
-    lastFocusedSlugRef,
-    focusedSlug,
-    egoRevealBatchesRef,
-    selectionPulseRef,
-    galaxyRef,
-    cameraTargetRef,
-    galaxyInspectionCameraRef,
+        revealToken,
+    });
+    useTopologyFocusNavigation({
+        lastFocusedSlugRef,
+        focusedSlug,
+        egoRevealBatchesRef,
+        selectionPulseRef,
+        cameraTargetRef,
     constellationFocusId,
     cameraGestureRevisionRef,
     userDrivenCameraRef,
@@ -689,8 +629,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       wardingFitRef,
       reducedMotionRef,
       pendingFlatCameraRef,
-      galaxyLayoutHandoffRef,
-      galaxyFlatReturnPositionsRef,
       cameraGestureRevisionRef,
       cameraRef,
       cameraTargetRef,
@@ -829,9 +767,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       trailLensPropRef,
       trailBrushPropRef,
       panelHoverPropRef,
-      galaxyRampRef,
-      galaxyRef,
-      neuralRampRef,
+            neuralRampRef,
       mapArrangementRef,
       drawnTrailLensRef,
       trailLensRampRef,
@@ -845,8 +781,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeLodRef,
     },
     presentationFrameStage: {
-      galaxyRef,
-      domeRuntimeRef,
+            domeRuntimeRef,
       clusterChipsRef,
       clusteredIdsRef,
       realmTierKindsRef,
@@ -861,15 +796,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       trailLensRampRef,
       view3dRef,
       neuralRampRef,
-      galaxyLayoutHandoffRef,
-      galaxyRampRef,
-      animatedBgRef,
-      lastInputMsRef,
-      ambientSleepDelayRef,
-      bgPointerRef,
-      galaxyLayoutRef,
-      galaxyEnteredAtRef,
-      galaxyAtmosphereSeedRef,
+            animatedBgRef,
+            lastInputMsRef,
+            ambientSleepDelayRef,
+            bgPointerRef,
       panelInsetsRef,
       gridPatternRef,
       dustPointsRef,
@@ -897,7 +827,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       selectionPulseRef,
       agentFocusNodeIdRef,
       hoveredClusterIdRef,
-      cosmosPointsRef,
+            realmStarPointsRef,
       footprintPrefRef,
       footprintStepColorRef,
       footprintInkRef,
@@ -971,8 +901,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeRuntimeRef,
     neuralRampRef,
     tierRevealRef,
-    galaxyRef,
-    pathEdgeIdsRef,
+        pathEdgeIdsRef,
     visitedTrailRef,
     onSelect,
     onSelectEdge,
@@ -1005,7 +934,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       domeRuntimeRef,
       domeModelBuildRef,
       domeLodRef,
-      galaxyRampRef,
       neuralRampRef,
       reducedMotionRef,
       appearRef,
@@ -1052,9 +980,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [domeTierNameWidthsRef, lastActiveMsRef]);
 
   const readLayoutMarks = useCallback(
-    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef, domeRuntimeRef, galaxyRampRef }),
-    [cameraRef, domeRuntimeRef, galaxyRampRef, viewportRef, worldRef],
-  );
+    () => readOntologyMapMarks({ worldRef, cameraRef, viewportRef, domeRuntimeRef }), [cameraRef, domeRuntimeRef, viewportRef, worldRef]);
 
   return { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, ...handlers, ...wrappedHandlers };
 }
