@@ -13,23 +13,25 @@ relates: [capabilities/import-dependency-inference]
 relation_notes: { capabilities/import-dependency-inference: "Gray Area reads the existing infer_imports output as bounded evidence for a person's investigation, without promoting an observed import into accepted meaning (src-tauri/src/gray_area.rs:190-206)." }
 ---
 
-Helps a person investigate overlooked code references, source changes, and recorded uncertainties around a selected concept or Concept set by comparing bounded local source evidence with the meaning already recorded in its vault.
+Helps a person investigate overlooked code references, source changes and recorded uncertainties around a selected concept, set or recorded project, then optionally continue that question with ACP and review a separate improvement.
 
 ## Includes
-- Inspecting the selected context in the installed app after the person sees the bound source folder and chooses to read it; the web explains this native boundary (`src/features/gray-area/ui/GrayAreaInspector.tsx:46-98`).
-- Presenting observed static imports absent from the dependency graph, source changes behind a recorded dependency, and authored reading gaps as reasons to investigate; each suggestion states the observation, its connection to the selection, what is unknown, and a next read (`src/features/gray-area/model/candidates.ts:48-84`; `src/features/gray-area/ui/GrayAreaInspector.tsx:135-147`).
-- Opening captured source lines with their file hash, comparing concepts or following existing recorded paths, and rechecking the source, vault, and binding before evidence actions (`src/features/gray-area/ui/GrayAreaInspector.tsx:119-157`; `src/views/home/model/gray-area/use-topology-gray-area.tsx:71-79`; `src-tauri/src/gray_area.rs:343-381`).
-- Showing three suggestions at a time with total and omitted counts, and folding or restoring suggestions only for the current inspection (`src/features/gray-area/model/candidates.ts:87-90`; `src/features/gray-area/ui/GrayAreaInspector.tsx:103-109,159-178`).
-- Copying an investigation packet or preparing an editable conversation draft with the observation, recorded meaning, source witnesses, and read limits; the person decides whether to send it (`src/features/gray-area/model/investigation.ts:4-12`; `src/views/home/ui/HomePage.tsx:465-473`).
+- A stable Analysis status entry on the map, including without a selection. One unambiguous recorded project is a scope; ambiguous scopes require selection, and an empty vault offers first construction (`src/views/home/model/gray-area/use-topology-gray-area.tsx`; `src/views/home/ui/TopologyCommandChrome.tsx`).
+- Explicit bounded inspection of the connected code folder in the installed app. Source recovery grants source reading separately from vault writing. Oversized or invalid selections offer narrowing rather than repeating an unchanged scan (`src/features/gray-area/ui/GrayAreaInspector.tsx`; `src-tauri/src/source_access.rs`; `src-tauri/src/gray_area.rs`).
+- Up to three visible reasons to investigate: static imports missing from the recorded graph, source changes behind a dependency, and authored reading gaps. Each states an observation, relation to the selection, unknowns and a next read; folded suggestions remain session-local (`src/features/gray-area/model/candidates.ts`).
+
+## Continued analysis contract
+- Inspectable source witnesses and exact request disclosure, with the bound folder, coding runtime, provider-cost notice and model unknown where not confirmed. Analyze next sends one deliberately chosen question after live source, selection, runtime and permission checks. Busy, stale or withdrawn pending requests do not become delayed sends (`src/features/gray-area/model/investigation.ts`; `src/features/acp-session/model/investigation/guard.ts`; `src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx`).
+- Dated saved results associated with the exact project UID, selected/target UIDs, question, originating turn and source/graph/body/witness basis. Historical source freshness remains unchecked until explicit inspection; unrelated or missing provenance earns no matching credit. Recent history lookup exposes its limits (`src/features/gray-area/model/investigation-record.ts`; `src/features/gray-area/model/investigation/use-investigation-history.ts`).
+- A separate editable, unsent improvement request that retains the inspected code folder and quotes the prior answer as untrusted evidence. Sending, write permission and meaning review remain separate; a later explicit inspection exposes remaining questions (`src/features/gray-area/ui/investigation/InvestigationResult.tsx`; `src/views/home/ui/HomePage.tsx`).
 
 ## Excludes
-- Accepting meaning, creating ontology relations, editing source or vault content, or treating a missing graph edge as an established semantic defect.
-- Inferring runtime behavior or ranking business risk from imports, source dates, or authored uncertainty.
-- A complete repository audit or a claim that zero suggestions establishes completeness or safety.
-- Automatically executing an agent investigation or sending evidence to an agent or external service.
+- Unrequested model runs, automatic writing, implicit write approval or automatic meaning acceptance.
+- Treating static imports, source dates, an authored uncertainty, a saved answer or completed agent plan as proof of runtime behavior, semantic completeness or gap resolution.
+- A complete repository audit or a claim that zero bounded suggestions establishes correctness or safety.
+- Native local-model source construction; its absence remains explicit rather than silently substituting a provider.
 
 ## Uncertainty
-- Existing prose can already explain a code reference, a source edit need not change meaning, and a recorded gap may be historical; each requires current corroboration before a semantic conclusion.
-- The initial context follows up to two recorded dependency hops; import scanning is bounded to that context's implementation-parent folders. Resolver configuration and metadata, and captured source witnesses for candidate endpoints, may be read elsewhere within the connected root under their own limits. Callers outside the scan folders, runtime dispatch, unsupported input, and omitted source ranges remain unmeasured (`src-tauri/src/gray_area.rs:167-194,230-268,283-305`).
-- On 2026-09-28, bounded native checks observed fold/restore and config-only stale refusal in a synthetic vault, and one actual Atlas selection scanning 184 files. Final installed checks showed both compared elements on the Flat map and an editable, unsent draft preserving its evidence and edits across runtime changes; clearing it kept it cleared after switching back. These observations cover the exercised paths, not all repositories or runtime behavior.
-- Controlled recall, real-human usefulness, and generalization across repositories have not been measured; successful reads, fixture checks, or persistence do not establish semantic qualification.
+- Existing prose may already explain a reference; a source edit need not change meaning, and an authored gap may be historical. Current corroboration and review are required.
+- Native node/file/read ceilings bound the captured packet only. Ordinary ACP may read more or incur further cost; requested no-write behavior is not an enforced read-only sandbox. Ordinary permission checkpoints remain.
+- Association and persistence do not establish semantic truth or qualification. Controlled interaction evidence, source-hidden reuse, source accuracy and general usefulness are separate measurements; broader repositories and real-human usefulness remain unmeasured.

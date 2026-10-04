@@ -16,6 +16,8 @@ import {
 
 import { GATED_SESSION_MODE } from './runtime-gate';
 import { modeKeepsGate } from './mode-safety';
+import { investigationPermissionVerified, type InvestigationSendGuard } from './investigation/guard';
+import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
@@ -471,6 +473,7 @@ export function useAcpSession({
    * a diagnosis but an English warning eating the screen (measured).
    */
   const [diagnostics, setDiagnostics] = useState<readonly string[]>([]);
+  const gateOffRef = useRef(false);
   /**
    * Collects diagnostic lines — **never put into the conversation.**
    *
@@ -479,11 +482,13 @@ export function useAcpSession({
    * of the conversation. Not for a person to read, and nothing to do about it if they did.
    */
   const resetDiagnostics = useCallback(() => {
+    gateOffRef.current = false;
     stderrRef.current = [];
     setDiagnostics([]);
   }, []);
   const keepDiagnostic = useCallback((line: string) => {
     const text = line.trim();
+    if (text.startsWith('gate-off')) gateOffRef.current = true;
     if (!text) return;
     const kept = stderrRef.current;
     if (kept.length >= STDERR_KEEP_LIMIT) return;
@@ -501,7 +506,16 @@ export function useAcpSession({
    * claude offers **none at all** (`session/set_model` returns "no such method"). So the screen does
    * not guess a count and draws **only what arrived**.
    */
-  const [choices, setChoices] = useState<AcpSessionChoices>(EMPTY_CHOICES);
+  const [choices, setChoicesState] = useState<AcpSessionChoices>(EMPTY_CHOICES);
+  const [reportedPlan,setReportedPlan] = useState<ReportedPlan|null>(null);
+  const choicesRef = useRef(EMPTY_CHOICES);
+  const sessionConsentRef = useRef(false);
+  const changingModeRef = useRef(0);
+  const setChoices = useCallback((value: AcpSessionChoices | ((current: AcpSessionChoices) => AcpSessionChoices)) => {
+    const next = typeof value === 'function' ? value(choicesRef.current) : value;
+    choicesRef.current = next;
+    setChoicesState(next);
+  }, []);
 
   const clientRef = useRef<AcpClient | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -683,6 +697,10 @@ export function useAcpSession({
       const kind = typeof update.sessionUpdate === 'string' ? update.sessionUpdate : '';
       const content = update.content as { text?: unknown } | undefined;
       const text = typeof content?.text === 'string' ? content.text : '';
+      if(kind==='plan') {
+        if(activeTurnRef.current)setReportedPlan(previous=>readReportedPlan(previous,update.entries));
+        return;
+      }
 
       if (kind === 'available_commands_update') {
         // What `/` can invoke. It holds **only what arrived** — with nothing, typing `/` in the
@@ -801,7 +819,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, updateEvents],
+    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
@@ -1171,6 +1189,7 @@ export function useAcpSession({
       }
       idleStoppedSessionIdRef.current = null;
       sessionIdRef.current = session.sessionId;
+      sessionConsentRef.current = vaultWriteConsentOn(mcpServers);
 
       /*
        * **Raise the permission gate.** codex is not held by config isolation and only by the session
@@ -1283,6 +1302,7 @@ export function useAcpSession({
     resetDiagnostics,
     runtimeId,
     setApprovedOntologyWriteTracked,
+    setChoices,
     setStatusTracked,
     updateEvents,
     vaultRoot,
@@ -1310,7 +1330,7 @@ export function useAcpSession({
       setChoices(EMPTY_CHOICES);
       await startRef.current?.();
     },
-    [setApprovedOntologyWriteTracked, updateEvents],
+    [setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
   /**
@@ -1324,22 +1344,30 @@ export function useAcpSession({
     if (await client.setModel(sessionId, modelId)) {
       setChoices((prev) => ({ ...prev, currentModelId: modelId }));
     }
-  }, []);
+  }, [setChoices]);
 
   const chooseMode = useCallback(async (modeId: string) => {
     const client = clientRef.current;
     const sessionId = sessionIdRef.current;
     if (!client || !sessionId) return;
-    if (await client.setMode(sessionId, modeId)) {
-      setChoices((prev) => ({ ...prev, currentModeId: modeId }));
-    }
-  }, []);
+    changingModeRef.current += 1;
+    try {
+      if (await client.setMode(sessionId, modeId) && clientRef.current === client && sessionIdRef.current === sessionId) {
+        setChoices((prev) => ({ ...prev, currentModeId: modeId }));
+      }
+    } finally { changingModeRef.current -= 1; }
+  }, [setChoices]);
 
-  const send = useCallback(
-    async (text: string) => {
+  const sendInternal = useCallback(
+    async (text: string, guard?: InvestigationSendGuard): Promise<boolean> => {
       const client = clientRef.current;
       const sessionId = sessionIdRef.current;
-      if (!client || !sessionId || !text.trim() || activeTurnRef.current) return;
+      if (!client || !sessionId || !text.trim() || activeTurnRef.current) return false;
+      const permissionCurrent = () => !guard || (
+        guard.runtimeId === runtimeId && changingModeRef.current === 0 && openAsksRef.current === 0
+        && investigationPermissionVerified(runtimeId, choicesRef.current, sessionConsentRef.current, gateOffRef.current)
+      );
+      if (guard && (statusRef.current !== 'ready' || !permissionCurrent())) return false;
       const generation = generationRef.current;
       const userEventId = nextEventId();
       const start: AcpTurnStart = { runtimeId, sessionId, vaultRoot, userEventId, text, startedAt: new Date().toISOString() };
@@ -1348,6 +1376,7 @@ export function useAcpSession({
         keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
       }
       activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null };
+      setReportedPlan(null);
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: userEventId, text });
       setLastTurnUpdateAt(Date.now());
@@ -1369,22 +1398,27 @@ export function useAcpSession({
       const capturedBaseline = active?.start === start ? active.taskBaseline : null;
       const baselineInvalidated = capturedBaseline?.status === 'unavailable'
         && capturedBaseline.reasons.some((reason) => reason === 'context_changed' || reason === 'membership_changed');
+      let investigationCurrent = permissionCurrent();
+      if (guard && investigationCurrent) {
+        try { investigationCurrent = await guard.revalidate(); } catch { investigationCurrent = false; }
+        investigationCurrent = investigationCurrent && permissionCurrent();
+      }
       const currentTurnScope = currentTurnScopeRef.current;
       if (generationRef.current !== generation || disposedRef.current || sessionIdRef.current !== sessionId
-        || clientRef.current !== client || active?.start !== start || active.cancelRequested || baselineInvalidated
+        || clientRef.current !== client || activeTurnRef.current?.start !== start || active?.start !== start || active.cancelRequested || baselineInvalidated || !investigationCurrent
         || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot) {
-        if (active?.start === start) {
-          finishTurn('cancelled', baselineInvalidated
+        if (activeTurnRef.current?.start === start) {
+          finishTurn('cancelled', !investigationCurrent ? 'investigation_context_changed' : baselineInvalidated
             || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot
             ? 'capture_context_changed' : 'capture_cancelled');
           setLastTurnUpdateAt(null);
           setStatusTracked('ready');
         }
-        return;
+        return false;
       }
       try {
         const result = await client.prompt(sessionId, [{ type: 'text', text }]);
-        if (generationRef.current !== generation) return;
+        if (generationRef.current !== generation) return true;
         const outcome = result.stopReason === 'cancelled' ? 'cancelled'
           : result.stopReason && result.stopReason !== 'end_turn' ? 'failed' : 'completed';
         finishTurn(outcome, result.stopReason ?? null);
@@ -1394,16 +1428,19 @@ export function useAcpSession({
           setStatusTracked('ready');
         }
       } catch (err) {
-        if (generationRef.current !== generation || statusRef.current === 'exited') return;
+        if (generationRef.current !== generation || statusRef.current === 'exited') return true;
         finishTurn('failed', null);
         setApprovedOntologyWriteTracked(null);
         setLastTurnUpdateAt(null);
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
       }
+      return true;
     },
     [captureTaskBaseline, finishTurn, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
   );
+  const send = useCallback(async (text: string) => { await sendInternal(text); }, [sendInternal]);
+  const sendInvestigation = useCallback((text: string, guard: InvestigationSendGuard) => sendInternal(text, guard), [sendInternal]);
 
   const cancel = useCallback(() => {
     if (activeTurnRef.current) activeTurnRef.current.cancelRequested = true;
@@ -1449,6 +1486,7 @@ export function useAcpSession({
     const acpSessionId = acpSessionRef.current;
     acpSessionRef.current = null;
     sessionIdRef.current = null;
+    setReportedPlan(null);
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
   }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setStatusTracked]);
@@ -1504,10 +1542,12 @@ export function useAcpSession({
     approvedOntologyWrite,
     sessions,
     choices,
+    reportedPlan,
     chooseModel,
     chooseMode,
     start,
     send,
+    sendInvestigation,
     cancel,
     stop,
     switchSession,

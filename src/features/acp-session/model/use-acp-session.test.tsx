@@ -1638,3 +1638,65 @@ describe('a conversation put away with nothing to do', () => {
     await act(async () => { await view.result.current.stop(); });
   });
 });
+
+describe('explicit investigation prompt guard', () => {
+  const servers=[{name:'atlas-vault',command:'/verified/mcp',args:[],env:[{name:'OATLAS_WRITE_CONSENT',value:'on'}]}];
+  async function ready() {
+    bridge.sessionModes={currentModeId:'read-only',availableModes:[{id:'read-only',name:'Read only',_meta:{kind:'plan'}}]};
+    const hook=renderHook(()=>useAcpSession({runtimeId:'codex-acp',vaultRoot:'/vault',mcpServers:servers}));
+    const starting=hook.result.current.start();
+    await waitFor(()=>expect(bridge.release).not.toBeNull());
+    await act(async()=>{bridge.release?.();await starting;});
+    return hook;
+  }
+  it('sends one explicitly revalidated investigation through the actual prompt RPC',async()=>{
+    const hook=await ready();const revalidate=vi.fn(async()=>true);
+    let sent=false;
+    await act(async()=>{sent=await hook.result.current.sendInvestigation('Investigate this selected question.',{runtimeId:'codex-acp',revalidate});});
+    expect(sent).toBe(true);expect(revalidate).toHaveBeenCalledOnce();
+    expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(1);
+  });
+  it.each(['brand-new','acceptEdits'])('refuses a live move into %s before any model prompt',async mode=>{
+    const hook=await ready();
+    act(()=>bridge.listener?.(JSON.stringify({jsonrpc:'2.0',method:'session/update',params:{sessionId:'s-1',update:{sessionUpdate:'current_mode_update',currentModeId:mode}}})));
+    await act(async()=>{expect(await hook.result.current.sendInvestigation('Investigate.',{runtimeId:'codex-acp',revalidate:async()=>true})).toBe(false);});
+    expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+  });
+  it('rejects duplicate sends and a mode change while source revalidation waits',async()=>{
+    const hook=await ready();let release!: (current:boolean)=>void;
+    const revalidate=vi.fn(()=>new Promise<boolean>(resolve=>{release=resolve;}));
+    let sending!:Promise<boolean>;
+    act(()=>{sending=hook.result.current.sendInvestigation('Investigate.',{runtimeId:'codex-acp',revalidate});});
+    await waitFor(()=>expect(revalidate).toHaveBeenCalledOnce());
+    await act(async()=>{expect(await hook.result.current.sendInvestigation('Duplicate.',{runtimeId:'codex-acp',revalidate})).toBe(false);});
+    act(()=>bridge.listener?.(JSON.stringify({jsonrpc:'2.0',method:'session/update',params:{sessionId:'s-1',update:{sessionUpdate:'current_mode_update',currentModeId:'auto'}}})));
+    await act(async()=>{release(true);expect(await sending).toBe(false);});
+    expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+  });
+  it('does not send stale evidence or a request for another runtime',async()=>{
+    const hook=await ready();
+    await act(async()=>{
+      expect(await hook.result.current.sendInvestigation('Stale.',{runtimeId:'codex-acp',revalidate:async()=>false})).toBe(false);
+      expect(await hook.result.current.sendInvestigation('Wrong runtime.',{runtimeId:'claude-acp',revalidate:async()=>true})).toBe(false);
+    });
+    expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+  });
+});
+
+it('keeps a stopped investigation idle when its source check returns late',async()=>{
+ bridge.sessionModes={currentModeId:'read-only',availableModes:[{id:'read-only',name:'Read only',_meta:{kind:'plan'}}]};
+ const mcpServers=[{name:'atlas-vault',command:'/verified/mcp',args:[],env:[{name:'OATLAS_WRITE_CONSENT',value:'on'}]}];
+ const hook=renderHook(()=>useAcpSession({runtimeId:'codex-acp',vaultRoot:'/vault',mcpServers}));
+ const starting=hook.result.current.start();await waitFor(()=>expect(bridge.release).not.toBeNull());
+ await act(async()=>{bridge.release?.();await starting;});
+ let release!: (value:boolean)=>void;
+ const revalidate=vi.fn(()=>new Promise<boolean>(resolve=>{release=resolve;}));
+ let sending!:Promise<boolean>;
+ act(()=>{sending=hook.result.current.sendInvestigation('Investigate.',{runtimeId:'codex-acp',revalidate});});
+ await waitFor(()=>expect(revalidate).toHaveBeenCalledOnce());
+ await act(async()=>{await hook.result.current.stop();});
+ expect(hook.result.current.status).toBe('idle');
+ await act(async()=>{release(true);expect(await sending).toBe(false);});
+ expect(hook.result.current.status).toBe('idle');
+ expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
+});
