@@ -3,6 +3,11 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 const runTurn = vi.hoisted(() => vi.fn());
 const buildProposal = vi.hoisted(() => vi.fn());
+const sourceBridge = vi.hoisted(() => ({ preview: vi.fn(), read: vi.fn() }));
+const writes = vi.hoisted(() => ({ createDoc: vi.fn(), saveDoc: vi.fn(), refresh: vi.fn() }));
+vi.mock('@/shared/lib/tauri-local-construction', () => ({
+  previewConstructionSource: sourceBridge.preview, readConstructionSource: sourceBridge.read,
+}));
 
 vi.mock('@/features/vault-agent', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -16,9 +21,9 @@ vi.mock('@/entities/vault-session', () => ({
     manifest: null,
     status: 'loaded',
     handle: {},
-    createDoc: vi.fn(),
-    saveDoc: vi.fn(),
-    refresh: vi.fn(),
+    createDoc: writes.createDoc,
+    saveDoc: writes.saveDoc,
+    refresh: writes.refresh,
     open: vi.fn(),
   }),
 }));
@@ -227,3 +232,212 @@ for (const retirement of ['stop', 'unmount', 'folder'] as const) {
     await act(async () => { pending.resolve({ turn: { ...started, status: 'aborted' }, readSlugs: [], writeIntents: [] }); await sending; });
   });
 }
+
+
+const sourcePreview = {
+  sourcePath: '/code', destinationPath: '/vault', fingerprint: 'source-v1',
+  files: [{ path: 'entry.py', bytes: 12 }], limited: false, excluded: [],
+};
+const sourceRange = {
+  path: 'entry.py', startLine: 1, endLine: 1, text: 'real source', bytes: 11,
+  fullFileSha256: `sha256:${'a'.repeat(64)}`, totalLines: 1, fileComplete: true, nextLine: null,
+};
+const sourceDraft = {
+  id: 'source-draft', status: 'pending', snapshotRequested: false, readNodesThisTurn: [],
+  changes: [{ id: 'new', tool: 'add_concept', selected: true, summary: 'new',
+    files: [{ path: 'elements/entry.md', kind: 'create', before: null, after: 'reviewed draft' }] }],
+};
+function localArgs(): UseVaultAgentArgs {
+  return { ...args(), screenContext: EMPTY_SCREEN_CONTEXT, provider: 'local', localEndpoint: { baseUrl: 'http://localhost:11434', model: 'fixture' } };
+}
+
+describe('local source construction resource boundary', () => {
+  beforeEach(() => {
+    runTurn.mockReset();
+    vi.mocked(llmChat).mockReset().mockResolvedValue({ status: 200, host: 'localhost:11434', durationMs: 0, loggedAt: 'fixture', body: '{}' });
+    buildProposal.mockReset().mockResolvedValue(sourceDraft);
+    sourceBridge.preview.mockReset().mockResolvedValue(sourcePreview);
+    sourceBridge.read.mockReset().mockResolvedValue(sourceRange);
+    writes.createDoc.mockReset().mockResolvedValue(undefined);
+    writes.saveDoc.mockReset().mockResolvedValue(undefined);
+    writes.refresh.mockReset().mockResolvedValue(undefined);
+    runTurn.mockImplementation(async (deps, turn) => {
+      await deps.execute({ id: 'read', name: 'read_source_text', args: { path: 'entry.py' } });
+      await deps.send({ body: '{}', model: 'fixture', question: 'build', scope: { nodes: [], tools: [], vaultChars: 0, promptChars: 0 } });
+      return { turn: { ...turn, status: 'done' }, readSlugs: [], writeIntents: [{ name: 'add_concept', args: {} }] };
+    });
+  });
+  afterEach(() => { cleanup(); });
+
+  it('uses construction tools and eight rounds with strict native local transport, then rechecks witnesses before approved save', async () => {
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(runTurn.mock.calls[0][0]).toMatchObject({ roundCap: 8, adapter: { provider: 'local' } });
+    expect(runTurn.mock.calls[0][0].tools.some((tool: { name: string }) => tool.name === 'read_source_text')).toBe(true);
+    expect(hook.result.current.systemPrompt).toBe(runTurn.mock.calls[0][0].system);
+    expect(llmChat).toHaveBeenLastCalledWith(expect.objectContaining({ sourceConstruction: true, provider: 'local' }));
+    expect(writes.createDoc).not.toHaveBeenCalled();
+    const readsBeforeApply = sourceBridge.read.mock.calls.length;
+    await act(async () => { await hook.result.current.apply(); });
+    expect(sourceBridge.read.mock.calls.length).toBeGreaterThan(readsBeforeApply);
+    expect(writes.createDoc).toHaveBeenCalledWith('elements/entry', 'reviewed draft');
+    expect(hook.result.current.proposal?.status).toBe('applied');
+  });
+
+  it('blocks apply when a full-file witness changed even with the same inventory fingerprint', async () => {
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    sourceBridge.read.mockResolvedValue({ ...sourceRange, fullFileSha256: `sha256:${'b'.repeat(64)}` });
+    await act(async () => { await hook.result.current.apply(); });
+    expect(writes.createDoc).not.toHaveBeenCalled();
+    expect(hook.result.current.proposal?.status).toBe('conflict');
+    expect(hook.result.current.construction?.status).toBe('sourceChanged');
+  });
+
+  it.each(['model', 'endpoint', 'vault', 'provider'] as const)('retires the draft on a %s switch', async (field) => {
+    const hook = renderHook((input) => useVaultAgent(input), { initialProps: localArgs() });
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    const next = localArgs();
+    if (field === 'model') next.localEndpoint!.model = 'other';
+    if (field === 'endpoint') next.localEndpoint!.baseUrl = 'http://localhost:1234';
+    if (field === 'vault') next.vaultPath = '/other';
+    if (field === 'provider') next.provider = 'anthropic';
+    hook.rerender(next);
+    await act(async () => { await hook.result.current.apply(); });
+    expect(writes.createDoc).not.toHaveBeenCalled();
+    expect(hook.result.current.proposal?.status).toBe('cancelled');
+  });
+
+  it('serializes double apply while source revalidation is pending', async () => {
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    const gate = Promise.withResolvers<typeof sourcePreview>();
+    sourceBridge.preview.mockReturnValue(gate.promise);
+    let first!: Promise<void>; let second!: Promise<void>;
+    act(() => { first = hook.result.current.apply(); second = hook.result.current.apply(); });
+    await act(async () => { gate.resolve(sourcePreview); await Promise.all([first, second]); });
+    expect(writes.createDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not publish a late construction proposal after Stop', async () => {
+    const late = Promise.withResolvers<unknown>();
+    buildProposal.mockReturnValue(late.promise);
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    let pending!: Promise<void>;
+    act(() => { pending = hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    await waitFor(() => expect(buildProposal).toHaveBeenCalled());
+    act(() => { hook.result.current.stop(); });
+    await act(async () => { late.resolve(sourceDraft); await pending; });
+    expect(hook.result.current.proposal).toBeNull();
+    expect(writes.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('refuses the ninth construction send even when the shared loop asks for a closing request', async () => {
+    vi.mocked(llmChat).mockClear();
+    runTurn.mockImplementation(async (deps, turn) => {
+      for (let index = 0; index < 9; index += 1) await deps.send({ body: '{}', model: 'fixture', question: 'build', scope: { nodes: [], tools: [], vaultChars: 0, promptChars: 0 } });
+      return { turn, readSlugs: [], writeIntents: [] };
+    });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(llmChat).toHaveBeenCalledTimes(8);
+    expect(hook.result.current.construction?.status).toBe('incomplete');
+    expect(hook.result.current.construction?.issues).toContainEqual({ code: 'construction_request_limit', target: '/code' });
+  });
+
+  it('keeps the real loop partial draft after eight requests while refusing its ninth closing transfer', async () => {
+    const actual = await vi.importActual<typeof import('@/features/vault-agent')>('@/features/vault-agent');
+    runTurn.mockImplementation(actual.runTurn);
+    vi.mocked(llmChat).mockReset().mockImplementation(async () => {
+      const index = vi.mocked(llmChat).mock.calls.length;
+      const name = index === 1 ? 'read_source_text' : index === 2 ? 'add_concept' : 'list_source_files';
+      const callArgs = index === 1 ? { path: 'entry.py' } : index === 2 ? {
+        slug: 'elements/entry', kind: 'element', title: 'Entry', path: 'entry.py',
+        body: `Observed entry [source:entry.py:1-1@${sourceRange.fullFileSha256}]`,
+      } : {};
+      return { status: 200, host: 'localhost:11434', durationMs: 0, loggedAt: 'fixture', body: JSON.stringify({
+        choices: [{ message: { content: null, tool_calls: [{ id: `call-${index}`, type: 'function', function: { name, arguments: JSON.stringify(callArgs) } }] }, finish_reason: 'tool_calls' }],
+      }) };
+    });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(llmChat).toHaveBeenCalledTimes(8);
+    expect(hook.result.current.turns.at(-1)?.events.at(-1)).toMatchObject({ kind: 'notice', code: 'round-cap' });
+    expect(hook.result.current.proposal?.status).toBe('pending');
+    expect(hook.result.current.construction?.status).toBe('incomplete');
+    expect(writes.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('does not send a construction request beyond the serialized byte budget', async () => {
+    vi.mocked(llmChat).mockClear();
+    runTurn.mockImplementation(async (deps, turn) => {
+      await deps.send({ body: '한'.repeat(22000), model: 'fixture', question: 'build', scope: { nodes: [], tools: [], vaultChars: 0, promptChars: 0 } });
+      return { turn, readSlugs: [], writeIntents: [] };
+    });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(llmChat).not.toHaveBeenCalled();
+  });
+
+  it('labels a round-limited surviving proposal incomplete even when the shared turn ends done', async () => {
+    runTurn.mockImplementation(async (deps, turn) => {
+      await deps.execute({ id: 'read', name: 'read_source_text', args: { path: 'entry.py' } });
+      return { turn: { ...turn, status: 'done', events: [...turn.events, { kind: 'notice', code: 'round-cap', text: 'limit' }] }, readSlugs: [], writeIntents: [{ name: 'add_concept', args: {} }] };
+    });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(hook.result.current.proposal?.status).toBe('pending');
+    expect(hook.result.current.construction?.status).toBe('incomplete');
+  });
+
+  it('keeps source-read limits visible and marks a surviving draft incomplete after a normal model finish', async () => {
+    runTurn.mockImplementation(async (deps, turn) => {
+      for (let index = 0; index < 9; index += 1) await deps.execute({ id: `read-${index}`, name: 'read_source_text', args: { path: 'entry.py' } });
+      return { turn: { ...turn, status: 'done' }, readSlugs: [], writeIntents: [{ name: 'add_concept', args: {} }] };
+    });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(hook.result.current.construction?.status).toBe('incomplete');
+    expect(hook.result.current.construction?.issues).toContainEqual({ code: 'source_range_limit', target: 'entry.py' });
+    expect(hook.result.current.proposal?.status).toBe('pending');
+  });
+
+  it('labels invalid source evidence changed and publishes no actionable draft', async () => {
+    sourceBridge.read.mockResolvedValue({ ...sourceRange, bytes: 999 });
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(hook.result.current.construction?.status).toBe('sourceChanged');
+    expect(hook.result.current.construction?.issues).toContainEqual({ code: 'source_evidence_invalid', target: 'entry.py' });
+    expect(hook.result.current.proposal).toBeNull();
+    expect(writes.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('blocks a stale resource after Apply started but before native witness revalidation finishes', async () => {
+    const hook = renderHook((input) => useVaultAgent(input), { initialProps: localArgs() });
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    const gate = Promise.withResolvers<typeof sourcePreview>();
+    sourceBridge.preview.mockReturnValue(gate.promise);
+    let applying!: Promise<void>;
+    act(() => { applying = hook.result.current.apply(); });
+    hook.rerender({ ...localArgs(), vaultPath: '/other' });
+    await act(async () => { gate.resolve(sourcePreview); await applying; });
+    expect(writes.createDoc).not.toHaveBeenCalled();
+    expect(hook.result.current.proposal?.status).toBe('cancelled');
+  });
+
+  it('refuses a remote address despite the local provider label', async () => {
+    const hook = renderHook(() => useVaultAgent({ ...localArgs(), localEndpoint: { baseUrl: 'https://remote.example', model: 'fixture' } }));
+    await act(async () => { await hook.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(runTurn).not.toHaveBeenCalled();
+  });
+
+  it('rejects a preview for a different destination or a nonlocal provider before a request', async () => {
+    const hook = renderHook(() => useVaultAgent(localArgs()));
+    await act(async () => { await hook.result.current.sendConstruction({ ...sourcePreview, destinationPath: '/other' }, 'build'); });
+    expect(runTurn).not.toHaveBeenCalled();
+    hook.unmount();
+    const cloud = renderHook(() => useVaultAgent(args()));
+    await act(async () => { await cloud.result.current.sendConstruction(sourcePreview, 'build'); });
+    expect(runTurn).not.toHaveBeenCalled();
+  });
+});

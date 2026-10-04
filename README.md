@@ -68,7 +68,7 @@ Read [What becomes a node?](docs/guide/what-becomes-a-node.md), [Relations](docs
 - **MCP** (Model Context Protocol): your agent starts the Atlas MCP server, which reads and writes the folder on disk, even with the app closed. [Connect an agent](docs/guide/connect-agent.md) · [MCP reference](mcp/README.md)
 - **ACP** (Agent Client Protocol): Claude Agent and Codex also run in the app's own chat. Reads go straight through; each Atlas write waits until you allow it once. [Agents screen](docs/features/agents.md)
 
-**Continue improving the map.** Analysis status stays visible on the map. In the macOS app, inspect the connected code folder, choose a question and press Analyze next to send it once to your ACP agent. Revisit its dated result or prepare a separate editable improvement. Opening the map starts no paid analysis; saved answers and reported task progress are not meaning acceptance or a completeness score. Native local-model source construction remains unavailable. [Continued analysis](docs/features/map/README.md#optional-continued-analysis)
+**Continue improving the map.** Analysis status stays visible on the map. In the macOS app, inspect the connected code folder, choose a question and press Analyze next to send it once to your ACP agent. Revisit its dated result or prepare a separate editable improvement. Opening the map starts no paid analysis; saved answers and reported task progress are not meaning acceptance or a completeness score. The native Agent panel also offers Build from code for an explicitly selected read-only code folder and a local model. [Continued analysis](docs/features/map/README.md#optional-continued-analysis)
 
 ## Construction measurements
 
@@ -86,7 +86,7 @@ bounded workflow measurements, not a model ranking or semantic qualification.
 The optional `OATLAS_TOOL_PROFILE=construction` advertises 20 first-build tools;
 default `full` remains 40. Smaller discovery inputs did not improve handoff
 quality in this pair. Local source-MCP experiments also failed before persisted
-writes, so local code-to-ontology quality remains unmeasured. The internal local
+writes; those failures remain separate from the newer native trials below. The internal local
 conversation and the ACP source builder have different tool capabilities. The
 local loop was measured through a Node HTTP shim; the installed native transport
 was not verified.
@@ -102,8 +102,8 @@ Body-evidence follow-up: the calibrated case fully answered **4/6** questions
 answered 4/6 but verified only 16/21 claims (4 failed, 1 unknown). Exact source
 continuations reduced one identical-evidence payload **11,105→2,042 bytes
 (81.6%)**. Calibration took 137.5 s, so this is not a build-speed win. General
-semantic quality, formal qualification and native local construction remain
-unproven. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
+semantic quality and formal qualification remain
+unproven; newer bounded native construction measurements appear below. See the [body-evidence trial](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
 
 Continued-analysis trial: on one fresh TypeScript expression library, a selected
 ACP investigation and reviewed body update changed source-hidden answers from
@@ -114,6 +114,31 @@ remained. This is bounded enrichment evidence, not qualification or a model
 ranking. [Measurements and failures](docs/benchmark/CONSTRUCTION.md#continued-analysis-and-reuse-trial).
 
 When an approved model proposal fails during application, Atlas lists the files whose saves completed and attempts to reload the folder. A reload error is reported separately. The failed write may also have changed bytes; this is not an automatic rollback. Inspect the documents before retrying.
+
+**Native local construction.** In the macOS Agent panel, choose Build from code,
+inspect the exact code folder, document destination, model and address, then Run.
+The code folder stays read-only, and the destination is excluded from source
+reads. Source ranges carry full-file hashes and omission markers. Review the same
+selectable proposal diff before Apply; changed source evidence retires the draft.
+No formal meaning or competency acceptance follows from file saves. The web
+surface explains the native/local requirement.
+
+The 2026-10-04 native background trial saved **3 nodes / 3 rendered edges** in
+**650.5 s / 8 actual model sends**, reading 5,956 source bytes. It remained
+incomplete; two malformed citation batches were refused. Four cited paths
+resolved, while the source audit verified **13/14 draft claims**. A fresh
+source-hidden reader answered one sealed relation/path question (**3/3 claims**);
+the six-question run timed out. Three earlier 60-second construction attempts
+also timed out. These results expose useful graph evidence and substantial
+remaining latency/meaning gaps. See the [native trial and failures](docs/benchmark/CONSTRUCTION.md#native-local-source-construction--2026-10-04).
+
+The first slice admits loopback endpoints only, bypasses inherited proxies and
+refuses redirects. It observes at most 500 entries/eight directory levels, reads
+at most eight ranges/32 KiB of source, and sends at most eight model requests,
+each limited to 64 KiB and a cancellable 180 seconds. Ordinary local conversation
+retains its 60-second timeout and separate audit policy. These are safety ceilings,
+not repository coverage or recommended node counts. Installed-app interaction,
+large-repository quality and comparisons on the same task remain unmeasured.
 
 ## Local-first and privacy
 

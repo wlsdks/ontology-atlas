@@ -32,6 +32,7 @@ pub(crate) struct Registry {
     /// inspection only (it may climb to the repo the vault lives in). Never widens
     /// what the content commands can read.
     sources: HashSet<PathBuf>,
+    selected_sources: HashSet<PathBuf>,
     /// Where granted vault roots persist across launches; `None` in tests.
     store: Option<PathBuf>,
 }
@@ -147,6 +148,7 @@ pub(crate) fn grant_source_root(root: &Path) {
     if THREAD_REGISTRY.with(|slot| {
         if let Some(reg) = slot.borrow_mut().as_mut() {
             reg.sources.insert(canonical.clone());
+            reg.selected_sources.insert(canonical.clone());
             true
         } else {
             false
@@ -154,7 +156,9 @@ pub(crate) fn grant_source_root(root: &Path) {
     }) {
         return;
     }
-    lock().sources.insert(canonical);
+    let mut registry = lock();
+    registry.sources.insert(canonical.clone());
+    registry.selected_sources.insert(canonical);
 }
 
 /// Gate for vault content, git and archive commands. Permissive until `initialize`.
@@ -166,6 +170,13 @@ pub(crate) fn is_vault_granted(path: &Path) -> bool {
         return true;
     }
     lock().is_vault_granted(path)
+}
+
+pub(crate) fn is_selected_source(path: &Path) -> bool {
+    if let Some(answer) = thread_override(|reg| reg.selected_sources.contains(path)) {
+        return answer;
+    }
+    lock().selected_sources.contains(path)
 }
 
 /// Gate for project-source inspection, which may target the repo a granted vault

@@ -21,13 +21,15 @@ import {
   type LocalEndpointSettings,
 } from '@/shared/lib/local-endpoint';
 import { useHeldValue } from '@/shared/lib/use-presence';
-import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton, Surface } from '@/shared/ui';
+import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip, CloseButton, Surface } from '@/shared/ui';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { useRouter } from '@/i18n/navigation';
 import { AGENTS_MODELS_HREF } from '@/shared/config/destinations';
 import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
+import { pickTauriSourceDirectory } from '@/shared/lib/tauri-vault-fs';
+import { previewConstructionSource, type ConstructionSourcePreview } from '@/shared/lib/tauri-local-construction';
 import {
   SECRET_PROVIDER_HOSTS,
   LOCAL_PROVIDER,
@@ -37,7 +39,7 @@ import {
   type ConnectionProvider,
 } from '@/shared/lib/tauri-secrets';
 
-import { useVaultAgent } from '../model/use-vault-agent';
+import { isLocalConstructionEndpoint, useVaultAgent } from '../model/use-vault-agent';
 import { AgentFirstWords } from './AgentFirstWords';
 import { AgentHandoffPacket } from './AgentHandoffCard';
 import { AgentLockedComposer, AgentLockedState } from './AgentLockedState';
@@ -104,6 +106,13 @@ export function VaultAgentPanel({
   const locale = useLocale();
   const [draft, setDraft] = useState('');
   const [scopeAccepted, setScopeAccepted] = useState(false);
+  const [sourceSelection, setSourceSelection] = useState<{
+    nonce: number;
+    status: 'preparing' | 'preview' | 'localRequired' | 'sourceChanged';
+    preview?: ConstructionSourcePreview;
+  } | null>(null);
+  const sourceSelectionNonce = useRef(0);
+  const heldSourceSelection = useHeldValue(sourceSelection, sourceSelection ? `${sourceSelection.nonce}:${sourceSelection.status}` : null);
   /**
    * The two side branches below the composer — "View instructions" (view instructions) and
    * "Continue in the terminal" (continue in the terminal). **Only one opens at a time.**
@@ -308,6 +317,7 @@ export function VaultAgentPanel({
     vaultIsGit,
     projectInstructions: null,
     snapshotLabel: t('snapshotLabel'),
+    constructionNotices: { incomplete: t('construction.incomplete') },
     notices: {
       roundCap: t('notice.roundCap'),
       noToolCall: ({ round, cap }) => t('notice.noToolCall', { round, cap }),
@@ -327,6 +337,43 @@ export function VaultAgentPanel({
         t('proposal.addRelation', { from, to, type }),
     },
   });
+
+  const constructionResource = JSON.stringify([readableVaultPath, provider, localEndpoint?.model, localEndpoint?.baseUrl, open]);
+  const constructionResourceRef = useRef(constructionResource);
+  useLayoutEffect(() => { constructionResourceRef.current = constructionResource; }, [constructionResource]);
+  useEffect(() => () => { sourceSelectionNonce.current += 1; setSourceSelection(null); }, [constructionResource]);
+
+  const cancelSourceSelection = () => { sourceSelectionNonce.current += 1; setSourceSelection(null); };
+  const chooseConstructionSource = async () => {
+    if (!bridgeAvailable || !readableVaultPath || agent.running || agent.proposal?.status === 'applying') return;
+    agent.stop();
+    const nonce = ++sourceSelectionNonce.current;
+    const resource = constructionResource;
+    if (provider !== LOCAL_PROVIDER || !localEndpoint?.model || !isLocalConstructionEndpoint(localEndpoint.baseUrl)) {
+      setSourceSelection({ nonce, status: 'localRequired' });
+      return;
+    }
+    setSourceSelection({ nonce, status: 'preparing' });
+    const active = () => sourceSelectionNonce.current === nonce && constructionResourceRef.current === resource;
+    try {
+      const sourcePath = await pickTauriSourceDirectory(t('construction.pickerTitle'));
+      if (!active()) return;
+      if (!sourcePath) { setSourceSelection(null); return; }
+      const preview = await previewConstructionSource(sourcePath, readableVaultPath);
+      if (!active()) return;
+      if (preview.destinationPath !== readableVaultPath || preview.sourcePath !== sourcePath) throw new Error('source_changed');
+      setSourceSelection({ nonce, status: 'preview', preview });
+    } catch {
+      if (active()) setSourceSelection({ nonce, status: 'sourceChanged' });
+    }
+  };
+  const runConstruction = () => {
+    if (sourceSelection?.status !== 'preview' || !sourceSelection.preview?.files.length || agent.running) return;
+    const preview = sourceSelection.preview;
+    cancelSourceSelection();
+    setScopeAccepted(true);
+    void agent.sendConstruction(preview, draft.trim() || t('construction.action'));
+  };
 
   // Closing = stopping. Not open means anything in flight ends with it.
   const { stop } = agent;
@@ -489,7 +536,7 @@ export function VaultAgentPanel({
   }, [agent.turns, agent.proposal]);
 
   const ready = bridgeAvailable && Boolean(provider) && Boolean(readableVaultPath);
-  const canSend = ready && scopeAccepted && !agent.running && draft.trim().length > 0;
+  const canSend = ready && scopeAccepted && !agent.running && sourceSelection === null && agent.proposal?.status !== 'applying' && draft.trim().length > 0;
 
   /**
    * Which state this panel is in — folded into one value. The same box is becoming a
@@ -612,6 +659,53 @@ export function VaultAgentPanel({
               short cross-fade (--motion-base) runs exactly once. Looking like a new
               screen appeared reads as "I went elsewhere" rather than "this opened". */}
           <div key={stage} className="agent-panel-stage-swap flex grow flex-col">
+          <div className="mb-3 space-y-2">
+            {!bridgeAvailable ? <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.webUnavailable')}</p> : readableVaultPath ? (
+              <>
+                <Chip data-testid="construction-action" disabled={agent.running || agent.proposal?.status === 'applying'}
+                  title={agent.running ? t('stop') : t('construction.action')} onClick={() => void chooseConstructionSource()}>
+                  {t('construction.action')}
+                </Chip>
+                <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.boundary')}</p>
+              </>
+            ) : null}
+            <Surface open={sourceSelection !== null} origin="top left" className={`${AGENT_DOCK_INSET_SURFACE_CLASS} space-y-3`} data-testid="construction-preview">
+              {heldSourceSelection?.status === 'preparing' ? <p role="status" className="text-label">{t('construction.preparing')}</p> : null}
+              {heldSourceSelection?.status === 'localRequired' ? <>
+                <p role="status" className="text-label">{t('construction.localRequired')}</p>
+                <Chip onClick={() => router.push(AGENTS_MODELS_HREF)}>{t('construction.modelsAction')}</Chip>
+              </> : null}
+              {heldSourceSelection?.status === 'sourceChanged' ? <p role="alert" className="text-label">{t('construction.sourceChanged')}</p> : null}
+              {heldSourceSelection?.status === 'preview' && heldSourceSelection.preview ? <>
+                <h3 className="text-label font-[var(--font-weight-strong)]">{t('construction.previewTitle')}</h3>
+                <p className="whitespace-pre-wrap break-all text-label">{t('construction.previewBody', {
+                  sourcePath: heldSourceSelection.preview.sourcePath, destinationPath: heldSourceSelection.preview.destinationPath,
+                  model: localEndpoint?.model ?? '', endpoint: localEndpoint?.baseUrl ?? '', count: heldSourceSelection.preview.files.length,
+                })}</p>
+                <p className="text-label">{t('construction.scope')}</p>
+                <p className="text-label">{t('scope.body', { provider: t('provider.local'), host: providerHost })}</p>
+                <p className="text-label">{t('scope.consent')}</p>
+                {heldSourceSelection.preview.limited ? <p className="text-label">{t('construction.inventoryLimited')}</p> : null}
+                {heldSourceSelection.preview.excluded.length ? <ul className="space-y-1 text-label">{heldSourceSelection.preview.excluded.map((reason, index) => <li key={`${index}:${reason}`} className="break-all">{reason}</li>)}</ul> : null}
+                {!heldSourceSelection.preview.files.length ? <p id="construction-empty" className="text-label">{t('construction.empty')}</p> : null}
+                <Chip data-testid="construction-run" tone="onAccent" disabled={!heldSourceSelection.preview.files.length}
+                  aria-describedby={!heldSourceSelection.preview.files.length ? 'construction-empty' : undefined}
+                  title={!heldSourceSelection.preview.files.length ? t('construction.empty') : t('construction.run')} onClick={runConstruction}>{t('construction.run')}</Chip>
+              </> : null}
+              <div className="flex flex-wrap gap-2">
+                {heldSourceSelection?.status !== 'preparing' && heldSourceSelection?.status !== 'localRequired' ? <Chip data-testid="construction-choose-again" onClick={() => void chooseConstructionSource()}>{t('construction.chooseAgain')}</Chip> : null}
+                <Chip data-testid="construction-cancel" onClick={cancelSourceSelection}>{t('proposal.cancel')}</Chip>
+              </div>
+            </Surface>
+            {agent.construction ? <div data-testid="construction-evidence" className={`${AGENT_DOCK_INSET_SURFACE_CLASS} space-y-2`}>
+              <p className="text-label">{agent.construction.status === 'running' ? t('thinking') : agent.construction.status === 'stopped' ? t('notice.aborted') : t(`construction.${agent.construction.status}`)}</p>
+              <p className="break-all text-label">{agent.construction.preview.sourcePath} · {agent.construction.sourceBytes} B</p>
+              {agent.construction.reads.map((read, index) => <p key={`${index}:${read.path}:${read.startLine}`} className="break-all text-caption">{read.path}:{read.startLine}-{read.endLine} · {read.bytes} B · {read.fullFileSha256}{!read.fileComplete ? ' …' : ''}</p>)}
+              {agent.construction.issues.map((issue, index) => <p key={`${index}:${issue.code}:${issue.target}`} className="break-all text-caption">{issue.target} · {issue.code}</p>)}
+              {agent.construction.preview.excluded.map((reason, index) => <p key={`${index}:${reason}`} className="break-all text-caption">{reason}</p>)}
+              {agent.construction.status === 'sourceChanged' || agent.construction.status === 'failed' || agent.construction.status === 'incomplete' ? <Chip onClick={() => void chooseConstructionSource()}>{t('construction.runAgain')}</Chip> : null}
+            </div> : null}
+          </div>
           {!bridgeAvailable ? (
             // A browser has nowhere to keep a key and no route to send — it sends you to
             // the app, not to settings (honest degradation).
@@ -725,7 +819,7 @@ export function VaultAgentPanel({
                     applied: (sha) => t('proposal.applied', { sha }),
                     appliedNoSnapshot: t('proposal.appliedNoSnapshot'),
                     cancelled: t('proposal.cancelled'),
-                    conflict: t('proposal.conflict'),
+                    conflict: t(agent.construction?.status === 'sourceChanged' ? 'construction.sourceChanged' : 'proposal.conflict'),
                     failed: (message) => t('proposal.failed', { message }),
                     partialWrites: (paths) => t('proposal.partialWrites', { paths }),
                     refreshFailed: (message) => t('proposal.refreshFailed', { message }),
@@ -950,7 +1044,7 @@ export function VaultAgentPanel({
                   vaultPath={readableVaultPath}
                   focusedSlug={screenContext.focusedSlug}
                   labels={{
-                    boundary: t('boundary'),
+                    boundary: t(agent.construction || sourceSelection ? 'construction.boundary' : 'boundary'),
                     note: t('handoffNote'),
                     copy: t('handoffCopy'),
                     copied: t('handoffCopied'),

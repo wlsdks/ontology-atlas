@@ -1,0 +1,5 @@
+{
+  "gate": "appearing-surfaces",
+  "raise": 1,
+  "why": "The explicit native-only Build from code action opens one source disclosure Surface. tests/e2e/local-construction-preview.spec.ts opens it with a mocked native chooser/bridge, checks nonempty WCAG axe coverage and zero violations, and measures control reachability at two widths. Its dedicated opener extends the inventory beyond generic OPENERS. This is background browser proof, not installed-app or real chooser proof."
+}

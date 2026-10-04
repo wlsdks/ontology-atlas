@@ -113,5 +113,26 @@
   "footerDetail": "{chars} characters were exchanged this turn. Most of it is instructions you never see.",
   "reground": {
     "title": "Stopped at attempt {round} of {cap}. Have it re-read this folder and answer again"
+  },
+  "construction": {
+    "action": "Build from code",
+    "boundary": "This conversation reads your document folder. Build from code reads a code folder you choose with your local model.",
+    "webUnavailable": "Build from code is available in the macOS app with a local model. Open your document folder there to continue.",
+    "pickerTitle": "Choose a code folder",
+    "preparing": "Checking the selected folder… No code has been sent to the model.",
+    "previewTitle": "Before your local model reads code",
+    "previewBody": "Code folder: {sourcePath}\nSave reviewed changes to: {destinationPath}\nLocal model: {model}\nAddress: {endpoint}\nEligible files found: {count}",
+    "scope": "Run sends code excerpts from this folder to the local model at the address shown. Your document folder is excluded from code reads. Code stays read-only. Only document changes you review and approve can be saved.",
+    "inventoryLimited": "The folder check reached its limit. This list is incomplete; choose a narrower folder or run with the files found.",
+    "run": "Run",
+    "chooseAgain": "Choose another folder",
+    "modelsAction": "Open Models",
+    "localRequired": "Build from code needs a local model at an address on this computer. Choose one in Agents → Models, then try again.",
+    "empty": "No supported code files were found outside your document folder. Choose another code folder.",
+    "sourceChanged": "The selected code folder or its evidence changed or cannot be read. Choose the folder and run again before applying a draft.",
+    "runAgain": "Run again",
+    "incomplete": "Construction stopped before finishing. This draft covers only the evidence read; review its gaps or choose a narrower folder.",
+    "failed": "The local model did not finish a draft. Check the model connection and retry; your folder selection and input are kept.",
+    "draft": "Draft from selected code. review its evidence and unknowns before applying."
   }
 }
