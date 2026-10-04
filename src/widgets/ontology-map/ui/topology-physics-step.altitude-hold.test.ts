@@ -28,7 +28,7 @@ const tokens = {
 } as unknown as OntologyMapTokens;
 
 const FLAT_OVERVIEW = 1.25;
-const GALAXY_FRAME = 0.7;
+const HELD_SCALE = 0.7;
 
 function flatReturnFrame(overrides: Partial<PhysicsStepInput> = {}): PhysicsStepInput {
   const bounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
@@ -43,7 +43,7 @@ function flatReturnFrame(overrides: Partial<PhysicsStepInput> = {}): PhysicsStep
   } as unknown as PhysicsStepInput["world"];
   return {
     world,
-    camera: { x: { value: 0 }, y: { value: 0 }, scale: { value: GALAXY_FRAME } },
+    camera: { x: { value: 0 }, y: { value: 0 }, scale: { value: HELD_SCALE } },
     target: { tx: 0, ty: 0, tscale: FLAT_OVERVIEW },
     damping: 1,
     overviewScale: FLAT_OVERVIEW,
@@ -75,14 +75,14 @@ describe("stepTopologyPhysics altitude during a view-return tween", () => {
   it("keeps the destination's altitude while the camera travels from another view's frame", () => {
     const held = stepTopologyPhysics(flatReturnFrame({ altitudeScale: FLAT_OVERVIEW }));
     expect(held.farT).toBe(0);
-    expect(held.camera.scale.value).toBeCloseTo(GALAXY_FRAME, 5);
+    expect(held.camera.scale.value).toBeCloseTo(HELD_SCALE, 5);
   });
 });
 
 describe("stepTopologyPhysics with a frozen camera under reduced motion", () => {
   it("keeps a hand-driven zoom step's eased camera", () => {
     const frame = stepTopologyPhysics(flatReturnFrame({ reducedMotion: true, userDrivenCamera: true }));
-    expect(frame.camera.scale.value).toBeCloseTo(GALAXY_FRAME, 9);
+    expect(frame.camera.scale.value).toBeCloseTo(HELD_SCALE, 9);
   });
 
   it("lands app-initiated travel at its target", () => {

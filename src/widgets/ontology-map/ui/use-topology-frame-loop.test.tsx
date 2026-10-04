@@ -23,7 +23,9 @@ const pipeline = vi.hoisted(() => {
 });
 
 const still = vi.hoisted(() => {
-  const state = { built: false, building: false, comets: [] as { kind: "depends"; t: number; sourceId: string; targetId: string }[], drawn: [] as { kind: "depends"; t: number; sourceId: string; targetId: string }[] };
+  const state = { built: false, building: false, comets: [] as { kind: "depends"; t: number; sourceId: string; targetId: string;
+        }[], drawn: [] as { kind: "depends"; t: number; sourceId: string; targetId: string;
+        }[] };
   const frame = {
     get building() {
       return state.building;
@@ -88,7 +90,7 @@ function configuration(canvas: HTMLCanvasElement) {
     domeFrameStage: {}, worldMotionFrameStage: {}, cameraFrameStage: {}, clusterFrameStage: {},
     realmFrameStage: {}, revealFrameStage: {},
     frameGate: {
-      galaxyRef: { current: false }, view3dRef: { current: false }, galaxyRampRef: { current: 0 },
+            view3dRef: { current: false },
       trailLensPropRef: { current: null }, lastInputMsRef: { current: 0 }, ambientSleepDelayRef: { current: undefined },
     },
     presentationFrameStage: { animatedBgRef: { current: null }, tourAnchorNodeIdRef: { current: null } },
@@ -155,26 +157,23 @@ describe("topology frame scheduling", () => {
     unmount();
   });
 
-  it("reads changed selection, camera, and mode refs without replacing stages", () => {
+  it("reads changed selection and camera refs without replacing stages", () => {
     const state = configuration(canvas);
     const focusedSlugRef = { current: "first" as string | null };
-    const galaxyRef = { current: false };
     const cameraRef = { current: { scale: { value: 1 } } };
     state.cameraFrameStage = { ...state.cameraFrameStage, focusedSlugRef, cameraRef } as typeof state.cameraFrameStage;
-    state.frameGate = { ...state.frameGate, galaxyRef };
     const observed: unknown[] = [];
     vi.mocked(createCameraFrameStage).mockImplementationOnce((dependencies) => (...args) => {
-      observed.push([dependencies.focusedSlugRef.current, dependencies.cameraRef.current.scale.value, galaxyRef.current]);
+      observed.push([dependencies.focusedSlugRef.current, dependencies.cameraRef.current.scale.value]);
       return pipeline.camera(...args) as ReturnType<ReturnType<typeof createCameraFrameStage>>;
     });
     const { rerender, unmount } = renderHook(() => useTopologyFrameLoop({ ...state }));
     act(() => nextFrame(1000));
     focusedSlugRef.current = "second";
     cameraRef.current.scale.value = 2;
-    galaxyRef.current = true;
-    rerender();
+        rerender();
     act(() => nextFrame(1016));
-    expect(observed).toEqual([["first", 1, false], ["second", 2, true]]);
+    expect(observed).toEqual([["first", 1], ["second", 2]]);
     expect(createCameraFrameStage).toHaveBeenCalledOnce();
     unmount();
   });

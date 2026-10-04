@@ -83,8 +83,8 @@ export function LibraryConstellations({
   [availableConcepts, locale, tCreateNode]);
   const hiddenStarting = availableConcepts.length - startingConcepts.length;
 
-  const createInGalaxy = () => router.push('/topology/?constellation=new');
-  const openInGalaxy = (id: string) => router.push(`/topology/?constellation=${encodeURIComponent(id)}`);
+  const createInMap = () => router.push('/topology/?constellation=new');
+  const openInMap = (id: string) => router.push(`/topology/?constellation=${encodeURIComponent(id)}`);
   const openDocument = (slug: string) => {
     router.push(`/library/?tab=ontology&slug=${encodeURIComponent(slug)}`);
   };
@@ -119,7 +119,7 @@ export function LibraryConstellations({
         </p>
       </div>
       {saved.status === 'ready' && saved.constellations.length > 0 ? (
-        <Button data-testid="library-collections-create" onClick={createInGalaxy} className="atlas-touch-floor atlas-touch-floor-wide shrink-0">
+        <Button data-testid="library-collections-create" onClick={createInMap} className="atlas-touch-floor atlas-touch-floor-wide shrink-0">
           <BookmarkPlus size={ICON_SIZE.sm} aria-hidden />
           {t('create')}
         </Button>
@@ -143,7 +143,7 @@ export function LibraryConstellations({
         title={t('unavailableTitle')}
         description={t('unavailableDescription')}
         icon={<Bookmark />}
-        action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}>{t('openGalaxy')}</Button>}
+        action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInMap}>{t('openMap')}</Button>}
         tone="solid"
       />
     );
@@ -167,7 +167,7 @@ export function LibraryConstellations({
       stepsLabel={t('stepsLabel')}
       steps={(['pick', 'name', 'return'] as const).map((id) => ({ id, name: t(`step.${id}`), body: t(`step.${id}Body`) }))}
       action={canPick
-        ? <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}><BookmarkPlus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>
+        ? <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInMap}><BookmarkPlus size={ICON_SIZE.sm} aria-hidden />{t('create')}</Button>
         : <Button data-testid="library-collections-add-concepts" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => router.push('/library/?tab=ontology&ontologyView=documents')}><Plus size={ICON_SIZE.sm} aria-hidden />{t('addConcepts')}</Button>} />;
   } else {
     content = (
@@ -223,12 +223,12 @@ export function LibraryConstellations({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => openInGalaxy(folder.id)}
-                    aria-label={t('viewInGalaxyNamed', { name: folder.name })}
+                    onClick={() => openInMap(folder.id)}
+                    aria-label={t('viewInMapNamed', { name: folder.name })}
                     className="atlas-touch-floor atlas-touch-floor-wide shrink-0 self-center"
                   >
                     <Orbit size={ICON_SIZE.sm} aria-hidden />
-                    <span className="hidden sm:inline">{t('viewInGalaxy')}</span>
+                    <span className="hidden sm:inline">{t('viewInMap')}</span>
                   </Button>
                 </div>
                 <Surface

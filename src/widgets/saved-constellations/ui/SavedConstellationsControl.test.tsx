@@ -33,7 +33,7 @@ const UID_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const UID_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const UID_C = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
-function candidate(uid: string, label: string, x: number): ConstellationCandidate {
+function candidate(uid: string, label: string): ConstellationCandidate {
   return {
     uid,
     mergedUids: [],
@@ -41,14 +41,13 @@ function candidate(uid: string, label: string, x: number): ConstellationCandidat
     lastKnownPath: `elements/${label}.md`,
     label,
     kind: 'element',
-    galaxyPoint: { x, y: x / 2 },
   };
 }
 
 const candidates = [
-  candidate(UID_A, '첫 번째', -20),
-  candidate(UID_B, '두 번째', 10),
-  candidate(UID_C, '세 번째', 30),
+  candidate(UID_A, '첫 번째'),
+  candidate(UID_B, '두 번째'),
+  candidate(UID_C, '세 번째'),
 ];
 
 function item(uid: string, label: string, order: number): LibraryCollectionItem {

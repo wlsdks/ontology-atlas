@@ -135,15 +135,27 @@ interface Harness {
   stage: LightFrameStage;
   map: HTMLCanvasElement;
   refs: {
-    reducedMotionRef: { current: boolean };
-    egoRevealRef: { current: Map<string, number> };
-    galaxyRef: { current: boolean };
-    domeRuntimeRef: { current: DomeRuntime | null };
-    mapLensKindRef: { current: TopologyMapLensKind };
-    pathEdgeIdsRef: { current: ReadonlySet<string> | null };
-    spotlightIdsRef: { current: ReadonlySet<string> | null };
-  };
-  lightActiveRef: { current: boolean };
+    reducedMotionRef: { current: boolean;
+        };
+        egoRevealRef: {
+            current: Map<string, number>;
+        };
+        domeRuntimeRef: {
+            current: DomeRuntime | null;
+        };
+        mapLensKindRef: {
+            current: TopologyMapLensKind;
+        };
+        pathEdgeIdsRef: {
+            current: ReadonlySet<string> | null;
+        };
+        spotlightIdsRef: {
+            current: ReadonlySet<string> | null;
+        };
+    };
+    lightActiveRef: {
+        current: boolean;
+    };
   world: TopologyWorld;
   runIdle: () => void;
   frame: (now: number, focus: string | null, trailLensActive?: boolean) => void;
@@ -158,7 +170,6 @@ function harness(options: Partial<LightStageOptions> = {}): Harness {
   const refs: Harness["refs"] = {
     reducedMotionRef: { current: false },
     egoRevealRef: { current: new Map() },
-    galaxyRef: { current: false },
     domeRuntimeRef: { current: null },
     mapLensKindRef: { current: "recent" },
     pathEdgeIdsRef: { current: null },
@@ -179,8 +190,7 @@ function harness(options: Partial<LightStageOptions> = {}): Harness {
         };
       },
       ...options,
-    },
-  );
+    });
   const built = world();
   return {
     stage,
@@ -330,26 +340,34 @@ describe("light frame stage", () => {
     const h = harness({ search: "?e2e=1" });
     await ready(h);
     h.frame(2 * FRAME_MS, "d0");
-    const probe = (window as unknown as { __atlasMapLight: { plan: () => { anchorId: string; signals: unknown[] }[] } }).__atlasMapLight;
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { anchorId: string; signals: unknown[];
+                }[];
+            };
+        }).__atlasMapLight;
     expect(probe.plan().map((plan) => plan.anchorId)).toEqual(["d0"]);
     h.frame(3 * FRAME_MS, "d1");
     expect(probe.plan().map((plan) => plan.anchorId)).toEqual(["d1"]);
     h.stage.dispose();
-    expect((window as unknown as { __atlasMapLight?: unknown }).__atlasMapLight).toBeUndefined();
+    expect((window as unknown as { __atlasMapLight?: unknown;
+        }).__atlasMapLight).toBeUndefined();
   });
 
   it("lights a found path once, and not again when a focus comes and goes", async () => {
     const h = harness({ search: "?e2e=1" });
     await ready(h);
-    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string; signals: { fromId: string; toId: string }[] }[] } }).__atlasMapLight;
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string; signals: { fromId: string; toId: string;
+                    }[];
+                }[];
+            };
+        }).__atlasMapLight;
     h.refs.mapLensKindRef.current = "path";
     h.refs.spotlightIdsRef.current = new Set(["p", "d0", "d1"]);
     h.refs.pathEdgeIdsRef.current = new Set(["e0", "e3"]);
     h.frame(2 * FRAME_MS, null);
     expect(probe.plan().find((plan) => plan.kind === "path")?.signals.map((s) => [s.fromId, s.toId])).toEqual([
       ["p", "d0"],
-      ["d0", "d1"],
-    ]);
+      ["d0", "d1"]
+        ]);
     let now = 3 * FRAME_MS;
     for (; now < SPENT_MS; now += FRAME_MS) h.frame(now, null);
     expect(h.lightActiveRef.current).toBe(false);
@@ -368,7 +386,10 @@ describe("light frame stage", () => {
   it("holds a path back while a concept is focused or the trail lens is on, and does not light it afterwards", async () => {
     const h = harness({ search: "?e2e=1" });
     await ready(h);
-    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string }[] } }).__atlasMapLight;
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string;
+                }[];
+            };
+        }).__atlasMapLight;
     const pathLit = () => probe.plan().some((plan) => plan.kind === "path");
     const open = (edge: string, nodes: string[]) => {
       h.refs.pathEdgeIdsRef.current = new Set([edge]);

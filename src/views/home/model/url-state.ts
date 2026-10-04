@@ -89,10 +89,11 @@ export interface HomeRouteState {
 }
 
 /** Every picker view except the flat map, which is the parameter's absence. */
-const HOME_MAP_VIEWS = ["territories", "hex", "galaxy", "strata", "coupling"] as const;
+const HOME_MAP_VIEWS = ["territories", "hex", "structure", "strata", "coupling"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
 function parseHomeMapView(value: string | null): HomeMapView | null {
+  if (value === "galaxy") return "structure";
   return value !== null && (HOME_MAP_VIEWS as readonly string[]).includes(value) ? (value as HomeMapView) : null;
 }
 

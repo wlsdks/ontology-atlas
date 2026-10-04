@@ -35,8 +35,6 @@ export const POST_MERGE_SPECS = [
   "map-3d-grip.spec.ts",
   "map-flat-dial-frame-work.spec.ts",
   "map-frame-allocation.spec.ts",
-  "map-galaxy-frame-work.spec.ts",
-  "map-galaxy-proof.spec.ts",
   "map-hex-frame-work.spec.ts",
   "map-hover-release.spec.ts",
   "map-sleep-frames.spec.ts",

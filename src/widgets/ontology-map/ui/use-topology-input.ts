@@ -89,8 +89,7 @@ interface Dependencies {
   domeRuntimeRef: RefObject<DomeRuntime | null>;
   neuralRampRef: RefObject<number>;
   tierRevealRef: RefObject<TierRevealConfig>;
-  galaxyRef: RefObject<boolean>;
-  pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
+    pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
   onSelect: ((slug: string) => void) | undefined;
   onSelectEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; }) => void) | undefined;
@@ -156,9 +155,7 @@ export function useTopologyInput({
   realmTierKindsRef,
   domeRuntimeRef,
   neuralRampRef,
-  tierRevealRef,
-  galaxyRef,
-  pathEdgeIdsRef,
+  tierRevealRef, pathEdgeIdsRef,
   visitedTrailRef,
   onSelect,
   onSelectEdge,
@@ -234,7 +231,6 @@ export function useTopologyInput({
     domeRuntimeRef,
     neuralRampRef,
     tierRevealRef,
-    galaxyRef,
     pathEdgeIdsRef,
     visitedTrailRef,
     onSelect,
@@ -517,8 +513,7 @@ export function useTopologyInput({
       // the `nodes()` window uses).
       nextId = pickInitialFocus(
         world.nodes.filter((n) => visible(n.id)).map((n) => ({ id: n.id, x: n.x, y: n.y })),
-        { x: camera.x.value, y: camera.y.value },
-      );
+        { x: camera.x.value, y: camera.y.value });
     } else {
       const from = world.nodeById.get(currentId);
       if (!from) return;
@@ -655,7 +650,6 @@ export function useTopologyInput({
         handlers.handleWheel(e);
       },
     }),
-    [handlers, noteInput, handleKeyDown],
-  );
-  return { handlersRef, handlers, wrappedHandlers };
+    [handlers, noteInput, handleKeyDown]);
+    return { handlersRef, handlers, wrappedHandlers };
 }

@@ -2,7 +2,7 @@ import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
 import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
-import { writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
+import { writeMapView } from "@/shared/lib/appearance-preferences";
 import { armMapLayoutMorph } from "@/shared/lib/map-layout-morph-store";
 import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
 import { withBasePath } from "@/shared/lib/base-path";
@@ -109,7 +109,7 @@ interface TopologyCommandChromeProps {
     | "selectedEdgeOwnsRightRail"
     | "setActivityInboxOpen"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "galaxy" | "tWorkbench" | "tAtlasGit">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "structure" | "tWorkbench" | "tAtlasGit">;
   topologyExplorationLenses: Pick<
     ReturnType<typeof useTopologyExplorationLenses>,
     | "constellationCandidates"
@@ -137,7 +137,7 @@ export function TopologyCommandChrome({
   const { renderedIndexState } = topologyIndexPresentation;
   const { constellationCandidates, routedConstellation, setActiveConstellation, setConstellationFitToken } = topologyExplorationLenses;
 
-  const { t, galaxy, tWorkbench, tAtlasGit } = topologyPreferences;
+  const { t, structure, tWorkbench, tAtlasGit } = topologyPreferences;
   const {
     topologyUtilityChromeState, topologyUtilityChromeCompact, topologyUtilityLaneSuppressionContract,
     searchLaneCrowded, selectedNodeFocusActive, inspectorOwnsRightRail, activityInboxOpen,
@@ -248,7 +248,9 @@ export function TopologyCommandChrome({
           ) : null}
           <div
             className={cn(
-              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)] xl:flex-row xl:flex-wrap-reverse",
+              "@container/map-toolbar topology-ui-scale pointer-events-none absolute right-4 top-4 flex flex-col-reverse items-end gap-4 md:right-[var(--chrome-inset)] md:top-[var(--chrome-inset)]",
+              renderedIndexState === "expanded" ? "xl:flex-col-reverse xl:flex-nowrap" : "xl:flex-row xl:flex-wrap-reverse",
+              structure && "md:right-[calc(var(--topology-index-tab-width)+var(--topology-index-inset))]",
               // The free map starts one inset past INDEX, open or folded, or the first search tile
               // slides under the tab.
               renderedIndexState === "expanded"
@@ -275,6 +277,7 @@ export function TopologyCommandChrome({
             }
           >
           <SearchHint
+            className="self-start"
             // No auto margin: from `xl` this lane holds the free map's left edge and the utility
             // lane's `ml-auto` the right, and it stays put while the inspector owns the right
             // rail. Gate: tests/e2e/map-toolbar-balance.spec.ts
@@ -290,8 +293,7 @@ export function TopologyCommandChrome({
                 activeId={routedConstellation?.id ?? null}
                 onFocus={(id, memberSlugs) => {
                   armMapLayoutMorph();
-                  writeView3d(false);
-                  writeGalaxy(true);
+                  writeMapView("flat");
                   setActiveConstellation({ id, memberSlugs });
                   setSelectedEdge(null);
                   setSelectedRelationActive(false);
@@ -337,9 +339,7 @@ export function TopologyCommandChrome({
               setTopologyRelayoutToken((current) => current + 1);
               toast.show(t('controls.relayoutToast'), "info");
             }}
-            // Galaxy always renders every concept, so the Flat expand action is hidden rather than
-            // inert.
-            onToggleExpandAll={!galaxy && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
+            onToggleExpandAll={!structure && resolvedRealmSlug !== null ? handleToggleExpandAll : undefined}
             allExpanded={expandAllActive}
             realmChip={
               resolvedRealmSlug && realmTitle ? (

@@ -9,8 +9,6 @@ import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/type
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view";
-import { predictCosmosMarks } from "../galaxy/cosmos-marks";
-import type { CosmosPlacementRecord } from "../galaxy/layout/cosmos-layout";
 import type { HexPlacementRecord } from "../model/hex-board";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
@@ -40,12 +38,8 @@ const FLAT_SHAPE: Readonly<Record<WorldNodeKind, MapLayoutMarkShape>> = {
   element: "square",
 };
 
-function markStyle(kind: WorldNodeKind, galaxy: boolean, tokens: OntologyMapTokens) {
-  if (galaxy) {
-    const ink = { project: tokens.galaxyProject, domain: tokens.galaxyDomain, capability: tokens.galaxyCapability, element: tokens.galaxyElement }[kind];
-    return { shape: "disc" as const, fill: ink, stroke: ink };
-  }
-  const fill = { project: tokens.nodeFillProject, domain: tokens.nodeFillDomain, capability: tokens.nodeFillCapability, element: tokens.nodeFillElement }[kind];
+function markStyle(kind: WorldNodeKind, tokens: OntologyMapTokens) {
+    const fill = { project: tokens.nodeFillProject, domain: tokens.nodeFillDomain, capability: tokens.nodeFillCapability, element: tokens.nodeFillElement }[kind];
   const stroke = { project: tokens.amberHub, domain: tokens.nodeStrokeDomain, capability: tokens.nodeStrokeCapability, element: tokens.nodeStrokeElement }[kind];
   return { shape: FLAT_SHAPE[kind], fill, stroke };
 }
@@ -55,9 +49,7 @@ function ontologyMapMarks({
   camera,
   width,
   height,
-  tokens,
-  galaxy,
-  alphaOf,
+  tokens, alphaOf,
   domeFrame,
 }: {
   world: TopologyWorld;
@@ -65,7 +57,6 @@ function ontologyMapMarks({
   width: number;
   height: number;
   tokens: OntologyMapTokens;
-  galaxy: boolean;
   alphaOf: (id: string) => number;
   domeFrame: ReadonlyMap<string, DomeNodeFrame> | null;
 }): MapLayoutMark[] {
@@ -80,7 +71,7 @@ function ontologyMapMarks({
       x: (node.x + (frame?.dx ?? 0) - camera.x.value) * scale + width / 2,
       y: (node.y + (frame?.dy ?? 0) - camera.y.value) * scale + height / 2,
       size: radiusForKind(node.kind, tokens) * node.magnitudeScale * (frame?.s ?? 1) * scale,
-      ...markStyle(node.kind, galaxy, tokens),
+      ...markStyle(node.kind, tokens),
       alpha,
     });
   }
@@ -91,27 +82,35 @@ export function readOntologyMapMarks({
   worldRef,
   cameraRef,
   viewportRef,
-  domeRuntimeRef,
-  galaxyRampRef,
-}: {
-  worldRef: { current: TopologyWorld | null };
-  cameraRef: { current: CameraAxes };
-  viewportRef: { current: { width: number; height: number } };
-  domeRuntimeRef: { current: DomeRuntime | null };
-  galaxyRampRef: { current: number };
+  domeRuntimeRef, }: {
+    worldRef: {
+        current: TopologyWorld | null;
+    };
+    cameraRef: {
+        current: CameraAxes;
+    };
+    viewportRef: {
+        current: {
+            width: number;
+            height: number;
+        };
+    };
+    domeRuntimeRef: {
+        current: DomeRuntime | null;
+    };
 }): MapLayoutMark[] {
   const world = worldRef.current;
   const tokens = readOntologyMapTokensOrNull();
   const { width, height } = viewportRef.current;
   if (!world || !tokens || width <= 0) return [];
   const dial = lastDialFrame();
-  if (dial !== null && world.dial && galaxyRampRef.current <= 0.5) {
+  if (dial !== null && world.dial) {
     const marks: MapLayoutMark[] = [];
     for (const pick of dial.picks) {
       const node = world.nodeById.get(pick.id);
       const alpha = dial.alphas.get(pick.id) ?? 1;
       if (!node || alpha <= HITTABLE_MIN_TIER_ALPHA) continue;
-      marks.push({ id: pick.id, x: pick.x, y: pick.y, size: pick.r, ...markStyle(node.kind, false, tokens), alpha });
+      marks.push({ id: pick.id, x: pick.x, y: pick.y, size: pick.r, ...markStyle(node.kind, tokens), alpha });
     }
     return marks;
   }
@@ -123,7 +122,6 @@ export function readOntologyMapMarks({
     width,
     height,
     tokens,
-    galaxy: galaxyRampRef.current > 0.5,
     alphaOf: (id) => drawn.get(id) ?? 0,
     domeFrame: dome !== null && dome.rampClock > 0 ? dome.frame : null,
   });
@@ -131,8 +129,10 @@ export function readOntologyMapMarks({
 
 function measuredCameraTokens(
   host: HTMLCanvasElement,
-  tokens: OntologyMapTokens,
-): OntologyMapTokens & { obstacleInsetLeft: number; obstacleInsetRight: number } {
+  tokens: OntologyMapTokens): OntologyMapTokens & {
+    obstacleInsetLeft: number;
+    obstacleInsetRight: number;
+} {
   const box = host.getBoundingClientRect();
   const measured = measureCanvasInsets(host, { x: box.x, y: box.y, width: box.width, height: box.height });
   return {
@@ -149,11 +149,13 @@ const DIAL_DISCS_DRAWN = 0.5;
 function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens, camera: CameraAxes, width: number, height: number, tokens: OntologyMapTokens): MapLayoutMark[] {
   const { model, scene } = dial;
   const s = camera.scale.value;
-  const screen = (p: { x: number; y: number }) => ({ x: (p.x - camera.x.value) * s + width / 2, y: (p.y - camera.y.value) * s + height / 2 });
+  const screen = (p: { x: number; y: number;
+    }) => ({ x: (p.x - camera.x.value) * s + width / 2, y: (p.y - camera.y.value) * s + height / 2 });
   const marks: MapLayoutMark[] = [];
-  const push = (id: string, at: { x: number; y: number }, size: number) => {
+  const push = (id: string, at: { x: number; y: number;
+    }, size: number) => {
     const node = world.nodeById.get(id);
-    if (node) marks.push({ id, ...screen(at), size, ...markStyle(node.kind, false, tokens), alpha: 1 });
+    if (node) marks.push({ id, ...screen(at), size, ...markStyle(node.kind, tokens), alpha: 1 });
   };
   if (model.projectId) push(model.projectId, scene.positions.get(model.projectId) ?? { x: 0, y: 0 }, dialHubRadiusPx(dialTokens, tokens, s));
   const maxItems = Math.max(1, ...scene.clusters.map((c) => c.items.length));
@@ -204,10 +206,7 @@ function predictOntologyMapMarks({
     bounds,
     box.width,
     box.height,
-    overviewFitTokens(measuredCameraTokens(host, tokens), false),
-    world.nodes.length,
-    dialOverviewFit(world),
-  );
+    overviewFitTokens(measuredCameraTokens(host, tokens)), world.nodes.length, dialOverviewFit(world));
   const camera: CameraAxes = {
     x: { value: target.tx, velocity: 0 },
     y: { value: target.ty, velocity: 0 },
@@ -221,15 +220,17 @@ function predictOntologyMapMarks({
     if (folded.has(id)) return false;
     return isSpineNode(node) || (node.parentId !== null && expandedParents.has(node.parentId));
   };
-  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, galaxy: false, alphaOf: (id) => (drawn(id) ? 1 : 0), domeFrame: null });
+  return ontologyMapMarks({ world, camera, width: box.width, height: box.height, tokens, alphaOf: (id) => (drawn(id) ? 1 : 0), domeFrame: null });
 }
 
 export interface MapLayoutTargetInput {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
-  territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null }) => { text: string };
-  hexPlacement: HexPlacementRecord | null;
-  cosmosPlacement?: CosmosPlacementRecord | null;
+  territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null;
+    }) => {
+        text: string;
+    };
+    hexPlacement: HexPlacementRecord | null;
   hexRelief?: boolean;
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
@@ -257,7 +258,6 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
     });
     return target ? { ...target, ground: tokens.canvasBgNear } : null;
   }
-  if (view === "galaxy") return predictCosmosMarks({ nodes, edges, placement: input.cosmosPlacement ?? null, host });
-  const marks = view === "flat" ? predictOntologyMapMarks({ ...input, host, tokens }) : null;
+    const marks = view === "flat" ? predictOntologyMapMarks({ ...input, host, tokens }) : null;
   return marks ? { marks, ground: tokens.canvasBgNear } : null;
 }

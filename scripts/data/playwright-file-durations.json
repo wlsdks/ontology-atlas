@@ -552,10 +552,6 @@
       "seconds": 3.7,
       "tests": 2
     },
-    "map-galaxy-mode-transition.spec.ts": {
-      "seconds": 30.6,
-      "tests": 3
-    },
     "map-growth-replay.spec.ts": {
       "seconds": 5.1,
       "tests": 2

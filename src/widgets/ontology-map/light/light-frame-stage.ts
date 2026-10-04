@@ -19,8 +19,7 @@ type LightStageState = "idle" | "pending" | "ready" | "off" | "lost";
 interface LightStageRefs {
   reducedMotionRef: RefObject<boolean>;
   egoRevealRef: RefObject<Map<string, number>>;
-  galaxyRef: RefObject<boolean>;
-  domeRuntimeRef: RefObject<DomeRuntime | null>;
+    domeRuntimeRef: RefObject<DomeRuntime | null>;
   mapLensKindRef: RefObject<TopologyMapLensKind>;
   pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -29,7 +28,8 @@ interface LightStageRefs {
 export interface LightStageDependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   refs: LightStageRefs;
-  lightActiveRef: { current: boolean };
+  lightActiveRef: { current: boolean;
+    };
   requestFrame: () => void;
 }
 
@@ -50,13 +50,10 @@ export interface LightFrameStage {
     height: number,
     focusedNodeId: string | null,
     trailLensActive: boolean,
-    clusteredIds: ReadonlySet<string>,
-  ): void;
-  render(): void;
-  dispose(): void;
+    clusteredIds: ReadonlySet<string>): void;
+    render(): void;
+    dispose(): void;
 }
-
-const EMPTY_IDS: ReadonlySet<string> = new Set();
 const INK_FLOATS = 12;
 
 function idleScheduler(callback: () => void): () => void {
@@ -308,7 +305,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         trailLensActive,
         reducedMotion,
         revealProgress: frameReveal,
-        clusteredIds: refs.galaxyRef.current ? EMPTY_IDS : clusteredIds,
+        clusteredIds: clusteredIds,
         mapLensKind: refs.mapLensKindRef.current,
         pathEdgeIds: refs.pathEdgeIdsRef.current,
         pathNodeIds: refs.spotlightIdsRef.current,
@@ -367,8 +364,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
           blooms: probeBlooms.slice(),
         },
         layer,
-        canvasRef.current,
-      );
+        canvasRef.current);
     },
     dispose() {
       disposed = true;
