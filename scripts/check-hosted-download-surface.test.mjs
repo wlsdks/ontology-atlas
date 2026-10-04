@@ -111,6 +111,21 @@ test("hosted download surface check passes for promo/download-aligned pages", as
   }
 });
 
+test("hosted copy preserves adjacent text through styled inline spans", async () => {
+  const plain = koDownloadCopy.change.title.replace(/<\/?key>/g, "");
+  const rich = koDownloadCopy.change.title.replace(/<key>/g, '<span class="emphasis">')
+    .replace(/<\/key>/g, '<span aria-hidden="true"></span></span>');
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": { body: alignedDownload.replace(plain, rich) },
+  });
+  try {
+    await evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 });
+  } finally {
+    await server.close();
+  }
+});
+
 test("hosted download surface check accepts the published release branch", async () => {
   const publishedDownload = alignedDownload.replace(
     `<a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>`,
