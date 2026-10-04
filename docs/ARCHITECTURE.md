@@ -184,7 +184,11 @@ unruled edges, and empty roles prevent a false green result. Each conformance
 evaluation and app role traversal lazily reuses compiled path patterns only
 within that call; paths and classification results are not cached. Compilation
 coalesces adjacent directory-wildcard tokens without changing declared pattern
-text or the glob dialect. The
+text or the glob dialect. Patterns with overlapping unbounded wildcards use
+a UTF-16 state program with one reusable byte buffer per compiled pattern;
+ordinary patterns retain the regex path. State-program matching takes
+O(path length × program length) work and O(program length) retained working
+space, without recursive backtracking or path-result caches. The
 `/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default
