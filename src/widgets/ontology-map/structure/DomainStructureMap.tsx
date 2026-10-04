@@ -15,7 +15,6 @@ import { useStructureFrame } from './use-structure-frame';
 
 const PAGE_SIZE = 40;
 const KINDS = ['project', 'domain', 'capability', 'element'] as const;
-const KIND_KEYS = { project: 'projects', domain: 'domains', capability: 'capabilities', element: 'elements' } as const;
 
 export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRead, onDrawnCountChange, onReady, reducedMotion, indexExpanded, inspectorOpen, loading = false }: {
   nodes: readonly OntologyMapNode[];
@@ -31,6 +30,7 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
   loading?: boolean;
 }) {
   const t = useTranslations('mapStructure');
+  const kindName = useTranslations('kinds');
   const index = useMemo(() => readStructure(nodes, edges), [nodes, edges]);
   const [outside, setOutside] = useState(false);
   const [pages, setPages] = useState<Partial<Record<StructureNode['kind'], number>>>({});
@@ -105,6 +105,7 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
     <section
       ref={sectionRef}
       data-testid="domain-structure-map"
+      data-reduced-motion={reducedMotion || undefined}
       data-surface-role={MAP_CANVAS_SURFACE_ROLE}
       tabIndex={-1}
       aria-label={t('title')}
@@ -121,7 +122,7 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
     >
       <div ref={contentRef} className="relative flex min-h-full flex-col gap-6 px-[var(--topology-index-tab-width)]">
       <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" data-testid="structure-membership-links">
-        {links.map(link => <path key={`${scope}:${link.kind}`} d={link.d} fill="none" stroke="var(--color-indigo-accent)" strokeWidth="1" strokeLinecap="round" pathLength="1" className={reducedMotion ? undefined : 'structure-link-in'} />)}
+        {links.map(link => <path key={`${scope}:${link.kind}`} d={link.d} fill="none" stroke="var(--color-indigo-accent)" strokeWidth="1" strokeLinecap="round" pathLength="1" className="structure-link-in" />)}
       </svg>
       <header className="flex shrink-0 flex-col gap-3">
         <nav aria-label={t('breadcrumb')} className="flex flex-wrap items-center gap-1">
@@ -142,7 +143,7 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
             </h2>
             <p className="text-label text-[color:var(--color-text-secondary)]">{outside ? t('unassignedDescription') : current ? t('childCount', { count: ids.length }) : t('description')}</p>
             {current && (index.parents.get(current.id)?.length ?? 0) > 1 && <p className="text-label text-[color:var(--color-text-secondary)]">{t('shared', { count: index.parents.get(current.id)!.length - 1 })}</p>}
-            {current && missingIds?.has(current.id) && <p className="text-label text-[color:var(--color-warning-text)]">{t('missingDocument')}</p>}
+            {current && missingIds?.has(current.id) && <p className="text-label text-[color:var(--color-status-warning)]">{t('missingDocument')}</p>}
           </div>
           {current && !outside && <Button variant="outline" onClick={() => read(current.id)}>{t('inspect', { name: current.label })}</Button>}
         </div>
@@ -158,15 +159,15 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
           if (!rows.length) return null;
           const pageCount = Math.ceil(rows.length / PAGE_SIZE);
           const page = Math.min(pages[kind] ?? 0, pageCount - 1);
-          return <section key={kind} aria-label={t(KIND_KEYS[kind])} className="min-w-0 space-y-3">
-            <h3 className="flex items-center gap-2 text-label font-[var(--font-weight-strong)]"><span data-structure-kind-anchor={kind} className="inline-flex"><OntologyMapKindGlyph kind={kind} /></span>{t(KIND_KEYS[kind])} · {rows.length}</h3>
+          return <section key={kind} aria-label={kindName(kind)} className="min-w-0 space-y-3">
+            <h3 className="flex items-center gap-2 text-label font-[var(--font-weight-strong)]"><span data-structure-kind-anchor={kind} className="inline-flex"><OntologyMapKindGlyph kind={kind} /></span>{kindName(kind)} · {rows.length}</h3>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((node, order) => {
                 const childCount = index.children.get(node.id)?.length ?? 0;
                 const cyclic = currentPath.includes(node.id);
                 const browse = childCount > 0 && !cyclic;
                 const parents = index.parents.get(node.id)?.length ?? 0;
-                return <div key={node.id} style={{ '--structure-item-delay': `${Math.min(order, 3) * STAGGER}s` } as CSSProperties} className={cn('min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]', !reducedMotion && 'structure-item-in')}><RowButton tone="secondary" data-structure-id={node.id} active={selectedId === node.id} aria-label={browse ? t('browse', { name: node.label }) : t('inspect', { name: node.label })} className="h-full w-full" onClick={() => browse ? navigate([...currentPath, node.id]) : read(node.id)}>
+                return <div key={node.id} style={{ '--structure-item-delay': `${Math.min(order, 3) * STAGGER}s` } as CSSProperties} className={cn('min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]', 'structure-item-in')}><RowButton tone="secondary" data-structure-id={node.id} active={selectedId === node.id} aria-label={browse ? t('browse', { name: node.label }) : t('inspect', { name: node.label })} className="h-full w-full" onClick={() => browse ? navigate([...currentPath, node.id]) : read(node.id)}>
                   <span className="flex w-full min-w-0 flex-col gap-2 py-2 text-left">
                     <span className="flex min-w-0 items-center justify-between gap-3">{header(node)}{browse && <ChevronRight aria-hidden className="size-4 shrink-0" />}</span>
                     {(parents > 1 || childCount > 0 || cyclic) && <span className="flex flex-wrap gap-x-3 text-label text-[color:var(--color-text-secondary)]">
@@ -174,7 +175,7 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
                       {parents > 1 && <span>{t('shared', { count: parents - 1 })}</span>}
                       {cyclic && <span>{t('cycle')}</span>}
                     </span>}
-                    {missingIds?.has(node.id) && <span className="text-label text-[color:var(--color-warning-text)]">{t('missingDocument')}</span>}
+                    {missingIds?.has(node.id) && <span className="text-label text-[color:var(--color-status-warning)]">{t('missingDocument')}</span>}
                   </span>
                 </RowButton></div>;
               })}

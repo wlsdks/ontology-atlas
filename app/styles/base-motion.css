@@ -395,6 +395,18 @@
     animation: structureItemIn var(--motion-base) var(--motion-ease) var(--structure-item-delay, 0s) both;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .structure-item-in,
+    .structure-link-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+      transform: none !important;
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+    }
+  }
+
   @keyframes panelCrossfadeIn {
     from {
       opacity: 0;

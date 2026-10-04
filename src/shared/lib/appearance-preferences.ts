@@ -292,10 +292,6 @@ function readView3d(): boolean {
   return readOnOff(VIEW_3D_KEY, DEFAULT_VIEW_3D);
 }
 
-export function writeView3d(value: boolean): void {
-  writeOnOff(VIEW_3D_KEY, value);
-}
-
 export function useView3d(): boolean {
   const getSnapshot = useCallback(() => readView3d(), []);
   const getServerSnapshot = useCallback(() => DEFAULT_VIEW_3D, []);

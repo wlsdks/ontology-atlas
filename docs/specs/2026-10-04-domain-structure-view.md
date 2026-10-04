@@ -98,7 +98,7 @@ supersedes the two Galaxy decisions for this surface; frozen history remains.
 8. When navigation reverses rapidly, the latest input wins. The current parent
    joins its real child-kind groups with measured membership links; a finite
    stroke reveal and child entrance explain the change. Card delays use the
-   existing 35ms stagger capped at 105ms; reduced motion settles immediately.
+   existing 35ms stagger capped at 105ms; reduced motion places geometry immediately and keeps a short opacity-only crossfade.
    Refresh trims broken steps to the last valid ancestor; folder switch resets
    transient path rather than retaining foreign identities.
 
@@ -151,10 +151,10 @@ Namespace `mapStructure`; exact translations are in
 | `back` | Back action | Back to {name} |
 | `browse` | Open action | Open {name} |
 | `inspect` | Read action | Read {name} |
-| `projects`, `domains`, `capabilities` | Kind headings | Projects; Domains; Capabilities |
-| `elements`, `documents`, `other` | Kind headings when available | Implementation elements; Documents; Other concepts |
+| `kinds.project`, `kinds.domain`, `kinds.capability`, `kinds.element` | Kind headings | Existing canonical kind labels |
+| `documents`, `other` | Other-kind copy | Documents; Other concepts |
 | `unassigned` | Orphan heading | Outside the recorded structure |
-| `unassignedDescription` | Orphan explanation | These concepts have no recorded path from a project. Open one to inspect its document and relations. |
+| `unassignedDescription` | Orphan explanation | These concepts have no recorded path from the structure’s starting concepts. Open one to inspect its document and relations. |
 | `shared` | Additional parents | Also shown under {count, plural, one {# other parent} other {# other parents}} |
 | `childCount` | Unique direct-child count | {count, plural, one {# direct child} other {# direct children}} |
 | `conceptCount` | Unique concept count | {count, plural, one {# concept} other {# concepts}} |
@@ -220,7 +220,7 @@ Namespace `mapStructure`; exact translations are in
    **then** clear filters or the last valid ancestor restores browsing without
    losing the folder. Proof: filter/refresh runtime fixtures.
 6. **Given** normal/reduced motion and rapid reversals, **when** changing scope,
-   **then** latest intent wins and reduced motion settles immediately. Proof:
+   **then** latest intent wins and reduced motion places geometry immediately and keeps a short opacity-only crossfade. Proof:
    background OS recording at 60fps minimum with 120fps capture ceiling, source
    timestamps and retained sampling flags; no 120Hz-output claim.
 7. **Given** old Galaxy URLs/preferences and retained choices, **when** opening,
