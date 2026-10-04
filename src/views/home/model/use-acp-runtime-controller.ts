@@ -22,7 +22,7 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
     scopeKey?: string;
     investigation?: InvestigationSendGuard;
   } | null>(null);
-  const [investigationBasis, setInvestigationBasis] = useState<{vaultPath:string;text:string;snapshot:GrayAreaSnapshot;projectUid:string;sourceRoot?:string;label?:string}|null>(null);
+  const [investigationBasis, setInvestigationBasis] = useState<{nonce:number;vaultPath:string;text:string;snapshot:GrayAreaSnapshot;projectUid:string;sourceRoot?:string;label?:string}|null>(null);
   const pendingAgentChatPromptRef = useRef<string | null>(null);
   const [chatMounted, setChatMounted] = useState(false);
   const acpSessionStartTimerRef = useRef<number | null>(null);

@@ -18,7 +18,7 @@ const doc:VaultDoc={slug:'project',path:'project.md',title:'Project',frontmatter
 const base:AnalysisCaptureContext={mode:'meaning',surface:'map',handle:null,writable:false,fileHandles:new Map(),
   scope:{projectSlug:'project',projectUid,targetSlugs:[],profileSlug:null},graph:{nodes:[],edges:[]},sourceFingerprint:null,profileHash:null};
 const text=buildGrayAreaInvestigation(snapshot,buildGrayAreaCandidates(snapshot)[0],{projectUid,explicit:true});
-const basis={vaultPath:'/vault',text,snapshot,projectUid};
+const basis={nonce:1,vaultPath:'/vault',text,snapshot,projectUid};
 
 describe('capture context for an app-composed investigation',()=>{
   it('binds exact targets and source to the native question without changing generic capture',()=>{

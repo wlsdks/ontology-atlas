@@ -145,7 +145,7 @@ export function TopologyAgentDock({
     }),
     [gitVaultPath],
   );
-  const draftContextKey=JSON.stringify([gitVaultPath,vaultAgentPrefill?.nonce]);
+  const draftContextKey=JSON.stringify([gitVaultPath,vaultAgentPrefill?.nonce,investigationBasis?.nonce]);
   const [draftContext,setDraftContext]=useState<{key:string;seen:boolean;retired:boolean}|null>(null);
   const handleDraftPresence=useCallback((present:boolean)=>{
     const hasDraft=present||(draftRef.current.folder===gitVaultPath&&draftRef.current.text.trim().length>0);

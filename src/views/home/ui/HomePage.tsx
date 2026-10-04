@@ -485,12 +485,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     busy: Boolean(topologyAgentActivity.acpLiveWork),
     onAnalyze: (text,snapshot,projectUid,investigation,sourceRoot,label) => {
       if(!gitVaultPath)return;
-      acpRuntimeController.setInvestigationBasis({vaultPath:gitVaultPath,text,snapshot,projectUid,sourceRoot,label});
+      acpRuntimeController.setInvestigationBasis({nonce:Date.now(),vaultPath:gitVaultPath,text,snapshot,projectUid,sourceRoot,label});
       acpRuntimeController.setAgentOpeningRequest({text,nonce:Date.now(),scopeKey:JSON.stringify([gitVaultPath,'meaning']),investigation});
       openVaultAgent();
     },
     onPrepare: (text,contextLabel,basis) => {
-      if(basis&&gitVaultPath)acpRuntimeController.setInvestigationBasis({vaultPath:gitVaultPath,text,...basis,label:contextLabel});
+      if(basis&&gitVaultPath)acpRuntimeController.setInvestigationBasis({nonce:Date.now(),vaultPath:gitVaultPath,text,...basis,label:contextLabel});
       setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:gitVaultPath}}); openVaultAgent();
     },
   });
