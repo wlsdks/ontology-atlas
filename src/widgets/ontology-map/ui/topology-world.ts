@@ -77,7 +77,7 @@ export interface WorldNode {
    * pre-attentive, the badge is for reading.
    */
   magnitudeScale: number;
-    
+
 }
 
 export interface WorldEdge {
@@ -753,7 +753,7 @@ export function buildTopologyWorld(
     }) => n.size + n.fullDegree * 18;
   const ranked = [...nodes].sort((x, y) => rawMagnitude(y) - rawMagnitude(x));
   const brightStarIds = new Set(ranked.slice(0, Math.max(0, Math.round(tokens.starCount))).map((n) => n.id));
-    
+
     // Node → the index of the edges attached to it. Built once at build time, it makes
     // the frame path that refreshes «only the moved nodes' edges» possible
     // (`recomputeWorldGeometry`).

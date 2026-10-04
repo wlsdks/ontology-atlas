@@ -568,7 +568,7 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * path they cited, never the sentence. It is written down now, with a gate:
  * `tests/contract/canvas-composite-license.contract.test.ts`.
  */
-export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, ink: string, lit: number, swell = 1, 
+export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, ink: string, lit: number, swell = 1,
 /** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */
 core = 0): void {
     // The map's only contribution is the silhouette: a hexagon, square or circle that converges

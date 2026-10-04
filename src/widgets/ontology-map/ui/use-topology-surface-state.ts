@@ -39,7 +39,7 @@ export function useTopologySurfaceState() {
 
   const dustPointsRef = useRef<DustPoint[]>([]);
 
-  
+
   const realmStarPointsRef = useRef<DustPoint[]>([]);
 
   const gridPatternRef = useRef<CanvasPattern | null>(null);

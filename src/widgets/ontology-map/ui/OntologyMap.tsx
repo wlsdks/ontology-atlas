@@ -673,16 +673,16 @@ export function OntologyMap(props: OntologyMapProps) {
     }, [canvasRef, containerRef, detailPanelVisible]);
     return (<div ref={containerRef} data-testid="ontology-map" data-map-engine="v2" data-minimal={minimal ? "true" : "false"} data-source-node-count={nodes.length} data-map-lens={spotlightIds ? mapLensKind : undefined} data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined} data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined} data-preview-edge={previewEdge
             ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`
-            : undefined} data-preview-phase={previewEdge?.phase} 
+            : undefined} data-preview-phase={previewEdge?.phase}
     // rank18 — while an overlay is open the canvas is excluded from the aria tree
     // and Tab traversal (inert blocks the pointer too). INDEX and the datasheet
     // are the alternative list.
     aria-hidden={overlayOpen} inert={overlayOpen} style={{ position: "relative", width: "100%", height: "100%" }}>
-      <canvas ref={canvasRef} data-testid="ontology-map-canvas" 
+      <canvas ref={canvasRef} data-testid="ontology-map-canvas"
     /* The marker `G M` uses to find this canvas and focus it — the full reason is
        in `shared/lib/focus-map-canvas.ts`. `data-testid` belongs to the tests and
        is never used as a runtime selector. */
-    data-surface-role={MAP_CANVAS_SURFACE_ROLE} 
+    data-surface-role={MAP_CANVAS_SURFACE_ROLE}
     /**
      * **Something you can drag is not a picture** (motion seat P3, 2026-07-28).
      *
@@ -706,7 +706,7 @@ export function OntologyMap(props: OntologyMapProps) {
      *
      * The focus ring is **also an affordance of the still frame** — zero motion budget.
      */
-    role={canvasLabel ? "group" : undefined} aria-label={canvasLabel} tabIndex={canvasLabel ? 0 : undefined} 
+    role={canvasLabel ? "group" : undefined} aria-label={canvasLabel} tabIndex={canvasLabel ? 0 : undefined}
     // Why `cursor-grab` is the **default state** (council "Interaction" —
     // interaction — 2026-07-28): this canvas's primary action is panning. The
     // pointer handlers override it inline with `pointer` over a node or edge, and
@@ -727,7 +727,7 @@ export function OntologyMap(props: OntologyMapProps) {
         }} onPointerDown={(event) => {
             delete event.currentTarget.dataset.keyboardFocus;
             handlePointerDown(event);
-        }} onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerCancel} onPointerLeave={handlePointerLeave} onContextMenu={handleContextMenu} 
+        }} onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerCancel} onPointerLeave={handlePointerLeave} onContextMenu={handleContextMenu}
     /**
      * Walk neighbours with the arrow keys (2026-08-09, option B). The rules are in
      * `../interaction/keyboard-walk` and the wiring is `use-topology-loop`'s
@@ -739,7 +739,7 @@ export function OntologyMap(props: OntologyMapProps) {
                   refreshes the transform every frame). Hidden by default; shown only when the
                   focused node has children and sits outside a realm. No radial menu — one
                   button. A microtooltip on hover (one plain line). */}
-      {onEnterRealm && !detailPanelVisible ? (<button ref={realmEnterButtonRef} type="button" data-testid="topology-realm-enter-button" aria-label={realmEnterLabel} 
+      {onEnterRealm && !detailPanelVisible ? (<button ref={realmEnterButtonRef} type="button" data-testid="topology-realm-enter-button" aria-label={realmEnterLabel}
         /**
          * **While invisible it is not a tab stop** (keyboard measurement, 2026-07-29).
          *
@@ -788,7 +788,7 @@ export function OntologyMap(props: OntologyMapProps) {
                 height: "calc(var(--tour-anchor-r, 0px) * 2)",
                 visibility: tourAnchorNodeId ? "visible" : "hidden",
             }}/>) : null}
-      {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")} 
+      {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")}
         /* Read by assistive technology, and non-existent to pointer and focus. */
         role="status" aria-live="polite" data-state={noticePresence.exiting ? "closed" : "open"} className={[
                 reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",

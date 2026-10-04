@@ -91,7 +91,7 @@ export interface StarEmissionState {
    * still and nothing on the canvas keeps breathing.
    */
   swell?: number;
-  
+
   core?: number;
   /**
    * The node's silhouette at `radius`, as a path this function can both stroke and subtract.
@@ -184,7 +184,7 @@ export function drawStarEmission(ctx: CanvasRenderingContext2D, state: StarEmiss
         ctx.fillStyle = heart;
         ctx.fill(body);
     }
-    
+
     ctx.globalAlpha = k * (1 - core * 0.4);
     ctx.strokeStyle = ink;
     ctx.lineWidth = Math.min(STAR_RIM_PX, Math.max(0.5, radius * 0.22)) * (1 - core * 0.5);

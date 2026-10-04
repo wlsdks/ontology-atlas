@@ -2259,7 +2259,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
              * one canvas would make the reader decide which light they are being shown.
              */
             const edgeGlows = walkedTrail > 0.01 && trailStarInk !== null
-                ? beginEdgeGlow(ctx, walkedTrail, 
+                ? beginEdgeGlow(ctx, walkedTrail,
                 // The trail's own glow values, not the ego's — a constellation line is light,
                 // and at the ego alpha it read as a slightly brighter dash.
                 {
