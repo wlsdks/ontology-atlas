@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readSkillProcedure } from '../helpers/read-skill-procedure';
+
 /**
  * **The field trial's replay assets have to still run.**
  *
@@ -58,7 +60,7 @@ describe('field trial replay scripts', () => {
   });
 
   it('the skill section names every asset', () => {
-    const skill = readFileSync(SKILL, 'utf8');
+    const skill = readSkillProcedure(SKILL);
     const section = skill.slice(skill.indexOf('## Headless ACP replay'));
     expect(section.startsWith('## Headless ACP replay')).toBe(true);
     const assets = readdirSync(SCRIPTS).filter((name) => !name.startsWith('.'));
