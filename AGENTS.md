@@ -126,9 +126,10 @@ Publishing needs an explicit request and `npm pack --dry-run` first.
 `CLAUDE.md` imports this file and owns Claude loading details. Keep root plus
 the largest nested instruction file below 32 KiB; nested `AGENTS.md` files only
 point to the `.claude/rules/` relevant to their paths, which Codex does not
-auto-load. Keep harness-specific skill metadata and agent briefs separate; shared workflow
-procedures may have one owner. Do not require byte identity. Codex briefs inherit
-the caller's model, effort and tools; `access` is a task boundary, not a grant. Run `pnpm agents:check` after editing agent
+auto-load. Keep host-specific skill metadata and agent briefs separate. Shared
+procedures may have one owner; byte identity is not required. Codex briefs
+inherit the caller's model, effort and tools; `access` defines scope, not a grant.
+Run `pnpm agents:check` after editing agent
 files. `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` Codex
 hooks; Codex skips a new or changed entry until a person trusts it in `/hooks`.
 Do not change Claude files while optimizing Codex instructions.
