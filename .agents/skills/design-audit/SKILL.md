@@ -58,6 +58,11 @@ Measure pairwise rect intersections among independent painted elements in the
 same stacking context. Report pixels, not “looks overlapped.” Repeat at affected
 bands through `/responsive-sweep`.
 
+Also compare independent surfaces that must remain usable together across
+stacking contexts. A higher z-index does not justify an inspector covering its
+map controls. Exclude intentionally blocked modal background controls only when
+the current interaction contract declares that blocking.
+
 Reachability is separate: at each important control's centre, require
 `document.elementFromPoint(cx, cy)` to return that control or a descendant.
 
@@ -107,6 +112,18 @@ Spec, `node-shapes.test.ts`, `map-kind-glyph.test.tsx`, and
 At maximum scroll, compare the last content bottom with the bottom bar top. Below
 `lg`, reserve both `--topology-mobile-bottom-tab-reserve` and safe-area inset.
 
+## 4a. Reading scroll ownership
+
+Expand the longest reading disclosure the surface offers, such as an answer,
+source excerpt or exact request. Inventory painted
+elements with scrolling overflow and `scrollHeight > clientHeight`. A reading
+panel should keep these disclosures in its declared body scroll, with its header
+and close control reachable. Report extra inner scroll regions; retain one only
+for an explicit independent editor or collection task, with wheel and keyboard
+reachability measured. Verify that opening a long disclosure reveals its label and close control. Test
+the long state and the maximum scroll position, not only the short fixture or
+viewport bounds.
+
 ## 4b. Generated drawings and printed numbers
 
 Applies when the screen draws a diagram, graph or chart from data:
@@ -119,7 +136,7 @@ Applies when the screen draws a diagram, graph or chart from data:
 
 ## 5. Final Computer Use checkpoint after measurement
 
-After browser geometry measurement, open the actual browser, WebView, or installed
+By default, after browser geometry measurement, open the actual browser, WebView, or installed
 app through the computer-use capability. Capture its fresh accessibility tree and screenshot;
 record app/window identity, route, viewport, DPR, state, screenshot path, and the
 element that owns the primary action or selected fact. Browser automation
@@ -161,3 +178,6 @@ confirms it.
 Motion belongs to `/motion-verify`; breakpoint coverage to `/responsive-sweep`.
 A `reviewer` is not an automatic next step; use one only when the route says
 `review=yes`.
+
+For an explicit background-only owner request, use background rendered evidence
+and record that actual-window or real-monitor approval was not performed.

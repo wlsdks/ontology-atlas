@@ -56,6 +56,14 @@ touches during §0-B and take new text only from the message keys in its Copy
 section. Report any state or string the spec lacks to the lead instead of
 inventing it.
 
+Before placement, name the primary reading object, controls that must remain
+reachable beside it, and the element that owns reading scroll. Reuse a token
+only when its role fits this surface; a node-popover inset does not establish
+clearance for a separate inspector. Long source, request and answer disclosures
+normally flow in the panel body. An independent editor or collection may scroll
+separately when its task requires it; measure that exception rather than adding
+an inner height cap by habit.
+
 ## 0-B. Render while building
 
 When the route includes `final-capture` (copy only), take one fresh capture of
@@ -73,8 +81,14 @@ code or imagination before looking at it.
 
 Keep baseline, material checkpoint, and final screenshot paths. A material
 checkpoint is the smallest visual result that can be judged on its own, not
-every CSS line. Browser automation localizes DOM geometry; it does not replace
-the actual-window Computer Use evidence.
+every CSS line. Browser automation localizes DOM geometry; the default loop also requires
+actual-window Computer Use evidence. Apply the explicit owner exception below
+when the foreground must remain untouched.
+
+If the owner explicitly requests background-only verification, keep their
+foreground untouched. Use rendered browser screenshots, accessibility and DOM
+measurements for the loop, and label installed-app or real-monitor proof as
+unperformed. Do not relabel headless frames as native motion evidence.
 
 ## 1. Controls
 
@@ -196,7 +210,7 @@ pnpm design:route -- --change=<every-observed-class>
 ```
 
 Run every recommended technical check plus the proof packet the router returns. Every rendered design class
-includes the completed Computer Use render loop above; the final proof points
+includes the completed render loop above, with any owner-imposed proof limit recorded; the final proof points
 to its baseline, material checkpoints, and final state.
 
 `motion` always includes `/motion-verify` against a real macOS screen recording.
