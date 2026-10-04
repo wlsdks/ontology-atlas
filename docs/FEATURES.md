@@ -45,6 +45,14 @@ the existing retry flow remains available for cloud and local endpoints. The loc
 
 Approved model proposals retain their confirmed saved-file prefix after a write failure, attempt a folder reload, and report reload errors separately. Normal agent and local Compile failure messages expose that prefix; no automatic rollback is claimed.
 
+The map offers optional continued analysis through its stable Analysis status
+entry and existing bounded inspector. Explicit Analyze next sends one selected
+question to guarded ACP; exact saved results remain dated evidence, and Prepare
+improvement opens an unsent editable request. Opening the map never starts paid
+analysis. Counts, agent-reported tasks, source freshness and meaning acceptance
+are distinct; there is no global completeness score. See the
+[map workflow](features/map/README.md#optional-continued-analysis).
+
 ## Destinations
 
 The desktop rail's order and hrefs come from

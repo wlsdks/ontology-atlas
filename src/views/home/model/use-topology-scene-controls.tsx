@@ -16,6 +16,16 @@ import { selectTopologyNodeRouteState } from "./url-state";
 import { useTopologyIndexReadModel } from "./use-topology-index-read-model";
 import { useTopologyPathLens } from "./use-topology-path-lens";
 
+function reportTopologyGraphStats(
+  setStats: React.Dispatch<React.SetStateAction<{ key:string;nodes:number;relations:number }|null>>,
+  key:string,
+  stats:{nodes:number;relations:number},
+) {
+  setStats({key,...stats});
+}
+
+
+
 interface Options {
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
@@ -228,10 +238,10 @@ export function useTopologySceneControls({
     filtersActive: topologyFiltersActive,
   });
   const emptyTopologyNodeCount = currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount;
-  const handleTopologyGraphStatsChange = useCallback(
-    (stats: { nodes: number; relations: number }) => {
-      setTopologyGraphStats({ key: visibleTopologyStatsKey, ...stats });
-    },
+  // The canvas can retain this callback across equally shaped folders. Binding
+  // only the setter and scalar key avoids retaining this render's vault context.
+  const handleTopologyGraphStatsChange = useMemo(
+    () => reportTopologyGraphStats.bind(null,setTopologyGraphStats,visibleTopologyStatsKey),
     [setTopologyGraphStats, visibleTopologyStatsKey],
   );
   const clearTopologyFilters = useCallback(() => {

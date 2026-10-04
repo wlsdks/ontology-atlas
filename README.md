@@ -68,6 +68,8 @@ Read [What becomes a node?](docs/guide/what-becomes-a-node.md), [Relations](docs
 - **MCP** (Model Context Protocol): your agent starts the Atlas MCP server, which reads and writes the folder on disk, even with the app closed. [Connect an agent](docs/guide/connect-agent.md) · [MCP reference](mcp/README.md)
 - **ACP** (Agent Client Protocol): Claude Agent and Codex also run in the app's own chat. Reads go straight through; each Atlas write waits until you allow it once. [Agents screen](docs/features/agents.md)
 
+**Continue improving the map.** Analysis status stays visible on the map. In the macOS app, inspect the connected code folder, choose a question and press Analyze next to send it once to your ACP agent. Revisit its dated result or prepare a separate editable improvement. Opening the map starts no paid analysis; saved answers and reported task progress are not meaning acceptance or a completeness score. Native local-model source construction remains unavailable. [Continued analysis](docs/features/map/README.md#optional-continued-analysis)
+
 ## Construction measurements
 
 The 2026-10-03 trial used one unfamiliar MIT Python configuration library, actual

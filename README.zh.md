@@ -63,6 +63,8 @@ frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `ui
 - **MCP**（Model Context Protocol）：你的智能体会启动 Atlas MCP 服务器，由它直接读写磁盘上的文件夹，应用关闭时也能工作。[连接智能体](docs/guide/connect-agent.md) · [MCP 参考](mcp/README.md)
 - **ACP**（Agent Client Protocol）：Claude Agent 和 Codex 也可以在应用自带的对话中工作。读取直接放行，每次 Atlas 写入都要等你允许一次后才会执行。[Agents 界面](docs/features/agents.md)
 
+**持续完善地图。** 地图始终显示分析状态。在 macOS 应用中检查已连接的代码文件夹，选择一个问题并点击追加分析，即可向 ACP 代理发送一次请求。可以查看带日期的结果，或准备单独的可编辑改进草稿。打开地图不会启动付费分析；回答和代理报告的任务进度不代表语义认可或完成率。本地模型的原生源码构建尚未支持。[持续分析](docs/features/map/README.md#optional-continued-analysis)
+
 ## 构建测量
 
 2026-10-03，我们用实际 ACP 会话构建了一个此前未读的 MIT Python 配置库，并通过无法访问源码的独立读取会话及源码审计进行评估。这是单个仓库的有限结果，不是模型排名或语义质量认证。

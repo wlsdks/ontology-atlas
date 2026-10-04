@@ -12,12 +12,13 @@ import { acpHeartbeatAgentName, buildAcpTurnHeartbeat, createVaultAcpHeartbeatSt
 
 interface Options {
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "agentServer" | "acpTurnActivityFrame" | "setAcpTurnActivityFrame">;
-  acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimeId">;
+  acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimeId"|"investigationBasis">;
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "vault" | "gitVaultPath">;
 }
 export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeController, topologyAuthoring }: Options) {
   const { vault, gitVaultPath } = topologyVaultReadModel;
-  const { acpRuntimeId } = acpRuntimeController;
+  const { acpRuntimeId,investigationBasis } = acpRuntimeController;
+  const sourceRoot=investigationBasis?.vaultPath===gitVaultPath?investigationBasis.sourceRoot:undefined;
   const { agentServer, acpTurnActivityFrame, setAcpTurnActivityFrame } = topologyAuthoring;
 
   // Read from the vault folder (`.ontology-atlas/connectors.json`) so both surfaces see the same
@@ -40,6 +41,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
     return [
       ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+        sourceRoot,
       }),
       // The vault first: claude-agent-acp lets a later same-named entry win, and the instructions
       // name the vault server.
@@ -50,6 +52,7 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
     agentServer.launch,
     gitVaultPath,
     acpRuntimeId,
+    sourceRoot,
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
     vaultConnectors.allowedHere,

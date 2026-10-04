@@ -59,3 +59,55 @@ describe('Gray Area inspection scope lifetime', () => {
     expect(hook.result.current.open).toBe(false);
   });
 });
+
+describe('map analysis entry without a selection',()=>{
+  function unselected(documents=docs){
+    const choose=vi.fn();const empty=vi.fn();const onOpen=vi.fn();const onPrepare=vi.fn();
+    const hook=renderHook(()=>useTopologyGrayArea({docs:documents,nodes:[],selectedSlug:null,memberSlugs:null,
+      vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState(new URLSearchParams()),
+      setRouteState:()=>{},onOpen,onPrepare,onChooseScope:choose,onEmptyVault:empty}));
+    return {...hook,choose,empty,onOpen,onPrepare};
+  }
+  it('names one recorded project and waits for a deliberate press',()=>{
+    const hook=unselected();
+    expect(hook.result.current.continuationAction.subject).toBe('project');
+    expect(hook.result.current.open).toBe(false);expect(hook.onOpen).not.toHaveBeenCalled();
+    act(()=>hook.result.current.continuationAction.onOpen());
+    expect((hook.result.current.inspector as Inspector).props.selection.uids).toEqual(['project']);
+    expect(hook.result.current.open).toBe(true);expect(hook.onPrepare).not.toHaveBeenCalled();
+  });
+  it('requires scope choice when projects are ambiguous instead of analyzing them together',()=>{
+    const hook=unselected([...docs,document('another-project',{kind:'project',uid:'another'})]);
+    act(()=>hook.result.current.continuationAction.onOpen());
+    expect(hook.choose).toHaveBeenCalledOnce();expect(hook.result.current.open).toBe(false);
+    expect(hook.onOpen).not.toHaveBeenCalled();expect(hook.onPrepare).not.toHaveBeenCalled();
+  });
+  it('offers the existing first construction for an empty map without sending',()=>{
+    const hook=unselected([]);act(()=>hook.result.current.continuationAction.onOpen());
+    expect(hook.empty).toHaveBeenCalledOnce();expect(hook.choose).not.toHaveBeenCalled();
+    expect(hook.onPrepare).not.toHaveBeenCalled();expect(hook.result.current.open).toBe(false);
+  });
+});
+
+it('offers folder connection for a visible sample without calling it an empty map',()=>{
+ const connect=vi.fn();const onPrepare=vi.fn();
+ const hook=renderHook(()=>useTopologyGrayArea({docs:[],nodes:[],selectedSlug:null,memberSlugs:null,
+   vaultPath:null,vaultLoaded:false,locale:'en',routeState:parseHomeRouteState(new URLSearchParams()),
+   setRouteState:()=>{},onOpen:()=>{},onPrepare,onConnectVault:connect}));
+ expect(hook.result.current.continuationAction.subject).toBe('continuation.localFolderAction');
+ expect(connect).not.toHaveBeenCalled();expect(onPrepare).not.toHaveBeenCalled();
+ act(()=>hook.result.current.continuationAction.onOpen());
+ expect(connect).toHaveBeenCalledOnce();expect(onPrepare).not.toHaveBeenCalled();
+});
+
+it('prepares an improvement without adding the investigation-only lead or automatically sending',()=>{
+ const prepare=vi.fn();
+ const hook=renderHook(()=>useTopologyGrayArea({docs,nodes:[],selectedSlug:'capabilities/a',memberSlugs:null,vaultPath:'/fixture/vault',locale:'en',routeState:parseHomeRouteState(new URLSearchParams()),setRouteState:()=>{},onOpen:()=>{},onPrepare:prepare}));
+ act(()=>hook.result.current.action?.onOpen());
+ const inspector=hook.result.current.inspector as ReactElement<{onPrepareImprovement:(text:string,candidate:GrayAreaCandidate,snapshot:unknown,sourceRoot:string)=>void}>;
+ const snapshot={snapshotId:'current-evidence'};
+ act(()=>inspector.props.onPrepareImprovement('Prepare the reviewable change.',{slug:'capabilities/a',relatedSlug:null} as GrayAreaCandidate,snapshot,'/fixture/source'));
+ expect(prepare).toHaveBeenCalledOnce();expect(prepare.mock.calls[0][0]).toBe('Prepare the reviewable change.');
+ expect(prepare.mock.calls[0][2]).toEqual({snapshot,projectUid:'project',sourceRoot:'/fixture/source'});
+ expect(hook.result.current.open).toBe(false);
+});

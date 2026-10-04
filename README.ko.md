@@ -63,6 +63,8 @@ frontmatter에 `kind:`가 있는 마크다운 파일 하나가 개념 하나예�
 - **MCP**(Model Context Protocol): 에이전트가 Atlas MCP 서버를 띄우고, 그 서버가 디스크의 폴더를 직접 읽고 써요. 앱이 꺼져 있어도 돼요. [에이전트 연결하기](docs/guide/connect-agent.md) · [MCP 레퍼런스](mcp/README.md)
 - **ACP**(Agent Client Protocol): Claude Agent와 Codex는 앱 안 대화에서도 일해요. 읽기는 바로 되고, Atlas 쓰기는 매번 한 번 허락해야 적혀요. [에이전트 화면](docs/features/agents.md)
 
+**지도를 계속 보강하기.** 지도에 분석 현황이 표시돼요. macOS 앱에서 연결된 코드 폴더를 살펴보고 질문을 골라 ‘추가 분석’을 누르면 ACP 에이전트에게 한 번 전달돼요. 날짜가 남은 결과를 다시 보거나 별도의 개선 초안을 준비할 수 있어요. 지도를 여는 것만으로 유료 분석을 시작하지 않으며, 답변과 에이전트 작업 진행률은 의미 승인이나 완성률이 아니에요. 로컬 모델의 네이티브 소스 구축은 아직 지원하지 않아요. [계속 분석하기](docs/features/map/README.md#optional-continued-analysis)
+
 ## 구축 성능 측정
 
 2026-10-03에 처음 보는 MIT Python 설정 라이브러리를 실제 ACP 세션으로 구축하고, 소스를 볼 수 없는 별도 읽기 세션과 소스 감사를 진행했어요. 한 저장소의 제한된 결과이며 모델 순위나 의미 품질 인증은 아니에요.

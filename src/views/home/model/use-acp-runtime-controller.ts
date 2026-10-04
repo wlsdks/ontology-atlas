@@ -1,4 +1,5 @@
-import { isGuardedRuntime } from "@/features/acp-session";
+import { isGuardedRuntime, type InvestigationSendGuard } from "@/features/acp-session";
+import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,7 +20,9 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
     text: string;
     nonce: number;
     scopeKey?: string;
+    investigation?: InvestigationSendGuard;
   } | null>(null);
+  const [investigationBasis, setInvestigationBasis] = useState<{vaultPath:string;text:string;snapshot:GrayAreaSnapshot;projectUid:string;sourceRoot?:string;label?:string}|null>(null);
   const pendingAgentChatPromptRef = useRef<string | null>(null);
   const [chatMounted, setChatMounted] = useState(false);
   const acpSessionStartTimerRef = useRef<number | null>(null);
@@ -87,6 +90,8 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
     requestedAcpRuntimeRef,
     agentOpeningRequest,
     setAgentOpeningRequest,
+    investigationBasis,
+    setInvestigationBasis,
     pendingAgentChatPromptRef,
     chatMounted,
     setChatMounted,

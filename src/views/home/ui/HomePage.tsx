@@ -471,9 +471,25 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     selectedSlug: topologyVaultReadModel.selectedOntologyNode?.id ?? null,
     memberSlugs: topologyExplorationLenses.routedConstellation?.memberSlugs ?? null,
     vaultPath: gitVaultPath,
+    vaultHandle: topologyVaultReadModel.vault.handle,
+    vaultLoaded: topologyVaultReadModel.vault.status === 'loaded',
     locale: activeLocale, routeState, setRouteState,
     onOpen: () => { closeVaultAgent(); setFullDetailSlug(null); },
-    onPrepare: (text,contextLabel) => { setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:gitVaultPath}}); openVaultAgent(); },
+    onChooseScope: () => setOntologySearchOpen(true),
+    onEmptyVault: topologyIndexPresentation.handleIndexTabExpand,
+    onConnectVault: requestVaultOpen,
+    runtime: acpRuntimeController.acpRuntime,
+    busy: Boolean(topologyAgentActivity.acpLiveWork),
+    onAnalyze: (text,snapshot,projectUid,investigation,sourceRoot,label) => {
+      if(!gitVaultPath)return;
+      acpRuntimeController.setInvestigationBasis({vaultPath:gitVaultPath,text,snapshot,projectUid,sourceRoot,label});
+      acpRuntimeController.setAgentOpeningRequest({text,nonce:Date.now(),scopeKey:JSON.stringify([gitVaultPath,'meaning']),investigation});
+      openVaultAgent();
+    },
+    onPrepare: (text,contextLabel,basis) => {
+      if(basis&&gitVaultPath)acpRuntimeController.setInvestigationBasis({vaultPath:gitVaultPath,text,...basis,label:contextLabel});
+      setVaultAgentPrefill({text,nonce:Date.now(),context:{label:contextLabel,vaultPath:gitVaultPath}}); openVaultAgent();
+    },
   });
   const topologyNavigationActions = useTopologyNavigationActions({
     setExpandAllActive, setRouteState, replayPastWalk, topologyCanvasFocus, topologyPreferences,
@@ -497,7 +513,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, preloadedImageUrlsRef, selectedSlug, topologyGraphProjection });
   const topologyAnalysisReview = useTopologyAnalysisReview({
     router, setExpandAllActive, setRouteState, topologyVaultReadModel, homeWorkbenchController,
-    topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions
+    topologyAuthoring, topologyPreferences, topologyCanvasFocus, topologyNavigationActions,
+    investigationBasis: acpRuntimeController.investigationBasis,
   });
 
   return (
@@ -542,6 +559,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           <>
             <TopologyCommandChrome
               grayAreaAction={grayArea.action}
+              grayAreaContinuation={grayArea.continuationAction}
               routeState={routeState}
               setRouteState={setRouteState}
               setVaultAgentPrefill={setVaultAgentPrefill}

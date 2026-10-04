@@ -63,6 +63,8 @@ frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つ�
 - **MCP**（Model Context Protocol）: エージェントが Atlas の MCP サーバーを起動し、そのサーバーがディスク上のフォルダを直接読み書きします。アプリを閉じていても動きます。[エージェントを接続する](docs/guide/connect-agent.md) · [MCP リファレンス](mcp/README.md)
 - **ACP**（Agent Client Protocol）: Claude Agent と Codex は、アプリ内のチャットでも動かせます。読み取りはそのまま通り、Atlas への書き込みは毎回 1 度許可するまで待機します。[Agents 画面](docs/features/agents.md)
 
+**地図を継続して改善する。** 地図には分析状況が表示されます。macOS アプリで接続したコードフォルダーを調べ、質問を選んで追加分析を押すと、ACP エージェントへ一度だけ送信します。日付付きの結果を再確認し、別の編集可能な改善案も準備できます。地図を開くだけで有料分析は始まりません。回答やエージェントの作業進捗は、意味の承認や完成率ではありません。ローカルモデルによるネイティブのソース構築は未対応です。[継続分析](docs/features/map/README.md#optional-continued-analysis)
+
 ## 構築の測定結果
 
 2026-10-03、未読の MIT Python 設定ライブラリを実際の ACP セッションで構築し、ソースを読めない別セッションとソース監査で評価しました。単一リポジトリの限定的な結果であり、モデル順位や意味品質の認定ではありません。
