@@ -1,7 +1,7 @@
 import { act, fireEvent, render, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 import { EXIT_WINDOW_MS, usePanelPresence, useSurfaceSwap, useSwapHeight } from './use-presence';
 
@@ -99,6 +99,27 @@ describe('useSwapHeight', () => {
 });
 
 describe('usePanelPresence', () => {
+  it('marks the first closed layout commit as exiting and clears it on an immediate reopen', () => {
+    vi.useFakeTimers();
+    const commits: Array<{ open: boolean; mounted: boolean; exiting: boolean }> = [];
+    function Probe({ open }: { open: boolean }) {
+      const { mounted, exiting } = usePanelPresence(open);
+      useLayoutEffect(() => { commits.push({ open, mounted, exiting }); }, [open, mounted, exiting]);
+      return mounted ? <div inert={exiting}>surface</div> : null;
+    }
+    try {
+      const view = render(<Probe open />);
+      view.rerender(<Probe open={false} />);
+      expect(commits.find(commit => !commit.open)).toEqual({ open: false, mounted: true, exiting: true });
+      commits.length = 0;
+      view.rerender(<Probe open />);
+      expect(commits[0]).toEqual({ open: true, mounted: true, exiting: false });
+      act(() => { vi.advanceTimersByTime(EXIT_WINDOW_MS); });
+      expect(view.queryByText('surface')).toBeInTheDocument();
+      view.unmount();
+    } finally { vi.useRealTimers(); }
+  });
+
   /*
    * A surface opened in its first exit window (a locale remount reopening the settings sheet)
    * rendered `inert` on its opening commit, so the focus trap could not focus it.
