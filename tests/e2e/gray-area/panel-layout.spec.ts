@@ -23,6 +23,7 @@ for(const [width,height] of [[600,900],[768,1024],[834,1112],[1024,768],[1440,90
       };
     });
     await page.getByTestId('map-detail-panel-close').click();
+    if(width<768)await page.getByTestId('topology-index-fold').click();
     await page.getByTestId('map-analysis-status-entry').click();
     await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
     const panel=page.getByTestId('gray-area-inspector');
