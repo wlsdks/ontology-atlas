@@ -76,7 +76,7 @@ test('distinct references from one concept control their own candidate details',
   });
   await open(page);await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
   const cards=page.getByTestId('gray-area-missing-link');await expect(cards).toHaveCount(2);
-  const headers=cards.locator('button[aria-controls]');
+  const headers=cards.locator(':scope > button[aria-controls]');
   const ids=await headers.evaluateAll(items=>items.map(e=>e.getAttribute('aria-controls')));
   expect(new Set(ids).size).toBe(2);
   await headers.nth(1).click();

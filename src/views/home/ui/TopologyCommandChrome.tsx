@@ -274,11 +274,6 @@ export function TopologyCommandChrome({
               renderedIndexState === "expanded" ? "recenter-in-remaining-map" : undefined
             }
           >
-          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
-            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
-              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
-            </ChromeChip>
-          </Tooltip> : null}
           <SearchHint
             // No auto margin: from `xl` this lane holds the free map's left edge and the utility
             // lane's `ml-auto` the right, and it stays put while the inspector owns the right
@@ -446,6 +441,11 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
+          {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
+            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
+              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
+            </ChromeChip>
+          </Tooltip> : null}
           {inspectorOwnsRightRail ? null : (
               <div
                 className={`topology-chrome-in pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}

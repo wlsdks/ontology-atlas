@@ -155,7 +155,7 @@ export function TopologyAgentDock({
   });},[draftContextKey,gitVaultPath]);
   const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
   // One subject for header, composer and asks: a picked concept, or the folder.
-  const investigationLabel=investigationBasis?.vaultPath===gitVaultPath?investigationBasis.label:null;
+  const investigationLabel=investigationBasis?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired)?investigationBasis.label:null;
   const composerSubject = investigationLabel??preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
   const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
   const dockSuggestions = useMemo(
@@ -263,7 +263,7 @@ export function TopologyAgentDock({
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
                 conversationLabel={investigationLabel??preparedContext}
-                contextLabel={investigationLabel??edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
+                contextLabel={edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
                 contextKind={edgePanelModel ? null : selectedOntologyNode?.kind ?? null}
                 open={acpDockFrameOpen || meaningWorkbenchOpen}
                 requestNonce={agentOpeningRequest?.nonce}
