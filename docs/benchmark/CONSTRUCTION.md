@@ -209,3 +209,54 @@ compatible discovery/continuation host and native source access are separate
 follow-on work.
 
 The practical procedure is in [body-backed construction](../guide/body-backed-construction.md).
+
+
+## Continued analysis and reuse trial
+
+A fresh MIT TypeScript expression-language library at revision
+`81886f9e55410e3b3f2d9baa95db83110c4892b0` supplied six questions sealed before
+construction. Claude ACP with Sonnet low built a nine-node map with 16 resolved
+relation references. A selected recorded execution-limit gap then used the exact
+current `buildGrayAreaInvestigation` prompt, generated from a root-verified
+headless evidence packet. A source-reviewed MCP body-only update followed;
+there were no new nodes, frontmatter changes or relation changes.
+
+| Measure | Before enrichment | After reviewed test application |
+|---|---:|---:|
+| Sealed questions answered / partial / unknown | 0 / 5 / 1 | 1 / 4 / 1 |
+| Independent vault-only reader wall time | 42.6 s | 51.1 s |
+| Reader-reported cost | $0.259 | $0.214 |
+| Nodes / resolved relation references | 9 / 16 | 9 / 16 |
+
+The initial build took 79.9 s and returned 148,067 MCP text bytes. The additional
+investigation took 22.8 s with an 8,763-byte prompt and one direct source `Read`
+of 6,198 bytes; MCP `read_source` calls were zero. Builder and investigation
+costs were unavailable. The follow-up used a fresh session of the same
+provider/model because the controller had closed its original stdin.
+
+The execution-limit question improved from partial to answered; the other five
+verdicts did not change. Both strict readers used Sonnet low, 14 vault-only MCP
+tools, a redacted source root, and disabled shell/file/web tools. The first Codex
+ACP read-only attempt exposed the source root and is excluded: read-only did
+not enforce source-hidden evaluation. All nine full bodies were read once for
+the six questions and again for a fixed uncertainty question in each valid lane.
+
+A separate source audit matched 21/21 hash-anchored body citations to the clone
+and resolved 5/5 frontmatter paths. These are citation/path checks, not a matched
+before/after atomic-accuracy score. Reader errors included incorrect line
+references, overbroad measurement/currentness statements, and an after-reader
+citation missing invocation lines. Seven builder relation notes asserted
+“You approved …” without a human receipt; they remain unsupported. The domain
+retained its old unread-range note beside the enriched capability. One
+unselected growth-plan row produced the nonexistent `README/package.json`.
+
+Post-write validation and source-path drift checks passed, but competency
+answers remained unfinalized. No human meaning acceptance or project finalizer
+receipt exists. Source tests were inspected rather than run. This single
+unreversed case does not establish general quality, cost savings, native local
+construction or model ranking. Headless packet generation is separate from
+native proof: the isolated review app verified source recovery, explicit ACP
+send, dated result reopening, a separate unsent improvement draft, write
+rejection, one allowed body write, and stale-result gating. Its generic ACP
+conversation archive reopened an empty session during the fresh walkthrough;
+the scoped map inspector did reopen the persisted dated answer.
