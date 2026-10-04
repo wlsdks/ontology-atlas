@@ -63,8 +63,7 @@ export interface UseTopologyLoopArgs {
   /** Edge hover micro-card. Fires only when the identified edge changes; null clears. */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null,
-    position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null,
-  ) => void;
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void;
   onSelect?: (slug: string) => void;
   /**
    * An arrow key found no neighbour in that direction; repeats are debounced
@@ -142,8 +141,7 @@ export interface UseTopologyLoopArgs {
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number; };
-    } | null,
-  ) => void;
+    } | null) => void;
   /**
    * Realm entry — switches the map into this node's own world (`?realm=slug`);
    * null is the whole map. A change starts a subtree relayout plus the
@@ -250,7 +248,6 @@ export interface UseTopologyLoopArgs {
    * anchors, and the inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
-  galaxy?: boolean;
   /** Which 3D structure is drawn — Strata or the coupling (Neural) cloud. */
   mapArrangement?: MapArrangement;
   /**
@@ -280,7 +277,8 @@ export interface UseTopologyLoopArgs {
   impactLens?: boolean;
   onFlatDialChange?: (state: FlatDialState) => void;
   flatRingMemory?: FlatRingMemoryStore | null;
-  loadProgress?: { read: number; total: number } | null;
+  loadProgress?: { read: number; total: number;
+    } | null;
   placingTierRead?: boolean;
 }
 
@@ -316,4 +314,3 @@ function sameSummary(a: DialFrameSummary | null, b: DialFrameSummary | null): bo
   if (a === null || b === null) return a === b;
   return a.concepts === b.concepts && a.domains === b.domains && a.tier === b.tier && a.linksShown === b.linksShown && a.linksTotal === b.linksTotal;
 }
-

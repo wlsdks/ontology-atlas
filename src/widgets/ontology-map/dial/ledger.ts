@@ -20,7 +20,7 @@ export interface LedgerInput {
   moreText(count: number): string;
   tokens: Pick<DialTokens, "ledgerRowPx" | "ledgerGapPx">;
   footprint?: { x: number; y: number; r: number } | null;
-  avoid?: { boxes: readonly Box[]; lines: readonly (readonly Point[])[] } | null;
+  avoid?: { boxes: readonly Box[]; nameBoxes?: readonly Box[]; lines: readonly (readonly Point[])[] } | null;
 }
 
 export interface LedgerTriggerInput {
@@ -168,9 +168,12 @@ export function buildLedger(input: LedgerInput): LedgerPlan | null {
     for (let k = -SHIFT_ROWS; k <= SHIFT_ROWS; k += 1) tries.push({ side: s.side, colX: s.colX, top: clampTop(base + k * rowPx), distance: Math.abs(k) + s.step * 2 });
   }
   tries.sort((a, b) => a.distance - b.distance);
-  let best = tries[0]!;
+  let best: typeof tries[number] | null = null;
   let bestCost = Infinity;
   for (const t of tries) {
+    const minX = t.side === "right" ? t.colX : t.colX - widest;
+    const column = { minX, maxX: minX + widest, minY: t.top, maxY: t.top + slotCount * rowPx };
+    if (avoid.nameBoxes?.some((name) => overlaps(name, column))) continue;
     const cost = slotCost(t.side, t.colX, t.top, slotCount, widest, rowPx, avoid);
     if (cost < bestCost) {
       best = t;
@@ -178,7 +181,7 @@ export function buildLedger(input: LedgerInput): LedgerPlan | null {
       if (cost === 0) break;
     }
   }
-  return layoutLedger(input, shown, widths, moreText, more, best.side, best.colX, best.top);
+  return best ? layoutLedger(input, shown, widths, moreText, more, best.side, best.colX, best.top) : null;
 }
 
 function slotCost(

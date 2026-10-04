@@ -79,33 +79,14 @@ type ConflictReview =
   | { stage: 'needs-review' | 'loading' | 'reload-error' }
   | { stage: 'ready'; latest: SavedConstellation | null; saveAsNew: boolean };
 
-function starColor(kind: ConstellationCandidate['kind']): string {
-  return `var(--map-galaxy-${kind})`;
+function memberColor(kind: ConstellationCandidate['kind']): string {
+  return `var(--map-label-${kind})`;
 }
 
 function previewPoints(members: readonly ConstellationCandidate[], width: number, height: number) {
-  if (members.length === 0) return [];
-  const paddingX = width * 0.11;
-  const paddingY = height * 0.22;
-  const xs = members.map((member) => member.galaxyPoint.x);
-  const ys = members.map((member) => member.galaxyPoint.y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const spanX = maxX - minX;
-  const spanY = maxY - minY;
-  const scale = Math.min(
-    (width - paddingX * 2) / Math.max(1, spanX),
-    (height - paddingY * 2) / Math.max(1, spanY),
-  );
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  return members.map((member) => ({
-    member,
-    x: width / 2 + (member.galaxyPoint.x - centerX) * scale,
-    y: height / 2 + (member.galaxyPoint.y - centerY) * scale,
-  }));
+  const columns = Math.max(1, Math.ceil(Math.sqrt(members.length * width / height)));
+  const rows = Math.max(1, Math.ceil(members.length / columns));
+  return members.map((member, i) => ({ member, x: (i % columns + 0.5) * width / columns, y: (Math.floor(i / columns) + 0.5) * height / rows }));
 }
 
 function ConstellationPreview({
@@ -146,9 +127,9 @@ function ConstellationPreview({
       <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full">
         {points.map(({ member, x, y }) => (
           <g key={member.uid} data-member-uid={member.uid}>
-            <circle cx={x} cy={y} r={compact ? 7 : 9} fill={starColor(member.kind)} opacity="0.09" />
-            <circle cx={x} cy={y} r={compact ? 3.2 : 4.2} fill={starColor(member.kind)} opacity="0.32" />
-            <circle cx={x} cy={y} r={compact ? 1.35 : 1.8} fill={starColor(member.kind)} />
+            <circle cx={x} cy={y} r={compact ? 7 : 9} fill={memberColor(member.kind)} opacity="0.09" />
+            <circle cx={x} cy={y} r={compact ? 3.2 : 4.2} fill={memberColor(member.kind)} opacity="0.32" />
+            <circle cx={x} cy={y} r={compact ? 1.35 : 1.8} fill={memberColor(member.kind)} />
             <circle cx={x} cy={y} r={compact ? 0.55 : 0.75} fill="white" opacity="0.9" />
           </g>
         ))}

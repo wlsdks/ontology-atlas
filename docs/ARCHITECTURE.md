@@ -129,8 +129,8 @@ The public entrypoints remain stable while internal modules own narrower work:
 |---|---|
 | `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
 | `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering; the light stage (`light/`) prepares before the presentation stage and renders after it on its own WebGL2 canvas, which draws light only, in Flat, for an event. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
-| `src/widgets/ontology-map/dial/` | The Flat dial paints the Flat overview: the dial model and its `domain_matrix`-equal counts, rings by dependents, order and spatial memory, layout, links and stubs, labels, ledger, placement, fit, picking and the light source; `frame/` turns the world-space scene into pooled marks per frame and paints them. It owns Flat's paint only with no realm, lens, edge or Galaxy (`frame/frame.ts`); otherwise the Flat pass draws on the dial's positions. |
-| `src/widgets/ontology-map/galaxy/` | Galaxy's own surface: deterministic cosmos layout (`layout/`), bitmap-cached canvas-2D drawing (`draw/`), engine, camera, arrival, haze, keyboard walk and DOM mirror; mounted by `TopologyMapRenderer` when the view is Galaxy, as the Hex board is. |
+| `src/widgets/ontology-map/dial/` | The Flat dial paints the Flat overview: the dial model and its `domain_matrix`-equal counts, rings by dependents, order and spatial memory, layout, links and stubs, labels, ledger, placement, fit, picking and the light source; `frame/` turns the world-space scene into pooled marks per frame and paints them. It owns Flat's paint only with no realm, lens, edge (`frame/frame.ts`); otherwise the Flat pass draws on the dial's positions. |
+| `src/widgets/ontology-map/structure/` | A DOM browser over recorded direct containment: deterministic DAG-aware membership projection, bounded named child lists, breadcrumbs, and existing concept inspection. Galaxy rendering and placement are retired. |
 | `mcp/src/rust-feature-evidence.mjs` | Keeps the evidence entrypoint stable. `rust-feature-evidence/collect.mjs` owns bounded Cargo/workspace reads, source inventory and evidence receipts; `attributes.mjs` interprets literal Rust `cfg` and `cfg_attr` attributes without filesystem access. |
 | `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
 | `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
@@ -497,7 +497,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   web build lacks a native folder root.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by
-  Galaxy and Library; MCP and CLI mirror it for read-only recovery. The Galaxy
+  Map and Library; MCP and CLI mirror it for read-only recovery. The Map
   candidate carries a separate `mapId` for map focus, while persisted
   `lastKnownPath` keeps the manifest's exact `document.path`
   (for example `capabilities/x.md`) for display only. A saved membership is neither
@@ -770,7 +770,7 @@ until a local manifest, or the first part of one, exists.
                            Bookmarks. The first two use the two-pane document
                            flow, whose right pane shows the selected Wiki page or the
                            bounded facts known about a raw source. Bookmarks resolves
-                           real ontology members by UID and returns the whole set to Galaxy
+                           real ontology members by UID and returns the whole set to Map
                            with `?constellation=<folder UUID>`. Split out of /docs 2026-09-06:
                            gathering documents of any format and reading the ontology's
                            Markdown are different jobs, and five capped lists were
@@ -858,7 +858,7 @@ to an agent.
 | `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/url-state.ts` |
 | `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
 | `review` | `/`, `/topology`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
-| `constellation` | `/topology` | saved Galaxy task scope or creation intent | stable folder UUID \| `new` |
+| `constellation` | `/topology` | saved Map task scope or creation intent | stable folder UUID \| `new` |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |

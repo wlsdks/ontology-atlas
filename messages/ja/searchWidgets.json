@@ -223,17 +223,17 @@
       "flat": "フラット",
       "territories": "領域",
       "hex": "ヘックスボード",
-      "galaxy": "銀河",
       "strata": "地層",
-      "coupling": "神経網"
+      "coupling": "神経網",
+      "structure": "ドメイン構造"
     },
     "view3dChoiceHint": {
       "flat": "ふつうの2Dマップ",
       "territories": "すべてのケイパビリティに名前が付き、ドメインの周りに集まる",
       "hex": "ケイパビリティ1つにつきタイル1枚、ドメイン1つにつきリージョン1つ",
-      "galaxy": "マップ全体を星空として描く",
       "strata": "包含つながりを、明るい層ごとに読む",
-      "coupling": "何が何とつながりするかでまとめる"
+      "coupling": "何が何とつながりするかでまとめる",
+      "structure": "ドメイン構造"
     },
     "mapViewAriaLabel": "マップの表示",
     "view3dPickerHelp": "マップの表示を選びます。現在：{view}。",

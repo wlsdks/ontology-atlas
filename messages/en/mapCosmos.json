@@ -1,7 +1,0 @@
-{
-  "list": "Domains on the map, each with its capabilities",
-  "galaxyRow": "{name}, {count, plural, one {# concept} other {# concepts}}",
-  "strandList": "How domains depend on each other",
-  "strandRow": "{from} depends on {to}: {count, plural, one {# dependency} other {# dependencies}}",
-  "strandRowBoth": "{from} and {to} depend on each other: {count, plural, one {# dependency} other {# dependencies}}"
-}

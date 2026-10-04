@@ -4,9 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOME_QUERY_KEYS,
-  VAULT_SCOPED_HOME_QUERY_KEYS,
-} from "@/views/home/model/url-state";
-
+  VAULT_SCOPED_HOME_QUERY_KEYS } from "@/views/home/model/url-state";
 /**
  * # Declared scope registry — the gate for state that outlived its scope
  *
@@ -41,22 +39,19 @@ import {
  * Precedents: `tests/contract/rules-path-scope.contract.test.ts` (registry as gate)
  * and `src/entities/docs-vault/lib/vault-scope-key.ts` (scoped keys).
  */
-
 // ────────────────────────────────────────────────────────────────────────────
 // Scope providers — **which functions count as an exact scope**
 // ────────────────────────────────────────────────────────────────────────────
-
 /**
  * Scope providers that separate vaults **exactly**. They distinguish both
  * `local:<folder>` and `sample:<sample>`.
  */
 const EXACT_SCOPE_PROVIDERS = [
-  "vaultIdentityScope",
-  "useVaultIdentityScope",
-  "setChangeBaselineScope",
-  "growthProjectKey", // Optional game: one unique project UID, including renamed folder copies.
+    "vaultIdentityScope",
+    "useVaultIdentityScope",
+    "setChangeBaselineScope",
+    "growthProjectKey"
 ] as const;
-
 /**
  * ⚠️ **`vaultScopeKey()` alone is not a scope.**
  *
@@ -72,10 +67,10 @@ const EXACT_SCOPE_PROVIDERS = [
  * paragraph.
  */
 const FROZEN_COARSE_SCOPE_KEYS = new Set([
-  "demo:docs-vault:pinned:v1:",
-  "demo:docs-vault:recent:v2:",
-  "docsVault:openTabs:",
-  "docsVault:activeTab:",
+    "demo:docs-vault:pinned:v1:",
+    "demo:docs-vault:recent:v2:",
+    "docsVault:openTabs:",
+    "docsVault:activeTab:"
 ]);
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -89,7 +84,8 @@ type Scope = "global" | "vault-scoped";
  * `vault-scoped` = the value is **a name from this vault**, so after a vault change it
  * points at nothing.
  */
-const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
+const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
+}> = {
   p: { scope: "vault-scoped", note: "선택 노드/프로젝트 슬러그" },
   c: { scope: "vault-scoped", note: "프로젝트 카테고리 값" },
   hub: { scope: "vault-scoped", note: "허브 노드 슬러그 (오늘 소비처 0 — 잠복)" },
@@ -154,7 +150,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "프레임 미터 표시 선호" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D 보기(지도 돔 뷰) 선호 — 기본 꺼짐(2D)" },
-  { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "갤럭시 보기(평면 지도를 별하늘로) 선호 — 기본 꺼짐" },
+  { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
+    { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, read only for migration" },
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "영역 보기(모든 역량을 도메인별로 펼친 평면 지도) 선호 — 기본 꺼짐" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },
@@ -315,15 +312,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "Flat dial memory per folder: ring radii, domain angles and order, capability order — view state, never meaning",
   },
   {
-    key: "atlas.map.cosmos.v1:",
-    kind: "storage",
-    scope: "vault-scoped",
-    scopedBy: "useVaultIdentityScope",
-    file: "src/views/home/model/cosmos-placement-store.ts",
-    provenBy: "src/views/home/model/cosmos-placement-store.test.ts",
-    note: "Galaxy placement: settled galaxy centres per folder, kept for absent domains, so placed galaxies never move — view state, never meaning",
-  },
-  {
     key: "atlas.agentActivity.readAt:",
     kind: "storage",
     scope: "vault-scoped",
@@ -433,7 +421,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   },
   { key: "ontology-atlas:agent-chat-intent", kind: "event", scope: "global", note: "에이전트 → 대화 열기 요청" },
   { key: "ontology-atlas:verify-edge-selected", kind: "event", scope: "global", note: "e2e 검증 훅" },
-  { key: "ontology-atlas:verify-select-edge", kind: "event", scope: "global", note: "e2e 검증 훅" },
+  { key: "ontology-atlas:verify-select-edge", kind: "event", scope: "global", note: "e2e 검증 훅" }
 ];
 
 /**
@@ -492,8 +480,7 @@ function stripComments(text: string): string {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
     .replace(/(^|[^:])\/\/[^\n]*/g, (m, lead: string) =>
-      lead + " ".repeat(m.length - lead.length),
-    );
+      lead + " ".repeat(m.length - lead.length));
 }
 
 function scanKeyLiterals(): Map<string, string[]> {
@@ -531,8 +518,7 @@ describe("범위 등록부 — URL 쿼리 키", () => {
     const unregistered = [...declared].filter((key) => !registered.has(key));
     expect(
       unregistered,
-      "새 쿼리 키를 만들었으면 URL_KEY_REGISTRY 에 global/vault-scoped 를 적어라",
-    ).toEqual([]);
+      "새 쿼리 키를 만들었으면 URL_KEY_REGISTRY 에 global/vault-scoped 를 적어라").toEqual([]);
   });
 
   it("등록부에 죽은 줄이 없다", () => {
@@ -562,162 +548,140 @@ describe("범위 등록부 — URL 쿼리 키", () => {
   it("판정 함수들이 지도에 실제로 배선돼 있다", () => {
     const homePage = readFileSync(
       join(REPO_ROOT, "src/views/home/ui/HomePage.tsx"),
-      "utf8",
-    );
+      "utf8");
     const owners = [
       ['src/views/home/model/use-topology-vault-read-model.tsx', 'useTopologyVaultReadModel', ['clearVaultScopedRouteState', 'useVaultSessionIdentityScope']],
       ['src/views/home/model/use-topology-graph-projection.ts', 'useTopologyGraphProjection', ['resolveCanvasSelectedSlug']],
       ['src/views/home/model/use-topology-scene-controls.tsx', 'useTopologySceneControls', ['useTopologyPathLens']],
-      ['src/views/home/ui/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']],
-    ] as const;
+      ['src/views/home/ui/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']]
+        ] as const;
     for (const [file, owner, witnesses] of owners) {
       const source = readFileSync(join(REPO_ROOT, file), "utf8");
       expect(homePage).toContain(owner.startsWith('use') ? `${owner}({` : `<${owner}`);
-      for (const witness of witnesses) {
-        const usage = witness === 'clearVaultScopedRouteState'
-          ? /setRouteState\(clearVaultScopedRouteState,\s*\{ replace: true \}\)/
-          : new RegExp(`\\b${witness}\\s*\\(`);
-        expect(source, `${witness} missing in ${file}`).toMatch(usage);
-      }
-    }
-    const scene = readFileSync(join(REPO_ROOT, 'src/views/home/model/use-topology-scene-controls.tsx'), 'utf8');
-    expect(scene).toMatch(/\buseTopologyPathLens\(\{/);
-    const pathLens = readFileSync(
-      join(REPO_ROOT, "src/views/home/model/use-topology-path-lens.ts"),
-      "utf8",
-    );
-    expect(pathLens).toMatch(/\bresolveTopologyPathChipState\(\{/);
-    expect(pathLens).toMatch(/\bcanCopyTopologyPathPacket\(chipState\)/);
-  });
+            for (const witness of witnesses) {
+                const usage = witness === 'clearVaultScopedRouteState'
+                    ? /setRouteState\(clearVaultScopedRouteState,\s*\{ replace: true \}\)/
+                    : new RegExp(`\\b${witness}\\s*\\(`);
+                expect(source, `${witness} missing in ${file}`).toMatch(usage);
+            }
+        }
+        const scene = readFileSync(join(REPO_ROOT, 'src/views/home/model/use-topology-scene-controls.tsx'), 'utf8');
+        expect(scene).toMatch(/\buseTopologyPathLens\(\{/);
+        const pathLens = readFileSync(join(REPO_ROOT, "src/views/home/model/use-topology-path-lens.ts"), "utf8");
+        expect(pathLens).toMatch(/\bresolveTopologyPathChipState\(\{/);
+        expect(pathLens).toMatch(/\bcanCopyTopologyPathPacket\(chipState\)/);
+    });
 });
-
 describe("범위 등록부 — 영속 저장 키", () => {
-  it("등록부에 없는 키 리터럴이 코드에 없다", () => {
-    const unregistered = [...SCANNED.entries()]
-      .filter(([key]) => !REGISTERED.has(key))
-      .map(([key, paths]) => `${key}  (${paths.join(", ")})`);
-    expect(
-      unregistered,
-      "새 저장 키/이벤트를 만들었으면 STORAGE_KEY_REGISTRY 에 한 줄 적어라",
-    ).toEqual([]);
-  });
-
-  it("등록부에 죽은 줄이 없다", () => {
-    const dead = STORAGE_KEY_REGISTRY.filter((entry) => !SCANNED.has(entry.key)).map(
-      (entry) => entry.key,
-    );
-    expect(dead, "코드에서 사라진 키는 등록부에서도 지운다").toEqual([]);
-  });
-
-  it("등록부가 선언한 파일에 그 키가 실제로 있다", () => {
-    const misplaced: string[] = [];
-    for (const entry of STORAGE_KEY_REGISTRY) {
-      if (!entry.file) continue;
-      const paths = SCANNED.get(entry.key) ?? [];
-      if (!paths.includes(entry.file)) {
-        misplaced.push(`${entry.key} → ${entry.file} (실제: ${paths.join(", ")})`);
-      }
-    }
-    expect(misplaced).toEqual([]);
-  });
-
-  /**
-   * **`vaultScopeKey` is not an exact scope.** Without this test the registry certifies
-   * a key that collapses the two samples as "protected" — the gate approving the defect
-   * it exists to block.
-   */
-  it("거친 범위(vaultScopeKey)는 얼어 있는 네 자리에서만 허용된다", () => {
-    const offenders = STORAGE_KEY_REGISTRY.filter(
-      (entry) =>
-        entry.scopedBy === "vaultScopeKey" && !FROZEN_COARSE_SCOPE_KEYS.has(entry.key),
-    ).map((entry) => entry.key);
-    expect(
-      offenders,
-      "vaultScopeKey 는 샘플 둘을 'server' 로 뭉뚱그린다 — 새 키는 vaultIdentityScope 를 써라",
-    ).toEqual([]);
-  });
-
-  it("얼어 있는 네 자리 목록이 늘지 않았다", () => {
-    expect([...FROZEN_COARSE_SCOPE_KEYS].sort()).toEqual([
-      "demo:docs-vault:pinned:v1:",
-      "demo:docs-vault:recent:v2:",
-      "docsVault:activeTab:",
-      "docsVault:openTabs:",
-    ]);
-  });
-
-  /**
-   * **The evidence of protection is a test.** Checking whether the scope function's
-   * name appears in the source passed in a real measurement (see the
-   * `StorageEntry.provenBy` comment). So each key names a test file asserting "a value
-   * written in vault A is not visible in vault B", and this check only verifies that
-   * file exists and really handles that key — what turns red on a revert is **that
-   * test**, not this one.
-   */
-  it("vault-scoped 저장 키는 행동으로 잠긴 시험을 지목한다", () => {
-    const unprotected: string[] = [];
-    for (const entry of STORAGE_KEY_REGISTRY) {
-      if (entry.kind !== "storage" || entry.scope !== "vault-scoped") continue;
-      if (entry.key in KNOWN_UNPROTECTED) continue;
-
-      if (!entry.scopedBy || !entry.provenBy) {
-        unprotected.push(`${entry.key} — scopedBy/provenBy 미선언`);
-        continue;
-      }
-      // It must be a prefix — with no room for a scope suffix it cannot receive one.
-      if (!entry.key.endsWith(":")) {
-        unprotected.push(`${entry.key} — 접두사가 아니라 붙일 자리가 없다`);
-        continue;
-      }
-      let proof: string;
-      try {
-        proof = readFileSync(join(REPO_ROOT, entry.provenBy), "utf8");
-      } catch {
-        unprotected.push(`${entry.key} — 시험 파일 ${entry.provenBy} 가 없다`);
-        continue;
-      }
-      if (!proof.includes(entry.key)) {
-        unprotected.push(`${entry.key} — ${entry.provenBy} 이 이 키를 다루지 않는다`);
-      }
-    }
-    expect(unprotected).toEqual([]);
-  });
-
-  it("보호되는 vault-scoped 키는 정확한 범위 제공자를 쓴다 (거친 네 자리 제외)", () => {
-    const wrong = STORAGE_KEY_REGISTRY.filter((entry) => {
-      if (entry.kind !== "storage" || entry.scope !== "vault-scoped") return false;
-      if (entry.key in KNOWN_UNPROTECTED) return false;
-      if (FROZEN_COARSE_SCOPE_KEYS.has(entry.key)) return false;
-      return !EXACT_SCOPE_PROVIDERS.includes(
-        entry.scopedBy as (typeof EXACT_SCOPE_PROVIDERS)[number],
-      );
-    }).map((entry) => `${entry.key} (scopedBy=${entry.scopedBy})`);
-    expect(wrong).toEqual([]);
-  });
-
-  it("알면서 안 고친 목록은 늘지 않는다 (래칫)", () => {
-    const listed = Object.keys(KNOWN_UNPROTECTED);
-    expect(listed.length).toBeLessThanOrEqual(MAX_KNOWN_UNPROTECTED);
-    for (const key of listed) {
-      expect(REGISTERED.get(key)?.scope, `${key} 는 등록부에 vault-scoped 로 있어야 한다`).toBe(
-        "vault-scoped",
-      );
-      expect(KNOWN_UNPROTECTED[key].length, `${key} 에 이유가 없다`).toBeGreaterThan(10);
-    }
-  });
-
-  it("옛 키는 되읽히지 않는다 — 제거만 한다", () => {
-    for (const entry of STORAGE_KEY_REGISTRY) {
-      if (entry.kind !== "legacy") continue;
-      for (const file of SCANNED.get(entry.key) ?? []) {
-        const source = stripComments(readFileSync(join(REPO_ROOT, file), "utf8"));
-        // Reading `demo:docs-vault:recent:v1` is legitimate because it is a migration.
-        if (entry.key === "demo:docs-vault:recent:v1") continue;
-        const readsIt = new RegExp(
-          `getItem\\(\\s*["'\`]${entry.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
-        ).test(source);
-        expect(readsIt, `${entry.key} 를 ${file} 이 되읽는다`).toBe(false);
-      }
-    }
-  });
+    it("등록부에 없는 키 리터럴이 코드에 없다", () => {
+        const unregistered = [...SCANNED.entries()]
+            .filter(([key]) => !REGISTERED.has(key))
+            .map(([key, paths]) => `${key}  (${paths.join(", ")})`);
+        expect(unregistered, "새 저장 키/이벤트를 만들었으면 STORAGE_KEY_REGISTRY 에 한 줄 적어라").toEqual([]);
+    });
+    it("등록부에 죽은 줄이 없다", () => {
+        const dead = STORAGE_KEY_REGISTRY.filter((entry) => !SCANNED.has(entry.key)).map((entry) => entry.key);
+        expect(dead, "코드에서 사라진 키는 등록부에서도 지운다").toEqual([]);
+    });
+    it("등록부가 선언한 파일에 그 키가 실제로 있다", () => {
+        const misplaced: string[] = [];
+        for (const entry of STORAGE_KEY_REGISTRY) {
+            if (!entry.file)
+                continue;
+            const paths = SCANNED.get(entry.key) ?? [];
+            if (!paths.includes(entry.file)) {
+                misplaced.push(`${entry.key} → ${entry.file} (실제: ${paths.join(", ")})`);
+            }
+        }
+        expect(misplaced).toEqual([]);
+    });
+    /**
+     * **`vaultScopeKey` is not an exact scope.** Without this test the registry certifies
+     * a key that collapses the two samples as "protected" — the gate approving the defect
+     * it exists to block.
+     */
+    it("거친 범위(vaultScopeKey)는 얼어 있는 네 자리에서만 허용된다", () => {
+        const offenders = STORAGE_KEY_REGISTRY.filter((entry) => entry.scopedBy === "vaultScopeKey" && !FROZEN_COARSE_SCOPE_KEYS.has(entry.key)).map((entry) => entry.key);
+        expect(offenders, "vaultScopeKey 는 샘플 둘을 'server' 로 뭉뚱그린다 — 새 키는 vaultIdentityScope 를 써라").toEqual([]);
+    });
+    it("얼어 있는 네 자리 목록이 늘지 않았다", () => {
+        expect([...FROZEN_COARSE_SCOPE_KEYS].sort()).toEqual([
+            "demo:docs-vault:pinned:v1:",
+            "demo:docs-vault:recent:v2:",
+            "docsVault:activeTab:",
+            "docsVault:openTabs:"
+        ]);
+    });
+    /**
+     * **The evidence of protection is a test.** Checking whether the scope function's
+     * name appears in the source passed in a real measurement (see the
+     * `StorageEntry.provenBy` comment). So each key names a test file asserting "a value
+     * written in vault A is not visible in vault B", and this check only verifies that
+     * file exists and really handles that key — what turns red on a revert is **that
+     * test**, not this one.
+     */
+    it("vault-scoped 저장 키는 행동으로 잠긴 시험을 지목한다", () => {
+        const unprotected: string[] = [];
+        for (const entry of STORAGE_KEY_REGISTRY) {
+            if (entry.kind !== "storage" || entry.scope !== "vault-scoped")
+                continue;
+            if (entry.key in KNOWN_UNPROTECTED)
+                continue;
+            if (!entry.scopedBy || !entry.provenBy) {
+                unprotected.push(`${entry.key} — scopedBy/provenBy 미선언`);
+                continue;
+            }
+            // It must be a prefix — with no room for a scope suffix it cannot receive one.
+            if (!entry.key.endsWith(":")) {
+                unprotected.push(`${entry.key} — 접두사가 아니라 붙일 자리가 없다`);
+                continue;
+            }
+            let proof: string;
+            try {
+                proof = readFileSync(join(REPO_ROOT, entry.provenBy), "utf8");
+            }
+            catch {
+                unprotected.push(`${entry.key} — 시험 파일 ${entry.provenBy} 가 없다`);
+                continue;
+            }
+            if (!proof.includes(entry.key)) {
+                unprotected.push(`${entry.key} — ${entry.provenBy} 이 이 키를 다루지 않는다`);
+            }
+        }
+        expect(unprotected).toEqual([]);
+    });
+    it("보호되는 vault-scoped 키는 정확한 범위 제공자를 쓴다 (거친 네 자리 제외)", () => {
+        const wrong = STORAGE_KEY_REGISTRY.filter((entry) => {
+            if (entry.kind !== "storage" || entry.scope !== "vault-scoped")
+                return false;
+            if (entry.key in KNOWN_UNPROTECTED)
+                return false;
+            if (FROZEN_COARSE_SCOPE_KEYS.has(entry.key))
+                return false;
+            return !EXACT_SCOPE_PROVIDERS.includes(entry.scopedBy as (typeof EXACT_SCOPE_PROVIDERS)[number]);
+        }).map((entry) => `${entry.key} (scopedBy=${entry.scopedBy})`);
+        expect(wrong).toEqual([]);
+    });
+    it("알면서 안 고친 목록은 늘지 않는다 (래칫)", () => {
+        const listed = Object.keys(KNOWN_UNPROTECTED);
+        expect(listed.length).toBeLessThanOrEqual(MAX_KNOWN_UNPROTECTED);
+        for (const key of listed) {
+            expect(REGISTERED.get(key)?.scope, `${key} 는 등록부에 vault-scoped 로 있어야 한다`).toBe("vault-scoped");
+            expect(KNOWN_UNPROTECTED[key].length, `${key} 에 이유가 없다`).toBeGreaterThan(10);
+        }
+    });
+    it("옛 키는 되읽히지 않는다 — 제거만 한다", () => {
+        for (const entry of STORAGE_KEY_REGISTRY) {
+            if (entry.kind !== "legacy")
+                continue;
+            for (const file of SCANNED.get(entry.key) ?? []) {
+                const source = stripComments(readFileSync(join(REPO_ROOT, file), "utf8"));
+                // Reading `demo:docs-vault:recent:v1` is legitimate because it is a migration.
+                if (entry.key === "demo:docs-vault:recent:v1")
+                    continue;
+                const readsIt = new RegExp(`getItem\\(\\s*["'\`]${entry.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(source);
+                expect(readsIt, `${entry.key} 를 ${file} 이 되읽는다`).toBe(false);
+            }
+        }
+    });
 });

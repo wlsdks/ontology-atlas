@@ -18,12 +18,10 @@
  * meaningfully assertable without a heavy mock; P5's screenshot gate is the
  * real verification for paint correctness, per design doc §4 P3 gate).
  */
-
 import { smoothstep } from "../model/altitude";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { computeHoverShimmer } from "../model/hover-shimmer";
 import { drawStarEmission } from "@/shared/lib/star-emission";
-import { drawDiffractionSpike } from "@/shared/lib/diffraction-spike";
 
 /**
  * How far outside the disc the recent-changes ring is drawn. The label placer
@@ -70,33 +68,29 @@ function buildDepthShade(ctx: CanvasRenderingContext2D, r: number, strength: num
     r * 0.05,
     0,
     0,
-    r * 1.25,
-  );
+    r * 1.25);
   shade.addColorStop(0, "rgba(0, 0, 0, 0)");
   shade.addColorStop(0.55, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength * 0.35).toFixed(3)})`);
-  shade.addColorStop(1, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength).toFixed(3)})`);
-  return shade;
+    shade.addColorStop(1, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength).toFixed(3)})`);
+    return shade;
 }
-
 export function hexPoints(cx: number, cy: number, r: number): Point[] {
-  const points: Point[] = [];
-  for (let i = 0; i < 6; i += 1) {
-    const a = ((i * 60 - 90) * Math.PI) / 180;
-    points.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-  }
-  return points;
+    const points: Point[] = [];
+    for (let i = 0; i < 6; i += 1) {
+        const a = ((i * 60 - 90) * Math.PI) / 180;
+        points.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+    return points;
 }
-
 /** Four corners of an axis-aligned square, half-extent `s`. */
 export function squarePoints(cx: number, cy: number, s: number): Point[] {
-  return [
-    { x: cx - s, y: cy - s },
-    { x: cx + s, y: cy - s },
-    { x: cx + s, y: cy + s },
-    { x: cx - s, y: cy + s },
-  ];
+    return [
+        { x: cx - s, y: cy - s },
+        { x: cx + s, y: cy - s },
+        { x: cx + s, y: cy + s },
+        { x: cx - s, y: cy + s }
+    ];
 }
-
 /**
  * Corner radius at a given altitude — `lerp(minRadius, fullRadius, farT)`.
  * `minRadius` is a small constant per kind in the prototype (e.g.
@@ -106,208 +100,206 @@ export function squarePoints(cx: number, cy: number, s: number): Point[] {
  * prototype, to avoid float-precision polygon/circle seams).
  */
 export function interpolateCornerRadius(minRadius: number, fullRadius: number, farT: number): number {
-  return minRadius + (fullRadius - minRadius) * farT;
+    return minRadius + (fullRadius - minRadius) * farT;
 }
-
 export interface NodeShapeDrawState {
-  kind: "project" | "domain" | "capability" | "element";
-  screenX: number;
-  screenY: number;
-  /** Screen-space draw radius (world radius × camera.scale × breathe). */
-  screenRadius: number;
-  farT: number;
-  egoState: "center" | "neighbor" | "dim" | "normal";
-  fill: string;
-  stroke: string;
-  lineWidth: number;
-  dash: readonly number[];
-  hub: boolean;
-  /**
-   * Top stop of the vertical metallic-sheen gradient (prototype `drawNode`:
-   * `lerpColor(fill, "#232329", 0.6)`). Resolved by the caller from the
-   * `--map-node-sheen-*` tokens so this pure module stays token-free;
-   * the bottom stop is always `fill`.
-   */
-  sheenTop: string;
-  /** Engraved node-count numeral, or null to skip (project/domain only, per prototype). */
-  countLabel: string | null;
-  /**
-   * The currently-hovered node (no focus active — hover is suppressed under
-     * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
-     * static 1px indigo hairline preview ring — the "Can grab this"
-     * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
-     * has its own stronger selection ring below.
+    kind: "project" | "domain" | "capability" | "element";
+    screenX: number;
+    screenY: number;
+    /** Screen-space draw radius (world radius × camera.scale × breathe). */
+    screenRadius: number;
+    farT: number;
+    egoState: "center" | "neighbor" | "dim" | "normal";
+    fill: string;
+    stroke: string;
+    lineWidth: number;
+    dash: readonly number[];
+    hub: boolean;
+    /**
+     * Top stop of the vertical metallic-sheen gradient (prototype `drawNode`:
+     * `lerpColor(fill, "#232329", 0.6)`). Resolved by the caller from the
+     * `--map-node-sheen-*` tokens so this pure module stays token-free;
+     * the bottom stop is always `fill`.
      */
-  isHovered: boolean;
-  /**
-   * rank5 — the hovered node's own hover-ripple emphasis (0..1, the SAME
-   * `emphasisById` scalar the body wake rides, rise τ 0.09). The static hover
-   * preview ring's alpha is multiplied by it so the ring rises ON the body's
-   * wake curve instead of hard-popping to full opacity on the first hover frame.
-   * Only read while `isHovered`; defaults to 1 when omitted (callers that don't
-   * thread emphasis keep the pre-rank5 always-solid ring). reduced-motion snaps
-   * emphasis to 1, so the ring is instantly solid there.
-   */
-  hoverEmphasis?: number;
-  /**
-   * One-shot commit-pulse visual for the just-selected (`egoState ===
-   * "center"`) node, or `null` outside its brief window (already played out,
-   * `prefers-reduced-motion`, or this isn't the node that was just clicked).
-   * `model/selection-pulse.ts#computeSelectionPulse` is the pure source;
-   * never loops — once elapsed exceeds the duration it's permanently null
-   * until the NEXT click resets the timestamp.
-   */
-  selectionPulse: { scaleFactor: number; alpha: number } | null;
-  /**
-   * W6 agent visibility — true for the single node matching the current
-     * agent heartbeat's `focus.ontologySlug` (resolved upstream by
-     * `views/home/lib/resolve-agent-focus-node.ts`), only while that
-     * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
-     * caller nulls the id otherwise). Draws a static amber hairline ring — the
-     * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
-     * glow (design.md "Material instead of emission" — material, not emission). Real heartbeat
-     * data only; `false`
-     * whenever there's no fresh focus (fabrication 0).
+    sheenTop: string;
+    /** Engraved node-count numeral, or null to skip (project/domain only, per prototype). */
+    countLabel: string | null;
+    /**
+     * The currently-hovered node (no focus active — hover is suppressed under
+       * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
+       * static 1px indigo hairline preview ring — the "Can grab this"
+       * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
+       * has its own stronger selection ring below.
+       */
+    isHovered: boolean;
+    /**
+     * rank5 — the hovered node's own hover-ripple emphasis (0..1, the SAME
+     * `emphasisById` scalar the body wake rides, rise τ 0.09). The static hover
+     * preview ring's alpha is multiplied by it so the ring rises ON the body's
+     * wake curve instead of hard-popping to full opacity on the first hover frame.
+     * Only read while `isHovered`; defaults to 1 when omitted (callers that don't
+     * thread emphasis keep the pre-rank5 always-solid ring). reduced-motion snaps
+     * emphasis to 1, so the ring is instantly solid there.
      */
-  agentFocus: boolean;
-  /**
-   * Spotlight ring for changed nodes. Owner, 2026-07-23: "Only the changed ones should have a rotating border." While the
-     * lens is on, nodes inside the mtime window get an amberHub **rotating dashed**
-     * kind-outline — the fix for a report that changed nodes were unreadable in
-     * the element view when settling contrast was the only cue. Zero glow/blur
-     * (material, not emission); amberHub follows the agent-focus ring's precedent
-     * as a signal tone. `alpha` is the lens fade in/out, `dashOffset` the rotation
-     * phase in px (the caller pins it to 0 under reduced-motion, giving a static
-     * dash). null hides it.
+    hoverEmphasis?: number;
+    /**
+     * One-shot commit-pulse visual for the just-selected (`egoState ===
+     * "center"`) node, or `null` outside its brief window (already played out,
+     * `prefers-reduced-motion`, or this isn't the node that was just clicked).
+     * `model/selection-pulse.ts#computeSelectionPulse` is the pure source;
+     * never loops — once elapsed exceeds the duration it's permanently null
+     * until the NEXT click resets the timestamp.
      */
-  spotlightRing: { alpha: number; dashOffset: number } | null;
-  /**
-   * Time source for the hover circuit-trace shimmer: the frame's
-   * `performance.now()`-compatible timestamp, taken here only because the pixel
-   * drawing itself is a pure layer that knows nothing of time. The static hover
-   * ring (the `isHovered` block) is drawn regardless of this value; only the
-   * shimmer arc is layered on top, and only when `!reducedMotion`.
-   */
-  now: number;
-  reducedMotion: boolean;
-  /**
-   * Icon set. The kind→silhouette mapping is identical regardless of this value
-   * (`bodyPoints` unchanged); it switches **render style only**: `"fill"` (the
-   * current default) is the kind fill plus the metallic sheen gradient, `"line"`
-   * is an unfilled flat dark body (hole-fill) with a slightly thinner outline.
-   * It reads the same store (`appearance-preferences`) as the DOM
-   * `OntologyMapKindGlyph` line set, so both surfaces swap together. Defaults to
-   * `"fill"`.
-   */
-  glyphStyle?: "fill" | "line";
-  /**
-   * 3D view — **depth shading** strength, 0..1. At 0 (the default) not a single
-   * extra stroke is issued.
-   *
-   * The human visual system resolves shading ambiguity by assuming light comes
-   * from above and slightly to the left (Sun & Perona, *Nature Neuroscience*
-   * 1(3), 1998). So laying a single luminance gradient in that direction over a
-   * disc makes it read as a **sphere** — the cheapest way to stop the dots from
-   * looking like stickers in 3D.
-   *
-   * **The dark side is darkened; the lit side is never brightened.** A highlight
-   * or rim light on the opposite side would be exactly the glow the charter
-   * bans. All this uses is one black alpha: zero new hues, no bleed, no motion.
-   */
-  depthShade?: number;
-  /**
-   * 3D view — **far-side detail factor**, 0..1
-   * (`model/dome-view.ts#domeDetailFactor`). At 1 (the default) the result is
-   * pixel-identical to before. It folds to 0 on the rear hemisphere, and only
-   * **supplementary strokes** recede: the outline stroke (fill set only — in the
-   * line set the outline *is* the mark, so it never folds) and the domain pin
-   * ticks. The disc fill, being the mark itself, is untouched at any value. The
-   * falloff is C¹ continuous (smoothstep), so a stroke can never pop out
-   * mid-rotation.
-   */
-  detail?: number;
-  /**
-   * 3D view — **the rim's floor against depth fog**, ≥ 1. At 1 (the default) the
-   * result is pixel-identical to before.
-   *
-   * Depth fog multiplies the whole node, rim included, and bottoms out at 0.09.
-   * Measured on the sample vault at 1920 (2026-09-05): the median node rim stood
-   * at 1.15 : 1 against the background beside it, 117 of 125 nodes were under
-   * 3 : 1, and 92 were under 1.5 : 1 — a hundred shapes whose edge you cannot
-   * see. The caller passes `max(1, DOME_RIM_FOG_FLOOR / fog)` here and the
-   * outline is drawn at that share of its unfogged alpha, overriding the
-   * far-side detail fade as well: a mark with no visible edge is not a mark.
-   *
-   * The fill, the depth shading, the halo, the line-width attenuation, the
-   * perspective size and the draw order all still carry depth, so this costs the
-   * cue nothing it was the only carrier of.
-   */
-  rimAlphaScale?: number;
+    selectionPulse: {
+        scaleFactor: number;
+        alpha: number;
+    } | null;
+    /**
+     * W6 agent visibility — true for the single node matching the current
+       * agent heartbeat's `focus.ontologySlug` (resolved upstream by
+       * `views/home/lib/resolve-agent-focus-node.ts`), only while that
+       * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
+       * caller nulls the id otherwise). Draws a static amber hairline ring — the
+       * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
+       * glow (design.md "Material instead of emission" — material, not emission). Real heartbeat
+       * data only; `false`
+       * whenever there's no fresh focus (fabrication 0).
+       */
+    agentFocus: boolean;
+    /**
+     * Spotlight ring for changed nodes. Owner, 2026-07-23: "Only the changed ones should have a rotating border." While the
+       * lens is on, nodes inside the mtime window get an amberHub **rotating dashed**
+       * kind-outline — the fix for a report that changed nodes were unreadable in
+       * the element view when settling contrast was the only cue. Zero glow/blur
+       * (material, not emission); amberHub follows the agent-focus ring's precedent
+       * as a signal tone. `alpha` is the lens fade in/out, `dashOffset` the rotation
+       * phase in px (the caller pins it to 0 under reduced-motion, giving a static
+       * dash). null hides it.
+       */
+    spotlightRing: {
+        alpha: number;
+        dashOffset: number;
+    } | null;
+    /**
+     * Time source for the hover circuit-trace shimmer: the frame's
+     * `performance.now()`-compatible timestamp, taken here only because the pixel
+     * drawing itself is a pure layer that knows nothing of time. The static hover
+     * ring (the `isHovered` block) is drawn regardless of this value; only the
+     * shimmer arc is layered on top, and only when `!reducedMotion`.
+     */
+    now: number;
+    reducedMotion: boolean;
+    /**
+     * Icon set. The kind→silhouette mapping is identical regardless of this value
+     * (`bodyPoints` unchanged); it switches **render style only**: `"fill"` (the
+     * current default) is the kind fill plus the metallic sheen gradient, `"line"`
+     * is an unfilled flat dark body (hole-fill) with a slightly thinner outline.
+     * It reads the same store (`appearance-preferences`) as the DOM
+     * `OntologyMapKindGlyph` line set, so both surfaces swap together. Defaults to
+     * `"fill"`.
+     */
+    glyphStyle?: "fill" | "line";
+    /**
+     * 3D view — **depth shading** strength, 0..1. At 0 (the default) not a single
+     * extra stroke is issued.
+     *
+     * The human visual system resolves shading ambiguity by assuming light comes
+     * from above and slightly to the left (Sun & Perona, *Nature Neuroscience*
+     * 1(3), 1998). So laying a single luminance gradient in that direction over a
+     * disc makes it read as a **sphere** — the cheapest way to stop the dots from
+     * looking like stickers in 3D.
+     *
+     * **The dark side is darkened; the lit side is never brightened.** A highlight
+     * or rim light on the opposite side would be exactly the glow the charter
+     * bans. All this uses is one black alpha: zero new hues, no bleed, no motion.
+     */
+    depthShade?: number;
+    /**
+     * 3D view — **far-side detail factor**, 0..1
+     * (`model/dome-view.ts#domeDetailFactor`). At 1 (the default) the result is
+     * pixel-identical to before. It folds to 0 on the rear hemisphere, and only
+     * **supplementary strokes** recede: the outline stroke (fill set only — in the
+     * line set the outline *is* the mark, so it never folds) and the domain pin
+     * ticks. The disc fill, being the mark itself, is untouched at any value. The
+     * falloff is C¹ continuous (smoothstep), so a stroke can never pop out
+     * mid-rotation.
+     */
+    detail?: number;
+    /**
+     * 3D view — **the rim's floor against depth fog**, ≥ 1. At 1 (the default) the
+     * result is pixel-identical to before.
+     *
+     * Depth fog multiplies the whole node, rim included, and bottoms out at 0.09.
+     * Measured on the sample vault at 1920 (2026-09-05): the median node rim stood
+     * at 1.15 : 1 against the background beside it, 117 of 125 nodes were under
+     * 3 : 1, and 92 were under 1.5 : 1 — a hundred shapes whose edge you cannot
+     * see. The caller passes `max(1, DOME_RIM_FOG_FLOOR / fog)` here and the
+     * outline is drawn at that share of its unfogged alpha, overriding the
+     * far-side detail fade as well: a mark with no visible edge is not a mark.
+     *
+     * The fill, the depth shading, the halo, the line-width attenuation, the
+     * perspective size and the draw order all still carry depth, so this costs the
+     * cue nothing it was the only carrier of.
+     */
+    rimAlphaScale?: number;
 }
-
 /** Pure descriptor for render style only; the kind→silhouette mapping is invariant. */
 export interface GlyphStyleDescriptor {
-  /** Line set: no kind fill, a flat dark body plus the outline. */
-  lineOnly: boolean;
-  /** Body outline width multiplier — the line set is slightly lighter. */
-  lineWidthScale: number;
+    /** Line set: no kind fill, a flat dark body plus the outline. */
+    lineOnly: boolean;
+    /** Body outline width multiplier — the line set is slightly lighter. */
+    lineWidthScale: number;
 }
-
 // perf 2026-08-19 — two pure constants with no reason to be rebuilt per node.
 // Consumers only read them, so sharing one object each is pixel-identical.
 const GLYPH_STYLE_LINE: GlyphStyleDescriptor = { lineOnly: true, lineWidthScale: 0.8 };
 const GLYPH_STYLE_FILL: GlyphStyleDescriptor = { lineOnly: false, lineWidthScale: 1 };
-
 export function glyphStyleDescriptor(glyphStyle: "fill" | "line" | undefined): GlyphStyleDescriptor {
-  return glyphStyle === "line" ? GLYPH_STYLE_LINE : GLYPH_STYLE_FILL;
+    return glyphStyle === "line" ? GLYPH_STYLE_LINE : GLYPH_STYLE_FILL;
 }
-
 export interface NodeShapeTokens {
-  amberHub: string;
-  recentChange: string;
-  numeralShadow: string;
-  numeralFace: string;
-  holeFill: string;
-  /**
-   * Canvas-emphasis slice — Layer-0 container identity (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber is allowed on hub nodes and
-     * Layer-0 containers only). Inner offset hairline for the
-     * project hexagon's double-hairline "machined bezel" (spec §A1's second
-     * stroke — the outer stroke itself is `amberHub`, applied to the BODY
-     * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
+    amberHub: string;
+    recentChange: string;
+    numeralShadow: string;
+    numeralFace: string;
+    holeFill: string;
+    /**
+     * Canvas-emphasis slice — Layer-0 container identity (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber is allowed on hub nodes and
+       * Layer-0 containers only). Inner offset hairline for the
+       * project hexagon's double-hairline "machined bezel" (spec §A1's second
+       * stroke — the outer stroke itself is `amberHub`, applied to the BODY
+       * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
+       */
+    projectHairlineInner: string;
+    /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
+    projectPinTick: string;
+    /** Canvas-emphasis slice — the static 2px selection ring's color (`tokens.indigoBright`, spec §B1). */
+    selectionIndigo: string;
+    /** Canvas-emphasis slice — the outer 6px hairline ring's color, a lower-alpha indigo (spec §B1's second ring). */
+    selectionHairline: string;
+    /**
+     * #5 — the connected-neighbor ring color. A THIN pale-indigo ring on the
+     * body outline of every direct (1-hop) neighbor of the selected node, so
+     * "what this connects to" reads as clearly as the edges do. Same indigo
+     * hue as the selection ring, differentiated by VALUE only (pale
+     * `--map-edge-selected`), per the charter's selection-color ladder
+     * — never a new blue hue.
      */
-  projectHairlineInner: string;
-  /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
-  projectPinTick: string;
-  /** Canvas-emphasis slice — the static 2px selection ring's color (`tokens.indigoBright`, spec §B1). */
-  selectionIndigo: string;
-  /** Canvas-emphasis slice — the outer 6px hairline ring's color, a lower-alpha indigo (spec §B1's second ring). */
-  selectionHairline: string;
-  /**
-   * #5 — the connected-neighbor ring color. A THIN pale-indigo ring on the
-   * body outline of every direct (1-hop) neighbor of the selected node, so
-   * "what this connects to" reads as clearly as the edges do. Same indigo
-   * hue as the selection ring, differentiated by VALUE only (pale
-   * `--map-edge-selected`), per the charter's selection-color ladder
-   * — never a new blue hue.
-   */
-  neighborRing: string;
-  /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
-  hoverRing: string;
-  /** Hover shimmer arc length, as a fraction of the perimeter (`--map-hover-shimmer-seg`). */
-  hoverShimmerSeg: number;
-  /** Hover shimmer period for one full revolution, ms (`--map-hover-shimmer-period-ms`). */
-  hoverShimmerPeriodMs: number;
-  /** Hover shimmer arc colour — reuses `--map-indigo-bright`; no new hue. */
-  hoverShimmerColor: string;
+    neighborRing: string;
+    /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
+    hoverRing: string;
+    /** Hover shimmer arc length, as a fraction of the perimeter (`--map-hover-shimmer-seg`). */
+    hoverShimmerSeg: number;
+    /** Hover shimmer period for one full revolution, ms (`--map-hover-shimmer-period-ms`). */
+    hoverShimmerPeriodMs: number;
+    /** Hover shimmer arc colour — reuses `--map-indigo-bright`; no new hue. */
+    hoverShimmerColor: string;
 }
-
 /** Full convergence to a plain circle above this farT — avoids float-precision polygon/circle seams (prototype: `farT > 0.985`). */
 const FULL_CIRCLE_FAR_T = 0.985;
-
 /** Sheen dissolves out toward far field — above this farT (or below `SHEEN_MIN_RADIUS`) the body fills flat so constellation points read luminous, not machined (prototype: `r > 3 && farT < 0.98`). */
 const SHEEN_MAX_FAR_T = 0.98;
 const SHEEN_MIN_RADIUS = 3;
-
 /**
  * Engraved node-count numeral shows only above this screen radius (project/
  * domain). Ported prototype literal was 15; lowered to 13 because with the
@@ -318,16 +310,13 @@ const SHEEN_MIN_RADIUS = 3;
  * once nodes shrink toward the far-field/constellation size on zoom-out.
  */
 const ENGRAVED_COUNT_MIN_RADIUS = 13;
-
 /** Domain chip-leg pin ticks — geometry ratios ported from the prototype's `[-0.45,0.45]` offsets + `tick = s*0.34` leg length, gated `s > 6 && farT < 0.9`. */
 const DOMAIN_PIN_MIN_HALF_EXTENT = 6;
 const DOMAIN_PIN_MAX_FAR_T = 0.9;
 const DOMAIN_PIN_TICK_RATIO = 0.34;
 const DOMAIN_PIN_OFFSET_FACTORS = [-0.45, 0.45] as const;
-
 /** Half-extent factor of the domain square relative to its draw radius (prototype `s = r * 0.86`). */
 const DOMAIN_HALF_EXTENT_RATIO = 0.86;
-
 /** Canvas-emphasis slice — project hexagon decor (double hairline + pin ticks) fades out toward far field, mirroring the domain pin-tick gate. */
 const PROJECT_DECOR_MIN_RADIUS = 8;
 const PROJECT_DECOR_MAX_FAR_T = 0.9;
@@ -341,33 +330,29 @@ const SELECTION_PULSE_RING_OFFSET = 3;
 const HOVER_RING_OFFSET = 3;
 /** W6 agent visibility — agent-focus ring offset (owner spec: "Static 1px, r+8"), deliberately wider than the hub ring's r+4 so the two never visually merge on a hub node the agent is also focused on. */
 const AGENT_FOCUS_RING_OFFSET = 8;
-
 export interface PinTick {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
 }
-
 /**
  * The four chip-leg pin ticks of a domain square — two above, two below, one
  * pair per `[-0.45, 0.45]` x-offset. Pure screen-space geometry (ported from
  * the prototype's domain branch), unit-tested in `node-shapes.test.ts`.
  */
 export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
-  const tick = s * DOMAIN_PIN_TICK_RATIO;
-  const ticks: PinTick[] = [];
-  for (const f of DOMAIN_PIN_OFFSET_FACTORS) {
-    const x = cx + s * f;
-    ticks.push({ x1: x, y1: cy - s, x2: x, y2: cy - s - tick });
-    ticks.push({ x1: x, y1: cy + s, x2: x, y2: cy + s + tick });
-  }
-  return ticks;
+    const tick = s * DOMAIN_PIN_TICK_RATIO;
+    const ticks: PinTick[] = [];
+    for (const f of DOMAIN_PIN_OFFSET_FACTORS) {
+        const x = cx + s * f;
+        ticks.push({ x1: x, y1: cy - s, x2: x, y2: cy - s - tick });
+        ticks.push({ x1: x, y1: cy + s, x2: x, y2: cy + s + tick });
+    }
+    return ticks;
 }
-
 /** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — "Pin ticks in 4 directions (up/down/left/right 6px line)": four ticks, up/down/left/right, 6px each), unlike domain's radius-proportional ticks. */
 const PROJECT_PIN_TICK_LENGTH = 6;
-
 /**
  * The four "chassis leg" pin ticks on the project hexagon — one per cardinal
  * direction (up/down/left/right), each a fixed 6px line starting at the
@@ -376,40 +361,32 @@ const PROJECT_PIN_TICK_LENGTH = 6;
  * approach but with fixed (not radius-proportional) leg length per spec.
  */
 export function projectPinTicks(cx: number, cy: number, r: number): PinTick[] {
-  const t = PROJECT_PIN_TICK_LENGTH;
-  return [
-    { x1: cx, y1: cy - r, x2: cx, y2: cy - r - t },
-    { x1: cx, y1: cy + r, x2: cx, y2: cy + r + t },
-    { x1: cx - r, y1: cy, x2: cx - r - t, y2: cy },
-    { x1: cx + r, y1: cy, x2: cx + r + t, y2: cy },
-  ];
+    const t = PROJECT_PIN_TICK_LENGTH;
+    return [
+        { x1: cx, y1: cy - r, x2: cx, y2: cy - r - t },
+        { x1: cx, y1: cy + r, x2: cx, y2: cy + r + t },
+        { x1: cx - r, y1: cy, x2: cx - r - t, y2: cy },
+        { x1: cx + r, y1: cy, x2: cx + r + t, y2: cy }
+    ];
 }
-
 /**
  * The body fill for one node: a vertical `sheenTop → fill` gradient when the
  * node is big + near enough (prototype `r > 3 && farT < 0.98`), otherwise the
  * flat `fill`. Ported from `drawNode`'s sheen block (§13).
  */
-function resolveBodyFill(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  r: number,
-  farT: number,
-  fill: string,
-  sheenTop: string,
-): string | CanvasGradient {
-  if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T) return fill;
-  // When the far-side detail factor has converged sheenTop onto fill (identical
-  // string), both stops are the same colour — return the flat fill early instead
-  // of building that gradient. Pixel-identical.
-  if (sheenTop === fill) return fill;
-  const grad = ctx.createLinearGradient(x, y - r, x, y + r);
-  grad.addColorStop(0, sheenTop);
-  grad.addColorStop(1, fill);
-  return grad;
+function resolveBodyFill(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, farT: number, fill: string, sheenTop: string): string | CanvasGradient {
+    if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T)
+        return fill;
+    // When the far-side detail factor has converged sheenTop onto fill (identical
+    // string), both stops are the same colour — return the flat fill early instead
+    // of building that gradient. Pixel-identical.
+    if (sheenTop === fill)
+        return fill;
+    const grad = ctx.createLinearGradient(x, y - r, x, y + r);
+    grad.addColorStop(0, sheenTop);
+    grad.addColorStop(1, fill);
+    return grad;
 }
-
 /** Ported from the prototype's `roundedPolygonPath()` — traces a closed polygon path with each corner rounded to `min(rad, adjacentEdgeLen*0.45)`. */
 /**
  * A path that can be traced into — a live context, or a `Path2D` being composed.
@@ -421,57 +398,48 @@ function resolveBodyFill(
  * concentric bands (2026-09-10). Starting the path is the caller's business now.
  */
 type PathSink = Pick<Path2D, "moveTo" | "lineTo" | "quadraticCurveTo" | "closePath">;
-
 function roundedPolygonPath(ctx: PathSink, points: readonly Point[], rad: number): void {
-  const n = points.length;
-  for (let i = 0; i < n; i += 1) {
-    const p0 = points[(i - 1 + n) % n];
-    const p1 = points[i];
-    const p2 = points[(i + 1) % n];
-    const v1x = p1.x - p0.x;
-    const v1y = p1.y - p0.y;
-    const len1 = Math.hypot(v1x, v1y) || 1;
-    const v2x = p2.x - p1.x;
-    const v2y = p2.y - p1.y;
-    const len2 = Math.hypot(v2x, v2y) || 1;
-    const r = Math.min(rad, len1 * 0.45, len2 * 0.45);
-    const sx = p1.x - (v1x / len1) * r;
-    const sy = p1.y - (v1y / len1) * r;
-    const ex = p1.x + (v2x / len2) * r;
-    const ey = p1.y + (v2y / len2) * r;
-    if (i === 0) ctx.moveTo(sx, sy);
-    else ctx.lineTo(sx, sy);
-    ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
-  }
-  ctx.closePath();
+    const n = points.length;
+    for (let i = 0; i < n; i += 1) {
+        const p0 = points[(i - 1 + n) % n];
+        const p1 = points[i];
+        const p2 = points[(i + 1) % n];
+        const v1x = p1.x - p0.x;
+        const v1y = p1.y - p0.y;
+        const len1 = Math.hypot(v1x, v1y) || 1;
+        const v2x = p2.x - p1.x;
+        const v2y = p2.y - p1.y;
+        const len2 = Math.hypot(v2x, v2y) || 1;
+        const r = Math.min(rad, len1 * 0.45, len2 * 0.45);
+        const sx = p1.x - (v1x / len1) * r;
+        const sy = p1.y - (v1y / len1) * r;
+        const ex = p1.x + (v2x / len2) * r;
+        const ey = p1.y + (v2y / len2) * r;
+        if (i === 0)
+            ctx.moveTo(sx, sy);
+        else
+            ctx.lineTo(sx, sy);
+        ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
+    }
+    ctx.closePath();
 }
-
 /** Ported from the prototype's `drawEngraved()` — a 1px dark shadow beneath a lighter face, reading as an inset/engraved numeral rather than printed text. */
-function drawEngraved(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  size: number,
-  alpha: number,
-  tokens: NodeShapeTokens,
-): void {
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `${FONT_WEIGHT.strong} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  // Multiply into the frame's alpha rather than replacing it — the caller has
-  // already folded tier, dim and the appear ramp into `ctx.globalAlpha`, and a
-  // numeral drawn at its own absolute alpha stayed visible on a node that was
-  // otherwise gone (measured 2026-09-02 during the growth replay).
-  const prevAlpha = ctx.globalAlpha;
-  ctx.globalAlpha = prevAlpha * alpha;
-  ctx.fillStyle = tokens.numeralShadow;
-  ctx.fillText(text, x, y + 1);
-  ctx.fillStyle = tokens.numeralFace;
-  ctx.fillText(text, x, y);
-  ctx.globalAlpha = prevAlpha;
+function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, alpha: number, tokens: NodeShapeTokens): void {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${FONT_WEIGHT.strong} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    // Multiply into the frame's alpha rather than replacing it — the caller has
+    // already folded tier, dim and the appear ramp into `ctx.globalAlpha`, and a
+    // numeral drawn at its own absolute alpha stayed visible on a node that was
+    // otherwise gone (measured 2026-09-02 during the growth replay).
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = prevAlpha * alpha;
+    ctx.fillStyle = tokens.numeralShadow;
+    ctx.fillText(text, x, y + 1);
+    ctx.fillStyle = tokens.numeralFace;
+    ctx.fillText(text, x, y);
+    ctx.globalAlpha = prevAlpha;
 }
-
 /**
  * This kind's polygon points at draw radius `r` — `null` for capability, which
  * is already a plain circle. Exported (in addition to internal use by
@@ -484,12 +452,14 @@ function drawEngraved(
  * check internal consistency, not parity across the two gateways.
  */
 export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
-  if (kind === "project") return hexPoints(x, y, r);
-  if (kind === "domain") return squarePoints(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
-  if (kind === "element") return squarePoints(x, y, r * 0.92);
-  return null;
+    if (kind === "project")
+        return hexPoints(x, y, r);
+    if (kind === "domain")
+        return squarePoints(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
+    if (kind === "element")
+        return squarePoints(x, y, r * 0.92);
+    return null;
 }
-
 /*
  * perf 2026-08-19 — draw-internal scratch version of `bodyPoints`.
  *
@@ -504,35 +474,34 @@ export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: numbe
  */
 const HEX_SCRATCH: Point[] = Array.from({ length: 6 }, () => ({ x: 0, y: 0 }));
 const SQUARE_SCRATCH: Point[] = Array.from({ length: 4 }, () => ({ x: 0, y: 0 }));
-
 function hexPointsScratch(cx: number, cy: number, r: number): readonly Point[] {
-  for (let i = 0; i < 6; i += 1) {
-    const a = ((i * 60 - 90) * Math.PI) / 180;
-    HEX_SCRATCH[i].x = cx + r * Math.cos(a);
-    HEX_SCRATCH[i].y = cy + r * Math.sin(a);
-  }
-  return HEX_SCRATCH;
+    for (let i = 0; i < 6; i += 1) {
+        const a = ((i * 60 - 90) * Math.PI) / 180;
+        HEX_SCRATCH[i].x = cx + r * Math.cos(a);
+        HEX_SCRATCH[i].y = cy + r * Math.sin(a);
+    }
+    return HEX_SCRATCH;
 }
-
 function squarePointsScratch(cx: number, cy: number, s: number): readonly Point[] {
-  SQUARE_SCRATCH[0].x = cx - s;
-  SQUARE_SCRATCH[0].y = cy - s;
-  SQUARE_SCRATCH[1].x = cx + s;
-  SQUARE_SCRATCH[1].y = cy - s;
-  SQUARE_SCRATCH[2].x = cx + s;
-  SQUARE_SCRATCH[2].y = cy + s;
-  SQUARE_SCRATCH[3].x = cx - s;
-  SQUARE_SCRATCH[3].y = cy + s;
-  return SQUARE_SCRATCH;
+    SQUARE_SCRATCH[0].x = cx - s;
+    SQUARE_SCRATCH[0].y = cy - s;
+    SQUARE_SCRATCH[1].x = cx + s;
+    SQUARE_SCRATCH[1].y = cy - s;
+    SQUARE_SCRATCH[2].x = cx + s;
+    SQUARE_SCRATCH[2].y = cy + s;
+    SQUARE_SCRATCH[3].x = cx - s;
+    SQUARE_SCRATCH[3].y = cy + s;
+    return SQUARE_SCRATCH;
 }
-
 function bodyPointsScratch(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
-  if (kind === "project") return hexPointsScratch(x, y, r);
-  if (kind === "domain") return squarePointsScratch(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
-  if (kind === "element") return squarePointsScratch(x, y, r * 0.92);
-  return null;
+    if (kind === "project")
+        return hexPointsScratch(x, y, r);
+    if (kind === "domain")
+        return squarePointsScratch(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
+    if (kind === "element")
+        return squarePointsScratch(x, y, r * 0.92);
+    return null;
 }
-
 /**
  * This kind's minimum corner radius at farT=0.
  *
@@ -545,11 +514,12 @@ function bodyPointsScratch(kind: NodeShapeDrawState["kind"], x: number, y: numbe
  * original purpose, now expressed at the correct end of the scale).
  */
 function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
-  if (kind === "project") return Math.max(0.5, r * 0.14);
-  if (kind === "domain") return Math.max(0.5, r * 0.86 * 0.22);
-  return Math.max(0.5, r * 0.92 * 0.3);
+    if (kind === "project")
+        return Math.max(0.5, r * 0.14);
+    if (kind === "domain")
+        return Math.max(0.5, r * 0.86 * 0.22);
+    return Math.max(0.5, r * 0.92 * 0.3);
 }
-
 /**
  * Strokes ONE ring at `radius`, following the node's own kind-shape (hex/
  * square/rounded-square, converging to a circle past `FULL_CIRCLE_FAR_T` —
@@ -598,171 +568,52 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * path they cited, never the sentence. It is written down now, with a gate:
  * `tests/contract/canvas-composite-license.contract.test.ts`.
  */
-export function drawNodeStar(
-  ctx: CanvasRenderingContext2D,
-  kind: NodeShapeDrawState["kind"],
-  x: number,
-  y: number,
-  radius: number,
-  farT: number,
-  ink: string,
-  lit: number,
-  swell = 1,
-  /** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */
-  core = 0,
-): void {
-  // The map's only contribution is the silhouette: a hexagon, square or circle that converges
-  // with altitude. The light is `shared/lib/star-emission.ts`, so the settings preview and this
-  // canvas cannot drift apart again.
-  drawStarEmission(ctx, {
-    x,
-    y,
-    radius,
-    ink,
-    lit,
-    swell,
-    core,
-    // A `Path2D` rather than a draw call, so the emitter can both stroke the silhouette and
-    // subtract it from a clip region without tracing it twice or knowing what shape it is.
-    bodyPath: (r) => {
-      const path = new Path2D();
-      const points = bodyPointsScratch(kind, x, y, r);
-      if (points === null || farT > FULL_CIRCLE_FAR_T) path.arc(x, y, r, 0, Math.PI * 2);
-      else roundedPolygonPath(path, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
-      return path;
-    },
-  });
-}
-
-/**
- * Galaxy's borderless star treatment: circular heart, radial corona, and a
- * sparse diffraction glint. Canonical radii still size hit areas and labels,
- * while Galaxy paint contains no kind polygon or state orbit. Walked nodes use
- * this same profile in Galaxy, so opening the trail lens cannot bring the old
- * boxes back.
- */
-type GalaxyLightSprite = { heart: HTMLCanvasElement; corona: HTMLCanvasElement };
-const galaxyLightSprites = new Map<string, GalaxyLightSprite>();
-
-/** Optical light kernels are cached by temperature, never by node or frame. */
-function galaxyLightSprite(ink: string): GalaxyLightSprite | null {
-  const cached = galaxyLightSprites.get(ink);
-  if (cached) return cached;
-  const color = Number.parseInt(ink.slice(1), 16);
-  const rgb = [(color >> 16) & 255, (color >> 8) & 255, color & 255];
-  const rgba = (alpha: number, heat = 0) =>
-    `rgba(${rgb.map((v) => Math.round(v + (255 - v) * heat)).join(",")},${alpha})`;
-  const make = (heart: boolean): HTMLCanvasElement | null => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const painter = canvas.getContext("2d");
-    if (!painter) return null;
-    const light = painter.createRadialGradient(32, 32, 0, 32, 32, 32);
-    if (heart) {
-      // A filled, hot centre with a continuous falloff: no rim, ring or clipped hole.
-      light.addColorStop(0, rgba(1, 0.88));
-      light.addColorStop(0.18, rgba(1, 0.66));
-      light.addColorStop(0.43, rgba(0.86, 0.18));
-      light.addColorStop(0.7, rgba(0.22));
-      light.addColorStop(1, rgba(0));
-    } else {
-      light.addColorStop(0, rgba(0.3));
-      light.addColorStop(0.2, rgba(0.18));
-      light.addColorStop(0.55, rgba(0.045));
-      light.addColorStop(1, rgba(0));
-    }
-    painter.fillStyle = light;
-    painter.fillRect(0, 0, 64, 64);
-    return canvas;
-  };
-  const heart = make(true);
-  const corona = make(false);
-  if (!heart || !corona) return null;
-  const sprite = { heart, corona };
-  // Selection blends introduce intermediate temperatures; keep memory bounded.
-  if (galaxyLightSprites.size >= 96) {
-    const oldest = galaxyLightSprites.keys().next().value;
-    if (oldest !== undefined) galaxyLightSprites.delete(oldest);
-  }
-  galaxyLightSprites.set(ink, sprite);
-  return sprite;
-}
-
-export function drawGalaxyNodeStar(
-  ctx: CanvasRenderingContext2D,
-  state: {
-    x: number;
-    y: number;
-    radius: number;
-    ink: string;
-    lit: number;
-    coronaLit: number;
-    presence: number;
-    glint: number;
-    glintRotation: number;
-  },
-): void {
-  const { x, y, radius, ink, lit, coronaLit, presence, glint, glintRotation } = state;
-  if (radius <= 0 || presence <= 0.01) return;
-  const sprite = galaxyLightSprite(ink);
-  if (!sprite) return;
-  const previousAlpha = ctx.globalAlpha;
-  const previousComposite = ctx.globalCompositeOperation;
-  const coreRadius = Math.min(radius, Math.max(1.8, Math.min(4.2, radius * 0.18)));
-  const heartRadius = coreRadius * 1.45;
-  const coronaRadius = Math.max(coreRadius * 3.8, Math.min(20, radius * 0.95));
-  ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = Math.min(1, coronaLit);
-  ctx.drawImage(sprite.corona, x - coronaRadius, y - coronaRadius, coronaRadius * 2, coronaRadius * 2);
-  // Keep the point locatable at a twinkle trough; the surrounding light still breathes.
-  ctx.globalAlpha = Math.min(1, Math.max(0.72 * presence, lit));
-  ctx.drawImage(sprite.heart, x - heartRadius, y - heartRadius, heartRadius * 2, heartRadius * 2);
-  if (glint > 0.01) {
-    ctx.globalAlpha = 1;
-    drawDiffractionSpike(ctx, {
-      screenX: x,
-      screenY: y,
-      screenRadius: coreRadius,
-      color: ink,
-      alpha: presence * glint * 0.72,
-      rotation: glintRotation,
-      maxLong: Math.min(20, Math.max(6, coreRadius * 4.5)),
+export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, ink: string, lit: number, swell = 1,
+/** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */
+core = 0): void {
+    // The map's only contribution is the silhouette: a hexagon, square or circle that converges
+    // with altitude. The light is `shared/lib/star-emission.ts`, so the settings preview and this
+    // canvas cannot drift apart again.
+    drawStarEmission(ctx, {
+        x,
+        y,
+        radius,
+        ink,
+        lit,
+        swell,
+        core,
+        // A `Path2D` rather than a draw call, so the emitter can both stroke the silhouette and
+        // subtract it from a clip region without tracing it twice or knowing what shape it is.
+        bodyPath: (r) => {
+            const path = new Path2D();
+            const points = bodyPointsScratch(kind, x, y, r);
+            if (points === null || farT > FULL_CIRCLE_FAR_T)
+                path.arc(x, y, r, 0, Math.PI * 2);
+            else
+                roundedPolygonPath(path, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
+            return path;
+        },
     });
-  }
-  ctx.globalCompositeOperation = previousComposite;
-  ctx.globalAlpha = previousAlpha;
 }
-
-
-function strokeKindOutline(
-  ctx: CanvasRenderingContext2D,
-  kind: NodeShapeDrawState["kind"],
-  x: number,
-  y: number,
-  radius: number,
-  farT: number,
-  color: string,
-  lineWidth: number,
-  alpha: number,
-): void {
-  if (alpha <= 0.01 || radius <= 0) return;
-  const points = bodyPointsScratch(kind, x, y, radius);
-  if (points === null || farT > FULL_CIRCLE_FAR_T) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-  } else {
-    ctx.beginPath();
-    roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
-  }
-  const prevAlpha = ctx.globalAlpha;
-  ctx.globalAlpha = prevAlpha * alpha;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = lineWidth;
-  ctx.stroke();
-  ctx.globalAlpha = prevAlpha;
+function strokeKindOutline(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, color: string, lineWidth: number, alpha: number): void {
+    if (alpha <= 0.01 || radius <= 0)
+        return;
+    const points = bodyPointsScratch(kind, x, y, radius);
+    if (points === null || farT > FULL_CIRCLE_FAR_T) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+    }
+    else {
+        ctx.beginPath();
+        roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
+    }
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = prevAlpha * alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+    ctx.globalAlpha = prevAlpha;
 }
-
 /**
  * Approximate perimeter of the node's own outline at this farT/kind — the
  * straight-edge sum of `bodyPoints` (ignoring the small corner-rounding
@@ -774,17 +625,17 @@ function strokeKindOutline(
  * `model/hover-shimmer.ts` time math is.
  */
 function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT: number): number {
-  const points = bodyPointsScratch(kind, 0, 0, radius);
-  if (points === null || farT > FULL_CIRCLE_FAR_T) return 2 * Math.PI * radius;
-  let perimeter = 0;
-  for (let i = 0; i < points.length; i += 1) {
-    const p1 = points[i];
-    const p2 = points[(i + 1) % points.length];
-    perimeter += Math.hypot(p2.x - p1.x, p2.y - p1.y);
-  }
-  return perimeter;
+    const points = bodyPointsScratch(kind, 0, 0, radius);
+    if (points === null || farT > FULL_CIRCLE_FAR_T)
+        return 2 * Math.PI * radius;
+    let perimeter = 0;
+    for (let i = 0; i < points.length; i += 1) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        perimeter += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    }
+    return perimeter;
 }
-
 /**
  * Design Guardian-approved: one slow travelling arc layered over the static
  * hover ring (`strokeKindOutline`). It re-traces the same shape path (hex/
@@ -793,41 +644,31 @@ function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT
  * zero glow/shadow (design.md), colour reused from the standard bright indigo.
  * A zero segment length (token drift, say) draws nothing.
  */
-function drawHoverShimmer(
-  ctx: CanvasRenderingContext2D,
-  kind: NodeShapeDrawState["kind"],
-  x: number,
-  y: number,
-  radius: number,
-  farT: number,
-  now: number,
-  periodMs: number,
-  segRatio: number,
-  color: string,
-): void {
-  const perimeter = outlinePerimeter(kind, radius, farT);
-  const { dash, offset } = computeHoverShimmer(now, periodMs, perimeter, segRatio);
-  if (dash[0] <= 0) return;
-  const points = bodyPointsScratch(kind, x, y, radius);
-  if (points === null || farT > FULL_CIRCLE_FAR_T) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-  } else {
-    ctx.beginPath();
-    roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
-  }
-  ctx.setLineDash([...dash]);
-  ctx.lineDashOffset = offset;
-  const prevAlpha = ctx.globalAlpha;
-  ctx.globalAlpha = prevAlpha * 0.9;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.lineDashOffset = 0;
-  ctx.globalAlpha = prevAlpha;
+function drawHoverShimmer(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, now: number, periodMs: number, segRatio: number, color: string): void {
+    const perimeter = outlinePerimeter(kind, radius, farT);
+    const { dash, offset } = computeHoverShimmer(now, periodMs, perimeter, segRatio);
+    if (dash[0] <= 0)
+        return;
+    const points = bodyPointsScratch(kind, x, y, radius);
+    if (points === null || farT > FULL_CIRCLE_FAR_T) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+    }
+    else {
+        ctx.beginPath();
+        roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
+    }
+    ctx.setLineDash([...dash]);
+    ctx.lineDashOffset = offset;
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = prevAlpha * 0.9;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+    ctx.globalAlpha = prevAlpha;
 }
-
 /**
  * Draws one node body (fill/stroke/dash + kind-specific shape morph + hub
  * ring + engraved numeral + via-hole for elements). Does NOT draw the
@@ -836,275 +677,232 @@ function drawHoverShimmer(
  * shape-by-kind) or the label (`render/labels.ts`).
  */
 export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, tokens: NodeShapeTokens): void {
-  // The alpha the frame handed us (tier × dim × appear ramp × …). Every
-  // sub-stroke below multiplies into it and restores it; none replaces it.
-  const entryAlpha = ctx.globalAlpha;
-  const {
-    kind,
-    screenX: x,
-    screenY: y,
-    screenRadius: r,
-    farT,
-    egoState,
-    fill,
-    stroke,
-    lineWidth,
-    dash,
-    hub,
-    sheenTop,
-    countLabel,
-    isHovered,
-    hoverEmphasis,
-    selectionPulse,
-    agentFocus,
-    spotlightRing,
-    now,
-    reducedMotion,
-    glyphStyle,
-    depthShade = 0,
-    detail = 1,
-    rimAlphaScale = 1,
-  } = state;
-
-  const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
-
-  // perf 2026-08-19 — nodes without a dash (the vast majority) issue no dash
-  // call at all. Every painter restores [] after using a dash (traces,
-  // cluster-chips, dome-rings, the frame-draw ring block, and this function
-  // itself), so the dash state on entry is always empty — the two native calls
-  // and the spread allocation per node now happen only on fresh/stale dashed
-  // nodes.
-  const hasDash = dash.length > 0;
-  if (hasDash) ctx.setLineDash([...dash]);
-  const points = bodyPointsScratch(kind, x, y, r);
-  if (points === null || farT > FULL_CIRCLE_FAR_T) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-  } else {
-    ctx.beginPath();
-    roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
-  }
-  // Line set: a flat dark body (hole-fill) rather than transparency, so edges
-  // behind do not show through, and no metallic sheen — the mark reads as pure
-  // outline. Fill set: the kind fill plus the sheen gradient. Either way the
-  // silhouette path was already traced identically above.
-  ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
-  ctx.fill();
-  /*
-   * Depth shading (3D) — see the `depthShade` doc-block above. This re-fills
-   * **the very path just filled** (canvas `fill` does not clear the current
-   * path), so the silhouette cannot drift. Skipped below the minimum radius,
-   * where the gradient would be noise rather than volume.
-   */
-  if (depthShade > 0.01 && r >= NODE_DEPTH_SHADE_MIN_RADIUS_PX) {
-    /*
-     * **The gradient is cached.** This branch runs per node in 3D, and every
-     * canvas gradient object is born fresh: 125 nodes × 120Hz is 15,000 per
-     * second, and the bill arrives not as frame time but as a stutter the moment
-     * GC steps in.
-     *
-     * The key is the **rounded radius and strength**. Those two alone fix the
-     * gradient's shape (both the centre offset and the stops are functions of r
-     * and strength), and differences below 0.5px / 0.05 are indistinguishable on
-     * screen. Coordinates stay out of the key because `translate` below moves the
-     * gradient into place.
-     */
-    const key = `${Math.round(r * 2)}:${Math.round(depthShade * 20)}`;
-    let shade = shadeGradientCache.get(key);
-    if (!shade) {
-      shade = buildDepthShade(ctx, r, depthShade);
-      // Keep the cache from growing without bound: the radius × strength
-      // combinations are finite, but zoom is continuous, so a long session
-      // reaches thousands of entries. On overflow just clear it — these objects
-      // are not expensive enough to justify an LRU.
-      if (shadeGradientCache.size > SHADE_CACHE_MAX) shadeGradientCache.clear();
-      shadeGradientCache.set(key, shade);
+    // The alpha the frame handed us (tier × dim × appear ramp × …). Every
+    // sub-stroke below multiplies into it and restores it; none replaces it.
+    const entryAlpha = ctx.globalAlpha;
+    const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, sheenTop, countLabel, isHovered, hoverEmphasis, selectionPulse, agentFocus, spotlightRing, now, reducedMotion, glyphStyle, depthShade = 0, detail = 1, rimAlphaScale = 1, } = state;
+    const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
+    // perf 2026-08-19 — nodes without a dash (the vast majority) issue no dash
+    // call at all. Every painter restores [] after using a dash (traces,
+    // cluster-chips, dome-rings, the frame-draw ring block, and this function
+    // itself), so the dash state on entry is always empty — the two native calls
+    // and the spread allocation per node now happen only on fresh/stale dashed
+    // nodes.
+    const hasDash = dash.length > 0;
+    if (hasDash)
+        ctx.setLineDash([...dash]);
+    const points = bodyPointsScratch(kind, x, y, r);
+    if (points === null || farT > FULL_CIRCLE_FAR_T) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
     }
-    // perf 2026-08-19 — undone by an inverse translate rather than save/restore
-    // of the whole state stack. The base transform is a pure DPR scale (tx = 0),
-    // so `translate(x, y)` followed by `translate(-x, -y)` restores it exactly,
-    // down to the float (0 + d - d = 0). The only other state this block touches
-    // is fillStyle, and the next stroke sets its own first anyway.
-    ctx.translate(x, y);
-    ctx.fillStyle = shade;
+    else {
+        ctx.beginPath();
+        roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
+    }
+    // Line set: a flat dark body (hole-fill) rather than transparency, so edges
+    // behind do not show through, and no metallic sheen — the mark reads as pure
+    // outline. Fill set: the kind fill plus the sheen gradient. Either way the
+    // silhouette path was already traced identically above.
+    ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
     ctx.fill();
-    ctx.translate(-x, -y);
-  }
-  /*
-   * Outline — governed by the far-side detail factor (see the `detail`
-   * doc-block). In the fill set the outline is a **supplementary stroke** laid
-   * over the fill, so on the rear hemisphere it fades continuously by alpha and
-   * is then skipped. In the line set (lineOnly) the outline *is* the mark and
-   * survives at any depth — on that path the "never make a node vanish"
-   * contract rests on this stroke.
-   */
-  const strokeFade = lineOnly ? 1 : detail;
-  // The rim floor outranks the far-side fade (`rimAlphaScale` doc-block): the
-  // fade may take a supplementary stroke away, but not the edge that says a node
-  // is there. With `rimAlphaScale` at 1 this is `entryAlpha × strokeFade`, the
-  // previous expression exactly.
-  const rimAlpha = Math.min(1, entryAlpha * Math.max(strokeFade, rimAlphaScale));
-  if (Math.abs(rimAlpha - entryAlpha) < 1e-6) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = lineWidth * lineWidthScale;
-    ctx.stroke();
-  } else if (rimAlpha > 0.01) {
-    const prevAlpha = ctx.globalAlpha;
-    ctx.globalAlpha = rimAlpha;
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = lineWidth * lineWidthScale;
-    ctx.stroke();
-    ctx.globalAlpha = prevAlpha;
-  }
-  if (hasDash) ctx.setLineDash([]);
-
-  // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
-  // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
-  // Far-side detail factor also folds the tick alpha on the rear hemisphere, continuously.
-  if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
-    const s = r * DOMAIN_HALF_EXTENT_RATIO;
-    if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
-      ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT)) * detail;
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1;
-      for (const t of domainPinTicks(x, y, s)) {
-        ctx.beginPath();
-        ctx.moveTo(t.x1, t.y1);
-        ctx.lineTo(t.x2, t.y2);
+    /*
+     * Depth shading (3D) — see the `depthShade` doc-block above. This re-fills
+     * **the very path just filled** (canvas `fill` does not clear the current
+     * path), so the silhouette cannot drift. Skipped below the minimum radius,
+     * where the gradient would be noise rather than volume.
+     */
+    if (depthShade > 0.01 && r >= NODE_DEPTH_SHADE_MIN_RADIUS_PX) {
+        /*
+         * **The gradient is cached.** This branch runs per node in 3D, and every
+         * canvas gradient object is born fresh: 125 nodes × 120Hz is 15,000 per
+         * second, and the bill arrives not as frame time but as a stutter the moment
+         * GC steps in.
+         *
+         * The key is the **rounded radius and strength**. Those two alone fix the
+         * gradient's shape (both the centre offset and the stops are functions of r
+         * and strength), and differences below 0.5px / 0.05 are indistinguishable on
+         * screen. Coordinates stay out of the key because `translate` below moves the
+         * gradient into place.
+         */
+        const key = `${Math.round(r * 2)}:${Math.round(depthShade * 20)}`;
+        let shade = shadeGradientCache.get(key);
+        if (!shade) {
+            shade = buildDepthShade(ctx, r, depthShade);
+            // Keep the cache from growing without bound: the radius × strength
+            // combinations are finite, but zoom is continuous, so a long session
+            // reaches thousands of entries. On overflow just clear it — these objects
+            // are not expensive enough to justify an LRU.
+            if (shadeGradientCache.size > SHADE_CACHE_MAX)
+                shadeGradientCache.clear();
+            shadeGradientCache.set(key, shade);
+        }
+        // perf 2026-08-19 — undone by an inverse translate rather than save/restore
+        // of the whole state stack. The base transform is a pure DPR scale (tx = 0),
+        // so `translate(x, y)` followed by `translate(-x, -y)` restores it exactly,
+        // down to the float (0 + d - d = 0). The only other state this block touches
+        // is fillStyle, and the next stroke sets its own first anyway.
+        ctx.translate(x, y);
+        ctx.fillStyle = shade;
+        ctx.fill();
+        ctx.translate(-x, -y);
+    }
+    /*
+     * Outline — governed by the far-side detail factor (see the `detail`
+     * doc-block). In the fill set the outline is a **supplementary stroke** laid
+     * over the fill, so on the rear hemisphere it fades continuously by alpha and
+     * is then skipped. In the line set (lineOnly) the outline *is* the mark and
+     * survives at any depth — on that path the "never make a node vanish"
+     * contract rests on this stroke.
+     */
+    const strokeFade = lineOnly ? 1 : detail;
+    // The rim floor outranks the far-side fade (`rimAlphaScale` doc-block): the
+    // fade may take a supplementary stroke away, but not the edge that says a node
+    // is there. With `rimAlphaScale` at 1 this is `entryAlpha × strokeFade`, the
+    // previous expression exactly.
+    const rimAlpha = Math.min(1, entryAlpha * Math.max(strokeFade, rimAlphaScale));
+    if (Math.abs(rimAlpha - entryAlpha) < 1e-6) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth * lineWidthScale;
         ctx.stroke();
-      }
-      ctx.globalAlpha = entryAlpha;
     }
-  }
-
-  if (kind === "element") {
-    const half = r * 0.92;
-    if (half > 3 && farT < 0.9) {
-      ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT));
-      ctx.beginPath();
-      ctx.arc(x, y, half * 0.4, 0, Math.PI * 2);
-      ctx.fillStyle = tokens.holeFill;
-      ctx.fill();
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.globalAlpha = entryAlpha;
-    }
-  }
-
-  if (hub && egoState !== "dim") {
-    strokeKindOutline(ctx, kind, x, y, r + 4, farT, tokens.amberHub, 1.4, 1);
-  }
-
-  // W6 agent visibility — the fresh heartbeat's current target gets a static amber
-  // hairline ring (owner spec: "Static 1px, r+8", same signal tone as the hub
-  // ring/project hexagon amber — never a new color system). Independent of
-  // `hub`/`egoState === "center"` — an agent-focused node can simultaneously
-  // be a hub or the user's own selection; the rings stack at their own
-  // offsets (hub r+4, selection r/r+6, this one r+8) rather than replacing
-  // each other.
-  if (agentFocus && egoState !== "dim") {
-    strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
-  }
-
-  // Spotlight ring for changed nodes — an amberHub **rotating dashed**
-  // kind-outline. The r+6 offset is its own slot between hub (r+4) and
-  // agentFocus (r+8), so all three stack rather than replace one another.
-  // lineDashOffset carries the rotation phase; under reduced-motion the caller
-  // pins dashOffset to 0, leaving a static dash. Zero glow.
-  if (spotlightRing !== null && egoState !== "dim") {
-    ctx.setLineDash([5, 4]);
-    ctx.lineDashOffset = -spotlightRing.dashOffset;
-    strokeKindOutline(ctx, kind, x, y, r + SPOTLIGHT_RING_OFFSET, farT, tokens.recentChange, 1.2, spotlightRing.alpha);
-    ctx.setLineDash([]);
-    ctx.lineDashOffset = 0;
-  }
-
-  // Canvas-emphasis slice §A — project hexagon's own decorative identity
-  // (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber on
-  // hub nodes and Layer-0 containers only). The
-  // OUTER amber stroke is the body's own `stroke` (set by
-  // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
-  // here) — this block only adds the inner offset hairline + the 4-direction
-  // chassis pin ticks, both fading out toward far field like domain's pins.
-  if (kind === "project" && egoState !== "dim") {
-    if (r > PROJECT_DECOR_MIN_RADIUS && farT < PROJECT_DECOR_MAX_FAR_T) {
-      const decorAlpha = 1 - smoothstep(0.55, 0.9, farT);
-      strokeKindOutline(ctx, "project", x, y, r * PROJECT_HAIRLINE_INNER_RATIO, farT, tokens.projectHairlineInner, 1, decorAlpha);
-      ctx.globalAlpha = entryAlpha * decorAlpha;
-      ctx.strokeStyle = tokens.projectPinTick;
-      ctx.lineWidth = 1;
-      for (const t of projectPinTicks(x, y, r)) {
-        ctx.beginPath();
-        ctx.moveTo(t.x1, t.y1);
-        ctx.lineTo(t.x2, t.y2);
+    else if (rimAlpha > 0.01) {
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = rimAlpha;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth * lineWidthScale;
         ctx.stroke();
-      }
-      ctx.globalAlpha = entryAlpha;
+        ctx.globalAlpha = prevAlpha;
     }
-  }
-
-  // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
-  // ring, "Can grab this" affordance. `isHovered` is only ever
-  // true while no focus is active (`topology-frame-draw.ts` nulls
-  // `hoveredNodeId` under focus), so this never collides with the selection
-  // ring below — but the `egoState` guards stay as defense in depth.
-  if (isHovered && egoState !== "dim" && egoState !== "center") {
-    // rank5 — ring alpha rides the body's hover-ripple wake (`emphasisById`,
-    // rise τ 0.09) so it fades up with the disc instead of a first-frame hard
-    // pop. Omitted emphasis → 1 (pre-rank5 solid ring); reduced-motion snaps
-    // emphasis to 1 upstream, so the ring is instantly solid there.
-    const ringAlpha = Math.min(1, Math.max(0, hoverEmphasis ?? 1));
-    strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, ringAlpha);
-    // The shimmer arc is pure motion layered over the static ring, so
-    // reduced-motion users keep the static ring and see none of it. Checked here
-    // only — no second branch elsewhere.
-    if (!reducedMotion) {
-      drawHoverShimmer(
-        ctx,
-        kind,
-        x,
-        y,
-        r + HOVER_RING_OFFSET,
-        farT,
-        now,
-        tokens.hoverShimmerPeriodMs,
-        tokens.hoverShimmerSeg,
-        tokens.hoverShimmerColor,
-      );
+    if (hasDash)
+        ctx.setLineDash([]);
+    // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
+    // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
+    // Far-side detail factor also folds the tick alpha on the rear hemisphere, continuously.
+    if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
+        const s = r * DOMAIN_HALF_EXTENT_RATIO;
+        if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
+            ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT)) * detail;
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = 1;
+            for (const t of domainPinTicks(x, y, s)) {
+                ctx.beginPath();
+                ctx.moveTo(t.x1, t.y1);
+                ctx.lineTo(t.x2, t.y2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = entryAlpha;
+        }
     }
-  }
-
-  // #5 — connected-neighbor ring. Every direct neighbor of the selected node
-  // gets a single THIN pale-indigo ring on its outline so "what this connects
-  // to" is visible as nodes, not only as highlighted edges (owner report: the
-  // relation lit up but the node on the other end stayed invisible). Same
-  // indigo hue as the center's ring, one value paler and thinner — the
-  // charter's value-only selection ladder, never a new blue hue. Sits below
-  // the `center` block so a node that is somehow both never double-draws.
-  if (egoState === "neighbor") {
-    strokeKindOutline(ctx, kind, x, y, r, farT, tokens.neighborRing, 1.25, 1);
-  }
-
-  // Canvas-emphasis slice §B — the selected node's STATIC double ring (2px on
-  // the outline + a 6px-out 1px hairline), plus its brief one-shot commit
-  // pulse (`model/selection-pulse.ts`). The double ring is unconditional
-  // while `egoState === "center"` — it never animates itself, so it reads as
-  // a fixed "this is selected" fact even after the pulse (if any) finishes.
-  if (egoState === "center") {
-    strokeKindOutline(ctx, kind, x, y, r, farT, tokens.selectionIndigo, 2, 1);
-    strokeKindOutline(ctx, kind, x, y, r + SELECTION_RING_OUTER_OFFSET, farT, tokens.selectionHairline, 1, 1);
-    if (selectionPulse) {
-      const pulseRadius = (r + SELECTION_PULSE_RING_OFFSET) * selectionPulse.scaleFactor;
-      strokeKindOutline(ctx, kind, x, y, pulseRadius, farT, tokens.selectionIndigo, 1.5, selectionPulse.alpha);
+    if (kind === "element") {
+        const half = r * 0.92;
+        if (half > 3 && farT < 0.9) {
+            ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT));
+            ctx.beginPath();
+            ctx.arc(x, y, half * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = tokens.holeFill;
+            ctx.fill();
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.globalAlpha = entryAlpha;
+        }
     }
-  }
-
-  if (countLabel !== null && r > ENGRAVED_COUNT_MIN_RADIUS && egoState !== "dim" && farT < 0.9) {
-    // Project's engraved count reads amber, not neutral gray — the same
-    // Layer-0-container tint as its body stroke (design.md), so the numeral
-    // doesn't look like a leftover from the generic domain/capability treatment.
-    const numeralTokens = kind === "project" ? { ...tokens, numeralFace: tokens.amberHub } : tokens;
-    drawEngraved(ctx, countLabel, x, y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT), numeralTokens);
-  }
+    if (hub && egoState !== "dim") {
+        strokeKindOutline(ctx, kind, x, y, r + 4, farT, tokens.amberHub, 1.4, 1);
+    }
+    // W6 agent visibility — the fresh heartbeat's current target gets a static amber
+    // hairline ring (owner spec: "Static 1px, r+8", same signal tone as the hub
+    // ring/project hexagon amber — never a new color system). Independent of
+    // `hub`/`egoState === "center"` — an agent-focused node can simultaneously
+    // be a hub or the user's own selection; the rings stack at their own
+    // offsets (hub r+4, selection r/r+6, this one r+8) rather than replacing
+    // each other.
+    if (agentFocus && egoState !== "dim") {
+        strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
+    }
+    // Spotlight ring for changed nodes — an amberHub **rotating dashed**
+    // kind-outline. The r+6 offset is its own slot between hub (r+4) and
+    // agentFocus (r+8), so all three stack rather than replace one another.
+    // lineDashOffset carries the rotation phase; under reduced-motion the caller
+    // pins dashOffset to 0, leaving a static dash. Zero glow.
+    if (spotlightRing !== null && egoState !== "dim") {
+        ctx.setLineDash([5, 4]);
+        ctx.lineDashOffset = -spotlightRing.dashOffset;
+        strokeKindOutline(ctx, kind, x, y, r + SPOTLIGHT_RING_OFFSET, farT, tokens.recentChange, 1.2, spotlightRing.alpha);
+        ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+    }
+    // Canvas-emphasis slice §A — project hexagon's own decorative identity
+    // (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber on
+    // hub nodes and Layer-0 containers only). The
+    // OUTER amber stroke is the body's own `stroke` (set by
+    // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
+    // here) — this block only adds the inner offset hairline + the 4-direction
+    // chassis pin ticks, both fading out toward far field like domain's pins.
+    if (kind === "project" && egoState !== "dim") {
+        if (r > PROJECT_DECOR_MIN_RADIUS && farT < PROJECT_DECOR_MAX_FAR_T) {
+            const decorAlpha = 1 - smoothstep(0.55, 0.9, farT);
+            strokeKindOutline(ctx, "project", x, y, r * PROJECT_HAIRLINE_INNER_RATIO, farT, tokens.projectHairlineInner, 1, decorAlpha);
+            ctx.globalAlpha = entryAlpha * decorAlpha;
+            ctx.strokeStyle = tokens.projectPinTick;
+            ctx.lineWidth = 1;
+            for (const t of projectPinTicks(x, y, r)) {
+                ctx.beginPath();
+                ctx.moveTo(t.x1, t.y1);
+                ctx.lineTo(t.x2, t.y2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = entryAlpha;
+        }
+    }
+    // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
+    // ring, "Can grab this" affordance. `isHovered` is only ever
+    // true while no focus is active (`topology-frame-draw.ts` nulls
+    // `hoveredNodeId` under focus), so this never collides with the selection
+    // ring below — but the `egoState` guards stay as defense in depth.
+    if (isHovered && egoState !== "dim" && egoState !== "center") {
+        // rank5 — ring alpha rides the body's hover-ripple wake (`emphasisById`,
+        // rise τ 0.09) so it fades up with the disc instead of a first-frame hard
+        // pop. Omitted emphasis → 1 (pre-rank5 solid ring); reduced-motion snaps
+        // emphasis to 1 upstream, so the ring is instantly solid there.
+        const ringAlpha = Math.min(1, Math.max(0, hoverEmphasis ?? 1));
+        strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, ringAlpha);
+        // The shimmer arc is pure motion layered over the static ring, so
+        // reduced-motion users keep the static ring and see none of it. Checked here
+        // only — no second branch elsewhere.
+        if (!reducedMotion) {
+            drawHoverShimmer(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, now, tokens.hoverShimmerPeriodMs, tokens.hoverShimmerSeg, tokens.hoverShimmerColor);
+        }
+    }
+    // #5 — connected-neighbor ring. Every direct neighbor of the selected node
+    // gets a single THIN pale-indigo ring on its outline so "what this connects
+    // to" is visible as nodes, not only as highlighted edges (owner report: the
+    // relation lit up but the node on the other end stayed invisible). Same
+    // indigo hue as the center's ring, one value paler and thinner — the
+    // charter's value-only selection ladder, never a new blue hue. Sits below
+    // the `center` block so a node that is somehow both never double-draws.
+    if (egoState === "neighbor") {
+        strokeKindOutline(ctx, kind, x, y, r, farT, tokens.neighborRing, 1.25, 1);
+    }
+    // Canvas-emphasis slice §B — the selected node's STATIC double ring (2px on
+    // the outline + a 6px-out 1px hairline), plus its brief one-shot commit
+    // pulse (`model/selection-pulse.ts`). The double ring is unconditional
+    // while `egoState === "center"` — it never animates itself, so it reads as
+    // a fixed "this is selected" fact even after the pulse (if any) finishes.
+    if (egoState === "center") {
+        strokeKindOutline(ctx, kind, x, y, r, farT, tokens.selectionIndigo, 2, 1);
+        strokeKindOutline(ctx, kind, x, y, r + SELECTION_RING_OUTER_OFFSET, farT, tokens.selectionHairline, 1, 1);
+        if (selectionPulse) {
+            const pulseRadius = (r + SELECTION_PULSE_RING_OFFSET) * selectionPulse.scaleFactor;
+            strokeKindOutline(ctx, kind, x, y, pulseRadius, farT, tokens.selectionIndigo, 1.5, selectionPulse.alpha);
+        }
+    }
+    if (countLabel !== null && r > ENGRAVED_COUNT_MIN_RADIUS && egoState !== "dim" && farT < 0.9) {
+        // Project's engraved count reads amber, not neutral gray — the same
+        // Layer-0-container tint as its body stroke (design.md), so the numeral
+        // doesn't look like a leftover from the generic domain/capability treatment.
+        const numeralTokens = kind === "project" ? { ...tokens, numeralFace: tokens.amberHub } : tokens;
+        drawEngraved(ctx, countLabel, x, y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT), numeralTokens);
+    }
 }

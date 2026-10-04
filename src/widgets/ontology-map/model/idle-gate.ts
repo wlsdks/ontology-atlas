@@ -2,7 +2,6 @@
  * Idle-frame predicates. Past the grace window the frame loop stops, so whatever turns one true
  * outside a frame must wake it: input and a write to the activity clock do, and so does a render.
  */
-
 export interface CanvasActivityFlags {
   /** Dragging, pressing or hover-moving. */
   pointerActive: boolean;
@@ -36,9 +35,6 @@ export interface CanvasActivityFlags {
    * light carrying direction never run. Ambient sleep may stop it; the idle gate must not.
    */
   trailMotionActive: boolean;
-  /** A crossfade the person asked for; without it the ramp stutters or stops halfway. */
-  galaxySettling: boolean;
-  galaxyAtmosphereActive: boolean;
   lightActive: boolean;
 }
 
@@ -93,16 +89,6 @@ export function isDomeSpinAnimating(input: DomeSpinInput): boolean {
   );
 }
 
-export interface GalaxyAtmosphereInput {
-  galaxyOn: boolean;
-  reducedMotion: boolean;
-  ambientAsleep: boolean;
-}
-
-export function isGalaxyAtmosphereAnimating(input: GalaxyAtmosphereInput): boolean {
-  return input.galaxyOn && !input.reducedMotion && !input.ambientAsleep;
-}
-
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||
@@ -117,9 +103,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.focusFadeSettling ||
     flags.spotlightSettling ||
     flags.trailLensSettling ||
-    flags.trailMotionActive ||
-    flags.galaxySettling ||
-    flags.galaxyAtmosphereActive ||
+    flags.trailMotionActive
+        ||
     flags.lightActive
   );
 }
@@ -142,11 +127,12 @@ export function shouldSkipFrame(nowMs: number, lastActiveMs: number, graceMs: nu
  * would never wake the loop.
  */
 export function isCameraUnsettled(
-  camera: { x: number; y: number; scale: number },
-  target: { tx: number; ty: number; tscale: number },
-  positionEps = 0.01,
-  scaleEps = 0.0001,
-): boolean {
+  camera: { x: number; y: number; scale: number;
+}, target: {
+    tx: number;
+    ty: number;
+    tscale: number;
+}, positionEps = 0.01, scaleEps = 0.0001): boolean {
   return (
     Math.abs(camera.x - target.tx) > positionEps ||
     Math.abs(camera.y - target.ty) > positionEps ||

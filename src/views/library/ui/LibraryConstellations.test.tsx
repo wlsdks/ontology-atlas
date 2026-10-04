@@ -114,7 +114,7 @@ describe('LibraryConstellations', () => {
     );
   });
 
-  it('routes the empty state to the existing Galaxy constellation editor', () => {
+  it('routes the empty state to the existing Map constellation editor', () => {
     mocks.useSavedConstellations.mockReturnValue({
       status: 'ready',
       constellations: [],

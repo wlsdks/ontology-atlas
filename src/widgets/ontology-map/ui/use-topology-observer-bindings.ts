@@ -11,10 +11,7 @@ import { type ZoomTier } from "../model/tier-visibility";
 import type { HoverAvoidRect } from "./topology-pointer-handlers";
 
 interface Dependencies {
-  galaxy: boolean;
-  galaxyEnteredAtRef: RefObject<number>;
-  galaxyAtmosphereSeedRef: RefObject<number>;
-  onGrowthReplayingChangeRef: RefObject<((running: boolean) => void) | undefined>;
+    onGrowthReplayingChangeRef: RefObject<((running: boolean) => void) | undefined>;
   onGrowthReplayingChange: ((running: boolean) => void) | undefined;
   onZoomTierChangeRef: RefObject<((tier: ZoomTier) => void) | undefined>;
   onZoomTierChange: ((tier: ZoomTier) => void) | undefined;
@@ -56,11 +53,7 @@ interface Dependencies {
 }
 
 /** Refresh observer callbacks, DOM anchors, focus, and lens inputs before mode transitions. */
-export function useTopologyObserverBindings({
-  galaxy,
-  galaxyEnteredAtRef,
-  galaxyAtmosphereSeedRef,
-  onGrowthReplayingChangeRef,
+export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   onGrowthReplayingChange,
   onZoomTierChangeRef,
   onZoomTierChange,
@@ -100,15 +93,9 @@ export function useTopologyObserverBindings({
   glyphStyleRef,
   glyphSet,
 }: Dependencies) {
-
-  // Initial Galaxy mounts do not pass through the mode-toggle branch below,
   // but their deterministic atmosphere still needs an entry epoch.
   useEffect(() => {
-    if (galaxy && galaxyEnteredAtRef.current === 0) {
-      galaxyEnteredAtRef.current = performance.now();
-      galaxyAtmosphereSeedRef.current = Math.random();
-    }
-  }, [galaxy, galaxyAtmosphereSeedRef, galaxyEnteredAtRef]);
+    }, []);
 
   useEffect(() => {
     onGrowthReplayingChangeRef.current = onGrowthReplayingChange;
