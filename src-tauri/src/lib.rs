@@ -32,6 +32,7 @@ mod jev;
 mod library;
 mod llm;
 mod llm_audit;
+mod local_construction;
 mod audit_read;
 mod managed_node;
 mod map_entry_diagnostic;
@@ -3978,6 +3979,8 @@ pub fn run() {
             acp_permission_verdict,
             pick_vault_directory,
             source_access::pick_source_directory,
+            local_construction::preview_local_construction_source,
+            local_construction::read_local_construction_source,
             inspect_project_source,
             inspect_project_source_continuity,
             list_vault_directory,

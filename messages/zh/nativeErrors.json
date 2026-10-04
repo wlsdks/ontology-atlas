@@ -69,5 +69,7 @@
   "connector-secret-ref-invalid": "该连接器引用的格式这台电脑无法存储。请移除连接器后重新添加。",
   "connector-secret-missing": "这个连接器需要的令牌不在这台电脑的钥匙串里。请打开“连接器”重新输入，或关闭该连接器。",
   "acp-line-rewrite-failed": "发给智能体的消息无法准备好。请尝试重新打开对话。",
-  "cancelled": "请求已停止。"
+  "cancelled": "请求已停止。",
+  "construction-loopback-required": "从代码构建需要此电脑上的本地模型地址。请在模型中选择 localhost 或回环地址。",
+  "construction-request-limit": "本次构建请求已达到传输上限。请检查未完成的草稿，或选择更小的文件夹重新运行。"
 }

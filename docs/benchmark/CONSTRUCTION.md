@@ -260,3 +260,61 @@ send, dated result reopening, a separate unsent improvement draft, write
 rejection, one allowed body write, and stale-result gating. Its generic ACP
 conversation archive reopened an empty session during the fresh walkthrough;
 the scoped map inspector did reopen the persisted dated answer.
+
+## Native local source construction — 2026-10-04
+
+This run used an unfamiliar MIT JavaScript byte-framing library, focusing on its
+encoding responsibility. It is a different task from the earlier ACP Python
+trial, so the timings do not rank models. All artifacts stayed outside the
+checkout. The builder was `atlas-qwen3.8:27b`, using production Rust selected-root
+and source-range functions, audited loopback-only curl, and the shared turn,
+proposal builder and applier. The harness substituted the chooser gesture and
+scratch storage port. No installed window, native writer IPC or default app
+replacement was exercised. Source writes and human meaning acceptance were absent.
+
+| Attempt | Native sends / wall time | Persisted result |
+|---|---|---|
+| Initial 60-second request bound | 3 / 120.4 s | Timed out; zero nodes |
+| Reasoning disabled, broad draft | 4 / 102.8 s | Timed out; zero nodes |
+| Focused encoding, same bound | 3 / 109.9 s | Timed out; zero nodes |
+| Construction-only 180-second bound | 4 / 207.2 s | Three nodes; source audit found reversed domain membership; needs review |
+| Kind/direction and citation guard follow-up | 8 / 650.5 s | Three nodes, three rendered graph edges; 5,956 source bytes; two malformed citation batches refused; incomplete at request cap |
+
+The final run's ninth closing attempt was refused before native transfer; the
+harness attempt counter is nine while the actual native-send count is eight.
+All three saved files equal the reviewed proposal's final bytes. Node count is
+not a quality score. Exact source receipts and current hashes matched; four
+unique cited paths existed, and both implementation-path entries resolved.
+The independent source audit verified **13/14 atomic draft claims**. The failed
+claim promoted framing intent into an encoding-alone delivery guarantee. A
+redundant generic and specific containment declaration remains; the renderer
+normalizes it to one edge. The draft is unqualified and validation retains an
+`epistemic-exclusion` warning.
+
+The six fixed questions were sealed before construction. The first reader
+harness omitted the node's agent address, delivered empty bodies and lost
+176.9 s: a setup failure, excluded from semantic grading. A repaired fresh reader
+received the actual three full bodies after individual follow-ups, but its
+six-question answer timed out at 208.5 s. Those failures are retained.
+
+A new source-hidden session answered **only sealed Q5**, the relation/path and
+remaining-unknown question, in 86.3 s using three individual full reads and three
+native sends. It followed the persisted domain/capability/element chain to
+`encode.js` and preserved destroyed-stream and buffer-safety unknowns. Its three
+atomic claims matched the vault and source (**3/3**); qualifier omissions were
+zero. The other five questions were ungraded in this narrower run. This is a
+bounded handoff proof, not six-question coverage or general semantic quality.
+
+The existing shipped local empty-vault loop had no source construction tools and
+persisted zero nodes. This slice establishes a bounded native source-to-draft
+path; it does not establish a speed improvement. The repeated citation repair
+and long output remain efficiency defects. No formal candidate lifecycle or
+human competency acceptance was claimed; current dogfood meaning finalization
+remains blocked by `source_receipt_unavailable`.
+
+A harmless proxy positive control received one marker. With the same inherited
+proxy environment, the production construction path delivered two direct
+markers, zero proxy markers and zero redirect-target markers; remote HTTPS was
+refused. Background browser bridge fixtures opened the source disclosure at
+1512 and 390 widths, kept Run reachable, and passed a nonempty WCAG axe scan.
+These are source/transport and mocked-window receipts, not installed-app proof.

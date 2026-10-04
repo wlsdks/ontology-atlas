@@ -41,7 +41,7 @@ Existing local saves remain untouched; no replacement viewer or export is provid
 
 Direct model conversations reject malformed response structures with a bounded
 `invalid-provider-response` diagnostic. No tool call from that response executes;
-the existing retry flow remains available for cloud and local endpoints. The local conversation stops evidence reads after a strictly verified empty census and explains its source-access limit; it does not construct a codebase map from an empty vault.
+the existing retry flow remains available for cloud and local endpoints. The local conversation stops evidence reads after a strictly verified empty census and explains its source-access limit; ordinary chat does not construct a codebase map from an empty vault. A separate explicit Build from code action in the native Agent panel gives a local model bounded source reads from the exact selected code folder, excludes the destination, and gathers hash-cited document proposals through the existing applier. Loopback-only transport bypasses proxies and follows no redirects. The person reviews the source/destination/model/address before Run, and selectable diffs before Apply; stale evidence retires the draft. Construction uses eight requests/eight ranges, 32 KiB of source, 64 KiB per request and a cancellable 180-second request bound. Source limits and omissions stay visible; saves do not accept meaning.
 
 Approved model proposals retain their confirmed saved-file prefix after a write failure, attempt a folder reload, and report reload errors separately. Normal agent and local Compile failure messages expose that prefix; no automatic rollback is claimed.
 
