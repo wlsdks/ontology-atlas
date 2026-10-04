@@ -1,0 +1,5 @@
+{
+  "gate": "comment-bytes.src-views",
+  "raise": 144,
+  "why": "The scoped effect-lint exception documents why a pre-paint canvas handoff requires durable queued state; CPU4 proved render-phase state was lost during deferred rebasing."
+}
