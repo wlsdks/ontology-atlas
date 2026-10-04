@@ -12,6 +12,17 @@ const nodes = [node('Project', 'project'), node('Domain', 'domain'), node('Capab
 const edges = [edge('Project', 'Domain'), edge('Domain', 'Capability'), edge('Domain', 'Element'), edge('Capability', 'Element')];
 
 describe('reading from a structure scope', () => {
+  it('leaves the outside scope when an external selection reveals a rooted concept', () => {
+    const renderMap = (selectedId: string | null) => <NextIntlClientProvider locale="en" messages={{ mapStructure: messages }}><DomainStructureMap nodes={[...nodes, node('Orphan', 'element')]} edges={edges} selectedId={selectedId} onRead={() => {}} reducedMotion indexExpanded={false} inspectorOpen={false} /></NextIntlClientProvider>;
+    const view = render(renderMap(null));
+    Object.defineProperty(screen.getByTestId('domain-structure-map'), 'scrollTo', { value: () => {} });
+    fireEvent.click(screen.getByRole('button', { name: /Outside the recorded structure/ }));
+    expect(screen.getByTestId('structure-scope-title')).toHaveTextContent('Outside the recorded structure');
+    view.rerender(renderMap('Capability'));
+    expect(screen.getByTestId('structure-scope-title')).toHaveTextContent('Capability');
+    expect(screen.getByRole('button', { name: 'Read Element' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Read Orphan' })).not.toBeInTheDocument();
+  });
   it('keeps the chosen parent when reading a child that has another shorter ancestry', () => {
     function Harness() {
       const [selected, setSelected] = useState<string | null>(null);

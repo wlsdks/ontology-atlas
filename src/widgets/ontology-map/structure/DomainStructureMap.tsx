@@ -32,6 +32,8 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
 }) {
   const t = useTranslations('mapStructure');
   const index = useMemo(() => readStructure(nodes, edges), [nodes, edges]);
+  const [outside, setOutside] = useState(false);
+  const [pages, setPages] = useState<Partial<Record<StructureNode['kind'], number>>>({});
   const [readingHere, setReadingHere] = useState<string | null>(null);
   const [path, setPath] = useState<string[]>(() => selectedId ? structurePath(index, selectedId) : index.roots.length === 1 && index.nodes.get(index.roots[0]!)?.kind === 'project' ? [...index.roots] : []);
   const [seenSelection, setSeenSelection] = useState(selectedId);
@@ -42,6 +44,8 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
     if (selectedId && readingHere !== selectedId) {
       valid = structurePath(index, selectedId);
       setPath(valid);
+      setOutside(false);
+      setPages({});
     }
     setReadingHere(null);
   }
@@ -49,8 +53,6 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
   const current = index.nodes.get(currentPath.at(-1) ?? '');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const requestedFocus = useRef(false);
-  const [outside, setOutside] = useState(false);
-  const [pages, setPages] = useState<Partial<Record<StructureNode['kind'], number>>>({});
   const ids = useMemo(() => outside ? index.outside : current ? index.children.get(current.id) ?? [] : index.roots, [outside, index, current]);
   const grouped = useMemo(() => {
     const groups = new Map(KINDS.map(kind => [kind, [] as StructureNode[]]));
