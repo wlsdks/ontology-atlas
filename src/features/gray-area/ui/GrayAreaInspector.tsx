@@ -16,6 +16,7 @@ import { buildGrayAreaInvestigation } from '../model/investigation';
 import { useInvestigationHistory } from '../model/investigation/use-investigation-history';
 import { InvestigationResult } from './investigation/InvestigationResult';
 import styles from './GrayAreaInspector.module.css';
+import { useInspectorClearance } from './use-inspector-clearance';
 
 export interface GrayAreaSelection { projectSlug: string; projectUid?:string; uids: string[]; label: string; key: string }
 interface Props {
@@ -39,6 +40,7 @@ interface Props {
 
 export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onClose, onFocus, onPrepare, onNarrowScope, onPrepareImprovement, onAnalyze, runtimeLabel, canAnalyze, busyConversation, onInspection, previousResultAt, onExited }: Props) {
   const t = useTranslations('grayArea');
+  const panelRef = useInspectorClearance();
   const nativeRuntime = isTauriVaultRuntime();
   const [attempt, setAttempt] = useState(0);
   const [preview,setPreview] = useState<{key:string;value:GrayAreaScopePreview|null;error:unknown}|null>(null);
@@ -124,9 +126,9 @@ export function GrayAreaInspector({ open, vaultPath, vaultHandle, selection, onC
     try{const snapshot=await readGrayAreaEvidence(vaultPath,selection.projectSlug,selection.uids,proposal.value.bindingDigest);if(ticket===sequence.current)setResult({key:requestKey,snapshot,error:null});}
     catch(error){if(ticket===sequence.current)setResult({key:requestKey,snapshot:null,error:String(error)});}
   };
-  return <Surface open={open} onExited={onExited} as="aside" role="region" aria-labelledby="gray-area-title" origin="top right"
+  return <Surface ref={panelRef} open={open} onExited={onExited} as="aside" role="region" aria-labelledby="gray-area-title" origin="top right"
     data-testid="gray-area-inspector" data-topology-camera-obstacle="side-panel"
-    className={`${styles.inspector} pointer-events-auto fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-40 flex max-h-[var(--map-inspector-max-height)] flex-col overflow-hidden rounded-panel border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--shadow-elevation-dock-side)] lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:w-[var(--map-panel-width)]`}>
+    className={`${styles.inspector} topology-ui-scale pointer-events-auto fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-40 flex max-h-[var(--map-inspector-max-height)] flex-col overflow-hidden rounded-panel border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] shadow-[var(--shadow-elevation-dock-side)] lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:w-[var(--map-panel-width)]`}>
     <header className="flex shrink-0 items-start gap-3 border-b border-[color:var(--color-divider)] p-[var(--card-pad)]">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1"><p className="text-caption text-[color:var(--color-text-secondary)]">{t('eyebrow')}</p><p className="break-words text-body text-[color:var(--color-text-secondary)]">{selection.label}</p></div>
@@ -216,7 +218,7 @@ function Findings({ snapshot,sourceRoot,vaultPath,vaultHandle,onFocus,onPrepare,
           <div className="space-y-2" data-testid="gray-area-next-analysis">
             <p className="text-caption text-[color:var(--color-text-secondary)]">{busyConversation?t('continuation.busy'):runtimeLabel?t('continuation.transfer',{runtime:runtimeLabel}):t('continuation.agentUnavailable')}</p>
             {runtimeLabel?<p className="text-caption text-[color:var(--color-text-tertiary)]">{t('continuation.modelUnknown')}</p>:null}
-            {request?<Disclosure summary={t('continuation.requestDetails')}><pre data-testid="gray-area-exact-request" className="max-h-64 overflow-y-auto whitespace-pre-wrap break-words font-mono text-caption">{request}</pre></Disclosure>:null}
+            {request?<Disclosure summary={t('continuation.requestDetails')}><pre data-testid="gray-area-exact-request" className="whitespace-pre-wrap break-words font-mono text-caption">{request}</pre></Disclosure>:null}
             <Button disabled={stale||busy||!canAnalyze||!onAnalyze||!request||!sourceRoot} onClick={()=>void guarded(()=>onAnalyze?.(request!,candidate,snapshot,sourceRoot!))}>{t('continuation.analyze')}</Button>
             <p className="text-caption text-[color:var(--color-text-secondary)]">{t('continuation.packetLimits')}</p>
           </div>
@@ -252,11 +254,11 @@ function Fact({label,value,detail,compact=false,unknown=false}:{label:string;val
 
 function SourceExcerpt({source,measuredAt,onClose,onExited}:{source:GrayAreaWitness|null;measuredAt:string;onClose:()=>void;onExited:()=>void}) {
   const t=useTranslations('grayArea');const shown=useHeldValue(source,source?.path??'');
-  const mountSource=useCallback((node:HTMLDivElement|null)=>{if(node&&source){node.focus();node.scrollIntoView({block:'nearest'});}},[source]);
-  return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 rounded-card border border-[color:var(--color-divider)] p-3" data-testid="gray-area-source-witness">
+  const mountSource=useCallback((node:HTMLDivElement|null)=>{if(node&&source){node.focus({preventScroll:true});node.scrollIntoView({block:'start'});}},[source]);
+  return <Surface open={Boolean(source)} onExited={onExited} motion="overlay" className="space-y-2 border-t border-[color:var(--color-divider)] pt-3" data-testid="gray-area-source-witness">
     <div tabIndex={-1} ref={mountSource} role="region" aria-label={t('source')} className="space-y-2 rounded-chip outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
       <div className="flex items-start gap-2"><p className="min-w-0 flex-1 break-all text-body leading-body font-mono">{shown?.path}:{shown?.actualRange?.startLine}–{shown?.actualRange?.endLine}</p><CloseButton label={t('closeSource')} onClick={onClose} /></div>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
+      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('capturedSource',{time:measuredAt})}</p><pre className="whitespace-pre-wrap break-words text-body leading-body font-mono">{shown?.text}</pre><p className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">SHA256 {shown?.fullFileSha256}</p>
     </div>
   </Surface>;
 }
