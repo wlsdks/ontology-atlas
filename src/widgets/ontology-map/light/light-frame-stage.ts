@@ -75,6 +75,9 @@ function writeInk(token: string, out: Float32Array, slot: number): void {
   for (let channel = 0; channel < 3; channel += 1) out[slot * 3 + channel] = rgb ? rgb[channel]! / 255 : 0;
 }
 
+function lightKinematics(tokens: OntologyMapTokens): LightKinematics {
+  return { speed: tokens.lightSpeed, hopMinMs: tokens.lightHopMinMs, hopMaxMs: tokens.lightHopMaxMs, pathMaxMs: tokens.lightPathMaxMs, tail: tokens.lightTail, intensity: tokens.lightIntensity, bloomTauMs: tokens.lightBloomTau * 1000 };
+}
 
 export function createLightFrameStage(dependencies: LightStageDependencies, options: LightStageOptions = {}): LightFrameStage {
   const { canvasRef, refs, lightActiveRef, requestFrame } = dependencies;
@@ -107,6 +110,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
   let prepareMs = 0;
   let prepareStart = 0;
   let paintInput: LightSourceInput | null = null;
+  let initialInput: LightSourceInput | null = null;
 
   let probe: LightProbe | null = null;
   if (params.has("e2e") && typeof window !== "undefined") {
@@ -179,6 +183,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
     layer?.dispose();
     layer = null;
     drewLast = false;
+    initialInput = null;
   };
 
   const create = async () => {
@@ -218,7 +223,12 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         corePx: 0,
         haloPx: 0,
       };
-        state = "ready";
+      if (initialInput) {
+        for (const source of sources) if (!source.readsPaint) source.step(initialInput, emitter);
+        sourcesQuiet = false;
+      }
+      initialInput = null;
+      state = "ready";
       requestFrame();
     } catch {
       if (state === "pending") state = "off";
@@ -264,6 +274,9 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       }
       const dome = refs.domeRuntimeRef.current;
       const flat = dome === null || dome.rampClock <= 0;
+      if (state === "idle" && flat && width > 0 && height > 0 && initialInput === null) {
+        initialInput = { now, world, camera, width, height, tokens, kinematics: lightKinematics(tokens), focusedNodeId, trailLensActive, reducedMotion, revealProgress: 1, clusteredIds, mapLensKind: refs.mapLensKindRef.current, pathEdgeIds: refs.pathEdgeIdsRef.current, pathNodeIds: refs.spotlightIdsRef.current };
+      }
       if (state === "idle" && flat && width > 0 && height > 0) schedule();
       if (state !== "ready" || !flat || !batch) {
         quiet();
@@ -271,7 +284,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       }
       if (tokens !== tokensSeen) {
         tokensSeen = tokens;
-        kinematics = { speed: tokens.lightSpeed, hopMinMs: tokens.lightHopMinMs, hopMaxMs: tokens.lightHopMaxMs, pathMaxMs: tokens.lightPathMaxMs, tail: tokens.lightTail, intensity: tokens.lightIntensity, bloomTauMs: tokens.lightBloomTau * 1000 };
+        kinematics = lightKinematics(tokens);
         writeInk(tokens.indigoBright, inks, 0);
         batch.corePx = tokens.lightCorePx;
         batch.haloPx = tokens.lightHaloPx;
