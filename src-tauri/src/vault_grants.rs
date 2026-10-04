@@ -139,6 +139,24 @@ pub(crate) fn grant_vault_root(root: &Path) {
     reg.persist();
 }
 
+pub(crate) fn grant_source_root(root: &Path) {
+    let Ok(canonical) = std::fs::canonicalize(root) else {
+        return;
+    };
+    #[cfg(test)]
+    if THREAD_REGISTRY.with(|slot| {
+        if let Some(reg) = slot.borrow_mut().as_mut() {
+            reg.sources.insert(canonical.clone());
+            true
+        } else {
+            false
+        }
+    }) {
+        return;
+    }
+    lock().sources.insert(canonical);
+}
+
 /// Gate for vault content, git and archive commands. Permissive until `initialize`.
 pub(crate) fn is_vault_granted(path: &Path) -> bool {
     if let Some(answer) = thread_override(|reg| reg.is_vault_granted(path)) {

@@ -76,7 +76,7 @@ test('distinct references from one concept control their own candidate details',
   });
   await open(page);await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
   const cards=page.getByTestId('gray-area-missing-link');await expect(cards).toHaveCount(2);
-  const headers=cards.locator('button[aria-controls]');
+  const headers=cards.locator(':scope > button[aria-controls]');
   const ids=await headers.evaluateAll(items=>items.map(e=>e.getAttribute('aria-controls')));
   expect(new Set(ids).size).toBe(2);
   await headers.nth(1).click();
@@ -185,4 +185,20 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await composer.fill('다른 질문을 준비해요');await expect(heading).not.toContainText('재시도 전달');
   const state=await page.evaluate(()=> (window as unknown as {__atlasLibraryWorkHarness:{snapshot:()=>{calls:{method:string}[];writes:unknown[]}}}).__atlasLibraryWorkHarness.snapshot());
   expect(state.calls.filter(c=>c.method==='session/prompt')).toHaveLength(0);expect(state.writes).toHaveLength(0);
+});
+
+
+test('a new explicit investigation restores its topic after an ordinary draft was retired',async({page})=>{
+  await page.setViewportSize({width:1512,height:949});await install(page);
+  await page.getByTestId('map-detail-panel').getByRole('button',{name:'Meaning review',exact:true}).click();
+  await page.getByTestId('analysis-workbench').getByRole('tab',{name:'Conversation',exact:true}).click();
+  const composer=page.getByRole('textbox',{name:'Write what you want done',exact:true});
+  await expect(composer).toBeVisible();await composer.fill('An ordinary draft');await composer.fill('');
+  await page.getByTestId('analysis-workbench').getByRole('button',{name:/close/i}).click();
+  await inspect(page);
+  await page.getByRole('button',{name:'Analyze next',exact:true}).click();
+  await expect(page.getByTestId('analysis-workbench').getByRole('heading',{level:2})).toContainText('Retry dispatch');
+  await expect(page.getByTestId('analysis-workbench').getByRole('heading',{level:2})).toContainText('Write policy');
+  await composer.fill('A new editable follow-up');await composer.fill('');
+  await expect(page.getByTestId('analysis-workbench').getByRole('heading',{level:2})).toHaveText('Retry dispatch');
 });

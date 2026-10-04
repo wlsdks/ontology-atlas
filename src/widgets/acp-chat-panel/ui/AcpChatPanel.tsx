@@ -1,6 +1,6 @@
 'use client';
 
-import type { AcpTurnStart, AcpTurnCompletion, TaskBaselineCaptureResult } from '@/features/acp-session';
+import type { AcpTurnStart, AcpTurnCompletion, TaskBaselineCaptureResult, InvestigationSendGuard } from '@/features/acp-session';
 
 import {
   ArrowDown,
@@ -52,6 +52,7 @@ import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/elapsed';
 import { MOTION } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { useTypewriterReveal } from '@/shared/lib/use-typewriter-reveal';
 import {
   buildOntologyChangeSet,
@@ -345,6 +346,7 @@ export function AcpChatPanel({
   requestScopeKey,
   draftStore,
   onOpeningRequestSent,
+  onOpeningRequestRejected,
   judgeWrite,
   autoDecide,
   suggestions = [],
@@ -407,9 +409,10 @@ export function AcpChatPanel({
    * It waits for `ready`: sending into a session that is still starting would be swallowed, and
    * the person would watch a door do nothing.
    */
-  openingRequest?: { text: string; nonce: number; scopeKey?: string } | null;
+  openingRequest?: { text: string; nonce: number; scopeKey?: string; investigation?: InvestigationSendGuard } | null;
   requestScopeKey?: string;
   onOpeningRequestSent?: (nonce: number) => void;
+  onOpeningRequestRejected?: (nonce: number) => void;
   /**
    * Where the unsent sentence lives when this panel does not outlive its dock.
    *
@@ -541,6 +544,7 @@ export function AcpChatPanel({
   meaningTransitionContext?: { handle: FileSystemDirectoryHandle; fileHandles: ReadonlyMap<string, FileSystemFileHandle>; writable: boolean };
 }) {
   const t = useTranslations('acpChat');
+  const tGray=useTranslations('grayArea');
   const reducedMotion = usePrefersReducedMotion();
   const meaningTransitions = useMeaningTransitionCapture({ context: meaningTransitionContext, vaultRoot, runtimeId });
   const recordMeaningReceipt = meaningTransitions.recordReceipt;
@@ -549,6 +553,7 @@ export function AcpChatPanel({
     onWorkReceipt?.(receipt);
   }, [recordMeaningReceipt, onWorkReceipt]);
   const openingScopeMismatch = openingRequest?.scopeKey !== undefined && openingRequest.scopeKey !== requestScopeKey;
+  const liveOpeningRequest=useLatestRef({openingRequest,sessionEnabled,openingScopeMismatch,runtimeId,vaultRoot});
   const observedTerminalToolIdsRef = useRef(new Set<string>());
   const emitTerminalTool = useCallback((event: AcpEvent) => {
     if (event.kind !== 'tool' || !['completed', 'failed', 'cancelled'].includes(event.status)
@@ -558,7 +563,7 @@ export function AcpChatPanel({
   }, [onTerminalToolObservation]);
   const captureTurnStart = useCallback((turn: AcpTurnStart) => {
     const completion = onTurnStarted?.(turn) ?? null;
-    if (!openingScopeMismatch && openingRequest && turn.text === openingRequest.text) onOpeningRequestSent?.(openingRequest.nonce);
+    if (!openingScopeMismatch && openingRequest && !openingRequest.investigation && turn.text === openingRequest.text) onOpeningRequestSent?.(openingRequest.nonce);
     return async (result: AcpTurnCompletion) => {
       // The last tool and turn end can land in one React batch. Drain the actual
       // live turn before a ready-state render baselines transcript history.
@@ -578,10 +583,12 @@ export function AcpChatPanel({
     approvedOntologyWrite,
     sessions,
     choices,
+    reportedPlan,
     chooseModel,
     chooseMode,
     start,
     send,
+    sendInvestigation,
     cancel,
     stop,
     switchSession,
@@ -980,8 +987,15 @@ export function AcpChatPanel({
   const restartedOpeningNonceRef = useRef<number | null>(null);
   const openingNonce = openingRequest?.nonce ?? null;
   const openingText = openingRequest?.text ?? null;
+  const openingInvestigation = openingRequest?.investigation;
   useEffect(() => {
     if (openingNonce === null || !openingText) return;
+    if (sentOpeningNonceRef.current === openingNonce) return;
+    if (openingInvestigation && (openingScopeMismatch || openingInvestigation.runtimeId !== runtimeId || status === 'thinking' || pending !== null)) {
+      sentOpeningNonceRef.current = openingNonce;
+      onOpeningRequestRejected?.(openingNonce);
+      return;
+    }
     if (openingScopeMismatch) return;
     /*
      * A connection the person stopped counts as broken for a door pressed afterwards: that
@@ -1000,10 +1014,22 @@ export function AcpChatPanel({
       return;
     }
     if (status !== 'ready') return;
-    if (sentOpeningNonceRef.current === openingNonce) return;
     sentOpeningNonceRef.current = openingNonce;
-    void send(openingText);
-  }, [openingNonce, openingText, openingScopeMismatch, status, send, switchSession, markConnectStopped]);
+    if (openingInvestigation) {
+      const requestCurrent=()=>{
+        const current=liveOpeningRequest.current;
+        return current.sessionEnabled&&!current.openingScopeMismatch
+          &&current.runtimeId===runtimeId&&current.vaultRoot===vaultRoot
+          &&current.openingRequest?.nonce===openingNonce&&current.openingRequest.text===openingText;
+      };
+      const guard={...openingInvestigation,revalidate:async()=>requestCurrent()
+        &&await openingInvestigation.revalidate()&&requestCurrent()};
+      void sendInvestigation(openingText, guard).then(sent => {
+        if (sent) onOpeningRequestSent?.(openingNonce);
+        else onOpeningRequestRejected?.(openingNonce);
+      });
+    } else void send(openingText);
+  }, [openingNonce, openingText, openingInvestigation, openingScopeMismatch, runtimeId, vaultRoot, liveOpeningRequest, status, pending, send, sendInvestigation, switchSession, markConnectStopped, onOpeningRequestSent, onOpeningRequestRejected]);
 
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
@@ -2519,6 +2545,7 @@ export function AcpChatPanel({
           (installed app, 2026-09-07). The two-row measurement in `panel-width.ts` is gone
           with the boxes: a quiet picker truncates to its floor instead of wrapping.
         */}
+            {reportedPlan?<p data-testid="acp-reported-plan" className="text-caption text-[color:var(--color-text-secondary)]">{tGray('continuation.reportedTasks',{done:reportedPlan.done,total:reportedPlan.total})}{reportedPlan.replanned?` ${tGray('continuation.replanned',{total:reportedPlan.total})}`:''}</p>:null}
         <div
           data-testid="acp-chat-footer"
           className="mt-2 flex min-w-0 items-center gap-1"

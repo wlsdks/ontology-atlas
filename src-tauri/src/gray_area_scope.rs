@@ -47,7 +47,7 @@ pub(crate) struct BoundSource {
 }
 pub(crate) fn resolve_binding(vault: &Path, project: &str) -> Result<BoundSource, String> {
     let binding = resolve_binding_metadata(vault, project)?;
-    crate::canonical_root(&binding.root.to_string_lossy())?;
+    crate::canonical_source_root(&binding.root.to_string_lossy())?;
     Ok(binding)
 }
 pub(crate) fn resolve_binding_metadata(vault: &Path, project: &str) -> Result<BoundSource, String> {

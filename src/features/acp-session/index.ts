@@ -7,6 +7,7 @@ export { useChatSuggestions } from "./model/use-chat-suggestions";
 export type { ChatSuggestion } from "./model/chat-suggestions";
 export { subjectSuggestions } from "./model/chat-suggestions";
 export { useAcpSession } from "./model/use-acp-session";
+export type { InvestigationSendGuard } from './model/investigation/guard';
 export type { AcpEvent, PendingPermission } from "./model/use-acp-session";
 export type { AcpTurnStart, AcpTurnCompletion } from './model/use-acp-session';
 export { captureTaskBaseline } from './model/task-baseline';

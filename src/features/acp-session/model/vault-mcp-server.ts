@@ -1,20 +1,9 @@
 import type { McpServerLaunch } from '@/shared/config';
 
 /**
- * The MCP server wired into a session automatically — **so the user never edits a config file.**
- *
- * **This is the substance of the feature.** ACP itself is something any app can attach in a few
- * weeks. What only we do is that **the person's vault is already loaded** the moment that session
- * opens. Other editors can wire MCP too, but they have no ontology to wire.
- *
- * Measured 2026-08-16: passing the bundled MCP through `session/new`'s `mcpServers` had the agent
- * call `connection_info` and `list_kinds` and read the vault's 79 nodes. The user had never created
- * a `.mcp.json` nor typed `claude mcp add`.
- *
- * **A name collision swallows it silently.** In the same measurement the codex side failed at first,
- * and the cause was not the protocol but a **name collision** — that repository's
- * `.codex/config.toml` already had `ontology-atlas`, and the adapter's deduplication **discarded
- * ours without a word**. So the server the app wires avoids names a user would plausibly write by hand.
+ * Wire the loaded vault into ACP without a user-written config. Native sessions
+ * on 2026-08-16 read the vault through this server. A Codex name collision
+ * silently discarded the injected server, so use a distinct session name.
  */
 import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
 
@@ -138,10 +127,12 @@ export function vaultMcpServers(
   launch: McpServerLaunch | null,
   vaultPath: string | null,
   registration?: ExistingVaultMcpRegistration | null,
-  options?: { ownsWriteGate?: boolean },
+  options?: { ownsWriteGate?: boolean;sourceRoot?:string },
 ): AcpMcpServer[] {
   if (!launch || !vaultPath) return [];
-  if (vaultAlreadyRegisters(launch, registration)) return [];
+  // A matching vault/command does not prove that the registration reads this bound code folder.
+  // Preserve ordinary deduplication; explicitly scoped analysis needs its own known-root server.
+  if (!options?.sourceRoot&&vaultAlreadyRegisters(launch, registration)) return [];
   /*
    * **One session, one checkpoint — held by whoever can actually hold it.**
    *
@@ -157,7 +148,7 @@ export function vaultMcpServers(
    * gets the gate rather than a silent write path.
    */
   const serverGate = options?.ownsWriteGate === true ? null : 'on';
-  const projectRoot = projectRootForVault(vaultPath);
+  const projectRoot = options?.sourceRoot??projectRootForVault(vaultPath);
   return [
     {
       name: VAULT_MCP_SERVER_NAME,

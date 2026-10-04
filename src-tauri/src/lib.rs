@@ -37,6 +37,7 @@ mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
 mod secrets;
+mod source_access;
 mod vault_grants;
 
 /// 20 attempts 250 ms apart: five seconds for a cold start to produce a document.
@@ -3976,6 +3977,7 @@ pub fn run() {
             acp_stop,
             acp_permission_verdict,
             pick_vault_directory,
+            source_access::pick_source_directory,
             inspect_project_source,
             inspect_project_source_continuity,
             list_vault_directory,

@@ -414,8 +414,8 @@ pub fn preview_gray_area_scope(
             return Err(json!("source_selection_mismatch"));
         }
     }
-    if let Err(error) = crate::canonical_root(&binding.root.to_string_lossy()) {
-        return Err(if error == "vault-root-not-granted" {
+    if let Err(error) = crate::canonical_source_root(&binding.root.to_string_lossy()) {
+        return Err(if error == "source-root-not-granted" {
             json!({"code":"source-root-not-granted","sourcePath":binding.root.to_string_lossy(),"bindingDigest":binding.binding_digest})
         } else {
             Value::String(error)

@@ -38,6 +38,7 @@ never a parallel router or surface fork.
 | Git | `src/shared/lib/tauri-git.ts` | degradation card |
 | Keychain | `src/shared/lib/tauri-secrets.ts` | degradation card |
 | Gray-area evidence | `src/shared/lib/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
+| Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
 | Jev evidence check (experimental) | `src/shared/lib/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
