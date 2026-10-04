@@ -225,6 +225,29 @@ afterEach(() => {
 });
 
 describe("light frame stage", () => {
+  it("observes the initial world before readiness so a path opened before the first ready frame is not lost", async () => {
+    const h = harness({ search: "?e2e=1" });
+    h.frame(0, null);
+    h.runIdle();
+    await vi.waitFor(() => expect(h.light()).not.toBeNull());
+    h.refs.mapLensKindRef.current = "path";
+    h.refs.pathEdgeIdsRef.current = new Set(["e0"]);
+    h.refs.spotlightIdsRef.current = new Set(["p", "d0"]);
+    h.frame(FRAME_MS, null);
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string }[] } }).__atlasMapLight;
+    expect(probe.plan().some(plan => plan.kind === "path")).toBe(true);
+    h.stage.dispose();
+  });
+  it("does not replay a path already open when GPU initialization begins", async () => {
+    const h = harness({ search: "?e2e=1" });
+    h.refs.mapLensKindRef.current = "path";
+    h.refs.pathEdgeIdsRef.current = new Set(["e0"]);
+    h.refs.spotlightIdsRef.current = new Set(["p", "d0"]);
+    await ready(h);
+    const probe = (window as unknown as { __atlasMapLight: { plan: () => { kind: string }[] } }).__atlasMapLight;
+    expect(probe.plan().some(plan => plan.kind === "path")).toBe(false);
+    h.stage.dispose();
+  });
   it("creates its canvas in an idle callback after the first frame, beside the map canvas", async () => {
     const h = harness();
     h.frame(0, null);
