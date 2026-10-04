@@ -98,8 +98,26 @@ test("desktop smoke titles derive current route metadata for every locale", () =
   for (const locale of DESKTOP_SMOKE_LOCALES) {
     const { metadata } = JSON.parse(fs.readFileSync(`messages/${locale}.json`, "utf8"));
     for (const [route, key] of Object.entries(DESKTOP_SMOKE_ROUTE_TITLE_KEYS)) {
-      assert.equal(DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`], `${metadata.pages[key]} · ${metadata.siteName}`);
+      const expected = route === "/download" ? metadata.homeTitle : `${metadata.pages[key]} · ${metadata.siteName}`;
+      assert.equal(DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`], expected);
     }
+  }
+});
+
+test("download uses absolute landing metadata and refuses a missing title", () => {
+  const root = makeOutDir();
+  try {
+    const messages = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
+    messages.metadata.homeTitle = "Fixture landing title";
+    messages.metadata.pages.download = "Fixture route label";
+    messages.metadata.siteName = "Fixture brand";
+    write(root, "messages/en.json", JSON.stringify(messages));
+    assert.equal(resolveRouteTitles({ root, locales: ["en"] })["en:/download"], messages.metadata.homeTitle);
+    delete messages.metadata.homeTitle;
+    write(root, "messages/en.json", JSON.stringify(messages));
+    assert.throws(() => resolveRouteTitles({ root, locales: ["en"] }), /en:\/download.*metadata.homeTitle/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -431,11 +449,13 @@ test("desktop smoke follows an injected four-locale list", () => {
     for (const locale of locales) {
       const catalog = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
       catalog.metadata.siteName = `Site ${locale}`;
+      catalog.metadata.homeTitle = `Home ${locale}`;
       write(root, `messages/${locale}.json`, JSON.stringify(catalog));
     }
     const titles = resolveRouteTitles({ root, locales });
     assert.equal(Object.keys(titles).length, locales.length * Object.keys(DESKTOP_SMOKE_ROUTE_TITLE_KEYS).length);
-    assert.ok(titles["zh:/download"].endsWith("· Site zh"));
+    assert.equal(titles["zh:/download"], "Home zh");
+    assert.ok(titles["zh:/docs"].endsWith("· Site zh"));
     assert.deepEqual(
       Object.keys(resolveRouteText({ root, locales })).sort(),
       locales.map((locale) => `${locale}:/download`),
