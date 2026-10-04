@@ -597,13 +597,37 @@ fn curl_chat_config(request: &ChatRequest) -> String {
     curl_config_for(&request.url, &request.headers, Some(&request.body))
 }
 
+fn local_chat_timeout(construction: bool) -> &'static str {
+    if construction { CHAT_TIMEOUT_SECONDS } else { LOCAL_CHAT_TIMEOUT_SECONDS }
+}
+
 fn send_chat_cancellable(
     request: &ChatRequest,
     timeout: &'static str,
     cancellation: &mut tokio::sync::oneshot::Receiver<()>,
 ) -> Result<ChatEcho, String> {
+    send_chat_with_policy(request, timeout, cancellation, false)
+}
+fn construction_transport_policy(command: &mut Command, request: &ChatRequest) -> Result<(), String> {
+    let endpoint = normalize_base_url(&request.url)?;
+    let authority = endpoint.split_once("://").ok_or_else(|| coded("endpoint-host-missing", ""))?.1.split('/').next().unwrap_or("");
+    if !is_loopback_authority(authority) { return Err(coded("construction-loopback-required", "")); }
+    if request.body.len() > 64 * 1024 { return Err(coded("construction-request-limit", "")); }
+    command.args(["--noproxy", "*"]);
+    for key in ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"] {
+        command.env_remove(key);
+    }
+    Ok(())
+}
+fn send_chat_with_policy(
+    request: &ChatRequest,
+    timeout: &'static str,
+    cancellation: &mut tokio::sync::oneshot::Receiver<()>,
+    construction: bool,
+) -> Result<ChatEcho, String> {
     let mut command = Command::new("curl");
     command.args(curl_argv_with_timeout(timeout));
+    if construction { construction_transport_policy(&mut command, request)?; }
     let config = curl_chat_config(request);
     let output = tauri::async_runtime::block_on(http_output::capture_cancelled(
         command,
@@ -718,7 +742,10 @@ pub async fn llm_chat(
     body: String,
     scope: AuditScopeInput,
     base_url: Option<String>,
+    source_construction: Option<bool>,
 ) -> Result<LlmChatEcho, String> {
+    let construction = source_construction.unwrap_or(false);
+    if construction && provider != LOCAL_PROVIDER { return Err(wrong_target(&provider)); }
     let mut owned = requests::registry().claim(window.label(), &request_id)?;
     tauri::async_runtime::spawn_blocking(move || {
         let vault_dir = crate::git::validate_vault_dir(&vault_path)?;
@@ -735,7 +762,7 @@ pub async fn llm_chat(
                 &body,
                 scope,
                 |request| {
-                    send_chat_cancellable(request, LOCAL_CHAT_TIMEOUT_SECONDS, &mut owned.receiver)
+                    send_chat_with_policy(request, local_chat_timeout(construction), &mut owned.receiver, construction)
                 },
             );
         }
@@ -763,10 +790,34 @@ pub async fn llm_chat(
 mod tests {
     #[cfg(unix)]
     mod cancellation;
+    mod construction_probe;
     use super::*;
     use std::cell::Cell;
     use std::fs;
     use std::path::PathBuf;
+
+    #[test]
+    fn construction_uses_a_longer_bound_without_changing_the_local_audit_timeout() {
+        assert_eq!(local_chat_timeout(true), "180");
+        assert_eq!(local_chat_timeout(false), "60");
+    }
+
+    #[test]
+    fn construction_transport_refuses_remote_https_and_large_payloads() {
+        let remote = ChatRequest { url: "https://example.com/v1/chat/completions".into(), headers: vec![], body: "marker".into() };
+        assert!(construction_transport_policy(&mut Command::new("curl"), &remote).is_err());
+        let oversized = ChatRequest { url: "http://127.0.0.1:11434/v1/chat/completions".into(), headers: vec![], body: "x".repeat(64 * 1024 + 1) };
+        assert!(construction_transport_policy(&mut Command::new("curl"), &oversized).is_err());
+    }
+    #[test]
+    fn construction_transport_removes_every_inherited_proxy_override() {
+        let request = ChatRequest { url: "http://127.0.0.1:11434/v1/chat/completions".into(), headers: vec![], body: "HARMLESS_SOURCE_MARKER".into() };
+        let mut command = Command::new("curl");
+        for key in ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"] { command.env(key, "untrusted-proxy-value"); }
+        construction_transport_policy(&mut command, &request).unwrap();
+        assert!(command.get_envs().all(|(_, value)| value.is_none()));
+        assert_eq!(command.get_args().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(), ["--noproxy", "*"]);
+    }
 
     fn temp_vault(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!(

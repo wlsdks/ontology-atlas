@@ -185,6 +185,25 @@ pub(crate) struct SnapshotEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Vec<String>>,
 }
+#[derive(Clone, Copy)]
+struct SourceLimits {
+    entries: usize,
+    depth: usize,
+    file_bytes: u64,
+    text_bytes: usize,
+    capture_text: bool,
+}
+impl Default for SourceLimits {
+    fn default() -> Self {
+        Self {
+            entries: 12000,
+            depth: 12,
+            file_bytes: 512 * 1024,
+            text_bytes: 32 * 1024 * 1024,
+            capture_text: true,
+        }
+    }
+}
 pub(crate) struct SourceObservation {
     pub fingerprint: String,
     pub files: Vec<String>,
@@ -193,7 +212,10 @@ pub(crate) struct SourceObservation {
     pub entries: Vec<SnapshotEntry>,
     pub excluded: Vec<String>,
     text_bytes: usize,
+    scanned_entries: usize,
     code_roots: Vec<String>,
+    excluded_roots: Vec<PathBuf>,
+    limits: SourceLimits,
 }
 impl SourceObservation {
     pub(crate) fn empty() -> Self {
@@ -205,7 +227,10 @@ impl SourceObservation {
             entries: Vec::new(),
             excluded: Vec::new(),
             text_bytes: 0,
+            scanned_entries: 0,
             code_roots: Vec::new(),
+            excluded_roots: Vec::new(),
+            limits: SourceLimits::default(),
         }
     }
 }
@@ -217,6 +242,15 @@ pub(crate) fn observe_scoped_source(
     root: &Path,
     code_roots: &[String],
 ) -> Result<SourceObservation, String> {
+    observe_with_exclusions(root, code_roots, Vec::new(), true, SourceLimits::default())
+}
+fn observe_with_exclusions(
+    root: &Path,
+    code_roots: &[String],
+    excluded_roots: Vec<PathBuf>,
+    include_git_revision: bool,
+    limits: SourceLimits,
+) -> Result<SourceObservation, String> {
     let mut result = SourceObservation {
         fingerprint: String::new(),
         files: Vec::new(),
@@ -225,7 +259,10 @@ pub(crate) fn observe_scoped_source(
         entries: Vec::new(),
         excluded: Vec::new(),
         text_bytes: 0,
+        scanned_entries: 0,
         code_roots: code_roots.to_vec(),
+        excluded_roots,
+        limits,
     };
     #[cfg(unix)]
     {
@@ -245,14 +282,38 @@ pub(crate) fn observe_scoped_source(
         hash.update(serde_json::to_vec(entry).map_err(|_| "source_unavailable")?);
         hash.update([0]);
     }
-    if let Some(repo) = crate::git::find_repo_root(root)? {
-        hash.update(crate::run_source_git(&repo, &["rev-parse", "HEAD"])?);
+    if include_git_revision {
+        if let Some(repo) = crate::git::find_repo_root(root)? {
+            hash.update(crate::run_source_git(&repo, &["rev-parse", "HEAD"])?);
+        }
     }
     hash.update(serde_json::to_vec(&result.excluded).map_err(|_| "source_unavailable")?);
     hash.update([u8::from(result.limited)]);
     hash.update(serde_json::to_vec(&result.ignored_names).map_err(|_| "source_unavailable")?);
     result.fingerprint = format!("sha256:{:x}", hash.finalize());
     Ok(result)
+}
+pub(crate) fn observe_construction_source(
+    root: &Path,
+    destination: &Path,
+) -> Result<SourceObservation, String> {
+    if root.starts_with(destination) {
+        return Err("construction_source_is_vault".into());
+    }
+    let excluded = destination.strip_prefix(root).ok().map(Path::to_path_buf);
+    observe_with_exclusions(
+        root,
+        &[".".into()],
+        excluded.into_iter().collect(),
+        false,
+        SourceLimits {
+            entries: 500,
+            depth: 8,
+            file_bytes: 256 * 1024,
+            text_bytes: 0,
+            capture_text: false,
+        },
+    )
 }
 fn text_input(path: &Path, code_roots: &[String]) -> bool {
     let file = path.to_string_lossy();
@@ -279,7 +340,7 @@ fn capture_directory(
     use std::io::Read;
     use std::os::fd::{AsRawFd, FromRawFd};
     use std::os::unix::fs::MetadataExt;
-    if depth > 12 || result.entries.len() >= 12000 {
+    if depth > result.limits.depth || result.entries.len() >= result.limits.entries {
         result.limited = true;
         return Ok(());
     }
@@ -300,6 +361,20 @@ fn capture_directory(
             return Err("source_filename_unsupported".into());
         };
         if name == "." || name == ".." {
+            continue;
+        }
+        if !result.limits.capture_text {
+            if result.scanned_entries >= result.limits.entries { result.limited = true; break; }
+            result.scanned_entries += 1;
+        }
+        if result
+            .excluded_roots
+            .iter()
+            .any(|excluded| relative.join(name).starts_with(excluded))
+        {
+            result
+                .excluded
+                .push(relative.join(name).to_string_lossy().into_owned());
             continue;
         }
         if name.starts_with('.')
@@ -328,7 +403,7 @@ fn capture_directory(
             continue;
         }
         names.push(name.to_string());
-        if names.len() > 12000 {
+        if names.len() > result.limits.entries {
             result.limited = true;
             break;
         }
@@ -348,7 +423,7 @@ fn capture_directory(
         children: Some(names.clone()),
     });
     for name in names {
-        if result.entries.len() >= 12000 {
+        if result.entries.len() >= result.limits.entries {
             result.limited = true;
             break;
         }
@@ -377,7 +452,7 @@ fn capture_directory(
             "other"
         };
         let path = relative.join(&name);
-        if kind == "file" && !text_input(&path, &result.code_roots) {
+        if kind == "file" && result.limits.capture_text && !text_input(&path, &result.code_roots) {
             result.files.push(path.to_string_lossy().into_owned());
             result.entries.push(SnapshotEntry {
                 path: path.to_string_lossy().into_owned(),
@@ -413,15 +488,15 @@ fn capture_directory(
                 continue;
             }
             let mut text = None;
-            if text_input(&path, &result.code_roots) {
-                if opened.len() > 512 * 1024
-                    || result.text_bytes + opened.len() as usize > 32 * 1024 * 1024
+            if result.limits.capture_text && text_input(&path, &result.code_roots) {
+                if opened.len() > result.limits.file_bytes
+                    || result.text_bytes + opened.len() as usize > result.limits.text_bytes
                 {
                     result.limited = true;
                 } else {
                     let mut bytes = Vec::new();
                     (&file)
-                        .take(512 * 1024 + 1)
+                        .take(result.limits.file_bytes + 1)
                         .read_to_end(&mut bytes)
                         .map_err(|_| "source_unavailable")?;
                     let after = file.metadata().map_err(|_| "source_unavailable")?;
@@ -445,7 +520,19 @@ fn capture_directory(
                 path: path.to_string_lossy().into_owned(),
                 kind: kind.into(),
                 size: opened.len(),
-                identity: format!("{}:{}", opened.dev(), opened.ino()),
+                identity: if result.limits.capture_text {
+                    format!("{}:{}", opened.dev(), opened.ino())
+                } else {
+                    format!(
+                        "{}:{}:{}:{}:{}:{}",
+                        opened.dev(),
+                        opened.ino(),
+                        opened.mtime(),
+                        opened.mtime_nsec(),
+                        opened.ctime(),
+                        opened.ctime_nsec()
+                    )
+                },
                 text,
                 children: None,
             });
@@ -613,9 +700,14 @@ pub(crate) fn verify_identity(binding: &BoundSource) -> Result<(), String> {
 }
 
 #[cfg(test)]
+#[path = "gray_area_scope_construction_tests.rs"]
+mod construction_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
     #[test]
     fn duplicate_bindings_are_refused_before_a_root_is_used() {
         let binding = json!({"projectSlug":"project"});

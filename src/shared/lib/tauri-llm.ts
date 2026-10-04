@@ -57,6 +57,7 @@ function rejectAborted(signal?: AbortSignal): void {
 
 /** A replacement waits for canceled native sends to finish their same-vault audit cleanup. */
 export async function llmChat(args: {
+  sourceConstruction?: boolean;
   provider: string;
   vaultPath: string;
   model: string;
@@ -109,6 +110,7 @@ export async function llmChat(args: {
       body: args.body,
       scope: args.scope,
       baseUrl: args.baseUrl ?? null,
+      ...(args.sourceConstruction ? {sourceConstruction:true} : {}),
     });
   } finally {
     args.signal?.removeEventListener('abort', onAbort);

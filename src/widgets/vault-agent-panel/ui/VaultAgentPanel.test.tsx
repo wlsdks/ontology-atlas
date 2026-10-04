@@ -1,11 +1,14 @@
 // What the panel holds: honest web degradation · closing = stopping · the scope sheet comes first · the reflow contract.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import messages from '../../../../messages/ko.json';
 
 const bridge = vi.hoisted(() => ({ available: false }));
+const constructionBridge = vi.hoisted(() => ({ pick: vi.fn(), preview: vi.fn(), read: vi.fn() }));
+vi.mock('@/shared/lib/tauri-local-construction', () => ({ previewConstructionSource: constructionBridge.preview, readConstructionSource: constructionBridge.read }));
+vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
 const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>() }));
 
 vi.mock('@/shared/lib/tauri-llm', () => ({
@@ -76,6 +79,8 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: (href: string) => navigation.pushed.push(href) }),
 }));
 
+import { llmChat } from '@/shared/lib/tauri-llm';
+import { writeLocalEndpoint } from '@/shared/lib/local-endpoint';
 import { VaultAgentPanel } from './VaultAgentPanel';
 
 beforeEach(() => {
@@ -461,5 +466,81 @@ describe('VaultAgentPanel', () => {
     fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
     expect(input.value).toBe('');
     await waitFor(() => expect(llmChat).toHaveBeenCalledTimes(1));
+  });
+});
+
+
+describe('local construction preview and consent', () => {
+  beforeEach(() => {
+    bridge.available = true;
+    writeLocalEndpoint({ baseUrl: 'http://localhost:11434', model: 'local-fixture' });
+    vi.mocked(llmChat).mockClear();
+    constructionBridge.pick.mockReset().mockResolvedValue('/chosen-code');
+    constructionBridge.preview.mockReset().mockResolvedValue({
+      sourcePath: '/chosen-code', destinationPath: '/vault', fingerprint: 'snapshot',
+      files: [{ path: 'entry.py', bytes: 18 }], excluded: ['symlink:elsewhere'], limited: false,
+    });
+    constructionBridge.read.mockReset();
+  });
+  afterEach(() => { window.localStorage.clear(); });
+
+  it('previews exact source, destination and model before any request; Cancel keeps composer input', async () => {
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: '코드에서 만들기' }));
+    expect(await screen.findByTestId('construction-preview')).toHaveTextContent('/chosen-code');
+    expect(screen.getByTestId('construction-preview')).toHaveTextContent('/vault');
+    expect(screen.getByTestId('construction-preview')).toHaveTextContent('local-fixture');
+    expect(screen.getByTestId('construction-preview')).toHaveTextContent('symlink:elsewhere');
+    expect(llmChat).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('construction-cancel'));
+    expect(llmChat).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('알겠어요'));
+    const input = await screen.findByTestId('vault-agent-input');
+    fireEvent.change(input, { target: { value: 'keep this question' } });
+    fireEvent.click(screen.getByRole('button', { name: '코드에서 만들기' }));
+    await screen.findByTestId('construction-preview');
+    fireEvent.click(screen.getByTestId('construction-cancel'));
+    expect(input).toHaveValue('keep this question');
+  });
+
+  it('only explicit Run invokes the strict local source transport', async () => {
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: '코드에서 만들기' }));
+    await screen.findByTestId('construction-preview');
+    expect(llmChat).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('construction-run'));
+    await waitFor(() => expect(llmChat).toHaveBeenCalledWith(expect.objectContaining({ sourceConstruction: true, provider: 'local', vaultPath: '/vault' })));
+  });
+
+  it('disables Run for an empty source and exposes another-folder recovery', async () => {
+    constructionBridge.preview.mockResolvedValue({ sourcePath: '/chosen-code', destinationPath: '/vault', fingerprint: 'snapshot', files: [], excluded: [], limited: false });
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: '코드에서 만들기' }));
+    expect(await screen.findByTestId('construction-run')).toBeDisabled();
+    expect(screen.getByTestId('construction-choose-again')).toBeInTheDocument();
+    expect(llmChat).not.toHaveBeenCalled();
+  });
+
+  it('shows an incomplete source range at EOF when earlier lines were omitted', async () => {
+    constructionBridge.read.mockResolvedValue({ path: 'entry.py', startLine: 11, endLine: 11, totalLines: 11, fileComplete: false,
+      text: 'last line', bytes: 9, fullFileSha256: `sha256:${'a'.repeat(64)}`, nextLine: null });
+    const echo = { status: 200, host: 'localhost:11434', durationMs: 0, loggedAt: 'fixture' };
+    vi.mocked(llmChat).mockResolvedValueOnce({ ...echo, body: JSON.stringify({ choices: [{ message: {
+      content: null, tool_calls: [{ id: 'read', type: 'function', function: { name: 'read_source_text', arguments: JSON.stringify({ path: 'entry.py', startLine: 11 }) } }],
+    }, finish_reason: 'tool_calls' }] }) }).mockResolvedValueOnce({ ...echo, body: JSON.stringify({ choices: [{ message: { content: 'No draft.' }, finish_reason: 'stop' }] }) });
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: '코드에서 만들기' }));
+    await screen.findByTestId('construction-preview');
+    fireEvent.click(screen.getByTestId('construction-run'));
+    await waitFor(() => expect(screen.getByTestId('construction-evidence')).toHaveTextContent('entry.py:11-11'));
+    expect(screen.getByTestId('construction-evidence')).toHaveTextContent('…');
+  });
+
+  it('does not prepare source or expose Run on the web', () => {
+    bridge.available = false;
+    renderPanel();
+    expect(screen.queryByRole('button', { name: '코드에서 만들기' })).not.toBeInTheDocument();
+    expect(constructionBridge.pick).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('construction-run')).not.toBeInTheDocument();
   });
 });

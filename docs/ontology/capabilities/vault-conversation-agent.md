@@ -19,6 +19,8 @@ Atlas's own conversation over the open vault, calling a model with the person's 
 - The turn loop, the tool catalog it is given, and the citations it is required to produce.
 - A separate compile conversation for turning sources into wiki pages.
 - Proposals gathered so a single applier is the only path to disk.
+- Explicit native local construction from an exactly selected read-only code folder: destination exclusion, bounded source ranges and hashes, loopback-only proxy-free transport, and the same selectable document proposals. Source/vault/model/endpoint changes retire stale drafts; Apply rechecks source witnesses.
+- Construction has at most eight model requests, eight ranges/32 KiB of source and 64 KiB per serialized request, with a cancellable 180-second per-request timeout. Ordinary local audit retains its separate three-read-round policy and 60-second timeout.
 
 ## Excludes
 - Running someone else's coding agent, which the in-app session capability does over a different protocol.
@@ -26,4 +28,4 @@ Atlas's own conversation over the open vault, calling a model with the person's 
 - Editing code; this agent reads and proposes meaning.
 
 ## Uncertainty
-- Read from its loop, prompt, catalog, applier and adapter headers, of thirty-two modules in the feature. No turn was run and no provider was contacted, so nothing here is a statement about answer quality.
+- Native source and transport boundaries have focused fixtures and an isolated production-function background probe. Local construction trials preserve failed timeouts and bounded source-backed drafts; these measurements do not establish broad semantic quality or meaning acceptance. The chooser gesture is substituted in the probe. Installed-app interaction and general repository coverage remain unmeasured.

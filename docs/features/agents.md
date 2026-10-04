@@ -46,6 +46,25 @@ Coding-tool mode lists exclude presets that bypass the permission checkpoint,
 including Codex's workspace-write preset. Codex starts in read-only mode; the
 Atlas MCP write checkpoint remains separate from the adapter's filesystem sandbox.
 
+### Focused local construction
+
+The native Agent panel's Build from code action selects a read-only code folder
+separately from the document destination. Its preview names both folders, the
+saved local model and loopback address, eligible files and exclusions. Run uses
+source ranges with whole-file hashes and completeness markers, plus current vault
+reads. It proposes document changes through the same selectable diff/applier;
+Stop and resource changes retire the run, and Apply rechecks used witnesses.
+Missing/malformed citations and invalid domain membership cannot establish a
+writable claim. A valid citation still needs human/source review.
+
+Construction observes at most 500 entries/eight directory levels, reads eight
+ranges/32 KiB, and sends eight requests of at most 64 KiB, with a cancellable
+180-second timeout per request. Local audit retains 60 seconds and its separate
+catalogue. The web explains the native/local requirement. Neither file saves nor
+these limits are a completeness score or meaning acceptance. Background native
+and browser fixtures substitute chooser/window gestures; installed interaction
+and general repository quality remain unmeasured.
+
 ### `/agents?tab=models` — Models
 
 **One sentence on what this screen does**: which model the conversation beside the map calls,

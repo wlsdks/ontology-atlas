@@ -35,3 +35,5 @@ export type {
 export { buildBusinessFlowRequest } from "./model/business-flow-request";
 export { applyProposal, proposalToClipboardPacket, summarizeChangeVolume } from './model/proposal-applier';
 export { buildProposal } from './model/proposal-builder';
+
+export { CONSTRUCTION_TOOLS, CONSTRUCTION_SYSTEM, constructionAdapter, createConstructionExecutor } from './model/construction-executor';

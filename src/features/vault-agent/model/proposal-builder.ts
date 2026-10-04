@@ -13,6 +13,8 @@ import type {
   ProposedFileChange,
 } from './types';
 import type { VaultReadPort } from './vault-read-port';
+import { containmentKeyFor } from '@/shared/lib/containment-keys';
+import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 
 /** A model's attempted write becomes a proposal card; `after` is both what the card draws and what the applier writes. */
 
@@ -90,7 +92,9 @@ export async function buildProposal(
     return input.port.readDocText(slug);
   }
 
-  for (const intent of input.intents) {
+  const creationIntent = (intent: WriteIntent) => ['add_concept', 'add_concepts'].includes(intent.name);
+  const orderedIntents = [...input.intents.filter(creationIntent), ...input.intents.filter(intent => !creationIntent(intent))];
+  for (const intent of orderedIntents) {
     const args = asArgs(intent.args);
     switch (intent.name as ProposalToolName) {
       case 'add_concept': {
@@ -170,7 +174,7 @@ function buildAddConcept(
   if (!title || !kind) return null;
   const slug = str(args.slug) ?? `${vaultFolderForKind(kind)}/${title}`;
   const labels = asArgs(args.labels);
-  const markdown = buildVaultMarkdown({
+  const draft = buildVaultMarkdown({
     kind,
     title,
     slug,
@@ -184,6 +188,13 @@ function buildAddConcept(
     } as Record<string, string>,
     createdBy: vaultAgentCreatedBy(input.agentName),
   });
+  const metadata: Record<string, FrontmatterUpdateValue> = {};
+  const path = typeof args.path === 'string' && args.path ? args.path : undefined;
+  if (path) metadata.path = path;
+  for (const key of ['capabilities', 'elements'] as const) {
+    if (Array.isArray(args[key])) metadata[key] = args[key].filter((value): value is string => typeof value === 'string');
+  }
+  const markdown = Object.keys(metadata).length ? applyFrontmatterUpdates(draft, metadata) : draft;
   const withBody = str(args.body)
     ? markdown.replace(/\n{2}[\s\S]*$/, `\n\n${str(args.body)}\n`)
     : markdown;
@@ -209,21 +220,34 @@ async function buildAddRelation(
   const key = RELATION_KEY[type];
   if (!key) return null;
 
-  const doc = input.port.docs.find(
-    (candidate) => candidate.slug === from || candidate.slug.endsWith(`/${from}`),
-  );
-  // No relation on a concept without a document, or another document asserts it.
-  if (!doc) return null;
-
-  const before = await currentText(doc.slug);
+  const slugs = [...new Set([...input.port.docs.map(candidate => candidate.slug), ...pending.keys()])];
+  const matches = slugs.includes(from) ? [from] : slugs.filter(slug => slug.endsWith(`/${from}`));
+  // Only one existing or proposed document can assert this relation.
+  if (matches.length !== 1) return null;
+  const slug = matches[0];
+  const doc = input.port.docs.find(candidate => candidate.slug === slug);
+  const before = await currentText(slug);
   if (before === null) return null;
+  const { frontmatter } = parseFrontmatter(before);
+  if (['domain', 'domains', 'capabilities', 'elements'].includes(key)) {
+    const targetSlugs = [...new Set([...input.port.docs.map(candidate => candidate.slug), ...pending.keys()])];
+    const exactTarget = targetSlugs.find(candidate => candidate === to);
+    const targetMatches = exactTarget ? [exactTarget] : targetSlugs.filter(candidate => candidate.endsWith(`/${to}`));
+    const targetSlug = targetMatches.length === 1 ? targetMatches[0] : undefined;
+    const target = input.port.docs.find(candidate => candidate.slug === targetSlug);
+    const targetText = targetSlug ? pending.get(targetSlug)?.after : undefined;
+    const targetKind = targetText ? parseFrontmatter(targetText).frontmatter.kind : target?.kind;
+    if (key === 'domain') {
+      if (!['capability', 'element'].includes(String(frontmatter.kind)) || targetKind !== 'domain') return null;
+    } else if (containmentKeyFor(String(frontmatter.kind), typeof targetKind === 'string' ? targetKind : null) !== key) return null;
+  }
   const updates: Record<string, FrontmatterUpdateValue> =
     key === 'domain'
       ? { domain: to }
-      : { [key]: appendRef(doc.frontmatter[key], to) };
+      : { [key]: appendRef(frontmatter[key], to) };
   const why = str(args.why);
   if (why) {
-    const notes = doc.frontmatter.relation_notes;
+    const notes = frontmatter.relation_notes;
     updates.relation_notes = {
       ...(notes && typeof notes === 'object' && !Array.isArray(notes)
         ? (notes as Record<string, string>)
@@ -235,10 +259,10 @@ async function buildAddRelation(
   return {
     id: nextChangeId(),
     tool: 'add_relation',
-    summary: input.labels.addRelation({ from: doc.slug, to, type }),
-    files: [record(pending, doc.slug, before, after)],
+    summary: input.labels.addRelation({ from: slug, to, type }),
+    files: [record(pending, slug, before, after)],
     selected: true,
-    expectedMtime: doc.mtime,
+    expectedMtime: doc?.mtime,
   };
 }
 
