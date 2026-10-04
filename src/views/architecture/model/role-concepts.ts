@@ -1,4 +1,4 @@
-import { matchesArchitecturePath, type ArchitectureProfile } from '@/entities/architecture-profile';
+import { createArchitecturePathMatcher, type ArchitectureProfile } from '@/entities/architecture-profile';
 
 /**
  * Reviewed concepts whose `path` falls inside a role's globs, kept apart from source modules so the
@@ -30,6 +30,7 @@ export function deriveRoleConcepts(
   profile: ArchitectureProfile,
   docs: ReadonlyArray<ConceptSourceDoc>,
 ): Record<string, RoleConcept[]> {
+  const match = createArchitecturePathMatcher();
   const byRole: Record<string, RoleConcept[]> = {};
   for (const role of profile.roles) byRole[role.id] = [];
 
@@ -53,7 +54,7 @@ export function deriveRoleConcepts(
       relatesTo: stringList(doc.frontmatter.relates),
     };
     for (const role of profile.roles) {
-      if (role.paths.some((pattern) => matchesArchitecturePath(path, pattern))) {
+      if (role.paths.some((pattern) => match(path, pattern))) {
         byRole[role.id]!.push(concept);
       }
     }

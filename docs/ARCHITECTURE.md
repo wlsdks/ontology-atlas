@@ -180,7 +180,9 @@ dependency rules govern; missing v1 fields preserve value plus type-only
 behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
 unsupported languages, incomplete scans, unknown usages, unmapped edges,
-unruled edges, and empty roles prevent a false green result. The
+unruled edges, and empty roles prevent a false green result. Each conformance
+evaluation and app role traversal lazily reuses compiled path patterns only
+within that call; paths and classification results are not cached. The
 `/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default

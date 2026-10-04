@@ -13,4 +13,4 @@ export {
   buildArchitectureLayout,
   type ArchitectureLayout,
 } from './model/architecture-layout';
-export { matchesArchitecturePath } from './model/architecture-occupants';
+export { matchesArchitecturePath, createArchitecturePathMatcher } from './model/architecture-occupants';

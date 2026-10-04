@@ -33,10 +33,9 @@ function normalizePath(value) {
   return String(value || '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
 }
 
-export function matchesPathPattern(path, pattern) {
-  const candidate = normalizePath(path);
+function compilePathPattern(pattern) {
   const normalized = normalizePath(pattern);
-  if (!normalized) return false;
+  if (!normalized) return null;
   let source = '^';
   for (let index = 0; index < normalized.length; index += 1) {
     const char = normalized[index];
@@ -60,7 +59,24 @@ export function matchesPathPattern(path, pattern) {
     }
     source += /[\\^$+?.()|{}[\]]/.test(char) ? `\\${char}` : char;
   }
-  return new RegExp(`${source}$`).test(candidate);
+  return new RegExp(`${source}$`);
+}
+
+export function matchesPathPattern(path, pattern) {
+  const candidate = normalizePath(path);
+  return compilePathPattern(pattern)?.test(candidate) ?? false;
+}
+function createPathMatcher() {
+  const patterns = new Map();
+  return (path, pattern) => {
+    const candidate = normalizePath(path);
+    let regex = patterns.get(pattern);
+    if (regex === undefined) {
+      regex = compilePathPattern(pattern);
+      patterns.set(pattern, regex);
+    }
+    return regex?.test(candidate) ?? false;
+  };
 }
 
 function parsePatterns(value) {
@@ -256,19 +272,19 @@ export function findArchitectureProfiles(docs) {
   return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
 }
 
-function matchingRoles(profile, path) {
+function matchingRoles(profile, path, match) {
   return profile.roles
-    .filter((role) => role.paths.some((pattern) => matchesPathPattern(path, pattern)))
+    .filter((role) => role.paths.some((pattern) => match(path, pattern)))
     .map((role) => role.id);
 }
 
-function inScope(profile, path) {
-  return profile.scopePaths.some((pattern) => matchesPathPattern(path, pattern))
-    && !profile.excludePaths.some((pattern) => matchesPathPattern(path, pattern));
+function inScope(profile, path, match) {
+  return profile.scopePaths.some((pattern) => match(path, pattern))
+    && !profile.excludePaths.some((pattern) => match(path, pattern));
 }
 
-function excludedFromScope(profile, path) {
-  return profile.excludePaths.some((pattern) => matchesPathPattern(path, pattern));
+function excludedFromScope(profile, path, match) {
+  return profile.excludePaths.some((pattern) => match(path, pattern));
 }
 
 function ruleFor(profile, fromRole, toRole) {
@@ -292,10 +308,10 @@ function importUsageOf(edge) {
 }
 
 /**
- * O(E × P) glob tests over E import edges and P scope, exclude and role
- * patterns; matchesPathPattern compiles a fresh RegExp for every test.
+ * O(E × P) tests; an invocation-local pool compiles each used pattern once.
  */
 export function evaluateArchitectureConformance(profile, importResult) {
+  const match = createPathMatcher();
   const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
   const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
   const observed = new Map();
@@ -316,10 +332,10 @@ export function evaluateArchitectureConformance(profile, importResult) {
     // Rules govern dependencies originating in scope: excluded sources (tests,
     // fixtures, generated code) are not violations for targeting production code.
     // A production source pointing outside the model stays an explicit unknown.
-    if (!inScope(profile, edge.from)) continue;
-    if (excludedFromScope(profile, edge.to)) continue;
-    const fromRoles = matchingRoles(profile, edge.from);
-    const toRoles = matchingRoles(profile, edge.to);
+    if (!inScope(profile, edge.from, match)) continue;
+    if (excludedFromScope(profile, edge.to, match)) continue;
+    const fromRoles = matchingRoles(profile, edge.from, match);
+    const toRoles = matchingRoles(profile, edge.to, match);
     if (fromRoles.length !== 1 || toRoles.length !== 1) {
       unmappedEdges += 1;
       continue;

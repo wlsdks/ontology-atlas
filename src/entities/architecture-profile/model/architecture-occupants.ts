@@ -10,10 +10,9 @@ function normalizePath(value: unknown): string {
     .replace(/\/+$/, '');
 }
 
-export function matchesArchitecturePath(path: string, pattern: string): boolean {
-  const candidate = normalizePath(path);
+function compilePathPattern(pattern: string): RegExp | null {
   const normalized = normalizePath(pattern);
-  if (!normalized) return false;
+  if (!normalized) return null;
   let source = '^';
   for (let index = 0; index < normalized.length; index += 1) {
     const char = normalized[index]!;
@@ -37,5 +36,23 @@ export function matchesArchitecturePath(path: string, pattern: string): boolean 
     }
     source += /[\\^$+?.()|{}[\]]/.test(char) ? `\\${char}` : char;
   }
-  return new RegExp(`${source}$`).test(candidate);
+  return new RegExp(`${source}$`);
+}
+
+export function matchesArchitecturePath(path: string, pattern: string): boolean {
+  const candidate = normalizePath(path);
+  return compilePathPattern(pattern)?.test(candidate) ?? false;
+}
+
+export function createArchitecturePathMatcher(): (path: string, pattern: string) => boolean {
+  const patterns = new Map<string, RegExp | null>();
+  return (path, pattern) => {
+    const candidate = normalizePath(path);
+    let regex = patterns.get(pattern);
+    if (regex === undefined) {
+      regex = compilePathPattern(pattern);
+      patterns.set(pattern, regex);
+    }
+    return regex?.test(candidate) ?? false;
+  };
 }
