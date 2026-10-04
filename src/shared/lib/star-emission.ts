@@ -35,7 +35,6 @@
  * "this is the end of the walk", and the end of the walk is the stop you are standing on,
  * already lit in the selection's own indigo and already numbered beside it.
  */
-
 /** The rim's width on a node large enough to want one, in px. */
 const STAR_RIM_PX = 1.8;
 
@@ -92,17 +91,7 @@ export interface StarEmissionState {
    * still and nothing on the canvas keeps breathing.
    */
   swell?: number;
-  /**
-   * How much of the interior burns, 0 (a lit rim) to 1 (a point of light). Default 0.
-   *
-   * ⚠️ **The rule that the face is never filled has a reason, and the reason runs out.** It
-   * exists because a wash over a node's own engraved numeral measured at 1.00:1 — the count
-   * erased on exactly the nodes a person had just walked. At galaxy altitude there is no numeral
-   * and no body: the silhouette has melted to a circle and `bodyPresence` has faded the node
-   * itself to nothing. Keeping the interior clear there does not protect anything; it punches a
-   * hole in the sky, which is what it did — the hub's centre measured `rgb(5,5,7)` against a
-   * `rgb(5,5,6)` background (2026-09-10). A star is bright in the middle.
-   */
+
   core?: number;
   /**
    * The node's silhouette at `radius`, as a path this function can both stroke and subtract.
@@ -123,95 +112,83 @@ export interface StarEmissionState {
 /** `#rrggbb` → `rgba(...)`, which a gradient stop takes where a `var()` cannot. */
 function withAlpha(hex: string, alpha: number): string {
   const h = hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
-  const r = parseInt(h.slice(1, 3), 16);
-  const g = parseInt(h.slice(3, 5), 16);
-  const b = parseInt(h.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha)).toFixed(3)})`;
+    const r = parseInt(h.slice(1, 3), 16);
+    const g = parseInt(h.slice(3, 5), 16);
+    const b = parseInt(h.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha)).toFixed(3)})`;
 }
-
 export function drawStarEmission(ctx: CanvasRenderingContext2D, state: StarEmissionState): void {
-  const { x, y, radius, ink, lit, bodyPath } = state;
-  const core = state.core ?? 0;
-  if (lit <= 0.01 || radius <= 0) return;
-  const k = Math.min(1, lit);
-  const swell = state.swell ?? 1;
-  const prevOp = ctx.globalCompositeOperation;
-  const prevAlpha = ctx.globalAlpha;
-  ctx.globalCompositeOperation = "lighter";
+    const { x, y, radius, ink, lit, bodyPath } = state;
+    const core = state.core ?? 0;
+    if (lit <= 0.01 || radius <= 0)
+        return;
+    const k = Math.min(1, lit);
+    const swell = state.swell ?? 1;
+    const prevOp = ctx.globalCompositeOperation;
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalCompositeOperation = "lighter";
+    /*
+     * The light it throws, laid down as layered strokes **of the node's own outline** rather
+     * than as a radial gradient.
+     *
+     * ⚠️ **A round hole under a square node reads as a black coin, not as a star.** The first
+     * build cut the bloom with `ctx.arc(x, y, inner)` while the node is a rounded square: the
+     * circle passes just outside the flat edges but well inside the corners, so along each side
+     * a crescent of unlit canvas showed *between* the node and where its light began, and only
+     * the corners had light touching them. The owner saw it immediately — "something about this
+     * is awkward" (2026-09-10). A radial gradient has the same flaw even with the hole fixed:
+     * distance from the centre is not distance from the silhouette, so a square's corners (at
+     * 1.41r) would sit far down the ramp while its edge midpoints (at 1.0r) sat at the top, and
+     * the rim would be bright on four sides and dim on four corners.
+     *
+     * Stroking the silhouette itself, wide and dim first, narrow and bright last, makes the
+     * falloff a function of distance *from the shape* — which is what a halo is. The interior is
+     * clipped away first, so the inward half of every wide stroke is discarded and the face is
+     * never washed; that is now enforced by geometry rather than by a gradient stop.
+     */
+    const spread = radius * (STAR_GLOW_REACH - 1) * swell;
+    const body = bodyPath(radius);
+    ctx.save();
+    // Clip to "everything except this node's body". Even-odd rather than winding, because the
+    // silhouette comes from the caller and its direction is not this function's to know.
+    const outside = new Path2D();
+    const bound = radius + spread * 2;
+    outside.rect(x - bound, y - bound, bound * 2, bound * 2);
+    outside.addPath(body);
+    ctx.clip(outside, "evenodd");
+    ctx.strokeStyle = ink;
+    for (let layer = 1; layer <= STAR_GLOW_LAYERS; layer += 1) {
+        const outer = layer / STAR_GLOW_LAYERS;
+        // Each band contributes the difference of the falloff across it, so the layers sum to
+        // `STAR_GLOW_PEAK` at the silhouette and to nothing at full reach.
+        const band = falloff((layer - 1) / STAR_GLOW_LAYERS) - falloff(outer);
+        if (band <= 0.001)
+            continue;
+        ctx.globalAlpha = k * band;
+        // Centred on the outline, so half of it lies outside; the clipped half is the inward one.
+        ctx.lineWidth = spread * outer * 2;
+        ctx.stroke(body);
+    }
+    ctx.restore();
+    /*
+     * The core. Brightest at the centre and falling toward the rim, so it reads as a point of
+     * light rather than as a filled disc — a disc is a dot, and a dot is what the map draws when
+     * it means "a node is here", which is the near view's job and not this one's.
+     */
+    if (core > 0.01) {
+        const heart = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        heart.addColorStop(0, withAlpha(ink, 0.95 * k * core));
+        heart.addColorStop(0.45, withAlpha(ink, 0.5 * k * core));
+        heart.addColorStop(1, withAlpha(ink, 0.2 * k * core));
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = heart;
+        ctx.fill(body);
+    }
 
-  /*
-   * The light it throws, laid down as layered strokes **of the node's own outline** rather
-   * than as a radial gradient.
-   *
-   * ⚠️ **A round hole under a square node reads as a black coin, not as a star.** The first
-   * build cut the bloom with `ctx.arc(x, y, inner)` while the node is a rounded square: the
-   * circle passes just outside the flat edges but well inside the corners, so along each side
-   * a crescent of unlit canvas showed *between* the node and where its light began, and only
-   * the corners had light touching them. The owner saw it immediately — "something about this
-   * is awkward" (2026-09-10). A radial gradient has the same flaw even with the hole fixed:
-   * distance from the centre is not distance from the silhouette, so a square's corners (at
-   * 1.41r) would sit far down the ramp while its edge midpoints (at 1.0r) sat at the top, and
-   * the rim would be bright on four sides and dim on four corners.
-   *
-   * Stroking the silhouette itself, wide and dim first, narrow and bright last, makes the
-   * falloff a function of distance *from the shape* — which is what a halo is. The interior is
-   * clipped away first, so the inward half of every wide stroke is discarded and the face is
-   * never washed; that is now enforced by geometry rather than by a gradient stop.
-   */
-  const spread = radius * (STAR_GLOW_REACH - 1) * swell;
-  const body = bodyPath(radius);
-  ctx.save();
-  // Clip to "everything except this node's body". Even-odd rather than winding, because the
-  // silhouette comes from the caller and its direction is not this function's to know.
-  const outside = new Path2D();
-  const bound = radius + spread * 2;
-  outside.rect(x - bound, y - bound, bound * 2, bound * 2);
-  outside.addPath(body);
-  ctx.clip(outside, "evenodd");
-  ctx.strokeStyle = ink;
-  for (let layer = 1; layer <= STAR_GLOW_LAYERS; layer += 1) {
-    const outer = layer / STAR_GLOW_LAYERS;
-    // Each band contributes the difference of the falloff across it, so the layers sum to
-    // `STAR_GLOW_PEAK` at the silhouette and to nothing at full reach.
-    const band = falloff((layer - 1) / STAR_GLOW_LAYERS) - falloff(outer);
-    if (band <= 0.001) continue;
-    ctx.globalAlpha = k * band;
-    // Centred on the outline, so half of it lies outside; the clipped half is the inward one.
-    ctx.lineWidth = spread * outer * 2;
+    ctx.globalAlpha = k * (1 - core * 0.4);
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = Math.min(STAR_RIM_PX, Math.max(0.5, radius * 0.22)) * (1 - core * 0.5);
     ctx.stroke(body);
-  }
-  ctx.restore();
-
-  /*
-   * The core. Brightest at the centre and falling toward the rim, so it reads as a point of
-   * light rather than as a filled disc — a disc is a dot, and a dot is what the map draws when
-   * it means "a node is here", which is the near view's job and not this one's.
-   */
-  if (core > 0.01) {
-    const heart = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    heart.addColorStop(0, withAlpha(ink, 0.95 * k * core));
-    heart.addColorStop(0.45, withAlpha(ink, 0.5 * k * core));
-    heart.addColorStop(1, withAlpha(ink, 0.2 * k * core));
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = heart;
-    ctx.fill(body);
-  }
-
-  /*
-   * The edge itself, on the node's real silhouette — never a circle over a square.
-   *
-   * ⚠️ **A rim is an edge on a node and a ring on a star.** At a fixed 1.8 px it is a hairline
-   * around a 33 px walked node and a thick band around a 6 px one, so the faint end of the
-   * galaxy rendered as a field of little circles rather than points of light. Two things pull
-   * it back: it never takes more than a fifth of the radius, and it recedes as the core burns —
-   * a star is bright in the middle and has no outline at all, while a *node* you are meant to
-   * read still wants its edge. Both callers get what they need from the same expression.
-   */
-  ctx.globalAlpha = k * (1 - core * 0.4);
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = Math.min(STAR_RIM_PX, Math.max(0.5, radius * 0.22)) * (1 - core * 0.5);
-  ctx.stroke(body);
-
-  ctx.globalCompositeOperation = prevOp;
-  ctx.globalAlpha = prevAlpha;
+    ctx.globalCompositeOperation = prevOp;
+    ctx.globalAlpha = prevAlpha;
 }

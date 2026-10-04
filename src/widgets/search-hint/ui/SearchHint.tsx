@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/chrome-chip';
-import { useGalaxy, useHexBoard, useMapArrangement, useTerritories, useView3d } from '@/shared/lib/appearance-preferences';
+import { useDomainStructure, useHexBoard, useMapArrangement, useTerritories, useView3d } from '@/shared/lib/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {
@@ -68,11 +68,11 @@ export function SearchHint({
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
   // Every stored view fact, so the chip names the view the canvas is drawing.
   const view3d = useView3d();
-  const galaxy = useGalaxy();
+  const structure = useDomainStructure();
   const territories = useTerritories();
   const hexBoard = useHexBoard();
   const arrangement = useMapArrangement();
-  const currentView = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : galaxy ? 'galaxy' : 'flat';
+  const currentView = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : structure ? 'structure' : 'flat';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
   const view3dChipRef = useRef<HTMLButtonElement | null>(null);
@@ -155,7 +155,7 @@ export function SearchHint({
           </div>
         ) : null}
         {/* Desktop only; the wrapper hides it so ChromeChip's own display utility does not clash. */}
-        <div className="hidden md:block">
+        {!structure && <div className="hidden md:block">
           <ChromeChip
             type="button"
             onClick={() => {
@@ -180,14 +180,14 @@ export function SearchHint({
           >
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
-        </div>
+        </div>}
         {/* The map-view chip opens a picker, not a toggle: an on/off switch cannot name
             which of several views is showing (`View3dMenu` doc-block). */}
         {/* `view3dAnchorRef` hands the shared wrapper to the picker so a chip press is not
             "outside", or the chip closes and reopens the picker in one batch. */}
         <div
           ref={view3dAnchorRef}
-          className="relative hidden md:block"
+          className="relative"
           data-lane-popover={view3dMenuOpen ? 'open' : undefined}
         >
           <ChromeChip
@@ -211,7 +211,7 @@ export function SearchHint({
             data-utility-action-shadow-token="--chrome-shadow"
             data-utility-action-focus-ring-token="--color-indigo-accent"
             icon={<MapIcon />}
-            active={view3d || galaxy}
+            active={view3d || structure}
             // Icon-first with the rest of the lane in the crowded density (dock or
             // review panel open); the current view stays in the name and tooltip.
             compact={compact}
@@ -271,7 +271,6 @@ export function SearchHint({
           </div>
         ) : null}
         {!onToggleExpandAll ? (
-          // Galaxy hides expand-all; this invisible, inert copy keeps the lane width
           // that decides from `xl` whether it shares the utility line, or every tile
           // jumps a line on a view change.
           <div

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { readSkillProcedure } from "../helpers/read-skill-procedure";
+
 /**
  * **Ratifying a primitive means updating the signpost with it** (2026-08-15).
  *
@@ -28,9 +30,8 @@ import { describe, expect, it } from "vitest";
  * than maintained by hand — the moment a new primitive is registered, this check
  * demands its name.
  *
- * **Both** copies (`.claude` and `.agents`) are checked. Fixing one only is caught
- * by `agents:check`'s `skill-copy`, but that asks whether the two copies match, not
- * whether the content is current.
+ * Both host entrypoints must reach the shared procedure that names the current
+ * primitives; matching metadata alone does not establish that coverage.
  */
 
 const ROOT = process.cwd();
@@ -91,14 +92,14 @@ describe("design-build 안내판 — 비준한 부품은 라우팅된다", () =>
   });
 
   it.each(SKILL_COPIES)("%s 가 모든 프리미티브를 이름으로 라우팅한다", (skillPath) => {
-    const skill = readFileSync(path.join(ROOT, skillPath), "utf8");
+    const skill = readSkillProcedure(path.join(ROOT, skillPath));
     const missing = components
       .filter(([, name]) => !new RegExp(`\\b${name}\\b`).test(skill))
       .map(([rel, name]) => `${name} (${rel})`);
     expect(
       missing,
       "A ratified primitive is missing from the routing table, so an agent following the instructions cannot reach it. " +
-        "Add a row to the section 1 table of `/design-build` and fix **both copies**.",
+        "Add a row to the shared section 1 table of `/design-build`.",
     ).toEqual([]);
   });
 

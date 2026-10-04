@@ -78,3 +78,51 @@ describe("focus light", () => {
     }
   });
 });
+
+function pathInput(now: number, world = WORLD, edges = ["x2", "x4"]): LightSourceInput {
+  return { ...input(now, null), world, mapLensKind: "path", pathEdgeIds: new Set(edges), pathNodeIds: new Set(["c0", "e0", "e1"]) };
+}
+
+describe("path light across world replacement", () => {
+  const replacement = () => buildTopologyWorld(WORLD.nodes.map((n) => node(n.id, n.kind)),
+    [edge("p", "d0", "contains", "x0"), edge("d0", "c0", "contains", "x1"), edge("c0", "e0", "contains", "x2"), edge("c0", "e1", "contains", "x3"), edge("e0", "e1", "depends", "x4")], TOKENS);
+
+  it("starts a newly opened path when its world is replaced on the same frame", () => {
+    const source = LIGHT_SOURCES[1]!();
+    source.step(input(0, null), emitter().out);
+    const fresh = replacement();
+    expect(source.step(pathInput(16, fresh), emitter().out)).toBe(true);
+    expect(source.plan()?.signals.map((s) => [s.fromId, s.toId])).toEqual([["c0", "e0"], ["e0", "e1"]]);
+    expect(source.plan()?.createdMs).toBe(16);
+  });
+
+  it("does not replay the same path when its world is replaced", () => {
+    const source = LIGHT_SOURCES[1]!();
+    source.step(input(0, null), emitter().out);
+    expect(source.step(pathInput(16), emitter().out)).toBe(true);
+    expect(source.step(pathInput(32, replacement()), emitter().out)).toBe(false);
+    expect(source.plan()).toBeNull();
+    expect(source.step(pathInput(48), emitter().out)).toBe(false);
+  });
+
+  it("starts a different path on a replacement world and does not resume a suppressed path", () => {
+    const source = LIGHT_SOURCES[1]!();
+    source.step(input(0, null), emitter().out);
+    source.step(pathInput(16), emitter().out);
+    const fresh = replacement();
+    const changed = pathInput(32, fresh, ["x3"]);
+    expect(source.step(changed, emitter().out)).toBe(true);
+    expect(source.plan()?.signals.map((s) => s.key)).toEqual(["x3"]);
+    const newer = replacement();
+    expect(source.step({ ...pathInput(48, newer), focusedNodeId: "d0" }, emitter().out)).toBe(false);
+    expect(source.step(pathInput(64, newer), emitter().out)).toBe(false);
+    expect(source.plan()).toBeNull();
+  });
+
+  it("does not replay a path already present when the source first binds a world", () => {
+    const source = LIGHT_SOURCES[1]!();
+    expect(source.step(pathInput(0), emitter().out)).toBe(false);
+    expect(source.step(pathInput(16), emitter().out)).toBe(false);
+    expect(source.plan()).toBeNull();
+  });
+});

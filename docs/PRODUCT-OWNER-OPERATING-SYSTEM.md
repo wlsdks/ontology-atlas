@@ -105,7 +105,9 @@ review is needed. It does not accept `--door` or `--risk`.
 ### Mechanical maintenance
 
 Typos, dependency bumps, CI plumbing, lint configuration, isolated test
-fixtures, and equivalent maintenance use technical checks only:
+fixtures, and behavior-preserving refactors and equivalent maintenance use technical checks
+directly, without loading this guide or routing a product decision. Request an
+explicit classification receipt only when needed:
 
 ```bash
 pnpm po:route -- --mechanical

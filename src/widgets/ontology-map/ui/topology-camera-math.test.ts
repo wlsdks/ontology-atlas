@@ -82,8 +82,7 @@ describe("computeOverviewCameraTarget", () => {
     const tiny = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
     const clamped = computeOverviewCameraTarget(tiny, 1000, 1000, tokens, 1);
     expect(clamped.tscale).toBeLessThanOrEqual(
-      tokens.cameraSmallGraphScaleMax * tokens.overviewEntryRatio + 1e-9,
-    );
+      tokens.cameraSmallGraphScaleMax * tokens.overviewEntryRatio + 1e-9);
     // …and it must be strictly tighter than the un-clamped (no nodeCount) fit.
     const unclamped = computeOverviewCameraTarget(tiny, 1000, 1000, tokens);
     expect(clamped.tscale).toBeLessThan(unclamped.tscale);
@@ -127,8 +126,7 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
     expect(centerScreen.x).toBeCloseTo((344 + (W - 120)) / 2, 4);
     expect(centerScreen.y).toBeCloseTo(
       (96 + (H - 96 - OVERVIEW_LABEL_BOTTOM_ALLOWANCE)) / 2,
-      4,
-    );
+      4);
   });
 
   it("with a wider left panel than right, shifts the camera left so content clears the panel", () => {
@@ -169,8 +167,7 @@ describe("computeLensFitTarget — beside the panels, not on the raw viewport", 
 
   it("with no insets is exactly the plain fit", () => {
     expect(computeLensFitTarget(bounds, 1440, 802, tokens)).toEqual(
-      fitWorldTarget(bounds, 1440, 802, tokens.cameraScaleMax, tokens.cameraScaleMin),
-    );
+      fitWorldTarget(bounds, 1440, 802, tokens.cameraScaleMax, tokens.cameraScaleMin));
   });
 
   it("lands the bounds centre at the midpoint of the width left beside the panels", () => {
@@ -204,8 +201,7 @@ describe("computeEffectiveCameraScaleMax", () => {
       const zoomRatio = effectiveMax / overviewEntryScale;
       expect(zoomRatio).toBeCloseTo(MAX_ZOOM_RATIO, 6);
       expect(zoomRatio).toBeGreaterThanOrEqual(DEFAULT_TIER_REVEAL.element.fullRatio);
-    },
-  );
+    });
 
   it("falls back to the absolute token when the entry scale is invalid (0 or negative)", () => {
     expect(computeEffectiveCameraScaleMax(0, MAX_ZOOM_RATIO, ABSOLUTE_FALLBACK)).toBe(ABSOLUTE_FALLBACK);
@@ -228,8 +224,7 @@ describe("computeEffectiveCameraScaleMin", () => {
       const effectiveMin = computeEffectiveCameraScaleMin(overviewEntryScale, MIN_ZOOM_RATIO, ABSOLUTE_FALLBACK);
       const zoomRatio = effectiveMin / overviewEntryScale;
       expect(zoomRatio).toBeCloseTo(MIN_ZOOM_RATIO, 6);
-    },
-  );
+    });
 
   it("stays below the constellation crossfade's own zoom ratio (so zoom-out still reaches far-field)", () => {
     // farLow (in zoom-ratio terms) = (overviewScale * altitudeFarLowRatio) / (overviewScale * overviewEntryRatio)
@@ -279,13 +274,13 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     radiusElement: 7,
   } as unknown as OntologyMapTokens;
 
-  function egoWorld(nodeXY: Record<string, { x: number; y: number; kind: "project" | "domain" | "capability" | "element" }>, neighbors: Record<string, string[]>): TopologyWorld {
+  function egoWorld(nodeXY: Record<string, { x: number; y: number; kind: "project" | "domain" | "capability" | "element";
+    }>, neighbors: Record<string, string[]>): TopologyWorld {
     const nodeById = new Map(
       Object.entries(nodeXY).map(([id, v]) => [
         id,
-        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: null, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 , starMagnitude: 0},
-      ]),
-    );
+        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: null, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 }
+        ]));
     const neighborMap = new Map(Object.entries(neighbors).map(([id, ns]) => [id, new Set(ns)]));
     return {
       nodes: [...nodeById.values()],
@@ -310,8 +305,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
         n3: { x: 0, y: 150, kind: "capability" },
         n4: { x: 0, y: -150, kind: "capability" },
       },
-      { f: ["n1", "n2", "n3", "n4"], n1: ["f"], n2: ["f"], n3: ["f"], n4: ["f"] },
-    );
+      { f: ["n1", "n2", "n3", "n4"], n1: ["f"], n2: ["f"], n3: ["f"], n4: ["f"] });
     const overviewEntryScale = 1.5;
     const viewportWidth = 1200;
     const viewportHeight = 800;
@@ -333,8 +327,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
   it("for a tiny ego (leaf with 1 neighbor), clamps by effectiveMax only — no floor drags it deeper than the fit needs", () => {
     const world = egoWorld(
       { f: { x: 0, y: 0, kind: "domain" }, n1: { x: 5, y: 0, kind: "capability" } },
-      { f: ["n1"], n1: ["f"] },
-    );
+      { f: ["n1"], n1: ["f"] });
     const overviewEntryScale = 1.5;
     const target = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(target).not.toBeNull();
@@ -347,8 +340,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
   it("never dives OUT past the overview's own entry scale, even for an extremely wide ego fan", () => {
     const world = egoWorld(
       { f: { x: 0, y: 0, kind: "domain" }, n1: { x: 5000, y: 0, kind: "capability" }, n2: { x: -5000, y: 0, kind: "capability" } },
-      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] },
-    );
+      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] });
     const overviewEntryScale = 1.5;
     const target = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(target).not.toBeNull();
@@ -366,8 +358,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
           p2: { x: -partnerX / 2, y: 30, kind: "capability" },
           chip: { x: 0, y: -4000, kind: "domain" },
         },
-        { f: ["p1", "p2", "chip"] },
-      ),
+        { f: ["p1", "p2", "chip"] }),
       dialScaleMax: 3,
     });
 
@@ -423,8 +414,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
         near: { x: 80, y: 0, kind: "capability" }, // a realm member
         fling: { x: 5000, y: 0, kind: "capability" }, // flung outside the warding circle
       },
-      { f: ["near", "fling"], near: ["f"], fling: ["f"] },
-    );
+      { f: ["near", "fling"], near: ["f"], fling: ["f"] });
     const overviewEntryScale = 1.5;
     const members = new Set(["f", "near"]);
     const restricted = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale, members);
@@ -447,8 +437,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
         far1: { x: 2000, y: 0, kind: "capability" },
         far2: { x: 2000, y: 40, kind: "capability" },
       },
-      { f: ["far1", "far2"], far1: ["f"], far2: ["f"] },
-    );
+      { f: ["far1", "far2"], far1: ["f"], far2: ["f"] });
     const target = computeFocusCameraTarget(world, tokens, 1200, 800, "f", 0.9)!;
     // The leash is the free half-width less the edge pad, in world units at
     // the target's scale — never tighter than the token.
@@ -462,7 +451,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     expect(focusScreenX).toBeLessThanOrEqual(1200 - FOCUS_LEASH_EDGE_PAD_PX + 1e-6);
     // The clamp is a clamp: a compact ego graph is framed exactly as before.
     const near = egoWorld({ f: { x: 0, y: 0, kind: "capability" }, n: { x: 60, y: 0, kind: "capability" } }, { f: ["n"], n: ["f"] });
-    const wide = computeFocusCameraTarget(near, { ...baseTokens, cameraFocusPanMargin: 10_000 } as unknown as OntologyMapTokens, 1200, 800, "f", 0.9)!;
+    const wide = computeFocusCameraTarget(near, { ...baseTokens, cameraFocusPanMargin: 10000 } as unknown as OntologyMapTokens, 1200, 800, "f", 0.9)!;
     const leashed = computeFocusCameraTarget(near, tokens, 1200, 800, "f", 0.9)!;
     expect(leashed).toEqual(wide);
   });
@@ -479,8 +468,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
         n1: { x: 820, y: 60, kind: "capability" },
         n2: { x: 840, y: 340, kind: "capability" },
       },
-      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] },
-    );
+      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] });
     // The whole ring's bounds: at or below the overview scale the unfocused
     // leash (around the map, not the node) is what the physics holds.
     const ring = { minX: -1200, minY: -600, maxX: 1200, maxY: 600 };
@@ -548,14 +536,12 @@ describe("computeUnfocusedPanBounds — 팬 목줄", () => {
     const huge = computeUnfocusedPanBounds(
       { minX: -1200, minY: -900, maxX: 1200, maxY: 900 },
       1,
-      tokens,
-    );
+      tokens);
     expect(huge).toEqual(small);
     // Without a leash these two differ — which is why the old envelope could not
     // guarantee "outside the reserved column" at any value.
     expect(computeUnfocusedPanBounds({ minX: -1200, minY: -900, maxX: 1200, maxY: 900 }, 1, {})).not.toEqual(
-      computeUnfocusedPanBounds(bounds, 1, {}),
-    );
+      computeUnfocusedPanBounds(bounds, 1, {}));
   });
 });
 
@@ -582,7 +568,8 @@ describe("computeFocusCameraTarget — 안전 인셋", () => {
   } as unknown as OntologyMapTokens;
 
   /** The focus node f plus two neighbours — deliberately offset so the bbox centre is not the origin. */
-  const XY: Record<string, { x: number; y: number; kind: "domain" | "capability" }> = {
+  const XY: Record<string, { x: number; y: number; kind: "domain" | "capability";
+    }> = {
     f: { x: 400, y: 200, kind: "domain" },
     n1: { x: 550, y: 200, kind: "capability" },
     n2: { x: 250, y: 200, kind: "capability" },
@@ -593,9 +580,8 @@ describe("computeFocusCameraTarget — 안전 인셋", () => {
     const nodeById = new Map(
       Object.entries(XY).map(([id, v]) => [
         id,
-        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: null, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 , starMagnitude: 0},
-      ]),
-    );
+        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: null, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 }
+        ]));
     return {
       nodes: [...nodeById.values()],
       nodeById,
@@ -661,9 +647,9 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
   const tokens = { radiusProject: 30, radiusDomain: 17, radiusCapability: 11, radiusElement: 7 } as unknown as Parameters<typeof hitTestWorld>[4];
   // far (dead-centre) vs near (4px off) — both discs cover the cursor.
   const nodes = [
-    { id: "far", kind: "domain", x: 0, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-    { id: "near", kind: "domain", x: 4, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-  ];
+    { id: "far", kind: "domain", x: 0, y: 0, magnitudeScale: 1 },
+    { id: "near", kind: "domain", x: 4, y: 0, magnitudeScale: 1 }
+    ];
   const world = {
     nodes,
     nodeById: new Map(nodes.map((n) => [n.id, n])),
@@ -675,20 +661,20 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
   });
 
   it("depthForNode 가 있으면 가까운(u 작은) 노드가 이긴다 — 화가 순서와 같은 규칙", () => {
-    const depth = (n: { id: string }) => (n.id === "far" ? 0.9 : 0.1);
+    const depth = (n: { id: string;
+        }) => (n.id === "far" ? 0.9 : 0.1);
     expect(
-      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, undefined, depth as never),
-    ).toBe("near");
+      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, undefined, depth as never)).toBe("near");
   });
 
   it("커서가 가까운 노드 디스크 밖이면 먼 노드가 잡힌다 — 깊이는 디스크 안에서만 겨룬다", () => {
-    const depth = (n: { id: string }) => (n.id === "far" ? 0.9 : 0.1);
+    const depth = (n: { id: string;
+        }) => (n.id === "far" ? 0.9 : 0.1);
     // Both discs have radius 17+5=22, so a point covering only far has to sit on
     // far's opposite side from near: x=379 is 21 from far (inside) and 25 from near
     // (outside).
     expect(
-      hitTestWorld(world, camera as never, 800, 600, tokens, 379, 300, undefined, undefined, undefined, depth as never),
-    ).toBe("far");
+      hitTestWorld(world, camera as never, 800, 600, tokens, 379, 300, undefined, undefined, undefined, depth as never)).toBe("far");
   });
 });
 
@@ -707,40 +693,39 @@ describe("hitTestWorld — 그려진 잉크가 여유 링을 이긴다 (3D 원�
    * courtesy ring reached that far and depth was decided before ink.
    */
   const nodes = [
-    { id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-    { id: "domain", kind: "domain", x: 20, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-  ];
+    { id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 },
+    { id: "domain", kind: "domain", x: 20, y: 0, magnitudeScale: 1 }
+    ];
   const world = {
     nodes,
     nodeById: new Map(nodes.map((n) => [n.id, n])),
   } as unknown as Parameters<typeof hitTestWorld>[0];
-  const depth = (n: { id: string }) => (n.id === "element" ? 0.9 : 0.1);
+  const depth = (n: { id: string;
+    }) => (n.id === "element" ? 0.9 : 0.1);
   // Both are scaled the way the dome scales them: element 7→3.5, domain 17→10.2.
-  const radiusScale = (n: { id: string }) => (n.id === "element" ? 0.5 : 0.6);
+  const radiusScale = (n: { id: string;
+    }) => (n.id === "element" ? 0.5 : 0.6);
   // Viewport 800×600 puts world (0,0) at (400,300).
 
   it("먼 노드의 그려진 원판 한가운데는 가까운 노드의 여유 링에 빼앗기지 않는다", () => {
     // domain: centre 20 px away, drawn radius 10.2, slack radius 15.2 — the cursor
     // is inside its slack ring but on no domain pixel.
     expect(
-      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, radiusScale as never, depth as never),
-    ).toBe("element");
+      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, radiusScale as never, depth as never)).toBe("element");
   });
 
   it("두 원판이 정말 겹치면 여전히 가까운(u 작은) 쪽이 이긴다", () => {
     // x=409 is 9 px from the element's centre — outside its 3.5 px disc — and 11 px
     // from the domain's, inside its 10.2 px disc. Real occlusion, near node wins.
     expect(
-      hitTestWorld(world, camera as never, 800, 600, tokens, 409, 300, undefined, undefined, radiusScale as never, depth as never),
-    ).toBe("domain");
+      hitTestWorld(world, camera as never, 800, 600, tokens, 409, 300, undefined, undefined, radiusScale as never, depth as never)).toBe("domain");
   });
 
   it("어느 잉크에도 닿지 않으면 여유 링 안에서 깊이가 결정한다 — 종전 규칙", () => {
     // x=406 is 6 px from the element (slack only, 3.5+5=8.5) and 14 px from the
     // domain (slack only, 10.2+5=15.2). Neither is painted here, so depth decides.
     expect(
-      hitTestWorld(world, camera as never, 800, 600, tokens, 406, 300, undefined, undefined, radiusScale as never, depth as never),
-    ).toBe("domain");
+      hitTestWorld(world, camera as never, 800, 600, tokens, 406, 300, undefined, undefined, radiusScale as never, depth as never)).toBe("domain");
   });
 
   it("히트 디스크는 계기가 보고하는 화면 좌표와 같은 투영을 쓴다 — 하나의 투영", () => {
@@ -751,25 +736,23 @@ describe("hitTestWorld — 그려진 잉크가 여유 링을 이긴다 (3D 원�
      * against a node that is somewhere else. `dome-view.test.ts` proves the frame
      * offset itself is `projectDomeCoord`; this proves the hit test consumes it.
      */
-    const offset = (n: { id: string }) => (n.id === "element" ? { x: 120, y: -80 } : { x: 0, y: 0 });
-    const moved = [{ id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 , starMagnitude: 0}];
+    const offset = (n: { id: string;
+        }) => (n.id === "element" ? { x: 120, y: -80 } : { x: 0, y: 0 });
+    const moved = [{ id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 }];
     const movedWorld = {
       nodes: moved,
       nodeById: new Map(moved.map((n) => [n.id, n])),
     } as unknown as Parameters<typeof hitTestWorld>[0];
     const reported = worldToScreen(camera as never, 800, 600, 0 + 120, 0 + -80);
     expect(
-      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x, reported.y, undefined, offset as never, radiusScale as never),
-    ).toBe("element");
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x, reported.y, undefined, offset as never, radiusScale as never)).toBe("element");
     // …and two pixels off the reported centre, the same answer. Below the drawn
     // radius (3.5), so this is the disc itself rather than the courtesy ring.
     expect(
-      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x + 2, reported.y, undefined, offset as never, radiusScale as never),
-    ).toBe("element");
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x + 2, reported.y, undefined, offset as never, radiusScale as never)).toBe("element");
     // The un-offset position is empty canvas — the offset is not decorative.
     expect(
-      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, 400, 300, undefined, offset as never, radiusScale as never),
-    ).toBeNull();
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, 400, 300, undefined, offset as never, radiusScale as never)).toBeNull();
   });
 });
 
@@ -799,86 +782,78 @@ describe("clampFitInsets — the chrome may not eat the map", () => {
       for (const floors of [[324, 0], [324, 60], [0, 0]] as const) {
         const { lo, hi } = clampFitInsets(376, 112, width, floors[0], floors[1], "equal");
         expect(lo + hi, `${width} ${floors}`).toBeLessThanOrEqual(width * MAX_FIT_CHROME_SHARE + 1e-6);
-        expect((lo + (width - hi)) / 2, `${width} ${floors}`).toBeCloseTo(freeCentre(width), 6);
-        expect(lo).toBeGreaterThanOrEqual(floors[0]);
-        expect(hi).toBeGreaterThanOrEqual(floors[1]);
-      }
-    }
-    // A side at its floor hands the rest of the cut to the other side: 90 px must go,
-    // the left has 16 above its panel, so the right gives the other 74.
-    expect(clampFitInsets(340, 200, 900, 324, 0, "equal")).toEqual({ lo: 324, hi: 126 });
-    // A floor wider than the ceiling still wins, whatever the share.
-    expect(clampFitInsets(600, 120, 900, 600, 0, "equal")).toEqual({ lo: 600, hi: 0 });
-  });
-
-  it("the overview on a narrow canvas lands centred between INDEX and the rail", () => {
-    // The resting lanes and what the map's chrome measurably covers with INDEX open:
-    // the panel's right edge at 324, the rail's column 60 from the right edge.
-    const tokens = {
-      cameraScaleMax: 2.6,
-      cameraScaleMin: 0.24,
-      cameraSmallGraphScaleMax: 1.3,
-      overviewEntryRatio: 0.95,
-      safeInsetLeft: 376,
-      safeInsetRight: 112,
-      safeInsetTop: 148,
-      safeInsetBottom: 96,
-    };
-    const bounds = { minX: -300, minY: -300, maxX: 300, maxY: 300 };
-    for (const width of [768, 800, 900, 1000]) {
-      for (const obstacles of [{}, { obstacleInsetLeft: 324 }, { obstacleInsetLeft: 324, obstacleInsetRight: 60 }]) {
-        const target = computeOverviewCameraTarget(bounds, width, 1000, { ...tokens, ...obstacles });
-        // The bounds' centre (world 0) lands on screen at the free map's centre.
-        const screenCentre = (0 - target.tx) * target.tscale + width / 2;
-        expect(screenCentre, `${width} ${JSON.stringify(obstacles)}`).toBeCloseTo((324 + (width - 60)) / 2, 6);
-      }
-    }
-  });
-
-  it("never shrinks below what a panel measurably covers", () => {
-    // An 820-wide canvas with a 324 px panel on the left and nothing on the right.
-    const { lo, hi } = clampFitInsets(350, 120, 820, 324, 0);
-    expect(lo, "the graph would slide under the open panel").toBeGreaterThanOrEqual(324);
-    expect(lo + hi).toBeCloseTo(820 * MAX_FIT_CHROME_SHARE, 6);
-  });
-
-  it("a floor wider than the ceiling wins — occlusion is not negotiable", () => {
-    const { lo, hi } = clampFitInsets(600, 120, 900, 600, 0);
-    expect(lo).toBe(600);
-    expect(hi).toBe(0);
-  });
-
-  it("a zero or unknown extent changes nothing", () => {
-    expect(clampFitInsets(350, 120, 0)).toEqual({ lo: 350, hi: 120 });
-  });
+                expect((lo + (width - hi)) / 2, `${width} ${floors}`).toBeCloseTo(freeCentre(width), 6);
+                expect(lo).toBeGreaterThanOrEqual(floors[0]);
+                expect(hi).toBeGreaterThanOrEqual(floors[1]);
+            }
+        }
+        // A side at its floor hands the rest of the cut to the other side: 90 px must go,
+        // the left has 16 above its panel, so the right gives the other 74.
+        expect(clampFitInsets(340, 200, 900, 324, 0, "equal")).toEqual({ lo: 324, hi: 126 });
+        // A floor wider than the ceiling still wins, whatever the share.
+        expect(clampFitInsets(600, 120, 900, 600, 0, "equal")).toEqual({ lo: 600, hi: 0 });
+    });
+    it("the overview on a narrow canvas lands centred between INDEX and the rail", () => {
+        // The resting lanes and what the map's chrome measurably covers with INDEX open:
+        // the panel's right edge at 324, the rail's column 60 from the right edge.
+        const tokens = {
+            cameraScaleMax: 2.6,
+            cameraScaleMin: 0.24,
+            cameraSmallGraphScaleMax: 1.3,
+            overviewEntryRatio: 0.95,
+            safeInsetLeft: 376,
+            safeInsetRight: 112,
+            safeInsetTop: 148,
+            safeInsetBottom: 96,
+        };
+        const bounds = { minX: -300, minY: -300, maxX: 300, maxY: 300 };
+        for (const width of [768, 800, 900, 1000]) {
+            for (const obstacles of [{}, { obstacleInsetLeft: 324 }, { obstacleInsetLeft: 324, obstacleInsetRight: 60 }]) {
+                const target = computeOverviewCameraTarget(bounds, width, 1000, { ...tokens, ...obstacles });
+                // The bounds' centre (world 0) lands on screen at the free map's centre.
+                const screenCentre = (0 - target.tx) * target.tscale + width / 2;
+                expect(screenCentre, `${width} ${JSON.stringify(obstacles)}`).toBeCloseTo((324 + (width - 60)) / 2, 6);
+            }
+        }
+    });
+    it("never shrinks below what a panel measurably covers", () => {
+        // An 820-wide canvas with a 324 px panel on the left and nothing on the right.
+        const { lo, hi } = clampFitInsets(350, 120, 820, 324, 0);
+        expect(lo, "the graph would slide under the open panel").toBeGreaterThanOrEqual(324);
+        expect(lo + hi).toBeCloseTo(820 * MAX_FIT_CHROME_SHARE, 6);
+    });
+    it("a floor wider than the ceiling wins — occlusion is not negotiable", () => {
+        const { lo, hi } = clampFitInsets(600, 120, 900, 600, 0);
+        expect(lo).toBe(600);
+        expect(hi).toBe(0);
+    });
+    it("a zero or unknown extent changes nothing", () => {
+        expect(clampFitInsets(350, 120, 0)).toEqual({ lo: 350, hi: 120 });
+    });
 });
-
 describe("overview fit options (Flat dial)", () => {
-  const bounds = { minX: -300, minY: -150, maxX: 900, maxY: 450 };
-  const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
-  const centreX = (bounds.minX + bounds.maxX) / 2;
-  const centreY = (bounds.minY + bounds.maxY) / 2;
-
-  it("equals the old result with a zero pad and no floor", () => {
-    const zero = { padPx: { left: 0, right: 0, top: 0, bottom: 0 } };
-    expect(computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, zero)).toEqual(computeOverviewCameraTarget(bounds, 1200, 800, tokens));
-    expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, zero)).toBe(computeOverviewFitScale(bounds, 1200, 800, tokens));
-  });
-
-  it("shrinks the scale and shifts the centre by (left - right) / (2 scale)", () => {
-    const padPx = { left: 120, right: 40, top: 30, bottom: 10 };
-    const plain = computeOverviewCameraTarget(bounds, 1200, 800, tokens);
-    const padded = computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, { padPx });
-    expect(padded.tscale).toBeLessThan(plain.tscale);
-    expect(padded.tx).toBeCloseTo(centreX - (padPx.left - padPx.right) / (2 * padded.tscale), 9);
-    expect(padded.ty).toBeCloseTo(centreY - (padPx.top - padPx.bottom) / (2 * padded.tscale), 9);
-    expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, { padPx })).toBeCloseTo((1200 - 160) / 1200, 9);
-  });
-
-  it("lets a scale floor stand in for cameraScaleMin", () => {
-    const huge = { minX: -40_000, minY: -40_000, maxX: 40_000, maxY: 40_000 };
-    expect(computeOverviewFitScale(huge, 1000, 1000, tokens)).toBe(tokens.cameraScaleMin);
-    expect(computeOverviewFitScale(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 })).toBeCloseTo(1000 / 80_000, 9);
-    expect(computeOverviewCameraTarget(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 }).tscale).toBeCloseTo((1000 / 80_000) * 0.95, 9);
-  });
+    const bounds = { minX: -300, minY: -150, maxX: 900, maxY: 450 };
+    const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
+    const centreX = (bounds.minX + bounds.maxX) / 2;
+    const centreY = (bounds.minY + bounds.maxY) / 2;
+    it("equals the old result with a zero pad and no floor", () => {
+        const zero = { padPx: { left: 0, right: 0, top: 0, bottom: 0 } };
+        expect(computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, zero)).toEqual(computeOverviewCameraTarget(bounds, 1200, 800, tokens));
+        expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, zero)).toBe(computeOverviewFitScale(bounds, 1200, 800, tokens));
+    });
+    it("shrinks the scale and shifts the centre by (left - right) / (2 scale)", () => {
+        const padPx = { left: 120, right: 40, top: 30, bottom: 10 };
+        const plain = computeOverviewCameraTarget(bounds, 1200, 800, tokens);
+        const padded = computeOverviewCameraTarget(bounds, 1200, 800, tokens, undefined, { padPx });
+        expect(padded.tscale).toBeLessThan(plain.tscale);
+        expect(padded.tx).toBeCloseTo(centreX - (padPx.left - padPx.right) / (2 * padded.tscale), 9);
+        expect(padded.ty).toBeCloseTo(centreY - (padPx.top - padPx.bottom) / (2 * padded.tscale), 9);
+        expect(computeOverviewFitScale(bounds, 1200, 800, tokens, undefined, { padPx })).toBeCloseTo((1200 - 160) / 1200, 9);
+    });
+    it("lets a scale floor stand in for cameraScaleMin", () => {
+        const huge = { minX: -40000, minY: -40000, maxX: 40000, maxY: 40000 };
+        expect(computeOverviewFitScale(huge, 1000, 1000, tokens)).toBe(tokens.cameraScaleMin);
+        expect(computeOverviewFitScale(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 })).toBeCloseTo(1000 / 80000, 9);
+        expect(computeOverviewCameraTarget(huge, 1000, 1000, tokens, undefined, { scaleFloor: 0.002 }).tscale).toBeCloseTo((1000 / 80000) * 0.95, 9);
+    });
 });

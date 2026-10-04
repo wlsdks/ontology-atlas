@@ -22,11 +22,11 @@ Hovering or selecting a domain splits its lines by direction: **needs** (what it
 
 ## Zoom
 
-Detail follows screen room, not zoom history: the same camera scale gives the same marks. When one end of a line leaves the free map (the viewport less the open panels), the line ends in a named stub such as `Payments →3 ←2`. Zoomed into a domain whose capabilities cannot all be named in place, a **ledger** lists them whole in one column beside it, joined to their discs by leaders that never cross; past its capacity it ends with `+N more`. Ledger rows, discs, chips and the hub are pick targets; lines are not, so Flat at the overview has no edge pick or edge hover card (Galaxy and a realm keep them).
+Detail follows screen room, not zoom history: the same camera scale gives the same marks. When one end of a line leaves the free map (the viewport less the open panels), the line ends in a named stub such as `Payments →3 ←2`. Zoomed into a domain whose capabilities cannot all be named in place, a **ledger** lists them whole in one column beside it, joined to their discs by leaders that never cross; past its capacity it ends with `+N more`. Ledger rows, discs, chips and the hub are pick targets; lines are not, so Flat at the overview has no edge pick or edge hover card (a realm keeps them).
 
 ## Lenses and realms
 
-The dial owns Flat's paint only at the overview with nothing narrowing it. Galaxy, a realm, a selected or previewed edge, a trail, a spotlight, a path or impact lens, and a selected element draw the earlier dots and lines on the same positions, so nothing jumps. The Flat overview folds nothing: double-click there selects, while folding, `+N` chips, Expand all and `?open=` work inside a realm.
+The dial owns Flat's paint only at the overview with nothing narrowing it. A realm, a selected or previewed edge, a trail, a spotlight, a path or impact lens, and a selected element draw the earlier dots and lines on the same positions, so nothing jumps. The Flat overview folds nothing: double-click there selects, while folding, `+N` chips, Expand all and `?open=` work inside a realm.
 
 ## Memory and first read
 

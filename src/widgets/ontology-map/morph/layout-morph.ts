@@ -6,7 +6,7 @@ import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, 
 
 export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
 
-const OVERLAY_VIEWS: ReadonlySet<MapLayoutView> = new Set(["territories", "hex", "galaxy"]);
+const OVERLAY_VIEWS: ReadonlySet<MapLayoutView> = new Set(["territories", "hex"]);
 
 export const ARRIVAL_GLIDE_CONCEPT_CEILING = 2000;
 
@@ -14,7 +14,7 @@ const GHOST_TARGET_CONCEPT_CEILING: Readonly<Record<MapLayoutView, number>> = {
   territories: Number.POSITIVE_INFINITY,
   hex: Number.POSITIVE_INFINITY,
   flat: 6500,
-  galaxy: 6300,
+    structure: 0,
   strata: 6100,
   coupling: 0,
 };
@@ -36,7 +36,7 @@ export function chooseLayoutSwitch({
 }): LayoutSwitch {
   if (from === to && !fromOverlay) return "none";
   if (!armed) return "cut";
-  if (reducedMotion) return "fade";
+  if (reducedMotion || from === "structure" || to === "structure") return "fade";
   if (!fromOverlay && !OVERLAY_VIEWS.has(from) && !OVERLAY_VIEWS.has(to)) return "native";
   if ((!fromOverlay && from === "coupling") || conceptCount > GHOST_TARGET_CONCEPT_CEILING[to]) return "fade";
   return "ghost";
@@ -44,8 +44,7 @@ export function chooseLayoutSwitch({
 
 export function containmentParents(
   nodes: readonly TreeInputNode[],
-  edges: readonly TreeInputEdge[],
-): ReadonlyMap<string, string> {
+  edges: readonly TreeInputEdge[]): ReadonlyMap<string, string> {
   const tree = readContainmentTree(nodes, edges);
   const project = tree.project?.id ?? null;
   const parents = new Map<string, string>();
@@ -101,8 +100,7 @@ function drawnById(marks: readonly MapLayoutMark[]): Map<string, MapLayoutMark> 
 function nearestDrawnAncestor(
   id: string,
   drawn: ReadonlyMap<string, MapLayoutMark>,
-  parentOf: ReadonlyMap<string, string>,
-): MapLayoutMark | null {
+  parentOf: ReadonlyMap<string, string>): MapLayoutMark | null {
   let current = parentOf.get(id);
   for (let depth = 0; current !== undefined && depth < ANCESTOR_WALK_DEPTH; depth += 1) {
     const hit = drawn.get(current);
@@ -134,8 +132,7 @@ interface Track {
 function tracksBetween(
   from: ReadonlyMap<string, MapLayoutMark>,
   to: ReadonlyMap<string, MapLayoutMark>,
-  parentOf: ReadonlyMap<string, string>,
-): Track[] {
+  parentOf: ReadonlyMap<string, string>): Track[] {
   const tracks: Track[] = [];
   for (const [id, a] of from) {
     const b = to.get(id);
@@ -158,8 +155,7 @@ export function planLayoutMorph(
   source: readonly MapLayoutMark[],
   target: readonly MapLayoutMark[],
   parentOf: ReadonlyMap<string, string>,
-  options: Omit<GlideOptions, "parentOf"> = {},
-): LayoutMorphPlan {
+  options: Omit<GlideOptions, "parentOf"> = {}): LayoutMorphPlan {
   const tracks = tracksBetween(drawnById(source), drawnById(target), parentOf);
   const n = tracks.length;
   const plan: Omit<LayoutMorphPlan, "glide" | "durationMs"> = {
@@ -181,7 +177,8 @@ export function planLayoutMorph(
     plan.s1[i] = track.s1;
   });
   const glide = planGlide(plan, { ...options, parentOf });
-  const groups = new Map<string, { from: GhostStyle; to: GhostStyle; alphaFrom: number; alphaTo: number; delayMs: number; members: number[] }>();
+  const groups = new Map<string, { from: GhostStyle; to: GhostStyle; alphaFrom: number; alphaTo: number; delayMs: number; members: number[];
+    }>();
   tracks.forEach((track, i) => {
     const delayMs = glide.delayMs[i]!;
     const alphaFrom = quantizeAlpha(track.alphaFrom);

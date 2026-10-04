@@ -1,159 +1,31 @@
 ---
 name: po-pass
-description: Route Atlas product work from observable change facts and one human-recovery outcome; use a compact solo pass for reversible work.
-when_to_use: Use for any product, UX, graph, MCP, CLI, workflow, or macOS change before building; mechanical maintenance takes the --mechanical skip.
+description: Assess Atlas product behavior, public contracts, or truth and approval boundaries before implementation. Skip behavior-preserving maintenance.
 ---
 
-# Atlas product pass — recover human understanding
+# po-pass
 
-This is not a general PO scorecard. It protects the moment where coding-agent
-velocity has made a person unable to find, explain, judge, correct, or hand off
-what their codebase now means.
-
-Read the **Human value** section of `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`
-(the rest is summarized below). Run `pnpm po:route -- --help`; never supply your
-own door or risk verdict.
-
-Use its **Human value** section to judge a change in the person's ability:
-understanding, confidence proportionate to evidence, and the ability to
-intervene. Keep the five existing outcomes; do not add a value score. Reduced
-effort is useful when it delivers that ability. Reassurance, approval speed,
-feature counts, and mandatory tool calls do not establish it.
-
-Before judging Atlas product work, read the current **Atlas product thesis** in
-`docs/PRODUCT-DIRECTION.md`. Act as its product specialist: understand the
-construction-quality risk, task-aware context as the repeated entry, Meaning
-Diff as a human-review direction, and next-task reuse as the loop's closing
-proof. Distinguish each hypothesis from shipped behavior. These are Atlas's
-working priorities, not reasons to approve any feature that uses those names.
-
-## 0. Skip real maintenance
-
-Typos, dependency bumps, CI plumbing, lint configuration, isolated fixtures, and
-equivalent maintenance go straight to technical checks:
-
-```bash
-pnpm po:route -- --mechanical
-```
-
-A change with any product or sovereignty signal is not mechanical. The router
-must reject that combination.
-
-## 1. Read the one prior decision you need
-
-Run `pnpm decisions:find <surface terms>` for the same surface and question;
-it returns records, not lines, with each record's decision, falsifier, and the
-later records that cite it. `--record=<n|date>` prints one in full.
-
-- Cite a standing decision or explicitly overturn it.
-- Check its falsifier, and read the records that cite it before calling it
-  standing.
-- Do not summarize the full ledger.
-
-## 2. Name the lost human ability
-
-Write the actor, exact moment, and one Atlas outcome:
-
-- `orient`: find the right starting point;
-- `explain`: explain what exists and why;
-- `judge`: judge evidence, uncertainty, and impact;
-- `correct`: inspect, reject, or correct agent-authored meaning;
-- `handoff`: let the next person or agent reuse accepted meaning and proof.
-
-The statement must remain true after removing the requested route, panel,
-library, schema field, animation, or tool name.
-
-State the before/after ability, not an invented feeling: what can the person
-explain, judge, correct, or hand off now? A correct refusal or newly visible
-unknown can be an improvement. For repeated-work claims, identify the later
-task that reuses accepted meaning and the construction/review burden it incurs.
-
-Classify evidence as `observed`, `inferred`, or `unknown`. Unknown evidence
-requires a bounded probe, not confidence prose.
-
-## 3. Supply facts to the router
-
-Use one or more change signals:
-
-- `rollback-cheap`;
-- `public-contract`;
-- `positioning`;
-- `surface-inventory`;
-- `substantial-investment`.
-
-Assess every boundary as `unchanged`, `affected`, or `unknown`:
-
-- `truth`: canonical truth or acceptance changes;
-- `transfer`: information crosses a machine or trust boundary;
-- `agent-write`: agent write or approval authority changes;
-- `human-correction`: inspect, reject, or correction ability changes.
-
-Omitting one is an error. `affected` and `unknown` force one-way meaning review
-and override `rollback-cheap`. The router derives the door, risk, and reviewers,
-so the builder must leave an inspectable claim instead of silently omitting the
-scan.
-
-```bash
-pnpm po:route -- --evidence=unknown --outcome=handoff --change=rollback-cheap \
-  --boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged
-pnpm po:route -- --evidence=observed --outcome=correct \
-  --change=public-contract \
-  --boundary=truth:unchanged,transfer:unchanged,agent-write:affected,human-correction:affected
-```
-
-## 4. Define the recovery proof
-
-Write one observable contract before implementation:
-
-```text
-Given <Atlas artifact and knowledge state>, without <forbidden fallback>,
-<actor> can <outcome task> and cite <evidence>.
-Fail when <observable condition>.
-```
-
-Use source-hidden proof when claiming Atlas itself carries understanding. Use
-the real runtime for interaction or control. Delegate visual, responsive,
-motion, and journey measurement to their own gates.
-
-Include a case where the agent is wrong or evidence is insufficient when the
-claim is better judgment or control. The proof should reveal mistaken approval,
-lost correction ability, or excessive review burden, not reward confidence
-alone. Keep meaning acceptance separate from code, merge, and deployment checks.
+Follow the [shared workflow](../../../.agents/skills/po-pass/workflow.md) at the requested or routed scope.
+Read supporting references only for the current phase.
 
 ## 5. Write one screen
+
+Keep these facts in the existing rationale, without repeating them in a ledger:
 
 ```md
 ## Atlas product pass — <decision>
 
-**Prior decision**: <standing record or none; falsifier observed or not>
-**Human loss and moment**: <actor, lost ability, and exact moment>
-**Atlas outcome**: orient / explain / judge / correct / handoff — <observable ability>
-**Evidence state**: observed / inferred / unknown — <primary artifact>
-**Change signals**: <change signals and all four boundary assessments>
-**Computed route**: <door, risk, route, and router reasons>
+**Prior decision**: <standing record or none; conditions rechecked>
+**Human loss and moment**: <actor, problem, exact moment>
+**Atlas outcome**: <one outcome and observable behavior>
+**Evidence state**: <observed / inferred / unknown and primary evidence>
+**Change signals**: <signals and all four boundary assessments>
+**Computed route**: <router output and reasons>
 **Recovery proof**: Given …; fail when …
-**Decision**: stop / probe first / build and verify — <smallest slice>
+**Decision**: <stop / probe first / build and verify and scope>
 ```
 
-## 6. Follow and measure the route
 
-- `skip`: maintenance checks.
-- `solo`: one accountable owner proceeds; unknown evidence means probe first. No
-  spec unless the owner asks for one.
-- `review`: when the Decision is build and verify, first give `product-planner`
-  this screen, the route output, and the primary evidence; it writes the spec in
-  `docs/specs/` and its copy in `messages/`. Then give one `reviewer` the same
-  packet and the spec; it applies the lenses the route lists, then `spec`, and a
-  `spec: revise` goes back to `product-planner` once. The author answers a
-  finding once, only on a material conflict; a one-way disagreement takes one
-  second opinion from a different model (the other harness's `reviewer` brief),
-  given the evidence and the disputed decision but neither argument. The owner
-  decides; `unchanged` is valid. Once decided, put the decision fragment's id in
-  the spec's `decisions:`.
-
-Routine solo work does not create a decision fragment; a significant decision
-creates one with `pnpm record:new -- --kind=decision`. The pilot closed on
-2026-09-26 (routing kept, per-run records retired), so no run fragment is owed.
-
-A green router is not proof of a good product decision. The recovery proof and
-later observed result are.
+Use Claude's named `reviewer` and `product-planner` when the workflow requires
+them. Planned implementation uses `implementer`; uncertain work uses `planner`
+or `investigator`. Keep the existing agent effort tiers.

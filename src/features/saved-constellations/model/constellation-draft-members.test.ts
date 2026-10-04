@@ -15,7 +15,6 @@ const current: ConstellationCandidate = {
   lastKnownPath: 'capabilities/current.md',
   label: 'Current',
   kind: 'capability',
-  galaxyPoint: { x: 40, y: -20 },
 };
 
 const saved: SavedConstellation = {

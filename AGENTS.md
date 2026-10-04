@@ -45,8 +45,8 @@ record a mistake, wasted CI round, or costly tool pattern with `/harness-retro`.
 
 | Task | Entry and required scope |
 |---|---|
-| Mechanical maintenance | Technical checks only; `pnpm po:route -- --mechanical` confirms it |
-| Product, UX, graph, MCP, CLI, workflow, or macOS change | `/po-pass`; one `reviewer` only when it returns review or the owner asks |
+| Mechanical maintenance | Technical checks only; skip product routing |
+| Product behavior, UX, public contract, or authority change | `/po-pass`; one `reviewer` only when it returns review or the owner asks |
 | UI, interaction, topology, responsive, motion, or macOS workbench | After the PO pass, `pnpm design:route`; `/design-build` implements the selected shape |
 | New structural design choice | `/design-directions` only when routed without a valid owner selection; one `reviewer` when the route says review |
 | Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, `/user-walkthrough` only at the requested or routed scope |
@@ -126,10 +126,10 @@ Publishing needs an explicit request and `npm pack --dry-run` first.
 `CLAUDE.md` imports this file and owns Claude loading details. Keep root plus
 the largest nested instruction file below 32 KiB; nested `AGENTS.md` files only
 point to the `.claude/rules/` relevant to their paths, which Codex does not
-auto-load. `.claude/skills/` and `.agents/skills/` (plus Codex `.agents/agents/`
-task briefs) are independent: never synchronize them or require byte identity;
-briefs inherit the caller's model, effort, and tools, and `access` is a task
-boundary, not a permission grant. Run `pnpm agents:check` after editing agent
+auto-load. Keep host-specific skill metadata and agent briefs separate. Shared
+procedures may have one owner; byte identity is not required. Codex briefs
+inherit the caller's model, effort and tools; `access` defines scope, not a grant.
+Run `pnpm agents:check` after editing agent
 files. `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` Codex
 hooks; Codex skips a new or changed entry until a person trusts it in `/hooks`.
 Do not change Claude files while optimizing Codex instructions.

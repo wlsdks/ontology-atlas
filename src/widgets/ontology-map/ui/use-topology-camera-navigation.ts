@@ -13,7 +13,6 @@ import {
   type DomeModel,
   type DomeRuntime
 } from "../model/dome-view";
-import { type GalaxyLayout } from "../model/galaxy-layout";
 import { isPathTargetPick, type TopologyMapLensKind } from "../model/path-lens";
 import {
   type RealmTransitionState
@@ -53,8 +52,6 @@ interface Dependencies {
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   runSpotlightFitRef: RefObject<(() => boolean) | null>;
-  galaxyRef: RefObject<boolean>;
-  galaxyLayoutRef: RefObject<GalaxyLayout | null>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   cameraTokens: <T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T) => T;
   overviewScaleRef: RefObject<number>;
@@ -103,10 +100,7 @@ export function useTopologyCameraNavigation({
   lastActiveMsRef,
   overviewFitRef,
   spotlightIdsRef,
-  runSpotlightFitRef,
-  galaxyRef,
-  galaxyLayoutRef,
-  clusteredIdsRef,
+  runSpotlightFitRef, clusteredIdsRef,
   cameraTokens,
   overviewScaleRef,
   initialFitTokensRef,
@@ -169,9 +163,7 @@ export function useTopologyCameraNavigation({
     let hit = 0;
     for (const node of world.nodes) {
       if (!ids.has(node.id)) continue;
-      const point = galaxyRef.current
-        ? galaxyLayoutRef.current?.points.get(node.id) ?? node
-        : node;
+      const point = node;
       hit += 1;
       if (point.x < minX) minX = point.x;
       if (point.y < minY) minY = point.y;
@@ -189,7 +181,7 @@ export function useTopologyCameraNavigation({
     // the path wants, not a crop to cut away. The ring as drawn: a hub folded
     // behind a crowded parent is not in it, unless the path itself runs
     // through it, and then the path's own bbox above already holds it.
-    if (mapLensKindRef.current === "path" && !galaxyRef.current) {
+    if (mapLensKindRef.current === "path") {
       const spine = computeDrawnSpineBounds(world, tokens, expandedParentsRef.current);
       if (spine.minX < minX) minX = spine.minX;
       if (spine.minY < minY) minY = spine.minY;
@@ -212,8 +204,7 @@ export function useTopologyCameraNavigation({
         focusBounds,
         width,
         height,
-        { ...cameraTokens(tokens), overviewEntryRatio: 1 },
-      )
+        { ...cameraTokens(tokens), overviewEntryRatio: 1 })
       // Beside the panels, not on the raw viewport: the raw fit landed
       // expand-all 116 px off the free centre (measured 2026-09-19).
       : computeLensFitTarget(focusBounds, width, height, cameraTokens(tokens));
@@ -303,19 +294,16 @@ export function useTopologyCameraNavigation({
 
     // Put the actual DOM width of INDEX/selection inspector into the same safe inset syntax.
     const tokens = cameraTokens(rawTokens);
-    const fitTokens = overviewFitTokens(tokens, galaxyRef.current);
-    const overviewBounds = galaxyRef.current && galaxyLayoutRef.current
-      ? galaxyLayoutRef.current.bounds
-      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-    const dialFit = galaxyRef.current ? undefined : dialOverviewFit(world);
+    const fitTokens = overviewFitTokens(tokens);
+        const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const dialFit = dialOverviewFit(world);
     overviewScaleRef.current = computeOverviewFitScale(
       overviewBounds,
       width,
       height,
       fitTokens,
       world.nodes.length,
-      dialFit,
-    );
+      dialFit);
 
     const realmPhase = realmTransitionRef.current.phase;
     const realmActive = realmPhase === "entering" || realmPhase === "active";
@@ -356,18 +344,13 @@ export function useTopologyCameraNavigation({
 
     let target: CameraTarget | null = null;
     if (mode === "focus" && focused !== null && !realmActive && isPathTargetPick(mapLensKindRef.current, focused, spotlightIdsRef.current)) {
-      // A path's source waiting for its target keeps the frame it is picked from
-      // (`use-topology-focus-navigation`), at the new size. Galaxy leaves the
-      // reader's camera where it is, as its selection does.
-      if (galaxyRef.current) return false;
-      target = computeOverviewCameraTarget(
+            target = computeOverviewCameraTarget(
         computePathPickBounds(world, tokens, focused, overviewBounds, expandedParentsRef.current),
         width,
         height,
         fitTokens,
         world.nodes.length,
-        dialFit,
-      );
+        dialFit);
     } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
       target = computeFocusCameraTarget(
@@ -379,8 +362,7 @@ export function useTopologyCameraNavigation({
         overviewScaleRef.current * tokens.overviewEntryRatio,
         realmActive ? realmData?.memberIds ?? null : null,
         undefined,
-        realmActive ? undefined : liveDialFocusFrame(world, focused),
-      );
+        realmActive ? undefined : liveDialFocusFrame(world, focused));
     } else if (mode === "realm") {
       const realmData = realmDataRef.current;
       if (realmData !== null) {
@@ -388,8 +370,7 @@ export function useTopologyCameraNavigation({
           world,
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
-          tokens,
-        );
+          tokens);
         target = realmCameraTarget(bounds, tokens, width, height);
       }
     } else if (mode === "spotlight") {
@@ -399,8 +380,7 @@ export function useTopologyCameraNavigation({
           ? "follow"
           : motion === "finalize-tracking"
             ? "snap"
-            : "tween",
-      );
+            : "tween");
     } else if (mode === "overview") {
       target = computeOverviewCameraTarget(
         overviewBounds,
@@ -408,8 +388,7 @@ export function useTopologyCameraNavigation({
         height,
         fitTokens,
         world.nodes.length,
-        dialFit,
-      );
+        dialFit);
     }
 
     if (target === null) return false;

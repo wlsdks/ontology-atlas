@@ -34,8 +34,7 @@ const tokens = vi.hoisted(
       focusDimTau: 0.2,
       egoRevealRiseTau: 0.1,
       egoRevealDecayTau: 0.2,
-    }) as unknown as OntologyMapTokens,
-);
+    }) as unknown as OntologyMapTokens);
 
 vi.mock("./topology-read-tokens", () => ({ readOntologyMapTokensOrNull: () => tokens }));
 vi.mock("../render/edge-fireflies", async () => {
@@ -49,7 +48,8 @@ import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
 type Kind = "project" | "domain" | "capability";
 
 function world(): TopologyWorld {
-  const at: Record<string, { x: number; y: number; kind: Kind; parentId: string | null }> = {
+  const at: Record<string, { x: number; y: number; kind: Kind; parentId: string | null;
+    }> = {
     p: { x: 0, y: 0, kind: "project", parentId: null },
     west: { x: -1500, y: 0, kind: "domain", parentId: "p" },
     east: { x: 1500, y: 0, kind: "domain", parentId: "p" },
@@ -59,9 +59,8 @@ function world(): TopologyWorld {
   const nodeById = new Map(
     Object.entries(at).map(([id, v]) => [
       id,
-      { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: v.parentId, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1, starMagnitude: 0 },
-    ]),
-  );
+      { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: v.parentId, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 }
+    ]));
   const spine = { minX: -1525, minY: -25, maxX: 1525, maxY: 25 };
   return {
     nodes: [...nodeById.values()],
@@ -71,13 +70,13 @@ function world(): TopologyWorld {
     neighborMap: new Map([
       ["f", new Set(["east", "far"])],
       ["east", new Set(["f"])],
-      ["far", new Set(["f"])],
-    ]),
+      ["far", new Set(["f"])]
+        ]),
     childrenByParent: new Map([
       ["p", ["west", "east"]],
       ["west", ["far"]],
-      ["east", ["f"]],
-    ]),
+      ["east", ["f"]]
+        ]),
     clusterMetaByParent: new Map(),
     brightStarIds: new Set(),
     bounds: spine,
@@ -111,9 +110,7 @@ describe("useTopologyFocusNavigation", () => {
       lastFocusedSlugRef: ref<string | null>(null),
       egoRevealBatchesRef: ref(1),
       selectionPulseRef: ref(null),
-      galaxyRef: ref(false),
-      cameraTargetRef,
-      galaxyInspectionCameraRef: ref(null),
+            cameraTargetRef,
       constellationFocusId: null,
       cameraGestureRevisionRef: ref(0),
       userDrivenCameraRef: ref(false),

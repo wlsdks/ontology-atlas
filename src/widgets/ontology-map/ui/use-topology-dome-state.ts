@@ -10,48 +10,18 @@ import {
   type DomeRuntime,
   type DomeViewKind
 } from "../model/dome-view";
-import { type GalaxyLayout } from "../model/galaxy-layout";
 import { type TierNameAnchor } from "../model/tier-names";
-
 interface Dependencies {
-  view3d: boolean;
-  galaxy: boolean;
+    view3d: boolean;
   mapArrangement: MapArrangement;
   onDomeTierAnchorsChange: ((anchors: readonly TierNameAnchor[] | null) => void) | undefined;
 }
 
-/** Own 3D model assembly, Galaxy handoffs, and deferred dome intents. */
+
 export function useTopologyDomeState({
-  view3d,
-  galaxy,
-  mapArrangement,
-  onDomeTierAnchorsChange,
-}: Dependencies) {
-
-  /** 3D view target — mirrored because draw reads it per frame and hit-testing reads it per event. */
-  const view3dRef = useRef<boolean>(view3d);
-
-  const galaxyRef = useRef<boolean>(galaxy);
-
-  const galaxyEnteredAtRef = useRef<number>(0);
-
-  /** Sampled once per Galaxy entry; every meteor frame hashes this stable seed. */
-  const galaxyAtmosphereSeedRef = useRef<number>(0);
-
-  /** Stable Galaxy positions for the current graph, shared with fit and backdrop. */
-  const galaxyLayoutRef = useRef<GalaxyLayout | null>(null);
-
-  /** The live Flat coordinates to restore after leaving Galaxy. */
-  const galaxyFlatReturnPositionsRef = useRef<ReadonlyMap<string, { x: number; y: number; }> | null>(null);
-
-  /** Which mode owns the active coordinate homing transition. */
-  const galaxyLayoutHandoffRef = useRef<"galaxy" | "flat" | null>(null);
-
-  /** The last camera intent in each 2D mode, restored when that mode is chosen again. */
-  const galaxyModeCameraRef = useRef<{
-    flat: { target: CameraTarget; userDriven: boolean; } | null;
-    galaxy: { target: CameraTarget; userDriven: boolean; } | null;
-  }>({ flat: null, galaxy: null });
+  view3d, mapArrangement, onDomeTierAnchorsChange, }: Dependencies) {
+    /** 3D view target — mirrored because draw reads it per frame and hit-testing reads it per event. */
+    const view3dRef = useRef<boolean>(view3d);
 
   /** Flat camera move waits for its coordinates, so the sky never shrinks around scattered stars. */
   const pendingFlatCameraRef = useRef<{
@@ -60,15 +30,6 @@ export function useTopologyDomeState({
     gestureRevision: number;
     userDriven: boolean;
   } | null>(null);
-
-  /**
-   * How far the galaxy view has come, 0 (flat) to 1 (sky).
-   *
-   * A ramp rather than the boolean, so switching views crossfades instead of cutting — the same
-   * `stepFocusRamp` and the same token the trail lens and the spotlight already use, because a
-   * fourth easing for the same kind of change is a fourth thing to keep in agreement.
-   */
-  const galaxyRampRef = useRef<number>(galaxy ? 1 : 0);
 
   const neuralRampRef = useRef<number>(0);
 
@@ -154,9 +115,8 @@ export function useTopologyDomeState({
    */
   const domeFitInsetsRef = useRef<{ left: number; right: number; top: number; bottom: number; } | null>(null);
   return {
-    view3dRef, galaxyRef, galaxyEnteredAtRef, galaxyAtmosphereSeedRef, galaxyLayoutRef,
-    galaxyFlatReturnPositionsRef, galaxyLayoutHandoffRef, galaxyModeCameraRef, pendingFlatCameraRef,
-    galaxyRampRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
+    view3dRef,
+        pendingFlatCameraRef, neuralRampRef, mapArrangementRef, domeRuntimeRef, domeWorldSourceRef, domeModelBuildRef,
     domeFocusPendingRef, domeFitPendingRef, domeFitDurationRef, flatFitPendingRef, onDomeTierAnchorsChangeRef,
     domeTierRaisedKindRef, domeTierAnchorsSentRef, domeTierNameWidthsRef,
     domeFitInsetsRef,

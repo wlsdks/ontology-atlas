@@ -12,7 +12,6 @@ import {
   type DomeModel,
   type DomeRuntime
 } from "../model/dome-view";
-import { type GalaxyLayout } from "../model/galaxy-layout";
 import {
   type RealmTransitionState
 } from "../model/realm-transition";
@@ -45,9 +44,7 @@ interface Dependencies {
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   runSpotlightFitRef: RefObject<(() => boolean) | null>;
-  galaxyRef: RefObject<boolean>;
-  galaxyLayoutRef: RefObject<GalaxyLayout | null>;
-  clusteredIdsRef: RefObject<ReadonlySet<string>>;
+    clusteredIdsRef: RefObject<ReadonlySet<string>>;
   cameraTokens: <T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T) => T;
   overviewScaleRef: RefObject<number>;
 }
@@ -71,8 +68,6 @@ export function useTopologyOverviewNavigation({
   overviewFitRef,
   spotlightIdsRef,
   runSpotlightFitRef,
-  galaxyRef,
-  galaxyLayoutRef,
   clusteredIdsRef,
   cameraTokens,
   overviewScaleRef,
@@ -102,8 +97,7 @@ export function useTopologyOverviewNavigation({
         world,
         realmData,
         new Set([...expandedParentsRef.current, realmData.rootId]),
-        tokens,
-      );
+        tokens);
       const target = realmCameraTarget(bounds, tokens, width, height);
       cameraTargetRef.current = target;
       userDrivenCameraRef.current = false;
@@ -156,20 +150,18 @@ export function useTopologyOverviewNavigation({
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
-      ? galaxyLayoutRef.current.bounds
-      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-    const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
-    const overviewTarget = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, galaxyRef.current ? undefined : dialOverviewFit(world));
+    const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const measuredTokens = overviewFitTokens(cameraTokens(tokens));
+    const overviewTarget = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
     cameraTargetRef.current = overviewTarget;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, galaxyRef.current ? undefined : dialOverviewFit(world));
+    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, domeFitTarget, domeRuntimeRef, expandedParentsRef, galaxyLayoutRef, galaxyRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, domeFitTarget, domeRuntimeRef, expandedParentsRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
   return { runOverviewFit };
 }

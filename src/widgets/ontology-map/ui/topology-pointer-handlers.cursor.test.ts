@@ -36,8 +36,7 @@ import { describe, expect, it, vi } from "vitest";
 // values would make the hit test a lie).
 vi.mock("./topology-camera-math", async () => {
   const actual = await vi.importActual<typeof import("./topology-camera-math")>(
-    "./topology-camera-math",
-  );
+    "./topology-camera-math");
   return { ...actual, worldToScreen: vi.fn(actual.worldToScreen) };
 });
 
@@ -60,7 +59,8 @@ vi.mock("./topology-read-tokens", () => ({
 import { worldToScreen } from "./topology-camera-math";
 import { createTopologyPointerHandlers, type PointerHandlerRefs } from "./topology-pointer-handlers";
 
-function ref<T>(current: T): { current: T } {
+function ref<T>(current: T): { current: T;
+} {
   return { current };
 }
 
@@ -116,8 +116,7 @@ function fakeCanvas() {
 function pointerEvent(
   canvas: ReturnType<typeof fakeCanvas>,
   x: number,
-  y: number,
-): ReactPointerEvent<HTMLCanvasElement> {
+  y: number): ReactPointerEvent<HTMLCanvasElement> {
   return {
     pointerId: 1,
     clientX: x,
@@ -191,9 +190,9 @@ describe("커서 어포던스 — 각 표면이 자기 1차 행동을 보여준�
 describe("엣지 후보 캐시 — 정지한 카메라에서 재계산 0회", () => {
   function worldWithEdges(): PointerHandlerRefs["worldRef"]["current"] {
     const nodes = [
-      { id: "a", slug: "a", kind: "domain", x: 0, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-      { id: "b", slug: "b", kind: "domain", x: 100, y: 0, magnitudeScale: 1 , starMagnitude: 0},
-    ];
+      { id: "a", slug: "a", kind: "domain", x: 0, y: 0, magnitudeScale: 1 },
+      { id: "b", slug: "b", kind: "domain", x: 100, y: 0, magnitudeScale: 1 }
+        ];
     return {
       nodes,
       nodeById: new Map(nodes.map((n) => [n.id, n])),
@@ -227,8 +226,7 @@ describe("엣지 후보 캐시 — 정지한 카메라에서 재계산 0회", ()
     handlePointerMove(pointerEvent(canvas, 410, 310));
     expect(
       vi.mocked(worldToScreen).mock.calls.length,
-      "카메라가 그대로인데 후보를 다시 만들었다",
-    ).toBe(firstPass);
+      "카메라가 그대로인데 후보를 다시 만들었다").toBe(firstPass);
   });
 });
 
@@ -236,7 +234,8 @@ describe("leaving the canvas takes its hover cards with it", () => {
   it("clears the edge card and the cluster tooltip once, and only once", () => {
     const onHoverEdge = vi.fn();
     const onHoverCluster = vi.fn();
-    const hoveredEdgeRef = ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>({
+    const hoveredEdgeRef = ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
+        } | null>({
       sourceId: "domain:a",
       targetId: "domain:b",
       relationType: "depends_on",
@@ -249,8 +248,7 @@ describe("leaving the canvas takes its hover cards with it", () => {
         onHoverEdge,
         hoveredClusterIdRef: hoveredClusterIdRef as unknown as PointerHandlerRefs["hoveredClusterIdRef"],
         onHoverCluster,
-      }),
-    );
+      }));
 
     handlePointerLeave();
 
