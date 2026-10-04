@@ -145,6 +145,7 @@ function renderedText(html) {
     .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
     .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
     .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<\/?span\b[^>]*>/gi, "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
