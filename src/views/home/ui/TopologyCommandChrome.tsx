@@ -440,7 +440,7 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
-          <div className="flex shrink-0 flex-col items-end gap-2 xl:ml-auto">
+          <div className="flex shrink-0 flex-col items-end gap-4 xl:ml-auto">
           {inspectorOwnsRightRail ? null : (
               <div
                 className={`topology-chrome-in pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
