@@ -204,3 +204,17 @@ test('conformance reuses compiled patterns only within one evaluation', () => {
   profile.excludePaths.push('src/features/**');
   assert.equal(evaluateArchitectureConformance(profile, input).observedRoleEdges.length, 0);
 });
+
+test('one conformance evaluation resets an ambiguous MCP matcher between paths', () => {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  profile.scopePaths = ['**'];
+  profile.excludePaths = [];
+  profile.roles = [{ id: 'entities', paths: ['*a*a*b'], summaries: {} }];
+  const result = evaluateArchitectureConformance(profile, { edges: [
+    { from: 'aaab', to: 'aaab', kind: 'static', importUsage: 'value' },
+    { from: 'ab', to: 'aaab', kind: 'static', importUsage: 'value' },
+  ] });
+  assert.equal(result.observedRoleEdges[0].count, 1);
+  assert.equal(result.unknown.unmappedEdges, 1);
+  assert.equal(result.roles[0].matchedFileCount, 1);
+});
