@@ -13,10 +13,7 @@ import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
 /**
- * Assembles the full-detail card model only while `open`: a closed card never traverses the graph,
- * since the depth-3 reach BFS and per-row containment scans (neighbours × edges) otherwise run on
- * every node click. The open result is unchanged and built in the same render. Guard: the colocated
- * test.
+ * A closed card never traverses the graph. Reader updates reuse graph facts until their inputs change.
  */
 export interface UseFullDetailA1ModelArgs {
   /** While `false` the hook returns `null` with no traversal. */
@@ -49,27 +46,25 @@ export function useFullDetailA1Model({
   onSaveExplanation,
   datasheet,
 }: UseFullDetailA1ModelArgs) {
+  const activeNodeId = open && nodeFocus && selectedOntologyNode && insight
+    ? selectedOntologyNode.id : null;
+  const graphFacts = useMemo(() => {
+    if (activeNodeId === null || !insight) return null;
+    return {
+      reach: buildFullDetailReachModel(activeNodeId, insight.nodes, insight.edges),
+      codeLocations: deriveCodeLocations(activeNodeId, insight.nodes, insight.edges),
+      projectTitle: insight.nodes.find((node) => node.kind === "project")?.title ?? null,
+    };
+  }, [activeNodeId, insight]);
+  const groups = useMemo(() => {
+    if (activeNodeId === null || !insight) return null;
+    return buildFullDetailGroups(activeNodeId, insight.nodes, insight.edges, changedSlugs);
+  }, [activeNodeId, insight, changedSlugs]);
+
   return useMemo(() => {
     if (!open) return null;
-    if (!nodeFocus || !selectedOntologyNode || !insight) return null;
+    if (!nodeFocus || !selectedOntologyNode || !insight || !graphFacts || !groups) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
-    const groups = buildFullDetailGroups(
-      selectedOntologyNode.id,
-      insight.nodes,
-      insight.edges,
-      changedSlugs,
-    );
-    const reach = buildFullDetailReachModel(
-      selectedOntologyNode.id,
-      insight.nodes,
-      insight.edges,
-    );
-    const codeLocations = deriveCodeLocations(
-      selectedOntologyNode.id,
-      insight.nodes,
-      insight.edges,
-    );
-    const projectTitle = insight.nodes.find((n) => n.kind === "project")?.title ?? null;
     const loadedBody = nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
     const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
     // Without its own document the link is relabelled "the document that mentions it", not
@@ -115,10 +110,10 @@ export function useFullDetailA1Model({
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.mtimeConflict : false,
       },
       groups,
-      reach,
-      codeLocations,
+      reach: graphFacts.reach,
+      codeLocations: graphFacts.codeLocations,
       breadcrumb: {
-        projectTitle,
+        projectTitle: graphFacts.projectTitle,
         // Canonical totals; `renderProjects` double-counted them.
         totalConcepts: insight.nodes.length,
         totalRelations: insight.edges.length,
@@ -133,6 +128,8 @@ export function useFullDetailA1Model({
     nodeFocus,
     selectedOntologyNode,
     insight,
+    graphFacts,
+    groups,
     changedSlugs,
     nodeBody,
     nodeEditTarget,
