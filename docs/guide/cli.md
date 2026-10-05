@@ -33,13 +33,18 @@ All three view the **same `.md` folder**. Commands that manipulate graphs are ac
 
 | Situation | Command |
 |---|---|
-| Create a vault in an empty repo | `init` (use `--quick-start` for one-line bootstrap) |
-| Extract nodes from existing code | `bootstrap`: combines `analyze` + `infer-imports` at once |
+| Create a vault in your repo | `init`: writes starter files and agent setup, not repository meaning |
+| Preview candidates from existing code | `bootstrap`: combines `analyze` + `infer-imports`; review-only, exit 3 when approval is required |
 | Preview what will be extracted | `analyze` · `infer-imports`: **zero side effects**, suggestions only |
 | Load your existing `.md` files | `import <path...>` |
 | Fold `CLAUDE.md` · `AGENTS.md` into nodes | `absorb <file...>` |
 
-`analyze` · `infer-imports` · `index` write nothing until you add `--apply`. **Look first, then apply** is the default stance for these three commands.
+In v1.6.0, `analyze --apply` is a compatibility wrapper that writes nothing;
+`index --apply` delegates to the review-only bootstrap, and `infer-imports --apply`
+is disabled. `init --quick-start` writes scaffolding before returning the
+bootstrap review plan. Continue with a connected agent and approve exact small
+batches, or use the separate qualified bulk MCP lifecycle. Follow
+[Starting from My Repository](/guide/from-your-repo) for the complete walkthrough.
 
 ### While fixing code
 
@@ -122,7 +127,7 @@ tools.
 
 ## Full list
 
-There are 52 commands. `--help` displays them all on one screen.
+`--help` displays the current command inventory and options.
 
 ```bash
 node cli/src/index.mjs --help

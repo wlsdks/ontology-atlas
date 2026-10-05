@@ -53,9 +53,13 @@ Opening the folder in Atlas does not upload it to an Atlas backend. If you later
 ## 3. Starting from the Codebase (for Developers)
 
 Expand **For Developers** on the first run card to get a command to paste into your terminal.
-It scans the repository to create the first graph.
+It creates a starter folder and previews repository candidates. In v1.6.0,
+`--quick-start` does not save repository-derived meaning: its bootstrap returns
+a review-only plan, with exit code 3 when approval is required.
 
-What happens is detailed step-by-step in [Starting from My Repository](/guide/from-your-repo). The scanning phase does not touch Vault.
+Follow [Starting from My Repository](/guide/from-your-repo) for setup, a copyable
+agent prompt, and the review and verification steps. Scanning writes no meaning;
+creating the starter folder writes scaffolding and agent configuration.
 
 ## 4. What's the Difference Between the App and the Web?
 
