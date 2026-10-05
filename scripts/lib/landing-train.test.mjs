@@ -264,7 +264,7 @@ describe('what the train says', () => {
     assert.match(body, /## Summary[\s\S]*## Test plan/);
   });
 
-  it('turns one pull request into one commit: its title and number, its author, other authors as trailers', () => {
+  it('prepares integration merge metadata without replacing original commit authors', () => {
     const commit = componentCommit({
       component: { number: 12, title: 'feat: one' },
       coAuthors: ['Ada <ada@example.com>', 'Claude <noreply@anthropic.com>', 'ada <ADA@example.com>'],

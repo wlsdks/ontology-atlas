@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   CONFLICT_INSTRUCTION,
@@ -9,6 +13,7 @@ import {
   classifyHolderLiveness,
   classifyLock,
   conduct,
+  createGithub,
   describeCleanup,
   lockTrains,
   describeLock,
@@ -670,6 +675,62 @@ const runConductor = (world, extra) => conduct({
 const called = (world, name) => world.calls.filter(([call]) => call === name);
 
 describe('the conductor runs trains', () => {
+  for (const mode of ['train', 'fast']) {
+  it(`retains ten original commit identities, messages and authors through real Git ${mode} integration`, () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-history-'));
+    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    try {
+      git('init', '-b', 'main');
+      git('config', 'user.name', 'Conductor');
+      git('config', 'user.email', 'conductor@example.com');
+      writeFileSync(join(root, 'base.txt'), 'base');
+      git('add', 'base.txt');
+      git('commit', '-m', 'chore: base');
+      const base = git('rev-parse', 'HEAD');
+      git('switch', '-c', 'feat/original');
+      const originals = [];
+      for (let i = 1; i <= 10; i += 1) {
+        writeFileSync(join(root, 'work.txt'), String(i));
+        git('add', 'work.txt');
+        git('-c', `user.name=Author ${i}`, '-c', `user.email=author${i}@example.com`, 'commit', '-m', `feat: original step ${i}`, '-m', `Evidence for step ${i}.`);
+        originals.push(git('show', '-s', '--format=%H%x00%B%x00%an%x00%ae', 'HEAD'));
+      }
+      const head = git('rev-parse', 'HEAD');
+      const world = fakeWorld({ prs: [component(11, { headRefOid: head, headRefName: 'feat/original', isDraft: mode !== 'fast', statusCheckRollup: mode === 'fast' ? green() : [] })], queued: [11] });
+      const createBranch = world.deps.gh.createBranch;
+      world.deps.gh.createBranch = (branch, sha) => { git('branch', branch, sha); return createBranch(branch, sha); };
+      const mergeInto = world.deps.gh.mergeInto;
+      world.deps.gh.mergeInto = (branch, sha, message) => {
+        git('switch', branch);
+        git('merge', '--no-ff', sha, '-m', message);
+        return mergeInto(branch, sha, message);
+      };
+      world.deps.gh.squashOnto = () => { throw new Error('original commit history must never be squashed'); };
+      const mergePr = world.deps.gh.mergePr;
+      world.deps.gh.mergePr = (number, options) => {
+        assert.equal(options.method, 'merge');
+        git('switch', 'main');
+        git('merge', '--no-ff', world.pulls.get(number).headRefName, '-m', `chore(train): land #${number}`);
+        return mergePr(number, options);
+      };
+      const revParse = world.deps.git.revParse;
+      world.deps.git.revParse = (ref) => ref === 'origin/main' ? base : revParse(ref);
+      if (mode === 'train') assert.equal(runConductor(world).state, 'drained');
+      else assert.equal(runPrLand(['11'], world.io, () => world.deps), 0);
+      const reachable = new Set(git('rev-list', 'main').split('\n'));
+      for (const original of originals) {
+        const sha = original.split('\0')[0];
+        assert.ok(reachable.has(sha), `original commit ${sha} must remain reachable from main`);
+        assert.equal(git('show', '-s', '--format=%H%x00%B%x00%an%x00%ae', sha), original);
+      }
+      assert.equal(originals.length, 10);
+      assert.equal(Number(git('rev-list', '--count', '--merges', 'main')), mode === 'train' ? 2 : 1, 'fast PRs add one merge; trains also retain their integration merge');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  }
+
   it('lands a green train behind one CI run, ejecting a conflicting component and continuing', () => {
     const world = fakeWorld({ prs: [component(11), component(12), component(13)], queued: [11, 12, 13], conflicts: new Set([12]) });
     const result = runConductor(world);
@@ -682,18 +743,13 @@ describe('the conductor runs trains', () => {
 
     const [merge] = called(world, 'mergePr');
     assert.equal(merge[2].sha, 'train-head-2001', 'the merge is pinned to the head CI measured');
-    assert.equal(merge[2].method, 'rebase', 'the train lands its per-pull-request commits as they are');
-    assert.equal(merge[2].title, undefined, 'no train-level title reaches main');
-    // main's history reads as the pull requests: one commit each, its own title, its own author.
-    const commits = called(world, 'squashOnto').map(([, , , commit]) => commit);
-    assert.deepEqual(commits.map((c) => c.message), ['feat: change 11 (#11)', 'feat: change 13 (#13)']);
-    assert.deepEqual(commits.map((c) => c.author), [
-      { name: 'Author 11', email: 'a11@example.com' },
-      { name: 'Author 13', email: 'a13@example.com' },
+    assert.equal(merge[2].method, 'merge', 'the train must preserve its original commit ancestry');
+    assert.equal(called(world, 'squashOnto').length, 0, 'no component history may be rewritten');
+    assert.deepEqual(called(world, 'mergeInto').map(([, , sha, message]) => [sha, message]), [
+      [component(11).headRefOid, 'feat: change 11 (#11)'],
+      [component(12).headRefOid, 'feat: change 12 (#12)'],
+      [component(13).headRefOid, 'feat: change 13 (#13)'],
     ]);
-    const [first, second] = called(world, 'squashOnto');
-    assert.equal(first[2], 'main'.padEnd(40, '0'), 'the first commit sits on the base');
-    assert.equal(second[2], `squash:${first[1]}:feat: change 11 (#11)`, 'each next commit sits on the one before');
 
     const ejected = world.pulls.get(12);
     assert.equal(ejected.state, 'OPEN');
@@ -983,6 +1039,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(merge[1], 22);
     assert.equal(merge[2].sha, component(22).headRefOid);
     assert.equal(merge[2].title, 'feat: change 22 (#22)');
+    assert.equal(merge[2].method, 'merge', 'the fast path must preserve original commits');
     assert.equal(called(world, 'addLabel').length, 0);
     assert.deepEqual(world.events.filter((e) => e.includes(FAST_LOCK_REF)), [`take ${FAST_LOCK_REF}`, `release ${FAST_LOCK_REF}`]);
     assert.equal(world.locks.has(LOCK_REF), false, 'the fast path never touched the train lock');
@@ -1025,7 +1082,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     const text = world.out.join('\n');
     assert.match(text, /PR #31: fast path not eligible/);
     assert.match(text, /PR #31: would be queued/);
-    assert.match(text, /PR #32: would squash-merge now/);
+    assert.match(text, /PR #32: would merge now/);
     assert.match(text, /next train \(2 of 2 queued\): chore\(train\): land #33 #31/);
     assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
     assert.match(text, /\| feat: change 33 \(#33\)  \(Author 33\)/, 'the plan shows the commit main would get for each pull request');
@@ -1067,5 +1124,21 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.match(text, /landing now: nothing is landing/);
     assert.match(text, /1\. #41 queued 0 min/);
     assert.match(text, /pnpm pr:land --conduct/);
+  });
+});
+
+
+describe('GitHub merge transport preserves history', () => {
+  it('uses a SHA-pinned merge commit by default and refuses squash or rebase', () => {
+    const calls = [];
+    const github = createGithub('owner/repo', (args) => { calls.push(args); return JSON.stringify({ merged: true, sha: 'merged' }); });
+    const sha = 'a'.repeat(40);
+    assert.equal(github.mergePr(11, { sha }).ok, true);
+    assert.ok(calls[0].includes('merge_method=merge'));
+    assert.ok(calls[0].includes(`sha=${sha}`));
+    for (const method of ['squash', 'rebase']) {
+      assert.equal(github.mergePr(11, { sha, method }).ok, false);
+    }
+    assert.equal(calls.length, 1, 'rewriting requests must not reach GitHub');
   });
 });

@@ -698,7 +698,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Landing a pull request
 
 **Run**: `pnpm test:pr:land`
-**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing.
+**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
 
