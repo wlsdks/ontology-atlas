@@ -155,7 +155,9 @@ The CLI runs from a source checkout as `node cli/src/index.mjs` with Node.js 24;
 ## Development
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) first; external pull requests come from forks. [AGENTS.md](AGENTS.md) is the contract for people and agents.
-Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- --run`, and land it with `pnpm pr:land <number>`.
+Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- --run`, and land it with `pnpm pr:land <number>`. Landing preserves the original commits
+and adds merge commits. Trains share CI while retaining component ancestry;
+they also add a final train integration merge.
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference; [Features](docs/FEATURES.md), [Architecture](docs/ARCHITECTURE.md) and [Product direction](docs/PRODUCT-DIRECTION.md) describe what the product does and why.
 
 <details>

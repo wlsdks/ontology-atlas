@@ -36,10 +36,10 @@
 ## Landing a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- `pnpm pr:land <number>` is the only way to `main`: it joins a train (2-20
-  per CI run, sized by red rate; two in flight; bisected when red), or merges
-  at once when green and disjoint (fast path). `--plan <n...>` dry-runs;
-  `pnpm pr:queue` shows trains; `--release` frees a wedged lock.
+- `pnpm pr:land <number>` is the only way to `main`; it runs checked fast-path
+  or train merges. `--plan <n...>` previews; `pnpm pr:queue` shows the queue.
+  Preserve original commits with merge commits; never squash or rebase during
+  landing. Disable main's linear-history requirement.
 - Several branches use `/land-bundle`: a draft each for the train, or
   one integration branch when they must be resolved together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without

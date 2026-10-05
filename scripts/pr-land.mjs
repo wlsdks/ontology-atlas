@@ -3,7 +3,7 @@
  * `pnpm pr:land <number>` — the only way a pull request reaches `main`.
  *
  * **The measurement this shape answers** (2026-09-26). `main` requires eight status contexts,
- * `strict` is off (no "must be up to date"), history is linear, and the owner is a personal
+ * `strict` is off (no "must be up to date"), original commit ancestry is preserved, and the owner is a personal
  * account, so GitHub's merge queue is unavailable (below). One CI run on a pull request costs
  * `checks.yml` 2-5 minutes and `e2e.yml` 17-21 minutes, fanned out to about eight jobs. The
  * previous version of this file held **one lock per pull request** across merge main in → local
@@ -30,8 +30,8 @@
  *      drafts and run nothing.
  *   4. **Green → merge.** Before merging, the conductor checks that `main` moved only in files the
  *      train never touched (`strict` is off, so GitHub merges onto today's `main`); an overlap
- *      rebuilds the train. The squash commit lists every component and carries each component's
- *      authors and `Co-authored-by` trailers. Each component is then closed with a comment linking
+ *      rebuilds the train. The train keeps every original commit and its
+ *      author, body and trailers, with named component integration merges. Each component is then closed with a comment linking
  *      the train, and its branch is deleted only when `origin/main` provably contains it
  *      (`isContained` from `bundle-branches.mjs`).
  *   5. **Red → bisect.** A red train of more than one component splits into halves that run as
@@ -58,12 +58,12 @@
  *      lock records both trains' file sets (`trains`), so the fast path refuses an overlap with
  *      either. `--no-speculate` keeps one train in flight.
  *
- * **What `main`'s history shows** (2026-09-27). A train used to squash into one commit titled
- * `chore(train): land #1926 #1913 (#1927)`, which says nothing about the change. Each component's
- * merge on the train branch is now rewritten server-side as one ordinary commit carrying that pull
- * request's own title, number and author, and the train lands with `rebase`: one commit per pull
- * request on `main`, still one CI run per train and still a linear history. A fast-path merge was
- * already one squash per pull request.
+ * **Commit history (owner, 2026-10-05).** Keep the original commit SHAs, messages,
+ * authors and parent links. Fast-path PRs and trains both use merge commits. Component
+ * branches merge into the train without squash or rebase; the train adds a final integration
+ * merge on main. Several PRs can still share one CI run. This supersedes the 2026-09-27
+ * per-PR synthetic-commit policy. Main must permit non-linear history; required checks,
+ * conflict/drift checks and the landing locks continue to apply.
  *
  * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs). A public
  * repository runs 20 jobs at once, so two trains fit side by side, which is why speculation stops
@@ -750,27 +750,13 @@ export function createGithub(slug, run = ghRun) {
       if (/409|[Mm]erge conflict/.test(result.output ?? '')) return { state: 'conflict', detail: result.output };
       return { state: 'error', detail: result.output };
     },
-    /**
-     * Replace the merge commit `mergeInto` just made at `branch`'s head with an ordinary commit of
-     * the same tree on `parent`, carrying the pull request's own message and author (Git Data API,
-     * server-side). The train branch becomes one commit per pull request, which `rebase` lands as is.
-     */
-    squashOnto: (branch, parent, { message, author }) => {
-      const head = json(['api', `repos/${slug}/git/ref/heads/${branch}`])?.object?.sha;
-      const tree = head ? json(['api', `repos/${slug}/git/commits/${head}`])?.tree?.sha : null;
-      if (!tree) return null;
-      const args = ['api', '-X', 'POST', `repos/${slug}/git/commits`, '-f', `message=${message}`, '-f', `tree=${tree}`, '-f', `parents[]=${parent}`];
-      if (author) args.push('-f', `author[name]=${author.name}`, '-f', `author[email]=${author.email}`);
-      const created = json(args)?.sha;
-      if (!created) return null;
-      return ok(['api', '-X', 'PATCH', `repos/${slug}/git/refs/heads/${branch}`, '-f', `sha=${created}`, '-F', 'force=true']) ? created : null;
-    },
     openPr: ({ title, head, base, body }) => {
       const created = json(['api', '-X', 'POST', `repos/${slug}/pulls`, '-f', `title=${title}`, '-f', `head=${head}`, '-f', `base=${base}`, '-f', `body=${body}`, '-F', 'draft=false']);
       return { number: created.number, url: created.html_url };
     },
-    /** The only merge call in the repository, pinned to the head sha CI measured: squash for a fast-path pull request, rebase for a train of per-pull-request commits. */
-    mergePr: (number, { sha, title = null, message = null, method = 'squash' }) => {
+    /** Merge the exact head CI measured while preserving original commit ancestry. */
+    mergePr: (number, { sha, title = null, message = null, method = 'merge' }) => {
+      if (method !== 'merge') return { ok: false, detail: 'Landing requires a merge commit to preserve original history.' };
       const args = ['api', '-X', 'PUT', `repos/${slug}/pulls/${number}/merge`, '-f', `merge_method=${method}`, '-f', `sha=${sha}`];
       if (title) args.push('-f', `commit_title=${title}`);
       if (message) args.push('-f', `commit_message=${message}`);
@@ -1056,7 +1042,7 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
       deps.log('no longer eligible; taking the train');
       return false;
     }
-    const merged = deps.gh.mergePr(pr.number, { sha: pr.headRefOid, title: `${pr.title} (#${pr.number})` });
+    const merged = deps.gh.mergePr(pr.number, { sha: pr.headRefOid, method: 'merge', title: `${pr.title} (#${pr.number})` });
     if (!merged.ok) {
       deps.log(`GitHub refused the fast-path merge (${merged.detail || 'no detail'}); taking the train`);
       return false;
@@ -1104,19 +1090,11 @@ function cutTrain({ batch, parent = null, deps, holder, key }) {
 
   const included = [];
   const errored = [];
-  let tip = base;
   for (const component of batch) {
-    const merged = gh.mergeInto(branch, component.headRefOid, `chore(train): merge #${component.number} ${component.headRefName}`);
+    const { message } = componentCommit({ component, coAuthors: parseCoAuthors(git.coAuthorLog(base, component.headRefOid)) });
+    const merged = gh.mergeInto(branch, component.headRefOid, message);
     if (merged.state === 'merged') {
-      // One ordinary commit per pull request, so main's history reads as the pull requests.
-      const commit = componentCommit({ component, coAuthors: parseCoAuthors(git.coAuthorLog('origin/main', component.headRefOid)) });
-      const squashed = gh.squashOnto(branch, tip, commit);
-      if (!squashed) {
-        gh.deleteBranch(branch);
-        holder.drop(key);
-        return { outcome: 'abort', reason: `could not rewrite #${component.number}'s merge on ${branch} as one commit`, errored };
-      }
-      tip = squashed;
+      // Keep the component's original ancestry, including every commit identity and body.
       included.push({ ...component, empty: false });
     } else if (merged.state === 'up-to-date' && !parent) {
       included.push({ ...component, empty: true });
@@ -1268,8 +1246,8 @@ function settleHead({ train, deps, requiredContexts, token }) {
     for (const name of other.unmatched) log(`--allow-failing named ${name}, which is not failing on this train`);
     const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
     for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
-    log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; landing its ${included.filter((c) => !c.empty).length} commit(s), one per pull request`);
-    const merged = gh.mergePr(number, { sha: trainPr.headRefOid, method: 'rebase' });
+    log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; preserving original commits from ${included.filter((c) => !c.empty).length} pull request(s)`);
+    const merged = gh.mergePr(number, { sha: trainPr.headRefOid, method: 'merge' });
     mergedSha = merged.sha ?? null;
     if (!merged.ok && gh.readPr(number).state !== 'MERGED') {
       log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);
@@ -1300,11 +1278,11 @@ function discardTrain({ train, deps, why }) {
  * Close every component a merged train carried, and delete a branch only when `origin/main`
  * provably contains it. Directly (`isContained`), or through the train: the component's sha is an
  * ancestor of the train head and `main` contains the train head. The second form is what proves
- * two components that edited the same file, where a three-way merge of one alone against the
- * squash can conflict.
+ * two components that edited the same file, where a three-way merge of one alone against
+ * the integrated result can conflict.
  */
 /**
- * Fetch until `origin/main` is the squash commit GitHub just made. Right after a merge the ref can
+ * Fetch until `origin/main` is the merge commit GitHub just made. Right after a merge the ref can
  * still read the old main, and judging containment against it re-queued a landed component: #1898
  * landed twice, the second time as an empty commit (2026-09-26).
  */
@@ -1660,7 +1638,7 @@ export function planLanding({ args, deps }) {
       deps.log(`PR #${number}: fast path ${verdict.eligible ? 'eligible' : 'not eligible'}`);
       for (const line of describeFastPath(verdict)) deps.log(`  ${line}`);
       if (verdict.eligible) {
-        deps.log(`PR #${number}: would squash-merge now at ${pr.headRefOid.slice(0, 9)}, without the train lock`);
+        deps.log(`PR #${number}: would merge now at ${pr.headRefOid.slice(0, 9)}, without the train lock`);
         continue;
       }
     }
@@ -1704,7 +1682,7 @@ export function planLanding({ args, deps }) {
     deps.log('  cut on top of the train above, CI concurrent; lands only if that train lands, discarded if it does not');
     for (const component of speculative) describeRow(component, true);
   } else if (!args.speculate) deps.log('no speculative train: --no-speculate');
-  deps.log('commits main gets, if green (one per pull request):');
+  deps.log('original commits are preserved; integration merge messages, if green:');
   for (const component of batch) {
     const { message, author } = componentCommit({ component, coAuthors: parseCoAuthors(deps.git.coAuthorLog('origin/main', component.headRefOid)) });
     deps.log(`  | ${message.split('\n')[0]}${author ? `  (${author.name})` : ''}`);
