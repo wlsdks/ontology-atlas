@@ -38,7 +38,7 @@ ATLAS=~/tools/ontology-atlas/cli/src/index.mjs
 
 cd /path/to/your/repo
 node $ATLAS init ./atlas                   # scaffold a vault and its agent config
-node $ATLAS index . --vault ./atlas        # analyze without writing; --apply is the write boundary
+node $ATLAS index . --vault ./atlas        # preview candidates without writing repository meaning
 node $ATLAS agent-brief ./atlas            # the complete diagnostic handoff
 node $ATLAS mcp-verify ./atlas             # after restarting your agent: prove the live connection
 ```
@@ -49,10 +49,15 @@ dependency and prints the exact repair. What a compact `--task` handoff will and
 will not claim is documented in the [agent guide](../mcp/README.md).
 
 > Run `init` in your own repository, not inside the Atlas clone. This clone ships
-> a committed `.mcp.json` pointing at Atlas's own vault, and `init` refuses to
-> overwrite it — your agent would silently answer from *our* ontology. That file
-> also declares a review-only `chrome-devtools` server the design seats measure
-> rendered geometry through; [AGENTS.md](../AGENTS.md) owns that contract.
+> a committed `.mcp.json` pointing at Atlas's own vault. A parseable existing
+> client config can be rebound while unrelated entries are preserved; a malformed
+> config stays unresolved and receives an adjacent example. Restart the agent
+> and call `connection_info` to verify the actual vault and repository roots.
+
+`bootstrap` and `index --apply` are review-only and exit 3 when approval is
+required; `analyze --apply` writes nothing, and `infer-imports --apply` is disabled.
+Continue with explicitly approved small MCP batches or the qualified bulk
+lifecycle. See the [repository walkthrough](../docs/guide/from-your-repo.md).
 
 Run the desktop shell from the same checkout with `pnpm desktop:dev`.
 ## Commands
