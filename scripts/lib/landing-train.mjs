@@ -3,7 +3,7 @@
  *
  * `scripts/pr-land.mjs` owns the input/output: `gh`, `git`, the clock and the lock. Everything that
  * decides something — which pull requests ride the next train, how a red train splits, whether a
- * pull request may skip the train, what the squash commit says, what a waiter's exit code is — lives
+ * pull request may skip the train, what integration merge metadata says, what a waiter's exit code is — lives
  * here, so it is tested from literals with no network at all. The header of `pr-land.mjs` carries
  * the measurements and the why.
  */
@@ -246,7 +246,7 @@ export function trainCiStep({ checks, other, inFlight = false, emptyRollupObserv
 /**
  * Has `main` moved into this train's files since the train was cut?
  *
- * `strict` is off on `main`, so GitHub squash-merges a train onto whatever `main` is now. That is
+ * `strict` is off on `main`, so GitHub merges a train onto whatever `main` is now. That is
  * safe exactly when `main` changed only files the train never touched: the tested tree and the
  * merged tree then differ only there. An overlap means the train was tested against a `main` that
  * no longer exists, and it is rebuilt.
@@ -370,8 +370,8 @@ export function trainBody({ components, base, onTopOf = null }) {
 }
 
 /**
- * Every `Co-authored-by` a squash must carry: the trailers already in the component commits, and
- * each commit's own author, because a squash made by the conductor otherwise credits only it.
+ * Contribution metadata for planning and integration merge messages: the trailers already in
+ * original commits and each commit's own author. Original commit authors remain unchanged.
  * De-duplicated by e-mail, case-insensitively, first spelling wins.
  */
 export function parseCoAuthors(logText) {
@@ -386,10 +386,9 @@ export function parseCoAuthors(logText) {
 }
 
 /**
- * The commit one pull request becomes on `main`: its own title and number, its first author as
- * the commit author, every other author as a trailer. A train lands as one commit per pull
- * request, so `main`'s history reads like the pull requests, not like the trains that carried them
- * (owner, 2026-09-27: "chore(train): land #1926 #1913 (#1927)" says nothing about the change).
+ * Metadata for a component integration merge: its title and number, an author hint for
+ * planning, and co-author trailers. Original commits are retained unchanged in the train;
+ * this message labels their merge instead of replacing their history.
  */
 export function componentCommit({ component, coAuthors = [] }) {
   const parsed = coAuthors
