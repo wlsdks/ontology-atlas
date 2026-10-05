@@ -14,6 +14,11 @@ overrides:
   js-yaml@>=4.0.0 <4.3.2: 4.3.2
   vite@<8.0.16: 8.1.5
 
+patchedDependencies:
+  three@0.185.1:
+    hash: 5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1
+    path: patches/three@0.185.1.patch
+
 importers:
 
   .:
@@ -104,7 +109,7 @@ importers:
         version: 3.6.0
       three:
         specifier: ^0.185.1
-        version: 0.185.1
+        version: 0.185.1(patch_hash=5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1)
       unified:
         specifier: 11.0.5
         version: 11.0.5
@@ -8332,7 +8337,7 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  three@0.185.1: {}
+  three@0.185.1(patch_hash=5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1): {}
 
   tinybench@2.9.0: {}
 
