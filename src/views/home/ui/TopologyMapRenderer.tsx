@@ -27,9 +27,8 @@ import {
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
-  type FlatDialState,
 } from "@/widgets/ontology-map";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useFlatRingMemory } from "../model/use-flat-ring-memory";
 import { readHexRelief } from "@/shared/lib/appearance-preferences";
@@ -42,7 +41,6 @@ import { TopologyLightLegend } from "./TopologyLightLegend";
 import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
 export interface TopologyMapRendererProps {
-  onFlatDialShown?: (state: FlatDialState | null) => void;
   localGraphRoot: string | null;
   mapEntryTicket: number | null;
   expandAllActive: boolean;
@@ -52,7 +50,6 @@ export interface TopologyMapRendererProps {
   setGrowthReplaying: React.Dispatch<React.SetStateAction<boolean>>;
   topologyRelayoutToken: number;
   setTopologyVisibleCount: React.Dispatch<React.SetStateAction<number | null>>;
-  setMapZoomTier: React.Dispatch<React.SetStateAction<"circuit" | "element" | "spine">>;
   footprintVisitedIds: string[];
   footprintLensActiveRef: React.RefObject<boolean>;
   footprintBrushNodeIdRef: React.RefObject<string | null>;
@@ -122,11 +119,11 @@ export interface TopologyMapRendererProps {
 
 export function TopologyMapRenderer({
   localGraphRoot, mapEntryTicket, expandAllActive, mapAssemblesOnOpen, combinedFitToken, growthReplayToken, setGrowthReplaying,
-  topologyRelayoutToken, setTopologyVisibleCount, setMapZoomTier, footprintVisitedIds, footprintLensActiveRef,
+  topologyRelayoutToken, setTopologyVisibleCount, footprintVisitedIds, footprintLensActiveRef,
   footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
-  topologyIndexPresentation, topologyCreateIntent, onFlatDialShown, impactLensActive,
+  topologyIndexPresentation, topologyCreateIntent, impactLensActive,
 }: TopologyMapRendererProps) {
   const { t, tTopologyKeyboardWalk, structure, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
@@ -159,10 +156,6 @@ export function TopologyMapRenderer({
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
   const missingStructureDocuments = useMemo(() => new Set(ontologyInsight?.nodes.filter(node => node.hasOwnDocument === false).map(node => node.id)), [ontologyInsight]);
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
-  const [flatDial, setFlatDial] = useState<FlatDialState>({ drawn: false, evidenceMeasured: false });
-  const onFlatDialChange = useCallback((state: FlatDialState) => {
-    setFlatDial(state);
-  }, []);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
@@ -190,10 +183,6 @@ export function TopologyMapRenderer({
     frameRef,
   });
   const { onIncomingDrawn } = morph;
-  const flatDialShown = morph.surface === "map" && flatDial.drawn ? flatDial : null;
-  useEffect(() => {
-    onFlatDialShown?.(flatDialShown);
-  }, [flatDialShown, onFlatDialShown]);
   const onDrawnCountChange = useCallback(
     (drawn: number) => {
       handleMapFrameDrawn(drawn);
@@ -283,7 +272,6 @@ export function TopologyMapRenderer({
             dialLabels={dialLabels}
             evidenceStates={evidenceStates}
             impactLens={impactLensActive}
-            onFlatDialChange={onFlatDialChange}
             loadProgress={arriving ? loadProgress : null}
             placingTierRead={placingTierRead}
             relationCaptions={mapRelationCaptions}
@@ -316,7 +304,6 @@ export function TopologyMapRenderer({
             onVisibleCountChange={setTopologyVisibleCount}
             onDrawnCountChange={onDrawnCountChange}
             onGraphStatsChange={handleTopologyGraphStatsChange}
-            onZoomTierChange={setMapZoomTier}
             onContextMenuNode={handleContextMenuNode}
             onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
             minimal={localGraphRoot !== null}

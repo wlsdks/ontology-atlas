@@ -131,4 +131,23 @@ describe("buildFullDetailGroups", () => {
     const other = groups.contains.rows.find((r) => r.id === "element:child-2");
     expect(other?.fresh).toBe(false);
   });
+
+  it('counts authored containment edges in either direction, including duplicates and unresolved children', () => {
+    const mixed = [
+      { from: "domain:a", to: "capability:child-1", type: "contains" },
+      { from: "capability:child-1", to: "element:grandchild", type: "contains" },
+      { from: "capability:child-1", to: "element:grandchild", type: "contains" },
+      { from: "element:grandchild", to: "capability:child-1", type: "belongs_to" },
+      { from: "capability:child-1", to: "element:missing", type: "contains" },
+      { from: "capability:child-1", to: "capability:child-1", type: "contains" },
+      { from: "capability:child-1", to: "domain:a", type: "depends_on" },
+    ];
+    const groups = buildFullDetailGroups("domain:a", nodes, mixed);
+    expect(groups.contains.rows).toEqual([{
+      id: "capability:child-1", title: "Child One", kind: "capability",
+      containment: true, childCount: 5, fresh: false,
+    }]);
+    expect(groups.usedBy.rows[0]?.childCount).toBe(5);
+    expect(buildFullDetailGroups("domain:a", nodes, []).contains.rows).toEqual([]);
+  });
 });

@@ -127,6 +127,22 @@ describe("stepEmphasis", () => {
   const RISE_TAU = 0.09;
   const DECAY_TAU = 0.15;
 
+  it("preserves the original ramp arithmetic at rest and for unusual timing inputs", () => {
+    for (const current of [-0, 0, 0.3, 1, Infinity, NaN]) {
+      for (const dt of [0, 1 / 144, -1, Infinity, NaN]) {
+        for (const tau of [0, 0.15, -0.15, Infinity, NaN]) {
+          for (const active of [false, true]) {
+            const target = active ? 1 : 0;
+            const expected = current + (target - current) * (1 - Math.exp(-dt / tau));
+            expect(stepEmphasis(current, active, true, dt, tau, tau)).toEqual(expected);
+            expect(stepFocusRamp(current, active, dt, tau)).toEqual(expected);
+            if (active) expect(stepEmphasis(current, true, false, dt, tau, tau)).toEqual(current);
+          }
+        }
+      }
+    }
+  });
+
   it("rises toward 1 when active and the ripple has started", () => {
     // emphasis += (1 - 0) * (1 - exp(-dt/riseTau)); dt = riseTau -> factor = 1 - exp(-1) ≈ 0.6321206
     const next = stepEmphasis(0, true, true, RISE_TAU, RISE_TAU, DECAY_TAU);

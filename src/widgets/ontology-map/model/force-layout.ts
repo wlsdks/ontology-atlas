@@ -101,6 +101,45 @@ export function createForceSimulation(
   let pinId: string | null = null;
   let pinX = 0;
   let pinY = 0;
+  let scopedGraph: Graph | null = null;
+  let scopedOrder: string[] = [];
+
+  const matchesScope = (ids: ReadonlySet<string>): boolean => {
+    if (scopedGraph === null) return false;
+    let index = 0;
+    for (const id of ids) {
+      if (!graph.hasNode(id)) continue;
+      if (scopedOrder[index++] !== id) return false;
+    }
+    return index === scopedOrder.length;
+  };
+
+  // Retain one induced graph; node order affects floating-point layout results.
+  const graphForScope = (ids: ReadonlySet<string>): Graph => {
+    if (matchesScope(ids)) {
+      const sub = scopedGraph!;
+      for (const id of scopedOrder) {
+        sub.setNodeAttribute(id, "x", graph.getNodeAttribute(id, "x"));
+        sub.setNodeAttribute(id, "y", graph.getNodeAttribute(id, "y"));
+      }
+      return sub;
+    }
+    const sub = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
+    scopedOrder = [];
+    for (const id of ids) {
+      if (!graph.hasNode(id)) continue;
+      scopedOrder.push(id);
+      sub.addNode(id, { x: graph.getNodeAttribute(id, "x"), y: graph.getNodeAttribute(id, "y") });
+    }
+    for (const id of scopedOrder) {
+      graph.forEachNeighbor(id, (other) => {
+        if (!sub.hasNode(other) || sub.hasEdge(id, other)) return;
+        sub.addEdge(id, other);
+      });
+    }
+    scopedGraph = sub;
+    return sub;
+  };
 
   const restamp = () => {
     if (pinId !== null && graph.hasNode(pinId)) {
@@ -113,24 +152,8 @@ export function createForceSimulation(
     tick(iterations: number, restrictToIds?: ReadonlySet<string> | null) {
       if (iterations <= 0 || graph.order === 0) return;
       if (restrictToIds) {
-        // Run FA2 only on the restricted subgraph: it is quadratic in node count, so running the
-        // whole graph and restoring the outside spends the frame on discarded work.
-        const sub = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
-        for (const id of restrictToIds) {
-          if (!graph.hasNode(id)) continue;
-          sub.addNode(id, { x: graph.getNodeAttribute(id, "x"), y: graph.getNodeAttribute(id, "y") });
-        }
-        // Only inside edges exert force, so boundary nodes lose their pull toward outside
-        // neighbours. slowDown 20 with a short warm window keeps that tiny per frame, overlap
-        // separation catches a cluster riding onto a settled node, and release settling rewinds
-        // the tug offset.
-        for (const id of restrictToIds) {
-          if (!sub.hasNode(id)) continue;
-          graph.forEachNeighbor(id, (other) => {
-            if (!sub.hasNode(other) || sub.hasEdge(id, other)) return;
-            sub.addEdge(id, other);
-          });
-        }
+        // O(k) position refresh on a scope hit; only induced edges exert force.
+        const sub = graphForScope(restrictToIds);
         if (sub.order > 0) {
           forceAtlas2.assign(sub, { iterations, settings });
           sub.forEachNode((id, attrs) => {

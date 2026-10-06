@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { UseFullDetailA1ModelArgs } from "./use-full-detail-a1-model";
 
 /**
  * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine, and
@@ -114,5 +115,44 @@ describe("useFullDetailA1Model: a closed surface does not traverse the graph", (
     expect(groupsSpy).toHaveBeenCalledTimes(1);
     expect(reachSpy).toHaveBeenCalledTimes(1);
     expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates reader state without rebuilding unchanged graph facts", () => {
+    const initial: UseFullDetailA1ModelArgs = {
+      open: true, nodeFocus, selectedOntologyNode: selected, insight, changedSlugs,
+      nodeBody: null, nodeEditTarget: null, vaultLoaded: false, onSaveExplanation,
+      datasheet: null,
+    };
+    const { result, rerender } = renderHook(useFullDetailA1Model, { initialProps: initial });
+    const save = vi.fn();
+    rerender({
+      ...initial,
+      nodeBody: { slug: "capability-alpha", raw: "Updated body", body: "Updated body" },
+      nodeEditTarget: { vaultSlug: "capability-alpha" },
+      vaultLoaded: true,
+      onSaveExplanation: save,
+    });
+    expect(result.current?.bodyMarkdown).toBe("Updated body");
+    expect(result.current?.explanationEdit?.onSave).toBe(save);
+    expect(groupsSpy).toHaveBeenCalledTimes(1);
+    expect(reachSpy).toHaveBeenCalledTimes(1);
+    expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
+
+    rerender({ ...initial, changedSlugs: new Set([selected.id]) });
+    expect(result.current?.node.fresh).toBe(true);
+    expect(groupsSpy).toHaveBeenCalledTimes(2);
+    expect(reachSpy).toHaveBeenCalledTimes(1);
+    expect(codeLocationsSpy).toHaveBeenCalledTimes(1);
+
+    const nextNodes = [...nodes, node("element:new")];
+    rerender({ ...initial, insight: { nodes: nextNodes, edges } });
+    expect(result.current?.breadcrumb.totalConcepts).toBe(3);
+    expect(reachSpy).toHaveBeenCalledTimes(2);
+    expect(codeLocationsSpy).toHaveBeenCalledTimes(2);
+
+    rerender({ ...initial, open: false });
+    expect(result.current).toBeNull();
+    expect(reachSpy).toHaveBeenCalledTimes(2);
+    expect(codeLocationsSpy).toHaveBeenCalledTimes(2);
   });
 });

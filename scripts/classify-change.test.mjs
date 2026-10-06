@@ -249,6 +249,18 @@ test('gate inventories are non-empty so exhaustive mode cannot pass vacuously', 
   assert.ok(FULL_LANE_COMMANDS.mcp.length > 0);
 });
 
+test('dependency patches are known and run every exhaustive lane', () => {
+  for (const file of ['patches/three@0.185.1.patch', 'patches/future-package@2.0.0.patch']) {
+    const plan = buildImpactPlan({ files: [file] });
+    assert.deepEqual(plan.unknownPaths, []);
+    assert.equal(plan.full, true);
+    assert.equal(plan.lanes.gates.run, true);
+    for (const lane of ['unit', 'perf', 'mcp', 'e2e']) assert.equal(plan.lanes[lane].mode, 'full');
+    assert.equal(plan.lanes.e2e.staticExport, true);
+    assert.equal(plan.lanes.e2e.webSurface, true);
+  }
+});
+
 test('every currently tracked path belongs to a known impact namespace', () => {
   const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
     .trim()

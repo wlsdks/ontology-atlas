@@ -43,7 +43,10 @@
     "zoomHint": "ズームインすると要素が表示されます",
     "zoomHintPlain": "点をクリックすると要素が表示されます",
     "dialCapabilitiesHint": "ズームするとケイパビリティが表示されます",
-    "dialElementsHint": "入ったドメインの要素が表示されます"
+    "dialElementsHint": "入ったドメインの要素が表示されます",
+    "scopeFull": "地図全体 · 概念{count, number}件",
+    "scopePartial": "現在の範囲 · 概念{shown, number} / 全体{total, number}件",
+    "synthetic": "性能テスト用の仮想データ · 概念{count, number}件"
   },
   "plainModeCta": "やさしい表示に切り替え",
   "reopenLabel": "スタートガイドを再表示",

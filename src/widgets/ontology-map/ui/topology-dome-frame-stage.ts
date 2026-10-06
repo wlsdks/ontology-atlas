@@ -795,10 +795,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           updateDomeFrame(
             dome,
             world.nodes,
-            (n) => {
-              const w = world.nodeById.get(n.id);
-              return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
-            },
+            (n) => radiusForKind(n.kind, tokens) * n.magnitudeScale,
             now,
             // A cone node is a fixed number of SCREEN pixels, so the zoom has
             // to be divided back out here (`DOME_NODE_PX`).

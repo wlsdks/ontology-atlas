@@ -14,18 +14,17 @@ import type { useTopologySceneControls } from "../model/use-topology-scene-contr
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
-import { FirstRunReadout, SampleNodeHint } from "@/features/first-run-starter";
 import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/frame-meter";
 import { Compass, HelpCircle, Play } from "lucide-react";
-import type { FlatDialState } from "@/widgets/ontology-map";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useMemo } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
-import { FlatDialLegend } from "./FlatDialLegend";
+import { TopologyScopeReadout } from "./TopologyScopeReadout";
+import { resolveMapScopeCount } from "../lib/map-scope/resolve-count";
 import { TopologyMapRenderer, type TopologyMapRendererProps } from "./TopologyMapRenderer";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 const VaultStartSteps = dynamic(
@@ -60,7 +59,6 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   heldLocalGraphStack: string[];
   topologyVisibleCount: number | null;
   readoutStepsAside: boolean;
-  mapZoomTier: "circuit" | "element" | "spine";
   unsupportedGuideOpen: boolean;
   setUnsupportedGuideOpen: React.Dispatch<React.SetStateAction<boolean>>;
   requestVaultOpen: () => void;
@@ -70,7 +68,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   >;
   topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "openGuidedTour" | "tour">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
-  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug">;
+  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d" | "structure">;
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
   topologyVaultReadModel: Pick<
@@ -92,9 +90,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
     | "topologyRenderState"
     | "mapMountTaskReady"
     | "drawerOpen"
-    | "drawnConceptCount"
-    | "totalConceptCount"
-    | "indexDomainCount"
+    | "realmActive"
   >;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "handleCanvasPointerDownCapture" | "nodePopoverDismissed">;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "startStepsVisible" | "renderedIndexState" | "dismissStartSteps" | "readoutStackRef">;
@@ -109,12 +105,10 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
 };
 
 export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
-  const [flatDial, setFlatDial] = useState<FlatDialState | null>(null);
-  const hintInline = flatDial !== null && !props.readoutStepsAside;
   const {
     localGraphRoot, acpRuntimeLabel, router, setFitViewToken, setShortcutsOpen, analysisMode, growthReplaying,
     setGrowthReplayToken, renderProjects, leftPanelCollapsed, localGraphStack, setLocalGraphStack,
-    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, mapZoomTier, unsupportedGuideOpen,
+    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, unsupportedGuideOpen,
     setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
     acpRuntimeController, topologyVaultReadModel, topologyAgentOrchestration, topologyPreferences,
     topologyGraphProjection, topologyNavigationActions, topologyKeyboardTour, topologyInspectorState,
@@ -128,8 +122,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   const { handleCanvasPointerDownCapture, nodePopoverDismissed } = topologyCanvasFocus;
   const {
     topologyOverlayState, handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount,
-    clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, drawnConceptCount,
-    totalConceptCount, indexDomainCount
+    clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, realmActive
   } = topologySceneControls;
   const { createNodeOpen, agentConnect, bootstrapPlan, setBootstrapOpen, canCreateNode } = topologyAuthoring;
   const { acpRuntime } = acpRuntimeController;
@@ -137,11 +130,17 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
   } = topologyVaultReadModel;
   const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
-  const { t, audiencePlain, view3d, structure } = topologyPreferences;
-  const { canvasSelectedSlug, localGraphProjects, resolvedSelectionSlug } = topologyGraphProjection;
+  const { t, view3d, structure } = topologyPreferences;
+  const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
-  const { openGuidedTour, tour } = topologyKeyboardTour;
+  const { openGuidedTour } = topologyKeyboardTour;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
+
+  const scopeConceptCount = useMemo(() => {
+    if (isSynthetic) return ontologyMapGraph.nodes.length;
+    if (realmActive) return resolveMapScopeCount(ontologyMapGraph.nodes, ontologyMapGraph.edges, resolvedRealmSlug);
+    return localGraphRoot === null ? ontologyMapGraph.nodes.length : null;
+  }, [isSynthetic, localGraphRoot, ontologyMapGraph.nodes, ontologyMapGraph.edges, realmActive, resolvedRealmSlug]);
 
   return (<>
     <div
@@ -242,7 +241,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
               variant="sparse"
             />
           ) : null}
-          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} onFlatDialShown={setFlatDial} /> : null}
+          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} /> : null}
           {topologyRenderState.renderCanvas ? (
             <TopologyChangeAnnouncement
               touchedCount={changedSlugs.size}
@@ -461,33 +460,14 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           )}
           aria-hidden={readoutStepsAside ? true : undefined}
         >
-          {flatDial ? (
-            <div className="flex max-w-[calc(100vw-7rem)] flex-wrap items-center justify-end gap-x-4 gap-y-2">
-              {hintInline ? <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} inline /> : null}
-              <FlatDialLegend
-                evidenceMeasured={flatDial.evidenceMeasured}
-                linksShown={flatDial.summary?.linksShown ?? 0}
-                linksTotal={flatDial.summary?.linksTotal ?? 0}
-              />
-            </div>
-          ) : null}
-          <FirstRunReadout
-            dial={flatDial?.summary ?? null}
-            conceptCount={drawnConceptCount}
-            totalConceptCount={totalConceptCount}
-            domainCount={indexDomainCount}
-            tier={mapZoomTier}
-            // Plain mode never reaches the element tier, so it uses the plain wording.
-            audiencePlain={audiencePlain}
+          <TopologyScopeReadout
+            total={topologyRenderState.renderCanvas && mapMountTaskReady && vault.restoreAttempted && !vault.partialTotal ? ontologyMapGraph.nodes.length : null}
+            members={scopeConceptCount}
+            synthetic={isSynthetic}
           />
           {/* The frame meter joins the instrument stack instead of claiming a new corner. */}
           <FrameMeter />
         </div>}
-
-        {/* Pointer-transparent; the first selection that exists dismisses it for good
-           (`features/first-run-starter`), so a ghost slug cannot
-           (see `resolvedSelectionSlug`). */}
-        <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open || hintInline || structure} />
 
         {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
            elsewhere. */}

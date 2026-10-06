@@ -13,6 +13,12 @@ overrides:
   undici@>=7.0.0 <7.29.1: 7.29.1
   js-yaml@>=4.0.0 <4.3.2: 4.3.2
   vite@<8.0.16: 8.1.5
+  source-map-js@<1.2.2: 1.2.2
+
+patchedDependencies:
+  three@0.185.1:
+    hash: 5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1
+    path: patches/three@0.185.1.patch
 
 importers:
 
@@ -94,8 +100,8 @@ importers:
         specifier: 11.0.0
         version: 11.0.0
       smol-toml:
-        specifier: 1.7.2
-        version: 1.7.2
+        specifier: 1.9.0
+        version: 1.9.0
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -104,7 +110,7 @@ importers:
         version: 3.6.0
       three:
         specifier: ^0.185.1
-        version: 0.185.1
+        version: 0.185.1(patch_hash=5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1)
       unified:
         specifier: 11.0.5
         version: 11.0.5
@@ -3911,8 +3917,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  smol-toml@1.7.2:
-    resolution: {integrity: sha512-pXFZ9B2WinEPzxWkMmlYE/oYx2BP+qLrE95wP8tCuK901uLSMGdCb6QSr82z+wnhXkG4+cO+OMLbZB2Cn+97zw==}
+  smol-toml@1.9.0:
+    resolution: {integrity: sha512-hpd+HLON7HdZXqYchMM/+LaTTbdK0AU3NngIJ4KVyWbY9bfQqdL9cD+4yf6dUoU2Ap4VsU0JkQi6FxAI1B2mXQ==}
     engines: {node: '>= 18'}
 
   sonner@2.0.7:
@@ -3921,8 +3927,8 @@ packages:
       react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
       react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   source-map@0.6.1:
@@ -5464,7 +5470,7 @@ snapshots:
       jiti: 2.7.0
       lightningcss: 1.32.0
       magic-string: 0.30.21
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
       tailwindcss: 4.3.3
 
   '@tailwindcss/oxide-android-arm64@4.3.3':
@@ -6197,7 +6203,7 @@ snapshots:
   css-tree@3.2.1:
     dependencies:
       mdn-data: 2.27.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   css.escape@1.5.1: {}
 
@@ -7145,7 +7151,7 @@ snapshots:
       oxc-parser: 0.140.0
       oxc-resolver: 11.24.2
       picomatch: 4.0.5
-      smol-toml: 1.7.2
+      smol-toml: 1.9.0
       strip-json-comments: 5.0.3
       tinyglobby: 0.2.17
       unbash: 4.0.3
@@ -7900,7 +7906,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   prelude-ls@1.2.1: {}
 
@@ -8213,14 +8219,14 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  smol-toml@1.7.2: {}
+  smol-toml@1.9.0: {}
 
   sonner@2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  source-map-js@1.2.1: {}
+  source-map-js@1.2.2: {}
 
   source-map@0.6.1: {}
 
@@ -8332,7 +8338,7 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  three@0.185.1: {}
+  three@0.185.1(patch_hash=5f3cdd82a513cfe1fd0b8ef55ccbe90d2bfe7b85b0af3950fcce34329766f9c1): {}
 
   tinybench@2.9.0: {}
 
