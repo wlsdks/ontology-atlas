@@ -276,7 +276,7 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "11.0.0",
-    "smol-toml": "1.7.2",
+    "smol-toml": "1.9.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
@@ -314,7 +314,7 @@
       "@swc/core",
       "unrs-resolver"
     ],
-    "//": "overrides: the brace-expansion floors lift eslint's minimatch 3 and typescript-estree's minimatch 10 (GHSA-q2hr-2g5m-vwhr); the undici floor lifts jsdom 29 (GHSA-w293-vg96-wgc3 and five more). All three are dev-only transitive dependencies whose parents still accept the vulnerable range; remove a floor once its parent's own range starts at or above it.",
+    "//": "Security floors for transitive dependencies whose parents still accept vulnerable versions, including source-map-js (GHSA-68fv-2mgg-jv7q). Remove each floor when every parent range excludes the vulnerable versions.",
     "overrides": {
       "brace-expansion@<1.1.21": "1.1.21",
       "brace-expansion@>=4.0.0 <5.0.12": "5.0.12",
@@ -323,7 +323,8 @@
       "sharp@<0.35.4": "0.35.4",
       "undici@>=7.0.0 <7.29.1": "7.29.1",
       "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
-      "vite@<8.0.16": "8.1.5"
+      "vite@<8.0.16": "8.1.5",
+      "source-map-js@<1.2.2": "1.2.2"
     },
     "patchedDependencies": {
       "three@0.185.1": "patches/three@0.185.1.patch"
