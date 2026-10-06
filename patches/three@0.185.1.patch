@@ -1,0 +1,91 @@
+diff --git a/build/three.cjs b/build/three.cjs
+index 8939a67dd76325ccd25ee8806fc4d22b1caea88a..33cf6b7caead3df6f78a6baaba0ac52b8ca652ce 100644
+--- a/build/three.cjs
++++ b/build/three.cjs
+@@ -73474,6 +73474,16 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
+ 
+ 	//
+ 
++	this.disposeTexture = function ( texture ) {
++
++		if ( properties.get( texture ).__webglInit !== undefined ) {
++
++			onTextureDispose( { target: texture } );
++
++		}
++
++	};
++
+ 	this.allocateTextureUnit = allocateTextureUnit;
+ 	this.resetTextureUnits = resetTextureUnits;
+ 	this.getTextureUnits = getTextureUnits;
+@@ -77052,6 +77062,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			textures.disposeTexture( getDFGLUT() );
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+diff --git a/build/three.module.js b/build/three.module.js
+index ad13abf7d128bee607a7672646ca543327e258d3..0fe0fce5429e3a21003263511b3b0d1aa8df15aa 100644
+--- a/build/three.module.js
++++ b/build/three.module.js
+@@ -13496,6 +13496,16 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
+ 
+ 	//
+ 
++	this.disposeTexture = function ( texture ) {
++
++		if ( properties.get( texture ).__webglInit !== undefined ) {
++
++			onTextureDispose( { target: texture } );
++
++		}
++
++	};
++
+ 	this.allocateTextureUnit = allocateTextureUnit;
+ 	this.resetTextureUnits = resetTextureUnits;
+ 	this.getTextureUnits = getTextureUnits;
+@@ -17074,6 +17084,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			textures.disposeTexture( getDFGLUT() );
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+diff --git a/src/renderers/WebGLRenderer.js b/src/renderers/WebGLRenderer.js
+index cc2f156939863f3ce3d524ea92bf206a740a6cdb..fb0a4589a5cb0149ed911667163828fba1620d89 100644
+--- a/src/renderers/WebGLRenderer.js
++++ b/src/renderers/WebGLRenderer.js
+@@ -1080,6 +1080,7 @@ class WebGLRenderer {
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
++			textures.disposeTexture( getDFGLUT() );
+ 			properties.dispose();
+ 			environments.dispose();
+ 			objects.dispose();
+diff --git a/src/renderers/webgl/WebGLTextures.js b/src/renderers/webgl/WebGLTextures.js
+index e4a1c61a9b12809539702be91bd8439664fd0932..d6752c1e0b8c86d18d4d7105d49971be0f3f2777 100644
+--- a/src/renderers/webgl/WebGLTextures.js
++++ b/src/renderers/webgl/WebGLTextures.js
+@@ -2491,6 +2491,16 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
+ 
+ 	//
+ 
++	this.disposeTexture = function ( texture ) {
++
++		if ( properties.get( texture ).__webglInit !== undefined ) {
++
++			onTextureDispose( { target: texture } );
++
++		}
++
++	};
++
+ 	this.allocateTextureUnit = allocateTextureUnit;
+ 	this.resetTextureUnits = resetTextureUnits;
+ 	this.getTextureUnits = getTextureUnits;

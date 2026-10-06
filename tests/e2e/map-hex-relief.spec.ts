@@ -285,18 +285,19 @@ test("the glide into a 10,000-concept board lands on its raised slabs as closely
 });
 
 for (const size of [{ width: 1512, height: 982 }, { width: 1040, height: 720 }]) {
-  test(`the relief legend line stays clear of the sample hint at ${size.width}`, async ({ page }) => {
+  test(`the relief legend line stays clear of the map scope at ${size.width}`, async ({ page }) => {
     await page.setViewportSize(size);
     await seedFirstRunSeen(page);
     await page.addInitScript(() => localStorage.setItem("atlas.appearance.hex-relief", "on"));
     await page.goto("/en/topology/?synth=500&synthDeps=1&view=hex&guides=off&e2e=1");
     await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true", { timeout: 60_000 });
-    await expect(page.getByTestId("sample-node-hint")).toBeVisible();
+    await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
+    await expect(page.getByTestId("sample-node-hint")).toHaveCount(0);
     const line = page.getByTestId("hex-board-relief-legend");
     await expect(line).toBeVisible();
     const b = (await line.boundingBox())!;
-    const p = (await page.getByTestId("sample-node-hint").boundingBox())!;
+    const p = (await page.getByTestId("topology-scope-readout").boundingBox())!;
     const overlap = b.x < p.x + p.width && p.x < b.x + b.width && b.y < p.y + p.height && p.y < b.y + b.height;
-    expect(overlap, `legend line ${JSON.stringify(b)} under the hint ${JSON.stringify(p)}`).toBe(false);
+    expect(overlap, `legend line ${JSON.stringify(b)} under the scope ${JSON.stringify(p)}`).toBe(false);
   });
 }

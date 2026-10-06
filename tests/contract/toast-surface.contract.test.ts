@@ -85,14 +85,18 @@ describe("toast box", () => {
   });
 });
 
-describe("toast walls", () => {
-  it.each([
+const WALLS = [
     ["src/widgets/app-nav-rail/ui/AppNavRail.tsx", 'data-toast-wall="left"'],
     ["src/views/home/ui/TopologyIndexSlot.tsx", 'data-toast-wall={frame.exiting ? undefined : "left"}'],
     ["src/views/home/ui/TopologyAgentDock.tsx", 'data-toast-wall="right"'],
     ["src/views/home/ui/TopologyCanvasSurface.tsx", 'data-toast-wall="bottom"'],
-    ["src/features/first-run-starter/ui/SampleNodeHint.tsx", 'data-toast-wall="bottom"'],
-  ])("%s 가 벽을 선언한다", (path, marker) => {
+] as const;
+
+describe("toast walls", () => {
+  it("covers a nonempty set of active wall owners", () => {
+    expect(WALLS.length).toBeGreaterThan(0);
+  });
+  it.each(WALLS)("%s 가 벽을 선언한다", (path, marker) => {
     expect(read(path)).toContain(marker);
   });
 

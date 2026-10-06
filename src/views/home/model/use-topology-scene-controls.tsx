@@ -204,14 +204,9 @@ export function useTopologySceneControls({
     }),
     [tDial],
   );
-  // `drawnConceptCount` comes from the map's last frame and the total from the
-  // same `ontologyInsight`, so the two cannot drift.
-  const [drawnConceptCount, setDrawnConceptCount] = useState(0);
-  const handleMapFrameDrawn = useCallback((count: number) => {
-    setDrawnConceptCount(count);
+  const handleMapFrameDrawn = useCallback((_count: number) => {
     completeMapNavigation(mapEntryTicket);
   }, [mapEntryTicket]);
-  const totalConceptCount = ontologyInsight?.nodes.length ?? 0;
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
   const visibleTopologyRelationCount =
@@ -289,7 +284,6 @@ export function useTopologySceneControls({
     handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount, clearTopologyFilters,
     topologyRenderState, mapMountTaskReady, handleExpandRequest, handleMapFrameDrawn,
     handleTopologyGraphStatsChange, mapLensIds, mapLensKind, pathLensEdgeIds, pathExpandedParents,
-    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels, drawnConceptCount,
-    totalConceptCount
+    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels
   } as const;
 }

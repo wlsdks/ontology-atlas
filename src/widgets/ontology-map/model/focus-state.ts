@@ -254,11 +254,11 @@ export function stepEmphasis(
   riseTau: number,
   decayTau: number,
 ): number {
-  if (isInActiveEgoSet) {
-    if (!rippleHasStarted) return currentEmphasis;
-    return currentEmphasis + (1 - currentEmphasis) * (1 - Math.exp(-dt / riseTau));
-  }
-  return currentEmphasis + (0 - currentEmphasis) * (1 - Math.exp(-dt / decayTau));
+  if (isInActiveEgoSet && !rippleHasStarted) return currentEmphasis;
+  const target = isInActiveEgoSet ? 1 : 0;
+  const tau = isInActiveEgoSet ? riseTau : decayTau;
+  if (currentEmphasis === target && Number.isFinite(dt) && dt >= 0 && tau > 0) return target;
+  return currentEmphasis + (target - currentEmphasis) * (1 - Math.exp(-dt / tau));
 }
 
 /** Rides the same ramp as the dim colour, so ink and presence move as one. */
@@ -274,6 +274,7 @@ export function egoRestSink(focusRamp: number, restAlpha: number): number {
  */
 export function stepFocusRamp(current: number, focusActive: boolean, dt: number, tau: number): number {
   const target = focusActive ? 1 : 0;
+  if (current === target && Number.isFinite(dt) && dt >= 0 && tau > 0) return target;
   return current + (target - current) * (1 - Math.exp(-dt / tau));
 }
 

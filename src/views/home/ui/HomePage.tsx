@@ -124,10 +124,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    */
   const [growthReplaying, setGrowthReplaying] = useState(false);
   const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
-  // The corner readout's orientation label; the "zoom in to see elements" hint drops at "element".
-  const [mapZoomTier, setMapZoomTier] = useState<"spine" | "circuit" | "element">(
-    "spine",
-  );
   const [topologyGraphStats, setTopologyGraphStats] = useState<{
     key: string;
     nodes: number;
@@ -615,7 +611,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
             />
             {/* INDEX stays beside the selected-node datasheet, as the approved spec shows. */}
-            <TopologyIndexSlot
+            {!topologyGraphProjection.isSynthetic && <TopologyIndexSlot
               indexSlotFrames={indexSlotFrames}
               setRouteState={setRouteState}
               recentWindow={recentWindow}
@@ -633,7 +629,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               acpRuntimeController={acpRuntimeController}
               topologyAgentOrchestration={topologyAgentOrchestration}
               topologyCreateIntent={topologyCreateIntent}
-            />
+            />}
           </>
           <TopologyCanvasSurface
             localGraphRoot={localGraphRoot}
@@ -647,7 +643,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             setGrowthReplaying={setGrowthReplaying}
             topologyRelayoutToken={topologyRelayoutToken}
             setTopologyVisibleCount={setTopologyVisibleCount}
-            setMapZoomTier={setMapZoomTier}
             footprintVisitedIds={footprintVisitedIds}
             footprintLensActiveRef={footprintLensActiveRef}
             footprintBrushNodeIdRef={footprintBrushNodeIdRef}
@@ -664,7 +659,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             heldLocalGraphStack={heldLocalGraphStack}
             topologyVisibleCount={topologyVisibleCount}
             readoutStepsAside={readoutStepsAside}
-            mapZoomTier={mapZoomTier}
             unsupportedGuideOpen={unsupportedGuideOpen}
             setUnsupportedGuideOpen={setUnsupportedGuideOpen}
             requestVaultOpen={requestVaultOpen}

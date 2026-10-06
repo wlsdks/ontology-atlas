@@ -31,18 +31,12 @@ async function readCardAgainstLitNode(page: import("@playwright/test").Page) {
     if (!probe || !cardEl || !canvasEl) return null;
     const canvas = canvasEl.getBoundingClientRect();
     const cut = document.querySelector<HTMLElement>('[data-testid="guided-tour-cutout"]');
-    // The lit node is the one under the cutout when there is one; otherwise the project node,
-    // which is what this step's anchor resolves to when a folder holds no domain.
     const nodes = probe.nodes();
-    let lit = nodes.find((n) => n.id.startsWith("project:")) ?? nodes[0];
-    if (cut) {
-      const box = cut.getBoundingClientRect();
-      const cx = box.left + box.width / 2 - canvas.left;
-      const cy = box.top + box.height / 2 - canvas.top;
-      lit = nodes.reduce((best, n) =>
-        Math.hypot(n.x - cx, n.y - cy) < Math.hypot(best.x - cx, best.y - cy) ? n : best,
-      );
-    }
+    const lit = nodes.find((n) => n.kind === "domain") ?? nodes.find((n) => n.kind === "project");
+    if (!lit) return null;
+    const cutBox = cut?.getBoundingClientRect();
+    const targetX = canvas.left + lit.x;
+    const targetY = canvas.top + lit.y;
     const name = probe.labels().find((l) => l.nodeId === lit.id);
     const card = cardEl.getBoundingClientRect();
     // The node plus the name hanging under it — what the card has to clear.
@@ -54,6 +48,9 @@ async function readCardAgainstLitNode(page: import("@playwright/test").Page) {
     };
     return {
       lit: lit.label,
+      cutout: cutBox?.toJSON() ?? null,
+      targetInCutout: Boolean(cutBox && targetX >= cutBox.left && targetX <= cutBox.right &&
+        targetY >= cutBox.top && targetY <= cutBox.bottom),
       hasName: Boolean(name),
       node,
       card: { left: card.left, right: card.right, top: card.top, bottom: card.bottom },
@@ -62,6 +59,36 @@ async function readCardAgainstLitNode(page: import("@playwright/test").Page) {
     };
   });
 }
+
+test("tour clearance identifies the requested domain even when the cutout points elsewhere", async ({ page }) => {
+  await page.setContent(`<main>
+    <canvas data-testid="ontology-map-canvas" style="position:fixed;inset:0"></canvas>
+    <div data-testid="guided-tour-card" style="position:fixed;left:200px;top:200px;width:100px;height:100px"></div>
+    <div data-testid="guided-tour-cutout" style="position:fixed;left:80px;top:80px;width:40px;height:40px"></div>
+  </main>`);
+  await page.evaluate(() => {
+    Object.defineProperty(window, "__atlasMap", { value: {
+      nodes: () => [
+        { id: "project:shop", kind: "project", label: "Shop", x: 100, y: 100, radius: 10 },
+        { id: "domain:catalog", kind: "domain", label: "Catalog", x: 250, y: 250, radius: 10 },
+      ],
+      labels: () => [],
+    } });
+  });
+  const covered = await readCardAgainstLitNode(page);
+  expect(covered?.lit).toBe("Catalog");
+  expect(covered?.overlaps).toBe(true);
+  expect(covered?.targetInCutout).toBe(false);
+  await page.getByTestId("guided-tour-cutout").evaluate((el) => {
+    el.style.left = "230px";
+    el.style.top = "230px";
+  });
+  await page.getByTestId("guided-tour-card").evaluate((el) => { el.style.left = "400px"; });
+  const clear = await readCardAgainstLitNode(page);
+  expect(clear?.lit).toBe("Catalog");
+  expect(clear?.targetInCutout).toBe(true);
+  expect(clear?.overlaps).toBe(false);
+});
 
 test("the interactive tour card never sits on the node it asks you to press (1200×863)", async ({ page }) => {
   test.setTimeout(120_000);
@@ -84,7 +111,8 @@ test("the interactive tour card never sits on the node it asks you to press (120
 
   // The opening paint — no settling wait, because the defect lived in the first frames.
   const opening = await readCardAgainstLitNode(page);
-  expect(opening, "지도 계기나 카드를 못 읽었다").not.toBeNull();
+  expect(opening, "The map target and card must be measurable").not.toBeNull();
+  expect(opening!.targetInCutout, JSON.stringify(opening)).toBe(true);
   expect(
     opening!.overlaps,
     `단계가 열리는 순간 카드(${JSON.stringify(opening!.card)})가 켜진 노드 ${opening!.lit}(${JSON.stringify(opening!.node)})를 덮는다`,
@@ -93,6 +121,7 @@ test("the interactive tour card never sits on the node it asks you to press (120
   // And once the camera has come to rest.
   await waitForMapStill(page);
   const settled = await readCardAgainstLitNode(page);
+  expect(settled!.targetInCutout, JSON.stringify(settled)).toBe(true);
   expect(settled!.hasName, `켜진 노드 ${settled!.lit} 의 이름이 안 그려졌다`).toBe(true);
   expect(
     settled!.overlaps,

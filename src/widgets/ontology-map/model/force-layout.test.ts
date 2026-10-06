@@ -108,4 +108,45 @@ describe("createForceSimulation", () => {
       expect(Number.isFinite(p.y)).toBe(true);
     }
   });
+
+  it("matches fresh graphs across repeated, reordered, mutated and unrestricted scopes", () => {
+    const graphSeeds = [...seeds, { id: "공유", x: 170, y: 90 }, seeds[0]];
+    const graphEdges = [...edges, edges[0], { source: "b", target: "공유" },
+      { source: "공유", target: "root" }, { source: "a", target: "a" },
+      { source: "missing", target: "root" }];
+    const sim = createForceSimulation(graphSeeds, graphEdges);
+    let expected = sim.positions();
+    const scope = new Set(["root", "a", "b", "missing"]);
+    const scopes = [scope, scope, new Set(["b", "a", "root"]), null,
+      scope, new Set(["공유"]), new Set<string>(), new Set(["missing"]), scope];
+    for (let step = 0; step < scopes.length * 4; step += 1) {
+      if (step % 4 === 0) {
+        if (scope.has("b")) scope.delete("b");
+        else scope.add("b");
+      }
+      const fresh = createForceSimulation(
+        [...expected].map(([id, position]) => ({ id, ...position })), graphEdges,
+      );
+      if (step % 3 !== 0) {
+        sim.pin("a", 500 + step * 5, 400 - step);
+        fresh.pin("a", 500 + step * 5, 400 - step);
+      } else {
+        sim.clearPin();
+      }
+      const active = scopes[step % scopes.length];
+      sim.tick(2, active);
+      fresh.tick(2, active);
+      expected = fresh.positions();
+      expect(sim.positions()).toEqual(expected);
+    }
+  });
+
+  it.each([{ input: [] }, { input: [{ id: "only", x: 30, y: 40 }] }])("keeps empty and single-node scopes finite", ({ input }) => {
+    const sim = createForceSimulation(input, []);
+    for (let i = 0; i < 3; i += 1) sim.tick(1, new Set(["only", "missing"]));
+    expect(sim.positions().size).toBe(input.length);
+    for (const position of sim.positions().values()) {
+      expect(Number.isFinite(position.x) && Number.isFinite(position.y)).toBe(true);
+    }
+  });
 });
