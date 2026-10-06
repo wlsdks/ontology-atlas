@@ -11,7 +11,7 @@ interface Read {
   textOverlaps: number;
   domains: number;
   concepts: number;
-  readout: { dial: string | null; concepts: number | null; domains: number | null } | null;
+  readout: { synthetic: string | null; concepts: number | null } | null;
   rects: Record<"legend" | "readout" | "hint", Rect | null>;
 }
 
@@ -36,36 +36,28 @@ function read(page: Page): Promise<Read> {
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
     };
-    const el = document.querySelector('[data-testid="first-run-readout"]');
-    const numbers = el ? [...el.querySelectorAll("span > span")].map((s) => Number(s.textContent)) : [];
+    const el = document.querySelector('[data-testid="topology-scope-readout"]');
     return {
       owns: d.owns, namesCrossed: d.namesCrossed, textOverlaps: d.textOverlaps, domains: d.clusters.length,
       concepts: m.nodes().filter((n) => n.kind !== "document").length,
-      readout: el ? { dial: el.getAttribute("data-dial"), concepts: numbers[0] ?? null, domains: numbers[1] ?? null } : null,
-      rects: { legend: rect("flat-dial-legend"), readout: rect("first-run-readout"), hint: rect("sample-node-hint") },
+      readout: el ? { synthetic: el.getAttribute("data-synthetic"), concepts: Number(el.getAttribute("data-total-concepts")) } : null,
+      rects: { legend: rect("flat-dial-legend"), readout: rect("topology-scope-readout"), hint: rect("sample-node-hint") },
     };
   });
 }
 
-function overlap(a: Rect | null, b: Rect | null): boolean {
-  if (!a || !b) return false;
-  return a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y;
-}
-
 for (const size of SIZES) {
-  test(`sample ${size.width}: the readout reads the dial and the legend stands clear`, async ({ page }) => {
+  test(`sample ${size.width}: the scope count matches the graph without generic overlays`, async ({ page }) => {
     await page.setViewportSize(size);
     await seedFirstRunSeen(page);
     await page.goto("/en/topology/?e2e=1&guides=off");
     await settle(page);
     const r = await read(page);
     expect(r.owns).toBe(true);
-    expect(r.readout).toMatchObject({ dial: "true", concepts: r.concepts, domains: r.domains });
-    expect(r.rects.legend).not.toBeNull();
-    expect(r.rects.hint).not.toBeNull();
-    expect(overlap(r.rects.legend, r.rects.readout)).toBe(false);
-    expect(overlap(r.rects.legend, r.rects.hint)).toBe(false);
-    expect(overlap(r.rects.hint, r.rects.readout)).toBe(false);
+    expect(r.readout).toMatchObject({ synthetic: "false", concepts: r.concepts });
+    expect(r.rects.legend).toBeNull();
+    expect(r.rects.hint).toBeNull();
+    expect(r.rects.readout).not.toBeNull();
     expect(r.textOverlaps).toBe(0);
     if (size.width === 1512) expect(r.namesCrossed).toBe(0);
   });
@@ -83,7 +75,7 @@ for (const size of SIZES) {
   });
 }
 
-test("synth 10,000: the readout counts the dial's domains, not the sample's", async ({ page }) => {
+test("synth 10,000: the readout identifies generated data without the sample introduction", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
@@ -91,6 +83,7 @@ test("synth 10,000: the readout counts the dial's domains, not the sample's", as
   await settle(page);
   const r = await read(page);
   expect(r.owns).toBe(true);
-  expect(r.readout).toMatchObject({ dial: "true", concepts: r.concepts, domains: r.domains });
+  expect(r.readout).toMatchObject({ synthetic: "true", concepts: r.concepts });
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0);
   expect(r.domains).toBeGreaterThan(9);
 });

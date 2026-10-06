@@ -204,7 +204,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:docs-vault:list-collapsed", kind: "storage", scope: "global", note: "문서 목록 접힘 선호" },
   { key: "dev:desktop-shell", kind: "storage", scope: "global", note: "데스크톱 셸 개발 오버라이드" },
   { key: "demo:gesture-hint:dismissed:v1", kind: "storage", scope: "global", note: "제스처 힌트 1회성" },
-  { key: "demo:sample-node-hint-dismissed:v1", kind: "storage", scope: "global", note: "샘플 노드 힌트 1회성" },
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "첫 실행 카드 1회성(세션)" },
   { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "첫 걸음 카드 1회성(세션) — 마지막 걸음을 지나면 거둔다" },
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "폴더 열기 안내 1회성" },

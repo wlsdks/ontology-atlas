@@ -27,6 +27,12 @@ license asks for.
 Both run in pre-push and in PR CI whenever a manifest, a lockfile, the license
 policy or the notice generator changes.
 
+The pinned `three@0.185.1` pnpm patch releases each renderer's shared DFG lookup-texture
+allocation and dispose listener before clearing renderer properties. It preserves other
+renderers' allocations and the reusable canvas context. Repeated Library navigation is
+covered by `tests/e2e/library-renderer-disposal.spec.ts`; remove the patch only when an
+upstream release passes that regression without it.
+
 ## Allowed licenses
 
 | Kind | Licenses |

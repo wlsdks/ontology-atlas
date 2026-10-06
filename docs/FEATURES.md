@@ -53,6 +53,11 @@ analysis. Counts, agent-reported tasks, source freshness and meaning acceptance
 are distinct; there is no global completeness score. See the
 [map workflow](features/map/README.md#optional-continued-analysis).
 
+The map's bottom corner reports one quiet scope count from graph membership.
+The generic legend, zoom invitation and sample click hint are removed; synthetic
+performance fixtures are explicitly labeled and do not show the unrelated sample
+introduction. The optional frame meter remains available in settings.
+
 ## Destinations
 
 The desktop rail's order and hrefs come from

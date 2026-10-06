@@ -150,6 +150,22 @@ export function addStrataLodDust(
 
 const bucketOrder: DustBucket[] = [];
 
+interface DustPath {
+  path: Path2D;
+  xs: Float32Array;
+  ys: Float32Array;
+}
+
+const dustPaths = new WeakMap<CanvasRenderingContext2D, Map<string, DustPath>>();
+
+function matchesDustPath(path: DustPath, bucket: DustBucket): boolean {
+  if (path.xs.length !== bucket.count) return false;
+  for (let i = 0; i < bucket.count; i += 1) {
+    if (path.xs[i] !== bucket.xs[i] || path.ys[i] !== bucket.ys[i]) return false;
+  }
+  return true;
+}
+
 export function drawStrataLodDust(
   ctx: CanvasRenderingContext2D,
   dust: StrataLodDust,
@@ -158,7 +174,12 @@ export function drawStrataLodDust(
   presence: number,
   drawnByState?: Record<EvidenceLight, number>,
 ): number {
-  if (presence <= 0.01) return 0;
+  if (presence <= 0.01) {
+    dustPaths.delete(ctx);
+    return 0;
+  }
+  const previousPaths = dustPaths.get(ctx);
+  const nextPaths = typeof Path2D === "undefined" ? null : new Map<string, DustPath>();
   bucketOrder.length = 0;
   for (const bucket of dust.buckets.values()) if (bucket.count > 0) bucketOrder.push(bucket);
   bucketOrder.sort((a, b) => b.fog - a.fog);
@@ -174,30 +195,42 @@ export function drawStrataLodDust(
     if (alpha <= 0.002) continue;
     const radius = DUST_RADIUS[bucket.plane] * (1.15 - 0.3 * u);
     ctx.fillStyle = rgba(rgb, alpha, mark.lift);
-    ctx.beginPath();
-    if (mark.ring) {
+    const key = `${bucket.plane}:${bucket.state}:${bucket.fog}:${bucket.weight}`;
+    const previous = previousPaths?.get(key);
+    const reusable = nextPaths !== null && previous !== undefined && matchesDustPath(previous, bucket);
+    const cached = nextPaths === null ? null : reusable ? previous : {
+      path: new Path2D(), xs: bucket.xs.slice(0, bucket.count), ys: bucket.ys.slice(0, bucket.count),
+    };
+    const pen = cached?.path ?? ctx;
+    if (cached === null) ctx.beginPath();
+    if (!reusable && mark.ring) {
       const outer = radius * DUST_RING_SCALE;
       const inner = outer * (1 - DUST_RING_WIDTH);
       for (let i = 0; i < bucket.count; i += 1) {
         const x = bucket.xs[i];
         const y = bucket.ys[i];
-        ctx.moveTo(x + outer, y);
-        ctx.arc(x, y, outer, 0, TAU);
-        ctx.moveTo(x + inner, y);
-        ctx.arc(x, y, inner, TAU, 0, true);
+        pen.moveTo(x + outer, y);
+        pen.arc(x, y, outer, 0, TAU);
+        pen.moveTo(x + inner, y);
+        pen.arc(x, y, inner, TAU, 0, true);
       }
-    } else {
+    } else if (!reusable) {
       for (let i = 0; i < bucket.count; i += 1) {
         const x = bucket.xs[i];
         const y = bucket.ys[i];
-        ctx.moveTo(x + radius, y);
-        ctx.arc(x, y, radius, 0, TAU);
+        pen.moveTo(x + radius, y);
+        pen.arc(x, y, radius, 0, TAU);
       }
     }
-    ctx.fill();
+    if (cached !== null) {
+      nextPaths!.set(key, cached);
+      ctx.fill(cached.path);
+    } else ctx.fill();
     drawn += bucket.count;
     if (drawnByState) drawnByState[bucket.state] += bucket.count;
   }
+  // O(N) equality checks; only this frame's paths survive, owned weakly by the context.
+  if (nextPaths !== null) dustPaths.set(ctx, nextPaths);
   ctx.globalAlpha = prevAlpha;
   return drawn;
 }

@@ -1,6 +1,6 @@
 /**
  * localStorage helpers for the tour's completed/aborted state, like
- * `first-run-starter/model/sample-node-hint.ts`. No intermediate step is saved, and completion
+ * `first-run-starter/model/first-run-starter-dismiss.ts`. No intermediate step is saved, and completion
  * never blocks a rerun from the entry tile.
  */
 export const GUIDED_TOUR_STATUS_KEY = "guided-tour:v1";

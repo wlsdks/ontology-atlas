@@ -8,7 +8,14 @@ routes: [/topology]
 
 # Flat dial
 
-At the overview, Flat is a dial (`src/widgets/ontology-map/dial/`). The project sits at the centre. Each domain stands on a ring by how many other domains depend on it: 32 or more, 16–31, 8–15, 4–7, 2–3 and 0–1, innermost the most depended on. The legend always says so (closer to the centre, more other domains depend on it), and a ring's range is written on its circle wherever a slot clear of lines and names is left. Around a ring, coupled domains are neighbours. A domain is drawn as its area; its capabilities appear around its chip once they have room on screen, and their elements after them. Names are whole or absent, never cut with "…". The decision is record `88b537fc` (2026-10-02).
+At the overview, Flat is a dial (`src/widgets/ontology-map/dial/`). The project sits at the centre. Each domain stands on a ring by how many other domains depend on it: 32 or more, 16–31, 8–15, 4–7, 2–3 and 0–1, innermost the most depended on. A ring's range is written on its circle wherever a slot clear of lines and names is left. Around a ring, coupled domains are neighbours. A domain is drawn as its area; its capabilities appear around its chip once they have room on screen, and their elements after them. Names are whole or absent, never cut with "…". The decision is record `88b537fc` (2026-10-02).
+
+The bottom corner has one passive scope line, without a generic legend or click invitation.
+Its count comes from graph membership, not visible marks or zoom: a full map shows its total,
+and a recorded realm shows its known member count against that total. An unknown subset has
+no scope claim. Selection and an open dock make the line step aside. A synthetic performance
+fixture is explicitly labeled and suppresses the unrelated sample introduction; its names
+are not authored ontology data. The frame meter remains opt-in.
 
 ## What a line counts
 
@@ -39,6 +46,11 @@ Evidence rims show only where evidence is measured: stale is amber, unknown is d
 ## Performance bars
 
 Overview and zoomed pans keep frame work at p95 ≤ 8.3 ms at synth 10,000 (`MAP_PERF_BARS=1`), the dial paints from pooled mark buffers batched by ink, and a settled map draws no frames.
+
+Dial drags restrict force relaxation, neighbor tug and overlap separation to disclosed members,
+while retaining the held concept outside the viewport. Orphaned tug and separation offsets
+remain in position writeback until they settle. The full graph remains available for disclosure
+and relation queries.
 
 ## Hand-off to an agent
 
