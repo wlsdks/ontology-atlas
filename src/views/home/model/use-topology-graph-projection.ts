@@ -167,6 +167,7 @@ export function useTopologyGraphProjection({
     spotlightIds,
     ontologyMapGraph: graph,
     synthEvidence,
+    isSynthetic: synthSize !== null,
     resolvedSelectionSlug,
     canvasSelectedSlug,
     canvasSelectedGraphNode,

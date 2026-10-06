@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   addStrataLodDust,
@@ -62,6 +62,43 @@ const inks = {
 };
 
 describe("drawStrataLodDust", () => {
+  it("keeps cached marks current across movement, removal, colour changes and empty frames", () => {
+    class RecordedPath {
+      arcs: number[][] = [];
+      moveTo() {}
+      arc(...values: number[]) { this.arcs.push(values); }
+    }
+    vi.stubGlobal("Path2D", RecordedPath);
+    try {
+      const dust = createStrataLodDust();
+      const { ctx } = recordingContext();
+      const painted: { path: RecordedPath; style: string }[] = [];
+      ctx.fill = ((path: RecordedPath) => painted.push({ path, style: String(ctx.fillStyle) })) as unknown as typeof ctx.fill;
+      const draw = (points: number[], colours: Parameters<typeof drawStrataLodDust>[2] = inks) => {
+        resetStrataLodDust(dust);
+        for (const x of points) addStrataLodDust(dust, "element", "unknown", 0.1, 1, x, 10);
+        drawStrataLodDust(ctx, dust, colours, () => 1, 1);
+        return painted.at(-1)!;
+      };
+      const first = draw([10, 20]);
+      const unchanged = draw([10, 20]);
+      expect(unchanged.path).toBe(first.path);
+      const recoloured = draw([10, 20], { ...inks, kindRgb: { ...inks.kindRgb, element: [20, 30, 40] } });
+      expect(recoloured.path).toBe(first.path);
+      expect(recoloured.style).not.toBe(first.style);
+      const moved = draw([10, 30]);
+      expect(moved.path.arcs.map(a => a[0])).toEqual([10, 10, 30, 30]);
+      const removed = draw([30]);
+      expect(removed.path.arcs.map(a => a[0])).toEqual([30, 30]);
+      const count = painted.length;
+      draw([]);
+      expect(painted).toHaveLength(count);
+      expect(draw([30]).path).not.toBe(removed.path);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("fills a fixed number of batches however many concepts the dust stands for", () => {
     const fillsFor = (count: number) => {
       const dust = createStrataLodDust();

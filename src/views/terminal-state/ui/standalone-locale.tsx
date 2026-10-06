@@ -71,7 +71,7 @@ export function StandaloneLocaleProvider({
     };
   }, [locale]);
   return (
-    <NextIntlClientProvider locale={locale} messages={bundle?.[locale] ?? {}}>
+    <NextIntlClientProvider locale={locale} messages={bundle?.[locale] ?? {}} timeZone="UTC">
       {children}
     </NextIntlClientProvider>
   );

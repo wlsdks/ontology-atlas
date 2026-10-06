@@ -1,4 +1,5 @@
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { lastDialFrame } from "../dial/frame/frame";
 import {
   isOffsetAtRest,
   orphanedOffsetIds,
@@ -57,6 +58,34 @@ import {
 const DRAG_TUG_EASE_TAU = 0.15;
 const SCOPED_FRAME_SPARSITY = 5;
 const HOME_CONVERGE_EPSILON = 0.5;
+
+/** O(N) collection; undisclosed dial nodes cannot collide with a painted mark. */
+export function collectSeparationNodes(
+  world: Pick<TopologyWorld, "nodes">,
+  tokens: OntologyMapTokens,
+  clusteredIds: ReadonlySet<string>,
+  dialAlphas: ReadonlyMap<string, number> | null,
+): { drawnIdx: number[]; sepNodes: SeparationNode[] } {
+  const drawnIdx: number[] = [];
+  const sepNodes: SeparationNode[] = [];
+  for (let i = 0; i < world.nodes.length; i += 1) {
+    const node = world.nodes[i];
+    if (clusteredIds.has(node.id)) continue;
+    if (dialAlphas !== null && (dialAlphas.get(node.id) ?? 0) <= 0) continue;
+    drawnIdx.push(i);
+    sepNodes.push({ id: node.id, x: node.x, y: node.y, r: radiusForKind(node.kind, tokens) * node.magnitudeScale });
+  }
+  return { drawnIdx, sepNodes };
+}
+
+export function collectActiveMotionIds(
+  ids: readonly string[],
+  clusteredIds: ReadonlySet<string>,
+  dialAlphas: ReadonlyMap<string, number> | null,
+  draggedId: string,
+): ReadonlySet<string> {
+  return new Set(ids.filter(id => id === draggedId || (!clusteredIds.has(id) && (dialAlphas === null || (dialAlphas.get(id) ?? 0) > 0))));
+}
 
 function forceIterationsForDt(dt: number): number {
   return Math.min(3, Math.max(1, Math.round(dt * 60)));
@@ -278,11 +307,12 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       // went 137.6 → 137.6 ms, zero gain). A node collapsed off screen moves
       // where nobody can see it, so it is not worth computing.
       const clustered = clusteredIdsRef.current;
+      const dialAlphas = !view3dRef.current && world.dial && realmDataRef.current === null && realmTransitionRef.current.phase === "idle"
+        ? lastDialFrame()?.alphas ?? null : null;
       const restrictToIds = affected
-        ? new Set<string>(
-          [affected.draggedId, ...affected.oneHop, ...affected.twoHop].filter(
-            (id) => !clustered.has(id)))
+        ? collectActiveMotionIds([affected.draggedId, ...affected.oneHop, ...affected.twoHop], clustered, dialAlphas, affected.draggedId)
         : null;
+      const dialMotionIds = dialAlphas !== null ? restrictToIds : null;
       // **The narrowed path wins only when the set is sparse** (measured per
       // block, 2026-07-31).
       //
@@ -300,7 +330,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       const nodeCount = world.nodes.length;
       const scoped =
         affected !== null &&
-        (affected.oneHop.size + affected.twoHop.size + 1) * SCOPED_FRAME_SPARSITY < nodeCount;
+        (dialMotionIds?.size ?? (affected.oneHop.size + affected.twoHop.size + 1)) * SCOPED_FRAME_SPARSITY < nodeCount;
       let prevX: Float64Array | null = null;
       let prevY: Float64Array | null = null;
       if (scoped) {
@@ -330,9 +360,8 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       const applyOnly =
         scoped && affected
           ? new Set<string>([
-            affected.draggedId,
-            ...affected.oneHop,
-            ...affected.twoHop,
+            ...(dialMotionIds ?? [affected.draggedId, ...affected.oneHop, ...affected.twoHop]),
+            ...dragTugOffsetsRef.current.keys(),
             ...sepDisplacedIdsRef.current
                 ])
           : null;
@@ -348,7 +377,8 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         const draggedNode = world.nodeById.get(affected.draggedId);
         const dragStart = dragStartPosRef.current;
         const factors = { oneHop: tokens.dragTug1Hop, twoHop: tokens.dragTug2Hop };
-        const tugIds = new Set<string>([...affected.oneHop, ...affected.twoHop]);
+        const tugIds = new Set<string>(dialMotionIds ?? [...affected.oneHop, ...affected.twoHop]);
+        tugIds.delete(affected.draggedId);
         // Mass (2026-09-08, direction B): a node's release spring comes from its degree
         // (`expressive/release-offsets.ts`; the loop only owns the refs).
         const massTokens = {
@@ -451,32 +481,10 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             // block is not reached while homing, so the first-map reveal's
             // deliberate gathering is protected.
             {
-                // ★ **A node that is not drawn cannot overlap.**
-                //
-                // A subtree collapsed by the density gate is replaced by one chip and
-                // is not on screen (measured at synth=3000: **2,820 of 3,000 (94%)
-                // collapsed, 118 on screen**). Resolving overlaps among the invisible
-                // is pure waste whose result appears nowhere, and because pair count
-                // is N² that waste took 78% of the frame (109.3 ms).
-                //
-                // This is exactly what the owner asked three times: "Only 20 are on screen — why
-                // compute all 3,000?" What you hold as data and what you feed into
-                // per-frame computation are different things, and here they were
-                // indistinguishably the same.
-                const drawnIdx: number[] = [];
-                const sepNodes: SeparationNode[] = [];
-                for (let i = 0; i < world.nodes.length; i += 1) {
-                    const n = world.nodes[i];
-                    if (clusteredIdsRef.current.has(n.id))
-                        continue;
-                    drawnIdx.push(i);
-                    sepNodes.push({
-                        id: n.id,
-                        x: n.x,
-                        y: n.y,
-                        r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
-                    });
-                }
+                const { drawnIdx, sepNodes } = collectSeparationNodes(
+                    world, tokens, clusteredIdsRef.current,
+                    dialAlphas,
+                );
                 // **Only test what actually moved this frame.** A still-still pair
                 // did not overlap last frame, so it cannot overlap now.
                 //

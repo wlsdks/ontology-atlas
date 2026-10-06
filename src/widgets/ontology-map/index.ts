@@ -5,12 +5,13 @@ export { MapLayoutMorphOverlay, installMapLayoutMorphProbe } from './morph/MapLa
 export type { MapLayoutMorphJob } from './morph/MapLayoutMorphOverlay';
 export { chooseLayoutSwitch, containmentParents } from './morph/layout-morph';
 export { conceptDegrees } from './morph/glide';
+export { extractRealmSubtree } from './model/realm';
 export { predictMapLayoutTarget } from './morph/map-marks';
 export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
 export type { HexPlacementRecord } from './model/hex-board';
 export type { DialLabels, DialMemory } from './dial/types';
 export { capabilityTierRead } from './dial/placement';
-export type { FlatDialState, FlatRingMemoryStore } from './ui/topology-loop-contract';
+export type { FlatRingMemoryStore } from './ui/topology-loop-contract';
 export type { OntologyMapNode, OntologyMapEdge, } from './ui/OntologyMap';
 export { OntologyMapDetailPanel } from './ui/OntologyMapDetailPanel';
 export { OntologyMapEdgeHoverCard } from './ui/OntologyMapEdgeHoverCard';

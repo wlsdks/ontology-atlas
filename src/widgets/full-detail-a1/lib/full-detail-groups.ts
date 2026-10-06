@@ -42,19 +42,17 @@ export interface FullDetailGroups {
 }
 
 /**
- * A node's own containment child count, shown on every row; handles both `contains` (parent to
- * child) and `belongs_to` (child to parent) like `buildContainmentParents`.
+ * O(E) counts of authored containment edges, including unresolved children and duplicate edges.
  */
-function countContainmentChildren(
-  nodeId: string,
+function containmentChildCounts(
   edges: readonly ConnectionSourceEdge[],
-): number {
-  let count = 0;
+): Map<string, number> {
+  const counts = new Map<string, number>();
   for (const edge of edges) {
-    if (edge.type === "contains" && edge.from === nodeId) count += 1;
-    else if (edge.type === "belongs_to" && edge.to === nodeId) count += 1;
+    const parentId = edge.type === "contains" ? edge.from : edge.type === "belongs_to" ? edge.to : null;
+    if (parentId !== null) counts.set(parentId, (counts.get(parentId) ?? 0) + 1);
   }
-  return count;
+  return counts;
 }
 
 export function buildFullDetailGroups(
@@ -67,13 +65,14 @@ export function buildFullDetailGroups(
   // popover shows the same numbers; this adds `childCount`, `fresh` and `containment` per row.
   const connections = buildConnections(nodeId, nodes, edges);
   const grouped = groupConnectionsByRole(connections);
+  const childCounts = containmentChildCounts(edges);
 
   const toRow = (connection: DatasheetConnection): FullDetailConnectionRow => ({
     id: connection.id,
     title: connection.title,
     kind: connection.kind,
     containment: isContainmentRelation(connection.relationType),
-    childCount: countContainmentChildren(connection.id, edges),
+    childCount: childCounts.get(connection.id) ?? 0,
     fresh: changedIds?.has(connection.id) ?? false,
   });
 
