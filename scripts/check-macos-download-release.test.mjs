@@ -579,7 +579,7 @@ test("download release verifier can validate draft assets before publishing", as
   });
 });
 
-test("download release verifier can find tagged draft assets when the tag endpoint hides drafts", async () => {
+test("download release verifier finds a tagged draft on a later bounded release page", async () => {
   await withServer(makeHandler(), async (baseUrl) => {
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
@@ -589,7 +589,14 @@ test("download release verifier can find tagged draft assets when the tag endpoi
         res.end(JSON.stringify({ message: "Not Found" }));
         return;
       }
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(Array.from({ length: 20 }, (_, index) => ({
+          ...payload[0], tag_name: `v0.0.${index}`, body: "x".repeat(20_000),
+        }))));
+        return;
+      }
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=2") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(payload));
         return;
@@ -613,6 +620,24 @@ test("download release verifier can find tagged draft assets when the tag endpoi
       assert.match(stdout, /exposes reachable draft macOS download assets/);
     });
   });
+});
+
+test("tagged draft lookup stops after 100 releases when the tag is absent", async () => {
+  const pages = [];
+  await withServer((req, res) => {
+    const url = new URL(req.url, "http://localhost");
+    res.setHeader("Content-Type", "application/json");
+    if (url.pathname.endsWith("/releases") && url.searchParams.get("per_page") === "20") {
+      pages.push(Number(url.searchParams.get("page")));
+      res.end(JSON.stringify(Array.from({ length: 20 }, () => ({ tag_name: "v0.0.1", draft: true }))));
+      return;
+    }
+    res.writeHead(404);
+    res.end(JSON.stringify({ message: "Not Found" }));
+  }, async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--allow-draft"]));
+  });
+  assert.deepEqual(pages, [1, 2, 3, 4, 5]);
 });
 
 test("download release verifier reports rate limits without a stack trace", async () => {
@@ -642,7 +667,7 @@ test("download release verifier refuses a release GitHub marks as a pre-release,
         res.end(JSON.stringify({ message: "Not Found" }));
         return;
       }
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(payload));
         return;
