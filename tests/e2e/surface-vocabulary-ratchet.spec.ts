@@ -54,7 +54,7 @@ import { waitForAnimationsDone } from "./settle";
  * side lets new combinations hide on the control side. Controls are owned by the value
  * layer so their ceiling is looser, but it is not unbounded.
  */
-const BASELINE_SURFACE_COMBOS = 9;
+const BASELINE_SURFACE_COMBOS = 7;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [
