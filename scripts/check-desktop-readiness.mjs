@@ -618,7 +618,8 @@ if (
   downloadReleaseVerifier.includes("releaseVersionFromTag") &&
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
-  downloadReleaseVerifier.includes("per_page=100") &&
+  downloadReleaseVerifier.includes("per_page=20&page=${page}") &&
+  downloadReleaseVerifier.includes("page <= 5") &&
   downloadReleaseVerifier.includes("export function isRequestedDraft") &&
   downloadReleaseVerifier.includes("release?.tag_name === tag && release?.draft === true") &&
   downloadReleaseVerifier.includes("if (release.prerelease) {") &&
