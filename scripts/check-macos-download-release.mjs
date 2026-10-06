@@ -315,13 +315,14 @@ async function findRelease(options) {
       if (!options.allowDraft || !/\b404\b/.test(message)) {
         throw error;
       }
-      const releases = await requestJson(`${base}/releases?per_page=100`);
-      if (!Array.isArray(releases)) {
-        fail("GitHub releases response was not an array.");
-      }
-      const draftRelease = releases.find((release) => isRequestedDraft(release, options.tag));
-      if (draftRelease) {
-        return draftRelease;
+      for (let page = 1; page <= 5; page += 1) {
+        const releases = await requestJson(`${base}/releases?per_page=20&page=${page}`);
+        if (!Array.isArray(releases)) {
+          fail("GitHub releases response was not an array.");
+        }
+        const draftRelease = releases.find((release) => isRequestedDraft(release, options.tag));
+        if (draftRelease) return draftRelease;
+        if (releases.length < 20) break;
       }
       throw error;
     }
