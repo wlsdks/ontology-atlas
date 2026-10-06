@@ -110,6 +110,7 @@ const PLANNER_SURFACE = CI_PLANNER_SURFACE_PATTERNS;
 const ROOT_ALL_LANE_INPUTS = [
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,
+  /^patches\//,
 ];
 
 const ROOT_UNIT_FULL_INPUTS = [
@@ -133,7 +134,7 @@ const E2E_FULL_INPUTS = [
 ];
 
 const KNOWN_PATHS = [
-  /^(?:app|assets|cli|docs|examples|mcp|messages|public|samples|script|scripts|src|src-tauri|tests)\//,
+  /^(?:app|assets|cli|docs|examples|mcp|messages|patches|public|samples|script|scripts|src|src-tauri|tests)\//,
   /^\.(?:agents|claude|codex|github|githooks)\//,
   /^\.(?:bun-version|env\.example|gitattributes|gitignore|mcp\.json(?:\.example)?|nvmrc)$/,
   /^(?:AGENTS|CLAUDE|CODE_OF_CONDUCT|CONTRIBUTING|NOTICE|README(?:\.(?:ja|ko|zh))?|SECURITY)\.md$/,

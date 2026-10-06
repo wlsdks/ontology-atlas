@@ -130,7 +130,8 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
     test(`${vault} at ${size.width}: the overview keeps its rings, marks, lines and names inside the bars`, async ({ page }) => {
       test.setTimeout(180_000);
       await openDial(page, vault, size);
-      await expect(page.getByTestId("topology-index-panel")).toBeVisible();
+      if (QUERY[vault]) await expect(page.getByTestId("topology-scope-readout")).toHaveAttribute("data-synthetic", "true");
+      else await expect(page.getByTestId("topology-index-panel")).toBeVisible();
       const dial = await readDial(page);
       const bar = OVERVIEW[vault];
       const drawn = dial.flows.filter((f) => f.drawn).length;
@@ -156,12 +157,12 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
 }
 
 for (const size of WIDTHS) {
-  test(`storefront at ${size.width}: the legend says what the rings mean, and ring labels name the ranges they have room for`, async ({ page }) => {
+  test(`storefront at ${size.width}: ring labels name the ranges they have room for`, async ({ page }) => {
     await openDial(page, "storefront", size);
     const dial = await readDial(page);
     const ringTexts = dial.texts.filter((t) => t.role === "ring").map((t) => t.text);
     report(`storefront ${size.width} rings`, { ringLabels: ringTexts.length, rings: dial.rings.length, ringTexts });
-    await expect(page.getByTestId("flat-dial-legend-rings"), "the legend explains every ring").toHaveText("Closer to the centre: more other domains depend on it");
+    await expect(page.getByTestId("flat-dial-legend")).toHaveCount(0);
     expect.soft(new Set(ringTexts).size, "one label per ring").toBe(ringTexts.length);
     expect.soft(ringTexts.length, "ring labels").toBeLessThanOrEqual(dial.rings.length);
     expect.soft(ringTexts.length, "ring labels").toBeGreaterThan(0);
@@ -193,7 +194,7 @@ for (const vault of ["storefront", "synth 2,000"] as const) {
     for (const index of ["expanded", "collapsed"] as const) {
       test(`${vault} at ${size.width}, INDEX ${index}: no name under INDEX or the rail, and every domain keeps its name`, async ({ page }) => {
         await openDial(page, vault, size, `index=${index}&`);
-        await expect(page.getByTestId("topology-index-panel")).toHaveCount(index === "expanded" ? 1 : 0);
+        await expect(page.getByTestId("topology-index-panel")).toHaveCount(vault === "storefront" && index === "expanded" ? 1 : 0);
         const dial = await readDial(page);
         const outside = dial.texts.filter((t) => !inside(t.box, dial.freeRect)).map((t) => t.text);
         const named = new Set(dial.texts.filter((t) => t.role === "domain").map((t) => t.id));
@@ -327,7 +328,11 @@ for (const size of WIDTHS) {
     const cx = (start.freeRect.minX + start.freeRect.maxX) / 2;
     const cy = (start.freeRect.minY + start.freeRect.maxY) / 2;
     const target = [...start.clusters].sort((a, b) => Math.hypot(a.chip.x - cx, a.chip.y - cy) - Math.hypot(b.chip.x - cx, b.chip.y - cy))[0]!;
-    const dial = await zoomAt(page, target.chip, (d) => d.disclosure.enteredDomain !== null && namedCapabilities(d, d.disclosure.enteredDomain).missing.length === 0);
+    const origin = await canvasOrigin(page);
+    await page.mouse.move(origin.x + target.chip.x, origin.y + target.chip.y);
+    await page.mouse.wheel(0, -60);
+    await expect.poll(async () => (await readDial(page)).zoomRatio).toBeGreaterThan(start.zoomRatio);
+    const dial = await zoomAt(page, target.chip, (d) => d.disclosure.enteredDomain !== null && namedCapabilities(d, d.disclosure.enteredDomain).missing.length === 0 && d.namesCrossed === 0);
     const entered = dial.disclosure.enteredDomain;
     const named = entered ? namedCapabilities(dial, entered) : null;
     report(`synth 2,000 ${size.width} zoomed`, { aimed: target.domainId, entered, zoom: dial.zoomRatio, named, ledger: dial.ledger, namesCrossed: dial.namesCrossed });
@@ -393,9 +398,9 @@ test("a lens hands Flat back to the classic paint, and clearing it returns the d
   await expect.poll(owns, { message: "clearing the lens returns the dial" }).toBe(true);
 });
 
-test("a selected element hands Flat back without the legend, and the plain address shows the legend again", async ({ page }) => {
+test("a selected element hands Flat back and returning restores the map scope", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
-  await expect(page.getByTestId("flat-dial-legend")).toBeVisible();
+  await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
   await page.goto(`/en/topology/?p=${encodeURIComponent("element:cart-session")}&guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
   const owns = () => page.evaluate(() => window.__atlasMap?.dial?.().owns ?? null);
@@ -404,18 +409,18 @@ test("a selected element hands Flat back without the legend, and the plain addre
   await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
   await expect.poll(owns, { message: "clearing the selection returns the dial" }).toBe(true);
-  await expect(page.getByTestId("flat-dial-legend")).toBeVisible();
+  await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
 });
 
-test("the legend's stale entry shows only with synthesized evidence", async ({ page }) => {
+test("synthesized evidence keeps its test data identified without a generic legend", async ({ page }) => {
   test.setTimeout(180_000);
   await openDial(page, "synth 2,000", WIDTHS[0]);
-  const legend = page.getByTestId("flat-dial-legend");
-  await expect(legend).toHaveAttribute("data-evidence-measured", "false");
-  await expect(legend.getByText("stale", { exact: true })).toHaveCount(0);
+  const scope = page.getByTestId("topology-scope-readout");
+  await expect(scope).toHaveAttribute("data-synthetic", "true");
+  await expect(page.getByTestId("flat-dial-legend")).toHaveCount(0);
   await openDial(page, "synth 2,000", WIDTHS[0], "synthEvidence=12&");
-  await expect(legend).toHaveAttribute("data-evidence-measured", "true");
-  await expect(legend.getByText("stale", { exact: true })).toBeVisible();
+  await expect(scope).toHaveAttribute("data-synthetic", "true");
+  await expect(page.getByTestId("flat-dial-legend")).toHaveCount(0);
 });
 
 test("the Flat overview offers no Expand all", async ({ page }) => {

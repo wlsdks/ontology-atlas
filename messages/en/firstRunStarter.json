@@ -43,7 +43,10 @@
     "zoomHint": "zoom in to reveal elements",
     "zoomHintPlain": "click a dot to reveal its elements",
     "dialCapabilitiesHint": "capabilities show as you zoom",
-    "dialElementsHint": "elements show inside the domain you enter"
+    "dialElementsHint": "elements show inside the domain you enter",
+    "scopeFull": "Whole map · {count, plural, one {# concept} other {# concepts}}",
+    "scopePartial": "Current scope · {shown, number} / {total, number} concepts",
+    "synthetic": "Performance test · {count, plural, one {# synthetic concept} other {# synthetic concepts}}"
   },
   "plainModeCta": "Switch to plain-language view",
   "reopenLabel": "Reopen the start guide",

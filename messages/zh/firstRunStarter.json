@@ -43,7 +43,10 @@
     "zoomHint": "放大以显示元素",
     "zoomHintPlain": "点击圆点显示其元素",
     "dialCapabilitiesHint": "放大后显示能力",
-    "dialElementsHint": "进入某个领域后显示其元素"
+    "dialElementsHint": "进入某个领域后显示其元素",
+    "scopeFull": "完整地图 · {count, number} 个概念",
+    "scopePartial": "当前范围 · {shown, number} / 共 {total, number} 个概念",
+    "synthetic": "性能测试用合成数据 · {count, number} 个概念"
   },
   "plainModeCta": "切换到通俗视图",
   "reopenLabel": "重新打开起步指南",

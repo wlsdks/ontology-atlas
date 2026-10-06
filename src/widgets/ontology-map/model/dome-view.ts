@@ -1352,11 +1352,11 @@ export interface DomeNodeFrame {
 }
 
 /** In place, with trig computed once per kind and node entries reused. */
-export function updateDomeFrame(
+export function updateDomeFrame<Node extends { id: string; kind: DomeViewKind; x: number; y: number }>(
   runtime: DomeRuntime,
-  nodes: ReadonlyArray<{ id: string; kind: DomeViewKind; x: number; y: number }>,
+  nodes: ReadonlyArray<Node>,
   /** Denominator of the `s` inversion. */
-  baseRadiusFor: (node: { id: string; kind: DomeViewKind }) => number,
+  baseRadiusFor: (node: Node) => number,
   /** Read only while a morph is in flight. */
   nowMs = 0,
   /** Inverted through, so the drawn radius lands on `DOME_NODE_PX` screen pixels. */
