@@ -11,19 +11,14 @@ docs/ontology/.ontology-atlas/
 
 # Dependencies
 node_modules/
-.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
-# Next.js
+# Next.js and TypeScript build output
 .next/
 out/
 build/
 dist/
+*.tsbuildinfo
+next-env.d.ts
 
 # Tauri / Rust desktop build output
 src-tauri/target/
@@ -32,12 +27,9 @@ src-tauri/gen/
 # Created by `pnpm mcp:build-binary`.
 src-tauri/binaries/
 
-# Production
-*.tsbuildinfo
-next-env.d.ts
-.firebase/
-
-# Environment variables
+# Environment variables. The names are listed one by one, not left to `.env*`
+# alone: `tests/contract/secret-read-guard.contract.test.ts` reads them to prove
+# `.claude/settings.json` denies an agent reading each one.
 .env
 .env.local
 .env.prod
@@ -64,13 +56,10 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 
 # External references (cloned separately, not part of this repo)
-references/
+/references/
 
 # Playwright MCP session dumps (snapshot yaml · screenshots)
 .playwright-mcp/
@@ -86,7 +75,6 @@ references/
 # Gateway captures of the real app (2026-09-08): the download page's architecture and library sections.
 !public/gateway/*.png
 !public/brand/*.png
-!src-tauri/icons/
 !src-tauri/icons/**
 # Demo clip poster — the first frame of the video, so it must be held in the repository. The global `*.png`
 # ignore is intended to block Playwright dumps, not deployment assets
@@ -128,7 +116,7 @@ cli/.mcp.json.example
 # QA sweep output — thousands of screenshots accumulate at the root during audits (measurement on 2026-07-31:
 # `sweep-2026-07-28` 3.3M · `sweepA2` 11M). Knowledge remains in `.qa-scratch/*.md`,
 # but images are not kept.
-sweep*/
+/sweep*/
 
 # Agent worktree — lives inside the repository but is not part of it.
 # (2026-08-03: `git add -A` once committed this as a gitlink into main)
