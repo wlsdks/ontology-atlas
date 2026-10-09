@@ -166,6 +166,17 @@ describe("FlowTab", () => {
     ).toBeInTheDocument();
   });
 
+  it.each([false, true])("names a keyboard-readable request region with saved answer %s", (saved) => {
+    render(
+      <FlowTab labels={labels} request={REQUEST} versions={saved ? [version()] : []} hasGraph hasOwnFolder canLaunchAgent={false} />,
+    );
+    if (saved) fireEvent.click(screen.getByTestId("flow-request-open"));
+
+    const region = screen.getByRole("region", { name: labels.requestLabel });
+    expect(region).toHaveAttribute("tabindex", "0");
+    expect(region).toHaveTextContent(REQUEST);
+  });
+
   it("hands the exact request to the conversation, unedited", () => {
     const onPrefill = vi.fn();
     render(<FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent onPrefill={onPrefill} />);

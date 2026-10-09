@@ -132,7 +132,7 @@ export function FlowTab({
     <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
       <div className="mt-2 flex flex-col gap-2">
         <div className="flex justify-end">{copyButton}</div>
-        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]">
+        <pre role="region" aria-label={labels.requestLabel} tabIndex={0} className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
           {request}
         </pre>
       </div>
@@ -200,12 +200,12 @@ export function FlowTab({
           </div>
           {/* The explanation sets the row's height and the request scrolls inside it, so neither card holds a blank band;
              on one column the request keeps a 16rem floor. */}
-          <section aria-label={labels.requestLabel} data-testid="flow-request" className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+          <section data-testid="flow-request" className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
               {copyButton}
             </div>
-            <RequestScroller request={request} />
+            <RequestScroller request={request} label={labels.requestLabel} />
           </section>
         </div>
       )}
@@ -218,7 +218,7 @@ export function FlowTab({
  * (the library index and tab strips' mask) only while text lies past it. The text face, not monospace, since
  * Hangul in `<pre>`'s monospace falls back glyph by glyph; `pre-wrap` keeps the line breaks as sent.
  */
-function RequestScroller({ request }: { request: string }) {
+function RequestScroller({ request, label }: { request: string; label: string }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLPreElement>(null);
   const [edge, setEdge] = useState({ top: false, bottom: false });
@@ -265,9 +265,12 @@ function RequestScroller({ request }: { request: string }) {
           ? `linear-gradient(to bottom, transparent 0, black ${fade})`
           : undefined;
   return (
-    <div ref={frameRef} className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] @min-[960px]/insights:min-h-32">
+    <div ref={frameRef} className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[color:var(--color-indigo-focus-ring)] @min-[960px]/insights:min-h-32">
       <pre
         ref={ref}
+        role="region"
+        aria-label={label}
+        tabIndex={0}
         data-testid="flow-request-text"
         data-fade-bottom={edge.bottom ? "" : undefined}
         onScroll={measure}
@@ -275,7 +278,7 @@ function RequestScroller({ request }: { request: string }) {
           ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
           ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
         }}
-        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)]"
+        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:text-[color:var(--color-text-primary)]"
       >
         {request}
       </pre>
