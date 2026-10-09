@@ -9,7 +9,7 @@ import { makeGit } from './bundle-branches.mjs';
 import { GH_FILE_CAP, listOpenPullRequests, parseArgs, runScan, scanConflicts } from './conflicts-scan.mjs';
 
 // Under a git hook GIT_DIR and friends are exported; a fixture `git init` or
-// `git config` would then act on the real repository (lesson 390c0c51). Both the
+// `git config` would then act on the real repository. Both the
 // fixture calls and the script's own git calls inherit process.env, so strip it.
 for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
 

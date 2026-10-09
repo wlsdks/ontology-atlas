@@ -60,8 +60,7 @@ sleeping.
   sleep states in place why it is a measurement window; `pnpm e2e:sleeps:check`
   refuses a new one without `// measurement window:`.
 - Compare canvas pixels inside the page and return one number: a 5-million
-  value `getImageData` array through `page.evaluate` costs 12 s per call
-  (lesson 1250cf7a).
+  value `getImageData` array through `page.evaluate` costs 12 s per call.
 
 ## What to test
 
@@ -70,7 +69,7 @@ sleeping.
   that detects that regression.
 - When an interaction moves focus or inert state while it animates, also press
   the next key immediately, with normal motion, not only after the settled
-  state or under reduced motion (lessons d806ce25, b50c9221).
+  state or under reduced motion.
 - Prose, mechanical edits and isolated visual tweaks need no new test. Never
   write a test that duplicates the implementation or pins prose.
 - Update an e2e baseline only for an intentional rendered change.
@@ -111,8 +110,7 @@ web smoke.
 
 Test keyboard input in the installed app with Computer Use idle, sending keys
 through `osascript` or JXA: a Computer Use session swallows Escape system-wide.
-Before fixing a platform input bug, reproduce it once without the test tool
-(lesson fcc6d81f).
+Before fixing a platform input bug, reproduce it once without the test tool.
 
 ## Cross-package contract tests
 

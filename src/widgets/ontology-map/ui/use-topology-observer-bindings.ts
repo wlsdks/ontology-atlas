@@ -168,7 +168,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
     // 0x0: the overlay reads "no target", centres its card on the very node the copy points
     // at, and draws no cutout. Whether the loop happened to be awake decided the placement
     // (a CI runner that was still drawing placed the card beside the node; a resting map
-    // did not) — lesson cb5fbfaf.
+    // did not).
     lastActiveMsRef.current = performance.now();
   }, [tourAnchorNodeId, tourAnchorNodeIdRef, lastActiveMsRef]);
 

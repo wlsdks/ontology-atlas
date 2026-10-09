@@ -10,7 +10,7 @@ const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
 
 // Locally Playwright reuses whatever already listens on the port; refuse one
-// that another worktree or project started (lesson 823b9af4).
+// that another worktree or project started.
 const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
 if (foreignServerMessage) throw new Error(foreignServerMessage);
 if (!process.env.CI && process.env.PLAYWRIGHT_STATIC && !existsSync('out/index.html')) {

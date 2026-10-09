@@ -185,7 +185,7 @@ function directSourceLanguageSuggestions(paths) {
  * imports it**, through Vitest's module graph (`vitest related`). The sibling
  * `<name>.test.tsx` alone missed the suite that renders the file: a change to
  * `AcpPermissionCard.tsx` passed every recommended lane while
- * `AcpChatPanel.test.tsx` had 25 failing cases (lesson dbb4417c). Agents in a
+ * `AcpChatPanel.test.tsx` had 25 failing cases. Agents in a
  * fan-out never reach the pre-push `--changed` lane, so this is where it is caught.
  */
 function directVitestTestSuggestions(paths) {

@@ -79,7 +79,7 @@ export function runPlaywrightCi(argv, { spawn = spawnSync, cwd = process.cwd(), 
   // A red shard cannot become green by running more files, and a shared setup
   // regression would repeat in every spec, so CI stops the shard early. Not at
   // the first failure: that hid the rest of the shard, and bundle #1874 needed
-  // three landings to see three independent failures (lesson 4c50b3c9). Five
+  // three landings to see three independent failures. Five
   // still stops a systemic break within minutes.
   const failFast = env.CI === 'true' || env.CI === '1' ? [`--max-failures=${CI_MAX_FAILURES}`] : [];
   const result = spawn('pnpm', ['exec', 'playwright', 'test', ...project, ...filters, ...failFast, '--reporter=list,json'], {

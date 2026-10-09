@@ -385,7 +385,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         for (let i = 0; i < 12; i++) {
             const step = await page.getByTestId("guided-tour-overlay").getAttribute("data-tour-step");
             // Settle on what the step shows, not on a clock: a fixed 700 ms read the card mid-entrance
-            // on a slow CI runner and saw the Next button 74 px off (lesson cb5fbfaf).
+            // on a slow CI runner and saw the Next button 74 px off.
             const tourCard = page.getByTestId("guided-tour-card");
             await waitForAnimationsDone(tourCard);
             await waitForBoxStill(tourCard);
@@ -396,7 +396,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
                 expect(await nextInset(), "[next] holds the card's trailing corner").toEqual(nextBefore);
                 // And the card stands beside the node the step names, never on it. This used to pass
                 // only by accident: a map at rest never wrote the anchor probe, so the card centred on
-                // the project node exactly where step 1's card stood (lesson cb5fbfaf).
+                // the project node exactly where step 1's card stood.
                 const cutout = (await rectOf(page, "topology-tour-anchor"))!;
                 expect(cutout, "the anchor probe is projected onto the project node").not.toBeNull();
                 const project = (await drawnNodes(page)).find((n) => n.id.startsWith("project:"))!;

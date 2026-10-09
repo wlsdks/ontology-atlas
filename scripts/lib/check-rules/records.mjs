@@ -1,4 +1,4 @@
-/** Immutable records and ledgers: backlog, lessons, decisions, changelog, and the development-checks reference. */
+/** Immutable records and ledgers: backlog, decisions, changelog, and the development-checks reference. */
 
 export const rules = [
   {
@@ -8,16 +8,10 @@ export const rules = [
     matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
   },
   {
-    order: 20,
-    command: 'pnpm test:lessons && pnpm lessons:check',
-    reason: 'harness lessons, their writer, or verdict composition changed',
-    matches: [/^scripts\/(?:lessons|new-record)(?:\.test)?\.mjs$/, /^docs\/records\/lessons\//],
-  },
-  {
     order: 150,
     command: 'pnpm test:records',
     reason: 'immutable record composition or writers changed',
-    matches: [/^scripts\/(?:lib\/(?:record-ledgers|po-pilot-records)|new-record|po-record)(?:\.test)?\.mjs$/, /^docs\/records\//],
+    matches: [/^scripts\/(?:lib\/(?:record-ledgers|po-pilot-records)|new-record)(?:\.test)?\.mjs$/, /^docs\/records\//],
   },
   {
     order: 540,

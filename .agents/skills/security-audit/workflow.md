@@ -81,7 +81,6 @@ needs the person's own deliberate action is low.
   public threat model updates `SECURITY.md` in the same pull request.
 - After the fixes land, rerun §0 and every planted input from this audit, and
   report each as blocked or still reached.
-- A gate that should have caught a finding is a `/harness-retro` lesson.
 
 ## Never
 

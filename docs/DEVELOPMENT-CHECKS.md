@@ -637,13 +637,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Every in-body internal link inside a guide chapter's Markdown source resolves to a real destination.
 **Escalate**: `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` opens both locales and checks the rendered link carries that locale's prefix and returns 200.
 
-### Harness lessons
-
-**Run**: `pnpm test:lessons && pnpm lessons:check`
-**Proves**: lesson and verdict records fit the template, verdicts follow reported, verified, fixed order, concurrent verdicts are reconciled, and published lessons are unchanged.
-**Escalate**: `pnpm lessons -- --id=UUID` to read one lesson's full history
-**Fix**: append a new verdict naming every current head; never edit a published lesson.
-
 ### i18n message catalog parity
 
 **Run**: `pnpm test:i18n:messages`
