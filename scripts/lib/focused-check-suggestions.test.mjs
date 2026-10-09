@@ -19,6 +19,7 @@ import {
 
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
 const DEAD_CODE_COMMAND = 'pnpm knip';
+const COMMENT_REFS_COMMAND = 'pnpm docs:comment-refs';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -42,6 +43,7 @@ function domainCommands(result) {
   return commandNames(result).filter(
     (command) =>
       command !== SOURCE_LANGUAGE_COMMAND &&
+      command !== COMMENT_REFS_COMMAND &&
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
@@ -184,7 +186,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
       'pnpm exec node --test scripts/quality/source-language/inventory.test.mjs',
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
@@ -193,6 +195,17 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
+  });
+
+  it('checks comment citations when source or Markdown changes, once', () => {
+    const CASES = [
+      [['src/views/architecture/model/harness-anatomy.ts', 'docs/FEATURES.md'], 1],
+      [['docs/FEATURES.md'], 1],
+      [['messages/ko.json'], 0],
+    ];
+    for (const [paths, expected] of CASES) {
+      assert.equal(commandNames(suggestFocusedChecks(paths)).filter((command) => command === COMMENT_REFS_COMMAND).length, expected, paths.join(', '));
+    }
   });
 
   it('suggests the test-source ratchets once for every test source and never for other code', () => {

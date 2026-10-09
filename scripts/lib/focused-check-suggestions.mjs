@@ -173,13 +173,18 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnl
 
 function directSourceLanguageSuggestions(paths) {
   const sourcePaths = paths.filter(isSupportedSourcePath);
-  if (sourcePaths.length === 0) return [];
+  const citingPaths = paths.filter((path) => isSupportedSourcePath(path) || path.endsWith('.md'));
   return [
-    {
+    ...(sourcePaths.length ? [{
       command: 'pnpm source:language',
       reason: 'source comments are English-only across current code, tests, and prototypes',
       paths: sourcePaths,
-    },
+    }] : []),
+    ...(citingPaths.length ? [{
+      command: 'pnpm docs:comment-refs',
+      reason: 'a code comment can cite a Markdown path that this change moved or never existed',
+      paths: citingPaths,
+    }] : []),
   ];
 }
 
