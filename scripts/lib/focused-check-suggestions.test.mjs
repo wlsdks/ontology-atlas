@@ -199,7 +199,7 @@ describe('focused check suggestions', () => {
     const tests = [
       'src/shared/lib/cn.test.ts',
       'src/widgets/example/ui/Example.test.tsx',
-      'tests/e2e/page-frame.spec.ts',
+      'tests/e2e/rail-destinations.spec.ts',
       'tests/contract/page-frame.contract.test.ts',
       'scripts/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',

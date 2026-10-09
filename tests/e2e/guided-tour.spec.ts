@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 
 /**
  * Guided tour (`src/features/guided-tour`) click-through — walks all 8
@@ -23,6 +24,127 @@ async function gotoAndSettle(page: import("@playwright/test").Page, url: string)
   await page.waitForLoadState("networkidle");
 }
 
+/** The card's box, and the lit node's box in the same viewport coordinates. */
+async function readCardAgainstLitNode(page: import("@playwright/test").Page) {
+  return page.evaluate(() => {
+    const probe = window.__atlasMap;
+    const cardEl = document.querySelector<HTMLElement>('[data-testid="guided-tour-card"]');
+    const canvasEl = document.querySelector<HTMLElement>('[data-testid="ontology-map-canvas"]');
+    if (!probe || !cardEl || !canvasEl) return null;
+    const canvas = canvasEl.getBoundingClientRect();
+    const cut = document.querySelector<HTMLElement>('[data-testid="guided-tour-cutout"]');
+    const nodes = probe.nodes();
+    const lit = nodes.find((n) => n.kind === "domain") ?? nodes.find((n) => n.kind === "project");
+    if (!lit) return null;
+    const cutBox = cut?.getBoundingClientRect();
+    const targetX = canvas.left + lit.x;
+    const targetY = canvas.top + lit.y;
+    const name = probe.labels().find((l) => l.nodeId === lit.id);
+    const card = cardEl.getBoundingClientRect();
+    // The node plus the name hanging under it — what the card has to clear.
+    const node = {
+      left: canvas.left + lit.x - lit.radius,
+      right: canvas.left + lit.x + lit.radius,
+      top: canvas.top + lit.y - lit.radius,
+      bottom: canvas.top + (name ? Math.max(lit.y + lit.radius, name.maxY) : lit.y + lit.radius),
+    };
+    return {
+      lit: lit.label,
+      cutout: cutBox?.toJSON() ?? null,
+      targetInCutout: Boolean(cutBox && targetX >= cutBox.left && targetX <= cutBox.right &&
+        targetY >= cutBox.top && targetY <= cutBox.bottom),
+      hasName: Boolean(name),
+      node,
+      card: { left: card.left, right: card.right, top: card.top, bottom: card.bottom },
+      overlaps:
+        card.left < node.right && card.right > node.left && card.top < node.bottom && card.bottom > node.top,
+    };
+  });
+}
+
+test("tour clearance identifies the requested domain even when the cutout points elsewhere", async ({ page }) => {
+  await page.setContent(`<main>
+    <canvas data-testid="ontology-map-canvas" style="position:fixed;inset:0"></canvas>
+    <div data-testid="guided-tour-card" style="position:fixed;left:200px;top:200px;width:100px;height:100px"></div>
+    <div data-testid="guided-tour-cutout" style="position:fixed;left:80px;top:80px;width:40px;height:40px"></div>
+  </main>`);
+  await page.evaluate(() => {
+    Object.defineProperty(window, "__atlasMap", { value: {
+      nodes: () => [
+        { id: "project:shop", kind: "project", label: "Shop", x: 100, y: 100, radius: 10 },
+        { id: "domain:catalog", kind: "domain", label: "Catalog", x: 250, y: 250, radius: 10 },
+      ],
+      labels: () => [],
+    } });
+  });
+  const covered = await readCardAgainstLitNode(page);
+  expect(covered?.lit).toBe("Catalog");
+  expect(covered?.overlaps).toBe(true);
+  expect(covered?.targetInCutout).toBe(false);
+  await page.getByTestId("guided-tour-cutout").evaluate((el) => {
+    el.style.left = "230px";
+    el.style.top = "230px";
+  });
+  await page.getByTestId("guided-tour-card").evaluate((el) => { el.style.left = "400px"; });
+  const clear = await readCardAgainstLitNode(page);
+  expect(clear?.lit).toBe("Catalog");
+  expect(clear?.targetInCutout).toBe(true);
+  expect(clear?.overlaps).toBe(false);
+});
+
+type TourStepReading = { step: string; text: string; legendOnScreen: boolean };
+
+/** A step may name a legend only while a legend is on the screen. */
+async function readTourStep(page: import("@playwright/test").Page, seen: TourStepReading[]) {
+  const reading = await page.evaluate(() => {
+    const tourCard = document.querySelector<HTMLElement>('[data-testid="guided-tour-card"]');
+    if (!tourCard) return null;
+    const legends = [...document.querySelectorAll<HTMLElement>("[data-testid]")].filter((el) => {
+      if (!/legend/i.test(el.dataset.testid ?? "")) return false;
+      const r = el.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4) return false;
+      const cs = getComputedStyle(el);
+      return cs.visibility !== "hidden" && cs.opacity !== "0";
+    });
+    return {
+      step: document.querySelector('[data-testid="guided-tour-overlay"]')?.getAttribute("data-tour-step") ?? "",
+      text: (tourCard.textContent ?? "").trim(),
+      legendOnScreen: legends.length > 0,
+    };
+  });
+  if (reading && !seen.some((s) => s.step === reading.step)) seen.push(reading);
+}
+
+function expectNoLyingLegend(seen: TourStepReading[]) {
+  expect(seen.length, `The tour was not walked: ${JSON.stringify(seen.map((s) => s.step))}`).toBeGreaterThanOrEqual(3);
+  const lying = seen.filter((s) => /범례|legend/i.test(s.text) && !s.legendOnScreen);
+  expect(
+    lying.map((s) => s.step),
+    `Tour steps that point at a legend while none is on screen: ${JSON.stringify(lying.map((s) => s.text.slice(0, 80)))}`,
+  ).toEqual([]);
+}
+
+async function expectCardClearsLitNode(page: import("@playwright/test").Page) {
+  // The opening paint — no settling wait, because the defect lived in the first frames.
+  const opening = await readCardAgainstLitNode(page);
+  expect(opening, "The map target and card must be measurable").not.toBeNull();
+  expect(opening!.targetInCutout, JSON.stringify(opening)).toBe(true);
+  expect(
+    opening!.overlaps,
+    `The card (${JSON.stringify(opening!.card)}) covers the lit node ${opening!.lit} (${JSON.stringify(opening!.node)}) the moment the step opens`,
+  ).toBe(false);
+
+  // And once the camera has come to rest.
+  await waitForMapStill(page);
+  const settled = await readCardAgainstLitNode(page);
+  expect(settled!.targetInCutout, JSON.stringify(settled)).toBe(true);
+  expect(settled!.hasName, `The lit node ${settled!.lit} has no drawn name`).toBe(true);
+  expect(
+    settled!.overlaps,
+    `The card (${JSON.stringify(settled!.card)}) covers the lit node ${settled!.lit} (${JSON.stringify(settled!.node)}) after the map came to rest`,
+  ).toBe(false);
+}
+
 test.describe("guided tour click-through (dev branch, 1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -37,25 +159,34 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     const card = page.getByTestId("guided-tour-card");
     const overlay = page.getByTestId("guided-tour-overlay");
 
+    const seen: TourStepReading[] = [];
+    const readLegend = () => readTourStep(page, seen);
+
     // Step 1 — welcome (no anchor, centered card, full scrim)
     await expect(overlay).toHaveAttribute("data-tour-step", "welcome");
+    await readLegend();
     await expect(card).toBeVisible();
 
     // Step 2 — nodes (canvas-node: project)
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "nodes");
+    await readLegend();
     await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
 
     // Step 3 — relations (centered explanation; the persistent corner legend is retired)
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "relations");
+    await readLegend();
     await expect(page.getByTestId("guided-tour-cutout")).toHaveCount(0);
 
     // Step 4 — try-click (interactive canvas-node: domain). Click through the
     // funnel cutout by reading its rect rather than guessing a coordinate.
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "try-click");
+    await readLegend();
     await expect(page.getByTestId("guided-tour-waiting")).toBeVisible();
+
+    await expectCardClearsLitNode(page);
 
     const cutout = page.getByTestId("guided-tour-cutout");
     await expect(cutout).toBeVisible({ timeout: 5_000 });
@@ -92,16 +223,19 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
 
     // Step 5 — datasheet (auto-advanced after the click above resolves a selection)
     await expect(overlay).toHaveAttribute("data-tour-step", "datasheet", { timeout: 5_000 });
+    await readLegend();
     await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
 
     // Step 6 — index
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "index");
+    await readLegend();
     await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
 
     // Step 7 — recent (branch step)
     await card.getByTestId("guided-tour-next").click();
     await expect(overlay).toHaveAttribute("data-tour-step", "recent");
+    await readLegend();
     await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
 
     // Step 8 — agent (dev branch)
@@ -109,10 +243,63 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await expect(devBranchButton).toBeVisible();
     await devBranchButton.click();
     await expect(overlay).toHaveAttribute("data-tour-step", "agent", { timeout: 5_000 });
+    await readLegend();
 
     // Finish
     await card.getByTestId("guided-tour-finish").click();
     await expect(overlay).toHaveCount(0);
+
+    expectNoLyingLegend(seen);
+
+    // The place the line guide really lives, so the step's pointer is not a second empty promise.
+    await page.getByTestId("topology-shortcuts-help-button").click();
+    await expect(page.getByTestId("shortcut-sheet-relation-guide")).toBeVisible();
+  });
+});
+
+test.describe("guided tour at a laptop window in Korean (1200x863)", () => {
+  test.use({ viewport: { width: 1200, height: 863 } });
+
+  test("every step clears the lit node and names only legends on screen, and Escape closes the tour", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/topology/?e2e=1", { waitUntil: "domcontentloaded" });
+    await waitForMapStill(page);
+
+    await page.getByTestId("topology-tour-button").click();
+    const overlay = page.getByTestId("guided-tour-overlay");
+    const card = page.getByTestId("guided-tour-card");
+    await expect(card).toBeVisible();
+
+    const seen: TourStepReading[] = [];
+    await readTourStep(page, seen);
+    for (const step of ["nodes", "relations", "try-click"]) {
+      await card.getByTestId("guided-tour-next").first().click();
+      await expect(overlay).toHaveAttribute("data-tour-step", step);
+      await readTourStep(page, seen);
+    }
+    await expect(page.getByTestId("guided-tour-waiting")).toBeVisible();
+    await expectCardClearsLitNode(page);
+
+    const activate = page.getByTestId("guided-tour-activate-target");
+    await activate.focus();
+    await expect(activate).toBeFocused();
+    await page.keyboard.press("Enter");
+    for (const step of ["datasheet", "index", "recent"]) {
+      if (step !== "datasheet") await card.getByTestId("guided-tour-next").first().click();
+      await expect(overlay).toHaveAttribute("data-tour-step", step, { timeout: 5_000 });
+      await readTourStep(page, seen);
+    }
+    await card.getByTestId("guided-tour-dev-branch").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "agent", { timeout: 5_000 });
+    await readTourStep(page, seen);
+    expectNoLyingLegend(seen);
+
+    await page.keyboard.press("Escape");
+    await expect(card).toHaveCount(0);
+    await page.getByTestId("topology-shortcuts-help-button").click();
+    await expect(page.getByTestId("shortcut-sheet-relation-guide")).toBeVisible();
   });
 });
 

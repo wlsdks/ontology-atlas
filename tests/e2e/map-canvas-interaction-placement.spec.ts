@@ -1,7 +1,5 @@
-import { mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
-import { dogfoodVaultFiles } from "./dogfood-vault-files";
+import { activeTestId, arrive, capture, drawnNodes, pickDomain, rectOf, type Box } from "./map-canvas-interaction-harness";
 import {
   waitForAnimationsDone,
   waitForBoxStill,
@@ -11,12 +9,11 @@ import {
   waitFrames } from "./settle";
 
 /**
- * **Map canvas surfaces stand where they belong, keep one grammar, and hand focus back**
+ * **Map canvas surfaces stand where they belong and keep one grammar**
  * (interaction audit, 2026-09-25). Each case is a defect measured on the product's own vault
  * (`docs/ontology`) and is judged here the way it was found: by rects, computed styles and
  * `document.activeElement`, never by eye.
  *
- * - the node context menu takes focus, so the arrow keys move inside it and not the map;
  * - the edge hover card never lands on the INDEX panel or the utility tiles;
  * - the lit 3D legend holds no drawn node;
  * - in Territories the legend stands between the panels, the selected name stays clear of the
@@ -25,92 +22,19 @@ import {
  * - the detail panel's action row is one height and one radius, the edge panel shares its width
  *   and primary grammar, and "+N more" is set in body type on the row text's column;
  * - the tour's first step offers no dead [back], and its relation/datasheet cards leave the
- *   nodes they explain in view;
- * - closing full detail, folding INDEX, clearing the INDEX search and ending the tour leave
- *   focus somewhere a keyboard can continue from, not on `<body>`;
- * - "add to map" on a vault that already has a project says so.
+ *   nodes they explain in view.
+ *
+ * Focus and address behaviour lives in `map-canvas-focus.spec.ts`.
  *
  * Captures are written only when `MAP_CANVAS_CAPTURE_DIR` names a folder outside the repository;
  * a gate run takes none, because a screenshot per step was time spent on evidence nobody read.
  */
 
-const CAPTURE_DIR = process.env.MAP_CANVAS_CAPTURE_DIR;
-if (CAPTURE_DIR) mkdirSync(CAPTURE_DIR, { recursive: true });
-const capture = async (page: Page, name: string) => {
-  if (CAPTURE_DIR) await page.screenshot({ path: `${CAPTURE_DIR}/${name}.png` });
-};
-type Box = {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-};
 const intersects = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const contains = (b: Box, p: {
     x: number;
     y: number;
 }) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
-async function arrive(page: Page, viewport: {
-    width: number;
-    height: number;
-}, extraFiles: Record<string, string> = {}) {
-    await page.setViewportSize(viewport);
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await installDesktopRailRuntime(page, { ...dogfoodVaultFiles(), ...extraFiles }, undefined, { replaceFixture: true });
-    await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-open").click();
-    await page.waitForFunction(() => ((window as unknown as {
-        __atlasMap?: {
-            nodes: () => unknown[];
-        };
-    }).__atlasMap?.nodes().length ?? 0) > 20, undefined, { timeout: 60000 });
-    await waitForMapStill(page).catch(() => { });
-}
-type DrawnNode = {
-    id: string;
-    label: string;
-    kind: string;
-    x: number;
-    y: number;
-    hidden: boolean;
-};
-/** Drawn nodes in page coordinates. */
-async function drawnNodes(page: Page): Promise<DrawnNode[]> {
-    return page.evaluate(() => {
-        const m = (window as unknown as {
-            __atlasMap: {
-                nodes: () => DrawnNode[];
-            };
-        }).__atlasMap;
-        const c = document.querySelector('[data-surface-role="map-canvas"]')!.getBoundingClientRect();
-        return m.nodes().filter((n) => !n.hidden).map((n) => ({ ...n, x: n.x + c.x, y: n.y + c.y }));
-    });
-}
-async function rectOf(page: Page, testid: string): Promise<Box | null> {
-    return page.evaluate((t) => {
-        const el = document.querySelector(`[data-testid="${t}"]`);
-        if (!el)
-            return null;
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0)
-            return null;
-        return { x: r.x, y: r.y, w: r.width, h: r.height };
-    }, testid);
-}
-const activeTestId = (page: Page) => page.evaluate(() => {
-    const a = document.activeElement as HTMLElement | null;
-    if (!a || a === document.body)
-        return "BODY";
-    return a.dataset.testid ?? a.getAttribute("role") ?? a.tagName;
-});
-/** A domain drawn well inside the canvas, away from INDEX and the right-hand tiles. */
-async function pickDomain(page: Page) {
-    const nodes = await drawnNodes(page);
-    const vw = page.viewportSize()!.width;
-    const pick = nodes.find((n) => n.kind === "domain" && n.x > 420 && n.x < vw - 420);
-    expect(pick, "no domain drawn in the middle of the canvas").toBeDefined();
-    return pick!;
-}
 /**
  * Enters the realm of a drawn domain through its panel's own action. The Flat overview
  * picks no line (the flat dial, 2026-10-02); inside a realm each relation is drawn and picked.
@@ -132,29 +56,6 @@ async function enterRealmOf(page: Page, domain: {
 }
 test.describe("map canvas interactions on the dogfood vault", () => {
     test.setTimeout(150000);
-    test("MC-01: the context menu takes focus, walks with the arrows, and gives focus back to the canvas", async ({ page }) => {
-        await arrive(page, { width: 1512, height: 949 });
-        const domain = await pickDomain(page);
-        await page.mouse.click(domain.x, domain.y, { button: "right" });
-        const menu = page.getByTestId("map-context-menu");
-        await expect(menu).toBeVisible();
-        await expect(menu).toHaveAttribute("aria-label", /.+/);
-        // Focus lands on the first item, inside the menu.
-        await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute("role"))).toBe("menuitem");
-        const focusedItem = () => page.evaluate(() => [...document.querySelectorAll('[data-testid="map-context-menu"] [role="menuitem"]')].indexOf(document.activeElement!));
-        const firstItem = await focusedItem();
-        await page.keyboard.press("ArrowDown");
-        // The arrow is handled once focus has moved to another item; a map walk would open its panel on the same key.
-        await expect.poll(focusedItem).not.toBe(firstItem);
-        await waitFrames(page, 2);
-        // The arrow moved inside the menu; the map did not walk and open a panel behind it.
-        expect(await page.evaluate(() => document.activeElement?.closest('[data-testid="map-context-menu"]') !== null)).toBe(true);
-        await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-        await capture(page, "mc01-ctx-arrowdown");
-        await page.keyboard.press("Escape");
-        await expect(menu).toHaveCount(0);
-        await expect.poll(() => activeTestId(page)).toBe("ontology-map-canvas");
-    });
     test("MC-04: the edge hover card never lands on INDEX or the utility tiles", async ({ page }) => {
         await arrive(page, { width: 1040, height: 720 });
         await enterRealmOf(page, await pickDomain(page));
@@ -455,53 +356,6 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         await expect(page.getByTestId("guided-tour-overlay")).toHaveCount(0);
         await expect.poll(() => activeTestId(page)).toBe("topology-tour-button");
     });
-    test("MC-10: full detail, INDEX fold and INDEX search hand focus back", async ({ page }) => {
-        await arrive(page, { width: 1512, height: 949 });
-        // (f) Esc in a non-empty INDEX search clears it and keeps the caret there.
-        const search = page.getByTestId("topology-index-search");
-        await search.fill("지도");
-        await search.press("Escape");
-        await expect(search).toHaveValue("");
-        expect(await activeTestId(page)).toBe("topology-index-search");
-        // (c) folding INDEX lands on the tab; unfolding lands on the fold button.
-        await page.getByTestId("topology-index-fold").click();
-        await expect.poll(() => activeTestId(page)).toBe("topology-index-tab");
-        await page.getByTestId("topology-index-tab").click();
-        await expect.poll(() => activeTestId(page)).toBe("topology-index-fold");
-        // (d) full detail closes back to its own button.
-        const domain = await pickDomain(page);
-        await page.mouse.click(domain.x, domain.y);
-        await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-        await page.getByTestId("map-detail-panel-open-full-detail").click();
-        const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
-        await expect(fullDetail).toBeVisible();
-        await waitForAnimationsDone(fullDetail);
-        await page.keyboard.press("Escape");
-        await expect.poll(() => activeTestId(page)).toBe("map-detail-panel-open-full-detail");
-    });
-    test("MC-09/MC-10a: adding to an existing map says so, matches its sibling dialog, and returns focus", async ({ page }) => {
-        await arrive(page, { width: 1512, height: 949 }, { "notes/loose-note.md": "# A loose note\n\nNo frontmatter yet.\n" });
-        const row = page.getByTestId("topology-index-uncataloged-docs");
-        await expect(row).toBeVisible({ timeout: 30000 });
-        await row.click();
-        const panel = page.getByTestId("ontology-bootstrap-panel");
-        await expect(panel).toBeVisible();
-        await expect(panel).toHaveAttribute("aria-label", "지도에 추가");
-        await expect(page.getByTestId("ontology-bootstrap-title")).toHaveCount(0);
-        // Round 2: with the name field gone, focus still opens inside the dialog, on the first
-        // folder choice, never on <body> with the backdrop as the first Tab stop.
-        await expect
-            .poll(() => page.evaluate(() => !!document.activeElement?.closest('[data-testid="ontology-bootstrap-panel"]')))
-            .toBe(true);
-        expect(await activeTestId(page)).toMatch(/^ontology-bootstrap-domain-/);
-        const confirm = page.getByTestId("ontology-bootstrap-confirm");
-        await expect(confirm).toContainText("지도에 추가");
-        expect(Math.round((await rectOf(page, "ontology-bootstrap-confirm"))!.h)).toBe(40);
-        await capture(page, "mc09-add-to-map");
-        await page.keyboard.press("Escape");
-        await expect(panel).toHaveCount(0);
-        await expect.poll(() => activeTestId(page)).toBe("topology-index-uncataloged-docs");
-    });
     for (const viewport of [
         { width: 1040, height: 720 },
         { width: 1512, height: 949 }
@@ -675,16 +529,5 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         }, { id: target!.id, left: panel.x });
         expect(under, "lit neighbours under the panel").toEqual([]);
         await capture(page, "mc06-strata-focus-1040");
-    });
-    test("MC-17: every picker view is kept in the address", async ({ page }) => {
-        await arrive(page, { width: 1512, height: 949 });
-        for (const view of ["strata", "coupling", "hex", "territories"] as const) {
-            await page.getByTestId("topology-view-3d").click();
-            await page.getByTestId(`topology-view-3d-choice-${view}`).click();
-            await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view);
-        }
-        await page.getByTestId("topology-view-3d").click();
-        await page.getByTestId("topology-view-3d-choice-flat").click();
-        await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBeNull();
     });
 });
