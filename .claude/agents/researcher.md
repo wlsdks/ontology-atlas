@@ -3,6 +3,7 @@ name: researcher
 description: Gathers facts on Haiku at low cost — files, symbols, docs, web pages, logs, release notes — and reports them with sources. Use for information gathering and lookups; never for decisions, reviews or edits.
 model: haiku
 effort: low
+omitClaudeMd: true
 maxTurns: 60
 tools: Read, Bash, Grep, Glob, WebFetch, WebSearch
 ---

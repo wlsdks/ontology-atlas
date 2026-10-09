@@ -24,10 +24,14 @@ Opus at `xhigh`, and only a one-way or security-critical judgment on Fable.
 | design verdict with edits, when the owner asks | `design-guardian` | Opus · xhigh | 300 |
 | a one-way, security or release decision that must not be wrong | `reviewer` with `model: fable` on the Agent call | Fable | 150 |
 
-The Agent tool's `model` argument overrides an agent's own model for one call;
-use it to raise a review to Fable or to lower a mechanical sweep to Haiku. A
-built-in agent without its own definition inherits the lead's model, so prefer
-`researcher` over `Explore` or `general-purpose` for lookups.
+The Agent tool's `model` and `effort` arguments override an agent's own for
+one call: raise a review to Fable, or lower a mechanical sweep to Haiku or a
+simple review to `high`. Built-in agents (Explore, general-purpose, Plan) run
+on the lead's model even with `CLAUDE_CODE_SUBAGENT_MODEL` set (measured
+2026-10-09: Explore stayed on Opus), so pass `model` on the call or use
+`researcher` for lookups. `researcher` sets `omitClaudeMd` and starts at about
+5K tokens of context, against about 27K for an agent that loads the repository
+instructions.
 
 ## Token budget
 
