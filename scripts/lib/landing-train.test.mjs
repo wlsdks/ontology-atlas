@@ -356,14 +356,19 @@ describe('a waiter reads its outcome from GitHub alone', () => {
 describe('the train size, measured from recent trains', () => {
   const trainPr = (number, title, state, comments = []) => ({ number, title, state, headRefName: `train/20260926T100000Z-${number}`, comments });
 
-  it('counts the pull requests a train carried from its title', () => {
-    assert.equal(trainSizeFromTitle('chore(train): land #1911'), 1);
-    assert.equal(trainSizeFromTitle('chore(train): land #1889 #1890 #1891 #1892'), 4);
-    assert.equal(trainSizeFromTitle('chore(train): land #1 #2 #3 and 17 more'), 20);
-    assert.equal(trainSizeFromTitle('feat: something else'), 0);
-    assert.equal(trainSizeFromTitle('chore(merge): #12 #13'), 2);
-    assert.equal(trainSizeFromTitle('chore(merge): #2562 — fix(map): keep #3 visible'), 1);
-  });
+  const SIZE_CASES = [
+    ['old single', 'chore(train): land #1911', 1],
+    ['old list', 'chore(train): land #1889 #1890 #1891 #1892', 4],
+    ['old shortened', 'chore(train): land #1 #2 #3 and 17 more', 20],
+    ['not a train', 'feat: something else', 0],
+    ['new list', 'chore(merge): #12 #13', 2],
+    ['new single with a number in its title', 'chore(merge): #2562 — fix(map): keep #3 visible', 1],
+  ];
+  for (const [name, title, expected] of SIZE_CASES) {
+    it(`counts the pull requests a train carried from its title: ${name}`, () => {
+      assert.equal(trainSizeFromTitle(title), expected);
+    });
+  }
 
   it('reads merged trains as green and trains closed red as red, and ignores the rest', () => {
     const rows = trainHistoryRows([
