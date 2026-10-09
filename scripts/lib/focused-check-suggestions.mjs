@@ -1,4 +1,5 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { posix } from 'node:path';
 
 import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
 
@@ -163,7 +164,7 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   return {
     paths: normalizedPaths,
     deletedPaths: normalizedDeleted,
-    commands: withFocusedCheckDirect,
+    commands: uniqueCommands(withFocusedCheckDirect),
     escalations,
   };
 }
@@ -299,19 +300,53 @@ function directMcpUnitTestSuggestions(paths) {
 }
 
 /** A source maps to its declared test; a declared test maps to itself. */
+let scriptTestImports = null;
+
+function scriptTestFiles(dir = 'scripts') {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scriptTestFiles(path);
+    return entry.name.endsWith('.test.mjs') ? [path] : [];
+  });
+}
+
+function importedModules(testFile) {
+  const dir = posix.dirname(testFile);
+  const text = readFileSync(testFile, 'utf8');
+  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(dir, match[1])));
+}
+
+function scriptTestsFor(path) {
+  if (!/^scripts\/.+\.mjs$/.test(path)) return [];
+  if (path.endsWith('.test.mjs')) return existsSync(path) ? [path] : [];
+  scriptTestImports ??= scriptTestFiles().map((file) => [file, new Set(importedModules(file))]);
+  return scriptTestImports.filter(([, modules]) => modules.has(path)).map(([file]) => file);
+}
+
 function directMappedTestSuggestions(paths, kind, reason) {
   const { bySource, testFiles } = DIRECT_TESTS[kind];
-  return groupByTestFile(paths, (path) => bySource.get(path) ?? (testFiles.has(path) ? path : null), reason);
+  return groupByTestFile(paths, (path) => {
+    const mapped = bySource.get(path) ?? (testFiles.has(path) ? path : null);
+    if (mapped) return [mapped];
+    return kind === 'script' ? scriptTestsFor(path) : [];
+  }, reason);
+}
+
+function uniqueCommands(suggestions) {
+  const seen = new Set();
+  return suggestions.filter((item) => !seen.has(item.command) && seen.add(item.command));
 }
 
 function groupByTestFile(paths, resolve, reason) {
   const byTestFile = new Map();
   for (const path of paths) {
-    const testFile = resolve(path);
-    if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
+    const resolved = resolve(path);
+    for (const testFile of Array.isArray(resolved) ? resolved : resolved ? [resolved] : []) {
+      const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
+      row.paths.push(path);
+      byTestFile.set(testFile, row);
+    }
   }
   return [...byTestFile.values()];
 }

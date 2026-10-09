@@ -63,8 +63,8 @@ export function suggestedChecks(paths, { cwd = process.cwd() } = {}) {
 export function renderBrief({ slug, owns, read, path, budget, port, checks }) {
   const portLine = port == null ? 'No server may run.' : `Use port ${port} only: set \`PLAYWRIGHT_BASE_URL=http://localhost:${port}\`, add \`PLAYWRIGHT_STATIC=1\` when proof must cover the exported build, and pass the same environment to \`pnpm checks:changed\`. Run one spec at a time.`;
   const landing = path === 'train'
-    ? `Commit on branch \`${slug}\` in its own worktree; push and open a draft pull request with \`gh pr create --draft\`; never mark it ready or run \`pnpm pr:land\`. The lead lands after an independent review.`
-    : `Commit on branch \`${slug}\` in its own worktree; do not push. The lead lands after an independent review.`;
+    ? `Commit on branch \`${slug}\` in its own worktree; push and open a draft pull request with \`gh pr create --draft\`; never mark it ready or run \`pnpm pr:land\`. The lead merges it after an independent review.`
+    : `Commit on branch \`${slug}\` in its own worktree; do not push. The lead merges it after an independent review.`;
   const checkLines = checks.length ? checks.map((command) => `   - \`${command}\``) : ['   - (no focused check suggested)'];
   return [
     `# Brief: ${slug}`,

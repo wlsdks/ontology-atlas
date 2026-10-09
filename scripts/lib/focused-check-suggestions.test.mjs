@@ -159,6 +159,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/markdown-language/inventory.test.mjs',
     ]);
     assert.deepEqual(domainCommands(gate), [
+      'pnpm exec node --test scripts/quality/markdown-language/inventory.test.mjs',
       'pnpm docs:language',
       'pnpm test:docs:language',
     ]);
@@ -184,6 +185,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
     assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+      'pnpm exec node --test scripts/quality/source-language/inventory.test.mjs',
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
       'pnpm design:ontology',
@@ -777,6 +779,7 @@ describe('focused check suggestions', () => {
     // carries the `permissions.deny` rules the secret-read guard derives from
     // `.gitignore`, so all three gates apply.
     assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test scripts/claude-hooks.test.mjs',
       'pnpm test:claude:hooks',
       'pnpm agents:check',
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
@@ -856,6 +859,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
+      'pnpm exec node --test scripts/verify-macos-install-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/redact-command.test.mjs',
       'pnpm exec eslint --max-warnings 0 src/shared/lib/tauri-vault-fs.ts src/shared/lib/tauri-vault-fs.test.ts ' +
@@ -1350,6 +1354,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test scripts/benchmark-change-flow.test.mjs',
       'pnpm benchmark --dry-run',
       'pnpm benchmark:change-flow --dry-run',
       'pnpm benchmark:scale --dry-run',
@@ -1574,8 +1579,8 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
-      'pnpm test:ci:impact',
       'pnpm exec node --test scripts/suggest-focused-checks.test.mjs',
+      'pnpm test:ci:impact',
       'pnpm test:checks:changed',
     ]);
   });
@@ -2027,5 +2032,21 @@ describe('message catalogue related-tests rule', () => {
       relatedMessagesCommand(),
       'pnpm exec vitest related --run messages/en.json messages/ja.json messages/ko.json messages/zh.json --passWithNoTests',
     );
+  });
+});
+
+describe('node tests for a changed script', () => {
+  const commandsFor = (paths) => suggestFocusedChecks(paths).commands.map((item) => item.command);
+
+  it('suggests the tests that import the script by its resolved path, not by its file name', () => {
+    const markdown = commandsFor(['scripts/quality/markdown-language/inventory.mjs']);
+    assert.ok(markdown.includes('pnpm exec node --test scripts/quality/markdown-language/inventory.test.mjs'));
+    assert.ok(!markdown.includes('pnpm exec node --test scripts/quality/source-language/inventory.test.mjs'));
+    assert.ok(commandsFor(['scripts/lib/ui-audit-checks.mjs']).includes('pnpm exec node --test scripts/ui-audit.test.mjs'));
+  });
+
+  it('lists a command once even when two rules reach it', () => {
+    const commands = commandsFor(['scripts/lib/focused-check-suggestions.mjs', 'scripts/suggest-focused-checks.mjs']);
+    assert.equal(commands.length, new Set(commands).size);
   });
 });
