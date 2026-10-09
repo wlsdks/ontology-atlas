@@ -231,8 +231,9 @@ These product rules remain non-negotiable:
 - **Handoff is state-bound:** the visible MCP action and CLI fallback carry the
   selected slug, relation, evidence, or real vault path.
 
-Values, attention layers, Node Spec, motion tokens, responsive reserves, and
-control primitives live only in `docs/DESIGN-SYSTEM.md`. Implementation rules
+Attention layers, Node Spec, motion rules, responsive reserves, and control
+primitives live only in `docs/DESIGN-SYSTEM.md`; token values are printed by
+`pnpm design:tokens`. Implementation rules
 live in `.claude/rules/design.md`; gate archaeology lives in
 `.claude/rules/design-gates.md`. Do not grow this router into a second value
 catalog.

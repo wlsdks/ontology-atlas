@@ -13,9 +13,10 @@ paths:
 
 # Design rules for building screens
 
-Working decisions for UI source. Values live only in `docs/DESIGN-SYSTEM.md`
-(about 350 KB): open the section you need from its table of contents, never the
-whole file. Why each gate is shaped as it is: `.claude/rules/design-gates.md`.
+Working decisions for UI source. Values live in code: `pnpm design:tokens`
+prints them. `docs/DESIGN-SYSTEM.md` (about 50 KB) holds the rules; open the
+section you need from its table of contents. Why each gate is shaped as it is:
+`.claude/rules/design-gates.md`.
 
 Build rendered work in slices and look at each one: baseline, one coherent
 slice, then a fresh accessibility tree and screenshot in the actual browser,
