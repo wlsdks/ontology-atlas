@@ -45,6 +45,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:records',
     'pnpm test:backlog && pnpm backlog:check',
     'pnpm test:harness:tokens',
+    'pnpm test:build:static',
     'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
     'pnpm test:changelog',
     'pnpm changelog:check',

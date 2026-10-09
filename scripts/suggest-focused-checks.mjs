@@ -216,7 +216,7 @@ export function collapsePlaywrightCommands(commands) {
   }
   const merged = staticRun
     ? {
-      command: `pnpm build && PLAYWRIGHT_STATIC=1 ${PLAYWRIGHT_PREFIX}${specs.join(' ')}`,
+      command: `pnpm build:static && PLAYWRIGHT_STATIC=1 ${PLAYWRIGHT_PREFIX}${specs.join(' ')}`,
       reason: `${specs.length} e2e specs against one static build, as CI runs them`,
     }
     : {

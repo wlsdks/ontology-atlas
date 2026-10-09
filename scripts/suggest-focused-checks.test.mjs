@@ -370,7 +370,7 @@ describe('collapsePlaywrightCommands', () => {
     merged.map((c) => c.command),
     [
       'pnpm typecheck',
-      'pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
+      'pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
       'pnpm lint',
     ],
   );
@@ -389,7 +389,7 @@ describe('collapsePlaywrightCommands', () => {
   const commands = specs.map((s) => ({ command: `pnpm exec playwright test ${s}` }));
   const merged = collapsePlaywrightCommands(commands);
   assert.equal(merged.length, 1);
-  const kept = merged[0].command.replace('pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test ', '').split(' ');
+  const kept = merged[0].command.replace('pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test ', '').split(' ');
   assert.deepEqual(kept.sort(), specs.slice().sort());
 });
 });
@@ -398,7 +398,7 @@ describe('collapsePlaywrightCommands', () => {
 describe('where the merged e2e run renders', () => {
   const CASES = [
     ['two specs stay on the dev server', ['a', 'b'], 'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts'],
-    ['three specs pay for one static build', ['a', 'b', 'c'], 'pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts'],
+    ['three specs pay for one static build', ['a', 'b', 'c'], 'pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts'],
   ];
   for (const [name, ids, expected] of CASES) {
     it(name, () => {

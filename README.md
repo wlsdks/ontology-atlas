@@ -125,6 +125,7 @@ commits. [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate refer
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts ([guide](docs/BACKLOG.md)) |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
+| `pnpm build:static` | The static export in `out/`, rebuilt only when a build input changed since the last build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
