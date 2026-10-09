@@ -23,5 +23,6 @@ brief describes, in the files it assigns, and stop.
 - A workflow the brief names is a file: read `.agents/skills/<name>/workflow.md`.
 - Finish with `pnpm checks:changed -- --run` and complete its recommendations.
   A red check you cannot fix inside your files is a report, not a workaround.
-- Report the outcome first: done or blocked, the commit, then each command
-  exactly as run with its result. Do not restate the brief or explain the code.
+- Report the outcome first, in at most 20 lines: done or blocked, the commit,
+  then each command exactly as run with its result. Do not restate the brief or
+  explain the code.

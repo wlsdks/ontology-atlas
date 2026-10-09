@@ -32,5 +32,6 @@ with the question a `planner` should answer, before reading code.
    open a draft pull request only when the brief says so, and never mark it
    ready or run `pnpm pr:land`, `git stash`, or `git add -A`.
 
-Report the outcome first (fixed, not reproducible, or blocked), the root cause
-in two sentences, the commit, then each command exactly as run with its result.
+Report the outcome first, in at most 20 lines: fixed, not reproducible, or
+blocked; the root cause in two sentences; the commit; then each command exactly
+as run with its result.
