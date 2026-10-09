@@ -241,8 +241,6 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
    */
   test("그 길은 실제로 폴더 선택기를 부른다", async ({ page, context }) => {
     const SITES = [
-      // The open-folder call to action lives on the to-do question, and the board lands on the
-      // brief since it gained a first row naming its subject (2026-09-20).
       { route: "/ko/ontology/insights/?tab=flow", testId: "flow-open-vault" },
       { route: "/ko/project/storefront/", testId: "project-detail-open-vault" },
       { route: "/ko/project/new/", testId: "project-write-disabled-open-folder" },
