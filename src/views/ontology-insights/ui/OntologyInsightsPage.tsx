@@ -128,12 +128,11 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import {
   presentationRelationKeysForGraphEdge,
   analysisGraphFromInsight,
-  currentAnalysisBasis,
   type AnalysisCaptureContext,
 } from "@/features/acp-session";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
-import { readAnalysisHistory, type AnalysisBasis, type AnalysisRecord } from "@/entities/analysis-record";
-import { selectFlowVersions } from "../lib/flow-history";
+import { type AnalysisBasis, type AnalysisRecord } from "@/entities/analysis-record";
+import { createFlowArchiveLoader, selectFlowVersions } from "../lib/flow-history";
 import { InsightsAgentDock } from "./parts/InsightsAgentDock";
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -445,20 +444,12 @@ export function OntologyInsightsPage() {
   const flowHandle = tab === "flow" ? analysisContext.handle : null;
   useEffect(() => {
     if (!flowHandle) return;
-    let cancelled = false;
-    const load = () => {
-      void Promise.all([
-        readAnalysisHistory(flowHandle, { limit: 20 }).catch(() => null),
-        currentAnalysisBasis(analysisContext, []).catch(() => null),
-      ]).then(([page, basis]) => {
-        // An unreadable archive is no versions, never a wrong one.
-        if (!cancelled) setFlowArchive({ handle: flowHandle, records: page?.records ?? [], basis });
-      });
-    };
+    const loader = createFlowArchiveLoader(analysisContext, (state) => setFlowArchive({ handle: flowHandle, ...state }));
+    const load = () => { void loader.load(); };
     load();
     window.addEventListener("atlas-analysis-records-changed", load);
     return () => {
-      cancelled = true;
+      loader.stop();
       window.removeEventListener("atlas-analysis-records-changed", load);
     };
   }, [flowHandle, analysisContext]);
