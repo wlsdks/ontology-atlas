@@ -180,6 +180,8 @@
     "perf:graph:scale": "node scripts/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",
     "perf:mcp:memory": "node scripts/perf-mcp-memory.mjs",
     "perf:mcp:memory:check": "node scripts/perf-mcp-memory.mjs --check",
+    "ui:audit": "node scripts/ui-audit.mjs",
+    "test:ui:audit": "node --test scripts/ui-audit.test.mjs",
     "dogfood:compile": "node cli/src/index.mjs compile docs/ontology --summary --json",
     "dogfood:compile-fix": "node scripts/dogfood-compile-fix.mjs",
     "test:dogfood:args": "node --test scripts/lib/dogfood-args.test.mjs",
