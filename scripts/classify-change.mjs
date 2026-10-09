@@ -40,6 +40,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm vault:audit',
     'pnpm test:claude:hooks',
     'pnpm test:pr:land',
+    'pnpm test:review:facts && pnpm test:brief:new',
     'pnpm test:decisions',
     'pnpm test:records',
     'pnpm test:backlog && pnpm backlog:check',
