@@ -185,6 +185,7 @@ export const FAST_LEASE_MINUTES = 2;
  */
 export const LEASE_MINUTES = 45;
 
+const DAILY_BROWSER_WORKFLOW = 'e2e.yml';
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
 
@@ -210,6 +211,17 @@ export const CONFLICT_INSTRUCTION =
   + '  nothing waits on it meanwhile.';
 
 /** A pull request this script refuses to touch, with the reason a person can act on. */
+export function describeDailyBrowserRun(run, nowMs = Date.now()) {
+  if (!run) return null;
+  const day = String(run.createdAt ?? '').slice(0, 10);
+  if (run.conclusion === 'failure') {
+    return `the daily full browser run on main failed on ${day} (${run.url}); the specs that run only after merge are red until someone fixes them`;
+  }
+  const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
+  if (ageHours > 48) return `the last daily full browser run on main is from ${day}; the specs that run only after merge have not run since`;
+  return null;
+}
+
 export function refuseLanding(pr) {
   if (!pr || typeof pr.number !== 'number') return 'no such pull request.';
   if (pr.state !== 'OPEN') {
@@ -743,6 +755,16 @@ export function createGithub(slug, run = ghRun) {
         for (const row of parsed) if (String(row.headRefName ?? '').startsWith('train/')) rows.set(row.number, row);
       }
       return [...rows.values()].sort((a, b) => b.number - a.number).slice(0, TRAIN_HISTORY_LIMIT);
+    },
+    readDailyBrowserRun: () => {
+      const out = run(['run', 'list', '--workflow', DAILY_BROWSER_WORKFLOW, '--event', 'schedule', '--branch', 'main', '--limit', '1',
+        '--json', 'conclusion,createdAt,url'], { allowFailure: true });
+      if (typeof out !== 'string') return null;
+      try {
+        return JSON.parse(out).find((row) => row.conclusion) ?? null;
+      } catch {
+        return null;
+      }
     },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
@@ -1580,6 +1602,8 @@ function landOne({ args, deps }) {
   const requiredContexts = readProtection(deps);
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
+  const daily = describeDailyBrowserRun(deps.gh.readDailyBrowserRun?.() ?? null, deps.now());
+  if (daily) deps.error(`warning: ${daily}`);
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
 
   if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {

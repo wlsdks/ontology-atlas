@@ -15,6 +15,7 @@ import {
   conduct,
   createGithub,
   describeCleanup,
+  describeDailyBrowserRun,
   lockTrains,
   describeLock,
   otherCheckState,
@@ -1173,5 +1174,31 @@ describe('train history', () => {
     let call = 0;
     const github = createGithub('owner/repo', () => (call++ === 0 ? '[]' : undefined));
     assert.equal(github.listTrainHistory(), null);
+  });
+});
+
+describe('daily full browser run on main', () => {
+  const now = Date.parse('2026-10-09T12:00:00Z');
+  const CASES = [
+    ['a green run from today says nothing', { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
+    ['a red run names its day and link', { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /failed on 2026-10-08 \(https:\/\/x\/1\)/],
+    ['a green run older than two days says the schedule stalled', { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
+    ['an unreadable run says nothing', null, null],
+  ];
+  for (const [name, run, expected] of CASES) {
+    it(name, () => {
+      const said = describeDailyBrowserRun(run, now);
+      if (expected === null) assert.equal(said, null);
+      else assert.match(said, expected);
+    });
+  }
+
+  it('reads the newest finished scheduled run and survives an unreadable answer', () => {
+    const calls = [];
+    const finished = { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'u' };
+    const github = createGithub('owner/repo', (args) => { calls.push(args); return JSON.stringify([finished]); });
+    assert.deepEqual(github.readDailyBrowserRun(), finished);
+    assert.ok(calls[0].includes('schedule') && calls[0].includes('main'));
+    assert.equal(createGithub('owner/repo', () => undefined).readDailyBrowserRun(), null);
   });
 });
