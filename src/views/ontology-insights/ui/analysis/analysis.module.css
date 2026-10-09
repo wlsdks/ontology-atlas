@@ -69,3 +69,7 @@
 .inspectAction > details { width: 100%; }
 
 .pairNames, .nodeContent { min-width: 0; overflow-wrap: anywhere; }
+
+@media (any-pointer: coarse) {
+ .purposeDisclosure > button { min-height: var(--touch-target-min); }
+}

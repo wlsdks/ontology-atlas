@@ -150,3 +150,43 @@ test('a local explanation keeps root and identity checks in the unsent request',
   await expect(composer).toHaveValue(/12 full concepts/);
   expect((await harness.snapshot(page)).calls.filter(call => call.method === 'session/prompt')).toHaveLength(0);
 });
+
+test.describe('supporting records at the touch viewport', () => {
+  test.use({ viewport: { width: 600, height: 900 }, hasTouch: true });
+  for (const tab of ['brief', 'library', 'harness']) {
+    test(`${tab} returns above the bottom navigation with a full touch target`, async ({ page }) => {
+      await page.goto(`/en/ontology/insights/?tab=${tab}&guides=off`);
+      const back = page.getByTestId('analysis-back-to-system');
+      await expect(back).toBeVisible();
+      await page.locator('main').evaluate(element => { element.scrollTop = element.scrollHeight; });
+      const nav = await page.getByRole('navigation', { name: 'Primary menu', exact: true }).boundingBox();
+      const bounds = await back.boundingBox();
+      expect(bounds!.height).toBeGreaterThanOrEqual(44);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(nav!.y);
+      expect(await back.evaluate(element => {
+        const r = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return element === hit || element.contains(hit);
+      })).toBe(true);
+      await back.click();
+      await expect(page.getByTestId('analysis-workspace')).toBeVisible();
+    });
+  }
+});
+
+test.describe('project purpose on coarse input', () => {
+  test.use({ hasTouch: true });
+  for (const [width, height] of [[390, 844], [600, 900], [768, 1024]]) {
+    for (const tab of ['connections', 'do-next']) {
+      test(`${tab} purpose remains a full touch target at ${width}`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await page.goto(`/en/ontology/insights/?tab=${tab}&guides=off`);
+        const purpose = page.getByTestId('analysis-purpose');
+        await expect(purpose).toBeVisible();
+        expect((await purpose.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        await purpose.click();
+        await expect(purpose).toHaveAttribute('aria-expanded', 'true');
+      });
+    }
+  }
+});
