@@ -35,6 +35,7 @@ const HOOK_CONFIGS = [
       // and PreCompact stdout never reaches the model (its one-day wiring was
       // removed 2026-09-02; the census header records the observation).
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/session-length.sh"',
     ],
     expectedPreToolMatchers: ['Bash', 'Edit|Write|MultiEdit|NotebookEdit'],
   },
@@ -192,7 +193,7 @@ describe('agent hooks', () => {
         const result = runLandingHook(config.hook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${JSON.stringify(command)}`);
-        assert.match(result.stdout, /landing guard/, `${config.name}: ${JSON.stringify(command)}`);
+        assert.match(result.stdout, /merge guard/, `${config.name}: ${JSON.stringify(command)}`);
         // A refusal that does not name the replacement is a wall, not a gate.
         assert.match(result.stdout, /pnpm pr:land/, `${config.name}: ${JSON.stringify(command)}`);
       }
@@ -942,4 +943,34 @@ describe('inject-ontology-summary executable recovery', () => {
       }
     });
   }
+});
+
+describe('session length notice', () => {
+  const runNotice = async (responses, dir) => {
+    const transcript = join(dir, 'session.jsonl');
+    const lines = [];
+    for (let i = 0; i < responses; i += 1) {
+      lines.push(JSON.stringify({ type: 'assistant', timestamp: new Date().toISOString(), message: { id: `msg_${i}` } }));
+      lines.push(JSON.stringify({ type: 'assistant', message: { id: `msg_${i}` } }));
+    }
+    await writeFile(transcript, `${lines.join('\n')}\n`, 'utf8');
+    return spawnSync('bash', ['.claude/hooks/session-length.sh'], {
+      input: JSON.stringify({ transcript_path: transcript, session_id: 'notice' }),
+      encoding: 'utf8',
+      env: { ...process.env, TMPDIR: dir },
+    });
+  };
+
+  it('tells the owner once a session passes the turn budget, counting each response once', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'session-length-'));
+    try {
+      assert.equal((await runNotice(299, dir)).stdout, '');
+      const first = await runNotice(300, dir);
+      assert.match(JSON.parse(first.stdout).systemMessage, /300 turns .* start a fresh session with \/clear/);
+      assert.equal((await runNotice(301, dir)).stdout, '');
+      assert.match(JSON.parse((await runNotice(450, dir)).stdout).systemMessage, /450 turns/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

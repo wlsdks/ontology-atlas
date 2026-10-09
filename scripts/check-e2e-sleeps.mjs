@@ -5,7 +5,7 @@
  * `.claude/rules/testing.md` already forbids waiting by the clock, and nothing
  * enforced it: 126 `waitForTimeout` calls sat in 68 specs on 2026-09-26. One of
  * them read the map tour's card mid-reframe on a slow CI runner and ejected a
- * train (lesson cb5fbfaf); a red train costs a bisect, which is the landing
+ * train; a red train costs a bisect, which is the landing
  * train's throughput limit. Fixing all of them is a separate job; this stops
  * new ones.
  *

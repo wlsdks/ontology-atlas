@@ -13,7 +13,7 @@ import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
  * ## Why this file exists — the repository was breaking its own discipline
  * ════════════════════════════════════════════════════════════════════
  *
- * `.claude/skills/design-system-audit/SKILL.md`'s 「Level blind spot」 (the severity
+ * `.claude/skills/ui-proof/SKILL.md`'s 「Level blind spot」 (the severity
  * blind spot) section already pinned it:
  *
  * > *"Catching things at `warn` with no warning cap (`--max-warnings`) **fails

@@ -1,6 +1,6 @@
 ---
 name: ontology-extract
-description: Extract reviewable Atlas ontology candidates when the user requests extraction from prose or from a wiki page read through their own registered wiki MCP. Pasted text alone does not request vault changes.
+description: Extract reviewable Atlas ontology candidates when the user asks to extract from prose, or to absorb a wiki page read through their own registered wiki MCP. Pasted text alone does not request vault changes.
 ---
 
 # ontology-extract

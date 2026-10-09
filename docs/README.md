@@ -55,8 +55,8 @@ which resolves to their GitHub page.
 
 `DECISIONS.md`, `CHANGELOG.md`, `PO-PILOT.md` and
 `BACKLOG-SNAPSHOT-2026-09-13.md` are frozen history; new decisions, changes and
-pilot runs are fragments under `records/` written by `pnpm record:new` /
-`pnpm po:record` ([how](records/README.md)). `archive/`, `audits/`, `plans/` and
+pilot runs are fragments under `records/` written by `pnpm record:new`
+([how](records/README.md)); the PO pilot is closed and its records are frozen. `archive/`, `audits/`, `plans/` and
 `benchmark/` hold dated context, not current instructions. A deleted superseded
 artifact can be recovered from Git when a specific historical question requires
 it.

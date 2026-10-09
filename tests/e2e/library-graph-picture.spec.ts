@@ -1246,7 +1246,7 @@ for (const fixture of FIXTURES) {
        * bar that can be met: sixty names at about 100px each need 6,000px of width inside a
        * picture 700px across. What can be met is that *enough* of them are named for a person
        * to read the folder off the home, and that the ones that survive are the busiest —
-       * which is what makes the subset a policy rather than an accident. The `/user-walkthrough`
+       * which is what makes the subset a policy rather than an accident. The `/ui-proof`
        * task the same round runs is "name three write-ups in ten seconds", so eight is the
        * floor here and the mean-weight comparison is the ordering claim.
        */

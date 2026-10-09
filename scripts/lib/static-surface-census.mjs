@@ -3,7 +3,7 @@
  * with the same function.**
  *
  * Built after hitting "the hand-written ledger is wrong" four times in one day on
- * 2026-08-15 (see `/design-system-audit`, the section on deriving the ledger from
+ * 2026-08-15 (see `/ui-proof`, the section on deriving the ledger from
  * the scanner). The ratchet contract and the inventory report both call **this one
  * file**, so the ledger cannot drift from the measurement and the bidirectional
  * "the ledger is more generous than the measurement" check has meaning.

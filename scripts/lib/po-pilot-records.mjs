@@ -1,6 +1,5 @@
-import { closeSync, mkdirSync, openSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
 
 import { parsePoPilot } from './po-pilot.mjs';
 import { readFrozenDocument } from './record-ledgers.mjs';
@@ -110,53 +109,4 @@ export function readPoPilotSource(relativePath, { root = process.cwd() } = {}) {
   if (relativePath !== 'docs/PO-PILOT.md') return null;
   const loaded = loadPoPilotRecords({ root, relativePath });
   return { content: loaded.content, inputs: loaded.inputs };
-}
-
-function preflight(type, record, root) {
-  if (!readable(join(root, 'docs/PO-PILOT.md'))) return;
-  const loaded = loadPoPilotRecords({ root });
-  let content = loaded.content;
-  if (type === 'run') {
-    content = appendRows(content, '## Structured runs', [runRow(record)]);
-    content = appendRows(content, '## Outcome updates', [updateRow({ ...record.initialUpdate, runId: record.id })]);
-  } else if (type === 'update') {
-    content = appendRows(content, '## Outcome updates', [updateRow(record)]);
-  } else {
-    content = content.replace(/^outcome: .*$/m, `outcome: ${record.outcome}`);
-  }
-  parsePoPilot(content);
-}
-
-function readable(path) {
-  try { readFileSync(path); return true; } catch (error) { if (error.code === 'ENOENT') return false; throw error; }
-}
-
-export function writePoPilotFragment(type, input, { root = process.cwd(), now = () => new Date().toISOString(), uuid = randomUUID } = {}) {
-  const config = {
-    run: [RUN_DIR, 'po-pilot-run/v1'],
-    update: [UPDATE_DIR, 'po-pilot-update/v1'],
-    policy: [POLICY_DIR, 'po-pilot-policy/v1'],
-  }[type];
-  if (!config) fail('type must be run, update, or policy');
-  object(input, 'input');
-  if (type === 'run') {
-    const initial = object(input.initialUpdate, 'run initialUpdate');
-    for (const [field, expected] of Object.entries({ proof: 'pending', ownerClear: 'pending', boundaryMiss: 'pending', laterResult: 'pending' })) {
-      if (initial[field] !== expected) fail(`run initialUpdate ${field} must be ${expected}`);
-    }
-  }
-  if (type === 'update' && !((Number.isInteger(input.runId) && input.runId >= 1) || (typeof input.runId === 'string' && UUID.test(input.runId)))) {
-    fail('update runId must be a legacy integer or UUIDv4');
-  }
-  if (type === 'policy' && !['pending', 'keep', 'adjust', 'revert'].includes(input.outcome)) fail('policy outcome is invalid');
-  const recordId = id(input.id ?? uuid(), 'record id');
-  const record = { ...input, schema: config[1], id: recordId, recordedAt: instant(input.recordedAt ?? now(), 'recordedAt') };
-  preflight(type, record, root);
-  const directory = join(root, config[0]);
-  mkdirSync(directory, { recursive: true });
-  const path = join(directory, `${recordId}.json`);
-  const descriptor = openSync(path, 'wx');
-  try { writeFileSync(descriptor, `${JSON.stringify(record, null, 2)}\n`); }
-  finally { closeSync(descriptor); }
-  return { path: `${config[0]}/${recordId}.json`, record };
 }

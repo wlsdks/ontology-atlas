@@ -7,7 +7,7 @@ import { test } from 'node:test';
 
 import { importGraph, staleFiles } from './run-main-copy.mjs';
 
-// Fixture repositories must never inherit a hook's GIT_DIR (lesson 390c0c51).
+// Fixture repositories must never inherit a hook's GIT_DIR.
 const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
 
 test('importGraph follows relative imports, including multi-line ones, and stops at built-ins', () => {

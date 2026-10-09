@@ -127,8 +127,8 @@ Because the batch is deterministic, two runs under the same conditions are **byt
 
 Procedure and pitfalls (real mouse input, headed runs, `work` not `gap`, a
 control group, and the on-screen Frame meter under Settings → Map background):
-the `/map-perf` skill (`.claude/skills/map-perf/SKILL.md` ·
-`.agents/skills/map-perf/SKILL.md`).
+the `/ui-proof` skill (`.claude/skills/ui-proof/SKILL.md` ·
+`.agents/skills/ui-proof/SKILL.md`).
 
 ## Final Gate
 

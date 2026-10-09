@@ -315,6 +315,42 @@ export function citationProblems(root = ROOT) {
   return problems;
 }
 
+export const STANDING_DATED_DOCS = [
+  'docs/BACKLOG-SNAPSHOT-2026-09-13.md',
+  'docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md',
+  'docs/benchmark/FINDINGS-2026-08-25.md',
+  'docs/benchmark/FINDINGS-2026-08-31-change-flow.md',
+  'docs/benchmark/FINDINGS-2026-08-31-metric-split.md',
+  'docs/benchmark/FINDINGS-2026-08-31-screening-grade.md',
+  'docs/benchmark/FINDINGS-2026-08-31-two-graders.md',
+  'docs/benchmark/FINDINGS-2026-08-31.md',
+  'docs/benchmark/FINDINGS-2026-09-02-review-marks.md',
+  'docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md',
+  'docs/benchmark/FINDINGS-2026-09-06-wiki-probe.md',
+  'docs/benchmark/FINDINGS-2026-09-10-wiki-retrieval.md',
+  'docs/benchmark/LIBRARY-ACP-MAINTENANCE-2026-09-11.md',
+  'docs/benchmark/LIBRARY-ACP-SOURCE-FIDELITY-2026-09-11.md',
+  'docs/benchmark/LIBRARY-COMMUNITY-2026-09-11.md',
+  'docs/benchmark/LIBRARY-LOCAL-WIKI-CONTEXT-2026-09-11.md',
+  'docs/benchmark/MCP-ONE-CLICK-2026-09-07.md',
+  'docs/benchmark/STRATA-2026-09-06.md',
+  'docs/benchmark/THREE-PROBE-2026-09-06.md',
+  'docs/plans/DESIGN-OVERHAUL-2026-07-25.md',
+];
+
+const DATED_NAME = /20\d{2}-?[01]\d-?[0-3]\d/;
+const DATED_HOMES = /^docs\/(?:specs|records|ontology|benchmark\/results)\//;
+
+export function datedDocProblems(trackedDocs) {
+  const problems = trackedDocs
+    .filter((file) => DATED_NAME.test(file) && !DATED_HOMES.test(file) && !STANDING_DATED_DOCS.includes(file))
+    .map((file) => ({ file, key: 'path', message: 'is a new dated document: a plan, audit or note belongs in a commit body or pull request, a spec in docs/specs/' }));
+  for (const file of STANDING_DATED_DOCS) {
+    if (!trackedDocs.includes(file)) problems.push({ file, key: 'path', message: 'is gone: remove it from STANDING_DATED_DOCS in scripts/check-doc-meta.mjs' });
+  }
+  return problems;
+}
+
 export function run(root = ROOT) {
   const files = listLivingDocs(root);
   const decisions = decisionIds(root);
@@ -334,6 +370,8 @@ export function run(root = ROOT) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const { checked, problems } = run();
+  const trackedDocs = execFileSync('git', ['ls-files', 'docs'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean);
+  problems.push(...datedDocProblems(trackedDocs));
   if (checked < MIN_CHECKED) {
     console.error(`[docs:meta] only ${checked} living documents found (expected at least ${MIN_CHECKED}); the walk is broken`);
     process.exit(1);
