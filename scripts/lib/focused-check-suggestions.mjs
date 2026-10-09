@@ -377,11 +377,13 @@ function insertBeforeCommand(suggestions, additions, command) {
   ];
 }
 
+const BEHAVIOUR_COMMAND = /\bplaywright test\b|^pnpm (?:-s )?(?:lint|typecheck)\b/;
+
 function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   const seen = new Set();
   const suggestions = [];
   for (const rule of rules) {
-    const candidates = /\bplaywright test\b/.test(rule.command) ? paths.filter((path) => !commentOnly.has(path)) : paths;
+    const candidates = BEHAVIOUR_COMMAND.test(rule.command) ? paths.filter((path) => !commentOnly.has(path)) : paths;
     const matchedPaths = candidates.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
     if (matchedPaths.length === 0 || seen.has(rule.command)) continue;
     seen.add(rule.command);

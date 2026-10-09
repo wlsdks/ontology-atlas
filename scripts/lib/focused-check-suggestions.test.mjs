@@ -2060,6 +2060,8 @@ describe('files changed only in comments', () => {
     assert.ok(tests(all).length >= 3);
     assert.deepEqual(tests(skipped), []);
     assert.ok(skipped.some((command) => command.includes('source-comment-bytes')), 'comment ratchets still run');
+    const config = suggestFocusedChecks(['eslint.config.mjs'], { commentOnlyPaths: ['eslint.config.mjs'] }).commands.map((item) => item.command);
+    assert.ok(!config.includes('pnpm lint'), 'a comment in the lint config does not rerun the whole lint');
     assert.ok(skipped.includes(SOURCE_LANGUAGE_COMMAND));
     assert.ok(skipped.some((command) => command.startsWith('pnpm exec eslint')));
   });
