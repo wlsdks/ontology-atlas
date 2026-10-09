@@ -243,7 +243,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     const SITES = [
       // The open-folder call to action lives on the to-do question, and the board lands on the
       // brief since it gained a first row naming its subject (2026-09-20).
-      { route: "/ko/ontology/insights/?tab=do-next", testId: "do-next-open-vault" },
+      { route: "/ko/ontology/insights/?tab=flow", testId: "flow-open-vault" },
       { route: "/ko/project/storefront/", testId: "project-detail-open-vault" },
       { route: "/ko/project/new/", testId: "project-write-disabled-open-folder" },
     ];
@@ -260,8 +260,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     });
 
     for (const site of SITES) {
-      // A site may already carry a query — the insights board needs `?tab=` to reach the question
-      // its call to action lives on — so the guide flag joins rather than starting a second query.
+      // Preserve the named section when disabling guided tours.
       const url = `${site.route}${site.route.includes("?") ? "&" : "?"}guides=off`;
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
@@ -340,12 +339,12 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     await context.addInitScript(() => {
       delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
     });
-    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=flow", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     // The assertion just below waits on its own — the fixed wait was waste (audit
       // 2026-08-17).
 
-    const cta = paintedTestId(page, "do-next-open-vault");
+    const cta = paintedTestId(page, "flow-open-vault");
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute("data-open-vault-cta", "download");
     // The destination must really open — zero buttons that go nowhere when pressed.
