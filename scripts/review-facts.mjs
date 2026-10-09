@@ -202,22 +202,29 @@ export function collectFacts({ base = 'origin/main', head = 'HEAD', cwd = proces
   return facts;
 }
 
+const SECTION_LIMITS = { security: 12, dependencies: 15, untested: 12, exports: 12, files: 20, comments: 8 };
+
+function capped(title, lines) {
+  const limit = SECTION_LIMITS[title];
+  if (lines.length <= limit) return lines;
+  return [...lines.slice(0, limit), `... ${lines.length - limit} more; use --json for all`];
+}
+
+function fileLine(f) {
+  const marks = f.marks.length ? ` ${f.marks.join(' ')}` : '';
+  return `${f.status} ${f.path} +${f.added}/-${f.removed} ${f.linesBefore}→${f.linesAfter}${marks}`;
+}
+
 export function formatFacts(facts) {
-  const out = [`review facts for ${facts.base}...${facts.head}`];
+  const counts = {};
+  for (const f of facts.files) counts[f.status] = (counts[f.status] ?? 0) + 1;
+  const tally = Object.entries(counts).map(([status, n]) => `${n} ${status}`).join(', ');
+  const out = [`review facts for ${facts.base}...${facts.head}: ${facts.files.length} files (${tally || 'none'})`];
   const section = (title, lines) => {
     if (!lines.length) return;
-    out.push('', `${title}:`, ...lines.map((line) => `  ${line}`));
+    out.push('', `${title}:`, ...capped(title, lines).map((line) => `  ${line}`));
   };
-  section('files', facts.files.map((f) => {
-    const marks = f.marks.length ? ` ${f.marks.join(' ')}` : '';
-    return `${f.status} ${f.path} +${f.added}/-${f.removed} ${f.linesBefore}→${f.linesAfter}${marks}`;
-  }));
-  section('exports', facts.exports.map((e) => {
-    const parts = [];
-    if (e.added.length) parts.push(`+ ${e.added.join(', ')}`);
-    if (e.removed.length) parts.push(`- ${e.removed.join(', ')}`);
-    return `${e.path}: ${parts.join('; ')}`;
-  }));
+  section('security', facts.security);
   section('dependencies', facts.dependencies.map((d) => {
     if (d.kind === 'unpinned-action') return `${d.path}: uses ${d.name} is not pinned to a 40-hex SHA`;
     if (d.kind === 'added') return `${d.path}: + ${d.field} ${d.name}@${d.to}`;
@@ -225,13 +232,16 @@ export function formatFacts(facts) {
     return `${d.path}: ~ ${d.field} ${d.name} ${d.from} -> ${d.to}`;
   }));
   section('untested', facts.untested.map((u) => `${u.path}: ${u.tests.join(', ')} not in the diff`));
+  section('exports', facts.exports.map((e) => {
+    const parts = [];
+    if (e.added.length) parts.push(`+ ${e.added.join(', ')}`);
+    if (e.removed.length) parts.push(`- ${e.removed.join(', ')}`);
+    return `${e.path}: ${parts.join('; ')}`;
+  }));
+  const kept = facts.files.filter((f) => f.status !== 'D');
+  const notable = [...kept.filter((f) => f.marks.length), ...kept.filter((f) => !f.marks.length)];
+  section('files', notable.map(fileLine));
   section('comments', facts.comments.map((c) => `${c.path}: ${c.removed} comment lines removed`));
-  section('security', facts.security);
-  const limit = 60;
-  if (out.length > limit) {
-    const hidden = out.length - (limit - 1);
-    return [...out.slice(0, limit - 1), `... ${hidden} more lines; use --json for all`].join('\n');
-  }
   return out.join('\n');
 }
 

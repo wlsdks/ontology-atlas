@@ -49,6 +49,11 @@ test('files lists status, counts, and marks a source file over 800 lines that gr
   const big = facts.files.find((f) => f.path === 'scripts/big.mjs');
   assert.deepEqual([big.status, big.linesBefore, big.linesAfter, big.marks], ['M', 1, 801, ['>800', 'grew']]);
   assert.match(formatFacts(facts), /M scripts\/big\.mjs \+800\/-0 1→801 >800 grew/);
+  const many = { ...facts, files: Array.from({ length: 300 }, (_, i) => ({ status: 'D', path: `docs/old-${i}.md`, added: 0, removed: 3, linesBefore: 3, linesAfter: 0, marks: [] })), security: ['src-tauri/src/lib.rs'] };
+  const text = formatFacts(many);
+  assert.match(text, /300 files \(300 D\)/);
+  assert.match(text, /security:\n  src-tauri\/src\/lib\.rs/, 'sections a reviewer must see survive a large diff');
+  assert.ok(text.split('\n').length < 100, 'the summary stays bounded');
 });
 
 test('exports reports added and removed names, including export-list aliases', () => {
