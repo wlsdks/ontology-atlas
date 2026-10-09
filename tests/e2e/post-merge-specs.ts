@@ -1,34 +1,17 @@
 /**
- * Specs deferred to the post-merge sweep — **the only list excluded from the PR
- * gate.**
+ * The specs excluded from the pull-request gate; they run in the daily and
+ * manual full runs, when CI's impact plan maps a change to them, and in an
+ * unfiltered local run. `pnpm pr:land` warns while the daily run is red.
  *
- * **The boundary** (2026-08-21, split approved by the owner). What stays in the PR is
- * **behavioural contracts and ratchets**: user journeys, the accessibility ratchet
- * (which caught two real defects that day), the contrast ratchet, degradation honesty.
- * What comes here is **measurement sweeps**: frame/motion/performance instruments that
- * collect wall-clock samples measured in seconds, and matrix measurements walking every
- * route × every width. That category ① spends tens of seconds per spec ② guards
- * prescriptions that rarely change ③ catches its defects identically on the first main
- * run after merge.
- *
- * **When it runs** — three triggers, not "later":
- *
- * ① Daily and manual full runs. ② Changes to browser infrastructure or other
- * full-plan inputs. ③ Locally, an unfiltered Playwright invocation. Main pushes
- * use their verified change range, so a prose-only merge does not pay for this sweep.
- *
- * **Discipline**
- *
- * - **A new spec defaults to the PR gate.** A spec not on this list runs in smoke, so
- *   the direction of a mistake is "the PR got a little slower" rather than "the gate
- *   disappeared".
- * - Whether the listed files exist, and whether a spec the workflow invokes by filename
- *   has been mixed in here, is guarded by
- *   `tests/contract/e2e-suite-split.contract.test.ts` — renaming a spec breaks that
- *   contract first.
+ * The pull-request gate keeps user journeys and behaviour, security and
+ * privacy boundaries, the accessibility and contrast ratchets, and one smoke
+ * per screen. Measurement moves here: frame, motion and performance samples,
+ * scale, pixel placement and geometry, and width, locale and text-size sweeps.
+ * A new spec defaults to the gate; `e2e-suite-split.contract.test.ts` keeps
+ * this list, the Playwright projects and the workflow in step.
  */
 export const POST_MERGE_SPECS = [
-  // ── Frame, motion, and performance instruments — wall-clock sampling (seconds to 40s per spec) ──
+  // Frame, motion and performance instruments sampling wall-clock time
   "camera-transition.spec.ts",
   "datasheet-hover-map-brush.spec.ts",
   "gateway-idle-sleep.spec.ts",
@@ -42,13 +25,11 @@ export const POST_MERGE_SPECS = [
   "nav-yield-map-frames.spec.ts",
   "offscreen-node-census.spec.ts",
   "route-cycle-leak.spec.ts",
-  // ── Timing-paced sweeps (2026-09-27): an ease-out curve, a settle deadline, a press budget
-  // and an 81-width sweep whose verdict depends on how fast the runner paints ──
   "map-3d-lit-strata.spec.ts",
   "map-hex-board.spec.ts",
   "map-toolbar-no-overlap.spec.ts",
   "route-transition-input.spec.ts",
-  // ── Every route × every width matrix — the layout and style drift sweep ──
+  // Every route at every width
   "cursor-affordance.spec.ts",
   "focus-ring-contrast.spec.ts",
   "hover-contrast.spec.ts",
@@ -58,4 +39,100 @@ export const POST_MERGE_SPECS = [
   "screen-hierarchy.spec.ts",
   "scroll-end-gap.spec.ts",
   "surface-vocabulary-ratchet.spec.ts",
+  // Motion curves and frame samples on shared building blocks
+  "motion-checkbox.spec.ts",
+  "motion-disclosure.spec.ts",
+  "motion-press.spec.ts",
+  "motion-sampler.spec.ts",
+  "motion-selection-indicator.spec.ts",
+  "motion-shared-element.spec.ts",
+  "motion-stagger.spec.ts",
+  "motion-surfaces.spec.ts",
+  "motion-work-status.spec.ts",
+  "acp-working-shimmer.spec.ts",
+  "insights-motion-feedback.spec.ts",
+  "map-view-motion.spec.ts",
+  "map-relation-reveal.spec.ts",
+  "map-relation-signal.spec.ts",
+  "map-layout-morph.spec.ts",
+  "map-flat-dial-motion.spec.ts",
+  // Download page animation, frame budgets and layout sweeps
+  "download-conduction.spec.ts",
+  "download-gateway-grid.spec.ts",
+  "download-hero-echo.spec.ts",
+  "download-hero-release.spec.ts",
+  "download-scroll-budget.spec.ts",
+  "download-still.spec.ts",
+  "download-visibility-gate.spec.ts",
+  "gateway-doc-column.spec.ts",
+  "gateway-reading-reach.spec.ts",
+  // Performance, memory release and 2,000–10,000-concept folders
+  "vault-switch-release.spec.ts",
+  "library-renderer-disposal.spec.ts",
+  "map-3d-strata-lod.spec.ts",
+  "map-flat-dial-polish.spec.ts",
+  "library-graph-islands.spec.ts",
+  "map-open-folder-stays-named.spec.ts",
+  // Hex board placement and glide
+  "map-hex-board-room.spec.ts",
+  "map-hex-board-rest.spec.ts",
+  "map-hex-relief.spec.ts",
+  "map-hex-routes-free-area.spec.ts",
+  // 3D view pixel and ink placement
+  "map-3d-relation-captions.spec.ts",
+  "map-3d-relation-ink.spec.ts",
+  "map-3d-strata-drawing.spec.ts",
+  "map-strata-tier-scale.spec.ts",
+  // Map free-area and label placement
+  "map-overview-centre.spec.ts",
+  "map-constellation-popover-bounds.spec.ts",
+  "map-territories-view.spec.ts",
+  "map-toolbar-balance.spec.ts",
+  "map-path-pick-frame.spec.ts",
+  "map-path-lens-frame.spec.ts",
+  "map-project-receipt-arrival.spec.ts",
+  "map-inspector-header-chips.spec.ts",
+  "map-panel-text-edges.spec.ts",
+  "map-no-label-under-the-panel.spec.ts",
+  "map-spotlight-label-clearance.spec.ts",
+  "map-edge-hover-card.spec.ts",
+  "map-label-collision.spec.ts",
+  "map-floor-labels.spec.ts",
+  "map-ego-dim-labels.spec.ts",
+  "toast-free-lane.spec.ts",
+  // Width, locale and text-size sweeps
+  "cjk-locale-sweep.spec.ts",
+  "cjk-font-fallback.spec.ts",
+  "hangul-tracking.spec.ts",
+  "settings-text-size.spec.ts",
+  "text-zoom-ramp.spec.ts",
+  "prose-measure-calibration.spec.ts",
+  "agent-footer-running-turn.spec.ts",
+  "agent-composer-footer-width.spec.ts",
+  "gray-area/text-scale.spec.ts",
+  "gray-area/panel-layout.spec.ts",
+  // Layout and visual geometry of single screens
+  "route-arrival-paint.spec.ts",
+  "library-interaction-placement.spec.ts",
+  "library-answer-comparison-rows.spec.ts",
+  "library-question-desk.spec.ts",
+  "library-graph-picture.spec.ts",
+  "library-source-pane-end.spec.ts",
+  "architecture-role-ledger.spec.ts",
+  "project-hero-control-row.spec.ts",
+  "git-workbench-stacked-floor.spec.ts",
+  "control-row-geometry.spec.ts",
+  "chat-answer-overflow-edge.spec.ts",
+  "insights-previews.spec.ts",
+  "agent-mascot-presence.spec.ts",
+  // Placement halves of map specs whose behaviour moved to map-canvas-focus and map-escape-from-chrome
+  "map-canvas-interaction-placement.spec.ts",
+  "map-toolbar-popovers.spec.ts",
+  // Geometry halves split from specs whose behaviour stays on the gate
+  "app-chrome-layout.spec.ts",
+  "harness-auto-insights-layout.spec.ts",
+  "harness-tab-layout.spec.ts",
+  "ix-projects-agents-git-layout.spec.ts",
+  "map-flat-dial-layout.spec.ts",
+  "settings-reading-layout.spec.ts",
 ] as const;

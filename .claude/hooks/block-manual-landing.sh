@@ -101,7 +101,7 @@ RULE=""
 if echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)' \
   || echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+api([[:space:]]+[^;|&]*)?pulls/[0-9]+/merge([[:space:]]|$|[?])'; then
   RULE="gh-pr-merge"
-  REASON="\`gh pr merge\` does not wait for the agent already landing, so two of them merge into the same window and both pay another CI round. Run \`pnpm pr:land <number>\` instead: it takes the shared landing lock, waits out the landing ahead, waits for the required checks, merges, deletes the branch and prunes."
+  REASON="\`gh pr merge\` does not wait for a merge already in flight, so two merges share one window and both pay another CI round. Run \`pnpm pr:land <number>\` instead: it takes the shared merge lock, waits for the merge ahead and the required checks, merges, deletes the branch and prunes."
 
 # ② gh pr update-branch — an unconditional CI round the lander only pays when it must.
 elif echo "$MATCH" | grep -Eq -- '(^|[^[:alnum:]_-])gh[[:space:]]+pr[[:space:]]+update-branch([[:space:]]|$)'; then
@@ -122,7 +122,7 @@ if [[ -n "$REASON" ]]; then
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "landing guard: ${REASON}\n\nBasis: .claude/rules/git.md, section \"Landing a pull request\".\n\nIf the user explicitly asked for this, have them run it themselves in the terminal (\`! <command>\`), or disable .claude/hooks/block-manual-landing.sh for that one run."
+    "permissionDecisionReason": "merge guard: ${REASON}\n\nBasis: .claude/rules/git.md, section \"Merging a pull request\".\n\nIf the user explicitly asked for this, have them run it themselves in the terminal (\`! <command>\`), or disable .claude/hooks/block-manual-landing.sh for that one run."
   }
 }
 JSON

@@ -19,6 +19,7 @@ import {
 
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
 const DEAD_CODE_COMMAND = 'pnpm knip';
+const COMMENT_REFS_COMMAND = 'pnpm docs:comment-refs';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -42,6 +43,7 @@ function domainCommands(result) {
   return commandNames(result).filter(
     (command) =>
       command !== SOURCE_LANGUAGE_COMMAND &&
+      command !== COMMENT_REFS_COMMAND &&
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
@@ -53,11 +55,11 @@ function domainCommands(result) {
 describe('focused check suggestions', () => {
   it('routes shared skill procedures and recording guidance to their existing checks', () => {
     const subjects = [
-      ['.agents/skills/design-build/workflow.md', 'pnpm test:design-gates'],
-      ['.agents/skills/motion-verify/workflow.md', 'pnpm test:design-gates'],
+      ['.agents/skills/ui-build/workflow.md', 'pnpm test:design-gates'],
+      ['.agents/skills/ui-proof/guides/motion-verify.md', 'pnpm test:design-gates'],
       ['docs/engineering/motion-recording.md', 'pnpm test:design-gates'],
-      ['.agents/skills/po-pass/workflow.md', 'pnpm test:po'],
-      ['.agents/skills/po-pass/workflow.md', 'pnpm po:pilot -- --check'],
+      ['.agents/skills/product-check/workflow.md', 'pnpm test:po'],
+      ['.agents/skills/product-check/workflow.md', 'pnpm po:pilot -- --check'],
       ['.agents/skills/ontology-bootstrap/workflow.md', 'pnpm test:dogfood:script-refs'],
     ];
     assert.ok(subjects.length > 0);
@@ -159,6 +161,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/markdown-language/inventory.test.mjs',
     ]);
     assert.deepEqual(domainCommands(gate), [
+      'pnpm exec node --test scripts/quality/markdown-language/inventory.test.mjs',
       'pnpm docs:language',
       'pnpm test:docs:language',
     ]);
@@ -183,7 +186,8 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+      'pnpm exec node --test scripts/quality/source-language/inventory.test.mjs',
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
       'pnpm design:ontology',
@@ -193,11 +197,22 @@ describe('focused check suggestions', () => {
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
   });
 
+  it('checks comment citations when source or Markdown changes, once', () => {
+    const CASES = [
+      [['src/views/architecture/model/harness-anatomy.ts', 'docs/FEATURES.md'], 1],
+      [['docs/FEATURES.md'], 1],
+      [['messages/ko.json'], 0],
+    ];
+    for (const [paths, expected] of CASES) {
+      assert.equal(commandNames(suggestFocusedChecks(paths)).filter((command) => command === COMMENT_REFS_COMMAND).length, expected, paths.join(', '));
+    }
+  });
+
   it('suggests the test-source ratchets once for every test source and never for other code', () => {
     const tests = [
       'src/shared/lib/cn.test.ts',
       'src/widgets/example/ui/Example.test.tsx',
-      'tests/e2e/page-frame.spec.ts',
+      'tests/e2e/rail-destinations.spec.ts',
       'tests/contract/page-frame.contract.test.ts',
       'scripts/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',
@@ -777,6 +792,7 @@ describe('focused check suggestions', () => {
     // carries the `permissions.deny` rules the secret-read guard derives from
     // `.gitignore`, so all three gates apply.
     assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test scripts/claude-hooks.test.mjs',
       'pnpm test:claude:hooks',
       'pnpm agents:check',
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
@@ -856,6 +872,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
+      'pnpm exec node --test scripts/verify-macos-install-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/redact-command.test.mjs',
       'pnpm exec eslint --max-warnings 0 src/shared/lib/tauri-vault-fs.ts src/shared/lib/tauri-vault-fs.test.ts ' +
@@ -1307,7 +1324,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
       'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
-      // A spec may not add a fixed sleep (2026-09-26, lesson cb5fbfaf).
+      // A spec may not add a fixed sleep.
       'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
       'pnpm typecheck',
     ]);
@@ -1350,6 +1367,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test scripts/benchmark-change-flow.test.mjs',
       'pnpm benchmark --dry-run',
       'pnpm benchmark:change-flow --dry-run',
       'pnpm benchmark:scale --dry-run',
@@ -1574,8 +1592,8 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
-      'pnpm test:ci:impact',
       'pnpm exec node --test scripts/suggest-focused-checks.test.mjs',
+      'pnpm test:ci:impact',
       'pnpm test:checks:changed',
     ]);
   });
@@ -1616,8 +1634,8 @@ describe('focused check suggestions', () => {
       'tests/contract/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
       'docs/PO-PILOT.md',
-      '.claude/skills/po-pass/SKILL.md',
-      '.agents/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
       '.claude/agents/reviewer.md',
       '.agents/agents/reviewer.md',
       'AGENTS.md',
@@ -1643,8 +1661,8 @@ describe('focused check suggestions', () => {
       'tests/contract/design-spec-ledger.contract.test.ts',
       'tests/contract/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
-      '.claude/skills/design-build/SKILL.md',
-      '.agents/skills/motion-verify/SKILL.md',
+      '.claude/skills/ui-build/SKILL.md',
+      '.agents/skills/ui-proof/SKILL.md',
       '.claude/agents/design-guardian.md',
       '.agents/agents/reviewer.md',
       '.claude/rules/design.md',
@@ -1817,9 +1835,9 @@ describe('agent-file surface', () => {
       'AGENTS.md',
       'src/AGENTS.md',
       '.claude/agents/reviewer.md',
-      '.claude/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
       '.claude/settings.json',
-      '.agents/skills/po-pass/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
       '.agents/agents/reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
@@ -1875,8 +1893,8 @@ describe('agent-file surface', () => {
       '.claude/rules/forbidden.md',
       '.claude/settings.json',
       '.gitignore',
-      '.claude/skills/po-pass/SKILL.md',
-      '.agents/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes(contract),
@@ -2027,5 +2045,37 @@ describe('message catalogue related-tests rule', () => {
       relatedMessagesCommand(),
       'pnpm exec vitest related --run messages/en.json messages/ja.json messages/ko.json messages/zh.json --passWithNoTests',
     );
+  });
+});
+
+describe('node tests for a changed script', () => {
+  const commandsFor = (paths) => suggestFocusedChecks(paths).commands.map((item) => item.command);
+
+  it('suggests the tests that import the script by its resolved path, not by its file name', () => {
+    const markdown = commandsFor(['scripts/quality/markdown-language/inventory.mjs']);
+    assert.ok(markdown.includes('pnpm exec node --test scripts/quality/markdown-language/inventory.test.mjs'));
+    assert.ok(!markdown.includes('pnpm exec node --test scripts/quality/source-language/inventory.test.mjs'));
+    assert.ok(commandsFor(['scripts/lib/ui-audit-checks.mjs']).includes('pnpm exec node --test scripts/ui-audit.test.mjs'));
+  });
+
+  it('lists a command once even when two rules reach it', () => {
+    const commands = commandsFor(['scripts/lib/focused-check-suggestions.mjs', 'scripts/suggest-focused-checks.mjs']);
+    assert.equal(commands.length, new Set(commands).size);
+  });
+});
+
+describe('files changed only in comments', () => {
+  it('keep their lint and language checks but run none of their tests', () => {
+    const paths = ['tests/e2e/map-viewport-reframe.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/review-facts.mjs'];
+    const all = suggestFocusedChecks(paths).commands.map((item) => item.command);
+    const skipped = suggestFocusedChecks(paths, { commentOnlyPaths: paths }).commands.map((item) => item.command);
+    const tests = (commands) => commands.filter((command) => /playwright test|vitest related|node --test/.test(command));
+    assert.ok(tests(all).length >= 3);
+    assert.deepEqual(tests(skipped), []);
+    assert.ok(skipped.some((command) => command.includes('source-comment-bytes')), 'comment ratchets still run');
+    const config = suggestFocusedChecks(['eslint.config.mjs'], { commentOnlyPaths: ['eslint.config.mjs'] }).commands.map((item) => item.command);
+    assert.ok(!config.includes('pnpm lint'), 'a comment in the lint config does not rerun the whole lint');
+    assert.ok(skipped.includes(SOURCE_LANGUAGE_COMMAND));
+    assert.ok(skipped.some((command) => command.startsWith('pnpm exec eslint')));
   });
 });

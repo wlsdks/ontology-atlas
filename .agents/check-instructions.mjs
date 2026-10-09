@@ -45,6 +45,11 @@ export function inspectTree(root, tree) {
         if (field('model') || field('tools')) failures.push(`${file}: inherit the host model and capabilities; do not declare host-specific model/tools aliases`);
         if (!['read-only', 'workspace-write'].includes(field('access'))) failures.push(`${file}: missing or invalid access boundary`);
       }
+      if (tree === '.claude' && agents.includes(file)) {
+        if (!field('tools')) failures.push(`${file}: missing tools allowlist`);
+        if (!['haiku', 'sonnet', 'opus', 'fable'].includes(field('model'))) failures.push(`${file}: missing or invalid model (haiku, sonnet, opus or fable)`);
+        if (!/^[1-9]\d*$/.test(field('maxTurns') ?? '')) failures.push(`${file}: missing or invalid maxTurns`);
+      }
     }
     for (const [, target] of content.matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {
       if (/^(?:[a-z][a-z\d+.-]*:|#)/i.test(target)) continue;

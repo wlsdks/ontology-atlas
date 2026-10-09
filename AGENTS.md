@@ -38,32 +38,33 @@ Finish with `pnpm checks:changed -- --run` and complete every recommendation.
 Stop after success unless a new edit, failure, or named risk requires more; do
 not add broad suites, repeat passing checks, or write tests that pin prose.
 `.claude/rules/testing.md` owns escalation. Report the outcome first, then the
-evidence and remaining limits. Never claim unperformed proof. Before finishing,
-record a mistake, wasted CI round, or costly tool pattern with `/harness-retro`.
+evidence and remaining limits. Never claim unperformed proof.
+
+A fact the source can answer comes from a script: run or extend the `pnpm`
+command (README's command table) and read its output instead of re-deriving it.
+Write no plans, retrospectives, handoffs or notes into the repository or
+`~/scratch`; reasons go in commit bodies and pull requests, working files in the
+session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
 
 ## Choose the relevant workflow
 
 | Task | Entry and required scope |
 |---|---|
 | Mechanical maintenance | Technical checks only; skip product routing |
-| Product behavior, UX, public contract, or authority change | `/po-pass`; one `reviewer` only when it returns review or the owner asks |
-| UI, interaction, topology, responsive, motion, or macOS workbench | After the PO pass, `pnpm design:route`; `/design-build` implements the selected shape |
-| New structural design choice | `/design-directions` only when routed without a valid owner selection; one `reviewer` when the route says review |
-| Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, `/user-walkthrough` only at the requested or routed scope |
-| Design-system enforcement | `/design-system-audit` |
+| Product behavior, UX, public contract, or authority change | `/product-check`; one `reviewer` only when it returns review or the owner asks |
+| UI, interaction, topology, responsive, motion, or macOS workbench | After the product check, `/ui-build` (it runs `pnpm design:route`); `/ui-proof` runs the proof steps the route returns |
 | Any automated gate change | `/gate-probe` |
 | Initial ontology or explicit rebuild | `/ontology-bootstrap`; general code analysis alone does not request construction |
 | Meaningful code change in an existing vault | `/ontology-sync` |
-| Requested extraction from prose or wiki | `/ontology-extract` or `/ontology-absorb-confluence` with the user's registered third-party MCP |
+| Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
-| Authorized parallel work | `/parallel-brief` before delegation |
-| Two or more ready branches | `/land-bundle`; a single branch lands with `pnpm pr:land` |
-| Reviewing open harness lessons | `/harness-retro` review mode |
+| Authorized parallel work | `/delegate` |
+| Returned or ready branches | `/merge`; your own branch with no review due merges with `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. On Opus, plan, review, and judge at `xhigh`; build a decided slice at
-`low`. Disclose shared-context reviews. Subagents do not stash,
+own work. Plan, review and judge on the strongest model; build a decided slice
+and gather facts on cheaper ones. Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
 Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only
@@ -108,7 +109,7 @@ Project containment is implicit; do not add `project:`. Vault writes go through
 vault rename, and write success is not meaning acceptance. Typos, comments,
 isolated style, lint, and fixtures without meaning changes skip the sync.
 
-## Documentation, landing, and instruction integrity
+## Documentation, merging, and instruction integrity
 
 Keep the owner document current: public behavior in `README.md` and
 `docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
@@ -118,7 +119,7 @@ Never edit frozen history (`docs/records/README.md`); never edit or stage
 generated `src/entities/docs-vault/data/` or `public/docs-vault/`, which
 `pnpm docs-vault:build` writes.
 
-Use English conventional commit subjects. Open pull requests as drafts and land
+Use English conventional commit subjects. Open pull requests as drafts and merge
 only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 `git reset --hard`, or `git push --force` without explicit user authority.
 Publishing needs an explicit request and `npm pack --dry-run` first.

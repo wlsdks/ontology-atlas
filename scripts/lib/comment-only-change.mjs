@@ -1,16 +1,21 @@
-import { extractCommentTokens } from '../quality/source-language/inventory.mjs';
+import ts from 'typescript';
 
-function codeWithoutComments(path, source) {
-  let code = '';
-  let cursor = 0;
-  for (const { start, end } of extractCommentTokens(path, source)) {
-    code += `${source.slice(cursor, start)} `;
-    cursor = end;
-  }
-  code += source.slice(cursor);
-  return code.replace(/\s+/g, ' ').trim();
+const KINDS = { '.ts': ts.ScriptKind.TS, '.tsx': ts.ScriptKind.TSX, '.mts': ts.ScriptKind.TS, '.js': ts.ScriptKind.JS, '.jsx': ts.ScriptKind.JSX, '.mjs': ts.ScriptKind.JS, '.cjs': ts.ScriptKind.JS };
+const printer = ts.createPrinter({ removeComments: true });
+
+export function supportsCommentOnlyCheck(path) {
+  return Object.hasOwn(KINDS, path.slice(path.lastIndexOf('.')));
 }
 
-export function isCommentOnlyChange(path, before, after) {
-  return codeWithoutComments(path, before) === codeWithoutComments(path, after);
+function codeOf(text, path) {
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, false, KINDS[path.slice(path.lastIndexOf('.'))]);
+  if (source.parseDiagnostics?.length) return null;
+  return printer.printFile(source);
+}
+
+export function isCommentOnlyChange(before, after, path) {
+  if (typeof before !== 'string' || typeof after !== 'string' || !supportsCommentOnlyCheck(path)) return false;
+  const a = codeOf(before, path);
+  const b = codeOf(after, path);
+  return a !== null && a === b;
 }

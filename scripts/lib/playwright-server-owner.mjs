@@ -4,7 +4,7 @@
  * `reuseExistingServer` accepts any process listening on the port. Locally that
  * has been a dev server from another worktree (2026-09-19) and, on 2026-09-26,
  * an unrelated project's server that had held :3100 for four days, so a spec
- * measured someone else's code and reported it as ours (lesson 823b9af4). The
+ * measured someone else's code and reported it as ours. The
  * config asks this module first and refuses a server whose working directory is
  * outside this checkout, naming it and the fix.
  */

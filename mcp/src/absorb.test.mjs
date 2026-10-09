@@ -206,7 +206,7 @@ describe('buildSlimPointer', () => {
 
 // An original, structurally typical wiki export (not a copy of a real page),
 // pinning the dry-run candidate set an absorption session sees before any
-// write (`/ontology-absorb-confluence`).
+// write (`/ontology-extract`).
 describe('buildAbsorptionPlan — confluence-style export fixture', () => {
   const fixturePath = join(__dirname, '..', '..', 'tests', 'fixtures', 'absorb-confluence-sample.md');
   const raw = readFileSync(fixturePath, 'utf-8');

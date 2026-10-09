@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { checkDoc, citationProblems, contractBumpProblems, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
+import { checkDoc, citationProblems, contractBumpProblems, datedDocProblems, listLivingDocs, routeExists, run, STANDING_DATED_DOCS } from './check-doc-meta.mjs';
 import { createDoc } from './new-doc.mjs';
 import { formerPaths } from './doc-history.mjs';
 import { DOC_TYPES } from './lib/doc-types.mjs';
@@ -202,4 +202,11 @@ test('instruction files cite no retired document; a live citation of a supersede
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('a new dated document outside specs, records, the vault and benchmark output is a problem', () => {
+  const standing = [...STANDING_DATED_DOCS];
+  assert.deepEqual(datedDocProblems([...standing, 'docs/specs/2026-10-09-x.md', 'docs/benchmark/results/2026-10-09-run.md', 'docs/README.md']), []);
+  assert.deepEqual(datedDocProblems([...standing, 'docs/plans/ROLLOUT-2026-10-09.md']).map((problem) => problem.file), ['docs/plans/ROLLOUT-2026-10-09.md']);
+  assert.deepEqual(datedDocProblems(standing.slice(1)).map((problem) => problem.file), [standing[0]]);
 });
