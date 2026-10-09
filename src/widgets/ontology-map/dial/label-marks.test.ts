@@ -166,6 +166,13 @@ describe("buildLabelMarks", () => {
     }
   });
 
+  it("names a domain at the floor beside or above it, never inside the floor band", () => {
+    const freeRect = { minX: -1000, minY: -1000, maxX: 1000, maxY: 330 };
+    const { all } = run({ freeRect });
+    expect(all.some((t) => t.id === "d2")).toBe(true);
+    for (const t of all) expect(t.box.maxY).toBeLessThanOrEqual(freeRect.maxY);
+  });
+
   it("adds the stale count only when evidence is measured", () => {
     const evidence = { measured: true, stateOf: () => "stale" as const, staleByDomain: new Map([["d1", 2]]) };
     const units = run({ evidence }).texts.filter((t) => t.role === "units");
