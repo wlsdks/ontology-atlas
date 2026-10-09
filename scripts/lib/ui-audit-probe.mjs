@@ -85,11 +85,12 @@ function uiAuditProbe({ rampNames, interactive }) {
     }
   }
   const overlap = [];
-  for (let i = 0; i < controls.length; i += 1) {
-    const a = controls[i];
+  const surfaces = controls.filter((el) => el.tagName !== "CANVAS");
+  for (let i = 0; i < surfaces.length; i += 1) {
+    const a = surfaces[i];
     const ra = a.getBoundingClientRect();
-    for (let j = i + 1; j < controls.length; j += 1) {
-      const b = controls[j];
+    for (let j = i + 1; j < surfaces.length; j += 1) {
+      const b = surfaces[j];
       if (a.contains(b) || b.contains(a)) continue;
       const rb = b.getBoundingClientRect();
       const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);

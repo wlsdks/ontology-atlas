@@ -20,6 +20,11 @@ const FIXTURE = `<!doctype html><html><head><style>
   .box { height: 60px; overflow-y: auto; }
   .box > div { height: 200px; background: #fafafa; }
   #roomy { padding-bottom: 16px; }
+  .lap, .map { position: relative; }
+  #lap-b, #tool { position: absolute; top: 0; }
+  #lap-b { left: 30px; }
+  #tool { left: 0; }
+  .map canvas { display: block; width: 300px; height: 80px; }
 </style></head><body>
   <div id="wide"></div>
   <div id="fits"></div>
@@ -32,6 +37,8 @@ const FIXTURE = `<!doctype html><html><head><style>
   <div class="row"><div class="even"></div><div class="even"></div><div class="even"></div></div>
   <div class="box" id="tight"><div></div></div>
   <div class="box" id="roomy"><div></div></div>
+  <div class="lap"><button id="lap-a" aria-label="a"></button><button id="lap-b" aria-label="b"></button></div>
+  <div class="map"><canvas tabindex="0" width="300" height="80"></canvas><button id="tool" aria-label="tool"></button></div>
 </body></html>`;
 
 const RAMP_NAMES = { text: ["--text-body"], leading: ["--leading-body"], radius: ["--radius-card"], shadow: [] };
@@ -45,7 +52,7 @@ test("ui-audit probe finds each planted defect and none of its clean counterpart
 
   expect(selectors("overflow")).toEqual(["document", "body > div#wide"]);
   expect(selectors("occluded")).toEqual(["body > div.stage > button#covered"]);
-  expect(findings.overlap).toEqual([]);
+  expect(selectors("overlap")).toEqual(["body > div.lap > button#lap-a"]);
   expect(selectors("target")).toEqual(["body > div.stage > button#tiny"]);
   expect(findings["off-ramp"].map((f: { selector: string; property: string }) => `${f.selector} ${f.property}`)).toEqual([
     "body > p#offramp font-size",
