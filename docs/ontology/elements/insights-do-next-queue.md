@@ -10,15 +10,15 @@ path: src/views/ontology-insights/lib/do-next-queue.ts
 created_by: "agent:claude-code"
 ---
 
-Turns the board's separate findings into one ordered list of what to do next, so a person is not left comparing several lists to decide where to start.
+Retained legacy ordering and grouping of findings into candidate work for the former Insights repair board.
 
 ## Includes
-- Ordering and grouping findings from the other checks into a single queue of work.
-- Four advisory sections for the meaning findings nobody can close by filling in a field: no stated boundary, no stated unknown, an exclusion that only reports what was not read, and a file outside its kind's folder.
+- Turning existing findings into ordered repair rows and advisory groups.
+- Templates that name a proposed next action without performing it.
 
 ## Excludes
-- Producing the findings themselves.
-- Performing any repair; the queue names work, it does not do it.
+- Producing source evidence, performing a repair, or accepting meaning.
+- Ordering the current Analysis relationship comparisons.
 
 ## Uncertainty
-- Read the four section keys and their counting (`src/views/ontology-insights/lib/do-next-groups.ts:36-38` and `:59-61`). The file remains witnessed as an import of the insights page and its weighting was still not read, so whether this order matches the maintenance plan the agent surface returns has not been compared.
+- Re-read in the 2026-10-10 retirement. The current Analysis entry does not import this queue. Legacy helper and test consumers remain; agreement with the latest agent maintenance plan was not requalified and no concept deletion was performed.

@@ -15,7 +15,7 @@ The surfaces where a person inspects, challenges, corrects, accepts, or rejects 
 
 ## Includes
 - The canvas map of the graph and the editing a person does directly on it.
-- The insights board and its measured questions about gaps and what to do next.
+- Analysis of declared product relationships, their exact documents, recorded implementation, and evidence that still needs review.
 - Selected-context investigation of code references, source changes, and recorded uncertainties, with the person choosing which local evidence to read and whether to prepare a conversation.
 - The document library, the vault's own Git history, the review checkpoint a proposed meaning change waits at, and choosing which folder is open.
 
@@ -25,4 +25,5 @@ The surfaces where a person inspects, challenges, corrects, accepts, or rejects 
 - Code review, merge, and deployment, which stay separate decisions from accepting a meaning.
 
 ## Uncertainty
-- Read from the `src/views/`, `src/widgets/` and `src/features/` layout and the surface table in section 0 of `docs/FEATURES.md`. Nothing was rendered or exercised in a running app during this scan, and the stated web-versus-desktop differences were taken from that table rather than measured.
+- The initial construction read from the `src/views/`, `src/widgets/` and `src/features/` layout and the surface table in section 0 of `docs/FEATURES.md`. Nothing was rendered or exercised in a running app during this scan, and the stated web-versus-desktop differences were taken from that table rather than measured.
+- The bounded 2026-10-10 Analysis sync read its current entry, model, diagram, and document properties and inspected the browser journey. It does not repeat installed-app proof or semantic qualification of the other workbench capabilities.

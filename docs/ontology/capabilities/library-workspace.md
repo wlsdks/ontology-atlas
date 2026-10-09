@@ -21,6 +21,7 @@ The local workspace for gathering originals, writing and checking Wiki pages tha
 - An explicit read-only ACP investigation that rereads originals and returns an unreviewed report: answer, source evidence, disagreements, and unknowns. A new question or changed inventoried listing invalidates the prior report. Unexpected writes retain the permission review. Exact runtime retries preserve the original question, read-only authority and strict report filing context; invalidated replies cannot become ordinary fileable answers.
 - Local Markdown download and document-only A4 Print/PDF. Exported external links/images are inert; unsupported unsafe syntax remains literal text. File as Wiki answer is a separate explicit action with report structure, current-source, citation, and Wiki write guards.
 - Ontology navigation containing Concept documents and Concept sets. Existing set links, immutable membership IDs, unresolved members, and unsaved document drafts survive the view change.
+- Concept document properties expose stored canonical neighbour fields, exact reference tokens, and actual relationship notes. Resolved references open the existing document; unresolved references and legacy element code paths remain visible without fabricated concept links.
 - Optional native Jev advice for a selected current Wiki claim and cited passage, after exact-transfer consent. It is supplementary to the local inquiry.
 
 ## Excludes
@@ -36,3 +37,5 @@ The local workspace for gathering originals, writing and checking Wiki pages tha
 ## Uncertainty
 - Re-read and exercised in the installed macOS app on 2026-09-28 with two synthetic Wiki pages and two originals: local search, real Codex source rereading/report arrival, exact source navigation, Markdown export, and earlier A4 PDF/file-as-Wiki proof. PR #2059 carries native captures and motion evidence. This replaces the earlier unrun-workspace note.
 - These checks establish the observed fixture flow, not the correctness of arbitrary generated answers, unsupported document extraction, large-corpus behavior, or accepted ontology meaning. Report and Jev results remain advisory until a person reviews their evidence.
+
+- The 2026-10-10 Analysis continuation exposed a missing canonical-field inventory in the document reader. The bounded correction was inspected in a browser: the declaring dependency is visible, its target resolves, and return keeps the original selected claim. This does not requalify the other Library abilities or introduce an additional editor or write authority.
