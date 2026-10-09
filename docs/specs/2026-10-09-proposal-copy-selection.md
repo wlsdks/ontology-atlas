@@ -21,7 +21,7 @@ Before-state source references below are pinned to `dcfbe2753` (the implementati
 - Apply rejects same-file selection gaps; clipboard export does not (`src/features/vault-agent/model/proposal-applier.ts:78-112`, `:145-162`).
 - The card sets Copied immediately after a void callback; the hook never awaits clipboard (`src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx:72`, `:219-235`; `src/widgets/vault-agent-panel/model/use-vault-agent.ts:500-503`).
 - Title counts edits; volume counts file occurrences and Set membership; expanded diff also uses Sets, omitting repeated-line deletion/reordering (`AgentProposalCard.tsx:77-79`, `:109-115`, `:332-355`; `proposal-applier.ts:166-185`).
-- Existing 22 tests passed despite controlled failures (`docs/records/lessons/2026-10-09-unchecked-chained-copy-734e8eab-cf49-4345-b495-01708cedf67a.md:8-14`).
+- Existing 22 tests passed despite controlled failures.
 - Vault boundaries are consented document writes, recovery, and meaning proposals (`docs/ontology/elements/agent-proposal-applier.md:13-23`; `docs/ontology/capabilities/vault-conversation-agent.md:16-28`).
 - App-only conversation/terminal packet remain the standing shape (`docs/DECISIONS.md:4613-4619`; `src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx:538-545`). Installed clipboard behavior and whole-vault scale remain unknown.
 

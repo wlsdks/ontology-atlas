@@ -30,7 +30,7 @@ import { describe, expect, it } from "vitest";
  * product is structurally blocked"**.
  *
  * ⚠️ Frame measurement (the real alpha curve on screen) belongs to
- * design-motion's `/motion-verify` — a verdict without a recording is invalid.
+ * design-motion's `/ui-proof` — a verdict without a recording is invalid.
  * This test locks only the **structural premise** that verdict needs.
  */
 

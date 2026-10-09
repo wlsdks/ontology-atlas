@@ -3,7 +3,8 @@ name: product-planner
 description: Writes the product spec for a one-way product change at xhigh effort, after the PO pass decides to build and before its one review: the person and moment, the flow, every web and app state, exact en/ko copy, edge cases, what is out of scope, and acceptance criteria that can fail. Use when pnpm po:route returns review or the owner asks for a spec; not for slicing implementation (planner) or judging (reviewer).
 model: opus
 effort: xhigh
-disallowedTools: Agent
+maxTurns: 250
+tools: Read, Edit, Write, Bash, Grep, Glob, mcp__ontology-atlas__list_kinds, mcp__ontology-atlas__list_concepts, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__get_concepts, mcp__ontology-atlas__find_backlinks
 ---
 
 # Product planner

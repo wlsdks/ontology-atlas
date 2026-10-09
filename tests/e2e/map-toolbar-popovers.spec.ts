@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
+import { openOwnerState } from "./map-toolbar-popovers-harness";
 import { waitForBoxStill, waitForMapStill } from "./settle";
 /**
  * **What the map's top toolbar opens lands in the free map, and its tiles hold still**
@@ -28,47 +28,6 @@ import { waitForBoxStill, waitForMapStill } from "./settle";
  *    removing the overlay in one frame.
  */
 const HEIGHT = 949;
-const ACTIVITY_LINE = JSON.stringify({
-    v: 1,
-    at: new Date(Date.now() - 20 * 60000).toISOString(),
-  tool: "add_concept",
-  target: "capabilities/checkout",
-  summary: "add_concept capability:capabilities/checkout",
-  agent: "codex-acp",
-  why: null,
-});
-
-/** The owner's state: a desktop folder, a path from checkout to invoice, one visit on the trail. */
-async function openOwnerState(page: Page, width = 1512) {
-  await page.setViewportSize({ width, height: HEIGHT });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await installDesktopRailRuntime(page, { ".ontology-atlas/activity.jsonl": `${ACTIVITY_LINE}\n` });
-    await page.goto("/ko/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
-    await page.getByTestId("first-run-open").click();
-    await waitForMapStill(page).catch(() => { });
-    await page.goto("/ko/topology/?guides=off&e2e=1&mode=path&pathFrom=capabilities/checkout&p=capabilities/checkout", {
-        waitUntil: "domcontentloaded",
-    });
-    await expect(page.getByTestId("topology-trail-chip")).toBeVisible({ timeout: 30000 });
-    await waitForMapStill(page).catch(() => { });
-    const canvasBox = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-    const target = await page.evaluate(() => {
-        const map = (window as unknown as {
-            __atlasMap?: {
-                nodes(): Array<{
-                    id: string;
-                    x: number;
-                    y: number;
-                }>;
-            };
-        }).__atlasMap;
-        return map?.nodes().find((node) => node.id === "capability:invoice") ?? null;
-    });
-    expect(target, "the path target is not on the map").not.toBeNull();
-    await page.mouse.click(canvasBox.x + target!.x, canvasBox.y + target!.y);
-    await expect(page.getByTestId("topology-path-chip-copy-packet")).toBeVisible();
-    await expect(page.getByTestId("agent-activity-bell")).toHaveCount(1, { timeout: 30000 });
-}
 /** Which test id is painted at fractions of a box — the popover must answer for itself. */
 async function paintedAt(page: Page, testId: string) {
     return page.evaluate((id) => {
@@ -210,39 +169,6 @@ test("the path chip's two actions are one 24px icon button shape", async ({ page
     await expect(outcome).toBeVisible();
     const clipped = await outcome.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
     expect(clipped, "the path outcome is cut off").toBe(false);
-});
-test("the view picker takes focus on open and gives it back after a choice", async ({ page }) => {
-    test.setTimeout(180000);
-    await openOwnerState(page);
-    const chip = page.getByTestId("topology-view-3d");
-    await chip.focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByTestId("topology-view-3d-choice-flat")).toBeFocused();
-    await page.keyboard.press("ArrowDown");
-    await expect(page.getByTestId("topology-view-3d-choice-flat")).not.toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(chip).toBeFocused();
-    await chip.click();
-    await page.getByTestId("topology-view-3d-choice-structure").click();
-    await expect(chip).toHaveAttribute("data-map-view", "structure");
-    await expect(chip).toBeFocused();
-});
-test("the agent dock closes on Escape and returns focus to its toggle", async ({ page }) => {
-    test.setTimeout(180000);
-    await openOwnerState(page);
-    const toggle = page.getByTestId("topology-vault-agent-toggle");
-    await toggle.click();
-    const close = page.getByTestId("vault-agent-panel-close");
-    await expect(close).toBeVisible();
-    await close.focus();
-    await page.keyboard.press("Escape");
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await expect(toggle).toBeFocused();
-    await toggle.click();
-    await expect(close).toBeVisible();
-    await close.click();
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await expect(toggle).toBeFocused();
 });
 test("the tour's try-click card stands clear of the toolbar, and leaves through an exit frame", async ({ page }) => {
     test.setTimeout(180000);

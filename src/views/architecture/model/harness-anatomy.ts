@@ -92,7 +92,7 @@ function slot(
 }
 
 /**
- * The name a path's skill or brief is called by: `.claude/skills/po-pass/SKILL.md` -> `po-pass`.
+ * The name a path's skill or brief is called by: `.claude/skills/merge/SKILL.md` -> `merge`.
  * Two tools holding the same name are one callable thing, so the name de-duplicates.
  */
 function namedUnit(path: string): string {

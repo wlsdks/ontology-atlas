@@ -33,7 +33,7 @@ import { parsePoRouteArgs } from '../../scripts/po-risk-router.mjs';
 const ROOT = process.cwd();
 const PO_OS = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
 const PILOT = 'docs/PO-PILOT.md';
-const PASS_SKILL = '.claude/skills/po-pass/SKILL.md';
+const PASS_WORKFLOW = '.agents/skills/product-check/workflow.md';
 const CLI = 'scripts/po-risk-router.mjs';
 const PILOT_CLI = 'scripts/po-pilot.mjs';
 
@@ -472,7 +472,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
 describe('Atlas PO written templates match the router policy', () => {
   it('binds the written templates to fields exported by the router policy', () => {
     expect(fieldsInTemplate(PO_OS, '## Compact solo pass')).toEqual(PO_SOLO_FIELDS);
-    expect(fieldsInTemplate(PASS_SKILL, '## 5. Write one screen')).toEqual(PO_SOLO_FIELDS);
+    expect(fieldsInTemplate(PASS_WORKFLOW, '## 5. Write one screen')).toEqual(PO_SOLO_FIELDS);
     expect(fieldsInTemplate(PO_OS, '## Significant decision record')).toEqual(PO_REVIEW_RECORD_FIELDS);
   });
 });

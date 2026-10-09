@@ -194,7 +194,7 @@ for every claim about today, weighs the status quo against at least one other
 way to restore the ability, and never builds. Exact English and Korean copy go
 into `messages/`, because prose under `docs/` stays English. The one `reviewer`
 adds the `spec` lens before any build; the `planner` maps each acceptance
-criterion to a slice, `/design-build` captures each state row, and the
+criterion to a slice, `/ui-build` captures each state row, and the
 returned-slice review checks the criteria and the Out of scope list. A solo
 route writes none; its one-screen pass is enough. The spec lands with the change
 it describes, marked `current`; an abandoned change's spec never lands.
@@ -244,8 +244,8 @@ lenses the router returns.
 6. The accountable human owner decides; `unchanged` is valid. The decision
    fragment records the dissent and the falsifier.
 
-The reviewer consumes the outputs of `/design-audit`, `/responsive-sweep`,
-`/motion-verify`, `/map-perf`, and `/user-walkthrough` rather than repeating
+The reviewer consumes the outputs of `/ui-proof`, `/ui-proof`,
+`/ui-proof`, `/ui-proof`, and `/ui-proof` rather than repeating
 those gates.
 
 ## Significant decision record

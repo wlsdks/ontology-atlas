@@ -3,6 +3,7 @@ name: planner
 description: Turns a request into slices a low-effort implementer can build without judgment, at xhigh effort. Use before fanning out development across agents, or when a change crosses several modules; not for a change the lead can plan in a few reads.
 model: opus
 effort: xhigh
+maxTurns: 200
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 
@@ -24,7 +25,7 @@ Return one plan:
    the work, each of its acceptance criteria is some slice's acceptance command
    or named capture; list any it leaves uncovered as a gap.
 3. **Order** — which slices run in parallel and which wait, and whether they
-   land as separate train drafts or one integration branch (`/review-and-land`).
+   merge as separate train drafts or one integration branch (`/merge`).
 4. **Risk** — what a reviewer must check that tests will not catch.
 
-The lead turns each slice into a `/parallel-brief` for an `implementer`.
+The lead turns each slice into a `/delegate` for an `implementer`.

@@ -12,7 +12,7 @@ import "./atlas-map-probe";
  * it straight to the spring. But **no check measured that claim on screen** — it
  * was being judged by "looks smooth".
  *
- * **Why camera values rather than pixels.** `/motion-verify` judges motion from
+ * **Why camera values rather than pixels.** `/ui-proof` judges motion from
  * pixel deltas between recorded frames; that is the instrument for when you do not
  * know what moved. The camera is different — `__atlasMap.camera()` returns x, y,
  * and zoom **as numbers**, so the curve's shape and duration can be measured
@@ -204,7 +204,7 @@ test.describe("카메라 전환 규격", () => {
    * protagonist hard-cuts can only be known by reading canvas pixels every frame,
    * and **that reading drops the frame interval from 8ms to 75ms** (measured). That
    * changes the very timing being measured, so it is not in this gate — it belongs to
-   * a one-off measurement and to `/motion-verify` (in that measurement the first
+   * a one-off measurement and to `/ui-proof` (in that measurement the first
    * frame's share was 14.3%, so not a hard cut).
    */
   test("입력 뒤 카메라와 팝오버가 한 사건으로 시작한다", async ({ page }) => {
