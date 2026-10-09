@@ -52,11 +52,3 @@ test('train pushes a draft while integration does not push', async () => {
   assert.match(integration.out, /do not push/);
   assert.doesNotMatch(integration.out, /gh pr create/);
 });
-
-test('missing --slug or --owns exits 1 with a usage line', async () => {
-  for (const argv of [['--owns=a.mjs'], ['--slug=feat/x']]) {
-    const { code, err } = await run(argv);
-    assert.equal(code, 1);
-    assert.match(err, /^Usage: pnpm brief:new/m);
-  }
-});

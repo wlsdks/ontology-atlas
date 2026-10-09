@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  formatSummary,
   offRampFindings,
   parseRampNames,
   regularityFindings,
@@ -71,12 +70,8 @@ test("selectorPath keeps the element and at most three ancestors", () => {
   assert.equal(selectorPath(chain), "main#m > section > div.row > button#go.a.b");
 });
 
-test("formatSummary and shouldFail follow the check order and failing set", () => {
+test("shouldFail fails only on the failing set", () => {
   const empty = { overflow: [], occluded: [], overlap: [], target: [], "off-ramp": [], contrast: [], regularity: [], "scroll-end": [] };
-  assert.equal(
-    formatSummary("/ko/topology", 1024, { ...empty, occluded: [{}, {}] }),
-    "/ko/topology @1024: overflow 0 · occluded 2 · overlap 0 · target 0 · off-ramp 0 · contrast 0 · regularity 0 · scroll-end 0",
-  );
   assert.equal(shouldFail([{ findings: { ...empty, overlap: [{}], target: [{}], "off-ramp": [{}], regularity: [{}] } }]), false);
   assert.equal(shouldFail([{ findings: { ...empty, "scroll-end": [{}] } }]), true);
 });

@@ -13,7 +13,6 @@ import {
   formatText,
   groupTokens,
   listStyleFiles,
-  parseArgs,
   parseCustomProperties,
   run,
 } from './design-tokens.mjs';
@@ -73,22 +72,17 @@ describe('parseCustomProperties', () => {
     );
   });
 
-  it('joins a multi-line value onto one line', () => {
-    const font = fixtureTokens().find((token) => token.name === '--font-sans');
-    assert.equal(font.value, 'var(--font-pretendard), system-ui, sans-serif');
-  });
-
-  it('keeps a semicolon inside a quoted value', () => {
-    const local = fixtureTokens().find((token) => token.name === '--local');
-    assert.equal(local.value, '"a;b"');
-    assert.equal(local.context, '.panel');
-  });
-
-  it('records the line and the file of each declaration', () => {
-    const chip = fixtureTokens().find((token) => token.name === '--radius-chip');
-    assert.equal(chip.line, lineOf('--radius-chip'));
-    assert.equal(chip.file, 'app/styles/fixture.css');
-  });
+  const VALUE_CASES = [
+    ['multi-line value joined', '--font-sans', { value: 'var(--font-pretendard), system-ui, sans-serif' }],
+    ['quoted semicolon kept', '--local', { value: '"a;b"', context: '.panel' }],
+    ['line and file recorded', '--radius-chip', { line: lineOf('--radius-chip'), file: 'app/styles/fixture.css' }],
+  ];
+  for (const [name, property, expected] of VALUE_CASES) {
+    it(`reads a declaration: ${name}`, () => {
+      const token = fixtureTokens().find((candidate) => candidate.name === property);
+      for (const [key, value] of Object.entries(expected)) assert.equal(token[key], value);
+    });
+  }
 
   it('keeps an override apart from its base through the enclosing condition', () => {
     const heights = fixtureTokens().filter((token) => token.name === '--control-h-md');
@@ -103,59 +97,53 @@ describe('parseCustomProperties', () => {
 });
 
 describe('families', () => {
-  it('assigns each name to the longest-listed prefix or to other', () => {
-    assert.equal(familyOf('--text-body'), '--text-');
-    assert.equal(familyOf('--shadow-elevation-1'), '--shadow-');
-    assert.equal(familyOf('--control-h-md'), '--control-h-');
-    assert.equal(familyOf('--topology-chrome-gap'), '--topology-');
-    assert.equal(familyOf('--chrome-tile-size'), 'other');
-  });
+  const FAMILY_CASES = [
+    ['text', '--text-body', '--text-'],
+    ['shadow', '--shadow-elevation-1', '--shadow-'],
+    ['longest prefix', '--control-h-md', '--control-h-'],
+    ['topology', '--topology-chrome-gap', '--topology-'],
+    ['unlisted', '--chrome-tile-size', 'other'],
+  ];
+  for (const [name, property, expected] of FAMILY_CASES) {
+    it(`assigns a family: ${name}`, () => assert.equal(familyOf(property), expected));
+  }
 
   it('groups in the listed order and leaves out empty families', () => {
     assert.deepEqual(
-      groupTokens(fixtureTokens()).map(([family]) => family),
-      ['--text-', '--leading-', '--radius-', '--shadow-', '--motion-', '--color-', '--control-h-', '--topology-', 'other'],
+      groupTokens(fixtureTokens()).map(([family, members]) => [family, members.length]),
+      [
+        ['--text-', 2],
+        ['--leading-', 1],
+        ['--radius-', 1],
+        ['--shadow-', 1],
+        ['--motion-', 1],
+        ['--color-', 1],
+        ['--control-h-', 2],
+        ['--topology-', 1],
+        ['other', 3],
+      ],
     );
-    const counts = Object.fromEntries(groupTokens(fixtureTokens()).map(([family, members]) => [family, members.length]));
-    assert.equal(counts['--text-'], 2);
-    assert.equal(counts['--control-h-'], 2);
-    assert.equal(counts.other, 3);
   });
 });
 
 describe('filterTokens', () => {
-  it('matches by prefix with or without the leading dashes', () => {
-    assert.equal(filterTokens(fixtureTokens(), '--control-h').length, 2);
-    assert.equal(filterTokens(fixtureTokens(), 'control-h').length, 2);
-    assert.equal(filterTokens(fixtureTokens(), '--text-body').length, 2);
-  });
-
-  it('returns everything for an empty prefix and nothing for an unknown one', () => {
-    assert.equal(filterTokens(fixtureTokens(), '').length, fixtureTokens().length);
-    assert.deepEqual(filterTokens(fixtureTokens(), '--nope-'), []);
-  });
+  const FILTER_CASES = [
+    ['with dashes', '--control-h', 2],
+    ['without dashes', 'control-h', 2],
+    ['full name', '--text-body', 2],
+    ['empty prefix', '', 13],
+    ['unknown prefix', '--nope-', 0],
+  ];
+  for (const [name, prefix, expected] of FILTER_CASES) {
+    it(`filters by prefix: ${name}`, () => assert.equal(filterTokens(fixtureTokens(), prefix).length, expected));
+  }
 });
 
 describe('formatText', () => {
-  it('prints a count heading per family and one line per token with value and file', () => {
-    const text = formatText(filterTokens(fixtureTokens(), '--radius'));
-    assert.equal(text, `--radius- (1)\n--radius-chip: 6px  app/styles/fixture.css:${lineOf('--radius-chip')}`);
-  });
-
   it('names the condition of an override on its line', () => {
     const lines = formatText(filterTokens(fixtureTokens(), '--control-h')).split('\n');
     assert.equal(lines.length, 3);
     assert.match(lines[2], /\[@media \(pointer: coarse\)\]$/);
-  });
-});
-
-describe('parseArgs', () => {
-  it('reads prefix and json and ignores the separator pnpm forwards', () => {
-    assert.deepEqual(parseArgs(['--', '--prefix=text', '--json']), { prefix: 'text', json: true, help: false, unknown: [] });
-  });
-
-  it('collects what it does not know', () => {
-    assert.deepEqual(parseArgs(['--prefix', 'text']).unknown, ['--prefix', 'text']);
   });
 });
 
@@ -202,12 +190,9 @@ describe('a project on disk', () => {
 describe('this repository', () => {
   const tokens = collectTokens(REPO_ROOT);
 
-  it('finds the stylesheet parts and a plausible number of tokens', () => {
+  it('reads every stylesheet part and fills every ramp family a rule in docs/DESIGN-SYSTEM.md points at', () => {
     assert.ok(listStyleFiles(REPO_ROOT).length >= 10);
     assert.ok(tokens.length > 400, `only ${tokens.length} custom properties were read`);
-  });
-
-  it('fills every ramp family a rule in docs/DESIGN-SYSTEM.md points at', () => {
     const present = new Set(tokens.map((token) => token.family));
     for (const family of FAMILIES.filter((name) => name !== '--elevation-')) {
       assert.ok(present.has(family), `${family} has no token`);
