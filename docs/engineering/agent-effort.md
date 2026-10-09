@@ -18,15 +18,38 @@ quality gain was measured
 ([Prompting Claude Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5#calibrate-effort),
 [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
 
-| Agent | Effort | Work |
-|---|---|---|
-| lead session | xhigh from `.claude/settings.json` | decide, plan small changes, talk to the owner |
-| `planner` | xhigh | slices a low-effort implementer can build without judgment |
-| `product-planner` | xhigh | the product spec of a one-way product change, before its review |
-| `implementer` | low | one planned slice from `/parallel-brief` |
-| `investigator` | xhigh | root cause of a failure or flake, then the fix |
-| `reviewer` | xhigh | an independent review of a returned diff, or of a routed product or design decision |
-| `design-guardian` | xhigh | a design verdict with edits, when the owner asks |
+| Agent | Effort | Turn cap | Work |
+|---|---|---|---|
+| lead session | xhigh from `.claude/settings.json` | none | decide, plan small changes, talk to the owner |
+| `planner` | xhigh | 200 | slices a low-effort implementer can build without judgment |
+| `product-planner` | xhigh | 250 | the product spec of a one-way product change, before its review |
+| `implementer` | low | 150 | one planned slice from `/parallel-brief` |
+| `investigator` | xhigh | 250 | root cause of a reproduced failure or flake, then the fix |
+| `reviewer` | xhigh | 150 | an independent review of a returned diff, or of a routed product or design decision |
+| `design-guardian` | xhigh | 300 | a design verdict with edits, when the owner asks |
+
+## Token budget
+
+Every turn re-reads the whole context, so cost is context size times turns.
+Three settings bound it; `pnpm harness:tokens` measures them from the local
+transcripts.
+
+- `autoCompactWindow: 200000` in `.claude/settings.json`. Opus 5.5 otherwise
+  compacts near 967K; on 2026-09-26..10-04 investigators re-read 415K tokens per
+  turn and the lead 511K.
+- `maxTurns` per agent (table above), from the same runs: above the p90 for
+  implementer, reviewer and product-planner, and below the longest planner,
+  investigator and design-guardian runs, which were missions outside the role.
+  At the cap the agent returns a partial result the lead can resume.
+- A `tools:` allowlist on every agent. Without one an agent also loads the skill
+  listing and every deferred tool, about 23K tokens per turn: implementers and
+  investigators started at about 50.5K tokens against a reviewer's 27.5K. A workflow
+  is a file under `.agents/skills/<name>/workflow.md`, so no agent needs the
+  Skill tool.
+
+The four costliest investigator runs that week (565 to 684 turns each) were
+feature and redesign missions, not failures. Those go to `planner`, then
+`implementer` slices.
 
 ## Steps
 
@@ -41,7 +64,8 @@ quality gain was measured
    records the `effort` every request ran at; the session header shows the
    lead's.
 5. Debugging and reproduction go to `investigator`, not `general-purpose`,
-   which inherits the lead's level and carries no instructions of its own.
+   which inherits the lead's level and carries no instructions of its own. A
+   feature, redesign, spike, or tuning mission goes to `planner` instead.
 6. Retune a tier by editing the `effort:` line in `.claude/agents/<name>.md`.
 
 ## If it fails

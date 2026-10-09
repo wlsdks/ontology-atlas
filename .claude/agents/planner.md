@@ -3,6 +3,7 @@ name: planner
 description: Turns a request into slices a low-effort implementer can build without judgment, at xhigh effort. Use before fanning out development across agents, or when a change crosses several modules; not for a change the lead can plan in a few reads.
 model: opus
 effort: xhigh
+maxTurns: 200
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

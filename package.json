@@ -110,6 +110,8 @@
     "lessons": "node scripts/lessons.mjs",
     "lessons:check": "node scripts/lessons.mjs --check",
     "test:lessons": "node --test scripts/lessons.test.mjs",
+    "harness:tokens": "node scripts/harness-token-report.mjs",
+    "test:harness:tokens": "node --test scripts/harness-token-report.test.mjs",
     "decisions:find": "node scripts/decisions-find.mjs",
     "changelog:check": "node scripts/check-changelog.mjs",
     "dev-checks:check": "node scripts/check-dev-checks.mjs",

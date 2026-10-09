@@ -186,6 +186,7 @@ they also add a final train integration merge.
 | `pnpm e2e:sleeps:check` | Refuses a new fixed `waitForTimeout` without a `// measurement window:` note |
 | `pnpm gates:yield -- --runs=200` | Which CI checks ever failed, per run, from the lane reports CI uploads |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the six app screens on the download page, in Korean and English |
+| `pnpm harness:tokens -- --since=<date>` | Where Claude Code tokens went per agent type, from local transcripts, and which runs broke the compaction window or turn caps ([budget](docs/engineering/agent-effort.md#token-budget)) |
 | `pnpm knip` | Dead files, exports and types |
 | `pnpm lessons` · `pnpm lessons:check` | Open harness lessons; record and review them with `/harness-retro` |
 | `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](docs/engineering/third-party-code.md)) |
