@@ -91,7 +91,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
       <div><h2 className="text-hero font-[var(--font-weight-strong)] tracking-tight">{!evidenceQuestion && pair ? <>{name(pair.from)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(pair.to)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
         <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">{!evidenceQuestion && pair ? t('findingDeclarations', { count: pair.edges.length }) : t('evidenceLead')}</p>
       </div>
-      <div className={styles.scopeDetail}><Disclosure summary={t('purpose')}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{project ? project.summary || model.documentOf(project)?.definitionPreview || t('purposeMissing') : model.projects.map(name).join(' · ') || t('purposeMissing')}</p></Disclosure></div>
+      <div className={styles.scopeDetail}><Disclosure summary={t('purpose')} summaryTestId="analysis-purpose" className={styles.purposeDisclosure}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{project ? project.summary || model.documentOf(project)?.definitionPreview || t('purposeMissing') : model.projects.map(name).join(' · ') || t('purposeMissing')}</p></Disclosure></div>
     </div>
     {!pair && question === 'relationships' ? <p className="mb-4 text-body text-[color:var(--color-text-secondary)]">{t('noDependencies', { count: model.dependencyCount })}</p> : null}
     <div className={styles.layout} data-testid="analysis-layout">
