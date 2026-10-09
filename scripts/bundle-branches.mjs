@@ -7,7 +7,7 @@
  * main merge, one local lane run and one CI run per branch; on 2026-09-24 nine
  * `design/polish-*` branches landed one by one and the queue took most of a day.
  * Every hand-made bundle (#1787, #1874, #1883) landed the same work behind one CI
- * run. The `/review-and-land` skill owns the procedure; this script owns the two
+ * run. The `/land` skill owns the procedure; this script owns the two
  * mechanical questions an agent should not answer by eye:
  *
  *   - **plan**: which selected branches still carry work, which files two of them

@@ -7,8 +7,7 @@ area: harness
 
 # Agent instruction and skill ownership
 
-Verified on 2026-10-04 against the official guides and locally installed Claude
-Code 2.1.289. Host loading is versioned behavior; recheck it before migration.
+Host loading is versioned behavior; recheck the linked guides before migrating.
 
 ## Instruction files
 
@@ -42,59 +41,56 @@ and discovery behavior; a Claude rule glob is not a Codex loader. See
 | `.agents/agents/`, `.claude/agents/` | Host-specific delegation metadata and briefs |
 | `.codex/hooks.json`, `.claude/settings.json` | Host-specific enforcement; keep separate |
 
-Both hosts support Agent Skills folders and symlinked skill directories. Claude
-still discovers project skills under `.claude/skills`; native `AGENTS.md`
-support does not make `.agents/skills` its discovery root. Codex discovers
-`.agents/skills`. See [Claude skills](https://code.claude.com/docs/en/skills#where-skills-live)
-and [Codex skills](https://developers.openai.com/codex/skills#where-codex-loads-local-skills).
+Claude discovers project skills under `.claude/skills`; Codex discovers
+`.agents/skills`. Each skill keeps one shared procedure in
+`.agents/skills/<name>/workflow.md` and a thin entrypoint in both roots, with
+host-specific invocation, tools and agent notes only in the entrypoints
+([Claude skills](https://code.claude.com/docs/en/skills#where-skills-live),
+[Codex skills](https://developers.openai.com/codex/skills#where-codex-loads-local-skills)).
+`.agents/check-instructions.mjs` does not follow symlinked skill folders, so
+keep real folders.
 
-A portable procedure can live once, with thin entrypoints in each host's
-supported location. Use standard `name` and `description` for shared metadata;
-keep host-specific invocation, tools, effort and subagent declarations in their
-adapters. Do not synchronize agent briefs or hooks wholesale.
+## Designing a skill
 
-Folder symlinks are a possible later delivery form, not the current repository
-layout. A real temporary fixture showed `.agents/check-instructions.mjs` ignoring
-a symlinked skill directory: the target was readable, but the Claude inventory
-contained zero skills. Migrate that inventory and citation coverage before
-trusting a symlink rollout. Host documentation establishes support; this audit
-did not measure a live symlink invocation in either host.
+1. **Script what source can answer.** A check that code, Git or a rendered page
+   can answer is a script: `scripts/<name>.mjs` with a node test, a `pnpm`
+   entry, a row in README's command table and a CI lane in
+   `scripts/classify-change.mjs`. The skill names the command and how to judge
+   its output; it never carries a probe or a recipe for the agent to retype.
+2. **Name the moment.** One or two plain words for when it is used (`ui-build`,
+   `ui-proof`, `land`), no product, vendor or person names. The description
+   says when to use it and the command it starts from.
+3. **Stay small.** One `workflow.md` of about 5KB at most; detail only some runs
+   need goes in `guides/<topic>.md`, linked from the workflow. Extend one of
+   the existing skills before adding another.
+4. **Leave no records.** A skill writes nothing into the repository except the
+   change: no plans, logs, retrospectives, ledgers or handoffs. Reasons go in
+   commit bodies and pull requests; working files in the session scratchpad.
 
-## Product pass assessment
+| Command | Answers |
+|---|---|
+| `pnpm checks:changed` | which gates a change needs, and runs them |
+| `pnpm review:facts` | line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
+| `pnpm ui:audit` | rendered overflow, occlusion, targets, off-ramp values, contrast, repeated sets, scroll end |
+| `pnpm design:tokens` | the current token ramps |
+| `pnpm po:route`, `pnpm design:route` | how much product review and which UI proof a change needs |
+| `pnpm brief:new` | a delegation brief's mechanical lines |
+| `pnpm conflicts:scan` | open pull requests touching the same files |
+| `pnpm harness:tokens` | where agent tokens went and which runs broke the budget |
 
-Keep product boundary judgment for changed public behavior, contracts or
-approval/truth authority. Behavior-preserving maintenance goes directly to
-technical checks and does not need a product router receipt by default.
+## Product check
 
-The closed pilot reports 103 eligible decisions, 60 reviews, a recorded material
-delta rate of 96.7%, proof resolution of 68.0%, owner clarity of 50.5%, and 17
-unresolved boundaries. These are historical process records, not a controlled
-comparison proving the skill's benefit. The prior
-[policy adjustment](../records/po-policy/04468072-6dbf-459b-af61-ed32a465b3bc.json)
-kept routing but removed per-run bookkeeping. Preserve that useful boundary
-check while removing repeated manuals and mandatory maintenance ceremony.
-
-All 20 skill pairs now use one procedure per skill under
-`.agents/skills/<name>/workflow.md`, with thin entrypoints in both discovery
-roots. Claude phase guides point to the existing current Codex guides; scripts
-and historical baseline receipts keep their original owners. The
-`po-pass` workflow routes to the same
-[owner procedure](../PRODUCT-OWNER-OPERATING-SYSTEM.md), loading its detailed
-review protocol only for an actual review. The small rationale template stays
-available to the existing discovery and contract checks. The router, approval
-boundaries and reviewer selection remain unchanged.
-
-The inventory also exposed concrete drift: Claude's motion skill still required
-30 fps while Codex required at least 60 fps. Both entrypoints now use one [recording procedure](motion-recording.md), requiring
-a real source at 60 fps minimum, timestamps and gap inspection; upsampling is
-not proof. This is a bounded shared-procedure migration, not a wholesale merge
-of every host adapter.
+`/product-check` keeps boundary judgment for changed public behavior,
+contracts, or truth and approval authority; behavior-preserving maintenance
+goes straight to technical checks. It routes through
+[the owner procedure](../PRODUCT-OWNER-OPERATING-SYSTEM.md) and loads its review
+protocol only for an actual review. Motion proof follows one
+[recording procedure](motion-recording.md) for both hosts.
 
 ## Maintenance
 
-Change the owner once and adjust adapters only for their host differences. Run
-`pnpm agents:check` and `pnpm checks:changed -- --run` for instruction changes.
-For a discovery or enforcement implementation change, plant an actual failing
-case and restore a passing case through `gate-probe`. Never weaken a check just
-to admit a missing or undiscovered skill. Keep capture and audit receipts in an
-external scratch directory, outside committed instructions.
+Change the owner once and adjust adapters only for host differences. Run
+`pnpm agents:check` and `pnpm checks:changed -- --run` after instruction
+changes. For a discovery or enforcement change, plant a failing case and restore
+a passing one through `/gate-probe`. Never weaken a check to admit a missing
+skill.

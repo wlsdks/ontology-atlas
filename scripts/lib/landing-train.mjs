@@ -106,7 +106,8 @@ export function nextTrain({ queue = [], splits = [], batchSize = DEFAULT_BATCH }
 /** Pull requests a train carried, from its title: `land #1 #2 and 3 more` is five. */
 export function trainSizeFromTitle(title) {
   const text = String(title ?? '');
-  const numbers = (text.match(/#\d+/g) ?? []).length;
+  const listed = /^chore\((?:train|merge)\): (?:land )?((?:#\d+\s*)+)/.exec(text)?.[1] ?? text;
+  const numbers = (listed.match(/#\d+/g) ?? []).length;
   const more = Number(/ and (\d+) more\s*$/.exec(text)?.[1] ?? 0);
   return numbers + more;
 }
@@ -336,18 +337,35 @@ export function trainBranchName(nowMs, firstNumber) {
   return `${TRAIN_BRANCH_PREFIX}${stamp}-${firstNumber}`;
 }
 
-/** `chore(train): land #1 #2 #3`, shortened past 100 characters so it stays a subject line. */
-export function trainTitle(components) {
-  const numbers = components.map((c) => `#${c.number}`);
-  const full = `chore(train): land ${numbers.join(' ')}`;
-  if (full.length <= 100) return full;
+const TITLE_LIMIT = 100;
+const clip = (text) => (text.length <= TITLE_LIMIT ? text : `${text.slice(0, TITLE_LIMIT - 1).trimEnd()}…`);
+
+function numberList(prefix, numbers, suffix = '') {
+  const full = `${prefix}${numbers.join(' ')}${suffix}`;
+  if (full.length <= TITLE_LIMIT) return full;
   const kept = [];
   for (const number of numbers) {
-    const candidate = `chore(train): land ${[...kept, number].join(' ')} and ${numbers.length - kept.length - 1} more`;
-    if (candidate.length > 100) break;
+    if (`${prefix}${[...kept, number].join(' ')} and ${numbers.length - kept.length - 1} more`.length > TITLE_LIMIT) break;
     kept.push(number);
   }
-  return `chore(train): land ${kept.join(' ')} and ${numbers.length - kept.length} more`;
+  return `${prefix}${kept.join(' ')} and ${numbers.length - kept.length} more`;
+}
+
+export function trainTitle(components) {
+  const numbers = components.map((c) => `#${c.number}`);
+  if (components.length === 1) return clip(`chore(merge): ${numbers[0]} — ${components[0].title ?? ''}`.trimEnd());
+  return numberList('chore(merge): ', numbers);
+}
+
+export function mergeCommitTitle(components) {
+  const numbers = components.map((c) => `#${c.number}`);
+  const first = components[0]?.title ?? '';
+  if (components.length === 1) return clip(`Merge ${numbers[0]}: ${first}`);
+  return clip(`Merge ${numbers.join(' ')}: ${first} and ${components.length - 1} more`);
+}
+
+export function mergeCommitMessage(components) {
+  return components.map((c) => `#${c.number} ${c.title ?? ''}`.trimEnd()).join('\n');
 }
 
 const componentLine = (c) => `- #${c.number} \`${c.headRefName}@${String(c.headRefOid ?? '').slice(0, 9)}\` ${c.title ?? ''}`.trimEnd();

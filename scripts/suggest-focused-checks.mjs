@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isCommentOnlyChange, supportsCommentOnlyCheck } from './lib/comment-only-change.mjs';
+
 import {
   formatFocusedCheckSuggestions,
   suggestFocusedChecks,
@@ -107,6 +109,27 @@ export function branchRangePathsFromGit({
   };
 }
 
+export function hooksPathWarning({ cwd = process.cwd(), spawn = spawnSync } = {}) {
+  const read = (args) => {
+    const result = spawn('git', args, { cwd, encoding: 'utf-8' });
+    return result.status === 0 && typeof result.stdout === 'string' ? result.stdout.trim() : '';
+  };
+  const value = read(['config', '--get', 'core.hooksPath']);
+  if (!value.startsWith('/')) return '';
+  const top = read(['rev-parse', '--show-toplevel']);
+  if (!top || resolve(value) === resolve(top, '.githooks')) return '';
+  return `[focused-checks] warning: core.hooksPath is ${value}, so commits here run another checkout's hooks; run \`git config core.hooksPath .githooks\`\n`;
+}
+
+export function commentOnlyPathsFromGit(paths, { cwd = process.cwd(), spawn = spawnSync, baseRev = 'HEAD', read = (path) => readFileSync(resolve(cwd, path), 'utf8') } = {}) {
+  return paths.filter((path) => {
+    if (!supportsCommentOnlyCheck(path)) return false;
+    const before = spawn('git', ['show', `${baseRev}:${path}`], { cwd, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 });
+    if ((before.status ?? 1) !== 0) return false;
+    return isCommentOnlyChange(before.stdout, read(path), path);
+  });
+}
+
 function spawnGit({ cwd, spawn, args }) {
   const result = spawn('git', args, {
     cwd,
@@ -171,6 +194,8 @@ const PLAYWRIGHT_PREFIX = 'pnpm exec playwright test ';
  * The merged command takes the place of the first Playwright entry so ordering is
  * preserved: whatever ran before e2e still runs before it.
  */
+export const STATIC_BUILD_PAYS_OFF_AT_SPECS = 3;
+
 export function collapsePlaywrightCommands(commands) {
   const specs = [];
   const seen = new Set();
@@ -183,15 +208,21 @@ export function collapsePlaywrightCommands(commands) {
       }
     }
   }
+  const staticRun = specs.length >= STATIC_BUILD_PAYS_OFF_AT_SPECS;
   // One invocation already — nothing to gain, and rewriting it would only lose the
   // suggester's own wording.
-  if (commands.filter((c) => c.command.startsWith(PLAYWRIGHT_PREFIX)).length < 2) {
+  if (!staticRun && commands.filter((c) => c.command.startsWith(PLAYWRIGHT_PREFIX)).length < 2) {
     return commands;
   }
-  const merged = {
-    command: PLAYWRIGHT_PREFIX + specs.join(' '),
-    reason: `${specs.length} e2e specs in one Playwright run — same coverage, one startup`,
-  };
+  const merged = staticRun
+    ? {
+      command: `pnpm build:static && PLAYWRIGHT_STATIC=1 ${PLAYWRIGHT_PREFIX}${specs.join(' ')}`,
+      reason: `${specs.length} e2e specs against one static build, as CI runs them`,
+    }
+    : {
+      command: PLAYWRIGHT_PREFIX + specs.join(' '),
+      reason: `${specs.length} e2e specs in one Playwright run — same coverage, one startup`,
+    };
   const out = [];
   let placed = false;
   for (const c of commands) {
@@ -207,7 +238,6 @@ export function collapsePlaywrightCommands(commands) {
   return out;
 }
 
-/** Collapse only exact default test-file coverage from earlier commands. */
 export function collapseCoveredContractCommands(commands, scripts = {}) {
   const result = { commands: [], covered: [] };
   let full = false;
@@ -314,8 +344,15 @@ export function runSuggestFocusedChecks({
         scope = branch.base;
       }
     }
+    if (!explicit) stdout.write(hooksPathWarning({ cwd, spawn }));
     if (scope) stdout.write(`[focused-checks] scope: ${scope}\n`);
-    const suggestions = suggestFocusedChecks(paths, { deletedPaths });
+    const baseRev = scope === 'the working tree' ? 'HEAD'
+      : scope ? spawn('git', ['merge-base', scope.split('...')[0], 'HEAD'], { cwd, encoding: 'utf-8' }).stdout?.trim() : '';
+    const commentOnlyPaths = baseRev ? commentOnlyPathsFromGit(paths, { cwd, spawn, baseRev }) : [];
+    if (commentOnlyPaths.length > 0) {
+      stdout.write(`[focused-checks] ${commentOnlyPaths.length} file(s) changed only in comments or formatting; their tests are skipped\n`);
+    }
+    const suggestions = suggestFocusedChecks(paths, { deletedPaths, commentOnlyPaths });
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
     return runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });

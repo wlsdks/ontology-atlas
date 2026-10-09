@@ -216,7 +216,7 @@ Rendered unchanged from their own namespaces: `downloadConduction.agent`, `.paus
 
 1. Given the rebuilt page at 1440 in en and ko, When a first-time reader (uses coding agents, never saw Atlas) scrolls
    past A and B, Then they say what Atlas does for their next agent task and name the first screen (`firstRun.title`);
-   fail when A or B needs MCP tool names or frontmatter, or claims something the app does not ship. `/user-walkthrough`.
+   fail when A or B needs MCP tool names or frontmatter, or claims something the app does not ship. `/ui-proof`.
 2. Given slice 1's probe, When it runs the brisk and parked legs (parked on A and B until each rests) at 1440×900,
    1040×720 and 1920×1080, DPR 2, Then each leg's median of 3 keeps ≤ 2% dropped frames, no frame interval over 50 ms
    and no long task over 50 ms. `tests/e2e/download-scroll-budget.spec.ts`.
@@ -229,12 +229,12 @@ Rendered unchanged from their own namespaces: `downloadConduction.agent`, `.paus
 5. Given A and B at rest, Then each holds no running animation and no composited layer, and at most 32 elements per
    figure carried an animation during its run. `tests/e2e/download-visibility-gate.spec.ts`.
 6. Given real macOS recordings at 1440 and 1040, Then every beat starts within 33 ms of its table time, no stall exceeds
-   50 ms in the run, and the rest frame matches the reduced-motion frame within 0.5% of pixels. `/motion-verify`.
+   50 ms in the run, and the rest frame matches the reduced-motion frame within 0.5% of pixels. `/ui-proof`.
 7. Given 1040×720, Then A's figure is ≤ 520 px tall, B is one window stepping in place, and each figure's cause and effect
    fit one viewport; at 1040, 1440 and 1920 in en, ko, ja and zh nothing overflows and B's windows are equal height.
-   `/responsive-sweep`.
+   `/ui-proof`.
 8. Given the owner's approved rest-frame PNGs, Then the built rest frames keep their composition: the same zones, focal
-   point and copy at 1440×900 and 1040×720. `/design-audit` against `/Users/jinan/scratch/download-round3/rest-frames/`.
+   point and copy at 1440×900 and 1040×720. `/ui-proof` against `/Users/jinan/scratch/download-round3/rest-frames/`.
 
 ## Risks
 

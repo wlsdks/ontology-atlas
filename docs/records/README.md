@@ -51,12 +51,8 @@ pnpm record:new -- --kind=release --date=2026-09-13 --version=v1.2.2 --title='Re
 Read the complete current changelog in the app or, after `pnpm docs-vault:build`,
 in `public/docs-vault/CHANGELOG.md`. The original `docs/CHANGELOG.md` is history.
 
-PO pilot records use `pnpm po:record -- --type=run|update|policy --input=/tmp/record.json`.
-The input schemas and accepted values are enforced by
-`scripts/lib/po-pilot-records.mjs` and `scripts/lib/po-pilot.mjs`. A run receives
-its own UUID; later observations add update files referencing that UUID (or a
-legacy numeric run). A policy record requires the same owner authority as the
-former outcome edit. `pnpm po:pilot` reports the composed current state.
+The PO pilot is closed. Its run, update and policy fragments are frozen;
+`pnpm po:pilot` reports the composed state.
 
 Fragments whose names start with a UUID (`po-runs`, `po-updates`, `po-policy`)
 are unordered on disk: any "latest" or "since" claim sorts by the `date`
@@ -71,30 +67,6 @@ gets a fresh UUID and an explicit worktree label. Status changes append a record
 referencing the current head UUIDs; they never modify another worktree's file.
 Concurrent heads remain visible until an author records an explicit reconciliation.
 See [the backlog guide](../BACKLOG.md) for read, append, and validation commands.
-
-## Harness lessons
-
-A lesson records one harness failure: a mistake, a wasted CI round, a gate that
-did not fire, or a tool pattern that cost real time. `/harness-retro` owns when
-to write one and how open lessons are reviewed. The body is four fields,
-**Observed**, **Cost**, **Suspected cause** and **Proposed change** (starting
-with `skill`, `rule`, `hook`, `script`, `gate` or `none`), within 16 lines and
-1600 bytes:
-
-```sh
-pnpm record:new -- --kind=lesson --type=gate-gap --area=checks-changed --slug=short-subject --input=/tmp/lesson.md
-pnpm record:new -- --kind=lesson-status --lesson=UUID --status=verified --input=/tmp/evidence.md
-```
-
-The writer creates `lessons/YYYY-MM-DD-slug-UUID.md` with status `reported`.
-A verdict (`verified`, `refuted`, `fixed`, `wontfix`, or `reported` to reopen)
-is another file in the same directory naming the lesson and the current heads of
-its history; its body is one **Evidence** line, and `fixed` cites a commit SHA
-or pull request. A lesson is verified before it is fixed. Two worktrees that
-record different verdicts leave two heads until a new record names both.
-`pnpm lessons` lists open and verified-but-unfixed lessons, with `--since=30d`,
-`--kind`, `--status`, `--area` and `--json`; `pnpm lessons:check` validates the
-template and verdict order and refuses edits to published lessons.
 
 ## Worktrees and old branches
 

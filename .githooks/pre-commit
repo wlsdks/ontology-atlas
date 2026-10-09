@@ -59,7 +59,7 @@ if printf '%s\n' "$staged" | grep -qE '^(messages/|scripts/build-messages\.mjs$)
 fi
 
 # Generator/parser changes can invalidate every document even when no Markdown changed.
-if ! printf '%s\n' "$staged" | grep -qE '^(docs/.*\.md|docs/records/.*\.json|samples/storefront/.*\.md|scripts/build-docs-vault\.mjs|scripts/lib/(parse-frontmatter|record-ledgers|po-pilot-records)\.mjs)'; then
+if ! printf '%s\n' "$staged" | grep -vE '^docs/records/(lessons|backlog)/' | grep -qE '^(docs/.*\.md|docs/records/.*\.json|samples/storefront/.*\.md|scripts/build-docs-vault\.mjs|scripts/lib/(parse-frontmatter|record-ledgers|po-pilot-records)\.mjs)'; then
   exit 0
 fi
 
@@ -79,7 +79,8 @@ GIT_DIR=$(git rev-parse --absolute-git-dir)
 GIT_WORK_TREE=$staging_tree
 export GIT_DIR GIT_WORK_TREE
 
-if ! (cd "$staging_tree" && node scripts/build-docs-vault.mjs); then
+if ! out=$(cd "$staging_tree" && node scripts/build-docs-vault.mjs 2>&1); then
+  printf '%s\n' "$out"
   echo ""
   echo "[pre-commit] staged Docs Vault sources cannot be generated."
   echo "[pre-commit] This result measures the staged index, not the working tree."

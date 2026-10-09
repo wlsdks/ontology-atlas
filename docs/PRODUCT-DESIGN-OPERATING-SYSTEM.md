@@ -48,10 +48,10 @@ instruments, and scope.
 | `layout` | geometry changes without a new information architecture | affected-state design audit + Computer Use render loop |
 | `responsive` | breakpoint, reflow, touch, safe area, or scroll reserve changes | affected-state audit + affected bands + Computer Use render loop |
 | `interaction` | visible states, keyboard, modality, discoverability, or reversibility change | affected-state audit + Computer Use render loop |
-| `motion` | timing, easing, animation, camera travel, or reduced-motion output changes | real screen recording through `/motion-verify` + Computer Use render loop |
+| `motion` | timing, easing, animation, camera travel, or reduced-motion output changes | real screen recording through `/ui-proof` + Computer Use render loop |
 | `topology-encoding` | a node/edge mark, relation channel, density rule, or graph-readable fact changes | audit + graph readability + contrast + Computer Use render loop |
-| `topology-gesture` | drag, pan, zoom, hit testing, layout work, or the frame loop changes | `/map-perf` + Computer Use render loop |
-| `journey` | order, destination, next step, or completion signal changes | changed-path `/user-walkthrough` + Computer Use render loop |
+| `topology-gesture` | drag, pan, zoom, hit testing, layout work, or the frame loop changes | `/ui-proof` + Computer Use render loop |
+| `journey` | order, destination, next step, or completion signal changes | changed-path `/ui-proof` + Computer Use render loop |
 | `desktop-shell` | window, menu, AppKit/Tauri bridge, WKWebView, restoration, or lifecycle changes | touched-state installed-app proof + Computer Use render loop |
 | `agent-handoff` | the visible MCP/CLI next action or state-bound handoff changes | agent-handoff walkthrough + Computer Use render loop |
 | `design-contract` | a token, ramp, primitive, design rule, or enforcement contract changes | one reviewer (`tokens`, `attention`) + design-system audit + `/gate-probe` |
@@ -90,7 +90,7 @@ rendered UI in small slices and look at each slice in the real browser, WebView,
 or installed app, through a fresh Computer Use screenshot and accessibility
 tree, before starting the next; do not build a whole screen unobserved. Use DOM
 rect and computed-style measurement for geometry questions. Keep one final
-capture (app/window, route, viewport) for the pull request. `/design-build` owns
+capture (app/window, route, viewport) for the pull request. `/ui-build` owns
 the step-by-step loop.
 
 Do not claim pass when screenshot capture is unavailable, the target is hidden,
@@ -105,19 +105,19 @@ can change.
 Motion is temporal output. Static screenshots, duration tokens, unit tests, and
 “looks smooth” do not prove it.
 
-Every `motion` route runs `/motion-verify` against a real macOS screen
+Every `motion` route runs `/ui-proof` against a real macOS screen
 recording, extracts uniform 30 fps frames, inspects a phase strip, and reports
 frame-to-frame stalls and spikes. It also proves the reduced-motion equivalent.
 Headless sequential screenshots are an explicitly named fallback, never a
 recording claim.
 
-Use `/map-perf` separately for topology work cost. A smooth video does not prove
+Use `/ui-proof` separately for topology work cost. A smooth video does not prove
 node drag is cheap, and a low work-time number does not prove the eye sees a
 continuous transition.
 
 ## Direction threshold
 
-`/design-directions` runs only when the router says `directions=yes`:
+`/ui-build` runs only when the router says `directions=yes`:
 
 - new primary surface;
 - information architecture;
@@ -138,7 +138,7 @@ lens asks live in `.claude/agents/reviewer.md` and its Codex brief.
 No UI lens always applies: every review starts with `moment` and `evidence`,
 and the router adds only the UI lenses the change facts implicate.
 
-The reviewer judges from the `/design-build` §0-B captures, and for motion from
+The reviewer judges from the `/ui-build` §0-B captures, and for motion from
 a real recording; a missing capture is a finding. The author answers a finding
 once, only on a material conflict, and a one-way disagreement takes one second
 opinion, as in the PO independent review protocol. The owner decides,
@@ -158,8 +158,8 @@ eye.
 
 1. Run the PO route and name the human ability being restored.
 2. Run `design:route` with every observed design change.
-3. If directed, run `/design-directions` and select one shape.
-4. Build through `/design-build` using existing primitives and canonical
+3. If directed, run `/ui-build` and select one shape.
+4. Build through `/ui-build` using existing primitives and canonical
    values in `docs/DESIGN-SYSTEM.md`; run the Computer Use render loop after
    each coherent visual slice.
 5. Run the remaining proof packet returned by the router against the final
@@ -231,15 +231,16 @@ These product rules remain non-negotiable:
 - **Handoff is state-bound:** the visible MCP action and CLI fallback carry the
   selected slug, relation, evidence, or real vault path.
 
-Values, attention layers, Node Spec, motion tokens, responsive reserves, and
-control primitives live only in `docs/DESIGN-SYSTEM.md`. Implementation rules
+Attention layers, Node Spec, motion rules, responsive reserves, and control
+primitives live only in `docs/DESIGN-SYSTEM.md`; token values are printed by
+`pnpm design:tokens`. Implementation rules
 live in `.claude/rules/design.md`; gate archaeology lives in
 `.claude/rules/design-gates.md`. Do not grow this router into a second value
 catalog.
 
 ## Responsive and installed-app scope
 
-`/responsive-sweep` measures affected bands for a breakpoint-local change and
+`/ui-proof` measures affected bands for a breakpoint-local change and
 the full 600/768/834/1024/1440/1920/2560 matrix for a new surface or information
 architecture. It measures rect intersections, `elementFromPoint` reachability,
 scroll reserve, and screenshots; class-string reasoning is not proof.

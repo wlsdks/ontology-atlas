@@ -28,13 +28,17 @@ complete its recommendations. This file owns escalation and test shape.
 pnpm checks:changed -- <path...>     # focused checks for a planned file set
 pnpm test src/path/to/file.test.ts   # one file
 pnpm test:run -t "specific case"     # one test block
-pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
+pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI runs it
 ```
 
 Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
-differently from the static export. Reproduce a red e2e in the CI mode before
-calling CI wrong or flaky; then check for a stale server with
-`lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own
+differently from the static export. The static export serves on 3110 and never
+reuses a running server; `checks:changed` runs three or more specs that way,
+since one 47 s build then costs less than dev compiling each route.
+`build:static` skips the build when `out/` was built from the same inputs, so
+editing only a spec reruns it without rebuilding. Reproduce
+a red e2e in the CI mode before calling CI wrong or flaky; then check for a
+stale server with `lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own
 server, and give parallel work its own port through `PLAYWRIGHT_BASE_URL`.
 
 ## The timing rule
@@ -60,8 +64,7 @@ sleeping.
   sleep states in place why it is a measurement window; `pnpm e2e:sleeps:check`
   refuses a new one without `// measurement window:`.
 - Compare canvas pixels inside the page and return one number: a 5-million
-  value `getImageData` array through `page.evaluate` costs 12 s per call
-  (lesson 1250cf7a).
+  value `getImageData` array through `page.evaluate` costs 12 s per call.
 
 ## What to test
 
@@ -70,7 +73,7 @@ sleeping.
   that detects that regression.
 - When an interaction moves focus or inert state while it animates, also press
   the next key immediately, with normal motion, not only after the settled
-  state or under reduced motion (lessons d806ce25, b50c9221).
+  state or under reduced motion.
 - Prose, mechanical edits and isolated visual tweaks need no new test. Never
   write a test that duplicates the implementation or pins prose.
 - Update an e2e baseline only for an intentional rendered change.
@@ -94,9 +97,8 @@ reaches the named risk:
 
 The final report names what ran and why that scope was enough.
 
-Keep measurements, captures and harness scripts outside the repository (for
-example `~/scratch/<task>/` or the session scratchpad). An ignored `output/`
-inside a worktree is deleted with the worktree.
+Keep measurements, captures and probe scripts in the session scratchpad, never
+in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 
 ## Verify web and app separately
 
@@ -111,8 +113,7 @@ web smoke.
 
 Test keyboard input in the installed app with Computer Use idle, sending keys
 through `osascript` or JXA: a Computer Use session swallows Escape system-wide.
-Before fixing a platform input bug, reproduce it once without the test tool
-(lesson fcc6d81f).
+Before fixing a platform input bug, reproduce it once without the test tool.
 
 ## Cross-package contract tests
 

@@ -38,9 +38,7 @@ Whole-vault validation establishes scanned shape, reference, and path facts.
 receipt proves that a definition is correct. Meaning and handoff claims require
 the independent evidence defined by the existing
 [field-trial protocol](../.agents/skills/ontology-field-trial/SKILL.md).
-The [13 September 2026 audit](audits/ONTOLOGY-FOUNDATIONS-2026-09-13.md)
-records a dated baseline, public research, and remaining probes; it is not a
-second meta-model or a current quality certificate. Instruction owners are
+Instruction owners are
 listed in [Architecture](ARCHITECTURE.md#agent-instruction-ownership).
 
 ## Public Quality Contract

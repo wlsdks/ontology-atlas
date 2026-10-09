@@ -5,7 +5,7 @@ import { waitForPageSettled } from "./settle";
 /**
  * Accessibility ratchet — of axe-core's 105 rules, **WCAG 2.x A/AA** only.
  *
- * **Why this sits on top of five hand-written specs.** `a11y-structure`,
+ * **Why this sits on top of five hand-written specs.** `public-surface-health`,
  * `aria-audit`, `keyboard-path`, and `touch-target-contract` each pin **one defect
  * a person noticed**. (`mobile-keyboard-audit` used to be in that list; deleted
  * 2026-08-16 because it carried no assertions at all — anything could break and it

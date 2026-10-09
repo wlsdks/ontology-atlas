@@ -1,35 +1,46 @@
-# Serena MCP project cache + memories (personal environment)
+# Local MCP and agent state
 .serena/
-
-# CodeGraph MCP local index (sqlite db + live socket) — do not commit.
-# Ignoring is essential to prevent Tailwind v4 source scanning from crashing when reading daemon.sock.
+# CodeGraph index; its daemon.sock crashes Tailwind source scanning.
 .codegraph/
-
-# Ontology Atlas local runtime state (agent heartbeat, UI session files).
 .ontology-atlas/
 docs/ontology/.ontology-atlas/
+
+# Claude Code: commit shared instructions, never personal or local state
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/agent-memory-local/
+.claude/cache/
+.claude/local/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+/.claude/shots-*/
 
 # Dependencies
 node_modules/
 
-# Next.js and TypeScript build output
+# Build output
 .next/
 out/
 build/
 dist/
 *.tsbuildinfo
 next-env.d.ts
-
-# Tauri / Rust desktop build output
 src-tauri/target/
 src-tauri/gen/
-# Compiled MCP server binaries (app bundle payload, ~59MB) — build output, not source
-# Created by `pnpm mcp:build-binary`.
+# `pnpm mcp:build-binary` output, about 59MB
 src-tauri/binaries/
+release-upload/
+release-assets/
 
-# Environment variables. The names are listed one by one, not left to `.env*`
-# alone: `tests/contract/secret-read-guard.contract.test.ts` reads them to prove
-# `.claude/settings.json` denies an agent reading each one.
+# Generated per worktree by install, checkout, merge and build
+/src/entities/docs-vault/data/
+/public/docs-vault/
+# Message composites; the authored parts are messages/<locale>/<Namespace>.json.
+/messages/*.json
+/messages/*.tmp
+
+# Secrets. Every .env name is listed: secret-read-guard.contract.test.ts reads
+# them to prove .claude/settings.json denies reading each one.
 .env
 .env.local
 .env.prod
@@ -42,27 +53,43 @@ src-tauri/binaries/
 .env.staging
 .env*
 !.env.example
+*.pem
+*.p8
+*.p12
+*.key
+.local-credentials/
+# Written by CLI tests that run `agent-setup`; holds this machine's absolute paths.
+cli/.mcp.json.example
 
-# OS
+# OS and editors
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/*
 !.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 
-# Logs
+# Logs, tests, captures and scratch
 *.log
 pnpm-debug.log*
-
-# External references (cloned separately, not part of this repo)
+coverage/
+.nyc_output/
+output/
+test-results/
+playwright-report/
+blob-report/
+.playwright-mcp/
+.screenshots/
+.qa-scratch/
+/.scratch-po/
+/sweep*/
+*.tmp
+.tmp/
+.cache/
 /references/
 
-# Playwright MCP session dumps (snapshot yaml · screenshots)
-.playwright-mcp/
+# Images: only these committed assets; captures stay out of the repository.
 *.png
 !public/logo.png
 !docs/assets/readme/*.png
@@ -72,62 +99,7 @@ pnpm-debug.log*
 !app/icon.png
 !assets/brand/mascot/*.png
 !assets/brand/mascot/source/*.png
-# Gateway captures of the real app (2026-09-08): the download page's architecture and library sections.
 !public/gateway/*.png
 !public/brand/*.png
 !src-tauri/icons/**
-# Demo clip poster — the first frame of the video, so it must be held in the repository. The global `*.png`
-# ignore is intended to block Playwright dumps, not deployment assets
-# (an exception of the same class as the brand assets above).
 !public/demo/*.png
-
-# Testing
-coverage/
-.nyc_output/
-output/
-
-# Temporary
-*.tmp
-.tmp/
-.cache/
-
-# Claude Code — ignore only local personal state. Shared guidelines are committed.
-.claude/settings.local.json
-.claude/cache/
-.claude/local/
-.claude/scheduled_tasks.lock
-
-# Local operational credentials. Never commit.
-.local-credentials/
-
-# Screenshots for session validation (do not commit)
-.screenshots/
-.qa-scratch/
-
-# Release staging output — created by CI and consumed within CI. Running
-# stage-macos-release-assets.mjs locally generates files here.
-release-upload/
-release-assets/
-
-# Output dropped into the checkout by CLI tests running `agent-setup` for real.
-# Contains absolute paths to temporary vaults; if committed, **that machine's path becomes embedded in the repository** — this actually happened once (2026-07-29).
-cli/.mcp.json.example
-
-# QA sweep output — thousands of screenshots accumulate at the root during audits (measurement on 2026-07-31:
-# `sweep-2026-07-28` 3.3M · `sweepA2` 11M). Knowledge remains in `.qa-scratch/*.md`,
-# but images are not kept.
-/sweep*/
-
-# Agent worktree — lives inside the repository but is not part of it.
-# (2026-08-03: `git add -A` once committed this as a gitlink into main)
-.claude/worktrees/
-
-# Worktree-local materialization. prepare, checkout, merge and build create these.
-/src/entities/docs-vault/data/
-/public/docs-vault/
-# Message composites; the authored parts are messages/<locale>/<Namespace>.json.
-/messages/*.json
-/messages/*.tmp
-# Local capture sessions, including scripts and recordings beside screenshots.
-/.claude/shots-*/
-/.scratch-po/

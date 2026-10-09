@@ -866,7 +866,7 @@ export const arbitrarySizeSelectors = [
   },
   // 2026-08-27 inline style time literals — **the third syntax of the duration rule.**
   // The class rules above see className strings and the framer rule sees `transition={{...}}`,
-  // but a JSX `style` object was outside every detector: /motion-verify measured a raw
+  // but a JSX `style` object was outside every detector: /ui-proof measured a raw
   // '--architecture-flow-delay': '100ms' shipping inside a style expression with zero lint
   // signal (finding F). The value has since moved to the stagger-token pattern
   // (--architecture-flow-stagger in globals.css × a unitless step custom property), so the

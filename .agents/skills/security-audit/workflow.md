@@ -71,7 +71,7 @@ needs the person's own deliberate action is low.
 ## 4. Close the loop
 
 - Each confirmed finding becomes a slice: a planned slice, an implementing
-  agent, then `/review-and-land` with the `security` lens. The fix ships with its
+  agent, then `/merge` with the `security` lens. The fix ships with its
   planted input as a regression test, proven red on the unfixed code
   (`/gate-probe`), and that test joins `pnpm test:security`.
 - A class of finding that could recur (a new raw-HTML sink, an unguarded path
@@ -81,7 +81,6 @@ needs the person's own deliberate action is low.
   public threat model updates `SECURITY.md` in the same pull request.
 - After the fixes land, rerun §0 and every planted input from this audit, and
   report each as blocked or still reached.
-- A gate that should have caught a finding is a `/harness-retro` lesson.
 
 ## Never
 
