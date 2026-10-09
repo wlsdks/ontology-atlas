@@ -109,6 +109,18 @@ export function branchRangePathsFromGit({
   };
 }
 
+export function hooksPathWarning({ cwd = process.cwd(), spawn = spawnSync } = {}) {
+  const read = (args) => {
+    const result = spawn('git', args, { cwd, encoding: 'utf-8' });
+    return result.status === 0 && typeof result.stdout === 'string' ? result.stdout.trim() : '';
+  };
+  const value = read(['config', '--get', 'core.hooksPath']);
+  if (!value.startsWith('/')) return '';
+  const top = read(['rev-parse', '--show-toplevel']);
+  if (!top || resolve(value) === resolve(top, '.githooks')) return '';
+  return `[focused-checks] warning: core.hooksPath is ${value}, so commits here run another checkout's hooks; run \`git config core.hooksPath .githooks\`\n`;
+}
+
 export function commentOnlyPathsFromGit(paths, { cwd = process.cwd(), spawn = spawnSync, baseRev = 'HEAD', read = (path) => readFileSync(resolve(cwd, path), 'utf8') } = {}) {
   return paths.filter((path) => {
     if (!supportsCommentOnlyCheck(path)) return false;
@@ -325,6 +337,7 @@ export function runSuggestFocusedChecks({
         scope = branch.base;
       }
     }
+    if (!explicit) stdout.write(hooksPathWarning({ cwd, spawn }));
     if (scope) stdout.write(`[focused-checks] scope: ${scope}\n`);
     const baseRev = scope === 'the working tree' ? 'HEAD'
       : scope ? spawn('git', ['merge-base', scope.split('...')[0], 'HEAD'], { cwd, encoding: 'utf-8' }).stdout?.trim() : '';

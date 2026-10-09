@@ -12,6 +12,7 @@ import {
   suggestFocusedChecksUsage,
   untrackedPathsForAdvisor,
   commentOnlyPathsFromGit,
+  hooksPathWarning,
 } from './suggest-focused-checks.mjs';
 
 /**
@@ -466,4 +467,21 @@ describe('commentOnlyPathsFromGit', () => {
     };
     assert.deepEqual(commentOnlyPathsFromGit(['a.ts', 'b.ts', 'c.ts', 'd.css'], { spawn, read: (path) => now[path] }), ['a.ts']);
   });
+});
+
+describe('hooksPathWarning', () => {
+  const CASES = [
+    ['unset', '', ''],
+    ['relative, so each checkout runs its own hooks', '.githooks', ''],
+    ['absolute to this checkout', '/repo/wt/.githooks', ''],
+    ['absolute to another checkout', '/repo/main/.githooks', 'another checkout'],
+  ];
+  for (const [name, value, expected] of CASES) {
+    it(`warns only when hooks come from elsewhere: ${name}`, () => {
+      const spawn = (_git, args) => ({ status: 0, stdout: args[0] === 'config' ? `${value}\n` : '/repo/wt\n' });
+      const warning = hooksPathWarning({ spawn });
+      if (expected) assert.match(warning, new RegExp(expected));
+      else assert.equal(warning, '');
+    });
+  }
 });
