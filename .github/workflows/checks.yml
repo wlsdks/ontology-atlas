@@ -165,8 +165,8 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 260s (shard 1 also carries the whole-graph commands)
-    timeout-minutes: 6
+    # budget: 310s (widest shard p95 303 s over 23 runs, 2026-10-09; shard 1 also carries the whole-graph commands)
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
