@@ -1,8 +1,8 @@
 ---
 name: implementer
-description: Builds one planned slice from a written brief at low effort. Use for development work whose decisions are already made (files owned, acceptance command, time budget); never for planning, review, or product or design judgment.
-model: opus
-effort: low
+description: Builds one planned slice from a written brief on Sonnet. Use for development work whose decisions are already made (files owned, acceptance command, time budget); never for planning, review, or product or design judgment.
+model: sonnet
+effort: medium
 maxTurns: 150
 tools: Read, Edit, Write, Bash, Grep, Glob, Monitor, TaskStop
 ---

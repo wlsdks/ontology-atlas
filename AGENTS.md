@@ -63,8 +63,8 @@ session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. On Opus, plan, review, and judge at `xhigh`; build a decided slice at
-`low`. Disclose shared-context reviews. Subagents do not stash,
+own work. Plan, review and judge on the strongest model; build a decided slice
+and gather facts on cheaper ones. Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
 Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only

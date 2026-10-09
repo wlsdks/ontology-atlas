@@ -1,32 +1,33 @@
 ---
-title: Agent effort tiers
+title: Agent model and effort routing
 doc_type: runbook
 status: current
 area: harness
 ---
 
-# Agent effort tiers
+# Agent model and effort routing
 
-Follow this when you start a Claude Code session that plans, reviews, or fans
-out work. Owner rule (2026-10-02): on Opus, planning and judgment run at `xhigh`;
-development of a decided slice runs at `low`.
+Size the task before starting, then give it to the model that does it well
+enough at the lowest cost. Owner rule (2026-10-09): decided development runs
+on Sonnet, information gathering on Haiku, planning, debugging and review on
+Opus at `xhigh`, and only a one-way or security-critical judgment on Fable.
 
-Basis, as of Claude Code 2.1.283 and Opus 5.5 (2026-09-27): on Opus 5.5 `low`
-comes close to `medium` on several coding evaluations at much lower cost, the
-platform recommends `low` for subagents, and `xhigh`/`max` are for work where a
-quality gain was measured
-([Prompting Claude Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5#calibrate-effort),
-[Effort](https://platform.claude.com/docs/en/build-with-claude/effort)).
-
-| Agent | Effort | Turn cap | Work |
+| Task | Agent | Model · effort | Turn cap |
 |---|---|---|---|
-| lead session | xhigh from `.claude/settings.json` | none | decide, plan small changes, talk to the owner |
-| `planner` | xhigh | 200 | slices a low-effort implementer can build without judgment |
-| `product-planner` | xhigh | 250 | the product spec of a one-way product change, before its review |
-| `implementer` | low | 150 | one planned slice from `/delegate` |
-| `investigator` | xhigh | 250 | root cause of a reproduced failure or flake, then the fix |
-| `reviewer` | xhigh | 150 | an independent review of a returned diff, or of a routed product or design decision |
-| `design-guardian` | xhigh | 300 | a design verdict with edits, when the owner asks |
+| decide, plan small changes, talk to the owner | lead session | the owner's choice · xhigh from `.claude/settings.json` | none |
+| find files, symbols, docs, release notes, web facts | `researcher` | Haiku · low | 60 |
+| build one decided slice from `/delegate` | `implementer` | Sonnet · medium | 150 |
+| slice work a cheaper builder can do without judgment | `planner` | Opus · xhigh | 200 |
+| the product spec of a one-way product change | `product-planner` | Opus · xhigh | 250 |
+| root cause of a reproduced failure or flake, then the fix | `investigator` | Opus · xhigh | 250 |
+| independent review of a diff or a routed decision | `reviewer` | Opus · xhigh | 150 |
+| design verdict with edits, when the owner asks | `design-guardian` | Opus · xhigh | 300 |
+| a one-way, security or release decision that must not be wrong | `reviewer` with `model: fable` on the Agent call | Fable | 150 |
+
+The Agent tool's `model` argument overrides an agent's own model for one call;
+use it to raise a review to Fable or to lower a mechanical sweep to Haiku. A
+built-in agent without its own definition inherits the lead's model, so prefer
+`researcher` over `Explore` or `general-purpose` for lookups.
 
 ## Token budget
 

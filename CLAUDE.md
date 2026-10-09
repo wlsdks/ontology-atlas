@@ -15,9 +15,9 @@ paths and `tests/contract/rules-path-scope.contract.test.ts` keep the
 conditions live. Making a rule resident updates that contract, this sentence,
 and the commit's reason together.
 
-`.claude/agents/` sets effort per type: `implementer` builds a planned slice at
-low; every other agent plans and judges at xhigh
-(`docs/engineering/agent-effort.md`; `CLAUDE_CODE_EFFORT_LEVEL` flattens them).
+Size each task, then route it: `implementer` (Sonnet) builds, `researcher`
+(Haiku) looks up, Opus agents plan, debug and review at xhigh, and `reviewer`
+with `model: fable` judges what must not be wrong (`docs/engineering/agent-effort.md`).
 Claude discovers skills under `.claude/skills/`.
 Codex discovers `.agents/skills/`; it does not auto-load `CLAUDE.md`.
 
