@@ -33,7 +33,7 @@ import { blankComments } from '../../scripts/quality/source-language/inventory.m
  * written in **two places**, a CSS token (`--page-max`) and a JS constant
  * (`PAGE_MAX_WIDTH`).
  *
- * **Why e2e alone is not enough.** `page-frame.spec.ts` measures **whether the three
+ * **Why e2e alone is not enough.** `rail-destinations.spec.ts` measures **whether the three
  * agree with each other**, so it catches one screen leaving the frame (probe: setting
  * skills back to 20px turns it red) but **passes when the shared value is changed
  * wholesale, because the three still agree** (probe: 48→32 stays green).

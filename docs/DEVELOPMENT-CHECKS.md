@@ -637,13 +637,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Every in-body internal link inside a guide chapter's Markdown source resolves to a real destination.
 **Escalate**: `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` opens both locales and checks the rendered link carries that locale's prefix and returns 200.
 
-### Harness lessons
-
-**Run**: `pnpm test:lessons && pnpm lessons:check`
-**Proves**: lesson and verdict records fit the template, verdicts follow reported, verified, fixed order, concurrent verdicts are reconciled, and published lessons are unchanged.
-**Escalate**: `pnpm lessons -- --id=UUID` to read one lesson's full history
-**Fix**: append a new verdict naming every current head; never edit a published lesson.
-
 ### i18n message catalog parity
 
 **Run**: `pnpm test:i18n:messages`
@@ -695,17 +688,10 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Korean text never breaks mid-word at a line wrap across the audited destinations; wraps at spaces are normal.
 **Escalate**: none.
 
-### Landing a pull request
-
-**Run**: `pnpm test:pr:land`
-**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
-**Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
-**Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
-
 ### Landing several branches together
 
 **Run**: `node --test scripts/bundle-branches.test.mjs`
-**Proves**: two or more ready branches land through `/land-bundle` as one integration branch and one `pnpm pr:land`: `pnpm bundle:plan` reports which branches carry work, shared files and trial-merge conflicts without touching a worktree, and `pnpm bundle:prune` removes only component branches `main` provably contains.
+**Proves**: two or more ready branches merge through `/merge` as one integration branch and one `pnpm pr:land`: `pnpm bundle:plan` reports which branches carry work, shared files and trial-merge conflicts without touching a worktree, and `pnpm bundle:prune` removes only component branches `main` provably contains.
 **Escalate**: `pnpm test:pr:land` when the bundle changes how `pnpm pr:land` is called, or none
 **Fix**: repair `scripts/bundle-branches.mjs`.
 
@@ -889,6 +875,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Root, MCP, CLI, and dogfood docs contracts hold, including the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml` templates pointing at `node ./mcp/src/index.js` with `OATLAS_VAULT=./docs/ontology`.
 **Escalate**: `pnpm package:check` when package files, lockfiles, entrypoints, docs contracts, or the graph hot-path perf budget need checking.
 **Fix**: Use `pnpm test:mcp:registration` when only the MCP registration templates changed.
+
+### Merging a pull request
+
+**Run**: `pnpm test:pr:land`
+**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
+**Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
+**Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
 
 ### Moved documents
 

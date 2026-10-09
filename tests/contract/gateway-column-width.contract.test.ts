@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { collectTokens } from '../../scripts/design-tokens.mjs';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
@@ -33,8 +34,8 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  *      `max-w-[var(--page-max)]` remains in gateway surface code. A half migration
  *      (column widened, origin still on the old cap, or the reverse) is the drift
  *      this repository has caught repeatedly.
- *  (e) **Documented** — the gateway table in `docs/DESIGN-SYSTEM.md` carries the
- *      same value. A value that exists only in code is a coincidence, not a spec.
+ *  (e) **Printed** — `pnpm design:tokens` reports the same value, which is how the
+ *      design document points at it instead of carrying a copy.
  *
  * Whether the rendered column and origin actually follow this value (and whether
  * the sides match) is measured per width with rects by
@@ -121,15 +122,9 @@ describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () 
     ).toEqual([]);
   });
 
-  it("(e) DESIGN-SYSTEM.md 관문 표에 같은 값이 등재돼 있다", () => {
-    const doc = read("docs/DESIGN-SYSTEM.md");
-    // Words scattered anywhere are not enough — the token and value must be paired
-    // **within the same table row** to count as documented (this regex closes the
-    // hole the first gate probe found, where renaming the row alone kept it green).
-    const row = new RegExp(`^\\|[^|\\n]*\\|\\s*\`${TOKEN}\`\\s*\\|[^\\n]*\`${gatewayMax}px\``, "m");
-    expect(
-      row.test(doc),
-      `관문 표에 「\`${TOKEN}\` | \`${gatewayMax}px\`」 행이 없다 — 값이 코드에만 있으면 규격이 아니라 우연이다`,
-    ).toBe(true);
+  it("(e) pnpm design:tokens prints the declared value", () => {
+    const printed = collectTokens().filter((token) => token.name === TOKEN);
+    expect(printed.length, `${TOKEN} is not printed by pnpm design:tokens`).toBeGreaterThan(0);
+    expect(printed.map((token) => token.value), "the printer and the stylesheet disagree").toContain(`${gatewayMax}px`);
   });
 });

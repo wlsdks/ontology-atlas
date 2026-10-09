@@ -82,6 +82,7 @@ test('a stylesheet change runs the token gates that read it whole', () => {
   for (const file of ['app/globals.css', 'app/styles/tokens.css']) {
     assert.deepEqual(buildImpactPlan({ files: [file] }).lanes.unit.contractFiles, [
       'tests/contract/design-doc-token-integrity.contract.test.ts',
+      'tests/contract/source-comment-bytes.contract.test.ts',
       'tests/contract/undeclared-token-ref.contract.test.ts',
       'tests/contract/unused-token-ratchet.contract.test.ts',
     ], file);

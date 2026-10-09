@@ -1,4 +1,5 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { posix } from 'node:path';
 
 import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
 
@@ -114,7 +115,7 @@ export function normalizeChangedPath(path) {
   return normalized.startsWith('-') ? `./${normalized}` : normalized;
 }
 
-export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
+export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnlyPaths = [] } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
   // Deleted paths participate in RULE matching only — the per-file direct
   // suggestions below embed paths into file-reading commands, which a deleted
@@ -122,18 +123,20 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   const normalizedDeleted = [...new Set(deletedPaths.map(normalizeChangedPath).filter(Boolean))]
     .filter((path) => !normalizedPaths.includes(path));
   const rulePaths = [...normalizedPaths, ...normalizedDeleted];
-  const staticCommands = rulesToSuggestions(RULES, rulePaths);
+  const commentOnly = new Set(commentOnlyPaths.map(normalizeChangedPath));
+  const behaviorPaths = normalizedPaths.filter((path) => !commentOnly.has(path));
+  const staticCommands = rulesToSuggestions(RULES, rulePaths, commentOnly);
   const withSourceLanguage = prependSuggestions(
     staticCommands,
     directSourceLanguageSuggestions(normalizedPaths),
   );
   const withVitestDirect = prependSuggestions(
     withSourceLanguage,
-    directVitestTestSuggestions(normalizedPaths),
+    directVitestTestSuggestions(behaviorPaths),
   );
   const withPlaywrightDirect = prependSuggestions(
     withVitestDirect,
-    directPlaywrightTestSuggestions(normalizedPaths),
+    directPlaywrightTestSuggestions(behaviorPaths),
   );
   const withLintDirect = prependSuggestions(
     withPlaywrightDirect,
@@ -141,42 +144,53 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   );
   const withMcpDirect = insertBeforeCommand(
     withLintDirect,
-    directMcpUnitTestSuggestions(normalizedPaths),
+    directMcpUnitTestSuggestions(behaviorPaths),
     'pnpm test:mcp:unit',
   );
   const commands = insertBeforeCommand(
     withMcpDirect,
-    directMappedTestSuggestions(normalizedPaths, 'cli', 'direct CLI lib unit test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'cli', 'direct CLI lib unit test for changed helper'),
     'pnpm test:cli:lib',
   );
   const withScriptDirect = insertBeforeCommand(
     commands,
-    directMappedTestSuggestions(normalizedPaths, 'script', 'direct script helper unit test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'script', 'direct script helper unit test for changed helper'),
     'pnpm test:dogfood:script-refs',
   );
   const withFocusedCheckDirect = insertBeforeCommand(
     withScriptDirect,
-    directMappedTestSuggestions(normalizedPaths, 'focusedCheck', 'direct focused-check advisor test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'focusedCheck', 'direct focused-check advisor test for changed helper'),
     'pnpm test:checks:changed',
   );
   const escalations = rulesToSuggestions(ESCALATIONS, rulePaths);
   return {
     paths: normalizedPaths,
     deletedPaths: normalizedDeleted,
-    commands: withFocusedCheckDirect,
+    commands: uniqueCommands(withFocusedCheckDirect),
     escalations,
   };
 }
 
 function directSourceLanguageSuggestions(paths) {
   const sourcePaths = paths.filter(isSupportedSourcePath);
-  if (sourcePaths.length === 0) return [];
+  const citingPaths = paths.filter((path) => isSupportedSourcePath(path) || path.endsWith('.md'));
+  const untestedSourcePaths = sourcePaths.filter((path) => !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
   return [
-    {
+    ...(sourcePaths.length ? [{
       command: 'pnpm source:language',
       reason: 'source comments are English-only across current code, tests, and prototypes',
       paths: sourcePaths,
-    },
+    }] : []),
+    ...(untestedSourcePaths.length ? [{
+      command: 'pnpm exec vitest run tests/contract/source-comment-bytes.contract.test.ts',
+      reason: 'comment bytes may only fall in each source area this change touches',
+      paths: untestedSourcePaths,
+    }] : []),
+    ...(citingPaths.length ? [{
+      command: 'pnpm docs:comment-refs',
+      reason: 'a code comment can cite a Markdown path that this change moved or never existed',
+      paths: citingPaths,
+    }] : []),
   ];
 }
 
@@ -185,7 +199,7 @@ function directSourceLanguageSuggestions(paths) {
  * imports it**, through Vitest's module graph (`vitest related`). The sibling
  * `<name>.test.tsx` alone missed the suite that renders the file: a change to
  * `AcpPermissionCard.tsx` passed every recommended lane while
- * `AcpChatPanel.test.tsx` had 25 failing cases (lesson dbb4417c). Agents in a
+ * `AcpChatPanel.test.tsx` had 25 failing cases. Agents in a
  * fan-out never reach the pre-push `--changed` lane, so this is where it is caught.
  */
 function directVitestTestSuggestions(paths) {
@@ -299,19 +313,53 @@ function directMcpUnitTestSuggestions(paths) {
 }
 
 /** A source maps to its declared test; a declared test maps to itself. */
+let scriptTestImports = null;
+
+function scriptTestFiles(dir = 'scripts') {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scriptTestFiles(path);
+    return entry.name.endsWith('.test.mjs') ? [path] : [];
+  });
+}
+
+function importedModules(testFile) {
+  const dir = posix.dirname(testFile);
+  const text = readFileSync(testFile, 'utf8');
+  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(dir, match[1])));
+}
+
+function scriptTestsFor(path) {
+  if (!/^scripts\/.+\.mjs$/.test(path)) return [];
+  if (path.endsWith('.test.mjs')) return existsSync(path) ? [path] : [];
+  scriptTestImports ??= scriptTestFiles().map((file) => [file, new Set(importedModules(file))]);
+  return scriptTestImports.filter(([, modules]) => modules.has(path)).map(([file]) => file);
+}
+
 function directMappedTestSuggestions(paths, kind, reason) {
   const { bySource, testFiles } = DIRECT_TESTS[kind];
-  return groupByTestFile(paths, (path) => bySource.get(path) ?? (testFiles.has(path) ? path : null), reason);
+  return groupByTestFile(paths, (path) => {
+    const mapped = bySource.get(path) ?? (testFiles.has(path) ? path : null);
+    if (mapped) return [mapped];
+    return kind === 'script' ? scriptTestsFor(path) : [];
+  }, reason);
+}
+
+function uniqueCommands(suggestions) {
+  const seen = new Set();
+  return suggestions.filter((item) => !seen.has(item.command) && seen.add(item.command));
 }
 
 function groupByTestFile(paths, resolve, reason) {
   const byTestFile = new Map();
   for (const path of paths) {
-    const testFile = resolve(path);
-    if (!testFile) continue;
-    const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
-    row.paths.push(path);
-    byTestFile.set(testFile, row);
+    const resolved = resolve(path);
+    for (const testFile of Array.isArray(resolved) ? resolved : resolved ? [resolved] : []) {
+      const row = byTestFile.get(testFile) ?? { command: `pnpm exec node --test ${testFile}`, reason, paths: [] };
+      row.paths.push(path);
+      byTestFile.set(testFile, row);
+    }
   }
   return [...byTestFile.values()];
 }
@@ -340,11 +388,14 @@ function insertBeforeCommand(suggestions, additions, command) {
   ];
 }
 
-function rulesToSuggestions(rules, paths) {
+const BEHAVIOUR_COMMAND = /\bplaywright test\b|^pnpm (?:-s )?(?:lint|typecheck)\b/;
+
+function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   const seen = new Set();
   const suggestions = [];
   for (const rule of rules) {
-    const matchedPaths = paths.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
+    const candidates = BEHAVIOUR_COMMAND.test(rule.command) ? paths.filter((path) => !commentOnly.has(path)) : paths;
+    const matchedPaths = candidates.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
     if (matchedPaths.length === 0 || seen.has(rule.command)) continue;
     seen.add(rule.command);
     suggestions.push({ command: rule.command, reason: rule.reason, paths: matchedPaths });

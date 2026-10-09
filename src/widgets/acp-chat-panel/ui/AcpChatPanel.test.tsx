@@ -86,6 +86,14 @@ vi.mock('next-intl', () => ({
   }),
 }));
 
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...rest }: ComponentProps<'a'> & { href: string }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
@@ -2559,6 +2567,72 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
     );
   });
 
+  describe.each([
+    {
+      name: 'a usage limit with one tool',
+      message: 'session limit reached (429)',
+      runtimes: [{ id: 'claude-acp', label: 'Claude Code' }],
+      kind: 'limit',
+      hint: 'trouble.limit.hintOnlyTool',
+      retry: true,
+      agentsLink: false,
+      pickers: 0,
+    },
+    {
+      name: 'a usage limit with two tools',
+      message: 'session limit reached (429)',
+      runtimes: [
+        { id: 'claude-acp', label: 'Claude Code' },
+        { id: 'codex-acp', label: 'Codex' },
+      ],
+      kind: 'limit',
+      hint: 'trouble.limit.hint',
+      retry: true,
+      agentsLink: false,
+      pickers: 1,
+    },
+    {
+      name: 'a launch failure',
+      message: 'spawn npx ENOENT',
+      runtimes: [{ id: 'claude-acp', label: 'Claude Code' }],
+      kind: 'launch',
+      hint: 'trouble.launch.hint',
+      retry: false,
+      agentsLink: true,
+      pickers: 0,
+    },
+    {
+      name: 'a network failure',
+      message: 'fetch failed: ECONNREFUSED',
+      runtimes: [{ id: 'claude-acp', label: 'Claude Code' }],
+      kind: 'network',
+      hint: 'trouble.network.hint',
+      retry: true,
+      agentsLink: false,
+      pickers: 0,
+    },
+  ])('the error card for $name', ({ message, runtimes, kind, hint, retry, agentsLink, pickers }) => {
+    it('offers only the next steps it can take', async () => {
+      await bootSession({ runtimes, onRuntimeChange: () => {} });
+      fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: 'hi' } });
+      fireEvent.click(screen.getByTestId('acp-chat-send'));
+      await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+      const call = [...bridge.sent].reverse().find((m) => m.method === 'session/prompt');
+      emit({ jsonrpc: '2.0', id: call?.id, error: { code: -32603, message } });
+
+      const card = await screen.findByTestId('acp-chat-error');
+      expect(card.dataset.trouble).toBe(kind);
+      expect(within(card).getByText(hint, { exact: true })).toBeTruthy();
+      if (hint !== 'trouble.limit.hintOnlyTool') {
+        expect(within(card).queryByText('trouble.limit.hintOnlyTool', { exact: true })).toBeNull();
+      }
+      expect(within(card).queryAllByTestId('acp-chat-error-retry')).toHaveLength(retry ? 1 : 0);
+      const door = within(card).queryAllByTestId('acp-chat-error-agents');
+      expect(door).toHaveLength(agentsLink ? 1 : 0);
+      if (agentsLink) expect(door[0]).toHaveAttribute('href', expect.stringMatching(/\/agents/));
+      expect(screen.queryAllByTestId('acp-chat-runtime')).toHaveLength(pickers);
+    });
+  });
 });
 
 describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-08-19)', () => {

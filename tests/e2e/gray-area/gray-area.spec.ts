@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { waitForAnimationsDone, waitForMapStill } from '../settle';
 import { installGrayAreaHarness as install, openGrayAreaPreview as open, inspectGrayArea as inspect, waitForGrayAreaTop } from './harness';
 
-test.beforeEach(()=>{mkdirSync('/tmp/atlas-gray-area-proof',{recursive:true});});
 
 test('reviews the exact folder before any scan and shows bounded actual source with preserved path focus',async({page})=>{
   await page.setViewportSize({width:1512,height:949});await install(page);await open(page);
@@ -11,10 +9,8 @@ test('reviews the exact folder before any scan and shows bounded actual source w
   await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
   const panel=page.getByTestId('gray-area-inspector');await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await waitForGrayAreaTop(page);
-  await page.screenshot({path:'/tmp/atlas-gray-area-proof/static-inspector-initial-1512.png'});
   await page.setViewportSize({width:390,height:949});
   await waitForGrayAreaTop(page);
-  await page.screenshot({path:'/tmp/atlas-gray-area-proof/static-inspector-initial-390.png'});
   await page.setViewportSize({width:1512,height:949});
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
   await expect(page.getByTestId('gray-area-source-witness')).toContainText('canWrite(request)');
@@ -26,11 +22,9 @@ test('reviews the exact folder before any scan and shows bounded actual source w
   await page.getByRole('button',{name:'Compare concepts on map'}).first().click();
   await expect(panel).toBeVisible();await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await waitForAnimationsDone(panel);
-  mkdirSync('/tmp/atlas-gray-area-proof',{recursive:true});await page.screenshot({path:'/tmp/atlas-gray-area-proof/static-inspector-1512.png'});
   for(const width of [390,768,1040]){
     await page.setViewportSize({width,height:949});
     await expect.poll(()=>panel.evaluate(e=>{const r=e.getBoundingClientRect();return Math.max(-r.left,r.right-innerWidth,-r.top,r.bottom-innerHeight);})).toBeLessThanOrEqual(1);
-    await page.screenshot({path:`/tmp/atlas-gray-area-proof/static-inspector-${width}.png`});
   }
   await page.getByRole('button',{name:'Scope, limits and permissions',exact:true}).click();
   await expect(page.getByRole('list',{name:'Implementation folders inspected'}).getByRole('listitem')).toHaveText(['src/research','src/retry']);
@@ -43,7 +37,6 @@ test('prepares an editable investigation without sending a provider turn or writ
   await page.getByTestId('acp-chat-seated-detail').click();
   const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');
   await expect(detail).toContainText('Passes the request to the local write-policy decision.');
-  writeFileSync('/tmp/atlas-gray-area-proof/investigation-packet.txt',(await composer.innerText())+'\n\n'+(await detail.innerText()));
   const state=await page.evaluate(()=> (window as unknown as {__atlasLibraryWorkHarness:{snapshot:()=>{calls:{method:string}[];writes:unknown[]}}}).__atlasLibraryWorkHarness.snapshot());
   expect(state.calls.filter(c=>c.method==='session/prompt')).toHaveLength(0);expect(state.writes).toHaveLength(0);
 });
@@ -127,7 +120,6 @@ test('the inspector, candidate detail, scope and source open with nonempty WCAG 
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
   await expect(page.getByRole('region',{name:'Captured source',exact:true})).toBeFocused();
   await audit('source excerpt');
-  writeFileSync('/tmp/atlas-gray-area-proof/open-surfaces-axe.json',JSON.stringify(receipts,null,2));
 });
 
 test('a comparison from the saved Hex view draws both elements on the flat recorded path',async({page})=>{
@@ -154,8 +146,6 @@ test('a comparison from the saved Hex view draws both elements on the flat recor
   await expect(page.getByTestId('gray-area-inspector')).toBeVisible();
   await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>({view:new URLSearchParams(location.search).get('view'),saved:localStorage.getItem('atlas.appearance.hex-board')}))).toEqual({view:null,saved:'off'});
-  writeFileSync('/tmp/atlas-gray-area-proof/hex-comparison.json',JSON.stringify(endpoints,null,2));
-  await page.screenshot({path:'/tmp/atlas-gray-area-proof/hex-comparison.png'});
 });
 
 test('a prepared pair draft leads with its localized topic, retains folded evidence and retires its topic when cleared',async({page})=>{
@@ -170,10 +160,8 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await expect(composer).toContainText('재시도 전달');await expect(composer).toContainText('쓰기 권한 규칙');
   await expect(composer).not.toContainText('grayAreaInvestigation:v1');
   await expect(page.getByTestId('acp-chat-suggestions')).toHaveCount(0);await expect(page.getByTestId('acp-starting-suggestions')).toHaveCount(0);
-  await waitForAnimationsDone(dock);await page.screenshot({path:'/tmp/atlas-gray-area-proof/prepared-pair-ko-initial.png'});
-  await page.getByTestId('acp-chat-seated-detail').click();
+  await waitForAnimationsDone(dock);  await page.getByTestId('acp-chat-seated-detail').click();
   const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');await expect(detail).toContainText('bodyDigest');await expect(detail).toContainText('requestedMode');
-  await page.screenshot({path:'/tmp/atlas-gray-area-proof/prepared-pair-ko.png'});
   await composer.fill('제가 고친 조사 질문이에요');
   await page.getByTestId('acp-chat-runtime').click();await page.getByRole('option',{name:'Codex',exact:true}).click();
   await expect(composer).toHaveText('제가 고친 조사 질문이에요');await expect(heading).toContainText('재시도 전달');
