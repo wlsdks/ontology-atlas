@@ -77,7 +77,7 @@ export function renderBrief({ slug, owns, read, path, budget, port, checks }) {
     ...checkLines,
     '   Finish with `pnpm checks:changed -- --run`; quote every command exactly as run.',
     `6. Primary sources: ${read.length ? read.map((p) => `\`${p}\``).join(', ') : 'the owned files'}.`,
-    `7. Landing: ${landing}`,
+    `7. Merge: ${landing}`,
     `8. Budget: ${budget || 'none'}.`,
     '',
     '## Task',

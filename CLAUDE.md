@@ -26,6 +26,7 @@ Codex discovers `.agents/skills/`; it does not auto-load `CLAUDE.md`.
 `.claude/settings.json` owns Claude permissions and hooks. Every hook is
 mirrored in `.codex/hooks/` as an adaptation (a Codex edit is an `apply_patch`
 envelope), not a copy; `block-secret-read.sh` is Codex-only because Claude uses
-`permissions.deny`. Hooks block irreversible commands, report lint and language
+`permissions.deny`, and `session-length.sh` is Claude-only because it reads
+Claude's transcript. Hooks block irreversible commands, report lint and language
 findings at edit time, and inject the vault census at session start; each
 header says why. `pnpm test:claude:hooks` guards the wiring.

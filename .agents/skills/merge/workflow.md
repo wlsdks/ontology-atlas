@@ -1,4 +1,4 @@
-# Review and land
+# Review and merge
 
 The author never approves its own slice, and nothing is deleted until `main`
 provably has it. This is the order that keeps both promises cheap.
@@ -43,14 +43,14 @@ lettered amendments at the top of the shared brief before the rest start
 - A finding that comes back a second time means the slice needed judgment:
   re-plan the slice before sending it out again.
 
-## 3. Land
+## 3. Merge
 
 One branch, from its worktree:
 
     pnpm conflicts:scan -- --head=<branch>
-    pnpm pr:land <number>    # in the background; exit 0 landed, 1 ejected or closed
+    pnpm pr:land <number>    # in the background; exit 0 merged, 1 ejected or closed
 
-The lander waits and reports. Do not poll GitHub in a loop: every landing
+The merge run waits and reports. Do not poll GitHub in a loop: every merging
 shares one API quota. `pnpm pr:queue` once shows the queue and the train.
 
 - **Refused or ejected on a conflict**: in the branch worktree run
@@ -61,7 +61,7 @@ shares one API quota. `pnpm pr:queue` once shows the queue and the train.
   back to the author. Rerun the slice's acceptance and
   `pnpm checks:changed -- --run`, push, and run `pnpm pr:land <number>` again.
 - **Ejected red**: read the failing context and its run. A context known to
-  flake gets one more landing with `--flaky=<context>`; any other failure goes
+  flake gets one more attempt with `--flaky=<context>`; any other failure goes
   to a debugging agent with the run URL and the ejection comment.
 
 Several branches ([bundle guide](guides/bundle.md)): `pnpm bundle:plan -- <branches or --match=<glob>>` reports
@@ -72,7 +72,7 @@ the trial-merge conflicts. Select only branches you created.
   merge is clean: each branch pushed with an open draft (the author's, when
   its brief said so); in each run `pnpm conflicts:scan` and
   `pnpm pr:land <number> --no-wait`; then run `pnpm pr:land --conduct`, or
-  keep one landing waiting. `pnpm pr:land --plan <n...>` is the dry run.
+  keep one merging waiting. `pnpm pr:land --plan <n...>` is the dry run.
 - **One integration branch**, when the trial merge conflicts, a shared file
   needs a reading neither branch can do alone, or one slice does not build
   without another: in a clean worktree,
@@ -86,22 +86,22 @@ the trial-merge conflicts. Select only branches you created.
   (`gates=true` means also run `pnpm lint`) and `pnpm checks:changed -- --run`, push, and open one draft whose body lists
   each component (branch @ short sha, and its pull request number) and a
   `### Conflicts` section naming each shared file and how it was resolved.
-  Land it with `pnpm pr:land <number>`; leave the component drafts unqueued.
+  Merge it with `pnpm pr:land <number>`; leave the component drafts unqueued.
 
 ## 4. Clean up after the proof
 
 Only after it landed: a waiting `pnpm pr:land <number>` exited 0, or
 `pnpm pr:queue` shows it landed:
 
-    pnpm bundle:prune -- <branch...>            # dry run: the landing commit, or why it keeps
+    pnpm bundle:prune -- <branch...>            # dry run: the merging commit, or why it keeps
     pnpm bundle:prune -- <branch...> --apply
 
 The apply step removes the worktree, closes an open component draft, deletes
 the local branch, its `worktree-agent-*` twin and the origin branch, and
 prunes worktree metadata. It lifts a worktree lock only when the locking
 process has exited, or when the lock is your own session's (the prune process
-or one of its ancestors) on a branch proven landed with a clean worktree; a
+or one of its ancestors) on a branch proven merged with a clean worktree; a
 lock held by any other live process stays. `not provably landed` means it did
-not land as-is: read it. A branch kept for a lock or uncommitted changes landed
+not merge as-is: read it. A branch kept for a lock or uncommitted changes merged
 and waits for its holder. Never delete either by hand, and never select a
 branch another session created.

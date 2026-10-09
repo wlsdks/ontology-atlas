@@ -162,7 +162,7 @@ The CLI runs from a source checkout as `node cli/src/index.mjs` with Node.js 24;
 ## Development
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) first; external pull requests come from forks. [AGENTS.md](AGENTS.md) is the contract for people and agents.
-Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- --run`, and land it with `pnpm pr:land <number>`. Landing preserves the original commits
+Run `pnpm install` and `pnpm dev`, check a change with `pnpm checks:changed -- --run`, and merge it with `pnpm pr:land <number>`. Merging preserves the original commits
 and adds merge commits. Trains share CI while retaining component ancestry;
 they also add a final train integration merge.
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference; [Features](docs/FEATURES.md), [Architecture](docs/ARCHITECTURE.md) and [Product direction](docs/PRODUCT-DIRECTION.md) describe what the product does and why.
@@ -174,8 +174,8 @@ they also add a final train integration merge.
 |---|---|
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts ([guide](docs/BACKLOG.md)) |
-| `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and landing lines filled in |
-| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan landing several branches as one, then prune the branches main contains (`/land`) |
+| `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
@@ -195,8 +195,8 @@ they also add a final train integration merge.
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm perf:mcp:memory` · `pnpm perf:mcp:memory:check` | Whether the MCP server releases memory across repeated calls; about a minute |
 | `pnpm pr:ci <n>` | Fire CI on a draft now |
-| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a landing, or run trains until the queue is empty |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train, and show the queue |
+| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request to merge (green ones merge together behind one CI run), and show the queue |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |

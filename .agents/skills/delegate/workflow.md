@@ -18,7 +18,7 @@ pnpm brief:new -- --slug=<branch> --owns=<path,...> [--read=<path,...>] [--port]
 `brief:new` fills the eight mandatory lines: the free port and its Playwright
 environment (or no server), owned and read-only files, no stash, no
 `git add -A` and no worktree deletion, scratch in the session scratchpad, the
-focused checks for the owned paths, primary sources, the landing rule, and the
+focused checks for the owned paths, primary sources, the merge rule, and the
 budget. Under its `## Task` add only what a script cannot know: the decisions
 already made, the acceptance command, and what to report. Choose `--owns` so no
 file is in two slices and none is changed by an open pull request.
@@ -46,4 +46,4 @@ scratchpad brief and give each agent that file plus its slice id:
 - every slice reports each owned path's outcome (changed, nothing to do, or
   skipped with a reason), so coverage is counted, not trusted.
 
-After the slices return, `/land` reviews and lands them.
+After the slices return, `/merge` reviews and merges them.

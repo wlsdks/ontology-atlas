@@ -1,4 +1,4 @@
-# Land many branches
+# Merge many branches
 
 `pnpm pr:land` is a queue now: it labels the pull request `landing-queue`, and
 the conductor merges up to 20 queued pull requests onto one `train/*` branch
@@ -47,7 +47,7 @@ gh pr create --draft --head <branch> --title "<type>: <slice>" --body-file <file
 pnpm pr:land <number> --no-wait
 ```
 
-Then one process conducts, or keep one of the landings waiting:
+Then one process conducts, or keep one of the merges waiting:
 
 ```bash
 pnpm pr:land --plan <n...>     # dry run: fast-path verdicts, the next train, trial merges
@@ -58,11 +58,11 @@ pnpm pr:queue                  # the queue, the train in flight and its CI
 A slice that is already green on its own head and touches nothing `main` or the
 train in flight touches merges on the fast path without waiting. A red train is
 split and rerun; the breaker gets a comment and loses its label. Fix it and
-`pnpm pr:land <number>` again. The conductor closes landed components and
+`pnpm pr:land <number>` again. The conductor closes merged components and
 deletes branches `main` provably contains; `pnpm bundle:prune` cleans up the
 local worktrees afterwards. Clean up only after `pnpm pr:land` exits 0, and through
 `pnpm bundle:prune`, which keeps any branch `main` does not contain; never
-`git branch -D` on a landing you have not seen succeed.
+`git branch -D` on a merge you have not seen succeed.
 
 ## 3. The bundle path
 
@@ -93,7 +93,7 @@ pnpm pr:land <bundle-number>
 Body: `## Summary` with one line per component (branch @ short sha, and its PR
 number if it had one), the commits added on top and why, a `### Conflicts`
 section naming each shared file and how it was resolved, then `## Test plan`.
-Leave component drafts unqueued; never land them separately. After it lands:
+Leave component drafts unqueued; never merge them separately. After it lands:
 
 ```bash
 pnpm bundle:prune -- <same selection>            # dry run: lists what main provably contains
@@ -102,5 +102,5 @@ pnpm bundle:prune -- <same selection> --apply    # closes component PRs, removes
 
 `bundle:prune` acts only on branches whose content `origin/main` provably
 contains, skips worktrees with uncommitted changes, and prints each head sha for
-recovery. A branch it keeps means content did not land as-is: inspect it before
+recovery. A branch it keeps means content did not merge as-is: inspect it before
 deleting anything by hand.

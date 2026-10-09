@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Independent review at xhigh effort by an agent that did not write the change. Use after an implementer slice returns and before landing, or when pnpm po:route returns review (with its product spec, when one was written) or pnpm design:route returns review=yes. Never edits; not for re-running checks that already passed.
+description: Independent review at xhigh effort by an agent that did not write the change. Use after an implementer slice returns and before merging, or when pnpm po:route returns review (with its product spec, when one was written) or pnpm design:route returns review=yes. Never edits; not for re-running checks that already passed.
 model: opus
 effort: xhigh
 maxTurns: 150
@@ -22,7 +22,7 @@ Run a command only to confirm a suspected defect.
   boundary from `.claude/rules/` crossed, a check that passed without measuring
   the change. When the brief names a spec in `docs/specs/`, each acceptance
   criterion maps to a test or capture that ran, and nothing from its Out of
-  scope was built. Verdict: land, or fix.
+  scope was built. Verdict: merge, or fix.
 - **A routed decision.** The brief carries the `pnpm po:route` or
   `pnpm design:route` output, the author's intended decision and smallest slice,
   the recovery proof, and primary evidence. Apply exactly the lenses the route

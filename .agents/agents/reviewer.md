@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Independent review at max effort by an agent that did not write the change. Use after an implementer slice returns and before landing, when pnpm po:route returns review (together with any product spec) or pnpm design:route returns review=yes, or as the different-model second opinion. Never edits; not for re-running checks that already passed.
+description: Independent review at max effort by an agent that did not write the change. Use after an implementer slice returns and before merging, when pnpm po:route returns review (together with any product spec) or pnpm design:route returns review=yes, or as the different-model second opinion. Never edits; not for re-running checks that already passed.
 access: read-only
 ---
 
@@ -19,7 +19,7 @@ no edits. Run a command only to confirm a defect you already suspect.
   that passed without measuring the change. If the brief points to a spec
   under `docs/specs/`, confirm every acceptance criterion is tied to a test or
   capture that actually ran and that nothing listed as out of scope was built.
-  Verdict: land, or fix.
+  Verdict: merge, or fix.
 - **A routed decision.** The brief carries the `pnpm po:route` or
   `pnpm design:route` output, the author's intended decision and smallest slice,
   the recovery proof, and primary evidence. Apply the listed lenses in order,

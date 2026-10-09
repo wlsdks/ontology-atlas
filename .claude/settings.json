@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "_comment": "Hook paths must be absolutised through $CLAUDE_PROJECT_DIR. With a relative path, any shell whose cwd is not the repository root (a worktree, a subagent scratch directory, a monorepo subfolder) fails to find the file, and the result is not a block but a non-blocking status code: the guard disappears silently and the command runs. An npm publish guard defeated that way removes the whole reason this repository has hooks. The `:-.` fallback exists so clients without the variable keep the previous behaviour; it is not the normal path.",
-  "_comment_permissions": "Deny rules are the one guard that needs no path to resolve and no workspace trust: Claude Code applies them immediately and evaluates them ahead of ask, allow, and any PreToolUse hook. Two standing rules \u2014 `local-first.md` \"never scan password, credential, or key files from the user's disk\" and `forbidden.md` \"never commit service accounts, API keys, or .env* files\" \u2014 had no mechanism at all. .gitignore stops a secret being committed; nothing stopped one being read into a transcript and sent to a model. The .env names are enumerated rather than globbed because a deny rule cannot carry an exception and `.env.example` is tracked, documented, and scanned by the source-language gate. `tests/contract/secret-read-guard.contract.test.ts` derives the list from .gitignore so the two cannot drift. Key material (*.pem, *.p8, *.p12, *.key, SSH keys) and the credential stores a session could reach (the release signing folder, gh, npm, netrc, AWS) are denied wherever they sit; scripts/claude-hooks.test.mjs holds the Codex secret-read hook to the same list.",
+  "_comment_permissions": "Deny rules are the one guard that needs no path to resolve and no workspace trust: Claude Code applies them immediately and evaluates them ahead of ask, allow, and any PreToolUse hook. Two standing rules — `local-first.md` \"never scan password, credential, or key files from the user's disk\" and `forbidden.md` \"never commit service accounts, API keys, or .env* files\" — had no mechanism at all. .gitignore stops a secret being committed; nothing stopped one being read into a transcript and sent to a model. The .env names are enumerated rather than globbed because a deny rule cannot carry an exception and `.env.example` is tracked, documented, and scanned by the source-language gate. `tests/contract/secret-read-guard.contract.test.ts` derives the list from .gitignore so the two cannot drift. Key material (*.pem, *.p8, *.p12, *.key, SSH keys) and the credential stores a session could reach (the release signing folder, gh, npm, netrc, AWS) are denied wherever they sit; scripts/claude-hooks.test.mjs holds the Codex secret-read hook to the same list.",
   "_comment_effort": "Opus 5.5 starts at medium, and a user-level effortLevel no longer applies to it, so the lead session that plans and judges would run at medium. Owner rule: plan and judge at xhigh, build at low. Agent `effort:` frontmatter overrides this per type (implementer low; planner, product-planner, investigator, reviewer, design-guardian xhigh). Never set CLAUDE_CODE_EFFORT_LEVEL: it outranks that frontmatter. docs/engineering/agent-effort.md",
   "_comment_compaction": "Opus 5.5 runs with a native 1M window and compacts only at about 967K tokens, and every turn re-reads the whole context from cache. Measured over the transcripts of 2026-09-26..10-04 (one lead, 190 subagents, 7.71B cache-read tokens): investigators re-read 415K tokens per turn on average and the lead 511K, with runs reaching 966K before compacting. Replaying those turns with a 200K window processes 38% of the context tokens (300K: 50%). Subagents follow the same compaction logic. Raise it for one launch with `claude --autocompact 400k`; `pnpm harness:tokens` reports the effect.",
   "autoCompactWindow": 200000,
@@ -79,6 +79,16 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/session-length.sh\""
           }
         ]
       }

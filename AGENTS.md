@@ -59,7 +59,7 @@ session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
 | Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
 | Authorized parallel work | `/delegate` |
-| Returned or ready branches | `/land`; your own branch with no review due lands with `pnpm pr:land` |
+| Returned or ready branches | `/merge`; your own branch with no review due merges with `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
@@ -109,7 +109,7 @@ Project containment is implicit; do not add `project:`. Vault writes go through
 vault rename, and write success is not meaning acceptance. Typos, comments,
 isolated style, lint, and fixtures without meaning changes skip the sync.
 
-## Documentation, landing, and instruction integrity
+## Documentation, merging, and instruction integrity
 
 Keep the owner document current: public behavior in `README.md` and
 `docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
@@ -119,7 +119,7 @@ Never edit frozen history (`docs/records/README.md`); never edit or stage
 generated `src/entities/docs-vault/data/` or `public/docs-vault/`, which
 `pnpm docs-vault:build` writes.
 
-Use English conventional commit subjects. Open pull requests as drafts and land
+Use English conventional commit subjects. Open pull requests as drafts and merge
 only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 `git reset --hard`, or `git push --force` without explicit user authority.
 Publishing needs an explicit request and `npm pack --dry-run` first.
