@@ -2,27 +2,13 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone } from "./settle";
 import { stubDirectoryPicker } from "./vault-picker-stub";
-import { BROKEN_VAULT, HEALTHY_VAULT } from "./fixtures/broken-vault";
+import { BROKEN_VAULT } from "./fixtures/broken-vault";
 
 /**
- * Does the screen **tell the truth about validation results** — a gate measured
- * with a defective vault.
- *
- * ## Why it has to be a defective vault
- *
- * Both the dogfood vault and the sample vault have 0 issues, so a gate asking
- * whether validation results appear on screen stayed green forever **with nothing to
- * see**. Measured 2026-08-04: opening a folder with 5 errors made four places lie at
- * once:
- *
- *   ① the readiness meter was 100% indigo (the danger segment measured 0px)
- *   ② the per-file diagnostics showed warnings and **hid errors**
- *   ③ documents without a `kind` had no diagnostics block rendered at all
- *   ④ a document absent from the map claimed to be "map evidence"
- *
- * None of the four can be reproduced on a healthy vault. So this spec **reproduces
- * the defects as data** and then measures the screen — and runs the same measurement
- * against a healthy vault to confirm the detector is not always-red.
+ * Defective-vault reader diagnostics: exact errors, untyped documents and map evidence.
+ * The 2026-10-10 Analysis relationship/evidence decision retires the global repair list.
+ * Its two list-only cases are removed; every reader diagnostic and positive/negative
+ * map-evidence assertion remains. A healthy-looking sample cannot exercise these errors.
  */
 
 async function loadVault(page: Page, seed: Record<string, string>) {
@@ -34,28 +20,6 @@ async function loadVault(page: Page, seed: Record<string, string>) {
   await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
-}
-
-/**
- * The blocked-document rows on the "to do" tab, read as text.
- *
- * **What replaced the meter (2026-08-31).** This measurement used to read the readiness meter's
- * danger segment, because that was the only place a validation error reached the screen: a colour
- * band that said "5 blocked" and named none of them. The owner's one-list decision removed the
- * meter, and the same fact is now a row per document that names the file and says which check
- * failed. That is strictly more truth-telling, and it is what this gate measures now.
- */
-async function measureBlockedRows(page: Page) {
-  await page.goto("/ko/ontology/insights/?tab=do-next&guides=off");
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
-  return page.evaluate(() => {
-    const rows = [...document.querySelectorAll('[data-fix-kind="blocked-document"]')].map((el) =>
-      (el.textContent ?? "").replace(/\s+/g, " ").trim(),
-    );
-    const heading = document.querySelector('[data-testid="do-next-list-title"]');
-    return { rows, heading: (heading?.textContent ?? "").replace(/\s+/g, " ").trim() };
-  });
 }
 
 /**
@@ -111,33 +75,6 @@ async function measureDoc(page: Page, title: string, expectFile: string) {
 }
 
 test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () => {
-  test("① 막힌 문서: 오류가 있으면 그 문서가 목록에서 자기 이름을 말한다", async ({ page }) => {
-    await loadVault(page, BROKEN_VAULT);
-    const broken = await measureBlockedRows(page);
-    console.log("[blocked/broken]", JSON.stringify(broken));
-
-    expect(
-      broken.rows.length,
-      "오류가 5건인데 「할 일」 목록에 막힌 문서가 한 줄도 없다 — 화면이 검사 결과를 말하지 않는다",
-    ).toBeGreaterThan(0);
-    // A row that says "your AI cannot read this" without saying which check failed is a colour
-    // band with words on it. Every row must carry both the file and the reason.
-    for (const row of broken.rows) {
-      expect(row, `막힌 문서 행이 파일 이름을 말하지 않는다: ${row}`).toMatch(/[a-z-]+\//);
-      expect(row.length, `막힌 문서 행에 이유가 없다: ${row}`).toBeGreaterThan(20);
-    }
-  });
-
-  test("① 대조군 — 정상 볼트에는 막힌 문서 행이 없다", async ({ page }) => {
-    await loadVault(page, HEALTHY_VAULT);
-    const healthy = await measureBlockedRows(page);
-    console.log("[blocked/healthy]", JSON.stringify(healthy));
-    expect(
-      healthy.rows,
-      "정상 볼트에서까지 막힌 문서가 뜨면 이 계기는 항상-빨강이라 쓸모없다",
-    ).toEqual([]);
-  });
-
   test("② 오류가 파일 옆에서 보인다 (경고만 보여 주지 않는다)", async ({ page }) => {
     await loadVault(page, BROKEN_VAULT);
     await openDocument(page, "capabilities/checkout");

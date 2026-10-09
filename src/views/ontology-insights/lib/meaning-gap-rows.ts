@@ -94,7 +94,7 @@ export interface DomainChoice {
 }
 
 /** Meaning-gap templates (`%ref%` token) plus the shared verification gate. */
-export interface MeaningGapProse {
+interface MeaningGapProse {
   verificationGate: string;
   missingDefinition: string;
   missingDefinitionProof: string;

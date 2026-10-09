@@ -284,58 +284,36 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologyVerificationSelectedParam) &&
     (payload.markers.ontologyMapSelectedRelationSource === topologyVerificationSelectedParam ||
       payload.markers.ontologyMapSelectedRelationTarget === topologyVerificationSelectedParam);
-  /*
- * The board has two rows and this file cannot import the TypeScript that owns
- * either list. `insights-tab-count-parity.contract.test.ts` keeps the numbers in
- * step, so a subject or a question added without updating them fails in a unit
- * run rather than eight minutes into a packaged-app verification.
- *
- * Row one names the subject (brief, concepts, library, harness) and is a
- * radiogroup. Row two holds the concepts subject's own questions and is the only
- * real tab row — it is not drawn for the other three subjects. Counting
- * `[role="tab"]` alone therefore reads 0 on the default landing, which is what a
- * single pinned tab count got wrong (2026-09-20).
- */
-const INSIGHTS_SUBJECT_COUNT = 4;
-const INSIGHTS_ONTOLOGY_TAB_COUNT = 7;
-const INSIGHTS_ONTOLOGY_SUBJECT = "insights-core-ontology";
+  // One section tab row; the selected analytical question remains inside its section.
+  const INSIGHTS_SUBJECT_COUNT = 5;
 
   const rawRelationTypePattern =
     /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
   if (webviewPath.includes("/ontology/insights")) {
     if (payload.markers.insightsMaintenanceBoard !== true) {
-      return "WebView did not report the insights maintenance board marker";
+      return "WebView did not report the insights relationship analysis marker";
     }
-    if (payload.markers.insightsQuestionModel !== "one-tab-one-question") {
+    if (payload.markers.insightsQuestionModel !== "claim-evidence") {
       return `WebView insights question model was ${payload.markers.insightsQuestionModel || "missing"}`;
     }
     if (payload.markers.insightsSubjectCount !== INSIGHTS_SUBJECT_COUNT) {
       return `WebView insights subject count was ${payload.markers.insightsSubjectCount ?? "missing"}, expected ${INSIGHTS_SUBJECT_COUNT}`;
     }
-    const onOntologySubject = payload.markers.insightsSelectedSubject === INSIGHTS_ONTOLOGY_SUBJECT;
-    const expectedTabCount = onOntologySubject ? INSIGHTS_ONTOLOGY_TAB_COUNT : 0;
+    const expectedTabCount = INSIGHTS_SUBJECT_COUNT;
     if (payload.markers.insightsTabCount !== expectedTabCount) {
       return `WebView insights question tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected ${expectedTabCount} on ${payload.markers.insightsSelectedSubject || "an unnamed subject"}`;
     }
-    if (payload.markers.insightsSelectedTabCount !== (onOntologySubject ? 1 : 0)) {
+    if (payload.markers.insightsSelectedTabCount !== 1) {
       return `WebView insights selected tab count was ${payload.markers.insightsSelectedTabCount ?? "missing"} on ${payload.markers.insightsSelectedSubject || "an unnamed subject"}`;
     }
     if (!payload.markers.insightsSelectedPanelKey) {
-      return "WebView insights board drew no panel for the selected subject";
+      return "WebView insights analysis drew no panel for the selected subject";
     }
     if (payload.markers.insightsSelectedPanelVisible !== true) {
       return "WebView insights selected panel was not visible";
     }
-    /*
-     * The agent handoff row belongs to the concepts questions. The other subjects hand off from
-     * inside their own panel, the to-do tab offers the agent per row instead of once per tab,
-     * and an open ACP dock carries the same action — so the row is expected on exactly the
-     * concepts questions other than to-do.
-     */
-    if (onOntologySubject && payload.markers.insightsSelectedPanelKey !== "do-next" && payload.markers.insightsHandoff !== true) {
-      return `WebView did not report the insights agent handoff marker on ${payload.markers.insightsSelectedPanelKey} (an open agent dock also removes it)`;
-    }
+
   }
   if (
     webviewPath.includes("/topology") &&

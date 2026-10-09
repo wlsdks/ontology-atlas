@@ -250,24 +250,26 @@ test.describe("하네스 탭", () => {
     await page.setViewportSize({ width: 1040, height: 720 });
     await page.goto('/en/ontology/insights/?tab=brief&guides=off');
     await expect(page.getByTestId('brief-tab')).toBeVisible();
-    const main = page.locator('main[data-insights-surface="maintenance-board"]');
-    const swapHost = page.locator('[data-insights-panel]').locator('..');
-    const briefBefore = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, className: element.className }));
-    expect(briefBefore.className).toContain('min-h-full');
-    expect(briefBefore.className).not.toContain('overflow-hidden');
+    const main = page.locator('main[data-insights-surface="relationship-analysis"]');
+    await expect(page.getByTestId('brief-headline')).toHaveAttribute('data-brief-headline-state', 'settled');
+    const briefBefore = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY }));
+    expect(briefBefore.overflowY).toBe('auto');
+    expect(await main.evaluate(element => element.scrollHeight)).toBeGreaterThan(await main.evaluate(element => element.clientHeight));
 
     await page.getByTestId('insights-core-harness').click();
     await expect(page.getByTestId('harness-coverage-overview')).toBeVisible();
     await waitForFiniteAnimations(page);
-    expect(await main.getAttribute('class')).toContain('overflow-hidden');
+    expect(await main.evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden');
 
     await page.getByTestId('insights-core-brief').click();
     await expect(page.getByTestId('brief-tab')).toBeVisible();
     await waitForFiniteAnimations(page);
-    await expect.poll(() => swapHost.evaluate((element) => ({ height: (element as HTMLElement).style.height, transition: (element as HTMLElement).style.transition }))).toEqual({ height: '', transition: '' });
-    const briefAfter = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, className: element.className }));
+    const briefAfter = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY }));
     expect(briefAfter).toEqual(briefBefore);
-    expect(await page.locator('[data-insights-panel="brief"]').getAttribute('class')).not.toContain('overflow-hidden');
+    const back = page.getByTestId('analysis-back-to-system');
+    await back.scrollIntoViewIfNeeded();
+    await expect(back).toBeInViewport({ ratio: 1 });
+    expect(await back.evaluate(element => { const rect = element.getBoundingClientRect(); const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2); return element === hit || element.contains(hit); })).toBe(true);
     console.info('GUIDANCE_BRIEF_SCROLL_RESTORE', JSON.stringify({ briefBefore, briefAfter }));
   });
 

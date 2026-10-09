@@ -84,6 +84,8 @@ Your agent reaches the folder two ways:
 - **MCP:** the agent starts the Atlas MCP server, which reads and writes the folder on disk, even with the app closed. [Connect an agent](docs/guide/connect-agent.md) · [MCP reference](mcp/README.md)
 - **ACP:** Claude Agent and Codex also run in the app's own chat; each write waits until you allow it. [Agents](docs/features/agents.md)
 
+Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. [Analysis](docs/features/analysis.md)
+
 ## Local-first
 
 - No backend, account or telemetry. The folder stays plain Markdown on your disk.

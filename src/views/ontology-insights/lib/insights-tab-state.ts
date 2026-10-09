@@ -1,7 +1,5 @@
-/**
- * `/ontology/insights` tab state. The URL `?tab=` is the source of truth, so a refresh or shared link opens the same
- * tab; parsing and serialization are pure. Two rows: the first names the subject (brief, ontology, library,
- * harness), and the ontology's questions sit in a second row, one question per tab.
+/** URL compatibility intents for Analysis. The new workspace maps ontology questions to relationships or evidence;
+ * supporting records keep their named section. Query serialization preserves orthogonal flags and return context.
  */
 export const INSIGHTS_TABS = [
   "brief",
@@ -16,7 +14,10 @@ export const INSIGHTS_TABS = [
   "flow",
 ] as const;
 
-/** The first row: what a tab is about. `ontology` opens the question row underneath. */
+/** Sections rendered by Analysis; old ontology tab names remain compatible URL intents. */
+export const INSIGHTS_SECTIONS = ["connections", "brief", "library", "harness", "flow"] as const;
+
+/** The legacy first row: what a tab is about. `ontology` opens the question row underneath. */
 export const INSIGHTS_CORES = ["brief", "ontology", "library", "harness"] as const;
 
 export type InsightsCore = (typeof INSIGHTS_CORES)[number];
@@ -60,8 +61,8 @@ export function parseInsightsTabHref(href: string): InsightsTab | null {
   return parseInsightsTab(new URLSearchParams(query.slice(1)).get("tab"));
 }
 
-// The brief opens first: "what in my understanding has to change", across ontology, wiki and harness.
-export const DEFAULT_INSIGHTS_TAB: InsightsTab = "brief";
+// Relationships open first; saved ontology tabs map into the shared Analysis workspace.
+export const DEFAULT_INSIGHTS_TAB: InsightsTab = "connections";
 
 function isInsightsTab(value: string): value is InsightsTab {
   return (INSIGHTS_TABS as readonly string[]).includes(value);

@@ -749,3 +749,40 @@ describe("nameLocalesFor", () => {
     expect(nameLocalesFor("en", { display_fr: "x" }, FOUR)).toEqual(["en", "ko"]);
   });
 });
+
+describe('recorded canonical graph declarations', () => {
+  it.each(['domains', 'capabilities', 'elements', 'dependencies', 'relates', 'describes', 'broader'])('shows the stored %s key and exact target', key => {
+    renderBlock('en', { frontmatter: { kind: 'capability', slug: 'capabilities/order-cancel', title: 'Order Cancellation', [key]: ['capabilities/stock-tracking'] } });
+    fireEvent.click(screen.getByTestId('doc-frontmatter-summary'));
+    const field = screen.getByTestId(`doc-frontmatter-field-${key}`);
+    expect(field).toHaveTextContent(`${key}:`);
+    expect(field).toHaveTextContent('capabilities/stock-tracking');
+  });
+
+  it('uses the existing resolver for canonical dependencies and keeps unresolved targets plain', () => {
+    const onNavigate = vi.fn();
+    const resolveRef = (ref: string) => ref === 'capabilities/stock-tracking' ? ref : null;
+    render(<NextIntlClientProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', dependencies: ['capabilities/payment-cancel', 'capabilities/stock-tracking'] } }} resolveRef={resolveRef} onNavigate={onNavigate} /></NextIntlClientProvider>);
+    fireEvent.click(screen.getByTestId('doc-frontmatter-summary'));
+    const field = screen.getByTestId('doc-frontmatter-field-dependencies');
+    expect(field).toHaveTextContent('capabilities/payment-cancel');
+    expect(within(field).queryByTestId('doc-frontmatter-ref-capabilities/payment-cancel')).toBeNull();
+    fireEvent.click(within(field).getByTestId('doc-frontmatter-ref-capabilities/stock-tracking'));
+    expect(onNavigate).toHaveBeenCalledExactlyOnceWith('capabilities/stock-tracking');
+  });
+
+  it('keeps mixed element code paths out of node navigation and exposes stored relation notes', () => {
+    const onNavigate = vi.fn();
+    render(<NextIntlClientProvider locale="en" messages={enMessages}><DocFrontmatterBlock doc={{ ...doc, frontmatter: { kind: 'capability', elements: ['elements/reservation', 'src/reservation.ts'], relation_notes: { 'elements/reservation': 'Preserves held stock until the order commits.' } } }} resolveRef={ref => ref} onNavigate={onNavigate} /></NextIntlClientProvider>);
+    fireEvent.click(screen.getByTestId('doc-frontmatter-summary'));
+    const field = screen.getByTestId('doc-frontmatter-field-elements');
+    expect(field).toHaveTextContent('src/reservation.ts');
+    expect(within(field).queryByRole('button', { name: 'src/reservation.ts' })).toBeNull();
+    expect(within(field).getByTestId('doc-frontmatter-ref-elements/reservation')).toBeVisible();
+    const notes = screen.getByTestId('doc-frontmatter-field-relation_notes');
+    expect(notes).toHaveTextContent('elements/reservation');
+    expect(notes).toHaveTextContent('Preserves held stock until the order commits.');
+    expect(notes).not.toHaveTextContent('[object Object]');
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+});

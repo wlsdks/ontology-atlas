@@ -205,9 +205,9 @@ test("desktop smoke chunks prove current route meaning", () => {
     "/topology": ["ontology-map-canvas", "topology-concept-search"],
     "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
     "/ontology/insights": [
-      "maintenance-board",
-      "one-tab-one-question",
-      "tab-query",
+      "relationship-analysis",
+      "claim-evidence",
+      "analysis-dependency-diagram",
     ],
   });
 
@@ -353,7 +353,7 @@ test("desktop smoke detects stale route metadata without prescribing another bui
   write(
     outDir,
     routePath,
-    html.replace("Insights · Ontology Atlas", "Verify Graph · Ontology Atlas"),
+    html.replace("Analysis · Ontology Atlas", "Verify Graph · Ontology Atlas"),
   );
 
   const report = evaluateDesktopSmoke({
@@ -375,7 +375,7 @@ test("desktop smoke detects a missing current component marker", () => {
   const outDir = makeCurrentOut();
   const chunkPath = routeChunkPath("ko", "/ontology/insights");
   const chunk = fs.readFileSync(path.join(outDir, chunkPath), "utf8");
-  write(outDir, chunkPath, chunk.replace("tab-query", ""));
+  write(outDir, chunkPath, chunk.replace("analysis-dependency-diagram", ""));
 
   const report = evaluateDesktopSmoke({
     outDir,
