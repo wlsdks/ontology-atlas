@@ -1,4 +1,32 @@
-import { analysisScopeKey, compareAnalysisBasis, type AnalysisCompatibility, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
+import { analysisScopeKey, compareAnalysisBasis, readAnalysisHistory, type AnalysisBasis, type AnalysisCompatibility, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
+import { currentAnalysisBasis, type AnalysisCaptureContext } from '@/features/acp-session';
+
+const FLOW_HISTORY_PAGE_SIZE = 20;
+const FLOW_VERSION_LIMIT = 5;
+
+export interface FlowArchiveState {
+  records: readonly AnalysisRecord[];
+  basis: AnalysisBasis | null;
+}
+
+export function createFlowArchiveLoader(context: AnalysisCaptureContext, publish: (state: FlowArchiveState) => void) {
+  let active = true;
+  let generation = 0;
+  return {
+    async load() {
+      if (!context.handle || !active) return;
+      const current = ++generation;
+      const page = await readAnalysisHistory(context.handle, { limit: FLOW_HISTORY_PAGE_SIZE }).catch(() => null);
+      if (!active || current !== generation) return;
+      const records = page?.records ?? [];
+      const visible = selectFlowRuns(records, context, FLOW_VERSION_LIMIT);
+      const slugs = [...new Set(visible.flatMap(run => run.basis.documents.map(doc => doc.slug)))];
+      const basis = visible.length ? await currentAnalysisBasis(context, slugs).catch(() => null) : null;
+      if (active && current === generation) publish({ records, basis });
+    },
+    stop() { active = false; },
+  };
+}
 
 /** One saved explanation of the product, as the Flow tab reads it. */
 export interface FlowVersion {
@@ -16,25 +44,14 @@ export interface FlowVersion {
   grounded: boolean;
 }
 
-/**
- * Saved analysis turns as versions of the product's explanation, with `compareAnalysisBasis` saying whether the
- * folder moved since. Only runs from this surface and project scope count; others answer a different question.
- */
+/** Only this analysis surface and exact scope answer the Flow question; saved grounding remains separate from currentness. */
 export function selectFlowVersions(
   records: readonly AnalysisRecord[],
   context: { mode: AnalysisRun['mode']; scope: AnalysisRun['scope'] } | null,
   currentBasis: AnalysisRun['basis'] | null,
-  limit = 5,
+  limit = FLOW_VERSION_LIMIT,
 ): FlowVersion[] {
-  if (!context) return [];
-  const wantedScope = analysisScopeKey(context.mode, context.scope);
-  return records
-    .filter((record): record is AnalysisRun => record.recordType === 'run')
-    .filter((run) => run.origin.surface === 'analysis' && run.mode === context.mode)
-    .filter((run) => analysisScopeKey(run.mode, run.scope) === wantedScope)
-    .filter((run) => run.origin.outcome === 'completed' && run.answer.trim().length > 0)
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-    .slice(0, limit)
+  return selectFlowRuns(records, context, limit)
     .map((run) => {
       const compatibility = currentBasis ? compareAnalysisBasis(run.basis, currentBasis) : null;
       return {
@@ -47,6 +64,23 @@ export function selectFlowVersions(
         grounded: run.qualification.status === 'grounded',
       };
     });
+}
+
+// O(N log N) after exact scope-key construction; the archive page stays bounded.
+function selectFlowRuns(
+  records: readonly AnalysisRecord[],
+  context: { mode: AnalysisRun['mode']; scope: AnalysisRun['scope'] } | null,
+  limit: number,
+): AnalysisRun[] {
+  if (!context) return [];
+  const wantedScope = analysisScopeKey(context.mode, context.scope);
+  return records
+    .filter((record): record is AnalysisRun => record.recordType === 'run')
+    .filter((run) => run.origin.surface === 'analysis' && run.mode === context.mode)
+    .filter((run) => analysisScopeKey(run.mode, run.scope) === wantedScope)
+    .filter((run) => run.origin.outcome === 'completed' && run.answer.trim().length > 0)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, limit);
 }
 
 /**
