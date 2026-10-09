@@ -1,4 +1,4 @@
-import type { AgentProposal, ProposalChange } from './types';
+import type { AgentProposal, ProposalChange, ProposedFileChange } from './types';
 import {
   changesCompetencyQualification,
   SOURCE_BACKED_COMPETENCY_MESSAGE,
@@ -35,6 +35,40 @@ function proposalChangesCompetencyQualification(change: ProposalChange): boolean
   return change.files.some((file) => changesCompetencyQualification(file.before, file.after));
 }
 
+export function planProposalFiles(changes: readonly ProposalChange[]): {
+  files: Array<ProposedFileChange & { expectedMtime?: number }>;
+  conflict: { path: string; summary: string } | null;
+} {
+  const chains = new Map<string, { change: ProposalChange; file: ProposedFileChange }[]>();
+  for (const change of changes) {
+    for (const file of change.files) {
+      const chain = chains.get(file.path) ?? [];
+      chain.push({ change, file });
+      chains.set(file.path, chain);
+    }
+  }
+  const files: Array<ProposedFileChange & { expectedMtime?: number }> = [];
+  for (const [path, chain] of chains) {
+    const last = chain.findLastIndex(({ change }) => change.selected);
+    if (last < 0) continue;
+    const gap = chain.slice(0, last + 1).find(({ change }) => !change.selected);
+    if (gap) return { files: [], conflict: { path, summary: gap.change.summary } };
+    files.push({
+      path,
+      kind: chain[0].file.kind,
+      before: chain[0].file.before,
+      after: chain[last].file.after,
+      expectedMtime: chain[0].change.expectedMtime,
+    });
+  }
+  return { files, conflict: null };
+}
+
+function selectionConflictMessage(conflict: { path: string; summary: string }): string {
+  return `"${conflict.summary}" is unchecked, but a later selected change to ${conflict.path} ` +
+    'builds on it. Select it as well, or uncheck the later change.';
+}
+
 export async function applyProposal(
   proposal: AgentProposal,
   port: VaultWritePort,
@@ -46,6 +80,10 @@ export async function applyProposal(
   }
   if (selected.some(proposalChangesCompetencyQualification)) {
     return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE, writtenPaths: [], snapshotSha: null };
+  }
+  const plan = planProposalFiles(proposal.changes);
+  if (plan.conflict) {
+    return { status: 'failed', message: selectionConflictMessage(plan.conflict), writtenPaths: [], snapshotSha: null };
   }
 
   const conflicted: string[] = [];
@@ -74,51 +112,14 @@ export async function applyProposal(
     }
   }
 
-  /*
-   * Changes to one file chain on each other's `after`. Selected changes must form an unbroken
-   * prefix of the chain, or deselected content reaches disk; the last selected `after` is written once.
-   */
-  const chains = new Map<string, { change: ProposalChange; file: ProposalChange['files'][number] }[]>();
-  for (const change of proposal.changes) {
-    for (const file of change.files) {
-      const chain = chains.get(file.path) ?? [];
-      chain.push({ change, file });
-      chains.set(file.path, chain);
-    }
-  }
-  const writes: { path: string; kind: 'create' | 'modify'; content: string; expectedMtime?: number }[] = [];
-  for (const [path, chain] of chains) {
-    let lastSelected = -1;
-    for (let i = 0; i < chain.length; i += 1) {
-      if (chain[i].change.selected) lastSelected = i;
-    }
-    if (lastSelected === -1) continue;
-    const gap = chain.slice(0, lastSelected + 1).find((entry) => !entry.change.selected);
-    if (gap) {
-      return {
-        status: 'failed',
-        writtenPaths: [],
-        snapshotSha,
-        message:
-          `"${gap.change.summary}" is unchecked, but a later selected change to ${path} ` +
-          'builds on it. Select it as well, or uncheck the later change.',
-      };
-    }
-    writes.push({
-      path,
-      kind: chain[0].file.kind === 'create' ? 'create' : chain[lastSelected].file.kind,
-      content: chain[lastSelected].file.after,
-      expectedMtime: chain[0].change.expectedMtime,
-    });
-  }
   const written: string[] = [];
   try {
-    for (const write of writes) {
+    for (const write of plan.files) {
       const slug = slugOf(write.path);
       if (write.kind === 'create') {
-        await port.createDoc(slug, write.content);
+        await port.createDoc(slug, write.after);
       } else {
-        await port.saveDoc(slug, write.content, { expectedMtime: write.expectedMtime });
+        await port.saveDoc(slug, write.after, { expectedMtime: write.expectedMtime });
       }
       written.push(write.path);
     }
@@ -143,22 +144,19 @@ export async function applyProposal(
 
 /** For a read-only vault — the string [copy this change] gives instead of [apply]. */
 export function proposalToClipboardPacket(proposal: AgentProposal): string {
+  const plan = planProposalFiles(proposal.changes);
+  if (plan.conflict) throw new Error(selectionConflictMessage(plan.conflict));
+  if (plan.files.length === 0) return '';
   const lines: string[] = [
     'Apply these vault changes with the ontology-atlas MCP tools:',
     '',
   ];
   for (const change of proposal.changes.filter((c) => c.selected)) {
     lines.push(`- ${change.summary}`);
-    for (const file of change.files) {
-      lines.push(`  file: ${file.path} (${file.kind})`);
-    }
   }
+  for (const file of plan.files) lines.push(`  file: ${file.path} (${file.kind})`);
   lines.push('', 'Full content of each file after the change:');
-  for (const change of proposal.changes.filter((c) => c.selected)) {
-    for (const file of change.files) {
-      lines.push('', `--- ${file.path} ---`, file.after);
-    }
-  }
+  for (const file of plan.files) lines.push('', `--- ${file.path} ---`, file.after);
   return lines.join('\n');
 }
 
@@ -171,16 +169,99 @@ export function summarizeChangeVolume(changes: readonly ProposalChange[]): {
   let files = 0;
   let added = 0;
   let removed = 0;
+  const net = new Map<string, { before: string | null; after: string }>();
   for (const change of changes) {
+    if (!change.selected) continue;
     for (const file of change.files) {
-      files += 1;
-      const beforeLines = file.before === null ? [] : file.before.split('\n');
-      const afterLines = file.after.split('\n');
-      const beforeSet = new Set(beforeLines);
-      const afterSet = new Set(afterLines);
-      for (const line of afterLines) if (!beforeSet.has(line)) added += 1;
-      for (const line of beforeLines) if (!afterSet.has(line)) removed += 1;
+      const original = net.get(file.path);
+      net.set(file.path, { before: original ? original.before : file.before, after: file.after });
+    }
+  }
+  files = net.size;
+  for (const file of net.values()) {
+    for (const line of proposalLineDiff(file.before, file.after)) {
+      if (line.kind === 'added') added += 1;
+      if (line.kind === 'removed') removed += 1;
     }
   }
   return { files, added, removed };
+}
+
+export interface ProposalDiffLine {
+  kind: 'added' | 'removed' | 'unchanged';
+  text: string;
+}
+
+function textLines(text: string | null): string[] {
+  if (!text) return [];
+  const lines = text.split(/\r?\n/);
+  if (lines.at(-1) === '') lines.pop();
+  return lines;
+}
+
+function commonLineLengths(before: readonly string[], after: readonly string[]): Uint32Array {
+  const lengths = new Uint32Array(after.length + 1);
+  for (const line of before) {
+    let diagonal = 0;
+    for (let index = 0; index < after.length; index += 1) {
+      const previous = lengths[index + 1];
+      lengths[index + 1] = line === after[index] ? diagonal + 1 : Math.max(previous, lengths[index]);
+      diagonal = previous;
+    }
+  }
+  return lengths;
+}
+
+function commonLineSplit(before: readonly string[], after: readonly string[], middle: number): number {
+  const left = commonLineLengths(before.slice(0, middle), after);
+  const right = commonLineLengths(before.slice(middle).reverse(), [...after].reverse());
+  let split = 0;
+  let longest = -1;
+  for (let index = 0; index <= after.length; index += 1) {
+    const common = left[index] + right[after.length - index];
+    if (common > longest) { longest = common; split = index; }
+  }
+  return split;
+}
+
+/** Ordered LCS diff: O(N*M) worst-case time, O((N+M)*log N) space; common ends and disjoint spans are linear. */
+export function proposalLineDiff(beforeText: string | null, afterText: string): ProposalDiffLine[] {
+  const rows: ProposalDiffLine[] = [];
+  function emit(kind: ProposalDiffLine['kind'], lines: readonly string[]) {
+    for (const text of lines) rows.push({ kind, text });
+  }
+  function append(before: string[], after: string[]) {
+    let start = 0;
+    while (start < before.length && start < after.length && before[start] === after[start]) {
+      rows.push({ kind: 'unchanged', text: before[start] });
+      start += 1;
+    }
+    let beforeEnd = before.length;
+    let afterEnd = after.length;
+    while (beforeEnd > start && afterEnd > start && before[beforeEnd - 1] === after[afterEnd - 1]) {
+      beforeEnd -= 1;
+      afterEnd -= 1;
+    }
+    const suffix = before.slice(beforeEnd);
+    before = before.slice(start, beforeEnd);
+    after = after.slice(start, afterEnd);
+    const oldLines = new Set(before);
+    if (!before.length || !after.length || !after.some(line => oldLines.has(line))) {
+      emit('removed', before);
+      emit('added', after);
+    } else if (before.length === 1) {
+      const match = after.indexOf(before[0]);
+      emit('added', after.slice(0, match));
+      rows.push({ kind: 'unchanged', text: before[0] });
+      emit('added', after.slice(match + 1));
+    } else {
+      const middle = Math.floor(before.length / 2);
+      const split = commonLineSplit(before, after, middle);
+      append(before.slice(0, middle), after.slice(0, split));
+      append(before.slice(middle), after.slice(split));
+    }
+    emit('unchanged', suffix);
+  }
+  append(textLines(beforeText), textLines(afterText));
+  return rows;
 }

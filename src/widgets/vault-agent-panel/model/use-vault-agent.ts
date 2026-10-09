@@ -27,6 +27,7 @@ import {
 } from '@/features/vault-agent';
 import { previewConstructionSource, readConstructionSource, type ConstructionSourcePreview, type ConstructionSourceRange } from '@/shared/lib/tauri-local-construction';
 import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
+import { copyText } from '@/shared/lib/copy-text';
 import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 
 /**
@@ -123,6 +124,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   const abortRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const applyLockRef = useRef(false);
+  const copyLockRef = useRef(false);
   const sourceProofRef = useRef<ConstructionProof | null>(null);
   const [construction, setConstruction] = useState<ConstructionTrace | null>(null);
   const resourceKey = JSON.stringify([args.vaultPath, args.provider, args.localEndpoint?.model, args.localEndpoint?.baseUrl]);
@@ -497,9 +499,14 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
     } finally { applyLockRef.current = false; }
   }, [args.manifest, args.snapshotLabel, proposal, vault, resourceKey, sourceCurrent]);
 
-  const copyProposal = useCallback(() => {
-    if (!proposal) return;
-    void navigator.clipboard?.writeText(proposalToClipboardPacket(proposal));
+  const copyProposal = useCallback(async (): Promise<boolean> => {
+    if (!proposal || proposal.status !== 'pending' || copyLockRef.current) return false;
+    copyLockRef.current = true;
+    try {
+      const packet = proposalToClipboardPacket(proposal);
+      return packet ? await copyText(packet) : false;
+    } catch { return false; }
+    finally { copyLockRef.current = false; }
   }, [proposal]);
 
   const reset = useCallback(() => {

@@ -1,7 +1,7 @@
 // The consent contract: **cancel means zero files changed. A conflict means zero files changed.**
 import { describe, expect, it, vi } from 'vitest';
 
-import { applyProposal, summarizeChangeVolume, type VaultWritePort } from './proposal-applier';
+import { applyProposal, proposalToClipboardPacket, proposalLineDiff, summarizeChangeVolume, type VaultWritePort } from './proposal-applier';
 import type { AgentProposal } from './types';
 
 function proposal(overrides: Partial<AgentProposal> = {}): AgentProposal {
@@ -331,5 +331,110 @@ describe('summarizeChangeVolume', () => {
     expect(volume.files).toBe(1);
     expect(volume.added).toBe(1);
     expect(volume.removed).toBe(0);
+  });
+});
+
+function chainedProposal(): AgentProposal {
+  return proposal({ changes: [
+    { id: 'first', tool: 'patch_concept', summary: 'Earlier edit', selected: true, expectedMtime: 100,
+      files: [{ path: 'capabilities/payment.md', kind: 'modify', before: 'original', after: 'original\nEARLIER_CONTENT' }] },
+    { id: 'second', tool: 'patch_concept', summary: 'Later edit', selected: true, expectedMtime: 100,
+      files: [{ path: 'capabilities/payment.md', kind: 'modify', before: 'original\nEARLIER_CONTENT', after: 'original\nEARLIER_CONTENT\nLATER_CONTENT' }] },
+  ] });
+}
+
+describe('proposal clipboard handoff', () => {
+  it('refuses an unchecked predecessor before a clipboard packet or checkpoint exists', async () => {
+    const target = chainedProposal();
+    target.changes[0].selected = false;
+    target.snapshotRequested = true;
+    const port = makePort();
+    await expect(applyProposal(target, port, { snapshotLabel: 'test' })).resolves.toMatchObject({ status: 'failed', writtenPaths: [] });
+    expect(port.snapshot).not.toHaveBeenCalled();
+    expect(() => proposalToClipboardPacket(target)).toThrow();
+  });
+
+  it('exports the exact final bytes once per selected file', async () => {
+    const target = chainedProposal();
+    const port = makePort();
+    await applyProposal(target, port, { snapshotLabel: 'test' });
+    const packet = proposalToClipboardPacket(target);
+    expect(packet.match(/^--- capabilities\/payment\.md ---$/gm)).toHaveLength(1);
+    expect(packet).toContain(vi.mocked(port.saveDoc).mock.calls[0][1]);
+  });
+
+  it('keeps a deselected trailing edit out of the exported bytes', () => {
+    const target = chainedProposal();
+    target.changes[1].selected = false;
+    expect(proposalToClipboardPacket(target)).toContain('EARLIER_CONTENT');
+    expect(proposalToClipboardPacket(target)).not.toContain('LATER_CONTENT');
+  });
+
+  it('returns no executable packet for an empty selection', () => {
+    const target = chainedProposal();
+    target.changes.forEach(change => { change.selected = false; });
+    expect(proposalToClipboardPacket(target)).toBe('');
+  });
+});
+
+describe('net proposal volume', () => {
+  it('counts a chained file once from its original to its final text', () => {
+    const target = chainedProposal();
+    target.changes[1].files[0].after = 'original\nFINAL_CONTENT';
+    expect(summarizeChangeVolume(target.changes)).toEqual({ files: 1, added: 1, removed: 0 });
+  });
+
+  it.each([
+    ['same\nsame\nend', 'same\nend', 0, 1],
+    ['same\nend', 'same\nsame\nend', 1, 0],
+    ['a\nb', 'b\na', 1, 1],
+    ['', '', 0, 0],
+    ['', 'one\n', 1, 0],
+    ['one\r\n', 'one\n', 0, 0],
+    ['결제\n결제\n끝', '결제\n끝', 0, 1],
+  ])('counts ordered line changes for %j to %j', (before, after, added, removed) => {
+    const target = proposal();
+    target.changes[0].files[0] = { path: 'capabilities/payment.md', kind: 'modify', before, after };
+    expect(summarizeChangeVolume(target.changes)).toEqual({ files: 1, added, removed });
+  });
+});
+
+describe('ordered proposal line diff', () => {
+  it.each([
+    ['a\nb', 'b\na'], ['same\nsame', 'same'], ['a\nb\na', 'b\na\nb'], ['결제\n끝', '끝\n결제'], ['', ''],
+  ])('preserves both complete line sequences for %j to %j', (before, after) => {
+    const rows = proposalLineDiff(before, after);
+    expect(rows.filter(row => row.kind !== 'added').map(row => row.text)).toEqual(before ? before.split('\n') : []);
+    expect(rows.filter(row => row.kind !== 'removed').map(row => row.text)).toEqual(after ? after.split('\n') : []);
+  });
+
+  it('keeps a large unchanged document and a sparse replacement exact', () => {
+    const before = Array.from({ length: 10000 }, (_, index) => 'line ' + index);
+    const after = [...before];
+    after[5000] = 'replacement';
+    const rows = proposalLineDiff(before.join('\n'), after.join('\n'));
+    expect(rows.filter(row => row.kind === 'removed')).toEqual([{ kind: 'removed', text: 'line 5000' }]);
+    expect(rows.filter(row => row.kind === 'added')).toEqual([{ kind: 'added', text: 'replacement' }]);
+    expect(rows.filter(row => row.kind !== 'removed').map(row => row.text)).toEqual(after);
+  });
+});
+
+describe('proposal file chain boundaries', () => {
+  it('keeps create followed by edit as one created file and final clipboard body', async () => {
+    const target = chainedProposal();
+    target.changes[0].files[0].kind = 'create';
+    target.changes[0].files[0].before = null;
+    const port = makePort();
+    await applyProposal(target, port, { snapshotLabel: 'test' });
+    expect(port.createDoc).toHaveBeenCalledExactlyOnceWith('capabilities/payment', target.changes[1].files[0].after);
+    expect(port.saveDoc).not.toHaveBeenCalled();
+    expect(proposalToClipboardPacket(target)).toContain('file: capabilities/payment.md (create)');
+    expect(summarizeChangeVolume(target.changes)).toEqual({ files: 1, added: 3, removed: 0 });
+  });
+
+  it('shows zero net lines when selected chained edits cancel each other', () => {
+    const target = chainedProposal();
+    target.changes[1].files[0].after = 'original';
+    expect(summarizeChangeVolume(target.changes)).toEqual({ files: 1, added: 0, removed: 0 });
   });
 });
