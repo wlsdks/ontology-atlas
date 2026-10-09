@@ -11,6 +11,8 @@ import {
   stripLeadingSeparator,
   suggestFocusedChecksUsage,
   untrackedPathsForAdvisor,
+  commentOnlyPathsFromGit,
+  hooksPathWarning,
 } from './suggest-focused-checks.mjs';
 
 /**
@@ -368,7 +370,7 @@ describe('collapsePlaywrightCommands', () => {
     merged.map((c) => c.command),
     [
       'pnpm typecheck',
-      'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
+      'pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts',
       'pnpm lint',
     ],
   );
@@ -387,11 +389,24 @@ describe('collapsePlaywrightCommands', () => {
   const commands = specs.map((s) => ({ command: `pnpm exec playwright test ${s}` }));
   const merged = collapsePlaywrightCommands(commands);
   assert.equal(merged.length, 1);
-  const kept = merged[0].command.replace('pnpm exec playwright test ', '').split(' ');
+  const kept = merged[0].command.replace('pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test ', '').split(' ');
   assert.deepEqual(kept.sort(), specs.slice().sort());
 });
 });
 
+
+describe('where the merged e2e run renders', () => {
+  const CASES = [
+    ['two specs stay on the dev server', ['a', 'b'], 'pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts'],
+    ['three specs pay for one static build', ['a', 'b', 'c'], 'pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/a.spec.ts tests/e2e/b.spec.ts tests/e2e/c.spec.ts'],
+  ];
+  for (const [name, ids, expected] of CASES) {
+    it(name, () => {
+      const commands = ids.map((id) => ({ command: `pnpm exec playwright test tests/e2e/${id}.spec.ts` }));
+      assert.equal(collapsePlaywrightCommands(commands)[0].command, expected);
+    });
+  }
+});
 
 describe('contract coverage within one focused run', () => {
   const scripts = {
@@ -453,4 +468,33 @@ it('exact Node test file coverage is reused within a run without dropping flags 
     ...scripts, 'pretest:pair': 'node setup.mjs',
   }).commands, [pair, single]);
   assert.deepEqual(collapseCoveredContractCommands([flagged, single], scripts).commands, [flagged, single]);
+});
+
+describe('commentOnlyPathsFromGit', () => {
+  it('names a file whose code is unchanged at the base, and keeps new or unreadable ones', () => {
+    const base = { 'a.ts': 'const a = 1; // old\n', 'b.ts': 'const b = 1;\n' };
+    const now = { 'a.ts': 'const a = 1; // new\n', 'b.ts': 'const b = 2;\n', 'c.ts': 'const c = 1;\n' };
+    const spawn = (_git, args) => {
+      const path = args[1].split(':')[1];
+      return path in base ? { status: 0, stdout: base[path] } : { status: 128, stdout: '' };
+    };
+    assert.deepEqual(commentOnlyPathsFromGit(['a.ts', 'b.ts', 'c.ts', 'd.css'], { spawn, read: (path) => now[path] }), ['a.ts']);
+  });
+});
+
+describe('hooksPathWarning', () => {
+  const CASES = [
+    ['unset', '', ''],
+    ['relative, so each checkout runs its own hooks', '.githooks', ''],
+    ['absolute to this checkout', '/repo/wt/.githooks', ''],
+    ['absolute to another checkout', '/repo/main/.githooks', 'another checkout'],
+  ];
+  for (const [name, value, expected] of CASES) {
+    it(`warns only when hooks come from elsewhere: ${name}`, () => {
+      const spawn = (_git, args) => ({ status: 0, stdout: args[0] === 'config' ? `${value}\n` : '/repo/wt\n' });
+      const warning = hooksPathWarning({ spawn });
+      if (expected) assert.match(warning, new RegExp(expected));
+      else assert.equal(warning, '');
+    });
+  }
 });

@@ -9,40 +9,56 @@
 
 <p align="center"><strong>AI エージェントがコードを変えても、システムを理解し続けられます。</strong></p>
 
-![Online Store プロジェクトを選んだ Ontology Atlas の macOS アプリ。そのプロジェクトのドメイン名が周囲に並び、無関係なものは薄くなり、インスペクターにプロジェクトの記録とコード根拠の状態が表示されている](docs/assets/readme/topology-overview.png)
-
 <p align="center">
-  <a href="https://ontologyatlas.com/en/download/"><strong>macOS 版をダウンロード</strong></a> ·
-  <a href="https://ontologyatlas.com/en/download/">Windows x64 ベータ</a> <sub>未署名</sub> ·
-  <a href="https://ontologyatlas.com/en/topology/">ブラウザで試す</a> ·
-  <a href="https://ontologyatlas.com/en/guide/">ガイド</a>
+  コードが何をしていて、なぜそうなっているのかを示すマップを、リポジトリ内の Markdown として残します。<br />
+  あなたもコーディングエージェントも、同じファイルを読みます。
 </p>
 
-<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
+<p align="center">
+  <a href="https://ontologyatlas.com/ja/download/"><strong>macOS 版をダウンロード</strong></a> ·
+  <a href="https://ontologyatlas.com/ja/topology/">ブラウザで試す</a> ·
+  <a href="https://ontologyatlas.com/ja/guide/">ガイド</a>
+</p>
 
-- **macOS**（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。
-- **Windows x64** は未署名のベータ版です。SmartScreen が警告を出すことがあり、管理下の PC では実行がブロックされる場合があります。
-- **Linux** 向けのアプリはまだありません。ブラウザ版を使うか、[ソースのチェックアウト](cli/README.md#set-up-from-a-source-checkout)から CLI と MCP サーバーを実行してください。
+<p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a></p>
 
-各リリースのバージョン、サイズ、チェックサムは[ダウンロードページ](https://ontologyatlas.com/en/download/)にあり、[GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) にも同じファイルがあります。以下からリンクしているサイトとリポジトリのドキュメントは英語です。
+![Online Store プロジェクトを選んだ Ontology Atlas の macOS アプリ。そのプロジェクトのドメイン名が周囲に並び、無関係なものは薄くなり、インスペクターにプロジェクトの記録とコードの根拠の状態が表示されている](docs/assets/readme/topology-overview.png)
 
-## できること
+## なぜ Atlas か
 
-- **コーディングエージェントにタスクの文脈を渡します。** Claude Code、Codex、Cursor、Antigravity が MCP 経由で、タスクに関わる機能、コードパス、依存関係、根拠、未確認事項を読み取ります。
-- **その意味を、自分で管理する Markdown に残します。** リポジトリ内の `atlas/` フォルダに、概念ごとに 1 ファイルが置かれます。履歴とレビューは Git が担います。
-- **最終判断は人が行います。** 提案された変更は Markdown の diff として届き、そのまま残すことも、直すことも、却下することもできます。
-- **人にも同じフォルダを見せます。** マップ、ドキュメント、ライブラリ、インサイト、Git 履歴は、すべてそれらのファイルを読んで表示します。
-- **分からないことは分からないと示します。** マップ上の線は宣言された関係であり、実行時の影響を示す証拠ではありません。根拠がなければ「安全」ではなく「未確認」と表示されます。
+コーディングエージェントがコードを変える速さは、チームが頭の中に全体像を保てる速さを超えています。Atlas はその全体像をコードのそばに置きます。各部分が何のためにあるのか、どのファイルが実装しているのか、何が何に依存しているのか、そしてまだ誰も知らないことは何か。エージェントはタスクの前にそれを読み、タスクの後に更新を提案します。あなたは変更ごとに Markdown の diff を見て、そのまま残すか、直すか、却下します。
 
-**まだ証明できていないこと:** 再採点した結果、私たちのベンチマークでは Atlas を使った場合の回答品質の差を測定できておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)）。
+- **エージェントは文脈を持って作業を始められます。** Claude Code、Codex、Cursor、Antigravity が MCP 経由で、タスクに関わる概念、コードパス、依存関係、未解決の問いを読み取ります。
+- **記録はあなたのものです。** `atlas/` フォルダに概念ごとに 1 つの Markdown ファイルがあり、コードと同じように Git でバージョン管理とレビューを行います。
+- **何が正しいかはあなたが決めます。** エージェントの提案は、あなたが受け入れるまで提案のままです。
+- **分からないことは分からないと示します。** マップ上の線は宣言された関係であり、実行時の影響の証拠ではありません。根拠がなければ「安全」ではなく「不明」と表示されます。
+
+## 画面を見る
+
+<table>
+<tr>
+<td width="50%"><img src="public/gateway/projects.en.png" alt="プロジェクト：プロジェクトごとのドメイン、ケイパビリティ、コードの根拠の状態" /><br /><b>プロジェクト</b> — すべてのプロジェクトと、そのうちコードの根拠がどれだけあるか。</td>
+<td width="50%"><img src="public/gateway/library.en.png" alt="資料室：左にソース、それらから書いた Wiki ページ、そのページが挙げる概念" /><br /><b>資料室</b> — 文書を入れると、出典つきの Wiki ページが出てきます。</td>
+</tr>
+<tr>
+<td><img src="public/gateway/git.en.png" alt="Git：未保存の概念の変更と、その Markdown の diff" /><br /><b>Git</b> — 保存する前に、正確な Markdown の diff を確認できます。</td>
+<td><img src="public/gateway/insights.en.png" alt="分析：上に測定値、下に直すべきものを種類別にまとめて表示" /><br /><b>分析</b> — 点数ではなく測定値で、次に直すべきものを示します。</td>
+</tr>
+<tr>
+<td><img src="public/gateway/harness.en.png" alt="ハーネス：リポジトリがコーディングエージェントに伝え、止め、見守っているもの" /><br /><b>ハーネス</b> — リポジトリがエージェントに伝え、止め、見守っているもの。</td>
+<td><img src="public/gateway/automations.en.png" alt="自動化：フォルダを最新に保つ定期チェック" /><br /><b>自動化</b> — フォルダを最新に保つ定期チェック。</td>
+</tr>
+</table>
 
 ## クイックスタート
 
-1. **インストール**: [ダウンロードページ](https://ontologyatlas.com/en/download/)からアプリを入手するか、[ブラウザ版](https://ontologyatlas.com/en/topology/)を開きます。
+1. **インストール**: [ダウンロードページ](https://ontologyatlas.com/ja/download/)からアプリを入手するか、[ブラウザ版](https://ontologyatlas.com/ja/topology/)を開きます。
 2. **フォルダを開く**: Atlas はフォルダ内の Markdown をその場で読むか、リポジトリに `atlas/` フォルダを新しく作ります。何かを書き込む前に、必ずパスを表示します。
-3. **エージェントを接続**: **Agents › MCP** で使っているツールの **Connect** を押し、エージェントを再起動して、次のタスクについて質問してみましょう。
+3. **エージェントを接続**: **エージェント › MCP** で使っているツールの **接続** を押し、エージェントを再起動して、次のタスクについて質問してみましょう。
 
-## フォルダ構成
+macOS（Apple Silicon）版は署名と公証済みで、アプリ内に MCP サーバーを同梱しています。Windows x64 は未署名のベータ版です。Linux では、ブラウザ版を使うか、[ソースのチェックアウトから CLI と MCP サーバーを実行](cli/README.md#set-up-from-a-source-checkout)してください。[Releases](https://github.com/wlsdks/ontology-atlas/releases) に、各バージョンのファイルとチェックサムがあります。
+
+## しくみ
 
 ```text
 your-repo/
@@ -54,57 +70,41 @@ your-repo/
     └── wiki/              それらから書いたページ。すべての事実に出典つき
 ```
 
-frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。1 つのフォルダに置ける概念の数に上限はありません。
+frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。マップ、文書、資料室、分析、Git の各画面は、すべてこれらのファイルを読んで表示します。
 
-あわせて [What becomes a node?](docs/guide/what-becomes-a-node.md)、[Relations](docs/guide/relations.md)、[仕様](docs/ONTOLOGY-ATLAS-SPEC.md)もご覧ください。
+エージェントがフォルダに届く道は 2 つあります。
 
-## コーディングエージェントと使う
+- **MCP:** エージェントが Atlas の MCP サーバーを起動し、そのサーバーがディスク上のフォルダを直接読み書きします。アプリを閉じていても動きます。[エージェントを接続する](docs/guide/connect-agent.md) · [MCP リファレンス](mcp/README.md)
+- **ACP:** Claude Agent と Codex は、アプリ内のチャットでも動かせます。書き込みは、あなたが許可するまで待機します。[エージェント](docs/features/agents.md)
 
-- **MCP**（Model Context Protocol）: エージェントが Atlas の MCP サーバーを起動し、そのサーバーがディスク上のフォルダを直接読み書きします。アプリを閉じていても動きます。[エージェントを接続する](docs/guide/connect-agent.md) · [MCP リファレンス](mcp/README.md)
-- **ACP**（Agent Client Protocol）: Claude Agent と Codex は、アプリ内のチャットでも動かせます。読み取りはそのまま通り、Atlas への書き込みは毎回 1 度許可するまで待機します。[Agents 画面](docs/features/agents.md)
+## ローカルファースト
 
-**地図を継続して改善する。** 地図には分析状況が表示されます。macOS アプリで接続したコードフォルダーを調べ、質問を選んで追加分析を押すと、ACP エージェントへ一度だけ送信します。日付付きの結果を再確認し、別の編集可能な改善案も準備できます。地図を開くだけで有料分析は始まりません。回答やエージェントの作業進捗は、意味の承認や完成率ではありません。ローカルモデルによるネイティブのソース構築は未対応です。[継続分析](docs/features/map/README.md#optional-continued-analysis)
-
-## 構築の測定結果
-
-2026-10-03、未読の MIT Python 設定ライブラリを実際の ACP セッションで構築し、ソースを読めない別セッションとソース監査で評価しました。単一リポジトリの限定的な結果であり、モデル順位や意味品質の認定ではありません。
-
-| 経路 | 測定結果 | 意味に関する根拠 |
-|---|---|---|
-| Claude Sonnet 5.5、low · full → construction | 107.6 → 100.4秒、ツール説明・入力スキーマ24.0%削減 | 完全回答3/6 → 2/6、検証済み主張17/18 → 18/21、両方とも要レビュー |
-| Codex Luna low · 初回ACP診断 | 250.2秒、3ノード、33呼び出し中4失敗 | 完全回答1/6、主張13/13検証、説明範囲は不足 |
-| Codex Luna xhigh · full / construction | 両方900秒で終了、4 / 2ノード、完了レシートなし | 構築未完了 |
-| ローカル27B · 空の保管庫ループ修正前 → 後 | モデル要求4 → 2回、189.1 → 151.6秒 | ソース用ツールの不足を説明、作成ノード0 |
-
-任意の `OATLAS_TOOL_PROFILE=construction` は初回構築用の既存20ツールを公開し、既定の `full` は40ツールを維持します。この比較では、入力の縮小は引き継ぎ品質を改善しませんでした。ローカルのソースMCP実験も保存前に失敗したため、コードからの構築品質は未測定です。内部ローカル会話とACP構築はツール能力が異なります。ローカルループはNode HTTP接続で測定し、インストール済みアプリのネイティブ接続は未検証です。
-
-`pnpm benchmark:construction <runs.json> [--json]` は時間、使用量、ツールエラー、グラフ・パス検査、ソース非公開回答、主張監査を分けて記録します。[手順・失敗・限界](docs/benchmark/CONSTRUCTION.md) · [プロファイル設定](mcp/README.md#first-construction-discovery-oatlas_tool_profile)
-
-
-本文根拠の改善試験では、既知の設定ライブラリで完全回答が **2/6→4/6**、検証済み主張が **19/20** となりました。新しい再試行ライブラリは4/6に回答しましたが、21主張中16件のみ検証、4件は誤り、1件は未確認です。同じソース根拠の後続応答は **11,105→2,042バイト（81.6%削減）**。設定ライブラリの構築は137.5秒で、全体速度の改善ではありません。一般的な意味品質、正式認定、ネイティブのローカル構築は未証明です。[本文根拠の試験](docs/benchmark/CONSTRUCTION.md#body-evidence-improvement-trial)
-
-継続分析の試験では、新しいTypeScript式ライブラリ一件に対するACP追加調査とレビュー済み本文更新により、ソースを見ない読者の回答が **完全0 / 部分5 / 不明1** から **1 / 4 / 1** へ変化しました。調査は22.8秒、構築・調査の提供者料金は取得できませんでした。ハッシュ付き引用21件はソースと一致しましたが、根拠のない承認文言と他ノードの古い不確実性は残っています。限定的な改善証拠であり、正式認定やモデル順位ではありません。[測定と失敗](docs/benchmark/CONSTRUCTION.md#continued-analysis-and-reuse-trial)
-
-承認したモデルの提案の適用に失敗すると、保存完了を確認したファイルを表示し、フォルダーの再読み込みを試みます。再読み込みのエラーは別に報告します。失敗した保存自体も内容を変更した可能性があり、自動的には元に戻しません。再試行する前に文書を確認してください。
-
-## ローカルファーストとプライバシー
-
-- Atlas にはバックエンド、アカウント、テレメトリがありません。フォルダは、普通の Markdown としてあなたのディスクに残ります。
-- 自分の API key やローカルモデルで Atlas がモデルを呼び出す機能はオプトインで、呼び出しごとに宛先が `.ontology-atlas/llm-audit.jsonl` に記録されます。
-- 接続したコーディングエージェントは、プロンプトと読み取った文脈を自身のプロバイダーに送信することがあります。その送信はこのログの対象外です。
+- バックエンド、アカウント、テレメトリはありません。フォルダは、普通の Markdown としてあなたのディスクに残ります。
+- 自分の API key やローカルモデルでモデルを呼び出す機能はオプトインで、呼び出しごとに宛先が `.ontology-atlas/llm-audit.jsonl` に記録されます。
+- 接続したコーディングエージェントは、プロンプトと読み取った内容を自身のプロバイダーに送信することがあります。その送信は Atlas のログの対象外です。
 
 [信頼について](docs/guide/trust.md) · [セキュリティ](SECURITY.md)
 
-## CLI
+## 現在の状況
 
-CLI はソースのチェックアウトから、Node.js 24 で `node cli/src/index.mjs` として実行します。npm パッケージはありません。フォルダの作成、検証、コンパイル、クエリができ、`mcp-verify` でエージェントとの接続が生きていることを確認できます。[CLI リファレンス](cli/README.md)
+Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas を使うとより良い回答になることはまだ示せておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)）。構築の試験とその失敗、限界は[構築の測定結果](docs/benchmark/CONSTRUCTION.md)にあります。
 
-## 開発
+## ドキュメント
 
-まず [CONTRIBUTING.md](CONTRIBUTING.md) をお読みください。外部からのプルリクエストはフォークから送ります。人とエージェントが共通で従うルールは [AGENTS.md](AGENTS.md) にあります。
-`pnpm install` と `pnpm dev` で始め、`pnpm checks:changed -- --run` で変更を検査し、`pnpm pr:land <number>` で取り込みます。
-リポジトリのコマンド一覧は英語版 README の [Development](README.md#development) にあり、検査の全体は [Development checks](docs/DEVELOPMENT-CHECKS.md) にまとまっています。
+[Atlasとは](docs/guide/what-is-atlas.md) · [最初の5分](docs/guide/first-five-minutes.md) · [概念になるもの](docs/guide/what-becomes-a-node.md) · [つながり](docs/guide/relations.md) · [仕様](docs/ONTOLOGY-ATLAS-SPEC.md) · [機能](docs/FEATURES.md) · [CLI](cli/README.md) · [アーキテクチャ](docs/ARCHITECTURE.md)
+
+## コントリビュート
+
+まず [CONTRIBUTING.md](CONTRIBUTING.md) をお読みください。外部からのプルリクエストはフォークから送ります。[AGENTS.md](AGENTS.md) は、人とエージェントが共通で従う取り決めです。
+
+```bash
+pnpm install
+pnpm dev
+pnpm checks:changed -- --run
+```
+
+`pnpm pr:land <number>` は、レビュー済みのプルリクエストをマージし、元のコミットをそのまま残します。検査の全体は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。リポジトリのコマンド表は、英語版 README の [Contributing](README.md#contributing) にあります。
 
 ## ライセンス
 
-[MIT](LICENSE)。サードパーティの告知は [NOTICE.md](NOTICE.md)、ライセンス全文は [public/third-party-licenses.txt](public/third-party-licenses.txt) にあります。
+[MIT](LICENSE)。サードパーティの告知は [NOTICE.md](NOTICE.md)、ライセンス全文は [public/third-party-licenses.txt](public/third-party-licenses.txt) にあります。ピクセルマスコットとその出典については[ブランド](docs/design/brand.md)をご覧ください。

@@ -2383,7 +2383,7 @@ export function AcpChatPanel({
               return (
                 <li key={command.name} role="option" aria-selected={active}>
                   {/*
-                    ⚠️ The hover axis is **opt-in** (`design-build`). Left off, the
+                    ⚠️ The hover axis is **opt-in** (`ui-build`). Left off, the
                     mouse does nothing and there is no telling which row is which —
                     exactly what the owner reported (2026-08-17). The `active` axis is
                     passed along so the keyboard-pointed row and the moused-over row
@@ -2810,7 +2810,7 @@ export function AcpChatPanel({
           </span>
         </div>
         {/*
-          ⚠️ **A popover is born at the control that opened it** (`design-build` §2; 2026-09-06).
+          ⚠️ **A popover is born at the control that opened it** (`ui-build` §2; 2026-09-06).
           It used to hang from `top-11`, the height of a header that no longer exists — and now
           that the history button sits on the composer, an origin at the top of the panel would
           open the list at the far end of the panel from the finger that asked for it.

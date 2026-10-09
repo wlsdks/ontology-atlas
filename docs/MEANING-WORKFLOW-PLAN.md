@@ -24,7 +24,7 @@ The human remains the meaning acceptor; a model or automated reviewer cannot
 make that decision. Use the existing PO router (solo, or one independent reviewer), not a
 standing council.
 
-Work one registered slice at a time. Delegated slices use `/parallel-brief`.
+Work one registered slice at a time. Delegated slices use `/delegate`.
 Draft PRs land through `pnpm pr:land` after the required checks.
 
 The program does not promise support for every enterprise language, complete
@@ -490,7 +490,7 @@ visible when the order changes.
 | Next independent task reuses accepted meaning | V4.2 |
 | User value and voluntary repeated use, not feature/app-open counts | V4.3 and common outcome |
 | Atlas-specialist PO, consistent current public/internal language, mirrored skills | Product Direction/PO operating system and existing mirrored skills; retain solo/one-reviewer routing |
-| Delegated implementation stays bounded; the human accepts meaning | Working agreement; `/parallel-brief` for delegated slices |
+| Delegated implementation stays bounded; the human accepts meaning | Working agreement; `/delegate` for delegated slices |
 
 This map is a coverage index, not another status board. Keep gaps visible when
 an item is blocked or only its enabling infrastructure has been implemented.

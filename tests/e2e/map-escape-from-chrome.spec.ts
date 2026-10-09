@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "./desktop-rail-arrival-harness";
+import { openOwnerState } from "./map-toolbar-popovers-harness";
 import { waitForMapStill } from "./settle";
 
 /**
@@ -119,4 +120,38 @@ test("an Escape pressed as the view picker appears returns focus to its chip", a
   await expect(page.getByTestId("topology-view-3d-choice-flat")).toHaveCount(0);
   await expect(viewChip).toHaveAttribute("aria-expanded", "false");
   await expect(viewChip, "focus fell off the chip once the picker left").toBeFocused();
+});
+
+test("the view picker takes focus on open and gives it back after a choice", async ({ page }) => {
+  test.setTimeout(180000);
+  await openOwnerState(page);
+  const chip = page.getByTestId("topology-view-3d");
+  await chip.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("topology-view-3d-choice-flat")).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByTestId("topology-view-3d-choice-flat")).not.toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(chip).toBeFocused();
+  await chip.click();
+  await page.getByTestId("topology-view-3d-choice-structure").click();
+  await expect(chip).toHaveAttribute("data-map-view", "structure");
+  await expect(chip).toBeFocused();
+});
+test("the agent dock closes on Escape and returns focus to its toggle", async ({ page }) => {
+  test.setTimeout(180000);
+  await openOwnerState(page);
+  const toggle = page.getByTestId("topology-vault-agent-toggle");
+  await toggle.click();
+  const close = page.getByTestId("vault-agent-panel-close");
+  await expect(close).toBeVisible();
+  await close.focus();
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toBeFocused();
+  await toggle.click();
+  await expect(close).toBeVisible();
+  await close.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toBeFocused();
 });

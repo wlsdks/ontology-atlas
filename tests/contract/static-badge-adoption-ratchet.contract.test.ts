@@ -41,7 +41,7 @@ const ROOT = process.cwd();
  * `scripts/lib/static-surface-census.mjs`. The ledger and the gate must count with
  * **the same function** for the two-way "the ledger is more generous than the
  * measurement" check to mean anything (a discipline codified in
- * `/design-system-audit` after a hand-written ledger was wrong four times on
+ * `/ui-proof` after a hand-written ledger was wrong four times on
  * 2026-08-15).
  */
 
@@ -50,7 +50,7 @@ const ROOT = process.cwd();
  * byte-identical places). These are per-file ceilings; growth turns red, and a row
  * reaching 0 is deleted.
  *
- * The repayment order follows `/design-system-audit`'s fix order: ① geometry that
+ * The repayment order follows `/ui-proof`'s fix order: ① geometry that
  * already matches (0 pixels moved) → ② ±1px → ③ places needing a design verdict. This
  * PR finished ①; most of what remains is ② and ③ and needs a per-place verdict.
  */

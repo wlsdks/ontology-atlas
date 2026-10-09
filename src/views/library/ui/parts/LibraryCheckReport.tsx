@@ -28,7 +28,7 @@ import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProble
  *
  * Owner direction 2026-09-07 (design round, direction B) put the findings in the pane
  * rather than the 280px index column: in the column they were three-line clips that
- * pushed the page list off the screen. Owner selection 2026-09-12 (`/design-directions`
+ * pushed the page list off the screen. Owner selection 2026-09-12 (`/ui-build`
  * direction B, licensed by `docs/DECISIONS.md` 2026-09-11 "The Library keeps its spine,
  * and computes the structural check itself") decides what the pane holds.
  *

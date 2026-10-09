@@ -20,7 +20,7 @@ import { censusStaticSurfaces, isHandCard } from "../../scripts/lib/static-surfa
  * `--card-pad` (16px) had 16 consumers, and **12 more boxes hand-wrote the same 16px**
  * (and all 12, along with 13 of the 16 token adopters, used `rounded-panel`, so
  * reality inverted the spec table's pairing of "card = --card-pad"). These are the
- * "values hand-rewritten without looking them up" that `/design-build` 0-Z forbids,
+ * "values hand-rewritten without looking them up" that `/ui-build` 0-Z forbids,
  * so the migration moved 0 pixels.
  *
  * This ratchet blocks their return. The remaining 62 are debt needing **per-place
@@ -43,7 +43,7 @@ const ROOT = process.cwd();
 /**
  * **The debt ledger** — exactly what the scanner produced after migration, never
  * hand-tuned. (On 2026-08-15 a hand-written ledger was wrong four times, and that
- * discipline was codified into `/design-system-audit`.)
+ * discipline was codified into `/ui-proof`.)
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/app-update/ui/UpdateToast.tsx", 1],

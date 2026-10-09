@@ -12,21 +12,21 @@ import { readSkillProcedure } from "../helpers/read-skill-procedure";
  * 2026-08-15: an agent that did not know this repository was handed only the design
  * system bundle and asked to build three screens containing forms. The five
  * primitives ratified that same day (`Input` · `Textarea` · `Checkbox` ·
- * `SegmentedControl` · `Select`) appeared **zero times** in the `/design-build`
+ * `SegmentedControl` · `Select`) appeared **zero times** in the `/ui-build`
  * routing table, whose last row said "a shape not among those eight → stop and
  * recount everything". In other words, **an agent following instructions receives a
  * stop signal on forms.** That agent did in fact abandon the signpost and recovered
  * by opening 12 `ui/` sources directly — the primitives existed, the gates existed,
  * and **only the signpost did not point there.**
  *
- * The diagnosis `/design-build` wrote in its own preamble recurred one layer up:
+ * The diagnosis `/ui-build` wrote in its own preamble recurred one layer up:
  * *"what was blocking this was not the model's taste but the absence of parts to
  * reach for and of a written order of operations"*. The parts arrived and **the
  * order of operations did not follow.**
  *
  * **What it enforces.** Every **component name** exported by a file in the spec
  * watch list (`PRIMITIVE_EXPORT_FILES` in `design-spec-census.mjs`) must appear by
- * name in the `/design-build` signpost. The list is extracted from source rather
+ * name in the `/ui-build` signpost. The list is extracted from source rather
  * than maintained by hand — the moment a new primitive is registered, this check
  * demands its name.
  *
@@ -57,8 +57,8 @@ const PRIMITIVE_FILES = [
 ] as const;
 
 const SKILL_COPIES = [
-  ".claude/skills/design-build/SKILL.md",
-  ".agents/skills/design-build/SKILL.md",
+  ".claude/skills/ui-build/SKILL.md",
+  ".agents/skills/ui-build/SKILL.md",
 ] as const;
 
 /**
@@ -99,7 +99,7 @@ describe("design-build 안내판 — 비준한 부품은 라우팅된다", () =>
     expect(
       missing,
       "A ratified primitive is missing from the routing table, so an agent following the instructions cannot reach it. " +
-        "Add a row to the shared section 1 table of `/design-build`.",
+        "Add a row to the shared section 1 table of `/ui-build`.",
     ).toEqual([]);
   });
 

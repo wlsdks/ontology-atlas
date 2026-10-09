@@ -300,7 +300,7 @@ async function main() {
   const plan = buildDeployMacosAppPlan(options);
 
   if (plan.build) {
-    // Chained after a separate build this builds the app a second time (lesson 612f3882).
+    // Chained after a separate build this builds the app a second time.
     console.log("[desktop-deploy-app] building the app first; after a separate build, pass --skip-build.");
     run(plan.build[0], plan.build[1]);
   }

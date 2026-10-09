@@ -26,7 +26,7 @@ import { pickTaxonomyLabel } from "@/shared/lib/taxonomy-label";
  *       place that picks a label, `TaxonomyProvider` (the root of ②).
  *
  * The layer that checks what is actually rendered on screen belongs to e2e
- * (`tests/e2e/locale-purity.spec.ts`) — render output is a layer neither lint nor
+ * (`tests/e2e/public-surface-health.spec.ts`) — render output is a layer neither lint nor
  * vitest can see, so it needs a browser.
  */
 
