@@ -9,5 +9,5 @@ Follow the [shared workflow](../../../.agents/skills/review-and-land/workflow.md
 Read supporting references only for the current phase.
 
 Use Claude's named `reviewer` and `product-planner` when the workflow requires
-them. Planned implementation uses `implementer`; uncertain work uses `planner`
-or `investigator`. Keep the existing agent effort tiers.
+them. Planned implementation uses `implementer`; unplanned work uses `planner`,
+and a reproduced failure `investigator`. Keep the existing agent effort tiers.

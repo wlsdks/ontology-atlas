@@ -220,7 +220,7 @@ not the app, so the installed build stays unproven.
 Write the four numbers and the two lists (unanswered questions, failed claims)
 into the PR or the decision record. Compare against
 [the current replay baseline](../../../.claude/skills/ontology-field-trial/BASELINE.md) and
-[the earlier bounded Rust/Codex receipts](BASELINE.md). **A trial with no comparison is an anecdote** — if
+[the earlier bounded Rust/Codex receipts](../../../.claude/skills/ontology-field-trial/BASELINE-HISTORY.md). **A trial with no comparison is an anecdote** — if
 you changed the construction rules and the unanswered list did not shrink, the
 change did not work, whatever the node count says.
 
