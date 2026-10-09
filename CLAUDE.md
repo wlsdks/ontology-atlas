@@ -18,7 +18,7 @@ and the commit's reason together.
 `.claude/agents/` sets effort per type: `implementer` builds a planned slice at
 low; every other agent plans and judges at xhigh
 (`docs/engineering/agent-effort.md`; `CLAUDE_CODE_EFFORT_LEVEL` flattens them).
-Claude discovers skills under `.claude/skills/`, including symlinked folders.
+Claude discovers skills under `.claude/skills/`.
 Codex discovers `.agents/skills/`; it does not auto-load `CLAUDE.md`.
 
 ## Hooks
