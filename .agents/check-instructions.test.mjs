@@ -48,11 +48,13 @@ test('checks actual discovery and references, including newly added phase docume
     put('.agents/skills/example/SKILL.md', 'No frontmatter.\n');
     assert.match(inspectTree(root, '.agents').failures.join('\n'), /metadata/);
     put('.claude/skills/example/SKILL.md', '---\nname: example\ndescription: Build the requested fixture.\n---\n');
-    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmaxTurns: 150\ntools: Read, Bash\n---\n');
+    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmodel: sonnet\nmaxTurns: 150\ntools: Read, Bash\n---\n');
     assert.deepEqual(inspectTree(root, '.claude').failures, []);
-    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmaxTurns: 150\ndisallowedTools: Agent\n---\n');
+    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmaxTurns: 150\ntools: Read, Bash\n---\n');
+    assert.match(inspectTree(root, '.claude').failures.join('\n'), /missing or invalid model/);
+    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmodel: sonnet\nmaxTurns: 150\ndisallowedTools: Agent\n---\n');
     assert.match(inspectTree(root, '.claude').failures.join('\n'), /tools allowlist/);
-    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmaxTurns: 0\ntools: Read\n---\n');
+    put('.claude/agents/implementer.md', '---\nname: implementer\ndescription: Build.\nmodel: sonnet\nmaxTurns: 0\ntools: Read\n---\n');
     assert.match(inspectTree(root, '.claude').failures.join('\n'), /maxTurns/);
   } finally {
     rmSync(root, { recursive: true, force: true });

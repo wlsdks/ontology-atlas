@@ -47,6 +47,7 @@ export function inspectTree(root, tree) {
       }
       if (tree === '.claude' && agents.includes(file)) {
         if (!field('tools')) failures.push(`${file}: missing tools allowlist`);
+        if (!['haiku', 'sonnet', 'opus', 'fable'].includes(field('model'))) failures.push(`${file}: missing or invalid model (haiku, sonnet, opus or fable)`);
         if (!/^[1-9]\d*$/.test(field('maxTurns') ?? '')) failures.push(`${file}: missing or invalid maxTurns`);
       }
     }
