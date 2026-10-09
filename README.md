@@ -115,6 +115,13 @@ ranking. [Measurements and failures](docs/benchmark/CONSTRUCTION.md#continued-an
 
 When an approved model proposal fails during application, Atlas lists the files whose saves completed and attempts to reload the folder. A reload error is reported separately. The failed write may also have changed bytes; this is not an automatic rollback. Inspect the documents before retrying.
 
+Apply and copied terminal requests preserve the selected edits. If a later edit
+needs an unchecked earlier edit to the same document, the card asks you to repair
+the selection before either action. Copied requests include one final body per
+file; Copy reports completion only after the local clipboard operation succeeds
+and offers retry on failure. File counts and line totals describe the net
+selected changes, including repeated and reordered lines.
+
 **Native local construction.** In the macOS Agent panel, choose Build from code,
 inspect the exact code folder, document destination, model and address, then Run.
 The code folder stays read-only, and the destination is excluded from source

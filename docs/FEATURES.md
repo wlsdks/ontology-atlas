@@ -45,6 +45,12 @@ the existing retry flow remains available for cloud and local endpoints. The loc
 
 Approved model proposals retain their confirmed saved-file prefix after a write failure, attempt a folder reload, and report reload errors separately. Normal agent and local Compile failure messages expose that prefix; no automatic rollback is claimed.
 
+The Agent proposal card blocks Apply and Copy when a selected same-file edit
+depends on an unchecked predecessor, keeping the selection editable. Clipboard
+requests contain one final selected body per path; success follows the actual
+local copy outcome, and failures stay retryable. Counts use unique selected paths
+and net ordered line changes; expanded edits preserve repeated-line differences.
+
 The map offers optional continued analysis through its stable Analysis status
 entry and existing bounded inspector. Explicit Analyze next sends one selected
 question to guarded ACP; exact saved results remain dated evidence, and Prepare
