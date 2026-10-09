@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins,
   // The TypeScript 6 compatibility package exposes tsc6, not bin/tsc.
   // Keep build-time type checking on its supported programmatic API.
-  experimental: { useTypeScriptCli: false },
+  experimental: { useTypeScriptCli: false, mcpServer: false },
   // The browser-evidence build in e2e.yml skips the type check: `pnpm typecheck` in the
   // Checks gate owns the same program, route types included, and here it cost 54 of the
   // build's 82 seconds on the E2E critical path. Every other build still checks types.
