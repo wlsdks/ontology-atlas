@@ -4,6 +4,8 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 const runTurn = vi.hoisted(() => vi.fn());
 const buildProposal = vi.hoisted(() => vi.fn());
 const sourceBridge = vi.hoisted(() => ({ preview: vi.fn(), read: vi.fn() }));
+const clipboard = vi.hoisted(() => ({ copyText: vi.fn() }));
+vi.mock('@/shared/lib/copy-text', () => clipboard);
 const writes = vi.hoisted(() => ({ createDoc: vi.fn(), saveDoc: vi.fn(), refresh: vi.fn() }));
 vi.mock('@/shared/lib/tauri-local-construction', () => ({
   previewConstructionSource: sourceBridge.preview, readConstructionSource: sourceBridge.read,
@@ -439,5 +441,83 @@ describe('local source construction resource boundary', () => {
     const cloud = renderHook(() => useVaultAgent(args()));
     await act(async () => { await cloud.result.current.sendConstruction(sourcePreview, 'build'); });
     expect(runTurn).not.toHaveBeenCalled();
+  });
+});
+
+describe('useVaultAgent proposal clipboard outcomes', () => {
+  beforeEach(() => {
+    clipboard.copyText.mockReset().mockResolvedValue(true);
+    runTurn.mockImplementation(async (_deps, turn: AgentTurn) => ({ turn: { ...turn, status: 'done' },
+      readSlugs: [], writeIntents: [{ name: 'patch_concept', args: {} }] }));
+  });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+  function preparedProposal() {
+    return { id: 'clipboard', status: 'pending', snapshotRequested: false, readNodesThisTurn: [], changes: [
+      { id: 'first', tool: 'patch_concept', summary: 'First', selected: true,
+        files: [{ path: 'capabilities/payment.md', kind: 'modify', before: 'original', after: 'original\nEARLIER' }] },
+      { id: 'last', tool: 'patch_concept', summary: 'Last', selected: true,
+        files: [{ path: 'capabilities/payment.md', kind: 'modify', before: 'original\nEARLIER', after: 'original\nEARLIER\nLATER' }] },
+    ] };
+  }
+
+  it('starts no clipboard operation without a pending proposal', async () => {
+    const hook = renderHook(() => useVaultAgent(args()));
+    await expect(hook.result.current.copyProposal()).resolves.toBe(false);
+    expect(clipboard.copyText).not.toHaveBeenCalled();
+  });
+
+  it('returns the actual pending clipboard result and final file bytes', async () => {
+    const pending = Promise.withResolvers<boolean>();
+    clipboard.copyText.mockReturnValue(pending.promise);
+    buildProposal.mockResolvedValue(preparedProposal());
+    const hook = renderHook(() => useVaultAgent(args()));
+    await act(async () => { await hook.result.current.send('draft'); });
+    let settled = false;
+    const result = hook.result.current.copyProposal().then(ok => { settled = true; return ok; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(clipboard.copyText).toHaveBeenCalledWith(expect.stringContaining('original\nEARLIER\nLATER'));
+    pending.resolve(false);
+    await expect(result).resolves.toBe(false);
+  });
+
+  it('refuses direct clipboard calls for a gap or empty selection', async () => {
+    buildProposal.mockResolvedValue(preparedProposal());
+    const hook = renderHook(() => useVaultAgent(args()));
+    await act(async () => { await hook.result.current.send('draft'); });
+    act(() => { hook.result.current.toggleChange('first', false); });
+    await expect(hook.result.current.copyProposal()).resolves.toBe(false);
+    act(() => { hook.result.current.toggleChange('last', false); });
+    await expect(hook.result.current.copyProposal()).resolves.toBe(false);
+    expect(clipboard.copyText).not.toHaveBeenCalled();
+  });
+
+
+  it('keeps direct clipboard operations serial across selection changes', async () => {
+    const pending = Promise.withResolvers<boolean>();
+    clipboard.copyText.mockReturnValueOnce(pending.promise).mockResolvedValue(true);
+    buildProposal.mockResolvedValue(preparedProposal());
+    const hook = renderHook(() => useVaultAgent(args()));
+    await act(async () => { await hook.result.current.send('draft'); });
+    const oldCopy = hook.result.current.copyProposal();
+    act(() => { hook.result.current.toggleChange('last', false); });
+    await expect(hook.result.current.copyProposal()).resolves.toBe(false);
+    expect(clipboard.copyText).toHaveBeenCalledTimes(1);
+    pending.resolve(true);
+    await expect(oldCopy).resolves.toBe(true);
+    await expect(hook.result.current.copyProposal()).resolves.toBe(true);
+    expect(clipboard.copyText).toHaveBeenCalledTimes(2);
+    expect(clipboard.copyText.mock.calls[1][0]).not.toContain('LATER');
+  });
+
+  it('keeps rejected clipboard operations retryable and permits fallback success', async () => {
+    clipboard.copyText.mockRejectedValueOnce(new Error('denied')).mockResolvedValueOnce(true);
+    buildProposal.mockResolvedValue(preparedProposal());
+    const hook = renderHook(() => useVaultAgent(args()));
+    await act(async () => { await hook.result.current.send('draft'); });
+    await expect(hook.result.current.copyProposal()).resolves.toBe(false);
+    expect(hook.result.current.proposal?.status).toBe('pending');
+    await expect(hook.result.current.copyProposal()).resolves.toBe(true);
   });
 });

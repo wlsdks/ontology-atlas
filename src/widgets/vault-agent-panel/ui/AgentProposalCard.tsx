@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
-import { summarizeChangeVolume } from '@/features/vault-agent';
+import { planProposalFiles, proposalLineDiff, summarizeChangeVolume } from '@/features/vault-agent';
 import { Checkbox, controlClass } from '@/shared/ui';
 
 /**
@@ -34,6 +34,9 @@ export interface AgentProposalLabels {
   cancel: string;
   copy: string;
   copied: string;
+  copying: string;
+  copyFailed: string;
+  selectionConflict: (path: string) => string;
   snapshot: string;
   snapshotUnavailable: string;
   applied: (sha: string) => string;
@@ -69,14 +72,33 @@ export function AgentProposalCard({
   expandedByDefault: boolean;
   onApply: () => void;
   onCancel: () => void;
-  onCopy: () => void;
+  onCopy: () => Promise<boolean>;
   onToggleChange: (changeId: string, selected: boolean) => void;
   onToggleSnapshot: (requested: boolean) => void;
   onFocusNode: (slug: string) => void;
 }) {
   const selected = proposal.changes.filter((change) => change.selected);
-  const volume = useMemo(() => summarizeChangeVolume(selected), [selected]);
-  const [copied, setCopied] = useState(false);
+  const plan = useMemo(() => planProposalFiles(proposal.changes), [proposal.changes]);
+  const volume = useMemo(() => summarizeChangeVolume(plan.conflict ? [] : proposal.changes), [plan.conflict, proposal.changes]);
+  const selectedFiles = new Set(selected.flatMap(change => change.files.map(file => file.path))).size;
+  const copyKey = useMemo(() => ({ id: proposal.id, status: proposal.status, canWrite, changes: proposal.changes }), [proposal.id, proposal.status, canWrite, proposal.changes]);
+  const [copyFeedback, setCopyFeedback] = useState<{ key: typeof copyKey; status: 'copying' | 'copied' | 'failed' } | null>(null);
+  const copyRequest = useRef<symbol | null>(null);
+  useLayoutEffect(() => () => { copyRequest.current = null; }, []);
+  const copyStatus = copyFeedback?.key === copyKey ? copyFeedback.status : 'idle';
+  const copyPending = copyFeedback?.status === 'copying';
+
+  async function copySelection() {
+    if (copyRequest.current || plan.conflict || selected.length === 0 || proposal.status !== 'pending') return;
+    const request = Symbol();
+    copyRequest.current = request;
+    setCopyFeedback({ key: copyKey, status: 'copying' });
+    let copied = false;
+    try { copied = await onCopy(); } catch { copied = false; }
+    if (copyRequest.current !== request) return;
+    copyRequest.current = null;
+    setCopyFeedback({ key: copyKey, status: copied ? 'copied' : 'failed' });
+  }
 
   const unread = proposal.changes.filter((change) =>
     change.files.some(
@@ -106,15 +128,21 @@ export function AgentProposalCard({
     >
       <header className="flex flex-col gap-1">
         <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
-          {canWrite ? labels.title(proposal.changes.length) : labels.readOnlyTitle}
+          {canWrite ? labels.title(selectedFiles) : labels.readOnlyTitle}
         </p>
         <p
           data-testid="agent-proposal-volume"
           className="text-label tracking-label text-[color:var(--color-text-tertiary)]"
         >
-          {labels.volume(volume)}
+          {plan.conflict ? labels.title(selectedFiles) : labels.volume(volume)}
         </p>
       </header>
+
+      {plan.conflict || copyStatus === 'failed' ? (
+        <p role="alert" className="rounded-chip border border-[color:var(--color-amber-signal-a60)] bg-[color:var(--color-amber-signal-a16)] px-2 py-1 text-label tracking-label text-[color:var(--color-text-secondary)]">
+          {plan.conflict ? labels.selectionConflict(plan.conflict.path) : labels.copyFailed}
+        </p>
+      ) : null}
 
       {unread.length > 0 ? (
         <p
@@ -205,7 +233,7 @@ export function AgentProposalCard({
             <button
               type="button"
               data-testid="agent-proposal-apply"
-              disabled={busy || selected.length === 0}
+              disabled={busy || !!plan.conflict || selected.length === 0}
               onClick={onApply}
               className={controlClass({
                 tone: 'onAccent',
@@ -219,10 +247,8 @@ export function AgentProposalCard({
             <button
               type="button"
               data-testid="agent-proposal-copy"
-              onClick={() => {
-                onCopy();
-                setCopied(true);
-              }}
+              disabled={copyPending || !!plan.conflict || selected.length === 0}
+              onClick={() => void copySelection()}
               className={controlClass({
                 shape: 'chip',
                 size: 'md',
@@ -231,7 +257,7 @@ export function AgentProposalCard({
                   'font-[var(--font-weight-emphasis)] tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
               })}
             >
-              {copied ? labels.copied : labels.copy}
+              {copyPending ? labels.copying : copyStatus === 'copied' ? labels.copied : labels.copy}
             </button>
           )}
         </div>
@@ -254,6 +280,7 @@ function ChangeRow({
   onToggle: (selected: boolean) => void;
 }) {
   const [open, setOpen] = useState(expandedByDefault);
+  const diffs = useMemo(() => open ? change.files.map(file => ({ file, rows: renderDiff(file.before, file.after) })) : [], [open, change.files]);
   return (
     <li className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]">
       <div className="flex items-center gap-2 px-2 py-1.5">
@@ -302,7 +329,7 @@ function ChangeRow({
       </div>
       {open ? (
         <div className="border-t border-[color:var(--color-divider)] px-2 py-1.5">
-          {change.files.map((file) => (
+          {diffs.map(({ file, rows }) => (
             <div key={file.path} className="mb-1 last:mb-0">
               <p
                 data-testid="agent-proposal-path"
@@ -315,7 +342,7 @@ function ChangeRow({
                 data-testid="agent-proposal-diff"
                 className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words text-caption leading-caption"
               >
-                {renderDiff(file.before, file.after)}
+                {rows}
               </pre>
             </div>
           ))}
@@ -330,25 +357,13 @@ function ChangeRow({
  * created; they are distinguished by the existing text hierarchy alone.
  */
 function renderDiff(before: string | null, after: string) {
-  const beforeLines = before === null ? [] : before.split('\n');
-  const afterLines = after.split('\n');
-  const beforeSet = new Set(beforeLines);
-  const afterSet = new Set(afterLines);
   const rows: React.ReactNode[] = [];
   let key = 0;
-  for (const line of beforeLines) {
-    if (afterSet.has(line)) continue;
+  for (const line of proposalLineDiff(before, after)) {
+    if (line.kind === 'unchanged') continue;
     rows.push(
-      <span key={`d-${key++}`} className="block text-[color:var(--color-text-quaternary)]">
-        − {line}
-      </span>,
-    );
-  }
-  for (const line of afterLines) {
-    if (beforeSet.has(line)) continue;
-    rows.push(
-      <span key={`a-${key++}`} className="block text-[color:var(--color-text-primary)]">
-        + {line}
+      <span key={key++} className={line.kind === 'removed' ? 'block text-[color:var(--color-text-quaternary)]' : 'block text-[color:var(--color-text-primary)]'}>
+        {line.kind === 'removed' ? '−' : '+'} {line.text}
       </span>,
     );
   }

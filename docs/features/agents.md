@@ -48,6 +48,16 @@ Atlas MCP write checkpoint remains separate from the adapter's filesystem sandbo
 
 ### Focused local construction
 
+Agent proposal selection is shared by direct application and the copied terminal
+request. An unchecked predecessor of a selected same-file edit blocks both
+actions and names the document; selecting the predecessor or unchecking the later
+edit restores the action without another model request. Valid copies export one
+final complete body per selected path. Copy waits for the local operation,
+including a successful clipboard fallback, and reports a recoverable failure
+otherwise. Changed or cancelled selection retires pending feedback. The card
+counts unique selected files and original-to-final ordered line changes; expanded
+per-edit previews show duplicate removals and reordered lines.
+
 The native Agent panel's Build from code action selects a read-only code folder
 separately from the document destination. Its preview names both folders, the
 saved local model and loopback address, eligible files and exclusions. Run uses
