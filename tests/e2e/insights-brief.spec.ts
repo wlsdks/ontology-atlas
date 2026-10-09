@@ -77,7 +77,7 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("topology-index-panel")).toContainText("Brief Shop", { timeout: 30_000 });
 
-  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });
   const brief = page.getByTestId("brief-tab");
   await expect(brief).toBeVisible({ timeout: 30_000 });
 
@@ -144,7 +144,7 @@ test("앱에서 지침을 아직 읽는 동안 헤드라인은 부분 합을 그
   }, HARNESS_SOURCE_ROOT);
   await mountHarnessVault(page);
 
-  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });
   const headline = page.getByTestId("brief-headline");
   await expect(page.getByTestId("brief-core-harness")).toHaveAttribute("data-brief-availability", "reading", { timeout: 30_000 });
   await expect(headline).toHaveAttribute("data-brief-headline-state", "counting");

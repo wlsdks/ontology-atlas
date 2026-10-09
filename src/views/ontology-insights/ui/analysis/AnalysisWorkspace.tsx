@@ -88,7 +88,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     </div>
     {missingSelection ? <p role="status" data-testid="analysis-missing-selection" className="mb-3 text-body text-[color:var(--color-text-secondary)]">{t('selectionMissing')}</p> : null}
     <div className={styles.findingHeading}>
-      <div><h2 className="text-hero font-[var(--font-weight-strong)] tracking-tight">{!evidenceQuestion && pair ? <>{name(pair.from)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(pair.to)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
+      <div><h2 data-testid="analysis-finding-heading" className="text-hero font-[var(--font-weight-strong)] tracking-tight">{!evidenceQuestion && pair ? <>{name(pair.from)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(pair.to)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
         <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">{!evidenceQuestion && pair ? t('findingDeclarations', { count: pair.edges.length }) : t('evidenceLead')}</p>
       </div>
       <div className={styles.scopeDetail}><Disclosure summary={t('purpose')} summaryTestId="analysis-purpose" className={styles.purposeDisclosure}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{project ? project.summary || model.documentOf(project)?.definitionPreview || t('purposeMissing') : model.projects.map(name).join(' · ') || t('purposeMissing')}</p></Disclosure></div>
@@ -123,7 +123,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
         {selectedNodes.length ? <div className={styles.inspectAction}>
           {mode === 'local' && inspection.runnable && agentReady ? <Button data-testid="analysis-inspect-selected" variant="outline" size="sm" className="atlas-touch-floor" onClick={() => onInspect(inspection.text)}>{t('inspectSelected')}</Button> : null}
           <CopyAgentTextButton key={inspection.text} testId="analysis-copy-selected" compact label={t(mode === 'static' ? 'copySampleFact' : 'copySelectedCheck')} copiedLabel={t('copiedSelected')} text={inspection.text} />
-          <Disclosure summary={t('reviewSelectedRequest')}><pre className="whitespace-pre-wrap break-words text-label leading-prose text-[color:var(--color-text-secondary)]">{inspection.text}</pre></Disclosure>
+          <Disclosure summary={t('reviewSelectedRequest')} summaryTestId="analysis-selected-request-toggle"><pre data-testid="analysis-selected-request" className="whitespace-pre-wrap break-words text-label leading-prose text-[color:var(--color-text-secondary)]">{inspection.text}</pre></Disclosure>
         </div> : null}
         <div className={styles.evidenceLimit}><p className="mt-2 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('limitsShort')}</p></div>
       </aside>
