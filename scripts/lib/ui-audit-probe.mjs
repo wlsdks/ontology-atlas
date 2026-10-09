@@ -14,19 +14,34 @@ function uiAuditProbe({ rampNames, interactive }) {
   };
   const cache = new Map();
   const painted = (el) => {
-    if (cache.has(el)) return cache.get(el);
+    if (cache.has(el)) return cache.get(el) !== null;
     const c = getComputedStyle(el);
     const b = el.getBoundingClientRect();
+    const area = { left: Math.max(0, b.left), top: Math.max(0, b.top), right: Math.min(innerWidth, b.right), bottom: Math.min(innerHeight, b.bottom) };
+    const boundary = (node, style) => node instanceof HTMLElement && ["absolute", "fixed"].includes(style.position)
+      ? node.offsetParent ?? document.documentElement : null;
+    let containingBlock = boundary(el, c);
     let ok = b.width >= 1 && b.height >= 1 && c.visibility !== "hidden" && c.display !== "none" && Number(c.opacity) >= 0.05;
     if (ok && el.closest("details:not([open])")) ok = false;
     for (let n = el.parentElement; ok && n && n !== document.body; n = n.parentElement) {
       const nc = getComputedStyle(n);
       const r = n.getBoundingClientRect();
-      if (nc.overflow !== "visible" && (b.bottom < r.top || b.top > r.bottom)) ok = false;
+      if (n === containingBlock) containingBlock = null;
+      const scaleX = n.offsetWidth ? r.width / n.offsetWidth : 1;
+      const scaleY = n.offsetHeight ? r.height / n.offsetHeight : 1;
+      if (!containingBlock && ["auto", "scroll", "hidden", "clip"].includes(nc.overflowX)) {
+        area.left = Math.max(area.left, r.left + n.clientLeft * scaleX);
+        area.right = Math.min(area.right, r.left + (n.clientLeft + n.clientWidth) * scaleX);
+      }
+      if (!containingBlock && ["auto", "scroll", "hidden", "clip"].includes(nc.overflowY)) {
+        area.top = Math.max(area.top, r.top + n.clientTop * scaleY);
+        area.bottom = Math.min(area.bottom, r.top + (n.clientTop + n.clientHeight) * scaleY);
+      }
+      if (!containingBlock) containingBlock = boundary(n, nc);
       if (nc.contentVisibility === "hidden" || n.hasAttribute("inert") || Number(nc.opacity) < 0.05) ok = false;
     }
-    ok = ok && b.top < innerHeight && b.bottom > 0 && b.left < innerWidth && b.right > 0;
-    cache.set(el, ok);
+    ok = ok && area.right - area.left >= 1 && area.bottom - area.top >= 1;
+    cache.set(el, ok ? area : null);
     return ok;
   };
   const r1 = (v) => Math.round(v * 10) / 10;
@@ -75,10 +90,11 @@ function uiAuditProbe({ rampNames, interactive }) {
   const targets = [];
   for (const el of controls) {
     const b = el.getBoundingClientRect();
-    if (b.width < 44 || b.height < 44) targets.push({ selector: chain(el), size: `${r1(b.width)}x${r1(b.height)}` });
-    const cx = b.left + b.width / 2;
-    const cy = b.top + b.height / 2;
-    if (cx < 0 || cy < 0 || cx >= innerWidth || cy >= innerHeight) continue;
+    const area = cache.get(el);
+    const width = area.right - area.left, height = area.bottom - area.top;
+    if (b.width < 44 || b.height < 44) targets.push({ selector: chain(el), intrinsicSize: `${r1(b.width)}x${r1(b.height)}`, availableSize: `${r1(width)}x${r1(height)}`, clipped: width < b.width - 0.5 || height < b.height - 0.5 });
+    const cx = (area.left + area.right) / 2;
+    const cy = (area.top + area.bottom) / 2;
     const hit = document.elementFromPoint(cx, cy);
     if (!hit || (hit !== el && !el.contains(hit))) {
       occluded.push({ selector: chain(el), by: hit ? chain(hit).slice(0, 1) : "nothing", at: `${Math.round(cx)},${Math.round(cy)}` });
@@ -88,11 +104,11 @@ function uiAuditProbe({ rampNames, interactive }) {
   const surfaces = controls.filter((el) => el.tagName !== "CANVAS");
   for (let i = 0; i < surfaces.length; i += 1) {
     const a = surfaces[i];
-    const ra = a.getBoundingClientRect();
+    const ra = cache.get(a);
     for (let j = i + 1; j < surfaces.length; j += 1) {
       const b = surfaces[j];
       if (a.contains(b) || b.contains(a)) continue;
-      const rb = b.getBoundingClientRect();
+      const rb = cache.get(b);
       const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
       const h = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
       if (w > 0 && h > 0 && w * h > 4) overlap.push({ selector: chain(a), with: chain(b).slice(0, 1), areaPx2: Math.round(w * h) });
