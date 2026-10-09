@@ -122,6 +122,11 @@ file; Copy reports completion only after the local clipboard operation succeeds
 and offers retry on failure. File counts and line totals describe the net
 selected changes, including repeated and reordered lines.
 
+Flow history rechecks the cited ontology documents behind its visible saved
+answers. Matching evidence is current, changed evidence is stale, and unreadable
+evidence stays unknown. These statuses compare recorded evidence; they do not
+approve meaning or verify source code.
+
 **Native local construction.** In the macOS Agent panel, choose Build from code,
 inspect the exact code folder, document destination, model and address, then Run.
 The code folder stays read-only, and the destination is excluded from source

@@ -51,6 +51,10 @@ requests contain one final selected body per path; success follows the actual
 local copy outcome, and failures stay retryable. Counts use unique selected paths
 and net ordered line changes; expanded edits preserve repeated-line differences.
 
+Flow history checks current document digests for the latest five matching answers
+on its bounded archive page. Unreadable evidence stays unknown, and an obsolete
+refresh cannot replace a newer result. The original answers remain dated records.
+
 The map offers optional continued analysis through its stable Analysis status
 entry and existing bounded inspector. Explicit Analyze next sends one selected
 question to guarded ACP; exact saved results remain dated evidence, and Prepare
