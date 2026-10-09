@@ -126,6 +126,8 @@ Flow history rechecks the cited ontology documents behind its visible saved
 answers. Matching evidence is current, changed evidence is stale, and unreadable
 evidence stays unknown. These statuses compare recorded evidence; they do not
 approve meaning or verify source code.
+The exact Flow request is a named keyboard scroll region, with a visible focus
+frame that stays clear of the text's overflow fade.
 
 **Native local construction.** In the macOS Agent panel, choose Build from code,
 inspect the exact code folder, document destination, model and address, then Run.

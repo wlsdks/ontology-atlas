@@ -1,5 +1,45 @@
 import { expect, test } from '@playwright/test';
 
+test('Flow request keeps a named keyboard scroll target and an unfaded focus frame', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1040, height: 720 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
+  const request = page.getByTestId('flow-request-text');
+  await expect(request).toHaveRole('region');
+  await expect(request).toHaveAccessibleName(await page.getByTestId('flow-request').getByRole('heading', { level: 3 }).innerText());
+  await page.evaluate(() => document.fonts.ready);
+  await page.getByTestId('flow-copy').focus();
+  await page.keyboard.press('Tab');
+  await expect(request).toBeFocused();
+  await page.keyboard.press('End');
+  await expect.poll(() => request.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop)).toBeLessThanOrEqual(1);
+  const measured = await request.evaluate((element) => {
+    const frame = element.parentElement!;
+    const style = getComputedStyle(frame);
+    const textStyle = getComputedStyle(element);
+    const rect = frame.getBoundingClientRect();
+    const card = frame.parentElement!.getBoundingClientRect();
+    return {
+      viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+      focusShadow: style.boxShadow,
+      focusMask: style.maskImage,
+      text: { size: textStyle.fontSize, leading: textStyle.lineHeight, color: textStyle.color },
+      surface: style.backgroundColor,
+      ringClearance: { left: rect.left - card.left, right: card.right - rect.right, bottom: card.bottom - rect.bottom },
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      frame: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      scrollTop: element.scrollTop,
+      scrollMax: element.scrollHeight - element.clientHeight,
+    };
+  });
+  expect(measured.focusShadow).not.toBe('none');
+  expect(measured.focusMask).toBe('none');
+  expect(measured.overflow).toBe(0);
+  await testInfo.attach('request-keyboard-geometry', { body: JSON.stringify(measured), contentType: 'application/json' });
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId('insights-handoff-row').getByRole('button')).toBeFocused();
+});
+
 test('long Flow requests keep the handoff below their content at the app minimum', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
