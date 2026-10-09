@@ -30,6 +30,8 @@ Ontology Atlas is a local-first workbench that keeps one reviewable Markdown rec
 - The initial construction did not open `src-tauri/`; native dependencies then came from web-side bridge readings. The bounded PR #2059 sync read the Jev native transfer boundary and exercised Library/Concept sets in the installed macOS app, plus one synthetic Jev request. Those observations are recorded in the affected nodes and do not qualify the rest of the map.
 - The 2026-09-28 census has 32 capabilities and 61 elements. The competency inventories below retain the initial 29-capability/56-element reading as historical evidence; this sync does not requalify all later additions or their runtime impact.
 
+- The bounded 2026-10-10 Analysis sync updates the inspection capability, its retired helper claims, and canonical document-property visibility. It does not repeat the full capability inventory, prove runtime change impact, or accept the model's remaining meanings.
+
 ## Competency answers
 
 ### scope: answered

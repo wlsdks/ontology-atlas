@@ -50,9 +50,9 @@ test('the installed-app and folder forms match the phrases the readiness gate re
   assert.equal(matches('folderWord', 'en', 'Open a Folder'), true);
 });
 
-test('the ratchet values are the ones the contracts held before the table', () => {
+test('ratchet values preserve the reviewed vocabulary budgets', () => {
   assert.equal(column('aiWord', 'ko').baseline, 82);
-  assert.equal(column('projectKindWord', 'ko').baseline, 144);
+  assert.equal(column('projectKindWord', 'ko').baseline, 145);
   assert.deepEqual(column('softenedKindNames', 'ko').baselines, { 영역: 14, 기능: 7 });
   assert.equal(column('nodeWord', 'en').baseline, 9);
   assert.equal(column('surfaceNaming', 'ko').pattern.source, column('surfaceNaming', 'en').pattern.source);

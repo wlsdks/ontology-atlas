@@ -10,14 +10,16 @@ path: src/views/ontology-insights/lib/unmatched-board.ts
 created_by: "agent:claude-code"
 ---
 
-Shows where the record and the code fail to meet: parts of the codebase no meaning claims, and recorded meaning no code backs.
+Retained legacy rows for durable graph references whose named target is missing, with viewer dismissals applied to the visible list.
 
 ## Includes
-- Both directions of the mismatch, with the dismissals a person has already made kept out of the way.
+- Names, source references, relation keys, and reference counts supplied by unresolved graph asks.
+- A total that includes dismissed names and a visible list that excludes them.
 
 ## Excludes
-- Creating the missing meaning or the missing evidence.
-- Deciding that an unmatched item is a defect; some code is deliberately unmodelled.
+- Comparing arbitrary source code against the ontology record.
+- Creating a missing concept, repairing a reference, or declaring an unresolved name a product defect.
+- An unmatched-name board in the current Analysis entry.
 
 ## Uncertainty
-- Witnessed as an import of the insights page and read by name only. It was never run against this vault, so whether it would flag the unread parts of this codebase is untested.
+- Read `src/views/ontology-insights/lib/unmatched-board.ts` during the 2026-10-10 retirement; the earlier record-versus-code wording was not the module's actual behavior. Legacy types and tests remain, while the current page has no runtime import of the helper. No concept deletion or general matching qualification was performed.

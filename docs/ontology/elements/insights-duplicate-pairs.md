@@ -10,13 +10,14 @@ path: src/views/ontology-insights/lib/duplicate-pairs.ts
 created_by: "agent:claude-code"
 ---
 
-Finds pairs of nodes that may be the same idea recorded twice, so the most common way a growing vault goes wrong is visible rather than accumulating quietly.
+Retained legacy candidate matching of graph nodes that may describe the same concept.
 
 ## Includes
-- Candidate pairs surfaced for a person to judge, keep, or merge.
+- Candidate pairs and their similarity values for a person to inspect.
 
 ## Excludes
-- Merging anything; whether two nodes are one concept is a decision a person makes.
+- Merging records or deciding that two concepts are interchangeable.
+- A duplicate-ranking surface in the current Analysis workbench.
 
 ## Uncertainty
-- Witnessed as an import of the insights page and read by name only. Its scoring was not compared against the duplicate check the agent surface offers before a write, and the two may not agree.
+- The module and tests remain after the 2026-10-10 Analysis redesign, but the current page no longer imports or displays this matcher. Its scores were not accepted as semantic equivalence or re-compared with the agent surface in this bounded sync.

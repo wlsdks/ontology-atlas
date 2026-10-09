@@ -67,52 +67,27 @@ function asAppPayload(markers: Markers, path: string) {
   };
 }
 
-test.describe("분석 보드 — 설치 앱의 프로브와 계약이 이 화면과 맞는다", () => {
+test.describe("Analysis agrees with the installed app probe", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
-
-  test("브리핑으로 열면 주제 4개·질문 0개로 계약을 통과한다", async ({ page }) => {
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("insights-core-switch")).toBeVisible({ timeout: 20_000 });
-
+  for (const [query, subject, panel] of [["", "ontology", "analysis"], ["?tab=brief", "brief", "brief"], ["?tab=composition", "ontology", "analysis"]]) {
+    test(`reads the live ${panel} panel at ${query || 'default'}`, async ({ page }) => {
+      await page.goto(`/ko/ontology/insights/${query}`);
+      await expect(page.locator('[data-insights-panel]')).toBeVisible();
+      const markers = await collectMarkers(page);
+      expect(markers.insightsMaintenanceBoard).toBe(true);
+      expect(markers.insightsSubjectCount).toBe(5);
+      expect(markers.insightsSelectedSubject).toBe(`insights-core-${subject}`);
+      expect(markers.insightsTabCount).toBe(5);
+      expect(markers.insightsSelectedPanelKey).toBe(panel);
+      expect(validateWebviewVerifyPayload(asAppPayload(markers, '/ko/ontology/insights/'))).toBeNull();
+    });
+  }
+  test("removing a real section fails the installed app contract", async ({ page }) => {
+    await page.goto('/ko/ontology/insights/');
+    await expect(page.getByTestId('insights-core-harness')).toBeVisible();
+    await page.getByTestId('insights-core-harness').evaluate(node => node.remove());
     const markers = await collectMarkers(page);
-    // Idling guards — an empty probe would satisfy every assertion that follows.
-    expect(markers.insightsMaintenanceBoard, "프로브가 보드를 못 찾았다 — 셀렉터가 낡았다").toBe(true);
-    expect(markers.insightsSubjectCount, "주제 행을 못 셌다").toBe(4);
-    expect(markers.insightsSelectedSubject).toBe("insights-core-brief");
-    expect(markers.insightsTabCount, "브리핑엔 질문 탭이 없다").toBe(0);
-    expect(markers.insightsSelectedPanelKey).toBe("brief");
-
-    expect(validateWebviewVerifyPayload(asAppPayload(markers, "/ko/ontology/insights/"))).toBeNull();
-  });
-
-  test("개념으로 열면 질문 7개와 핸드오프까지 계약을 통과한다", async ({ page }) => {
-    await page.goto("/ko/ontology/insights/?guides=off&tab=composition", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("insights-core-switch")).toBeVisible({ timeout: 20_000 });
-
-    const markers = await collectMarkers(page);
-    expect(markers.insightsSelectedSubject).toBe("insights-core-ontology");
-    expect(markers.insightsTabCount, "개념의 질문 행을 못 셌다").toBe(7);
-    expect(markers.insightsSelectedTabCount).toBe(1);
-    expect(markers.insightsHandoff, "이 질문은 탭 전체 핸드오프 줄을 가진다").toBe(true);
-
-    expect(
-      validateWebviewVerifyPayload(asAppPayload(markers, "/ko/ontology/insights/?tab=composition")),
-    ).toBeNull();
-  });
-
-  test("주제 하나가 사라지면 계약이 그 사실을 말한다", async ({ page }) => {
-    /*
-     * The probe and the contract must still be able to fail. Removing one subject from the live
-     * DOM is the cheapest deliberate RED: if this passes, the two files have stopped measuring
-     * the board and the two green cases above prove nothing.
-     */
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("insights-core-harness")).toBeVisible({ timeout: 20_000 });
-    await page.evaluate(() => document.querySelector('[data-testid="insights-core-harness"]')?.remove());
-
-    const markers = await collectMarkers(page);
-    expect(markers.insightsSubjectCount).toBe(3);
-    const message = validateWebviewVerifyPayload(asAppPayload(markers, "/ko/ontology/insights/"));
-    expect(message, "주제가 하나 사라졌는데 계약이 통과했다").toContain("subject count");
+    expect(markers.insightsSubjectCount).toBe(4);
+    expect(validateWebviewVerifyPayload(asAppPayload(markers, '/ko/ontology/insights/'))).toContain('subject count');
   });
 });

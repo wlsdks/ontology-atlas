@@ -4,6 +4,13 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 import { waitForPageSettled } from "./settle";
 
+// The shared fixture's cross-domain links are relates, not declared dependencies.
+const ANALYSIS_VAULT = {
+  ...FIXTURE_VAULT,
+  "capabilities/checkout.md": FIXTURE_VAULT["capabilities/checkout.md"].replace("relates:\n", "dependencies: [capabilities/invoice]\nrelates:\n"),
+  "capabilities/cart-pricing.md": FIXTURE_VAULT["capabilities/cart-pricing.md"].replace("relates:\n", "dependencies: [capabilities/payout-ledger]\nrelates:\n"),
+};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright specs load as CJS; using `import.meta` stops the file loading at all.
 const { judgeText } = require("../../scripts/lib/contrast.mjs");
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
@@ -239,37 +246,26 @@ const STATES: readonly VaultState[] = [
     evidence: '[id^="insights-tabpanel"]',
   },
   {
-    // The grid itself is not born without a vault that has cross-domain edges.
-    name: "인사이트 · 경계 (교차 도메인 격자)",
-    url: "/ko/ontology/insights/?tab=boundaries",
-    evidence: '[data-testid="domain-coupling-grid"]',
+    name: "Analysis declared responsibility pair",
+    url: "/ko/ontology/insights/?tab=connections",
+    evidence: '[data-testid="analysis-dependency-diagram"]',
+    async verify(page) {
+      expect(await page.getByTestId('analysis-witness').count()).toBeGreaterThan(0);
+      await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeVisible();
+    },
   },
   {
-    // Dense rows — the DOM PR #918 first rendered for a place that only appears with data.
-    name: "인사이트 · 경계 상세 (밀집 행)",
-    url: "/ko/ontology/insights/?tab=boundaries",
-    evidence: '[data-testid="domain-coupling-pair"]',
+    name: "Analysis selected implementation evidence",
+    url: "/ko/ontology/insights/?tab=do-next",
+    evidence: '[data-testid="analysis-claim"][aria-pressed="true"]',
     async act(page) {
-      await page.getByTestId("domain-coupling-cell").first().click({ timeout: EVIDENCE_TIMEOUT });
-      await expect(page.getByTestId("domain-coupling-pair").first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
+      const claims = page.getByTestId('analysis-claim');
+      expect(await claims.count()).toBeGreaterThan(1);
+      await claims.nth(1).click();
+      await expect(claims.nth(1)).toHaveAttribute('aria-pressed', 'true');
     },
-    /*
-     * axe's `target-size` (WCAG 2.5.8, in `wcag22aa`) is what guards these rows, and it only means
-     * something while the rows are actually dense: example links stacked one under another. This
-     * state replaced `dense-row-target-size.spec.ts`, which measured the same DOM by hand.
-     */
     async verify(page) {
-      const links = await page.getByTestId("domain-coupling-example-link").evaluateAll((nodes) =>
-        nodes.map((node) => {
-          const r = node.getBoundingClientRect();
-          return { x: r.x, y: r.y };
-        }),
-      );
-      expect(links.length, "밀집 행의 예시 링크가 두 줄도 안 된다 — 밀집 행을 재고 있지 않다").toBeGreaterThanOrEqual(2);
-      const stacked = links.some((a) =>
-        links.some((b) => a !== b && Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) > 1 && Math.abs(a.y - b.y) < 60),
-      );
-      expect(stacked, "세로로 쌓인 예시 링크 이웃이 없다 — 밀집 행을 재고 있지 않다").toBe(true);
+      await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeVisible();
     },
   },
   {
@@ -347,7 +343,7 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   await page.setViewportSize({ width: 1512, height: 900 });
 
   // ── ① Attach the vault ───────────────────────────────────────────────
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
+  await stubDirectoryPicker(page, ANALYSIS_VAULT);
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?guides=off");
   await page.waitForLoadState("networkidle");

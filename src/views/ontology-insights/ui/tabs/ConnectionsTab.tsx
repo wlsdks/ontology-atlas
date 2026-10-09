@@ -23,7 +23,7 @@ import { ShareStack } from "../parts/ShareStack";
 import { INSIGHTS_LIST_ROW, INSIGHTS_LIST_TWO_COLUMN, insightsTwoColumnCell } from "../parts/insights-list";
 import { controlClass } from '@/shared/ui/control-class';
 
-export interface ConnectionHubRow {
+interface ConnectionHubRow {
   id: string;
   title: string;
   kind: string;

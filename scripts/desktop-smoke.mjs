@@ -166,9 +166,9 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/topology": ["ontology-map-canvas", "topology-concept-search"],
   "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
   "/ontology/insights": [
-    "maintenance-board",
-    "one-tab-one-question",
-    "tab-query",
+    "relationship-analysis",
+    "claim-evidence",
+    "analysis-dependency-diagram",
   ],
 };
 

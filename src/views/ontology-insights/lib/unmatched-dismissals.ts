@@ -1,4 +1,3 @@
-import { useCallback, useSyncExternalStore } from "react";
 
 /**
  * Unmatched rows this viewer chose not to look at: a browser preference, never a vault write, so it never reaches
@@ -62,38 +61,4 @@ export function writeUnmatchedDismissals(
     /* private mode — the change still holds for this session */
   }
   window.dispatchEvent(new Event(DISMISSED_EVENT));
-}
-
-function subscribe(onChange: () => void): () => void {
-  const handle = () => {
-    snapshot = new Map();
-    onChange();
-  };
-  window.addEventListener(DISMISSED_EVENT, handle);
-  window.addEventListener("storage", handle);
-  return () => {
-    window.removeEventListener(DISMISSED_EVENT, handle);
-    window.removeEventListener("storage", handle);
-  };
-}
-
-/** The dismissed ids for one vault, plus a toggle for one row. */
-export function useUnmatchedDismissals(
-  vaultScope: string,
-): [ReadonlySet<string>, (id: string, dismissed: boolean) => void] {
-  const value = useSyncExternalStore(
-    subscribe,
-    () => readUnmatchedDismissals(vaultScope),
-    () => EMPTY,
-  );
-  const toggle = useCallback(
-    (id: string, dismissed: boolean) => {
-      const next = new Set(readUnmatchedDismissals(vaultScope));
-      if (dismissed) next.add(id);
-      else next.delete(id);
-      writeUnmatchedDismissals(vaultScope, next);
-    },
-    [vaultScope],
-  );
-  return [value, toggle];
 }

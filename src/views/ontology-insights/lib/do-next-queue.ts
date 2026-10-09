@@ -64,7 +64,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * User-facing clipboard strings from the messages files via `t.raw`, which leaves the MCP-call braces verbatim.
  * Tokens such as `%ref%` and `%kind%` are filled by `fillHandoffTemplate`.
  */
-export interface DoNextHandoffProse {
+interface DoNextHandoffProse {
   verificationGate: string;
   createDocFirst: string;
   doNextUpdate: string;

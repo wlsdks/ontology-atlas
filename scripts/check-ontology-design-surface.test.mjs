@@ -92,65 +92,12 @@ function writeCleanWorkbenchFixtures(root) {
     "src/features/acp-session/model/acp-client.ts",
     "const ontologyWrite = atlasMode === 'write';",
   );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/lib/insights-tab-state.ts",
-    [
-      "export const INSIGHTS_TABS = [",
-      '  "brief",',
-      '  "library",',
-      '  "harness",',
-      '  "do-next",',
-      '  "unmatched",',
-      '  "composition",',
-      '  "connections",',
-      '  "boundaries",',
-      '  "growth",',
-      '  "flow",',
-      "] as const;",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    [
-      '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
-      "<TabBar",
-      'role: "tabpanel"',
-      "data-insights-panel={tab}",
-      '{tab === "flow" ? (',
-      "<FlowTab",
-      'request={flowRequest}',
-      "canLaunchAgent={agentRoute === 'agent'}",
-      '<InsightsAgentDock',
-      "<InsightsHandoffRow",
-      "<InsightsHeroCensus",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
-    [
-      'function FlowTab() { return <section data-testid="flow-tab">',
-      '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} />',
-      '<CopyControl text={request} testId="flow-copy" />',
-      "</section>; }",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
-    ["function OverviewTab() {}", "InsightsHeroCensus"].join("\n"),
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
-    [
-      "function InsightsHandoffRow() {}",
-      '<section data-insights-handoff="tab-query">',
-      "<CopyAgentTextButton",
-    ].join("\n"),
-  );
+  writeFixture(root, "src/views/ontology-insights/ui/OntologyInsightsPage.tsx", '<main data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence" role="tabpanel"><TabBar /><AnalysisWorkspace /></main>');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref</aside>');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/DependencyDiagram.tsx", '<div data-testid="analysis-dependency-diagram" />');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/PairRail.tsx", '<button data-testid="analysis-pair" />');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", '<InsightsAgentDock /> planInsightsAgentPrompt');
+  writeFixture(root, "src/views/ontology-insights/ui/tabs/FlowTab.tsx", '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} /><CopyControl text={request} testId="flow-copy" />');
   writeFixture(
     root,
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
@@ -330,154 +277,24 @@ test("ontology design surface does not accept a workbench marker that survives o
   );
 });
 
-test("ontology design surface reports missing workbench structure markers", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  // Break the current maintenance-board contract: five measured tabs plus Flow,
-  // one active panel, and the tab-scoped agent handoff must all be present.
-  writeFixture(
-    root,
-    "src/views/ontology-insights/lib/insights-tab-state.ts",
-    'export const INSIGHTS_TABS = ["overview", "relations", "freshness"] as const;',
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    "// no maintenance board, no question model, no tabs, no active panel, no handoff row",
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
-    "function OverviewTab() {}",
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
-    "function Nothing() {}",
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor", "src/views/ontology-insights"],
+for (const [file, missing] of [
+  ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", /relationship-analysis/],
+  ["src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", /analysis-evidence/],
+  ["src/views/ontology-insights/ui/analysis/DependencyDiagram.tsx", /analysis-dependency-diagram/],
+  ["src/views/ontology-insights/ui/analysis/PairRail.tsx", /analysis-pair/],
+  ["src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", /InsightsAgentDock/],
+  ["src/views/ontology-insights/ui/tabs/FlowTab.tsx", /onPrefill/],
+]) {
+  test(`ontology design surface rejects missing relationship or authority subject: ${file}`, () => {
+    const root = makeFixture();
+    writeCleanWorkbenchFixtures(root);
+    writeFixture(root, file, "// the protected subject was removed");
+    const report = evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/ontology-insights"] });
+    assert.equal(report.ok, false);
+    assert.ok(report.violations.length > 0);
+    assert.match(report.violations.map(violation => violation.source).join("\n"), missing);
   });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-maintenance-board"],
-  );
-  assert.deepEqual(
-    report.violations.map((violation) => violation.source),
-    [
-      [
-        "missing marker: export const INSIGHTS_TABS = [",
-        '  "brief",',
-        '  "library",',
-        '  "harness",',
-        '  "do-next",',
-        '  "unmatched",',
-        '  "composition",',
-        '  "connections",',
-        '  "boundaries",',
-        '  "growth",',
-        '  "flow",',
-        "] as const;",
-      ].join("\n"),
-      'missing marker: data-insights-surface="maintenance-board"',
-      'missing marker: data-insights-question-model="one-tab-one-question"',
-      "missing marker: TabBar",
-      'missing marker: role: "tabpanel"',
-      "missing marker: data-insights-panel={tab}",
-      'missing marker: {tab === "flow" ? (',
-      "missing marker: <FlowTab",
-      'missing marker: request={flowRequest}',
-      "missing marker: canLaunchAgent={agentRoute === 'agent'}",
-      'missing marker: <InsightsAgentDock',
-      "missing marker: InsightsHandoffRow",
-      'missing marker: data-insights-handoff="tab-query"',
-      "missing marker: CopyAgentTextButton",
-    ],
-  );
-});
-
-test("ontology design surface rejects a metrics-only board that omits Flow", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  writeFixture(
-    root,
-    "src/views/ontology-insights/lib/insights-tab-state.ts",
-    [
-      "export const INSIGHTS_TABS = [",
-      '  "brief",',
-      '  "library",',
-      '  "harness",',
-      '  "do-next",',
-      '  "unmatched",',
-      '  "composition",',
-      '  "connections",',
-      '  "boundaries",',
-      '  "growth",',
-      "] as const;",
-    ].join("\n"),
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/views/ontology-insights"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-maintenance-board"],
-  );
-  assert.match(report.violations[0].source, /"flow"/);
-});
-
-test("ontology design surface rejects a named Flow tab whose handoff no longer works", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    [
-      '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
-      "<TabBar",
-      'role: "tabpanel"',
-      "data-insights-panel={tab}",
-      '{tab === "flow" ? <FlowTab /> : null}',
-      "<InsightsHandoffRow",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
-    'function FlowTab() { return <section data-testid="flow-tab" />; }',
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/views/ontology-insights"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-maintenance-board"],
-  );
-  assert.match(
-    report.violations.map((violation) => violation.source).join("\n"),
-    /flowRequest/,
-  );
-  assert.match(
-    report.violations.map((violation) => violation.source).join("\n"),
-    /InsightsAgentDock/,
-  );
-  assert.match(
-    report.violations.map((violation) => violation.source).join("\n"),
-    /onPrefill|clipboard/,
-  );
-});
+}
 
 test("ontology design surface rejects the retired three-tab insights dashboard", () => {
   const root = makeFixture();
@@ -505,7 +322,7 @@ test("ontology design surface rejects the retired three-tab insights dashboard",
   assert.equal(report.ok, false);
   assert.deepEqual(
     Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-maintenance-board"],
+    ["insights-relationship-analysis"],
   );
 });
 

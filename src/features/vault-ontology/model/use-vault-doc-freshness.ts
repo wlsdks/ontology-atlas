@@ -167,11 +167,6 @@ export function useVaultDocDates(): VaultDocDates {
   }, [mode, staticSource.manifest, manifest, bridge, root, walk]);
 }
 
-/** `useVaultDocDates().index` — the change date of each document, by slug. */
-export function useVaultDocFreshnessIndex(): ReadonlyMap<string, string> {
-  return useVaultDocDates().index;
-}
-
 /** The manifest's own file dates, for "was this file written since I opened it", which a commit must not answer. */
 export function useVaultDocFileDates(): ReadonlyMap<string, string> {
   const mode = useDataSourceMode();

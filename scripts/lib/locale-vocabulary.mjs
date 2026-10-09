@@ -32,7 +32,8 @@ export const VOCABULARY = {
       ja: 'the baseline counts a Korean overload of the project word; プロジェクト is one term in the glossary',
       zh: 'the baseline counts a Korean overload of the project word; 项目 is one term in the glossary',
     },
-    ko: { word: '프로젝트', baseline: 144 },
+    // Analysis adds one actual project-kind count for a multi-project folder.
+    ko: { word: '프로젝트', baseline: 145 },
   },
   softenedKindNames: {
     applies: ['ko'],
