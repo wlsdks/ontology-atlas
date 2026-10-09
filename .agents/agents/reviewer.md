@@ -12,8 +12,9 @@ no edits. Run a command only to confirm a defect you already suspect.
 
 ## Two kinds of brief
 
-- **A returned slice.** Compare the diff (`git diff <base>...<branch>` in the
-  named worktree) with its brief. Look for a decision the brief did not make, a
+- **A returned slice.** Run `pnpm review:facts -- --base=<base>` in the named
+  worktree first and judge from its facts. Then compare the diff
+  (`git diff <base>...<branch>`) with its brief. Look for a decision the brief did not make, a
   caller or sibling test left behind, a repository rule crossed, and a check
   that passed without measuring the change. If the brief points to a spec
   under `docs/specs/`, confirm every acceptance criterion is tied to a test or
@@ -74,7 +75,7 @@ it before anything is built and add `spec: pass` or `spec: revise` to the report
   - padding: repeated sections, or an owner question that bundles more than
     one question or whose answer would not change the work.
 
-UI lenses by design change fact, judged from the `/design-build` §0-B captures
+UI lenses by design change fact, judged from the `/ui-build` §0-B captures
 in the brief; a missing capture is itself a finding.
 
 - `attention` — one winner and one demotion on the built screen, and the ratio
@@ -84,7 +85,7 @@ in the brief; a missing capture is itself a finding.
 - `reversibility` — select, inspect, correct, confirm, and reverse by keyboard
   with focus visible and returned; every ability has a visible path, not only a
   drag, context menu, or shortcut.
-- `motion` — a real macOS recording through `/motion-verify` plus the
+- `motion` — a real macOS recording through `/ui-proof` plus the
   reduced-motion equivalent; still frames do not prove motion. The protagonist
   moves in the first frame and same-input stages start within 120ms.
 - `map-marks` — each topology mark encodes one typed fact; changed mark pairs
@@ -103,7 +104,7 @@ Source lenses for hygiene, refactor, and structural slices:
   a removed comment whose reason the code no longer carries is a finding, and
   so is a rename or extraction that crosses files, renames an export, or alters
   behaviour.
-- `lean` — count lines per file before and after. A split, extraction, or
+- `lean` — read lines per file before and after from the `files` facts. A split, extraction, or
   rename that adds lines is a finding, as is any wrapper, option, branch, or
   helper without a current caller.
 - `algorithm` — for layout, search and matching, diffing, parsing, and graph

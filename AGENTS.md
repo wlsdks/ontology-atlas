@@ -40,23 +40,26 @@ not add broad suites, repeat passing checks, or write tests that pin prose.
 `.claude/rules/testing.md` owns escalation. Report the outcome first, then the
 evidence and remaining limits. Never claim unperformed proof.
 
+A fact the source can answer comes from a script: run or extend the `pnpm`
+command (README's command table) and read its output instead of re-deriving it.
+Write no plans, retrospectives, handoffs or notes into the repository or
+`~/scratch`; reasons go in commit bodies and pull requests, working files in the
+session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
+
 ## Choose the relevant workflow
 
 | Task | Entry and required scope |
 |---|---|
 | Mechanical maintenance | Technical checks only; skip product routing |
-| Product behavior, UX, public contract, or authority change | `/po-pass`; one `reviewer` only when it returns review or the owner asks |
-| UI, interaction, topology, responsive, motion, or macOS workbench | After the PO pass, `pnpm design:route`; `/design-build` implements the selected shape |
-| New structural design choice | `/design-directions` only when routed without a valid owner selection; one `reviewer` when the route says review |
-| Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, `/user-walkthrough` only at the requested or routed scope |
-| Design-system enforcement | `/design-system-audit` |
+| Product behavior, UX, public contract, or authority change | `/product-check`; one `reviewer` only when it returns review or the owner asks |
+| UI, interaction, topology, responsive, motion, or macOS workbench | After the product check, `/ui-build` (it runs `pnpm design:route`); `/ui-proof` runs the proof steps the route returns |
 | Any automated gate change | `/gate-probe` |
 | Initial ontology or explicit rebuild | `/ontology-bootstrap`; general code analysis alone does not request construction |
 | Meaningful code change in an existing vault | `/ontology-sync` |
-| Requested extraction from prose or wiki | `/ontology-extract` or `/ontology-absorb-confluence` with the user's registered third-party MCP |
+| Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
-| Authorized parallel work | `/parallel-brief` before delegation |
-| Two or more ready branches | `/land-bundle`; a single branch lands with `pnpm pr:land` |
+| Authorized parallel work | `/delegate` |
+| Returned or ready branches | `/land`; your own branch with no review due lands with `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your

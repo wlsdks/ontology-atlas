@@ -30,7 +30,8 @@ checkout — a scratch directory, never inside `ontology-atlas/`.
 
 ```bash
 # outside this repo
-mkdir -p ~/scratch/atlas-field-trial && cd ~/scratch/atlas-field-trial
+TRIAL=<your session scratchpad>/atlas-field-trial
+mkdir -p "$TRIAL" && cd "$TRIAL"
 git clone --depth 1 <repo-url> repo
 mkdir vault handoff
 node <atlas>/cli/src/index.mjs init vault     # starter nodes only
@@ -187,19 +188,19 @@ a pointer to them, the way this repository's visibility table allows:
 ```bash
 # 1. Seal six questions into scratch before any vault exists.
 cp .claude/skills/ontology-field-trial/scripts/sealed-questions.template.md \
-   ~/scratch/atlas-field-trial/sealed-questions.md
+   "$TRIAL"/sealed-questions.md
 
 # 2. Replay the door: two turns, the second resuming the first.
-.claude/skills/ontology-field-trial/scripts/acp-replay.sh ~/scratch/atlas-field-trial/repo \
-  --model opus --out ~/scratch/atlas-field-trial/replay
+.claude/skills/ontology-field-trial/scripts/acp-replay.sh "$TRIAL"/repo \
+  --model opus --out "$TRIAL"/replay
 
 # 3. Phase 3, sealed: the vault's read tools and nothing else.
-.claude/skills/ontology-field-trial/scripts/sealed-reader.sh ~/scratch/atlas-field-trial/repo \
-  ~/scratch/atlas-field-trial/sealed-questions.md --out ~/scratch/atlas-field-trial/reader
+.claude/skills/ontology-field-trial/scripts/sealed-reader.sh "$TRIAL"/repo \
+  "$TRIAL"/sealed-questions.md --out "$TRIAL"/reader
 
 # 4. What the write door would still say about the finished vault.
 node .claude/skills/ontology-field-trial/scripts/scan-findings.mjs \
-  ~/scratch/atlas-field-trial/repo/atlas ~/scratch/atlas-field-trial/repo
+  "$TRIAL"/repo/atlas "$TRIAL"/repo
 ```
 
 Phase 2 still runs from the CLI and phase 4 is still done by hand against the

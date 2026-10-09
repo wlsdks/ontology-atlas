@@ -20,8 +20,8 @@ whole file. Why each gate is shaped as it is: `.claude/rules/design-gates.md`.
 Build rendered work in slices and look at each one: baseline, one coherent
 slice, then a fresh accessibility tree and screenshot in the actual browser,
 WebView or app, correct, and repeat (`docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`
-scopes it per change class; `/design-build` has the steps). DOM geometry
-complements the capture. Motion needs the real recording in `/motion-verify`.
+scopes it per change class; `/ui-build` has the steps). DOM geometry
+complements the capture. Motion needs the real recording in `/ui-proof`.
 
 ## Fixed scale contract
 

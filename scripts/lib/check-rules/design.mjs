@@ -53,7 +53,7 @@ export const rules = [
       /^tests\/contract\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
       /^docs\/engineering\/motion-recording\.md$/,
-      /^\.(?:claude|agents)\/skills\/(?:design-(?:audit|build|directions|system-audit)|motion-verify|responsive-sweep|map-perf|user-walkthrough)\/(?:SKILL|workflow)\.md$/,
+      /^\.(?:claude|agents)\/skills\/(?:ui-build|ui-proof)\/(?:SKILL\.md|workflow\.md|guides\/[^/]+\.md)$/,
       /^\.(?:claude|agents)\/agents\/(?:reviewer|design-guardian)\.md$/,
       /^\.claude\/rules\/design\.md$/,
       /^AGENTS\.md$/,

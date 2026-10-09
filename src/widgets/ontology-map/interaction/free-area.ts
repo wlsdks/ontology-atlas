@@ -132,7 +132,7 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
  * **Measure from the DOM** what is covering the canvas.
  *
  * The "is it visible" decision follows the discipline this repository already
- * settled (`/design-audit`, "A rectangle coming back does not mean it is visible"): zero size, `visibility:hidden`,
+ * settled (`/ui-proof`, "A rectangle coming back does not mean it is visible"): zero size, `visibility:hidden`,
  * `display:none`, near-transparent, inside a collapsed `<details>`, or under an
  * `aria-hidden` ancestor is not on screen and is not counted. Skip that and **a
  * panel mid-exit keeps pushing the camera left** in a state nobody can trace.

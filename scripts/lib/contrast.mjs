@@ -7,7 +7,7 @@
  * *"measure contrast — take the composited contrast of adjacent segments, and below
  * 3:1 there must be a colour-independent distinguisher"* a precondition of any
  * verdict. **But there was no instrument to measure with.** As of 2026-08-03 no
- * script in this repository computed contrast, and `/design-audit` only **checked
+ * script in this repository computed contrast, and `/ui-proof` only **checked
  * colours against the token set** without producing a ratio — whether a token was
  * used and whether it is legible are different questions.
  *

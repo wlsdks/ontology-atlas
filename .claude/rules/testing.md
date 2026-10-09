@@ -93,9 +93,8 @@ reaches the named risk:
 
 The final report names what ran and why that scope was enough.
 
-Keep measurements, captures and harness scripts outside the repository (for
-example `~/scratch/<task>/` or the session scratchpad). An ignored `output/`
-inside a worktree is deleted with the worktree.
+Keep measurements, captures and probe scripts in the session scratchpad, never
+in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 
 ## Verify web and app separately
 

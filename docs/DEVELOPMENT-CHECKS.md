@@ -698,7 +698,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Landing several branches together
 
 **Run**: `node --test scripts/bundle-branches.test.mjs`
-**Proves**: two or more ready branches land through `/land-bundle` as one integration branch and one `pnpm pr:land`: `pnpm bundle:plan` reports which branches carry work, shared files and trial-merge conflicts without touching a worktree, and `pnpm bundle:prune` removes only component branches `main` provably contains.
+**Proves**: two or more ready branches land through `/land` as one integration branch and one `pnpm pr:land`: `pnpm bundle:plan` reports which branches carry work, shared files and trial-merge conflicts without touching a worktree, and `pnpm bundle:prune` removes only component branches `main` provably contains.
 **Escalate**: `pnpm test:pr:land` when the bundle changes how `pnpm pr:land` is called, or none
 **Fix**: repair `scripts/bundle-branches.mjs`.
 

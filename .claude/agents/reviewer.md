@@ -15,8 +15,9 @@ Run a command only to confirm a suspected defect.
 
 ## Two kinds of brief
 
-- **A returned slice.** Read the diff (`git diff <base>...<branch>` in the named
-  worktree) against its brief. Look for what low-effort implementation misses: a
+- **A returned slice.** Run `pnpm review:facts -- --base=<base>` in the named
+  worktree first; judge from its facts instead of recounting them. Then read the
+  diff (`git diff <base>...<branch>`) against its brief. Look for what low-effort implementation misses: a
   decision the brief did not make, a caller or sibling test left behind, a
   boundary from `.claude/rules/` crossed, a check that passed without measuring
   the change. When the brief names a spec in `docs/specs/`, each acceptance
@@ -33,7 +34,7 @@ Run a command only to confirm a suspected defect.
 Always first:
 
 - `moment` — who, doing what, saw what, did what next. Take it from the owner's
-  report, the captures, or `/user-walkthrough`; never imagine it. A finding that
+  report, the captures, or `/ui-proof`; never imagine it. A finding that
   does not start from the moment is not a finding.
 - `evidence` — is each claim observed, inferred, or unknown, and what is the
   cheapest proof that would settle it? More review cannot turn an unknown into
@@ -78,7 +79,7 @@ before any build and add `spec: pass` or `spec: revise` to the report.
   - padding: a section that repeats another, or an owner question that is more
     than one question or whose answer would not change the work.
 
-UI lenses, chosen by the design change facts. Judge from the `/design-build`
+UI lenses, chosen by the design change facts. Judge from the `/ui-build`
 §0-B captures (tree and screenshot paths) in the brief; a missing capture is a
 finding, never a reason to judge code by eye.
 
@@ -89,7 +90,7 @@ finding, never a reason to judge code by eye.
 - `reversibility` — a person can select, inspect, correct, confirm, and reverse
   by keyboard, with focus visible and returned; every ability has a visible
   path, not only a drag, context menu, or shortcut.
-- `motion` — a real macOS screen recording through `/motion-verify` and the
+- `motion` — a real macOS screen recording through `/ui-proof` and the
   reduced-motion equivalent; static frames do not prove motion. The protagonist
   moves in the first frame and same-input stages start within 120ms.
 - `map-marks` — each topology mark encodes one typed fact; contrast of changed
@@ -109,7 +110,7 @@ Source lenses, for hygiene, refactor and structural slices:
   deleted comment whose reason the code no longer shows is a finding, as is a
   rename or extraction that crosses a file, changes an exported name, or
   changes behaviour.
-- `lean` — compare lines before and after per file. Growth from a split,
+- `lean` — the `files` facts give lines before and after. Growth from a split,
   extraction or rename, or a wrapper, option, branch or helper no caller
   needs, is a finding.
 - `algorithm` — for layout, search and matching, diffing, parsing and graph

@@ -174,7 +174,7 @@ they also add a final train integration merge.
 |---|---|
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts ([guide](docs/BACKLOG.md)) |
-| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan landing several branches as one, then prune the branches main contains (`/land-bundle`) |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan landing several branches as one, then prune the branches main contains (`/land`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |

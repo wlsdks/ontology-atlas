@@ -33,7 +33,7 @@ import { parsePoRouteArgs } from '../../scripts/po-risk-router.mjs';
 const ROOT = process.cwd();
 const PO_OS = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
 const PILOT = 'docs/PO-PILOT.md';
-const PASS_WORKFLOW = '.agents/skills/po-pass/workflow.md';
+const PASS_WORKFLOW = '.agents/skills/product-check/workflow.md';
 const CLI = 'scripts/po-risk-router.mjs';
 const PILOT_CLI = 'scripts/po-pilot.mjs';
 

@@ -40,7 +40,7 @@
   or train merges. `--plan <n...>` previews; `pnpm pr:queue` shows the queue.
   Preserve original commits with merge commits; never squash or rebase during
   landing. Disable main's linear-history requirement.
-- Several branches use `/land-bundle`: a draft each for the train, or
+- Several branches use `/land`: a draft each for the train, or
   one integration branch when they must be resolved together.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.

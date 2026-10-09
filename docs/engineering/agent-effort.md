@@ -23,7 +23,7 @@ quality gain was measured
 | lead session | xhigh from `.claude/settings.json` | none | decide, plan small changes, talk to the owner |
 | `planner` | xhigh | 200 | slices a low-effort implementer can build without judgment |
 | `product-planner` | xhigh | 250 | the product spec of a one-way product change, before its review |
-| `implementer` | low | 150 | one planned slice from `/parallel-brief` |
+| `implementer` | low | 150 | one planned slice from `/delegate` |
 | `investigator` | xhigh | 250 | root cause of a reproduced failure or flake, then the fix |
 | `reviewer` | xhigh | 150 | an independent review of a returned diff, or of a routed product or design decision |
 | `design-guardian` | xhigh | 300 | a design verdict with edits, when the owner asks |

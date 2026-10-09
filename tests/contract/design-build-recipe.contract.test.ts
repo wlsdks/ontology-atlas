@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { readSkillProcedure } from '../helpers/read-skill-procedure';
 
 /**
- * Checks that the `/design-build` recipe **points only at things that exist**.
+ * Checks that the `/ui-build` recipe **points only at things that exist**.
  *
  * This repository's documentation discipline (`documentation.md`): **check only
  * what a machine can generate; never check a sentence a person wrote.** So this
@@ -24,7 +24,7 @@ import { readSkillProcedure } from '../helpers/read-skill-procedure';
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 describe.each(['.claude', '.agents'])('design-build references in %s', (tree) => {
-  const recipe = readSkillProcedure(join(ROOT, `${tree}/skills/design-build/SKILL.md`));
+  const recipe = readSkillProcedure(join(ROOT, `${tree}/skills/ui-build/SKILL.md`));
 
   /** What the recipe tells you to use. One missing entry makes the recipe a lie. */
   const PRESCRIBED_PRIMITIVES: Array<[name: string, file: string]> = [
@@ -47,10 +47,10 @@ describe.each(['.claude', '.agents'])('design-build references in %s', (tree) =>
   const PRESCRIBED_INSTRUMENTS = [
     'scripts/measure-graph-readability.mjs',
     'scripts/measure-contrast.mjs',
-    `${tree}/skills/design-audit/SKILL.md`,
-    `${tree}/skills/motion-verify/SKILL.md`,
-    `${tree}/skills/responsive-sweep/SKILL.md`,
-    `${tree}/skills/design-directions/SKILL.md`,
+    `${tree}/skills/ui-proof/SKILL.md`,
+    `${tree}/skills/ui-proof/SKILL.md`,
+    `${tree}/skills/ui-proof/SKILL.md`,
+    `${tree}/skills/ui-build/SKILL.md`,
     `${tree}/skills/gate-probe/SKILL.md`,
   ];
 

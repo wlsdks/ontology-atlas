@@ -53,11 +53,11 @@ function domainCommands(result) {
 describe('focused check suggestions', () => {
   it('routes shared skill procedures and recording guidance to their existing checks', () => {
     const subjects = [
-      ['.agents/skills/design-build/workflow.md', 'pnpm test:design-gates'],
-      ['.agents/skills/motion-verify/workflow.md', 'pnpm test:design-gates'],
+      ['.agents/skills/ui-build/workflow.md', 'pnpm test:design-gates'],
+      ['.agents/skills/ui-proof/guides/motion-verify.md', 'pnpm test:design-gates'],
       ['docs/engineering/motion-recording.md', 'pnpm test:design-gates'],
-      ['.agents/skills/po-pass/workflow.md', 'pnpm test:po'],
-      ['.agents/skills/po-pass/workflow.md', 'pnpm po:pilot -- --check'],
+      ['.agents/skills/product-check/workflow.md', 'pnpm test:po'],
+      ['.agents/skills/product-check/workflow.md', 'pnpm po:pilot -- --check'],
       ['.agents/skills/ontology-bootstrap/workflow.md', 'pnpm test:dogfood:script-refs'],
     ];
     assert.ok(subjects.length > 0);
@@ -1616,8 +1616,8 @@ describe('focused check suggestions', () => {
       'tests/contract/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
       'docs/PO-PILOT.md',
-      '.claude/skills/po-pass/SKILL.md',
-      '.agents/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
       '.claude/agents/reviewer.md',
       '.agents/agents/reviewer.md',
       'AGENTS.md',
@@ -1643,8 +1643,8 @@ describe('focused check suggestions', () => {
       'tests/contract/design-spec-ledger.contract.test.ts',
       'tests/contract/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
-      '.claude/skills/design-build/SKILL.md',
-      '.agents/skills/motion-verify/SKILL.md',
+      '.claude/skills/ui-build/SKILL.md',
+      '.agents/skills/ui-proof/SKILL.md',
       '.claude/agents/design-guardian.md',
       '.agents/agents/reviewer.md',
       '.claude/rules/design.md',
@@ -1817,9 +1817,9 @@ describe('agent-file surface', () => {
       'AGENTS.md',
       'src/AGENTS.md',
       '.claude/agents/reviewer.md',
-      '.claude/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
       '.claude/settings.json',
-      '.agents/skills/po-pass/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
       '.agents/agents/reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
@@ -1875,8 +1875,8 @@ describe('agent-file surface', () => {
       '.claude/rules/forbidden.md',
       '.claude/settings.json',
       '.gitignore',
-      '.claude/skills/po-pass/SKILL.md',
-      '.agents/skills/po-pass/SKILL.md',
+      '.claude/skills/product-check/SKILL.md',
+      '.agents/skills/product-check/SKILL.md',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes(contract),
