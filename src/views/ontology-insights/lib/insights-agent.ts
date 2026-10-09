@@ -14,7 +14,6 @@ export interface InsightsAgentPrefill {
   nonce: number;
 }
 
-export type InsightsAgentRoute = 'checking' | 'agent' | 'clipboard';
 
 export type InsightsAgentPromptPlan =
   | { action: 'open-current'; request: InsightsAgentPrefill }

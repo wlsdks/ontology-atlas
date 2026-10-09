@@ -29,7 +29,7 @@ const ROOT = process.cwd();
 
 const SURFACE_FILES: ReadonlyArray<{ label: string; file: string }> = [
   { label: '지도 도움말 관계 가이드 (ShortcutSheet)', file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx' },
-  { label: '인사이트 (OntologyInsightsPage)', file: 'src/views/ontology-insights/ui/OntologyInsightsPage.tsx' },
+  { label: 'Analysis relationship workspace', file: 'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx' },
   { label: '데이터시트 (HomePage — nodeDatasheet labels)', file: 'src/views/home/model/use-topology-preferences.tsx' },
 ];
 

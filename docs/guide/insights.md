@@ -1,181 +1,41 @@
 ---
-title: "Maintenance Board: Analyzing My Folders"
+title: Read relationships and inspect their evidence
 doc_type: guide
 status: current
 area: analysis
 ---
 
-# Maintenance Board: Analyzing My Folders
+# Read relationships and inspect their evidence
 
-[After the folder has grown](/guide/growing-vault), you answered "what should I fix now" via CLI. There is a **screen that does the same thing**: "Insights" in the left rail, at `/ontology/insights`.
+Open **Analysis** in the left rail. It reads the same ontology folder as the Map.
+The example is labeled; its source code has not been checked by this screen.
 
-The header states what the screen is: "Your whole folder at a glance. Every
-number is computed from the documents." No number on it is entered by hand. If
-the map shows what exists, this screen shows what is still left to do.
+Start with the selected responsibility pair and its visible comparison rail.
+The central graph expands that pair into actual capability or other concept
+endpoints. Each directed arrow is one recorded dependency declaration. A thicker
+highlight identifies selection, not volume, risk or runtime traffic. Choose a
+named pair, an exact declaration control, or an endpoint's first shown declaration.
 
-## 1. Two rows of tabs
+The selected declaration opens its exact endpoints, structured relationship note
+and declaring document beside the graph. A missing relation-note field does not
+establish that the Markdown body lacks an explanation. **Open the declaring
+document** reads the original record and retains a return to the selected claim.
 
-The first row names what a tab is about: "Brief" · "Concepts" · "Wiki" ·
-"Guidance". "Brief" opens first; it is one screen across "Concepts", "Wiki", "Guidance" and "Agents". "Wiki" counts the library's sources and pages, and "Guidance"
-reads the declared guidance by domain.
+**Inspect the implementation claim** continues from a dependency to the source
+capability. **Evidence to check** also opens named capabilities directly. It
+separates a documented implementation role, a recorded source path, missing
+explanation and unknown source currentness. A missing path means the path was
+not recorded; it does not prove that the code is absent. **Review and correct
+this claim** opens the existing Map editor for a local documented concept.
 
-Choosing "Concepts" opens a second row with one question per tab. It lands on
-"To fix", and the address carries the tab (`?tab=`), so a shared link reopens it.
+A scope with no cross-responsibility dependency declarations still shows its
+recorded capability evidence. It does not present an empty dependency record as
+proof that the system has no dependencies. Use the visible remainder controls
+to inspect additional pairs or capabilities without panning a map.
 
-Between the two rows, the "Concepts" questions share a strip of four tiles:
-"Concepts", "Relations", "Checks" ("Nothing blocking" or "Needs attention", with
-"Blocking", "Advisory", "Lone concepts", "Disconnected groups" and "Tangled
-loops") and "Last {weeks} weeks" (with "Evidence linked").
-
-| Tab | Question Answered |
-|---|---|
-| "To fix" | How many things need fixing now, and what to start with today |
-| "Missing concepts" | Which names a document points at that no concept answers to |
-| "Inventory" | What exists in what quantities, which domain is heavy |
-| "Relations" | Which relation types dominate, where the hubs are, what a change reaches |
-| "Domain boundaries" | How much domains are leaking into each other |
-| "Accumulation" | What the folder has grown into, and where it has stopped |
-| "Product flow" | What this product is and how its domains and capabilities form one business flow |
-
-The number next to a question tab is the size of that question; hover it to read
-what it counts. "Accumulation" and "Product flow" have no badge because neither
-has one honest count. The tab list lives in
-`src/views/ontology-insights/lib/insights-tab-state.ts`.
-
-## 2. "To fix": one list, grouped by finding
-
-The "To fix" tab (`src/views/ontology-insights/ui/tabs/DoNextTab.tsx`) draws one
-list titled "{count} things to fix". Rows are grouped by finding, and each group
-carries one name, such as "Concepts nothing links to", "Concepts with no domain",
-"Pairs whose names overlap" or "Tangled loops". Every row says why it is there,
-for example "Nothing links to it yet. Connect it to a related concept."
-
-Every row offers its actions in the same order and leaves out any it cannot
-offer:
-
-| Action | What it does |
-|---|---|
-| "Fix it myself" | Opens the place where you can fix it on the map. On "Concepts with no meaning written" and "Concepts with no domain", in a folder you can write, it opens a one-line form in the row instead |
-| "View on map" | Focuses that concept on the map |
-| "More actions" | Opens "Open source" (when the concept has a document) and "Verify with agent" |
-
-"Verify with agent" copies a request for this row to the clipboard. For a pair
-whose names overlap, the request reads like this (from
-`src/views/ontology-insights/lib/handoff-prose.ts`):
-
-```
-merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabilities/order-cancel"}) to preview the merge → if they mean the same thing, run the same call again with confirm:true → get_concept({slug:"capabilities/order-cancel"}) to confirm the merged text → query_ontology({operation:"health"}) to re-check the result
-```
-
-**It's a procedure that includes verification, not just a command.** Preview →
-execute → confirm the text → re-check. Paste it into an agent and it runs as is.
-
-In a folder you can write, the "Domains that do not point back" group carries
-"Fix these together". It opens one sheet listing each missing back-link, all
-ticked; untick any you do not want. Nothing is written until you press "Apply
-{count}". The rules for attaching evidence are in
-[What Becomes a Node](/guide/what-becomes-a-node).
-
-When nothing is left, the list says "Nothing needs attention: the graph is
-healthy."
-
-## 3. Read-only folders get copyable requests
-
-On the sample folder, the list opens with this line:
-
-> This is the sample. Open your own folder and you can finish these right here: for now you can copy the command and hand it off.
-
-In a folder you cannot write, "Fix it myself" opens the map instead of a form in
-the row, and "Fix these together" is not offered. Where no agent has been seen
-working in this folder, "Verify with agent" becomes "Copy this request to paste
-into your agent" (`src/views/ontology-insights/ui/parts/QueueRowActions.tsx`).
-Instead of
-failing silently where you cannot write, the screen gives you **what to pass to
-someone who can**.
-
-## 4. What the remaining question tabs answer
-
-### "Missing concepts": asked for, not held
-
-Each row is a name written into this folder that no concept answers to, with the
-number of times it appears.
-
-### "Inventory": how many of each thing
-
-"Kind census" counts concepts by kind. "Domain capacity" fills each domain's bar
-with capabilities from the left and elements from the right; a domain leaning
-hard one way has claims without evidence, or the reverse. A concept in several
-domains counts once in each, so the totals can exceed the whole.
-
-### "Relations": where is the center
-
-"Relation types" adds a judgment to the distribution: if containment dominates,
-draw more "leans on" links. This is [how relations arise](/guide/relations) in
-numbers: with only containment it is a tree; it becomes a graph once semantic
-relations are attached.
-
-The counting rule differs from the CLI and MCP. A relation written in both
-documents counts once here, while the CLI and MCP count every written reference,
-so their numbers are higher. Neither side is wrong.
-
-"Most connected concepts" lists the hubs. "Dependency impact" is the same
-question as `blast-radius` in the CLI: how much must be re-checked if this
-changes, split into "direct" and "indirect". It follows only human-approved
-"leans on" declarations, so it does not prove complete source dependencies.
-
-### "Domain boundaries": are domains leaking?
-
-The "Domain coupling" grid shows which domain pairs are connected; pick a cell to
-see the connections linking those two domains. "Cross-domain share" gives each
-domain's ratio of "self" to "cross" connections. A domain dominated by cross
-connections signals a boundary drawn in the wrong place.
-
-### "Accumulation": what the folder has grown into
-
-"What the folder holds" is recomputed from the folder's version history and
-stores nothing. Below it, "Recent changes by domain" draws a heatstrip of
-document updates, with "Recent updates" and a "Not updated in 90+ days" count.
-The first thing to rot in a vault is the area no one opens, so this tab names it.
-
-## 5. Asking for the product flow
-
-"Product flow" (`src/views/ontology-insights/ui/tabs/FlowTab.tsx`) keeps what an
-agent last wrote about the product: who wrote it and when, whether the folder
-has moved since, and "What changed since the last one". Until the first answer
-it says "Nothing has been written yet". "The request that goes to the agent" is
-always on the tab, with "Copy request". In the app, with your own folder open
-and a local agent available, "Explain the flow with ACP" (later "Write it
-again") puts the request in the conversation beside the board without sending
-it; you send it. Anywhere else, including a browser, which cannot start a
-process, the tab says "The app does this". Every requested paragraph must name a
-node slug whose body was read, so a person can open and challenge the answer.
-
-## 6. Handing a tab to the agent
-
-Below every question tab except "To fix", a row reading "For agents" · "Agent
-handoff" carries "Copy next action"
-(`src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx`). It copies the
-MCP request for that tab. On "Relations" it reads:
-
-```
-query_ontology({operation:"centrality"}) → query_ontology({operation:"blast_radius", slug:"«hub-slug»"})
-```
-
-In the app, when a local agent can run, "Analyze this tab with the agent" at the
-top of the board (not on "Product flow") opens a conversation beside it with this
-tab's question written in; you send it. The handoff row hides while that
-conversation is open, because the conversation already carries the same request.
-
-## Summary
-
-- The header says it: every number is computed from the documents. The map
-  shows what exists; this screen shows what is left to do.
-- Two rows: "Brief" · "Concepts" · "Wiki" · "Guidance", and under "Concepts"
-  one question per tab. "Product flow" is a visible, reviewable agent request
-  and never sends on its own.
-- "To fix" is one list grouped by finding. Every row says why it is there and
-  offers what it can of "Fix it myself", "View on map" and "More actions".
-- What is copied is not a single command but a **preview → execute → confirm →
-  re-check** procedure.
-- In read-only folders, the actions turn into requests you can copy and hand off.
-- To view the same queue via CLI, use `maintenance`, `health`, and `growth` from [CLI](/guide/cli).
+The other section tabs retain Review summary, Wiki, Guidance and Written
+explanations. Their facts belong to those records. An agent request remains
+inspectable and unsent until you send it; changing sections preserves the draft.
+The old census and maintenance tab board is no longer a second destination behind
+Analysis. Existing bookmarks enter the corresponding relationship, evidence or
+record question. For graph maintenance commands, see the [CLI guide](/guide/cli).

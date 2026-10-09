@@ -17,12 +17,8 @@ import { atlasBareToolMode } from '@/features/acp-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
-import {
-  buildEvidenceConcepts,
-  resolveEvidenceStates,
-  type EvidenceConceptInput,
-} from '@/shared/lib/evidence-states';
+import { useOntologyEvidence } from '../use-ontology-evidence';
+
 import {
   briefCounting,
   briefTotals,
@@ -40,7 +36,7 @@ import {
 import { buildEvidenceDetails } from './evidence-details';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
-import { buildOntologyBrief, evidenceAvailability, type OntologyBriefNode } from './ontology-brief';
+import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
@@ -237,69 +233,23 @@ export function useInsightsBrief({
   const harnessState = useHarnessReport(handle, projectSlugs, enabled, coverage.capabilityPaths);
   const harnessReport = harnessState.status === 'ready' ? harnessState.report : null;
 
-  // Each concept's evidence from the vault alone: its own `path:` and those of the elements it lists. The Git bridge
-  // answers in one walk when each, and the concept's document, last changed.
-  const evidenceConcepts = useMemo<EvidenceConceptInput[]>(
-    () => buildEvidenceConcepts(docs, nodes),
-    [docs, nodes],
-  );
-
-  const [evidenceChanges, setEvidenceChanges] = useState<{
-    key: string;
-    changes: ReadonlyMap<string, GitPathLastChange> | null;
-  } | null>(null);
-  const evidenceKey = nativeRootPath ? `${nativeRootPath}\0${vault.lastLoadedAt ?? ''}` : '';
-  useEffect(() => {
-    if (!enabled || !nativeRootPath || !isGitBridgeAvailable()) return;
-    const repoPaths = [...new Set(evidenceConcepts.flatMap((concept) => concept.evidencePaths))];
-    const vaultPaths = evidenceConcepts.map((concept) => concept.docPath).filter((path): path is string => path != null);
-    if (repoPaths.length === 0) return;
-    let cancelled = false;
-    const key = evidenceKey;
-    void gitPathsLastChange(nativeRootPath, repoPaths, vaultPaths)
-      .then((rows) => {
-        if (cancelled) return;
-        setEvidenceChanges({ key, changes: rows ? new Map(rows.map((row) => [row.path, row])) : null });
-      })
-      .catch(() => {
-        if (!cancelled) setEvidenceChanges({ key, changes: null });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, nativeRootPath, evidenceKey, evidenceConcepts]);
-  const evidence = useMemo(() => {
-    if (nativeRootPath && evidenceConcepts.every((concept) => concept.evidencePaths.length === 0)) {
-      return resolveEvidenceStates(evidenceConcepts, new Map());
-    }
-    if (!evidenceChanges?.changes || evidenceChanges.key !== evidenceKey) return null;
-    return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
-  }, [evidenceChanges, evidenceKey, evidenceConcepts, nativeRootPath]);
-  // Pending until the walk answers for this load, under the same conditions it runs.
-  const evidenceWalkPending =
-    enabled &&
-    nativeRootPath !== null &&
-    isGitBridgeAvailable() &&
-    evidenceConcepts.some((concept) => concept.evidencePaths.length > 0) &&
-    evidenceChanges?.key !== evidenceKey;
-  const ontologyEvidenceAvailability = evidenceAvailability({
-    bridge: isGitBridgeAvailable(),
-    walkable: nativeRootPath !== null,
-    walkPending: evidenceWalkPending,
-    walkFailed: evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null,
-    noSource: harnessState.status === 'no-source',
+  const ontologyRead = useOntologyEvidence({
+    docs, nodes, handle, projectSlugs, nativeRootPath,
+    reloadToken: vault.lastLoadedAt, enabled,
   });
+  const evidence = ontologyRead.evidence;
+  const ontologyEvidenceAvailability = ontologyRead.status === 'reading' ? 'reading'
+    : ontologyRead.status === 'app-only' ? 'app-only'
+    : ontologyRead.status === 'no-source' ? 'no-source' : 'unreadable';
 
   // When the concept document last changed: from Git where the walk reached it, else from the file. A checkout stamps
   // every file with its landing time, so the file answer alone would call every concept changed.
   const docChangedAt = useCallback(
     (slug: string, fallback: string | null) => {
-      const fromGit = evidenceChanges?.key === evidenceKey
-        ? evidenceChanges.changes?.get(`${slug}.md`)?.lastChangedAt ?? null
-        : null;
+      const fromGit = ontologyRead.changes?.get(`${slug}.md`)?.lastChangedAt ?? null;
       return fromGit ?? fallback;
     },
-    [evidenceChanges, evidenceKey],
+    [ontologyRead.changes],
   );
 
   const docFacts = useMemo(() => {

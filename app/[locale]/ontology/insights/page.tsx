@@ -20,8 +20,7 @@ export async function generateMetadata({
 }
 
 /**
- * /ontology/insights — the ontology's activity and structure at a glance: kind distribution, hub
- * nodes (highest degree), recent activity, and unconnected nodes.
+ * Relationship-first analysis with exact declaration evidence and supporting records.
  */
 export default function Page() {
   return (

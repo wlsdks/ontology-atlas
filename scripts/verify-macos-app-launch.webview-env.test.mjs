@@ -7,7 +7,7 @@ import {
   isSelectedRelationPrimaryCopyActionText,
   } from "./verify-macos-app-launch.mjs";
 
-test("installed-app insights proof follows the current maintenance-board contract", () => {
+test("installed-app insights proof follows the current relationship-analysis contract", () => {
   // The probe JavaScript moved out of `lib.rs` into `src-tauri/src/webview_verify/*.js` on
   // 2026-08-24 so a linter could finally see it. Reading only the Rust would silently stop
   // finding every marker this test exists to pin — the assertions would pass on an empty
@@ -24,13 +24,13 @@ test("installed-app insights proof follows the current maintenance-board contrac
     "utf8",
   );
   const insightsHandoff = fs.readFileSync(
-    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
+    "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx",
     "utf8",
   );
 
-  assert.match(insightsPage, /data-insights-surface="maintenance-board"/);
-  assert.match(insightsPage, /data-insights-question-model="one-tab-one-question"/);
-  assert.match(insightsHandoff, /data-insights-handoff="tab-query"/);
+  assert.match(insightsPage, /data-insights-surface="relationship-analysis"/);
+  assert.match(insightsPage, /data-insights-question-model="claim-evidence"/);
+  assert.match(insightsHandoff, /data-testid="analysis-evidence"/);
   assert.match(tauriLib, /insightsMaintenanceBoard/);
   assert.match(tauriLib, /insightsQuestionTabs/);
   assert.match(tauriLib, /insightsSelectedPanelVisible/);

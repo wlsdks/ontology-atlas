@@ -17,7 +17,7 @@ const STOPS: { go: { rail?: string; tab?: string; push?: string }; url?: RegExp;
     ready: "#library-workspace-tabpanel-ontology",
   },
   { go: { rail: "automations" }, url: /\/automations\//, ready: '[data-testid="automations-list"],[data-testid="automations-empty-workbench"]' },
-  { go: { rail: "insights" }, url: /\/ontology\/insights\//, ready: '[data-testid="brief-tab"]' },
+  { go: { rail: "insights" }, url: /\/ontology\/insights\//, ready: '[data-testid="analysis-workspace"]' },
   { go: { rail: "projects" }, url: /\/project\//, ready: '[data-testid="project-detail-body"]' },
   { go: { rail: "agents" }, url: /\/agents\//, ready: '[data-testid="agents-page"]' },
   { go: { tab: "agents-tab-mcp" }, ready: '[data-testid="mcp-page"]' },

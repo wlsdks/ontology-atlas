@@ -743,16 +743,6 @@
        column has the window's height and the floor never binds (measured 0px at 1024 and
        1040). */
     --library-index-min: 296px;
-    /* One block of a vault-history column. Small enough that a hundred-node folder is a
-       stack a person can take in at a glance rather than a wall, large enough that a
-       single block still reads as a countable thing rather than as a rule (2026-09-09). */
-    --vault-history-cube: 5px;
-    /* How wide the three tracks are allowed to grow. Uncapped, eighteen columns spread
-       across a full-width band and each week became a 97px slab that merged into its
-       neighbours; the marks stopped reading as countable blocks and started reading as an
-       area chart. Capped, one week is about 40px and the stack is legible as a stack
-       (2026-09-09, measured at 1512 and 1920). */
-    --vault-history-width: 760px;
     /* drawer/audit modal shared scrim, single source — same value as existing sourceTreeOpen drawer. Dark-only (no light branch). */
     --docs-scrim: rgba(0, 0, 0, 0.5);
     /*

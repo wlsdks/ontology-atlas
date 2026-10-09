@@ -3,31 +3,38 @@ uid: e09a683e-d8e1-4c86-bacf-1fdb86a121de
 slug: capabilities/ontology-insights
 kind: capability
 title: Ontology insights
-display_en: Ontology insights
-display_ko: 온톨로지 인사이트
+display_en: Analysis
+display_ko: 분석
 domain: domains/human-workbench
-elements: [elements/insights-do-next-queue, elements/insights-duplicate-pairs, elements/insights-meaning-gaps, elements/insights-unmatched-board]
+elements: []
 path: src/views/ontology-insights/ui/OntologyInsightsPage.tsx
 created_by: "agent:claude-code"
-dependencies: [elements/insights-do-next-queue, elements/insights-duplicate-pairs, elements/insights-meaning-gaps]
-relation_notes: { elements/insights-do-next-queue: "You asked me to turn imports I actually witnessed into dependencies: the scan shows OntologyInsightsPage.tsx importing lib/do-next-queue.ts.", elements/insights-duplicate-pairs: "You asked me to turn imports I actually witnessed into dependencies: the scan shows OntologyInsightsPage.tsx importing lib/duplicate-pairs.ts.", elements/insights-meaning-gaps: "You asked me to turn imports I actually witnessed into dependencies: the scan shows OntologyInsightsPage.tsx importing lib/meaning-gap-rows.ts.", elements/insights-unmatched-board: You asked for element nodes named by role under the capability that uses them; showing where record and code fail to meet is this role., capabilities/vault-graph-query: "Demoted from a dependency on 2026-09-23 because no app file reaches the graph tool module: the board answers its questions in the browser from the loaded vault files through src/entities/knowledge-graph/lib/vault-health.ts, which the page consumes at src/views/ontology-insights/ui/OntologyInsightsPage.tsx:92. What binds the two is agreement, not a call: tests/contract/vault-health.contract.test.ts runs one fixture vault through both implementations and fails if the screen and the tool report different health. Kept as a relation so a reader sees the question was asked and how it was answered." }
+relation_notes: { capabilities/vault-graph-query: "Both read the typed Markdown graph. Analysis derives its comparison from the loaded graph in the renderer; it does not invoke the graph tool module. This relates entry marks the shared record contract, not a runtime import or health-parity verdict." }
 relates: [capabilities/vault-graph-query]
 ---
 
-A maintenance board that asks a fixed set of measured questions about the graph's gaps and turns the answers into an ordered list of what to do next.
+A workbench where a person compares declared product relationships with their declaring documents, recorded implementation, and remaining evidence gaps.
 
 ## Includes
-- Duplicate pairs, dependency cycles, unmatched nodes, meaning gaps, impact ranking, and a flow view of recent change.
-- A do-next grouping that turns findings into concrete repairs.
-- The same five prose judgements the validator makes, computed once while the folder's manifest is built and carried on each row as codes, so the queue judges what a body states rather than whether an excerpt exists.
+- A bounded directional comparison between responsibility pairs. Each arrow names one declared relationship between real concepts; selecting a declaration keeps its source document and recorded rationale alongside it.
+- Inspection of a selected capability's recorded implementation roles or path, documentary findings, and source state. Missing evidence is not proof that implementation is absent.
+- Exact document and correction entries that return to the selected claim, with visible keyboard focus.
+- Supporting review notices, Wiki evidence, guidance, and saved explanations. Scope distinguishes the bundled example, a single project, and a folder containing multiple projects.
+- Read-only requests tied to the visible record. Example facts can be copied without querying another vault; local explanation requests check the exact vault root and recorded identities before reads and wait for explicit Send.
 
 ## Excludes
-- Accepting a meaning on the person's behalf; a clean board is not evidence the meaning is right.
-- The per-file well-formedness check, which the meaning layer's validation owns.
-- Answering anything that needs a repository root; on this board a folder is all there is.
+- Repeating the main Map's camera and topology exploration.
+- The retired global repair catalog, duplicate ranking, dependency-cycle dashboard, unmatched-name board, and document freshness census.
+- Inferring runtime impact, implementation correctness, or accepted meaning from a declared edge, path, date, or clean structure.
+- Sending an agent request, repairing a document, or accepting meaning without the person's explicit action.
+
+## Evidence
+- `src/views/ontology-insights/ui/OntologyInsightsPage.tsx` owns the five sections and legacy URL entry.
+- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `DependencyDiagram.tsx`, and `lib/analysis-model.ts` build the comparison and exact evidence continuation.
+- `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx` exposes stored canonical references and relationship notes in the declaring document.
+- `src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx` keeps explanation archives and explicit agent requests separate from the graph.
 
 ## Uncertainty
-- Read today: the manifest builder runs the five judgements once per document, at the one point that already holds the whole body, and stores only each finding's code on the row (`src/entities/docs-vault/lib/build-local-manifest.ts:489-518`, importing the browser copy at `:9`). The comment there says the slug it passes is the file's vault-relative path, which is exactly what `slug-outside-kind-folder` asks. What the queue does with those codes afterwards was not traced.
-- Of the validator's findings, only the five a browser can answer reach this board; the two needing a repository root are absent by design (`src/shared/lib/meaning-findings.ts:1-18`). Whether the board and the validator stay in step rests on the parity test named there, which was read about but not run.
-- The page itself was read from the file names under `src/views/ontology-insights/lib/` and the repository's description of a six-tab Insights page. It was not opened, and the overlap between its health questions and `capabilities/vault-validation` is a boundary the owner has not yet ruled on.
-- Re-read 2026-09-26 where bundle #1874 changed `src/views/ontology-insights/ui/OntologyInsightsPage.tsx`: the page no longer mounts its own concept search, which the app shell now provides on every destination. The questions and the do-next grouping above are unchanged.
+- Re-read against the 2026-10-10 redesign and inspected in a local browser. The focused tests and recordings establish the observed fixture interactions, not the business meaning of arbitrary records.
+- The redesigned installed Atlas app and an actual external agent explanation run were not exercised in this bounded sync. Native request behavior has fixture coverage.
+- Legacy repair helpers remain in the repository and their tests. The current page does not import them; removing the former containment and import-derived dependency claims does not delete or qualify those concepts.

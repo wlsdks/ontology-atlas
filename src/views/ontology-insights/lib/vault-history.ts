@@ -7,7 +7,7 @@
  * commit, not frontmatter, which `git_history` reads from disk now.
  */
 
-/** The four layers a vault folder holds. Changing what a past week counts moves `VAULT_HISTORY_RULES_VERSION`. */
+/** The four layers a vault folder holds. Counts remain derived from the recorded paths. */
 export type VaultLayer = "document" | "writeUp" | "concept" | "module";
 
 /**
@@ -47,7 +47,6 @@ export interface VaultHistoryPoint {
  * The counting rules' version, stamped on every series so an old picture is never silently redrawn by new rules;
  * it changes whenever `classifyVaultPath` does.
  */
-export const VAULT_HISTORY_RULES_VERSION = 3;
 
 const WIKI_DIR = "wiki";
 const SOURCES_DIR = "sources";

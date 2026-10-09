@@ -40,36 +40,11 @@ import {
 import { Input } from "@/shared/ui/input";
 import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-move";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
+import { graphFieldKeys, DANGLING_CHECK_KEYS, REFERENCE_KEYS, toRefTokens, formatValue, isNodeReference } from "./doc-frontmatter/fields";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 // Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
-
-const GRAPH_KEYS = [
-  "kind",
-  "slug",
-  "title",
-  // `display_<locale>` keys are listed right after `title` — see `graphFieldKeys`.
-  "domain",
-  "category",
-  "status",
-  "depends_on",
-  "relates_to",
-  "contains",
-  "belongs_to",
-  "evidence",
-] as const;
-
-/** Per-language names are graph facts: screens show `display_<locale>` before `title`. */
-const DISPLAY_NAME_KEY = /^display_[a-z]{2}$/;
-
-function graphFieldKeys(frontmatter: Record<string, unknown> | undefined): string[] {
-  const displayKeys = Object.keys(frontmatter ?? {})
-    .filter((key) => DISPLAY_NAME_KEY.test(key))
-    .sort();
-  const titleAt = GRAPH_KEYS.indexOf("title") + 1;
-  return [...GRAPH_KEYS.slice(0, titleAt), ...displayKeys, ...GRAPH_KEYS.slice(titleAt)];
-}
 
 export function nameLocalesFor(
   current: string,
@@ -81,25 +56,6 @@ export function nameLocalesFor(
   const ordered = [current, ...named, companion].filter((code) => locales.includes(code));
   return [...new Set(ordered)];
 }
-
-/**
- * Keys whose value names another node (the MCP neighbour-key family); `elements:` also
- * carries code paths, which are evidence.
- */
-const DANGLING_CHECK_KEYS = [
-  "domain",
-  "domains",
-  "capabilities",
-  "elements",
-  "dependencies",
-  "depends_on",
-  "relates",
-  "relates_to",
-  "contains",
-  "describes",
-  "broader",
-  "belongs_to",
-] as const;
 
 /**
  * References nothing in the folder answers to (the compiler's `dangling-graph-reference`).
@@ -203,47 +159,6 @@ type EditableKind = (typeof EDITABLE_KINDS)[number];
 
 function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
-}
-
-// Keys that reference another node by slug; `evidence`, `category` and `status` are not references.
-const REFERENCE_KEYS = new Set<string>([
-  "domain",
-  "depends_on",
-  "relates_to",
-  "contains",
-  "belongs_to",
-]);
-
-function toRefTokens(value: unknown): { tokens: string[]; isArray: boolean } {
-  if (Array.isArray(value)) {
-    return {
-      tokens: value
-        .filter((v): v is string => typeof v === "string")
-        .map((v) => v.trim())
-        .filter(Boolean),
-      isArray: true,
-    };
-  }
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return { tokens: trimmed ? [trimmed] : [], isArray: false };
-  }
-  return { tokens: [], isArray: false };
-}
-
-function formatValue(value: unknown): string | null {
-  if (value == null) return null;
-  if (Array.isArray(value)) {
-    if (value.length === 0) return null;
-    return `[${value.join(", ")}]`;
-  }
-  if (typeof value === "string") {
-    return value.trim() || null;
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  return null;
 }
 
 export interface DocFrontmatterPatch {
@@ -458,7 +373,7 @@ export function DocFrontmatterBlock({
     const ref = REFERENCE_KEYS.has(key) ? toRefTokens(raw) : null;
     return {
       key: key as string,
-      value: formatValue(raw),
+      value: formatValue(raw, key),
       refTokens: ref?.tokens ?? null,
       refIsArray: ref?.isArray ?? false,
     };
@@ -895,14 +810,14 @@ export function DocFrontmatterBlock({
               refTokens != null &&
               refTokens.length > 0 &&
               onNavigate != null &&
-              refTokens.some((tok) => resolveRef?.(tok) != null || danglingSet.has(tok));
+              refTokens.some((tok) => isNodeReference(key, tok) && (resolveRef?.(tok) != null || danglingSet.has(tok)));
             return (
-              <div key={key} className="flex min-w-0 flex-wrap gap-x-1.5">
+              <div key={key} data-testid={`doc-frontmatter-field-${key}`} className="flex min-w-0 flex-wrap gap-x-1.5">
                 <span className="text-[color:var(--color-text-quaternary)]">{key}:</span>
                 {linkable ? (
                   <span className="min-w-0 break-words text-[color:var(--color-text-secondary)]">
                     {refTokens!.map((tok, index) => {
-                      const target = resolveRef?.(tok) ?? null;
+                      const target = isNodeReference(key, tok) ? resolveRef?.(tok) ?? null : null;
                       return (
                         <Fragment key={`${tok}-${index}`}>
                           {index > 0 ? <span aria-hidden>, </span> : null}
@@ -937,7 +852,7 @@ export function DocFrontmatterBlock({
                     className={
                       key === "kind"
                         ? "font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-                        : "min-w-0 truncate text-[color:var(--color-text-secondary)]"
+                        : "min-w-0 whitespace-pre-wrap break-words text-[color:var(--color-text-secondary)]"
                     }
                   >
                     {value}
