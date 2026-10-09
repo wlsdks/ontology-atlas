@@ -36,6 +36,8 @@ import {
   trainBranchName,
   trainCiStep,
   trainTitle,
+  mergeCommitTitle,
+  mergeCommitMessage,
   waiterOutcome,
   waiterPollSeconds,
 } from './landing-train.mjs';
@@ -248,13 +250,22 @@ describe('what the train says', () => {
   });
 
   it('titles the train with every number, shortened past 100 characters', () => {
-    assert.equal(trainTitle(components), 'chore(train): land #12 #13');
+    assert.equal(trainTitle(components), 'chore(merge): #12 #13');
+    assert.equal(trainTitle([pr(12)]), 'chore(merge): #12 — change 12');
+    assert.ok(trainTitle([pr(12, { title: 'x'.repeat(200) })]).length <= 100);
     const many = Array.from({ length: 30 }, (_, i) => pr(1900 + i));
     const title = trainTitle(many);
     assert.ok(title.length <= 100, title);
-    assert.match(title, /^chore\(train\): land #1900 #1901 .* and \d+ more$/);
+    assert.match(title, /^chore\(merge\): #1900 #1901 .* and \d+ more$/);
     const shown = title.match(/#\d+/g).length;
     assert.equal(shown + Number(title.match(/and (\d+) more/)[1]), 30);
+  });
+
+  it('names the main merge commit after the pull requests it carries, not the train branch', () => {
+    assert.equal(mergeCommitTitle([pr(2562, { title: 'fix(analysis): keep Flow focus' })]), 'Merge #2562: fix(analysis): keep Flow focus');
+    assert.equal(mergeCommitTitle(components), 'Merge #12 #13: feat: one and 1 more');
+    assert.ok(mergeCommitTitle([pr(1, { title: 'y'.repeat(300) })]).length <= 100);
+    assert.equal(mergeCommitMessage(components), '#12 feat: one\n#13 fix: two');
   });
 
   it('lists each component as #n branch@sha title in the body', () => {
@@ -350,6 +361,8 @@ describe('the train size, measured from recent trains', () => {
     assert.equal(trainSizeFromTitle('chore(train): land #1889 #1890 #1891 #1892'), 4);
     assert.equal(trainSizeFromTitle('chore(train): land #1 #2 #3 and 17 more'), 20);
     assert.equal(trainSizeFromTitle('feat: something else'), 0);
+    assert.equal(trainSizeFromTitle('chore(merge): #12 #13'), 2);
+    assert.equal(trainSizeFromTitle('chore(merge): #2562 — fix(map): keep #3 visible'), 1);
   });
 
   it('reads merged trains as green and trains closed red as red, and ignores the rest', () => {

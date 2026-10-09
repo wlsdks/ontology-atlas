@@ -160,6 +160,8 @@ import {
   splitTrain,
   trainBody,
   trainBranchName,
+  mergeCommitTitle,
+  mergeCommitMessage,
   trainCiStep,
   trainHistoryRows,
   trainTitle,
@@ -183,6 +185,7 @@ export const FAST_LEASE_MINUTES = 2;
  */
 export const LEASE_MINUTES = 45;
 
+const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
 
 /**
@@ -726,14 +729,20 @@ export function createGithub(slug, run = ghRun) {
      * GraphQL search; `null` when it could not be read, which keeps the default size.
      */
     listTrainHistory: () => {
-      const out = run(['pr', 'list', '--state', 'all', '--search', '"chore(train): land" in:title', '--limit', String(TRAIN_HISTORY_LIMIT),
-        '--json', 'number,title,state,headRefName,comments'], { allowFailure: true });
-      if (typeof out !== 'string') return null;
-      try {
-        return JSON.parse(out);
-      } catch {
-        return null;
+      const rows = new Map();
+      for (const title of TRAIN_TITLE_SEARCHES) {
+        const out = run(['pr', 'list', '--state', 'all', '--search', `"${title}" in:title`, '--limit', String(TRAIN_HISTORY_LIMIT),
+          '--json', 'number,title,state,headRefName,comments'], { allowFailure: true });
+        if (typeof out !== 'string') return null;
+        let parsed;
+        try {
+          parsed = JSON.parse(out);
+        } catch {
+          return null;
+        }
+        for (const row of parsed) if (String(row.headRefName ?? '').startsWith('train/')) rows.set(row.number, row);
       }
+      return [...rows.values()].sort((a, b) => b.number - a.number).slice(0, TRAIN_HISTORY_LIMIT);
     },
     comment: (number, body) => ok(['pr', 'comment', String(number), '--body', body]),
     closePr: (number, body) => ok(['pr', 'close', String(number), '--comment', body]),
@@ -1247,7 +1256,7 @@ function settleHead({ train, deps, requiredContexts, token }) {
     const accepted = other.accepted.length > 0 ? `, accepting ${other.accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}` : '';
     for (const component of included) component.coAuthors = parseCoAuthors(git.coAuthorLog(base, component.headRefOid));
     log(`train #${number} is green on ${trainPr.headRefOid.slice(0, 9)}${accepted}; preserving original commits from ${included.filter((c) => !c.empty).length} pull request(s)`);
-    const merged = gh.mergePr(number, { sha: trainPr.headRefOid, method: 'merge' });
+    const merged = gh.mergePr(number, { sha: trainPr.headRefOid, method: 'merge', title: mergeCommitTitle(included), message: mergeCommitMessage(included) });
     mergedSha = merged.sha ?? null;
     if (!merged.ok && gh.readPr(number).state !== 'MERGED') {
       log(`GitHub refused the train merge (${merged.detail || 'no detail'}); rebuilding`);

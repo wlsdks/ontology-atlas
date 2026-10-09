@@ -738,7 +738,7 @@ describe('the conductor runs trains', () => {
     assert.equal(result.state, 'drained');
     assert.deepEqual(result.landed, [11, 13]);
     assert.equal(called(world, 'openPr').length, 1, 'one CI run for the whole train');
-    assert.match(called(world, 'openPr')[0][1].title, /^chore\(train\): land #11 #13$/);
+    assert.match(called(world, 'openPr')[0][1].title, /^chore\(merge\): #11 #13$/);
     assert.match(called(world, 'openPr')[0][1].body, /- #11 `feat\/change-11@11ccccccc` feat: change 11/);
 
     const [merge] = called(world, 'mergePr');
@@ -834,11 +834,11 @@ describe('the conductor runs trains', () => {
     assert.deepEqual(result.landed, [1, 2, 4]);
     const trains = called(world, 'openPr').map(([, { title }]) => title);
     assert.deepEqual(trains, [
-      'chore(train): land #1 #2 #3 #4',
-      'chore(train): land #1 #2',
-      'chore(train): land #3 #4',
-      'chore(train): land #3',
-      'chore(train): land #4',
+      'chore(merge): #1 #2 #3 #4',
+      'chore(merge): #1 #2',
+      'chore(merge): #3 #4',
+      'chore(merge): #3 — feat: change 3',
+      'chore(merge): #4 — feat: change 4',
     ]);
     const note = world.pulls.get(3).comments.at(-1).body;
     assert.ok(note.startsWith(EJECTED_MARKER));
@@ -907,7 +907,7 @@ describe('a speculative second train', () => {
     const result = runConductor(world, { batch: 2 });
 
     assert.deepEqual(result.landed, [1, 2, 3, 4]);
-    assert.deepEqual(titles(world), ['chore(train): land #1 #2', 'chore(train): land #3 #4'], 'two trains, one CI run each');
+    assert.deepEqual(titles(world), ['chore(merge): #1 #2', 'chore(merge): #3 #4'], 'two trains, one CI run each');
     assert.deepEqual(called(world, 'mergePr').map(([, number]) => number), [2001, 2002], 'merged in order: A, then B');
     const bOpened = index(world, 'openPr', ([, o]) => o.title.endsWith('#3 #4'));
     assert.ok(bOpened < index(world, 'mergePr'), 'B opened before A merged: the two CI runs overlapped');
@@ -933,12 +933,12 @@ describe('a speculative second train', () => {
 
     assert.deepEqual(result.landed, [2, 3, 4]);
     assert.deepEqual(titles(world), [
-      'chore(train): land #1 #2',
-      'chore(train): land #3 #4', // speculative on A: discarded
-      'chore(train): land #1',
-      'chore(train): land #2', // speculative on #1: discarded, its half put back
-      'chore(train): land #2',
-      'chore(train): land #3 #4', // speculative on #2, which lands: so does this
+      'chore(merge): #1 #2',
+      'chore(merge): #3 #4', // speculative on A: discarded
+      'chore(merge): #1 — feat: change 1',
+      'chore(merge): #2 — feat: change 2', // speculative on #1: discarded, its half put back
+      'chore(merge): #2 — feat: change 2',
+      'chore(merge): #3 #4', // speculative on #2, which lands: so does this
     ]);
     const merged = called(world, 'mergePr').map(([, n]) => n);
     assert.ok(!merged.includes(2002) && !merged.includes(2004), 'a discarded train is never merged');
@@ -959,7 +959,7 @@ describe('a speculative second train', () => {
     const bClose = world.pulls.get(2002).comments.at(-1).body;
     assert.ok(bClose.startsWith(RED_CLOSE_PREFIX), 'B is judged red on its own, after A landed');
     assert.match(bClose, /Split into #3 \| #4/);
-    assert.deepEqual(titles(world).slice(2), ['chore(train): land #3', 'chore(train): land #4']);
+    assert.deepEqual(titles(world).slice(2), ['chore(merge): #3 — feat: change 3', 'chore(merge): #4 — feat: change 4']);
     assert.ok(world.pulls.get(4).comments.at(-1).body.startsWith(EJECTED_MARKER));
     assert.equal(world.pulls.get(3).state, 'CLOSED');
   });
@@ -967,7 +967,7 @@ describe('a speculative second train', () => {
   it('bisects with speculation too: the second half rides on the first', () => {
     const world = fakeWorld({ prs: prs(), queued: [1, 2, 3, 4], ci: (numbers) => (numbers.includes(3) ? red(['Unit · Contract']) : green()) });
     assert.deepEqual(runConductor(world).landed, [1, 2, 4]);
-    assert.equal(titles(world)[2], 'chore(train): land #3 #4');
+    assert.equal(titles(world)[2], 'chore(merge): #3 #4');
     assert.match(called(world, 'openPr')[2][1].body, /onto train #2002/, 'the second half was cut on the first half');
   });
 
@@ -1083,7 +1083,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.match(text, /PR #31: fast path not eligible/);
     assert.match(text, /PR #31: would be queued/);
     assert.match(text, /PR #32: would merge now/);
-    assert.match(text, /next train \(2 of 2 queued\): chore\(train\): land #33 #31/);
+    assert.match(text, /next train \(2 of 2 queued\): chore\(merge\): #33 #31/);
     assert.match(text, /#31 feat\/change-31@31ccccccc: would conflict and be ejected/);
     assert.match(text, /\| feat: change 33 \(#33\)  \(Author 33\)/, 'the plan shows the commit main would get for each pull request');
     assert.match(text, /dry run: nothing was written to GitHub/);
@@ -1095,8 +1095,8 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     assert.equal(land(world, ['--plan', '51', '--batch=1']), 0);
     const text = world.out.join('\n');
     assert.match(text, /train size 1 \(--batch\)/);
-    assert.match(text, /next train \(1 of 3 queued\): chore\(train\): land #51/);
-    assert.match(text, /speculative train while its CI runs \(1\): chore\(train\): land #52/);
+    assert.match(text, /next train \(1 of 3 queued\): chore\(merge\): #51 /);
+    assert.match(text, /speculative train while its CI runs \(1\): chore\(merge\): #52 /);
     assert.match(text, /lands only if that train lands, discarded if it does not/);
     assert.match(text, /#52 feat\/change-52@52ccccccc: merges cleanly/);
     assert.deepEqual(world.calls.filter(([name]) => !['readPr'].includes(name)), [], 'plan made a write call');
@@ -1110,7 +1110,7 @@ describe('pnpm pr:land <n>, end to end against the fake', () => {
     land(flying, ['--plan', '52', '--no-fast']);
     const flyingText = flying.out.join('\n');
     assert.match(flyingText, /1 train\(s\) in flight carrying #51; the trains below form after it, the first one speculating on it/);
-    assert.match(flyingText, /next train \(1 of 1 queued\): chore\(train\): land #52\n.*from train #1990's head/);
+    assert.match(flyingText, /next train \(1 of 1 queued\): chore\(merge\): #52 — feat: change 52\n.*from train #1990's head/);
 
     const sequential = fakeWorld({ prs: [component(51), component(52)], queued: [51, 52], readOnly: true });
     land(sequential, ['--plan', '51', '--batch=1', '--no-speculate']);
@@ -1140,5 +1140,38 @@ describe('GitHub merge transport preserves history', () => {
       assert.equal(github.mergePr(11, { sha, method }).ok, false);
     }
     assert.equal(calls.length, 1, 'rewriting requests must not reach GitHub');
+  });
+
+  it('titles a train merge commit with what it carries when asked', () => {
+    const calls = [];
+    const github = createGithub('owner/repo', (args) => { calls.push(args); return JSON.stringify({ merged: true, sha: 'merged' }); });
+    github.mergePr(11, { sha: 'a'.repeat(40), title: 'Merge #10: fix(map): keep focus', message: '#10 fix(map): keep focus' });
+    assert.ok(calls[0].includes('commit_title=Merge #10: fix(map): keep focus'));
+    assert.ok(calls[0].includes('commit_message=#10 fix(map): keep focus'));
+  });
+});
+
+describe('train history', () => {
+  const row = (number, title, headRefName) => ({ number, title, state: 'MERGED', headRefName, comments: [] });
+
+  it('reads trains titled the new and the old way, and only train branches', () => {
+    const searches = [];
+    const results = {
+      'chore(merge):': [row(20, 'chore(merge): #19 — fix: x', 'train/20261009T000000Z-19'), row(21, 'chore(merge): tidy', 'chore/tidy')],
+      'chore(train): land': [row(10, 'chore(train): land #9', 'train/20260926T000000Z-9')],
+    };
+    const github = createGithub('owner/repo', (args) => {
+      const search = args[args.indexOf('--search') + 1];
+      searches.push(search);
+      return JSON.stringify(results[Object.keys(results).find((key) => search.includes(key))] ?? []);
+    });
+    assert.deepEqual(github.listTrainHistory().map((pr) => pr.number), [20, 10]);
+    assert.equal(searches.length, 2);
+  });
+
+  it('reports unknown history when either search cannot be read', () => {
+    let call = 0;
+    const github = createGithub('owner/repo', () => (call++ === 0 ? '[]' : undefined));
+    assert.equal(github.listTrainHistory(), null);
   });
 });
