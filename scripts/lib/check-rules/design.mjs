@@ -34,6 +34,12 @@ export const rules = [
     matches: [/^docs\/DESIGN-SYSTEM\.md$/],
   },
   {
+    order: 105,
+    command: 'pnpm test:design:tokens',
+    reason: 'the token printer or its tests changed',
+    matches: [/^scripts\/design-tokens(?:\.test)?\.mjs$/],
+  },
+  {
     order: 360,
     command: 'pnpm design:ontology',
     reason: 'ontology workbench design surface or its guard changed',

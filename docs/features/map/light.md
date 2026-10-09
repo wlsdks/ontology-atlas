@@ -14,8 +14,9 @@ empty space, and only in the Flat view. With nothing happening, the
 map draws no frame. Under reduced motion there is no light at all; the reveal's
 ink and the static glow under the focused concept carry the same facts.
 
-Technical contract: `src/widgets/ontology-map/light/README.md`. Values: the
-`--map-light-*` tokens in `docs/DESIGN-SYSTEM.md`, "Light tokens".
+Technical contract: `src/widgets/ontology-map/light/README.md`. Values:
+`pnpm design:tokens -- --prefix=--map-light`; the rule is `docs/DESIGN-SYSTEM.md`,
+"Signature motion".
 
 ## Focus
 

@@ -70,6 +70,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm dogfood:test',
     'pnpm test:desktop:check',
     'pnpm docs-vault:check',
+    'pnpm test:design:tokens',
     'pnpm test:docs-vault',
     // The committed connector catalogue and the generator's own translation tests. Same shape as
     // every other generate-and-diff snapshot in this lane: a hand edit cannot ship.

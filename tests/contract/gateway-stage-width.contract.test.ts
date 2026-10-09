@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { collectTokens } from '../../scripts/design-tokens.mjs';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
@@ -29,8 +30,8 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  *  (d) **One source of truth for the stage width** — the demo section is the
  *      token's one consumer since 2026-09-02 (the agent scene moved to the
  *      evidence section's grid), and no local `max-w-[48rem]` survives.
- *  (e) **Documented** — the gateway table in `docs/DESIGN-SYSTEM.md` carries the
- *      same formula. A value that exists only in code is a coincidence, not a spec.
+ *  (e) **Printed** — `pnpm design:tokens` reports the same formula, which is how the
+ *      design document points at it instead of carrying a copy.
  *
  * Whether the rendered stage actually grows with this token (and whether the demo
  * and agent scenes share a width) is measured per width with rects by
@@ -39,7 +40,6 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
-const read = (rel: string): string => readFileSync(join(repoRoot, rel), "utf8");
 
 const TOKEN = "--gateway-stage-max";
 
@@ -117,12 +117,12 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
     expect(strays, "무대 폭을 따로 정하는 max-w-[48rem] 이 남아 있다").toEqual([]);
   });
 
-  it("(e) DESIGN-SYSTEM.md 관문 표에 같은 공식이 등재돼 있다", () => {
-    const doc = read("docs/DESIGN-SYSTEM.md");
-    expect(doc).toContain(TOKEN);
+  it("(e) pnpm design:tokens prints the declared formula", () => {
+    const printed = collectTokens().filter((token) => token.name === TOKEN);
+    expect(printed.length, `${TOKEN} is not printed by pnpm design:tokens`).toBeGreaterThan(0);
     expect(
-      doc,
-      "문서의 공식이 코드와 다르다 — 값의 정본은 하나여야 한다",
+      printed.map((token) => token.value),
+      "the printer and the stylesheet disagree",
     ).toContain(`clamp(${clamp.floorRem}rem, ${clamp.slopeVw}vw, ${clamp.capRem}rem)`);
   });
 });
