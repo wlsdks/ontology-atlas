@@ -95,61 +95,34 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
   },
-  // Replaced the old three-tab "insights-tabbed-handoff" check (2026-07-27). Insights
-  // has six measured maintenance questions (do next / unmatched / composition /
-  // connections / boundaries / freshness) plus one agent-written Flow question. Neither a
-  // fixed three-tab dashboard nor a metrics-only board is the current contract.
-  // What must hold together is the exact seven-tab set restorable from the URL, one
-  // active tabpanel at a time, and an agent handoff matching the current question.
-  // `unmatched` joined on 2026-09-05: names this folder was asked for and does not hold.
   {
-    id: "insights-maintenance-board",
+    id: "insights-relationship-analysis",
     files: [
-      "src/views/ontology-insights/lib/insights-tab-state.ts",
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+      "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx",
+      "src/views/ontology-insights/ui/analysis/DependencyDiagram.tsx",
+      "src/views/ontology-insights/ui/analysis/PairRail.tsx",
+      "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx",
       "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
-      "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
     ],
     markers: [
-      [
-        "export const INSIGHTS_TABS = [",
-        '  "brief",',
-        '  "library",',
-        '  "harness",',
-        '  "do-next",',
-        '  "unmatched",',
-        '  "composition",',
-        '  "connections",',
-        '  "boundaries",',
-        '  "growth",',
-        '  "flow",',
-        "] as const;",
-      ].join("\n"),
-      'data-insights-surface="maintenance-board"',
-      'data-insights-question-model="one-tab-one-question"',
-      "TabBar",
-      // The question row is the only real tab row, so its panel is a `tabpanel` named by the
-      // tab that opened it while the other three subjects draw a named region. Both shapes wear
-      // the panel marker, which is what the installed-app probe finds the panel by.
-      'role: "tabpanel"',
-      "data-insights-panel={tab}",
-      '{tab === "flow" ? (',
-      "<FlowTab",
-      'request={flowRequest}',
-      "canLaunchAgent={agentRoute === 'agent'}",
+      'data-insights-surface="relationship-analysis"',
+      'data-insights-question-model="claim-evidence"',
+      'role="tabpanel"',
+      '<TabBar',
+      '<AnalysisWorkspace',
+      'data-testid="analysis-dependency-diagram"',
+      'data-testid="analysis-pair"',
+      'data-testid="analysis-evidence"',
+      'buildDocsVaultHref',
       '<InsightsAgentDock',
-      'data-testid="flow-tab"',
+      'planInsightsAgentPrompt',
       'data-testid="flow-prefill"',
-      "onClick={() => onPrefill?.(request)}",
-      // The browser copy fallback is the page's shared copy control carrying the whole request.
-      "text={request}",
+      'onClick={() => onPrefill?.(request)}',
+      'text={request}',
       'testId="flow-copy"',
-      "InsightsHandoffRow",
-      'data-insights-handoff="tab-query"',
-      "CopyAgentTextButton",
     ],
-    reason:
-      "/ontology/insights must keep the brief first, a row naming each core, six measured ontology tabs and a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
+    reason: "Analysis must connect a named relationship to its exact evidence, retain keyboard section navigation and preserve explicit agent prefill/send boundaries.",
   },
 ];
 

@@ -12,10 +12,10 @@ import {
 } from "./insights-tab-state";
 
 describe("parseInsightsTab", () => {
-  it("defaults to the brief when the param is missing", () => {
-    expect(parseInsightsTab(null)).toBe("brief");
-    expect(parseInsightsTab(undefined)).toBe("brief");
-    expect(parseInsightsTab("")).toBe("brief");
+  it("defaults to relationships when the param is missing", () => {
+    expect(parseInsightsTab(null)).toBe("connections");
+    expect(parseInsightsTab(undefined)).toBe("connections");
+    expect(parseInsightsTab("")).toBe("connections");
   });
 
   it("accepts every question tab", () => {
@@ -82,13 +82,13 @@ describe("the first row names the thing a tab is about", () => {
 
 describe("buildInsightsTabHref", () => {
   it("omits the query string for the default tab", () => {
-    expect(buildInsightsTabHref("brief")).toBe("/ontology/insights/");
+    expect(buildInsightsTabHref("connections")).toBe("/ontology/insights/");
   });
 
   it("appends ?tab= for non-default tabs", () => {
     expect(buildInsightsTabHref("do-next")).toBe("/ontology/insights/?tab=do-next");
     expect(buildInsightsTabHref("composition")).toBe("/ontology/insights/?tab=composition");
-    expect(buildInsightsTabHref("connections")).toBe("/ontology/insights/?tab=connections");
+    expect(buildInsightsTabHref("brief")).toBe("/ontology/insights/?tab=brief");
     expect(buildInsightsTabHref("boundaries")).toBe("/ontology/insights/?tab=boundaries");
     expect(buildInsightsTabHref("growth")).toBe("/ontology/insights/?tab=growth");
   });
@@ -97,7 +97,7 @@ describe("buildInsightsTabHref", () => {
     expect(buildInsightsTabHref("composition", "/ko/ontology/insights/")).toBe(
       "/ko/ontology/insights/?tab=composition",
     );
-    expect(buildInsightsTabHref("brief", "/en/ontology/insights/")).toBe(
+    expect(buildInsightsTabHref("connections", "/en/ontology/insights/")).toBe(
       "/en/ontology/insights/",
     );
   });
@@ -112,10 +112,10 @@ describe("switching tabs keeps the rest of the address", () => {
   });
 
   it("still drops ?tab= entirely for the default tab, flags and all kept", () => {
-    expect(buildInsightsTabHref("brief", "/ontology/insights/", "?guides=off&tab=growth")).toBe(
+    expect(buildInsightsTabHref("connections", "/ontology/insights/", "?guides=off&tab=growth")).toBe(
       "/ontology/insights/?guides=off",
     );
-    expect(buildInsightsTabHref("brief", "/ontology/insights/", "?tab=growth")).toBe(
+    expect(buildInsightsTabHref("connections", "/ontology/insights/", "?tab=growth")).toBe(
       "/ontology/insights/",
     );
   });
@@ -132,7 +132,7 @@ describe("parseInsightsTabHref", () => {
     expect(parseInsightsTabHref("/ontology/insights/?tab=do-next")).toBe("do-next");
     expect(parseInsightsTabHref("/ontology/insights/?tab=growth")).toBe("growth");
     // No query is the default tab; a retired name resolves through the aliases.
-    expect(parseInsightsTabHref("/ontology/insights/")).toBe("brief");
+    expect(parseInsightsTabHref("/ontology/insights/")).toBe("connections");
     expect(parseInsightsTabHref("/ontology/insights/?tab=freshness")).toBe("growth");
   });
 

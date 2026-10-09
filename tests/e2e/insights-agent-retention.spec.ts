@@ -9,14 +9,17 @@ test('closing and reopening Analysis retains the unsent draft and protocol sessi
     runtimeId: 'claude-acp',
   });
   await openFolderFromFirstRun(page, 'en');
-  await page.goto('/en/ontology/insights/?tab=composition&guides=off');
-  const opener = page.getByTestId('insights-agent-open');
+  await page.goto('/en/ontology/insights/?tab=flow&guides=off');
+  const opener = page.getByTestId('flow-prefill');
   await opener.click();
   const chat = page.getByTestId('acp-chat-panel');
   await expect(chat).toHaveAttribute('data-acp-status', 'ready');
   const composer = chat.getByRole('textbox');
   const draft = 'Keep this unsent Analysis request when putting the dock away';
   await composer.fill(draft);
+  await page.getByTestId('insights-core-ontology').click();
+  await expect(composer).toHaveValue(draft);
+  await page.getByTestId('insights-core-flow').click();
   const sessionCount = (await harness.snapshot(page)).calls.filter((call) => call.method === 'session/new').length;
   await page.getByTestId('analysis-workbench-close').click();
   const frame = page.getByTestId('insights-agent-dock-frame');
@@ -27,4 +30,5 @@ test('closing and reopening Analysis retains the unsent draft and protocol sessi
   await expect(composer).toHaveValue(draft);
   const after = await harness.snapshot(page);
   expect(after.calls.filter((call) => call.method === 'session/new')).toHaveLength(sessionCount);
+  expect(after.calls.filter((call) => call.method === 'session/prompt')).toHaveLength(0);
 });

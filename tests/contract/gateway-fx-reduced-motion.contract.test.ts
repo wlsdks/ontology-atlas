@@ -47,8 +47,6 @@ describe("관문 FX — 감속 동등물", () => {
    */
   it("(d) the growth figures draw finished on the first frame, with no schedule", () => {
     for (const rel of [
-      "src/views/ontology-insights/ui/parts/VaultPresentStack.tsx",
-      "src/views/ontology-insights/ui/parts/VaultHistoryTracks.tsx",
     ]) {
       const source = read(rel);
       // The finished state is *derived at render*, not written from an effect — that is what

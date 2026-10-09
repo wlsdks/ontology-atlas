@@ -7,7 +7,7 @@
                               }));
                               const buttons = Array.from(document.querySelectorAll("button")).map((button) => button.textContent || "");
                               const insightsMaintenanceBoard = document.querySelector(
-                                '[data-insights-surface="maintenance-board"]'
+                                '[data-insights-surface="relationship-analysis"]'
                               );
                               const insightsQuestionTabs = Array.from(
                                 insightsMaintenanceBoard?.querySelectorAll('[role="tab"]') || []
@@ -15,14 +15,13 @@
                               const insightsSelectedTabs = insightsQuestionTabs.filter(
                                 (tab) => tab.getAttribute("aria-selected") === "true"
                               );
-                              // The subject row is a radiogroup and most subjects draw no question tabs,
-                              // so the panel is found by its own marker.
+                              // Keep historical marker names; only the section tabs count here.
                               const insightsSubjectRadios = Array.from(
-                                insightsMaintenanceBoard?.querySelectorAll('[role="radio"]') || []
+                                insightsMaintenanceBoard?.querySelectorAll('[data-testid="insights-core-switch"] [role="tab"]') || []
                               );
                               const insightsSelectedSubject =
                                 insightsSubjectRadios
-                                  .find((radio) => radio.getAttribute("aria-checked") === "true")
+                                  .find((radio) => radio.getAttribute("aria-selected") === "true")
                                   ?.getAttribute("data-testid") || "";
                               const insightsSelectedPanel =
                                 insightsMaintenanceBoard?.querySelector("[data-insights-panel]") || null;

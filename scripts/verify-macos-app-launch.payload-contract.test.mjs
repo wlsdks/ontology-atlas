@@ -403,13 +403,13 @@ function insightsPayload(markerOverrides) {
     href: "tauri://localhost/ko/ontology/insights/",
     markers: {
       insightsMaintenanceBoard: true,
-      insightsQuestionModel: "one-tab-one-question",
-      insightsSubjectCount: 4,
+      insightsQuestionModel: "claim-evidence",
+      insightsSubjectCount: 5,
       insightsSelectedSubject: "insights-core-brief",
       insightsSelectedPanelKey: "brief",
       insightsSelectedPanelVisible: true,
-      insightsTabCount: 0,
-      insightsSelectedTabCount: 0,
+      insightsTabCount: 5,
+      insightsSelectedTabCount: 1,
       insightsHandoff: false,
       ...markerOverrides,
     },
@@ -420,30 +420,11 @@ test("payload contract · the insights brief landing passes with no question tab
   assert.equal(validateWebviewVerifyPayload(insightsPayload()), null);
 });
 
-test("payload contract · the insights concepts landing still owes its question row", () => {
-  const onConcepts = {
-    insightsSelectedSubject: "insights-core-ontology",
-    insightsSelectedPanelKey: "composition",
-    insightsTabCount: 7,
-    insightsSelectedTabCount: 1,
-    insightsHandoff: true,
-  };
-  assert.equal(validateWebviewVerifyPayload(insightsPayload(onConcepts)), null);
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ ...onConcepts, insightsTabCount: 6 })),
-    /question tab count/,
-  );
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ ...onConcepts, insightsHandoff: false })),
-    /handoff/,
-  );
-  // The to-do question offers the agent per row, so it carries no tab-wide handoff row.
-  assert.equal(
-    validateWebviewVerifyPayload(
-      insightsPayload({ ...onConcepts, insightsSelectedPanelKey: 'do-next', insightsHandoff: false }),
-    ),
-    null,
-  );
+test("payload contract · relationship analysis needs its selected section and visible evidence panel", () => {
+  const selected = { insightsSelectedSubject: "insights-core-ontology", insightsSelectedPanelKey: "analysis" };
+  assert.equal(validateWebviewVerifyPayload(insightsPayload(selected)), null);
+  assert.match(validateWebviewVerifyPayload(insightsPayload({ ...selected, insightsTabCount: 4 })), /question tab count/);
+  assert.match(validateWebviewVerifyPayload(insightsPayload({ ...selected, insightsSelectedTabCount: 0 })), /selected tab count/);
 });
 
 test("payload contract · a vanished insights subject or panel fails", () => {

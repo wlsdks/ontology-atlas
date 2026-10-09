@@ -84,12 +84,11 @@ the same local markdown graph:
   source evidence.
 - **Workshop** — one typed relation write at a time, backed by frontmatter or a
   read-only MCP packet.
-- **Insights** — five measured maintenance questions plus the Flow handoff,
-  with one active panel and a tab-scoped agent handoff.
+- **Analysis** — a fixed directional relationship comparison with exact declaration witnesses and adjacent evidence; supporting records use visible section tabs. The old census/maintenance board is retired.
 
 The retired tree/ego hub and ERD Builder are not alternate modes. Headers,
 cards, and navigation preserve the selected concept while moving between
-Topology inspection, Workshop writing, Insights maintenance, and source docs.
+Topology inspection, Workshop writing, Analysis evidence inspection, and source docs.
 
 ## v2 — "Circuit × Constellation" (B2+) Visual Language
 
@@ -1431,14 +1430,31 @@ center-card border and plain progress caption, not game reward, glow, loot, or
 a hidden draft canvas. `/ontology/edit` is only a compatibility redirect to
 this surface.
 
-Insights is a maintenance board, not a generic analytics dashboard. Its exact
-six tabs are five measured questions — **Do next / Composition / Connections /
-Boundaries / Freshness** — plus the agent-written **Flow** question. `?tab=` restores the selected question, `TabBar` exposes one
-selected tab, and only the matching `tabpanel` is visible. The first viewport
-should answer the selected question with real graph data; the bottom handoff
-row copies the matching MCP/CLI action without making raw query syntax the
-visual winner. A fixed three-tab dashboard, reader-persona lanes, or a large
-query cockpit is retired structure.
+Analysis is a relationship-and-evidence workbench. The selected responsibility
+pair owns the headline; a bounded, visible comparison rail names other pairs and
+their declaration counts. The central graph expands the selected pair into the
+actual typed concepts, measured DOM ports and directed declaration lines. Each
+line is one recorded dependency, not a runtime step. Selection uses a second
+frame, an explicit label, visible declaration units and the selected arrow; it
+must remain understandable without colour. Counts are not risk or acceptance.
+
+An exact witness control and its declaring-document action must be simultaneously
+visible at 1040x720. Adjacent evidence names the structured relationship note,
+recorded implementation anchors and source currentness separately. An absent
+relation note does not establish that the Markdown body lacks an explanation.
+Project names title only single-project scopes; multiple projects name the folder.
+The page owns reading scroll, with text-relative responsive bands and no clipped
+labels at enlarged text. Bounded selections retain the selected item, including
+continuations from a dependency to a capability outside the initial list.
+
+Five section tabs retain relationships, review summary, Wiki, Guidance and saved
+explanations. Legacy ontology links enter the current relationship/evidence
+question. The census/seven-tab maintenance board, global batch-repair entry and
+bottom generic handoff are retired here. A compact selected-fact request sits
+beside its evidence, can be inspected/copied, and prefills the existing ACP
+conversation only for a matching local native folder. Sample copies contain
+quoted facts without commands against an active MCP vault. Prefill is never send;
+existing drafts and write review remain person-owned.
 
 Source/setup surfaces should expose the vault execution contract before setup
 actions. Use compact `Files` / `Graph` / `Agent` cells to show that local

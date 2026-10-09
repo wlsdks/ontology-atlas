@@ -215,26 +215,13 @@ test.describe('Automations remove confirm', () => {
 });
 
 test.describe('Analysis', () => {
-  test('the row menu is one line per item and the handoff footer is not monospace', async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await page.goto('/ko/ontology/insights/?tab=do-next&guides=off', { waitUntil: 'domcontentloaded' });
-    const trigger = page.getByTestId('do-next-row-menu').first();
-    await expect(trigger).toBeVisible({ timeout: 30_000 });
-    await trigger.click();
-    const items = page.getByTestId('do-next-row-menu-popover').getByRole('menuitem');
-    await expect(items.first()).toBeVisible();
-    const heights = await items.evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().height)));
-    /* 28 and 44 before, because the second item wrapped in a 160px menu. */
-    expect(new Set(heights).size, `menu item heights ${heights.join(', ')}`).toBe(1);
-    await page.keyboard.press('Escape');
-
-    await page.goto('/ko/ontology/insights/?tab=flow&guides=off', { waitUntil: 'domcontentloaded' });
-    const handoff = page.getByTestId('insights-handoff-row').first();
-    await handoff.scrollIntoViewIfNeeded();
-    const families = await handoff.evaluate((row) =>
-      [...row.querySelectorAll('span, button')].map((node) => getComputedStyle(node).fontFamily),
-    );
-    expect(families.filter((family) => /mono/i.test(family)), 'Hangul set in a monospace face').toEqual([]);
+  test('evidence uses visible named selection without the retired handoff footer', async ({ page }) => {
+    await page.goto('/ko/ontology/insights/?tab=do-next&guides=off');
+    const choice = page.getByTestId('analysis-claim').nth(1);
+    await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('analysis-evidence')).toBeVisible();
+    await expect(page.getByTestId('insights-handoff-row')).toHaveCount(0);
   });
 
   test('the guidance evidence popup stays inside its field at 1040×720', async ({ page }) => {

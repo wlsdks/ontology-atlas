@@ -14,8 +14,8 @@ area: architecture
 > and AI coding agents read and write that same folder. Round 10 permanently
 > removed every login and cloud-data screen. In today's route model, reading and
 > contextual writing happen together on Topology, ACP writes pause in the same
-> conversation for human review, and upkeep lives on the six-tab Insights page:
-> five measured questions plus Flow. The old `/ontology/studio` and
+> conversation for human review, and Analysis uses a five-section relationship/evidence workspace:
+> relationships, review summary, Wiki, Guidance and saved explanations. The old `/ontology/studio` and
 > `/ontology/edit` URLs only translate old links.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
@@ -39,7 +39,7 @@ area: architecture
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
-│ ├─ /ontology/insights      five measures + Flow        │
+│ ├─ /ontology/insights      relationships + evidence        │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
@@ -134,6 +134,7 @@ The public entrypoints remain stable while internal modules own narrower work:
 | `mcp/src/rust-feature-evidence.mjs` | Keeps the evidence entrypoint stable. `rust-feature-evidence/collect.mjs` owns bounded Cargo/workspace reads, source inventory and evidence receipts; `attributes.mjs` interprets literal Rust `cfg` and `cfg_attr` attributes without filesystem access. |
 | `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
 | `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
+| `src/views/ontology-insights/ui/analysis/` | Fixed DOM dependency comparison with SVG connectors, named declaration witnesses and adjacent evidence. `lib/analysis-model.ts` derives only recorded dependencies, unambiguous responsibility pairs, implementation anchors and document gaps. `AnalysisRecords` keeps supporting records and one persistent ACP conversation; no second census/maintenance board is mounted. The source-date hook refuses a separately bound code root. |
 | `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation. Scheduling and execution authority remain in Library rounds. |
 
 These modules preserve the existing React lifecycle, frame order, query result
@@ -724,7 +725,9 @@ until a local manifest, or the first part of one, exists.
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
-/ontology/insights         six-tab maintenance board: five measured questions + Flow
+/ontology/insights         five-section relationship/evidence workspace; exact declarations,
+                           capability endpoints and supporting records; old tab URLs map
+                           to the corresponding relationship, evidence or record question
 /git                       local vault git history / snapshot workbench; remains a
                            primary desktop-rail destination with contextual links too
 /agents                    coding agents this computer can run — the app launches them and
@@ -857,12 +860,12 @@ to an agent.
 | `workbench` · `edit` | `/topology` | contextual writer state · optional relation/target | `edit` \| `create`; `edit=<relation>:<targetId>` |
 | `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/url-state.ts` |
 | `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
-| `review` | `/`, `/topology`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
+| `review` | `/`, `/topology`, `/ontology/insights` | selected Analysis claim/declaration carried across a document or correction return | `analysis:<nodeId>` / `relation:<edgeId>`; legacy review ids remain compatible context |
 | `constellation` | `/topology` | saved Map task scope or creation intent | stable folder UUID \| `new` |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
-| `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
+| `tab` | `/ontology/insights` | section or compatible question intent | `connections` (default), `brief`, `library`, `harness`, `flow`; `do-next`/`unmatched` open evidence; other legacy ontology names open relationships |
 
 ### One place builds node ids, one place reads them
 
