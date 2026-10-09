@@ -32,9 +32,11 @@ pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test <spec>   # e2e as CI
 ```
 
 Without `PLAYWRIGHT_STATIC=1` the config starts `pnpm dev`, which renders
-differently from the static export. Reproduce a red e2e in the CI mode before
-calling CI wrong or flaky; then check for a stale server with
-`lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own
+differently from the static export. The static export serves on 3110 and never
+reuses a running server; `checks:changed` runs three or more specs that way,
+since one 47 s build then costs less than dev compiling each route. Reproduce
+a red e2e in the CI mode before calling CI wrong or flaky; then check for a
+stale server with `lsof -iTCP:<port>`. Run Playwright in the foreground, let it start its own
 server, and give parallel work its own port through `PLAYWRIGHT_BASE_URL`.
 
 ## The timing rule

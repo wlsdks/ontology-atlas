@@ -5,7 +5,9 @@ import { defineConfig } from '@playwright/test';
 import { POST_MERGE_SPECS } from './tests/e2e/post-merge-specs';
 import { foreignServer } from './scripts/lib/playwright-server-owner.mjs';
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
+const servesStaticExport = Boolean(process.env.PLAYWRIGHT_STATIC);
+// The static export gets its own port so it never reuses a dev server left on 3100.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || (servesStaticExport ? 'http://127.0.0.1:3110' : 'http://127.0.0.1:3100');
 const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
 
@@ -13,7 +15,7 @@ const webServerPort = new URL(baseURL).port || '3100';
 // that another worktree or project started.
 const foreignServerMessage = process.env.CI ? null : foreignServer(new URL(baseURL).hostname, webServerPort, process.cwd());
 if (foreignServerMessage) throw new Error(foreignServerMessage);
-if (!process.env.CI && process.env.PLAYWRIGHT_STATIC && !existsSync('out/index.html')) {
+if (!process.env.CI && servesStaticExport && !existsSync('out/index.html')) {
   throw new Error('PLAYWRIGHT_STATIC=1 serves the static export in out/, which is missing: run `pnpm build` first.');
 }
 
@@ -100,11 +102,11 @@ export default defineConfig({
     // so it was a no-op at the routing level), while dev succeeded for both regardless of slash presence/mechanism,
     // making it **diagnostically useless** for this defect. A gate running only in dev
     // will forever let this class of regression pass.
-    command: process.env.PLAYWRIGHT_STATIC
+    command: servesStaticExport
       ? `node scripts/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,
     url: webServerOrigin,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && !servesStaticExport,
     timeout: 120_000,
   },
 });

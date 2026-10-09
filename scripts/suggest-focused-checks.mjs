@@ -194,6 +194,8 @@ const PLAYWRIGHT_PREFIX = 'pnpm exec playwright test ';
  * The merged command takes the place of the first Playwright entry so ordering is
  * preserved: whatever ran before e2e still runs before it.
  */
+export const STATIC_BUILD_PAYS_OFF_AT_SPECS = 3;
+
 export function collapsePlaywrightCommands(commands) {
   const specs = [];
   const seen = new Set();
@@ -206,15 +208,21 @@ export function collapsePlaywrightCommands(commands) {
       }
     }
   }
+  const staticRun = specs.length >= STATIC_BUILD_PAYS_OFF_AT_SPECS;
   // One invocation already — nothing to gain, and rewriting it would only lose the
   // suggester's own wording.
-  if (commands.filter((c) => c.command.startsWith(PLAYWRIGHT_PREFIX)).length < 2) {
+  if (!staticRun && commands.filter((c) => c.command.startsWith(PLAYWRIGHT_PREFIX)).length < 2) {
     return commands;
   }
-  const merged = {
-    command: PLAYWRIGHT_PREFIX + specs.join(' '),
-    reason: `${specs.length} e2e specs in one Playwright run — same coverage, one startup`,
-  };
+  const merged = staticRun
+    ? {
+      command: `pnpm build && PLAYWRIGHT_STATIC=1 ${PLAYWRIGHT_PREFIX}${specs.join(' ')}`,
+      reason: `${specs.length} e2e specs against one static build, as CI runs them`,
+    }
+    : {
+      command: PLAYWRIGHT_PREFIX + specs.join(' '),
+      reason: `${specs.length} e2e specs in one Playwright run — same coverage, one startup`,
+    };
   const out = [];
   let placed = false;
   for (const c of commands) {
@@ -230,7 +238,6 @@ export function collapsePlaywrightCommands(commands) {
   return out;
 }
 
-/** Collapse only exact default test-file coverage from earlier commands. */
 export function collapseCoveredContractCommands(commands, scripts = {}) {
   const result = { commands: [], covered: [] };
   let full = false;
