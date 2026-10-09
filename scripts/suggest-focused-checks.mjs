@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isCommentOnlyChange, supportsCommentOnlyCheck } from './lib/comment-only-change.mjs';
+
 import {
   formatFocusedCheckSuggestions,
   suggestFocusedChecks,
@@ -105,6 +107,15 @@ export function branchRangePathsFromGit({
     paths: existingPaths(all, { cwd, exists }),
     deletedPaths: all.filter((path) => !exists(resolve(cwd, path))),
   };
+}
+
+export function commentOnlyPathsFromGit(paths, { cwd = process.cwd(), spawn = spawnSync, baseRev = 'HEAD', read = (path) => readFileSync(resolve(cwd, path), 'utf8') } = {}) {
+  return paths.filter((path) => {
+    if (!supportsCommentOnlyCheck(path)) return false;
+    const before = spawn('git', ['show', `${baseRev}:${path}`], { cwd, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 });
+    if ((before.status ?? 1) !== 0) return false;
+    return isCommentOnlyChange(before.stdout, read(path), path);
+  });
 }
 
 function spawnGit({ cwd, spawn, args }) {
@@ -315,7 +326,13 @@ export function runSuggestFocusedChecks({
       }
     }
     if (scope) stdout.write(`[focused-checks] scope: ${scope}\n`);
-    const suggestions = suggestFocusedChecks(paths, { deletedPaths });
+    const baseRev = scope === 'the working tree' ? 'HEAD'
+      : scope ? spawn('git', ['merge-base', scope.split('...')[0], 'HEAD'], { cwd, encoding: 'utf-8' }).stdout?.trim() : '';
+    const commentOnlyPaths = baseRev ? commentOnlyPathsFromGit(paths, { cwd, spawn, baseRev }) : [];
+    if (commentOnlyPaths.length > 0) {
+      stdout.write(`[focused-checks] ${commentOnlyPaths.length} file(s) changed only in comments or formatting; their tests are skipped\n`);
+    }
+    const suggestions = suggestFocusedChecks(paths, { deletedPaths, commentOnlyPaths });
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
     return runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });

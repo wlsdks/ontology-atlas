@@ -115,7 +115,7 @@ export function normalizeChangedPath(path) {
   return normalized.startsWith('-') ? `./${normalized}` : normalized;
 }
 
-export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
+export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnlyPaths = [] } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
   // Deleted paths participate in RULE matching only — the per-file direct
   // suggestions below embed paths into file-reading commands, which a deleted
@@ -123,18 +123,20 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   const normalizedDeleted = [...new Set(deletedPaths.map(normalizeChangedPath).filter(Boolean))]
     .filter((path) => !normalizedPaths.includes(path));
   const rulePaths = [...normalizedPaths, ...normalizedDeleted];
-  const staticCommands = rulesToSuggestions(RULES, rulePaths);
+  const commentOnly = new Set(commentOnlyPaths.map(normalizeChangedPath));
+  const behaviorPaths = normalizedPaths.filter((path) => !commentOnly.has(path));
+  const staticCommands = rulesToSuggestions(RULES, rulePaths, commentOnly);
   const withSourceLanguage = prependSuggestions(
     staticCommands,
     directSourceLanguageSuggestions(normalizedPaths),
   );
   const withVitestDirect = prependSuggestions(
     withSourceLanguage,
-    directVitestTestSuggestions(normalizedPaths),
+    directVitestTestSuggestions(behaviorPaths),
   );
   const withPlaywrightDirect = prependSuggestions(
     withVitestDirect,
-    directPlaywrightTestSuggestions(normalizedPaths),
+    directPlaywrightTestSuggestions(behaviorPaths),
   );
   const withLintDirect = prependSuggestions(
     withPlaywrightDirect,
@@ -142,22 +144,22 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   );
   const withMcpDirect = insertBeforeCommand(
     withLintDirect,
-    directMcpUnitTestSuggestions(normalizedPaths),
+    directMcpUnitTestSuggestions(behaviorPaths),
     'pnpm test:mcp:unit',
   );
   const commands = insertBeforeCommand(
     withMcpDirect,
-    directMappedTestSuggestions(normalizedPaths, 'cli', 'direct CLI lib unit test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'cli', 'direct CLI lib unit test for changed helper'),
     'pnpm test:cli:lib',
   );
   const withScriptDirect = insertBeforeCommand(
     commands,
-    directMappedTestSuggestions(normalizedPaths, 'script', 'direct script helper unit test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'script', 'direct script helper unit test for changed helper'),
     'pnpm test:dogfood:script-refs',
   );
   const withFocusedCheckDirect = insertBeforeCommand(
     withScriptDirect,
-    directMappedTestSuggestions(normalizedPaths, 'focusedCheck', 'direct focused-check advisor test for changed helper'),
+    directMappedTestSuggestions(behaviorPaths, 'focusedCheck', 'direct focused-check advisor test for changed helper'),
     'pnpm test:checks:changed',
   );
   const escalations = rulesToSuggestions(ESCALATIONS, rulePaths);
@@ -375,11 +377,12 @@ function insertBeforeCommand(suggestions, additions, command) {
   ];
 }
 
-function rulesToSuggestions(rules, paths) {
+function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   const seen = new Set();
   const suggestions = [];
   for (const rule of rules) {
-    const matchedPaths = paths.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
+    const candidates = /\bplaywright test\b/.test(rule.command) ? paths.filter((path) => !commentOnly.has(path)) : paths;
+    const matchedPaths = candidates.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
     if (matchedPaths.length === 0 || seen.has(rule.command)) continue;
     seen.add(rule.command);
     suggestions.push({ command: rule.command, reason: rule.reason, paths: matchedPaths });

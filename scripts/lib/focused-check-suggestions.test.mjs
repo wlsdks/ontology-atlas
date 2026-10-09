@@ -2050,3 +2050,17 @@ describe('node tests for a changed script', () => {
     assert.equal(commands.length, new Set(commands).size);
   });
 });
+
+describe('files changed only in comments', () => {
+  it('keep their lint and language checks but run none of their tests', () => {
+    const paths = ['tests/e2e/map-viewport-reframe.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/review-facts.mjs'];
+    const all = suggestFocusedChecks(paths).commands.map((item) => item.command);
+    const skipped = suggestFocusedChecks(paths, { commentOnlyPaths: paths }).commands.map((item) => item.command);
+    const tests = (commands) => commands.filter((command) => /playwright test|vitest related|node --test/.test(command));
+    assert.ok(tests(all).length >= 3);
+    assert.deepEqual(tests(skipped), []);
+    assert.ok(skipped.some((command) => command.includes('source-comment-bytes')), 'comment ratchets still run');
+    assert.ok(skipped.includes(SOURCE_LANGUAGE_COMMAND));
+    assert.ok(skipped.some((command) => command.startsWith('pnpm exec eslint')));
+  });
+});

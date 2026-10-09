@@ -11,6 +11,7 @@ import {
   stripLeadingSeparator,
   suggestFocusedChecksUsage,
   untrackedPathsForAdvisor,
+  commentOnlyPathsFromGit,
 } from './suggest-focused-checks.mjs';
 
 /**
@@ -453,4 +454,16 @@ it('exact Node test file coverage is reused within a run without dropping flags 
     ...scripts, 'pretest:pair': 'node setup.mjs',
   }).commands, [pair, single]);
   assert.deepEqual(collapseCoveredContractCommands([flagged, single], scripts).commands, [flagged, single]);
+});
+
+describe('commentOnlyPathsFromGit', () => {
+  it('names a file whose code is unchanged at the base, and keeps new or unreadable ones', () => {
+    const base = { 'a.ts': 'const a = 1; // old\n', 'b.ts': 'const b = 1;\n' };
+    const now = { 'a.ts': 'const a = 1; // new\n', 'b.ts': 'const b = 2;\n', 'c.ts': 'const c = 1;\n' };
+    const spawn = (_git, args) => {
+      const path = args[1].split(':')[1];
+      return path in base ? { status: 0, stdout: base[path] } : { status: 128, stdout: '' };
+    };
+    assert.deepEqual(commentOnlyPathsFromGit(['a.ts', 'b.ts', 'c.ts', 'd.css'], { spawn, read: (path) => now[path] }), ['a.ts']);
+  });
 });
