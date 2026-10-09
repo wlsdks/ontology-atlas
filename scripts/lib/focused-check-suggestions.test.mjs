@@ -20,6 +20,7 @@ import {
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
 const DEAD_CODE_COMMAND = 'pnpm knip';
 const COMMENT_REFS_COMMAND = 'pnpm docs:comment-refs';
+const COMMENT_BYTES_COMMAND = 'pnpm exec vitest run tests/contract/source-comment-bytes.contract.test.ts';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -44,6 +45,7 @@ function domainCommands(result) {
     (command) =>
       command !== SOURCE_LANGUAGE_COMMAND &&
       command !== COMMENT_REFS_COMMAND &&
+      command !== COMMENT_BYTES_COMMAND &&
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
@@ -186,7 +188,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+    assert.deepEqual(commandNames(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== COMMENT_BYTES_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
       'pnpm exec node --test scripts/quality/source-language/inventory.test.mjs',
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
@@ -195,6 +197,17 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
+  });
+
+  it('ratchets comment bytes for every changed source, through the test hygiene pair for tests', () => {
+    const CASES = [
+      [['.github/workflows/checks.yml'], COMMENT_BYTES_COMMAND],
+      [['src/views/architecture/model/harness-anatomy.ts'], COMMENT_BYTES_COMMAND],
+      [['src/shared/lib/cn.test.ts'], TEST_HYGIENE_COMMAND],
+    ];
+    for (const [paths, expected] of CASES) {
+      assert.ok(commandNames(suggestFocusedChecks(paths)).includes(expected), paths.join(', '));
+    }
   });
 
   it('checks comment citations when source or Markdown changes, once', () => {

@@ -174,11 +174,17 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnl
 function directSourceLanguageSuggestions(paths) {
   const sourcePaths = paths.filter(isSupportedSourcePath);
   const citingPaths = paths.filter((path) => isSupportedSourcePath(path) || path.endsWith('.md'));
+  const untestedSourcePaths = sourcePaths.filter((path) => !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
   return [
     ...(sourcePaths.length ? [{
       command: 'pnpm source:language',
       reason: 'source comments are English-only across current code, tests, and prototypes',
       paths: sourcePaths,
+    }] : []),
+    ...(untestedSourcePaths.length ? [{
+      command: 'pnpm exec vitest run tests/contract/source-comment-bytes.contract.test.ts',
+      reason: 'comment bytes may only fall in each source area this change touches',
+      paths: untestedSourcePaths,
     }] : []),
     ...(citingPaths.length ? [{
       command: 'pnpm docs:comment-refs',
