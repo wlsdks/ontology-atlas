@@ -174,6 +174,7 @@ they also add a final train integration merge.
 |---|---|
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts ([guide](docs/BACKLOG.md)) |
+| `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and landing lines filled in |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan landing several branches as one, then prune the branches main contains (`/land-bundle`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
@@ -195,6 +196,7 @@ they also add a final train integration merge.
 | `pnpm pr:ci <n>` | Fire CI on a draft now |
 | `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a landing, or run trains until the queue is empty |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Queue a pull request for the landing train, and show the queue |
+| `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
 
