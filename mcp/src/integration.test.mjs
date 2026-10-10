@@ -28,7 +28,8 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
-import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
+import { GRAPH_ARRAY_KEYS } from "./vault/relation-refs.mjs";
+import { loadVaultDocs } from "./vault/documents.mjs";
 import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-record.mts';
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";

@@ -40,7 +40,7 @@ import {
   requireOptionalPositiveInteger,
   requireOptionalStringArray,
 } from '../server/validate.mjs';
-import { loadVaultDocs } from '../vault.mjs';
+import { loadVaultDocs } from '../vault/documents.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
 import {
   relative,

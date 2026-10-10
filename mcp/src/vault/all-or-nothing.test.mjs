@@ -10,7 +10,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unli
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { applyAllOrNothing, writeFileAtomically } from './vault.mjs';
+import { applyAllOrNothing, writeFileAtomically } from './atomic-writes.mjs';
 
 function scratch() {
   return mkdtempSync(join(tmpdir(), 'oa-aon-'));

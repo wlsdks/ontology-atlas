@@ -40,10 +40,8 @@ import {
   requireOptionalNonBlankString,
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
-import {
-  VaultConflictError,
-  loadVaultDocs,
-} from '../vault.mjs';
+import { loadVaultDocs } from '../vault/documents.mjs';
+import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import {
   meaningSourceFromProjectSource,
   projectMeaningContext,

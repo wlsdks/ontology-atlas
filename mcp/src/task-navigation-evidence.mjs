@@ -1,7 +1,7 @@
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
-import { extractSummaryExcerpt } from './vault.mjs';
+import { extractSummaryExcerpt } from './vault/documents.mjs';
 
 const TASK_NAVIGATION_EVIDENCE_CONTRACT = 'taskNavigation:v1';
 

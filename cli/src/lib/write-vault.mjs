@@ -7,7 +7,7 @@ import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
  * Vault-relative slug → file path, checked for containment so a malicious slug from an agent or prompt
- * injection ('../../etc/passwd') cannot name a file outside the vault. Same contract as mcp/src/vault.mjs slugToPath.
+ * injection ('../../etc/passwd') cannot name a file outside the vault. Same contract as mcp/src/vault/ slugToPath.
  */
 export function slugToPath(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) {
@@ -27,7 +27,7 @@ export function slugToPath(rootPath, slug) {
   const rawSourceSlug = rawSourceSlugForPath(normalizedRoot, candidate);
   if (rawSourceSlug) throw new Error(rawSourceSlugIssue(rawSourceSlug));
   // A string check alone cannot stop a symlink: `writeFileSync` follows a link inside the vault and writes
-  // outside it. Same contract as `mcp/src/vault.mjs`.
+  // outside it. Same contract as `mcp/src/vault/`.
   assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
 }
@@ -105,7 +105,7 @@ function realSegmentsBelowRoot(normalizedRoot, candidate) {
 
 /**
  * Writes a new doc, creating directories; throws when the file exists, never overwriting the user's work.
- * Same contract as writeDoc in mcp/src/vault.mjs.
+ * Same contract as writeDoc in mcp/src/vault/.
  */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = preflightWriteDoc(rootPath, slug, frontmatter);
@@ -180,7 +180,7 @@ export function readDocFrontmatter(rootPath, slug) {
 
 /**
  * Replaces one frontmatter key of an existing doc, keeping the rest and the body; the read → merge → rewrite
- * contract of patchFrontmatter in mcp/src/vault.mjs, written with the CLI's own fs calls like `add` and `import`.
+ * contract of patchFrontmatter in mcp/src/vault/, written with the CLI's own fs calls like `add` and `import`.
  */
 export function writeFrontmatterKey(rootPath, slug, key, value, options) {
   return writeFrontmatterKeys(rootPath, slug, { [key]: value }, options);
@@ -220,7 +220,7 @@ export function writeFrontmatterKeys(rootPath, slug, patch, { expectedRevision =
 
 /**
  * Dedupes and locale-sorts string refs and appends other values unchanged, like normalizeRelationRefs in
- * mcp/src/vault.mjs, so `relate` writes the same shape as MCP `add_relation`.
+ * mcp/src/vault/, so `relate` writes the same shape as MCP `add_relation`.
  */
 export function normalizeRelationRefs(values) {
   if (!Array.isArray(values)) return [];

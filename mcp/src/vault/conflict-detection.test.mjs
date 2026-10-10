@@ -9,15 +9,9 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  readDoc,
-  writeDoc,
-  patchFrontmatter,
-  updateDoc,
-  deleteDoc,
-  getFileMtime,
-  VaultConflictError,
-} from "./vault.mjs";
+import { readDoc } from "./documents.mjs";
+import { getFileMtime, VaultConflictError } from "./atomic-writes.mjs";
+import { writeDoc, patchFrontmatter, updateDoc, deleteDoc } from "./doc-writes.mjs";
 
 let passed = 0;
 let failed = 0;

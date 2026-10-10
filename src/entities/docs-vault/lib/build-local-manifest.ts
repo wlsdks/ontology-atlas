@@ -27,7 +27,7 @@ import type {
 } from '../model/types';
 
 /**
- * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault.mjs`
+ * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault/`
  * NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS and `scripts/build-docs-vault.mjs`.
  */
 const RELATION_REF_ARRAY_KEYS = [

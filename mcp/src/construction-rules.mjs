@@ -1,7 +1,7 @@
 /**
  * Ontology construction rules: the single source of every text that tells a
  * model how to build this graph, and of the path heuristics the write gate
- * in `vault.mjs` runs. Values live in `schema.mjs`, gate logic in `vault.mjs`, text
+ * in `vault/eligibility-gate.mjs` runs. Values live in `schema.mjs`, logic there, text
  * here (`docs/DECISIONS.md`: sibling count is not the target, since a cap is
  * gamed with empty buckets). English only; screen text lives in `messages/*.json`
  * by issue code.
@@ -371,8 +371,6 @@ export function uncertaintyMissingMessage({ slug, kind }) {
 
 /**
  * Keys holding a declared dependency edge; `depends_on:` is the authoring alias.
- * Here rather than beside `NEIGHBOR_KEY_ALIASES` because `vault.mjs` imports the
- * findings module, which would have to import back.
  */
 export const DEPENDENCY_FRONTMATTER_KEYS = Object.freeze(['dependencies', 'depends_on']);
 

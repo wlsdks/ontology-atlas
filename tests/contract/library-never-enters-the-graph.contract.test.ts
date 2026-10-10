@@ -6,7 +6,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildLocalManifest } from '@/entities/docs-vault/lib/build-local-manifest';
 import { deriveOntologyFromVault } from '@/entities/docs-vault/lib/derive-ontology-from-vault';
 import { walkMd as walkCliVault } from '../../cli/src/lib/walk-vault.mjs';
-import { loadVaultDocs, walkMd } from '../../mcp/src/vault.mjs';
+import { walkMd } from '../../mcp/src/vault/slug-paths.mjs';
+import { loadVaultDocs } from '../../mcp/src/vault/documents.mjs';
 
 /**
  * **A vault holds three kinds of file and only one is the graph** (`docs/DECISIONS.md`,

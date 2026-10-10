@@ -19,13 +19,10 @@ import {
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
 import { isValidVaultTitle } from '../validate.mjs';
-import {
-  configureNodeEligibilityRepoRoot,
-  detectDuplicateTitle,
-  loadVaultDocs,
-  updateDoc,
-  writeDoc,
-} from '../vault.mjs';
+import { loadVaultDocs } from '../vault/documents.mjs';
+import { configureNodeEligibilityRepoRoot } from '../vault/eligibility-gate.mjs';
+import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
+import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,

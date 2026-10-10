@@ -256,7 +256,7 @@ function mcpCodes(bodyCase: BodyCase): string[] {
   ].filter(Boolean) as Array<{ code: string }>;
   const codes = findings.map((finding) => finding.code);
   /*
-   * `slug-outside-kind-folder` lives in `vault.mjs`'s write gate rather than in
+   * `slug-outside-kind-folder` lives in `vault/`'s write gate rather than in
    * `meaning-findings.mjs`, so the canonical rule is read from the schema it is
    * built on — `folderForKind` plus a prefix test, the same two lines the gate
    * runs. Comparing the port against a re-typed literal would prove nothing.

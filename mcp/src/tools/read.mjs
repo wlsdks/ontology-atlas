@@ -61,20 +61,19 @@ import {
   validateVaultDocument,
 } from '../validate.mjs';
 import {
+  collectNeighborRefs,
+  normalizeRelationRefs,
+  relationNoteFor,
+} from '../vault/relation-refs.mjs';
+import { slugToPath } from '../vault/slug-paths.mjs';
+import {
   FULL_BODY_MAX_CHARS,
   GET_CONCEPTS_FULL_BODY_MAX,
-  collectNeighborRefs,
   describeBodyDelivery,
-  findBacklinks,
-  findOrphans,
-  findPath,
-  listKinds,
   loadVaultDocs,
-  normalizeRelationRefs,
   readDoc,
-  relationNoteFor,
-  slugToPath,
-} from '../vault.mjs';
+} from '../vault/documents.mjs';
+import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph-queries.mjs';
 import {
   normalizeGraphRelationKey,
   relationRefsFor,

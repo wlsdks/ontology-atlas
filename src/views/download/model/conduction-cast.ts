@@ -38,7 +38,7 @@ export const CONDUCTION_CAST: readonly CastConcept[] = [
   cast('capability:task-agent-brief', 'domain:agent-access', 'mcp/src/agent-brief-compact.mjs'),
   cast(EVIDENCE_SPECIMEN.facts.name.nodeId, 'domain:agent-access', EVIDENCE_SPECIMEN.facts.implPath),
   cast('element:map-camera', 'capability:ontology-map', 'src/widgets/ontology-map/engine/camera.ts'),
-  cast('element:vault-file-store', 'capability:meaning-write-safety', 'mcp/src/vault.mjs'),
+  cast('element:vault-file-store', 'capability:meaning-write-safety', 'mcp/src/vault/documents.mjs'),
   cast('element:meaning-gap-findings', 'capability:vault-validation', 'mcp/src/meaning-findings.mjs'),
   cast('element:acp-permission-scope', 'capability:in-app-coding-agent', 'src/features/acp-session/model/permission-scope.ts'),
   cast('element:mcp-server-runtime', EVIDENCE_SPECIMEN.facts.name.nodeId, 'mcp/src/server/runtime.mjs'),
