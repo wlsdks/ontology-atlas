@@ -7,6 +7,8 @@ import {
   isGuardedRuntime,
 } from '@/features/acp-session/model/runtime-gate';
 
+import { readAcpRust } from '../helpers/read-acp-rust';
+
 /**
  * **A runtime the screen says will ask must actually have a checkpoint in place.**
  *
@@ -74,7 +76,7 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
 
   it('세션 시작과 로그인 확인은 같은 부모 환경 차단 함수를 쓴다', () => {
     const lib = readFileSync(join(ROOT, 'src-tauri/src/acp_session/mod.rs'), 'utf8');
-    const acp = readFileSync(join(ROOT, 'src-tauri/src/acp.rs'), 'utf8');
+    const acp = readAcpRust(ROOT);
     const start = lib.slice(lib.indexOf('fn acp_start('), lib.indexOf('fn acp_permission_verdict('));
     // The login probe spawns from its own function so a failed run can be logged and retried;
     // slice **that** function, or this gate measures a wrapper that no longer starts a process.

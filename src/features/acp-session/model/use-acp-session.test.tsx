@@ -847,7 +847,7 @@ describe('관문을 못 세웠으면 화면이 말한다', () => {
     /*
      * Review 2026-08-16: a failure while building the isolated config was swallowed by `.ok()`, and
      * the session came up inheriting the user's global config — what that state means was measured and
-     * recorded by `acp.rs` itself: "it wrote files outside the working folder without ever asking, and
+     * recorded in `docs/DECISIONS.md` (2026-08-16): "it wrote files outside the working folder without ever asking, and
      * even ran a terminal." Yet the screen kept calling that runtime "gated".
      */
     const { result } = renderHook(() =>

@@ -51,7 +51,7 @@ const AUTH = /authentication[_ ]?(failed|required)|oauth|not logged ?in|unauthor
  *
  * An `_npx/<16 hex>` path, or npm's "could not read package.json" — both appear only in this
  * failure. The app deletes that entry and re-downloads on the next start (the npx cache self-heal in
- * `src-tauri/src/acp.rs`), so the next step is "new conversation".
+ * `src-tauri/src/acp/npx_cache.rs`), so the next step is "new conversation".
  */
 const INSTALL = /_npx[\\/][0-9a-f]{4,16}|could not read package\.json/i;
 /** It hit the ceiling we set. */

@@ -42,7 +42,7 @@ never a parallel router or surface fork.
 | Jev evidence check (experimental) | `src/shared/lib/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
-| ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp.rs` | degradation card; an externally launched agent can still attach |
+| ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp/` | degradation card; an externally launched agent can still attach |
 | Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |

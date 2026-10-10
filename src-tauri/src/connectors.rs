@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use serde_json::Value;
 
-/// Injected so tests judge without a real disk, as `acp::FsProbe` does.
+/// Injected so tests judge without a real disk, as `acp::command_lookup::FsProbe` does.
 pub(crate) struct ConfigFs<'a> {
     pub read_text: &'a dyn Fn(&Path) -> Option<String>,
 }
@@ -531,8 +531,8 @@ pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);
-    let (is_executable, list_dir, read_text, login_ok) = crate::acp::real_probe();
-    let probe = crate::acp::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = crate::acp::login_probe::real_probe();
+    let probe = crate::acp::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -540,7 +540,7 @@ pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
     };
     // No managed directories: those hold the agent's runtime, and a connector path
     // only this app can reach would break the person's config.
-    let dirs = crate::acp::candidate_bin_dirs(
+    let dirs = crate::acp::command_lookup::candidate_bin_dirs(
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
@@ -551,7 +551,7 @@ pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
         .iter()
         .map(|name| ResolvedRuntime {
             name: (*name).to_string(),
-            path: crate::acp::resolve_command(name, &dirs, &probe)
+            path: crate::acp::command_lookup::resolve_command(name, &dirs, &probe)
                 .map(|path| path.to_string_lossy().into_owned()),
         })
         .collect())
