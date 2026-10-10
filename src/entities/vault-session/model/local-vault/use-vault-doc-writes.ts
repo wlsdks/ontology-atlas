@@ -86,11 +86,6 @@ export function useVaultDocWrites(
     [stateRef, load],
   );
 
-  /**
-   * Rewrites one slug's markdown file, requesting readwrite permission first, then rescans.
-   * `options.expectedMtime` is checked against `file.lastModified` before the write and throws
-   * `VaultConflictError` on an outside change; omitted, the check is skipped.
-   */
   // Slugs the app itself just wrote, so the polling diff toaster does not report its own
   // writes as "added/edited" (the four-toast burst during bootstrap). A one-shot ledger
   // cleared on consumption: only outside changes (an agent, an IDE) become toasts.
@@ -157,6 +152,11 @@ export function useVaultDocWrites(
     [],
   );
 
+  /**
+   * Rewrites one slug's markdown file, requesting readwrite permission first, then rescans.
+   * `options.expectedMtime` is checked against `file.lastModified` before the write and throws
+   * `VaultConflictError` on an outside change; omitted, the check is skipped.
+   */
   const saveDoc = useCallback(
     async (
       slug: string,

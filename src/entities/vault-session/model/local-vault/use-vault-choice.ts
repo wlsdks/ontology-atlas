@@ -286,6 +286,7 @@ export function useVaultChoice({
       if (!isCurrent()) return;
       /*
        * Two or more known folders means the app asks instead of guessing; the count alone decides.
+       * No launch-chooser preference on purpose: forgetting a folder on the chooser is the control.
        * Returning early leaves `status` 'idle' with the stored record untouched; `close()` would
        * delete the `current` record.
        */

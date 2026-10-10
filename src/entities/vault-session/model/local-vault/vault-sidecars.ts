@@ -180,10 +180,6 @@ async function readAgentActivityStatus(
 }
 
 /**
- * Are two sidecar states effectively the same? Structural, because the nested objects are
- * rebuilt on every parse; stops each poll tick from re-rendering the app.
- */
-/**
  * Blanks the volatile age fields (`ageMs`, `refreshRequest.previousAgeMs`) before a no-change
  * compare. `stale` still participates; nothing on screen reads `ageMs` directly.
  */
@@ -196,6 +192,10 @@ export function comparableAgentActivityStatus(status: AgentActivityStatus): Agen
   };
 }
 
+/**
+ * Are two sidecar states effectively the same? Structural, because the nested objects are
+ * rebuilt on every parse; stops each poll tick from re-rendering the app.
+ */
 export function structurallyEqualStatus(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;

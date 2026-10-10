@@ -467,7 +467,8 @@ export function useLocalVaultInternal() {
     lastLoadedAt: state.lastLoadedAt,
     /**
      * Is this a re-read of the same folder (save, focus rescan)? False while switching folders,
-     * so the previous folder is never drawn as the new one.
+     * so the previous folder is never drawn as the new one. Consumers branch on this, not on
+     * `status`, so a save does not blank the screen.
      */
     isReloadingSameVault:
       state.status === 'loading' &&
