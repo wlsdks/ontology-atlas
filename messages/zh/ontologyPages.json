@@ -459,7 +459,9 @@
       "noVersionBody": "让智能体读一遍这个文件夹，说明产品是什么、如何运转。回答会留在这里，下次再写时会显示有哪些变化。",
       "rewrite": "重新撰写",
       "versionsLabel": "已保留 {count, number} 个版本。",
-      "sampleBody": "这是内置示例，没有保存在你的文件夹中的说明。打开自己的文件夹后，可以准备读取其中记录的请求。"
+      "sampleBody": "打开自己的文件夹，即可在这里阅读已保存的产品说明和历史版本。",
+      "sampleTitle": "还没有保存的产品说明",
+      "exploreConnections": "查看产品关联"
     },
     "vaultHistory": {
       "title": "文件夹里有什么",

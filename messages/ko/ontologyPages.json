@@ -459,7 +459,9 @@
       "noVersionBody": "에이전트가 이 폴더만 읽고 제품이 무엇이고 어떻게 도는지 한 번 써 두면, 여기에 그 설명이 남고 다음에 다시 쓸 때 무엇이 달라졌는지 함께 보여드려요.",
       "rewrite": "다시 쓰게 하기",
       "versionsLabel": "{count, number}개 남아 있어요.",
-      "sampleBody": "내장 예제에는 내 폴더에 저장된 설명이 없습니다. 내 폴더를 열면 해당 기록을 읽는 요청을 준비할 수 있습니다."
+      "sampleBody": "내 폴더를 열면 저장된 제품 설명과 이전 기록을 여기서 읽을 수 있어요.",
+      "sampleTitle": "아직 저장된 제품 설명이 없어요",
+      "exploreConnections": "제품 연결 둘러보기"
     },
     "vaultHistory": {
       "title": "폴더가 담고 있는 것",

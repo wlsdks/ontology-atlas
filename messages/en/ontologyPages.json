@@ -459,7 +459,9 @@
       "noVersionBody": "Ask an agent to read this folder once and say what the product is and how it moves. The answer stays here, and the next writing shows what changed.",
       "rewrite": "Write it again",
       "versionsLabel": "{count, number} kept.",
-      "sampleBody": "This is the bundled example. It has no saved explanation in your folder. Open your own folder to inspect its records and prepare a scoped request."
+      "sampleBody": "Open your folder to read its saved product explanations and earlier versions here.",
+      "sampleTitle": "No saved product explanations yet",
+      "exploreConnections": "Explore connections"
     },
     "vaultHistory": {
       "title": "What the folder holds",
