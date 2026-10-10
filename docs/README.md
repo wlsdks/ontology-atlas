@@ -40,7 +40,7 @@ or a test that parses them pins their path.
 | `engineering/` | build, deploy, stack and testability | yes |
 | `specs/` | dated feature design specs | yes |
 | `ontology/` | the project's dogfood ontology vault | yes |
-| `records/` | decision, change, release, backlog and pilot fragments | `records/README.md` only |
+| `records/` | decision, change, release and pilot fragments | `records/README.md` only |
 | `plans/` | plans, historical and one live program | no |
 | `launch/` | marketing copy and the demo shoot | no |
 | `archive/`, `audits/`, `benchmark/`, `prototypes/` | dated evidence and drafts | no |
