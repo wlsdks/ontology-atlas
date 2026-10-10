@@ -40,7 +40,7 @@ describe('node-lookups', () => {
     assert.equal(assertBacklinksShape({ target: 'capabilities/foo', matches: [] }).total, undefined);
 
     /**
-     * A row matched by a body link alone, the second shape the server emits (`mcp/src/vault.mjs`: `matchedKeys`
+     * A row matched by a body link alone, the second shape the server emits (`mcp/src/vault/`: `matchedKeys`
      * undefined, `matchedInBody: true`); it appears in the starter vault right after `init`.
      */
     const bodyOnly = {

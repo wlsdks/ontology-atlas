@@ -1,6 +1,6 @@
 // Wiring test: the CLI write door (writeDoc, used by `add` and `import`) applies slug flatness
 // (docs/DECISIONS.md, 2026-08-01). The rule is measured in `tests/contract/vault-schema.contract.test.ts`,
-// the mcp wiring in `mcp/src/write-path-gate.test.mjs`.
+// the mcp wiring in `mcp/src/vault/write-path-gate.test.mjs`.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';

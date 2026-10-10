@@ -83,7 +83,7 @@ export interface VaultHealthResult {
   islands: string[][];
 }
 
-// Array keys that become edges, in lockstep with `NEIGHBOR_KEYS` in `mcp/src/vault.mjs`.
+// Array keys that become edges, in lockstep with `NEIGHBOR_KEYS` in `mcp/src/vault/`.
 const NEIGHBOR_KEYS = [
   'domains',
   'capabilities',
@@ -130,7 +130,7 @@ function isPathLikeGraphRef(ref: string): boolean {
   );
 }
 
-// Mirrors `collectNeighborRefs` in mcp/src/vault.mjs.
+// Mirrors `collectNeighborRefs` in mcp/src/vault/.
 function collectNeighborRefs(fm: Record<string, unknown>): { key: string; ref: string }[] {
   const refs: { key: string; ref: string }[] = [];
   const seen = new Set<string>();

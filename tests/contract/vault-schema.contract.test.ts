@@ -249,7 +249,7 @@ describe("display_<locale> 정규화 2-way contract", () => {
  * `docs/DECISIONS.md`).
  *
  * The spec is split three ways — values, logic, text — and this is the value gate.
- * The logic lives in `commitDoc` (`mcp/src/vault.mjs`) and the text in
+ * The logic lives in `commitDoc` (`mcp/src/vault/`) and the text in
  * `mcp/src/construction-rules.mjs`. The CLI reached these thresholds through a
  * literal copy until 2026-08-30; it now imports the same module, so what remains
  * to pin is the value itself rather than the agreement between two files.

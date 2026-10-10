@@ -58,7 +58,7 @@ function existingRegularFileMode(filePath) {
 
 /**
  * Writes one file without a torn window (temp file, fsync, rename): `writeFileSync` truncates first, so a crash
- * could leave the user's markdown at zero bytes. Twin of `writeFileAtomically` in `mcp/src/vault.mjs`; a fix
+ * could leave the user's markdown at zero bytes. Twin of `writeFileAtomically` in `mcp/src/vault/`; a fix
  * lands in both (tests/contract/vault-integrity-guards.contract.test.ts).
  */
 export function writeFileAtomically(filePath, text, { expectedRevision = null } = {}) {

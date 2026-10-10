@@ -206,18 +206,6 @@
       "witness": "KNOWN_VAULT_KINDS"
     },
     {
-      "key": "mcp:runtime:exports:src/vault.mjs:pathToSlug",
-      "reason": "The CLI vault walker shares slug derivation with MCP; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/walk-vault.mjs",
-      "witness": "pathToSlug"
-    },
-    {
-      "key": "mcp:runtime:exports:src/vault.mjs:walkMd",
-      "reason": "The CLI vault walker shares Markdown enumeration with MCP; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/walk-vault.mjs",
-      "witness": "walkMd"
-    },
-    {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_CITATION_PATTERN",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "src/shared/lib/wiki-page-schema.ts",

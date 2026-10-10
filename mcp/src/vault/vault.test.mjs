@@ -5,25 +5,13 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
-import { defaultBody, nodeUidIssue } from './schema.mjs';
+import { defaultBody, nodeUidIssue } from '../schema.mjs';
 
-import {
-  FULL_BODY_MAX_CHARS,
-  canonicalDiskSlug,
-  deleteDoc,
-  drainNodeEligibilityFindings,
-  resetNodeEligibilityGate,
-  describeBodyDelivery,
-  detectDuplicateTitle,
-  extractSummaryExcerpt,
-  findOrphans,
-  findPath,
-  suggestSimilarSlugs,
-  vaultSlugExists,
-  patchFrontmatter,
-  updateDoc,
-  writeDoc,
-} from './vault.mjs';
+import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './slug-paths.mjs';
+import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './documents.mjs';
+import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './eligibility-gate.mjs';
+import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './doc-writes.mjs';
+import { detectDuplicateTitle, findOrphans, findPath } from './graph-queries.mjs';
 
 let root;
 

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { findBacklinks } from '../../mcp/src/vault.mjs';
+import { findBacklinks } from '../../mcp/src/vault/graph-queries.mjs';
 import {
   buildDocLinkMarkdown,
   relativeDocPath,
@@ -16,7 +16,7 @@ import {
  * a standard markdown link in the body (the path a person clicks). Whether **MCP's
  * `find_backlinks` recognises that body notation** is decided by two pieces of code
  * that know nothing of each other — the web side is produced by
- * `relative-doc-path.ts`, and MCP finds it with the body needles in `vault.mjs`
+ * `relative-doc-path.ts`, and MCP finds it with the body needles in `vault/`
  * (`[[slug]]` · `(slug.md)` · `/slug.md`).
  *
  * **Why a contract test.** The body notation changed **three times in one day on

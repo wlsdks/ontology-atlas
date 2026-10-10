@@ -22,18 +22,12 @@ import {
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
-import {
-  VaultConflictError,
-  applyAllOrNothing,
-  canonicalDiskSlug,
-  deleteDoc,
-  extractSummaryExcerpt,
-  findBacklinks,
-  readDoc,
-  redirectBacklinks,
-  slugToWritePath,
-  vaultSlugExists,
-} from '../vault.mjs';
+import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/slug-paths.mjs';
+import { extractSummaryExcerpt, readDoc } from '../vault/documents.mjs';
+import { VaultConflictError, applyAllOrNothing } from '../vault/atomic-writes.mjs';
+import { deleteDoc } from '../vault/doc-writes.mjs';
+import { findBacklinks } from '../vault/graph-queries.mjs';
+import { redirectBacklinks } from '../vault/backlink-rewrite.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,

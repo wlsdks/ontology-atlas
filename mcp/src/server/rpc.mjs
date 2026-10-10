@@ -5,7 +5,7 @@
  */
 
 import { closestAllowedValue } from '../suggestions.mjs';
-import { VaultConflictError } from '../vault.mjs';
+import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import { TOOL_BY_NAME } from './registry.mjs';
 
 function formatUnknownToolError(name) {
