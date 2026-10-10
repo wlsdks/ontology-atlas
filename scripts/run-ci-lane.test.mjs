@@ -135,7 +135,7 @@ test('targeted Playwright runs exact specs once without an empty shard', () => {
 });
 
 test('unmapped browser work retains the PR smoke sweep and its shard', () => {
-  const plan = buildImpactPlan({ files: ['src/widgets/search-hint/ui/SearchHint.tsx'] });
+  const plan = buildImpactPlan({ files: ['src/views/guide/ui/GuidePage.tsx'] });
   assert.deepEqual(commandsForLane({ lane: 'e2e', plan, shard: '2/3' }), [
     'pnpm build && PLAYWRIGHT_STATIC=1 node scripts/run-playwright-ci.mjs --project=smoke --shard=2/3',
   ]);
@@ -144,7 +144,7 @@ test('unmapped browser work retains the PR smoke sweep and its shard', () => {
 test('smoke keeps the mapped specs that run after merge, once, on the first shard', () => {
   const plan = buildImpactPlan({ files: [
     'src/features/agent-activity/ui/AgentMascotPresence.tsx',
-    'src/widgets/search-hint/ui/SearchHint.tsx',
+    'src/views/guide/ui/GuidePage.tsx',
   ] });
   assert.equal(plan.lanes.e2e.mode, 'smoke');
   const first = commandsForLane({ lane: 'e2e', plan, shard: '1/3' });
@@ -185,7 +185,7 @@ test('comparison refs remain one shell argument and malformed shards fail closed
     ),
   );
 
-  const smoke = buildImpactPlan({ files: ['src/widgets/search-hint/ui/SearchHint.tsx'] });
+  const smoke = buildImpactPlan({ files: ['src/views/guide/ui/GuidePage.tsx'] });
   for (const lane of ['e2e', 'unit']) {
     assert.throws(
       () => commandsForLane({ lane, plan: smoke, base: 'abc123', shard: '1/3; echo injected' }),
