@@ -41,6 +41,7 @@ export function PresentationSurface({
       className="absolute inset-0 flex min-h-0 flex-col bg-[color:var(--color-canvas)]"
     >
       <AcpPresentationPanel
+        // Visible implies a ready trace; during exit useHeldValue keeps it until Surface unmounts this.
         trace={trace!}
         activeIndex={Math.min(activeIndex, (trace?.scenes.length ?? 1) - 1)}
         onChangeScene={onChangeScene}

@@ -165,6 +165,7 @@ export const TranscriptEntry = memo(function TranscriptEntry({
 
         className={cn(
           'flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]',
+          // 9px = the run's border-l plus pl-2 in TranscriptRows.tsx; change them together.
           broke && '-ml-[9px] border-l border-[color:var(--color-danger-a50)] pl-2',
         )}
       >

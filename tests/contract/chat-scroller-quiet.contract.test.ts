@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { followStep } from '@/widgets/acp-chat-panel/model/transcript-follow';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
@@ -33,10 +33,15 @@ const CSS = readGlobalCss();
 const SCROLLER_SOURCES = [
   'src/widgets/acp-chat-panel/ui/chat-panel/TranscriptPane.tsx',
   'src/widgets/acp-chat-panel/ui/chat-panel/HistoryPopover.tsx',
-  'src/widgets/acp-chat-panel/ui/chat-panel/ComposerInput.tsx',
+  'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx',
   'src/widgets/acp-chat-panel/ui/AcpPresentationPanel.tsx',
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
 ] as const;
+
+const PANEL_UI = 'src/widgets/acp-chat-panel/ui';
+const EVERY_PANEL_SOURCE = readdirSync(PANEL_UI, { recursive: true, encoding: 'utf8' })
+  .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+  .map((file) => `${PANEL_UI}/${file}`);
 
 /**
  * ⚠️ **The Library's column is asserted by name, not by the detector above.** That detector
@@ -103,7 +108,8 @@ describe('quiet scrollers', () => {
   });
 
   it('gives every conversation scroller the quiet class', () => {
-    for (const path of SCROLLER_SOURCES) {
+    expect(EVERY_PANEL_SOURCE).toContain(`${PANEL_UI}/AcpChatPanel.tsx`);
+    for (const path of new Set([...SCROLLER_SOURCES, ...EVERY_PANEL_SOURCE])) {
       for (const classes of verticalScrollerClassStrings(readFileSync(path, 'utf8'))) {
         expect(`${path} :: ${classes}`).toContain('atlas-scroll-quiet');
       }

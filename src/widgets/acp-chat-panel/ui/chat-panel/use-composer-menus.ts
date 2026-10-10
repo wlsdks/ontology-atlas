@@ -69,11 +69,10 @@ export function useHistoryEscape(historyOpen: boolean, setHistoryOpen: Dispatch<
     if (!historyOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-
       event.stopPropagation();
       setHistoryOpen(false);
     };
-
+    // Capture phase, so the dock's close-one-level handler never sees this Escape and closes the panel.
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [historyOpen, setHistoryOpen]);

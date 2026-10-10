@@ -83,7 +83,7 @@ export function HistoryPopover({
                     </span>
 
                     <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                      {session.updatedAt ? formatDate(session.updatedAt) : ' '}
+                      {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
                     </span>
                   </span>
                 </RowButton>

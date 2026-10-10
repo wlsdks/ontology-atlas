@@ -8,12 +8,12 @@ import { readAcpTrouble, useAcpSession, type ChatSuggestion } from '@/features/a
 import { MOTION } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { Surface } from '@/shared/ui';
+import { RowButton, Surface } from '@/shared/ui';
 
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
 import { splitAppRequest } from './request-parts';
-import { ComposerInput, SlashMenu } from './chat-panel/ComposerInput';
+import { ComposerInput } from './chat-panel/ComposerInput';
 import { ChoicesRow, ComposerFooter } from './chat-panel/ComposerFooter';
 import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/ComposerNotices';
 import { ErrorCard } from './chat-panel/ErrorCard';
@@ -144,6 +144,7 @@ export function AcpChatPanel({
   });
 
   const [connectStopped, setConnectStopped] = useState(false);
+  // Mirrored so the start effects see it without re-running, which would race New chat's own start.
   const connectStoppedRef = useRef(false);
   const markConnectStopped = useCallback((stopped: boolean) => {
     connectStoppedRef.current = stopped;
@@ -522,14 +523,36 @@ export function AcpChatPanel({
         ) : null}
 
         {slashOpen ? (
-          <SlashMenu
-            t={t}
-            menuRef={slashMenuRef}
-            matches={slashMatches}
-            activeIndex={slashActiveIndex}
-            onHover={setSlashActive}
-            onChoose={chooseSlashCommand}
-          />
+          <ul
+            ref={slashMenuRef}
+            data-testid="acp-chat-slash-menu"
+            role="listbox"
+            aria-label={t('composerLabel')}
+            className="atlas-scroll-quiet max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
+          >
+            {slashMatches.map((command, index) => {
+              const active = index === slashActiveIndex;
+              return (
+                <li key={command.name} role="option" aria-selected={active}>
+                  <RowButton
+                    active={active}
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    onMouseEnter={() => setSlashActive(index)}
+                    onClick={() => chooseSlashCommand(command.name)}
+                    className="w-full gap-2"
+                  >
+                    <span className="shrink-0 font-mono text-label">/{command.name}</span>
+                    {command.description ? (
+                      <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
+                        {command.description}
+                      </span>
+                    ) : null}
+                  </RowButton>
+                </li>
+              );
+            })}
+          </ul>
         ) : null}
 
         {seatedDetail ? <SeatedDetailDisclosure t={t} detail={seatedDetail} /> : null}

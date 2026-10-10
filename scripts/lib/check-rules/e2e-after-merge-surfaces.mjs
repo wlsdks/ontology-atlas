@@ -47,6 +47,7 @@ export const rules = [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
       /^src\/widgets\/acp-chat-panel\/ui\/chat-markdown\/[^/]+\.tsx?$/,
       /^src\/widgets\/acp-chat-panel\/ui\/transcript\/[^/]+\.tsx?$/,
+      /^src\/widgets\/acp-chat-panel\/ui\/chat-panel\/Transcript[^/]*\.tsx$/,
     ],
   },
   {

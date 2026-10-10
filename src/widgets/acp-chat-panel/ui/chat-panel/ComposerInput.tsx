@@ -3,51 +3,9 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { AcpSlashCommand } from '@/features/acp-session';
 import { COMPOSER_MIN_ROWS } from '@/shared/lib/composer-growth';
 import { isImeComposing } from '@/shared/lib/ime-composition';
-import { RowButton, Textarea } from '@/shared/ui';
+import { Textarea } from '@/shared/ui';
 
 import type { ChatT, SeatedDetail } from './types';
-
-export function SlashMenu({ t, menuRef, matches, activeIndex, onHover, onChoose }: {
-  t: ChatT;
-  menuRef: RefObject<HTMLUListElement | null>;
-  matches: readonly AcpSlashCommand[];
-  activeIndex: number;
-  onHover: (index: number) => void;
-  onChoose: (name: string) => void;
-}) {
-  return (
-    <ul
-      ref={menuRef}
-      data-testid="acp-chat-slash-menu"
-      role="listbox"
-      aria-label={t('composerLabel')}
-      className="atlas-scroll-quiet max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
-    >
-      {matches.map((command, index) => {
-        const active = index === activeIndex;
-        return (
-          <li key={command.name} role="option" aria-selected={active}>
-            <RowButton
-              active={active}
-              hoverSurface="lift"
-              hoverInk="strong"
-              onMouseEnter={() => onHover(index)}
-              onClick={() => onChoose(command.name)}
-              className="w-full gap-2"
-            >
-              <span className="shrink-0 font-mono text-label">/{command.name}</span>
-              {command.description ? (
-                <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
-                  {command.description}
-                </span>
-              ) : null}
-            </RowButton>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 interface ComposerInputProps {
   t: ChatT;
@@ -135,6 +93,7 @@ export function ComposerInput({
           }
 
           if (e.key === 'Escape') {
+            // With text here the key is claimed: the hosts' close handlers stand down on defaultPrevented.
             if (draft.trim().length > 0) e.preventDefault();
             return;
           }

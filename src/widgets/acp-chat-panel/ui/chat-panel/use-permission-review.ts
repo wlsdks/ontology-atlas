@@ -87,7 +87,6 @@ export function usePermissionReview({
     pendingHeld,
     pendingHeldChangeSet,
     pendingForCard,
-    deferredPermission,
     setDeferredPermission,
     livePendingRef,
     permissionDeferred,

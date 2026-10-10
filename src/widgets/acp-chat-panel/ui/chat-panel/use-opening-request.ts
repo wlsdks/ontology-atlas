@@ -43,8 +43,8 @@ export function useOpeningRequest({
   onOpeningRequestSent,
   onOpeningRequestRejected,
 }: OpeningRequestOptions) {
+  // A ref, not state: state would re-run the send effect on the render the send causes.
   const sentOpeningNonceRef = useRef<number | null>(null);
-
   const restartedOpeningNonceRef = useRef<number | null>(null);
   const openingNonce = openingRequest?.nonce ?? null;
   const openingText = openingRequest?.text ?? null;

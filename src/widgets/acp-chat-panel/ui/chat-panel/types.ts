@@ -120,6 +120,7 @@ export interface AcpChatPanelProps {
   beforeComposer?: ReactNode;
   systemPromptAppendix?: string | null;
   noticeActions?: NoticeActions | null;
+  /** Current graph relation keys (`from\0type\0to`) used to reject invented presentation edges. */
   knownRelations?: KnownRelations;
   /** Collapses every agent message of the turn whose request text matches exactly. */
   answerFold?: AnswerFold | null;
@@ -133,9 +134,12 @@ export interface AcpChatPanelProps {
   /** The caller holds this in a ref: rendering on every hover turns a large graph sticky. */
   onHoverSlug?: (slug: string | null) => void;
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
+  /** The exact active tool snapshot; callers must not derive a target from agent prose. */
   onTurnToolActivityChange?: (activity: AcpTurnToolActivity | null) => void;
   onTerminalToolObservation?: (event: Extract<AcpEvent, { kind: 'tool' }>) => void;
+  /** The map move named by the exact input of an Atlas read tool, never by agent prose (`acp-session/model/map-intent.ts`). */
   onMapIntent?: (intent: AcpMapIntent) => void;
+  /** One relation change proposal: dashed before approval, solid until its ACP tool finishes. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;

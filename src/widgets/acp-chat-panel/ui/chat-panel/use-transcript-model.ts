@@ -27,6 +27,7 @@ export function useTranscriptModel({
 }: TranscriptModelOptions) {
   const transcriptItems = useMemo(() => groupEvents(withoutErrorEcho(events, error)), [events, error]);
 
+  // Stable renderers: a new function per render is a new component type, which remounts every row.
   const markdownComponents = useMemo(
     () => chatMarkdownComponents(knownSlugs, onHoverSlug),
     [knownSlugs, onHoverSlug],

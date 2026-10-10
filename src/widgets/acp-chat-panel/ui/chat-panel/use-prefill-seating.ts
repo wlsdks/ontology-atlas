@@ -28,6 +28,7 @@ export function usePrefillSeating({
   const [seatedDetail, setSeatedDetail] = useState<SeatedDetail | null>(
     () => restoredDraft.detail ? { lead: restoredDraft.lead, detail: restoredDraft.detail, full: restoredDraft.full } : null,
   );
+  // Adjusted during render: in an effect, one frame would draw an empty composer.
   if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
     setSeenPrefillNonce(prefillNonce);
     const parts = splitAppRequest(prefillText);
