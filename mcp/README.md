@@ -749,7 +749,7 @@ known coding task, `detail:"compact"` requires a request-local `task` of at most
 2,000 characters and returns no more than 12,000 UTF-8 JSON bytes, measured as
 `Buffer.byteLength(JSON.stringify(completeCompactObject), "utf8")`, including
 `handoffPrompt`. Display indentation is excluded; the combined connection and
-compact wire response still stays below 20,000 characters. The compact
+compact wire guard is 22,000 characters, including the construction card. The compact
 v2 contract keeps final source/meaning currentness, `meaningRepair:v2`, approval
 and no-auto-write/finalize guards, one broad capability selected only when its
 persisted Definition/Includes/Excludes are compatible with the task, cited
@@ -787,15 +787,36 @@ separates or follows bullets; the projector never guesses which child it scopes.
 Pure lists may remain separate units with indented child context. Coverage counts every eligible unit;
 omissions make the projection explicitly incomplete and require that full-body
 read. The handoff prompt labels every unit with its recorded-claim slug,
-section and role before repeating the exact text without clipping it. Task
+section and role before JSON-quoting the exact text without clipping it. Task
 relevance selects the capability condition, a capability exception and
 non-overlapping uncertainty are reserved, and a complementary anchor condition
 preserves distributed scope. If these complete units exceed the 12,000-byte
 compact budget, it removes whole lower-priority units, increases the honest
 omitted count and keeps the exact full-body recovery; it never clips a retained
-condition. If the response still cannot fit after all qualifier units are
-omitted, the operation fails instead of downgrading currentness, meaning repair
-or unknowns. An element may record human-reviewable
+condition. The additive `focus.uncertainty` covers canonical `## Uncertainty`
+sections in the selected project, capability and up to three anchors. Its
+`scope:"selected_task_documents"` is not a claim of complete project knowledge.
+Each `sources` row has `slug`, `status` (`recorded` or `not_recorded`),
+`totalUnits`, `omittedUnits` and `unknownIndexes` into the existing string array
+`focus.unknowns`; `totalUnits = unknownIndexes.length + omittedUnits`. These are
+Markdown-unit counts, not semantic fact counts. `system` rows separately
+attribute currentness/meaning warnings by `code` and `unknownIndex`.
+
+Statements remain whole. At most eight recorded units are considered in document
+round-robin order; an oversized unit is omitted intact so other short units can
+still fit. System warnings, coverage and recovery are reserved before optional
+text. The text handoff quotes statements with their source, including embedded
+newlines. The exact `get_concepts({body:"full"})` next read includes the project
+and every scoped document; refusal candidates remain unselected. A successful
+body recovery requires each row's `ok:true` and `bodyInfo.truncated:false`.
+The existing 40,000-character body cap and missing-row errors can leave recovery
+incomplete; the reader must retain that unknown. Missing Uncertainty sections
+also mean unknown, never absence of risk. Legacy valid v2 payloads without the
+additive field remain readable by the CLI. If mandatory data cannot fit after
+whole qualifier omissions, the operation fails instead of downgrading
+currentness, meaning repair, system warnings, coverage or recovery.
+
+An element may record human-reviewable
 Evidence coordinates as `Primary implementation`, `Supporting implementation`,
 and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
 checks only those named files, requires each symbol/test to resolve uniquely,

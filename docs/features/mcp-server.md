@@ -259,7 +259,7 @@ until `project` is supplied. The complete response remains the default. For a
 known coding task, opt-in `detail:"compact"` plus a request-local `task` returns
 an `agentBriefCompact:v2` projection capped at 12,000 UTF-8 bytes of the complete
 serialized JSON object, including its handoff prompt. Display indentation is
-excluded; the combined two-call wire guard remains 20,000 characters. It keeps
+excluded; the current combined two-call wire guard is 22,000 characters. It keeps
 final source/meaning currentness, the compact meaning-repair and human-approval
 guards, a broad persisted capability only when its Definition/Includes/Excludes
 agree with the desired work and explicit non-goals, cited element/path evidence,
@@ -273,6 +273,12 @@ reviewed non-exhaustive IN/OUT boundary. Stale, missing, ambiguous, unsafe, or
 unrecorded evidence returns no exact target; claim-compatible task selection
 never searches source, proves code behavior, persists raw task text, or creates
 a narrow capability.
+`focus.uncertainty` attributes whole `focus.unknowns` strings to the selected
+project, capability and anchors, with per-document unit and omission counts;
+system currentness/meaning gaps remain separate. Missing sections mean unknown,
+not complete knowledge. The exact full-body read includes every scoped document,
+including the project. A failed row or a capped body remains incomplete; only
+`ok:true` with `bodyInfo.truncated:false` establishes a complete body read.
 The same source fingerprint, revision, and graph hash are checked again after
 the named reads; a mismatch detected by the exact-file guards or that final
 recheck withdraws every target and downgrades outer currentness. Compact v2
