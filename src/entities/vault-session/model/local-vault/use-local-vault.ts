@@ -1,6 +1,6 @@
 'use client';
 
-import { type AgentClientId, filesForClient } from '../lib/agent-clients';
+import { type AgentClientId, filesForClient } from '../../lib/agent-clients';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 import { countVaultContents, type VaultShape } from '@/shared/lib/vault-shape';
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
@@ -48,7 +48,7 @@ import {
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
-} from '../lib/ontology-starter';
+} from '../../lib/ontology-starter';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
@@ -60,7 +60,7 @@ import {
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
-import { classifyVaultAccessError, isMissingFolderError } from './classify-vault-access-error';
+import { classifyVaultAccessError, isMissingFolderError } from '../classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { codedFailure } from '@/shared/lib/failure-code';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
@@ -76,10 +76,10 @@ import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
   type AgentActivityStatus,
-} from './agent-activity-status';
+} from '../agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
-import { createVaultLoadProgressStore } from './vault-load-progress';
-import { createVaultArrivalStore } from './vault-arrival';
+import { createVaultLoadProgressStore } from '../vault-load-progress';
+import { createVaultArrivalStore } from '../vault-arrival';
 /** Minimum interval (ms) between auto-refreshes when the tab regains focus.
  *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;

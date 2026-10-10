@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { useLocalVaultInternal } from "./use-local-vault";
+import type { useLocalVaultInternal } from "./local-vault/use-local-vault";
 
 export type LocalVaultValue = ReturnType<typeof useLocalVaultInternal>;
 

@@ -1021,7 +1021,7 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
    */
   it('파싱마다 새로 만들어진 동일 내용의 nested status 를 같다고 판정한다', async () => {
     const { structurallyEqualStatus } = await import('./use-local-vault');
-    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const { emptyAgentActivityStatus } = await import('../agent-activity-status');
     expect(
       structurallyEqualStatus(emptyAgentActivityStatus(), emptyAgentActivityStatus()),
     ).toBe(true);
@@ -1029,7 +1029,7 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
 
   it('nested 필드 하나가 다르면 다르다고 판정한다', async () => {
     const { structurallyEqualStatus } = await import('./use-local-vault');
-    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const { emptyAgentActivityStatus } = await import('../agent-activity-status');
     const changed = emptyAgentActivityStatus();
     changed.proof.sources.mcp = 1;
     expect(structurallyEqualStatus(emptyAgentActivityStatus(), changed)).toBe(false);
@@ -1045,7 +1045,7 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
    */
   it('ageMs 만 다른 두 heartbeat status 는 같다고 판정한다', async () => {
     const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./use-local-vault');
-    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const { emptyAgentActivityStatus } = await import('../agent-activity-status');
     const a = { ...emptyAgentActivityStatus(), ageMs: 1_000 };
     const b = { ...emptyAgentActivityStatus(), ageMs: 4_500 };
     b.refreshRequest = { ...b.refreshRequest, previousAgeMs: 4_500 };
@@ -1056,7 +1056,7 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
 
   it('stale 전이는 여전히 변경으로 판정한다', async () => {
     const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./use-local-vault');
-    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const { emptyAgentActivityStatus } = await import('../agent-activity-status');
     const fresh = { ...emptyAgentActivityStatus(), ageMs: 1_000, stale: false };
     const stale = { ...emptyAgentActivityStatus(), ageMs: 999_000, stale: true };
     expect(
