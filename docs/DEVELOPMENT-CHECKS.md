@@ -879,7 +879,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Merging a pull request
 
 **Run**: `pnpm test:pr:land`
-**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A red or stalled daily browser run or ACP registry check on main prints a warning. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
+**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A `feat`, `fix`, `perf` or `design` pull request lands only with a `docs/records/changes/` record or a `No change record:` reason in its body, and a red or stalled daily browser run or ACP registry check on main prints a warning. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
 

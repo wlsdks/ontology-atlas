@@ -168,6 +168,7 @@ import {
   waiterOutcome,
   waiterPollSeconds,
 } from './lib/landing-train.mjs';
+import { CATEGORIES } from './lib/changelog-entry-template.mjs';
 
 export const LOCK_REF = 'refs/atlas/landing-lock';
 
@@ -231,6 +232,26 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
   if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
+}
+
+const USER_VISIBLE_TITLE = /^(feat|fix|perf|design)(\([^)]*\))?!?:/;
+const NO_CHANGE_RECORD_LINE = /^No change record: *\S/m;
+const CHANGE_RECORD_DIR = 'docs/records/changes/';
+
+export function missingChangeRecord(pr, readChangedFiles) {
+  const type = USER_VISIBLE_TITLE.exec(pr.title ?? '')?.[1];
+  if (!type || NO_CHANGE_RECORD_LINE.test(pr.body ?? '')) return null;
+  const files = readChangedFiles();
+  if (files === null) {
+    return `is titled \`${type}:\`, and its changed files could not be read, so whether it adds a change record is unknown; try again once the read works.`;
+  }
+  if (files.some((path) => path.startsWith(CHANGE_RECORD_DIR))) return null;
+  return `is titled \`${type}:\`, which tells a user something changed, but adds no ${CHANGE_RECORD_DIR} record, so no release note can name it.\n`
+    + `  Record the fact, then commit and push it:\n`
+    + `    pnpm record:new -- --kind=change --date=YYYY-MM-DD --slug=<subject> --category=<${CATEGORIES.join('|')}> --input=<file>\n`
+    + '  Or, when no user can notice the change, add this line to the pull request body:\n'
+    + '    No change record: <why no user can notice it>\n'
+    + '  Then run `pnpm pr:land <number>` again.';
 }
 
 /** A pull request this script refuses to touch, with the reason a person can act on. */
@@ -667,6 +688,7 @@ const PR_FIELDS = [
   'number',
   'state',
   'title',
+  'body',
   'url',
   'isDraft',
   'mergeable',
@@ -767,6 +789,10 @@ export function createGithub(slug, run = ghRun) {
         for (const row of parsed) if (String(row.headRefName ?? '').startsWith('train/')) rows.set(row.number, row);
       }
       return [...rows.values()].sort((a, b) => b.number - a.number).slice(0, TRAIN_HISTORY_LIMIT);
+    },
+    readChangedFiles: (number) => {
+      const out = run(['api', '--paginate', `repos/${slug}/pulls/${number}/files`, '--jq', '.[].filename'], { allowFailure: true });
+      return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
     },
     readScheduledRun: (workflow) => {
       const out = run(['run', 'list', '--workflow', workflow, '--event', 'schedule', '--branch', 'main', '--limit', '1',
@@ -1606,7 +1632,7 @@ function landOne({ args, deps }) {
     if (removal) deps.cleanupWorktree(removal);
     return 0;
   }
-  const refusal = refuseLanding(pr);
+  const refusal = refuseLanding(pr) ?? missingChangeRecord(pr, () => deps.gh.readChangedFiles(number));
   if (refusal) {
     deps.error(`PR #${number} ${refusal}`);
     return 1;
@@ -1675,7 +1701,7 @@ export function planLanding({ args, deps }) {
       deps.log(`PR #${number}: already merged`);
       continue;
     }
-    const refusal = refuseLanding(pr);
+    const refusal = refuseLanding(pr) ?? missingChangeRecord(pr, () => deps.gh.readChangedFiles(number));
     if (refusal) {
       deps.log(`PR #${number}: would be refused — ${refusal.split('\n')[0]}`);
       continue;
