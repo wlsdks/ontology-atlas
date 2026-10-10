@@ -19,18 +19,18 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PushOutcome {
-    pub(super) pushed: bool,
+    pushed: bool,
     remote_url: Option<String>,
-    pub(super) message: Option<String>,
+    message: Option<String>,
     guidance: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitSnapshotResult {
-    pub(super) committed: bool,
+    committed: bool,
     /// "no-changes" or null (committed).
-    pub(super) reason: Option<String>,
+    reason: Option<String>,
     commit_hash: Option<String>,
     subject: Option<String>,
     summary: Option<String>,
@@ -38,7 +38,7 @@ pub struct GitSnapshotResult {
     files: Vec<ChangeEntry>,
     staged_outside_vault: Vec<String>,
     /// Only when push was requested.
-    pub(super) push: Option<PushOutcome>,
+    push: Option<PushOutcome>,
 }
 
 #[derive(Debug, Serialize)]

@@ -1,4 +1,3 @@
-use super::changes::first_nonempty_line;
 use super::runner::GitRun;
 use crate::errors::coded;
 
@@ -9,7 +8,7 @@ mod tests;
 /// as detail, because only git knows what went wrong (see `errors.rs`).
 pub(super) struct GitErrorInfo {
     /// Also the prefix of the `Err(String)` payload.
-    pub(super) code: &'static str,
+    code: &'static str,
     /// Machine detail, never prose.
     note: Option<String>,
     /// Untranslated: it is typed verbatim into a shell.
@@ -139,4 +138,11 @@ pub(super) fn git_error_text(run: &GitRun) -> String {
         parts.push(run.stdout.clone());
     }
     parts.join("\n")
+}
+
+pub(super) fn first_nonempty_line(text: &str) -> Option<String> {
+    text.lines()
+        .map(|l| l.trim())
+        .find(|l| !l.is_empty())
+        .map(|l| l.to_string())
 }

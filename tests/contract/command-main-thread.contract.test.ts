@@ -43,7 +43,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'llm.rs', fn: 'llm_chat', because: 'waits on curl for a model round trip' },
   { file: 'llm.rs', fn: 'secret_verify', because: 'waits on curl to test a key' },
   { file: 'git/remote.rs', fn: 'git_pull', because: 'network git' },
-  { file: 'git/status.rs', fn: 'git_fetch', because: 'network git' },
+  { file: 'git/remote.rs', fn: 'git_fetch', because: 'network git' },
   { file: 'git/snapshot.rs', fn: 'git_snapshot', because: 'may push, which is network git' },
   { file: 'agent_setup.rs', fn: 'verify_mcp_server', because: 'spawns the bundled MCP server' },
   { file: 'acp_session/mod.rs', fn: 'acp_start', because: 'runs keychain subprocesses and spawns the adapter' },

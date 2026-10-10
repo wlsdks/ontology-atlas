@@ -4,7 +4,7 @@ import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
 
 /**
  * Atlas Git — the Tauri IPC bridge: typed wrappers over the commands in
- * `src-tauri/src/git.rs`, which is the source of truth for the contract.
+ * `src-tauri/src/git/`, which is the source of truth for the contract.
  *
  * - `git_status(vault_path)` → `GitStatusResult` — outside a repo it returns
  *   `initialized: false`, not an error

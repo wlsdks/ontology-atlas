@@ -1,13 +1,11 @@
 use serde::Serialize;
-use std::path::Path;
 
 use super::changes::{find_staged_outside_vault, get_full_porcelain_status, get_porcelain_status};
-use super::classify::{classified_error_string, classify_git_error};
 use super::repo::{
-    find_repo_root, get_current_branch, get_head_short_hash, get_remote_url, get_upstream_ref,
-    is_head_detached, require_repo_root, vault_pathspec,
+    divergence_counts, find_repo_root, get_current_branch, get_head_short_hash, get_remote_url, get_upstream_ref,
+    is_head_detached, vault_pathspec,
 };
-use super::runner::{run_git, run_network_git, validate_vault_dir};
+use super::runner::validate_vault_dir;
 
 #[cfg(test)]
 mod tests;
@@ -34,18 +32,6 @@ pub struct GitStatusResult {
     detached: bool,
     /// `None` before the first commit.
     head_short_hash: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GitFetchResult {
-    ok: bool,
-    /// Empty string with `ok:false` when absent.
-    upstream: String,
-    /// Re-measured after the fetch; the screen enables Pull/Push from it.
-    ahead: Option<usize>,
-    behind: Option<usize>,
-    summary: String,
 }
 
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
@@ -89,55 +75,5 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
         has_origin: get_remote_url(&repo_root, "origin").is_some(),
         detached: is_head_detached(&repo_root),
         head_short_hash: get_head_short_hash(&repo_root),
-    })
-}
-
-/// As of the last fetch, so the screen needs a separate Fetch to refresh them.
-fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
-    let out = match run_git(
-        repo_root,
-        &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
-    ) {
-        Ok(o) if o.success => o,
-        // A vanished upstream or broken ref is unknown, not 0.
-        _ => return (None, None),
-    };
-    let mut parts = out.stdout.split_whitespace();
-    let ahead = parts.next().and_then(|v| v.parse::<usize>().ok());
-    let behind = parts.next().and_then(|v| v.parse::<usize>().ok());
-    (ahead, behind)
-}
-
-/// Receives only; the working tree is untouched. Runs only when the user presses it.
-#[tauri::command(async)]
-pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
-    let vault_dir = validate_vault_dir(&vault_path)?;
-    let repo_root = require_repo_root(&vault_dir)?;
-    let Some(upstream) = get_upstream_ref(&repo_root) else {
-        return Ok(GitFetchResult {
-            ok: false,
-            upstream: String::new(),
-            ahead: None,
-            behind: None,
-            // A code, not a sentence: `nativeErrors` holds the wording.
-            summary: "remote-no-upstream".to_string(),
-        });
-    };
-    let out = run_network_git(&repo_root, &["fetch", "--prune"])?;
-    if !out.success {
-        // Keep git's reason and the next step; a failure without them cannot be fixed.
-        let info = classify_git_error(&out.stderr, "fetch");
-        return Err(classified_error_string(&info));
-    }
-    let (ahead, behind) = divergence_counts(&repo_root);
-    Ok(GitFetchResult {
-        ok: true,
-        upstream,
-        ahead,
-        behind,
-        summary: match (ahead, behind) {
-            (Some(0), Some(0)) => "remote-in-sync".to_string(),
-            (_, _) => "remote-diverged".to_string(),
-        },
     })
 }

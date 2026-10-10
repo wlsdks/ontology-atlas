@@ -1,7 +1,9 @@
 use serde::Serialize;
 
 use super::classify::{classified_error_string, classify_git_error, git_error_text};
-use super::repo::{get_current_branch, get_remote_url, get_upstream_ref, require_repo_root};
+use super::repo::{
+    divergence_counts, get_current_branch, get_remote_url, get_upstream_ref, require_repo_root,
+};
 use super::runner::{run_git, run_network_git, validate_vault_dir};
 use crate::errors::coded;
 
@@ -44,6 +46,52 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
         ok: true,
         upstream,
         summary,
+    })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitFetchResult {
+    ok: bool,
+    /// Empty string with `ok:false` when absent.
+    upstream: String,
+    /// Re-measured after the fetch; the screen enables Pull/Push from it.
+    ahead: Option<usize>,
+    behind: Option<usize>,
+    summary: String,
+}
+
+/// Receives only; the working tree is untouched. Runs only when the user presses it.
+#[tauri::command(async)]
+pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let Some(upstream) = get_upstream_ref(&repo_root) else {
+        return Ok(GitFetchResult {
+            ok: false,
+            upstream: String::new(),
+            ahead: None,
+            behind: None,
+            // A code, not a sentence: `nativeErrors` holds the wording.
+            summary: "remote-no-upstream".to_string(),
+        });
+    };
+    let out = run_network_git(&repo_root, &["fetch", "--prune"])?;
+    if !out.success {
+        // Keep git's reason and the next step; a failure without them cannot be fixed.
+        let info = classify_git_error(&out.stderr, "fetch");
+        return Err(classified_error_string(&info));
+    }
+    let (ahead, behind) = divergence_counts(&repo_root);
+    Ok(GitFetchResult {
+        ok: true,
+        upstream,
+        ahead,
+        behind,
+        summary: match (ahead, behind) {
+            (Some(0), Some(0)) => "remote-in-sync".to_string(),
+            (_, _) => "remote-diverged".to_string(),
+        },
     })
 }
 

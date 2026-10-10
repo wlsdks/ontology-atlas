@@ -83,7 +83,7 @@ import { PAGE_TITLE } from "@/shared/ui/page-frame";
  * right. Raw diff headers and automatic subjects are read back in human language by
  * the `atlas-git-record.ts` helpers; the raw text stays in the detail.
  *
- * Desktop uses the `src-tauri/src/git.rs` commands through `tauri-git.ts`; a browser cannot
+ * Desktop uses the `src-tauri/src/git/` commands through `tauri-git.ts`; a browser cannot
  * spawn a process, so getting the app is its one action. Trust charter: mount-time queries
  * are read-only, and `git_init`, `git_set_remote` and `git_snapshot` run only from their own
  * button's click, which tests pin.
@@ -1638,7 +1638,7 @@ function LocationLine({
           {/*
             The first send, and the only place an upstream is set: the hint names the branch,
             the destination and that it goes only on this press, and the line under it is the
-            command it amounts to (git.rs runs `push --set-upstream origin HEAD`). With
+            command it amounts to (src-tauri/src/git/snapshot.rs: `push --set-upstream origin HEAD`). With
             uncommitted changes it opens the commit confirm first, like Push.
           */}
           <RemoteActionButton

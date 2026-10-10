@@ -2,6 +2,7 @@ use serde::Serialize;
 use std::fs;
 use std::path::Path;
 
+use super::classify::first_nonempty_line;
 use super::runner::run_git;
 use crate::errors::coded;
 
@@ -12,7 +13,7 @@ pub(super) struct PorcelainRow {
     pub(super) index: char,
     pub(super) worktree: char,
     pub(super) path: String,
-    pub(super) renamed_from: Option<String>,
+    renamed_from: Option<String>,
 }
 
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
@@ -296,11 +297,4 @@ fn is_under_pathspec(path: &str, pathspec: &str) -> bool {
         return true;
     }
     path == pathspec || path.starts_with(&format!("{pathspec}/"))
-}
-
-pub(super) fn first_nonempty_line(text: &str) -> Option<String> {
-    text.lines()
-        .map(|l| l.trim())
-        .find(|l| !l.is_empty())
-        .map(|l| l.to_string())
 }

@@ -1,7 +1,8 @@
 use serde::Serialize;
 use std::fs;
 
-use super::changes::{classify_change, first_nonempty_line, get_porcelain_status, unquote};
+use super::changes::{classify_change, get_porcelain_status, unquote};
+use super::classify::first_nonempty_line;
 use super::repo::{require_repo_root, vault_pathspec};
 use super::runner::{run_git, validate_vault_dir};
 use crate::errors::coded;

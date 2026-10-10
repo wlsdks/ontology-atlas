@@ -305,7 +305,7 @@ pub fn run() {
             git::commits::git_diff,
             git::commits::git_commit_diff,
             git::remote::git_pull,
-            git::status::git_fetch,
+            git::remote::git_fetch,
             git::document::git_restore_file,
             git::document::git_document_diff,
             agent_setup::mcp_bundled_server,

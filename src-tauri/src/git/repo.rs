@@ -89,6 +89,22 @@ pub(super) fn get_upstream_ref(repo_root: &Path) -> Option<String> {
     }
 }
 
+/// As of the last fetch, so the screen needs a separate Fetch to refresh them.
+pub(super) fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
+    let out = match run_git(
+        repo_root,
+        &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
+    ) {
+        Ok(o) if o.success => o,
+        // A vanished upstream or broken ref is unknown, not 0.
+        _ => return (None, None),
+    };
+    let mut parts = out.stdout.split_whitespace();
+    let ahead = parts.next().and_then(|v| v.parse::<usize>().ok());
+    let behind = parts.next().and_then(|v| v.parse::<usize>().ok());
+    (ahead, behind)
+}
+
 pub(super) fn get_head_hash(repo_root: &Path) -> Option<String> {
     let out = run_git(repo_root, &["rev-parse", "HEAD"]).ok()?;
     if !out.success {

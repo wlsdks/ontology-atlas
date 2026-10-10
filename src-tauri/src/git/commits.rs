@@ -27,11 +27,11 @@ pub struct GitCommitInfo {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitDiffResult {
-    pub(super) count: usize,
-    pub(super) files: Vec<ChangeEntry>,
+    count: usize,
+    files: Vec<ChangeEntry>,
     /// New files appear only in the list.
-    pub(super) diff: String,
-    pub(super) too_large: bool,
+    diff: String,
+    too_large: bool,
 }
 
 /// The largest of this repository's 1,500 vault commits is 565 KB.
