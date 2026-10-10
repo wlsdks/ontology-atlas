@@ -120,3 +120,19 @@ test('invalid infer options are rejected instead of coerced', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('the default file budget scans exactly 5000 source files', () => {
+  for (const count of [5000, 5001]) {
+    const root = withRepo((r) => {
+      mkdirSync(join(r, 'src'), { recursive: true });
+      for (let index = 0; index < count; index += 1) {
+        writeFileSync(join(r, 'src', `f${index}.ts`), 'export const a = 1;\n');
+      }
+    });
+    try {
+      assert.equal(inferImports(root).filesScanned, 5000, `${count} files on disk`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
