@@ -55,7 +55,7 @@ const GATE_REMOVING = new Set([
   'workspace-write',
   /*
    * `agent` belongs here. By name it sounds like "the normal mode", but the measurement
-   * (2026-08-16) is recorded in `src-tauri/src/acp.rs`: launching codex on its default (`agent`)
+   * is recorded in `docs/DECISIONS.md` (2026-08-16): launching codex on its default (`agent`)
    * gave *"files written outside the working folder with zero permission requests"*.
    *
    * **Re-measured 2026-08-17 — unchanged on `codex-acp` 1.4.** This closes the worry the block above

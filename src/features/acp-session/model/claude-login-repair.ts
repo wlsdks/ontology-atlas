@@ -25,7 +25,7 @@
  *
  * **The app clears it itself.** Before starting a session, `prepare_isolated_config` links the
  * credentials and then deletes any keychain entry standing in front of that folder
- * (`clear_shadowing_credentials`, `src-tauri/src/acp.rs`). So this command is **the last resort for
+ * (`clear_shadowing_credentials`, `src-tauri/src/acp/isolation.rs`). So this command is **the last resort for
  * when even that failed** — a person's hand is needed only where keychain access is blocked.
  *
  * The name stays `...LoginRepair` because what this slot does (restore the app's login) is unchanged;
