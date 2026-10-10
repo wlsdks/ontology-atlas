@@ -439,6 +439,9 @@ export function thrownMessageOutsideDeveloperReach(path: string, text: string): 
  */
 const REPAIRED = [
   'src/views/library/ui/LibraryPage.tsx',
+  'src/views/library/ui/library-page/use-library-sources.ts',
+  'src/views/library/ui/library-page/use-library-turns.ts',
+  'src/views/library/ui/library-page/use-wiki-template-problems.ts',
   'src/views/library/lib/use-answer-refresh.ts',
   'src/views/library/ui/parts/RetainedAnswerContext.tsx',
   'src/views/library/ui/parts/AnswerRevisionComparison.tsx',
