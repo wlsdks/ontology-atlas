@@ -9,7 +9,7 @@
  * session comes up with that connector's tools silently absent. `connectorProblems` reports it as
  * `command-not-absolute` and the form's hint said so — and the owner's answer was
  * still *"I don't know what I'm supposed to write here"*. Nobody knows where their own `npx` is;
- * `acp.rs` already worked it out for the agent runtimes, so the form picks from that answer
+ * `src-tauri/src/acp/command_lookup.rs` already worked it out for the agent runtimes, so the form picks from that answer
  * instead of asking for it.
  *
  * ## Web degradation contract

@@ -85,7 +85,7 @@ const BRAND_MARK = {
  *
  * The rest stay listed and launchable, but only these two are marked "verified",
  * so the screen never claims we tried something we did not. This set grows only
- * with measured evidence.
+ * with measured evidence (`docs/DECISIONS.md`).
  */
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 

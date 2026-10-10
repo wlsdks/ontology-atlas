@@ -33,7 +33,7 @@ import { APP_CODING_TOOLS } from '../model/app-coding-tools';
 /**
  * The coding agents this machine can invoke. Each row says whether the tool can be used from
  * here and, if not, what to do on that row (a missing tool and missing Node need different
- * actions). What is confirmed on this computer comes first; `cli-unknown` keeps
+ * actions). What is confirmed on this computer comes first; `cli-unknown` (`src-tauri/src/acp/detection.rs`) keeps
  * unverified tools out of that group. Only the measured runners run isolated and ask before
  * touching files outside the vault; that fact needs a sentence, so it stands once above the
  * group and names the guarded tools from the data rather than as a per-row badge.
@@ -86,7 +86,7 @@ export function AcpRuntimeSettings({
   // "Searching" is already said by `runtimes === null`, so there is nothing to switch on.
   useEffect(() => {
     // Do not set out to call a capability that is not there. In a browser the answer
-    // is obvious, and calling anyway is the shape of retrying "maybe this time".
+    // is obvious.
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     /*

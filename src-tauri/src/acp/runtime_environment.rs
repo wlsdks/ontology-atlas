@@ -65,7 +65,7 @@ fn sanitized_runtime_environment(
     )
 }
 
-/// Both adapters start through npx under the snapshot's cutoff.
+/// Measured: both adapters start through npx under the snapshot's cutoff.
 const NPM_HARDENED_RUNTIMES: &[&str] = &["claude-acp", "codex-acp"];
 
 /// A flag npm does not hand on (measured): what the adapter runs keeps its own npm settings.

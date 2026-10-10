@@ -181,7 +181,7 @@ pub(crate) fn acp_start(
     launch.path_env =
         acp::search_path::path_without_vault_node_modules_bin(&launch.path_env, &root, repo_root.as_deref());
 
-    // Heal a half-downloaded npx entry just before launch (see the npx cache block in `acp.rs`).
+    // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`).
     let npx_preflight = acp::npx_cache::preflight_npx_cache(&launch, home.as_deref());
 
     // Never inherit the user's global settings: pre-allowed entries bypass the gate.

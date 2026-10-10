@@ -191,7 +191,7 @@ describe('connector record', () => {
 
   it('lets any variable be keychain-backed, not only the ones a regex recognises', () => {
     /*
-     * `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
+     * Measured: `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
      * documents, and it carries `Bearer ntn_...`. It matches nothing, so a name-only rule
      * offered no field for it at all and the connector attached with its credential absent,
      * looking perfectly healthy. `GH_PAT`, `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and

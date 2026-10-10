@@ -65,11 +65,10 @@ export interface AcpRuntimeStatus {
    *   on our side, not the user's.
    * `login-needed` — the tool is there but **not logged in**; one login in that tool
    *   fixes it. Without this branch the screen says "ready" and then dies with
-   *   `Authentication required` only when a conversation opens (owner report,
-   *   2026-08-16).
+   *   `Authentication required` only when a conversation opens.
    * `login-unknown` — we asked whether it is signed in and **could not get an answer**. Not the
    *   same as `cli-unknown` (never asked) and not the same as `login-needed` (asked, told no).
-   *   Under load, right after an in-app session ended, both measured
+   *   Owner report: under load, right after an in-app session ended, both measured
    *   runtimes wore 「Sign in needed」 while the same commands exited 0 from a shell. The tool is
    *   present and launchable, so this row stays usable — only the claim is withdrawn.
    * `cli-missing` — the tool must be installed.
