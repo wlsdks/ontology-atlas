@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../../messages/ko.json";
 import { VaultConflictError } from "@/entities/vault-session";
-import { RenameDocDialog, type RenameDocTarget } from "./RenameDocDialog";
+import { RenameDocDialog } from "./RenameDocDialog";
+import type { RenameDocTarget } from "../../model/use-doc-write-actions";
 
 const target: RenameDocTarget = {
   slug: "capabilities/mcp-tool-server",
