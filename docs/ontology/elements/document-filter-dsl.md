@@ -8,8 +8,8 @@ display_ko: 문서 필터 식
 domain: domains/meaning-layer
 path: mcp/src/query.mjs
 created_by: "agent:claude-code"
-dependencies: [elements/graph-engine, elements/vault-file-store]
-relation_notes: { elements/graph-engine: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows query.mjs importing ontology-engine.mjs.", elements/vault-file-store: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows query.mjs importing vault.mjs." }
+dependencies: [elements/graph-engine, elements/relation-reference-normalizer]
+relation_notes: { elements/graph-engine: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows query.mjs importing ontology-engine.mjs.", elements/relation-reference-normalizer: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows mcp/src/query.mjs importing vault/relation-refs.mjs (`GRAPH_ARRAY_KEYS`)." }
 ---
 
 Parses the small filter expression that lets someone ask which documents have or lack a given field, without learning a graph query language.
