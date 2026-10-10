@@ -1,13 +1,16 @@
 import {
-  ADD_RELATION_TYPE_SCHEMA,
+  NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
-  NON_BLANK_STRING_SCHEMA,
+} from '../tool-schemas/destructive-preview.mjs';
+import {
   POST_WRITE_MAINTENANCE_GUIDANCE,
   POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-  RELATION_RESULT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/post-write-maintenance.mjs';
+import { ADD_RELATION_TYPE_SCHEMA, RELATION_RESULT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const ADD_RELATION_TOOL = {
   name: 'add_relation',

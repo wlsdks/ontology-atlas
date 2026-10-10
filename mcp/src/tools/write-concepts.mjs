@@ -8,7 +8,7 @@ import {
 } from '../schema.mjs';
 import { structuredRowErrorDetails } from '../server/rpc.mjs';
 import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
-import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas.mjs';
+import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas/array-limits.mjs';
 import {
   requireAllowedObjectKeys,
   requireNonBlankString,

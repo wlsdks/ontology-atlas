@@ -1,12 +1,14 @@
 import { ELEMENT_NAMING_RULE_BATCH_EN, ELEMENT_NAMING_RULE_EN } from '../../construction-rules.mjs';
+import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
 import {
-  GRAPH_REF_ARRAY_MAX_ITEMS,
-  LOCALE_LABELS_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import {
   POST_WRITE_MAINTENANCE_GUIDANCE,
   POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/post-write-maintenance.mjs';
+import { LOCALE_LABELS_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const ADD_CONCEPT_TOOL = {
   name: 'add_concept',

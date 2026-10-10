@@ -69,7 +69,7 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
   }),
   Object.freeze({
     id: 'mcp-korean-display-locale-example',
-    path: 'mcp/src/server/tool-schemas.mjs',
+    path: 'mcp/src/server/tool-schemas/vault-node-shapes.mjs',
     why:
       'A `display_ko` example value in the locale-labels schema description. The example is the '
       + 'locale data itself, so translating it would stop showing what the field holds.',

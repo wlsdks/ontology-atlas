@@ -31,7 +31,7 @@ import {
   MEANING_GATE_EVIDENCE_ROW_LIMIT,
   MEANING_GATE_REVIEW_ROW_LIMIT,
   SOURCE_FOLDER_ARRAY_MAX_ITEMS,
-} from '../server/tool-schemas.mjs';
+} from '../server/tool-schemas/array-limits.mjs';
 import {
   requireOptionalBoolean,
   requireOptionalEnum,

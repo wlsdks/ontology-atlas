@@ -1,9 +1,9 @@
+import { nonBlankStringSchema } from '../tool-schemas/field-primitives.mjs';
 import {
   GIT_HISTORY_OUTPUT_SCHEMA,
   GIT_RESULT_OUTPUT_SCHEMA,
   GIT_SNAPSHOT_OUTPUT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/git-results.mjs';
 
 export const GIT_STATUS_TOOL = {
   name: 'git_status',
