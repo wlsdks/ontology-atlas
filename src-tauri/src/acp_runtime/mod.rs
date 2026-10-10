@@ -12,10 +12,10 @@ use tauri::{Emitter, Manager};
 pub(crate) fn acp_detect_runtimes(
     app: tauri::AppHandle,
     probe_login: Option<bool>,
-) -> Vec<acp::AcpRuntimeStatus> {
-    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
+) -> Vec<acp::detection::AcpRuntimeStatus> {
+    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
     let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
-    let probe = acp::FsProbe {
+    let probe = acp::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -30,11 +30,11 @@ pub(crate) fn acp_detect_runtimes(
     let path = std::env::var_os("PATH");
     // Include app installs, or the screen still says installation is required.
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
-    acp::detect_runtimes(
+    acp::detection::detect_runtimes(
         home.as_deref(),
         path.as_deref(),
         &probe,
@@ -163,7 +163,7 @@ pub(crate) fn acp_install_node(
 #[tauri::command]
 pub(crate) fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String> {
     let app_data = app.path().app_data_dir().ok()?;
-    acp::managed_install_command(&runtime_id, &app_data)
+    acp::managed_cli::managed_install_command(&runtime_id, &app_data)
 }
 
 /// Only on a user press, after `acp_install_plan` showed the command, under `--prefix
@@ -174,17 +174,17 @@ pub(crate) fn acp_install_cli(
     app: tauri::AppHandle,
     runtime_id: String,
 ) -> Result<Vec<acp_doctor::AcpCheck>, String> {
-    let package = acp::installable_package(&runtime_id)
+    let package = acp::managed_cli::installable_package(&runtime_id)
         .ok_or_else(|| format!("not-installable:{runtime_id}"))?;
     let app_data = app
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    let prefix = acp::managed_cli_prefix(&app_data);
+    let prefix = acp::managed_cli::managed_cli_prefix(&app_data);
     std::fs::create_dir_all(&prefix).map_err(|err| format!("prefix-failed:{err}"))?;
 
-    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let probe = acp::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
+    let probe = acp::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -194,7 +194,7 @@ pub(crate) fn acp_install_cli(
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     // The bundled npm is the fallback when the system has none.
     let managed_node_bin = managed_node::managed_node_bin_dir(&app_data);
-    let dirs = acp::candidate_bin_dirs(
+    let dirs = acp::command_lookup::candidate_bin_dirs(
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
@@ -203,7 +203,7 @@ pub(crate) fn acp_install_cli(
     );
     // Never by name: a GUI app's PATH differs from the shell's.
     let npm =
-        acp::resolve_command("npm", &dirs, &probe).ok_or_else(|| "npm-missing".to_string())?;
+        acp::command_lookup::resolve_command("npm", &dirs, &probe).ok_or_else(|| "npm-missing".to_string())?;
     let child_path = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -349,8 +349,8 @@ impl OwnedDoctorContext {
 }
 
 fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDoctorContext, String> {
-    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let probe = acp::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
+    let probe = acp::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -360,11 +360,11 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
-    let dirs = acp::candidate_bin_dirs(
+    let dirs = acp::command_lookup::candidate_bin_dirs(
         home.as_deref(),
         path.as_deref(),
         &probe,
@@ -376,12 +376,12 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .unwrap_or_default();
 
     let agent =
-        acp::registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+        acp::registry::registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
     let cli = agent
         .cli
         .as_deref()
-        .and_then(|name| acp::resolve_command(name, &dirs, &probe));
-    let launcher = acp::resolve_launch(
+        .and_then(|name| acp::command_lookup::resolve_command(name, &dirs, &probe));
+    let launcher = acp::launch::resolve_launch(
         runtime_id,
         home.as_deref(),
         path.as_deref(),
@@ -401,9 +401,9 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     let isolated = app_data_dir.join("agent-config").join(runtime_id);
     let isolated_logged_out = cli
         .as_deref()
-        .filter(|_| acp::config_env_for(runtime_id).is_some())
-        .and_then(|path| acp::probe_isolated_logged_out(path, &isolated, &path_env));
-    let shadow_present = acp::shadow_credentials_present(&isolated);
+        .filter(|_| acp::isolation::config_env_for(runtime_id).is_some())
+        .and_then(|path| acp::isolation::probe_isolated_logged_out(path, &isolated, &path_env));
+    let shadow_present = acp::isolation::shadow_credentials_present(&isolated);
 
     Ok(OwnedDoctorContext {
         runtime_id: runtime_id.to_string(),

@@ -56,6 +56,14 @@ export function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boole
   return doc.frontmatter.architecture_schema === 'architecture-profile/v1';
 }
 
+/** An architecture profile is never the unattended first document (`a11y-vault-backed.spec.ts`). */
+export function firstReadableSlug<T extends { slug: string; frontmatter: Record<string, unknown> }>(
+  docs: readonly T[],
+): string | undefined {
+  // No fallback to `docs[0]`; callers handle "no document".
+  return docs.find((doc) => !isArchitectureProfile(doc))?.slug;
+}
+
 export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>>(
   docs: T[],
   collection: DocsVaultCollection,

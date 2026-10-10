@@ -63,6 +63,6 @@ export function runtimeCarriesConnectors(runtimeId: string | null | undefined): 
 
 /**
  * Runtimes whose configuration the app isolates. Mirrors `ISOLATION` in
- * `src-tauri/src/acp.rs`; `runtime-gate.test.ts` keeps the two from drifting.
+ * `src-tauri/src/acp/isolation.rs`; `runtime-gate.test.ts` keeps the two from drifting.
  */
 const CONFIG_ISOLATED_RUNTIMES: ReadonlySet<string> = new Set(['claude-acp']);

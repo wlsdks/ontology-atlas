@@ -112,7 +112,7 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     // Controlling codex's config directory is not holding its write gate (decision
     // (111)); report the compound boundary instead.
     out.push(
-        if acp::chat_eligible(ctx.runtime_id) && acp::config_env_for(ctx.runtime_id).is_some() {
+        if acp::registry::chat_eligible(ctx.runtime_id) && acp::isolation::config_env_for(ctx.runtime_id).is_some() {
             let detail = SESSION_MODE_GATE
                 .iter()
                 .find(|(id, _)| *id == ctx.runtime_id)
@@ -132,13 +132,13 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     // No cache outside npx is not applicable, so it is left off rather than shown green.
     if let Some(entry) = npx_entry_path(ctx) {
         out.push(
-            match acp::npx_entry_health(&entry, npx_package(ctx).as_deref().unwrap_or("")) {
-                acp::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
+            match acp::npx_cache::npx_entry_health(&entry, npx_package(ctx).as_deref().unwrap_or("")) {
+                acp::npx_cache::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
                 // Not yet downloaded is fine: it downloads on first launch.
-                acp::NpxEntryHealth::Missing => {
+                acp::npx_cache::NpxEntryHealth::Missing => {
                     AcpCheck::ok("npx-cache", Some("not-downloaded".into()))
                 }
-                acp::NpxEntryHealth::Broken(reason) => {
+                acp::npx_cache::NpxEntryHealth::Broken(reason) => {
                     AcpCheck::problem("npx-cache", true, Some(reason.into()))
                 }
             },
@@ -212,21 +212,21 @@ fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
 
 /// Only executors with measured isolation have one.
 fn isolated_dir(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
-    acp::config_env_for(ctx.runtime_id)?;
+    acp::isolation::config_env_for(ctx.runtime_id)?;
     Some(ctx.app_data_dir.join("agent-config").join(ctx.runtime_id))
 }
 
 fn npx_package(ctx: &DoctorContext<'_>) -> Option<String> {
-    match &acp::registry_agent(ctx.runtime_id)?.launch {
-        acp::RegistryLaunch::Npx { package, .. } => Some(package.clone()),
+    match &acp::registry::registry_agent(ctx.runtime_id)?.launch {
+        acp::registry::RegistryLaunch::Npx { package, .. } => Some(package.clone()),
         _ => None,
     }
 }
 
 fn npx_entry_path(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     let package = npx_package(ctx)?;
-    let root = acp::npx_cache_root(ctx.home)?;
-    Some(acp::npx_cache_entry_dir(&root, &package))
+    let root = acp::npx_cache::npx_cache_root(ctx.home)?;
+    Some(acp::npx_cache::npx_cache_entry_dir(&root, &package))
 }
 
 pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), String> {
@@ -235,7 +235,7 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
     }
     match check_id {
         // One preparation path fixes all three, so a separate fix cannot drift from it.
-        "config-dir" | "credentials-link" | "shadow-keychain" => acp::prepare_isolated_config(
+        "config-dir" | "credentials-link" | "shadow-keychain" => acp::isolation::prepare_isolated_config(
             ctx.runtime_id,
             ctx.app_data_dir,
             ctx.home,
@@ -262,7 +262,7 @@ pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
         return Ok(());
     };
 
-    acp::remove_shadow_credentials(&dir);
+    acp::isolation::remove_shadow_credentials(&dir);
 
     match std::fs::remove_dir_all(&dir) {
         Ok(()) => {}
@@ -270,7 +270,7 @@ pub(crate) fn reset_connection(ctx: &DoctorContext<'_>) -> Result<(), String> {
         Err(err) => return Err(format!("reset-failed:{err}")),
     }
 
-    acp::prepare_isolated_config(
+    acp::isolation::prepare_isolated_config(
         ctx.runtime_id,
         ctx.app_data_dir,
         ctx.home,
@@ -286,7 +286,7 @@ mod tests {
     use super::*;
 
     fn prepare_for_test(c: &DoctorContext<'_>) {
-        acp::prepare_isolated_config(c.runtime_id, c.app_data_dir, c.home, c.cli, c.path_env)
+        acp::isolation::prepare_isolated_config(c.runtime_id, c.app_data_dir, c.home, c.cli, c.path_env)
             .expect("setup must succeed for this test to hold");
     }
 
@@ -480,14 +480,14 @@ mod tests {
     /// reject-without-write and allow-with-write earns it (decisions (111), (113)).
     #[test]
     fn an_isolated_runtime_is_not_automatically_chat_eligible() {
-        for id in acp::CHAT_ELIGIBLE {
+        for id in acp::registry::CHAT_ELIGIBLE {
             assert!(
-                acp::config_env_for(id).is_some(),
+                acp::isolation::config_env_for(id).is_some(),
                 "{id} may hold the chat gate but the app does not control its config"
             );
         }
         assert!(
-            !acp::chat_eligible("amp-acp"),
+            !acp::registry::chat_eligible("amp-acp"),
             "an unmeasured runtime must never be eligible by default"
         );
         let base = std::env::temp_dir().join(format!("atlas-doctor-e-{}", std::process::id()));

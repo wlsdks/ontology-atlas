@@ -327,7 +327,7 @@ const VAULT_HANDOFF_BASE = [
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
 ];
 /**
- * ⚠️ **Only claim it is wired when it is** (caught in review, 2026-08-16).
+ * ⚠️ **Only claim it is wired when it is**.
  *
  * This sentence used to be attached unconditionally. But an empty server list really does happen
  * (no binary in the bundle, or not ready yet) — and then a session with no tools at all is given an
@@ -439,7 +439,7 @@ export function useAcpSession({
    * Why (owner's real machine, 2026-08-19): the adapter's first run has npx fetch tens of MB while
    * the screen showed only a "starting" chip. The user thought it had hung, quit the app — and that
    * interruption left a half-built npx cache that made it never start again (self-healing lives on
-   * the Rust side, `acp.rs`). So this indicator is not decoration; it removes that accident's trigger.
+   * the Rust side, `src-tauri/src/acp/npx_cache.rs`). So this indicator is not decoration; it removes that accident's trigger.
    *
    * `mb` is the measured size the cache directory has grown to (the `npx-download-progress:<mb>`
    * notice). The total size is unknown, so a percentage is **not invented** — it states only what
@@ -1085,7 +1085,7 @@ export function useAcpSession({
           setPending(null);
           setApprovedOntologyWriteTracked(null);
           /*
-           * ⚠️ **Dispose the client of a finished session** (caught in review, 2026-08-16).
+           * ⚠️ **Dispose the client of a finished session**.
            * It used to set status to `exited` and leave the client in place. Then ① a call awaiting a
            * response never finished, and ② `clientRef` stayed populated so `start()` hit the lock and
            * could never restart. The adapter dying is an irreversible event, so that fact is passed
@@ -1130,7 +1130,7 @@ export function useAcpSession({
          * path** — without this line the agent **cannot write anything to the map** (measured
          * 2026-08-16).
          *
-         * ⚠️ **Pass the name only when it is really wired** (caught in review, 2026-08-16). It used
+         * ⚠️ **Pass the name only when it is really wired**. It used
          * to be passed unconditionally, but an empty server list really happens (the web, no MCP
          * binary in the bundle, not ready yet). Passing the name then lets **someone else's
          * `atlas-vault` server that we did not wire** inherit that auto-allow. The contract already
@@ -1265,7 +1265,7 @@ export function useAcpSession({
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
         /*
-         * ⚠️ **If starting failed, stop what was started** (caught in review, 2026-08-16).
+         * ⚠️ **If starting failed, stop what was started**.
          * It used to set status to `error` and stop there, but depending on where it failed the child
          * process is **already up** (a failed event subscription, say). The next `start()` then spawns
          * a new process while the previous becomes a ghost nobody stops until the app quits — the same
