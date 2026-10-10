@@ -17,10 +17,12 @@ export async function waitForFiniteAnimations(page: Page) {
   await page.evaluate(async () => {
     // Flush style changes before collecting the transitions they create.
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    const animations = document.getAnimations().filter((animation) =>
-      animation.playState === 'running' &&
-      Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)),
-    );
+    const animations = document.getAnimations().filter((animation) => {
+      const target = (animation.effect as KeyframeEffect | null)?.target;
+      return animation.playState === 'running' &&
+        Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)) &&
+        !target?.closest('[data-decorative-motion]');
+    });
     await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   });
