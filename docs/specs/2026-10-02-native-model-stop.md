@@ -40,9 +40,9 @@ Source baseline: `112127a49`. These are source facts, not runtime measurements.
 - The bridge has no cancellation argument (`src/shared/lib/tauri-llm.ts:74`),
   and native chat waits for a child to finish
   (`src-tauri/src/llm/http_output.rs:45`). Local and named-provider deadlines
-  remain 60 and 180 seconds (`src-tauri/src/llm.rs:33`).
+  remain 60 and 180 seconds (`src-tauri/src/llm/chat.rs:24`).
 - Native sends reserve an audit entry before transmission, then finalize it
-  (`src-tauri/src/llm.rs:654`). The audit allows one reservation per vault at
+  (`src-tauri/src/llm/chat.rs:111`). The audit allows one reservation per vault at
   a time and refuses changed tail bytes (`src-tauri/src/llm_audit.rs:336`, `:367`).
 - Aborted results cannot produce a new proposal in either caller
   (`src/widgets/vault-agent-panel/model/use-vault-agent.ts:244`,

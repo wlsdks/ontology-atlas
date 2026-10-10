@@ -10,7 +10,7 @@ elements: []
 path: src/features/gray-area/ui/GrayAreaInspector.tsx
 created_by: "agent:codex-mcp-client"
 relates: [capabilities/import-dependency-inference]
-relation_notes: { capabilities/import-dependency-inference: "Gray Area reads the existing infer_imports output as bounded evidence for a person's investigation, without promoting an observed import into accepted meaning (src-tauri/src/gray_area.rs:190-206)." }
+relation_notes: { capabilities/import-dependency-inference: "Gray Area reads the existing infer_imports output as bounded evidence for a person's investigation, without promoting an observed import into accepted meaning (`read_gray_area_evidence` in src-tauri/src/gray_area.rs)." }
 ---
 
 Helps a person investigate overlooked code references, source changes and recorded uncertainties around a selected concept, set or recorded project, then optionally continue that question with ACP and review a separate improvement.

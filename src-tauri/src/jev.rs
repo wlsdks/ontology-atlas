@@ -2,7 +2,7 @@
 //! app action sends the exact previewed JSON to the fixed TypeSafe endpoint.
 
 use crate::errors::coded;
-use crate::llm::{curl_argv_with_timeout, curl_config_for, run_curl};
+use crate::llm::curl::{curl_argv_with_timeout, curl_config_for, run_curl};
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope};
 use crate::secrets::{is_cleared, Step};
 use keyring::Entry;
@@ -270,7 +270,7 @@ where
 }
 
 /// `async` keeps the up-to-30-second network wait off the macOS main thread,
-/// as the `secret_verify` and `llm_chat` commands do in `llm.rs`.
+/// as the `secret_verify` and `llm_chat` commands do in `llm/`.
 #[tauri::command(async)]
 pub fn jev_judge(vault_path: String, payload: String) -> Result<JevJudgment, String> {
     // The judgment writes an audit line under the vault and sends the payload out, so

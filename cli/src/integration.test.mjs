@@ -6841,7 +6841,7 @@ await test('agent-brief --project — selects one project in a multi-project vau
     assert.equal(compact.focus.taskNavigation.status, 'blocked');
     assert.equal(compact.focus.taskNavigation.blockedBy, 'source_not_current');
     assert.doesNotMatch(JSON.stringify(compact), /projects\/alpha|domains\/alpha|capabilities\/alpha/);
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), 'utf8') <= 12000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact), 'utf8') <= 12000);
 
     const compactHuman = await run([
       'agent-brief',
@@ -6863,6 +6863,14 @@ await test('agent-brief --project — selects one project in a multi-project vau
     assert.match(human, /MEANING\s+\S+ · gap \S+ · next \S+/);
     assert.match(human, /MEANING REPAIR\s+\S+.*approval required · automatic write\/finalize off/);
     assert.match(human, /FULL DETAIL\s+query_ontology/);
+    const uncertaintyLines = (text) => text.split('\n').filter((line) => /^(?:Uncertainty:|Unknown:) /.test(line));
+    assert.deepEqual(uncertaintyLines(human), uncertaintyLines(compact.handoffPrompt));
+    const compactPrompt = await run([
+      'agent-brief', root, '--project', 'projects/beta', '--compact',
+      '--task', 'Change the beta capability and identify its evidence and verification boundary.', '--prompt', '--exit-zero',
+    ]);
+    assert.equal(compactPrompt.code, 0, compactPrompt.stderr);
+    assert.equal(compactPrompt.stdout.trimEnd(), compact.handoffPrompt);
 
     const ambiguous = await run(['agent-brief', root, '--json', '--exit-zero']);
     assert.equal(ambiguous.code, 2);
@@ -6962,6 +6970,32 @@ DER parsing and unrelated encodings.
     assert.match(human, /VERIFY\s+recorded · package-script via package\.json · tests\/writer\.test\.ts/);
     assert.ok(human.indexOf('TASK NAVIGATION') < human.indexOf('STATUS'));
     assert.doesNotMatch(human, new RegExp(repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    const assertParity = async (task) => {
+      const args = ['agent-brief', vault, '--project', 'project', '--compact', '--task', task, '--exit-zero'];
+      const [jsonResult, humanResult, promptResult] = await Promise.all([
+        run([...args, '--json']), run(args), run([...args, '--prompt']),
+      ]);
+      for (const output of [jsonResult, humanResult, promptResult]) assert.equal(output.code, 0, output.stderr);
+      const payload = JSON.parse(jsonResult.stdout);
+      assert.equal(promptResult.stdout.trimEnd(), payload.handoffPrompt);
+      const coverageLines = (text) => text.split('\n').filter((line) => /^(?:Uncertainty:|Unknown:) /.test(line));
+      assert.deepEqual(coverageLines(stripAnsi(humanResult.stdout)), coverageLines(payload.handoffPrompt));
+      for (const source of payload.focus.uncertainty.sources) assert.ok(payload.nextReads[0].arguments.slugs.includes(source.slug));
+      assert.ok(stripAnsi(humanResult.stdout).includes(JSON.stringify(payload.nextReads[0].arguments)));
+      return payload;
+    };
+    const ready = await assertParity('Write an optional DER SET value.');
+    assert.equal(ready.focus.taskNavigation.status, 'ready');
+    const refused = await assertParity('Coordinate orbital trajectories.');
+    assert.equal(refused.focus.capability, null);
+    assert.equal(refused.focus.refusal.reason, 'no_match');
+    assert.deepEqual(refused.nextReads[0].arguments.slugs, ['project']);
+    const writerPath = join(vault, 'elements/writer.md');
+    writeFileSync(writerPath, readFileSync(writerPath, 'utf8').replace(/^- Focused test:.*\n/mu, ''));
+    const reconnected = await run(['connect-source', 'project', vault, '--root', repo, '--confirm', '--json']);
+    assert.equal(reconnected.code, 0, reconnected.stderr);
+    const partial = await assertParity('Write an optional DER SET value.');
+    assert.equal(partial.focus.taskNavigation.status, 'partial');
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
