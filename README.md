@@ -35,7 +35,7 @@ reject each change as a Markdown diff.
 - **Your agent starts with context.** Claude Code, Codex, Cursor and Antigravity read the concepts, code paths, dependencies and open questions a task touches, over MCP.
 - **You own the record.** One Markdown file per concept in an `atlas/` folder, versioned and reviewed in Git like the code.
 - **You decide what is true.** Agent proposals stay proposals until you accept them.
-- **It says what it does not know.** A line on the map is a declared relationship, not proof of runtime impact; missing evidence shows as unknown, never as safe.
+- **It says what it does not know.** A line on the map is a declared relationship, not proof of runtime impact; missing evidence shows as unknown, never as safe. Compact task handoffs preserve whole uncertainty statements or report omissions with the document reads needed to inspect them.
 
 ## See it
 

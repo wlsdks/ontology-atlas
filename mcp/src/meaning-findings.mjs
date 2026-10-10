@@ -541,9 +541,8 @@ function trimNotePathEdges(token) {
 }
 
 /**
- * The `:42` the message explicitly asks the writer to append, and the `:42:7`
- * an editor copies. Stripped in the same loop as the punctuation, because
- * `` `src/consumer.ts`:1, `` needs both passes twice: quote, line, backtick.
+ * The `:42`, `:42:7` or `#L42` an editor copies. Stripped in the same loop as
+ * the punctuation, because `` `src/consumer.ts`:1, `` needs both passes twice.
  */
 const NOTE_PATH_LINE_SUFFIX = /(?::\d+(?:[-\u2013]\d+)?(?::\d+)?|#L\d+(?:-L?\d+)?)$/;
 

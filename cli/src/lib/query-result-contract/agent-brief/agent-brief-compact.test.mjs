@@ -179,6 +179,38 @@ describe('agent-brief-compact', () => {
     assert.equal(assertAgentBriefCompactShape(valid), valid);
     assert.equal(assertAgentBriefResponseShape(valid), valid);
     assert.equal(agentBriefExitCode(valid), 1);
+    const uncertainty = {
+      scope: 'selected_task_documents',
+      sources: [
+        { slug: 'project/app', status: 'not_recorded', totalUnits: 0, omittedUnits: 0, unknownIndexes: [] },
+        { slug: 'capabilities/session', status: 'recorded', totalUnits: 2, omittedUnits: 1, unknownIndexes: [0] },
+        { slug: 'elements/session-store', status: 'not_recorded', totalUnits: 0, omittedUnits: 0, unknownIndexes: [] },
+      ],
+      system: [{ code: 'meaning_gap', unknownIndex: 1 }],
+    };
+    const covered = { ...valid, focus: { ...valid.focus, unknowns: [...valid.focus.unknowns, 'Meaning remains unverified.'], uncertainty } };
+    assert.equal(assertAgentBriefCompactShape(covered), covered);
+    for (const mutate of [
+      (row) => { row.focus.uncertainty.sources[1].omittedUnits = 0; },
+      (row) => { row.focus.uncertainty.sources[1].unknownIndexes = [4]; },
+      (row) => { row.focus.uncertainty.sources[1].unknownIndexes = [0, 0]; },
+      (row) => { row.focus.uncertainty.sources[0].status = 'complete'; },
+      (row) => { row.focus.uncertainty.sources[0].slug = 'another-project'; },
+      (row) => { row.focus.uncertainty.system[0].unknownIndex = 0; },
+      (row) => { row.focus.uncertainty.system = []; },
+      (row) => { row.focus.unknowns.push('Unattributed claim.'); },
+      (row) => { row.nextReads[0].arguments.slugs = ['capabilities/session', 'elements/session-store']; },
+    ]) {
+      const malformed = structuredClone(covered);
+      mutate(malformed);
+      assert.throws(() => assertAgentBriefCompactShape(malformed), /uncertainty/i);
+    }
+    const padded = structuredClone(valid);
+    padded.purpose.statement += 'x'.repeat(11_950 - Buffer.byteLength(JSON.stringify(padded), 'utf8'));
+    assert.ok(Buffer.byteLength(JSON.stringify(padded, null, 2), 'utf8') > 12_000);
+    assert.equal(assertAgentBriefCompactShape(padded), padded);
+    padded.purpose.statement += '🔒'.repeat(20);
+    assert.throws(() => assertAgentBriefCompactShape(padded), /12000 UTF-8 JSON bytes/);
     assert.throws(
       () => assertAgentBriefCompactShape({ ...valid, safety: { ...valid.safety, automaticWrite: true } }),
       /human approval and no-auto-write\/finalize/,

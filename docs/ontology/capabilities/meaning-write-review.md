@@ -10,7 +10,7 @@ elements: [elements/change-summary-headline]
 path: src/features/ontology-change-review/index.ts
 created_by: "agent:claude-code"
 dependencies: [capabilities/meaning-write-safety, elements/change-summary-headline]
-relation_notes: { elements/change-summary-headline: "You asked me to turn imports I actually witnessed into dependencies: the review barrel re-exports ontologyChangeHeadline from lib/change-summary.ts as one of the two things outside the feature actually calls.", capabilities/meaning-write-safety: "You asked me to name where the witness is: AcpPermissionCard.tsx:693 renders this review and :241-242, :873 resolve the allow_once or reject_once option, which is the answer the server checkpoint waits for : src-tauri/src/acp/isolation.rs:50 names mcp/src/write-consent.mjs as that checkpoint." }
+relation_notes: { elements/change-summary-headline: "You asked me to turn imports I actually witnessed into dependencies: the review barrel re-exports ontologyChangeHeadline from lib/change-summary.ts as one of the two things outside the feature actually calls.", capabilities/meaning-write-safety: "You asked me to name where the witness is: `AcpPermissionCard` in src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx renders this review (`OntologyChangeReview`) and picks the `allow_once` or `reject_once` option, which is the answer the server checkpoint waits for: the comment on `ISOLATED_CODEX_CONFIG` in src-tauri/src/acp/isolation.rs names mcp/src/write-consent.mjs as that checkpoint." }
 ---
 
 Shows a proposed change to recorded meaning as something a person can read and decide on, so the change is accepted, corrected, or rejected before it lands in the files.

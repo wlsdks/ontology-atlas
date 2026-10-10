@@ -9,7 +9,7 @@ domain: domains/code-evidence
 path: mcp/src/source-evidence.mjs
 created_by: "agent:claude-code"
 dependencies: [elements/source-declaration-outline]
-relation_notes: { elements/source-declaration-outline: "You asked me to witness the import: mcp/src/source-evidence.mjs:14 imports outlineSource from source-outline.mjs, which is what mode outline returns." }
+relation_notes: { elements/source-declaration-outline: "You asked me to witness the import: mcp/src/source-evidence.mjs imports `outlineSource` from source-outline.mjs, which is what mode outline returns." }
 ---
 
 Returns exact repository source lines or declaration outlines under fixed request, line, file and packet budgets so a builder can inspect actual implementation evidence.

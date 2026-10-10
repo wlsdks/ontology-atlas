@@ -26,5 +26,5 @@ Walks the vault folder and performs the actual Markdown reads and writes, includ
 - Interpreting what a document means.
 
 ## Uncertainty
-- The largest module in this domain at roughly 2,600 lines. Read today: the imports of the two new findings (`mcp/src/vault.mjs:51-56`) and their call sites in the write gate (`:1295` for the dependency witness, `:1333-1337` for the starter example). The body was not read end to end, so this role sentence may still understate what else it carries.
+- The largest module in this domain at roughly 2,300 lines. Read today: the imports of the two new findings and their call sites in the write gate (`runNodeEligibilityGate` in `mcp/src/vault.mjs`, which calls `dependencyWitnessFinding` for the dependency witness and `isStarterExampleNode` with `starterExampleFinding` for the starter example). The body was not read end to end, so this role sentence may still understate what else it carries.
 - Re-read 2026-09-26: the kind-change rewriter in `mcp/src/vault.mjs` (bundle #1874).
