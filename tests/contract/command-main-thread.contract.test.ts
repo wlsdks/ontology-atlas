@@ -72,9 +72,9 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'git/document.rs', fn: 'git_restore_file', because: 'runs git' },
   { file: 'connectors.rs', fn: 'discover_mcp_connectors', because: 'parses agent config files of any size' },
   { file: 'analysis_archive.rs', fn: 'read_analysis_record_text', because: 'reads a vault file' },
-  { file: 'meaning_transition_archive.rs', fn: 'read_meaning_transition_record_text', because: 'reads a vault file' },
-  { file: 'meaning_transition_archive.rs', fn: 'read_meaning_transition_artifact_text', because: 'reads and digests a vault file' },
-  { file: 'meaning_transition_archive.rs', fn: 'list_meaning_transition_history', because: 'lists and reads the archive' },
+  { file: 'meaning_transition_archive/read.rs', fn: 'read_meaning_transition_record_text', because: 'reads a vault file' },
+  { file: 'meaning_transition_archive/read.rs', fn: 'read_meaning_transition_artifact_text', because: 'reads and digests a vault file' },
+  { file: 'meaning_transition_archive/history.rs', fn: 'list_meaning_transition_history', because: 'lists and reads the archive' },
 ];
 
 /** Commands that must stay on the main thread, with the reason they are exceptions. */
