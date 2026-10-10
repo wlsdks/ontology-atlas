@@ -27,10 +27,9 @@ fn validate_vault_dir_rejects_missing_path() {
     assert!(!err.is_empty());
 }
 
-// Security regression: a hostile repository (opened as a vault or connected as a
-// source) must not run code that its own git config asks for. Each test proves
-// the fixture is a live weapon under an unhardened invocation, then that the
-// module's helper leaves no marker. Reintroducing the defect fails these.
+// Security regression: a hostile repository (vault or source) must not run code its git
+// config asks for. Each test proves the fixture is live unhardened, then that the
+// helper leaves no marker, so reintroducing the defect fails.
 
 fn plain_git(dir: &Path, args: &[&str]) {
     let out = Command::new("git")

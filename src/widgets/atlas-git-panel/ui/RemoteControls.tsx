@@ -214,9 +214,9 @@ export function LocationLine({
             {t("neverSent")}
           </span>
           {/*
-            The first send, the only place an upstream is set (src-tauri/src/git/snapshot.rs runs
-            `push --set-upstream origin HEAD`); the hint names branch and destination. With
-            uncommitted changes it opens the commit confirm first, like Push.
+            The first send, the only upstream setter (src-tauri/src/git/snapshot.rs runs
+            `push --set-upstream origin HEAD`); the hint names branch and target.
+            Uncommitted changes open the commit confirm first, like Push.
           */}
           <RemoteActionButton
             id="push"

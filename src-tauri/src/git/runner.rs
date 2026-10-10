@@ -34,13 +34,9 @@ pub(super) struct GitRun {
     pub(super) stderr: String,
 }
 
-/// Config that neutralises code execution driven by a repository's own git config
-/// before git can honour a hostile repo's settings. The opened vault or connected
-/// project source may be attacker-authored, so every invocation carries these.
-/// `safe.bareRepository=explicit` makes git refuse a bare/embedded repo committed
-/// as tracked files (the `<project>/atlas` open path, which also delivers a repo's
-/// config), and `core.fsmonitor=false` blocks the fsmonitor hook that fires on
-/// `status` with no click.
+/// Carried by every call so a hostile repo cannot run code via its config:
+/// `safe.bareRepository=explicit` refuses a bare repo committed as tracked files (the
+/// `<project>/atlas` path delivers config);`core.fsmonitor=false` blocks the no-click `status` hook.
 const BASE_HARDENING: &[&str] = &[
     "-c",
     "safe.bareRepository=explicit",
@@ -48,10 +44,9 @@ const BASE_HARDENING: &[&str] = &[
     "core.fsmonitor=false",
 ];
 
-/// Repository hooks run a repo-controlled command. `post-index-change` fires on the
-/// no-click `status`, `post-checkout` on `restore`, `post-merge` on `pull` — so
-/// hooks are disabled for every verb except the explicit snapshot `commit`, which
-/// must run the user's pre-commit hook (`classify_git_error` surfaces its rejection).
+/// Hooks run repo-controlled commands (`post-index-change` on no-click `status`,
+/// `post-checkout` on `restore`, `post-merge` on `pull`), so every verb disables them
+/// except snapshot `commit`, which runs the user's pre-commit hook (see `classify_git_error`).
 const HOOKS_HARDENING: &[&str] = &["-c", "core.hooksPath=/dev/null"];
 
 /// `ext::` remote transports run an arbitrary command; a hostile remote URL must
@@ -121,12 +116,9 @@ pub(super) fn with_diff_family_guard<'a>(args: &[&'a str]) -> Vec<&'a str> {
     out
 }
 
-/// Per-repository overrides that neutralise clean/smudge/process filters. A repo's
-/// own config may bind an attribute to a filter whose command git runs on
-/// `add`/`commit`/`checkout`; the base flags cannot express a wildcard, so each
-/// filter the repo defines is redirected to an identity passthrough.
-/// Computed once per working directory since a session's repo config is stable, and
-/// discovered with the base flags so reading a hostile embedded repo is itself refused.
+/// Redirects every filter the repo defines to identity: git runs clean/smudge/process
+/// filters on `add`/`commit`/`checkout` and no flag takes a wildcard. Found with the base
+/// flags, so a hostile embedded repo is refused; cached per directory (config is stable).
 fn filter_overrides_cache() -> &'static Mutex<HashMap<PathBuf, Arc<Vec<String>>>> {
     static CACHE: OnceLock<Mutex<HashMap<PathBuf, Arc<Vec<String>>>>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
@@ -184,10 +176,9 @@ fn worktree_config_enabled(cwd: &Path) -> bool {
 }
 
 fn discover_filter_overrides(cwd: &Path) -> Vec<String> {
-    // Every config scope the hostile repo controls. `--local --includes` also sees a
-    // filter body pulled in with `include.path`/`includeIf`; the worktree scope sees
-    // `.git/config.worktree` when the repo turns it on. `--local` is never dropped, so
-    // the user's own global LFS or git-crypt filters keep working untouched.
+    // Every scope the hostile repo controls: `--local --includes` sees `include.path`
+    // filters, `--worktree` sees `config.worktree`. `--local` is never dropped, so the
+    // user's global LFS or git-crypt filters keep working.
     let mut filters: Vec<(String, bool)> = Vec::new();
     collect_filter_keys(cwd, &["config", "--local"], &mut filters);
     if worktree_config_enabled(cwd) {
