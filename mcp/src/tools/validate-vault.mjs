@@ -8,7 +8,7 @@ import {
   detectVaultPathDrift,
   suggestPathReconciliations,
 } from '../detect-drift.mjs';
-import { listSourceFiles } from '../infer-imports.mjs';
+import { listSourceFiles } from '../infer-imports/source-files.mjs';
 import {
   REPO_ROOT,
   REPO_ROOT_IS_GROUNDED,
