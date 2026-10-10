@@ -6,9 +6,8 @@ import { waitForMapStill } from "./settle";
  * A domain at the canvas floor keeps its name, and no name enters the floor
  * band reserved for the readout. On this route the Flat dial paints the
  * overview, and `dial/label-marks.ts#domainNames` accepts a slot only when the
- * whole box is inside `freeRect`, which ends where the band starts. So a name
- * whose slot below would cross the band moves beside or above its node; beside
- * is correct, and asserting "above the node top" failed CI on it.
+ * whole box is inside `freeRect`, which ends where the band starts, so a name
+ * whose slot below would cross the band moves beside or above its node.
  * `render/label-layout.ts#floorFlipBaseline` is the same rule for the non-dial
  * pass, which this route does not reach; its unit tests pin it.
  */
@@ -56,9 +55,11 @@ const MAX_PULL_PX = 240;
 
 test("a domain at the canvas floor keeps its name outside the floor band", async ({ page }) => {
   test.setTimeout(120_000);
-  // The 14-inch app viewport: this is where the two lowest domains met the floor band.
+  // The 14-inch app viewport, where the two lowest domains met the floor band.
   await page.setViewportSize({ width: 1512, height: 806 });
   await seedFirstRunSeen(page);
+  // A fast runner releases each pull mid-move, which would coast on as a flick.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/ko/topology/?e2e=1&guides=off&p=capability%3Aexchange-request&open=domain%3Asupport", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => (await read(page))?.selection, { timeout: 15_000 }).toBe("capability:exchange-request");
   await waitForMapStill(page, { what: "camera" });
