@@ -52,6 +52,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm dev-checks:check',
     'pnpm test:dev-checks',
     'pnpm test:checks:changed',
+    'pnpm test:checks:proof',
     'pnpm test:ci:impact',
     'node --test scripts/run-playwright-ci.test.mjs',
     'node --test scripts/prepush.test.mjs',

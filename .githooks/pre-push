@@ -176,7 +176,11 @@ MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "$BASE_REF")
 if touched '^(src|app)/.*\.(ts|tsx|js|mjs|css)$' '^messages/'; then
   UNIT_COMMAND=$(node scripts/prepush-unit-plan.mjs "--base=$MERGE_BASE") ||
     UNIT_COMMAND="pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
-  lane unit "$UNIT_COMMAND"
+  if ! touched '^messages/' && node scripts/lib/focused-checks-proof.mjs --covers="$MERGE_BASE"; then
+    echo '[pre-push] unit: every change since the merge base passed checks:changed --run on this exact content; skipped (CI reruns it)'
+  else
+    lane unit "$UNIT_COMMAND"
+  fi
 fi
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 # The lane selector covers agents:check's full subject set: `.codex/**` (the
