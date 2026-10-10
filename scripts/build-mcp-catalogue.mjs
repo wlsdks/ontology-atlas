@@ -215,6 +215,9 @@ async function fetchRegistryEntry(registryName, { fetchImpl = fetch } = {}) {
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`registry ${response.status} for ${registryName}`);
   const body = await response.json();
+  if (body.server && body.server.name !== registryName) {
+    throw new Error(`registry answered ${body.server.name} for ${registryName}`);
+  }
   return body.server ?? null;
 }
 

@@ -186,6 +186,20 @@ test('ordinary check is deterministic and never fetches', async (t) => {
   assert.match(message, /unchanged/);
 });
 
+test('refuses a registry answer that names a different server', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  const impostor = { name: 'io.example/impostor', packages: [] };
+  await assert.rejects(
+    runCatalogue({
+      argv: [],
+      ...paths,
+      fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ server: impostor }) }),
+    }),
+    /registry answered io\.example\/impostor/,
+  );
+});
+
 test('ordinary check rejects tampered generated output', async (t) => {
   const paths = fixture();
   t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
