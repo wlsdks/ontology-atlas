@@ -114,6 +114,38 @@ test('finds a credential declared inside a runtime argument, not only in the env
   );
 });
 
+test('keeps a curated required credential when the registry relaxes it with arguments the curated line lacks', async () => {
+  const entries = await build({
+    offline: false,
+    registryServers: {
+      'io.github.github/github-mcp-server': {
+        packages: [
+          {
+            registryType: 'oci',
+            identifier: 'ghcr.io/github/github-mcp-server:2.0.2',
+            runtimeArguments: [
+              { type: 'named', name: '-p', value: '127.0.0.1:8085:8085' },
+              {
+                type: 'named',
+                name: '-e',
+                value: 'GITHUB_PERSONAL_ACCESS_TOKEN={token}',
+                variables: { token: { isSecret: true } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  });
+  const github = entries.find((entry) => entry.id === 'github');
+  assert.equal(github.registryChecked, true);
+  assert.equal(github.variants[0].args.includes('127.0.0.1:8085:8085'), false);
+  assert.deepEqual(
+    github.variants[0].env.map(({ name, required }) => ({ name, required })),
+    [{ name: 'GITHUB_PERSONAL_ACCESS_TOKEN', required: true }],
+  );
+});
+
 test('the file states the count and the date, and says the list is neither complete nor audited', async () => {
   const entries = await build({ offline: true });
   const text = render(entries, '2026-09-07');
@@ -210,11 +242,11 @@ test('normal regeneration captures live inputs and writes output that determinis
   rmSync(paths.outPath);
   const requested = [];
   const fetchImpl = async (url) => {
-    const name = new URL(url).searchParams.get('search');
+    const name = decodeURIComponent(new URL(url).pathname.match(/\/servers\/([^/]+)\/versions\/latest$/)[1]);
     requested.push(name);
     return {
       ok: true,
-      json: async () => ({ servers: [{ server: live.servers[name] }] }),
+      json: async () => ({ server: live.servers[name] }),
     };
   };
 
