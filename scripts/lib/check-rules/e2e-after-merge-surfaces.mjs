@@ -206,7 +206,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/library-interaction-placement.spec.ts',
     reason: "where the library's transient surfaces land changed",
     matches: [
-      /^src\/views\/library\/ui\/LibraryPage\.tsx$/,
+      /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?)$/,
       /^src\/views\/library\/ui\/LibraryRounds\.tsx$/,
       /^src\/views\/library\/ui\/parts\/LibraryAgentDock\.tsx$/,
       /^src\/features\/library\/ui\/FindDocumentsDialog\.tsx$/,
@@ -235,7 +235,7 @@ export const rules = [
     reason: 'where the library source pane ends changed',
     matches: [
       /^src\/views\/library\/ui\/parts\/SourceSummary\.tsx$/,
-      /^src\/views\/library\/ui\/LibraryPage\.tsx$/,
+      /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?)$/,
     ],
   },
   {
@@ -282,6 +282,7 @@ export const rules = [
     additive: true,
     matches: [
       /^src\/views\/[^/]+\/ui\/[A-Za-z]+Page\.tsx$/,
+      /^src\/views\/library\/ui\/library-page\/Library[A-Za-z]+\.tsx$/,
       /^src\/shared\/ui\/page-frame\.ts$/,
     ],
   },

@@ -275,6 +275,41 @@ DER parsing and unrelated encodings.
     assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
   });
 
+  it('carries every retained unknown into ready and blocked text handoffs', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-compact-unknowns-'));
+    try {
+      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'tests'), { recursive: true });
+      writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --test"}}\n');
+      writeFileSync(join(root, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+      writeFileSync(join(root, 'tests/writer.test.ts'), "test('writes optional DER SET values', () => {});\n");
+      const unknownDocs = docs.map((doc) => {
+        if (doc.slug === 'project') return { ...doc, body: `${doc.body}\n## Uncertainty\n\nUpstream tests were not run.\n` };
+        if (doc.slug === 'elements/writer') return { ...doc, body: '## Definition\n\nWriter implementation.\n\n## Evidence\n\n- `package.json`\n- Primary implementation: `src/writer.ts#writeDerSet`\n- Focused test: `tests/writer.test.ts#writes optional DER SET values`\n\n## Includes\n\nDER SET output ordering and optional values.\n\n## Excludes\n\nDER parsing and unrelated encodings.\n\n## Uncertainty\n\nConcurrent writes were not checked.\n' };
+        return doc;
+      });
+      for (const [expectedStatus, options] of [
+        ['ready', { sourceRoot: root }],
+        ['blocked', { sourceRoot: root, confirmSourceCurrent: () => false }],
+        ['blocked', {}],
+      ]) {
+        const result = buildCompactAgentBrief({
+          brief, artifact, docs: unknownDocs,
+          task: 'Encode an optional DER SET and keep present elements ordered.',
+          ...options,
+        });
+        assert.equal(result.focus.taskNavigation.status, expectedStatus);
+        assert.equal(result.focus.unknowns.length, 3);
+        const textUnknowns = result.handoffPrompt.split('\n')
+          .filter((line) => line.startsWith('Unknown: ')).map((line) => line.slice('Unknown: '.length));
+        assert.deepEqual(textUnknowns, result.focus.unknowns);
+        assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('projects complete recorded qualifier units with cross-anchor scope and full-body recovery', () => {
     const qualifierDocs = [
       docs[0],
@@ -492,6 +527,35 @@ DER parsing and unrelated encodings.
       assert.equal(result.focus.qualifiers.coverage.total, 4);
       assert.equal(result.focus.qualifiers.coverage.complete, true);
       assert.match(result.handoffPrompt, new RegExp(`\\[recorded_claim capabilities/report-delivery Includes/condition\\]\\n${includes.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    }
+  });
+
+  it('keeps prose conditions and evidence limits attached across sentence and paragraph breaks', () => {
+    for (const separator of [' ', '\n\n']) {
+      const sections = {
+        Definition: `Send reports to requesters.${separator}This requires supervisor approval.`,
+        Includes: `Report delivery sends the report.${separator}It runs only after supervisor approval.`,
+        Excludes: `Automatic release is excluded.${separator}This boundary applies to report delivery only.`,
+        Uncertainty: `The implementation and test files were read.${separator}The tests were not run.`,
+      };
+      const result = buildCompactAgentBrief({
+        brief,
+        artifact,
+        docs: [docs[0], {
+          slug: 'capabilities/report-delivery',
+          frontmatter: { kind: 'capability', title: 'Report Delivery' },
+          body: Object.entries(sections).map(([section, text]) => `## ${section}\n\n${text}`).join('\n\n'),
+        }],
+        task: 'Send report delivery after approval.',
+      });
+      for (const [section, text] of Object.entries(sections)) {
+        const units = result.focus.qualifiers.units.filter((row) => row.section === section);
+        assert.equal(units.length, 1, `${section} must travel with its governing scope`);
+        assert.equal(units[0].text, text);
+        assert.ok(result.handoffPrompt.includes(text), `${section} must survive the text handoff`);
+      }
+      assert.equal(result.focus.qualifiers.coverage.complete, true);
+      assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
     }
   });
 

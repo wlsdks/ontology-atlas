@@ -650,11 +650,7 @@ function completeMarkdownUnits(doc, section, role) {
       if (current.length > 0) texts.push(current.join('\n').trim());
     }
   } else {
-    for (const paragraph of source.split(/\n\s*\n/u).map((text) => text.trim()).filter(Boolean)) {
-      texts.push(...[...new Intl.Segmenter(undefined, { granularity: 'sentence' }).segment(paragraph)]
-        .map((row) => row.segment.trim())
-        .filter(Boolean));
-    }
+    texts.push(source.trim());
   }
   return texts.map((text) => ({
     slug: doc.slug,
@@ -796,6 +792,9 @@ function buildCompactHandoffPrompt(result) {
   const anchors = result.focus.evidenceAnchors;
   const navigation = result.focus.taskNavigation;
   const nextRead = result.nextReads[0];
+  const unknownLines = result.focus.unknowns.length > 0
+    ? result.focus.unknowns.map((unknown) => `Unknown: ${unknown}`)
+    : ['Unknown: no additional bounded unknown was recorded'];
   const qualifierLines = result.focus.qualifiers
     ? [
         `Recorded qualifiers: ${result.focus.qualifiers.coverage.returned}/${result.focus.qualifiers.coverage.total}; ${result.focus.qualifiers.coverage.omitted} omitted; ${result.focus.qualifiers.coverage.status}.`,
@@ -835,7 +834,7 @@ function buildCompactHandoffPrompt(result) {
       `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
       verificationLine,
       'Tests: named positive + negative regression; exact observable output.',
-      `Unknown: ${result.focus.unknowns[0] ?? 'no additional bounded unknown was recorded'}`,
+      ...unknownLines,
       sourcePolicy,
       'Full: detail=full',
     ].join('\n');
@@ -853,7 +852,7 @@ function buildCompactHandoffPrompt(result) {
     ...qualifierLines,
     `Known evidence: ${anchors.length > 0 ? anchors.map((row) => `${row.slug}${row.path ? ` at ${row.path}` : ''}`).join(', ') : 'none recorded'}`,
     `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
-    `Unknown: ${result.focus.unknowns[0] ?? 'no additional bounded unknown was recorded'}`,
+    ...unknownLines,
     `Verify: ${result.focus.verification.status}${result.focus.verification.recordedPaths.length > 0 ? ` at ${result.focus.verification.recordedPaths.join(', ')}` : '; discover near the anchor'}`,
     `Next read: ${nextRead ? `${nextRead.tool} ${JSON.stringify(nextRead.arguments)}` : 'inspect source from the recorded anchor'}`,
     `Full detail: ${result.fullDetail.tool} ${JSON.stringify(result.fullDetail.arguments)}`,

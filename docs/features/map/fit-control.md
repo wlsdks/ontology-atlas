@@ -18,4 +18,4 @@ routes: [/topology]
   path. In 3D, closing a detail panel preserves selection and exposes Fit to clear
   it and return to the overview.
 - The map draws its keyboard focus outline inside the clipped canvas. Picking a search result hands focus to the map after the palette closes; cancellation returns to the opener. Activating a related concept transfers keyboard focus to the replacement inspector's close control. INDEX, detail and realm controls use the shared 44px touch floor.
-- The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature (see BACKLOG).
+- The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature.

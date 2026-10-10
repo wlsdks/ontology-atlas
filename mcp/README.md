@@ -300,6 +300,12 @@ currentness and verification unknowns visible; source inspection still owns
 implementation verification. No global hook or default telemetry is needed.
 Removing the optional task policy stops this requested routing.
 
+Compact qualifiers keep a prose section together, including conditions or
+evidence limits in later sentences and paragraphs. A section that exceeds the
+budget is omitted whole with explicit coverage and a full-body recovery call.
+The text handoff includes every unknown retained in `focus.unknowns`; that list
+remains a bounded excerpt, not a complete inventory of the vault's uncertainty.
+
 The measured boundary is fresh Codex CLI sessions with source MCP, one explicit
 policy delivery per session, and read-only source access. Five frozen cases
 covered meaningful work, unrelated metadata, wrong vault, unavailable MCP and
