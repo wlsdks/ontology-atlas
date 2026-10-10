@@ -5,6 +5,7 @@ export const rules = [
     reason: "the agent composer footer's picker width across the panel's drag range changed",
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
+      /^src\/widgets\/acp-chat-panel\/ui\/chat-panel\/[^/]+\.tsx?$/,
     ],
   },
   {
@@ -13,6 +14,7 @@ export const rules = [
     reason: "the agent composer footer's pieces overlapping while a turn runs changed",
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
+      /^src\/widgets\/acp-chat-panel\/ui\/chat-panel\/[^/]+\.tsx?$/,
       /^src\/widgets\/acp-chat-panel\/ui\/AcpPermissionCard\.tsx$/,
     ],
   },
@@ -43,6 +45,8 @@ export const rules = [
     reason: 'the edge cue on a fenced block that overflows the agent panel changed',
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
+      /^src\/widgets\/acp-chat-panel\/ui\/chat-markdown\/[^/]+\.tsx?$/,
+      /^src\/widgets\/acp-chat-panel\/ui\/transcript\/[^/]+\.tsx?$/,
     ],
   },
   {

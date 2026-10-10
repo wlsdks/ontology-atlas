@@ -31,7 +31,9 @@ const CSS = readGlobalCss();
 
 /** Every file whose vertical scrollers were designed with the bar already gone. */
 const SCROLLER_SOURCES = [
-  'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx',
+  'src/widgets/acp-chat-panel/ui/chat-panel/TranscriptPane.tsx',
+  'src/widgets/acp-chat-panel/ui/chat-panel/HistoryPopover.tsx',
+  'src/widgets/acp-chat-panel/ui/chat-panel/ComposerInput.tsx',
   'src/widgets/acp-chat-panel/ui/AcpPresentationPanel.tsx',
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
 ] as const;
@@ -133,13 +135,16 @@ describe('quiet scrollers', () => {
     expect(library).toMatch(/indexMask \? \{ maskImage: indexMask, WebkitMaskImage: indexMask \}/);
 
     const panel = readFileSync('src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx', 'utf8');
+    const popover = readFileSync('src/widgets/acp-chat-panel/ui/chat-panel/HistoryPopover.tsx', 'utf8');
+    const pane = readFileSync('src/widgets/acp-chat-panel/ui/chat-panel/TranscriptPane.tsx', 'utf8');
     // The past-conversation list: rows below the fold are otherwise unannounced.
-    expect(panel).toContain('data-testid="acp-chat-history-list"');
+    expect(popover).toContain('data-testid="acp-chat-history-list"');
     expect(panel).toContain("const historyFade = 'var(--tabbar-edge-fade)'");
     expect(panel).toMatch(/const historyMask =[\s\S]{0,600}historyFade/);
-    expect(panel).toMatch(/historyMask \? \{ maskImage: historyMask, WebkitMaskImage: historyMask \}/);
+    expect(popover).toMatch(/mask \? \{ maskImage: mask, WebkitMaskImage: mask \}/);
     // The transcript's top edge cuts glyphs in half without one.
     expect(panel).toMatch(/transcriptScrolled[\s\S]{0,400}--tabbar-edge-fade/);
+    expect(pane).toMatch(/mask \? \{ maskImage: mask, WebkitMaskImage: mask \}/);
   });
 
   it('lets distance decide how the transcript follows, and never glides under reduced motion', () => {
