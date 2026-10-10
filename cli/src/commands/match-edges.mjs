@@ -3,10 +3,8 @@
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import {
-  assertMatchEdgesShape,
-  assertQueryPlanShape,
-} from '../lib/query-result-contract.mjs';
+import { assertMatchEdgesShape } from '../lib/query-result-contract/node-lookups.mjs';
+import { assertQueryPlanShape } from '../lib/query-result-contract/graph-traversal.mjs';
 import {
   printQueryPlan,
   shouldBlockPlannedExecution,

@@ -3,7 +3,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertExplainRelationShape } from '../lib/query-result-contract.mjs';
+import { assertExplainRelationShape } from '../lib/query-result-contract/graph-traversal.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import {

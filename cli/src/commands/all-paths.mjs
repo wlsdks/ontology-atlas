@@ -5,9 +5,9 @@ import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertAllPathsShape,
-  assertQueryPlanShape,
   allPathsResultExitCode,
-} from '../lib/query-result-contract.mjs';
+} from '../lib/query-result-contract/path-queries.mjs';
+import { assertQueryPlanShape } from '../lib/query-result-contract/graph-traversal.mjs';
 import {
   formatQueryHint,
   printQueryPlan,

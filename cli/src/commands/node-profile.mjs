@@ -3,7 +3,7 @@
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertNodeProfileShape } from '../lib/query-result-contract.mjs';
+import { assertNodeProfileShape } from '../lib/query-result-contract/node-lookups.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,

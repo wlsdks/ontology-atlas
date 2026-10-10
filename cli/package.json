@@ -9,7 +9,7 @@
     "ontology-atlas": "src/index.mjs"
   },
   "scripts": {
-    "test": "node --test src/lib/*.test.mjs"
+    "test": "node --test src/lib/*.test.mjs src/lib/query-result-contract/*.test.mjs"
   },
   "files": [
     "src/index.mjs",

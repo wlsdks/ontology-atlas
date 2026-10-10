@@ -4,10 +4,8 @@
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import {
-  assertBlastRadiusShape,
-  assertQueryPlanShape,
-} from '../lib/query-result-contract.mjs';
+import { assertBlastRadiusShape } from '../lib/query-result-contract/blast-radius.mjs';
+import { assertQueryPlanShape } from '../lib/query-result-contract/graph-traversal.mjs';
 import {
   printQueryPlan,
   shouldBlockPlannedExecution,

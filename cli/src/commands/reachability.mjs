@@ -6,7 +6,7 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertQueryPlanShape,
   assertReachabilityShape,
-} from '../lib/query-result-contract.mjs';
+} from '../lib/query-result-contract/graph-traversal.mjs';
 import {
   printQueryPlan,
   shouldBlockPlannedExecution,

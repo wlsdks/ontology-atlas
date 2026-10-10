@@ -10,7 +10,7 @@ import { walkMd, pathToSlug } from '../lib/walk-vault.mjs';
 import { getStagedFiles } from '../lib/git-staged.mjs';
 import { matchChangedFilesToVaultNodes } from '../lib/preflight-match.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertBlastRadiusShape } from '../lib/query-result-contract.mjs';
+import { assertBlastRadiusShape } from '../lib/query-result-contract/blast-radius.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedNonNegativeIntegerFlag,

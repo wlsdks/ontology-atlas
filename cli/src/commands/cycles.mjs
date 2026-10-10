@@ -3,7 +3,10 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertCyclesShape, cyclesResultExitCode } from '../lib/query-result-contract.mjs';
+import {
+  assertCyclesShape,
+  cyclesResultExitCode,
+} from '../lib/query-result-contract/path-queries.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
