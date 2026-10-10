@@ -14,8 +14,8 @@ import {
  * Atlas Git summary arithmetic, 2-way contract — the same logic lives in two places:
  *   - cli/src/lib/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
  *   - src/shared/lib/atlas-git-changes.ts (the web Atlas Git panel)
- * (Rust `src-tauri/src/git.rs` is a third mirror — its own Rust unit tests verify
- * the same fixture intent.)
+ * (Rust `src-tauri/src/git/changes.rs` is a third mirror — its Rust unit tests verify
+ * the same fixtures.)
  *
  * If the web panel reports different commit messages or counts than the CLI, the
  * user sees two different histories on the two surfaces. This test blocks that
