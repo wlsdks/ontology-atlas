@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { isCommentOnlyChange, supportsCommentOnlyCheck } from './lib/comment-only-change.mjs';
+import { contentTree, proofFile, proofToRecord, recordProof, treeOf } from './lib/focused-checks-proof.mjs';
 
 import {
   formatFocusedCheckSuggestions,
@@ -312,6 +313,23 @@ export function runFocusedChecks({
   return 0;
 }
 
+function tryContentTree({ cwd, spawn }) {
+  try {
+    return contentTree({ cwd, spawn });
+  } catch {
+    return null;
+  }
+}
+
+function recordPassedRun({ baseRev, checked, cwd, spawn }) {
+  try {
+    const proof = proofToRecord({ from: treeOf(baseRev, { cwd, spawn }), before: checked, after: tryContentTree({ cwd, spawn }) });
+    if (proof) recordProof({ ...proof, file: proofFile({ cwd, spawn }) });
+  } catch {
+    return;
+  }
+}
+
 export function runSuggestFocusedChecks({
   argv = process.argv.slice(2),
   cwd = process.cwd(),
@@ -355,7 +373,10 @@ export function runSuggestFocusedChecks({
     const suggestions = suggestFocusedChecks(paths, { deletedPaths, commentOnlyPaths });
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
-    return runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });
+    const checked = !explicit && baseRev ? tryContentTree({ cwd, spawn }) : null;
+    const code = runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });
+    if (code === 0 && checked) recordPassedRun({ baseRev, checked, cwd, spawn });
+    return code;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     stderr.write(`[focused-checks] ${message}\n`);

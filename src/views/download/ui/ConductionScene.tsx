@@ -207,6 +207,7 @@ export default function ConductionScene({
     <div
       ref={sceneRef}
       aria-hidden
+      data-decorative-motion
       data-testid="download-conduction-scene"
       data-conduction-layout={geometry.layout}
       className="relative"

@@ -46,7 +46,7 @@ before relying on it.
 | **pre-push, whole hook** | 90 s | **80 s** (was 367 s) | the common failure, found before CI |
 | PR CI `contract` | — | formerly 80 s locally | full ratchets stay in CI; removed from pre-push |
 | PR CI `dead_code` | — | formerly 33 s locally | whole-graph Knip stays in CI; removed from pre-push |
-| pre-push `unit` | — | 6-19 s | the tests that import the change |
+| pre-push `unit` | — | 6-19 s; skipped when every change since the merge base passed `checks:changed -- --run` on the same content | the tests that import the change |
 | pre-push `source_language` | — | 7 s | Korean in source comments |
 | pre-push `lint` | — | 1-3 s | ESLint on the changed files |
 | pre-push `typecheck` · `comment_refs` · `decisions` | — | ~1 s each | types, code-comment citations, a route with no record |
