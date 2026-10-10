@@ -28,8 +28,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm check:tokens',
     'pnpm test:check:tokens',
     'pnpm test:i18n:messages',
-    // `package:check` runs every `cli/src/lib/*.test.mjs`, and the MCP lane's `test:mcp:unit`
-    // every `mcp/src/*.test.mjs`, so their single-file wrappers are not listed again here.
+    // `package:check` runs every test under `cli/src/lib/`, and the MCP lane's
+    // `test:mcp:unit` every MCP unit test, so their single-file wrappers are not listed here.
     'pnpm package:check',
     'pnpm licenses:check',
     'pnpm notice:check',

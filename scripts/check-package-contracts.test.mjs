@@ -364,7 +364,7 @@ describe('package contract helpers', () => {
 
   it('keeps CLI npm test runnable from the published tarball', () => {
     const pkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
-    const cliLibTests = readdirSync('cli/src/lib')
+    const cliLibTests = readdirSync('cli/src/lib', { recursive: true })
       .filter((file) => file.endsWith('.test.mjs'))
       .sort();
 

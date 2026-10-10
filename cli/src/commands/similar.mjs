@@ -3,7 +3,7 @@
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { validateKindValue } from '../lib/kinds.mjs';
-import { assertSimilarNodesShape } from '../lib/query-result-contract.mjs';
+import { assertSimilarNodesShape } from '../lib/query-result-contract/node-lookups.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { VAULT_KINDS } from '../lib/schema.mjs';
 import {
