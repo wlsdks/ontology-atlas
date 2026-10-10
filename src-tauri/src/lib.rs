@@ -75,7 +75,7 @@ const DEFAULT_APP_LOCALE: &str = "en";
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
-        std::env::set_var("PATH", acp::sanitized_process_path(&path));
+        std::env::set_var("PATH", acp::search_path::sanitized_process_path(&path));
     }
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();

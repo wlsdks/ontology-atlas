@@ -153,8 +153,8 @@ pub(crate) fn acp_start(
         return Err(format!("vault-root-rejected:{reason}"));
     }
 
-    let (is_executable, list_dir, read_text, login_ok) = acp::real_probe();
-    let probe = acp::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
+    let probe = acp::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -164,12 +164,12 @@ pub(crate) fn acp_start(
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     // Include app installs, or the screen keeps asking for installation.
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
     // Include the app's Node for the same reason.
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
-    let mut launch = acp::resolve_launch(
+    let mut launch = acp::launch::resolve_launch(
         &runtime_id,
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
@@ -179,10 +179,10 @@ pub(crate) fn acp_start(
     )?;
     let repo_root = git::find_repo_root(&root).ok().flatten();
     launch.path_env =
-        acp::path_without_vault_node_modules_bin(&launch.path_env, &root, repo_root.as_deref());
+        acp::search_path::path_without_vault_node_modules_bin(&launch.path_env, &root, repo_root.as_deref());
 
     // Heal a half-downloaded npx entry just before launch (see the npx cache block in `acp.rs`).
-    let npx_preflight = acp::preflight_npx_cache(&launch, home.as_deref());
+    let npx_preflight = acp::npx_cache::preflight_npx_cache(&launch, home.as_deref());
 
     // Never inherit the user's global settings: pre-allowed entries bypass the gate.
     let app_data = app
@@ -191,19 +191,19 @@ pub(crate) fn acp_start(
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
     // No start without a verified app-owned boundary. Shadow checks need the CLI's
     // absolute path because a GUI app's PATH differs from the shell's.
-    let isolation_cli = acp::registry_agent(&runtime_id)
+    let isolation_cli = acp::registry::registry_agent(&runtime_id)
         .and_then(|agent| agent.cli.as_deref())
         .and_then(|name| {
-            let dirs = acp::candidate_bin_dirs(
+            let dirs = acp::command_lookup::candidate_bin_dirs(
                 home.as_deref(),
                 std::env::var_os("PATH").as_deref(),
                 &probe,
                 managed_bin.as_deref(),
                 managed_node_bin.as_deref(),
             );
-            acp::resolve_command(name, &dirs, &probe)
+            acp::command_lookup::resolve_command(name, &dirs, &probe)
         });
-    let (isolation_env, isolation_dir) = acp::prepare_runtime_isolation(
+    let (isolation_env, isolation_dir) = acp::isolation::prepare_runtime_isolation(
         &runtime_id,
         &app_data,
         home.as_deref(),
@@ -211,8 +211,8 @@ pub(crate) fn acp_start(
         &launch.path_env,
     )?;
 
-    let spawned = matches!(npx_preflight, acp::NpxCachePreflight::CacheReady)
-        .then(|| acp::launch_from_npx_cache(&launch, home.as_deref(), &is_executable))
+    let spawned = matches!(npx_preflight, acp::npx_cache::NpxCachePreflight::CacheReady)
+        .then(|| acp::npx_cache::launch_from_npx_cache(&launch, home.as_deref(), &is_executable))
         .flatten();
     log::info!(
         "acp start {runtime_id}: {}",
@@ -224,7 +224,7 @@ pub(crate) fn acp_start(
     );
     let spawned = spawned.unwrap_or_else(|| launch.clone());
     let mut command = adapter_command(&spawned.program, &spawned.args, &app_data, &root);
-    acp::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
+    acp::runtime_environment::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
     command.env(isolation_env, isolation_dir);
 
     #[cfg(unix)]
@@ -301,27 +301,27 @@ pub(crate) fn acp_start(
 
     let first_run_message = match &npx_preflight {
         // Mention the healing for diagnostics.
-        acp::NpxCachePreflight::HealedBrokenEntry { reason } => {
+        acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { reason } => {
             Some(format!("npx-first-run-download:healed:{reason}"))
         }
-        acp::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
+        acp::npx_cache::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
         // Report the reason so the screen can explain the repeat failure.
-        acp::NpxCachePreflight::HealFailed { reason, error } => {
+        acp::npx_cache::NpxCachePreflight::HealFailed { reason, error } => {
             Some(format!("npx-cache-heal-failed:{reason}:{error}"))
         }
-        acp::NpxCachePreflight::NotNpx
-        | acp::NpxCachePreflight::CacheUnknown
-        | acp::NpxCachePreflight::CacheReady => None,
+        acp::npx_cache::NpxCachePreflight::NotNpx
+        | acp::npx_cache::NpxCachePreflight::CacheUnknown
+        | acp::npx_cache::NpxCachePreflight::CacheReady => None,
     };
     let downloading = matches!(
         npx_preflight,
-        acp::NpxCachePreflight::FirstDownload | acp::NpxCachePreflight::HealedBrokenEntry { .. }
+        acp::npx_cache::NpxCachePreflight::FirstDownload | acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { .. }
     );
     if let Some(message) = first_run_message {
         let entry = downloading
-            .then(|| acp::npx_cache_entry_for_launch(&launch, home.as_deref()))
+            .then(|| acp::npx_cache::npx_cache_entry_for_launch(&launch, home.as_deref()))
             .flatten();
-        let package = acp::npx_launch_package(&launch).map(str::to_string);
+        let package = acp::npx_cache::npx_launch_package(&launch).map(str::to_string);
         let app = app.clone();
         let session_id = session_id.clone();
         std::thread::spawn(move || {
@@ -343,13 +343,13 @@ pub(crate) fn acp_start(
                 if !alive {
                     break;
                 }
-                if acp::npx_entry_health(&entry, &package) == acp::NpxEntryHealth::Usable {
+                if acp::npx_cache::npx_entry_health(&entry, &package) == acp::npx_cache::NpxEntryHealth::Usable {
                     let _ = on_event.send(AcpStreamEvent::Notice {
                         message: "npx-download-done".to_string(),
                     });
                     break;
                 }
-                let mb = acp::dir_size_bytes(&entry) / (1024 * 1024);
+                let mb = acp::npx_cache::dir_size_bytes(&entry) / (1024 * 1024);
                 let _ = on_event.send(AcpStreamEvent::Notice {
                     message: format!("npx-download-progress:{mb}"),
                 });
@@ -384,7 +384,7 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     std::thread::spawn(move || {
         let mut reader = std::io::BufReader::new(stream);
         loop {
-            match acp::read_bounded_line(&mut reader, acp::MAX_LINE_BYTES) {
+            match acp::agent_process::read_bounded_line(&mut reader, acp::agent_process::MAX_LINE_BYTES) {
                 Ok(Some(bytes)) => {
                     let line = acp_line_text(bytes);
                     if let Some(sink) = early_lines.as_ref() {
@@ -421,11 +421,11 @@ fn permission_verdict_for_session(
     sessions: &AcpSessions,
     session_id: &str,
     file_path: Option<&str>,
-) -> acp::PermissionVerdict {
+) -> acp::permission_verdict::PermissionVerdict {
     sessions
         .vault_root(session_id)
-        .map(|root| acp::permission_verdict(&root, file_path))
-        .unwrap_or(acp::PermissionVerdict::Ask)
+        .map(|root| acp::permission_verdict::permission_verdict(&root, file_path))
+        .unwrap_or(acp::permission_verdict::PermissionVerdict::Ask)
 }
 
 #[tauri::command]
@@ -436,8 +436,8 @@ pub(crate) fn acp_permission_verdict(
 ) -> String {
     let verdict = permission_verdict_for_session(&sessions, &session_id, file_path.as_deref());
     match verdict {
-        acp::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
-        acp::PermissionVerdict::Ask => "ask".to_string(),
+        acp::permission_verdict::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
+        acp::permission_verdict::PermissionVerdict::Ask => "ask".to_string(),
     }
 }
 
@@ -460,7 +460,7 @@ pub(crate) fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> 
     log::info!("acp session {session_id} stop requested by the screen");
     let pid = sessions.take_pid(&session_id)?;
     match pid {
-        Some(pid) => acp::terminate_tree(pid),
+        Some(pid) => acp::agent_process::terminate_tree(pid),
         None => Ok(()),
     }
 }
@@ -476,7 +476,7 @@ pub(crate) fn terminate_all_acp_sessions(app: &AppHandle) {
         Err(_) => return,
     };
     for pid in handles {
-        let _ = acp::terminate_tree(pid);
+        let _ = acp::agent_process::terminate_tree(pid);
     }
 }
 
@@ -697,15 +697,15 @@ mod tests {
                 "bound-session",
                 vault.join("inside.md").to_str()
             ),
-            acp::PermissionVerdict::AllowInsideVault
+            acp::permission_verdict::PermissionVerdict::AllowInsideVault
         );
         assert_eq!(
             permission_verdict_for_session(&sessions, "bound-session", outside.to_str()),
-            acp::PermissionVerdict::Ask
+            acp::permission_verdict::PermissionVerdict::Ask
         );
         assert_eq!(
             permission_verdict_for_session(&sessions, "caller-invented-session", outside.to_str()),
-            acp::PermissionVerdict::Ask,
+            acp::permission_verdict::PermissionVerdict::Ask,
             "an unregistered session must not auto-allow any path"
         );
 
