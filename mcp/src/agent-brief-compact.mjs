@@ -792,6 +792,7 @@ function buildCompactHandoffPrompt(result) {
   const anchors = result.focus.evidenceAnchors;
   const navigation = result.focus.taskNavigation;
   const nextRead = result.nextReads[0];
+  const nextReadLine = `Next read: ${nextRead ? `${nextRead.tool} ${JSON.stringify(nextRead.arguments)}` : 'inspect source from the recorded anchor'}`;
   const unknownLines = result.focus.unknowns.length > 0
     ? result.focus.unknowns.map((unknown) => `Unknown: ${unknown}`)
     : ['Unknown: no additional bounded unknown was recorded'];
@@ -835,6 +836,7 @@ function buildCompactHandoffPrompt(result) {
       verificationLine,
       'Tests: named positive + negative regression; exact observable output.',
       ...unknownLines,
+      nextReadLine,
       sourcePolicy,
       'Full: detail=full',
     ].join('\n');
@@ -854,7 +856,7 @@ function buildCompactHandoffPrompt(result) {
     `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
     ...unknownLines,
     `Verify: ${result.focus.verification.status}${result.focus.verification.recordedPaths.length > 0 ? ` at ${result.focus.verification.recordedPaths.join(', ')}` : '; discover near the anchor'}`,
-    `Next read: ${nextRead ? `${nextRead.tool} ${JSON.stringify(nextRead.arguments)}` : 'inspect source from the recorded anchor'}`,
+    nextReadLine,
     `Full detail: ${result.fullDetail.tool} ${JSON.stringify(result.fullDetail.arguments)}`,
   ].join('\n');
 }

@@ -1,5 +1,5 @@
 {
-  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "file": "src/widgets/atlas-git-panel/ui/StepList.tsx",
   "count": 3,
   "claim": "chrome-token",
   "proof": "--git-row-h",
