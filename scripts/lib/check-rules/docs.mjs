@@ -88,7 +88,7 @@ export const rules = [
     reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
     matches: [
       /^mcp\/src\/index\.js$/,
-      /^mcp\/src\/server\/registry\.mjs$/,
+      /^mcp\/src\/server\/(?:registry\.mjs|tool-definitions\/[^/]+\.mjs)$/,
       /^cli\/src\/lib\/cli-commands\.mjs$/,
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
