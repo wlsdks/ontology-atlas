@@ -66,7 +66,7 @@ export function pendingDocPaths(changedRepoPaths: readonly string[], docPaths: I
   return pending;
 }
 
-/** Documents `git_paths_last_change` dates in one walk (`MAX_EVIDENCE_PATHS`, `src-tauri/src/git.rs`). */
+/** Documents `git_paths_last_change` dates in one walk (`MAX_EVIDENCE_PATHS`, `git/evidence.rs`). */
 const GIT_WALK_PATH_LIMIT = 512;
 
 /** A document that is a node — the only documents the change dates are read for. */
