@@ -10,10 +10,8 @@ import {
   buildArchitectureMeasuredStamp,
   findArchitectureProfiles,
 } from '../architecture-profile.mjs';
-import {
-  buildImportImpactFocus,
-  inferImports,
-} from '../infer-imports.mjs';
+import { inferImports } from '../infer-imports.mjs';
+import { buildImportImpactFocus } from '../infer-imports/import-impact-focus.mjs';
 import { inspectProjectSource } from '../project-source-inspection.mjs';
 import { composeSourceDigest, readSourceEvidence, validateSourceReadSelectors } from '../source-evidence.mjs';
 import {
