@@ -650,11 +650,7 @@ function completeMarkdownUnits(doc, section, role) {
       if (current.length > 0) texts.push(current.join('\n').trim());
     }
   } else {
-    for (const paragraph of source.split(/\n\s*\n/u).map((text) => text.trim()).filter(Boolean)) {
-      texts.push(...[...new Intl.Segmenter(undefined, { granularity: 'sentence' }).segment(paragraph)]
-        .map((row) => row.segment.trim())
-        .filter(Boolean));
-    }
+    texts.push(source.trim());
   }
   return texts.map((text) => ({
     slug: doc.slug,

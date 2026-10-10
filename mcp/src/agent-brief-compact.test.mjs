@@ -495,6 +495,35 @@ DER parsing and unrelated encodings.
     }
   });
 
+  it('keeps prose conditions and evidence limits attached across sentence and paragraph breaks', () => {
+    for (const separator of [' ', '\n\n']) {
+      const sections = {
+        Definition: `Send reports to requesters.${separator}This requires supervisor approval.`,
+        Includes: `Report delivery sends the report.${separator}It runs only after supervisor approval.`,
+        Excludes: `Automatic release is excluded.${separator}This boundary applies to report delivery only.`,
+        Uncertainty: `The implementation and test files were read.${separator}The tests were not run.`,
+      };
+      const result = buildCompactAgentBrief({
+        brief,
+        artifact,
+        docs: [docs[0], {
+          slug: 'capabilities/report-delivery',
+          frontmatter: { kind: 'capability', title: 'Report Delivery' },
+          body: Object.entries(sections).map(([section, text]) => `## ${section}\n\n${text}`).join('\n\n'),
+        }],
+        task: 'Send report delivery after approval.',
+      });
+      for (const [section, text] of Object.entries(sections)) {
+        const units = result.focus.qualifiers.units.filter((row) => row.section === section);
+        assert.equal(units.length, 1, `${section} must travel with its governing scope`);
+        assert.equal(units[0].text, text);
+        assert.ok(result.handoffPrompt.includes(text), `${section} must survive the text handoff`);
+      }
+      assert.equal(result.focus.qualifiers.coverage.complete, true);
+      assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+    }
+  });
+
   it('returns no capability when the bounded vault records no task match', () => {
     const result = buildCompactAgentBrief({
       brief,
