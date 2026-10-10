@@ -51,6 +51,20 @@ test('two-hundred-percent text keeps nodes, evidence and controls inside the rea
   await expect(documentLink).toBeInViewport({ ratio: 1 });
 });
 
+for (const tab of ['connections', 'do-next']) {
+  test(`${tab} scrolls inside the page and leaves the shell slot without a scroll range`, async ({ page }) => {
+    await page.setViewportSize({ width: 1040, height: 720 });
+    await page.goto(`/en/ontology/insights/?tab=${tab}&guides=off`);
+    await expect(page.getByTestId('analysis-workspace')).toBeVisible();
+    const ranges = await page.evaluate(() => {
+      const range = (element: Element) => element.scrollHeight - element.clientHeight;
+      return { page: range(document.querySelector('main#main')!), slot: range(document.querySelector('[data-testid="app-shell-body-slot"]')!) };
+    });
+    expect(ranges.page, 'the page must be taller than the window or nothing below is measured').toBeGreaterThan(0);
+    expect(ranges.slot, JSON.stringify(ranges)).toBeLessThanOrEqual(1);
+  });
+}
+
 test('the rendered node text and selected arrow meet contrast on their actual surfaces', async ({ page }, testInfo) => {
   await page.goto('/en/ontology/insights/');
   await expect(page.getByTestId('analysis-witness').first()).toBeVisible();
