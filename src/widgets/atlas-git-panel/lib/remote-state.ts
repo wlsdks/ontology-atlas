@@ -15,6 +15,13 @@ import type { GitStatusResult } from "@/shared/lib/tauri-git";
  */
 export type GitRemoteState = "tracking" | "no-remote" | "never-sent" | "detached" | "unknown";
 
+/**
+ * The presses that reach the remote. On a branch `origin` has never seen, `push` is its first
+ * send (`push -u`, see `describeRemoteState`): the one press that turns a saved address into an
+ * upstream.
+ */
+export type RemoteAction = "fetch" | "pull" | "push";
+
 export function describeRemoteState(
   status: Pick<GitStatusResult, "upstream" | "hasOrigin" | "detached"> | null,
 ): GitRemoteState {

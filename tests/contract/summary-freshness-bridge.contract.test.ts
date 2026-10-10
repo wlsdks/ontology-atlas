@@ -38,16 +38,16 @@ function read(relative: string): string {
 
 describe('summary freshness bridge', () => {
   it('exposes the Rust command the app reads history through', () => {
-    const git = read('src-tauri/src/git.rs');
-    expect(git, 'the vault_node_revisions command is gone — the app can never see staleness').toContain(
+    const history = read('src-tauri/src/git/history.rs');
+    expect(history, 'the vault_node_revisions command is gone — the app can never see staleness').toContain(
       'pub fn vault_node_revisions',
     );
     expect(
-      git,
+      history,
       'the per-node revision cap is gone; one screen paint could spawn unbounded git processes',
     ).toContain('MAX_FRESHNESS_SLUGS');
     expect(
-      read('src-tauri/src/git/history.rs'),
+      history,
       'the slug traversal guard is gone — a slug reaches a `git show` argument and must not be able to climb out of the vault',
     ).toMatch(/contains\("\.\."\)/);
   });
@@ -55,9 +55,9 @@ describe('summary freshness bridge', () => {
   it('registers that command, without which the app calls into nothing', () => {
     const lib = read('src-tauri/src/lib.rs');
     expect(lib, 'vault_node_revisions is not in the invoke handler').toContain(
-      'git::vault_node_revisions',
+      'git::history::vault_node_revisions',
     );
-    expect(lib).toContain('git::vault_node_revision_content');
+    expect(lib).toContain('git::history::vault_node_revision_content');
   });
 
   it('keeps the client calling the command by the name Rust exports', () => {

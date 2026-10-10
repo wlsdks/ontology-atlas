@@ -30,7 +30,8 @@ space, and a description match now opens at the match with a leading ellipsis ra
 than highlighting past the truncation — measured live: rows whose mark rendered
 outside its own box went from 1-2 per English query to 0. The per-node name index is
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
-243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
+243 ms to 29.8 ms; `node-name-match.test.ts` holds that a repeated query builds
+nothing.
 
 **Every result row says what it matched** (2026-09-19). Matching deliberately looks
 wider than the row draws — every one of a concept's names (the canonical `title` and

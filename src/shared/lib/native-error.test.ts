@@ -97,7 +97,19 @@ describe('nativeErrorMessage', () => {
 
 describe('the catalogue covers every code Rust mints', () => {
   const crate = join(import.meta.dirname, '..', '..', '..', 'src-tauri', 'src');
-  const sources = ['errors.rs', 'git.rs', 'llm.rs', 'llm_audit.rs', 'secrets.rs']
+  const sources = [
+    'errors.rs',
+    'git/classify.rs',
+    'git/document.rs',
+    'git/remote.rs',
+    'git/repo.rs',
+    'git/runner.rs',
+    'git/setup.rs',
+    'git/snapshot.rs',
+    'llm.rs',
+    'llm_audit.rs',
+    'secrets.rs',
+  ]
     .map((name) => readFileSync(join(crate, name), 'utf8'))
     .join('\n');
 

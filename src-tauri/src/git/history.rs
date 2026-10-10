@@ -1,6 +1,12 @@
-use super::*;
-use crate::command_output::{self, CaptureError};
+use serde::Serialize;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
+
+use super::repo::{repo_toplevel_is_trustworthy, vault_pathspec};
+use super::runner::{hardened_base_command, validate_vault_dir, with_diff_family_guard};
+use crate::command_output::{self, CaptureError};
+use crate::errors::coded;
 
 const MAX_CONTENT_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_LOG_BYTES: u64 = 64 * 1024;
@@ -67,7 +73,7 @@ fn read(root: &Path, args: &[&str], max_bytes: u64) -> Result<(bool, String), St
 }
 
 // O(requested revisions) metadata, bounded separately from one body's bytes.
-pub(super) fn list(
+fn list(
     vault_path: &str,
     slugs: &[String],
     max_revisions: Option<u32>,
@@ -117,7 +123,7 @@ pub(super) fn list(
     Ok(references)
 }
 
-pub(super) fn content(
+fn content(
     vault_path: &str,
     slug: &str,
     revision: &str,
@@ -154,4 +160,33 @@ pub(super) fn content(
     } else {
         Err(coded("git-history-unavailable", ""))
     }
+}
+
+/// Bounds `git show` processes per paint.
+const MAX_FRESHNESS_SLUGS: usize = 64;
+
+/// A historical version address; bodies are read separately when needed.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeRevisionRef {
+    slug: String,
+    iso_time: String,
+    revision: String,
+}
+
+/// Revisions newest first for the summary-freshness check. Git plumbing only; the
+/// ontology judgement lives in one shared TypeScript module. A slug without history
+/// is absent, not an error.
+#[tauri::command(async)]
+pub fn vault_node_revisions(
+    vault_path: String,
+    slugs: Vec<String>,
+    max_revisions: Option<u32>,
+) -> Result<Vec<NodeRevisionRef>, String> {
+    list(&vault_path, &slugs, max_revisions)
+}
+
+#[tauri::command(async)]
+pub fn vault_node_revision_content(vault_path: String, slug: String, revision: String) -> Result<Option<String>, String> {
+    content(&vault_path, &slug, &revision)
 }
