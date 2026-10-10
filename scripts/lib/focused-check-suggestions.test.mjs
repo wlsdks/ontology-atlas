@@ -74,6 +74,9 @@ describe('focused check suggestions', () => {
   it('covers construction registry, replay delegation and rendered guide consumers', () => {
     const subjects = [
       ['mcp/src/server/registry.mjs', 'pnpm test:mcp:unit'],
+      ['mcp/src/server/tool-definitions/read.mjs', 'pnpm test:mcp:unit'],
+      ['mcp/src/server/tool-definitions/read.mjs', 'pnpm docs:surface:check'],
+      ['mcp/src/server/tool-definitions/read.mjs', 'pnpm integration:mcp:surface'],
       ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
       ['scripts/lib/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],

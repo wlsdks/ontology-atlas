@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -25,12 +25,16 @@ import { NODE_ELIGIBILITY_GATE } from "../../mcp/src/schema.mjs";
  */
 
 /**
- * The two files the rules have to reach: the `initialize` instructions and the
- * tool table. They left `index.js` when the entry point became wiring only, so
- * both are read and joined — a gate that read only one of them could go green
- * because the text moved rather than because it arrived.
+ * The files the rules have to reach: the `initialize` instructions, the tool
+ * table and the per-family tool definitions. They left `index.js` when the entry
+ * point became wiring only, so all are read and joined — a gate that read only
+ * one of them could go green because the text moved rather than because it
+ * arrived.
  */
-const SERVER_SOURCE = ["server/instructions.mjs", "server/registry.mjs", "index.js"]
+const TOOL_DEFINITION_FILES = readdirSync(resolve(__dirname, "../../mcp/src/server/tool-definitions"))
+  .filter((file) => file.endsWith(".mjs"))
+  .map((file) => `server/tool-definitions/${file}`);
+const SERVER_SOURCE = ["server/instructions.mjs", "server/registry.mjs", "index.js", ...TOOL_DEFINITION_FILES]
   .map((file) => readFileSync(resolve(__dirname, "../../mcp/src", file), "utf-8"))
   .join("\n");
 
