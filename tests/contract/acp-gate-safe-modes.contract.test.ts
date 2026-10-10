@@ -54,7 +54,7 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
 
 describe('current adapter mode transcription', () => {
   it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
-    // v2.1.1 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
+    // v2.2.2 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
     const modes = [
       choice('read-only', 'Read-only', air ? 'standard' : null),
       choice('workspace-write', 'Workspace access', air ? 'standard' : null),
@@ -65,7 +65,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.86.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
+    // v0.89.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),
@@ -212,16 +212,16 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.86.0: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
+   * 0.89.0: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
    * now sent only to the adapter's own AIR client, so Atlas receives no kind and `mode-safety.ts`
    * judges by id alone; every gate-removing id is on its measured list.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.86.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.89.0',
   /**
-   * 2.1.1 src/AgentMode.ts restores readOnly and adds workspace-write; Atlas excludes the
+   * 2.2.2 src/AgentMode.ts restores readOnly and adds workspace-write; Atlas excludes the
    * latter because its workspaceWrite sandbox permits edits before an approval request.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@2.1.1',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.2.2',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
