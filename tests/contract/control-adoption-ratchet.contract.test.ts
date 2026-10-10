@@ -1977,6 +1977,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
  * to, so the rule cannot be half-satisfied by a prop that is simply ignored.
  */
 const WORKBENCH_HOSTED_PANEL = 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx';
+const WORKBENCH_HOSTED_PANEL_PROPS = 'src/widgets/acp-chat-panel/ui/chat-panel/types.ts';
 const WORKBENCH_HOSTS = [
   'src/views/home/ui/TopologyAgentDock.tsx',
   'src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx',
@@ -2033,7 +2034,9 @@ describe('컨트롤 소유권 — 한 화면에 닫기는 하나', () => {
 
   it('패널에는 넘겨줄 닫기 자체가 없다 — 규칙이 무시되는 prop 으로 반만 지켜지지 않게', () => {
     const panel = readFileSync(WORKBENCH_HOSTED_PANEL, 'utf8');
+    const props = readFileSync(WORKBENCH_HOSTED_PANEL_PROPS, 'utf8');
     expect(panel, '패널이 여전히 닫기 버튼을 그린다').not.toContain('data-testid="acp-chat-close"');
+    expect(props, 'the panel props still accept onClose').not.toMatch(/^\s*onClose\??:/m);
     expect(panel, '패널이 여전히 onClose 를 받는다').not.toMatch(/^\s*onClose\??:/m);
   });
 

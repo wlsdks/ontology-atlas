@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { followStep } from '@/widgets/acp-chat-panel/model/transcript-follow';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
@@ -31,10 +31,17 @@ const CSS = readGlobalCss();
 
 /** Every file whose vertical scrollers were designed with the bar already gone. */
 const SCROLLER_SOURCES = [
+  'src/widgets/acp-chat-panel/ui/chat-panel/TranscriptPane.tsx',
+  'src/widgets/acp-chat-panel/ui/chat-panel/HistoryPopover.tsx',
   'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx',
   'src/widgets/acp-chat-panel/ui/AcpPresentationPanel.tsx',
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
 ] as const;
+
+const PANEL_UI = 'src/widgets/acp-chat-panel/ui';
+const EVERY_PANEL_SOURCE = readdirSync(PANEL_UI, { recursive: true, encoding: 'utf8' })
+  .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+  .map((file) => `${PANEL_UI}/${file}`);
 
 // The Library index column is asserted by its own facts: the exact quiet class string on
 // `library-index-scroll`, and the edge mask that replaces its bar.
@@ -96,7 +103,8 @@ describe('quiet scrollers', () => {
   });
 
   it('gives every conversation scroller the quiet class', () => {
-    for (const path of SCROLLER_SOURCES) {
+    expect(EVERY_PANEL_SOURCE).toContain(`${PANEL_UI}/AcpChatPanel.tsx`);
+    for (const path of new Set([...SCROLLER_SOURCES, ...EVERY_PANEL_SOURCE])) {
       for (const classes of verticalScrollerClassStrings(readFileSync(path, 'utf8'))) {
         expect(`${path} :: ${classes}`).toContain('atlas-scroll-quiet');
       }
@@ -128,13 +136,16 @@ describe('quiet scrollers', () => {
     expect(library).toMatch(/indexMask \? \{ maskImage: indexMask, WebkitMaskImage: indexMask \}/);
 
     const panel = readFileSync('src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx', 'utf8');
+    const popover = readFileSync('src/widgets/acp-chat-panel/ui/chat-panel/HistoryPopover.tsx', 'utf8');
+    const pane = readFileSync('src/widgets/acp-chat-panel/ui/chat-panel/TranscriptPane.tsx', 'utf8');
     // The past-conversation list: rows below the fold are otherwise unannounced.
-    expect(panel).toContain('data-testid="acp-chat-history-list"');
+    expect(popover).toContain('data-testid="acp-chat-history-list"');
     expect(panel).toContain("const historyFade = 'var(--tabbar-edge-fade)'");
     expect(panel).toMatch(/const historyMask =[\s\S]{0,600}historyFade/);
-    expect(panel).toMatch(/historyMask \? \{ maskImage: historyMask, WebkitMaskImage: historyMask \}/);
+    expect(popover).toMatch(/mask \? \{ maskImage: mask, WebkitMaskImage: mask \}/);
     // The transcript's top edge cuts glyphs in half without one.
     expect(panel).toMatch(/transcriptScrolled[\s\S]{0,400}--tabbar-edge-fade/);
+    expect(pane).toMatch(/mask \? \{ maskImage: mask, WebkitMaskImage: mask \}/);
   });
 
   it('lets distance decide how the transcript follows, and never glides under reduced motion', () => {
