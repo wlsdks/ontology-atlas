@@ -17,11 +17,9 @@ import { defaultBody } from '../schema.mjs';
 import {
   configureNodeEligibilityRepoRoot,
   drainNodeEligibilityFindings,
-  patchFrontmatter,
   resetNodeEligibilityGate,
-  updateDoc,
-  writeDoc as writeVaultDoc,
-} from './doc-writes.mjs';
+} from './eligibility-gate.mjs';
+import { patchFrontmatter, updateDoc, writeDoc as writeVaultDoc } from './doc-writes.mjs';
 
 let root;
 let uidSequence = 0;

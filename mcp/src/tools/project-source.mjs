@@ -41,7 +41,7 @@ import {
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
-import { VaultConflictError } from '../vault/doc-writes.mjs';
+import { VaultConflictError } from '../vault/atomic-writes.mjs';
 import {
   meaningSourceFromProjectSource,
   projectMeaningContext,

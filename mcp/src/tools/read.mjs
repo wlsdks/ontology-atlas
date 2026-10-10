@@ -73,7 +73,7 @@ import {
   loadVaultDocs,
   readDoc,
 } from '../vault/documents.mjs';
-import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/doc-writes.mjs';
+import { findBacklinks, findOrphans, findPath, listKinds } from '../vault/graph-queries.mjs';
 import {
   normalizeGraphRelationKey,
   relationRefsFor,

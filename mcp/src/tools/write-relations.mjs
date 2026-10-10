@@ -17,7 +17,8 @@ import { formatAllowedValueError } from '../suggestions.mjs';
 import { normalizeRelationRefs } from '../vault/relation-refs.mjs';
 import { slugToPath } from '../vault/slug-paths.mjs';
 import { readDoc } from '../vault/documents.mjs';
-import { VaultConflictError, patchFrontmatter } from '../vault/doc-writes.mjs';
+import { VaultConflictError } from '../vault/atomic-writes.mjs';
+import { patchFrontmatter } from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   RELATION_KEY,

@@ -7,7 +7,7 @@ import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from "../../mcp/src/vault/relat
 
 /**
  * A 2-way contract — relation keys are read in two packages:
- *   - mcp/src/vault.mjs (the AI agent surface — canonical, GRAPH_ARRAY_KEYS)
+ *   - mcp/src/vault/ (the AI agent surface — canonical, GRAPH_ARRAY_KEYS)
  *   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts (the web map, studio,
  *     and insights)
  *

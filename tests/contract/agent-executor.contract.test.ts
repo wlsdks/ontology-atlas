@@ -84,7 +84,7 @@ async function run<T>(name: string, args: unknown = {}): Promise<T> {
 
 // The MCP side reads the vault folder directly, never through our manifest.
 const mcpDocuments = await import('../../mcp/src/vault/documents.mjs');
-const mcpVault = await import('../../mcp/src/vault/doc-writes.mjs');
+const mcpGraphQueries = await import('../../mcp/src/vault/graph-queries.mjs');
 const mcpRelationRefs = await import('../../mcp/src/vault/relation-refs.mjs');
 
 function loadMcpOntologyDocs() {
@@ -98,7 +98,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
   it('종류별 개수와 "이름만 불린 개념" 수가 통째로 같다', async () => {
     // Even the field names match — the in-screen agent and the terminal agent must state
     // the inventory in the same words for a user to compare the two numbers.
-    const mcpKinds = mcpVault.listKinds(VAULT_DIR) as {
+    const mcpKinds = mcpGraphQueries.listKinds(VAULT_DIR) as {
       total: number;
       byKind: Record<string, number>;
       referencedOnlyTotal: number;
@@ -159,7 +159,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
       .map((doc) => ({
         slug: doc.slug,
         backlinks:
-          (mcpVault.findBacklinks(VAULT_DIR, doc.slug) as Array<{
+          (mcpGraphQueries.findBacklinks(VAULT_DIR, doc.slug) as Array<{
             slug: string;
             matchedKeys?: string[];
           }>) ?? [],

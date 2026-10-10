@@ -24,7 +24,8 @@ import {
   requireOptionalBoolean,
 } from '../server/validate.mjs';
 import { slugToPath } from '../vault/slug-paths.mjs';
-import { writeDoc, writeFileAtomically } from '../vault/doc-writes.mjs';
+import { writeFileAtomically } from '../vault/atomic-writes.mjs';
+import { writeDoc } from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   agentProvenance,

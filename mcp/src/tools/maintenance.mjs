@@ -10,7 +10,7 @@ import {
   COMPILED_ONTOLOGY_CACHE,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
-import { drainNodeEligibilityFindings } from '../vault/doc-writes.mjs';
+import { drainNodeEligibilityFindings } from '../vault/eligibility-gate.mjs';
 import {
   briefVaultValidation,
   validateVaultReport,
