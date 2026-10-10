@@ -268,7 +268,7 @@ export interface NodeShapeTokens {
        * Layer-0 containers only). Inner offset hairline for the
        * project hexagon's double-hairline "machined bezel" (spec §A1's second
        * stroke — the outer stroke itself is `amberHub`, applied to the BODY
-       * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
+       * stroke by `ui/frame-draw/node-visual.ts#resolveNodeVisual`, not here).
        */
     projectHairlineInner: string;
     /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
@@ -837,7 +837,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber on
     // hub nodes and Layer-0 containers only). The
     // OUTER amber stroke is the body's own `stroke` (set by
-    // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
+    // `ui/frame-draw/node-visual.ts#resolveNodeVisual` for kind==="project", not
     // here) — this block only adds the inner offset hairline + the 4-direction
     // chassis pin ticks, both fading out toward far field like domain's pins.
     if (kind === "project" && egoState !== "dim") {

@@ -247,7 +247,7 @@ export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
  * name the user is looking at right now disappearing behind someone else's shape
  * is the worse outcome. Passive project/domain/capability/element labels (2–5)
  * step aside — first by flipping above the node, then dropping if that is
- * blocked too (the flip logic in `topology-frame-draw.ts`).
+ * blocked too (the flip logic in `ui/frame-draw/paint-labels.ts`).
  */
 export const NODE_DISC_LABEL_PRIORITY = 1;
 
