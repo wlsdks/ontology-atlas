@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -15,7 +15,7 @@ import {
   conduct,
   createGithub,
   describeCleanup,
-  describeDailyBrowserRun,
+  describeScheduledRun,
   lockTrains,
   describeLock,
   otherCheckState,
@@ -27,6 +27,7 @@ import {
   requiredCheckState,
   runInFlight,
   runPrLand,
+  SCHEDULED_CHECKS,
   worktreeToRemove,
 } from './pr-land.mjs';
 import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, RED_CLOSE_PREFIX, trainCiStep } from './lib/landing-train.mjs';
@@ -1177,28 +1178,45 @@ describe('train history', () => {
   });
 });
 
-describe('daily full browser run on main', () => {
+describe('scheduled checks on main', () => {
   const now = Date.parse('2026-10-09T12:00:00Z');
+  const [browser, acp] = SCHEDULED_CHECKS;
   const CASES = [
-    ['a green run from today says nothing', { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
-    ['a red run names its day and link', { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /failed on 2026-10-08 \(https:\/\/x\/1\)/],
-    ['a green run older than two days says the schedule stalled', { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
-    ['an unreadable run says nothing', null, null],
+    ['a green run from today says nothing', browser, { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
+    ['a red run names its day and link', browser, { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /full browser run on main failed on 2026-10-08 \(https:\/\/x\/1\)/],
+    ['a green run older than two days says the schedule stalled', browser, { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
+    ['an unreadable run says nothing', browser, null, null],
+    ['a red ACP registry check names the command that shows what moved', acp, { conclusion: 'failure', createdAt: '2026-10-08T03:41:00Z', url: 'https://x/2' }, /ACP registry check on main failed on 2026-10-08 .*`pnpm acp:registry:check`/],
   ];
-  for (const [name, run, expected] of CASES) {
+  for (const [name, check, run, expected] of CASES) {
     it(name, () => {
-      const said = describeDailyBrowserRun(run, now);
+      const said = describeScheduledRun(check, run, now);
       if (expected === null) assert.equal(said, null);
       else assert.match(said, expected);
     });
   }
 
-  it('reads the newest finished scheduled run and survives an unreadable answer', () => {
+  it('reads the newest finished scheduled run of the named workflow and survives an unreadable answer', () => {
     const calls = [];
     const finished = { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'u' };
     const github = createGithub('owner/repo', (args) => { calls.push(args); return JSON.stringify([finished]); });
-    assert.deepEqual(github.readDailyBrowserRun(), finished);
-    assert.ok(calls[0].includes('schedule') && calls[0].includes('main'));
-    assert.equal(createGithub('owner/repo', () => undefined).readDailyBrowserRun(), null);
+    assert.deepEqual(github.readScheduledRun('acp-registry.yml'), finished);
+    assert.ok(calls[0].includes('acp-registry.yml') && calls[0].includes('schedule') && calls[0].includes('main'));
+    assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml'), null);
+  });
+
+  it('warns at landing for every red scheduled check', () => {
+    const world = fakeWorld({ prs: [component(71)] });
+    world.deps.gh.readScheduledRun = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
+    runPrLand(['71'], world.io, () => world.deps);
+    for (const workflow of ['e2e.yml', 'acp-registry.yml']) {
+      assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes(`https://x/${workflow}`)), workflow);
+    }
+  });
+
+  it('names only workflows that run on a schedule', () => {
+    for (const { workflow } of SCHEDULED_CHECKS) {
+      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), /^ {2}schedule:/m, workflow);
+    }
   });
 });

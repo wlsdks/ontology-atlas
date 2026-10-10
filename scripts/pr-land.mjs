@@ -185,7 +185,21 @@ export const FAST_LEASE_MINUTES = 2;
  */
 export const LEASE_MINUTES = 45;
 
-const DAILY_BROWSER_WORKFLOW = 'e2e.yml';
+export const SCHEDULED_CHECKS = [
+  {
+    workflow: 'e2e.yml',
+    name: 'daily full browser run',
+    red: 'the specs that run only after merge are red until someone fixes them',
+    idle: 'the specs that run only after merge have not run since',
+  },
+  {
+    workflow: 'acp-registry.yml',
+    name: 'daily ACP registry check',
+    red: 'an agent adapter moved upstream, and release admission refuses it until the registry is refreshed and reviewed (`pnpm acp:registry:check` names what moved)',
+    idle: 'an adapter that moved upstream since then is unknown until release admission',
+  },
+];
+const SCHEDULED_RUN_STALE_HOURS = 48;
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
 
@@ -210,18 +224,16 @@ export const CONFLICT_INSTRUCTION =
   + '  write command. Then run `pnpm pr:land <number>` again. It was not queued, so\n'
   + '  nothing waits on it meanwhile.';
 
-/** A pull request this script refuses to touch, with the reason a person can act on. */
-export function describeDailyBrowserRun(run, nowMs = Date.now()) {
+export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
-  if (run.conclusion === 'failure') {
-    return `the daily full browser run on main failed on ${day} (${run.url}); the specs that run only after merge are red until someone fixes them`;
-  }
+  if (run.conclusion === 'failure') return `the ${check.name} on main failed on ${day} (${run.url}); ${check.red}`;
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
-  if (ageHours > 48) return `the last daily full browser run on main is from ${day}; the specs that run only after merge have not run since`;
+  if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
 }
 
+/** A pull request this script refuses to touch, with the reason a person can act on. */
 export function refuseLanding(pr) {
   if (!pr || typeof pr.number !== 'number') return 'no such pull request.';
   if (pr.state !== 'OPEN') {
@@ -756,8 +768,8 @@ export function createGithub(slug, run = ghRun) {
       }
       return [...rows.values()].sort((a, b) => b.number - a.number).slice(0, TRAIN_HISTORY_LIMIT);
     },
-    readDailyBrowserRun: () => {
-      const out = run(['run', 'list', '--workflow', DAILY_BROWSER_WORKFLOW, '--event', 'schedule', '--branch', 'main', '--limit', '1',
+    readScheduledRun: (workflow) => {
+      const out = run(['run', 'list', '--workflow', workflow, '--event', 'schedule', '--branch', 'main', '--limit', '1',
         '--json', 'conclusion,createdAt,url'], { allowFailure: true });
       if (typeof out !== 'string') return null;
       try {
@@ -1602,8 +1614,10 @@ function landOne({ args, deps }) {
   const requiredContexts = readProtection(deps);
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
-  const daily = describeDailyBrowserRun(deps.gh.readDailyBrowserRun?.() ?? null, deps.now());
-  if (daily) deps.error(`warning: ${daily}`);
+  for (const check of SCHEDULED_CHECKS) {
+    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow) ?? null, deps.now());
+    if (warning) deps.error(`warning: ${warning}`);
+  }
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
 
   if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {

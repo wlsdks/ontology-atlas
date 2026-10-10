@@ -130,7 +130,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### ACP agent-runtime registry snapshot
 
 **Run**: `pnpm acp:registry:check`
-**Proves**: The committed `src-tauri/src/acp-registry.json` snapshot matches what the app actually launches, and a compatibility-pinned runtime has not moved beyond the newest upstream version whose permission behavior was reviewed. The app still never fetches this list at runtime.
+**Proves**: The committed `src-tauri/src/acp-registry.json` snapshot matches what the app actually launches, and a compatibility-pinned runtime has not moved beyond the newest upstream version whose permission behavior was reviewed. The app still never fetches this list at runtime. Upstream moves it without a commit, so `.github/workflows/acp-registry.yml` runs it daily on main and `pnpm pr:land` warns while that run is red.
 **Escalate**: none.
 **Fix**: For an ordinary registry move, run `pnpm acp:registry` and read the diff. For a compatibility-pin failure, first rerun the installed permission matrix named by the diagnostic; update the reviewed upstream identity only after that evidence. Only measured runtimes are marked `verified`.
 
@@ -879,7 +879,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Merging a pull request
 
 **Run**: `pnpm test:pr:land`
-**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
+**Proves**: against a fake GitHub, queued pull requests land behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, and `--plan` writes nothing. A red or stalled daily browser run or ACP registry check on main prints a warning. A real Git fixture with ten original commits proves their SHAs, full messages and authors remain reachable after train integration; both paths select merge commits.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/pr-land.mjs` (I/O) or `scripts/lib/landing-train.mjs` (decisions).
 
