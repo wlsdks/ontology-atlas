@@ -117,11 +117,11 @@ test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2
 });
 
 test('an unmapped rendered dependency fails closed to the smoke suite', () => {
-  const plan = buildImpactPlan({ files: ['src/widgets/search-hint/ui/SearchHint.tsx'] });
+  const plan = buildImpactPlan({ files: ['src/views/guide/ui/GuidePage.tsx'] });
 
   assert.equal(plan.lanes.e2e.mode, 'smoke');
   assert.deepEqual(plan.lanes.e2e.unmappedPaths, [
-    'src/widgets/search-hint/ui/SearchHint.tsx',
+    'src/views/guide/ui/GuidePage.tsx',
   ]);
 });
 
@@ -295,7 +295,12 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   // part-only change must plan the same token gate and styling sweep.
   const part = buildImpactPlan({ files: ['app/styles/tokens.css'] });
   assert.ok(part.lanes.gates.commands.includes('pnpm check:tokens'));
-  assert.deepEqual(part.lanes.e2e.specs, ['tests/e2e/overflow-sweep.spec.ts']);
+  assert.deepEqual(part.lanes.e2e.specs, [
+    'tests/e2e/hangul-tracking.spec.ts',
+    'tests/e2e/overflow-sweep.spec.ts',
+    'tests/e2e/prose-measure-calibration.spec.ts',
+    'tests/e2e/text-zoom-ramp.spec.ts',
+  ]);
   assert.equal(part.lanes.e2e.webSurface, true);
 
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });

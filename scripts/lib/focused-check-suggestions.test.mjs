@@ -565,6 +565,7 @@ describe('focused check suggestions', () => {
       'pnpm typecheck',
       'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
+      'pnpm exec playwright test tests/e2e/architecture-role-ledger.spec.ts',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -915,6 +916,7 @@ describe('focused check suggestions', () => {
       // set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm typecheck',
+      'pnpm exec playwright test tests/e2e/settings-reading-layout.spec.ts',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
@@ -1364,6 +1366,9 @@ describe('focused check suggestions', () => {
       'pnpm check:tokens',
       TOKEN_GATES_COMMAND,
       'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
+      'pnpm exec playwright test tests/e2e/hangul-tracking.spec.ts',
+      'pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts',
+      'pnpm exec playwright test tests/e2e/text-zoom-ramp.spec.ts',
     ]);
     assert.ok(!commandNames(suggestFocusedChecks(['postcss.config.mjs'])).includes(TOKEN_GATES_COMMAND));
   });
