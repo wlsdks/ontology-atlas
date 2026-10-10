@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { assertBriefCountsAgree } from './query-result-contract.mjs';
+import { assertBriefCountsAgree } from './query-result-contract/agent-brief/agent-brief.mjs';
 
 /** The minimum shape that passes the contract check — only the fields a real response needs. */
 function briefWith(healthChecks, checks) {

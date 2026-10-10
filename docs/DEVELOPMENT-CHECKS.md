@@ -519,7 +519,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Exact task-navigation truth
 
-**Run**: `node --test mcp/src/task-navigation-evidence.test.mjs && node --test --test-name-pattern="validates compact agent_brief truth fields" cli/src/lib/query-result-contract.test.mjs`
+**Run**: `node --test mcp/src/task-navigation-evidence.test.mjs && node --test cli/src/lib/query-result-contract/agent-brief/agent-brief-compact.test.mjs`
 **Proves**: Compact agent_brief truth fields stay exact, probing source-currentness, the 12,000-byte cap, and stop_on_match independently.
 **Escalate**: `pnpm test:mcp:unit`, then current-source MCP/CLI integration and a prospective field trial
 

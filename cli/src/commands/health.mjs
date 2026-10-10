@@ -3,7 +3,10 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertHealthShape, healthResultExitCode } from '../lib/query-result-contract.mjs';
+import {
+  assertHealthShape,
+  healthResultExitCode,
+} from '../lib/query-result-contract/workspace-health.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
