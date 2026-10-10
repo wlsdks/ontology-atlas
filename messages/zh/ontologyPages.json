@@ -862,7 +862,12 @@
       "showMoreItems": "再显示 {count} 项",
       "showLessItems": "收起",
       "gapClaims": "记录缺项 · {count}",
-      "capabilityFilter": "能力显示范围"
+      "capabilityFilter": "能力显示范围",
+      "connectedElements": "已连接的实现要素 · {count}",
+      "openElementDocument": "打开 {name} 文档",
+      "noElementLinks": "没有连接实现要素",
+      "pathsWithoutElements": "仅记录了 {count} 个源路径，没有连接要素。",
+      "implementationLegend": "每条线表示文档中记录的组成关系。选择要素即可阅读其文档。"
     }
   }
 }

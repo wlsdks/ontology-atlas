@@ -862,7 +862,12 @@
       "showMoreItems": "さらに{count}件を表示",
       "showLessItems": "折りたたむ",
       "gapClaims": "記録の不足 · {count}",
-      "capabilityFilter": "能力の表示範囲"
+      "capabilityFilter": "能力の表示範囲",
+      "connectedElements": "接続された実装要素 · {count}",
+      "openElementDocument": "{name}の文書を開く",
+      "noElementLinks": "実装要素が接続されていません",
+      "pathsWithoutElements": "要素の接続なしで、ソースパスが{count}件記録されています。",
+      "implementationLegend": "線は文書に記録された構成関係です。要素を選ぶと、その文書が開きます。"
     }
   }
 }

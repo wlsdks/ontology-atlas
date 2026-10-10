@@ -862,7 +862,12 @@
       "showMoreItems": "{count}개 더 보기",
       "showLessItems": "접기",
       "gapClaims": "기록 빈틈 · {count}",
-      "capabilityFilter": "역량 표시 범위"
+      "capabilityFilter": "역량 표시 범위",
+      "connectedElements": "연결된 구현 요소 · {count}",
+      "openElementDocument": "{name} 문서 열기",
+      "noElementLinks": "연결된 구현 요소가 없어요",
+      "pathsWithoutElements": "요소 연결 없이 소스 경로 {count}개만 기록되어 있어요.",
+      "implementationLegend": "선 하나가 문서에 기록된 구성 관계예요. 요소를 누르면 해당 문서가 열려요."
     }
   }
 }

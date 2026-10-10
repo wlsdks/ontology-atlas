@@ -18,6 +18,7 @@ import { buildAnalysisModel, type AnalysisClaim } from '../../lib/analysis-model
 import { PairRail } from './PairRail';
 import { AnalysisListSearch } from './AnalysisListSearch';
 import { DependencyDiagram } from './DependencyDiagram';
+import { ImplementationDiagram } from './ImplementationDiagram';
 import styles from './analysis.module.css';
 
 const name = (node: KnowledgeGraphNode) => node.display ?? node.title;
@@ -39,7 +40,6 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const [claimId, setClaimId] = useState<string | null>(initialClaim ?? null);
   const [claimLimit, setClaimLimit] = useState(6);
   const [claimQuery, setClaimQuery] = useState('');
-  const [rolePage, setRolePage] = useState({ claim: '', limit: 6 });
   const claimList = useRef<HTMLDivElement>(null);
   const pendingClaimFocus = useRef<string | null>(initialClaim && model.claims.some(item => item.node.id === initialClaim) ? initialClaim : null);
   const graphStage = useRef<HTMLDivElement>(null);
@@ -50,7 +50,6 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const candidates = onlyGaps ? model.gaps : model.claims;
   const filteredClaims = useMemo(() => filterAnalysisItems(candidates, claimQuery, item => [name(item.node), item.node.title]), [candidates, claimQuery]);
   const claim = candidates.find(candidate => candidate.node.id === claimId) ?? candidates[0] ?? null;
-  const roleLimit = rolePage.claim === claim?.node.id ? rolePage.limit : 6;
   const implementationClaim = edge ? model.claims.find(item => item.node.id === edge.from || item.roles.some(role => role.id === edge.from)) : null;
   const evidenceQuestion = question === 'evidence' || !pair;
   const declaringDocs = edge?.evidenceIds.flatMap(slug => { const doc = docs.find(candidate => candidate.slug === slug); return doc ? [doc] : []; }) ?? [];
@@ -110,16 +109,9 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
         </div>
       </nav>}
       <div ref={graphStage} className={styles.stage}>
-        {!evidenceQuestion && pair && edge ? <DependencyDiagram pair={pair} selected={edge} byId={model.byId} onSelect={next => setEdgeId(next.id)} /> : claim ? <div className={styles.capabilityObject}>
-          <div className={styles.objectHeading}><span>{t('capability')}</span><span>→</span><span>{t('implementation')}</span></div>
-          <div className={styles.implementationTrace}><div className={styles.implementationSubject}><OntologyMapKindGlyph kind="capability" size={24} /><h3 className="text-title font-[var(--font-weight-strong)]">{name(claim.node)}</h3><p className="text-label text-[color:var(--color-text-tertiary)]">{[...model.domainsOf.get(claim.node.id) ?? []].map(id => name(model.byId.get(id)!)).join(' · ') || t('responsibilityMissing')}</p></div><div className={styles.implementationBranch} aria-hidden="true" /><div className={styles.implementationRoles}>
-            {claim.roles.length ? claim.roles.slice(0, roleLimit).map(role => <div key={role.id} className={styles.roleObject}><OntologyMapKindGlyph kind="element" size={18} /><span className="text-body-lg">{name(role)}</span></div>) : <div className={styles.roleEmpty}><p className="text-body-lg">{claim.paths[0] ?? t('anchorMissing')}</p><p className="mt-2 text-label text-[color:var(--color-text-tertiary)]">{t('recordingNotImplementation')}</p></div>}
-          </div></div>
-          {claim.roles.length > roleLimit ? <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => setRolePage({ claim: claim.node.id, limit: roleLimit + 6 })}>{t('moreRoles', { count: claim.roles.length - roleLimit })}</Button> : null}
-          <p className="mt-5 text-label text-[color:var(--color-text-tertiary)]">{t('inspectionBasis', { inspected: model.inspected, total: model.claims.length })}</p>
-        </div> : <p className="text-body">{t('noGaps')}</p>}
+        {!evidenceQuestion && pair && edge ? <DependencyDiagram pair={pair} selected={edge} byId={model.byId} onSelect={next => setEdgeId(next.id)} /> : claim ? <ImplementationDiagram key={claim.node.id} claim={claim} responsibility={[...model.domainsOf.get(claim.node.id) ?? []].map(id => name(model.byId.get(id)!)).join(' · ')} href={href} /> : <p className="text-body">{t('noGaps')}</p>}
         <div className={styles.supportingFacts}><Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => openEvidence(false)}>{t('anchorSummary', { anchored: model.anchored, total: model.claims.length })}</Button><Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => openEvidence(true)}>{t('gapSummary', { count: model.gaps.length })}</Button></div>
-        <Disclosure summary={t('countBasis')}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('countDetails', { total: model.dependencyCount, cross: model.crossCount, internal: model.internal, unassigned: model.unassigned })}</p><div className="mt-3 flex flex-wrap gap-3">{relationTypes.map(row => <span key={row.type} className="text-label text-[color:var(--color-text-tertiary)]">{relationLabel(row.type)} · {row.count}</span>)}</div></Disclosure>
+        <Disclosure summary={t('countBasis')}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('countDetails', { total: model.dependencyCount, cross: model.crossCount, internal: model.internal, unassigned: model.unassigned })}</p><p className="mt-3 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('inspectionBasis', { inspected: model.inspected, total: model.claims.length })}</p><div className="mt-3 flex flex-wrap gap-3">{relationTypes.map(row => <span key={row.type} className="text-label text-[color:var(--color-text-tertiary)]">{relationLabel(row.type)} · {row.count}</span>)}</div></Disclosure>
       </div>
       <aside className={styles.inspector} data-testid="analysis-evidence">
         <div className={styles.evidenceHeading}><p className="text-label text-[color:var(--color-text-tertiary)]">{t('evidenceChain')}</p><h3 className="mt-2 text-title font-[var(--font-weight-strong)]">{!evidenceQuestion && edge ? name(model.byId.get(edge.from)!) : claim ? name(claim.node) : t('noClaim')}</h3>{!evidenceQuestion && edge ? <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">→ {name(model.byId.get(edge.to)!)}</p> : null}<p className="mt-3 text-label text-[color:var(--color-text-tertiary)]">{sourceCaption}</p></div>
