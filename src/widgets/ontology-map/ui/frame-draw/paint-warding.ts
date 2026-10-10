@@ -2,7 +2,6 @@ import { drawInstrumentCaption } from "../../render/labels";
 import { type FrameScope } from "./frame-scope";
 
 const WARDING_CAPTION_OFFSET_PX = 24;
-
 const WARDING_CAPTION_ALPHA = 0.62;
 
 export function paintWardingRing(F: FrameScope): void {

@@ -1,5 +1,13 @@
-import { CLUSTER_CHIP_LABEL_PRIORITY, NODE_DISC_LABEL_PRIORITY, type ReservedBox } from "../../render/label-layout";
-import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale } from "../../render/cluster-chips";
+import {
+  CLUSTER_CHIP_LABEL_PRIORITY,
+  NODE_DISC_LABEL_PRIORITY,
+  type ReservedBox,
+} from "../../render/label-layout";
+import {
+  clusterChipOccupancyRect,
+  drawClusterChip,
+  clusterChipScale,
+} from "../../render/cluster-chips";
 import { radiusForKind } from "../topology-world";
 import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "./frame-state";
 import { type FrameScope } from "./frame-scope";
@@ -7,8 +15,8 @@ import { type FrameScope } from "./frame-scope";
 const CLUSTER_CHIP_HOVER_MS = 150;
 
 let clusterChipHoverAnim: {
-    id: string;
-    startAt: number;
+  id: string;
+  startAt: number;
 } | null = null;
 
 export function paintClusterChips(F: FrameScope): void {
@@ -89,15 +97,15 @@ export function paintClusterChips(F: FrameScope): void {
         hoverBorder: tokens.indigo,
         hoverInk: tokens.indigoBright,
       });
-        ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1;
+  }
+  if (domeOn && tierNameBoxes !== null) {
+    for (const box of tierNameBoxes) {
+      nodeDiscReservations.push({
+        priority: NODE_DISC_LABEL_PRIORITY,
+        bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
+      });
     }
-    if (domeOn && tierNameBoxes !== null) {
-        for (const box of tierNameBoxes) {
-            nodeDiscReservations.push({
-                priority: NODE_DISC_LABEL_PRIORITY,
-                bbox: { minX: box.minX, maxX: box.maxX, minY: box.minY, maxY: box.maxY },
-            });
-        }
-    }
+  }
   F.chipReservations = chipReservations;
 }

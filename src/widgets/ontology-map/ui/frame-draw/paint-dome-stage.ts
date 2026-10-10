@@ -1,30 +1,52 @@
-import { DOME_NODE_PX, DOME_RING_WIDTH_PX, domeFogAlpha, domeLineWidthFactor, type DomeViewKind } from "../../model/dome-view";
+import {
+  DOME_NODE_PX,
+  DOME_RING_WIDTH_PX,
+  domeFogAlpha,
+  domeLineWidthFactor,
+  type DomeViewKind,
+} from "../../model/dome-view";
 import { draw as domeRingsDraw } from "../../render/dome-rings";
 import { drawStrataStage, hexToRgb } from "../../render/dome-light";
-import { drawStrataLodChords, drawStrataLodSheets, type StrataLodChordDraw } from "../../render/strata-lod";
+import {
+  drawStrataLodChords,
+  drawStrataLodSheets,
+  type StrataLodChordDraw,
+} from "../../render/strata-lod";
 import { rollUpStrataDependencies } from "../../model/strata-lod";
 import { lerpColorHex } from "../../render/grid";
 import type { WorldEdge } from "../topology-world";
-import { S, ZERO_DOME_FRAME, domeEdgeFrameAReused, domeEdgeFrameBReused, domeEdgeIndexReused, domeNodeFrameReused, drawnScreenRadiusByIdReused, litSectorIdsReused, lodChords } from "./frame-state";
+import {
+  S,
+  ZERO_DOME_FRAME,
+  domeEdgeFrameAReused,
+  domeEdgeFrameBReused,
+  domeEdgeIndexReused,
+  domeNodeFrameReused,
+  drawnScreenRadiusByIdReused,
+  litSectorIdsReused,
+  lodChords,
+} from "./frame-state";
 import { type FrameScope } from "./frame-scope";
 
 const domeEdgeOrderReused: WorldEdge[] = [];
-
 const domeEdgeDepthReused: number[] = [];
 
 const domeRingScreenReused: {
   kind: DomeViewKind;
   a: number;
-  points: { x: number; y: number; u: number;
-    }[];
+  points: {
+    x: number; y: number; u: number;
+  }[];
 }[] = [];
 
 const lodChordPool: StrataLodChordDraw[] = [];
 
-let lodContainsInk: { hex: string; rgb: readonly [number, number, number];
+let lodContainsInk: {
+  hex: string; rgb: readonly [number, number, number];
 } | null = null;
 
-let lodDependsInk: { hex: string; rgb: readonly [number, number, number];
+let lodDependsInk: {
+  hex: string; rgb: readonly [number, number, number];
 } | null = null;
 
 export function paintDomeStage(F: FrameScope): void {
@@ -67,42 +89,42 @@ export function paintDomeStage(F: FrameScope): void {
   let domeRingsTokens: Parameters<typeof domeRingsDraw>[2] | null = null;
   if (domeOn && domeRings !== null && domeRings.length > 0) {
     domeRingsState = {
-        rings: (() => {
-          for (let i = 0; i < domeRings.length; i += 1) {
-            const ring = domeRings[i];
-            let out = domeRingScreenReused[i];
-            if (!out) {
-              out = { kind: ring.kind, a: 0, points: [] };
-              domeRingScreenReused[i] = out;
-            }
-            out.kind = ring.kind;
-            out.a = ring.a;
-            for (let k = 0; k < ring.points.length; k += 1) {
-              const point = ring.points[k];
-              const screen = project(point.wx, point.wy);
-              const slot = out.points[k];
-              if (slot) {
-                slot.x = screen.x;
-                slot.y = screen.y;
-                slot.u = point.u;
-              } else {
-                out.points[k] = { x: screen.x, y: screen.y, u: point.u };
-              }
-            }
-            out.points.length = ring.points.length;
+      rings: (() => {
+        for (let i = 0; i < domeRings.length; i += 1) {
+          const ring = domeRings[i];
+          let out = domeRingScreenReused[i];
+          if (!out) {
+            out = { kind: ring.kind, a: 0, points: [] };
+            domeRingScreenReused[i] = out;
           }
-          domeRingScreenReused.length = domeRings.length;
-          return domeRingScreenReused;
-        })(),
-        baseAlpha: domeRingAlpha,
-        baseWidthPx: DOME_RING_WIDTH_PX,
-        fog: domeFogAlpha,
-        widthFactor: domeLineWidthFactor,
-        raisedKind: domeTierRaisedKind,
+          out.kind = ring.kind;
+          out.a = ring.a;
+          for (let k = 0; k < ring.points.length; k += 1) {
+            const point = ring.points[k];
+            const screen = project(point.wx, point.wy);
+            const slot = out.points[k];
+            if (slot) {
+              slot.x = screen.x;
+              slot.y = screen.y;
+              slot.u = point.u;
+            } else {
+              out.points[k] = { x: screen.x, y: screen.y, u: point.u };
+            }
+          }
+          out.points.length = ring.points.length;
+        }
+        domeRingScreenReused.length = domeRings.length;
+        return domeRingScreenReused;
+      })(),
+      baseAlpha: domeRingAlpha,
+      baseWidthPx: DOME_RING_WIDTH_PX,
+      fog: domeFogAlpha,
+      widthFactor: domeLineWidthFactor,
+      raisedKind: domeTierRaisedKind,
     };
     domeRingsTokens = {
-        stroke: tokens.domeRing,
-        strokeRaised: tokens.domeRingRaised,
+      stroke: tokens.domeRing,
+      strokeRaised: tokens.domeRingRaised,
     };
     domeRingsDraw(ctx, domeRingsState, domeRingsTokens);
   }

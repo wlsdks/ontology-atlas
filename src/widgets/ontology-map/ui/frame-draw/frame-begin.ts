@@ -1,5 +1,10 @@
 import { buildTrailGlintLegs } from "../../model/footprint-steps";
-import { resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, type EdgePairFocus, type NodeEgoState } from "../../model/focus-state";
+import {
+  resolveNodeEgoStateWithPair,
+  resolveTrailLensNodeEgoState,
+  type EdgePairFocus,
+  type NodeEgoState,
+} from "../../model/focus-state";
 import { resolveBackgroundOrigin } from "../../model/background-parallax";
 import { footprintScaleFor } from "@/shared/lib/footprint-glyph";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -15,62 +20,62 @@ import { type FrameScope } from "./frame-scope";
 
 export function beginFrame(F: FrameScope, params: FrameDrawParams): void {
   F.params = params;
-    const { ctx: baseCtx, world, camera, farT, neuralRamp: neuralRampProp = 0, zoomRatio, now, viewportWidth, viewportHeight, panelInsets = null, devicePixelRatio: canvasDpr = 1, gridPattern, dustPoints, tokens, focusedNodeId, hoveredNodeId, hoverReleasedNodeId = null, hoverStartedAt = null, emphasizedNeighborId, hoveredEdge, selectedEdge, relationCaptions, captionFoldedIds = null, reviewQuestionIds, previewEdge, emphasisById, egoRevealById, focusRampById, appearById, bornNodeIds, chipRevealById, batchAppearById, labelPresentById, colorFocusedNodeId, colorSelectedEdge, reducedMotion, pulses, selectionPulse, agentFocusNodeId, clusteredIds, clusterChips, hoveredClusterId, wardingRing, realmTierKinds, expandRevealById, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, realmStarPoints, footprintStepsById, footprintPref = null, walkedEdgeKeys = null, walkedEdgeDirections = null, walkedEdgeArrivalStep = null, footprintInk = [232, 196, 122], footprintStepColor = "#e8c47a", footprintNewestId = null, footprintAppear = 1, trailStarInk = null, footprintNewestStep = 1, trailLensOpenedAtMs = 0, trailLensIds = null, spotlightIds, mapLensKind, pathEdgeIds, spotlightRamp, spotlightDashOffset, tierReveal = DEFAULT_TIER_REVEAL, glyphStyle = "fill", backgroundVariant = "dot", paintAnimatedBackground = null, depthDotPatterns, expand = DEFAULT_EXPAND, clusterBarLabels = null, domeFrame = null, domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null, domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial: dialProps = null, } = params;
-    const ctx = baseCtx;
-    const spotlightLensActive = spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
-    const pathLensActive = spotlightLensActive && mapLensKind === "path";
-    const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
-    const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
-    const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
-    const spotlightSink = (inSpotlight: boolean): number => spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
-    const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
-    const trailLensActive = trailLensKeepIds !== null;
-    const trailRamp = trailLensActive
-        ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
-        : 0;
-    const trailGlint = trailRamp > 0.001 ? ((now % TRAIL_GLINT_PERIOD_MS) / TRAIL_GLINT_PERIOD_MS) : 0;
-    const trailGlintLegs = trailRamp > 0.001 && walkedEdgeArrivalStep !== null && walkedEdgeArrivalStep.size > 0
-        ? buildTrailGlintLegs([...walkedEdgeArrivalStep.entries()]
-            .sort((left, right) => left[1] - right[1])
-            .map(([key]) => {
-            const [sourceId, targetId] = key.split(" ");
-            const from = world.nodeById.get(sourceId ?? "");
-            const to = world.nodeById.get(targetId ?? "");
-            return {
-                key,
-                length: from && to ? Math.hypot(to.x - from.x, to.y - from.y) : 0,
-            };
-        }))
-        : null;
-    const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
-    const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState => trailLensKeepIds !== null
-        ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
-        : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
-    const realmDepthOf = (nodeId: string): number | undefined => realmDepthById?.get(nodeId);
-    const realmParallaxOffsetFor = (nodeId: string): {
-        x: number;
-        y: number;
-    } => {
-        if (!realmDepthParallax || !realmDepthById)
-            return ZERO_PARALLAX;
-        return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
-    };
-    const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
-    const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
-    const skyTimeMs = now - 0;
-    S.drawnSkyTimeMs = skyTimeMs;
-    const domeFrameFor = (nodeId: string): DomeNodeFrame => (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
-    if (domeOn) {
-        domeNodeFrameReused.length = 0;
-        for (let i = 0; i < world.nodes.length; i += 1) {
-            domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
-        }
+  const { ctx: baseCtx, world, camera, farT, neuralRamp: neuralRampProp = 0, zoomRatio, now, viewportWidth, viewportHeight, panelInsets = null, devicePixelRatio: canvasDpr = 1, gridPattern, dustPoints, tokens, focusedNodeId, hoveredNodeId, hoverReleasedNodeId = null, hoverStartedAt = null, emphasizedNeighborId, hoveredEdge, selectedEdge, relationCaptions, captionFoldedIds = null, reviewQuestionIds, previewEdge, emphasisById, egoRevealById, focusRampById, appearById, bornNodeIds, chipRevealById, batchAppearById, labelPresentById, colorFocusedNodeId, colorSelectedEdge, reducedMotion, pulses, selectionPulse, agentFocusNodeId, clusteredIds, clusterChips, hoveredClusterId, wardingRing, realmTierKinds, expandRevealById, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, realmStarPoints, footprintStepsById, footprintPref = null, walkedEdgeKeys = null, walkedEdgeDirections = null, walkedEdgeArrivalStep = null, footprintInk = [232, 196, 122], footprintStepColor = "#e8c47a", footprintNewestId = null, footprintAppear = 1, trailStarInk = null, footprintNewestStep = 1, trailLensOpenedAtMs = 0, trailLensIds = null, spotlightIds, mapLensKind, pathEdgeIds, spotlightRamp, spotlightDashOffset, tierReveal = DEFAULT_TIER_REVEAL, glyphStyle = "fill", backgroundVariant = "dot", paintAnimatedBackground = null, depthDotPatterns, expand = DEFAULT_EXPAND, clusterBarLabels = null, domeFrame = null, domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null, domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial: dialProps = null, } = params;
+  const ctx = baseCtx;
+  const spotlightLensActive = spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
+  const pathLensActive = spotlightLensActive && mapLensKind === "path";
+  const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
+  const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
+  const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
+  const spotlightSink = (inSpotlight: boolean): number => spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
+  const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
+  const trailLensActive = trailLensKeepIds !== null;
+  const trailRamp = trailLensActive
+    ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
+    : 0;
+  const trailGlint = trailRamp > 0.001 ? ((now % TRAIL_GLINT_PERIOD_MS) / TRAIL_GLINT_PERIOD_MS) : 0;
+  const trailGlintLegs = trailRamp > 0.001 && walkedEdgeArrivalStep !== null && walkedEdgeArrivalStep.size > 0
+    ? buildTrailGlintLegs([...walkedEdgeArrivalStep.entries()]
+      .sort((left, right) => left[1] - right[1])
+      .map(([key]) => {
+        const [sourceId, targetId] = key.split(" ");
+        const from = world.nodeById.get(sourceId ?? "");
+        const to = world.nodeById.get(targetId ?? "");
+        return {
+          key,
+          length: from && to ? Math.hypot(to.x - from.x, to.y - from.y) : 0,
+        };
+      }))
+    : null;
+  const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
+  const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState => trailLensKeepIds !== null
+    ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
+    : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
+  const realmDepthOf = (nodeId: string): number | undefined => realmDepthById?.get(nodeId);
+  const realmParallaxOffsetFor = (nodeId: string): {
+    x: number;
+    y: number;
+  } => {
+    if (!realmDepthParallax || !realmDepthById)
+      return ZERO_PARALLAX;
+    return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
+  };
+  const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
+  const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
+  const skyTimeMs = now - 0;
+  S.drawnSkyTimeMs = skyTimeMs;
+  const domeFrameFor = (nodeId: string): DomeNodeFrame => (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
+  if (domeOn) {
+    domeNodeFrameReused.length = 0;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      domeNodeFrameReused.push(domeFrame.get(world.nodes[i].id) ?? ZERO_DOME_FRAME);
     }
-    const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
-    const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
-    const footprintScale = footprintScaleFor(camera.scale.value);
-    const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
-    const bgOrigin = resolveBackgroundOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, backgroundVariant, tokens.canvasBgParallax, reducedMotion);
+  }
+  const nodeFrameAt = (index: number): DomeNodeFrame => (domeOn ? domeNodeFrameReused[index] : ZERO_DOME_FRAME);
+  const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+  const footprintScale = footprintScaleFor(camera.scale.value);
+  const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
+  const bgOrigin = resolveBackgroundOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, backgroundVariant, tokens.canvasBgParallax, reducedMotion);
   F.world = world;
   F.camera = camera;
   F.farT = farT;

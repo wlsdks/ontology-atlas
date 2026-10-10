@@ -7,15 +7,15 @@ import { S } from "./frame-state";
 import { type FrameScope } from "./frame-scope";
 
 const EMPTY_EGO_COMET_EDGES: ReadonlySet<WorldEdge> = new Set();
-
 const ambientDependsCometsReused = new Set<string>();
-
 const edgeAlphaByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 
-const edgeEndsByWorld = new WeakMap<TopologyWorld, { source: Int32Array; target: Int32Array;
+const edgeEndsByWorld = new WeakMap<TopologyWorld, {
+  source: Int32Array; target: Int32Array;
 }>();
 
-function edgeEndsFor(world: TopologyWorld): { source: Int32Array; target: Int32Array;
+function edgeEndsFor(world: TopologyWorld): {
+  source: Int32Array; target: Int32Array;
 } {
   const known = edgeEndsByWorld.get(world);
   if (known !== undefined && known.source.length === world.edges.length) return known;
@@ -30,7 +30,6 @@ function edgeEndsFor(world: TopologyWorld): { source: Int32Array; target: Int32A
 }
 
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
-
 const edgeRestDimByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 
 export function prepareEdges(F: FrameScope): void {
@@ -77,8 +76,8 @@ export function prepareEdges(F: FrameScope): void {
       clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)
         ? -1
         : edgeTierAlpha(
-            sourceIndex >= 0 ? effectiveAlphaByIndex[sourceIndex] : 1,
-            targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1);
+          sourceIndex >= 0 ? effectiveAlphaByIndex[sourceIndex] : 1,
+          targetIndex >= 0 ? effectiveAlphaByIndex[targetIndex] : 1);
   }
   const inLitSubtree = (id: string): boolean => {
     if (litFocusId === null) return false;
