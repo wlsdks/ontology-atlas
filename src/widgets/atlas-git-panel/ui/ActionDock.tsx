@@ -66,7 +66,7 @@ export function DiscardDock({
  * A one-line result for recording. Every ICU argument is passed, or next-intl renders the key
  * path; a missing `counts` field from Rust falls back to the list's counts.
  */
-export function SnapshotResultLine({
+function SnapshotResultLine({
   t,
   result,
   fallbackCount,
