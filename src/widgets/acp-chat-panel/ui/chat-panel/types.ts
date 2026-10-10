@@ -39,7 +39,7 @@ export interface OpeningRequest {
   investigation?: InvestigationSendGuard;
 }
 
-export interface DraftSnapshot {
+interface DraftSnapshot {
   text: string;
   prefillNonce: number | null;
 }
