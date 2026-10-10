@@ -1,13 +1,15 @@
 import {
-  MEANING_ASSESSMENT_OUTPUT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import { MEANING_ASSESSMENT_OUTPUT_SCHEMA } from '../tool-schemas/meaning-construction.mjs';
+import {
   PROJECT_SOURCE_BINDING_VIEW_SCHEMA,
   PROJECT_SOURCE_NEXT_CALL_SCHEMA,
   PROJECT_SOURCE_RECEIPT_SCHEMA,
   PROJECT_SOURCE_REMEDY_SCHEMA,
   PROJECT_SOURCE_VIEW_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/project-source-shapes.mjs';
 
 export const FINALIZE_PROJECT_MEANING_TOOL = {
   name: 'finalize_project_meaning',

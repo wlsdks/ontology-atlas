@@ -26,11 +26,15 @@ const MCP_DEFINITIONS = join(process.cwd(), "mcp", "src", "server", "tool-defini
 const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS)
   .filter((file) => file.endsWith(".mjs"))
   .map((file) => join(MCP_DEFINITIONS, file));
+const MCP_SCHEMAS = join(process.cwd(), "mcp", "src", "server", "tool-schemas");
+const MCP_SCHEMA_FILES = readdirSync(MCP_SCHEMAS)
+  .filter((file) => file.endsWith(".mjs"))
+  .map((file) => join(MCP_SCHEMAS, file));
 /** Names and descriptions live in the tool definitions; the response field names live in the schemas they are built from. */
 const MCP_SURFACE_FILES = [
   join(process.cwd(), "mcp", "src", "server", "registry.mjs"),
   ...MCP_DEFINITION_FILES,
-  join(process.cwd(), "mcp", "src", "server", "tool-schemas.mjs"),
+  ...MCP_SCHEMA_FILES,
 ];
 
 function registeredToolNames(): Set<string> {

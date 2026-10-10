@@ -2,7 +2,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertBacklinksShape } from '../lib/query-result-contract.mjs';
+import { assertBacklinksShape } from '../lib/query-result-contract/node-lookups.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { closestAllowedValue, formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
 

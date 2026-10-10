@@ -3,12 +3,16 @@ import { measureLabelWidth, scaledLabelFontSize, scaledLabelFont } from "../../r
 import { placeRelationCaptions } from "../../render/relation-captions";
 import { isPreviewEndpoint } from "../../render/preview-edge";
 import { passState } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { ReservedBox, SafeRect } from "../../render/label-layout";
+import type { FrameInputs } from "./frame-begin";
+import type { EdgePrep } from "./edge-prep";
+import type { NodeLayer } from "./node-layer";
 
-export function paintRelationCaptions(F: FrameScope): void {
+export function paintRelationCaptions(frame: FrameInputs, edges: EdgePrep, layer: NodeLayer, chipReservations: readonly ReservedBox[], safeRect: SafeRect): void {
   const { mapLensKind, spotlightIds, colorSelectedEdge, colorFocusedNodeId, hoveredNodeId,
-    previewEdge, tokens, ctx, pathLensActive, captionCandidates, nodeDiscReservations,
-    chipReservations, safeRect } = F;
+    previewEdge, tokens, pathLensActive } = frame;
+  const { captionCandidates } = edges;
+  const { ctx, nodeDiscReservations } = layer;
   if (captionCandidates.length) {
     const pathSinks = mapLensKind === "path" && spotlightIds !== null && (pathLensActive || (colorSelectedEdge !== null && colorFocusedNodeId === null));
     const sunk = (id: string | undefined) => pathSinks && id !== undefined && id !== hoveredNodeId

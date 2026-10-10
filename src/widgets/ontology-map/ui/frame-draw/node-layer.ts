@@ -8,24 +8,25 @@ import {
 import type { ReservedBox } from "../../render/label-layout";
 import { isPreviewEndpointHidden } from "../../render/preview-edge";
 import { passState, domeNodeFrameReused, drawnScreenRadiusByIdReused, lodDustByState } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
 
 const lodDust = createStrataLodDust();
 
 // `nodeLayer` may wrap the context; every later pass paints through the wrapped one.
-export function beginNodeLayer(F: FrameScope): void {
-  const { params } = F;
-  const ctx = params.nodeLayer?.(F.ctx) ?? F.ctx;
+export function beginNodeLayer(frame: FrameInputs) {
+  const ctx = frame.nodeLayer?.(frame.ctx) ?? frame.ctx;
   drawnScreenRadiusByIdReused.clear();
   const nodeDiscReservations: ReservedBox[] = [];
-  F.ctx = ctx;
-  F.drawnScreenRadiusById = drawnScreenRadiusByIdReused;
-  F.nodeDiscReservations = nodeDiscReservations;
+  return { ctx, drawnScreenRadiusById: drawnScreenRadiusByIdReused, nodeDiscReservations };
 }
 
-export function paintStrataDust(F: FrameScope): void {
-  const { ctx, domeLight, world, clusteredIds, previewEdge, viewportWidth, viewportHeight, camX,
-    camY, camScale, halfW, halfH, litFocusRamp, lod } = F;
+export type NodeLayer = Readonly<ReturnType<typeof beginNodeLayer>>;
+
+export function paintStrataDust(frame: FrameInputs, focus: FrameFocus, layer: NodeLayer): void {
+  const { domeLight, world, clusteredIds, previewEdge, viewportWidth, viewportHeight } = frame;
+  const { camX, camY, camScale, halfW, halfH, litFocusRamp, lod } = focus;
+  const { ctx } = layer;
   lodDustByState.current = 0;
   lodDustByState.stale = 0;
   lodDustByState.unknown = 0;

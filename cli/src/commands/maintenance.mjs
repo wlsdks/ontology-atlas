@@ -3,7 +3,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertMaintenancePlanShape } from '../lib/query-result-contract.mjs';
+import { assertMaintenancePlanShape } from '../lib/query-result-contract/maintenance-growth.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,

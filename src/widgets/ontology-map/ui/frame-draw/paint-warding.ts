@@ -1,11 +1,15 @@
 import { drawInstrumentCaption } from "../../render/labels";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeLayer } from "./node-layer";
 
 const WARDING_CAPTION_OFFSET_PX = 24;
 const WARDING_CAPTION_ALPHA = 0.62;
 
-export function paintWardingRing(F: FrameScope): void {
-  const { wardingRing, camera, tokens, ctx, project } = F;
+export function paintWardingRing(frame: FrameInputs, focus: FrameFocus, layer: NodeLayer): void {
+  const { wardingRing, camera, tokens } = frame;
+  const { project } = focus;
+  const { ctx } = layer;
   if (wardingRing !== null) {
     const center = project(wardingRing.centerX, wardingRing.centerY);
     const screenRadius = wardingRing.radius * camera.scale.value;

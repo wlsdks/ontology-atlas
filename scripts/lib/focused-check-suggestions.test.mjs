@@ -77,6 +77,10 @@ describe('focused check suggestions', () => {
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm test:mcp:unit'],
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm docs:surface:check'],
       ['mcp/src/server/tool-definitions/read.mjs', 'pnpm integration:mcp:surface'],
+      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm test:mcp:unit'],
+      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm docs:surface:check'],
+      ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm integration:mcp:surface'],
+      ['mcp/src/server/tool-schemas/destructive-preview.mjs', 'pnpm integration:mcp:write'],
       ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
       ['scripts/lib/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
@@ -652,12 +656,26 @@ describe('focused check suggestions', () => {
   it('suggests direct CLI lib unit tests before aggregate CLI lib gate', () => {
     const result = suggestFocusedChecks([
       'cli/src/lib/captured-summary.mjs',
-      'cli/src/lib/query-result-contract.test.mjs',
+      'cli/src/lib/query-result-contract/path-queries.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test cli/src/lib/captured-summary.test.mjs',
-      'pnpm exec node --test cli/src/lib/query-result-contract.test.mjs',
+      'pnpm exec node --test cli/src/lib/query-result-contract/path-queries.test.mjs',
+      'pnpm test:cli:lib',
+      'pnpm vault:validate',
+    ]);
+  });
+
+  it('routes a result contract family file to the test that covers it', () => {
+    const result = suggestFocusedChecks([
+      'cli/src/lib/query-result-contract/project-source-meaning.mjs',
+      'cli/src/lib/query-result-contract/graph-traversal.mjs',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test cli/src/lib/query-result-contract/agent-brief/agent-brief.test.mjs',
+      'pnpm exec node --test cli/src/lib/query-result-contract/graph-traversal.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
     ]);

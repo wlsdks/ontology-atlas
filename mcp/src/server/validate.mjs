@@ -14,7 +14,7 @@ import {
   formatAllowedValueError,
 } from '../suggestions.mjs';
 import { TOOL_BY_NAME } from './registry.mjs';
-import { BODY_DELIVERY_MODES } from './tool-schemas.mjs';
+import { BODY_DELIVERY_MODES } from './tool-schemas/vault-node-shapes.mjs';
 
 function normalizeToolArguments(args, toolName) {
   if (args === undefined) return {};

@@ -30,13 +30,17 @@ import {
   resolveLabelPriority,
   floorFlipBaseline,
   type LabelCandidate,
+  type ReservedBox,
   type SafeRect,
 } from "../../render/label-layout";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
 import { rankedDiscChildren, rankedEgoNeighbors } from "../frame-cache/structure";
 import { radiusForKind, type WorldNode } from "../topology-world";
 import { passState } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeAlpha } from "./node-alpha";
+import type { NodeLayer } from "./node-layer";
 
 const LABEL_SIDE_GAP = 3;
 const labelScreenScratch = { x: 0, y: 0 };
@@ -62,14 +66,15 @@ interface LabelPayload {
   depthU: number;
 }
 
-export function paintLabels(F: FrameScope): void {
+export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, layer: NodeLayer, chipReservations: readonly ReservedBox[]): SafeRect {
   const { tokens, panelInsets, viewportWidth, viewportHeight, zoomRatio, clusterChips, world,
     expand, focusedNodeId, previewEdge, clusteredIds, selectedEdge, mapLensKind, spotlightIds,
     hoveredNodeId, spotlightRamp, camera, reviewQuestionIds, agentFocusNodeId, labelPresentById,
-    now, reducedMotion, appearById, ctx, pathLensActive, constellationLensActive, spotlightSink,
-    isTrailKept, lensNodeEgoState, realmParallaxOffsetFor, domeOn, nodeFrameAt, labelScale, camX,
-    camY, camScale, halfW, halfH, neighborsOfFocused, egoAllNormal, effectiveAlphaById,
-    drawnScreenRadiusById, nodeDiscReservations, chipReservations } = F;
+    now, reducedMotion, appearById, pathLensActive, constellationLensActive, spotlightSink,
+    isTrailKept, lensNodeEgoState, realmParallaxOffsetFor, domeOn, nodeFrameAt, labelScale } = frame;
+  const { camX, camY, camScale, halfW, halfH, neighborsOfFocused, egoAllNormal } = focus;
+  const { effectiveAlphaById } = alpha;
+  const { ctx, drawnScreenRadiusById, nodeDiscReservations } = layer;
   const safeRect: SafeRect = {
     left: Math.max(tokens.safeInsetLeft, panelInsets?.left ?? 0),
     right: viewportWidth - Math.max(tokens.safeInsetRight, panelInsets?.right ?? 0),
@@ -353,5 +358,5 @@ export function paintLabels(F: FrameScope): void {
       labelHalo: tokens.canvasBgNear,
     });
   }
-  F.safeRect = safeRect;
+  return safeRect;
 }

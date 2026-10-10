@@ -1,7 +1,6 @@
 import { computeNodeAlpha } from "./frame-draw/node-alpha";
 import { beginFrame } from "./frame-draw/frame-begin";
 import { beginNodeLayer, paintStrataDust } from "./frame-draw/node-layer";
-import type { FrameScope } from "./frame-draw/frame-scope";
 import { paintBackdrop } from "./frame-draw/paint-backdrop";
 import { paintClusterChips } from "./frame-draw/paint-chips";
 import { paintDial } from "./frame-draw/paint-dial";
@@ -28,22 +27,21 @@ export {
   setMapComets,
 } from "./frame-draw/frame-state";
 
-// Order is paint order, and each pass reads the scope fields the earlier ones filled.
+// Order is paint order; each pass takes the stage results it reads.
 export function drawTopologyFrame(params: FrameDrawParams): void {
-  const F = {} as FrameScope;
-  beginFrame(F, params);
-  paintBackdrop(F);
-  if (paintDial(F)) return;
-  prepareFocus(F);
-  computeNodeAlpha(F);
-  prepareEdges(F);
-  paintDomeStage(F);
-  paintEdges(F);
-  beginNodeLayer(F);
-  paintStrataDust(F);
-  paintNodes(F);
-  paintWardingRing(F);
-  paintClusterChips(F);
-  paintLabels(F);
-  paintRelationCaptions(F);
+  const frame = beginFrame(params);
+  paintBackdrop(frame);
+  if (paintDial(frame)) return;
+  const focus = prepareFocus(frame);
+  const alpha = computeNodeAlpha(frame, focus);
+  const edges = prepareEdges(frame, focus, alpha);
+  const stage = paintDomeStage(frame, focus, edges);
+  paintEdges(frame, focus, alpha, edges, stage);
+  const layer = beginNodeLayer(frame);
+  paintStrataDust(frame, focus, layer);
+  paintNodes(frame, focus, alpha, stage, layer);
+  paintWardingRing(frame, focus, layer);
+  const chipReservations = paintClusterChips(frame, focus, alpha, layer);
+  const safeRect = paintLabels(frame, focus, alpha, layer, chipReservations);
+  paintRelationCaptions(frame, edges, layer, chipReservations, safeRect);
 }

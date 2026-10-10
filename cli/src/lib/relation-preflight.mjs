@@ -3,7 +3,7 @@
 
 import { COLORS } from './colors.mjs';
 import { callMcpTool } from './mcp-call.mjs';
-import { assertRelationCheckShape } from './query-result-contract.mjs';
+import { assertRelationCheckShape } from './query-result-contract/relation-check.mjs';
 
 /**
  * Runs the relation_check preflight and asserts its shape. It throws when `from`/`to` do not resolve or

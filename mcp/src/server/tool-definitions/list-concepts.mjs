@@ -1,10 +1,10 @@
 import { NODE_KIND_VALUES } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
+import { NODE_KIND_DESCRIPTION } from '../tool-schemas/enum-descriptions.mjs';
 import {
-  NODE_KIND_DESCRIPTION,
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/field-primitives.mjs';
 
 export const LIST_CONCEPTS_TOOL = {
   name: 'list_concepts',
