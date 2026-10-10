@@ -628,6 +628,21 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('routes each infer-imports family module to its own test and to repo-analysis integration', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/infer-imports/go-imports.mjs',
+      'mcp/src/infer-imports/path-confinement.mjs',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test mcp/src/infer-imports/go-imports.test.mjs',
+      'pnpm exec node --test mcp/src/confined-source-fs.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm integration:mcp:repo-analysis',
+      'pnpm vault:validate',
+    ]);
+  });
+
   it('suggests direct MCP suggestions tests before the broader suggestions gate', () => {
     const result = suggestFocusedChecks([
       'mcp/src/suggestions.mjs',
