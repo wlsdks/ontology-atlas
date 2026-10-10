@@ -261,7 +261,6 @@ const CONSTELLATION_CONTEXT_OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
-
 export const LIST_CONSTELLATIONS_TOOL = {
   name: 'list_constellations',
   description:

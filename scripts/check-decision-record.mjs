@@ -85,10 +85,8 @@ const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
 
 /**
  * Single sources of truth for the two public contracts. The MCP tool table is
- * `server/registry.mjs` and the definitions it lists sit under
- * `server/tool-definitions/`; the entry point stays listed because it still
- * decides the dispatch and the read-only guard, and dropping it would quietly
- * stop watching those.
+ * `server/registry.mjs` plus `server/tool-definitions/`; the entry point stays
+ * listed because it still decides the dispatch and the read-only guard.
  */
 const CONTRACT_FILES = [
   "cli/src/lib/cli-commands.mjs",
@@ -195,7 +193,7 @@ const surfaceChanges = entries
  * The entry point is watched only where it decides the contract. Every edit to
  * `mcp/src/index.js` used to demand a decision record, so a one-line internal
  * fix paid for a ledger entry nobody would read (2026-09-26). The tool table
- * itself is `server/registry.mjs` and `server/tool-definitions/`, still watched whole; in the entry point only
+ * itself is under `server/`, still watched whole; in the entry point only
  * a changed line that names the request handlers or the read-only and consent
  * filters moves what a client can call.
  */
