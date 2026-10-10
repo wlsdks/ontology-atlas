@@ -42,15 +42,9 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
-    # apt has no upper limit on waiting. If a mirror doesn't respond, it waits forever,
-    # and if the only way to break this «forever» is the job timeout, you **only learn of
-    # the failure after paying the full cost**. This actually happened on 2026-08-20 — repeating
-    # `Ign: http://azure.archive.
-    # ubuntu.com/... InRelease` for 19 minutes and 42 seconds caused all four shards to cancel together,
-    # no tests ran, and the PR required six re-runs.
-    #
-    # The two values below eliminate this «forever». Retries are handled by apt itself; if that
-    # also fails, `run-with-retry` outside calls it again.
+    # apt waits on a silent mirror until the job timeout, so its network waits are bounded.
+    # A retry after a timed-out attempt waits for the dpkg lock that attempt's root apt-get
+    # still holds (the group kill cannot reach it) instead of failing on the lock at once.
     - name: Bound apt network waits
       shell: bash
       run: |
@@ -58,6 +52,7 @@ runs:
         Acquire::http::Timeout "15";
         Acquire::https::Timeout "15";
         Acquire::Retries "2";
+        DPkg::Lock::Timeout "60";
         CONF
 
     # Browser download is **not best-effort** because without it, nothing works.
