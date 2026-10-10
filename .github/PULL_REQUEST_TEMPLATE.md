@@ -6,6 +6,8 @@ Korean or English both fine.
 ## Summary
 
 <!-- 2~5 lines: what changes, why now. The diff explains the *what*; this section answers *why*. -->
+<!-- A feat/fix/perf/design title needs a docs/records/changes/ record (`pnpm record:new -- --kind=change`)
+     or the line `No change record: <why no user can notice it>`; `pnpm pr:land` refuses otherwise. -->
 
 -
 

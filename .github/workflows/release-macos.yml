@@ -78,12 +78,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # A stale ACP registry snapshot must not ship (2026-08-20: nine packages had fallen behind
-      # while the check existed but ran nowhere). It turns red when upstream deploys, so it gates
-      # releases, not pull requests, and blocks only on the runtimes Rust's `ISOLATION` table runs
-      # (narrowed 2026-08-26); other drift is reported. A compatibility-pinned runtime changes only
-      # after the installed permission matrix passes. **When blocked**: follow the diagnostic;
-      # refresh ordinary drift with `pnpm acp:registry`.
+      # A stale ACP registry snapshot must not ship. Upstream turns it red without a commit, so
+      # it gates releases, not pull requests; `acp-registry.yml` runs it daily and `pr:land`
+      # warns while that run is red. It blocks only on the runtimes Rust's `ISOLATION` table
+      # runs. A compatibility-pinned runtime changes only after the installed permission matrix
+      # passes. **When blocked**: follow the diagnostic; refresh drift with `pnpm acp:registry`.
       - name: Verify bundled ACP registry is current
         run: pnpm acp:registry:check
 

@@ -168,6 +168,7 @@ import {
   waiterOutcome,
   waiterPollSeconds,
 } from './lib/landing-train.mjs';
+import { CATEGORIES } from './lib/changelog-entry-template.mjs';
 
 export const LOCK_REF = 'refs/atlas/landing-lock';
 
@@ -185,7 +186,21 @@ export const FAST_LEASE_MINUTES = 2;
  */
 export const LEASE_MINUTES = 45;
 
-const DAILY_BROWSER_WORKFLOW = 'e2e.yml';
+export const SCHEDULED_CHECKS = [
+  {
+    workflow: 'e2e.yml',
+    name: 'daily full browser run',
+    red: 'the specs that run only after merge are red until someone fixes them',
+    idle: 'the specs that run only after merge have not run since',
+  },
+  {
+    workflow: 'acp-registry.yml',
+    name: 'daily ACP registry check',
+    red: 'an agent adapter moved upstream, and release admission refuses it until the registry is refreshed and reviewed (`pnpm acp:registry:check` names what moved)',
+    idle: 'an adapter that moved upstream since then is unknown until release admission',
+  },
+];
+const SCHEDULED_RUN_STALE_HOURS = 48;
 const TRAIN_TITLE_SEARCHES = ['chore(merge):', 'chore(train): land'];
 export const POLL_SECONDS = 30;
 
@@ -210,18 +225,36 @@ export const CONFLICT_INSTRUCTION =
   + '  write command. Then run `pnpm pr:land <number>` again. It was not queued, so\n'
   + '  nothing waits on it meanwhile.';
 
-/** A pull request this script refuses to touch, with the reason a person can act on. */
-export function describeDailyBrowserRun(run, nowMs = Date.now()) {
+export function describeScheduledRun(check, run, nowMs = Date.now()) {
   if (!run) return null;
   const day = String(run.createdAt ?? '').slice(0, 10);
-  if (run.conclusion === 'failure') {
-    return `the daily full browser run on main failed on ${day} (${run.url}); the specs that run only after merge are red until someone fixes them`;
-  }
+  if (run.conclusion === 'failure') return `the ${check.name} on main failed on ${day} (${run.url}); ${check.red}`;
   const ageHours = (nowMs - Date.parse(run.createdAt)) / 3_600_000;
-  if (ageHours > 48) return `the last daily full browser run on main is from ${day}; the specs that run only after merge have not run since`;
+  if (ageHours > SCHEDULED_RUN_STALE_HOURS) return `the last ${check.name} on main is from ${day}; ${check.idle}`;
   return null;
 }
 
+const USER_VISIBLE_TITLE = /^(feat|fix|perf|design)(\([^)]*\))?!?:/;
+const NO_CHANGE_RECORD_LINE = /^No change record: *\S/m;
+const CHANGE_RECORD_DIR = 'docs/records/changes/';
+
+export function missingChangeRecord(pr, readChangedFiles) {
+  const type = USER_VISIBLE_TITLE.exec(pr.title ?? '')?.[1];
+  if (!type || NO_CHANGE_RECORD_LINE.test(pr.body ?? '')) return null;
+  const files = readChangedFiles();
+  if (files === null) {
+    return `is titled \`${type}:\`, and its changed files could not be read, so whether it adds a change record is unknown; try again once the read works.`;
+  }
+  if (files.some((path) => path.startsWith(CHANGE_RECORD_DIR))) return null;
+  return `is titled \`${type}:\`, which tells a user something changed, but adds no ${CHANGE_RECORD_DIR} record, so no release note can name it.\n`
+    + `  Record the fact, then commit and push it:\n`
+    + `    pnpm record:new -- --kind=change --date=YYYY-MM-DD --slug=<subject> --category=<${CATEGORIES.join('|')}> --input=<file>\n`
+    + '  Or, when no user can notice the change, add this line to the pull request body:\n'
+    + '    No change record: <why no user can notice it>\n'
+    + '  Then run `pnpm pr:land <number>` again.';
+}
+
+/** A pull request this script refuses to touch, with the reason a person can act on. */
 export function refuseLanding(pr) {
   if (!pr || typeof pr.number !== 'number') return 'no such pull request.';
   if (pr.state !== 'OPEN') {
@@ -655,6 +688,7 @@ const PR_FIELDS = [
   'number',
   'state',
   'title',
+  'body',
   'url',
   'isDraft',
   'mergeable',
@@ -756,8 +790,12 @@ export function createGithub(slug, run = ghRun) {
       }
       return [...rows.values()].sort((a, b) => b.number - a.number).slice(0, TRAIN_HISTORY_LIMIT);
     },
-    readDailyBrowserRun: () => {
-      const out = run(['run', 'list', '--workflow', DAILY_BROWSER_WORKFLOW, '--event', 'schedule', '--branch', 'main', '--limit', '1',
+    readChangedFiles: (number) => {
+      const out = run(['api', '--paginate', `repos/${slug}/pulls/${number}/files`, '--jq', '.[].filename'], { allowFailure: true });
+      return typeof out === 'string' ? out.split('\n').filter(Boolean) : null;
+    },
+    readScheduledRun: (workflow) => {
+      const out = run(['run', 'list', '--workflow', workflow, '--event', 'schedule', '--branch', 'main', '--limit', '1',
         '--json', 'conclusion,createdAt,url'], { allowFailure: true });
       if (typeof out !== 'string') return null;
       try {
@@ -1594,7 +1632,7 @@ function landOne({ args, deps }) {
     if (removal) deps.cleanupWorktree(removal);
     return 0;
   }
-  const refusal = refuseLanding(pr);
+  const refusal = refuseLanding(pr) ?? missingChangeRecord(pr, () => deps.gh.readChangedFiles(number));
   if (refusal) {
     deps.error(`PR #${number} ${refusal}`);
     return 1;
@@ -1602,8 +1640,10 @@ function landOne({ args, deps }) {
   const requiredContexts = readProtection(deps);
   if (!requiredContexts) return 1;
   deps.log(`PR #${number} ${pr.title}`);
-  const daily = describeDailyBrowserRun(deps.gh.readDailyBrowserRun?.() ?? null, deps.now());
-  if (daily) deps.error(`warning: ${daily}`);
+  for (const check of SCHEDULED_CHECKS) {
+    const warning = describeScheduledRun(check, deps.gh.readScheduledRun?.(check.workflow) ?? null, deps.now());
+    if (warning) deps.error(`warning: ${warning}`);
+  }
   const token = `${deps.host}-${deps.pid}-${deps.now()}`;
 
   if (args.fast && tryFastPath({ pr, deps, requiredContexts, args, token })) {
@@ -1661,7 +1701,7 @@ export function planLanding({ args, deps }) {
       deps.log(`PR #${number}: already merged`);
       continue;
     }
-    const refusal = refuseLanding(pr);
+    const refusal = refuseLanding(pr) ?? missingChangeRecord(pr, () => deps.gh.readChangedFiles(number));
     if (refusal) {
       deps.log(`PR #${number}: would be refused — ${refusal.split('\n')[0]}`);
       continue;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -15,7 +15,7 @@ import {
   conduct,
   createGithub,
   describeCleanup,
-  describeDailyBrowserRun,
+  describeScheduledRun,
   lockTrains,
   describeLock,
   otherCheckState,
@@ -23,10 +23,12 @@ import {
   parseLockToken,
   protectionFrom,
   readOutcome,
+  missingChangeRecord,
   refuseLanding,
   requiredCheckState,
   runInFlight,
   runPrLand,
+  SCHEDULED_CHECKS,
   worktreeToRemove,
 } from './pr-land.mjs';
 import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, RED_CLOSE_PREFIX, trainCiStep } from './lib/landing-train.mjs';
@@ -213,6 +215,60 @@ describe('pr:land refusals', () => {
     assert.match(refusal, /fork/);
     assert.match(refusal, /gh pr diff/);
     assert.match(refusal, /core\.hooksPath=\/dev\/null/);
+  });
+});
+
+describe('a user-visible change lands with its change record', () => {
+  const readNothing = () => assert.fail('the changed files were read');
+  const recorded = () => ['src/a.ts', 'docs/records/changes/2026-10-10-a-0000.md'];
+
+  it('refuses a fix that adds no record and names both ways out', () => {
+    const refusal = missingChangeRecord({ title: 'fix(map): keep the camera still', body: '' }, () => ['src/a.ts']);
+    assert.match(refusal, /titled `fix:`/);
+    assert.match(refusal, /pnpm record:new -- --kind=change .*--category=<Added\|Changed\|Fixed\|Removed>/);
+    assert.match(refusal, /No change record: <why/);
+  });
+
+  it('lands each user-visible type once it adds a record', () => {
+    for (const title of ['feat: a', 'fix(map): a', 'perf!: a', 'design(app): a']) {
+      assert.equal(missingChangeRecord({ title, body: '' }, recorded), null, title);
+    }
+  });
+
+  it('lands on a stated reason without reading the files', () => {
+    assert.equal(missingChangeRecord({ title: 'fix(ci): a', body: 'Summary\n\nNo change record: only CI timing moved\n' }, readNothing), null);
+  });
+
+  it('refuses a declaration with no reason', () => {
+    assert.match(missingChangeRecord({ title: 'fix: a', body: 'No change record:   \n' }, () => []), /adds no docs\/records\/changes\/ record/);
+  });
+
+  it('never asks a chore, docs, refactor, test or fixup pull request', () => {
+    for (const title of ['chore(release): a', 'docs: a', 'refactor: a', 'test: a', 'fixup: a']) {
+      assert.equal(missingChangeRecord({ title, body: '' }, readNothing), null, title);
+    }
+  });
+
+  it('refuses when the changed files cannot be read', () => {
+    assert.match(missingChangeRecord({ title: 'feat: a', body: null }, () => null), /could not be read/);
+  });
+
+  it('refuses before queueing, and --plan reports the refusal', () => {
+    const world = fakeWorld({ prs: [component(61, { body: '' })] });
+    assert.equal(runPrLand(['61'], world.io, () => world.deps), 1);
+    assert.deepEqual(called(world, 'addLabel'), []);
+    assert.ok(world.out.some((line) => line.startsWith('ERROR PR #61 is titled `feat:`')));
+    const plan = fakeWorld({ prs: [component(62, { body: '' })], readOnly: true });
+    runPrLand(['--plan', '62'], plan.io, () => plan.deps);
+    assert.ok(plan.out.some((line) => line.startsWith('PR #62: would be refused — is titled `feat:`')));
+  });
+
+  it('reads every page of changed files and survives an unreadable answer', () => {
+    const calls = [];
+    const github = createGithub('owner/repo', (args) => { calls.push(args); return 'src/a.ts\ndocs/records/changes/x.md\n'; });
+    assert.deepEqual(github.readChangedFiles(7), ['src/a.ts', 'docs/records/changes/x.md']);
+    assert.ok(calls[0].includes('--paginate') && calls[0].includes('repos/owner/repo/pulls/7/files'));
+    assert.equal(createGithub('owner/repo', () => undefined).readChangedFiles(7), null);
   });
 });
 
@@ -475,6 +531,7 @@ function component(number, extra = {}) {
     headRefOid: `${number}`.padEnd(40, 'c'),
     statusCheckRollup: DRAFT_ROLLUP,
     files: [`src/change-${number}.ts`],
+    body: 'No change record: a landing fixture',
     ...extra,
   };
 }
@@ -528,6 +585,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       return view(pr);
     },
     readPrComments: (number) => pulls.get(number).comments,
+    readChangedFiles: (number) => pulls.get(number).files,
     listQueue: () => [...pulls.values()]
       .filter((pr) => pr.state === 'OPEN' && pr.labels.some((l) => l.name === QUEUE_LABEL))
       .sort((a, b) => Date.parse(a.queuedAt) - Date.parse(b.queuedAt))
@@ -1177,28 +1235,45 @@ describe('train history', () => {
   });
 });
 
-describe('daily full browser run on main', () => {
+describe('scheduled checks on main', () => {
   const now = Date.parse('2026-10-09T12:00:00Z');
+  const [browser, acp] = SCHEDULED_CHECKS;
   const CASES = [
-    ['a green run from today says nothing', { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
-    ['a red run names its day and link', { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /failed on 2026-10-08 \(https:\/\/x\/1\)/],
-    ['a green run older than two days says the schedule stalled', { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
-    ['an unreadable run says nothing', null, null],
+    ['a green run from today says nothing', browser, { conclusion: 'success', createdAt: '2026-10-08T19:17:00Z', url: 'u' }, null],
+    ['a red run names its day and link', browser, { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'https://x/1' }, /full browser run on main failed on 2026-10-08 \(https:\/\/x\/1\)/],
+    ['a green run older than two days says the schedule stalled', browser, { conclusion: 'success', createdAt: '2026-10-05T19:17:00Z', url: 'u' }, /is from 2026-10-05/],
+    ['an unreadable run says nothing', browser, null, null],
+    ['a red ACP registry check names the command that shows what moved', acp, { conclusion: 'failure', createdAt: '2026-10-08T03:41:00Z', url: 'https://x/2' }, /ACP registry check on main failed on 2026-10-08 .*`pnpm acp:registry:check`/],
   ];
-  for (const [name, run, expected] of CASES) {
+  for (const [name, check, run, expected] of CASES) {
     it(name, () => {
-      const said = describeDailyBrowserRun(run, now);
+      const said = describeScheduledRun(check, run, now);
       if (expected === null) assert.equal(said, null);
       else assert.match(said, expected);
     });
   }
 
-  it('reads the newest finished scheduled run and survives an unreadable answer', () => {
+  it('reads the newest finished scheduled run of the named workflow and survives an unreadable answer', () => {
     const calls = [];
     const finished = { conclusion: 'failure', createdAt: '2026-10-08T19:17:00Z', url: 'u' };
     const github = createGithub('owner/repo', (args) => { calls.push(args); return JSON.stringify([finished]); });
-    assert.deepEqual(github.readDailyBrowserRun(), finished);
-    assert.ok(calls[0].includes('schedule') && calls[0].includes('main'));
-    assert.equal(createGithub('owner/repo', () => undefined).readDailyBrowserRun(), null);
+    assert.deepEqual(github.readScheduledRun('acp-registry.yml'), finished);
+    assert.ok(calls[0].includes('acp-registry.yml') && calls[0].includes('schedule') && calls[0].includes('main'));
+    assert.equal(createGithub('owner/repo', () => undefined).readScheduledRun('e2e.yml'), null);
+  });
+
+  it('warns at landing for every red scheduled check', () => {
+    const world = fakeWorld({ prs: [component(71)] });
+    world.deps.gh.readScheduledRun = (workflow) => ({ conclusion: 'failure', createdAt: '2026-09-26T03:00:00Z', url: `https://x/${workflow}` });
+    runPrLand(['71'], world.io, () => world.deps);
+    for (const workflow of ['e2e.yml', 'acp-registry.yml']) {
+      assert.ok(world.out.some((line) => line.startsWith('ERROR warning:') && line.includes(`https://x/${workflow}`)), workflow);
+    }
+  });
+
+  it('names only workflows that run on a schedule', () => {
+    for (const { workflow } of SCHEDULED_CHECKS) {
+      assert.match(readFileSync(join('.github/workflows', workflow), 'utf8'), /^ {2}schedule:/m, workflow);
+    }
   });
 });
