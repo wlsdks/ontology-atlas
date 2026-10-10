@@ -3,6 +3,7 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
+  firstReadableSlug,
   isAuthorableOntologyDocument,
   followMovedSlugs,
   resolveDocsVaultSlugAlias,
@@ -206,5 +207,22 @@ describe('resolveInitialDocsCollection never opens on an empty list', () => {
   it('accepts an explicit preferred collection', () => {
     const docs = [doc('a')];
     expect(resolveInitialDocsCollection(docs, 'ontology')).toBe('all');
+  });
+});
+
+describe('firstReadableSlug', () => {
+  it('skips an architecture profile and takes the next document', () => {
+    const docs = [
+      doc('profile', { architecture_schema: 'architecture-profile/v1' }),
+      doc('readme'),
+    ];
+    expect(firstReadableSlug(docs)).toBe('readme');
+  });
+
+  it('gives undefined for an empty list or only profiles', () => {
+    expect(firstReadableSlug([])).toBeUndefined();
+    expect(
+      firstReadableSlug([doc('profile', { architecture_schema: 'architecture-profile/v1' })]),
+    ).toBeUndefined();
   });
 });

@@ -60,7 +60,7 @@ import {
   type ArchitectureAgentRuntime,
 } from '../model/architecture-agent';
 
-/* The runtime never changes within a session, so the store is a constant read, as in `DocsVaultPage`. */
+/* The runtime never changes within a session, so the store is a constant read, as in `use-docs-vault-source`. */
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;

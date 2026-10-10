@@ -961,6 +961,21 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('routes the docs vault page modules to the desktop readiness gate', () => {
+    for (const path of [
+      'src/views/docs-vault/ui/DocsVaultHeader.tsx',
+      'src/views/docs-vault/ui/DocsVaultDocumentPane.tsx',
+      'src/views/docs-vault/ui/DocsVaultSidebar.tsx',
+      'src/views/docs-vault/model/use-docs-vault-source.tsx',
+      'src/views/docs-vault/model/use-doc-write-actions.ts',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes('pnpm desktop:check'),
+        path,
+      );
+    }
+  });
+
   it('runs the native bridge tests for code split out of the crate root', () => {
     for (const path of ['src-tauri/src/vault/write.rs', 'src-tauri/src/webview_verify/mod.rs']) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:bridge'), path);

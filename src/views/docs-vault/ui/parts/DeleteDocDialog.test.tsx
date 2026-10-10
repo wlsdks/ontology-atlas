@@ -3,7 +3,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import koMessages from "../../../../../messages/ko.json";
-import { DeleteDocDialog, type DeleteDocTarget } from "./DeleteDocDialog";
+import { DeleteDocDialog } from "./DeleteDocDialog";
+import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
 
 function renderDialog(target: DeleteDocTarget, onConfirm = vi.fn().mockResolvedValue(undefined)) {
   render(

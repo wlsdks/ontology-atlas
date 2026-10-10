@@ -8,12 +8,7 @@ import { useFailureSentence, type FailureCopy } from "@/shared/lib/use-failure-s
 import { useHeldValue } from "@/shared/lib/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 
-export interface DeleteDocTarget {
-  slug: string;
-  title: string;
-  /** By display name. */
-  referrers: ReadonlyArray<{ slug: string; title: string }>;
-}
+import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
 
 /** Named before the rest are counted. */
 const REFERRERS_NAMED_MAX = 3;
