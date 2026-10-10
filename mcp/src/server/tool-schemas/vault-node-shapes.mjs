@@ -1,7 +1,7 @@
 import { RELATION_TYPE_VALUES, WRITE_RELATION_TYPE_VALUES } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
-import { GRAPH_ARRAY_KEYS } from '../../vault.mjs';
+import { GRAPH_ARRAY_KEYS } from '../../vault/relation-refs.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from './array-limits.mjs';
 import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 

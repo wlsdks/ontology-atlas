@@ -11,11 +11,8 @@ import {
   sep,
 } from 'node:path';
 
-import {
-  collectNeighborRefs,
-  describeBodyDelivery,
-  relationNoteFor,
-} from './vault.mjs';
+import { collectNeighborRefs, relationNoteFor } from './vault/relation-refs.mjs';
+import { describeBodyDelivery } from './vault/documents.mjs';
 import {
   REVIEWED_AT_KEY,
   REVIEWED_BY_KEY,

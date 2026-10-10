@@ -1,6 +1,6 @@
 /**
  * The relation-key matrix — the full set of frontmatter keys MCP reads as graph edges
- * (`mcp/src/vault.mjs` GRAPH_ARRAY_KEYS = NEIGHBOR_KEYS + alias `depends_on`)
+ * (`mcp/src/vault/` GRAPH_ARRAY_KEYS = NEIGHBOR_KEYS + alias `depends_on`)
  * and the edge type each key must produce in the web derive
  * (`derive-ontology-from-vault`). This table is the only source of truth.
  *

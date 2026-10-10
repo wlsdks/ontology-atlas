@@ -58,7 +58,7 @@ export interface InteropGraph {
 
 /**
  * Every graph edge key the compiler can emit as `via`, mapped to its oatlas
- * predicate term. Keep in sync with `mcp/src/vault.mjs` NEIGHBOR_KEYS +
+ * predicate term. Keep in sync with `mcp/src/vault/` NEIGHBOR_KEYS +
  * INLINE_NEIGHBOR_KEYS (`dependencies` is the canonical form of `depends_on`).
  * An unknown `via` falls back to an `oatlas:<via>` term so a new edge type is
  * never silently dropped.

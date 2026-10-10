@@ -1,7 +1,7 @@
 /**
  * Near-duplicate detection for nodes created through the GUI.
  *
- * Combines `detectDuplicateTitle` from `mcp/src/vault.mjs` (normalised *exact*
+ * Combines `detectDuplicateTitle` from `mcp/src/vault/` (normalised *exact*
  * match only) and `findNearTitleMatches` from `mcp/src/growth-hint.mjs` (Jaccard
  * token overlap) into one pure function. `mcp/` is a separate package and is never
  * imported from `src/`, so the logic is ported rather than shared

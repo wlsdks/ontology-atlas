@@ -23,4 +23,4 @@ Lets a change land in the vault files without silently erasing a concurrent edit
 - Version history, which Git owns.
 
 ## Uncertainty
-- Read from `mcp/src/write-consent.mjs` by name alongside prose describing the modification-time guard in `mcp/src/vault.mjs`; neither file's implementation was read, and no concurrent write was exercised in this scan.
+- Read from `mcp/src/write-consent.mjs` by name alongside prose describing the modification-time guard (`VaultConflictError`, `getFileMtime` in `mcp/src/vault/atomic-writes.mjs`); neither file's implementation was read, and no concurrent write was exercised in this scan.

@@ -8,8 +8,8 @@ display_ko: 그래프 컴파일러
 domain: domains/meaning-layer
 path: mcp/src/ontology-compiler.mjs
 created_by: "agent:claude-code"
-dependencies: [elements/vault-file-store, elements/vault-kind-schema]
-relation_notes: { elements/vault-kind-schema: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows ontology-compiler.mjs importing schema.mjs.", elements/vault-file-store: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows ontology-compiler.mjs importing vault.mjs." }
+dependencies: [elements/relation-reference-normalizer, elements/vault-kind-schema]
+relation_notes: { elements/vault-kind-schema: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows ontology-compiler.mjs importing schema.mjs.", elements/relation-reference-normalizer: "You asked me to turn imports I actually witnessed into dependencies: the import scan shows mcp/src/ontology-compiler.mjs importing vault/relation-refs.mjs (`normalizeRelationRefs`, `collectNeighborRefs`)." }
 ---
 
 Turns the loaded documents into one graph artifact of nodes, edges and aliases, and stamps it with a hash that changes exactly when the graph does.

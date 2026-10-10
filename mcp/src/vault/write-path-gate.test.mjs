@@ -13,15 +13,13 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { defaultBody } from './schema.mjs';
+import { defaultBody } from '../schema.mjs';
 import {
   configureNodeEligibilityRepoRoot,
   drainNodeEligibilityFindings,
-  patchFrontmatter,
   resetNodeEligibilityGate,
-  updateDoc,
-  writeDoc as writeVaultDoc,
-} from './vault.mjs';
+} from './eligibility-gate.mjs';
+import { patchFrontmatter, updateDoc, writeDoc as writeVaultDoc } from './doc-writes.mjs';
 
 let root;
 let uidSequence = 0;
