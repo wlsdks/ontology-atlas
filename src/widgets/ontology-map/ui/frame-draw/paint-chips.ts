@@ -10,7 +10,10 @@ import {
 } from "../../render/cluster-chips";
 import { radiusForKind } from "../topology-world";
 import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeAlpha } from "./node-alpha";
+import type { NodeLayer } from "./node-layer";
 
 const CLUSTER_CHIP_HOVER_MS = 150;
 
@@ -19,11 +22,13 @@ let clusterChipHoverAnim: {
   startAt: number;
 } | null = null;
 
-export function paintClusterChips(F: FrameScope): void {
+export function paintClusterChips(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, layer: NodeLayer): ReservedBox[] {
   const { camera, hoveredClusterId, clusterChips, reducedMotion, now, world, tokens, spotlightIds,
-    chipRevealById, expand, clusterBarLabels, focusedNodeId, tierNameBoxes, ctx, spotlightSink,
-    trailLensActive, trailRamp, domeOn, domeFrameFor, project, effectiveAlphaById,
-    nodeDiscReservations } = F;
+    chipRevealById, expand, clusterBarLabels, focusedNodeId, tierNameBoxes, spotlightSink,
+    trailLensActive, trailRamp, domeOn, domeFrameFor } = frame;
+  const { project } = focus;
+  const { effectiveAlphaById } = alpha;
+  const { ctx, nodeDiscReservations } = layer;
   const chipScale = clusterChipScale(camera.scale.value);
   if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
     clusterChipHoverAnim = null;
@@ -107,5 +112,5 @@ export function paintClusterChips(F: FrameScope): void {
       });
     }
   }
-  F.chipReservations = chipReservations;
+  return chipReservations;
 }

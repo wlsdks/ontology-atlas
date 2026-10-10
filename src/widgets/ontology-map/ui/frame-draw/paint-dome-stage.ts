@@ -26,7 +26,9 @@ import {
   litSectorIdsReused,
   lodChords,
 } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { EdgePrep } from "./edge-prep";
 
 const domeEdgeOrderReused: WorldEdge[] = [];
 const domeEdgeDepthReused: number[] = [];
@@ -49,10 +51,10 @@ let lodDependsInk: {
   hex: string; rgb: readonly [number, number, number];
 } | null = null;
 
-export function paintDomeStage(F: FrameScope): void {
-  const { tokens, farT, world, domeLight, domeRings, domeRingAlpha, domeTierRaisedKind, ctx, domeOn,
-    project, camX, camY, camScale, halfW, halfH, litOn, litFocusRamp, lod, edgeAlphaReused,
-    edgeEnds } = F;
+export function paintDomeStage(frame: FrameInputs, focus: FrameFocus, edges: EdgePrep) {
+  const { tokens, farT, world, domeLight, domeRings, domeRingAlpha, domeTierRaisedKind, ctx, domeOn } = frame;
+  const { project, camX, camY, camScale, halfW, halfH, litOn, litFocusRamp, lod } = focus;
+  const { edgeAlphaReused, edgeEnds } = edges;
   const domeHaloColor = domeOn ? lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT) : "";
   let edgeDrawOrder: readonly WorldEdge[] = world.edges;
   if (domeOn) {
@@ -196,6 +198,7 @@ export function paintDomeStage(F: FrameScope): void {
     lodChords.represented = 0;
     lodChords.hidden = 0;
   }
-  F.domeHaloColor = domeHaloColor;
-  F.edgeDrawOrder = edgeDrawOrder;
+  return { domeHaloColor, edgeDrawOrder };
 }
+
+export type DomeStage = Readonly<ReturnType<typeof paintDomeStage>>;
