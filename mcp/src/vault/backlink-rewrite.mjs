@@ -7,19 +7,9 @@ import { GRAPH_ARRAY_KEY_SET, normalizeRelationRefs } from './relation-refs.mjs'
 import { slugToPath } from './slug-paths.mjs';
 
 /**
- * Rewrites every frontmatter graph key and body link pointing at `targetSlug`
- * to `nextSlug`, for rename_concept and merge_concepts. Matches like
- * findBacklinks (absolute slug, last segment, path-prefixed tail); a tail is
- * rewritten with the tail of `nextSlug`, so the new name shows in every form.
- *
- * With `dryRun` it previews without writing. `excludeSlugs` skips documents the
- * caller replaces in the same plan. Pass `targetKind` only when the node changes
- * kind (reclassify_concept): an entry in a kind-named list (domains,
- * capabilities, elements) moves to the list for `targetKind` when the
- * referrer's kind keeps one (`containmentKeyFor`, spec §5), else it stays and is
- * listed in `keptInPlace`; then `targetSlug === nextSlug` is a kind change in place.
- *
- * Returns `{ updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated, keptInPlace, unwritableReferrers }`.
+ * Rewrites every graph key and body link naming `targetSlug` to `nextSlug`, matched
+ * as findBacklinks matches. `targetKind` marks a kind change (spec §5), in place
+ * when `targetSlug === nextSlug`; entries a referrer's kind cannot list stay in `keptInPlace`.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
   /**
@@ -115,10 +105,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           fmChanged = true;
         }
       } else if (value && typeof value === 'object') {
-        // An object map's keys (`relation_notes: {ref: "why"}`) are rename targets too,
-        // or the rationale is orphaned. On a collision the existing new-key value wins
-        // (the more recent intent; overwriting it is silent loss) and the displaced old
-        // value stays in beforeKeys.
+        // `relation_notes` keys are rename targets too, or the rationale is orphaned.
+        // On a collision the existing new-key value wins (overwriting it is silent
+        // loss) and the displaced old value stays in beforeKeys.
         const entries = Object.entries(value);
         let mapChanged = false;
         const nextMap = {};
@@ -155,11 +144,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     }
 
     /*
-     * A kind change moves an entry between kind-named lists, not only its
-     * address: `capabilities: [elements/x]` resolves silently and the dense-parent check
-     * counts it as a capability. The entry follows the node into its new kind's list
-     * when the referrer's kind keeps one (spec §5, `containmentKeyFor`); otherwise
-     * it stays and is reported in `keptInPlace`. A merge survivor is skipped.
+     * A kind change moves the entry between kind-named lists, or `capabilities:
+     * [elements/x]` resolves silently and is counted as a capability. A merge
+     * survivor is skipped.
      */
     if (targetKind && !rewritingSelf) {
       const holderKind = typeof doc.frontmatter?.kind === 'string' ? doc.frontmatter.kind.trim() : '';
@@ -216,13 +203,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     let nextBody = doc.body;
     let bodyChanged = false;
     /*
-     * Body links take more shapes than frontmatter: the wikilinks for a slug,
-     * a heading and an alias (`[[slug]]`, `[[slug#h]]`, `[[slug|alias]]`) and the
-     * markdown links (`(slug.md)`, `(slug.md#a)`, `(…/slug.md)`). Missing one
-     * leaves it dangling, permanently after a merge deletes the old file. All
-     * route through `rewriteArrayItem` for its tail rules and ambiguity guard.
-     * Bare prose paths are evidence, not references; a kind change in place
-     * leaves the body.
+     * Every body link shape (`[[slug]]`, `[[slug#h]]`, `[[slug\|alias]]`, `(slug.md)`,
+     * `(slug.md#a)`, `(…/slug.md)`) is rewritten, or a merge leaves it dangling for
+     * good. Bare prose paths are evidence, not references.
      */
     if (renaming) {
       nextBody = nextBody.replace(

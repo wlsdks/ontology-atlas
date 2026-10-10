@@ -77,10 +77,9 @@ export function collectNeighborRefs(doc) {
 }
 
 /**
- * The `relation_notes: { <ref>: "why" }` sentence a document stores for one
- * relation. The raw ref is tried before the resolved slug, the compiler's order
- * for `edge.rationale`. `undefined` when absent: callers omit the key, since an
- * absent rationale is no claim, not a null one.
+ * A relation's `relation_notes` sentence, raw ref before resolved slug (the
+ * compiler's order for `edge.rationale`). `undefined` when absent: callers omit
+ * the key, since an absent rationale is no claim, not a null one.
  */
 export function relationNoteFor(doc, ref, resolvedSlug) {
   const notes = doc?.frontmatter?.relation_notes;
@@ -94,10 +93,9 @@ export function relationNoteFor(doc, ref, resolvedSlug) {
 }
 
 /**
- * Documents that name `ref` in a relation key. A concept named only in another
- * document's relations has no file, yet the map shows it; this lets get_concept
- * answer "who wrote this name, under which key" instead of "Doc not found".
- * It creates no nodes.
+ * Documents naming `ref` in a relation key: a concept named only in relations
+ * has no file yet shows on the map, so get_concept answers "who wrote this name,
+ * under which key" instead of "Doc not found". It creates no nodes.
  */
 export function findGraphReferences(docs, ref) {
   const target = String(ref ?? '').trim();

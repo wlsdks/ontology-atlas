@@ -38,10 +38,9 @@ export function walkMd(rootPath) {
 }
 
 /**
- * File path → vault-relative slug (`projects/foo.md` → `projects/foo`), NFC
- * normalised: macOS often hands back Korean filenames as NFD while frontmatter
- * is typed as NFC, and the byte mismatch drops those nodes' relations. Only the
- * identifier is normalised; the disk path stays as it is.
+ * NFC-normalised because macOS often returns Korean filenames as NFD while
+ * frontmatter is typed as NFC, and the byte mismatch drops those nodes'
+ * relations. Only the identifier is normalised; the disk path stays as it is.
  */
 export function pathToSlug(rootPath, filePath) {
   const rel = relative(rootPath, filePath).replace(/\\/g, '/');
@@ -160,12 +159,9 @@ export function rawSourceSlugAt(rootPath, slug) {
 }
 
 /**
- * The exact on-disk spelling of an existing slug, or `null`. `existsSync`
- * follows the filesystem's case rules, so on macOS a wrong-case slug passes every
- * existence gate while backlink matching is case-sensitive: rename_concept would
- * redirect 0 backlinks and report success. Destructive tools use the disk's
- * spelling. Walks one directory level per segment (exact entry, then a unique
- * case-insensitive one); an unmatched segment returns the input unchanged.
+ * The disk's spelling of an existing slug, or `null`. macOS `existsSync` passes a
+ * wrong-case slug while backlink matching is case-sensitive, so rename_concept
+ * would redirect 0 backlinks and still report success.
  */
 export function canonicalDiskSlug(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) return null;
@@ -217,10 +213,9 @@ export function vaultSlugExists(rootPath, slug) {
 }
 
 /**
- * Up to `limit` existing slugs similar to `badSlug`, for a not-found error's
- * next action. First stage that hits wins: exact tail, tail substring either
- * way, tail prefix. Substring only: an edit distance is costly on a large vault
- * and noisy, and the goal is "these exist", not "did you mean".
+ * Up to `limit` existing slugs near `badSlug` for a not-found error. Substring
+ * stages only: edit distance is costly on a large vault and noisy, and the goal
+ * is "these exist", not "did you mean".
  */
 export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
   if (typeof badSlug !== 'string' || badSlug.length === 0) return [];

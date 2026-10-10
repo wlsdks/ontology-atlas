@@ -124,10 +124,9 @@ function hasSettledUid(frontmatter) {
 }
 
 /**
- * Immutability covers changing a present uid only; filling an absent one is
- * allowed, or a hand-written node has no repair door (patch, set uid and add
- * all refuse). Taking over another node's identity is still blocked by the
- * collision check in `assertNodeIdentity`.
+ * Only changing a present uid is refused: filling an absent one is the only repair
+ * door for a hand-written node, and identity takeover is still caught by
+ * `assertNodeIdentity`'s collision check.
  */
 function assertIdentityPatch(previousFrontmatter, patch) {
   if (!patch) return;

@@ -222,10 +222,9 @@ export function findBacklinks(rootPath, targetSlug, options = {}) {
 }
 
 /**
- * The one reference index findPath, findOrphans and findBacklinks share. An
- * ambiguous ref asserts no specific edge (`resolve` → null) but is a candidate
- * referrer of every match (`resolveCandidates`), so "is this referenced?" stays
- * conservative.
+ * The reference index findPath, findOrphans and findBacklinks share. An ambiguous
+ * ref asserts no edge (`resolve` → null) but is a candidate referrer of every
+ * match, so "is this referenced?" stays conservative.
  */
 function buildRefIndex(docs) {
   const slugs = new Set(docs.map((d) => d.slug));
@@ -271,10 +270,8 @@ function normalizeForDuplicateTitle(title) {
 }
 
 /**
- * Advisory warning when a new title equals an existing one after normalisation
- * (lowercase, collapsed whitespace), else null. Exact match only, since fuzzy
- * matching flags genuinely different concepts (auth-login vs auth-logout); the
- * node itself and empty titles are excluded. Never blocks the write.
+ * Advisory: exact match after lowercasing and collapsing whitespace, since fuzzy
+ * matching flags different concepts (auth-login vs auth-logout). Never blocks.
  */
 export function detectDuplicateTitle(title, slug, docs) {
   const norm = normalizeForDuplicateTitle(title);

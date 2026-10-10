@@ -230,23 +230,17 @@ function reservedForHumanIssue(filePath) {
 }
 
 /**
- * Applies a multi-file vault write all-or-nothing. While the process lives, any
- * I/O failure (EACCES, EROFS, ENOSPC, a lock) leaves the vault as it started:
- * every target's permission is pre-checked, and a later failure restores the
- * original bytes. Not crash-safe (that needs a journal; the vault is a git
- * repository), hence not "atomic". A failed rollback is reported file by file.
- *
- * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
- * @returns {{applied:number}}
+ * Any I/O failure while the process lives leaves the vault as it started: every
+ * target's permission is pre-checked and a later failure restores the original
+ * bytes. Not crash-safe, hence not "atomic": that needs a journal, and the vault is git.
  */
 export function applyAllOrNothing(plan, options = {}) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
 
   /*
-   * ⓿ Every file the plan touches must be unreserved, not only the named one:
-   * rename, reclassify and merge rewrite backlinks in documents nobody named.
-   * Guarded here, where every multi-file plan passes, so a new tool inherits it;
-   * the whole plan is refused and nothing is written.
+   * ⓿ Every touched file must be unreserved, not only the named one: rename,
+   * reclassify and merge rewrite backlinks nobody named. Checked here, where every
+   * multi-file plan passes, so a new tool inherits it.
    */
   if (options.allowReservedTargets !== true) {
     for (const entry of plan) {
@@ -256,10 +250,9 @@ export function applyAllOrNothing(plan, options = {}) {
   }
 
   /*
-   * ⓪ A plan that writes and then deletes the same file drops the delete. A
-   * case-only rename (write `auth.md`, delete `Auth.md`) names one file on macOS
-   * and Windows, and the delete would erase what was just written. Rename, merge
-   * and reclassify all build this plan, so the write layer compares real paths.
+   * ⓪ A plan that writes then deletes the same file drops the delete: a case-only
+   * rename (write `auth.md`, delete `Auth.md`) names one file on macOS and Windows,
+   * so the delete would erase what was just written.
    */
   const writeTargets = new Set();
   for (const entry of plan) {

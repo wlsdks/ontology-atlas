@@ -26,10 +26,8 @@ import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from './relation-refs.mjs';
 import { slugToPath } from './slug-paths.mjs';
 
 /*
- * Node-eligibility gate (`docs/DECISIONS.md`). Values live in `schema.mjs` and
- * wording in `construction-rules.mjs`; the judgement lives here, in `commitDoc`,
- * because all three write doors (add_concept, patch_concept, add_relation) meet
- * here. It never blocks a write and never enforces a child count: a rejection
+ * Node-eligibility gate (`docs/DECISIONS.md`); every write door reaches it through
+ * `commitDoc`. It never blocks a write or enforces a child count: a rejection
  * strands an agent mid-batch, and a cap is met with empty filler buckets.
  */
 
@@ -55,9 +53,7 @@ const GATE = {
   /** Lazy slug index: { rootPath, names: Set<string> }. */
   index: null,
   /**
-   * Repository root the meaning findings resolve a cited `path:` against,
-   * or `null` while nothing grounded it. Set through a setter
-   * because `server/runtime.mjs` imports this module (an import would be a cycle); `null`
+   * Repository root a cited `path:` resolves against; `null` until grounded, which
    * keeps the check silent instead of measuring against the process cwd.
    */
   repoRoot: null,
@@ -226,10 +222,9 @@ function percentile90(values) {
 }
 
 /**
- * What counts as "wide" for this kind of parent, and whether the number is the
- * vault's own p90 (enough parents) or the researched starting range; a bootstrap
- * constant must not be reported as the reader's own measurement. Costs a full
- * scan, so call it only once a parent is already worth a sentence.
+ * "Wide" for this parent kind: the vault's p90 when there are enough parents,
+ * else the researched starting range, which must not be reported as the vault's
+ * own measurement. Costs a full scan; call it only for a parent worth a sentence.
  */
 function siblingFanoutTrigger(rootPath, parentKind) {
   const relation = DENSE_PARENT_RELATIONS[parentKind];
@@ -275,14 +270,8 @@ function pushRefFinding(slug, code, key, refs, message) {
 }
 
 /**
- * Runs on the committed frontmatter after the file is on disk: it observes and
- * never blocks. `created` marks a brand-new node; `previousFrontmatter` is what
- * this write replaced, which tells a new edge from one already on disk.
- *
- * @param {string} rootPath
- * @param {string} slug
- * @param {Record<string, unknown>} frontmatter
- * @param {{ created?: boolean }} [options]
+ * Runs on the committed frontmatter after the file is on disk, so it observes and
+ * never blocks; `previousFrontmatter` tells a new edge from one already on disk.
  */
 export function runNodeEligibilityGate(
   rootPath,
@@ -382,10 +371,9 @@ export function runNodeEligibilityGate(
     pushRefFinding(slug, 'dangling-graph-reference', key, refs, danglingGraphReferenceMessage);
   }
 
-  // ③ Dense parent. Fires only when something else is already wrong (mostly
-  //    broken references, or machine-filled this session), so a healthy wide
-  //    parent stays silent and never pays for the percentile scan. Unresolved
-  //    strings are not counted as children, or the defect would read as growth.
+  // ③ Fires only when something else is already wrong, so a healthy wide parent
+  // never pays for the percentile scan; unresolved strings are not children, or
+  // the defect would read as growth.
   const relation = DENSE_PARENT_RELATIONS[frontmatter.kind];
   if (relation) {
     const childRefs = Array.isArray(frontmatter[relation.key]) ? frontmatter[relation.key] : [];
@@ -443,11 +431,9 @@ export function runNodeEligibilityGate(
     GATE.findings.push(finding);
   }
 
-  // ④b A dependency the source file never mentions: opens the file this node
-  //     cites and asks whether it names the file the target cites. New edges only
-  //     (hence `previousFrontmatter`), keyed by target so two edges are two
-  //     sentences. No compiled-plan half: it needs the repository root, which only
-  //     the write door and the validators hold.
+  // ④b A new dependency whose cited source never names the target's file, keyed by
+  // target so two edges are two sentences. No compiled-plan half: only the
+  // write door and the validators hold the repository root.
   for (const finding of dependencyWitnessFinding({
     slug,
     frontmatter,
@@ -464,10 +450,9 @@ export function runNodeEligibilityGate(
     GATE.findings.push(finding);
   }
 
-  // ④c An `init` starter example once a real node of its kind lands: from then
-  //     it is a fake concept on the map. Creation only, for non-starter nodes. The
-  //     finding is attached to the starter (the file to act on), matching the
-  //     vault-wide row so the queue drops the duplicate; once per starter per session.
+  // ④c A starter example becomes a fake concept once a real node of its kind lands.
+  // Attached to the starter, as the vault-wide row is, so the queue drops the
+  // duplicate; once per starter per session.
   if (created && typeof frontmatter.kind === 'string') {
     const kind = frontmatter.kind.trim();
     const title = frontmatter.title;

@@ -1,5 +1,4 @@
-// Vault directory walking and `.md` read/write. Synchronous fs only: MCP tool
-// calls are infrequent, so async buys nothing.
+// Synchronous fs throughout `vault/`: MCP tool calls are infrequent, so async buys nothing.
 
 import { closeSync, fstatSync, openSync, readFileSync, statSync } from 'node:fs';
 import { parseFrontmatter } from '../parser.mjs';
@@ -47,10 +46,8 @@ function readStableFileSnapshot(filePath) {
 }
 
 /**
- * The first prose paragraph of a body, so get_concept previews the sentence a
- * person wrote rather than table or code syntax. Skips blank lines, headings,
- * code, tables, images, rules, lists and quotes; falls back to the raw body when
- * no prose exists; caps at `maxLen` with a trailing '…'.
+ * The first prose paragraph, so get_concept previews a sentence a person wrote
+ * rather than table or code syntax; falls back to the raw body when no prose exists.
  */
 export function extractSummaryExcerpt(body, maxLen = 800) {
   if (typeof body !== 'string' || body.length === 0) return '';
@@ -58,14 +55,14 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
   const isBlockStart = (line) => {
     const trimmed = line.trim();
     if (trimmed === '') return false;
-    if (trimmed.startsWith('```')) return true; // Code block
-    if (trimmed.startsWith('|')) return true; // table
-    if (trimmed.startsWith('#')) return true; // heading
-    if (trimmed.startsWith('![')) return true; // image
+    if (trimmed.startsWith('```')) return true;
+    if (trimmed.startsWith('|')) return true;
+    if (trimmed.startsWith('#')) return true;
+    if (trimmed.startsWith('![')) return true;
     if (/^([-*_])(?:\s*\1){2,}$/.test(trimmed)) return true; // thematic break
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true; // list
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true;
     if (/^\d+[.)]\s+/.test(trimmed)) return true; // ordered list
-    if (trimmed.startsWith('> ')) return true; // quote
+    if (trimmed.startsWith('> ')) return true;
     return false;
   };
   let i = 0;
@@ -113,17 +110,9 @@ export const FULL_BODY_MAX_CHARS = 40_000;
 export const GET_CONCEPTS_FULL_BODY_MAX = 20;
 
 /**
- * Reports how much body was returned and what was withheld. The construction
+ * Reports how much body was returned and what was withheld: the construction
  * rules put evidence and boundaries in the body, so a silent cut hides what an
- * agent must read. When cut: `truncated: true`, `omittedChars`, and a `hint`
- * naming the call that fetches the rest; an intact response carries no `hint`.
- *
- * @param {string} body raw markdown body
- * @param {object} [options]
- * @param {'excerpt'|'full'} [options.mode] defaults to `'excerpt'`
- * @param {number} [options.maxLen] excerpt cap (default 800)
- * @param {string} [options.hint] follow-up call to attach when truncated
- * @returns {{ text: string, info: { mode: string, totalChars: number, returnedChars: number, truncated: boolean, omittedChars?: number, hint?: string } }}
+ * agent must read. Only a cut response carries a `hint` naming the follow-up call.
  */
 export function describeBodyDelivery(body, options = {}) {
   const { mode = 'excerpt', maxLen = 800, hint } = options;
