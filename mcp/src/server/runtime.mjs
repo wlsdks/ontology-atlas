@@ -15,7 +15,7 @@ import { shareArtifact } from '../ontology-engine.mjs';
 import {
   ensureVaultRoot,
   loadVaultDocs,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import {
   existsSync,
   realpathSync,

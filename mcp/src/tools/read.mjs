@@ -74,7 +74,7 @@ import {
   readDoc,
   relationNoteFor,
   slugToPath,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import {
   normalizeGraphRelationKey,
   relationRefsFor,

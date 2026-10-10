@@ -31,7 +31,7 @@ import {
   folderOnlyEvidenceFinding,
   starterExampleFindings,
 } from '../meaning-findings.mjs';
-import { loadVaultDocs } from '../vault.mjs';
+import { loadVaultDocs } from '../vault/doc-writes.mjs';
 import { collectPathLastChanges } from '../git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../evidence-drift.mjs';
 import {

@@ -50,7 +50,7 @@ import {
   readDoc,
   slugToPath,
   suggestSimilarSlugs,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 

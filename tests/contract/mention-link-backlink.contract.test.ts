@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { findBacklinks } from '../../mcp/src/vault.mjs';
+import { findBacklinks } from '../../mcp/src/vault/doc-writes.mjs';
 import {
   buildDocLinkMarkdown,
   relativeDocPath,

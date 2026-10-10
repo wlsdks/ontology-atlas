@@ -43,7 +43,7 @@ import {
 import {
   VaultConflictError,
   loadVaultDocs,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import {
   meaningSourceFromProjectSource,
   projectMeaningContext,

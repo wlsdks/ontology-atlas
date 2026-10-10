@@ -10,7 +10,7 @@ import {
   RELATION_TYPE_VALUES,
 } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
-import { GRAPH_ARRAY_KEYS } from '../../vault.mjs';
+import { GRAPH_ARRAY_KEYS } from '../../vault/doc-writes.mjs';
 import {
   EDGE_TARGET_KIND_DESCRIPTION,
   NODE_KIND_DESCRIPTION,

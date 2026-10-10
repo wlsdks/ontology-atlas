@@ -22,8 +22,8 @@ import {
 } from 'node:fs';
 import { basename, join, relative, dirname, resolve, sep } from 'node:path';
 
-import { detachText, parseFrontmatter, buildMarkdown } from './parser.mjs';
-import { previewDocumentPatch } from './document-patch.mjs';
+import { detachText, parseFrontmatter, buildMarkdown } from '../parser.mjs';
+import { previewDocumentPatch } from '../document-patch.mjs';
 import {
   CONTAINMENT_KEY_FOR_KIND,
   NODE_ELIGIBILITY_GATE,
@@ -39,7 +39,7 @@ import {
   rawSourceSlugIssue,
   nodeUidIssue,
   unwritableSlugIssue,
-} from './schema.mjs';
+} from '../schema.mjs';
 import {
   STARTER_EXAMPLE_SLUGS,
   bulkProvenanceMessage,
@@ -51,14 +51,14 @@ import {
   pathShapedReferenceMessage,
   pathShapedTitleMessage,
   slugOutsideKindFolderMessage,
-} from './construction-rules.mjs';
-import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
+} from '../construction-rules.mjs';
+import { hasCapabilityImplementationEvidence } from '../capability-evidence.mjs';
 import {
   dependencyWitnessFinding,
   isStarterExampleNode,
   meaningFindings,
   starterExampleFinding,
-} from './meaning-findings.mjs';
+} from '../meaning-findings.mjs';
 
 /**
  * Thrown when a write passed `expectedMtime` and the file changed on disk since

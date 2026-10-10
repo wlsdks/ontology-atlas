@@ -15,7 +15,7 @@ import {
   collectNeighborRefs,
   describeBodyDelivery,
   relationNoteFor,
-} from './vault.mjs';
+} from './vault/doc-writes.mjs';
 import {
   REVIEWED_AT_KEY,
   REVIEWED_BY_KEY,

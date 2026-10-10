@@ -17,7 +17,7 @@ import {
   deleteDoc,
   getFileMtime,
   VaultConflictError,
-} from "./vault.mjs";
+} from "./doc-writes.mjs";
 
 let passed = 0;
 let failed = 0;

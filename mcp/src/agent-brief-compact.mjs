@@ -4,7 +4,7 @@ import {
   buildTaskNavigationEvidence,
   verifyTaskNavigationEvidencePath,
 } from './task-navigation-evidence.mjs';
-import { extractSummaryExcerpt } from './vault.mjs';
+import { extractSummaryExcerpt } from './vault/doc-writes.mjs';
 
 const AGENT_BRIEF_COMPACT_CONTRACT = 'agentBriefCompact:v2';
 export const AGENT_BRIEF_COMPACT_MAX_BYTES = 12_000;

@@ -18,7 +18,7 @@
 
 import { NODE_KIND_VALUES } from './ontology-engine.mjs';
 import { formatAllowedValueError } from './suggestions.mjs';
-import { GRAPH_ARRAY_KEYS } from './vault.mjs';
+import { GRAPH_ARRAY_KEYS } from './vault/doc-writes.mjs';
 
 const KEY_RE = /^[a-z_][a-z0-9_]*$/i;
 // `created_by="agent:codex"` must be quoted (bare words hold no colon); a node

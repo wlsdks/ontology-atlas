@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { GET_CONCEPTS_FULL_BODY_MAX } from './vault.mjs';
+import { GET_CONCEPTS_FULL_BODY_MAX } from './vault/doc-writes.mjs';
 
 const CONTRACT = 'meaningRepair:v2';
 const REVIEW_CONTRACT = 'meaningRepairReviewPage:v1';

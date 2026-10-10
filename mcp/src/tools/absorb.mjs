@@ -27,7 +27,7 @@ import {
   slugToPath,
   writeDoc,
   writeFileAtomically,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   agentProvenance,

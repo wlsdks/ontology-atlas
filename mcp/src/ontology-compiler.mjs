@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { detachText } from './parser.mjs';
 import { nodeUidIssue } from './schema.mjs';
-import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault.mjs';
+import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault/doc-writes.mjs';
 
 const COMPILER_VERSION = 2;
 

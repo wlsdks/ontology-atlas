@@ -55,7 +55,7 @@ import {
   requireOptionalPositiveInteger,
   requireOptionalStringArray,
 } from '../server/validate.mjs';
-import { loadVaultDocs } from '../vault.mjs';
+import { loadVaultDocs } from '../vault/doc-writes.mjs';
 import { attachVaultValidation } from './maintenance.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 

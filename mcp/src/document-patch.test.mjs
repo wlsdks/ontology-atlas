@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { previewDocumentPatch } from './document-patch.mjs';
-import { loadVaultDocs, patchFrontmatter, updateDoc } from './vault.mjs';
+import { loadVaultDocs, patchFrontmatter, updateDoc } from './vault/doc-writes.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 import { queryCompiledOntology } from './ontology-engine.mjs';
 import { validateVaultDocument } from './validate.mjs';

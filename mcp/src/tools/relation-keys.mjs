@@ -6,7 +6,7 @@
 
 import { WRITE_RELATION_TYPE_VALUES } from '../ontology-engine.mjs';
 import { emptiedRelationListValue } from '../schema.mjs';
-import { NEIGHBOR_KEY_ALIASES } from '../vault.mjs';
+import { NEIGHBOR_KEY_ALIASES } from '../vault/doc-writes.mjs';
 import { resolveExistingVaultSlug } from './vault-nodes.mjs';
 
 const RELATION_KEY = {

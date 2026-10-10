@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { findBacklinks, redirectBacklinks } from "./vault.mjs";
+import { findBacklinks, redirectBacklinks } from "./doc-writes.mjs";
 
 let passed = 0;
 let failed = 0;

@@ -18,7 +18,7 @@ import {
   pathToSlug,
   walkMd as mcpWalkMd,
   writeFileAtomically as mcpWriteFileAtomically,
-} from "../../mcp/src/vault.mjs";
+} from "../../mcp/src/vault/doc-writes.mjs";
 import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
 import { writeFileAtomically as cliWriteFileAtomically } from "../../cli/src/lib/atomic-write.mjs";
 import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/write-vault.mjs";

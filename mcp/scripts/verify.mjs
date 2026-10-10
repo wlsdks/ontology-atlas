@@ -42,7 +42,7 @@ import {
   IMPORT_USAGE_VALUES,
 } from '../src/infer-imports.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../src/validate.mjs';
-import { GRAPH_ARRAY_KEYS } from '../src/vault.mjs';
+import { GRAPH_ARRAY_KEYS } from '../src/vault/doc-writes.mjs';
 import { NODE_UID_PATTERN } from '../src/schema.mjs';
 export {
   IMPORT_EDGE_KIND_VALUES,

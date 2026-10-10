@@ -20,7 +20,7 @@ import {
   patchFrontmatter,
   readDoc,
   slugToPath,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   RELATION_KEY,

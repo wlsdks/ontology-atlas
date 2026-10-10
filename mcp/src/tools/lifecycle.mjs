@@ -33,7 +33,7 @@ import {
   redirectBacklinks,
   slugToWritePath,
   vaultSlugExists,
-} from '../vault.mjs';
+} from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,
