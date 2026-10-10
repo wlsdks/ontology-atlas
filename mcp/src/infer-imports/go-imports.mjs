@@ -6,7 +6,6 @@ import {
   existsSync,
 } from '../confined-source-fs.mjs';
 import { join, dirname, resolve, relative, extname, sep } from 'node:path';
-import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from '../infer-imports.mjs';
 import { pathResolvesInsideRoot } from './path-confinement.mjs';
 import { zeroCounts } from './zero-counts.mjs';
 
@@ -15,7 +14,7 @@ const GO_IMPORTS_PER_FILE_LIMIT = 256;
 const GO_PACKAGE_EDGE_EVIDENCE_LIMIT = 5;
 export const GO_SOURCE_EXTENSION = '.go';
 
-export function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders = null) {
+export function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders, countKeys) {
   const rootModule = readRootGoModule(rootPath);
   if (!rootModule) return null;
   const receipt = {
@@ -99,7 +98,7 @@ export function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders 
 
   receipt.skipped.sort(compareGoSkippedFile);
   receipt.packageImports.sort(compareGoPackageImportEvidence);
-  receipt.moduleEdges = collapseGoPackageImports(receipt.packageImports);
+  receipt.moduleEdges = collapseGoPackageImports(receipt.packageImports, countKeys);
   return receipt;
 }
 
@@ -346,7 +345,7 @@ function goSourceRoleOf(filePath) {
   return filePath.endsWith('_test.go') ? 'test' : 'production';
 }
 
-function collapseGoPackageImports(imports) {
+function collapseGoPackageImports(imports, countKeys) {
   const buckets = new Map();
   for (const receipt of imports) {
     const key = `${receipt.fromPackage}\u0000${receipt.toPackage}`;
@@ -355,8 +354,8 @@ function collapseGoPackageImports(imports) {
       toPackage: receipt.toPackage,
       count: 0,
       kindCounts: new Map(),
-      sourceRoleCounts: zeroCounts(IMPORT_SOURCE_ROLE_VALUES),
-      importUsageCounts: zeroCounts(IMPORT_USAGE_VALUES),
+      sourceRoleCounts: zeroCounts(countKeys.sourceRoles),
+      importUsageCounts: zeroCounts(countKeys.usages),
       productValueCount: 0,
       evidence: [],
     };

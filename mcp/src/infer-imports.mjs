@@ -157,6 +157,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
     ignore,
     Math.max(0, maxFiles - files.length),
     confinedSourceReadsEnabled() ? sourceFolders : null,
+    { sourceRoles: IMPORT_SOURCE_ROLE_VALUES, usages: IMPORT_USAGE_VALUES },
   );
 
   const edges = [];
