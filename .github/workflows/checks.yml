@@ -129,7 +129,10 @@ jobs:
 
       - name: Check live catalogue freshness
         if: env.ACTIVE == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-        run: node scripts/build-mcp-catalogue.mjs --check-online
+        run: >-
+          node scripts/run-with-retry.mjs
+          --attempts=3 --timeout-ms=30000 --label="mcp catalogue live check"
+          -- node scripts/build-mcp-catalogue.mjs --check-online
 
       - name: Skip unaffected gate setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'

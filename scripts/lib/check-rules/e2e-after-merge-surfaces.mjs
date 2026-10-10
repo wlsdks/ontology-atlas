@@ -270,4 +270,14 @@ export const rules = [
       /^src\/widgets\/search-hint\/ui\/SearchHint\.tsx$/,
     ],
   },
+  {
+    order: 5229,
+    command: 'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
+    reason: "a page root's scroll container or bottom breath changed",
+    additive: true,
+    matches: [
+      /^src\/views\/[^/]+\/ui\/[A-Za-z]+Page\.tsx$/,
+      /^src\/shared\/ui\/page-frame\.ts$/,
+    ],
+  },
 ]
