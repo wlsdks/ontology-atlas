@@ -39,9 +39,9 @@ Every turn re-reads the whole context, so cost is context size times turns.
 Three settings bound it; `pnpm harness:tokens` measures them from the local
 transcripts.
 
-- `autoCompactWindow: 200000` in `.claude/settings.json`. Opus 5.5 otherwise
-  compacts near 967K; on 2026-09-26..10-04 investigators re-read 415K tokens per
-  turn and the lead 511K.
+- `autoCompactWindow: 400000` in `.claude/settings.json`, the owner's choice
+  over 200K for answer quality. Opus 5.5 otherwise compacts near 967K; on
+  2026-09-26..10-04 investigators re-read 415K tokens per turn and the lead 511K.
 - `maxTurns` per agent (table above), from the same runs: above the p90 for
   implementer, reviewer and product-planner, and below the longest planner,
   investigator and design-guardian runs, which were missions outside the role.
