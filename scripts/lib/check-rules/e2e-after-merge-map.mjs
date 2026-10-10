@@ -13,7 +13,7 @@ export const rules = [
     reason: "the 3D relation line ink and depth fade changed",
     matches: [
       /^src\/widgets\/ontology-map\/model\/dome-view\.ts$/,
-      /^src\/widgets\/ontology-map\/ui\/topology-frame-draw\.ts$/,
+      /^src\/widgets\/ontology-map\/ui\/(?:topology-frame-draw|frame-draw\/[^/]+)\.ts$/,
     ],
   },
   {

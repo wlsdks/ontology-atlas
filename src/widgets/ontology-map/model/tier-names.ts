@@ -2,7 +2,7 @@
  * Each Strata tier name hangs outside its own plane's rim (right, else left), placed only
  * where it lands on nothing: inside the free map, outside every other plane's disc and off
  * earlier names. A plane with no such place stays unnamed; the legend names every kind.
- * Concept labels give way to these (`topology-frame-draw.ts` label reservations).
+ * Concept labels give way to these (`ui/frame-draw/paint-labels.ts` label reservations).
  */
 
 export interface TierPlane {

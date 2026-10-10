@@ -9,21 +9,19 @@
 // The **source is read** rather than imported, and each tool block inside
 // `const TOOLS = [...]` yields its name, argument keys, and required list for
 // comparison. Adding or renaming an argument on the MCP side breaks this
-// immediately. The table lives in `mcp/src/server/registry.mjs`; reading the
-// entry point would find only the wiring.
-import { readFileSync } from 'node:fs';
+// immediately. The definitions live in `mcp/src/server/tool-definitions/`; reading
+// the entry point would find only the wiring.
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vault-agent/model/tool-catalog';
 
-const MCP_SOURCE = readFileSync(
-  join(__dirname, '../../mcp/src/server/registry.mjs'),
-  'utf-8',
-);
-
-/** Only look after `const TOOLS = [`, to avoid strings that coincidentally share a name. */
-const TOOLS_START = MCP_SOURCE.indexOf('const TOOLS = [');
+const DEFINITIONS_DIR = join(__dirname, '../../mcp/src/server/tool-definitions');
+const MCP_SOURCE = readdirSync(DEFINITIONS_DIR)
+  .filter((file) => file.endsWith('.mjs'))
+  .map((file) => readFileSync(join(DEFINITIONS_DIR, file), 'utf-8'))
+  .join('\n');
 
 /** Index just past the bracket matching the opening bracket at `open`. */
 function matchBrace(source: string, open: number, openChar: '{' | '['): number {
@@ -67,7 +65,7 @@ interface McpToolShape {
 
 /** Extracts one tool's top-level inputSchema argument names and required list from the MCP source. */
 function readMcpToolShape(toolName: string): McpToolShape {
-  const nameAt = MCP_SOURCE.indexOf(`name: '${toolName}',`, TOOLS_START);
+  const nameAt = MCP_SOURCE.indexOf(`name: '${toolName}',`);
   if (nameAt < 0) throw new Error(`MCP 에 없는 도구: ${toolName}`);
   const schemaAt = MCP_SOURCE.indexOf('inputSchema:', nameAt);
   const schemaOpen = MCP_SOURCE.indexOf('{', schemaAt);

@@ -1,3 +1,6 @@
+import { describeSnapshotSubject } from "@/shared/lib/atlas-git-record";
+import type { Translator } from "./translator";
+
 /**
  * A step's headline drops a conventional-commit type (`feat:`, `docs(api):`), a filing code
  * for tooling. Only known types are stripped, so "Note: …" stays as its author wrote it.
@@ -35,4 +38,21 @@ export function stepFileNames(
 /** The first seven characters of a hash — what people read, paste and compare. */
 export function shortHash(hash: string): string {
   return hash.slice(0, 7);
+}
+
+/**
+ * The human wording of a step's subject: an automatic `ontology snapshot: …` subject becomes
+ * counts in the reader's language, and a subject a person wrote stays as written. `null`
+ * means the subject is already human language.
+ */
+export function humanizeStepSubject(t: Translator, subject: string): string | null {
+  const summary = describeSnapshotSubject(subject);
+  if (!summary.matched) return null;
+  const parts = [
+    summary.added > 0 ? t("statusAdded", { count: summary.added }) : null,
+    summary.updated > 0 ? t("statusModified", { count: summary.updated }) : null,
+    summary.renamed > 0 ? t("statusRenamed", { count: summary.renamed }) : null,
+    summary.removed > 0 ? t("statusDeleted", { count: summary.removed }) : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : t("stepNoConcepts");
 }

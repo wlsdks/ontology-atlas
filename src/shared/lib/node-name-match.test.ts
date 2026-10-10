@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { findNameMatch, idSearchText, normalizeForMatch } from "./node-name-match";
+
+const chosungCalls = vi.hoisted(() => ({ count: 0 }));
+
+vi.mock("./hangul-match", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./hangul-match")>();
+  return {
+    ...actual,
+    chosungKey: (value: string) => {
+      chosungCalls.count += 1;
+      return actual.chosungKey(value);
+    },
+  };
+});
 
 const node = {
   title: "Shipping Fee Policy",
@@ -51,5 +64,32 @@ describe("idSearchText", () => {
 
   it("slug 이 비어 있으면 내놓을 것이 없다", () => {
     expect(idSearchText("element:", "x")).toBeNull();
+  });
+});
+
+describe("name index", () => {
+  it("builds each node's names once; a later keystroke re-derives none", () => {
+    const nodes = Array.from({ length: 50 }, (_, i) => ({
+      title: `회원 탈퇴 ${i}`,
+      display: `Capability ${i}`,
+      displayLocales: { ko: `회원 탈퇴 ${i}`, en: `Capability ${i}` },
+    }));
+    // Initials reach the last tier, so every name of every node is examined.
+    const query = normalizeForMatch("ㅌㅌ");
+    const pass = () => nodes.filter((node) => findNameMatch(node, query)).length;
+    const normalize = vi.spyOn(String.prototype, "normalize");
+
+    chosungCalls.count = 0;
+    normalize.mockClear();
+    expect(pass()).toBe(nodes.length);
+    expect(chosungCalls.count, "initials are built once per distinct name").toBe(nodes.length * 2);
+    expect(normalize, "the first query normalises every name").toHaveBeenCalled();
+
+    chosungCalls.count = 0;
+    normalize.mockClear();
+    expect(pass()).toBe(nodes.length);
+    expect(chosungCalls.count, "a repeated query rebuilt the initials").toBe(0);
+    expect(normalize, "a repeated query re-normalised node names").not.toHaveBeenCalled();
+    normalize.mockRestore();
   });
 });

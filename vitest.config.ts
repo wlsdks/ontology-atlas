@@ -78,26 +78,8 @@ export default defineConfig({
         },
       },
       /*
-       * ⚠️ **A performance file runs alone, because its verdict is a ratio and only one side of
-       * that ratio pays for company.**
-       *
-       * `node-name-match.perf.test.ts` asserts cached-against-naive over 10, with healthy
-       * measured at 17.2–25.5 and the defect it guards at 2.7–5.3. In CI it read **6.73, 9.20
-       * and 9.20** — three times in the gap, never near the defective band, on branches that
-       * never touched the matcher. Its own doc-block claimed the ratio was load-proof because
-       * "numerator and denominator ride the same machine and the same concurrent load". They do;
-       * they do not ride the same **allocation**. The cached side builds a per-node index and
-       * pays GC under memory pressure, while the naive side walks strings it throws away, so
-       * contention pushes the ratio down from above and the gate reddens on a fast path that
-       * works. Vitest shards by file, so whether the number meant anything depended on which
-       * other files landed in the same shard — a lottery, not a gate.
-       *
-       * `.claude/rules/testing.md` already says performance lanes run "where the number means
-       * something: CI on a quiet runner". This project is that rule with somewhere to live, and
-       * the six files that exist today stop inheriting the lottery.
-       *
-       * `fileParallelism: false` is the point: no sibling worker on the same machine while a
-       * measurement is being taken.
+       * A performance file runs alone: its verdict is a ratio, and the side holding memory pays
+       * for any company in GC. `fileParallelism: false` keeps sibling workers off the machine.
        */
       {
         extends: true,

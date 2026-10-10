@@ -168,7 +168,7 @@
        ⚠️ 2026-07-28 — This token (`--map-builder-node-sheen`) is **deleted**.
        Zero usage, and its consumer xyflow ERD builder retired on 2026-07-24.
        While name ("sheen") remains, next person could read it as glow permission — unused tokens are misinformation, not spec. */
-    /* canvas-emphasis slice (owner: "center(project node) must shine differently") — material instead of glow (design.md "material instead of glow"). Project hexagon exclusive double hairline + pincushion color. Outer stroke itself reuses --map-amber-hub (topology-frame-draw.ts#resolveNodeVisual), these two are inner offset hairline + 4-direction pincushion exclusive. rgb(212,180,120) = same hue as amber-hub,
+    /* canvas-emphasis slice (owner: "center(project node) must shine differently") — material instead of glow (design.md "material instead of glow"). Project hexagon exclusive double hairline + pincushion color. Outer stroke itself reuses --map-amber-hub (node-visual.ts#resolveNodeVisual), these two are inner offset hairline + 4-direction pincushion exclusive. rgb(212,180,120) = same hue as amber-hub,
        only alpha differs (first run v3 flagship mockup, docs/prototypes/first-run-v3-flagship.html
        §"project hexagon" 1:1 extraction). */
     --map-project-hairline-inner: rgba(212, 180, 120, 0.35);

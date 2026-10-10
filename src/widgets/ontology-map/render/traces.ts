@@ -640,7 +640,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
      * stars hold still, and that they hold still because brightness means recency. They twinkle,
      * and brightness means *walked* — order moved to the ordinal on 2026-09-10 precisely because
      * additive light cannot rank. A twinkle argues with nothing now, which is the only reason it
-     * is allowed to exist. See `TRAIL_STAR_TWINKLE` in `ui/topology-frame-draw.ts`.
+     * is allowed to exist. See `TRAIL_STAR_TWINKLE` in `ui/frame-draw/trail-curves.ts`.
      *
      * ⚠️ **One light on the walk, not one per line.** `state.trailGlint` is `null` on every
      * relation the light is not currently crossing, so a walk's lines take their turn in the

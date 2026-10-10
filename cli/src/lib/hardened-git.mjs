@@ -1,7 +1,7 @@
-// Shared git hardening for every runtime `git` the CLI spawns. A vault's repo or a
+// Git hardening for every runtime `git` the CLI spawns. A vault's repo or a
 // connected project source may be attacker-authored, so each invocation carries
 // config that neutralises code execution driven by the repository's own git config
-// before git honours it. Mirrors src-tauri/src/git.rs and mcp/src/hardened-git.mjs.
+// before git honours it. Mirrors src-tauri/src/git/runner.rs and mcp/src/hardened-git.mjs.
 //
 // The CLI spawns git with the cwd option (no `-C`), so these return the `-c` prefix
 // and guarded args only; the caller passes cwd to execFileSync/spawnSync.

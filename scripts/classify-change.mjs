@@ -319,12 +319,7 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
 /**
  * The measurement lane: the Vitest `perf` project, on a runner of its own.
  *
- * ⚠️ **It is its own job because a ratio measured beside other work is a lottery.** Train #1928
- * (2026-09-26) carried a change that touched no matcher code and went red on
- * `node-name-match.perf.test.ts` at 9.25 against a bar of 10, in the `pnpm test:perf` step that
- * then ran after `pnpm knip` and a third of the Vitest sweep on the Unit · Contract shard-1
- * runner. The header had already recorded 6.73 and 9.20 there and prescribed moving the lane,
- * not the number; the defect it guards reads 2.7-5.3, so the gate stays and the bar stays.
+ * It is its own job because a ratio measured beside other work pays unevenly.
  *
  * `full` runs every measurement file. `affected` hands the selection to Vitest's own import graph
  * (`--changed`), which is the only thing that knows whether a perf file reaches a changed module;

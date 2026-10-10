@@ -305,6 +305,9 @@ evidence limits in later sentences and paragraphs. A section that exceeds the
 budget is omitted whole with explicit coverage and a full-body recovery call.
 The text handoff includes every unknown retained in `focus.unknowns`; that list
 remains a bounded excerpt, not a complete inventory of the vault's uncertainty.
+Ready source navigation also retains the exact prescribed full-body read in the
+text handoff, before its source-reading instructions, so omitted qualifiers can
+be recovered even when the byte budget removes every qualifier from the summary.
 
 The measured boundary is fresh Codex CLI sessions with source MCP, one explicit
 policy delivery per session, and read-only source access. Five frozen cases
@@ -2103,7 +2106,8 @@ transport. Everything a change would actually touch lives beside it.
 
 | File | What it owns |
 |---|---|
-| `src/server/registry.mjs` | the `TOOLS` table — every name, description, schema and annotation. **This is the public surface**, and what `pnpm docs:surface:check` measures |
+| `src/server/registry.mjs` | the `TOOLS` table of contents, the annotation sets, and the read-only, profile and consent modes behind `tools/list`. **This is the public surface**, and what `pnpm docs:surface:check` measures |
+| `src/server/tool-definitions/*.mjs` | every tool's name, description, input and output schema, one file per tool family (the large tools have their own file) |
 | `src/server/tool-schemas.mjs` | the JSON Schema fragments `tools/list` is assembled from |
 | `src/server/instructions.mjs` | the `initialize` instructions template |
 | `src/server/instance.mjs` | the one `Server` object |

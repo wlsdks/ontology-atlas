@@ -143,7 +143,7 @@ export function hitTestWorld(
       node.x + (off?.x ?? 0),
       node.y + (off?.y ?? 0),
     );
-    // The disc the draw actually paints (`topology-frame-draw.ts`'s `screenRadius`)
+    // The disc the draw actually paints (`frame-draw/paint-nodes.ts`'s `screenRadius`)
     // and, around it, the courtesy ring that makes a 7 px element pressable.
     const drawnRadius =
       radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value;
