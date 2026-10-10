@@ -47,53 +47,24 @@ const APP_SAFETY_POLL: PollCadenceConfig = { burstMs: 60_000, idleMs: 60_000, bu
 const HEARTBEAT_STALE_MARGIN_MS = 1000;
 
 /**
- * @internal — do not call directly. Access it through `useLocalVault()`, a consumer of
- * `LocalVaultProvider`. This hook exists so `LocalVaultProvider` can mount it once and
- * keep a single instance of the state, IDB rehydration, fingerprint rescan, and FS reads.
- *
- * Before the provider pattern, eight places called `useLocalVault()` directly, giving two
- * or three instances per page mount — the same IDB key rehydrated N times and N full
- * `buildLocalManifest` walks of the filesystem.
- *
- * Uses a local folder as the vault. Works only in browsers with the File System Access
- * API (Chrome/Edge/Safari 18.2+/Opera).
- * The surface:
- * - `open()` — pick a folder with showDirectoryPicker and store the handle in IDB
- * - `close()` — drop the handle and return to idle
- * - `refresh()` — rescan the current handle to pick up file changes
- * - `requestPermission()` — re-approve when a restored session is permission-needed
- *
- * On first mount it tries to restore the handle stored in IDB: a 'granted' query builds
- * the manifest automatically, while 'prompt' waits in permission-needed.
+ * @internal — mount through `LocalVaultProvider`, read through `useLocalVault()`. One mounted
+ * instance keeps IDB rehydration, fingerprint rescans and FS reads from running per consumer.
  */
 export function useLocalVaultInternal() {
-  // SSR consistency: calling `isSupported()` from the lazy initializer mismatches between
-  // SSR (no window → 'unsupported') and the client's first hydration (window → 'idle').
-  // Always start 'idle' and let a mount effect switch to 'unsupported' when FSA is
-  // missing — one frame looks supported, but the hydration error is gone.
+  // Start 'idle' on both server and client; a mount effect switches to 'unsupported' when FSA
+  // is missing, so hydration matches.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const stateRef = useLatestRef(state);
   /**
-   * **The launch stopped at the chooser on purpose**, because two or more folders are known
-   * and the app will not guess between them. Distinct from every other idle state: nothing
-   * failed, nothing is missing, and the stored `current` record is still there to go back to.
-   *
-   * Consumers need it because 'idle' alone cannot carry this fact. The docs surface decides
-   * which source to land on by asking whether a local vault loaded (`shouldPreferLocalOnLanding`),
-   * and a deferred launch has not loaded one — so without this flag the person who is meant
-   * to be choosing a folder lands on the sample instead.
+   * The launch stopped at the chooser on purpose: two or more folders are known and the app
+   * will not guess. Not a failure; the docs surface needs it because 'idle' alone would land on the sample.
    */
   const [awaitingVaultChoice, setAwaitingVaultChoice] = useState(false);
 
   /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
 
-  /**
-   * The reusable entries of the last successful build and the handle they came from. The
-   * next `load` of the same vault uses them for an incremental rebuild (re-reading only
-   * changed files). Reset to null on a different vault or a failed build, falling back to
-   * a full build. A ref, not state, so it triggers no re-render.
-   */
+  /** Reusable entries of the last build plus their handle, for incremental rebuilds. A ref, no re-render. */
   const lastBuildRef = useRef<{
     handle: FileSystemDirectoryHandle;
     entries: BuiltVaultEntry[];
@@ -146,28 +117,13 @@ export function useLocalVaultInternal() {
     setState((s) => {
       const cleared = { ...s, handle, errorMessage: null, errorCode: null, partialTotal: 0 };
       /*
-       * **Re-reading a folder that is already open is not opening one.**
-       *
-       * The 5-second watch calls this whenever the fingerprint moves, and it used to
-       * drop back to `loading` every time. Everything the screen derives from
-       * `status === 'loaded'` went with it: measured on the map at 1512x982 with
-       * nothing touched, the INDEX lost the folder's name and document count for
-       * ~3.5 s out of every ~8.6 s, and while it was gone the recent filter claimed
-       * nothing at all in seven days on a folder where 20 of 20 documents had
-       * changed that same day.
-       * A false zero is worse than a stale one.
-       *
-       * So a rebuild of the same handle keeps the frame that is already on screen and
-       * swaps in the new manifest when it arrives. A different folder, or one that is
-       * not loaded yet, still shows `loading` — there is nothing to keep there.
+       * Re-reading an already open folder is not opening one: keep the frame on screen and swap
+       * in the new manifest. A different or unloaded folder still shows `loading`.
        */
       return s.status === 'loaded' && s.handle === handle ? cleared : { ...cleared, status: 'loading' };
     });
     try {
-      // With a previous build of the same vault (identical handle), rebuild incrementally —
-      // re-reading only changed files, which is what removes the live-update lag on a large
-      // vault. First load, a different vault, or a failed incremental falls back to a full
-      // build; the results are byte-equivalent (proven by incremental.test).
+      // Same handle as the previous build: rebuild incrementally; otherwise (or on failure) build in full.
       const reuse =
         lastBuildRef.current && lastBuildRef.current.handle === handle
           ? lastBuildRef.current.entries
@@ -201,18 +157,8 @@ export function useLocalVaultInternal() {
       }
       if (!isCurrent()) return null;
       /*
-       * **A creation door's starter lands before the folder is first shown** (2026-09-25, D1).
-       *
-       * "Just start" and "Create a new folder" used to open the folder and then wait for the
-       * next render of the screen that pressed them to write the starter. That screen never
-       * rendered again: the shell swaps it for the opening pane the moment the open begins, and
-       * the root entry swaps that for the map. The folder opened empty with no error, three
-       * runs out of three. Written here, the starter is part of the open itself, so it does not
-       * matter which screen is on the glass, and the map is never drawn empty first.
-       *
-       * Only into a folder with no documents: picking an existing vault through a creation
-       * door must not plant examples in it. A failure does not fail the open (the folder is
-       * readable and is shown); it is handed back so the door can say the starter is missing.
+       * A creation door's starter is written here, as part of the open, so the map is never drawn
+       * empty. Only into a folder with no documents; a failure is handed back, not thrown.
        */
       let starterWritten = 0;
       let starterError: unknown = null;
@@ -268,43 +214,14 @@ export function useLocalVaultInternal() {
       if (arrivedPart) startTransition(() => setState(loaded));
       else setState(loaded);
       /*
-       * The chooser's row facts are written here, by the one path that has already paid for
-       * the walk. A folder the person is *offered* cannot be counted at the moment of
-       * offering — on the web reading it needs the permission gesture they have not made
-       * yet, and on the desktop five rows would mean five vault reads — so the count is
-       * taken when the folder is open and the row states its age.
-       *
-       * ⚠️ **Its own try/catch, not the load's.** This runs after the vault is already
-       * `loaded`, so a failure here reaching the outer catch would take a successfully
-       * opened folder and report it as broken — trading the whole screen for a cache write.
-       * A `.catch()` alone is not enough either: a synchronous throw (an absent export under
-       * a partial module mock, which is exactly how the existing tests stub this module)
-       * never becomes a rejected promise. The row is built to say it has no counts, and
-       * that is the correct outcome of every failure here.
+       * The chooser's row facts are written here, where the walk was already paid for. Own
+       * try/catch: a failure must not turn a loaded folder into an error, and a sync throw
+       * (partial module mock) never becomes a rejection.
        */
       try {
         /*
-         * ⚠️ **Never awaited. `load()` resolving means "the manifest is live", and nothing
-         * else may be added to that promise.**
-         *
-         * It was awaited here for one revision, to stop a navigation racing the write, and
-         * that broke renaming a document for every person: `handleRenameCurrent` awaits
-         * `renameDoc` — which calls this `load` — and only then records the slugs it touched
-         * in `appTouchedSlugsRef`, the guard that keeps the missing-document verdict quiet
-         * for the app's own action. Awaiting an IndexedDB round trip *after* `setState` has
-         * published the new manifest opened a window where React had already committed the
-         * rename (so the old slug was gone from `docsBySlug`) while the guard was still
-         * empty — so the address's old name was judged missing and the screen said it could
-         * not find that document in this folder, half a second after a rename that had
-         * succeeded. The banner named the **old** slug while its own fallback link already
-         * pointed at the **new** one, which is what settles the diagnosis. Caught by
-         * `tests/e2e/docs-rename-address.spec.ts`, which exists for exactly that false
-         * warning (CI shard chromium 2/3, 2026-09-13).
-         *
-         * The cost of not awaiting is that leaving the folder within the write window loses
-         * the counts, and the row then says "not counted yet" — an honest unknown, and one
-         * `countedAgo` labels. Telling somebody their document is lost when it is not is a
-         * different order of wrong.
+         * Never awaited: `load()` resolving means "the manifest is live". Awaiting here opens a
+         * window in which a rename is committed but `appTouchedSlugsRef` is still empty.
          */
         void recordLocalFsHandleContents(countVaultContents(manifest.docs)).catch(() => {});
       } catch {
@@ -317,11 +234,8 @@ export function useLocalVaultInternal() {
       lastFingerprintRef.current = null;
       settled = true;
       loadProgressStore.set(null);
-      // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
-      // `invoke` rejects with a *string* rather than an Error; the previous
-      // `err instanceof Error ? err.message : null` discarded it wholesale and silenced every
-      // desktop vault access failure behind a generic banner. An empty message stays null so
-      // the picker's locale-aware `errorFallback` fills it.
+      // `toErrorMessage` keeps the cause string (Tauri rejects with a string); empty stays null
+      // so the picker's `errorFallback` fills it.
       setState({
         status: 'error',
         handle,
@@ -346,11 +260,7 @@ export function useLocalVaultInternal() {
     }
   }, [arrivalStore, loadProgressStore, stateRef]);
 
-  /**
-   * User-initiated refresh. An unchanged fingerprint (nothing changed outside) skips the full
-   * rebuild but still updates `lastLoadedAt` so the picker's "just scanned" label stays
-   * accurate. A failure to compute the fingerprint falls back safely to a full rebuild.
-   */
+  /** User-initiated refresh: an unchanged fingerprint skips the rebuild but updates `lastLoadedAt`. */
   const refresh = useCallback(async () => {
     const handle = stateRef.current.handle;
     const session = vaultReadSessionRef.current;
@@ -358,11 +268,7 @@ export function useLocalVaultInternal() {
     if (!handle || !isCurrent()) return;
     let nativeStamps: VaultStampIndex | null = null;
     try {
-      /*
-       * Take the fingerprint **and the stamps behind it**. Previously only the fingerprint was
-       * taken and the stamps discarded, so the incremental rebuild that followed walked the same
-       * vault a second time — two native walks per change. Now one.
-       */
+      // Take the fingerprint and its stamps together so the incremental rebuild walks once.
       const { fingerprint: fp, nativeStamps: stamps } =
         await computeLocalVaultFingerprintWithStamps(handle);
       if (!isCurrent()) return;
@@ -379,10 +285,7 @@ export function useLocalVaultInternal() {
     if (isCurrent()) await load(handle, {}, nativeStamps);
   }, [stateRef, load]);
 
-  // Auto-refresh when the tab regains focus, so editing in an IDE and coming back rescans
-  // by itself. Debounced by 2 s against duplicate calls. The fingerprint is compared first
-  // and an unchanged one skips the full rebuild, which removes the brief freeze on focus
-  // with a large vault.
+  // Refresh when the tab regains focus; the fingerprint check skips unchanged vaults.
   const autoRefreshRef = useRef<{
     lastAt: number;
     timer: ReturnType<typeof setTimeout> | null;
@@ -563,14 +466,8 @@ export function useLocalVaultInternal() {
     errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,
     /**
-     * Is this **a re-read of the same folder**? A save, or a rescan after the tab regains focus.
-     *
-     * Why it is exposed: a consumer that returns empty on `status !== 'loaded'` makes the whole
-     * screen blank and come back on every save. Measured 2026-07-26: right after an inline save
-     * the entire insights tab vanished, and the "saved" confirmation on the component unmounted
-     * in that frame was never seen at all. Re-reading does not mean there is no data — showing
-     * what was there a moment ago is the honest thing to do meanwhile. It is false while
-     * **switching** folders, so the previous folder is never drawn as if it were the new one.
+     * Is this a re-read of the same folder (save, focus rescan)? False while switching folders,
+     * so the previous folder is never drawn as the new one.
      */
     isReloadingSameVault:
       state.status === 'loading' &&
@@ -582,13 +479,7 @@ export function useLocalVaultInternal() {
     restoreAttempted,
     /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
     openedInsidePickedFolder,
-    /**
-     * Clears that notice once it has been read.
-     *
-     * ⚠️ A one-time fact must not become permanent furniture. It is set when the substitution
-     * happens and nothing else clears it, so without this the line sits in the panel for the rest of
-     * the session, long after it has told the person everything it knows.
-     */
+    /** Clears the one-time substitution notice once read. */
     dismissOpenedInsideNotice: () => setOpenedInsidePickedFolder(null),
     // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
     // initializer). The switch to 'unsupported' happens in a mount effect.

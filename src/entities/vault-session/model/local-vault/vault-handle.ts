@@ -9,12 +9,8 @@ import {
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
 /**
- * (Desktop) Preflight for reopening a recent Tauri vault: does the stored absolute path
- * still resolve to a directory? False when the folder chosen in an earlier session has
- * since moved or been deleted. This desktop-only path reopens by absolute path with no
- * FSA picker, and this classifies the common "folder vanished" failure as a readable
- * 'path-missing'. Non-Tauri runtimes and records without a path are not preflight
- * candidates and short-circuit to true — their handles carry their own permission.
+ * (Desktop) Does the stored absolute path still resolve to a directory? False means the folder
+ * moved or was deleted; non-Tauri runtimes and records without a path short-circuit to true.
  */
 type VaultRecordResolution = 'ok' | 'missing' | 'grant-needed';
 
@@ -41,14 +37,7 @@ interface ResolvedVaultHandle {
   redirectedFrom: string | null;
 }
 
-/**
- * Applies the project → `atlas/` rule to every desktop ingress, not only the picker.
- *
- * The picker adopted this rule first, but recent-vault reopening and cold restore kept loading
- * their stored project-root handles directly. A project containing `atlas/*.md` could therefore
- * be read as the project plus every frontmatter-bearing Markdown file around it, while a manual
- * picker open read only `atlas/`. One stored project must not mean two vaults depending on ingress.
- */
+/** Applies the project → `atlas/` rule to every desktop ingress, not only the picker. */
 export async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Promise<ResolvedVaultHandle> {
   const pickedPath = getTauriVaultRootPath(handle);
   if (!pickedPath) return { handle, redirectedFrom: null };
@@ -68,12 +57,8 @@ export async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Pro
 }
 
 /**
- * Capability is decided by **whether it can be called**, not by `in`. `'showDirectoryPicker'
- * in window` is true whenever the key exists, so in an environment where the value is
- * `undefined` (an extension, a polyfill, a browser stub) `isSupported()` returned true and
- * the picker call then threw a raw JavaScript `is not a function` error — which was
- * rendered in red in the product's single indigo primary CTA slot (entry review E-1).
- * If it cannot be called it is unsupported, and the existing path degrades honestly instead.
+ * Capability is decided by whether `showDirectoryPicker` can be called, not by `in`: a stubbed
+ * key must read as unsupported, not throw `is not a function`.
  */
 export function isSupported(): boolean {
   if (typeof window === 'undefined') return false;

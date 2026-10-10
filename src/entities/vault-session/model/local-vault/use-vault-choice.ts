@@ -42,23 +42,15 @@ export function useVaultChoice({
 }: VaultSessionCore) {
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   /**
-   * The stored `current` record as read at boot - **which folder the last session had
-   * open**, whether or not it was then loaded.
-   *
-   * The chooser needs it to mark one row "last open", and that has to be a stored fact
-   * rather than an inference. Taking the top of the recent list instead would be right only
-   * for as long as "most recently accessed" and "was open last" agree, and they stop
-   * agreeing the moment a `touch` or a failed open reorders the list.
+   * The stored `current` record as read at boot: which folder the last session had open. The
+   * chooser marks "last open" from it, since recent-list order moves on a touch or a failed open.
    */
   const [storedVaultRecord, setStoredVaultRecord] = useState<LocalFsHandleRecord | null>(
     null,
   );
   /**
-   * Set when "open a folder" opened the map **inside** the folder that was picked.
-   *
-   * ⚠️ Exists so the screen can say so. Quietly opening a different folder from the one a person
-   * chose teaches them the product does not do what they asked, even when the substitution is the
-   * helpful one. Holds the path they actually picked; `null` means nothing was substituted.
+   * Set when "open a folder" opened the map inside the picked folder (`atlas/`); holds the path
+   * they picked so the screen can say so. `null` means nothing was substituted.
    */
   const [openedInsidePickedFolder, setOpenedInsidePickedFolder] = useState<string | null>(null);
   const [recentVaults, setRecentVaults] = useState<LocalFsHandleRecord[]>([]);
@@ -68,21 +60,15 @@ export function useVaultChoice({
   }, []);
 
   /**
-   * Picks a folder and opens it. `options.starter` is a creation door's request: when the picked
-   * folder holds no documents, the starter is written before the folder is first shown. The result
-   * says whether the folder opened and whether its starter landed, because the screen that pressed
-   * the door is usually gone by the time this settles.
+   * Picks a folder and opens it. `options.starter` is a creation door's request, written before
+   * the folder is first shown if it holds no documents. The result says whether each landed.
    */
   const open = useCallback(async (options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
     if (!isSupported()) {
       setState(emptyState('unsupported'));
       return NOT_OPENED;
     }
-    // Cancelling the native or browser picker is not a state change: the exact contract from
-    // just before the picker opened — permission-needed, error, idle, loaded — must be
-    // restored whole. Inferring 'loaded' from the mere presence of a `handle` makes a cancel
-    // during permission-needed wake a spurious auto-refresh that surfaces a raw OS error
-    // from a stale path.
+    // A cancelled picker is not a state change: restore the exact status from before it opened.
     const previousState = stateRef.current;
     const pickerSequence = ++pickerSequenceRef.current;
     let session = vaultReadSessionRef.current;
@@ -111,11 +97,8 @@ export function useVaultChoice({
       }
       session = beginVaultReadSession(handle);
       /*
-       * ⚠️ **A person who picks their project means their map** (owner, 2026-08-24). Since the map
-       * moved to `<project>/atlas`, two folders became plausible to pick, and this path took
-       * whatever it was handed — so picking the project root read the entire source tree as a vault
-       * and buried the map that was right there. See `resolve-picked-vault-folder.ts` for why the
-       * rule is narrow and why it is never silent.
+       * Picking the project means its map: `resolve-picked-vault-folder.ts` narrows to `atlas/`
+       * and says why it is never silent.
        */
       const resolvedHandle = await resolveVaultHandle(handle);
       if (!isCurrent()) return NOT_OPENED;
@@ -132,16 +115,8 @@ export function useVaultChoice({
       });
       if (!isCurrent()) return NOT_OPENED;
       /*
-       * ⚠️ **The order is the contract** (caught in review, 2026-08-16).
-       *
-       * The recent list used to be updated **first**. At that moment "this computer has
-       * never opened a vault" becomes false, and that single value **simultaneously removes**
-       * the first-run card, the "switch to my data" tile, and the first-run readout from
-       * the screen.
-       *
-       * So when the read on the very next line failed, the surface that would have said so
-       * was already gone — the user saw a silent sample map. Add to the list only after
-       * success.
+       * Add to the recent list only after the read succeeds: updating it first removes the
+       * first-run surface, so a failed read would leave a silent sample map.
        */
       const loaded = await load(openHandle, options);
       if (!isCurrent()) return NOT_OPENED;
@@ -150,7 +125,7 @@ export function useVaultChoice({
       return loaded ? { opened: true, ...loaded } : NOT_OPENED;
     } catch (err) {
       if (!isCurrent()) return NOT_OPENED;
-      // A cancel is not a failure — restore the state from just before the picker (see `isPickerAbort`).
+      // A cancel is not a failure: restore the state from before the picker (see `isPickerAbort`).
       if (isPickerAbort(err)) {
         setState(previousState);
         return NOT_OPENED;
@@ -200,11 +175,8 @@ export function useVaultChoice({
         errorCode: null,
       }));
       try {
-        // Desktop-only path: the stored absolute path *is* the handle, so it reopens with no
-        // FSA picker. But if the folder moved or was deleted since the last session, building
-        // the manifest throws a raw io error — preflight first so it classifies as a readable
-        // 'path-missing' and prompts "choose the folder again". A present-but-ungranted vault
-        // (first launch after the access-scope update) is 'grant-needed', not a loss.
+        // Desktop reopens by absolute path with no picker: preflight so a moved or deleted folder
+        // classifies as 'path-missing'. A present-but-ungranted vault is 'grant-needed', not a loss.
         const resolution = await tauriVaultRecordResolves(record);
         if (!isCurrent()) return NOT_OPENED;
         if (resolution !== 'ok') {
@@ -256,12 +228,8 @@ export function useVaultChoice({
   );
 
   /**
-   * Stops listing one folder, or several, as a known folder. The folders themselves are never
-   * touched: this is the recent list only.
-   *
-   * Several at once is the launch chooser's "forget all" for folders that no longer exist
-   * (2026-09-26): every write goes through the store's queue first and the list is read back once,
-   * so it redraws once instead of shrinking a row at a time.
+   * Stops listing one folder, or several, as a known folder; the folders are never touched.
+   * Every write goes through the store's queue and the list is read back once, so it redraws once.
    */
   const forgetRecent = useCallback(
     async (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
@@ -300,29 +268,13 @@ export function useVaultChoice({
       pickerSequenceRef.current === pickerSequence;
     (async () => {
       /*
-       * ⚠️ **Whatever happens, this must end** (installed app, 2026-08-24).
-       *
-       * `RootEntryPage` holds a neutral boot frame until `restoreAttempted` turns true. This body
-       * had no `catch` and no `finally`, so any rejection along the way left that flag false and
-       * the app sat on 「moving to the local docs picker」 **forever** — no error, no way out, and
-       * the person had touched nothing.
-       *
-       * It is not hypothetical. A vault under a macOS-protected folder (Downloads, Documents,
-       * Desktop) whose access prompt was dismissed makes the Tauri read fail, and that is exactly
-       * what happened here. Note the asymmetry it exposed: a folder that is **gone** already
-       * reported honestly (`path-missing` → 「that folder could not be found, choose another」),
-       * while a folder that is **there but unreadable** reported nothing at all. The second is the
-       * more common case and it had the worse answer.
-       *
-       * So the flag is set in `finally`, and a failure carries `access-failed` — the code the
-       * first-run screen already turns into a sentence with somewhere to go.
+       * Whatever happens, this must end: `RootEntryPage` holds a boot frame until
+       * `restoreAttempted` turns true, so the flag is set in `finally` and a failure carries
+       * `access-failed` (the code the first-run screen already turns into a sentence).
        */
       const record = await getLocalFsHandle();
       if (!isCurrent()) return;
-      /*
-       * Read the list here rather than through `refreshRecentVaults`, because the decision
-       * below needs the value and not just the state update.
-       */
+      // Read the list here, not via `refreshRecentVaults`: the decision below needs the value.
       const recent = await listRecentLocalFsHandles();
       if (isCurrent()) {
         setRecentVaults(recent);
@@ -333,28 +285,9 @@ export function useVaultChoice({
       }
       if (!isCurrent()) return;
       /*
-       * ⚠️ **Two or more known folders means the app stops guessing and asks.**
-       *
-       * Owner, on relaunching the installed app (2026-09-13): once you have set the app up,
-       * relaunching always drops you in the same place, and that is the problem — it would
-       * be different if the choice came first every time and you picked your way in, the
-       * way you pick a game character.
-       *
-       * The count decides, and **nothing else does**. There is deliberately no preference
-       * for "show the chooser on launch": a setting is one more control nobody finds, and
-       * being unable to find the control is the defect being fixed here, not a detail of
-       * it. The release valve is the list itself — forgetting a folder on the chooser drops
-       * the count back to one and the next launch resumes directly. The person changes the
-       * behaviour by changing the list, in the same place they are already looking.
-       *
-       * One folder is not asked about: a chooser there is a toll on every launch for a
-       * screen with one button.
-       *
-       * Returning early leaves `status` at 'idle' with the stored record **untouched** —
-       * `shouldShowDesktopVaultWelcome` already renders the folder screen in that state, so
-       * the chooser this reveals is the one that was always built. `close()` is the wrong
-       * tool here: it deletes the `current` record, which would throw away the answer to
-       * "which folder was I in last".
+       * Two or more known folders means the app asks instead of guessing; the count alone decides.
+       * Returning early leaves `status` 'idle' with the stored record untouched; `close()` would
+       * delete the `current` record.
        */
       if (recent.length >= 2) {
         setAwaitingVaultChoice(true);
@@ -363,29 +296,14 @@ export function useVaultChoice({
       const storedHandle = record.handle;
       session = beginVaultReadSession(storedHandle);
       /*
-       * ⚠️ **Not awaited, and the reason is measured.** This and
-       * `recordLocalFsHandleContents` both read-modify-write the single recent-list key, and
-       * the launch rule is decided by how many entries that list holds - so a dropped entry
-       * silently turns the chooser off. Awaiting here was the first attempt at that, and it
-       * cost more than it bought: the extra await point pushed the vault's arrival past the
-       * map's consumption of a `?edit=` deeplink, so the relation contextual editor never
-       * opened at all and `tests/e2e/a11y-vault-backed.spec.ts` reported the state as
-       * **unmeasured** (CI shard chromium 1/3, 2026-09-13; bisected by reverting this one
-       * line, which took the spec from red to 44.9s green, matching main).
-       *
-       * The interleave is fixed where it belongs instead: `store.ts` runs every recent-list
-       * write through one queue, so no caller has to wait for a cache write to keep the list
-       * intact. Second time in one day that adding an await to this file broke code whose
-       * timing depended on it - the other being the rename verdict inside `load`.
+       * Not awaited: an extra await delays the vault past the map's `?edit=` deeplink consumption.
+       * `store.ts` queues every recent-list write, so no caller waits to keep the list intact.
        */
       void touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);
       if (!isCurrent()) return;
       if (permission === 'granted') {
-        // (Desktop) The common silent failure of auto-restore: the stored vault folder moved or
-        // was deleted while the app was closed. Preflight first so it classifies as
-        // 'path-missing' and the picker says the folder is gone and to choose again, instead of
-        // a raw io error thrown from inside `load`.
+        // (Desktop) Preflight so a moved or deleted stored folder classifies as 'path-missing'.
         const resolution = await tauriVaultRecordResolves(record);
         if (!isCurrent()) return;
         if (resolution !== 'ok') {
@@ -453,12 +371,8 @@ export function useVaultChoice({
       .catch((error: unknown) => {
         if (!isCurrent()) return;
         /*
-         * ⚠️ **A folder that is gone must say so on the web too** (census, 2026-08-31). The desktop
-         * preflights the stored absolute path and reports `path-missing`; a browser has no path to
-         * preflight, so the folder's disappearance arrives only as a `NotFoundError` thrown out of
-         * the File System Access API. That fell into `access-failed`, and its developer sentence
-         * ("A requested file or directory could not be found…") was then printed verbatim on a
-         * Korean screen. Reading the exception gives both runtimes one code for one fact.
+         * A vanished folder on the web arrives as a `NotFoundError` from the File System Access API;
+         * read it so both runtimes report `path-missing` instead of `access-failed`.
          */
         const missing = isMissingFolderError(error);
         setState({

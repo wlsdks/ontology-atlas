@@ -15,10 +15,7 @@ interface ReferrerRewriteOutcome {
   moved: ReferrerListMove[];
   /** Entries left in their list: this referrer's kind keeps no list for the new kind. */
   kept: ReferrerListKept[];
-  /**
-   * The bytes this referrer needed could not be written — write permission was refused or the
-   * write failed — so the file on disk is as it was and `moved` did not happen.
-   */
+  /** Its rewrite was refused or failed to write; the file on disk is unchanged. */
   failed: boolean;
 }
 
@@ -30,14 +27,9 @@ export interface ReferrerRewriteReport {
 export const EMPTY_REFERRER_REPORT: ReferrerRewriteReport = { referrers: [] };
 
 /**
- * The referrer pass shared by a move (`renameDoc`) and a kind change in place
- * (`reclassifyDoc`): every document naming `oldSlug` is rewritten by
- * `planReferrerRewrite`, and what that did is returned for the confirmation to name.
- *
- * Every document is read (reads are free) and only one whose bytes change asks for write
- * permission. A document that cannot be read is skipped, as before: nothing is known about it.
- * One whose rewrite is refused or fails is reported rather than dropped — the old loop swallowed
- * both, and the screen then said nothing about a document still pointing at the old address.
+ * The referrer pass shared by `renameDoc` and `reclassifyDoc`: every document naming `oldSlug`
+ * is rewritten by `planReferrerRewrite`. Only a document whose bytes change asks for write
+ * permission; an unreadable one is skipped, a refused or failed rewrite is reported.
  */
 export async function rewriteReferrerFiles(args: {
   docs: ReadonlyArray<{ slug: string }>;

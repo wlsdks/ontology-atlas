@@ -25,12 +25,7 @@ export interface AgentConfigStatus {
   mcpJsonValid?: boolean;
   codexConfigValid?: boolean;
   mcpExampleValid?: boolean;
-  /**
-   * The command string `.codex/config.toml` registered, **verbatim**. To avoid wiring the
-   * same server twice in a session the app needs to know *what* was registered, not just
-   * that something was — a stale path must not be skipped over
-   * (see the measured comment in `vault-mcp-server.ts`).
-   */
+  /** The command string `.codex/config.toml` registered, verbatim, so a stale path is not skipped. */
   codexRegisteredCommand?: string | null;
 }
 
@@ -185,24 +180,12 @@ async function readAgentActivityStatus(
 }
 
 /**
- * Are two sidecar states **effectively the same** — the check that stops every polling
- * tick from re-rendering the whole app just because it built a new object.
- *
- * Structural, not reference, equality (2026-09-01 review). The one-level `===` version was a
- * dead guard: `reviewTarget`, `proof`, and `refreshRequest` are non-null nested objects rebuilt
- * fresh on every parse, so the compare was permanently false and `setState` fired on every
- * 1.5–5 s tick — reinstating exactly the five-second full-app re-render this comparison exists
- * to prevent. The inputs are small parsed sidecar summaries with no cycles, so a recursive
- * compare costs far less than one wasted render. Exported for its regression test only.
+ * Are two sidecar states effectively the same? Structural, because the nested objects are
+ * rebuilt on every parse; stops each poll tick from re-rendering the app.
  */
 /**
- * Blanks the volatile age fields before a no-change compare. `ageMs` and
- * `refreshRequest.previousAgeMs` embed `Date.now()` at parse time, so with a
- * heartbeat file present two consecutive poll ticks were never structurally
- * equal and the "nothing changed means state is not touched" guard was defeated
- * — the whole app re-rendered every 1.5–5s during any agent session (bug sweep
- * 2026-09-01). `stale` still participates, so the one meaningful age transition
- * still reaches state. Nothing on screen reads `ageMs` directly.
+ * Blanks the volatile age fields (`ageMs`, `refreshRequest.previousAgeMs`) before a no-change
+ * compare. `stale` still participates; nothing on screen reads `ageMs` directly.
  */
 export function comparableAgentActivityStatus(status: AgentActivityStatus): AgentActivityStatus {
   if (status.ageMs === null && status.refreshRequest.previousAgeMs === null) return status;
@@ -277,9 +260,8 @@ async function writeRootFileIfMissing(
 }
 
 /**
- * Locates the bundled MCP server and builds its launch contract. Null when it cannot be
- * found — and then no config is written. Planting a config that will not connect is not
- * help, it is a lie someone has to debug later.
+ * Locates the bundled MCP server and builds its launch contract. Null when not found, and then
+ * no config is written: a config that will not connect is worse than none.
  */
 export async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
   try {
@@ -291,13 +273,8 @@ export async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
 }
 
 /**
- * Config writing on the web (FSA) path — **only the file that was asked for.**
- *
- * This used to write `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
- * unconditionally, so "connect to Claude Code" also wrote the Codex config — a defect
- * that existed here as well as on the Tauri path. With no `wanted` (the starter-vault
- * scaffold, where the label is not "connect") it still writes all of them; that behaviour
- * is not a defect because the label promises it.
+ * Config writing on the web (FSA) path: only the file that was asked for. With no `wanted`
+ * (the starter scaffold) it writes all of them.
  */
 export async function writeAgentConfigFiles(
   handle: FileSystemDirectoryHandle,

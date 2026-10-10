@@ -32,9 +32,7 @@ export function useVaultDocWrites(
 ) {
   /**
    * Secures readwrite permission before any write. On refusal the state moves to
-   * 'permission-needed' so the picker's reauth UI appears immediately; previously
-   * `saveDoc` only threw while the state stayed 'loaded', leaving a user who went to the
-   * picker unaware it was a permission problem. It still throws afterwards, so the caller's
+   * 'permission-needed' so the reauth UI appears, and it still throws so the caller's
    * try/catch keeps showing the inline error.
    */
   const requireWritePermission = useCallback(
@@ -48,10 +46,7 @@ export function useVaultDocWrites(
     [setState],
   );
 
-  /**
-   * Walks a slash path from the root handle (creating as requested) and returns the parent
-   * directory handle plus the file name: `foo/bar/baz` → dir = root/foo/bar, name = baz.md.
-   */
+  /** Walks a slash path from the root handle and returns the parent directory handle plus the file name. */
   const getParentAndName = useCallback(
     async (
       root: FileSystemDirectoryHandle | null,
@@ -92,23 +87,16 @@ export function useVaultDocWrites(
   );
 
   /**
-   * Rewrites one slug's markdown file, requesting readwrite permission first when needed, and
-   * rescans the manifest on success.
-   *
-   * `options.expectedMtime` (the manifest's `doc.mtime`) is compared against the filesystem's
-   * `file.lastModified` immediately before the write and throws `VaultConflictError` on an
-   * outside change. Omitted, the check is skipped, keeping existing callers working.
+   * Rewrites one slug's markdown file, requesting readwrite permission first, then rescans.
+   * `options.expectedMtime` is checked against `file.lastModified` before the write and throws
+   * `VaultConflictError` on an outside change; omitted, the check is skipped.
    */
   // Slugs the app itself just wrote, so the polling diff toaster does not report its own
   // writes as "added/edited" (the four-toast burst during bootstrap). A one-shot ledger
   // cleared on consumption: only outside changes (an agent, an IDE) become toasts.
   const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
-  // The only real data source behind the "last edited · me" fact. Unlike
-  // `selfWrittenSlugsRef` this is not cleared on consumption (slug → last self-write time in
-  // ms). An mtime alone cannot say *who* changed a file — a git checkout, another editor, or
-  // an agent session without a heartbeat all change it — so this records only that this
-  // session actually wrote the slug through the local vault write API, and marks "me" for
-  // that trustworthy subset only. No guessing.
+  // slug → last self-write time in ms, the only source of "last edited · me". An mtime cannot
+  // say who changed a file, so only writes through this API mark "me". Not cleared on consumption.
   const [selfEditTimestamps, setSelfEditTimestamps] = useState<ReadonlyMap<string, number>>(
     () => new Map(),
   );
@@ -138,18 +126,8 @@ export function useVaultDocWrites(
     return consumed;
   }, []);
   /*
-   * **A refused save has already told the person about the outside change** (2026-09-26,
-   * map-edit QA D5). A save refused as a conflict raises the one message the person needs:
-   * the file changed elsewhere, refresh and save again. The watcher then picks the same
-   * outside write up a moment later and reported it again as a green «Capability edited»
-   * notice, which took the front of the stack and pushed the refusal behind it — read right
-   * after pressing Save, it looks like the save landed.
-   *
-   * So a refusal records **which change it reported**: the slug and the modification time
-   * the disk showed at that moment. The diff toaster drops a modification only when it
-   * observes that same slug at that same time (`consumeReportedConflicts`); a later outside
-   * edit carries a newer time and is reported as usual. Observing the slug at any time
-   * clears the record, so nothing lingers to swallow a notice that is owed.
+   * A refused save records which outside change it reported (slug + disk mtime), so the diff
+   * toaster drops only that same notice (`consumeReportedConflicts`); a newer edit still reports.
    */
   const reportedConflictsRef = useRef<Map<string, number>>(new Map());
   const guardExpectedMtime = useCallback(
@@ -203,10 +181,7 @@ export function useVaultDocWrites(
     [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
-  /**
-   * Creates a new `.md` at the slug path, erroring when one already exists. Intermediate
-   * directories are created, and the template content seeds the body.
-   */
+  /** Creates a new `.md` at the slug path, erroring when one exists; the template seeds the body. */
   const createDoc = useCallback(
     async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
       const live = openState();
@@ -242,13 +217,8 @@ export function useVaultDocWrites(
   );
 
   /**
-   * Deletes the file for a slug from local disk. Intermediate directories are deliberately
-   * left in place even when empty, since other files may land there.
-   *
-   * `options.expectedMtime` is the same guard as `saveDoc`'s: the person confirmed deleting
-   * the version they were shown, so a file an agent or an editor changed since then is
-   * refused rather than removed along with that change (MCP `delete_concept` takes the
-   * same `expected_mtime`).
+   * Deletes the file for a slug; empty directories stay. `options.expectedMtime` is `saveDoc`'s
+   * guard: a file changed since the person confirmed is refused, not removed.
    */
   const deleteDoc = useCallback(
     async (slug: string, options: { expectedMtime?: number } = {}) => {
@@ -268,18 +238,9 @@ export function useVaultDocWrites(
   );
 
   /**
-   * Updates only some frontmatter keys of a slug's markdown file, preserving the body. Works
-   * on our simple frontmatter rules (one `key: value` line, plus inline arrays like
-   * `tags`/`projects`); nested objects beyond one level are unsupported.
-   *
-   * An existing key is replaced, a new one is appended to the end of the frontmatter, and a
-   * null value deletes the key.
-   *
-   * Atomicity is the same path as `saveDoc` (`createWritable` → write). `opts.skipRefresh`
-   * skips the refresh so a run of calls does not cause scroll jumps and flicker, and
-   * `opts.expectedMtime` is the same conflict guard as `saveDoc`.
-   *
-   * `opts.rewriteBacklinks` is `reclassifyDoc`'s: see there.
+   * Updates only some frontmatter keys, preserving the body: an existing key is replaced, a new one
+   * appended, a null value deletes it. Supports one-line `key: value` and inline arrays only.
+   * `opts.skipRefresh` avoids scroll jumps in a run of calls; `opts.rewriteBacklinks` is `reclassifyDoc`'s.
    */
   const writeFrontmatterPatch = useCallback(
     async (
@@ -332,13 +293,9 @@ export function useVaultDocWrites(
   );
 
   /**
-   * A person changing a document's kind where it stands — the quick patch, when the file is not
-   * filed in its old kind's folder, so nothing moves (`renameDoc` does the moving case).
-   *
-   * The patch is written exactly as `updateFrontmatter` writes it; then, when it changes an
-   * existing `kind:`, every document that lists this one under the list for its old kind moves
-   * the entry to the list for the new one (`planReferrerRewrite`, 2026-09-26 map-edit review),
-   * and the returned report says what each referrer got.
+   * A kind change where the document stands (`renameDoc` does the moving case). The patch is
+   * written as `updateFrontmatter` writes it; referrers then move their entry to the new kind's
+   * list (`planReferrerRewrite`) and the returned report says what each got.
    */
   const reclassifyDoc = useCallback(
     (
@@ -351,21 +308,10 @@ export function useVaultDocWrites(
   );
 
   /**
-   * Changes a slug path inside the local vault (rename or move): read the existing content,
-   * create at the new location, and remove the original on success. Identical slugs are a no-op.
-   *
-   * With `rewriteBacklinks=true`, references to `oldSlug` in other markdown bodies
-   * (`[[oldSlug]]`, `[text](...oldSlug.md)`) are rewritten to `newSlug`. Best effort — a
-   * failure there does not undo the rename.
-   *
-   * The moved file is not copied verbatim: `rewriteMovedDocSelf` moves its own `slug:` when
-   * that mirrors the old address (the MCP `rename_concept` rule) and applies
-   * `frontmatterUpdates` in the same bytes, which is how a reclassify changes `kind:` and
-   * folder in one write. `expectedMtime` is `saveDoc`'s conflict guard, on the source.
-   *
-   * When `frontmatterUpdates` changes the document's kind, referrers also move each entry from
-   * the list for the old kind to the list for the new one (`planReferrerRewrite`), and the
-   * returned report says what every referrer got — the confirmation names them.
+   * Changes a slug path (rename or move): create at the new location, then remove the original;
+   * identical slugs are a no-op. `rewriteBacklinks` rewrites references best effort, without
+   * undoing the rename. `rewriteMovedDocSelf` and `frontmatterUpdates` apply in the same bytes;
+   * a kind change also moves referrer entries, and the report names them.
    */
   const renameDoc = useCallback(
     async (
@@ -380,15 +326,8 @@ export function useVaultDocWrites(
       const live = openState();
       if (oldSlug === newSlug) return EMPTY_REFERRER_REPORT;
       /*
-       * ⚠️ **Names that differ only in case are the same file** (review 2026-08-16 — reproduced
-       * on the MCP side as documents disappearing; this path has the same shape).
-       *
-       * The collision check below compares Map keys, so it sees `Payments` and `payments` as
-       * different. macOS and Windows filesystems see one file, so writing the new name and then
-       * deleting the old one **deletes what was just written**.
-       *
-       * And since this app's `slugify` lowercases, renaming `Payments` to `payments` is ordinary
-       * tidying a user does — not a rare case.
+       * Names that differ only in case are the same file on macOS and Windows: write-then-delete
+       * would delete what was just written, so the Map-key collision check is not enough.
        */
       if (oldSlug.toLowerCase() === newSlug.toLowerCase()) {
         throw new Error(`Case-only rename is not supported: "${oldSlug}" → "${newSlug}"`);
@@ -423,17 +362,9 @@ export function useVaultDocWrites(
 
       // --- optional cascading backlink rewrite
       /*
-       * ⚠️ **Frontmatter relations are the primary graph** (bug sweep 2026-09-01). This pass
-       * used to rewrite only body `[[wikilink]]` / `](x.md)` forms and select referrers from
-       * body-only `linksOut`, so a rename orphaned every frontmatter relation (`dependencies:`,
-       * `capabilities:`, …) to the renamed node — backlinks vanished and the graph minted a
-       * phantom stub under the old name, unlike MCP `rename_concept`. `planReferrerRewrite`
-       * applies the same key family and tail rules as the MCP rewrite, and every doc is scanned,
-       * which also catches referrers `linksOut` missed — a same-directory relative link was
-       * previously detected but left dangling by the full-slug regex.
-       *
-       * A kind change also moves each entry into the list for the new kind (2026-09-26): the
-       * same-key rewrite alone left an element listed under `capabilities:`.
+       * Frontmatter relations are the primary graph: `planReferrerRewrite` applies the MCP
+       * `rename_concept` key family and tail rules to every doc, and a kind change moves each entry
+       * into the list for the new kind.
        */
       const report =
         opts.rewriteBacklinks && live.manifest
@@ -455,24 +386,10 @@ export function useVaultDocWrites(
   );
 
   /**
-   * Writes the ontology starter into the open folder (`writeVaultStarter`) and rescans it. Config
-   * files such as `.mcp.json` / `.codex` are seeded only when the bundled agent server is actually
-   * installable — an unrunnable config is never planted silently. Existing files are skipped rather
-   * than overwritten, so calling this on an existing vault is safe.
-   *
-   * `starterLocale` decides the language of the starter bodies: a vault created from a screen
-   * in one language should read in that language. The file set and the frontmatter are
-   * locale-independent, so any language produces the same graph (a contract test proves it).
-   *
-   * The locale is a **required argument**. With a default of `'en'`, two of the four creation
-   * paths passed nothing and a vault created from a Korean screen was seeded with English
-   * bodies (walkthrough 2026-07-26). Removing the default makes the type demand a locale from
-   * any new call site, so the same drift cannot reopen. An unknown locale is downgraded to EN
-   * by `starterFilesForLocale`.
-   *
-   * This is the door for a folder that is **already open** (Settings › Workspace, the map's empty
-   * state). A door that creates a folder asks `open`/`openRecent` for the starter instead, so it is
-   * written before the folder is first shown.
+   * Writes the ontology starter into the open folder and rescans. Config files are seeded only
+   * when the bundled agent server is installable; existing files are skipped. `starterLocale` is
+   * required so no creation path falls back to English bodies. For an already open folder;
+   * creation doors pass the starter to `open`/`openRecent` instead.
    */
   const scaffoldOntology = useCallback(async (starterLocale: string, shape: VaultShape = FULL_STARTER_SHAPE) => {
     const live = openState();
@@ -492,12 +409,8 @@ export function useVaultDocWrites(
   }, [openState, reloadIfOpen, requireWritePermission]);
 
   /**
-   * The write the "connect" button performs — it takes the client and writes **only that
-   * client's file**.
-   *
-   * Omitting `client` (the starter-vault scaffold) still writes all of them. The label there is
-   * "start with a new folder", not "connect", and laying down one full set of configs is what
-   * that label promises — two uses of one function, not one contract.
+   * The write the "connect" button performs: only that client's file. Omitting `client` (the
+   * starter scaffold) writes all of them.
    */
   const ensureAgentConfigs = useCallback(async (client?: AgentClientId) => {
     const live = openState();
@@ -520,7 +433,6 @@ export function useVaultDocWrites(
     await reloadIfOpen(vaultHandle);
     return result;
   }, [openState, reloadIfOpen, requireWritePermission]);
-
 
   return {
     selfEditTimestamps,

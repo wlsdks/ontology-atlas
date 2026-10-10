@@ -16,24 +16,8 @@ type Status =
   | 'error';
 
 /**
- * A human-readable classification of the error status. The picker chooses its localized
- * guidance from this code, which keeps the hook itself i18n-free.
- *
- * - `path-missing` — (desktop) the vault folder opened previously has moved or been
- *   deleted and is no longer reachable by absolute path. "Choose the folder again" is
- *   the next action.
- * - `permission-denied` — the operating system is protecting this folder and has not been told to
- *   allow it. Its own code because the remedy is a checkbox in System Settings, not a retry, and
- *   because the raw `Operation not permitted (os error 1)` names an errno rather than a folder.
- *   Classified from the OS message, never guessed from the path — see
- *   `classify-vault-access-error.ts`.
- * - `access-failed` — any other read or build failure. `errorMessage` carries the cause
- *   string, including a Tauri command's `Err(String)`, so it is no longer silent.
- * - `root-rejected` — the chosen location cannot be a vault root (a filesystem root, the
- *   home directory itself, an OS or app directory). This is a **rejection, not a
- *   failure**, and gets its own code because retrying gives the same result — "please try
- *   again" would be wrong guidance. `errorMessage` is null and the screen picks the
- *   reason in its own language (`vaultRootRejectionReason`).
+ * Error classification the picker localizes. `access-failed` is any other failure and its
+ * `errorMessage` carries the cause string (a Tauri `Err(String)`); `root-rejected` has none.
  */
 type VaultErrorCode =
   | 'path-missing'
@@ -54,25 +38,14 @@ export interface State {
   acpWorkReceipts: AcpWorkReceipt[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
-  /**
-   * Raw sources under `sources/`, keyed by vault-relative path. Nothing here is opened
-   * by the build; a handle is reached through only when a person asks to open or hash
-   * one file.
-   */
+  /** Raw sources under `sources/` by vault-relative path; a handle is reached only on open or hash. */
   sourceHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
   /** Meaningful only in the error status — the key the picker uses to pick localized guidance. */
   errorCode: VaultErrorCode | null;
   /** Epoch ms of the last successful scan, shown by the picker as "scanned N seconds ago". */
   lastLoadedAt: number | null;
-  /**
-   * **Which handle** `manifest` was built from. Kept separate from `handle` because a
-   * rescan (`load`) sets `handle` to the new value and status to 'loading' the moment it
-   * starts, while `manifest` is still the previous one. Comparing the two distinguishes
-   * "re-reading the same folder" (content still valid) from "switching folders" (content
-   * invalid) — without that distinction, the second it takes to switch draws the other
-   * folder's graph.
-   */
+  /** The handle `manifest` was built from: tells "re-reading" from "switching" folders. */
   manifestHandle: FileSystemDirectoryHandle | null;
   partialTotal: number;
 }
@@ -114,6 +87,7 @@ export function emptyState(status: Status = 'idle'): State {
   };
 }
 
+/** Every member is a stable identity; dependency arrays list them. */
 export interface VaultSessionCore {
   setState: Dispatch<SetStateAction<State>>;
   stateRef: RefObject<State>;

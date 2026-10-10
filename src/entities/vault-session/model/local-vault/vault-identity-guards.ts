@@ -2,9 +2,8 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import type { FrontmatterUpdateValue } from '@/entities/docs-vault';
 
 /**
- * Thrown when the vault's `.md` changed outside the app (another editor, an AI over
- * MCP) and the user then saves from the GUI — the guard against a silent overwrite.
- * Same meaning as the MCP-side `VaultConflictError`.
+ * Thrown when the vault's `.md` changed outside the app and the user then saves from the GUI:
+ * the guard against a silent overwrite. Same meaning as the MCP-side `VaultConflictError`.
  */
 export class VaultConflictError extends Error {
   readonly slug: string;
@@ -82,9 +81,8 @@ export function assertNodeIdentityContent(
 }
 
 /**
- * Identity-guard errors carry their variant in `name`; the editor turns that name into
- * a sentence in the user's language (same grammar as `VaultConflictError`). The English
- * message stays as the fallback for the console, logs, and surfaces that do not localize.
+ * Identity-guard errors carry their variant in `name`; the editor localizes that name. The
+ * English message is the fallback for logs and surfaces that do not localize.
  */
 function identityError(name: 'VaultIdentityUidError' | 'VaultIdentityHistoryError', message: string): Error {
   return Object.assign(new Error(message), { name });
