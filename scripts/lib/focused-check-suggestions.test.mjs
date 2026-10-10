@@ -925,6 +925,12 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('runs the native bridge tests for code split out of the crate root', () => {
+    for (const path of ['src-tauri/src/vault/write.rs', 'src-tauri/src/webview_verify/mod.rs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:bridge'), path);
+    }
+  });
+
   it('points the Agents destination at the three e2e specs that drive it', () => {
     /*
      * Probe for the 2026-09-19 rule. Before it, every one of these files suggested **no**

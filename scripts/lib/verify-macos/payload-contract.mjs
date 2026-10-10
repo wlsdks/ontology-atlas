@@ -41,7 +41,7 @@ export function validateLibrarySurfaceEvidence(markers, { requireOntology = fals
   return null;
 }
 
-// `write_verify_line` in src-tauri/src/lib.rs tags window-lifecycle facts with this
+// `write_verify_line` in webview_verify tags window-lifecycle facts with this
 // prefix. webview-env.mjs owns the JSON payload prefix; this one is declared here
 // because the payload contract is its only reader.
 const WINDOW_STATE_PLUGIN_MARKER_PREFIX =

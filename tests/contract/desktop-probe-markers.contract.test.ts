@@ -11,7 +11,7 @@ import { readProbeSources } from "./lib/probe-selectors";
  *
  * ## Why (measured)
  *
- * `src-tauri/src/lib.rs` injects JS probes into the WebView to verify the installed
+ * `src-tauri/src/webview_verify/mod.rs` injects JS probes into the WebView to verify the installed
  * app's screens. Counting every `data-testid` those probes look for found that
  * **57 of 94 do not exist in the product** — they were waiting on Sigma-era DOM
  * (`sigma-*` · `data-skeleton-card` · `topology-node-popover-*` ·
@@ -109,8 +109,7 @@ const productSource = [...walk(join(REPO_ROOT, "src")), ...walk(join(REPO_ROOT, 
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
 
-// The probes moved from raw strings in `lib.rs` into real files on 2026-08-24;
-// `readProbeSources` concatenates `lib.rs` (still holding the templated scripts)
+// `readProbeSources` concatenates `webview_verify/mod.rs` (the templated scripts)
 // with every `src-tauri/src/webview_verify/*.js` probe file.
 const probeSource = readProbeSources(REPO_ROOT);
 

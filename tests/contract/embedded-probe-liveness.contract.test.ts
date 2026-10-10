@@ -3,36 +3,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Gate against dead literals surviving inside the verifier JavaScript.
- *
- * The webview probe and the three verify scripts were extracted on 2026-08-24 from Rust raw
- * strings in `lib.rs` into real files under `src-tauri/src/webview_verify/`, byte for byte. The
- * extension puts them in reach of tooling, but nothing type-checks or lints them yet (they are
- * plain `.js` outside the TS project), and the scripts still templated inside `lib.rs` via
- * `format!` remain strings a compiler never sees. So this gate now scans both homes: every
- * `src-tauri/src/webview_verify/*.js` file and every `r#"…"#` block left in `lib.rs`. A
- * mechanical edit can still leave residue that looks like code and computes nothing.
- *
- * **That is not hypothetical.** Commit `8806b8eba` (2026-08-13) removed 56 dead markers by
- * substitution and left the substitution behind: measured on 2026-08-24, 92 `(null)` and 84
- * `(undefined)` literal tokens remained, producing 31 marker fields permanently stuck at `false`,
- * `[]` or `null` — while still being emitted as evidence and still being read by
- * `payload-contract.mjs`, whose `=== true` branches on them could never fire. A verification
- * payload full of constants formatted as measurements is misinformation, and a verifier branch
- * that cannot fire is the permanently-green gate this repository's own `/gate-probe` doctrine
- * exists to reject.
- *
- * `tsc` would have caught every one of them in a second. Since the probe cannot be given to `tsc`
- * while it lives in a string, this gate stands in for it on the one pattern that actually bit.
- *
- * **Scope, deliberately narrow.** It bans a parenthesised `null`/`undefined` literal in a position
- * where the value is *used* — a condition, a receiver, an operand, an argument. It does not ban the
- * words: `x ?? null`, `=== undefined`, and `return null` are ordinary JavaScript and stay legal. The
- * distinguishing mark of the residue is the parentheses a substitution leaves behind.
+ * Bans a parenthesised `null`/`undefined` literal where its value is used in the verifier
+ * JavaScript: each `webview_verify/*.js` file and each `r#"…"#` script in `webview_verify/mod.rs`.
+ * `x ?? null`, `=== undefined` and `return null` stay legal; the parentheses mark substitution residue.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');
-const libSource = readFileSync(join(repoRoot, 'src-tauri/src/lib.rs'), 'utf8');
+const libSource = readFileSync(join(repoRoot, 'src-tauri/src/webview_verify/mod.rs'), 'utf8');
 const verifyDir = join(repoRoot, 'src-tauri/src/webview_verify');
 
 /** One scanned script: where it lives, the line its body starts on, and the body itself. */
@@ -43,7 +20,7 @@ interface Script {
   body: string;
 }
 
-/** Every `r#"…"#` block in lib.rs — the still-embedded scripts, and nothing else uses them. */
+/** Every `r#"…"#` block in `webview_verify/mod.rs` — the still-embedded scripts, and nothing else uses them. */
 function embeddedScripts(source: string): Script[] {
   const blocks: Script[] = [];
   const opener = /r#"/g;
@@ -53,7 +30,7 @@ function embeddedScripts(source: string): Script[] {
     const to = source.indexOf('"#', from);
     if (to < 0) break;
     blocks.push({
-      origin: 'src-tauri/src/lib.rs',
+      origin: 'src-tauri/src/webview_verify/mod.rs',
       line: source.slice(0, from).split('\n').length,
       body: source.slice(from, to),
     });
@@ -93,10 +70,8 @@ function locate(script: Script, offsetInBody: number): string {
 
 describe('the verifier JavaScript contains no dead literals', () => {
   it('finds the probe scripts at all', () => {
-    // A gate that scans nothing reports a clean sweep. The 2026-08-24 extraction moved the four
-    // probes into real files; this pins both homes so a silently empty read of either one cannot
-    // pass. The DOM marker probe is the largest script by far — its size proves the files were
-    // actually read, and the remaining `format!`-templated scripts keep lib.rs in scope.
+    // A gate that scans nothing reports a clean sweep: the DOM marker probe's size proves the
+    // files were read, and the `format!`-templated scripts keep `webview_verify/mod.rs` in scope.
     expect(fileScripts.length).toBeGreaterThanOrEqual(4);
     expect(Math.max(...fileScripts.map((script) => script.body.length))).toBeGreaterThan(10_000);
     expect(libScripts.length).toBeGreaterThan(0);

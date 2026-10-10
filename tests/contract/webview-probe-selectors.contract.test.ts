@@ -9,7 +9,7 @@ import { collectProbeSelectors, findDeadSelectors, readProbeSources } from "./li
  *
  * Desktop verification collects evidence through JS probes — the files under
  * `src-tauri/src/webview_verify/` plus the scripts still templated inside
- * `src-tauri/src/lib.rs` — that find UI with `document.querySelector`. But
+ * `src-tauri/src/webview_verify/mod.rs` — that find UI with `document.querySelector`. But
  * **deleting UI does not delete the probes.**
  *
  * The 2026-07 map rebuild removed the Sigma renderer while the probes kept poking
