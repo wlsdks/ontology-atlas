@@ -117,7 +117,7 @@ export const rules = [
     matches: [
       /^src\/shared\/lib\/tauri-(?:vault-fs|git|secrets|llm)\.ts$/,
       /^src\/shared\/lib\/desktop-shell\.ts$/,
-      /^src\/entities\/vault-session\/model\/use-local-vault\.ts$/,
+      /^src\/entities\/vault-session\/model\/local-vault\/[^/]+(?<!\.test)\.ts$/,
       /^src\/features\/first-run-starter\/ui\/FirstRunStarterModule\.tsx$/,
       /^src-tauri\//,
     ],
@@ -127,7 +127,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/vault-switch-release.spec.ts',
     reason: 'a callback that can outlive a folder switch changed; no earlier folder may stay alive',
     matches: [
-      /^src\/entities\/vault-session\/model\/use-local-vault\.ts$/,
+      /^src\/entities\/vault-session\/model\/local-vault\/use-(?:local-vault|vault-choice|vault-doc-writes)\.ts$/,
       /^src\/features\/vault-switch\//,
       /^src\/views\/home\/ui\/HomePage\.tsx$/,
       /^src\/views\/home\/model\/use-(?:topology-agent-orchestration|topology-keyboard-tour|topology-vault-read-model|past-trails|footprint-trail)\.tsx?$/,

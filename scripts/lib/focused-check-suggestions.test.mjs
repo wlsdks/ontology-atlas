@@ -989,8 +989,11 @@ describe('focused check suggestions', () => {
 
   it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
     const cases = [
-      ['src/entities/vault-session/model/use-local-vault.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/entities/vault-session/model/use-local-vault.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-vault-choice.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-vault-doc-writes.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/vault-sidecars.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
       ['src/features/vault-switch/ui/VaultSwitchRailTile.tsx', 'tests/e2e/vault-switch-release.spec.ts'],
       ['src/views/home/model/use-past-trails.ts', 'tests/e2e/vault-switch-release.spec.ts'],
       ['src/widgets/ontology-map/ui/use-topology-camera-navigation.ts', 'tests/e2e/vault-switch-release.spec.ts'],
@@ -1003,6 +1006,13 @@ describe('focused check suggestions', () => {
     for (const [path, spec] of cases) {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
       assert.ok(commandNames(suggestFocusedChecks([path])).includes(`pnpm exec playwright test ${spec}`), `${path} → ${spec}`);
+    }
+  });
+
+  it('routes the vault session files the desktop readiness gate reads to that gate', () => {
+    for (const path of ['src/entities/vault-session/model/local-vault/use-vault-choice.ts', 'src/entities/vault-session/model/local-vault/vault-sidecars.ts']) {
+      assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
+      assert.ok(domainCommands(suggestFocusedChecks([path])).includes('pnpm desktop:check'), path);
     }
   });
 

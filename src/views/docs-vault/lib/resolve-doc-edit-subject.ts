@@ -5,7 +5,7 @@ import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 /**
  * "Last edited · person/AI" from the only two real sources: a fresh heartbeat whose `focus`
  * names this doc (matched by bare-slug suffix like `resolveAgentFocusNodeId`), or this session's
- * self-writes (`markSelfWrite` in `use-local-vault.ts`). Never inferred from mtime alone, which
+ * self-writes (`markSelfWrite`). Never inferred from mtime alone, which
  * a checkout or another editor can change. Null when neither has evidence.
  */
 export function resolveDocLastEditSubject(params: {

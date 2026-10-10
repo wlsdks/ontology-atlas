@@ -82,6 +82,7 @@ export const rules = [
       /^scripts\/stage-macos-release-assets\.(?:mjs|test\.mjs)$/,
       /^docs\/DESKTOP-MACOS\.md$/,
       /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
+      /^src\/entities\/vault-session\/model\/local-vault\/(?:use-vault-choice|vault-sidecars)\.ts$/,
       /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
       /^src\/views\/docs-vault\/ui\/DocsVaultPage\.tsx$/,

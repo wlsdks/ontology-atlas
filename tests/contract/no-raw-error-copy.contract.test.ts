@@ -48,7 +48,7 @@ import { describe, expect, it } from 'vitest';
  *    `.message` is blind to the producer that hands over a bare code.
  *
  * A source comment in `FirstRunPage.tsx` also asserted that `vault.errorMessage` "is deliberately
- * blank so the raw cause is not leaked". That was false — `use-local-vault.ts` documents the
+ * blank so the raw cause is not leaked". That was false — `vault-state.ts` documents the
  * opposite for `access-failed` ("`errorMessage` carries the cause string, including a Tauri
  * command's `Err(String)`") — and the false comment is what made the leak beneath it look
  * deliberate. It has been corrected at the source.
@@ -115,7 +115,7 @@ function parse(path: string, text: string): ts.SourceFile {
 /**
  * The property names this repository gives raw failure text.
  *
- * `message` is a thrown `Error`'s. `errorMessage` is `use-local-vault`'s cause string and
+ * `message` is a thrown `Error`'s. `errorMessage` is `vault-state`'s cause string and
  * `agent-activity-status`'s parse complaint. `errorText` is what `use-build-from-code` hands over —
  * since v1.2.2 a bare kebab-case *code*, which is worse on screen than a sentence, not better.
  * `errorDetail` is the machine half a repaired screen carries beside its sentence.

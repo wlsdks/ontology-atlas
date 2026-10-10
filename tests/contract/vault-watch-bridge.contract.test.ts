@@ -56,7 +56,7 @@ describe("폴더 감시 브리지", () => {
   });
 
   it("웹 쪽: 폴링 폴백이 살아 있다 — 웹이 '못 하는' 게 아니라 '늦는' 것이다", () => {
-    const cadence = read("src/entities/vault-session/model/poll-cadence.test.ts");
+    const cadence = read("src/entities/vault-session/model/local-vault/poll-cadence.test.ts");
     expect(
       cadence,
       "Without the polling cadence the web build really cannot see file changes. Then " +

@@ -1,9 +1,8 @@
 /**
  * The single decision behind the expected_mtime conflict badge. It asks, quietly and
  * *before* a save, the same question as the expected_mtime contract already used by
- * `patch_concept` / `updateFrontmatter` / `saveDoc` (`assertExpectedMtime`,
- * `use-local-vault.ts`): does the baseline from when I opened this document differ
- * from what is known now, and is that difference explained by my own recent write?
+ * `patch_concept` / `updateFrontmatter` / `saveDoc` (`assertExpectedMtime`): does the
+ * baseline from when I opened this document differ from what is known now, and is that difference explained by my own recent write?
  * True only when the two differ *and* the difference is not explained by a self
  * write. With no real mismatch — time merely passing, say — it never turns on. No
  * signal inflation. Callers that can snapshot the self-write record at open time

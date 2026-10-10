@@ -147,7 +147,8 @@ const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/Workspace
 // one.
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
-const localVaultHook = readText("src/entities/vault-session/model/use-local-vault.ts");
+const vaultChoiceHook = readText("src/entities/vault-session/model/local-vault/use-vault-choice.ts");
+const vaultSidecars = readText("src/entities/vault-session/model/local-vault/vault-sidecars.ts");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
 const pagesDeployWorkflow = readText(".github/workflows/deploy-pages.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
@@ -408,7 +409,7 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml"
+  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml"
 ) {
   pass(
     "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard",
@@ -1839,11 +1840,11 @@ if (
   localFsHandleStore.includes("canUseStoredRecord") &&
   localFsHandleStore.includes("!record.desktopRootPath || isTauriVaultRuntime()") &&
   localFsHandleStore.includes(".filter((record): record is LocalFsHandleRecord => Boolean(record))") &&
-  localVaultHook.includes("recentVaults") &&
-  localVaultHook.includes("mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' })") &&
-  localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
-  localVaultHook.includes("openRecent") &&
-  localVaultHook.includes("forgetRecent") &&
+  vaultChoiceHook.includes("recentVaults") &&
+  vaultSidecars.includes("mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' })") &&
+  vaultSidecars.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
+  vaultChoiceHook.includes("openRecent") &&
+  vaultChoiceHook.includes("forgetRecent") &&
   appSettingsMenu.includes("<WorkspacePane") &&
   workspacePane.includes("localVault.recentVaults") &&
   workspacePane.includes("localVault.openRecent(record)") &&
