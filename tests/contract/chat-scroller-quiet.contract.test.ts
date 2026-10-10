@@ -36,13 +36,8 @@ const SCROLLER_SOURCES = [
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
 ] as const;
 
-/**
- * ⚠️ **The Library's column is asserted by name, not by the detector above.** That detector
- * pairs quotes across the whole file, and `LibraryPage.tsx` is written in prose thick with
- * apostrophes ("the person's own folder"), so a single quote inside a comment pairs with one
- * hundreds of lines away and the scan returns nothing. A detector that silently sees no
- * scrollers is worse than none, so this file is checked by its own two facts instead.
- */
+// The Library index column is asserted by its own facts: the exact quiet class string on
+// `library-index-scroll`, and the edge mask that replaces its bar.
 const LIBRARY_INDEX_SCROLLER =
   'atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto';
 
@@ -125,7 +120,7 @@ describe('quiet scrollers', () => {
      * hard edge it cannot say whether the cut is the end. Both edges fade, because the
      * switch above it can put a person in the middle of a list they have not scrolled.
      */
-    const library = readFileSync('src/views/library/ui/LibraryPage.tsx', 'utf8');
+    const library = readFileSync('src/views/library/ui/library-page/LibraryIndexColumn.tsx', 'utf8');
     expect(library).toContain('data-testid="library-index-scroll"');
     expect(library).toContain(LIBRARY_INDEX_SCROLLER);
     expect(library).toContain('const indexFade = "var(--tabbar-edge-fade)"');
