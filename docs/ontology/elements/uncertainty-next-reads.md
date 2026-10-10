@@ -9,7 +9,7 @@ domain: domains/meaning-layer
 path: mcp/src/uncertainty-reads.mjs
 created_by: "agent:claude-code"
 dependencies: [elements/meaning-gap-findings]
-relation_notes: { elements/meaning-gap-findings: "You asked me to witness the import: mcp/src/uncertainty-reads.mjs:14 imports uncertaintySectionLines from meaning-findings.mjs to find the section it reads." }
+relation_notes: { elements/meaning-gap-findings: "You asked me to witness the import: mcp/src/uncertainty-reads.mjs imports `uncertaintySectionLines` from meaning-findings.mjs to find the section it reads." }
 ---
 
 Reads what a node's author recorded as not read and turns each of those sentences into a named next read (which file, which lines, and what kind of gap), so the most honest prose in the vault becomes work somebody can pick up.
@@ -25,4 +25,4 @@ Reads what a node's author recorded as not read and turns each of those sentence
 - Judging whether the recorded unknown matters to the product.
 
 ## Uncertainty
-- Read the whole module after this revision (`mcp/src/uncertainty-reads.mjs`, with span direction in `polarityAt` and span assembly in `locateRanges`) and its call site in the growth plan (`mcp/src/ontology-engine/scope-queries.mjs:784`). The parallel shape check in `cli/src/lib/query-result-contract/maintenance-growth.mjs` was read only for the row fields it validates. The phrasing table was measured on two vaults (this one and one Rust trial); a builder in another language or style may still write lines that fall to the unrecognised kind.
+- Read the whole module after this revision (`mcp/src/uncertainty-reads.mjs`, with span direction in `polarityAt` and span assembly in `locateRanges`) and its call site in the growth plan (`nextReadCandidates` in `mcp/src/ontology-engine/scope-queries.mjs`). The parallel shape check in `cli/src/lib/query-result-contract/maintenance-growth.mjs` was read only for the row fields it validates. The phrasing table was measured on two vaults (this one and one Rust trial); a builder in another language or style may still write lines that fall to the unrecognised kind.

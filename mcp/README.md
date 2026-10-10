@@ -1191,7 +1191,9 @@ module depends on an MCP module is the barrel, bridge or contract test between
 them. Write that path from the repository root; a path relative to `src/` or to
 the module's own folder resolves to nothing and is ignored rather than guessed
 at; a line suffix (`:42`, `:42:7`, `:3-9`, `#L3-L9`) is stripped before the
-file is opened. Measured on this repository's own vault (2026-09-22): 70 of 85
+file is opened. The message asks for the symbol the file imports or calls
+instead of a line, because a line moves with every edit above it and nothing
+checks it. Measured on this repository's own vault (2026-09-22): 70 of 85
 such edges were witnessed and 15 were not, all 15 carrying a reviewed `why` and
 validating clean. `add_relation` and `patch_concept` report it for the edge the
 write just added, while the validators report every edge; both stay silent with
