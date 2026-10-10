@@ -80,7 +80,7 @@ function composite(
   ];
 }
 
-/** The alpha the rim is painted at, at depth `u`. Mirrors `topology-frame-draw.ts`. */
+/** The alpha the rim is painted at, at depth `u`. Mirrors `paint-nodes.ts`. */
 function rimAlphaAt(u: number): number {
   const fog = domeFogAlpha(u);
   return Math.min(1, fog * Math.max(1, DOME_RIM_FOG_FLOOR / fog));

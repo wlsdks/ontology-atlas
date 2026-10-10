@@ -15,7 +15,7 @@ import {
 
 /**
  * Hit-testing (`topology-pointer-handlers.ts`) and drawing
- * (`topology-frame-draw.ts`) must use the same `clusterChipRect` /
+ * (`ui/frame-draw/paint-chips.ts`) must use the same `clusterChipRect` /
  * `clusterChipLabel` or click coordinates drift. That shared geometry is this
  * slice's load-bearing contract, so it is unit-tested here; the actual canvas
  * pixels are verified on the running screen.

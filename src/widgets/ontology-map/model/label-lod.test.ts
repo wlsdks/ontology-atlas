@@ -124,7 +124,7 @@ describe("isEgoNeighborLabelExempt (label overlap LOD for focused domain childre
   });
 
   it("a small focus (≤ DISC_LABEL_TOP_K neighbors) is unaffected — caller passes null, regression 0", () => {
-    // The caller (`ui/topology-frame-draw.ts`) computes an eligible set only above
+    // The caller (`ui/frame-draw/paint-labels.ts`) computes an eligible set only above
     // `DISC_LABEL_TOP_K` neighbours; below it every neighbour stays exempt.
     const neighborIds = ["a", "b", "c"];
     expect(neighborIds.every((id) => isEgoNeighborLabelExempt(id, null))).toBe(true);
