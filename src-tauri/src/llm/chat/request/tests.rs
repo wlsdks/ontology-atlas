@@ -1,6 +1,7 @@
 use super::*;
 use crate::llm::chat::CHAT_TIMEOUT_SECONDS;
-use crate::llm::curl::{curl_argv_with_timeout, host_of};
+use crate::llm::curl::curl_argv_with_timeout;
+use crate::llm::host_of;
 use crate::llm::verify::verify_request;
 
 #[test]

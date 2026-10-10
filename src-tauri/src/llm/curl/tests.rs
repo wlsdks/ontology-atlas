@@ -17,20 +17,6 @@ fn curl_never_follows_a_redirect() {
 }
 
 #[test]
-fn the_recorded_host_is_derived_from_the_url_the_request_actually_uses() {
-    assert_eq!(
-        host_of("https://api.anthropic.com/v1/models?limit=1"),
-        "api.anthropic.com"
-    );
-    assert_eq!(
-        host_of("https://api.openai.com/v1/models"),
-        "api.openai.com"
-    );
-    assert_eq!(host_of("https://example.com"), "example.com");
-    assert_eq!(host_of("https://example.com#frag"), "example.com");
-}
-
-#[test]
 fn curl_exit_codes_tell_off_from_wrong_port_from_timeout_apart() {
     // The exit code separates these cases; stderr collapses them.
     let refused = curl_failure_message(Some(7), "Couldn't connect to server");

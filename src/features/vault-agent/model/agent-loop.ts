@@ -88,7 +88,7 @@ export function startTurn(input: StartTurnInput): AgentTurn {
 }
 
 /**
- * Prefixes in `src-tauri/src/llm/curl.rs`, mirrored because Rust cannot export to TypeScript;
+ * Prefixes in `src-tauri/src/llm`, mirrored because Rust cannot export to TypeScript;
  * tests/contract/agent-notice-codes.contract.test.ts keeps the copies equal.
  */
 export const AUDIT_BLOCKED_PREFIX = 'audit-blocked:';

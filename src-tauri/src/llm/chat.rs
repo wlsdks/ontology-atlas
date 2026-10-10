@@ -3,7 +3,8 @@
 
 mod request;
 
-use super::curl::{AUDIT_BLOCKED_PREFIX, curl_argv_with_timeout, host_of, interpret_curl_output};
+use super::curl::{curl_argv_with_timeout, interpret_curl_output};
+use super::{AUDIT_BLOCKED_PREFIX, host_of};
 use super::http_output;
 use super::local_endpoint::{
     LOCAL_DEFAULT_BASE_URL, LOCAL_PROVIDER, is_loopback_authority, normalize_base_url,

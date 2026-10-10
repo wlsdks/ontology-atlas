@@ -2,15 +2,6 @@ use super::http_output;
 use crate::errors::coded;
 use std::process::Command;
 
-/// Derived from the URL so the audit `host` and the screen never drift from the real target.
-pub(super) fn host_of(url: &str) -> &str {
-    let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
-    without_scheme
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or(without_scheme)
-}
-
 /// No secret on argv; URL, headers and body go via stdin.
 pub(crate) fn curl_argv_with_timeout(timeout_seconds: &'static str) -> [&'static str; 9] {
     [
@@ -66,9 +57,6 @@ pub(crate) fn curl_config_for(
     config
 }
 
-/// Codes, not sentences, so the screen can branch and translate; matching prose
-/// would turn a vault-write failure into "check your network".
-pub(super) const AUDIT_BLOCKED_PREFIX: &str = "audit-blocked:";
 const TIMED_OUT_PREFIX: &str = "timed-out:";
 
 fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {

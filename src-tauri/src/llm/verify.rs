@@ -1,4 +1,5 @@
-use super::curl::{AUDIT_BLOCKED_PREFIX, curl_argv, curl_config_for, host_of, run_curl};
+use super::curl::{curl_argv, curl_config_for, run_curl};
+use super::{AUDIT_BLOCKED_PREFIX, host_of};
 use super::local_endpoint::{
     LOCAL_DEFAULT_BASE_URL, LOCAL_MODELS_PATH, LOCAL_PROVIDER, local_endpoint, normalize_base_url,
 };
