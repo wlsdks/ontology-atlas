@@ -13,7 +13,6 @@ import { analysisGraphFromInsight, presentationRelationKeysForGraphEdge, type An
 import { useVaultAgentRuntime } from '@/widgets/acp-chat-panel';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { useToast } from '@/shared/ui';
-import { OpenVaultCta } from '@/features/docs-vault-local';
 import type { AnalysisBasis, AnalysisRecord } from '@/entities/analysis-record';
 import { useInsightsBrief } from '../../lib/brief/use-insights-brief';
 import { buildAnalysisModel } from '../../lib/analysis-model';
@@ -26,7 +25,7 @@ import { LibraryTab } from '../tabs/LibraryTab';
 import { HarnessTab } from '../tabs/HarnessTab';
 import { FlowTab, type FlowTabLabels } from '../tabs/FlowTab';
 import { InsightsAgentDock } from '../parts/InsightsAgentDock';
-import { InsightsSectionTitle } from '../parts/InsightsSectionTitle';
+import { SampleFlowEmptyState } from './SampleFlowEmptyState';
 
 const EMPTY_DOCS: VaultDoc[] = [];
 
@@ -116,12 +115,12 @@ export function AnalysisRecords({ dockHost, inspectRequest, onAgentReady, active
                   versionsLabel: (count) => t("flow.versionsLabel", { count }),
   };
   return <>
-    {active ? <section className={tab === 'harness' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : undefined}>
+    {active ? <section className={tab === 'harness' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : tab === 'flow' && mode === 'static' ? 'flex flex-1 flex-col' : undefined}>
       <p data-testid="analysis-records-scope" className="mb-4 shrink-0 text-label text-[color:var(--color-text-secondary)]"><span className="font-[var(--font-weight-strong)]">{scopeName}</span>{' · '}{t(mode === 'static' ? 'analysis.example' : 'analysis.recorded')}{!project ? ` · ${t('analysis.scopeCount', { count: model.projects.length })}` : ''}</p>
       {tab === 'brief' ? <BriefTab brief={brief} onOpenTab={onTab} onAskAgent={canInspect ? text => ask(text) : undefined} /> : null}
       {tab === 'library' ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
       {tab === 'harness' ? <HarnessTab detail={brief.harnessDetail} /> : null}
-      {tab === 'flow' ? mode === 'static' ? <section data-testid="flow-tab" className="flex max-w-[72ch] flex-col gap-4"><InsightsSectionTitle level={2}>{flowLabels.title}</InsightsSectionTitle><div data-testid="flow-no-version"><p className="text-body-lg font-[var(--font-weight-signature)]">{flowLabels.noVersionTitle}</p><p className="mt-2 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('flow.sampleBody')}</p></div><OpenVaultCta testId="flow-open-vault" className="atlas-touch-floor" /></section> : <FlowTab labels={flowLabels} request={request} versions={versions} hasGraph={nodes.length > 0} hasOwnFolder={vault.status === 'loaded'} canLaunchAgent={canInspect} agentChecking={agent.route === 'checking'} onPrefill={text => ask(text, 'flow')} /> : null}
+      {tab === 'flow' ? mode === 'static' ? <SampleFlowEmptyState onExplore={() => onTab('connections')} /> : <FlowTab labels={flowLabels} request={request} versions={versions} hasGraph={nodes.length > 0} hasOwnFolder={vault.status === 'loaded'} canLaunchAgent={canInspect} agentChecking={agent.route === 'checking'} onPrefill={text => ask(text, 'flow')} /> : null}
     </section> : null}
     {agent.runtime && root && dockHost ? createPortal(<InsightsAgentDock open={open} runtime={agent.runtime} runtimes={agent.runtimes} onRuntimeChange={agent.setRuntimeId} vaultRoot={root} mcpServers={agent.mcpServers} prefillRequest={prefill} contextLabel={prefill ? t('agentContext', { tab: t(`tab.${prefill.kind}`) }) : ''} knownSlugs={knownSlugs} knownRelations={knownRelations} analysisContext={context} onDraftPresenceChange={setDraft} onPresentationOpenMap={slug => { const id = [...slugs].find(([, value]) => value === slug)?.[0]; if (id) router.push(`/topology/?p=${encodeURIComponent(id)}`); }} onEvidence={slug => router.push(buildDocsVaultHref({ slug }))} onClose={() => setOpen(false)} />, dockHost) : null}
   </>;
