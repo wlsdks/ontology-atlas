@@ -61,9 +61,9 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
   }),
   Object.freeze({
     id: 'mcp-korean-bootstrap-request-registry',
-    path: 'mcp/src/server/registry.mjs',
+    path: 'mcp/src/server/tool-definitions/analyze-repo-structure.mjs',
     why:
-      'The same typed request, quoted in the `index_project` description so an agent recognises '
+      'The same typed request, quoted in the `analyze_repo_structure` description so an agent recognises '
       + 'it at the moment of the call.',
     allow: /이 codebase 분석해줘/,
   }),

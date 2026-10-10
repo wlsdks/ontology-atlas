@@ -109,7 +109,8 @@ developer) read and write that same folder.
 
 `mcp/src/index.js` is wiring: the two request handlers, one switch that routes a
 tool name, and the transport. The public surface — every tool name, description,
-schema and annotation — is `mcp/src/server/registry.mjs`, with its schema
+schema and annotation — is `mcp/src/server/registry.mjs`, which lists the
+per-family definitions in `server/tool-definitions/`, with their schema
 fragments in `server/tool-schemas.mjs` and the `initialize` instructions in
 `server/instructions.mjs`. Handlers live in `mcp/src/tools/` by workflow: reads,
 git, the compiled graph, vault validation, repo analysis, project source,
@@ -118,8 +119,8 @@ node identity in `tools/vault-nodes.mjs` and post-write maintenance in
 `tools/maintenance.mjs`. The full table is in
 [`mcp/README.md`](../mcp/README.md#source-layout).
 
-`scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the
-entry point, because that is where a public-contract change now lands.
+`scripts/check-decision-record.mjs` watches `server/registry.mjs` and `server/tool-definitions/`
+alongside the entry point, because that is where a public-contract change now lands.
 
 ### Runtime module ownership
 
