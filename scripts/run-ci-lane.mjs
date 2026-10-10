@@ -41,7 +41,7 @@ function planFromEnvironment(env = process.env) {
  * `checks.yml` runs the gates lane on ubuntu with Node only: no GTK, WebKitGTK or glib
  * headers, so `cargo test` on `src-tauri` dies in `glib-sys`'s build script before a single
  * test runs (measured 2026-09-05 on PR #1445 and on the main push for #1442, both of which
- * touched `src-tauri/src/lib.rs`). The bridge contract is still executed where a Tauri
+ * touched the native bridge Rust sources). The bridge contract is still executed where a Tauri
  * toolchain exists: the Windows beta job runs the crate's tests on every `src-tauri/**`
  * change, and the macOS release rehearsal runs `test:desktop:bridge` before a tag. Dropping
  * the command here on a non-macOS host is therefore a routing decision, not a skipped gate,

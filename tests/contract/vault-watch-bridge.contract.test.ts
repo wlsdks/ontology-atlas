@@ -33,7 +33,7 @@ function read(relative: string): string {
 
 describe("폴더 감시 브리지", () => {
   it("앱 쪽: Rust 워처가 디바운스와 함께 vault-changed 를 emit 한다", () => {
-    const rust = read("src-tauri/src/lib.rs");
+    const rust = read("src-tauri/src/vault/watch.rs");
     expect(rust, "start_vault_watch 커맨드가 사라졌다").toContain("start_vault_watch");
     expect(rust, "vault-changed 이벤트 이름이 바뀌었다 — 프런트 리스너와 짝이 깨진다").toContain(
       "vault-changed",

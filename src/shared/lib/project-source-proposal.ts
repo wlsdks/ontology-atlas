@@ -4,7 +4,7 @@
  *
  * The desktop app does not need to walk the filesystem to answer this. One
  * `inspect_project_source` call on the **vault root** already climbs to the
- * enclosing git repository (`src-tauri/src/lib.rs`), so its result *is* the
+ * enclosing git repository (`project_source`), so its result *is* the
  * candidate. This module turns that result into the same proposal shape the
  * MCP tool returns, so a screen and an agent describe the same thing with the
  * same words.

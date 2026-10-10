@@ -111,31 +111,28 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
     );
     // The URL is never logged. A refused link may be an address somebody was tricked into
     // pressing and its payload is a server config; the reason is what a report needs.
-    const handler = read('src-tauri/src/lib.rs').split('fn answer_deep_link')[1]?.split('\nfn ')[0];
-    expect(handler, 'answer_deep_link must exist in lib.rs').toBeTruthy();
+    const handler = read('src-tauri/src/app_shell/mod.rs').split('fn answer_deep_link')[1]?.split('\n}\n')[0];
+    expect(handler, 'answer_deep_link must exist in app_shell/mod.rs').toBeTruthy();
     expect(handler, 'the arriving URL must never reach the log').not.toMatch(
       /log::(warn|info|error|debug)!\([^)]*\{url\}/,
     );
   });
 
   it('mints no address but that one, anywhere it ships', () => {
+    const crate = sourceFiles('src-tauri/src').map((file) => file.slice(repoRoot.length + 1));
+    expect(crate.length, 'the crate scan found no sources').toBeGreaterThan(30);
     for (const path of [
-      'src-tauri/src/lib.rs',
+      ...crate,
       'src/shared/lib/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
     ]) {
-      for (const address of mintedAddresses(read(path))) {
+      const body = path === 'src-tauri/src/deep_link.rs' ? shippedBody(path) : read(path);
+      for (const address of mintedAddresses(body)) {
         expect(
           address === 'ontology-atlas://' || address.startsWith(THE_ONE_DOOR),
           `${path} mints ${address}, which is not ${THE_ONE_DOOR}`,
         ).toBe(true);
       }
-    }
-    for (const address of mintedAddresses(shippedBody('src-tauri/src/deep_link.rs'))) {
-      expect(
-        address === 'ontology-atlas://' || address.startsWith(THE_ONE_DOOR),
-        `the doorman mints ${address}, which is not ${THE_ONE_DOOR}`,
-      ).toBe(true);
     }
   });
 

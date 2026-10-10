@@ -246,7 +246,7 @@ export function useProjectSourceModel(input: {
 
   /**
    * One `inspect_project_source` call already climbs to the enclosing git repository
-   * (`src-tauri/src/lib.rs`), so the app never scans folders itself, which local-first forbids. It
+   * (`project_source`), so the app never scans folders itself, which local-first forbids. It
    * runs only while the proposal is drawn (`connect_source` next), per the render-condition rule
    * in `.claude/rules/architecture.md`, or one click pays for two measurements. "M of N declared
    * paths" is measured from real witnesses; the receipt is built in memory, never written.

@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = resolve(__dirname, '../..');
-const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/lib.rs'), 'utf8');
+const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/project_source/mod.rs'), 'utf8');
 const mcpSource = readFileSync(
   resolve(repoRoot, 'mcp/src/project-source-inspection.mjs'),
   'utf8',
@@ -18,7 +18,7 @@ function mcpConstant(name: string): string {
 
 function rustConstant(name: string): string {
   const match = new RegExp(`^const ${name}: [^=]+= (.+);$`, 'm').exec(rustSource);
-  expect(match, `${name} is not declared in src-tauri/src/lib.rs`).toBeTruthy();
+  expect(match, `${name} is not declared in src-tauri/src/project_source/mod.rs`).toBeTruthy();
   return match![1]!.trim();
 }
 
@@ -28,7 +28,7 @@ function rustConstant(name: string): string {
  * The 2026-08-03 decision ("The new MCP handoff re-verifies the person's source
  * connection on its own") makes `connect_project_source` re-run the app's bounded
  * inventory probe in a separate process and compare fingerprints. The two probes are
- * separate implementations — Rust in `src-tauri/src/lib.rs`, JavaScript in
+ * separate implementations — Rust in `src-tauri/src/project_source/mod.rs`, JavaScript in
  * `mcp/src/project-source-inspection.mjs` — so every bound they walk with has to be
  * the same number on both sides.
  *

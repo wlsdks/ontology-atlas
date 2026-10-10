@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
-// Byte-for-byte aligned with src-tauri/src/lib.rs, or a fresh MCP process
+// Byte-for-byte aligned with project_source, or a fresh MCP process
 // cannot reproduce the app's probe and call its receipt current
 // (tests/contract/source-inventory-bound.contract.test.ts).
 const SOURCE_INVENTORY_VERSION = 'inventory-v2';

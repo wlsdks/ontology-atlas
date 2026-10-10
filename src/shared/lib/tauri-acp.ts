@@ -2,7 +2,7 @@ import { Channel, invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
  * ACP harness — the Tauri IPC bridge (`src-tauri/src/acp.rs` plus the five commands in
- * `lib.rs`).
+ * `acp_session`).
  *
  * Contract (the Rust code is the source of truth):
  * - `acp_detect_runtimes()` → `AcpRuntimeStatus[]` — what exists on this machine

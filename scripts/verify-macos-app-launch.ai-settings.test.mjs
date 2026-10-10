@@ -363,12 +363,9 @@ test("authorityOfBaseUrl matches the Rust host_of split", () => {
 });
 
 test("installed-app AI settings driver walks the real settings testids", () => {
-  // The probe JavaScript moved out of `lib.rs` into `src-tauri/src/webview_verify/*.js` on
-  // 2026-08-24 so a linter could finally see it. Reading only the Rust would silently stop
-  // finding every marker this test exists to pin — the assertions would pass on an empty
-  // haystack, which is the failure mode this file is meant to prevent.
+  // The probe scripts live in webview_verify/; reading only Rust would pass on an empty haystack.
   const tauriLib = [
-    fs.readFileSync("src-tauri/src/lib.rs", "utf8"),
+    fs.readFileSync("src-tauri/src/webview_verify/mod.rs", "utf8"),
     ...fs
       .readdirSync("src-tauri/src/webview_verify")
       .filter((name) => name.endsWith(".js"))
