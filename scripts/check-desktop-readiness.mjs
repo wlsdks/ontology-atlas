@@ -130,7 +130,19 @@ const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
-const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
+const docsVaultPageFiles = [
+  "src/views/docs-vault/ui/DocsVaultPage.tsx",
+  "src/views/docs-vault/ui/DocsVaultHeader.tsx",
+  "src/views/docs-vault/ui/DocsVaultDocumentPane.tsx",
+  "src/views/docs-vault/ui/DocsVaultSidebar.tsx",
+  "src/views/docs-vault/ui/DocsVaultDialogs.tsx",
+  ...fs
+    .readdirSync(path.join(root, "src/views/docs-vault/model"))
+    .filter((name) => /\.tsx?$/.test(name))
+    .sort()
+    .map((name) => `src/views/docs-vault/model/${name}`),
+];
+const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // The docs surface's local-source control is carried by the vault chip menu
 // (merged 2026-08-08).
 const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");

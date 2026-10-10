@@ -723,7 +723,16 @@ test("desktop readiness checker defines durable protected-release markers", () =
 
 test("desktop readiness guard covers strict ontology emptiness and the exact README handoff", () => {
   const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
-  const docsVaultPage = readFileSync("src/views/docs-vault/ui/DocsVaultPage.tsx", "utf8");
+  const docsVaultPage = [
+    "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    "src/views/docs-vault/ui/DocsVaultHeader.tsx",
+    "src/views/docs-vault/ui/DocsVaultDocumentPane.tsx",
+    "src/views/docs-vault/ui/DocsVaultSidebar.tsx",
+    "src/views/docs-vault/ui/DocsVaultDialogs.tsx",
+    ...readdirSync("src/views/docs-vault/model").map((name) => `src/views/docs-vault/model/${name}`),
+  ]
+    .map((file) => readFileSync(file, "utf8"))
+    .join("\n");
 
   assert.ok(docsVaultPage.length > 0, "DocsVaultPage must remain a nonempty gate subject");
   for (const marker of [
