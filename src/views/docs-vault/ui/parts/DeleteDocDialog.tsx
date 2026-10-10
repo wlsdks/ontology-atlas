@@ -10,8 +10,6 @@ import { Button, Dialog } from "@/shared/ui";
 
 import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
 
-export type { DeleteDocTarget };
-
 /** Named before the rest are counted. */
 const REFERRERS_NAMED_MAX = 3;
 

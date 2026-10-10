@@ -23,55 +23,46 @@ import { copyText } from '@/shared/lib/copy-text';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { useToast } from '@/shared/ui';
 import type { VaultCommand } from '@/widgets/docs-vault';
-import type { DocsVaultSource as Source, DocsVaultView } from '../lib/persistence';
+import type { DocsVaultView } from '../lib/persistence';
+import type { useDocAccess } from './use-doc-access';
+import type { useDocWriteActions } from './use-doc-write-actions';
+import type { useDocsVaultSource } from './use-docs-vault-source';
+import type { useDocsVaultAddress } from './use-docs-vault-url';
 
 export function useDocsVaultCommands({
-  localVault,
-  view,
-  source,
-  installedShell,
+  src,
+  access,
+  address,
+  writes,
   selectedSlug,
-  pinnedSet,
-  canEditCurrent,
-  editing,
-  setEditing,
   activeTag,
   setActiveTag,
-  projectsListHref,
-  legacyDocumentMode,
   setPaletteQuery,
-  handleOpenNewDocDialog,
-  handleDeleteCurrent,
-  handleExportDocHtml,
-  handleInsertToc,
   handleViewChange,
-  handleRenameCurrent,
-  handleSourceChange,
-  handleTogglePin,
+  legacyDocumentMode,
 }: {
-  localVault: ReturnType<typeof useLocalVault>;
-  view: DocsVaultView;
-  source: Source;
-  installedShell: boolean;
+  src: ReturnType<typeof useDocsVaultSource>;
+  access: ReturnType<typeof useDocAccess>;
+  address: ReturnType<typeof useDocsVaultAddress>;
+  writes: ReturnType<typeof useDocWriteActions>;
   selectedSlug: string | null;
-  pinnedSet: ReadonlySet<string>;
-  canEditCurrent: boolean;
-  editing: boolean;
-  setEditing: Dispatch<SetStateAction<boolean>>;
   activeTag: string | null;
   setActiveTag: Dispatch<SetStateAction<string | null>>;
-  projectsListHref: string;
-  legacyDocumentMode: boolean;
   setPaletteQuery: Dispatch<SetStateAction<string | null>>;
-  handleOpenNewDocDialog: () => void;
-  handleDeleteCurrent: () => void;
-  handleExportDocHtml: () => void;
-  handleInsertToc: () => void;
   handleViewChange: (next: DocsVaultView) => void;
-  handleRenameCurrent: () => void;
-  handleSourceChange: (next: Source) => void;
-  handleTogglePin: (slug: string) => void;
+  legacyDocumentMode: boolean;
 }) {
+  const { view, projectsListHref } = address;
+  const { source, installedShell, pinnedSet, handleSourceChange, handleTogglePin } = src;
+  const { canEditCurrent, editing, setEditing } = access;
+  const {
+    handleOpenNewDocDialog,
+    handleDeleteCurrent,
+    handleExportDocHtml,
+    handleInsertToc,
+    handleRenameCurrent,
+  } = writes;
+  const localVault = useLocalVault();
   const t = useTranslations('docsVault');
   const router = useRouter();
   const toast = useToast();
@@ -280,5 +271,5 @@ export function useDocsVaultCommands({
     setActiveTag,
     setEditing,
   ]);
-  return { commands, handleCopyUrl, handleCopyAgentVerifyPrompt };
+  return { commands };
 }

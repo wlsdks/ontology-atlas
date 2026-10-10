@@ -31,7 +31,6 @@ export function DocsVaultHeader({
   scopedDocSlugs,
   isLocalSourceLoaded,
   localVaultRootPath,
-  localVault,
   vaultChipOpen,
   setVaultChipOpen,
   vaultChipMenuRef,
@@ -62,7 +61,6 @@ export function DocsVaultHeader({
   scopedDocSlugs: ReadonlySet<string>;
   isLocalSourceLoaded: boolean;
   localVaultRootPath: string | null;
-  localVault: ReturnType<typeof useLocalVault>;
   vaultChipOpen: boolean;
   setVaultChipOpen: Dispatch<SetStateAction<boolean>>;
   vaultChipMenuRef: ComponentProps<typeof DocsVaultVaultChip>['menuRef'];
@@ -81,6 +79,7 @@ export function DocsVaultHeader({
   setPaletteQuery: Dispatch<SetStateAction<string | null>>;
 }) {
   const t = useTranslations('docsVault');
+  const localVault = useLocalVault();
   // Show the real path only for an open local folder; the build machine's dogfood path
   // would otherwise leak into the sample.
   const vaultPillPath =

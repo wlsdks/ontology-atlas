@@ -29,7 +29,7 @@ import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import type { useDocAccess } from './use-doc-access';
 import type { useDocsVaultAddress } from './use-docs-vault-url';
 import type { useDocsVaultSource } from './use-docs-vault-source';
-import type { useDocTabs } from './use-doc-tabs';
+import type { useQuerySlugVerdict } from './use-query-slug-verdict';
 import type { useVaultManifest } from './use-vault-manifest';
 
 export interface DeleteDocTarget {
@@ -46,7 +46,8 @@ export interface RenameDocTarget {
   referrerCount: number;
 }
 
-export type NewDocKind = 'domain' | 'capability' | 'element' | 'document';
+export const NEW_DOC_KINDS = ['domain', 'capability', 'element', 'document'] as const;
+export type NewDocKind = (typeof NEW_DOC_KINDS)[number];
 
 export interface DocFrontmatterPatch {
   kind?: string;
@@ -70,35 +71,55 @@ function storeSlugListSoon(storageKey: string, slugs: readonly string[]): void {
   });
 }
 
+/** The reader's word for a kind-named list key; shared with the write receipts. */
+export function useReferrerListName(): (key: string) => string {
+  const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
+  return useCallback(
+    (key: string) => {
+      switch (key) {
+        case "domains":
+          return t("domains");
+        case "capabilities":
+          return t("capabilities");
+        case "elements":
+          return t("elements");
+        case "domain":
+          return t("domain");
+        default:
+          return key;
+      }
+    },
+    [t],
+  );
+}
+
 export function useDocWriteActions({
   address,
   vault,
   src,
-  tabs,
+  appTouchedSlugsRef,
   access,
   selectedSlug,
   setSelectedSlug,
   setAdvancedOpen,
   closePopovers,
-  referrerListName,
 }: {
   address: ReturnType<typeof useDocsVaultAddress>;
   vault: ReturnType<typeof useVaultManifest>;
   src: ReturnType<typeof useDocsVaultSource>;
-  tabs: ReturnType<typeof useDocTabs>;
+  appTouchedSlugsRef: ReturnType<typeof useQuerySlugVerdict>['appTouchedSlugsRef'];
   access: ReturnType<typeof useDocAccess>;
   selectedSlug: string | null;
   setSelectedSlug: (slug: string | null) => void;
   setAdvancedOpen: (open: boolean) => void;
   closePopovers: () => void;
-  referrerListName: (key: string) => string;
 }) {
   const { replaceUrlState, generalDocsHref, setView } = address;
   const { manifest, docsBySlug, selectedDoc } = vault;
   const { recentKey, setRecentSlugs, setPinnedSlugs } = src;
-  const { appTouchedSlugsRef } = tabs;
   const { canEditCurrent, setEditing } = access;
   const localVault = useLocalVault();
+  const referrerListName = useReferrerListName();
   const t = useTranslations('docsVault');
   const locale = useLocale();
   const router = useRouter();
@@ -537,7 +558,6 @@ export function useDocWriteActions({
     [selectedDoc, moveDoc, toast, t, failureSentence],
   );
   return {
-    moveDoc,
     deleteTarget,
     setDeleteTarget,
     handleDeleteCurrent,

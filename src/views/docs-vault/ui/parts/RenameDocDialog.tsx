@@ -12,8 +12,6 @@ import { Input } from "@/shared/ui/input";
 
 import type { RenameDocTarget } from "../../model/use-doc-write-actions";
 
-export type { RenameDocTarget };
-
 /**
  * Asks for a new name in the product's `Dialog` and shows the address before anything moves.
  * The folder stays (a kind change moves folders, `kind-folder-move.ts`). `slugify` names it as

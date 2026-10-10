@@ -16,7 +16,6 @@ export function useDocReview({
   staticVault,
   selectedSlug,
   selectedDoc,
-  localVault,
 }: {
   scopedDocs: VaultManifest['docs'];
   getDocContent: ((slug: string) => Promise<string>) | undefined;
@@ -24,8 +23,8 @@ export function useDocReview({
   staticVault: ReturnType<typeof resolveStaticVaultSource>;
   selectedSlug: string | null;
   selectedDoc: VaultManifest['docs'][number] | null;
-  localVault: ReturnType<typeof useLocalVault>;
 }) {
+  const localVault = useLocalVault();
   const t = useTranslations('docsVault');
   const toast = useToast();
   // Built from the whole folder: a reserved node keeps waiting whatever the filter shows.

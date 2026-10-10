@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { useLocalVault } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { vaultImageUrl } from '@/shared/lib/open-vault-file';
 import { scheduleStateSync, type DocsVaultSource as Source } from '../lib/persistence';
-
-type LocalVault = ReturnType<typeof useLocalVault>;
 
 function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> }>, 'get'>) {
   return async (slug: string) => {
@@ -18,15 +16,14 @@ function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> 
 
 export function useDocAccess({
   source,
-  localVault,
   isLocalSourceLoaded,
   selectedSlug,
 }: {
   source: Source;
-  localVault: LocalVault;
   isLocalSourceLoaded: boolean;
   selectedSlug: string | null;
 }) {
+  const localVault = useLocalVault();
   const [editing, setEditing] = useState(false);
   // With no file handles yet, fall back to a server fetch so demo content shows.
   const getDocContent = useMemo<

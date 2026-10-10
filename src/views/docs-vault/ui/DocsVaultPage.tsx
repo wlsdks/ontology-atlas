@@ -10,7 +10,7 @@ import {
 } from '@/entities/vault-session';
 import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
-import { buildOntologyDeeplinkForDoc, buildTopologyDeeplinkForDoc } from '@/entities/docs-vault';
+import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
@@ -30,6 +30,7 @@ import { useDocCollection } from '../model/use-doc-collection';
 import { useDocOutline } from '../model/use-doc-outline';
 import { useDocReview } from '../model/use-doc-review';
 import { useDocTabs } from '../model/use-doc-tabs';
+import { useQuerySlugVerdict } from '../model/use-query-slug-verdict';
 import { useDocWriteActions } from '../model/use-doc-write-actions';
 import { useDocsVaultAddress, useDocsVaultUrlSync } from '../model/use-docs-vault-url';
 import { useDocsVaultCommands } from '../model/use-docs-vault-commands';
@@ -52,8 +53,8 @@ import { useSkillParity } from '../lib/use-skill-parity';
 import { DocsVaultHeader } from './DocsVaultHeader';
 import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
 import { DocsVaultSidebar } from './DocsVaultSidebar';
+import { DocsSidebarBody } from './parts/DocsSidebarBody';
 import { DesktopVaultWelcome } from './parts/DesktopVaultWelcome';
-import { useReferrerListName } from './parts/DocFrontmatterBlock';
 import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
 import { DeleteDocDialog } from './parts/DeleteDocDialog';
 import { EmptyState } from './parts/EmptyState';
@@ -71,7 +72,6 @@ function DocsVaultContent({
 }) {
   const t = useTranslations('docsVault');
   const locale = useLocale();
-  const referrerListName = useReferrerListName();
   const siteT = useTranslations('metadata');
   const tSkillParity = useTranslations('skillParity');
   const toast = useToast();
@@ -84,7 +84,6 @@ function DocsVaultContent({
     workspaceHref,
     getDocHref,
     getProjectHref,
-    projectsListHref,
     libraryOntologyHref,
   } = address;
   const [selectedSlug, setSelectedSlug] = useState<string | null>(address.querySlug);
@@ -123,7 +122,6 @@ function DocsVaultContent({
     isDesktopRuntime,
     localSourceDisabled,
     localVaultRootPath,
-    pinnedSet,
     handleTogglePin,
     showDesktopWelcome,
     vaultScopeSettled,
@@ -174,7 +172,7 @@ function DocsVaultContent({
     vaultSlugs,
     refSlugResolver,
   } = vault;
-  const access = useDocAccess({ source, localVault, isLocalSourceLoaded, selectedSlug });
+  const access = useDocAccess({ source, isLocalSourceLoaded, selectedSlug });
   const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } = access;
   const { treeSort, treeGroup, handleViewChange, handleTreeSortChange, handleTreeGroupChange } =
     useDocsVaultUrlSync({
@@ -186,7 +184,12 @@ function DocsVaultContent({
       vaultScopeSettled,
     });
   const tabs = useDocTabs({ address, vault, src, selectedSlug, setSelectedSlug });
-  const { openDocTabs, missingQuerySlug, vaultScope } = tabs;
+  const { openDocTabs } = tabs;
+  const { missingQuerySlug, vaultScope, appTouchedSlugsRef } = useQuerySlugVerdict({
+    address,
+    vault,
+    src,
+  });
   const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
     source,
     normalizedQuerySlug: normalizedQuerySlug ?? selectedSlug,
@@ -196,13 +199,17 @@ function DocsVaultContent({
   const selectedDocDisplayTitle = selectedDoc
     ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
     : "";
-  // Null means no place in the graph, so "open on the map" is not rendered.
-  const mapDeeplinkForSelectedDoc = selectedDoc
-    ? buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc)
-    : null;
-  const backlinksDetail = selectedSlug
-    ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
-    : [];
+  const writes = useDocWriteActions({
+    address,
+    vault,
+    src,
+    appTouchedSlugsRef,
+    access,
+    selectedSlug,
+    setSelectedSlug,
+    setAdvancedOpen,
+    closePopovers,
+  });
   const {
     deleteTarget,
     setDeleteTarget,
@@ -221,24 +228,11 @@ function DocsVaultContent({
     handleCreateNewDocWithKind,
     openPendingSimilarDoc,
     createPendingDocAnyway,
-    handleInsertToc,
-    handleExportDocHtml,
     domainOptions,
     kindChangeReferrers,
     handlePatchDocFrontmatter,
     handleMoveToKindFolder,
-  } = useDocWriteActions({
-    address,
-    vault,
-    src,
-    tabs,
-    access,
-    selectedSlug,
-    setSelectedSlug,
-    setAdvancedOpen,
-    closePopovers,
-    referrerListName,
-  });
+  } = writes;
   // Static export cannot prebuild per-slug metadata; mirrors layout.tsx's `%s · siteName`.
   useDocumentTitle(
     selectedDoc ? `${selectedDocDisplayTitle} · ${siteT('siteName')}` : null,
@@ -250,7 +244,6 @@ function DocsVaultContent({
     staticVault,
     selectedSlug,
     selectedDoc,
-    localVault,
   });
   const {
     docCollection,
@@ -319,28 +312,16 @@ function DocsVaultContent({
     setActiveHeadingSlug,
   });
   const { commands } = useDocsVaultCommands({
-    localVault,
-    view,
-    source,
-    installedShell,
+    src,
+    access,
+    address,
+    writes,
     selectedSlug,
-    pinnedSet,
-    canEditCurrent,
-    editing,
-    setEditing,
     activeTag,
     setActiveTag,
-    projectsListHref,
-    legacyDocumentMode,
     setPaletteQuery,
-    handleOpenNewDocDialog,
-    handleDeleteCurrent,
-    handleExportDocHtml,
-    handleInsertToc,
     handleViewChange,
-    handleRenameCurrent,
-    handleSourceChange,
-    handleTogglePin,
+    legacyDocumentMode,
   });
   // From the whole manifest, independent of the collection filter; read-only.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
@@ -394,7 +375,6 @@ function DocsVaultContent({
         scopedDocSlugs={scopedDocSlugs}
         isLocalSourceLoaded={isLocalSourceLoaded}
         localVaultRootPath={localVaultRootPath}
-        localVault={localVault}
         vaultChipOpen={vaultChipOpen}
         setVaultChipOpen={setVaultChipOpen}
         vaultChipMenuRef={vaultChipMenuRef}
@@ -520,36 +500,39 @@ function DocsVaultContent({
         <>
           <div className="relative flex min-h-0 flex-1">
         <DocsVaultSidebar
-          reviewQueue={reviewQueue}
-          collectionPinnedSlugs={collectionPinnedSlugs}
-          collectionRecentSlugs={collectionRecentSlugs}
-          selectedSlug={selectedSlug}
-          docsBySlug={docsBySlug}
-          activeTag={activeTag}
-          collectionManifest={collectionManifest}
-          docCollection={docCollection}
-          collectionCounts={collectionCounts}
-          documentScope={documentScope}
-          legacyDocumentMode={legacyDocumentMode}
-          collectionDocSlugs={collectionDocSlugs}
-          handleSelectFromSidebar={handleSelectFromSidebar}
-          handleCollectionChange={handleCollectionChange}
-          handleTogglePin={handleTogglePin}
-          setActiveTag={setActiveTag}
-          canEditCurrent={canEditCurrent}
-          handleOpenNewDocDialog={handleOpenNewDocDialog}
-          handleVaultPillSwap={handleVaultPillSwap}
-          treeSort={treeSort}
-          treeGroup={treeGroup}
-          handleTreeSortChange={handleTreeSortChange}
-          handleTreeGroupChange={handleTreeGroupChange}
-          agentFiles={documentScope === 'ontology' ? null : agentFiles}
           sourceTreeOpen={sourceTreeOpen}
           setSourceTreeOpen={setSourceTreeOpen}
           docListCollapsed={docListCollapsed}
           docListLeaving={docListLeaving}
           docListToggled={docListToggled}
-        />
+        >
+          <DocsSidebarBody
+            reviewQueue={reviewQueue}
+            pinnedSlugs={collectionPinnedSlugs}
+            recentSlugs={collectionRecentSlugs}
+            selectedSlug={selectedSlug}
+            docsBySlug={docsBySlug}
+            activeTag={activeTag}
+            manifest={collectionManifest}
+            collection={docCollection}
+            collectionCounts={collectionCounts}
+            showCollectionChooser={documentScope !== 'ontology'}
+            showCreateDocument={!legacyDocumentMode}
+            visibleDocSlugs={collectionDocSlugs}
+            onSelect={handleSelectFromSidebar}
+            onCollectionChange={handleCollectionChange}
+            onTogglePin={handleTogglePin}
+            onTagSelect={setActiveTag}
+            // In the read-only sample the `+` opens a folder, the path that makes creating possible.
+            onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
+            canCreateNewDoc={canEditCurrent}
+            sort={treeSort}
+            group={treeGroup}
+            onSortChange={handleTreeSortChange}
+            onGroupChange={handleTreeGroupChange}
+            agentFiles={documentScope === 'ontology' ? null : agentFiles}
+          />
+        </DocsVaultSidebar>
 
         <main
           id="main"
@@ -585,7 +568,6 @@ function DocsVaultContent({
               backToTop={backToTop}
               editResolver={editResolver}
               vaultScope={vaultScope}
-              localVault={localVault}
               manifest={manifest}
               domainOptions={domainOptions}
               handlePatchDocFrontmatter={handlePatchDocFrontmatter}
@@ -605,8 +587,6 @@ function DocsVaultContent({
               highlightQuery={highlightQuery}
               resolveImage={resolveImage}
               staticVault={staticVault}
-              backlinksDetail={backlinksDetail}
-              mapDeeplinkForSelectedDoc={mapDeeplinkForSelectedDoc}
             />
           ) : source === 'local' &&
             localVault.status === 'loaded' &&

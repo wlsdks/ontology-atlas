@@ -21,7 +21,12 @@ import {
   ONTOLOGY_ATLAS_REPO_BLOB_BASE,
   DOCS_VAULT_REPO_ROOT,
 } from '@/widgets/docs-vault';
-import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
+import {
+  buildOntologyDeeplinkForDoc,
+  buildTopologyDeeplinkForDoc,
+  resolveStaticVaultSource,
+  type VaultManifest,
+} from '@/entities/docs-vault';
 import { DocMetaBar } from './parts/DocMetaBar';
 import { DocFrontmatterBlock } from './parts/DocFrontmatterBlock';
 import { SampleNotice } from './parts/SampleNotice';
@@ -54,7 +59,6 @@ export function DocsVaultDocumentPane({
   backToTop,
   editResolver,
   vaultScope,
-  localVault,
   manifest,
   domainOptions,
   handlePatchDocFrontmatter,
@@ -74,8 +78,6 @@ export function DocsVaultDocumentPane({
   highlightQuery,
   resolveImage,
   staticVault,
-  backlinksDetail,
-  mapDeeplinkForSelectedDoc,
 }: {
   selectedDoc: VaultManifest['docs'][number];
   editing: boolean;
@@ -96,7 +98,6 @@ export function DocsVaultDocumentPane({
   backToTop: ReturnType<typeof useBackToTop>;
   editResolver: ReturnType<typeof useDocAccess>['editResolver'];
   vaultScope: string;
-  localVault: ReturnType<typeof useLocalVault>;
   manifest: VaultManifest;
   domainOptions: ReturnType<typeof useDocWriteActions>['domainOptions'];
   handlePatchDocFrontmatter: ReturnType<typeof useDocWriteActions>['handlePatchDocFrontmatter'];
@@ -116,11 +117,14 @@ export function DocsVaultDocumentPane({
   highlightQuery: string | undefined;
   resolveImage: ReturnType<typeof useDocAccess>['resolveImage'];
   staticVault: ReturnType<typeof resolveStaticVaultSource>;
-  backlinksDetail: NonNullable<VaultManifest['backlinksDetail']>[string];
-  mapDeeplinkForSelectedDoc: string | null;
 }) {
   const t = useTranslations('docsVault');
   const toast = useToast();
+  const localVault = useLocalVault();
+  const backlinksDetail = manifest.backlinksDetail?.[selectedDoc.slug] ?? [];
+  // Null means no place in the graph, so "open on the map" is not rendered.
+  const mapDeeplinkForSelectedDoc =
+    buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {!editing && showSampleWelcomeNote ? (

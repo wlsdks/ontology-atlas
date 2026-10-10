@@ -1,112 +1,28 @@
 'use client';
 
-import type { useDocsVaultUrlSync } from '../model/use-docs-vault-url';
-import type { useDocReview } from '../model/use-doc-review';
-import type { useDocCollection } from '../model/use-doc-collection';
-import type { useVaultManifest } from '../model/use-vault-manifest';
-import type { useDocWriteActions } from '../model/use-doc-write-actions';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { IconButton, Surface } from '@/shared/ui';
-import type { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
-import type { DocsTreeGroup, DocsTreeSort } from '@/widgets/docs-vault';
-import type { DocsVaultCollection } from '../lib/docs-vault-collection';
-import { DocsSidebarBody } from './parts/DocsSidebarBody';
-import type { useAgentFilesModel } from '../lib/use-agent-files';
 
 export function DocsVaultSidebar({
-  reviewQueue,
-  collectionPinnedSlugs,
-  collectionRecentSlugs,
-  selectedSlug,
-  docsBySlug,
-  activeTag,
-  collectionManifest,
-  docCollection,
-  collectionCounts,
-  documentScope,
-  legacyDocumentMode,
-  collectionDocSlugs,
-  handleSelectFromSidebar,
-  handleCollectionChange,
-  handleTogglePin,
-  setActiveTag,
-  canEditCurrent,
-  handleOpenNewDocDialog,
-  handleVaultPillSwap,
-  treeSort,
-  treeGroup,
-  handleTreeSortChange,
-  handleTreeGroupChange,
-  agentFiles,
   sourceTreeOpen,
   setSourceTreeOpen,
   docListCollapsed,
   docListLeaving,
   docListToggled,
+  children,
 }: {
-  reviewQueue: ReturnType<typeof useDocReview>['reviewQueue'];
-  collectionPinnedSlugs: ReturnType<typeof useDocCollection>['collectionPinnedSlugs'];
-  collectionRecentSlugs: ReturnType<typeof useDocCollection>['collectionRecentSlugs'];
-  selectedSlug: string | null;
-  docsBySlug: ReturnType<typeof useVaultManifest>['docsBySlug'];
-  activeTag: string | null;
-  collectionManifest: ReturnType<typeof useDocCollection>['collectionManifest'];
-  docCollection: DocsVaultCollection;
-  collectionCounts: ReturnType<typeof useDocCollection>['collectionCounts'];
-  documentScope: 'all' | 'ontology';
-  legacyDocumentMode: boolean;
-  collectionDocSlugs: ReturnType<typeof useDocCollection>['collectionDocSlugs'];
-  handleSelectFromSidebar: (slug: string) => void;
-  handleCollectionChange: ReturnType<typeof useDocCollection>['handleCollectionChange'];
-  handleTogglePin: ReturnType<typeof useDocsVaultPersistence>['togglePin'];
-  setActiveTag: Dispatch<SetStateAction<string | null>>;
-  canEditCurrent: boolean;
-  handleOpenNewDocDialog: ReturnType<typeof useDocWriteActions>['handleOpenNewDocDialog'];
-  handleVaultPillSwap: () => void;
-  treeSort: DocsTreeSort;
-  treeGroup: DocsTreeGroup;
-  handleTreeSortChange: ReturnType<typeof useDocsVaultUrlSync>['handleTreeSortChange'];
-  handleTreeGroupChange: ReturnType<typeof useDocsVaultUrlSync>['handleTreeGroupChange'];
-  agentFiles: ReturnType<typeof useAgentFilesModel>;
   sourceTreeOpen: boolean;
   setSourceTreeOpen: Dispatch<SetStateAction<boolean>>;
   docListCollapsed: boolean;
   docListLeaving: boolean;
   docListToggled: boolean;
+  children: ReactNode;
 }) {
   const t = useTranslations('docsVault');
-  const sidebarBody = (
-    <DocsSidebarBody
-      reviewQueue={reviewQueue}
-      pinnedSlugs={collectionPinnedSlugs}
-      recentSlugs={collectionRecentSlugs}
-      selectedSlug={selectedSlug}
-      docsBySlug={docsBySlug}
-      activeTag={activeTag}
-      manifest={collectionManifest}
-      collection={docCollection}
-      collectionCounts={collectionCounts}
-      showCollectionChooser={documentScope !== 'ontology'}
-      showCreateDocument={!legacyDocumentMode}
-      visibleDocSlugs={collectionDocSlugs}
-      onSelect={handleSelectFromSidebar}
-      onCollectionChange={handleCollectionChange}
-      onTogglePin={handleTogglePin}
-      onTagSelect={setActiveTag}
-      // In the read-only sample the `+` opens a folder, the path that makes creating possible.
-      onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
-      canCreateNewDoc={canEditCurrent}
-      sort={treeSort}
-      group={treeGroup}
-      onSortChange={handleTreeSortChange}
-      onGroupChange={handleTreeGroupChange}
-      agentFiles={documentScope === 'ontology' ? null : agentFiles}
-    />
-  );
   return (
     <>
       {/* Tree navigation is opt-in so the document surface stays primary. */}
@@ -135,7 +51,7 @@ export function DocsVaultSidebar({
               </IconButton>
             </div>
             <div className="flex flex-1 flex-col overflow-auto">
-              {sidebarBody}
+              {children}
             </div>
           </aside>
       </Surface>
@@ -153,7 +69,7 @@ export function DocsVaultSidebar({
             : docListLeaving && 'map-overlay-out absolute inset-y-0 left-0 lg:flex',
         )}
       >
-        {sidebarBody}
+        {children}
       </aside>
     </>
   );

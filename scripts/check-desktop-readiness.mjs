@@ -137,7 +137,7 @@ const docsVaultPageFiles = [
   "src/views/docs-vault/ui/DocsVaultSidebar.tsx",
   ...fs
     .readdirSync(path.join(root, "src/views/docs-vault/model"))
-    .filter((name) => /\.tsx?$/.test(name))
+    .filter((name) => /\.tsx?$/.test(name) && !name.includes(".test."))
     .sort()
     .map((name) => `src/views/docs-vault/model/${name}`),
 ];
