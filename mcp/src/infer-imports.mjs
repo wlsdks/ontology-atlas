@@ -129,6 +129,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       ? sourceFolders.filter((folder) => !['apps', 'packages'].includes(folder))
       : sourceFolders;
 
+  // Existing source folders, or rootPath itself when none exists.
   const roots = [];
   let configuredRootExists = false;
   for (const f of scanSourceFolders) {

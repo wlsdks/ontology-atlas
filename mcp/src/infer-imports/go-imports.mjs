@@ -14,7 +14,7 @@ const GO_IMPORTS_PER_FILE_LIMIT = 256;
 const GO_PACKAGE_EDGE_EVIDENCE_LIMIT = 5;
 export const GO_SOURCE_EXTENSION = '.go';
 
-export function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders, countKeys) {
+export function inferGoPackageImports(rootPath, ignore, maxFiles, scopedFolders = null, countKeys) {
   const rootModule = readRootGoModule(rootPath);
   if (!rootModule) return null;
   const receipt = {

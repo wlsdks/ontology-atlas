@@ -2124,6 +2124,7 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+| `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
 | `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |
 | `src/ontology-engine/context-operations.mjs` | shared graph lookups and scope helpers |
