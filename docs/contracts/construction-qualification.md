@@ -191,7 +191,7 @@ node --test mcp/src/construction-qualification.test.mjs mcp/src/construction-lif
 
 The fixture and integration round trip are contract specimens, not evidence that
 Atlas has qualified three real products. `O1.5` in
-[`BACKLOG.md`](../BACKLOG-SNAPSHOT-2026-09-13.md#o15--three-product-independent-construction-qualification)
+the 2026-09-13 backlog snapshot (repository history)
 owns that independent field qualification.
 
 ## Product disclosure boundary

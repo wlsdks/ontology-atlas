@@ -94,7 +94,7 @@
  *   cannot change a file the author's own run did not see. `--worktree` is accepted and ignored.
  * - *Merging `main` into each pull request.* The train starts from `main`, so components are never
  *   pushed to, stay drafts, and cost no CI.
- * - *`--parallel-ci`.* Early CI for backlog-only drafts. `pnpm pr:ci <n>` followed by
+ * - *`--parallel-ci`.* Early CI for drafts. `pnpm pr:ci <n>` followed by
  *   `pnpm pr:land <n>` does the same for any disjoint change through the fast path. Accepted and
  *   ignored with a note.
  * - *The `refs/atlas/landing-queue` waiting line.* It ordered waiters racing for a per-PR lock.

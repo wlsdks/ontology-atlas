@@ -9,8 +9,7 @@ area: ontology-model
 
 This is the current detailed execution specification for the
 [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis).
-[BACKLOG.md](BACKLOG.md#current-priority--useful-meaning-across-real-tasks-2026-09-13)
-routes to independent UUID task records, the single status source. This plan defines scope, dependencies, artifacts,
+This plan defines scope, dependencies, artifacts,
 and acceptance; it does not duplicate live status or mark hypotheses as shipped.
 
 ## Outcome and working agreement
@@ -462,7 +461,7 @@ or default telemetry introduced merely for measurement.
 
 ## Registration and evidence locations
 
-All live item states and evidence references are maintained in BACKLOG only.
+Live item states are not recorded in this repository; pull requests and history carry them.
 A plan item can reference an existing contract or workbench; it does not require
 a new route or tool. Link each completed slice's commit/PR and concise proof,
 plus exact external artifact locations when their source license/scope keeps

@@ -59,7 +59,7 @@ if printf '%s\n' "$staged" | grep -qE '^(messages/|scripts/build-messages\.mjs$)
 fi
 
 # Generator/parser changes can invalidate every document even when no Markdown changed.
-if ! printf '%s\n' "$staged" | grep -vE '^docs/records/(lessons|backlog)/' | grep -qE '^(docs/.*\.md|docs/records/.*\.json|samples/storefront/.*\.md|scripts/build-docs-vault\.mjs|scripts/lib/(parse-frontmatter|record-ledgers|po-pilot-records)\.mjs)'; then
+if ! printf '%s\n' "$staged" | grep -vE '^docs/records/lessons/' | grep -qE '^(docs/.*\.md|docs/records/.*\.json|samples/storefront/.*\.md|scripts/build-docs-vault\.mjs|scripts/lib/(parse-frontmatter|record-ledgers|po-pilot-records)\.mjs)'; then
   exit 0
 fi
 

@@ -172,13 +172,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The router derives a door and risk from supplied change/boundary facts, evidence, and a human-recovery outcome, routing an Atlas product decision to maintenance checks, a solo pass, or one independent reviewer with routed lenses.
 **Escalate**: `pnpm test:po` replays derived change/boundary routes and the known one-way and reversible controls.
 
-### Backlog records
-
-**Run**: `pnpm test:backlog && pnpm backlog:check`
-**Proves**: UUID records compose deterministically; malformed ancestry, concurrent task heads, and rewrites of published records fail.
-**Escalate**: `pnpm backlog -- --task=ID` to inspect all current heads and their evidence
-**Fix**: append a new record referencing all current task heads; never overwrite a published record or select a winner by timestamp.
-
 ### Benchmark runner config smoke
 
 **Run**: `pnpm benchmark --dry-run`
