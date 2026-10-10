@@ -253,7 +253,7 @@ export function useTopologyMapInstrumentation({
             /**
              * ★ For the graph-readability instrument: overlap cannot be counted
              * without radii. Uses the **same formula** as the draw
-             * (`radiusForKind × magnitudeScale` in `topology-frame-draw.ts`, times
+             * (`radiusForKind × magnitudeScale` in `frame-draw/paint-nodes.ts`, times
              * the camera zoom for the screen radius). Diverging formulas measure
              * the instrument's imagination, not the screen.
              */
@@ -318,7 +318,7 @@ export function useTopologyMapInstrumentation({
                         /**
                          * ★ So the instrument measures **the curve that is drawn**, not its
                          * chord. The draw path is `quadraticCurveTo(control, b)`
-                         * (`topology-frame-draw.ts`); joining endpoints instead counts
+                         * (`frame-draw/paint-edges.ts`); joining endpoints instead counts
                          * crossings that are not on screen and misses crossings that are —
                          * measuring an approximation rather than the map.
                          */

@@ -25,7 +25,7 @@ import { drawStarEmission } from "@/shared/lib/star-emission";
 
 /**
  * How far outside the disc the recent-changes ring is drawn. The label placer
- * reserves it too (`topology-frame-draw.ts`), so a name is not laid across a
+ * reserves it too (`ui/frame-draw/paint-nodes.ts`), so a name is not laid across a
  * neighbour's ring: with the lens on, two names crossed rings on the fixture
  * vault while the placer reserved only the disc (measured 2026-09-19).
  */
@@ -126,7 +126,7 @@ export interface NodeShapeDrawState {
     countLabel: string | null;
     /**
      * The currently-hovered node (no focus active — hover is suppressed under
-       * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
+       * focus, `ui/frame-draw/paint-nodes.ts` nulls `hoveredNodeId` there). Draws a
        * static 1px indigo hairline preview ring — the "Can grab this"
        * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
        * has its own stronger selection ring below.
@@ -858,7 +858,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     }
     // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
     // ring, "Can grab this" affordance. `isHovered` is only ever
-    // true while no focus is active (`topology-frame-draw.ts` nulls
+    // true while no focus is active (`ui/frame-draw/paint-nodes.ts` nulls
     // `hoveredNodeId` under focus), so this never collides with the selection
     // ring below — but the `egoState` guards stay as defense in depth.
     if (isHovered && egoState !== "dim" && egoState !== "center") {

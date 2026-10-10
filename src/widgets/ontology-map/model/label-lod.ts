@@ -3,7 +3,7 @@
  * are named rather than whichever leaf wins the greedy race (`docs/design/ontology-map.md`;
  * overview first, `.claude/rules/design.md`). Lifted at element zoom. Exempt labels (ego
  * members, the hovered node) are always kept. Deterministic on ties by id; the caller
- * (`ui/topology-frame-draw.ts`) applies the allow set before greedy placement.
+ * (`ui/frame-draw/paint-labels.ts`) applies the allow set before greedy placement.
  */
 
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
