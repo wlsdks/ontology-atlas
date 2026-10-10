@@ -14,11 +14,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   slugToPath as mcpSlugToPath,
-  loadVaultDocs,
   pathToSlug,
   walkMd as mcpWalkMd,
-  writeFileAtomically as mcpWriteFileAtomically,
-} from "../../mcp/src/vault/doc-writes.mjs";
+} from "../../mcp/src/vault/slug-paths.mjs";
+import { loadVaultDocs } from "../../mcp/src/vault/documents.mjs";
+import { writeFileAtomically as mcpWriteFileAtomically } from "../../mcp/src/vault/doc-writes.mjs";
 import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
 import { writeFileAtomically as cliWriteFileAtomically } from "../../cli/src/lib/atomic-write.mjs";
 import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/write-vault.mjs";

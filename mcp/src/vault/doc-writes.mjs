@@ -1,15 +1,10 @@
-// Vault directory walking and `.md` read/write. Synchronous fs only: MCP tool
-// calls are infrequent, so async buys nothing.
-
 import {
   accessSync,
   closeSync,
   constants as fsConstants,
   fchmodSync,
-  fstatSync,
   fsyncSync,
   openSync,
-  readdirSync,
   readFileSync,
   writeFileSync,
   mkdirSync,
@@ -20,8 +15,7 @@ import {
   statSync,
   unlinkSync,
 } from 'node:fs';
-import { basename, join, relative, dirname, resolve, sep } from 'node:path';
-
+import { dirname, resolve } from 'node:path';
 import { detachText, parseFrontmatter, buildMarkdown } from '../parser.mjs';
 import { previewDocumentPatch } from '../document-patch.mjs';
 import {
@@ -30,13 +24,11 @@ import {
   REVIEW_NOTE_KEY,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
-  VAULT_SOURCES_DIR,
   containmentKeyFor,
   flatSlugIssue,
   folderForKind,
   generateNodeUid,
   inspectMergedUids,
-  rawSourceSlugIssue,
   nodeUidIssue,
   unwritableSlugIssue,
 } from '../schema.mjs';
@@ -59,6 +51,16 @@ import {
   meaningFindings,
   starterExampleFinding,
 } from '../meaning-findings.mjs';
+
+import { docTitle, loadVaultDocs, readDoc } from './documents.mjs';
+import {
+  GRAPH_ARRAY_KEYS,
+  GRAPH_ARRAY_KEY_SET,
+  collectNeighborRefs,
+  normalizeRelationRefs,
+  relationNoteFor,
+} from './relation-refs.mjs';
+import { slugToPath, slugToWritePath, suggestSimilarSlugs } from './slug-paths.mjs';
 
 /**
  * Thrown when a write passed `expectedMtime` and the file changed on disk since
@@ -90,46 +92,6 @@ export function getFileMtime(filePath) {
   } catch {
     return null;
   }
-}
-
-function sameFileSnapshot(left, right) {
-  return left.dev === right.dev
-    && left.ino === right.ino
-    && left.size === right.size
-    && left.mtimeMs === right.mtimeMs
-    && left.ctimeMs === right.ctimeMs;
-}
-
-/** Reads bytes and metadata together from one open file, and confirms the current path is still that file. */
-function readStableFileSnapshot(filePath) {
-  let lastError = null;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    let descriptor = null;
-    try {
-      descriptor = openSync(filePath, 'r');
-      const before = fstatSync(descriptor);
-      const raw = readFileSync(descriptor, 'utf-8');
-      const after = fstatSync(descriptor);
-      closeSync(descriptor);
-      descriptor = null;
-      const currentPath = statSync(filePath);
-      if (sameFileSnapshot(before, after) && sameFileSnapshot(after, currentPath)) {
-        return { raw, mtime: after.mtimeMs };
-      }
-    } catch (error) {
-      lastError = error;
-    } finally {
-      if (descriptor !== null) {
-        try {
-          closeSync(descriptor);
-        } catch {
-          /* already closed */
-        }
-      }
-    }
-  }
-  const reason = lastError?.message ? ` (${lastError.message})` : '';
-  throw new Error(`Could not capture a stable file snapshot: ${filePath}${reason}`);
 }
 
 function assertSnapshotMtime(slug, expectedMtime, currentMtime) {
@@ -165,507 +127,11 @@ function assertBoundedNonNegativeInteger(value, name, { max }) {
   }
 }
 
-/**
- * The frontmatter array keys read as graph edges. findOrphans, findPath and the
- * rest share this one list; a private copy is how they drifted before.
- */
-const NEIGHBOR_KEYS = Object.freeze([
-  'domains',
-  'capabilities',
-  'elements',
-  'dependencies',
-  'relates',
-  'contains',
-  'describes',
-  'broader',
-]);
-
-const INLINE_NEIGHBOR_KEYS = Object.freeze(['domain']);
-export const NEIGHBOR_KEY_ALIASES = Object.freeze({
-  depends_on: 'dependencies',
-});
-export const GRAPH_ARRAY_KEYS = Object.freeze([
-  ...NEIGHBOR_KEYS,
-  ...Object.keys(NEIGHBOR_KEY_ALIASES),
-]);
-const GRAPH_ARRAY_KEY_SET = new Set(GRAPH_ARRAY_KEYS);
-
-/** Same edge set, same bytes on disk, whatever order the agent wrote them in. */
-export function normalizeRelationRefs(values) {
-  if (!Array.isArray(values)) return [];
-  const seen = new Set();
-  const refs = [];
-  const passthrough = [];
-  for (const value of values) {
-    if (typeof value !== 'string') {
-      passthrough.push(value);
-      continue;
-    }
-    const ref = value.trim();
-    if (!ref || seen.has(ref)) continue;
-    seen.add(ref);
-    refs.push(ref);
-  }
-  refs.sort((a, b) => a.localeCompare(b, 'en'));
-  return [...refs, ...passthrough];
-}
-
 function normalizeFrontmatterValue(key, value) {
   if (GRAPH_ARRAY_KEY_SET.has(key) && Array.isArray(value)) {
     return normalizeRelationRefs(value);
   }
   return value;
-}
-
-export function collectNeighborRefs(doc) {
-  const refs = [];
-  const seen = new Set();
-  const pushRef = (key, ref) => {
-    if (typeof ref !== 'string') return;
-    const trimmed = ref.trim();
-    if (!trimmed) return;
-    const canonicalKey = NEIGHBOR_KEY_ALIASES[key] || key;
-    const seenKey = `${canonicalKey}\0${trimmed}`;
-    if (seen.has(seenKey)) return;
-    seen.add(seenKey);
-    refs.push({ key: canonicalKey, ref: trimmed });
-  };
-  for (const key of NEIGHBOR_KEYS) {
-    const value = doc.frontmatter[key];
-    if (!Array.isArray(value)) continue;
-    for (const ref of value) {
-      pushRef(key, ref);
-    }
-  }
-  for (const key of Object.keys(NEIGHBOR_KEY_ALIASES)) {
-    const value = doc.frontmatter[key];
-    if (!Array.isArray(value)) continue;
-    for (const ref of value) {
-      pushRef(key, ref);
-    }
-  }
-  for (const key of INLINE_NEIGHBOR_KEYS) {
-    pushRef(key, doc.frontmatter[key]);
-  }
-  return refs;
-}
-
-/**
- * The `relation_notes: { <ref>: "why" }` sentence a document stores for one
- * relation. The raw ref is tried before the resolved slug, the compiler's order
- * for `edge.rationale`. `undefined` when absent: callers omit the key, since an
- * absent rationale is no claim, not a null one.
- */
-export function relationNoteFor(doc, ref, resolvedSlug) {
-  const notes = doc?.frontmatter?.relation_notes;
-  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return undefined;
-  for (const key of [ref, resolvedSlug]) {
-    if (typeof key !== 'string') continue;
-    const value = Object.prototype.hasOwnProperty.call(notes, key) ? notes[key] : undefined;
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-  return undefined;
-}
-
-/**
- * Documents that name `ref` in a relation key. A concept named only in another
- * document's relations has no file, yet the map shows it; this lets get_concept
- * answer "who wrote this name, under which key" instead of "Doc not found".
- * It creates no nodes.
- */
-export function findGraphReferences(docs, ref) {
-  const target = String(ref ?? '').trim();
-  if (!target) return [];
-  const hits = [];
-  for (const doc of docs ?? []) {
-    if (doc.slug === target) continue;
-    for (const { key, ref: candidate } of collectNeighborRefs(doc)) {
-      if (candidate !== target) continue;
-      hits.push({ slug: doc.slug, via: key });
-      break;
-    }
-  }
-  return hits.sort((a, b) => a.slug.localeCompare(b.slug));
-}
-
-/**
- * The first prose paragraph of a body, so get_concept previews the sentence a
- * person wrote rather than table or code syntax. Skips blank lines, headings,
- * code, tables, images, rules, lists and quotes; falls back to the raw body when
- * no prose exists; caps at `maxLen` with a trailing '…'.
- */
-export function extractSummaryExcerpt(body, maxLen = 800) {
-  if (typeof body !== 'string' || body.length === 0) return '';
-  const lines = body.split('\n');
-  const isBlockStart = (line) => {
-    const trimmed = line.trim();
-    if (trimmed === '') return false;
-    if (trimmed.startsWith('```')) return true; // Code block
-    if (trimmed.startsWith('|')) return true; // table
-    if (trimmed.startsWith('#')) return true; // heading
-    if (trimmed.startsWith('![')) return true; // image
-    if (/^([-*_])(?:\s*\1){2,}$/.test(trimmed)) return true; // thematic break
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true; // list
-    if (/^\d+[.)]\s+/.test(trimmed)) return true; // ordered list
-    if (trimmed.startsWith('> ')) return true; // quote
-    return false;
-  };
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (trimmed === '' || isBlockStart(line)) {
-      if (trimmed.startsWith('```')) {
-        i += 1;
-        while (i < lines.length && !lines[i].trim().startsWith('```')) i += 1;
-      }
-      i += 1;
-      continue;
-    }
-    const para = [];
-    while (i < lines.length) {
-      const cur = lines[i];
-      if (cur.trim() === '' || isBlockStart(cur)) break;
-      para.push(cur.trim());
-      i += 1;
-    }
-    if (para.length > 0) {
-      const text = para.join(' ');
-      return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
-    }
-  }
-  const trimmedBody = body.trim();
-  return trimmedBody.length > maxLen
-    ? trimmedBody.slice(0, maxLen).trimEnd() + '…'
-    : trimmedBody;
-}
-
-/**
- * Cap for `body: 'full'`: a vault `.md` can be a pasted log of hundreds of KB,
- * and one document must not fill an agent's context. Measured bodies run 1–3 KB;
- * anything cut is reported by {@link describeBodyDelivery}.
- */
-export const FULL_BODY_MAX_CHARS = 40_000;
-
-/**
- * Row cap for one `get_concepts({ body: "full" })`, narrower than the batch cap
- * of 50. Builders of runnable read workflows (meaning repair) must use this
- * value, or they emit a call the server rejects.
- */
-export const GET_CONCEPTS_FULL_BODY_MAX = 20;
-
-/**
- * Reports how much body was returned and what was withheld. The construction
- * rules put evidence and boundaries in the body, so a silent cut hides what an
- * agent must read. When cut: `truncated: true`, `omittedChars`, and a `hint`
- * naming the call that fetches the rest; an intact response carries no `hint`.
- *
- * @param {string} body raw markdown body
- * @param {object} [options]
- * @param {'excerpt'|'full'} [options.mode] defaults to `'excerpt'`
- * @param {number} [options.maxLen] excerpt cap (default 800)
- * @param {string} [options.hint] follow-up call to attach when truncated
- * @returns {{ text: string, info: { mode: string, totalChars: number, returnedChars: number, truncated: boolean, omittedChars?: number, hint?: string } }}
- */
-export function describeBodyDelivery(body, options = {}) {
-  const { mode = 'excerpt', maxLen = 800, hint } = options;
-  const source = typeof body === 'string' ? body : '';
-  const totalChars = source.length;
-  let text;
-  if (mode === 'full') {
-    text =
-      totalChars > FULL_BODY_MAX_CHARS
-        ? source.slice(0, FULL_BODY_MAX_CHARS)
-        : source;
-  } else {
-    text = extractSummaryExcerpt(source, maxLen);
-  }
-  // An excerpt joins lines with spaces, so compare with whitespace normalised: a
-  // one-paragraph body delivered whole must not read as truncated.
-  const returnedChars = text.length;
-  const flatten = (value) => value.replace(/\s+/g, ' ').trim();
-  const truncated =
-    mode === 'full'
-      ? totalChars > FULL_BODY_MAX_CHARS
-      : flatten(text) !== flatten(source);
-  const info = { mode, totalChars, returnedChars, truncated };
-  if (truncated) {
-    info.omittedChars = Math.max(0, totalChars - returnedChars);
-    if (hint) info.hint = hint;
-  }
-  return { text, info };
-}
-
-/** Absolute paths of every `.md` in the vault except dotfiles, build folders and sources/. */
-export function walkMd(rootPath) {
-  const out = [];
-  const stack = [rootPath];
-  const SKIP_DIRS = new Set([
-    'node_modules',
-    '.next',
-    '.git',
-    'out',
-    'build',
-    'dist',
-    '.serena',
-  ]);
-  while (stack.length > 0) {
-    const dir = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      if (entry.isDirectory()) {
-        if (SKIP_DIRS.has(entry.name)) continue;
-        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
-        stack.push(join(dir, entry.name));
-      } else if (entry.isFile() && entry.name.endsWith('.md')) {
-        out.push(join(dir, entry.name));
-      }
-    }
-  }
-  return out;
-}
-
-/**
- * File path → vault-relative slug (`projects/foo.md` → `projects/foo`), NFC
- * normalised: macOS often hands back Korean filenames as NFD while frontmatter
- * is typed as NFC, and the byte mismatch drops those nodes' relations. Only the
- * identifier is normalised; the disk path stays as it is.
- */
-export function pathToSlug(rootPath, filePath) {
-  const rel = relative(rootPath, filePath).replace(/\\/g, '/');
-  return rel.replace(/\.md$/, '').normalize('NFC');
-}
-
-/**
- * vault-relative slug → file path. Security: a slug from an agent or a prompt
- * injection (`../../etc/passwd`) must not name a file outside the vault root, so
- * this throws on escape, and every read and write caller fails with it.
- */
-export function slugToPath(rootPath, slug) {
-  if (typeof slug !== 'string' || slug.length === 0) {
-    throw new Error('slug must be a non-empty string');
-  }
-  // Some Node fs APIs truncate at a null byte.
-  if (slug.includes('\0')) {
-    throw new Error('slug must not contain a null byte');
-  }
-  const candidate = resolve(rootPath, `${slug}.md`);
-  const normalizedRoot = resolve(rootPath);
-  if (
-    candidate !== normalizedRoot &&
-    !candidate.startsWith(normalizedRoot + sep)
-  ) {
-    throw new Error(`slug points outside the vault root: "${slug}"`);
-  }
-  const rawSourceSlug = rawSourceSlugForPath(normalizedRoot, candidate);
-  if (rawSourceSlug) throw new Error(rawSourceSlugIssue(rawSourceSlug));
-  // writeFileSync follows a link, so the real path must stay inside too.
-  assertRealPathInside(candidate, normalizedRoot, slug);
-  return candidate;
-}
-
-/** `slugToPath` for a file a write tool will create, change or delete; refuses what `unwritableSlugIssue` names, as typed or where it resolves. */
-export function slugToWritePath(rootPath, slug) {
-  const issue = unwritableSlugIssue(slug);
-  if (issue) throw new Error(issue);
-  const filePath = slugToPath(rootPath, slug);
-  const real = realSegmentsBelowRoot(resolve(rootPath), filePath);
-  const resolved = real ? segmentsToSlug(real) : slug;
-  const resolvedIssue = resolved === slug ? null : unwritableSlugIssue(resolved);
-  if (resolvedIssue) throw new Error(`slug "${slug}" resolves through a link to "${resolved}". ${resolvedIssue}`);
-  return filePath;
-}
-
-/**
- * The real path (symlinks resolved) must stay inside the vault. A file that does
- * not exist yet uses its nearest existing ancestor, since creating a file inside
- * a linked directory is the same escape.
- */
-function assertRealPathInside(candidate, normalizedRoot, slug) {
-  let realRoot;
-  try {
-    realRoot = realpathSync(normalizedRoot);
-  } catch {
-    // If the root itself cannot be resolved, the string check is all we can do.
-    return;
-  }
-  let probe = candidate;
-  for (;;) {
-    try {
-      const real = realpathSync(probe);
-      if (real !== realRoot && !real.startsWith(realRoot + sep)) {
-        throw new Error(
-          `slug resolves outside the vault root through a symlink: "${slug}"`,
-        );
-      }
-      return;
-    } catch (error) {
-      if (error instanceof Error && error.message.startsWith('slug resolves outside')) throw error;
-      const parent = dirname(probe);
-      if (parent === probe) return;
-      probe = parent;
-    }
-  }
-}
-
-function rawSourceSlugForPath(normalizedRoot, candidate) {
-  const spelled = relative(normalizedRoot, candidate).split(sep);
-  if (namesRawSource(spelled)) return segmentsToSlug(spelled);
-  // A case-folding disk opens `ſources/` as `sources/`, and a link can alias it.
-  const real = realSegmentsBelowRoot(normalizedRoot, candidate);
-  return real && namesRawSource(real) ? segmentsToSlug(real) : null;
-}
-
-function namesRawSource(segments) {
-  return segments.length > 1 && segments[0] === VAULT_SOURCES_DIR;
-}
-
-function segmentsToSlug(segments) {
-  return segments.join('/').replace(/\.md$/, '');
-}
-
-function realSegmentsBelowRoot(normalizedRoot, candidate) {
-  try {
-    const realRoot = realpathSync.native(normalizedRoot);
-    const unresolved = [];
-    for (let probe = candidate; ; probe = dirname(probe)) {
-      try {
-        return relative(realRoot, join(realpathSync.native(probe), ...unresolved)).split(sep);
-      } catch {
-        if (dirname(probe) === probe) return null;
-        unresolved.unshift(basename(probe));
-      }
-    }
-  } catch {
-    return null;
-  }
-}
-
-export function rawSourceSlugAt(rootPath, slug) {
-  if (typeof slug !== 'string' || slug.length === 0 || slug.includes('\0')) return null;
-  const normalizedRoot = resolve(rootPath);
-  return rawSourceSlugForPath(normalizedRoot, resolve(normalizedRoot, `${slug}.md`));
-}
-
-/**
- * The exact on-disk spelling of an existing slug, or `null`. `existsSync`
- * follows the filesystem's case rules, so on macOS a wrong-case slug passes every
- * existence gate while backlink matching is case-sensitive: rename_concept would
- * redirect 0 backlinks and report success. Destructive tools use the disk's
- * spelling. Walks one directory level per segment (exact entry, then a unique
- * case-insensitive one); an unmatched segment returns the input unchanged.
- */
-export function canonicalDiskSlug(rootPath, slug) {
-  if (typeof slug !== 'string' || slug.length === 0) return null;
-  let contained;
-  try {
-    contained = slugToPath(rootPath, slug);
-  } catch {
-    return null;
-  }
-  const existsAsGiven = existsSync(contained);
-  const parts = slug.split('/');
-  let dir = resolve(rootPath);
-  const canonical = [];
-  for (let i = 0; i < parts.length; i += 1) {
-    const want = i === parts.length - 1 ? `${parts[i]}.md` : parts[i];
-    let entries;
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      return existsAsGiven ? slug : null;
-    }
-    let hit = entries.includes(want) ? want : null;
-    if (hit === null) {
-      const lower = want.toLowerCase();
-      const caseMatches = entries.filter((entry) => entry.toLowerCase() === lower);
-      if (caseMatches.length !== 1) return existsAsGiven ? slug : null;
-      hit = caseMatches[0];
-    }
-    canonical.push(i === parts.length - 1 ? hit.slice(0, -3) : hit);
-    dir = join(dir, hit);
-  }
-  return canonical.join('/');
-}
-
-/**
- * Whether a `.md` for the slug exists, so a typo or invented slug is not
- * appended to a frontmatter array as a dangling reference. A malformed slug
- * returns false instead of throwing; a genuine fs error surfaces on the next read.
- */
-export function vaultSlugExists(rootPath, slug) {
-  if (typeof slug !== 'string' || slug.length === 0) return false;
-  let candidate;
-  try {
-    candidate = slugToPath(rootPath, slug);
-  } catch {
-    return false;
-  }
-  return existsSync(candidate);
-}
-
-/** Reads one `.md`; its `mtime` passed as a later `expectedMtime` enables conflict detection. */
-export function readDoc(rootPath, filePath) {
-  const snapshot = readStableFileSnapshot(filePath);
-  const raw = snapshot.raw;
-  const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
-  const result = {
-    slug: pathToSlug(rootPath, filePath),
-    frontmatter,
-    body,
-    raw,
-    mtime: snapshot.mtime,
-  };
-  if (diagnostics?.length) result.diagnostics = diagnostics;
-  return result;
-}
-
-/** Every doc in the vault; the caller filters. */
-export function loadVaultDocs(rootPath) {
-  const files = walkMd(rootPath);
-  return files.map((path) => readDoc(rootPath, path));
-}
-
-/**
- * Up to `limit` existing slugs similar to `badSlug`, for a not-found error's
- * next action. First stage that hits wins: exact tail, tail substring either
- * way, tail prefix. Substring only: an edit distance is costly on a large vault
- * and noisy, and the goal is "these exist", not "did you mean".
- */
-export function suggestSimilarSlugs(rootPath, badSlug, limit = 3) {
-  if (typeof badSlug !== 'string' || badSlug.length === 0) return [];
-  const all = walkMd(rootPath).map((filePath) => pathToSlug(rootPath, filePath)).filter((s) => s !== badSlug);
-  const tail = badSlug.split('/').pop() || badSlug;
-  const lowerTail = tail.toLowerCase();
-  const lowerBad = badSlug.toLowerCase();
-  const tier1 = []; // exact tail match
-  const tier2 = []; // substring (either direction)
-  const tier3 = []; // prefix match on tail or full slug
-  for (const slug of all) {
-    const candTail = (slug.split('/').pop() || slug).toLowerCase();
-    if (candTail === lowerTail) {
-      tier1.push(slug);
-      continue;
-    }
-    if (
-      candTail.includes(lowerTail)
-      || lowerTail.includes(candTail)
-      || slug.toLowerCase().includes(lowerBad)
-    ) {
-      tier2.push(slug);
-      continue;
-    }
-    if (candTail.startsWith(lowerTail) || slug.toLowerCase().startsWith(lowerBad)) {
-      tier3.push(slug);
-    }
-  }
-  return [...tier1, ...tier2, ...tier3].slice(0, limit);
 }
 
 /** Suffix a not-found or duplicate error appends so the agent can act next. */
@@ -2283,16 +1749,6 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   };
 }
 
-function docTitle(doc) {
-  if (typeof doc?.frontmatter?.title === 'string' && doc.frontmatter.title.trim()) {
-    return doc.frontmatter.title;
-  }
-  if (typeof doc?.frontmatter?.name === 'string' && doc.frontmatter.name.trim()) {
-    return doc.frontmatter.name;
-  }
-  return doc?.slug;
-}
-
 function normalizeForDuplicateTitle(title) {
   return String(title ?? '')
     .trim()
@@ -2320,17 +1776,4 @@ export function detectDuplicateTitle(title, slug, docs) {
     }
   }
   return null;
-}
-
-/** Requires an absolute path to a directory; a folder with no frontmatter is an empty vault. */
-export function ensureVaultRoot(rootPath) {
-  if (!rootPath) {
-    throw new Error('Set the vault root via OATLAS_VAULT env var or --vault arg.');
-  }
-  if (!existsSync(rootPath)) {
-    throw new Error(`Vault root not found: ${rootPath}`);
-  }
-  if (!statSync(rootPath).isDirectory()) {
-    throw new Error(`Vault root is not a directory: ${rootPath}`);
-  }
 }

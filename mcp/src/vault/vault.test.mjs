@@ -7,19 +7,15 @@ import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { defaultBody, nodeUidIssue } from '../schema.mjs';
 
+import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './slug-paths.mjs';
+import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './documents.mjs';
 import {
-  FULL_BODY_MAX_CHARS,
-  canonicalDiskSlug,
   deleteDoc,
   drainNodeEligibilityFindings,
   resetNodeEligibilityGate,
-  describeBodyDelivery,
   detectDuplicateTitle,
-  extractSummaryExcerpt,
   findOrphans,
   findPath,
-  suggestSimilarSlugs,
-  vaultSlugExists,
   patchFrontmatter,
   updateDoc,
   writeDoc,

@@ -23,11 +23,8 @@ import {
   requireNonBlankString,
   requireOptionalBoolean,
 } from '../server/validate.mjs';
-import {
-  slugToPath,
-  writeDoc,
-  writeFileAtomically,
-} from '../vault/doc-writes.mjs';
+import { slugToPath } from '../vault/slug-paths.mjs';
+import { writeDoc, writeFileAtomically } from '../vault/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   agentProvenance,

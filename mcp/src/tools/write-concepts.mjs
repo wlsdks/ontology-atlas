@@ -19,10 +19,10 @@ import {
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
 import { isValidVaultTitle } from '../validate.mjs';
+import { loadVaultDocs } from '../vault/documents.mjs';
 import {
   configureNodeEligibilityRepoRoot,
   detectDuplicateTitle,
-  loadVaultDocs,
   updateDoc,
   writeDoc,
 } from '../vault/doc-writes.mjs';

@@ -9,8 +9,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { readDoc } from "./documents.mjs";
 import {
-  readDoc,
   writeDoc,
   patchFrontmatter,
   updateDoc,

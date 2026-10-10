@@ -1,5 +1,5 @@
 import { NODE_UID_PATTERN } from '../../schema.mjs';
-import { GRAPH_ARRAY_KEYS } from '../../vault/doc-writes.mjs';
+import { GRAPH_ARRAY_KEYS } from '../../vault/relation-refs.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,

@@ -83,10 +83,12 @@ async function run<T>(name: string, args: unknown = {}): Promise<T> {
 }
 
 // The MCP side reads the vault folder directly, never through our manifest.
+const mcpDocuments = await import('../../mcp/src/vault/documents.mjs');
 const mcpVault = await import('../../mcp/src/vault/doc-writes.mjs');
+const mcpRelationRefs = await import('../../mcp/src/vault/relation-refs.mjs');
 
 function loadMcpOntologyDocs() {
-  return (mcpVault.loadVaultDocs(VAULT_DIR) as Array<{
+  return (mcpDocuments.loadVaultDocs(VAULT_DIR) as Array<{
     slug: string;
     frontmatter: Record<string, unknown>;
   }>).filter((doc) => typeof doc.frontmatter.kind === 'string');
@@ -205,7 +207,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
     // Backlinks are counted from this key list, not from map edges. Growing one side
     // creates relations the in-screen agent cannot see.
     expect([...GRAPH_FRONTMATTER_KEYS].sort()).toEqual(
-      [...(mcpVault.GRAPH_ARRAY_KEYS as string[]), 'domain'].sort(),
+      [...(mcpRelationRefs.GRAPH_ARRAY_KEYS as string[]), 'domain'].sort(),
     );
   });
 

@@ -42,15 +42,16 @@ import {
 } from '../stale-parent.mjs';
 import {
   GRAPH_ARRAY_KEYS,
-  canonicalDiskSlug,
   collectNeighborRefs,
   findGraphReferences,
-  loadVaultDocs,
+} from '../vault/relation-refs.mjs';
+import {
+  canonicalDiskSlug,
   rawSourceSlugAt,
-  readDoc,
   slugToPath,
   suggestSimilarSlugs,
-} from '../vault/doc-writes.mjs';
+} from '../vault/slug-paths.mjs';
+import { loadVaultDocs, readDoc } from '../vault/documents.mjs';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
