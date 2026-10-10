@@ -4,7 +4,7 @@
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertCentralityShape } from '../lib/query-result-contract/overview-queries.mjs';
-import { assertQueryPlanShape } from '../lib/query-result-contract/graph-traversal.mjs';
+import { assertQueryPlanShape } from '../lib/query-result-contract/query-plan.mjs';
 import {
   printQueryPlan,
   shouldBlockPlannedExecution,

@@ -243,25 +243,6 @@ function nextReadRowFailure(row) {
   return null;
 }
 
-export function compileResultExitCode(artifact) {
-  const counts = compileBlockingCounts(artifact);
-  if (!validCount(counts.issues) || !validCount(counts.unresolvedEdges)) return 1;
-  return counts.issues > 0 || counts.unresolvedEdges > 0 ? 1 : 0;
-}
-
-export function compileBlockingCounts(artifact) {
-  if (!artifact || typeof artifact !== 'object' || Array.isArray(artifact)) {
-    return { issues: Number.NaN, unresolvedEdges: Number.NaN };
-  }
-  const summary = artifact.summary && typeof artifact.summary === 'object' && !Array.isArray(artifact.summary)
-    ? artifact.summary
-    : artifact;
-  return {
-    issues: countValue(summary.issues ?? summary.issueCount ?? artifact.issueCount),
-    unresolvedEdges: countValue(summary.unresolvedEdges ?? summary.unresolvedEdgeCount ?? artifact.unresolvedEdgeCount),
-  };
-}
-
 function maintenanceActionFailure(action, index) {
   if (!isPlainObject(action)) {
     return `maintenance_plan actions[${index}] must be an object`;
@@ -462,8 +443,4 @@ function growthProposedActionFailure(row) {
     if (args.kind !== row.inferredKind) return 'proposedAction.kind must match inferredKind';
   }
   return null;
-}
-
-function countValue(value) {
-  return validCount(value) ? value : Number.NaN;
 }

@@ -660,7 +660,7 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('routes a result contract family file to its own test', () => {
+  it('routes a result contract family file to the test that covers it', () => {
     const result = suggestFocusedChecks([
       'cli/src/lib/query-result-contract/project-source-meaning.mjs',
       'cli/src/lib/query-result-contract/graph-traversal.mjs',

@@ -7,7 +7,7 @@ import {
   assertAllPathsShape,
   allPathsResultExitCode,
 } from '../lib/query-result-contract/path-queries.mjs';
-import { assertQueryPlanShape } from '../lib/query-result-contract/graph-traversal.mjs';
+import { assertQueryPlanShape } from '../lib/query-result-contract/query-plan.mjs';
 import {
   formatQueryHint,
   printQueryPlan,

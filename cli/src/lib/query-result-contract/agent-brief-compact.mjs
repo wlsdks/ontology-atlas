@@ -1,4 +1,4 @@
-import { BLAST_RADIUS_QUALIFICATION_STATUSES } from './blast-radius.mjs';
+import { BLAST_RADIUS_QUALIFICATION_STATUSES } from './overview-queries.mjs';
 import {
   MEANING_ASSESSMENT_STATUSES,
   MEANING_QUESTION_IDS,
