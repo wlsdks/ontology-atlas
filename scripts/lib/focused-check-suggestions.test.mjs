@@ -649,12 +649,26 @@ describe('focused check suggestions', () => {
   it('suggests direct CLI lib unit tests before aggregate CLI lib gate', () => {
     const result = suggestFocusedChecks([
       'cli/src/lib/captured-summary.mjs',
-      'cli/src/lib/query-result-contract.test.mjs',
+      'cli/src/lib/query-result-contract/path-queries.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test cli/src/lib/captured-summary.test.mjs',
-      'pnpm exec node --test cli/src/lib/query-result-contract.test.mjs',
+      'pnpm exec node --test cli/src/lib/query-result-contract/path-queries.test.mjs',
+      'pnpm test:cli:lib',
+      'pnpm vault:validate',
+    ]);
+  });
+
+  it('routes a result contract family file to its own test', () => {
+    const result = suggestFocusedChecks([
+      'cli/src/lib/query-result-contract/project-source-meaning.mjs',
+      'cli/src/lib/query-result-contract/graph-traversal.mjs',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test cli/src/lib/query-result-contract/agent-brief.test.mjs',
+      'pnpm exec node --test cli/src/lib/query-result-contract/graph-traversal.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
     ]);
