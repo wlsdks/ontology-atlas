@@ -44,13 +44,9 @@ export interface NodeNameSource {
  * each one — the canonical title first, then the display names, duplicates and
  * empties removed.
  *
- * **Built once per node and kept.** Each question below used to rebuild this list
- * and re-normalise every name, so one keystroke ran NFC + lowercase + a whitespace
- * regex three to five times per node. Measured 2026-09-19 over 12,000 nodes, best of
- * five: a plain query cost 243 ms and a half-typed Hangul one 358 ms — a palette that
- * stalls for a third of a second on every character. With the index cached the same
- * two cost 29.8 ms and 30.0 ms, and a chosung query 14.3 ms.
- * `node-name-match.perf.test.ts` holds the ratio against a rebuild-every-time baseline.
+ * Built once per node and kept, so a keystroke re-normalises no name; over 12,000
+ * nodes a rebuild per query costs a palette hundreds of milliseconds per character.
+ * `node-name-match.test.ts` counts the work a repeated query does: none.
  *
  * The cache is a `WeakMap` on the node object, so it costs nothing to hold and
  * disappears with the graph. It assumes nodes are **replaced** rather than mutated
