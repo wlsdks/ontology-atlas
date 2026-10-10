@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -71,11 +71,9 @@ describe("release-facts", () => {
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-notarized");
   });
 
-  it("matches the MCP tool count declared in mcp/src/server/registry.mjs", () => {
-    const source = readFileSync(join(process.cwd(), "mcp/src/server/registry.mjs"), "utf8");
-    const start = source.indexOf("const TOOLS = [");
-    expect(start).toBeGreaterThan(-1);
-    const block = source.slice(start, source.indexOf("\n];", start));
-    expect(block.match(/^\s+name: '/gm)?.length ?? 0).toBe(MCP_TOOL_COUNT);
+  it("matches the MCP tool count declared in mcp/src/server/tool-definitions", () => {
+    const dir = join(process.cwd(), "mcp/src/server/tool-definitions");
+    const source = readdirSync(dir).map((file) => readFileSync(join(dir, file), "utf8")).join("\n");
+    expect(source.match(/^ {2}name: '/gm)?.length ?? 0).toBe(MCP_TOOL_COUNT);
   });
 });
