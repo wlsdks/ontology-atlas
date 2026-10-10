@@ -206,20 +206,19 @@ const CURATION = [
 const REGISTRY_FIELDS = ['packageId', 'args', 'env'];
 
 async function fetchRegistryEntry(registryName, { fetchImpl = fetch } = {}) {
-  const url = `${REGISTRY}?search=${encodeURIComponent(registryName)}&limit=50`;
+  // A name search pages versions in string order; only this endpoint names the newest.
+  const url = `${REGISTRY}/${encodeURIComponent(registryName)}/versions/latest`;
   const response = await fetchImpl(url, {
     headers: { accept: 'application/json' },
     signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
   });
+  if (response.status === 404) return null;
   if (!response.ok) throw new Error(`registry ${response.status} for ${registryName}`);
   const body = await response.json();
-  const matches = (body.servers ?? [])
-    .map((row) => row.server)
-    .filter((server) => server && server.name === registryName);
-  if (matches.length === 0) return null;
-  // The registry keeps every published version; the last one it returns for a name is the newest
-  // it has, and taking anything else would pin the catalogue to an old package on purpose.
-  return matches[matches.length - 1];
+  if (body.server && body.server.name !== registryName) {
+    throw new Error(`registry answered ${body.server.name} for ${registryName}`);
+  }
+  return body.server ?? null;
 }
 
 async function fetchRegistrySnapshot({ fetchImpl = fetch } = {}) {
@@ -403,13 +402,17 @@ async function build({ offline, registryServers = null, fetchImpl = fetch, curat
            * from a dead end into an errand. So a registry variable of the same name keeps the
            * curated `issueUrl`; everything else about it comes from the publisher.
            */
+          // A registry "optional" may rest on runtime arguments (an OAuth port) curated argv lacks.
+          const argvIsCurated = fromRegistry.args.length === 0;
           fromRegistry.env = fromRegistry.env.map((variable) => {
             const curatedVariable = (variants[index].env ?? []).find(
               (candidate) => candidate.name === variable.name,
             );
-            return curatedVariable?.issueUrl
-              ? { ...variable, issueUrl: curatedVariable.issueUrl }
-              : variable;
+            return {
+              ...variable,
+              ...(argvIsCurated && curatedVariable?.required ? { required: true } : {}),
+              ...(curatedVariable?.issueUrl ? { issueUrl: curatedVariable.issueUrl } : {}),
+            };
           });
           for (const field of REGISTRY_FIELDS) {
             const value = fromRegistry[field];

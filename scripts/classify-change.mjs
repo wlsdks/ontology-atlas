@@ -380,7 +380,7 @@ function e2ePlan({ paths, suggestions, full }) {
   }
 
   const rows = suggestions.commands.filter((row) => commandLane(row.command) === 'e2e');
-  const mappedPaths = new Set(rows.flatMap((row) => row.paths));
+  const mappedPaths = new Set(rows.filter((row) => !row.additive).flatMap((row) => row.paths));
   const browserInputs = paths.filter(isBrowserInput);
   const unmappedPaths = browserInputs.filter((path) => !mappedPaths.has(path));
   const staticExport =

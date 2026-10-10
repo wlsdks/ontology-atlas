@@ -119,7 +119,6 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'route-cycle-leak.spec.ts',
   'route-transition-input.spec.ts',
   'screen-hierarchy.spec.ts',
-  'scroll-end-gap.spec.ts',
   'surface-vocabulary-ratchet.spec.ts',
 ];
 
