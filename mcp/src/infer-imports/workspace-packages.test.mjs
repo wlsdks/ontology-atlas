@@ -205,3 +205,33 @@ test('workspace declaration count limit fails closed before an omitted exclusion
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('a workspace package without a name takes its slug from the folder, and the full path when folders repeat', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workspace-root', private: true }));
+    writeFileSync(join(r, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    mkdirSync(join(r, 'packages', 'tools'), { recursive: true });
+    writeFileSync(join(r, 'packages', 'tools', 'package.json'), '{}\n');
+  });
+  const twins = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workspace-root', private: true }));
+    writeFileSync(join(r, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n  - 'apps/*'\n");
+    mkdirSync(join(r, 'packages', 'tools'), { recursive: true });
+    mkdirSync(join(r, 'apps', 'tools'), { recursive: true });
+    writeFileSync(join(r, 'packages', 'tools', 'package.json'), '{}\n');
+    writeFileSync(join(r, 'apps', 'tools', 'package.json'), '{}\n');
+  });
+  try {
+    assert.deepEqual(discoverDeclaredWorkspacePackages(root).packages, [
+      { path: 'packages/tools', name: null, slug: 'tools' },
+    ]);
+    assert.doesNotThrow(() => inferImports(root));
+    assert.deepEqual(discoverDeclaredWorkspacePackages(twins).packages, [
+      { path: 'apps/tools', name: null, slug: 'apps-tools' },
+      { path: 'packages/tools', name: null, slug: 'packages-tools' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(twins, { recursive: true, force: true });
+  }
+});

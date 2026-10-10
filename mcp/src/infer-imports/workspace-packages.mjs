@@ -5,7 +5,7 @@ import {
   lstatSync,
   existsSync,
 } from '../confined-source-fs.mjs';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { pathResolvesInsideRoot } from './path-confinement.mjs';
 import { DEFAULT_IGNORE } from './source-files.mjs';
 
