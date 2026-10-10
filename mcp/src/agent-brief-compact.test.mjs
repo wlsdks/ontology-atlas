@@ -168,9 +168,26 @@ DER parsing and unrelated encodings.
       assert.equal(result.focus.verification.runner, 'package-script');
       assert.match(result.handoffPrompt, /Verify: package-script\/package\.json; batch manifest; focused once, full once, no overlap\./);
       assert.match(result.handoffPrompt, /Read: primary \+ supporting \+ tests \+ manifest; stop_on_match\./);
+      const recovery = result.focus.qualifiers.fullBodyRead;
+      assert.ok(result.focus.qualifiers.coverage.omitted > 0);
+      assert.ok(result.handoffPrompt.includes(`${recovery.tool} ${JSON.stringify(recovery.arguments)}`),
+        'Ready navigation must retain the exact full-body recovery call');
       assert.equal(JSON.stringify(result).includes('return true'), false);
       assert.equal(Object.hasOwn(result.task, 'text'), false);
       assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+      const oversized = buildCompactAgentBrief({
+        brief, artifact, sourceRoot: root,
+        docs: navigationDocs.map((doc) => doc.slug === 'capabilities/write'
+          ? { ...doc, body: `${doc.body}\n## Includes\n\n- DER SET output requires ${'🔒'.repeat(2_000)} before writing.\n` }
+          : doc),
+        task: 'Encode an optional DER SET and keep present elements ordered.',
+      });
+      assert.equal(oversized.focus.taskNavigation.status, 'ready');
+      assert.equal(oversized.focus.qualifiers.units.length, 0);
+      assert.equal(oversized.focus.qualifiers.coverage.complete, false);
+      assert.ok(oversized.handoffPrompt.includes(`${recovery.tool} ${JSON.stringify(recovery.arguments)}`),
+        'Full-body recovery must survive when the byte budget removes every qualifier');
+      assert.ok(Buffer.byteLength(JSON.stringify(oversized), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

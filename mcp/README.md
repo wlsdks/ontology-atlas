@@ -305,6 +305,9 @@ evidence limits in later sentences and paragraphs. A section that exceeds the
 budget is omitted whole with explicit coverage and a full-body recovery call.
 The text handoff includes every unknown retained in `focus.unknowns`; that list
 remains a bounded excerpt, not a complete inventory of the vault's uncertainty.
+Ready source navigation also retains the exact prescribed full-body read in the
+text handoff, before its source-reading instructions, so omitted qualifiers can
+be recovered even when the byte budget removes every qualifier from the summary.
 
 The measured boundary is fresh Codex CLI sessions with source MCP, one explicit
 policy delivery per session, and read-only source access. Five frozen cases

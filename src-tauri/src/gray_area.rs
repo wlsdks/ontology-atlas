@@ -317,7 +317,7 @@ fn read_drift(vault: &str, source: &str, docs: &[Value]) -> Vec<Value> {
         .filter(|p| !p.is_empty())
         .collect();
     let dates = |root: &str, repo_paths, vault_paths| -> HashMap<String, String> {
-        crate::git::git_paths_last_change(root.into(), repo_paths, vault_paths)
+        crate::git::evidence::git_paths_last_change(root.into(), repo_paths, vault_paths)
             .ok()
             .and_then(|r| serde_json::to_value(r).ok())
             .and_then(|r| r.as_array().cloned())

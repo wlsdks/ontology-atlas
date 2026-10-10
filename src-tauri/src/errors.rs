@@ -59,7 +59,12 @@ mod tests {
         // breaks the lookup.
         let sources = [
             include_str!("errors.rs"),
-            include_str!("git.rs"),
+            include_str!("git/document.rs"),
+            include_str!("git/remote.rs"),
+            include_str!("git/repo.rs"),
+            include_str!("git/runner.rs"),
+            include_str!("git/setup.rs"),
+            include_str!("git/snapshot.rs"),
             include_str!("llm.rs"),
             include_str!("llm_audit.rs"),
             include_str!("secrets.rs"),
