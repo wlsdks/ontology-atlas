@@ -162,7 +162,6 @@ function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
 }
 
-export type { DocFrontmatterPatch };
 
 export interface DocFrontmatterBlockProps {
   doc: VaultDoc;
