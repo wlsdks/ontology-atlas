@@ -635,6 +635,21 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('routes each infer-imports family module to its own test and to repo-analysis integration', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/infer-imports/go-imports.mjs',
+      'mcp/src/infer-imports/path-confinement.mjs',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test mcp/src/infer-imports/go-imports.test.mjs',
+      'pnpm exec node --test mcp/src/confined-source-fs.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm integration:mcp:repo-analysis',
+      'pnpm vault:validate',
+    ]);
+  });
+
   it('suggests direct MCP suggestions tests before the broader suggestions gate', () => {
     const result = suggestFocusedChecks([
       'mcp/src/suggestions.mjs',
@@ -861,6 +876,8 @@ describe('focused check suggestions', () => {
       'scripts/build-acp-registry.test.mjs',
       'src-tauri/src/acp-registry.json',
       'src-tauri/src/acp.rs',
+      'src-tauri/src/acp/isolation.rs',
+      'src-tauri/src/acp/runtime_environment/tests.rs',
       '.github/workflows/release-macos.yml',
     ];
     assert.ok(subjects.length > 0, 'the ACP launch-boundary subject inventory must not be empty');
@@ -944,6 +961,21 @@ describe('focused check suggestions', () => {
       'scripts/check-desktop-readiness.mjs',
       'scripts/check-desktop-readiness.test.mjs',
     ]);
+  });
+
+  it('routes the docs vault page modules to the desktop readiness gate', () => {
+    for (const path of [
+      'src/views/docs-vault/ui/DocsVaultHeader.tsx',
+      'src/views/docs-vault/ui/DocsVaultDocumentPane.tsx',
+      'src/views/docs-vault/ui/DocsVaultSidebar.tsx',
+      'src/views/docs-vault/model/use-docs-vault-source.tsx',
+      'src/views/docs-vault/model/use-doc-write-actions.ts',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes('pnpm desktop:check'),
+        path,
+      );
+    }
   });
 
   it('runs the native bridge tests for code split out of the crate root', () => {

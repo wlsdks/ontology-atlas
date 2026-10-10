@@ -122,8 +122,8 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
     ]).map((m) => m.id);
     /*
      * ⚠️ The previous expectation was `['read-only', 'agent']` — **this file was
-     * pinning the hole** (review 2026-08-16). `agent` only sounds like a normal mode,
-     * and this repository's own measurement is recorded in `src-tauri/src/acp.rs`:
+     * pinning the hole**. `agent` only sounds like a normal mode,
+     * and this repository's own measurement is recorded in `docs/DECISIONS.md` (2026-08-16):
      * launching codex in that default mode produced *"files written outside the working
      * folder with 0 permission requests"*. It fails the criterion above exactly.
      *

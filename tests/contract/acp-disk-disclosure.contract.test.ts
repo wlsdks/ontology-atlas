@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
+import { readAcpRust } from '../helpers/read-acp-rust';
 
 /**
  * **As long as the app symlinks the user's credential file**, the screen must say so.
@@ -33,7 +34,6 @@ import ko from '../../messages/ko.json';
  * is nothing to disclose, and then it requires no copy.
  */
 
-const ACP_RS = 'src-tauri/src/acp.rs';
 const PANEL = 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx';
 
 function read(path: string): string {
@@ -48,7 +48,7 @@ function linksCredentials(source: string): boolean {
 }
 
 describe('자격증명에 링크를 거는 한 화면이 그것을 말한다', () => {
-  const acp = read(ACP_RS);
+  const acp = readAcpRust(process.cwd());
 
   it('검사가 헛돌고 있지 않다 — 볼 파일과 볼 표식이 실재한다', () => {
     expect(acp.length).toBeGreaterThan(1000);

@@ -3,14 +3,12 @@
 import { useTranslations } from "next-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui";
+import { NEW_DOC_KINDS, type NewDocKind } from "../../model/use-doc-write-actions";
 
 /**
  * Asks for the kind first, so every new document is a node. `project` has its own
  * flow at `/project/new`. `Dialog` owns scrim, trap, Escape, focus restore and motion.
  */
-const KIND_OPTIONS = ["domain", "capability", "element", "document"] as const;
-export type NewDocKind = (typeof KIND_OPTIONS)[number];
-
 export function NewDocKindDialog({
   open,
   onSelect,
@@ -35,7 +33,7 @@ export function NewDocKindDialog({
         {t("subtitle")}
       </p>
       <ul className="mt-3 grid grid-cols-2 gap-2">
-        {KIND_OPTIONS.map((kind) => (
+        {NEW_DOC_KINDS.map((kind) => (
           <li key={kind}>
             <button
               type="button"

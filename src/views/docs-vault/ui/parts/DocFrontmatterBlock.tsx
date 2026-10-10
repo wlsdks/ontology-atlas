@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
@@ -42,6 +42,7 @@ import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-m
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 import { graphFieldKeys, DANGLING_CHECK_KEYS, REFERENCE_KEYS, toRefTokens, formatValue, isNodeReference } from "./doc-frontmatter/fields";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
+import { useReferrerListName, type DocFrontmatterPatch } from "../../model/use-doc-write-actions";
 
 // Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
@@ -131,42 +132,12 @@ export interface KindChangeReferrerRow extends KindChangeReferrer {
 /** How many referrers the quick patch names before Save, before it counts the rest. */
 const KIND_CHANGE_ROWS_MAX = 4;
 
-/** The reader's word for a kind-named list key; shared with the page's receipt. */
-export function useReferrerListName(): (key: string) => string {
-  const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
-  return useCallback(
-    (key: string) => {
-      switch (key) {
-        case "domains":
-          return t("domains");
-        case "capabilities":
-          return t("capabilities");
-        case "elements":
-          return t("elements");
-        case "domain":
-          return t("domain");
-        default:
-          return key;
-      }
-    },
-    [t],
-  );
-}
-
 // Sentinel kinds such as vault-readme are not editable here.
 const EDITABLE_KINDS = ["project", "domain", "capability", "element", "document"] as const;
 type EditableKind = (typeof EDITABLE_KINDS)[number];
 
 function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
-}
-
-export interface DocFrontmatterPatch {
-  kind?: string;
-  domain?: string | null;
-  title?: string;
-  /** A per-language name (`display_ko`, `display_en`, …); null removes the key. */
-  [displayName: `display_${string}`]: string | null | undefined;
 }
 
 export interface DocFrontmatterBlockProps {

@@ -182,7 +182,7 @@ describe('connector record', () => {
   });
 
   it('flags a bare command, because the agent it is spawned from has no PATH', () => {
-    // `SHARED_RUNTIME_ENV` in `src-tauri/src/acp.rs` hands the agent a sanitized environment
+    // `SHARED_RUNTIME_ENV` in `src-tauri/src/acp/runtime_environment.rs` hands the agent a sanitized environment
     // with no PATH, and the connector inherits it. A bare `npx` resolves to nothing and the
     // session comes up with that server's tools silently absent.
     expect(connectorProblems(stdio({ command: 'npx' }))).toContain('command-not-absolute');
@@ -191,7 +191,7 @@ describe('connector record', () => {
 
   it('lets any variable be keychain-backed, not only the ones a regex recognises', () => {
     /*
-     * Measured 2026-09-05. `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
+     * Measured: `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
      * documents, and it carries `Bearer ntn_...`. It matches nothing, so a name-only rule
      * offered no field for it at all and the connector attached with its credential absent,
      * looking perfectly healthy. `GH_PAT`, `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and

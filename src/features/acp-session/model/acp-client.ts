@@ -11,7 +11,7 @@
  *    declare them.** An undeclared method is answered with "no such thing".
  *    ⚠️ That alone is not the permission gate — an undeclared capability closes only the ACP
  *    channel, and the real CLI the adapter wraps does not consult this declaration for its own
- *    tools. The actual gate comes from the config the app isolates (`src-tauri/src/acp.rs`).
+ *    tools. The actual gate comes from the config the app isolates (`src-tauri/src/acp/isolation.rs`).
  * 2. **Never hardcode an `optionId`.** Options are located by `kind` (`allow_once`,
  *    `reject_once`, …). Measured, those values were short strings like `allow` and `reject`, but
  *    the adapter decides them and they can change at any time.
@@ -514,7 +514,7 @@ export function createAcpClient(
     );
     const ontologyWrite = atlasMode === 'write';
     /*
-     * ⚠️ **Answer even when the verdict fails** (caught in review, 2026-08-16).
+     * ⚠️ **Answer even when the verdict fails**.
      * `await handlers.verdict(...)` used to be unwrapped, so a rejected IPC (the window closing, a
      * bridge error) left this request with **no answer at all**. The other side waits forever and the
      * user sees neither a card nor an error.
@@ -740,7 +740,7 @@ export function createAcpClient(
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
         /*
-         * ⚠️ **A resumed conversation gets the same instructions** (caught in review, 2026-08-16).
+         * ⚠️ **A resumed conversation gets the same instructions**.
          *
          * They used to be attached to new conversations only. So a session resumed from "past
          * conversations" **ran under different rules** — no requirement to write `why` when changing a

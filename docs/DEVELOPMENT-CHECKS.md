@@ -764,7 +764,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### MCP core units
 
 **Run**: `pnpm test:mcp:unit`
-**Proves**: Every mcp/src/*.test.mjs unit suite (excluding integration) passes; suites are discovered by glob, not a hand-kept list.
+**Proves**: Every mcp/src/*.test.mjs and mcp/src/infer-imports/*.test.mjs unit suite (excluding integration) passes; suites are discovered by glob, not a hand-kept list.
 **Escalate**: `pnpm integration:mcp:readme` for the readme-flow integration suite
 **Fix**: Run the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` names one.
 
