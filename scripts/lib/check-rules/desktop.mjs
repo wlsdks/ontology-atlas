@@ -29,6 +29,7 @@ export const rules = [
       /^scripts\/build-acp-registry\.(?:mjs|test\.mjs)$/,
       /^src-tauri\/src\/acp-registry\.json$/,
       /^src-tauri\/src\/acp\.rs$/,
+      /^src-tauri\/src\/acp\/.+\.rs$/,
       /^\.github\/workflows\/release-macos\.yml$/,
     ],
   },

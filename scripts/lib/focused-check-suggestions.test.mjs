@@ -861,6 +861,8 @@ describe('focused check suggestions', () => {
       'scripts/build-acp-registry.test.mjs',
       'src-tauri/src/acp-registry.json',
       'src-tauri/src/acp.rs',
+      'src-tauri/src/acp/isolation.rs',
+      'src-tauri/src/acp/runtime_environment/tests.rs',
       '.github/workflows/release-macos.yml',
     ];
     assert.ok(subjects.length > 0, 'the ACP launch-boundary subject inventory must not be empty');

@@ -46,7 +46,7 @@ export type ConnectorTransport = (typeof CONNECTOR_TRANSPORTS)[number];
  * a literal in the file, so `serializeConnectorState` refuses one whether or not somebody turned
  * the keychain off for it. The name is a **default suggestion** for the choice and a **hard floor**
  * on what may be written; it is not the whole answer, which is what it used to be
- * (measured 2026-09-05: `OPENAPI_MCP_HEADERS` - the variable Notion's own server documents, and
+ * (measured: `OPENAPI_MCP_HEADERS` - the variable Notion's own server documents, and
  * which carries `Bearer ntn_...` - matched nothing, so the screen offered no field at all and the
  * connector attached with its credential absent while looking perfectly healthy. `GH_PAT`,
  * `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and `COOKIE` all missed the same way.)
@@ -133,7 +133,7 @@ export type ConnectorProblem =
  *
  * `command-not-absolute` is the one that surprises people. The agent process Atlas launches runs
  * with a **sanitized environment that has no `PATH`** (`SHARED_RUNTIME_ENV` in
- * `src-tauri/src/acp.rs`), and a connector the agent spawns inherits that environment. So a bare
+ * `src-tauri/src/acp/runtime_environment.rs`), and a connector the agent spawns inherits that environment. So a bare
  * `npx` resolves to nothing and the session comes up with the connector's tools silently absent —
  * the worst failure this feature has, because it looks like success.
  */
