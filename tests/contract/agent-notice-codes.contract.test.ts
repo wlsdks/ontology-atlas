@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -29,7 +29,24 @@ import {
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');
-const llmSource = readFileSync(join(repoRoot, 'src-tauri/src/llm.rs'), 'utf8');
+
+function productionSource(dir: string): string {
+  const parts: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'tests') parts.push(productionSource(path));
+    } else if (entry.name.endsWith('.rs') && !/(^|_)tests\.rs$/.test(entry.name)) {
+      parts.push(readFileSync(path, 'utf8'));
+    }
+  }
+  return parts.join('\n');
+}
+
+const llmSource = [
+  readFileSync(join(repoRoot, 'src-tauri/src/llm.rs'), 'utf8'),
+  productionSource(join(repoRoot, 'src-tauri/src/llm')),
+].join('\n');
 
 describe('the agent notice codes mean the same thing on both sides', () => {
   it('mints the same prefixes in Rust that TypeScript matches', () => {

@@ -5,7 +5,7 @@
 // [check connection]. A sentence that differs from the real destination is not a typo
 // but a false security claim (trust charter ⑥ — we say only what we can prove).
 //
-// The source of truth is the check URL in `src-tauri/src/llm.rs`, which cannot be
+// The source of truth is the check URL in `llm/verify.rs`, which cannot be
 // imported into the same process. So this uses the same pattern as the audit log:
 // **both sides read the same fixture.** On the Rust side
 // `the_hosts_match_the_shared_fixture_the_screen_promises` proves "the host I

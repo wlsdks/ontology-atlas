@@ -65,7 +65,11 @@ mod tests {
             include_str!("git/runner.rs"),
             include_str!("git/setup.rs"),
             include_str!("git/snapshot.rs"),
-            include_str!("llm.rs"),
+            include_str!("llm/chat.rs"),
+            include_str!("llm/chat/request.rs"),
+            include_str!("llm/curl.rs"),
+            include_str!("llm/local_endpoint.rs"),
+            include_str!("llm/verify.rs"),
             include_str!("llm_audit.rs"),
             include_str!("secrets.rs"),
         ];
