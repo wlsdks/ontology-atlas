@@ -307,7 +307,6 @@ test('workspace discovery stops after 10000 directory entries and reports it', (
         build: (r) => {
           mkdirSync(join(r, 'zpkgs', 'core'), { recursive: true });
           writeFileSync(join(r, 'zpkgs', 'core', 'package.json'), '{"name":"core"}\n');
-          // package.json, pnpm-workspace.yaml, zpkgs, core and core/package.json are 5 entries.
           for (let index = 0; index < entries - 5; index += 1) {
             writeFileSync(join(r, 'zpkgs', `f${index}`), '');
           }
@@ -324,8 +323,6 @@ test('workspace discovery stops after 10000 directory entries and reports it', (
 });
 
 test('workspace pattern matching stops at 250000 states and reports it', () => {
-  // 63 one-state patterns and one two-state pattern per candidate: depth-1
-  // candidates cost 64 states, depth-2 candidates under a/ cost 65.
   const patterns = [...Array.from({ length: 63 }, () => 'x'), 'a/y'];
   const made = [];
   try {
