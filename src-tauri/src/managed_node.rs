@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::acp::bounded_output;
+use crate::acp::bounded_command::bounded_output;
 
 /// Change the hash and file names with the version; contract tests catch a mismatch.
 pub(crate) const MANAGED_NODE_VERSION: &str = "v24.18.0";

@@ -1,9 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import type { McpServerLaunch } from '@/shared/config';
+
+import { readAcpRust } from '../../../../tests/helpers/read-acp-rust';
 
 import { GATED_SESSION_MODE, isGuardedRuntime, runtimeOwnsWriteGate } from './runtime-gate';
 import { vaultMcpServers } from './vault-mcp-server';
@@ -73,7 +72,7 @@ describe('who holds the write checkpoint', () => {
    * checkpoint to a configuration the app cannot control.
    */
   it('never claims gate ownership for a runtime the app does not isolate', () => {
-    const rust = readFileSync(join(process.cwd(), 'src-tauri/src/acp.rs'), 'utf8');
+    const rust = readAcpRust(process.cwd());
     const block = rust.slice(rust.indexOf('ISOLATION: &[IsolationSpec]'));
     const isolated = [...block.slice(0, block.indexOf('];')).matchAll(/id:\s*"([^"]+)"/g)].map(
       (m) => m[1],

@@ -85,7 +85,7 @@ const BRAND_MARK = {
  *
  * The rest stay listed and launchable, but only these two are marked "verified",
  * so the screen never claims we tried something we did not. This set grows only
- * with measured evidence (decision ledger 2026-08-16).
+ * with measured evidence (`docs/DECISIONS.md`).
  */
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 
@@ -142,7 +142,7 @@ function applyRuntimeLaunchPin(id, launch) {
  * Display-name overrides — only for launchers whose registry name differs from
  * what people actually call them.
  *
- * **Empty today, and it must stay empty** (2026-08-16). It once held
+ * **Empty today, and it must stay empty**. It once held
  * `'claude-acp': 'Claude Code'`, on the grounds that *the registry's `Claude
  * Agent` is accurate but nobody calls it that*. That name is **explicitly not
  * permitted**:
@@ -275,7 +275,7 @@ function normalize(raw, brandInk = {}) {
   };
 }
 
-/** npx's `--before` for the hardened runtimes (src-tauri/src/acp.rs); moves with the snapshot. */
+/** npx's `--before` for the hardened runtimes (src-tauri/src/acp/runtime_environment.rs); moves with the snapshot. */
 export function withDependencyCutoff(normalized, committed, now = new Date()) {
   const bare = (snapshot) => JSON.stringify({ ...snapshot, npmDependencyCutoff: null });
   const kept = committed?.npmDependencyCutoff && bare(committed) === bare(normalized);
@@ -283,7 +283,7 @@ export function withDependencyCutoff(normalized, committed, now = new Date()) {
 }
 
 export function hardenedRuntimeIds() {
-  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp.rs'), 'utf8');
+  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp', 'runtime_environment.rs'), 'utf8');
   const list = /NPM_HARDENED_RUNTIMES: &\[&str\] = &\[([^\]]*)\]/.exec(rust)?.[1] ?? '';
   const ids = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   if (ids.length === 0) {
@@ -375,10 +375,10 @@ async function fetchIcon(agent) {
  * specific knowledge about, and `runtime-gate.test.ts` already reads it the same way.
  */
 export function isolatedRuntimeIds() {
-  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp.rs'), 'utf8');
+  const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp', 'isolation.rs'), 'utf8');
   const start = rust.indexOf('ISOLATION: &[IsolationSpec]');
   if (start < 0) {
-    console.error('[acp-registry] could not find the ISOLATION table in src-tauri/src/acp.rs');
+    console.error('[acp-registry] could not find the ISOLATION table in src-tauri/src/acp/isolation.rs');
     process.exit(1);
   }
   const block = rust.slice(start, rust.indexOf('];', start));
