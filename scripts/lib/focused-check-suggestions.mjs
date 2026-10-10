@@ -366,9 +366,14 @@ function groupByTestFile(paths, resolve, reason) {
 
 function prependSuggestions(suggestions, additions) {
   if (additions.length === 0) return suggestions;
+  const additionByCommand = new Map(additions.map((item) => [item.command, item]));
+  const withDirectOverAdditive = suggestions.map((item) => {
+    const direct = item.additive ? additionByCommand.get(item.command) : undefined;
+    return direct ? { ...direct, paths: [...new Set([...direct.paths, ...item.paths])] } : item;
+  });
   const existing = new Set(suggestions.map((item) => item.command));
   const uniqueAdditions = additions.filter((item) => !existing.has(item.command));
-  return [...uniqueAdditions, ...suggestions];
+  return [...uniqueAdditions, ...withDirectOverAdditive];
 }
 
 function insertBeforeCommand(suggestions, additions, command) {

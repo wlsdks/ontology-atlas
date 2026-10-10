@@ -134,6 +134,11 @@ test('an additive sweep joins a page root plan without standing in for its smoke
   const mapped = buildImpactPlan({ files: ['src/views/architecture/ui/HarnessPage.tsx'] }).lanes.e2e;
   assert.equal(mapped.mode, 'targeted');
   assert.ok(mapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+
+  const withSpec = buildImpactPlan({
+    files: ['tests/e2e/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
+  }).lanes.e2e;
+  assert.equal(withSpec.mode, 'targeted');
 });
 
 test('unmapped pure TypeScript relies on affected units instead of browser guesswork', () => {
