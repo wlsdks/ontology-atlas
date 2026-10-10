@@ -5,9 +5,9 @@
  * ## Why the form stopped asking for a typed path
  *
  * A connector the agent spawns inherits a sanitized environment with **no `PATH`**
- * (`SHARED_RUNTIME_ENV`, `src-tauri/src/acp.rs`), so a bare `npx` resolves to nothing and the
+ * (`SHARED_RUNTIME_ENV`, `src-tauri/src/acp/runtime_environment.rs`), so a bare `npx` resolves to nothing and the
  * session comes up with that connector's tools silently absent. `connectorProblems` reports it as
- * `command-not-absolute` and the form's hint said so — and the owner's answer on 2026-09-07 was
+ * `command-not-absolute` and the form's hint said so — and the owner's answer was
  * still *"I don't know what I'm supposed to write here"*. Nobody knows where their own `npx` is;
  * `acp.rs` already worked it out for the agent runtimes, so the form picks from that answer
  * instead of asking for it.

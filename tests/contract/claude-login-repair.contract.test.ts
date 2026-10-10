@@ -8,6 +8,8 @@ import {
   claudeLoginRepairCommand,
 } from "@/features/acp-session/model/claude-login-repair";
 
+import { readAcpRust } from "../helpers/read-acp-rust";
+
 /**
  * **The one line the screen offers when a login is stale has to actually work**
  * (2026-08-17).
@@ -25,7 +27,7 @@ import {
 const TAURI_CONF = JSON.parse(
   readFileSync(join(process.cwd(), "src-tauri", "tauri.conf.json"), "utf8"),
 ) as { identifier?: string };
-const ACP_RS = readFileSync(join(process.cwd(), "src-tauri", "src", "acp.rs"), "utf8");
+const ACP_RS = readAcpRust(process.cwd());
 
 describe("앱 몫 로그인 복구 명령", () => {
   it("번들 식별자가 실제 앱 설정과 같다", () => {

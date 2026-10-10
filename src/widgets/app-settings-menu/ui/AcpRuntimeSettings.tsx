@@ -33,7 +33,7 @@ import { APP_CODING_TOOLS } from '../model/app-coding-tools';
 /**
  * The coding agents this machine can invoke. Each row says whether the tool can be used from
  * here and, if not, what to do on that row (a missing tool and missing Node need different
- * actions). What is confirmed on this computer comes first; `cli-unknown` (`acp.rs`) keeps
+ * actions). What is confirmed on this computer comes first; `cli-unknown` keeps
  * unverified tools out of that group. Only the measured runners run isolated and ask before
  * touching files outside the vault; that fact needs a sentence, so it stands once above the
  * group and names the guarded tools from the data rather than as a per-row badge.
@@ -235,7 +235,7 @@ export function AcpRuntimeSettings({
     runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated));
   /*
     Discloses that starting a chat symlinks the user's credential files into the app's data folder
-    (`link_credentials` in `src-tauri/src/acp.rs`; gate: `tests/contract/acp-disk-disclosure.contract.test.ts`).
+    (`link_credentials` in `src-tauri/src/acp/isolation.rs`; gate: `tests/contract/acp-disk-disclosure.contract.test.ts`).
     Shown only where a chat can start, the chat button's own condition, as a hint in the group
     heading beside the re-scan press.
   */

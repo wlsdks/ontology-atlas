@@ -133,7 +133,7 @@ export type ConnectorProblem =
  *
  * `command-not-absolute` is the one that surprises people. The agent process Atlas launches runs
  * with a **sanitized environment that has no `PATH`** (`SHARED_RUNTIME_ENV` in
- * `src-tauri/src/acp.rs`), and a connector the agent spawns inherits that environment. So a bare
+ * `src-tauri/src/acp/runtime_environment.rs`), and a connector the agent spawns inherits that environment. So a bare
  * `npx` resolves to nothing and the session comes up with the connector's tools silently absent —
  * the worst failure this feature has, because it looks like success.
  */
