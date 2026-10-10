@@ -35,7 +35,7 @@ import { drawNeuralBloom } from "../../expressive/neural-bloom";
 import {
   BACKGROUND_DIM_WHEN_EXPANDED,
   EMPTY_NEIGHBOR_SET,
-  S,
+  passState,
   ZERO_DOME_FRAME,
   domeNodeFrameReused,
   litDrawnStateCounts,
@@ -62,6 +62,7 @@ import {
 } from "./trail-curves";
 import { type FrameScope } from "./frame-scope";
 
+// Spike arms reach 2.6 times the radius.
 const NODE_CULL_SLACK = 3;
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
@@ -124,7 +125,7 @@ export function paintNodes(F: FrameScope): void {
       domeNodeOrderReused.push(world.nodes[domeNodeIndexReused[i]]);
     nodeDrawOrder = domeNodeOrderReused;
   }
-  S.drawnNodeCount = 0;
+  passState.drawnNodeCount = 0;
   litDrawnStateCounts.current = 0;
   litDrawnStateCounts.stale = 0;
   litDrawnStateCounts.unknown = 0;
@@ -137,7 +138,7 @@ export function paintNodes(F: FrameScope): void {
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA)
       continue;
-    S.drawnNodeCount += 1;
+    passState.drawnNodeCount += 1;
     const egoState = previewTarget
       ? "neighbor"
       : egoAllNormal
@@ -179,6 +180,7 @@ export function paintNodes(F: FrameScope): void {
         colorEgoState,
       })
       : 0;
+    // Safe to mutate: trail-lens frames never use a cached NodeVisual.
     if (trailInk > 0.001) {
       visual.stroke = lerpColorHex(visual.stroke, footprintStepColor, trailInk);
     }
@@ -201,6 +203,7 @@ export function paintNodes(F: FrameScope): void {
     let effRadius = baseRadius * breathe * appearScale;
     if (colorEgoState === "center")
       effRadius *= 1 + 0.12 * Math.min(1, Math.max(0, focusRamp));
+    // A released node keeps the 0.16 press coefficient until its emphasis decays; 0.08 at once is a hard cut.
     const releasedPress = node.id === hoverReleasedNodeId &&
       node.id !== hoveredNodeId &&
       !(hoveredNodeId !== null && (world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET).has(node.id));

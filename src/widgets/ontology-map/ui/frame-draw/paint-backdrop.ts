@@ -18,6 +18,7 @@ export function paintBackdrop(F: FrameScope): void {
     depthLayersAlpha: 1 - domeRamp,
     depthLayers: depthDotPatterns && domeRamp < 0.999
       ? DEPTH_DOT_LAYERS.map((layer, i) => {
+        // Parallax comes from gridOrigin, not the already-parallaxed bgOrigin; doubling it collapses the layers.
         const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, reducedMotion ? 1 : layer.parallax);
         return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
       })
@@ -33,6 +34,7 @@ export function paintBackdrop(F: FrameScope): void {
   drawStarDust(ctx, {
     points: dustPoints,
     farT: Math.max(farT, 0),
+    // The caller already scaled ctx by the device pixel ratio.
     devicePixelRatio: 1,
     opacityScale: 1,
     originX: reducedMotion ? 0 : gridOrigin.x,

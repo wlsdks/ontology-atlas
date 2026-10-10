@@ -62,7 +62,9 @@ export interface FrameDrawParams {
   bornNodeIds?: ReadonlySet<string> | null;
   chipRevealById?: ReadonlyMap<string, number>;
   batchAppearById?: ReadonlyMap<string, number>;
+  // The label pass mutates this map, so the caller owns one that persists across frames.
   labelPresentById?: Map<string, number>;
+  // Lingers ~160 ms after deselect for colour and rings only; labels, tier reveal and camera read `focusedNodeId`.
   colorFocusedNodeId: string | null;
   colorSelectedEdge: EdgePairFocus | null;
   reducedMotion: boolean;
@@ -97,6 +99,7 @@ export interface FrameDrawParams {
   } | null;
   realmDustParallax: number;
   realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
+  // The caller excludes the focused node, so its footprint does not double up with the selection ring.
   footprintStepsById: ReadonlyMap<string, readonly number[]>;
   footprintPref?: FootprintPreference | null;
   walkedEdgeKeys?: ReadonlySet<string> | null;
@@ -116,6 +119,7 @@ export interface FrameDrawParams {
   pathEdgeIds: ReadonlySet<string> | null;
   spotlightRamp: number;
   spotlightDashOffset: number;
+  // Must be the same config hit testing and pan clamping use.
   tierReveal?: TierRevealConfig;
   glyphStyle?: "fill" | "line";
   backgroundVariant?: CanvasBackgroundVariant;

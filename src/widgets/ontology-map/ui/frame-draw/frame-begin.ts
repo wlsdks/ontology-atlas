@@ -13,7 +13,7 @@ import { DOME_RING_ALPHA, type DomeNodeFrame } from "../../model/dome-view";
 import { DEFAULT_TIER_REVEAL } from "../../model/tier-visibility";
 import { labelZoomScale } from "../../render/labels";
 import { worldToScreen } from "../topology-camera-math";
-import { S, ZERO_DOME_FRAME, domeNodeFrameReused } from "./frame-state";
+import { passState, ZERO_DOME_FRAME, domeNodeFrameReused } from "./frame-state";
 import { TRAIL_GLINT_PERIOD_MS } from "./trail-curves";
 import { type FrameDrawParams } from "./frame-draw-params";
 import { type FrameScope } from "./frame-scope";
@@ -63,7 +63,7 @@ export function beginFrame(F: FrameScope, params: FrameDrawParams): void {
   const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
   const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
   const skyTimeMs = now - 0;
-  S.drawnSkyTimeMs = skyTimeMs;
+  passState.drawnSkyTimeMs = skyTimeMs;
   const domeFrameFor = (nodeId: string): DomeNodeFrame => (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
   if (domeOn) {
     domeNodeFrameReused.length = 0;

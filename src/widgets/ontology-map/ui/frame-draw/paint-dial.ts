@@ -4,7 +4,7 @@ import { clearDialFrame, dialOwnsFlatPaint, paintDialFrame } from "../../dial/fr
 import { readDialTokens } from "../../dial/tokens";
 import { tierAssemblyAppear } from "../../morph/tier-assembly";
 import type { FlatDialFrameProps } from "../topology-loop-contract";
-import { S, effectiveAlphaByIdReused } from "./frame-state";
+import { passState, effectiveAlphaByIdReused } from "./frame-state";
 import { type FrameDrawParams } from "./frame-draw-params";
 import { type FrameScope } from "./frame-scope";
 
@@ -56,12 +56,12 @@ function paintOwnedDial(params: FrameDrawParams, ctx: CanvasRenderingContext2D, 
     domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,
   });
   effectiveAlphaByIdReused.clear();
-  S.effectiveAlphaWorld = new WeakRef(world);
+  passState.effectiveAlphaWorld = new WeakRef(world);
   for (const node of world.nodes)
     effectiveAlphaByIdReused.set(node.id, result.alphas.get(node.id) ?? 0);
-  S.drawnLabelBoxes = result.labelBoxes;
-  S.drawnRelationCaptions = [];
-  S.drawnNodeCount = result.drawnCount;
+  passState.drawnLabelBoxes = result.labelBoxes;
+  passState.drawnRelationCaptions = [];
+  passState.drawnNodeCount = result.drawnCount;
   return true;
 }
 

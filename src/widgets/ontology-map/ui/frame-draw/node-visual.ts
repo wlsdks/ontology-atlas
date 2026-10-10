@@ -8,6 +8,18 @@ import type { WorldNode } from "../topology-world";
 
 export const nodeVisualCache: (NodeVisual | undefined)[] = new Array(16);
 
+let nodeVisualCacheTokens: OntologyMapTokens | null = null;
+
+let nodeVisualCacheReducedMotion: boolean | null = null;
+
+export function resetNodeVisualCacheFor(tokens: OntologyMapTokens, reducedMotion: boolean): void {
+  if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
+    nodeVisualCache.fill(undefined);
+    nodeVisualCacheTokens = tokens;
+    nodeVisualCacheReducedMotion = reducedMotion;
+  }
+}
+
 export const neuralPaletteCache = new WeakMap<NodeVisual, {
   ramp: number; ink: string; fill: string; stroke: string;
 }>();

@@ -3,6 +3,7 @@ export const TRAIL_STAR_SWELL = 0.7;
 export const TRAIL_IGNITE_MS = 360;
 const TRAIL_IGNITE_SPAN_MS = 900;
 
+// The stride makes the last star finish exactly at the span.
 export function trailIgniteStartMs(step: number, total: number): number {
   const stride = (TRAIL_IGNITE_SPAN_MS - TRAIL_IGNITE_MS) / Math.max(1, total - 1);
   return Math.max(0, step - 1) * stride;
@@ -25,6 +26,7 @@ export function starSwellCurve(t: number): number {
 }
 
 const TRAIL_SWELL_PHASE_EXP = 2.11;
+// The twinkle must stay meaningless: step order is carried by ordinals, not brightness.
 export const TRAIL_STAR_TWINKLE = 0.14;
 export const TRAIL_STAR_TWINKLE_MS = 3200;
 export const TRAIL_STAR_TWINKLE_SPREAD_MS = 1400;

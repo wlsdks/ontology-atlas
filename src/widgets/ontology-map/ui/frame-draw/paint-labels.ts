@@ -35,7 +35,7 @@ import {
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
 import { rankedDiscChildren, rankedEgoNeighbors } from "../frame-cache/structure";
 import { radiusForKind, type WorldNode } from "../topology-world";
-import { S } from "./frame-state";
+import { passState } from "./frame-state";
 import { type FrameScope } from "./frame-scope";
 
 const LABEL_SIDE_GAP = 3;
@@ -321,12 +321,12 @@ export function paintLabels(F: FrameScope): void {
   prevPlacedLabelIds = placedIds;
   if (domeOn)
     drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
-  S.drawnLabelBoxes = [];
+  passState.drawnLabelBoxes = [];
   for (const { payload, presenceAlpha } of drawList) {
     if (presenceAlpha > 0.5) {
       const box = labelBboxById.get(payload.nodeId);
       if (box)
-        S.drawnLabelBoxes.push({ nodeId: payload.nodeId, text: payload.text, ...box });
+        passState.drawnLabelBoxes.push({ nodeId: payload.nodeId, text: payload.text, ...box });
     }
     labelsDraw(ctx, {
       kind: payload.kind,

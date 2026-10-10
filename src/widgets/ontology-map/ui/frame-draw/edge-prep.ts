@@ -3,7 +3,7 @@ import type { RelationCaption } from "../../render/relation-captions";
 import { selectAmbientDependsComets, selectEgoContainsComets } from "../../render/edge-fireflies";
 import { isSpineNode, type TopologyWorld, type WorldEdge } from "../topology-world";
 import { edgeRevealProgress } from "../../expressive/edge-reveal";
-import { S } from "./frame-state";
+import { passState } from "./frame-state";
 import { type FrameScope } from "./frame-scope";
 
 const EMPTY_EGO_COMET_EDGES: ReadonlySet<WorldEdge> = new Set();
@@ -62,7 +62,7 @@ export function prepareEdges(F: FrameScope): void {
       ? edgeRevealProgress(egoRevealById.get(focusedNodeId) ?? 1, reducedMotion)
       : 1;
   const captionCandidates: RelationCaption[] = [];
-  S.drawnRelationCaptions = [];
+  passState.drawnRelationCaptions = [];
   const isSpineEndpoint = (id: string): boolean => {
     const node = world.nodeById.get(id);
     return node !== undefined && isSpineNode(node);

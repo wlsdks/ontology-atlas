@@ -168,7 +168,3 @@ export interface FrameScope {
   chipReservations: ReservedBox[];
   safeRect: SafeRect;
 }
-
-// One scope refilled every frame; a pass reads only what the passes before it wrote.
-// Safe because the draw runs synchronously from a single rAF loop.
-export const frameScope = {} as FrameScope;

@@ -7,20 +7,25 @@ import {
 } from "../../render/strata-lod";
 import type { ReservedBox } from "../../render/label-layout";
 import { isPreviewEndpointHidden } from "../../render/preview-edge";
-import { S, domeNodeFrameReused, drawnScreenRadiusByIdReused, lodDustByState } from "./frame-state";
+import { passState, domeNodeFrameReused, drawnScreenRadiusByIdReused, lodDustByState } from "./frame-state";
 import { type FrameScope } from "./frame-scope";
 
 const lodDust = createStrataLodDust();
 
 // `nodeLayer` may wrap the context; every later pass paints through the wrapped one.
 export function beginNodeLayer(F: FrameScope): void {
-  const { params, domeLight, world, clusteredIds, previewEdge, viewportWidth, viewportHeight, camX,
-    camY, camScale, halfW, halfH, litFocusRamp, lod } = F;
-  let { ctx } = F;
-  ctx = params.nodeLayer?.(ctx) ?? ctx;
+  const { params } = F;
+  const ctx = params.nodeLayer?.(F.ctx) ?? F.ctx;
   drawnScreenRadiusByIdReused.clear();
-  const drawnScreenRadiusById = drawnScreenRadiusByIdReused;
   const nodeDiscReservations: ReservedBox[] = [];
+  F.ctx = ctx;
+  F.drawnScreenRadiusById = drawnScreenRadiusByIdReused;
+  F.nodeDiscReservations = nodeDiscReservations;
+}
+
+export function paintStrataDust(F: FrameScope): void {
+  const { ctx, domeLight, world, clusteredIds, previewEdge, viewportWidth, viewportHeight, camX,
+    camY, camScale, halfW, halfH, litFocusRamp, lod } = F;
   lodDustByState.current = 0;
   lodDustByState.stale = 0;
   lodDustByState.unknown = 0;
@@ -36,7 +41,7 @@ export function beginNodeLayer(F: FrameScope): void {
       const frame = domeNodeFrameReused[i];
       if (frame.a <= 0.01)
         continue;
-      const weight = frame.a * (1 - S.lodPresenceReused[i]);
+      const weight = frame.a * (1 - passState.lodPresenceReused[i]);
       if (weight <= 0.01)
         continue;
       if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id))
@@ -55,12 +60,9 @@ export function beginNodeLayer(F: FrameScope): void {
         addStrataLodDust(lodDust, node.kind, to, frame.u, weight * evidenceRamp, x, y);
       }
     }
-    S.lodDustDrawn = drawStrataLodDust(ctx, lodDust, { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb }, domeFogAlpha, 1 - 0.55 * litFocusRamp, lodDustByState);
+    passState.lodDustDrawn = drawStrataLodDust(ctx, lodDust, { kindRgb: domeLight.kindRgb, warningRgb: domeLight.warningRgb }, domeFogAlpha, 1 - 0.55 * litFocusRamp, lodDustByState);
   }
   else {
-    S.lodDustDrawn = 0;
+    passState.lodDustDrawn = 0;
   }
-  F.ctx = ctx;
-  F.drawnScreenRadiusById = drawnScreenRadiusById;
-  F.nodeDiscReservations = nodeDiscReservations;
 }

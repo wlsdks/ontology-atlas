@@ -26,7 +26,7 @@ import { indexedPulseEdges } from "../frame-cache/structure";
 import { radiusForKind } from "../topology-world";
 import { beginEdgeGlow, endEdgeGlow } from "../../expressive/ego-light";
 import {
-  S,
+  passState,
   ZERO_DOME_FRAME,
   domeEdgeFrameAReused,
   domeEdgeFrameBReused,
@@ -42,6 +42,7 @@ import {
 import { type FrameScope } from "./frame-scope";
 
 const EDGE_CULL_MARGIN_PX = 24;
+// Shared scratch: use the result before the next call and never keep it.
 const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 const HOVER_RECEDE_ALPHA_STEP = 0.3;
@@ -236,8 +237,8 @@ export function paintEdges(F: FrameScope): void {
         widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
         minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
         halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
-        containsCometEligible: kind === "contains" ? S.mapCometsOn && egoCometEdges.has(edge) : undefined,
-        dependsCometEligible: kind === "depends" ? S.mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
+        containsCometEligible: kind === "contains" ? passState.mapCometsOn && egoCometEdges.has(edge) : undefined,
+        dependsCometEligible: kind === "depends" ? passState.mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
         cometOwner: edge,
       }, traceTokensFrame);
       if (edgeGlows)

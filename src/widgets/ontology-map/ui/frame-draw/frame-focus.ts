@@ -1,22 +1,18 @@
 import type { DomeNodeFrame } from "../../model/dome-view";
 import { lerpColorHex } from "../../render/grid";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { worldToScreen } from "../topology-camera-math";
 import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../topology-world";
-import { EMPTY_NEIGHBOR_SET, S, litSectorIdsReused, lodHoverEgoReused } from "./frame-state";
-import { nodeVisualCache } from "./node-visual";
+import { EMPTY_NEIGHBOR_SET, passState, litSectorIdsReused, lodHoverEgoReused } from "./frame-state";
+import { resetNodeVisualCacheFor } from "./node-visual";
 import { type FrameScope } from "./frame-scope";
 
+// Shared scratch: use the result before the next call and never keep it.
 const edgePointsScratch = {
   a: { x: 0, y: 0 },
   b: { x: 0, y: 0 },
   control: { x: 0, y: 0 },
 };
-
-let nodeVisualCacheTokens: OntologyMapTokens | null = null;
-
-let nodeVisualCacheReducedMotion: boolean | null = null;
 
 export function prepareFocus(F: FrameScope): void {
   const { camera, viewportWidth, viewportHeight, domeControlFor, colorFocusedNodeId, focusRampById,
@@ -96,8 +92,8 @@ export function prepareFocus(F: FrameScope): void {
   }
   const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
   if (lod !== null) {
-    if (S.lodPresenceReused.length < world.nodes.length)
-      S.lodPresenceReused = new Float32Array(world.nodes.length);
+    if (passState.lodPresenceReused.length < world.nodes.length)
+      passState.lodPresenceReused = new Float32Array(world.nodes.length);
     lodHoverEgoReused.clear();
     if (hoveredNodeId !== null) {
       lodHoverEgoReused.add(hoveredNodeId);
@@ -107,11 +103,7 @@ export function prepareFocus(F: FrameScope): void {
   }
   const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
-  if (nodeVisualCacheTokens !== tokens || nodeVisualCacheReducedMotion !== reducedMotion) {
-    nodeVisualCache.fill(undefined);
-    nodeVisualCacheTokens = tokens;
-    nodeVisualCacheReducedMotion = reducedMotion;
-  }
+  resetNodeVisualCacheFor(tokens, reducedMotion);
   const traceTokensFrame = {
     edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
     edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),

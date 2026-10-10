@@ -16,7 +16,7 @@ import { rollUpStrataDependencies } from "../../model/strata-lod";
 import { lerpColorHex } from "../../render/grid";
 import type { WorldEdge } from "../topology-world";
 import {
-  S,
+  passState,
   ZERO_DOME_FRAME,
   domeEdgeFrameAReused,
   domeEdgeFrameBReused,
@@ -134,7 +134,7 @@ export function paintDomeStage(F: FrameScope): void {
     }
     drawStrataLodSheets(ctx, lod.shapes, lod.shapeCount, lodContainsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
   }
-  S.lodChordsDrawn = 0;
+  passState.lodChordsDrawn = 0;
   if (lod !== null && lod.index !== null) {
     const index = lod.index;
     const slots = index.domainIds.length;
@@ -145,7 +145,7 @@ export function paintDomeStage(F: FrameScope): void {
       world.edges,
       edgeEnds.source,
       edgeEnds.target,
-      (i) => S.lodPresenceReused[i],
+      (i) => passState.lodPresenceReused[i],
       (i) => domeNodeFrameReused[i].a,
       (slot) => lod.ramps[slot] ?? 0);
     let chordCount = 0;
@@ -191,7 +191,7 @@ export function paintDomeStage(F: FrameScope): void {
     if (lodDependsInk === null || lodDependsInk.hex !== tokens.edgeDepends) {
       lodDependsInk = { hex: tokens.edgeDepends, rgb: hexToRgb(tokens.edgeDepends) ?? [102, 102, 133] };
     }
-    S.lodChordsDrawn = drawStrataLodChords(ctx, lodChordPool, chordCount, lodDependsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
+    passState.lodChordsDrawn = drawStrataLodChords(ctx, lodChordPool, chordCount, lodDependsInk.rgb, domeFogAlpha, 1 - 0.55 * litFocusRamp);
   } else {
     lodChords.represented = 0;
     lodChords.hidden = 0;

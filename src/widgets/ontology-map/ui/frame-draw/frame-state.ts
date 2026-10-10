@@ -5,7 +5,8 @@ import type { PlacedRelationCaption } from "../../render/relation-captions";
 import type { TopologyWorld } from "../topology-world";
 
 // State that several pass modules reassign; an imported `let` cannot be reassigned.
-export const S = {
+export const passState = {
+  // Weak, so a closed map holds no graph.
   effectiveAlphaWorld: null as WeakRef<TopologyWorld> | null,
   lodPresenceReused: new Float32Array(0),
   lodDustDrawn: 0,
@@ -24,6 +25,7 @@ export const S = {
   drawnSkyTimeMs: 0,
 };
 
+// 0.8 is the floor that keeps dimmed background marks at 3:1 contrast or better.
 export const BACKGROUND_DIM_WHEN_EXPANDED = 0.8;
 export const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 export const effectiveAlphaByIdReused = new Map<string, number>();
@@ -42,9 +44,9 @@ export function lastDrawnLod(): {
   hidden: number;
 } {
   return {
-    dust: S.lodDustDrawn,
+    dust: passState.lodDustDrawn,
     dustStates: { ...lodDustByState },
-    chords: S.lodChordsDrawn,
+    chords: passState.lodChordsDrawn,
     represented: lodChords.represented,
     hidden: lodChords.hidden,
   };
@@ -57,14 +59,17 @@ export function lastHiddenDependencies(): number {
 export const lodChords = createStrataLodChords();
 export const lodHoverEgoReused = new Set<string>();
 export const drawnScreenRadiusByIdReused = new Map<string, number>();
+// Shared by every 2D node; never mutate it.
 export const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
 
+// Hit testing reads the alphas this frame drew, so every channel that lifts a node stays clickable.
 export function lastDrawnNodeAlphas(): ReadonlyMap<string, number> {
   return effectiveAlphaByIdReused;
 }
 
+// Counted after culling; the readout must not infer it from the zoom tier.
 export function lastDrawnNodeCount(): number {
-  return S.drawnNodeCount;
+  return passState.drawnNodeCount;
 }
 
 export const litDrawnStateCounts: Record<EvidenceLight, number> = { current: 0, stale: 0, unknown: 0 };
@@ -74,15 +79,16 @@ export function lastLitStateCounts(): Readonly<Record<EvidenceLight, number>> {
 }
 
 export function setMapComets(on: boolean): void {
-  S.mapCometsOn = on;
+  passState.mapCometsOn = on;
 }
 
-export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return S.drawnRelationCaptions; }
+export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return passState.drawnRelationCaptions; }
 
 export function lastDrawnSkyTimeMs(): number {
-  return S.drawnSkyTimeMs;
+  return passState.drawnSkyTimeMs;
 }
 
+// Recorded when drawn, not when placed: a fading-out label still paints.
 export function lastDrawnLabelBoxes(): readonly {
   nodeId: string;
   text: string;
@@ -91,5 +97,5 @@ export function lastDrawnLabelBoxes(): readonly {
   maxX: number;
   maxY: number;
 }[] {
-  return S.drawnLabelBoxes;
+  return passState.drawnLabelBoxes;
 }
