@@ -850,7 +850,19 @@
         "unknown": "ソースの現在の状態は未確認"
       },
       "declarationCompact": "宣言{count}件",
-      "documentTitle": "分析 · Ontology Atlas"
+      "documentTitle": "分析 · Ontology Atlas",
+      "findConnection": "関係を検索",
+      "findCapability": "能力を検索",
+      "searchByName": "名前で検索",
+      "clearSearch": "クリア",
+      "searchMatches": "{total}件中{count}件が一致",
+      "listShown": "{total}件中{shown}件を表示",
+      "noSearchResults": "一致する名前がありません。検索語を変えてください。",
+      "selectionKept": "現在の選択内容は引き続き表示されます。",
+      "showMoreItems": "さらに{count}件を表示",
+      "showLessItems": "折りたたむ",
+      "gapClaims": "記録の不足 · {count}",
+      "capabilityFilter": "能力の表示範囲"
     }
   }
 }

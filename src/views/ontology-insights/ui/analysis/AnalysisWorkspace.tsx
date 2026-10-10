@@ -13,9 +13,10 @@ import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { buildTopologyMeaningEditorNodeHref, buildEdgeTypeRows, computeEdgeTypeDistribution, useEdgeTypeLabel, resolveNodeDocument, type KnowledgeGraphNode, type KnowledgeGraphEdge } from '@/entities/knowledge-graph';
 import { CopyAgentTextButton } from '../parts/CopyAgentTextButton';
 import { selectedAnalysisRequest } from '../../lib/selected-analysis-request';
-import { visibleAnalysisItems } from '../../lib/analysis-selection';
+import { filterAnalysisItems, visibleAnalysisItems } from '../../lib/analysis-selection';
 import { buildAnalysisModel, type AnalysisClaim } from '../../lib/analysis-model';
 import { PairRail } from './PairRail';
+import { AnalysisListSearch } from './AnalysisListSearch';
 import { DependencyDiagram } from './DependencyDiagram';
 import styles from './analysis.module.css';
 
@@ -37,6 +38,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const [edgeId, setEdgeId] = useState<string | null>(initialEdge ?? null);
   const [claimId, setClaimId] = useState<string | null>(initialClaim ?? null);
   const [claimLimit, setClaimLimit] = useState(6);
+  const [claimQuery, setClaimQuery] = useState('');
   const [rolePage, setRolePage] = useState({ claim: '', limit: 6 });
   const claimList = useRef<HTMLDivElement>(null);
   const pendingClaimFocus = useRef<string | null>(initialClaim && model.claims.some(item => item.node.id === initialClaim) ? initialClaim : null);
@@ -46,6 +48,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const pair = model.pairs.find(candidate => candidate.id === pairId) ?? model.pairs[0] ?? null;
   const edge = pair?.edges.find(candidate => candidate.id === edgeId) ?? pair?.edges[0] ?? null;
   const candidates = onlyGaps ? model.gaps : model.claims;
+  const filteredClaims = useMemo(() => filterAnalysisItems(candidates, claimQuery, item => [name(item.node), item.node.title]), [candidates, claimQuery]);
   const claim = candidates.find(candidate => candidate.node.id === claimId) ?? candidates[0] ?? null;
   const roleLimit = rolePage.claim === claim?.node.id ? rolePage.limit : 6;
   const implementationClaim = edge ? model.claims.find(item => item.node.id === edge.from || item.roles.some(role => role.id === edge.from)) : null;
@@ -60,7 +63,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const missingSelection = Boolean(initialClaim && !model.claims.some(item => item.node.id === initialClaim) || initialEdge && !model.pairs.some(item => item.edges.some(candidate => candidate.id === initialEdge)));
   const project = model.projects.length === 1 ? model.projects[0] : null;
   const scopeName = project ? name(project) : mode === 'local' && vault.handle ? vault.handle.name : t('scopeAll');
-  const visibleClaims = visibleAnalysisItems(candidates, claimLimit, claim?.node.id ?? null, item => item.node.id);
+  const visibleClaims = visibleAnalysisItems(filteredClaims, claimLimit, claim?.node.id ?? null, item => item.node.id);
   useLayoutEffect(() => {
     if (!evidenceQuestion && pendingEdgeFocus.current) {
       const selected = graphStage.current?.querySelector<HTMLButtonElement>('[data-testid="analysis-witness"][aria-pressed="true"]');
@@ -73,14 +76,15 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   function inspectImplementation() {
     if (!implementationClaim) return;
     pendingClaimFocus.current = implementationClaim.node.id;
+    setClaimQuery(''); setClaimLimit(6);
     setQuestion('evidence'); setOnlyGaps(false); setClaimId(implementationClaim.node.id);
   }
   function revealClaims() {
-    const next = visibleAnalysisItems(candidates, claimLimit + 6, claim?.node.id ?? null, item => item.node.id);
+    const next = visibleAnalysisItems(filteredClaims, claimLimit + 6, claim?.node.id ?? null, item => item.node.id);
     pendingClaimFocus.current = next.find(item => !visibleClaims.some(shown => shown.node.id === item.node.id))?.node.id ?? null;
     setClaimLimit(value => value + 6);
   }
-  function openEvidence(gaps: boolean) { setQuestion('evidence'); setOnlyGaps(gaps); setClaimId(null); }
+  function openEvidence(gaps: boolean) { pendingClaimFocus.current = null; setClaimQuery(''); setClaimLimit(6); setQuestion('evidence'); setOnlyGaps(gaps); setClaimId(null); }
   return <section className={styles.workspace} data-testid="analysis-workspace" data-analysis-capability-count={model.claims.length} data-analysis-cross-count={model.crossCount} data-analysis-project-count={model.projects.length}>
     <div className={styles.scopeBar} data-testid="analysis-scope">
       <div className="flex min-w-0 items-center gap-2"><OntologyMapKindGlyph kind="project" size={16} /><span className="text-body font-[var(--font-weight-strong)]">{scopeName}</span><span className="text-label text-[color:var(--color-text-tertiary)]">{mode === 'static' ? t('example') : t('recorded')}{!project ? ` · ${t('scopeCount', { count: model.projects.length })}` : ''}</span></div>
@@ -96,9 +100,14 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     {!pair && question === 'relationships' ? <p className="mb-4 text-body text-[color:var(--color-text-secondary)]">{t('noDependencies', { count: model.dependencyCount })}</p> : null}
     <div className={styles.layout} data-testid="analysis-layout">
       {!evidenceQuestion && pair ? <PairRail pairs={model.pairs} selected={pair.id} count={model.crossCount} onSelect={next => { setPairId(next.id); setEdgeId(null); }} /> : <nav className={styles.pairRail} aria-label={t('chooseCapability')}>
-        <div className={styles.railHeading}><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('allClaims', { count: candidates.length })}</h3>{candidates.length > claimLimit ? <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={revealClaims}>{t('morePairsCompact', { count: candidates.length - claimLimit })}</Button> : null}</div>
-        <div className="mb-3 flex flex-wrap gap-1"><Button size="sm" className="atlas-touch-floor" variant={onlyGaps ? 'outline' : 'ghost'} onClick={() => openEvidence(true)}>{t('gapsFilter')}</Button><Button size="sm" className="atlas-touch-floor" variant={!onlyGaps ? 'outline' : 'ghost'} onClick={() => openEvidence(false)}>{t('allFilter')}</Button></div>
+        <div className={styles.railHeading}><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t(onlyGaps ? 'gapClaims' : 'allClaims', { count: candidates.length })}</h3></div>
+        <div className="mb-3"><SegmentedControl ariaLabel={t('capabilityFilter')} value={onlyGaps ? 'gaps' : 'all'} onChange={value => openEvidence(value === 'gaps')} options={[{ value: 'all', label: t('allFilter') }, { value: 'gaps', label: t('gapsFilter') }]} /></div>
+        <AnalysisListSearch value={claimQuery} onChange={value => { pendingClaimFocus.current = null; setClaimQuery(value); setClaimLimit(6); }} label={t('findCapability')} shown={visibleClaims.length} matches={filteredClaims.length} total={candidates.length} selectionHidden={Boolean(claimQuery.trim() && claim && !filteredClaims.some(item => item.node.id === claim.node.id))} testId="analysis-claim-search" />
         <div ref={claimList} className={styles.pairChoices}>{visibleClaims.map(item => <button type="button" key={item.node.id} data-testid="analysis-claim" data-analysis-claim-id={item.node.id} aria-pressed={claim?.node.id === item.node.id} onClick={() => setClaimId(item.node.id)} className={controlClass({ hoverSurface: 'lift', shape: 'row', size: 'lg', tone: claim?.node.id === item.node.id ? 'accentOnTint' : 'default', active: claim?.node.id === item.node.id, className: 'atlas-touch-floor w-full' })}><OntologyMapKindGlyph kind="capability" size={14} /><span>{name(item.node)}</span></button>)}</div>
+        <div className={styles.railActions}>
+          {filteredClaims.length > claimLimit ? <Button variant="ghost" size="sm" className="atlas-touch-floor" data-testid="analysis-claims-more" onClick={revealClaims}>{t('showMoreItems', { count: Math.min(6, filteredClaims.length - claimLimit) })}</Button> : null}
+          {claimLimit > 6 ? <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => { pendingClaimFocus.current = visibleAnalysisItems(filteredClaims, 6, claim?.node.id ?? null, item => item.node.id)[0]?.node.id ?? null; setClaimLimit(6); }}>{t('showLessItems')}</Button> : null}
+        </div>
       </nav>}
       <div ref={graphStage} className={styles.stage}>
         {!evidenceQuestion && pair && edge ? <DependencyDiagram pair={pair} selected={edge} byId={model.byId} onSelect={next => setEdgeId(next.id)} /> : claim ? <div className={styles.capabilityObject}>

@@ -19,8 +19,11 @@ The bundled example is explicitly labeled.
 The selected responsibility pair owns the headline. A visible comparison rail
 starts with six named pairs, ordered by their distinct declaration counts, with
 a selected pair retained even when it falls outside that initial set. The scope
-total covers every pair, not only the visible choices. Additional pairs have an
-explicit remainder action.
+total covers every pair, not only the visible choices. Search matches the
+displayed or canonical names at either end without changing the selected graph
+or evidence. Additional pairs reveal six at a time in a bounded list; the action
+names the actual next batch and moves focus to its first new choice. Collapse
+returns to six choices while retaining the selection.
 
 The graph expands the selected pair into its actual concept endpoints. Every
 thin directed line is one declared `depends_on` edge; containment and loose
@@ -50,7 +53,12 @@ relation to a real element document. A reference-only element or reverse
 containment does not count. An implementation role without a source path remains
 an anchor in the ontology; it is not checked code. Document, anchor, definition,
 boundary and uncertainty gaps are distinct facts. A document without an available
-`meaningFindings` array is unchecked, not clean. Each shortened set has a named
+`meaningFindings` array is unchecked, not clean. Capability search narrows the
+All or Recorded gaps scope without replacing the selected evidence. A zero-result
+search preserves that evidence and offers a clear action; clearing or pressing
+Escape returns focus to the search field. Selecting a result is explicit, and
+that selection remains in the first six when the query is cleared. The scope
+filter is an exclusive keyboard-operable control. Each shortened set has a named
 remainder action.
 
 The selected claim links to its declaring document. A local, documented claim

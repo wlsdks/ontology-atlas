@@ -850,7 +850,19 @@
         "unknown": "Source currentness not checked"
       },
       "declarationCompact": "{count} declarations",
-      "documentTitle": "Analysis · Ontology Atlas"
+      "documentTitle": "Analysis · Ontology Atlas",
+      "findConnection": "Search connections",
+      "findCapability": "Search capabilities",
+      "searchByName": "Search by name",
+      "clearSearch": "Clear",
+      "searchMatches": "{count} of {total} match",
+      "listShown": "{shown} of {total} shown",
+      "noSearchResults": "No matching names. Try another search.",
+      "selectionKept": "The current selection remains visible.",
+      "showMoreItems": "Show {count} more",
+      "showLessItems": "Show less",
+      "gapClaims": "Record gaps · {count}",
+      "capabilityFilter": "Capability scope"
     }
   }
 }
