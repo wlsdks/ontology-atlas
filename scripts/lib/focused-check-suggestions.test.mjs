@@ -146,7 +146,7 @@ describe('focused check suggestions', () => {
     for (const living of ['docs/contracts/analysis-records.md', 'docs/features/map/canvas.md', 'docs/records/README.md', 'docs/.moved.json', 'scripts/lib/doc-types.mjs']) {
       assert.ok(commandNames(suggestFocusedChecks([living])).includes(meta), living);
     }
-    for (const frozen of ['docs/DECISIONS.md', 'docs/BACKLOG-SNAPSHOT-2026-09-13.md', 'docs/records/decisions/x.md', 'docs/ontology/capabilities/x.md', 'docs/audits/x.md']) {
+    for (const frozen of ['docs/DECISIONS.md', 'docs/records/decisions/x.md', 'docs/ontology/capabilities/x.md', 'docs/audits/x.md']) {
       assert.ok(!commandNames(suggestFocusedChecks([frozen])).includes(meta), frozen);
     }
   });

@@ -74,7 +74,7 @@ Meaning acquisition, later-task usefulness, review burden, and retention are
 separate measurements. Public copy states current mechanisms and their limits;
 development priorities do not become shipped guarantees.
 
-Execution priority and current-record discovery start at [BACKLOG.md](BACKLOG.md); the
+The
 [detailed V1–V4 plan](MEANING-WORKFLOW-PLAN.md) specifies each implementation
 and verification commitment. The
 [PO operating system](PRODUCT-OWNER-OPERATING-SYSTEM.md) turns this product model
@@ -96,7 +96,7 @@ current value emphasis and workflow priorities where wording differs.
 > **Marketing copy starts from the friction experienced while using agents, but the product's core remains "a set used together by both."** Every screen must satisfy two things: can agents use it directly (typed facts · redirect text), and can humans read and judge it (plain language · visible priority)?
 > The first screen is also split. The public web has an introduction page (the place to bring people in), and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
 
-> **[Current Canonical] This document handles product direction, `docs/DECISIONS.md` handles decision rationale, and `docs/BACKLOG.md` routes to implementation order and independent task records.**
+> **[Current Canonical] This document handles product direction, and `docs/DECISIONS.md` handles decision rationale.**
 > `docs/plans/PRODUCT-PLAN-2026-07.md` and other files in `docs/plans/` are historical records preserving intent and review history at the time; they do not indicate current state or execution order.
 > **[v9, 2026-07-17]** What the plan at that time defined was four things. ① Split the product into two layers — Layer 1 is core functionality running on your computer, never changing; Layer 2 is Atlas Network (Spec standard · Hub · paid Team Sync created only after demand is confirmed). ② Narrow the primary target to one group: "tech leads of 2-10 person teams." ③ Correct the multiple stakeholders noted in v8 to "those who ask questions after passing the gate." ④ The core differentiator is a feature proving that written content is still valid — catching mismatches between code and docs, placing approval in three stages, and preventing prompt injection. The v2~v8 body of this file is kept for record.
 
@@ -790,7 +790,7 @@ The direction is no longer waiting on a phase pick. The active bar is evidence:
 
 The checks below establish runtime availability. They are necessary but do not
 close the v12 product thesis: unfamiliar-codebase meaning quality, correct human
-judgment, and reuse across real tasks need their own evidence under BACKLOG V1–V4.
+judgment, and reuse across real tasks need their own evidence under V1–V4.
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
 - Topology + INDEX is the read/inspect surface, contextual map writing is the

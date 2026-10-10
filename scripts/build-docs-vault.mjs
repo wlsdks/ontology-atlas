@@ -283,10 +283,6 @@ const NOT_PRODUCT_DOCS = new Set(['analyses', 'records']);
 // slug resolves to its GitHub page (`src/widgets/docs-vault/lib/resolve-doc-link.ts`).
 const NOT_SHIPPED_TOP_DIRS = new Set(['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch']);
 
-// Single files that stay in the repository but leave the app, as paths relative
-// to the scanned root. The backlog snapshot is a frozen dated copy.
-const NOT_PRODUCT_PATHS = new Set(['BACKLOG-SNAPSHOT-2026-09-13.md']);
-
 // `product: false` lists every Markdown file under `dir` with no exclusion; the
 // staleness check uses it on the public output so a leftover file is reported.
 async function walk(dir, { root = dir, product = true } = {}) {
@@ -311,7 +307,6 @@ async function walk(dir, { root = dir, product = true } = {}) {
     }
     if (product && atRoot && entry.isDirectory() && NOT_SHIPPED_TOP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
-    if (product && NOT_PRODUCT_PATHS.has(path.relative(root, full).split(path.sep).join('/'))) continue;
     if (entry.isDirectory()) {
       const nested = await walk(full, { root, product });
       out.push(...nested);

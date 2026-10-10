@@ -61,16 +61,6 @@ Fragments whose names start with a UUID (`po-runs`, `po-updates`, `po-policy`)
 are unordered on disk: any "latest" or "since" claim sorts by the `date`
 field, never by listing order.
 
-## Backlog observations
-
-`docs/BACKLOG.md` is a stable entrypoint. `pnpm backlog` reads current task
-states from `docs/records/backlog/`. Filenames contain the date, task, and a
-fresh UUID. Every observation
-gets a fresh UUID and an explicit worktree label. Status changes append a record
-referencing the current head UUIDs; they never modify another worktree's file.
-Concurrent heads remain visible until an author records an explicit reconciliation.
-See [the backlog guide](../BACKLOG.md) for read, append, and validation commands.
-
 ## Worktrees and old branches
 
 The generated `src/entities/docs-vault/data/` and `public/docs-vault/` trees are

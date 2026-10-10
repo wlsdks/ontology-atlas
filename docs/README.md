@@ -28,7 +28,6 @@ or a test that parses them pins their path.
 | Agent and terminal surfaces | `../mcp/README.md`, `../cli/README.md`, `AGENT-GRAPH-WORKFLOW.md` |
 | Verification and release | `DEVELOPMENT-CHECKS.md`, `DESKTOP-MACOS.md`, `TROUBLESHOOTING.md` |
 | Visual rules | `DESIGN-SYSTEM.md` |
-| Task status | `BACKLOG.md` (`pnpm backlog`) |
 
 ## Folders
 
@@ -41,7 +40,7 @@ or a test that parses them pins their path.
 | `engineering/` | build, deploy, stack and testability | yes |
 | `specs/` | dated feature design specs | yes |
 | `ontology/` | the project's dogfood ontology vault | yes |
-| `records/` | decision, change, release, backlog and pilot fragments | `records/README.md` only |
+| `records/` | decision, change, release and pilot fragments | `records/README.md` only |
 | `plans/` | plans, historical and one live program | no |
 | `launch/` | marketing copy and the demo shoot | no |
 | `archive/`, `audits/`, `benchmark/`, `prototypes/` | dated evidence and drafts | no |
@@ -53,8 +52,7 @@ which resolves to their GitHub page.
 
 ## Historical material
 
-`DECISIONS.md`, `CHANGELOG.md`, `PO-PILOT.md` and
-`BACKLOG-SNAPSHOT-2026-09-13.md` are frozen history; new decisions, changes and
+`DECISIONS.md`, `CHANGELOG.md` and `PO-PILOT.md` are frozen history; new decisions, changes and
 pilot runs are fragments under `records/` written by `pnpm record:new`
 ([how](records/README.md)); the PO pilot is closed and its records are frozen. `archive/`, `audits/`, `plans/` and
 `benchmark/` hold dated context, not current instructions. A deleted superseded

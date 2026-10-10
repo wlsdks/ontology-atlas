@@ -1,12 +1,6 @@
-/** Immutable records and ledgers: backlog, decisions, changelog, and the development-checks reference. */
+/** Immutable records and ledgers: decisions, changelog, and the development-checks reference. */
 
 export const rules = [
-  {
-    order: 10,
-    command: 'pnpm test:backlog && pnpm backlog:check',
-    reason: 'independent backlog records, their writer, or current-state composition changed',
-    matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
-  },
   {
     order: 150,
     command: 'pnpm test:records',

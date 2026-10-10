@@ -135,8 +135,8 @@ visible gaps; the existing finalizer receipt binds that body to the current
 graph and source. CQ revisions, axis results, exact gap acceptance, and the
 pre-write regression remain evidence in the MCP response/agent transcript and
 cannot be reconstructed after restart unless that evidence is handed off. This
-deliberate M1.5 limit preserves `reviewPlan === writePlan`; O1.5 must falsify it
-before Atlas adds another storage contract.
+deliberate limit preserves `reviewPlan === writePlan`; the field qualification
+must falsify it before Atlas adds another storage contract.
 
 ## Independent quality axes
 
@@ -190,14 +190,14 @@ node --test mcp/src/construction-qualification.test.mjs mcp/src/construction-lif
 ```
 
 The fixture and integration round trip are contract specimens, not evidence that
-Atlas has qualified three real products. `O1.5` in
-[`BACKLOG.md`](../BACKLOG-SNAPSHOT-2026-09-13.md#o15--three-product-independent-construction-qualification)
-owns that independent field qualification.
+Atlas has qualified three real products. Independent field qualification on
+three real products is still open (tracked as `O1.5` in
+`git show b1677355a:docs/BACKLOG-SNAPSHOT-2026-09-13.md`).
 
 ## Product disclosure boundary
 
-There is no new UI in this slice. When `U1.3` is reached, basic and expert views
-must project the same packet: the default view may summarize the next decision,
+There is no new UI in this slice. When the progressive-disclosure construction
+UX is built, basic and expert views must project the same packet: the default view may summarize the next decision,
 ambiguity, and approval; the expert view may expand CQs, witnesses, counterexamples,
 diagnostics, and the write plan. Neither view may hide red/unknown/conflict state or
 bypass human acceptance.

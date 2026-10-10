@@ -67,8 +67,7 @@ own work. Plan, review and judge on the strongest model; build a decided slice
 and gather facts on cheaper ones. Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
-Task status: `pnpm backlog -- --task=ID`; `docs/BACKLOG.md` owns the append-only
-record format. Before reversing an existing product or architecture choice, find
+Before reversing an existing product or architecture choice, find
 it with `pnpm decisions:find <terms>` and cite or explicitly overturn it, keeping
 dissent and a falsifier. A record is context from its date, not proof it still
 holds: recheck its conditions and figures against the present before relying on
