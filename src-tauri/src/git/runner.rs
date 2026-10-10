@@ -176,9 +176,9 @@ fn worktree_config_enabled(cwd: &Path) -> bool {
 }
 
 fn discover_filter_overrides(cwd: &Path) -> Vec<String> {
-    // Every scope the hostile repo controls: `--local --includes` sees `include.path`
-    // filters, `--worktree` sees `config.worktree`. `--local` is never dropped, so the
-    // user's global LFS or git-crypt filters keep working.
+    // Every scope the hostile repo controls: `--local --includes` sees filters from
+    // `include.path`/`includeIf`, `--worktree` sees `config.worktree`. `--local` is
+    // never dropped, so the user's global LFS or git-crypt filters keep working.
     let mut filters: Vec<(String, bool)> = Vec::new();
     collect_filter_keys(cwd, &["config", "--local"], &mut filters);
     if worktree_config_enabled(cwd) {
