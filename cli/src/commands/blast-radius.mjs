@@ -4,7 +4,7 @@
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertBlastRadiusShape } from '../lib/query-result-contract/overview-queries.mjs';
+import { assertBlastRadiusShape } from '../lib/query-result-contract/blast-radius.mjs';
 import { assertQueryPlanShape } from '../lib/query-result-contract/query-plan.mjs';
 import {
   printQueryPlan,

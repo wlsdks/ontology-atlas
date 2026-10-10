@@ -1,4 +1,4 @@
-import { BLAST_RADIUS_QUALIFICATION_STATUSES } from './overview-queries.mjs';
+import { BLAST_RADIUS_QUALIFICATION_STATUSES } from '../blast-radius.mjs';
 import {
   MEANING_ASSESSMENT_STATUSES,
   MEANING_QUESTION_IDS,
@@ -9,10 +9,10 @@ import {
   liveWitnessesSupported,
   validMeaningRepair,
   validProjectSourceLive,
-} from './project-source-meaning.mjs';
-import { assertQueryOperation } from './query-operation.mjs';
-import { hasExactKeys, hasNonEmptyString, isPlainObject, validCount } from './value-checks.mjs';
-import { DIAGNOSIS_STATUSES } from './workspace-health.mjs';
+} from '../project-source-meaning.mjs';
+import { assertQueryOperation } from '../query-operation.mjs';
+import { hasExactKeys, hasNonEmptyString, isPlainObject, validCount } from '../value-checks.mjs';
+import { DIAGNOSIS_STATUSES } from '../workspace-health.mjs';
 
 export const AGENT_READINESS_STATUSES = new Set(['ready', 'needs_attention', 'needs_shape']);
 const AGENT_BRIEF_COMPACT_MAX_BYTES = 12_000;

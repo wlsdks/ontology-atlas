@@ -14,15 +14,15 @@ import {
   validAgentResultContracts,
   validAgentToolCall,
   validAgentTraversalStrategy,
-} from './agent-guidance.mjs';
+} from '../agent-guidance.mjs';
 import {
   validMeaningAssessment,
   validMeaningRepair,
   validProjectSourceView,
-} from './project-source-meaning.mjs';
-import { assertQueryOperation } from './query-operation.mjs';
-import { hasNonEmptyString, isPlainObject, validCount } from './value-checks.mjs';
-import { DIAGNOSIS_STATUSES, validHealthCheck, validNextAction } from './workspace-health.mjs';
+} from '../project-source-meaning.mjs';
+import { assertQueryOperation } from '../query-operation.mjs';
+import { hasNonEmptyString, isPlainObject, validCount } from '../value-checks.mjs';
+import { DIAGNOSIS_STATUSES, validHealthCheck, validNextAction } from '../workspace-health.mjs';
 
 export function assertAgentBriefResponseShape(result) {
   return result?.contract === 'agentBriefCompact:v2'

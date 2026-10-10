@@ -1,4 +1,4 @@
-import { validBlastRadiusEdgeRow } from './overview-queries.mjs';
+import { validBlastRadiusEdgeRow } from './blast-radius.mjs';
 import { validPathNode, validUndirectedPathEdge } from './path-queries.mjs';
 import { assertQueryOperation } from './query-operation.mjs';
 import {

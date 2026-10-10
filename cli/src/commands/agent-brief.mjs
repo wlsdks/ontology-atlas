@@ -8,7 +8,7 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertAgentBriefResponseShape,
   agentBriefExitCode,
-} from '../lib/query-result-contract/agent-brief.mjs';
+} from '../lib/query-result-contract/agent-brief/agent-brief.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatUnknownFlagError, parsePositiveIntegerFlag, parseRequiredFlagValue, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';

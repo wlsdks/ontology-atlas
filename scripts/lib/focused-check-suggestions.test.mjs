@@ -670,7 +670,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test cli/src/lib/query-result-contract/agent-brief.test.mjs',
+      'pnpm exec node --test cli/src/lib/query-result-contract/agent-brief/agent-brief.test.mjs',
       'pnpm exec node --test cli/src/lib/query-result-contract/graph-traversal.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
