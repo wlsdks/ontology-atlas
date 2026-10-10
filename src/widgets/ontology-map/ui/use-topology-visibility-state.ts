@@ -124,7 +124,7 @@ export function useTopologyVisibilityState({
    * (one input, one event).
    *
    * ⚠️ In the draw this channel **replaces** the group fade
-   * (`topology-frame-draw.ts`'s `revealMul`); applying both makes alpha the
+   * (`frame-draw/paint-nodes.ts`'s `revealMul`); applying both makes alpha the
    * product of two exponentials. Measured: the chip reached 90% at 391 ms while
    * its children took 621 ms — a 230 ms gap, past the 120 ms threshold. That
    * file guards `batchAppear` against double fades; this channel was added

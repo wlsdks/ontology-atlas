@@ -579,7 +579,7 @@ export function clusterChipRect(
 
 /**
  * Owner report: "The +31 overlapping between nodes looks bad too." Chips are drawn **before** node labels
- * (`topology-frame-draw.ts`), and the label placer (`greedyPlaceLabels`) did not
+ * (`ui/frame-draw/paint-chips.ts`), and the label placer (`greedyPlaceLabels`) did not
  * know chips existed, so labels were painted straight over them. Handing the
  * placer a chip as a **reserved occupant** needs "the rectangle the chip
  * actually occupies this frame".
@@ -738,7 +738,7 @@ export interface ClusterChipDrawInput {
 }
 
 /**
- * Draw one chip. The caller (`topology-frame-draw.ts`) has already set
+ * Draw one chip. The caller (`ui/frame-draw/paint-chips.ts`) has already set
  * `ctx.globalAlpha` to the parent's tier alpha; this function only multiplies
  * into that base and restores it before returning.
  */
