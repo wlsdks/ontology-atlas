@@ -184,10 +184,9 @@ test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement �
 // recomputes (1.15→1.3). This is closest to the real usage pattern of resizing after
 // an SPA route change (plugging or unplugging an external monitor, dragging the
 // window).
-test("overflow sweep — resize transition 1920↔2560", async ({ page }) => {
-  const violations: Array<{ step: string; route: string; scroll: number; client: number }> = [];
-
-  for (const url of ROUTES) {
+for (const url of ROUTES) {
+  test(`overflow sweep — resize transition 1920↔2560 — ${url}`, async ({ page }) => {
+    const violations: Array<{ step: string; scroll: number; client: number }> = [];
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await waitForDocumentPaint(page);
@@ -196,20 +195,13 @@ test("overflow sweep — resize transition 1920↔2560", async ({ page }) => {
     await page.setViewportSize({ width: 2560, height: 1440 });
     await waitForDocumentPaint(page);
     const afterGrow = await measureOverflow(page);
-    if (afterGrow.scroll > afterGrow.client) {
-      violations.push({ step: "1920→2560", route: url, ...afterGrow });
-    }
+    if (afterGrow.scroll > afterGrow.client) violations.push({ step: "1920→2560", ...afterGrow });
 
     await page.setViewportSize({ width: 1920, height: 1080 });
     await waitForDocumentPaint(page);
     const afterShrink = await measureOverflow(page);
-    if (afterShrink.scroll > afterShrink.client) {
-      violations.push({ step: "2560→1920", route: url, ...afterShrink });
-    }
-  }
+    if (afterShrink.scroll > afterShrink.client) violations.push({ step: "2560→1920", ...afterShrink });
 
-  if (violations.length > 0) {
-    console.log("[OVF] resize-transition violations:", JSON.stringify(violations));
-  }
-  expect(violations, `resize-transition overflow: ${JSON.stringify(violations)}`).toHaveLength(0);
-});
+    expect(violations, `resize-transition overflow on ${url}: ${JSON.stringify(violations)}`).toHaveLength(0);
+  });
+}
