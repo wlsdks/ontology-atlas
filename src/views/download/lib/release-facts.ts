@@ -6,7 +6,7 @@
  * release-facts.test.ts catches drift.
  */
 
-/** Copied from `mcp/src/server/registry.mjs`, which the web bundle cannot import; the test catches drift. */
+/** Tools in `server/tool-definitions/`, which the web bundle cannot import; the test catches drift. */
 export const MCP_TOOL_COUNT = 40;
 
 /* For tools without Next's build env; never a version string, since a plausible wrong one goes unchecked. */

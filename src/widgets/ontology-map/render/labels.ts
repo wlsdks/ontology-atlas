@@ -367,7 +367,7 @@ export function computeLensLabelAlpha(input: LabelAlphaInput & { lensSink: numbe
 
 /**
  * W6 agent visibility — activity-mark dot radius + gap past the label
- * text's own measured width. Exported so `ui/topology-frame-draw.ts`'s
+ * text's own measured width. Exported so `ui/frame-draw/paint-labels.ts`'s
  * label-candidate bbox can reserve the extra width for greedy-suppression
  * (an agent-focus label's mark must not get overlapped by a neighboring
  * label placed right after it).
@@ -432,7 +432,7 @@ export const LABEL_NODE_CLEARANCE = 3;
  * floor**. That floor is the ring allowance plus the minimum clearance, so no
  * kind at any zoom lets the name touch the shape's outline.
  *
- * `draw()` and the bbox build in `topology-frame-draw.ts` call **this same
+ * `draw()` and the bbox build in `frame-draw/paint-labels.ts` call **this same
  * function** — if they diverge, the measured box and the painted glyphs land in
  * different places (the old code had already diverged: bbox left the offset
  * unscaled while the paint scaled it).

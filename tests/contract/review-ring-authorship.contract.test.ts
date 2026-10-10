@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
@@ -22,7 +22,11 @@ describe("created_by UI boundary", () => {
   it("저작자를 검수 상태나 INDEX 렌즈로 승격하지 않는다", () => {
     const home = read("src/views/home/ui/HomePage.tsx");
     const panel = read("src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx");
-    const frame = read("src/widgets/ontology-map/ui/topology-frame-draw.ts");
+    const frameDir = "src/widgets/ontology-map/ui/frame-draw";
+    const frame = [
+      read("src/widgets/ontology-map/ui/topology-frame-draw.ts"),
+      ...readdirSync(join(ROOT, frameDir)).map((name) => read(`${frameDir}/${name}`)),
+    ].join("\n");
     const shapes = read("src/widgets/ontology-map/render/node-shapes.ts");
     const tokens = read("src/widgets/ontology-map/tokens/read-map-tokens.ts");
     const css = readGlobalCss();

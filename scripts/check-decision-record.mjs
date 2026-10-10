@@ -84,16 +84,20 @@ ${TEMPLATE.split("\n").map((line) => `[decisions]   ${line}`).join("\n")}
 const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
 
 /**
- * Single sources of truth for the two public contracts. The MCP tool table moved
- * out of `mcp/src/index.js` into `server/registry.mjs` on 2026-09-12; the entry
- * point stays listed because it still decides the dispatch and the read-only
- * guard, and dropping it would quietly stop watching those.
+ * Single sources of truth for the two public contracts. The MCP tool table is
+ * `server/registry.mjs` plus `server/tool-definitions/`; the entry point stays
+ * listed because it still decides the dispatch and the read-only guard.
  */
 const CONTRACT_FILES = [
   "cli/src/lib/cli-commands.mjs",
   "mcp/src/index.js",
   "mcp/src/server/registry.mjs",
 ];
+const CONTRACT_PREFIXES = ["mcp/src/server/tool-definitions/"];
+
+function isContractFile(path) {
+  return CONTRACT_FILES.includes(path) || CONTRACT_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
 
 function printHelp() {
   console.log(`Usage: pnpm decisions:check [-- --base=<ref>]
@@ -189,7 +193,7 @@ const surfaceChanges = entries
  * The entry point is watched only where it decides the contract. Every edit to
  * `mcp/src/index.js` used to demand a decision record, so a one-line internal
  * fix paid for a ledger entry nobody would read (2026-09-26). The tool table
- * itself is `server/registry.mjs`, still watched whole; in the entry point only
+ * itself is under `server/`, still watched whole; in the entry point only
  * a changed line that names the request handlers or the read-only and consent
  * filters moves what a client can call.
  */
@@ -210,7 +214,7 @@ function contractCodeChanged({ path, status }) {
 }
 
 const contractChanges = entries
-  .filter((entry) => CONTRACT_FILES.includes(entry.path))
+  .filter((entry) => isContractFile(entry.path))
   .filter(contractCodeChanged)
   .filter((entry) => entry.path !== ENTRY_POINT || entryPointMovesContract(entry.status))
   .map((entry) => `public contract changed: ${entry.path}`);

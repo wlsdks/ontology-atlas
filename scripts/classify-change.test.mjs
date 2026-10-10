@@ -458,13 +458,12 @@ test('exhaustive architecture coverage is owned once across the three lanes', ()
 /*
  * The performance ratios get a runner of their own (`checks.yml`, `perf`), so the plan says when
  * that runner is worth starting: only when a changed path could sit in a measurement file's
- * import graph, which Vitest then resolves with `--changed`. Train #1928 read 9.25 against a bar
- * of 10 while the ratios still shared the Unit · Contract shard-1 runner.
+ * import graph, which Vitest then resolves with `--changed`.
  */
 test('the perf lane starts only for code a measurement could import, and on every full plan', () => {
   const mode = (options) => buildImpactPlan(options).lanes.perf.mode;
   assert.equal(mode({ files: ['src/shared/lib/node-name-match.ts'] }), 'affected');
-  assert.equal(mode({ files: ['src/shared/lib/node-name-match.perf.test.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/source-passage.perf.test.ts'] }), 'affected');
   assert.equal(mode({ files: ['app/[locale]/page.tsx'] }), 'affected');
   // A plain test file is never imported by a measurement file.
   assert.equal(mode({ files: ['src/shared/lib/cn.test.ts'] }), 'skip');

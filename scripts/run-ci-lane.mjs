@@ -7,18 +7,8 @@ import { join } from 'node:path';
 import { decodePlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
 
 /*
- * ⚠️ **The measurement files never ride a shard.** Vitest shards by file, so a ratio gate's
- * verdict otherwise depended on which other files happened to land beside it — and only one
- * side of a cached-against-naive ratio pays for that company, because the cached side is the
- * one holding an index when the collector runs. `node-name-match.perf.test.ts` read 6.73, 9.20
- * and 9.20 against a bar of 10 on branches that never touched the matcher, never once near the
- * 2.7-5.3 its defect actually produces. `vitest.config.ts` owns the reasoning; this constant is
- * how the sweeps skip them, and the `perf` lane is where they run instead.
- *
- * That lane used to be the last command on Unit · Contract shard 1, sequential after `pnpm knip`
- * and a third of the sweep, and train #1928 (2026-09-26) still read 9.25 there on a change that
- * never touched the matcher. So it is now a job of its own on a runner of its own
- * (`checks.yml`, `perf`), and nothing in the unit lane runs a measurement file.
+ * Measurement files never ride a shard: a ratio's verdict would depend on which files land
+ * beside it. The sweeps skip them here, and the `perf` job (`checks.yml`) runs them alone.
  */
 const MEASURED_LANES_EXCLUDED = "--project=contract-node --project=jsdom";
 

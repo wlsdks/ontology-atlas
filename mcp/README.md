@@ -2103,7 +2103,8 @@ transport. Everything a change would actually touch lives beside it.
 
 | File | What it owns |
 |---|---|
-| `src/server/registry.mjs` | the `TOOLS` table — every name, description, schema and annotation. **This is the public surface**, and what `pnpm docs:surface:check` measures |
+| `src/server/registry.mjs` | the `TOOLS` table of contents, the annotation sets, and the read-only, profile and consent modes behind `tools/list`. **This is the public surface**, and what `pnpm docs:surface:check` measures |
+| `src/server/tool-definitions/*.mjs` | every tool's name, description, input and output schema, one file per tool family (the large tools have their own file) |
 | `src/server/tool-schemas.mjs` | the JSON Schema fragments `tools/list` is assembled from |
 | `src/server/instructions.mjs` | the `initialize` instructions template |
 | `src/server/instance.mjs` | the one `Server` object |

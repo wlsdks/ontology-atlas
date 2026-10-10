@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -22,15 +22,19 @@ import {
  * (`/ontology-*`) and `npx ontology-atlas`, which is not in the registry. Both are
  * 404s in a user's environment.
  */
-const MCP_REGISTRY = join(process.cwd(), "mcp", "src", "server", "registry.mjs");
-/** Names and descriptions live in the registry; the response field names live in the schemas it is built from. */
+const MCP_DEFINITIONS = join(process.cwd(), "mcp", "src", "server", "tool-definitions");
+const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS)
+  .filter((file) => file.endsWith(".mjs"))
+  .map((file) => join(MCP_DEFINITIONS, file));
+/** Names and descriptions live in the tool definitions; the response field names live in the schemas they are built from. */
 const MCP_SURFACE_FILES = [
-  MCP_REGISTRY,
+  join(process.cwd(), "mcp", "src", "server", "registry.mjs"),
+  ...MCP_DEFINITION_FILES,
   join(process.cwd(), "mcp", "src", "server", "tool-schemas.mjs"),
 ];
 
 function registeredToolNames(): Set<string> {
-  const source = readFileSync(MCP_REGISTRY, "utf8");
+  const source = MCP_DEFINITION_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
   const names = new Set<string>();
   for (const match of source.matchAll(/name:\s*["']([a-z][a-z0-9_]*)["']/g)) {
     names.add(match[1]);

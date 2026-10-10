@@ -69,7 +69,7 @@ export function parseArgs(argv) {
 
 /**
  * Actually starts the server and receives `tools/list`. Asked at runtime rather than
- * parsed statically because the registry is assembled inside a 5,000-line file, and
+ * parsed statically because the registry is assembled across many modules, and
  * static parsing gives a quietly wrong answer the moment the assembly rules change.
  */
 export function listMcpTools({ entry = MCP_ENTRY, cwd = ROOT, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {

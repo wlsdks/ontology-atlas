@@ -172,7 +172,7 @@ export interface PhysicsStepInput {
   /**
    * Click-focus signature — mutated in place like `emphasisById`. Each node's
    * scalar 0..1 ramps toward 1 while ANY focus is live (node OR edge-pair) and
-   * toward 0 otherwise, on `--map-focus-dim-tau`. `topology-frame-draw.ts`
+   * toward 0 otherwise, on `--map-focus-dim-tau`. `frame-draw/node-visual.ts`
    * lerps normal→dim/ego color and eases the center radius by this factor, so
    * the dim/ego swap a click triggers rides the camera-dive time axis instead of
    * hard-cutting (and reverses on deselect). Per-node (not one scalar) so a node
@@ -185,7 +185,7 @@ export interface PhysicsStepInput {
    * to 0 for nodes that first appear on a world rebuild (existing nodes stay 1)
    * by `use-topology-loop.ts`; stepped here toward 1 for every present node on
    * `egoRevealRiseTau` (reused — same "content resolves onto the scene" rise as
-   * the ego reveal). `topology-frame-draw.ts` multiplies effRadius (0.6→1 micro
+   * the ego reveal). `frame-draw/paint-nodes.ts` multiplies effRadius (0.6→1 micro
    * scale) and globalAlpha (0→1) by it so a new node swells in instead of
    * hard-popping. reduced-motion snaps to 1. Missing entry defaults to 1 (never
    * fades an untracked node).

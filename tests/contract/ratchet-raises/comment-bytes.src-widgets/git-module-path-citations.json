@@ -1,1 +1,0 @@
-{ "gate": "comment-bytes.src-widgets", "raise": 17, "why": "The desktop git module became a directory, so AtlasGitPanel cites the full repo-relative path src-tauri/src/git/snapshot.rs for the push it describes; the path is longer than the old git.rs and no other wording in that comment can shrink without losing its reason." }

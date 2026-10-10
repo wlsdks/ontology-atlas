@@ -122,7 +122,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/git-workbench-stacked-floor.spec.ts',
     reason: 'the stacked Git reader at the window floor changed',
     matches: [
-      /^src\/widgets\/atlas-git-panel\/ui\/AtlasGitPanel\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/CommitDetail\.tsx$/,
     ],
   },
@@ -169,7 +169,7 @@ export const rules = [
     reason: 'the project agent dock, agents and Git panel layout at the window floor changed',
     matches: [
       /^src\/views\/project-detail\/ui\/parts\/ProjectAgentDock\.tsx$/,
-      /^src\/widgets\/atlas-git-panel\/ui\/AtlasGitPanel\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
       /^src\/views\/mcp\/ui\/McpPage\.tsx$/,
       /^src\/features\/acp-doctor\/ui\/AgentDoctor\.tsx$/,
     ],

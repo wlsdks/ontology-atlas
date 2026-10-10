@@ -3,7 +3,7 @@
 Self-contained pieces that give the map weight, light and a press. Each is a
 pure module with its own tests: plain data in, plain calls out, no React, no
 DOM, no knowledge of the world model or the camera. The host (`ui/use-topology-loop.ts`,
-`ui/topology-frame-draw.ts`) calls one function per piece per frame and owns
+`ui/topology-frame-draw.ts` and its `ui/frame-draw/` passes) call one function per piece per frame and owns
 every ref. Delete the folder and the call sites and the map is back to critical
 damping and flat marks; copy the folder and the tokens and the pieces work on
 any canvas graph.

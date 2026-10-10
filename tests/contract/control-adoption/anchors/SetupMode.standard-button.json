@@ -1,5 +1,5 @@
 {
-  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "file": "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
   "count": 2,
   "claim": "standard-button",
   "proof": "buttonVariants",

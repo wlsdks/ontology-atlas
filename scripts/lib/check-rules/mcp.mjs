@@ -54,7 +54,7 @@ export const rules = [
     order: 460,
     command: 'pnpm integration:mcp:surface',
     reason: 'MCP JSON-RPC tool registry or handler surface changed',
-    matches: [/^mcp\/src\/index\.js$/, /^mcp\/src\/server\/registry\.mjs$/],
+    matches: [/^mcp\/src\/index\.js$/, /^mcp\/src\/server\/(?:registry\.mjs|tool-definitions\/[^/]+\.mjs)$/],
   },
   {
     order: 470,
@@ -92,7 +92,7 @@ export const rules = [
     order: 520,
     command: 'pnpm integration:mcp:write',
     reason: 'MCP write tool handler surface changed',
-    matches: [/^mcp\/src\/(?:index|vault)\.(?:mjs|js)$/, /^mcp\/src\/server\/registry\.mjs$/],
+    matches: [/^mcp\/src\/(?:index|vault)\.(?:mjs|js)$/, /^mcp\/src\/server\/(?:registry\.mjs|tool-definitions\/[^/]+\.mjs)$/],
   },
   {
     order: 1090,

@@ -34,7 +34,7 @@ import { describe, expect, it } from "vitest";
  * This test locks only the **structural premise** that verdict needs.
  */
 
-const DRAW = join(process.cwd(), "src/widgets/ontology-map/ui/topology-frame-draw.ts");
+const DRAW = join(process.cwd(), "src/widgets/ontology-map/ui/frame-draw/paint-nodes.ts");
 const REVEAL = join(process.cwd(), "src/widgets/ontology-map/ui/topology-reveal-frame-stage.ts");
 const SCHEDULER = join(process.cwd(), "src/widgets/ontology-map/ui/use-topology-frame-loop.ts");
 
