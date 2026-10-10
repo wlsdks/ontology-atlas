@@ -753,7 +753,7 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
   leaves this computer only when the saved host really is this computer; a runner reached
   over `https://` at another address is named as one, because `normalize_base_url` in
-  `src-tauri/src/llm.rs` requires loopback for plaintext but accepts a remote TLS host.
+  `src-tauri/src/llm/local_endpoint.rs` requires loopback for plaintext but accepts a remote TLS host.
   `.ontology-atlas/llm-audit.jsonl` records each request either way.
   **It compiles** (second pass, 2026-09-06). The 2026-09-06 record left this route a named
   brain because the runner's tool catalogue read and proposed ontology concepts only, and

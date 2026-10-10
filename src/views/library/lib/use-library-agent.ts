@@ -80,7 +80,7 @@ export interface LibraryLocalModel {
    * Whether that host really is this machine.
    *
    * **The screen may not assume it.** `isLocalEndpointReady` asks only for a non-empty
-   * address and a chosen model, and Rust's own guard (`src-tauri/src/llm.rs`,
+   * address and a chosen model, and Rust's own guard (`local_endpoint.rs`,
    * `normalize_base_url`) refuses a plaintext non-loopback host but accepts an `https://`
    * one — so a saved `https://gpu.example.com/v1` is a valid connect-by-address runner
    * that is not on this computer. Printing "nothing leaves this computer" for it would be
