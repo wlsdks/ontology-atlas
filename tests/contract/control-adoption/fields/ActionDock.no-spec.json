@@ -1,5 +1,5 @@
 {
-  "file": "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+  "file": "src/widgets/atlas-git-panel/ui/ActionDock.tsx",
   "count": 2,
   "claim": "no-spec",
   "proof": "accent-[var(--color-indigo-accent)]",
