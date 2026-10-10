@@ -7,6 +7,12 @@ import {
 } from "@/shared/lib/appearance-preferences";
 import type { LibraryUiModel } from "@/features/library";
 
+const INDEX_COLUMN_PX = 280;
+const FOLDED_TAB_PX = 38;
+// The gap between the two thresholds stops a one-pixel drag from flapping the index.
+const FOLD_BELOW_READER_PX = 420;
+const UNFOLD_AT_READER_PX = 460;
+
 export function useLibraryIndexColumn({
   segment, model,
 }: {
@@ -32,14 +38,14 @@ export function useLibraryIndexColumn({
       }
       setAutoFolded((current) => {
         if (current) {
-          if (width - 280 + 38 >= 460) {
+          if (width - INDEX_COLUMN_PX + FOLDED_TAB_PX >= UNFOLD_AT_READER_PX) {
             autoFoldDeclinedRef.current = false;
             return false;
           }
           return true;
         }
-        if (width < 420 && !autoFoldDeclinedRef.current) return true;
-        if (width >= 460) autoFoldDeclinedRef.current = false;
+        if (width < FOLD_BELOW_READER_PX && !autoFoldDeclinedRef.current) return true;
+        if (width >= UNFOLD_AT_READER_PX) autoFoldDeclinedRef.current = false;
         return false;
       });
     };

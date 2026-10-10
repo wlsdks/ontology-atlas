@@ -203,6 +203,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     [manifest],
   );
 
+  // One owner: useChatWidth keeps the in-flight drag locally, so a second copy publishes a stale width.
   const chatWidth = useChatWidth();
   const dockOpen = agent.route === "agent" && agent.runtime !== null && nativeVaultRootPath !== null && agent.open;
   const workActivity = useLibraryWorkActivity({ workVaultScope, nativeVaultRootPath, wikiRevisionStamp, agent });
