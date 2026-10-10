@@ -17,10 +17,9 @@
  *
  * The same failure twice, and **the English original reads first.** The card below translates it
  * into human words and even supplies the next step, but the line above it plants "this is not for me
- * to read" first. It is the same failure this repository has already met and fixed
- * (`AcpChatPanel.tsx`: *"it pasted what the adapter gave, verbatim … owner: how is a user supposed
- * to understand this?"*) — the card was fixed then, and it was missed that the adapter sends the
- * same thing **as a message too**.
+ * to read" first. It is the same failure this repository has already met and fixed (the error
+ * card in `chat-panel/ErrorCard.tsx` once pasted what the adapter gave, verbatim) — the card was
+ * fixed then, and it was missed that the adapter sends the same thing **as a message too**.
  *
  * ## Why not "hide what the agent said"
  *
