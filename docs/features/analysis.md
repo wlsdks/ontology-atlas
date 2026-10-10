@@ -65,6 +65,17 @@ The selected claim links to its declaring document. A local, documented claim
 also links to the existing Map meaning editor and its typed review boundary.
 Analysis does not accept meaning or write proposed corrections itself.
 
+The implementation diagram frames the selected capability and connects it to
+each recorded element document with a branching composition line. Each element
+opens its own document and returns to the same capability. The drawing follows
+the measured card boundaries when names wrap or the layout stacks on narrow
+screens; the lines are recorded composition, not runtime execution order.
+Six elements appear initially, with explicit continuation and focus on the first
+new element. Missing element links have an unconnected empty state; source paths
+without element documents remain paths, not invented graph nodes. The global
+document-inspection count lives under the count-basis disclosure, outside this
+selected-capability diagram.
+
 ## Source currentness
 
 Browser/sample sessions state that source currentness was not checked. The
