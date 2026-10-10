@@ -125,6 +125,17 @@ test('an unmapped rendered dependency fails closed to the smoke suite', () => {
   ]);
 });
 
+test('an additive sweep joins a page root plan without standing in for its smoke suite', () => {
+  const unmapped = buildImpactPlan({ files: ['src/views/git/ui/GitPage.tsx'] }).lanes.e2e;
+  assert.equal(unmapped.mode, 'smoke');
+  assert.deepEqual(unmapped.unmappedPaths, ['src/views/git/ui/GitPage.tsx']);
+  assert.ok(unmapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+
+  const mapped = buildImpactPlan({ files: ['src/views/architecture/ui/HarnessPage.tsx'] }).lanes.e2e;
+  assert.equal(mapped.mode, 'targeted');
+  assert.ok(mapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+});
+
 test('unmapped pure TypeScript relies on affected units instead of browser guesswork', () => {
   const plan = buildImpactPlan({ files: ['src/shared/lib/cn.ts'] });
   assert.equal(plan.lanes.unit.mode, 'affected');

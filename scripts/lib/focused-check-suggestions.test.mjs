@@ -917,6 +917,7 @@ describe('focused check suggestions', () => {
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/settings-reading-layout.spec.ts',
+      'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
@@ -1083,6 +1084,7 @@ describe('focused check suggestions', () => {
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
+      'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
     ]);
   });
 

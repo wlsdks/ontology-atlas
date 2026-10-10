@@ -10,13 +10,12 @@ import { isSupportedSourcePath } from '../quality/source-language/source-paths.m
  * **To add a check, add a rule file under `scripts/lib/check-rules/<area>.mjs`**
  * (or append to the area file that already owns the subject). Nothing else
  * needs an edit: this module reads that directory at load time, so a new file
- * is picked up without touching an index. The rule table used to live here, a
- * 1,700-line registry every new check appended to at the same anchor, and two
- * branches doing that on one day conflicted twice (2026-09-26).
+ * is picked up without touching an index.
  *
  * A rule file exports any of:
  *
- * - `rules`: `{ order?, command, reason, matches: RegExp[] }[]`, the first checks.
+ * - `rules`: `{ order?, command, reason, matches: RegExp[], additive? }[]`, the
+ *   first checks. An `additive` rule never counts as a path's browser coverage.
  * - `escalations`: the same shape, printed as "escalate when needed".
  * - `directTests`: `{ mcp?, cli?, script?, focusedCheck?: [source, test][] }`,
  *   sibling tests run directly when their source or the test itself changes.
@@ -70,7 +69,8 @@ export function composeCheckRules(modules) {
           !Array.isArray(rule.matches) ||
           rule.matches.length === 0 ||
           !rule.matches.every((pattern) => pattern instanceof RegExp) ||
-          (rule.order !== undefined && !Number.isFinite(rule.order))
+          (rule.order !== undefined && !Number.isFinite(rule.order)) ||
+          (rule.additive !== undefined && typeof rule.additive !== 'boolean')
         ) {
           throw new Error(`check-rules/${name}: ${key}[${index}] needs command, reason, RegExp matches, and a finite order if any`);
         }
@@ -398,7 +398,12 @@ function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
     const matchedPaths = candidates.filter((path) => rule.matches.some((pattern) => pattern.test(path)));
     if (matchedPaths.length === 0 || seen.has(rule.command)) continue;
     seen.add(rule.command);
-    suggestions.push({ command: rule.command, reason: rule.reason, paths: matchedPaths });
+    suggestions.push({
+      command: rule.command,
+      reason: rule.reason,
+      paths: matchedPaths,
+      ...(rule.additive ? { additive: true } : {}),
+    });
   }
   return suggestions;
 }
