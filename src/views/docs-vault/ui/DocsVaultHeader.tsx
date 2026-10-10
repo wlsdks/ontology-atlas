@@ -1,6 +1,6 @@
 'use client';
 
-import type { useDocsVaultAddress } from '../model/use-docs-vault-address';
+import type { useDocsVaultAddress } from '../model/use-docs-vault-url';
 import type { Dispatch, SetStateAction, ComponentProps } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,9 +11,9 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { cn } from '@/shared/lib/cn';
 import { Chip, controlClass } from '@/shared/ui';
 import type { VaultManifest } from '@/entities/docs-vault';
-import { DocsHeaderTile } from '../ui/parts/DocsHeaderTile';
-import { DocsVaultVaultChip } from '../ui/parts/DocsVaultVaultChip';
-import { DocsVaultTabStrip } from '../ui/parts/DocsVaultTabStrip';
+import { DocsHeaderTile } from './parts/DocsHeaderTile';
+import { DocsVaultVaultChip } from './parts/DocsVaultVaultChip';
+import { DocsVaultTabStrip } from './parts/DocsVaultTabStrip';
 import { resolveVaultChipIdentity } from '../lib/vault-chip-identity';
 import type { DocsVaultSource as Source, DocsVaultView } from '../lib/persistence';
 

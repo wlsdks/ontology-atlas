@@ -3,13 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui";
+import type { NewDocKind } from "../../model/use-doc-write-actions";
 
 /**
  * Asks for the kind first, so every new document is a node. `project` has its own
  * flow at `/project/new`. `Dialog` owns scrim, trap, Escape, focus restore and motion.
  */
-const KIND_OPTIONS = ["domain", "capability", "element", "document"] as const;
-export type NewDocKind = (typeof KIND_OPTIONS)[number];
+const KIND_OPTIONS = ["domain", "capability", "element", "document"] as const satisfies readonly NewDocKind[];
 
 export function NewDocKindDialog({
   open,

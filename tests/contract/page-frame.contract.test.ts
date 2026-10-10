@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -269,10 +269,17 @@ describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () =>
   });
 
   it("문서함이 페이지 틀을 입지 않는다 — 세 칸 작업대라 상단 48px 이 틀리다", () => {
-    const source = read(DOCS_PAGE);
-    expect(source, `${DOCS_PAGE} 가 PAGE_FRAME 을 입었다 — 트리와 본문이 같은 높이에서 시작해야 한다`).not.toContain(
-      "PAGE_FRAME",
-    );
+    const rendered = [
+      DOCS_PAGE,
+      ...readdirSync("src/views/docs-vault/ui")
+        .filter((name) => /^DocsVault\w+\.tsx$/.test(name) && !name.includes(".test."))
+        .map((name) => `src/views/docs-vault/ui/${name}`),
+    ];
+    for (const file of new Set(rendered)) {
+      expect(read(file), `${file} 가 PAGE_FRAME 을 입었다 — 트리와 본문이 같은 높이에서 시작해야 한다`).not.toContain(
+        "PAGE_FRAME",
+      );
+    }
   });
 
   it("no page-frame constant claims the reading column", () => {

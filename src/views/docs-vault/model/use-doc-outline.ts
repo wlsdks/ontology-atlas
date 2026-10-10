@@ -6,22 +6,15 @@ import { shouldShowOutlineRail } from '@/widgets/doc-reading-pane';
 import type { VaultManifest, StaticVaultHeadings } from '@/entities/docs-vault';
 
 export function useDocOutline({
-  manifest,
-  selectedSlug,
   selectedDoc,
   staticHeadings,
   setActiveHeadingSlug,
 }: {
-  manifest: VaultManifest;
-  selectedSlug: string | null;
   selectedDoc: VaultManifest['docs'][number] | null;
   staticHeadings: StaticVaultHeadings | null;
   setActiveHeadingSlug: (slug: string | null) => void;
 }) {
   const reducedMotion = usePrefersReducedMotion();
-  const backlinksDetail = selectedSlug
-    ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
-    : [];
   const outlineHeadings = useMemo(() => {
     // Bundled headings come from the lazily loaded map; a local manifest has them inline.
     const docHeadings =
@@ -66,5 +59,5 @@ export function useDocOutline({
     },
     [reducedMotion, setActiveHeadingSlug],
   );
-  return { backlinksDetail, outlineHeadings, showOutlineRail, handleHeadingNavigate };
+  return { outlineHeadings, showOutlineRail, handleHeadingNavigate };
 }

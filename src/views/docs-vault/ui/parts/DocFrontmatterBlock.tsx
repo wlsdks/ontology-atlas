@@ -42,6 +42,7 @@ import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-m
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 import { graphFieldKeys, DANGLING_CHECK_KEYS, REFERENCE_KEYS, toRefTokens, formatValue, isNodeReference } from "./doc-frontmatter/fields";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
+import type { DocFrontmatterPatch } from "../../model/use-doc-write-actions";
 
 // Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
@@ -161,13 +162,7 @@ function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
 }
 
-export interface DocFrontmatterPatch {
-  kind?: string;
-  domain?: string | null;
-  title?: string;
-  /** A per-language name (`display_ko`, `display_en`, …); null removes the key. */
-  [displayName: `display_${string}`]: string | null | undefined;
-}
+export type { DocFrontmatterPatch };
 
 export interface DocFrontmatterBlockProps {
   doc: VaultDoc;

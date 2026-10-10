@@ -930,9 +930,8 @@ describe('focused check suggestions', () => {
       'src/views/docs-vault/ui/DocsVaultHeader.tsx',
       'src/views/docs-vault/ui/DocsVaultDocumentPane.tsx',
       'src/views/docs-vault/ui/DocsVaultSidebar.tsx',
-      'src/views/docs-vault/ui/DocsVaultDialogs.tsx',
       'src/views/docs-vault/model/use-docs-vault-source.tsx',
-      'src/views/docs-vault/model/use-doc-create.ts',
+      'src/views/docs-vault/model/use-doc-write-actions.ts',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes('pnpm desktop:check'),

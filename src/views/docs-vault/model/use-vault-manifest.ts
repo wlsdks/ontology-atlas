@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useStaticVaultSource, type useLocalVault } from '@/entities/vault-session';
+import { useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
   loadStaticVaultHeadings,
@@ -16,19 +16,20 @@ import {
 
 export function useVaultManifest({
   isLocalSourceLoaded,
-  localVault,
   staticSampleOverride,
   querySlug,
+  selectedSlug,
   legacyEntry,
   documentScope,
 }: {
   isLocalSourceLoaded: boolean;
-  localVault: ReturnType<typeof useLocalVault>;
   staticSampleOverride: 'dogfood' | null;
   querySlug: string | null;
+  selectedSlug: string | null;
   legacyEntry: boolean;
   documentScope: 'all' | 'ontology';
 }) {
+  const localVault = useLocalVault();
   // The static fallback follows the sample the user chose, matching the map.
   const preferredStaticVault = useStaticVaultSource();
   const staticVault = staticSampleOverride
@@ -64,6 +65,14 @@ export function useVaultManifest({
     () => new Set(scopedDocs.map((doc) => doc.slug)),
     [scopedDocs],
   );
+  const outOfScopeQuerySlug =
+    documentScope === 'ontology' &&
+    !legacyEntry &&
+    normalizedQuerySlug &&
+    manifest.docs.some((doc) => doc.slug === normalizedQuerySlug) &&
+    !scopedDocSlugs.has(normalizedQuerySlug)
+      ? normalizedQuerySlug
+      : null;
 
   // Bundled headings live in a lazily loaded chunk (`entities/docs-vault/lib/static-headings.ts`);
   // use the map only for the vault currently drawn.
@@ -99,6 +108,9 @@ export function useVaultManifest({
     for (const d of manifest.docs) map.set(d.slug, d);
     return map;
   }, [manifest]);
+  const selectedDoc = selectedSlug && scopedDocSlugs.has(selectedSlug)
+    ? (docsBySlug.get(selectedSlug) ?? null)
+    : null;
   const vaultSlugs = useMemo(
     () => new Set(manifest.docs.map((d) => d.slug)),
     [manifest],
@@ -127,6 +139,8 @@ export function useVaultManifest({
     legacyRedirectToLibrary,
     scopedDocs,
     scopedDocSlugs,
+    outOfScopeQuerySlug,
+    selectedDoc,
     staticHeadings,
     ontologyDerivation,
     docsBySlug,

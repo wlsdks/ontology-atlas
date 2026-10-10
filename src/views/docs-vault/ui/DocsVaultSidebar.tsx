@@ -1,23 +1,21 @@
 'use client';
 
-import type { useDocsVaultUrlSync } from '../model/use-docs-vault-url-sync';
+import type { useDocsVaultUrlSync } from '../model/use-docs-vault-url';
 import type { useDocReview } from '../model/use-doc-review';
-import type { useCollectionDocs } from '../model/use-collection-docs';
-import type { useCollectionSelection } from '../model/use-collection-selection';
+import type { useDocCollection } from '../model/use-doc-collection';
 import type { useVaultManifest } from '../model/use-vault-manifest';
 import type { useDocWriteActions } from '../model/use-doc-write-actions';
-import type { useDocSelection } from '../model/use-doc-selection';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { IconButton, Surface } from '@/shared/ui';
-import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
+import type { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import type { DocsTreeGroup, DocsTreeSort } from '@/widgets/docs-vault';
 import type { DocsVaultCollection } from '../lib/docs-vault-collection';
-import { DocsSidebarBody } from '../ui/parts/DocsSidebarBody';
-import { useAgentFilesModel } from '../lib/use-agent-files';
+import { DocsSidebarBody } from './parts/DocsSidebarBody';
+import type { useAgentFilesModel } from '../lib/use-agent-files';
 
 export function DocsVaultSidebar({
   reviewQueue,
@@ -51,19 +49,19 @@ export function DocsVaultSidebar({
   docListToggled,
 }: {
   reviewQueue: ReturnType<typeof useDocReview>['reviewQueue'];
-  collectionPinnedSlugs: ReturnType<typeof useCollectionDocs>['collectionPinnedSlugs'];
-  collectionRecentSlugs: ReturnType<typeof useCollectionDocs>['collectionRecentSlugs'];
+  collectionPinnedSlugs: ReturnType<typeof useDocCollection>['collectionPinnedSlugs'];
+  collectionRecentSlugs: ReturnType<typeof useDocCollection>['collectionRecentSlugs'];
   selectedSlug: string | null;
   docsBySlug: ReturnType<typeof useVaultManifest>['docsBySlug'];
   activeTag: string | null;
-  collectionManifest: ReturnType<typeof useCollectionDocs>['collectionManifest'];
+  collectionManifest: ReturnType<typeof useDocCollection>['collectionManifest'];
   docCollection: DocsVaultCollection;
-  collectionCounts: ReturnType<typeof useCollectionDocs>['collectionCounts'];
+  collectionCounts: ReturnType<typeof useDocCollection>['collectionCounts'];
   documentScope: 'all' | 'ontology';
   legacyDocumentMode: boolean;
-  collectionDocSlugs: ReturnType<typeof useCollectionDocs>['collectionDocSlugs'];
-  handleSelectFromSidebar: ReturnType<typeof useDocSelection>['handleSelectFromSidebar'];
-  handleCollectionChange: ReturnType<typeof useCollectionSelection>['handleCollectionChange'];
+  collectionDocSlugs: ReturnType<typeof useDocCollection>['collectionDocSlugs'];
+  handleSelectFromSidebar: (slug: string) => void;
+  handleCollectionChange: ReturnType<typeof useDocCollection>['handleCollectionChange'];
   handleTogglePin: ReturnType<typeof useDocsVaultPersistence>['togglePin'];
   setActiveTag: Dispatch<SetStateAction<string | null>>;
   canEditCurrent: boolean;

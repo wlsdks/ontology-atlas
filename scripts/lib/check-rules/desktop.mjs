@@ -84,7 +84,7 @@ export const rules = [
       /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
       /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
-      /^src\/views\/docs-vault\/ui\/DocsVault(?:Page|Header|DocumentPane|Sidebar|Dialogs)\.tsx$/,
+      /^src\/views\/docs-vault\/ui\/DocsVault(?:Page|Header|DocumentPane|Sidebar)\.tsx$/,
       /^src\/views\/docs-vault\/model\/[^/]+\.tsx?$/,
       /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
       /^\.github\/workflows\/deploy-pages\.yml$/,

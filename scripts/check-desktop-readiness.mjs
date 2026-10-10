@@ -135,7 +135,6 @@ const docsVaultPageFiles = [
   "src/views/docs-vault/ui/DocsVaultHeader.tsx",
   "src/views/docs-vault/ui/DocsVaultDocumentPane.tsx",
   "src/views/docs-vault/ui/DocsVaultSidebar.tsx",
-  "src/views/docs-vault/ui/DocsVaultDialogs.tsx",
   ...fs
     .readdirSync(path.join(root, "src/views/docs-vault/model"))
     .filter((name) => /\.tsx?$/.test(name))

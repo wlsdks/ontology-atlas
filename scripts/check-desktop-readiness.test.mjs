@@ -728,7 +728,6 @@ test("desktop readiness guard covers strict ontology emptiness and the exact REA
     "src/views/docs-vault/ui/DocsVaultHeader.tsx",
     "src/views/docs-vault/ui/DocsVaultDocumentPane.tsx",
     "src/views/docs-vault/ui/DocsVaultSidebar.tsx",
-    "src/views/docs-vault/ui/DocsVaultDialogs.tsx",
     ...readdirSync("src/views/docs-vault/model").map((name) => `src/views/docs-vault/model/${name}`),
   ]
     .map((file) => readFileSync(file, "utf8"))

@@ -10,12 +10,9 @@ import { useHeldValue } from "@/shared/lib/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 
-export interface RenameDocTarget {
-  slug: string;
-  title: string;
-  /** Their references move with the file. */
-  referrerCount: number;
-}
+import type { RenameDocTarget } from "../../model/use-doc-write-actions";
+
+export type { RenameDocTarget };
 
 /**
  * Asks for a new name in the product's `Dialog` and shows the address before anything moves.

@@ -2,10 +2,10 @@
 
 import type { useDocReview } from '../model/use-doc-review';
 import type { useDocAccess } from '../model/use-doc-access';
-import type { useDocFrontmatterEdit } from '../model/use-doc-frontmatter-edit';
+import type { useDocWriteActions } from '../model/use-doc-write-actions';
 import type { useVaultManifest } from '../model/use-vault-manifest';
 import type { useDocOutline } from '../model/use-doc-outline';
-import type { useDocsVaultAddress } from '../model/use-docs-vault-address';
+import type { useDocsVaultAddress } from '../model/use-docs-vault-url';
 import type { Dispatch, SetStateAction } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
@@ -22,10 +22,10 @@ import {
   DOCS_VAULT_REPO_ROOT,
 } from '@/widgets/docs-vault';
 import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
-import { DocMetaBar } from '../ui/parts/DocMetaBar';
-import { DocFrontmatterBlock } from '../ui/parts/DocFrontmatterBlock';
-import { SampleNotice } from '../ui/parts/SampleNotice';
-import { SampleWelcomeNote } from '../ui/parts/SampleWelcomeNote';
+import { DocMetaBar } from './parts/DocMetaBar';
+import { DocFrontmatterBlock } from './parts/DocFrontmatterBlock';
+import { SampleNotice } from './parts/SampleNotice';
+import { SampleWelcomeNote } from './parts/SampleWelcomeNote';
 import { persistEditorSave, type DocsVaultSource as Source } from '../lib/persistence';
 
 function splitVaultSlugPath(slug: string): { dir: string; name: string } {
@@ -98,10 +98,10 @@ export function DocsVaultDocumentPane({
   vaultScope: string;
   localVault: ReturnType<typeof useLocalVault>;
   manifest: VaultManifest;
-  domainOptions: ReturnType<typeof useDocFrontmatterEdit>['domainOptions'];
-  handlePatchDocFrontmatter: ReturnType<typeof useDocFrontmatterEdit>['handlePatchDocFrontmatter'];
-  handleMoveToKindFolder: ReturnType<typeof useDocFrontmatterEdit>['handleMoveToKindFolder'];
-  kindChangeReferrers: ReturnType<typeof useDocFrontmatterEdit>['kindChangeReferrers'];
+  domainOptions: ReturnType<typeof useDocWriteActions>['domainOptions'];
+  handlePatchDocFrontmatter: ReturnType<typeof useDocWriteActions>['handlePatchDocFrontmatter'];
+  handleMoveToKindFolder: ReturnType<typeof useDocWriteActions>['handleMoveToKindFolder'];
+  kindChangeReferrers: ReturnType<typeof useDocWriteActions>['kindChangeReferrers'];
   handleSelect: (slug: string, query?: string) => void;
   refSlugResolver: ReturnType<typeof useVaultManifest>['refSlugResolver'];
   docsBySlug: ReturnType<typeof useVaultManifest>['docsBySlug'];
@@ -116,7 +116,7 @@ export function DocsVaultDocumentPane({
   highlightQuery: string | undefined;
   resolveImage: ReturnType<typeof useDocAccess>['resolveImage'];
   staticVault: ReturnType<typeof resolveStaticVaultSource>;
-  backlinksDetail: ReturnType<typeof useDocOutline>['backlinksDetail'];
+  backlinksDetail: NonNullable<VaultManifest['backlinksDetail']>[string];
   mapDeeplinkForSelectedDoc: string | null;
 }) {
   const t = useTranslations('docsVault');

@@ -1,58 +1,64 @@
 'use client';
 
-import { useSkillParityHandoff } from '../model/use-skill-parity-handoff';
-import { useDocsVaultUrlSync } from '../model/use-docs-vault-url-sync';
-import { useDocReview } from '../model/use-doc-review';
-import { useCollectionDocs } from '../model/use-collection-docs';
-import { useDocAccess } from '../model/use-doc-access';
-import { useCollectionSelection } from '../model/use-collection-selection';
-import { useDocListLayout } from '../model/use-doc-list-layout';
-import { useQuerySlugGuard } from '../model/use-query-slug-guard';
-import { useVaultManifest } from '../model/use-vault-manifest';
-import { useDogfoodVaultSwitch } from '../model/use-dogfood-vault-switch';
-import { useLandingSource } from '../model/use-landing-source';
-import { useDocTabs } from '../model/use-doc-tabs';
-import { useActiveSource } from '../model/use-active-source';
-import { useDocWriteActions } from '../model/use-doc-write-actions';
-import { usePaletteShortcuts } from '../model/use-palette-shortcuts';
-import { useDocsVaultCommands } from '../model/use-docs-vault-commands';
-import { useDocsVaultSource } from '../model/use-docs-vault-source';
-import { useDocOutline } from '../model/use-doc-outline';
-import { useDocsVaultAddress } from '../model/use-docs-vault-address';
-import { useDocSelection } from '../model/use-doc-selection';
-import type { DocsVaultDocCollection, DocsVaultCollection } from '../lib/docs-vault-collection';
-import { DocsVaultHeader } from './DocsVaultHeader';
-import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
-import { DocsVaultSidebar } from './DocsVaultSidebar';
-import { DocsVaultDialogs } from './DocsVaultDialogs';
 import { Suspense, useCallback, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   useLocalVault,
-  useVaultSessionIdentityScope,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
 import { OntologyStarterCta } from '@/features/docs-vault-local';
-import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
-import { useHydrated } from '@/shared/lib/use-hydrated';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { RouteLoadingFallback, controlClass } from '@/shared/ui';
-import { useAdvancedMenu } from '../lib/use-advanced-menu';
-import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
-import { useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';
-import { usePaletteState } from '../lib/use-palette-state';
-import { useDocsBodyIndex, type DocsTreeGroup, type DocsTreeSort } from '@/widgets/docs-vault';
-import { buildOntologyDeeplinkForDoc, buildTopologyDeeplinkForDoc } from '@/entities/docs-vault';
-import { DesktopVaultWelcome } from './parts/DesktopVaultWelcome';
 import { recentVaultRowKey } from '@/features/vault-switch';
-import { useReferrerListName } from './parts/DocFrontmatterBlock';
-import { useAgentFilesModel } from '../lib/use-agent-files';
-import { EmptyState } from './parts/EmptyState';
-import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
-import { isDocsVaultLocalSourceDisabled, type DocsVaultView } from '../lib/persistence';
+import { buildOntologyDeeplinkForDoc, buildTopologyDeeplinkForDoc } from '@/entities/docs-vault';
+import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { useClaimShellKey } from '@/shared/lib/shell-key-claims';
+import { usePanelPresence } from '@/shared/lib/use-presence';
+import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
+import {
+  RouteLoadingFallback,
+  SimilarNodeWarning,
+  controlClass,
+  useToast,
+} from '@/shared/ui';
+import { useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';
+import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault';
+import { useDocAccess } from '../model/use-doc-access';
+import { useDocCollection } from '../model/use-doc-collection';
+import { useDocOutline } from '../model/use-doc-outline';
+import { useDocReview } from '../model/use-doc-review';
+import { useDocTabs } from '../model/use-doc-tabs';
+import { useDocWriteActions } from '../model/use-doc-write-actions';
+import { useDocsVaultAddress, useDocsVaultUrlSync } from '../model/use-docs-vault-url';
+import { useDocsVaultCommands } from '../model/use-docs-vault-commands';
+import { useDocsVaultSource } from '../model/use-docs-vault-source';
+import { useVaultManifest } from '../model/use-vault-manifest';
+import {
+  shouldShowSampleWelcomeNote,
+  type DocsVaultDocCollection,
+} from '../lib/docs-vault-collection';
+import {
+  readStoredListCollapsed,
+  storeListCollapsed,
+} from '../lib/persistence';
+import { buildSkillParityHandoff } from '../lib/skill-parity-handoff';
+import type { SkillParityRow } from '../lib/skill-parity';
+import { useAdvancedMenu } from '../lib/use-advanced-menu';
+import { useAgentFilesModel } from '../lib/use-agent-files';
+import { usePaletteState } from '../lib/use-palette-state';
+import { useSkillParity } from '../lib/use-skill-parity';
+import { DocsVaultHeader } from './DocsVaultHeader';
+import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
+import { DocsVaultSidebar } from './DocsVaultSidebar';
+import { DesktopVaultWelcome } from './parts/DesktopVaultWelcome';
+import { useReferrerListName } from './parts/DocFrontmatterBlock';
+import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
+import { DeleteDocDialog } from './parts/DeleteDocDialog';
+import { EmptyState } from './parts/EmptyState';
+import { NewDocKindDialog } from './parts/NewDocKindDialog';
+import { RenameDocDialog } from './parts/RenameDocDialog';
 
 function DocsVaultContent({
   initialCollection,
@@ -68,142 +74,90 @@ function DocsVaultContent({
   const referrerListName = useReferrerListName();
   const siteT = useTranslations('metadata');
   const tSkillParity = useTranslations('skillParity');
+  const toast = useToast();
   const localVault = useLocalVault();
-  const hydrated = useHydrated();
-  const installedShell = hydrated && isDesktopShell();
+  const openLocalVault = localVault.open;
+  const address = useDocsVaultAddress();
   const {
-    searchParams,
-    routePathname,
-    querySlug,
-    queryView,
-    querySource,
-    querySample,
-    queryDogfood,
-    queryTreeSort,
-    queryTreeGroup,
+    view,
     insightsReturnTab,
     workspaceHref,
     getDocHref,
     getProjectHref,
     projectsListHref,
-    replaceUrlState,
-    generalDocsHref,
-    legacyLibraryRedirectHref,
     libraryOntologyHref,
-  } = useDocsVaultAddress();
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(querySlug);
+  } = address;
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(address.querySlug);
   // A truthy `openWith` opens the palette; its value is the initial query (`>`, `#`, ``).
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
-  const [paletteOpened, setPaletteOpened] = useState(false);
-  if (paletteOpen && !paletteOpened) setPaletteOpened(true);
-  const vaultSessionScope = useVaultSessionIdentityScope();
-  const [view, setView] = useState<DocsVaultView>(queryView);
   // No visible menu remains; other surfaces still call `setAdvancedOpen(false)` to close popovers.
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
   const { open: vaultChipOpen, setOpen: setVaultChipOpen, ref: vaultChipMenuRef } =
     useAdvancedMenu();
-  const [highlightQuery, setHighlightQuery] = useState<string | undefined>(undefined);
-  // Set when the reader picks a real document.
+  // Set when the reader picks a real document; `shouldShowSampleWelcomeNote` combines it.
   const [sampleWelcomeDismissed, setSampleWelcomeDismissed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [docCollection, setDocCollection] = useState<DocsVaultCollection>(initialCollection);
-  const [treeSort, setTreeSort] = useState<DocsTreeSort>(queryTreeSort);
-  const [treeGroup, setTreeGroup] = useState<DocsTreeGroup>(queryTreeGroup);
-  const {
-    source,
-    setSource,
-    staticSampleOverride,
-    setStaticSampleOverride,
-    sourcePreferenceHydrated,
-    setSourcePreferenceHydrated,
-    isDesktopRuntime,
-    localWinsInitialSource,
-    localIntentAutoOpenRef,
-  } = useDocsVaultSource({
-    localVault,
-    querySource,
-    querySample,
-    installedShell,
-    setAdvancedOpen,
-  });
-  const { docListCollapsed, docListToggled, docListLeaving, toggleDocListCollapsed } =
-    useDocListLayout();
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
-  const localVaultStatus = localVault.status;
-  // Distinguishes "not known yet" from "confirmed absent"; the landing decision waits on it.
-  const localVaultRestoreAttempted = localVault.restoreAttempted;
-  const openLocalVault = localVault.open;
-  const openRecentLocalVault = localVault.openRecent;
-  const localVaultRootPath = localVault.handle
-    ? getTauriVaultRootPath(localVault.handle) ?? localVault.handle.name ?? null
-    : null;
-  const handleOpenDogfoodVault = useDogfoodVaultSwitch({
-    queryDogfood,
-    isDesktopRuntime,
-    source,
-    localVaultStatus,
-    localVaultRootPath,
-    openRecentLocalVault,
-  });
-  const localSourceDisabled = isDocsVaultLocalSourceDisabled({
-    isDesktopRuntime,
-    localVaultStatus: localVault.status,
+  const [docListCollapsed, setDocListCollapsedState] = useState(readStoredListCollapsed);
+  const [docListToggled, setDocListToggled] = useState(false);
+  const docListPresence = usePanelPresence(!docListCollapsed);
+  const docListLeaving = docListToggled && docListCollapsed && docListPresence.mounted;
+  const toggleDocListCollapsed = useCallback(() => {
+    setDocListToggled(true);
+    setDocListCollapsedState((collapsed) => {
+      const next = !collapsed;
+      storeListCollapsed(next);
+      return next;
+    });
+  }, []);
+  const src = useDocsVaultSource({
+    address,
+    setAdvancedOpen,
+    setSelectedSlug,
+    setActiveTag,
+    setSampleWelcomeDismissed,
   });
   const {
-    recentKey,
-    recentSlugs,
-    setRecentSlugs,
-    pinnedSlugs,
-    setPinnedSlugs,
-    pinnedSet,
-    togglePin: handleTogglePin,
-  } = useDocsVaultPersistence({ source, localVault });
-  const { showDesktopWelcome, vaultScopeSettled } = useLandingSource({
+    source,
     installedShell,
     isDesktopRuntime,
-    localVault,
-    localVaultStatus,
-    localVaultRestoreAttempted,
-    querySource,
-    source,
-    setSource,
-    sourcePreferenceHydrated,
-    setSourcePreferenceHydrated,
-    localWinsInitialSource,
-  });
-
-  // Always starts closed; a modal on every load violates modality.
-  const [contractOpen, setContractOpen] = useState(false);
-  const openContract = useCallback(() => {
-    // Single-transient rule: opening a modal closes the other popovers.
-    setAdvancedOpen(false);
-    setVaultChipOpen(false);
-    setPaletteQuery(null);
-    setContractOpen(true);
-  }, [setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
-  const closeContract = useCallback(() => setContractOpen(false), []);
-  const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
-    useDocReadingScrollSpy(selectedSlug, source);
-  const backToTop = useBackToTop(articleScrollRef, selectedSlug);
-  const {
+    localSourceDisabled,
+    localVaultRootPath,
+    pinnedSet,
+    handleTogglePin,
+    showDesktopWelcome,
+    vaultScopeSettled,
+    handleOpenDogfoodVault,
     handleSourceChange,
     handleOpenAgentGraphWorkflowGuide,
     showDogfoodHint,
     isLocalSourceLoaded,
     vaultChipIdentity,
-  } = useActiveSource({
-    source,
-    setSource,
-    setStaticSampleOverride,
-    localVault,
-    localVaultStatus,
-    installedShell,
-    isDesktopRuntime,
-    queryDogfood,
-    view,
-    replaceUrlState,
-    setSelectedSlug, setActiveTag, setSampleWelcomeDismissed,
-    setAdvancedOpen, setRecentSlugs, localIntentAutoOpenRef,
+  } = src;
+
+  // Always starts closed; a modal on every load violates modality.
+  const [contractOpen, setContractOpen] = useState(false);
+  const closePopovers = useCallback(() => {
+    setAdvancedOpen(false);
+    setVaultChipOpen(false);
+    setPaletteQuery(null);
+  }, [setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
+  const openContract = useCallback(() => {
+    // Single-transient rule: opening a modal closes the other popovers.
+    closePopovers();
+    setContractOpen(true);
+  }, [closePopovers]);
+  const closeContract = useCallback(() => setContractOpen(false), []);
+  const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
+    useDocReadingScrollSpy(selectedSlug, source);
+  const backToTop = useBackToTop(articleScrollRef, selectedSlug);
+  const vault = useVaultManifest({
+    isLocalSourceLoaded,
+    staticSampleOverride: src.staticSampleOverride,
+    querySlug: address.querySlug,
+    selectedSlug,
+    legacyEntry,
+    documentScope,
   });
   const {
     staticVault,
@@ -213,79 +167,30 @@ function DocsVaultContent({
     legacyRedirectToLibrary,
     scopedDocs,
     scopedDocSlugs,
+    selectedDoc,
     staticHeadings,
     ontologyDerivation,
     docsBySlug,
     vaultSlugs,
     refSlugResolver,
-  } = useVaultManifest({
-    isLocalSourceLoaded,
-    localVault,
-    staticSampleOverride,
-    querySlug,
-    legacyEntry,
-    documentScope,
-  });
-  const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } =
-    useDocAccess({ source, localVault, isLocalSourceLoaded, selectedSlug });
-  const {
-    outOfScopeQuerySlug,
-    showSampleWelcomeNote,
-    handleViewChange,
-    handleTreeSortChange,
-    handleTreeGroupChange,
-  } = useDocsVaultUrlSync({
-    searchParams,
-    queryView,
-    queryTreeSort,
-    queryTreeGroup,
-    view,
-    setView,
-    treeSort,
-    setTreeSort,
-    treeGroup,
-    setTreeGroup,
-    replaceUrlState,
-    setAdvancedOpen,
-    documentScope,
-    legacyEntry,
-    manifest,
-    normalizedQuerySlug,
-    scopedDocSlugs,
-    selectedSlug,
-    setSelectedSlug,
-    vaultScopeSettled,
-    legacyRedirectToLibrary,
-    generalDocsHref,
-    legacyLibraryRedirectHref,
+  } = vault;
+  const access = useDocAccess({ source, localVault, isLocalSourceLoaded, selectedSlug });
+  const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } = access;
+  const { treeSort, treeGroup, handleViewChange, handleTreeSortChange, handleTreeGroupChange } =
+    useDocsVaultUrlSync({
+      address,
+      vault,
+      selectedSlug,
+      setSelectedSlug,
+      setAdvancedOpen,
+      vaultScopeSettled,
+    });
+  const tabs = useDocTabs({ address, vault, src, selectedSlug, setSelectedSlug });
+  const { openDocTabs, missingQuerySlug, vaultScope } = tabs;
+  const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
     source,
-    sampleWelcomeDismissed,
-  });
-  const {
-    openDocTabs,
-    openDocTabsHydrated,
-    rememberActiveSlug,
-    closeDocTabInWorkingSet,
-    pendingRestoredActiveSlug,
-    selectedDoc,
-  } = useDocTabs({
-    recentKey,
-    vaultSlugs,
-    scopedDocSlugs,
-    normalizedQuerySlug,
-    routePathname,
-    docsBySlug,
-    selectedSlug,
-    setSelectedSlug,
-  });
-  const { missingQuerySlug, vaultScope, appTouchedSlugsRef } = useQuerySlugGuard({
-    normalizedQuerySlug,
-    docsBySlug,
-    vaultScopeSettled,
-    source,
-    recentKey,
-    staticVault,
-    replaceUrlState,
+    normalizedQuerySlug: normalizedQuerySlug ?? selectedSlug,
+    dismissed: sampleWelcomeDismissed,
   });
   // Every surface names a document the same way; the file path stays in the caption below.
   const selectedDocDisplayTitle = selectedDoc
@@ -295,6 +200,9 @@ function DocsVaultContent({
   const mapDeeplinkForSelectedDoc = selectedDoc
     ? buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc)
     : null;
+  const backlinksDetail = selectedSlug
+    ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
+    : [];
   const {
     deleteTarget,
     setDeleteTarget,
@@ -320,43 +228,21 @@ function DocsVaultContent({
     handlePatchDocFrontmatter,
     handleMoveToKindFolder,
   } = useDocWriteActions({
-    manifest,
-    docsBySlug,
-    selectedDoc,
-    localVault,
-    recentKey,
-    replaceUrlState,
-    setPinnedSlugs, setRecentSlugs, setSelectedSlug, setEditing, setView,
-    setAdvancedOpen, setVaultChipOpen, setPaletteQuery, appTouchedSlugsRef,
-    canEditCurrent, selectedSlug, generalDocsHref, referrerListName,
+    address,
+    vault,
+    src,
+    tabs,
+    access,
+    selectedSlug,
+    setSelectedSlug,
+    setAdvancedOpen,
+    closePopovers,
+    referrerListName,
   });
   // Static export cannot prebuild per-slug metadata; mirrors layout.tsx's `%s · siteName`.
   useDocumentTitle(
     selectedDoc ? `${selectedDocDisplayTitle} · ${siteT('siteName')}` : null,
   );
-  const {
-    collectionDocs,
-    collectionTagCounts,
-    collectionManifest,
-    collectionDocSlugs,
-    collectionCounts,
-    collectionPinnedSlugs,
-    collectionRecentSlugs,
-  } = useCollectionDocs({
-    manifest,
-    scopedDocs,
-    documentScope,
-    docCollection,
-    pinnedSlugs,
-    recentSlugs,
-  });
-  // Palette full-text index from the first open, keyed by mtime.
-  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } = useDocsBodyIndex({
-    docs: collectionDocs,
-    enabled: paletteOpened,
-    scope: vaultSessionScope,
-    getDocContent,
-  });
   const { reviewQueue, selectedReviewRow, reviewBusy, handleReviewWrite } = useDocReview({
     scopedDocs,
     getDocContent,
@@ -366,58 +252,72 @@ function DocsVaultContent({
     selectedDoc,
     localVault,
   });
-  const { handleCollectionChange } = useCollectionSelection({
-    manifest,
-    scopedDocs,
-    scopedDocSlugs,
-    documentScope,
+  const {
     docCollection,
-    setDocCollection,
+    highlightQuery,
+    collectionDocs,
+    collectionTagCounts,
+    collectionManifest,
+    collectionDocSlugs,
+    collectionCounts,
+    collectionPinnedSlugs,
+    collectionRecentSlugs,
+    docsBodyIndex,
+    docsBodyIndexing,
+    handleCollectionChange,
+    handleSelect,
+    handleCloseDocTab,
+  } = useDocCollection({
+    address,
+    vault,
+    src,
+    tabs,
+    documentScope,
     initialCollection,
-    selectedDoc,
     selectedSlug,
     setSelectedSlug,
     setActiveTag,
-    pinnedSlugs,
-    recentSlugs,
-    collectionDocs,
-    collectionDocSlugs,
-    collectionPinnedSlugs,
-    collectionRecentSlugs,
-    openDocTabsHydrated,
-    pendingRestoredActiveSlug,
-    outOfScopeQuerySlug,
-    normalizedQuerySlug,
-    vaultScopeSettled,
-    routePathname,
-    replaceUrlState,
-  });
-  const { handleSelect, handleCloseDocTab, handleSelectFromSidebar } = useDocSelection({
-    documentScope,
-    scopedDocSlugs,
-    generalDocsHref,
-    rememberActiveSlug,
-    closeDocTabInWorkingSet,
-    setSelectedSlug,
-    setHighlightQuery,
-    setRecentSlugs,
     setSampleWelcomeDismissed,
-    setSourceTreeOpen,
-    recentKey,
-    replaceUrlState,
-    selectedSlug,
-    collectionDocs,
-    collectionDocSlugs,
+    paletteOpen,
+    getDocContent,
   });
-  usePaletteShortcuts({ paletteOpen, setPaletteQuery });
-  const { backlinksDetail, outlineHeadings, showOutlineRail, handleHeadingNavigate } =
-    useDocOutline({
-      manifest,
-      selectedSlug,
-      selectedDoc,
-      staticHeadings,
-      setActiveHeadingSlug,
-    });
+  const handleSelectFromSidebar = useCallback(
+    (slug: string) => {
+      handleSelect(slug);
+      setSourceTreeOpen(false);
+    },
+    [handleSelect],
+  );
+  // ⌘K is this workspace's palette, so the shell search stands aside.
+  useClaimShellKey('search');
+  useTypingShortcuts([
+    {
+      combo: { key: 'k', meta: true },
+      onFire: () => setPaletteQuery((q) => (q === null ? '' : null)),
+    },
+    {
+      combo: { key: 'p', meta: true },
+      onFire: () => setPaletteQuery((q) => (q === null ? '' : null)),
+    },
+    {
+      combo: { key: 'o', meta: true },
+      onFire: () => setPaletteQuery((q) => (q === null ? '' : null)),
+    },
+    {
+      combo: { key: 'p', meta: true, shift: true },
+      onFire: () => setPaletteQuery((q) => (q === null ? '> ' : null)),
+    },
+    {
+      combo: { key: '/' },
+      disabled: paletteOpen,
+      onFire: () => setPaletteQuery(''),
+    },
+  ]);
+  const { outlineHeadings, showOutlineRail, handleHeadingNavigate } = useDocOutline({
+    selectedDoc,
+    staticHeadings,
+    setActiveHeadingSlug,
+  });
   const { commands } = useDocsVaultCommands({
     localVault,
     view,
@@ -444,10 +344,24 @@ function DocsVaultContent({
   });
   // From the whole manifest, independent of the collection filter; read-only.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
-  const { skillParity, handleCopySkillParityHandoff } = useSkillParityHandoff({
-    isDesktopRuntime,
-    localVault,
-  });
+  // Skill-copy parity only with a real absolute path; the web falls back to the handle name.
+  const skillParityRoot =
+    isDesktopRuntime && localVault.handle
+      ? getTauriVaultRootPath(localVault.handle) ?? null
+      : null;
+  const skillParity = useSkillParity(skillParityRoot);
+  const handleCopySkillParityHandoff = useCallback(
+    (rows: SkillParityRow[]) => {
+      if (!skillParityRoot) return;
+      const text = buildSkillParityHandoff(rows, skillParityRoot);
+      if (!text) return;
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => toast.show(tSkillParity("copied"), "success"))
+        .catch(() => toast.show(tSkillParity("copyFailed"), "error"));
+    },
+    [toast, tSkillParity, skillParityRoot],
+  );
   const handleVaultPillSwap = useCallback(() => {
     if (source !== 'local' && isDesktopRuntime) {
       handleSourceChange('local');
@@ -726,34 +640,62 @@ function DocsVaultContent({
         </>
       )}
 
-      <DocsVaultDialogs
-        paletteOpen={paletteOpen}
-        paletteQuery={paletteQuery}
-        setPaletteQuery={setPaletteQuery}
-        collectionDocs={collectionDocs}
-        collectionRecentSlugs={collectionRecentSlugs}
-        collectionPinnedSlugs={collectionPinnedSlugs}
-        commands={commands}
-        collectionTagCounts={collectionTagCounts}
-        handleSelect={handleSelect}
-        setActiveTag={setActiveTag}
-        getDocHref={getDocHref}
-        docsBodyIndex={docsBodyIndex}
-        docsBodyIndexing={docsBodyIndexing}
-        newDocKindDialogOpen={newDocKindDialogOpen}
-        handleCreateNewDocWithKind={handleCreateNewDocWithKind}
-        setNewDocKindDialogOpen={setNewDocKindDialogOpen}
-        renameTarget={renameTarget}
-        isSlugTaken={isSlugTaken}
-        setRenameTarget={setRenameTarget}
-        confirmRename={confirmRename}
-        deleteTarget={deleteTarget}
-        confirmDelete={confirmDelete}
-        setDeleteTarget={setDeleteTarget}
-        pendingSimilarDoc={pendingSimilarDoc}
-        openPendingSimilarDoc={openPendingSimilarDoc}
-        createPendingDocAnyway={createPendingDocAnyway}
+      <AnimatePresence>
+        {paletteOpen ? (
+          <DocsVaultUnifiedPalette
+            key="docs-unified-palette"
+            onClose={() => setPaletteQuery(null)}
+            docs={collectionDocs}
+            recentSlugs={collectionRecentSlugs}
+            pinnedSlugs={collectionPinnedSlugs}
+            commands={commands}
+            tagCounts={collectionTagCounts}
+            onDocSelect={(slug, q) => handleSelect(slug, q)}
+            onTagSelect={(tag) => setActiveTag(tag)}
+            initialQuery={paletteQuery ?? ''}
+            getDocHref={getDocHref}
+            bodyIndex={docsBodyIndex}
+            bodyIndexing={docsBodyIndexing}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <NewDocKindDialog
+        open={newDocKindDialogOpen}
+        onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
+        onClose={() => setNewDocKindDialogOpen(false)}
       />
+      <RenameDocDialog
+        target={renameTarget}
+        isTaken={isSlugTaken}
+        onCancel={() => setRenameTarget(null)}
+        onConfirm={confirmRename}
+      />
+      <DeleteDocDialog
+        target={deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+
+      {/* Bottom chip without scrim or autofocus, so the content stays usable. */}
+      <AnimatePresence>
+        {pendingSimilarDoc ? (
+          <div
+            key="pending-similar-doc"
+            className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4"
+          >
+            <div className="pointer-events-auto w-full max-w-[var(--dialog-w-sm)]">
+              <SimilarNodeWarning
+                message={t('dialog.similarNodeWarning', { title: pendingSimilarDoc.match.title })}
+                openLabel={t('dialog.similarNodeOpen')}
+                createAnywayLabel={t('dialog.similarNodeCreateAnyway')}
+                onOpen={openPendingSimilarDoc}
+                onCreateAnyway={createPendingDocAnyway}
+              />
+            </div>
+          </div>
+        ) : null}
+      </AnimatePresence>
       </div>
     </div>
   );
