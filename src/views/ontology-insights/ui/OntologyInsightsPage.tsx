@@ -10,6 +10,7 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { Button, TabBar } from '@/shared/ui';
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
+import { cn } from '@/shared/lib/cn';
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_TITLE } from '@/shared/ui/page-frame';
 import { type KnowledgeGraphNode, type KnowledgeGraphEdge } from '@/entities/knowledge-graph';
 import { parseInsightsTab, buildInsightsTabHref, INSIGHTS_SECTIONS, type InsightsTab } from '../lib/insights-tab-state';
@@ -50,8 +51,21 @@ export function OntologyInsightsPage() {
   const record = RECORDS.has(tab);
   const evidence = tab === 'do-next' || tab === 'unmatched';
   return <VaultSourceHydrationBoundary><div className="relative flex min-h-0 min-w-0 flex-1 pb-[var(--topology-mobile-bottom-tab-reserve)] lg:pb-0">
-    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
-      <header className={`${PAGE_HEADER_ROW} mb-5`}><div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t('analysis.title')}</h1></div><nav className="min-w-0 flex-1" aria-label={t('coreAriaLabel')}><TabBar ariaLabel={t('coreAriaLabel')} activeKey={record ? tab : 'connections'} onSelect={value => setTab(value as InsightsTab)} testId="insights-core-switch" items={INSIGHTS_SECTIONS.map(key => ({ key, label: t(`analysis.${({ connections: 'system', brief: 'records', library: 'wiki', harness: 'guidance', flow: 'explanations' } as const)[key]}`), testId: `insights-core-${key === 'connections' ? 'ontology' : key}` }))} /></nav><div className="lg:hidden"><AppSettingsMenu mode={mode} triggerVariant="chrome-tile" /></div></header>
+    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} relative min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
+      <header className={cn(PAGE_HEADER_ROW, 'mb-5 gap-x-8 border-b border-[color:var(--color-divider)]')}>
+        <div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t('analysis.title')}</h1></div>
+        <div className="lg:hidden"><AppSettingsMenu mode={mode} triggerVariant="chrome-tile" /></div>
+        <nav className="order-last min-w-0 w-full lg:order-none lg:-mt-1 lg:w-auto lg:flex-1" aria-label={t('coreAriaLabel')}>
+          <TabBar
+            placement="header"
+            ariaLabel={t('coreAriaLabel')}
+            activeKey={record ? tab : 'connections'}
+            onSelect={value => setTab(value as InsightsTab)}
+            testId="insights-core-switch"
+            items={INSIGHTS_SECTIONS.map(key => ({ key, label: t(`analysis.${({ connections: 'system', brief: 'records', library: 'wiki', harness: 'guidance', flow: 'explanations' } as const)[key]}`), testId: `insights-core-${key === 'connections' ? 'ontology' : key}` }))}
+          />
+        </nav>
+      </header>
       <section id={`insights-tabpanel-${record ? tab : 'connections'}`} role="tabpanel" aria-labelledby={`insights-tab-${record ? tab : 'connections'}`} data-insights-panel={record ? tab : 'analysis'} className={tab === 'harness' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : undefined}>
       {error ? <p role="alert" className="text-body text-[color:var(--color-status-danger)]">{error.message}</p> : null}
       {!insight ? <p role="status" className="text-body">{t('loading')}</p> : nodes.length === 0 ? <div className="flex flex-col gap-4"><p className="text-body">{t('analysis.empty')}</p><OpenVaultCta testId="analysis-open-vault" /></div> : <>
