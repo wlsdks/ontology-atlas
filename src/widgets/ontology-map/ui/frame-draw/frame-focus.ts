@@ -5,7 +5,7 @@ import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../topology-world";
 import { EMPTY_NEIGHBOR_SET, passState, litSectorIdsReused, lodHoverEgoReused } from "./frame-state";
 import { resetNodeVisualCacheFor } from "./node-visual";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
 
 // Shared scratch: use the result before the next call and never keep it.
 const edgePointsScratch = {
@@ -14,10 +14,10 @@ const edgePointsScratch = {
   control: { x: 0, y: 0 },
 };
 
-export function prepareFocus(F: FrameScope): void {
+export function prepareFocus(frame: FrameInputs) {
   const { camera, viewportWidth, viewportHeight, domeControlFor, colorFocusedNodeId, focusRampById,
     focusedNodeId, world, domeLight, hoveredNodeId, selectedEdge, colorSelectedEdge, tokens,
-    reducedMotion, footprintStepColor, trailLensKeepIds, domeOn, neural, domeFrameFor } = F;
+    reducedMotion, footprintStepColor, trailLensKeepIds, domeOn, neural, domeFrameFor } = frame;
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const camX = camera.x.value;
   const camY = camera.y.value;
@@ -131,27 +131,11 @@ export function prepareFocus(F: FrameScope): void {
     hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
     hoverShimmerColor: tokens.indigoBright,
   };
-  F.project = project;
-  F.camX = camX;
-  F.camY = camY;
-  F.camScale = camScale;
-  F.halfW = halfW;
-  F.halfH = halfH;
-  F.projectEdgePoints = projectEdgePoints;
-  F.egoGlowRamp = egoGlowRamp;
-  F.neighborsOfFocusedRaw = neighborsOfFocusedRaw;
-  F.parentOf = parentOf;
-  F.litOn = litOn;
-  F.domeAncestryOn = domeAncestryOn;
-  F.domeAncestryEdges = domeAncestryEdges;
-  F.neighborsOfFocused = neighborsOfFocused;
-  F.colorNeighbors = colorNeighbors;
-  F.litFocusId = litFocusId;
-  F.litFocusRamp = litFocusRamp;
-  F.inLitLine = inLitLine;
-  F.lod = lod;
-  F.egoAllNormal = egoAllNormal;
-  F.colorAllNormal = colorAllNormal;
-  F.traceTokensFrame = traceTokensFrame;
-  F.nodeShapeTokensFrame = nodeShapeTokensFrame;
+  return {
+    project, camX, camY, camScale, halfW, halfH, projectEdgePoints, egoGlowRamp, neighborsOfFocusedRaw,
+    parentOf, litOn, domeAncestryOn, domeAncestryEdges, neighborsOfFocused, colorNeighbors, litFocusId,
+    litFocusRamp, inLitLine, lod, egoAllNormal, colorAllNormal, traceTokensFrame, nodeShapeTokensFrame,
+  };
 }
+
+export type FrameFocus = Readonly<ReturnType<typeof prepareFocus>>;

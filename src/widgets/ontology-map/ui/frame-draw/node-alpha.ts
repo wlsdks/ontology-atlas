@@ -2,16 +2,17 @@ import { egoRestSink } from "../../model/focus-state";
 import { effectiveNodeAlpha, nodeTierAlpha } from "../../model/tier-visibility";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
 import { passState, domeNodeFrameReused, effectiveAlphaByIdReused, lodHoverEgoReused } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
 
 let effectiveAlphaByIndexReused = new Float64Array(0);
 
-export function computeNodeAlpha(F: FrameScope): void {
+export function computeNodeAlpha(frame: FrameInputs, focus: FrameFocus) {
   const { world, previewEdge, clusteredIds, realmTierKinds, zoomRatio, tierReveal, focusedNodeId,
     selectedEdge, spotlightIds, spotlightRamp, expandRevealById, bornNodeIds, appearById,
     egoRevealById, realmOutsideReturnAlphaById, focusRampById, tokens, agentFocusNodeId,
-    emphasisById, clusterChips, spotlightLensActive, trailLensActive, isTrailKept, domeOn,
-    neighborsOfFocusedRaw, neighborsOfFocused, lod } = F;
+    emphasisById, clusterChips, spotlightLensActive, trailLensActive, isTrailKept, domeOn } = frame;
+  const { neighborsOfFocusedRaw, neighborsOfFocused, lod } = focus;
   if (passState.effectiveAlphaWorld?.deref() !== world) {
     effectiveAlphaByIdReused.clear();
     passState.effectiveAlphaWorld = new WeakRef(world);
@@ -103,10 +104,7 @@ export function computeNodeAlpha(F: FrameScope): void {
     }
   }
   const anyExpanded = expandedParentIds.size > 0;
-  F.effectiveAlphaById = effectiveAlphaById;
-  F.effectiveAlphaByIndex = effectiveAlphaByIndex;
-  F.expandedParentIds = expandedParentIds;
-  F.expandedDiscIds = expandedDiscIds;
-  F.expandedChildIds = expandedChildIds;
-  F.anyExpanded = anyExpanded;
+  return { effectiveAlphaById, effectiveAlphaByIndex, expandedParentIds, expandedDiscIds, expandedChildIds, anyExpanded };
 }
+
+export type NodeAlpha = Readonly<ReturnType<typeof computeNodeAlpha>>;

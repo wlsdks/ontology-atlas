@@ -1,4 +1,4 @@
-import { buildTrailGlintLegs } from "../../model/footprint-steps";
+import { buildTrailGlintLegs, type TrailGlintLeg } from "../../model/footprint-steps";
 import {
   resolveNodeEgoStateWithPair,
   resolveTrailLensNodeEgoState,
@@ -15,13 +15,57 @@ import { labelZoomScale } from "../../render/labels";
 import { worldToScreen } from "../topology-camera-math";
 import { passState, ZERO_DOME_FRAME, domeNodeFrameReused } from "./frame-state";
 import { TRAIL_GLINT_PERIOD_MS } from "./trail-curves";
-import { type FrameDrawParams } from "./frame-draw-params";
-import { type FrameScope } from "./frame-scope";
+import type { FrameDrawParams } from "./frame-draw-params";
 
-export function beginFrame(F: FrameScope, params: FrameDrawParams): void {
-  F.params = params;
-  const { ctx: baseCtx, world, camera, farT, neuralRamp: neuralRampProp = 0, zoomRatio, now, viewportWidth, viewportHeight, panelInsets = null, devicePixelRatio: canvasDpr = 1, gridPattern, dustPoints, tokens, focusedNodeId, hoveredNodeId, hoverReleasedNodeId = null, hoverStartedAt = null, emphasizedNeighborId, hoveredEdge, selectedEdge, relationCaptions, captionFoldedIds = null, reviewQuestionIds, previewEdge, emphasisById, egoRevealById, focusRampById, appearById, bornNodeIds, chipRevealById, batchAppearById, labelPresentById, colorFocusedNodeId, colorSelectedEdge, reducedMotion, pulses, selectionPulse, agentFocusNodeId, clusteredIds, clusterChips, hoveredClusterId, wardingRing, realmTierKinds, expandRevealById, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, realmStarPoints, footprintStepsById, footprintPref = null, walkedEdgeKeys = null, walkedEdgeDirections = null, walkedEdgeArrivalStep = null, footprintInk = [232, 196, 122], footprintStepColor = "#e8c47a", footprintNewestId = null, footprintAppear = 1, trailStarInk = null, footprintNewestStep = 1, trailLensOpenedAtMs = 0, trailLensIds = null, spotlightIds, mapLensKind, pathEdgeIds, spotlightRamp, spotlightDashOffset, tierReveal = DEFAULT_TIER_REVEAL, glyphStyle = "fill", backgroundVariant = "dot", paintAnimatedBackground = null, depthDotPatterns, expand = DEFAULT_EXPAND, clusterBarLabels = null, domeFrame = null, domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null, domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial: dialProps = null, } = params;
-  const ctx = baseCtx;
+type DefaultedKey = "neuralRamp" | "panelInsets" | "devicePixelRatio" | "hoverReleasedNodeId" | "hoverStartedAt"
+  | "captionFoldedIds" | "footprintPref" | "walkedEdgeKeys" | "walkedEdgeDirections" | "walkedEdgeArrivalStep"
+  | "footprintInk" | "footprintStepColor" | "footprintNewestId" | "footprintAppear" | "trailStarInk"
+  | "footprintNewestStep" | "trailLensOpenedAtMs" | "trailLensIds" | "tierReveal" | "glyphStyle"
+  | "backgroundVariant" | "paintAnimatedBackground" | "expand" | "clusterBarLabels" | "domeFrame" | "domeRamp"
+  | "domeRings" | "domeRingAlpha" | "tierNameBoxes" | "domeTierRaisedKind" | "domeControlFor" | "domeLight"
+  | "dial";
+
+type ResolvedDefaults = { [K in DefaultedKey]-?: Exclude<FrameDrawParams[K], undefined> };
+
+interface FrameLens {
+  spotlightLensActive: boolean;
+  pathLensActive: boolean;
+  constellationLensActive: boolean;
+  recentSpotlightActive: boolean;
+  spotlightSink: (inSpotlight: boolean) => number;
+  trailLensKeepIds: ReadonlySet<string> | null;
+  trailLensActive: boolean;
+  trailRamp: number;
+  trailGlint: number;
+  trailGlintLegs: Map<string, TrailGlintLeg> | null;
+  isTrailKept: (nodeId: string) => boolean;
+  lensNodeEgoState: (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null) => NodeEgoState;
+  realmDepthOf: (nodeId: string) => number | undefined;
+  realmParallaxOffsetFor: (nodeId: string) => { x: number; y: number };
+  domeOn: boolean;
+  neural: number;
+  domeFrameFor: (nodeId: string) => DomeNodeFrame;
+  nodeFrameAt: (index: number) => DomeNodeFrame;
+  gridOrigin: { x: number; y: number };
+  footprintScale: number;
+  labelScale: number;
+  bgOrigin: { x: number; y: number };
+}
+
+export type FrameInputs = Readonly<Omit<FrameDrawParams, DefaultedKey> & ResolvedDefaults & FrameLens>;
+
+export function beginFrame(params: FrameDrawParams): FrameInputs {
+  const { world, camera, neuralRamp = 0, now, viewportWidth, viewportHeight, panelInsets = null,
+    devicePixelRatio = 1, tokens, hoverReleasedNodeId = null, hoverStartedAt = null,
+    captionFoldedIds = null, colorFocusedNodeId, colorSelectedEdge, reducedMotion, realmDepthById,
+    realmDepthParallax, footprintPref = null, walkedEdgeKeys = null, walkedEdgeDirections = null,
+    walkedEdgeArrivalStep = null, footprintInk = [232, 196, 122], footprintStepColor = "#e8c47a",
+    footprintNewestId = null, footprintAppear = 1, trailStarInk = null, footprintNewestStep = 1,
+    trailLensOpenedAtMs = 0, trailLensIds = null, spotlightIds, mapLensKind, spotlightRamp,
+    tierReveal = DEFAULT_TIER_REVEAL, glyphStyle = "fill", backgroundVariant = "dot",
+    paintAnimatedBackground = null, expand = DEFAULT_EXPAND, clusterBarLabels = null, domeFrame = null,
+    domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null,
+    domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial = null } = params;
   const spotlightLensActive = spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
   const pathLensActive = spotlightLensActive && mapLensKind === "path";
   const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
@@ -61,7 +105,7 @@ export function beginFrame(F: FrameScope, params: FrameDrawParams): void {
     return depthParallaxOffsetFor(realmDepthById.get(nodeId), realmDepthParallax.depth2, realmDepthParallax.depth3);
   };
   const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
-  const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
+  const neural = domeOn ? Math.min(1, Math.max(0, neuralRamp)) : 0;
   const skyTimeMs = now - 0;
   passState.drawnSkyTimeMs = skyTimeMs;
   const domeFrameFor = (nodeId: string): DomeNodeFrame => (domeOn ? domeFrame.get(nodeId) : undefined) ?? ZERO_DOME_FRAME;
@@ -76,106 +120,17 @@ export function beginFrame(F: FrameScope, params: FrameDrawParams): void {
   const footprintScale = footprintScaleFor(camera.scale.value);
   const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
   const bgOrigin = resolveBackgroundOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, backgroundVariant, tokens.canvasBgParallax, reducedMotion);
-  F.world = world;
-  F.camera = camera;
-  F.farT = farT;
-  F.zoomRatio = zoomRatio;
-  F.now = now;
-  F.viewportWidth = viewportWidth;
-  F.viewportHeight = viewportHeight;
-  F.panelInsets = panelInsets;
-  F.canvasDpr = canvasDpr;
-  F.gridPattern = gridPattern;
-  F.dustPoints = dustPoints;
-  F.tokens = tokens;
-  F.focusedNodeId = focusedNodeId;
-  F.hoveredNodeId = hoveredNodeId;
-  F.hoverReleasedNodeId = hoverReleasedNodeId;
-  F.hoverStartedAt = hoverStartedAt;
-  F.emphasizedNeighborId = emphasizedNeighborId;
-  F.hoveredEdge = hoveredEdge;
-  F.selectedEdge = selectedEdge;
-  F.relationCaptions = relationCaptions;
-  F.captionFoldedIds = captionFoldedIds;
-  F.reviewQuestionIds = reviewQuestionIds;
-  F.previewEdge = previewEdge;
-  F.emphasisById = emphasisById;
-  F.egoRevealById = egoRevealById;
-  F.focusRampById = focusRampById;
-  F.appearById = appearById;
-  F.bornNodeIds = bornNodeIds;
-  F.chipRevealById = chipRevealById;
-  F.batchAppearById = batchAppearById;
-  F.labelPresentById = labelPresentById;
-  F.colorFocusedNodeId = colorFocusedNodeId;
-  F.colorSelectedEdge = colorSelectedEdge;
-  F.reducedMotion = reducedMotion;
-  F.pulses = pulses;
-  F.selectionPulse = selectionPulse;
-  F.agentFocusNodeId = agentFocusNodeId;
-  F.clusteredIds = clusteredIds;
-  F.clusterChips = clusterChips;
-  F.hoveredClusterId = hoveredClusterId;
-  F.wardingRing = wardingRing;
-  F.realmTierKinds = realmTierKinds;
-  F.expandRevealById = expandRevealById;
-  F.realmDepthById = realmDepthById;
-  F.realmDustParallax = realmDustParallax;
-  F.realmOutsideReturnAlphaById = realmOutsideReturnAlphaById;
-  F.realmStarPoints = realmStarPoints;
-  F.footprintStepsById = footprintStepsById;
-  F.footprintPref = footprintPref;
-  F.walkedEdgeKeys = walkedEdgeKeys;
-  F.walkedEdgeDirections = walkedEdgeDirections;
-  F.walkedEdgeArrivalStep = walkedEdgeArrivalStep;
-  F.footprintInk = footprintInk;
-  F.footprintStepColor = footprintStepColor;
-  F.footprintNewestId = footprintNewestId;
-  F.footprintAppear = footprintAppear;
-  F.trailStarInk = trailStarInk;
-  F.footprintNewestStep = footprintNewestStep;
-  F.trailLensOpenedAtMs = trailLensOpenedAtMs;
-  F.spotlightIds = spotlightIds;
-  F.mapLensKind = mapLensKind;
-  F.pathEdgeIds = pathEdgeIds;
-  F.spotlightRamp = spotlightRamp;
-  F.spotlightDashOffset = spotlightDashOffset;
-  F.tierReveal = tierReveal;
-  F.glyphStyle = glyphStyle;
-  F.backgroundVariant = backgroundVariant;
-  F.paintAnimatedBackground = paintAnimatedBackground;
-  F.depthDotPatterns = depthDotPatterns;
-  F.expand = expand;
-  F.clusterBarLabels = clusterBarLabels;
-  F.domeRamp = domeRamp;
-  F.domeRings = domeRings;
-  F.domeRingAlpha = domeRingAlpha;
-  F.tierNameBoxes = tierNameBoxes;
-  F.domeTierRaisedKind = domeTierRaisedKind;
-  F.domeControlFor = domeControlFor;
-  F.domeLight = domeLight;
-  F.dialProps = dialProps;
-  F.ctx = ctx;
-  F.spotlightLensActive = spotlightLensActive;
-  F.pathLensActive = pathLensActive;
-  F.constellationLensActive = constellationLensActive;
-  F.recentSpotlightActive = recentSpotlightActive;
-  F.spotlightSink = spotlightSink;
-  F.trailLensKeepIds = trailLensKeepIds;
-  F.trailLensActive = trailLensActive;
-  F.trailRamp = trailRamp;
-  F.trailGlint = trailGlint;
-  F.trailGlintLegs = trailGlintLegs;
-  F.isTrailKept = isTrailKept;
-  F.lensNodeEgoState = lensNodeEgoState;
-  F.realmDepthOf = realmDepthOf;
-  F.realmParallaxOffsetFor = realmParallaxOffsetFor;
-  F.domeOn = domeOn;
-  F.neural = neural;
-  F.domeFrameFor = domeFrameFor;
-  F.nodeFrameAt = nodeFrameAt;
-  F.gridOrigin = gridOrigin;
-  F.footprintScale = footprintScale;
-  F.labelScale = labelScale;
-  F.bgOrigin = bgOrigin;
+  return {
+    ...params,
+    neuralRamp, panelInsets, devicePixelRatio, hoverReleasedNodeId, hoverStartedAt, captionFoldedIds,
+    footprintPref, walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep, footprintInk,
+    footprintStepColor, footprintNewestId, footprintAppear, trailStarInk, footprintNewestStep,
+    trailLensOpenedAtMs, trailLensIds, tierReveal, glyphStyle, backgroundVariant, paintAnimatedBackground,
+    expand, clusterBarLabels, domeFrame, domeRamp, domeRings, domeRingAlpha, tierNameBoxes,
+    domeTierRaisedKind, domeControlFor, domeLight, dial,
+    spotlightLensActive, pathLensActive, constellationLensActive, recentSpotlightActive, spotlightSink,
+    trailLensKeepIds, trailLensActive, trailRamp, trailGlint, trailGlintLegs, isTrailKept,
+    lensNodeEgoState, realmDepthOf, realmParallaxOffsetFor, domeOn, neural, domeFrameFor, nodeFrameAt,
+    gridOrigin, footprintScale, labelScale, bgOrigin,
+  };
 }

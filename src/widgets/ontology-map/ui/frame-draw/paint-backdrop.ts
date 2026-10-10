@@ -2,12 +2,12 @@ import { backgroundParallaxOrigin } from "../../model/background-parallax";
 import { DEPTH_DOT_LAYERS, draw as gridDraw } from "../../render/grid";
 import { drawRealmStars, drawStarDust } from "../../render/starfield";
 import { worldToScreen } from "../topology-camera-math";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
 
-export function paintBackdrop(F: FrameScope): void {
+export function paintBackdrop(frame: FrameInputs): void {
   const { viewportWidth, viewportHeight, farT, domeRamp, backgroundVariant, gridPattern,
-    paintAnimatedBackground, depthDotPatterns, reducedMotion, tokens, dustPoints, realmDustParallax,
-    wardingRing, realmStarPoints, camera, ctx, gridOrigin, bgOrigin } = F;
+    paintAnimatedBackground, depthDotPatterns, reducedMotion, tokens, dustPoints,
+    realmDustParallax, wardingRing, realmStarPoints, camera, ctx, gridOrigin, bgOrigin } = frame;
   gridDraw(ctx, {
     viewportWidth,
     viewportHeight,
