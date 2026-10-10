@@ -850,7 +850,19 @@
         "unknown": "尚未检查源码当前状态"
       },
       "declarationCompact": "{count} 条声明",
-      "documentTitle": "分析 · Ontology Atlas"
+      "documentTitle": "分析 · Ontology Atlas",
+      "findConnection": "查找关系",
+      "findCapability": "查找能力",
+      "searchByName": "按名称搜索",
+      "clearSearch": "清除",
+      "searchMatches": "共 {total} 项，匹配 {count} 项",
+      "listShown": "共 {total} 项，显示 {shown} 项",
+      "noSearchResults": "没有匹配的名称。请尝试其他关键词。",
+      "selectionKept": "当前选择的内容会继续显示。",
+      "showMoreItems": "再显示 {count} 项",
+      "showLessItems": "收起",
+      "gapClaims": "记录缺项 · {count}",
+      "capabilityFilter": "能力显示范围"
     }
   }
 }
