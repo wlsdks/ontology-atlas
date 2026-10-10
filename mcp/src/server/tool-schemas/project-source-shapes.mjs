@@ -1,8 +1,5 @@
-// Project source binding, receipt and remedy schemas.
-
 import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 
-// Nested objects are closed; only maps with runtime-chosen keys are open.
 const PROJECT_SOURCE_GAP_SCHEMA = Object.freeze({
   type: ['object', 'null'],
   properties: {

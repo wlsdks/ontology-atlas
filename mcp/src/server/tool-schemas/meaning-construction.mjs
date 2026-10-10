@@ -1,5 +1,3 @@
-// Meaning proposal, write plan, lifecycle and assessment schemas.
-
 import {
   CONSTRUCTION_ADMISSION_CONTRACT,
   CONSTRUCTION_ADMISSION_TIERS,

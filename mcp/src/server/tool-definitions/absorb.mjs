@@ -5,7 +5,7 @@ import {
 import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
-} from '../tool-schemas/git-results.mjs';
+} from '../tool-schemas/destructive-preview.mjs';
 import { POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA } from '../tool-schemas/post-write-maintenance.mjs';
 
 export const ABSORB_DOCUMENT_TOOL = {

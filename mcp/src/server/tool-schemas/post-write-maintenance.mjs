@@ -1,5 +1,3 @@
-// Post-write maintenance queue schemas.
-
 import {
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,

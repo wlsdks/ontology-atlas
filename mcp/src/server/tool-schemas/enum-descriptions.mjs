@@ -1,5 +1,3 @@
-// Enum descriptions and unions from engine value lists.
-
 import { IMPORT_EDGE_KIND_VALUES } from '../../infer-imports.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -7,10 +5,8 @@ import {
   QUERY_ONTOLOGY_OPERATIONS,
   QUERY_PLAN_TARGET_OPERATIONS,
   RELATION_TYPE_VALUES,
-  WRITE_RELATION_TYPE_VALUES,
 } from '../../ontology-engine.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
-import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
 const IMPORT_EDGE_KIND_DESCRIPTION = IMPORT_EDGE_KIND_VALUES.join(', ');
@@ -26,7 +22,6 @@ const QUERY_PLAN_TARGET_OPERATION_UNION = QUERY_PLAN_TARGET_OPERATIONS
 const RELATION_TYPE_UNION = RELATION_TYPE_VALUES
   .map((type) => `'${type}'`)
   .join('|');
-const ADD_RELATION_TYPE_SCHEMA = { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES };
 
 export {
   VAULT_ISSUE_CODE_DESCRIPTION,
@@ -36,5 +31,4 @@ export {
   QUERY_ONTOLOGY_OPERATION_UNION,
   QUERY_PLAN_TARGET_OPERATION_UNION,
   RELATION_TYPE_UNION,
-  ADD_RELATION_TYPE_SCHEMA,
 };

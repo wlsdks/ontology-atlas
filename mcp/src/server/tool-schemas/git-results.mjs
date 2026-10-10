@@ -1,5 +1,7 @@
-// Git result, snapshot and destructive preview schemas.
-
+import {
+  DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+  DESTRUCTIVE_PREVIEW_REQUIRED,
+} from './destructive-preview.mjs';
 import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 
 const GIT_FILE_OUTPUT_SCHEMA = Object.freeze({
@@ -37,31 +39,6 @@ const GIT_RISK_OUTPUT_SCHEMA = Object.freeze({
   required: ['level', 'warnings'],
   additionalProperties: false,
 });
-const DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES = Object.freeze({
-  previewReady: {
-    type: 'boolean',
-    description: 'True only when this response is a complete dry-run preview that an agent can review.',
-  },
-  canConfirm: {
-    type: 'boolean',
-    description: 'True only when repeating the call with confirm:true can perform the previewed change without another explicit safety opt-in.',
-  },
-  wouldChange: {
-    type: 'boolean',
-    description: 'True only when the dry-run predicts a disk or Git change.',
-  },
-  blockedReasons: {
-    type: 'array',
-    items: NON_BLANK_STRING_SCHEMA,
-    description: 'Machine-readable human explanations for every condition currently blocking confirmation.',
-  },
-});
-const DESTRUCTIVE_PREVIEW_REQUIRED = Object.freeze([
-  'previewReady',
-  'canConfirm',
-  'wouldChange',
-  'blockedReasons',
-]);
 const GIT_RESULT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -155,8 +132,6 @@ const GIT_HISTORY_OUTPUT_SCHEMA = Object.freeze({
 });
 
 export {
-  DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-  DESTRUCTIVE_PREVIEW_REQUIRED,
   GIT_RESULT_OUTPUT_SCHEMA,
   GIT_SNAPSHOT_OUTPUT_SCHEMA,
   GIT_HISTORY_OUTPUT_SCHEMA,

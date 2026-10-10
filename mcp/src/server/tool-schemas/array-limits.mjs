@@ -1,4 +1,4 @@
-// Shared item and row limits.
+// Handlers import these caps so they enforce what the schemas advertise, for input arrays and output rows.
 
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 const IGNORE_ARRAY_MAX_ITEMS = 200;

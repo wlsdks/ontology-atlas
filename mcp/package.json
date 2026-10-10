@@ -23,6 +23,7 @@
     "src/index.js",
     "src/server/runtime.mjs",
     "src/server/tool-schemas/array-limits.mjs",
+    "src/server/tool-schemas/destructive-preview.mjs",
     "src/server/tool-schemas/enum-descriptions.mjs",
     "src/server/tool-schemas/field-primitives.mjs",
     "src/server/tool-schemas/git-results.mjs",

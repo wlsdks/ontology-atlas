@@ -80,6 +80,7 @@ describe('focused check suggestions', () => {
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm test:mcp:unit'],
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm docs:surface:check'],
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm integration:mcp:surface'],
+      ['mcp/src/server/tool-schemas/destructive-preview.mjs', 'pnpm integration:mcp:write'],
       ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
       ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
       ['scripts/lib/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],

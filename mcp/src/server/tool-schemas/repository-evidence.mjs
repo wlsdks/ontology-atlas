@@ -1,5 +1,3 @@
-// Business, semantic, Rust, Go and import evidence schemas.
-
 import {
   IMPORT_EDGE_KIND_VALUES,
   IMPORT_SOURCE_ROLE_VALUES,

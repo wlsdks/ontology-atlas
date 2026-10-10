@@ -1,6 +1,4 @@
-// Vault node, edge, backlink and warning shapes.
-
-import { RELATION_TYPE_VALUES } from '../../ontology-engine.mjs';
+import { RELATION_TYPE_VALUES, WRITE_RELATION_TYPE_VALUES } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
 import { GRAPH_ARRAY_KEYS } from '../../vault.mjs';
@@ -161,7 +159,7 @@ const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
-// Attached only to an empty or unresolved read, never to a success; filled from real vault data.
+// Attached only to an empty or unresolved read, never to a success; `mcp/src/growth-hint.mjs` fills it from real vault data.
 const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -180,6 +178,17 @@ const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   },
   required: ['reason', 'suggestion', 'exampleCall'],
   additionalProperties: false,
+});
+const ADD_RELATION_TYPE_SCHEMA = { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES };
+const LOCALE_LABELS_SCHEMA = Object.freeze({
+  type: 'object',
+  description:
+    'Per-locale display names, e.g. { "ko": "결제", "en": "Payments" }. Written as `display_ko` / `display_en` frontmatter keys; `title` stays the single source for search/matching. Fill BOTH locales the vault serves — a single-locale entry comes back as a warning.',
+  properties: {
+    ko: { type: 'string', description: 'Korean display name.' },
+    en: { type: 'string', description: 'English display name.' },
+  },
+  additionalProperties: { type: 'string' },
 });
 const RELATION_RESULT_SCHEMA = Object.freeze({
   type: 'object',
@@ -218,6 +227,8 @@ export {
   BODY_DELIVERY_MODES,
   BODY_INFO_OUTPUT_SCHEMA,
   GROWTH_HINT_OUTPUT_SCHEMA,
+  ADD_RELATION_TYPE_SCHEMA,
+  LOCALE_LABELS_SCHEMA,
   RELATION_RESULT_SCHEMA,
   CONCEPT_REVIEW_OUTPUT_SCHEMA,
 };

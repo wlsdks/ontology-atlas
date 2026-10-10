@@ -2105,7 +2105,7 @@ transport. Everything a change would actually touch lives beside it.
 |---|---|
 | `src/server/registry.mjs` | the `TOOLS` table of contents, the annotation sets, and the read-only, profile and consent modes behind `tools/list`. **This is the public surface**, and what `pnpm docs:surface:check` measures |
 | `src/server/tool-definitions/*.mjs` | every tool's name, description, input and output schema, one file per tool family (the large tools have their own file) |
-| `src/server/tool-schemas/*.mjs` | the JSON Schema fragments `tools/list` is assembled from, one file per subject: field primitives, limits, enum descriptions, repository evidence, meaning construction, vault node shapes, project source, post-write maintenance, git results |
+| `src/server/tool-schemas/*.mjs` | the JSON Schema fragments `tools/list` is assembled from, one file per subject: field primitives, limits, enum descriptions, repository evidence, meaning construction, vault node shapes, project source, post-write maintenance, git results, destructive preview. Pure data: nothing here reads the disk or the environment, so `registry.mjs` and these files alone decide the surface a client negotiates. Nested `tools/list` objects are closed by default and kept beside the registry so wire shape and runtime values cannot drift; only maps with runtime-chosen keys (frontmatter, example-call arguments) are open |
 | `src/server/instructions.mjs` | the `initialize` instructions template |
 | `src/server/instance.mjs` | the one `Server` object |
 | `src/server/runtime.mjs` | vault and repository roots, how each was resolved, the compiled-ontology cache |

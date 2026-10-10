@@ -1,4 +1,3 @@
-import { ADD_RELATION_TYPE_SCHEMA } from '../tool-schemas/enum-descriptions.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
@@ -6,12 +5,12 @@ import {
 import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
-} from '../tool-schemas/git-results.mjs';
+} from '../tool-schemas/destructive-preview.mjs';
 import {
   POST_WRITE_MAINTENANCE_GUIDANCE,
   POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
 } from '../tool-schemas/post-write-maintenance.mjs';
-import { RELATION_RESULT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
+import { ADD_RELATION_TYPE_SCHEMA, RELATION_RESULT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const ADD_RELATION_TOOL = {
   name: 'add_relation',
