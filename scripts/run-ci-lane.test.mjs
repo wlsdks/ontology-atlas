@@ -68,13 +68,9 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
 });
 
 /*
- * ⚠️ **A measurement must not ride a shard, nor share a runner.** Vitest shards by file, so a
- * ratio gate's verdict otherwise depends on which other files land beside it — and only the
- * cached half of a cached-against-naive ratio pays for that company. `node-name-match.perf.test.ts`
- * read 6.73, 9.20 and 9.20 against a bar of 10 on branches that never touched it, and 9.25 on
- * train #1928 while it still ran last on Unit · Contract shard 1. This pins the shape that fixed
- * it rather than the strings: every sweep names the two non-measurement projects, no unit shard
- * runs the measurement project, and the `perf` lane runs it once, by itself.
+ * A ratio's verdict depends on which files share its runner, so this pins the shape, not the
+ * strings: every sweep names the two non-measurement projects, no unit shard runs the
+ * measurement project, and the `perf` lane runs it once, by itself.
  */
 test('the measurement files never ride a unit runner, and run once in their own lane', () => {
   const plans = [

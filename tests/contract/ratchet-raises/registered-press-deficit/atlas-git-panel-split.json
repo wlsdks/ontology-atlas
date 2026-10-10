@@ -1,0 +1,5 @@
+{
+  "gate": "registered-press-deficit",
+  "raise": 2,
+  "why": "Splitting AtlasGitPanel moved the three STEP_ROW buttons into StepList.tsx and the two buttonVariants links into SetupMode.tsx. The press evidence stayed with the links, so the three-row record now sits in a file with none; the deficit is the same move counted per file, with no control added or changed."
+}
