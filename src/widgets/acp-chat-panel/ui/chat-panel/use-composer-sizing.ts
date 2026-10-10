@@ -30,7 +30,6 @@ export function useComposerSizing({
           Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
         contentHeight: mirror.scrollHeight,
       },
-
       composerMaxRows(panelRef.current?.clientHeight ?? 0, lineHeight),
     );
 

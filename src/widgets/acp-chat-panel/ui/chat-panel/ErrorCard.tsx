@@ -52,12 +52,10 @@ export function ErrorCard({
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-
         {trouble?.kind === 'launch' ? (
           <Link
             href={DESTINATION_HREF.agents}
             data-testid="acp-chat-error-agents"
-
             className={controlClass({
               shape: 'chip',
               size: 'lg',

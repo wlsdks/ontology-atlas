@@ -17,7 +17,6 @@ export function ChatCodeBlock({ children, ...rest }: { node?: unknown; children?
   }, [copied]);
   return (
     <div className="my-2 grid gap-1 justify-items-start">
-
       <pre data-testid="acp-chat-code-block" {...rest} {...edges} className="atlas-scroll-quiet w-full">
         {children}
       </pre>

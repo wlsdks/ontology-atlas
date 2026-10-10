@@ -39,7 +39,6 @@ export function TranscriptRows({
   return items.map((item, index) => {
     if (item.kind === 'toolRun')
       return (
-
         <div
           key={item.id}
           data-acp-entry="tool-run"

@@ -56,7 +56,6 @@ export function ChoicesRow({ t, choices, busy, toolIsPicker, onChooseMode }: {
           })}
           data-testid="acp-chat-mode"
           quiet
-
           className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0')}
         />
       ) : null}
@@ -120,14 +119,11 @@ export function ComposerFooter({
       data-testid="acp-chat-footer"
       className="mt-2 flex min-w-0 items-center gap-1"
     >
-
       <span
         data-testid="acp-chat-pickers"
         className="-m-0.5 flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden p-0.5"
       >
-
         {toolIsPicker ? (
-
           <Select
             ariaLabel={t('runtimePicker')}
             size="sm"
@@ -137,7 +133,6 @@ export function ComposerFooter({
             options={toolPicker}
             data-testid="acp-chat-runtime"
             quiet
-
             className={cn(
               PICKER_MIN_WIDTH_CLASS,
               PICKER_MAX_WIDTH_CLASS,
@@ -146,7 +141,6 @@ export function ComposerFooter({
             )}
           />
         ) : (
-
           <span
             data-testid="acp-chat-runtime-label"
             className="hidden min-w-0 shrink-[99] truncate text-label leading-label text-[color:var(--color-text-tertiary)] @min-[286px]/composer:inline"
@@ -171,25 +165,20 @@ export function ComposerFooter({
         data-testid="acp-chat-session-actions"
         className="flex min-w-0 items-center gap-1"
       >
-
         <span
           data-acp-status-badge={footerStatus}
           aria-live="polite"
-
           className="flex min-w-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
         >
-
           <span
             data-testid="acp-status-words"
             className={cn('min-w-0 truncate', workingShimmer(composerStatusLive(footerStatus, turnSilent)))}
           >
-
             {t(`status.${footerStatus}`)}
             {turnElapsedLabel ? <> <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span></> : null}
           </span>
         </span>
         <TooltipProvider delayDuration={200}>
-
           {hasHistory ? (
             <Tooltip content={t('history')} withProvider={false} side="top">
               <IconButton
@@ -209,7 +198,6 @@ export function ComposerFooter({
             withProvider={false}
             side="top"
           >
-
             <IconButton
               className={cn('atlas-touch-floor atlas-touch-floor-wide', sessionButtonStandDown)}
               size="lg"
@@ -229,7 +217,6 @@ export function ComposerFooter({
             {t('stop')}
           </Chip>
         ) : connecting ? (
-
           <Chip size="md" tone="secondary" data-testid="acp-chat-stop-connecting" onClick={onStopConnecting}>
             <Square size={ICON_SIZE.sm} aria-hidden />
             {t('stop')}

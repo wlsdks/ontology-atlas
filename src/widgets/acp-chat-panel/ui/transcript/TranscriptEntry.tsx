@@ -165,11 +165,9 @@ export const TranscriptEntry = memo(function TranscriptEntry({
 
         className={cn(
           'flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]',
-
           broke && '-ml-[9px] border-l border-[color:var(--color-danger-a50)] pl-2',
         )}
       >
-
         {running ? (
           <span
             aria-hidden
@@ -237,11 +235,9 @@ export const TranscriptEntry = memo(function TranscriptEntry({
         >
           {outcome.kind === 'count' ? (
             outcome.count === 0 ? (
-
               t('toolOutcome.foundNone')
             ) : (
               <>
-
                 <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
                   {outcome.count}
                 </span>
@@ -249,7 +245,6 @@ export const TranscriptEntry = memo(function TranscriptEntry({
               </>
             )
           ) : phase === 'awaiting' ? (
-
             t('status.awaiting')
           ) : (
             t(`toolOutcome.${outcome.status}`)
@@ -265,7 +260,6 @@ export const TranscriptEntry = memo(function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
-
       {event.text === 'mode-moved'
         ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {
             mode: event.mode ?? '',
@@ -276,7 +270,6 @@ export const TranscriptEntry = memo(function TranscriptEntry({
             ? t('notice.autoRefused', { detail: event.detail ?? '' })
             : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
       {event.text === 'auto-allowed' && noticeActions && event.detail ? (
-
         <span className="ml-2 inline-flex flex-wrap items-center gap-x-2 align-baseline">
           <button
             type="button"

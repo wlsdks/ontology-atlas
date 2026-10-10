@@ -38,7 +38,6 @@ export function TranscriptPane({
         style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
         className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
-
         <div ref={contentRef} className="flex flex-1 flex-col gap-3">
           {children}
         </div>

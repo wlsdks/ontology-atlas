@@ -45,7 +45,6 @@ export function TranscriptOffers({
         </div>
       ) : null}
       {stoppedWithoutAnswer ? (
-
         <p
           data-testid="acp-turn-stopped"
           role="status"

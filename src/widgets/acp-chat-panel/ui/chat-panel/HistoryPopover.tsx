@@ -36,7 +36,6 @@ export function HistoryPopover({
         className="pointer-events-auto w-[min(320px,100%)]"
       >
         <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
-
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
             <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
               {t('history')}

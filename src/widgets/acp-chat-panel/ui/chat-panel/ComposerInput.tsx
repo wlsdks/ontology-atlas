@@ -27,7 +27,6 @@ export function SlashMenu({ t, menuRef, matches, activeIndex, onHover, onChoose 
         const active = index === activeIndex;
         return (
           <li key={command.name} role="option" aria-selected={active}>
-
             <RowButton
               active={active}
               hoverSurface="lift"
@@ -99,7 +98,6 @@ export function ComposerInput({
         disabled={!canType}
         style={{
           minHeight: 'var(--touch-target-min)',
-
           transitionProperty: 'height',
           transitionDuration: 'var(--motion-base)',
           transitionTimingFunction: 'var(--motion-ease)',
