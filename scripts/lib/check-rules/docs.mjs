@@ -64,7 +64,7 @@ export const rules = [
     // a template, the kind table or the move map can each break that.
     command: 'pnpm docs:meta && pnpm docs:move -- --check',
     reason: 'a living document, template, document kind or move changed — metadata and moved paths must stay current',
-    matches: [/^docs\/(?!ontology\/|records\/(?!README)|archive\/|audits\/|benchmark\/|prototypes\/|(?:DECISIONS|CHANGELOG|PO-PILOT)\.md$|BACKLOG-SNAPSHOT-).+\.md$/, /^docs\/\.moved\.json$/, /^scripts\/lib\/doc-types\.mjs$/],
+    matches: [/^docs\/(?!ontology\/|records\/(?!README)|archive\/|audits\/|benchmark\/|prototypes\/|(?:DECISIONS|CHANGELOG|PO-PILOT)\.md$).+\.md$/, /^docs\/\.moved\.json$/, /^scripts\/lib\/doc-types\.mjs$/],
   },
   {
     order: 240,

@@ -329,13 +329,12 @@ test('dated evidence, drafts, plans and launch copy stay in the repository but l
       await mkdir(path.join(docs, dir), { recursive: true });
       await writeFile(path.join(docs, dir, 'NOTE.md'), `# ${dir}\n`, 'utf8');
     }
-    await writeFile(path.join(docs, 'BACKLOG-SNAPSHOT-2026-09-13.md'), '# Snapshot\n', 'utf8');
-    await writeFile(path.join(docs, 'BACKLOG.md'), '# Backlog\n', 'utf8');
+    await writeFile(path.join(docs, 'GUIDE.md'), '# Guide\n', 'utf8');
 
     const result = await scanVaultDir(docs, { rootDir: root, check: true, publicOutDir: null });
     // Only the top-level folder name is excluded; a nested folder that happens to
     // share the name still ships.
-    assert.deepEqual(Object.keys(result.content).sort(), ['BACKLOG', 'guide/plans/NOTE']);
+    assert.deepEqual(Object.keys(result.content).sort(), ['GUIDE', 'guide/plans/NOTE']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -13,7 +13,6 @@
  *
  * - `DECISIONS`, `CHANGELOG`, `PO-PILOT`: keyed by path and hash in
  *   `docs/records/legacy.json`.
- * - `BACKLOG-SNAPSHOT-*`: `scripts/backlog.mjs` refuses any diff but an add.
  * - `records/**`: immutable fragments. `records/README.md` is the one living
  *   file there.
  * - `archive`, `audits`, `benchmark`, `prototypes`: dated evidence and drafts.
@@ -27,7 +26,6 @@ export function isFrozenDocPath(repoPath) {
   if (p === 'docs/records/README.md') return false;
   return (
     /^docs\/(DECISIONS|CHANGELOG|PO-PILOT)\.md$/.test(p) ||
-    /^docs\/BACKLOG-SNAPSHOT-[^/]+\.md$/.test(p) ||
     /^docs\/(records|archive|audits|benchmark|prototypes|ontology|\.generated|\.templates)\//.test(p)
   );
 }

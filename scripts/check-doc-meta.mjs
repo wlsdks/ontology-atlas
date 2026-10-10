@@ -316,7 +316,6 @@ export function citationProblems(root = ROOT) {
 }
 
 export const STANDING_DATED_DOCS = [
-  'docs/BACKLOG-SNAPSHOT-2026-09-13.md',
   'docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md',
   'docs/benchmark/FINDINGS-2026-08-25.md',
   'docs/benchmark/FINDINGS-2026-08-31-change-flow.md',

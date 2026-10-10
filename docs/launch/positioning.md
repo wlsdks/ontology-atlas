@@ -10,7 +10,7 @@ area: product
 > Current messaging companion for README, download, and guide copy.
 > Last updated: 2026-09-13. The
 > [Atlas product thesis](../PRODUCT-DIRECTION.md#the-atlas-product-thesis) owns
-> direction; [BACKLOG.md](../BACKLOG.md) owns execution order.
+> direction.
 
 ## One-line Position
 
