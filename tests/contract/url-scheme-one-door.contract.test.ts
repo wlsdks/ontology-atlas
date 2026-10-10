@@ -119,25 +119,20 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
   });
 
   it('mints no address but that one, anywhere it ships', () => {
+    const crate = sourceFiles('src-tauri/src').map((file) => file.slice(repoRoot.length + 1));
+    expect(crate.length, 'the crate scan found no sources').toBeGreaterThan(30);
     for (const path of [
-      'src-tauri/src/lib.rs',
-      'src-tauri/src/app_shell/mod.rs',
-      'src-tauri/src/webview_verify/mod.rs',
+      ...crate,
       'src/shared/lib/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
     ]) {
-      for (const address of mintedAddresses(read(path))) {
+      const body = path === 'src-tauri/src/deep_link.rs' ? shippedBody(path) : read(path);
+      for (const address of mintedAddresses(body)) {
         expect(
           address === 'ontology-atlas://' || address.startsWith(THE_ONE_DOOR),
           `${path} mints ${address}, which is not ${THE_ONE_DOOR}`,
         ).toBe(true);
       }
-    }
-    for (const address of mintedAddresses(shippedBody('src-tauri/src/deep_link.rs'))) {
-      expect(
-        address === 'ontology-atlas://' || address.startsWith(THE_ONE_DOOR),
-        `the doorman mints ${address}, which is not ${THE_ONE_DOOR}`,
-      ).toBe(true);
     }
   });
 
