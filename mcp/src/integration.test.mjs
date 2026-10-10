@@ -10537,6 +10537,9 @@ DER parsing and unrelated encodings.
     const compact = getCallParsed(responses, 2);
     const compactText = getCallText(responses, 2);
     assert.equal(compactText, compact.handoffPrompt);
+    const recovery = compact.focus.qualifiers.fullBodyRead;
+    assert.ok(compactText.includes(`${recovery.tool} ${JSON.stringify(recovery.arguments)}`),
+      "MCP text must retain the exact full-body recovery call alongside ready source navigation");
     assert.equal(compact.contract, "agentBriefCompact:v2");
     assert.equal(compact.focus.taskNavigation.status, "ready");
     assert.deepEqual(compact.focus.taskNavigation.primary, {
