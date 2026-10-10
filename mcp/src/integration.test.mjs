@@ -10316,9 +10316,22 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.equal(compact.focus.impact.completeness, "unknown");
     assert.ok(compact.focus.unknowns.length > 1);
     const textUnknowns = getCallText(responses, 3).split('\n')
-      .filter((line) => line.startsWith('Unknown: ')).map((line) => line.slice('Unknown: '.length));
-    assert.deepEqual(textUnknowns, compact.focus.unknowns);
+      .filter((line) => line.startsWith('Unknown: ')).map((line) => JSON.parse(line.slice('Unknown: '.length)).text);
+    assert.deepEqual([...textUnknowns].sort(), [...compact.focus.unknowns].sort());
+    assert.equal(getCallText(responses, 3), compact.handoffPrompt);
     assert.ok(compact.nextReads.some((row) => row.tool === "get_concepts" && row.arguments.body === "full"));
+    const recovery = compact.nextReads[0];
+    assert.deepEqual(recovery.arguments.slugs, ['project-a', 'capabilities/write-values', 'elements/writer']);
+    const recovered = await rpc(root, [
+      ...INIT_REQUESTS, callTool(2, recovery.tool, recovery.arguments),
+    ], 3000, { OATLAS_READ_ONLY: '1' });
+    const bodies = getCallParsed(recovered.responses, 2).concepts;
+    assert.deepEqual(bodies.map((row) => row.slug), recovery.arguments.slugs);
+    assert.ok(bodies.every((row) => row.ok && row.bodyInfo.mode === 'full' && !row.bodyInfo.truncated));
+    for (const source of compact.focus.uncertainty.sources) {
+      const body = bodies.find((row) => row.slug === source.slug).body;
+      for (const index of source.unknownIndexes) assert.ok(body.includes(compact.focus.unknowns[index]));
+    }
     assert.deepEqual(compact.fullDetail, {
       tool: "query_ontology",
       arguments: { operation: "agent_brief", project: "project-a", detail: "full" },
@@ -10356,6 +10369,40 @@ await test("query_ontology agent_brief — selected project and compact task han
       assert.equal(isErrorResponse(responses, id), true);
       assert.match(getCallStructured(responses, id)?.error ?? "", pattern);
     }
+    const refusedResponse = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task: 'Coordinate orbital trajectories.' }),
+    ], 3000, { OATLAS_READ_ONLY: '1' });
+    const refused = getCallParsed(refusedResponse.responses, 2);
+    assert.equal(refused.focus.capability, null);
+    assert.equal(refused.focus.refusal.reason, 'no_match');
+    const refusedRead = await rpc(root, [
+      ...INIT_REQUESTS, callTool(2, refused.nextReads[0].tool, refused.nextReads[0].arguments),
+    ], 3000, { OATLAS_READ_ONLY: '1' });
+    assert.deepEqual(getCallParsed(refusedRead.responses, 2).concepts.map((row) => ({ slug: row.slug, ok: row.ok })), [{ slug: 'project-a', ok: true }]);
+    const lateLimit = 'Cross-process replacement recovery has not been tested.';
+    const projectPath = join(root, 'project-a.md');
+    writeFileSync(projectPath, readFileSync(projectPath, 'utf8').replace(/## Uncertainty[\s\S]*/u,
+      `## Uncertainty\n\n${'Bounded context. '.repeat(3000)}${lateLimit}\n`));
+    const cappedResponse = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task }),
+    ], 3000, { OATLAS_READ_ONLY: '1' });
+    const capped = getCallParsed(cappedResponse.responses, 2);
+    const projectCoverage = capped.focus.uncertainty.sources.find((row) => row.slug === 'project-a');
+    assert.equal(projectCoverage.totalUnits, 1);
+    assert.equal(projectCoverage.omittedUnits, 1);
+    rmSync(join(root, 'elements/writer.md'));
+    const partialRead = await rpc(root, [
+      ...INIT_REQUESTS, callTool(2, capped.nextReads[0].tool, capped.nextReads[0].arguments),
+    ], 3000, { OATLAS_READ_ONLY: '1' });
+    const partialBodies = getCallParsed(partialRead.responses, 2).concepts;
+    const projectBody = partialBodies.find((row) => row.slug === 'project-a');
+    assert.equal(projectBody.ok, true);
+    assert.equal(projectBody.bodyInfo.truncated, true);
+    assert.ok(projectBody.bodyInfo.omittedChars > 0);
+    assert.equal(projectBody.body.includes(lateLimit), false);
+    assert.equal(partialBodies.find((row) => row.slug === 'elements/writer').ok, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -10601,6 +10648,7 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
     const compactResponse = responses.find((row) => row.id === 3);
     assert.ok(connectionResponse?.result, "connection_info must return one wire result");
     assert.ok(compactResponse?.result, "compact agent_brief must return one wire result");
+    assert.notEqual(compactResponse.result.isError, true, JSON.stringify(compactResponse.result));
     const compact = getCallParsed(responses, 3);
     assert.equal(compact.focus.taskNavigation.status, "ready");
     assert.equal(compact.focus.taskNavigation.currentness, "current");

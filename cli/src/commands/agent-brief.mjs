@@ -644,7 +644,19 @@ function renderCompact(result) {
   process.stdout.write(
     `${COLORS.dim}VERIFY${COLORS.reset} ${verification.status} · ${runner} · ${verificationPaths} · ${verification.nextAction}\n`,
   );
-  if (result.focus.unknowns.length > 0) {
+  if (result.focus.uncertainty) {
+    process.stdout.write('Uncertainty scope: selected task documents; not_recorded means unknown.\n');
+    for (const row of result.focus.uncertainty.system) {
+      process.stdout.write(`Unknown: ${JSON.stringify({ system: row.code, text: result.focus.unknowns[row.unknownIndex] })}\n`);
+    }
+    for (const row of result.focus.uncertainty.sources) {
+      process.stdout.write(`Uncertainty: ${JSON.stringify(row.slug)} ${row.unknownIndexes.length}/${row.totalUnits} units; ${row.omittedUnits} omitted${row.status === 'not_recorded' ? '; not_recorded' : ''}.\n`);
+      for (const index of row.unknownIndexes) {
+        process.stdout.write(`Unknown: ${JSON.stringify({ slug: row.slug, text: result.focus.unknowns[index] })}\n`);
+      }
+    }
+    process.stdout.write('Recovery: require ok:true and bodyInfo.truncated:false; otherwise unknown.\n');
+  } else if (result.focus.unknowns.length > 0) {
     process.stdout.write(`${COLORS.dim}UNKNOWNS${COLORS.reset}\n`);
     for (const unknown of result.focus.unknowns) process.stdout.write(`  ${COLORS.dim}- ${unknown}${COLORS.reset}\n`);
   }

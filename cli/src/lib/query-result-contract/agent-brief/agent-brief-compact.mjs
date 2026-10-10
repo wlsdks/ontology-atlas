@@ -34,7 +34,7 @@ export function assertAgentBriefCompactShape(result) {
   if (result.contract !== 'agentBriefCompact:v2' || result.detail !== 'compact' || result.sideEffect !== false) {
     throw new Error('agent_brief compact response must use agentBriefCompact:v2, detail compact, and sideEffect false');
   }
-  if (new TextEncoder().encode(JSON.stringify(result, null, 2)).byteLength > AGENT_BRIEF_COMPACT_MAX_BYTES) {
+  if (new TextEncoder().encode(JSON.stringify(result)).byteLength > AGENT_BRIEF_COMPACT_MAX_BYTES) {
     throw new Error(`agent_brief compact response must fit ${AGENT_BRIEF_COMPACT_MAX_BYTES} UTF-8 JSON bytes`);
   }
   if (!isPlainObject(result.project) || !hasNonEmptyString(result.project.slug, result.project.title)) {
@@ -171,6 +171,7 @@ export function assertAgentBriefCompactShape(result) {
   ) {
     throw new Error('agent_brief compact nextReads must include one bounded get_concepts body full call');
   }
+  if (Object.hasOwn(result.focus, 'uncertainty')) assertCompactUncertainty(result, bodyRead);
   if (
     !isPlainObject(result.safety)
     || !hasExactKeys(result.safety, [
@@ -234,6 +235,45 @@ export function assertAgentBriefCompactShape(result) {
     }
   }
   return result;
+}
+
+function assertCompactUncertainty(result, bodyRead) {
+  const { uncertainty, unknowns, capability, evidenceAnchors } = result.focus;
+  const expectedSlugs = new Set([result.project.slug, capability?.slug, ...evidenceAnchors.map((row) => row.slug)].filter(Boolean));
+  const validIndex = (index) => validCount(index) && index < unknowns.length;
+  const invalid = () => { throw new Error('agent_brief compact uncertainty must preserve scoped provenance, unit counts, system gaps and full-body recovery'); };
+  if (!isPlainObject(uncertainty)
+    || !hasExactKeys(uncertainty, ['scope', 'sources', 'system'])
+    || uncertainty.scope !== 'selected_task_documents'
+    || !Array.isArray(uncertainty.sources)
+    || uncertainty.sources.length !== expectedSlugs.size
+    || !Array.isArray(uncertainty.system)) invalid();
+  const sourceIndexes = new Set();
+  for (const source of uncertainty.sources) {
+    if (!isPlainObject(source)
+      || !hasExactKeys(source, ['slug', 'status', 'totalUnits', 'omittedUnits', 'unknownIndexes'])
+      || !expectedSlugs.delete(source.slug)
+      || !bodyRead.arguments.slugs.includes(source.slug)
+      || !validCount(source.totalUnits) || !validCount(source.omittedUnits)
+      || !Array.isArray(source.unknownIndexes)
+      || !source.unknownIndexes.every(validIndex)
+      || new Set(source.unknownIndexes).size !== source.unknownIndexes.length
+      || source.totalUnits !== source.unknownIndexes.length + source.omittedUnits
+      || source.status !== (source.totalUnits > 0 ? 'recorded' : 'not_recorded')) invalid();
+    for (const index of source.unknownIndexes) sourceIndexes.add(index);
+  }
+  const expectedCodes = new Set([
+    ...(result.currentness.source.topGap?.id === 'source_changed_during_navigation' ? ['source_changed_during_navigation'] : []),
+    ...(result.currentness.meaning.topGap?.id ? ['meaning_gap'] : []),
+  ]);
+  const systemIndexes = new Set();
+  for (const row of uncertainty.system) {
+    if (!isPlainObject(row) || !hasExactKeys(row, ['code', 'unknownIndex'])
+      || !expectedCodes.delete(row.code) || !validIndex(row.unknownIndex)
+      || sourceIndexes.has(row.unknownIndex) || systemIndexes.has(row.unknownIndex)) invalid();
+    systemIndexes.add(row.unknownIndex);
+  }
+  if (expectedCodes.size > 0 || sourceIndexes.size + systemIndexes.size !== unknowns.length) invalid();
 }
 
 function validCompactNode(row, expectedKind) {

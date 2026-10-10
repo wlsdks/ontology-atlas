@@ -185,6 +185,15 @@ capability. Definition prose describes what a capability touches, so it
 corroborates but never selects on its own: at least one desired word must reach
 the capability's own title, slug, path, or `Includes`, and one shared word is
 never enough.
+Whole recorded uncertainty travels in `focus.unknowns`; additive
+`focus.uncertainty` names each scoped document, omitted-unit counts and string
+indices, separately from system gaps. The full-body read includes the project
+as well as the selected capability and anchors. Missing sections remain unknown;
+failed or capped reads are incomplete (`ok:true` and `bodyInfo.truncated:false`
+are required for complete recovery). Human output and `--prompt` quote the
+statements with their source. The CLI validates the same serialized UTF-8 bytes
+as MCP; pretty-printing `--json` does not consume the transport budget. Older
+valid v2 responses without the additive coverage field remain readable.
 When the selected element's Markdown contains reviewed `Primary
 implementation`, `Supporting implementation`, and `Focused test` Evidence
 coordinates and the bound source is current, `taskNavigation` verifies only

@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
 import {
+  completeMarkdownUnits, createUncertaintyPlan, formatUncertaintyLines,
+  markdownSection, projectUncertainty,
+} from './agent-brief/recorded-evidence.mjs';
+
+import {
   buildTaskNavigationEvidence,
   verifyTaskNavigationEvidencePath,
 } from './task-navigation-evidence.mjs';
@@ -155,23 +160,6 @@ function taskIntent(task) {
   };
 }
 
-function markdownSection(body, heading) {
-  if (typeof body !== 'string' || body.length === 0) return '';
-  const lines = body.split('\n');
-  const wanted = normalizeText(heading);
-  let collecting = false;
-  const rows = [];
-  for (const line of lines) {
-    const match = line.match(/^##\s+(.+?)\s*$/);
-    if (match) {
-      if (collecting) break;
-      collecting = normalizeText(match[1]) === wanted;
-      continue;
-    }
-    if (collecting) rows.push(line);
-  }
-  return rows.join('\n').trim();
-}
 
 function boundedSection(body, heading, maxChars = 420) {
   const section = markdownSection(body, heading);
@@ -617,49 +605,6 @@ const QUALIFIER_SECTIONS = [
   ['Uncertainty', 'uncertainty'],
 ];
 
-function completeMarkdownUnits(doc, section, role) {
-  const source = markdownSection(doc?.body, section);
-  if (!source) return [];
-  const lines = source.split('\n');
-  const hasTopLevelBullets = lines.some((line) => /^[-*]\s+\S/u.test(line));
-  const texts = [];
-  if (hasTopLevelBullets) {
-    let withinBullet = false;
-    const mixedTopLevelProse = lines.some((line) => {
-      if (/^[-*]\s+\S/u.test(line)) {
-        withinBullet = true;
-        return false;
-      }
-      if (!line.trim() || (withinBullet && /^\s+\S/u.test(line))) return false;
-      return true;
-    });
-    if (mixedTopLevelProse) {
-      // Free-standing prose may govern the list before or after it, so the section is
-      // kept verbatim rather than guessing its owner.
-      texts.push(source.trim());
-    } else {
-      let current = [];
-      for (const line of lines) {
-        if (/^[-*]\s+\S/u.test(line)) {
-          if (current.length > 0) texts.push(current.join('\n').trim());
-          current = [line];
-        } else if (current.length > 0) {
-          current.push(line);
-        }
-      }
-      if (current.length > 0) texts.push(current.join('\n').trim());
-    }
-  } else {
-    texts.push(source.trim());
-  }
-  return texts.map((text) => ({
-    slug: doc.slug,
-    section,
-    role,
-    text,
-    locator: { slug: doc.slug, section, body: 'full' },
-  }));
-}
 
 function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
   if (!capabilityDoc) return null;
@@ -793,15 +738,13 @@ function buildCompactHandoffPrompt(result) {
   const navigation = result.focus.taskNavigation;
   const nextRead = result.nextReads[0];
   const nextReadLine = `Next read: ${nextRead ? `${nextRead.tool} ${JSON.stringify(nextRead.arguments)}` : 'inspect source from the recorded anchor'}`;
-  const unknownLines = result.focus.unknowns.length > 0
-    ? result.focus.unknowns.map((unknown) => `Unknown: ${unknown}`)
-    : ['Unknown: no additional bounded unknown was recorded'];
+  const unknownLines = formatUncertaintyLines(result.focus);
   const qualifierLines = result.focus.qualifiers
     ? [
         `Recorded qualifiers: ${result.focus.qualifiers.coverage.returned}/${result.focus.qualifiers.coverage.total}; ${result.focus.qualifiers.coverage.omitted} omitted; ${result.focus.qualifiers.coverage.status}.`,
         ...result.focus.qualifiers.units.flatMap((row) => [
           `[recorded_claim ${row.slug} ${row.section}/${row.role}]`,
-          row.text,
+          JSON.stringify(row.text),
         ]),
       ]
     : [];
@@ -955,29 +898,24 @@ export function buildCompactAgentBrief({
       ));
     }
   }
-  const capabilityUncertainty = boundedSection(capabilityDoc?.body, 'Uncertainty', 220);
-  const anchorUncertainty = anchorDocs.map((doc) => boundedSection(doc.body, 'Uncertainty', 180));
   const projectDefinition = boundedSection(projectDoc?.body, 'Definition', 260);
   const projectExcludes = boundedSection(projectDoc?.body, 'Excludes', 180);
-  const projectUncertainty = boundedSection(projectDoc?.body, 'Uncertainty', 180);
+  const projectScopeUncertainty = boundedSection(projectDoc?.body, 'Uncertainty', 180);
   const meaningGap = effectiveMeaningAssessment?.topGap?.id
     ? `Meaning remains ${effectiveMeaningAssessment.status}: ${effectiveMeaningAssessment.topGap.id}${effectiveMeaningAssessment.topGap.questionId ? ` (${effectiveMeaningAssessment.topGap.questionId})` : ''}.`
     : '';
-  const unknowns = uniqueBoundedStrings([
-    sourceChangedDuringNavigation
-      ? 'Source changed during exact navigation; every coordinate was withdrawn and must be remeasured.'
-      : '',
-    capabilityUncertainty,
-    ...anchorUncertainty,
-    projectUncertainty,
-    meaningGap,
+  const uncertaintyDocs = [...new Map([
+    projectDoc ?? { slug: brief.projectSlug, body: '' }, capabilityDoc, ...anchorDocs,
+  ].filter(Boolean).map((doc) => [doc.slug, doc])).values()];
+  const uncertaintyPlan = createUncertaintyPlan(uncertaintyDocs, [
+    ...(sourceChangedDuringNavigation ? [{ code: 'source_changed_during_navigation', text: 'Source changed during exact navigation; every coordinate was withdrawn and must be remeasured.' }] : []),
+    ...(meaningGap ? [{ code: 'meaning_gap', text: meaningGap }] : []),
   ]);
   const nextSlugs = [...new Set([
+    ...uncertaintyDocs.map((doc) => doc.slug),
     ...(selection.refusal?.candidates.map((row) => row.slug) ?? []),
-    capabilityDoc?.slug,
-    ...evidenceAnchors.map((row) => row.slug),
-    ...(capabilityDoc || selection.refusal?.candidates.length > 0 ? [] : [brief.projectSlug]),
-  ].filter(Boolean))].slice(0, 4);
+  ])];
+  if (qualifiers) qualifiers.fullBodyRead.arguments.slugs = nextSlugs;
   const compact = {
     contract: AGENT_BRIEF_COMPACT_CONTRACT,
     operation: 'agent_brief',
@@ -1014,7 +952,7 @@ export function buildCompactAgentBrief({
     purpose: {
       slug: brief.projectSlug,
       statement: projectDefinition,
-      scopeLimit: projectExcludes || projectUncertainty,
+      scopeLimit: projectExcludes || projectScopeUncertainty,
     },
     focus: {
       status: capabilityDoc
@@ -1036,7 +974,7 @@ export function buildCompactAgentBrief({
       impact,
       verification,
       taskNavigation,
-      unknowns,
+      ...projectUncertainty(uncertaintyPlan, []),
     },
     nextReads: [
       ...(nextSlugs.length > 0
@@ -1069,14 +1007,11 @@ export function buildCompactAgentBrief({
       reason: 'Read complete diagnostics only when compact is insufficient.',
     },
   };
-  const projectWithQualifierCount = (count) => {
-    if (!compact.focus.qualifiers) {
-      return { ...compact, handoffPrompt: buildCompactHandoffPrompt(compact) };
-    }
+  const projectWithinBudget = (count, included = []) => {
     const original = compact.focus.qualifiers;
-    const returned = Math.min(count, original.units.length);
-    const omitted = Math.max(0, original.coverage.total - returned);
-    const qualifiersForBudget = {
+    const returned = Math.min(count, original?.units.length ?? 0);
+    const omitted = Math.max(0, (original?.coverage.total ?? 0) - returned);
+    const qualifiersForBudget = original ? {
       ...original,
       coverage: {
         ...original.coverage,
@@ -1086,18 +1021,21 @@ export function buildCompactAgentBrief({
         status: omitted === 0 ? 'complete' : 'incomplete_full_body_required',
       },
       units: original.units.slice(0, returned),
-    };
-    const candidate = { ...compact, focus: { ...compact.focus, qualifiers: qualifiersForBudget } };
+    } : null;
+    const candidate = { ...compact, focus: {
+      ...compact.focus,
+      ...(qualifiersForBudget ? { qualifiers: qualifiersForBudget } : {}),
+      ...projectUncertainty(uncertaintyPlan, included),
+    } };
     return { ...candidate, handoffPrompt: buildCompactHandoffPrompt(candidate) };
   };
   let qualifierCount = compact.focus.qualifiers?.units.length ?? 0;
-  let result = projectWithQualifierCount(qualifierCount);
-  // The serialized structured payload, without presentation indentation; the wire
-  // gate counts the wrappers separately.
+  let result = projectWithinBudget(qualifierCount);
+  // Display indentation is not transmitted; the wire gate also counts wrappers.
   let bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
   while (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES && qualifierCount > 0) {
     qualifierCount -= 1;
-    result = projectWithQualifierCount(qualifierCount);
+    result = projectWithinBudget(qualifierCount);
     bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
   }
   if (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES) {
@@ -1110,6 +1048,13 @@ export function buildCompactAgentBrief({
     throw new Error(
       `agent_brief compact response is ${bytes} bytes, above the ${AGENT_BRIEF_COMPACT_MAX_BYTES}-byte budget (largest fields: ${largestFields}). Use detail "full" and report this compact-budget defect; do not drop currentness, meaningRepair, qualifiers, or unknowns.`,
     );
+  }
+  const included = [];
+  for (const unit of uncertaintyPlan.candidates) {
+    const candidate = projectWithinBudget(qualifierCount, [...included, unit]);
+    if (Buffer.byteLength(JSON.stringify(candidate), 'utf8') > AGENT_BRIEF_COMPACT_MAX_BYTES) continue;
+    included.push(unit);
+    result = candidate;
   }
   return result;
 }
