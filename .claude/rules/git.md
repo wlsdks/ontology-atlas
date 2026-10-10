@@ -36,9 +36,6 @@
 ## Merging a pull request
 
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
-- A `feat`, `fix`, `perf` or `design` pull request adds its change record
-  (`docs/records/README.md`) or a `No change record: <reason>` body line;
-  `pnpm pr:land` refuses it otherwise.
 - `pnpm pr:land <number>` is the only way to `main`; it runs checked fast-path
   or train merges. `--plan <n...>` previews; `pnpm pr:queue` shows the queue.
   Preserve original commits with merge commits; never squash or rebase during
