@@ -35,10 +35,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The destination headline, with no close button. `inColumn` drops the full-width divider so
- * the line matches the column; `trailing` is state at the right (the location line); and
- * the `showScope` flag says the recording-scope notice here, which the workbench says in its dock
- * where the write happens.
+ * The destination headline. `inColumn` drops the full-width divider to match the column;
+ * `trailing` is state at the right; `showScope` says the recording scope here, which the
+ * workbench says in its dock.
  */
 export function PageHeader({
   t,
@@ -114,10 +113,8 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             <span
               aria-hidden
               className={cn(
-                // The number is `text-label` (11px). `text-caption` (9.5px)
-                // indigo measures 4.55:1 on the canvas, right at the AA
-                // threshold (measured). Inside a 24px circle 11px has room, and
-                // it is a ramp step, so it is not a new value.
+                // `text-label`, not `text-caption`: indigo at caption size sits at the AA contrast
+                // threshold, and 11px fits the 24px circle.
                 "grid size-6 shrink-0 place-items-center rounded-full border text-label tabular-nums",
                 done
                   ? "border-[color:var(--color-indigo-a46)] text-[color:var(--color-indigo-text-soft)]"
@@ -269,10 +266,9 @@ function SetupPreview({ t }: { t: Translator }) {
 }
 
 /**
- * The setup stage every not-yet-recording state shares, centred: the telling cell
- * (`--git-setup-measure`) with the task as the display-size h1, and from `xl` the showing cell
- * (`SetupPreview`) of what the screen becomes. It enters with `.topology-chrome-in`, whose
- * reduced-motion equivalent comes from the globals base layer.
+ * The centred setup stage every not-yet-recording state shares: the telling cell with the
+ * task as h1 and, from `xl`, the showing cell (`SetupPreview`). It enters with
+ * `.topology-chrome-in`, whose reduced-motion equivalent the globals layer supplies.
  */
 export function SetupFrame({
   t,

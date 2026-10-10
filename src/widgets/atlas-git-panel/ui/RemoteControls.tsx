@@ -214,9 +214,8 @@ export function LocationLine({
             {t("neverSent")}
           </span>
           {/*
-            The first send, and the only place an upstream is set: the hint names the branch,
-            the destination and that it goes only on this press, and the line under it is the
-            command it amounts to (git.rs runs `push --set-upstream origin HEAD`). With
+            The first send, the only place an upstream is set (git.rs runs
+            `push --set-upstream origin HEAD`); the hint names branch and destination. With
             uncommitted changes it opens the commit confirm first, like Push.
           */}
           <RemoteActionButton

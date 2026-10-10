@@ -28,8 +28,7 @@ import { cn } from "@/shared/lib/cn";
 
 /**
  * Atlas Git, the body of the history destination: setup mode until the screen can record,
- * then one workbench of step list, commit dock and the selection's detail. Desktop uses the
- * `git.rs` commands through `tauri-git.ts`; a browser cannot spawn a process. Trust charter:
+ * then one workbench of step list, commit dock and the selection's detail. Trust charter:
  * mount-time queries are read-only, and writes run only from their own button's click.
  */
 
@@ -101,11 +100,9 @@ export function AtlasGitPanel({
     setJumpHash,
     historyShort,
   } = useGitWorkspace({ vaultPath, desktop, nativeErrors });
-  // The bridge's `relativeTime` is useful only as a compatibility fallback: it
-  // is preformatted by git and can therefore arrive in a different language.
-  // Capture one reference instant per successful workspace read. Unrelated
-  // renders cannot churn wording, while an explicit refresh/snapshot cannot keep
-  // formatting against an hours-old mount instant.
+  // The bridge's `relativeTime` is git-formatted and may be in another language, so it is only
+  // a fallback. One reference instant per read keeps wording stable across unrelated renders
+  // and fresh after a refresh.
   const localizedHistory = useMemo(
     () =>
       history.map((commit) => {
@@ -153,10 +150,8 @@ export function AtlasGitPanel({
     [graph],
   );
 
-  // Split what the user judges (concepts) from the files that ride along. What
-  // they have to read here is "which of my concepts changed"; `.gitignore` and
-  // `package.json` are recorded too but are not for reading. The commit formula
-  // still covers **everything**.
+  // Concepts are what the user judges; other files (`.gitignore`, `package.json`) are recorded
+  // too but not for reading. The commit still covers everything.
   const { concepts, others } = useMemo(() => splitConceptChanges(changes), [changes]);
   /*
    * Each changed document with the concept it carries, named the way the map names it.

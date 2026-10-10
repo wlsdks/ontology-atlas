@@ -20,11 +20,6 @@ export function useFollowVaultChanges({
   followBusy: boolean;
 }) {
   /*
-   * Follow the folder while open by re-reading on each `vault-changed` from the watcher
-   * that `TauriVaultWatchBridge` starts. Reads only, so the charter holds. While this side writes, the
-   * echo is skipped: the write re-reads when done, and a mid-commit read would show a half state.
-   */
-  /*
    * A notice that elapses mid-write is deferred, not dropped: the write's own re-read may miss
    * an edit saved while it ran.
    */
@@ -41,6 +36,10 @@ export function useFollowVaultChanges({
     if (followBusy || !missedWhileBusy.current) return;
     followVaultChange();
   }, [followBusy]);
+  /*
+   * Follow the open folder: re-read on each `vault-changed` from the watcher. Reads only; while
+   * this side writes the echo is skipped, since a mid-commit read would show a half state.
+   */
   useEffect(() => {
     if (!desktop || !vaultPath) return;
     let cancelled = false;
@@ -59,7 +58,7 @@ export function useFollowVaultChanges({
         else unlisten = un;
       })
       .catch(() => {
-        /* No event channel — the next arrival re-reads, exactly as before. */
+        /* No event channel — the next arrival re-reads. */
       });
     return () => {
       cancelled = true;

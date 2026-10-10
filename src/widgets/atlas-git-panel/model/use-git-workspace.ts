@@ -15,7 +15,7 @@ import {
   type GitWorkspaceRead,
 } from "./git-workspace-read";
 
-/* Stable empty values, so the `useMemo` dependencies below do not change every render. */
+/* Stable empty values, so callers' `useMemo` dependencies do not change every render. */
 const NO_CHANGES: readonly GitChangeEntry[] = [];
 const NO_HISTORY: readonly GitCommitInfo[] = [];
 
@@ -81,9 +81,9 @@ export function useGitWorkspace({
     setLoadState("error");
   }, [nativeErrors]);
   /*
-   * Reads can now overlap — the watcher, a commit and a click may each start one — and
-   * git answers them in whatever order it likes. Only the newest read may land: a status from
-   * before a commit arriving after the commit's own read would put the old count back.
+   * Reads overlap — the watcher, a commit and a click may each start one — and git answers
+   * in any order. Only the newest read may land: a status from before a commit arriving
+   * after the commit's own read would put the old count back.
    */
   const readSeqRef = useRef(0);
   // Read-only queries (status/diff/history) only — a write (git_snapshot) never happens here.
