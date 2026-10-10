@@ -19,6 +19,7 @@ import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vau
 
 const DEFINITIONS_DIR = join(__dirname, '../../mcp/src/server/tool-definitions');
 const MCP_SOURCE = readdirSync(DEFINITIONS_DIR)
+  .filter((file) => file.endsWith('.mjs'))
   .map((file) => readFileSync(join(DEFINITIONS_DIR, file), 'utf-8'))
   .join('\n');
 

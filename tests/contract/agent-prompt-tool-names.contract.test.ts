@@ -23,7 +23,9 @@ import {
  * 404s in a user's environment.
  */
 const MCP_DEFINITIONS = join(process.cwd(), "mcp", "src", "server", "tool-definitions");
-const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS).map((file) => join(MCP_DEFINITIONS, file));
+const MCP_DEFINITION_FILES = readdirSync(MCP_DEFINITIONS)
+  .filter((file) => file.endsWith(".mjs"))
+  .map((file) => join(MCP_DEFINITIONS, file));
 /** Names and descriptions live in the tool definitions; the response field names live in the schemas they are built from. */
 const MCP_SURFACE_FILES = [
   join(process.cwd(), "mcp", "src", "server", "registry.mjs"),

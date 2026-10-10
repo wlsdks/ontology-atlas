@@ -73,7 +73,10 @@ describe("release-facts", () => {
 
   it("matches the MCP tool count declared in mcp/src/server/tool-definitions", () => {
     const dir = join(process.cwd(), "mcp/src/server/tool-definitions");
-    const source = readdirSync(dir).map((file) => readFileSync(join(dir, file), "utf8")).join("\n");
+    const source = readdirSync(dir)
+      .filter((file) => file.endsWith(".mjs"))
+      .map((file) => readFileSync(join(dir, file), "utf8"))
+      .join("\n");
     expect(source.match(/^ {2}name: '/gm)?.length ?? 0).toBe(MCP_TOOL_COUNT);
   });
 });

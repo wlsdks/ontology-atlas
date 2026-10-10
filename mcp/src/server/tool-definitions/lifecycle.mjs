@@ -103,7 +103,7 @@ export const RECLASSIFY_CONCEPT_TOOL = {
       sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
       bodyAction: { type: 'string', enum: ['preserved', 'replaced_explicitly', 'regenerated_starter'] },
       backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
-      // Referrer entries the kind change could not move.
+      // Entries the kind change left in a list the referrer's kind keeps no list for the new kind in.
       warnings: { type: 'array', items: { type: 'string' } },
       postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
     },
@@ -167,7 +167,7 @@ export const MERGE_CONCEPTS_TOOL = {
       fromPath: { type: 'string' },
       deleted: { type: 'boolean' },
       backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
-      // Referrer entries a cross-kind merge could not move.
+      // Entries a cross-kind merge left in a list the referrer keeps for the old kind.
       warnings: { type: 'array', items: { type: 'string' } },
       capturedFrom: CAPTURED_DOC_OUTPUT_SCHEMA,
       message: { type: 'string' },

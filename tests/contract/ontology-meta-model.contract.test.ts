@@ -59,6 +59,7 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     const instructionsSource = read("mcp/src/server/instructions.mjs");
     expect(instructionsSource).toContain("${META_MODEL_RULES_EN}");
     const toolDefinitions = readdirSync(resolve(ROOT, "mcp/src/server/tool-definitions"))
+      .filter((file) => file.endsWith(".mjs"))
       .map((file) => `mcp/src/server/tool-definitions/${file}`);
     for (const file of ["mcp/src/server/instructions.mjs", "mcp/src/server/registry.mjs", "mcp/src/index.js", ...toolDefinitions]) {
       expect(read(file)).not.toContain(flat(MCP_META_MODEL_RULES_EN));

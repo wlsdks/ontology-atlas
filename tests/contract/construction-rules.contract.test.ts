@@ -32,6 +32,7 @@ import { NODE_ELIGIBILITY_GATE } from "../../mcp/src/schema.mjs";
  * arrived.
  */
 const TOOL_DEFINITION_FILES = readdirSync(resolve(__dirname, "../../mcp/src/server/tool-definitions"))
+  .filter((file) => file.endsWith(".mjs"))
   .map((file) => `server/tool-definitions/${file}`);
 const SERVER_SOURCE = ["server/instructions.mjs", "server/registry.mjs", "index.js", ...TOOL_DEFINITION_FILES]
   .map((file) => readFileSync(resolve(__dirname, "../../mcp/src", file), "utf-8"))
