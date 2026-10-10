@@ -55,8 +55,8 @@ vi.mock("@/features/project-data-source", () => ({
   }),
 }));
 
-vi.mock("@/entities/vault-session/model/local-vault/use-local-vault", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/local-vault/use-local-vault")>()),
+vi.mock("@/entities/vault-session/model/local-vault/vault-identity-guards", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/local-vault/vault-identity-guards")>()),
   VaultConflictError: class VaultConflictError extends Error {},
 }));
 vi.mock("@/features/docs-vault-local", () => ({
