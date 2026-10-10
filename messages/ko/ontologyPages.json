@@ -850,7 +850,19 @@
         "unknown": "이 주장의 소스 상태 미확인"
       },
       "declarationCompact": "선언 {count}개",
-      "documentTitle": "분석 · Ontology Atlas"
+      "documentTitle": "분석 · Ontology Atlas",
+      "findConnection": "연결 찾기",
+      "findCapability": "역량 찾기",
+      "searchByName": "이름으로 검색",
+      "clearSearch": "지우기",
+      "searchMatches": "{total}개 중 {count}개 일치",
+      "listShown": "{total}개 중 {shown}개 표시",
+      "noSearchResults": "일치하는 항목이 없어요. 검색어를 바꿔보세요.",
+      "selectionKept": "선택한 내용은 계속 표시돼요.",
+      "showMoreItems": "{count}개 더 보기",
+      "showLessItems": "접기",
+      "gapClaims": "기록 빈틈 · {count}",
+      "capabilityFilter": "역량 표시 범위"
     }
   }
 }
