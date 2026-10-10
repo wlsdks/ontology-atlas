@@ -295,7 +295,7 @@ const TITLE_MEMBERS = [
   "src/views/library/ui/parts/LibraryStartStage.tsx",
   "src/views/library/ui/LibraryRounds.tsx",
   "src/views/library/ui/LibraryConstellations.tsx",
-  "src/views/library/ui/LibraryPage.tsx",
+  "src/views/library/ui/library-page/LibraryNoFolderStage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
   "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
 ] as const;

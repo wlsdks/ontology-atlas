@@ -68,7 +68,7 @@ export const rules = [
       /^src\/widgets\/docs-vault\/ui\/(?:DocsVaultBacklinks|DocsVaultEditor|DocsVaultViewer)\.tsx$/,
       /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
-      /^src\/views\/library\/ui\/(?:LibraryPage|parts\/(?:AnswerRevisionComparison|LibraryQuestionDesk))\.tsx$/,
+      /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?|parts\/(?:AnswerRevisionComparison|LibraryQuestionDesk)\.tsx)$/,
       /^src\/views\/project-detail\/ui\/ProjectBriefSummary\.tsx$/,
       /^src\/widgets\/(?:analysis-workbench\/ui\/AnalysisWorkbench|full-detail-a1\/ui\/FullDetailA1)\.tsx$/,
       /^scripts\/lib\/check-rules\/security\.mjs$/,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clearFiledAnswer, librarySelectionFocusTarget, matchLibraryOpeningRequest, restoreFiledAnswer, type RetainedLibraryAnswer } from './LibraryPage';
+import { librarySelectionFocusTarget } from './library-page/library-page-state';
+import { clearFiledAnswer, matchLibraryOpeningRequest, restoreFiledAnswer, type RetainedLibraryAnswer } from './library-page/use-library-turns';
 
 describe('Library turn presentation belongs to the actual opening request', () => {
   const compile = { kind: 'compile', text: 'Compile this folder', nonce: 1 } as const;
