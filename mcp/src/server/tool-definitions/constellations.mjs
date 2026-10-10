@@ -1,11 +1,11 @@
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { GRAPH_ARRAY_KEYS } from '../../vault.mjs';
 import {
-  CONCEPT_REVIEW_OUTPUT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
   paginationOutputSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/field-primitives.mjs';
+import { CONCEPT_REVIEW_OUTPUT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 const CONSTELLATION_SOURCE_OUTPUT_SCHEMA = {
   type: 'object',

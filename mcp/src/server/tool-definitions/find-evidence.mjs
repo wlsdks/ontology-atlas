@@ -1,9 +1,9 @@
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import {
-  GROWTH_HINT_OUTPUT_SCHEMA,
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/field-primitives.mjs';
+import { GROWTH_HINT_OUTPUT_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const FIND_EVIDENCE_TOOL = {
   name: 'find_evidence',
