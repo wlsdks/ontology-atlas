@@ -29,7 +29,7 @@ import {
   REPO_ROOT,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
-import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas.mjs';
+import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas/array-limits.mjs';
 import {
   requireNonBlankString,
   requireOptionalStringArray,

@@ -17,7 +17,7 @@ import {
   QUERY_ONTOLOGY_OPERATION_UNION,
   QUERY_PLAN_TARGET_OPERATION_UNION,
   RELATION_TYPE_UNION,
-} from './tool-schemas.mjs';
+} from './tool-schemas/enum-descriptions.mjs';
 
 // Tool descriptions alone never convey call order, the kind hierarchy, the
 // dry-run/confirm pattern, the mtime gate or the bootstrap workflow. The host

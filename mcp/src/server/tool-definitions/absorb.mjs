@@ -1,10 +1,12 @@
 import {
+  NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
-  NON_BLANK_STRING_SCHEMA,
-  POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/git-results.mjs';
+import { POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA } from '../tool-schemas/post-write-maintenance.mjs';
 
 export const ABSORB_DOCUMENT_TOOL = {
   name: 'absorb_document',

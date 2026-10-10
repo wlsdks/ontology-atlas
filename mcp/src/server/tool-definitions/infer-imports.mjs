@@ -5,17 +5,19 @@ import {
   IMPORT_USAGE_VALUES,
 } from '../../infer-imports.mjs';
 import {
+  IGNORE_ARRAY_MAX_ITEMS,
+  SOURCE_FOLDER_ARRAY_MAX_ITEMS,
+} from '../tool-schemas/array-limits.mjs';
+import { IMPORT_EDGE_KIND_DESCRIPTION } from '../tool-schemas/enum-descriptions.mjs';
+import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
+import {
   GO_PACKAGE_IMPORT_EVIDENCE_OUTPUT_SCHEMA,
   GO_PACKAGE_IMPORT_EVIDENCE_SUMMARY_SCHEMA,
-  IGNORE_ARRAY_MAX_ITEMS,
-  IMPORT_EDGE_KIND_DESCRIPTION,
   IMPORT_RECONCILIATION_EDGE_SCHEMA,
   IMPORT_RECONCILIATION_SUMMARY_SCHEMA,
   IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
   IMPORT_STALE_EDGE_FOLLOW_UP_SCHEMA,
-  NON_BLANK_STRING_SCHEMA,
-  SOURCE_FOLDER_ARRAY_MAX_ITEMS,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/repository-evidence.mjs';
 
 export const INFER_IMPORTS_TOOL = {
   name: 'infer_imports',
