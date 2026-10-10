@@ -36,9 +36,9 @@ const checkboxAccentSelectors = [
 const closureScopeSelectors = [
   {
     selector:
-      'FunctionDeclaration[id.name="useLocalVaultInternal"] :function Identifier[name="state"]:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
+      'FunctionDeclaration[id.name=/^use(?:LocalVaultInternal|VaultChoice|VaultDocWrites)$/] :function Identifier[name="state"]:not(MemberExpression[computed=false] > Identifier.property):not(Property[computed=false] > Identifier.key)',
     message:
-      'A callback in useLocalVaultInternal reads the vault through stateRef, never `state`: a closure keeps its render\'s state, manifest included, after another folder opens.',
+      'A callback in the local vault hooks reads the vault through stateRef, never `state`: a closure keeps its render\'s state, manifest included, after another folder opens.',
   },
   {
     selector:

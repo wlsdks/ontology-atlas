@@ -119,7 +119,7 @@ points to Settings › Workspace.
 `src/shared/lib/project-vault-dir.ts` — is shared by the door that creates the
 folder (`src/features/first-run-starter/model/use-build-from-code.ts`) and the
 open path that finds it
-(`src/entities/vault-session/model/resolve-picked-vault-folder.ts`). Choosing a
+(`src/entities/vault-session/model/local-vault/resolve-picked-vault-folder.ts`). Choosing a
 project only computes and describes: the screen renders the exact path before
 `confirm` creates anything, an existing `atlas/` is reused and reported rather
 than overwritten, and picking the `atlas` folder itself is named as a mistake

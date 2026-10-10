@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useLocalVaultInternal } from "./use-local-vault";
+import { useLocalVaultInternal } from "./local-vault/use-local-vault";
 import { VaultDiffToaster } from "./VaultDiffToaster";
 import { TauriVaultWatchBridge } from "./TauriVaultWatchBridge";
 import { LocalVaultContext } from "./local-vault-context";

@@ -17,8 +17,8 @@ const internalMocks = vi.hoisted(() => ({
   useLocalVaultInternal: vi.fn(),
 }));
 
-vi.mock('./use-local-vault', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./use-local-vault')>();
+vi.mock('./local-vault/use-local-vault', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./local-vault/use-local-vault')>();
   return {
     ...actual,
     useLocalVaultInternal: internalMocks.useLocalVaultInternal,

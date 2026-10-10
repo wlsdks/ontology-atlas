@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  VaultConflictError,
-  applyFrontmatterUpdates,
-  assertExpectedMtime,
-} from './use-local-vault';
+import { applyFrontmatterUpdates } from '@/entities/docs-vault';
+import { VaultConflictError, assertExpectedMtime } from './vault-identity-guards';
 
 describe('applyFrontmatterUpdates', () => {
   it('기존 key 교체', () => {

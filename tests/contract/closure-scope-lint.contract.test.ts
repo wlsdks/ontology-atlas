@@ -5,7 +5,11 @@ import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
-const VAULT_HOOK = "src/entities/vault-session/model/use-local-vault.ts";
+const VAULT_HOOKS = [
+  ["useLocalVaultInternal", "src/entities/vault-session/model/local-vault/use-local-vault.ts"],
+  ["useVaultChoice", "src/entities/vault-session/model/local-vault/use-vault-choice.ts"],
+  ["useVaultDocWrites", "src/entities/vault-session/model/local-vault/use-vault-doc-writes.ts"],
+] as const;
 const MAP_PAGE = "src/views/home/ui/HomePage.tsx";
 const LINT_TIMEOUT_MS = 30_000;
 const eslint = new ESLint({ cwd: REPO_ROOT });
@@ -25,8 +29,10 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("closure scope lint", () => {
-  it("the vault hook and the map page the rules name still exist", () => {
-    expect(readFileSync(path.join(REPO_ROOT, VAULT_HOOK), "utf8")).toMatch(/export function useLocalVaultInternal\(/);
+  it("the vault hooks and the map page the rules name still exist", () => {
+    for (const [name, file] of VAULT_HOOKS) {
+      expect(readFileSync(path.join(REPO_ROOT, file), "utf8")).toMatch(new RegExp(`export function ${name}\\(`));
+    }
     expect(readFileSync(path.join(REPO_ROOT, MAP_PAGE), "utf8")).toMatch(/function HomePageImpl\(/);
   });
 
@@ -35,16 +41,16 @@ describe("closure scope lint", () => {
     expect(calls.length).toBeGreaterThan(0);
   });
 
-  it("refuses a callback in the vault hook that reads state", async () => {
+  it.each(VAULT_HOOKS)("refuses a callback in %s that reads state", async (name, file) => {
     const planted = [
-      "export function useLocalVaultInternal() {",
+      `export function ${name}() {`,
       "  const [state] = useState(null);",
       "  const refresh = useCallback(() => state.handle, []);",
       "  const status = state.status;",
       "  return { refresh, status };",
       "}",
     ].join("\n");
-    expect(await closureScopeErrors(planted, VAULT_HOOK)).toHaveLength(1);
+    expect(await closureScopeErrors(planted, file)).toHaveLength(1);
   }, LINT_TIMEOUT_MS);
 
   it("refuses a callback in the map page that reads the vault read model", async () => {

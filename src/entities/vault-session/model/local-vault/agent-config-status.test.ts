@@ -3,7 +3,7 @@ import {
   looksLikeOmotCodexToml,
   looksLikeOmotMcpJson,
   readOmotCodexCommand,
-} from './use-local-vault';
+} from './vault-sidecars';
 
 function mcpJson(command: string, args: string[], vault = '.'): string {
   return JSON.stringify({

@@ -1,7 +1,7 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
-export { VaultConflictError } from './model/use-local-vault';
-export type { VaultOpenOptions, VaultOpenResult } from './model/use-local-vault';
-export type { ReferrerRewriteReport } from './model/use-local-vault';
+export { VaultConflictError } from './model/local-vault/vault-identity-guards';
+export type { VaultOpenOptions, VaultOpenResult } from './model/local-vault/vault-starter';
+export type { ReferrerRewriteReport } from './model/local-vault/referrer-rewrite';
 export type {
   AgentActivityFocus,
   AgentActivityHeartbeat,
