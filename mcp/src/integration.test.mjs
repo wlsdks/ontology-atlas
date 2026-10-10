@@ -10314,7 +10314,10 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.equal(compact.focus.taskNavigation.blockedBy, "source_not_current");
     assert.equal(compact.focus.taskNavigation.primary, null);
     assert.equal(compact.focus.impact.completeness, "unknown");
-    assert.ok(compact.focus.unknowns.length > 0);
+    assert.ok(compact.focus.unknowns.length > 1);
+    const textUnknowns = getCallText(responses, 3).split('\n')
+      .filter((line) => line.startsWith('Unknown: ')).map((line) => line.slice('Unknown: '.length));
+    assert.deepEqual(textUnknowns, compact.focus.unknowns);
     assert.ok(compact.nextReads.some((row) => row.tool === "get_concepts" && row.arguments.body === "full"));
     assert.deepEqual(compact.fullDetail, {
       tool: "query_ontology",
