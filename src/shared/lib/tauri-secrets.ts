@@ -48,7 +48,7 @@ export type SecretProvider = (typeof SECRET_PROVIDERS)[number];
  * key goes **before** it is pasted, and the same host lands in the audit line's
  * `host`.
  *
- * The source of truth is the Rust-side verification URL (`src-tauri/src/llm.rs`).
+ * The source of truth is the verification URL in `src-tauri/src/llm/verify.rs`.
  * If these values diverge, the destination the UI promised stops matching the
  * real one — so both test suites read the shared fixture
  * `tests/fixtures/llm-provider-hosts.json`.

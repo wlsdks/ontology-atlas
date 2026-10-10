@@ -106,7 +106,11 @@ describe('the catalogue covers every code Rust mints', () => {
     'git/runner.rs',
     'git/setup.rs',
     'git/snapshot.rs',
-    'llm.rs',
+    'llm/chat.rs',
+    'llm/chat/request.rs',
+    'llm/curl.rs',
+    'llm/local_endpoint.rs',
+    'llm/verify.rs',
     'llm_audit.rs',
     'secrets.rs',
   ]
