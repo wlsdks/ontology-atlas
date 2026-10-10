@@ -10,7 +10,7 @@ const WHY =
   '25-35x in WebKit); return tauri::ipc::Response and read an ArrayBuffer instead';
 
 function rustFiles(): { file: string; text: string }[] {
-  return readdirSync(RUST_SOURCE)
+  return readdirSync(RUST_SOURCE, { recursive: true, encoding: 'utf8' })
     .filter((name) => name.endsWith('.rs'))
     .map((file) => ({ file, text: readFileSync(join(RUST_SOURCE, file), 'utf8').replace(/\r\n/g, '\n') }));
 }
