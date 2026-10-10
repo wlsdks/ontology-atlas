@@ -2128,6 +2128,14 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+| `src/vault/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
+| `src/vault/documents.mjs` | walking and reading `.md` documents, stable file snapshots, body excerpts and the full-body cap |
+| `src/vault/relation-refs.mjs` | the relation keys that become graph edges, their aliases, and how a document's refs and relation notes are read |
+| `src/vault/graph-queries.mjs` | kinds, orphans, shortest path and backlinks over one reference index, and the duplicate-title warning |
+| `src/vault/eligibility-gate.mjs` | the node-eligibility gate: its session memory and the advisory findings every committed write produces |
+| `src/vault/atomic-writes.mjs` | the stale-write conflict error, single-file atomic writes, and all-or-nothing multi-file plans |
+| `src/vault/doc-writes.mjs` | the single write point for create, patch, update and delete, with uid minting and identity checks |
+| `src/vault/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
 | `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
 | `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |

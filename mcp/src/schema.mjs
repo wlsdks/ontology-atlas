@@ -210,7 +210,7 @@ export function reviewCurrentness(frontmatter, body) {
 
 /**
  * Node-eligibility gate values (`docs/DECISIONS.md`, Ontology Construction
- * Specification); logic in `vault.mjs`, wording in `construction-rules.mjs`.
+ * Specification); logic in `vault/eligibility-gate.mjs`, wording in `construction-rules.mjs`.
  * None is a limit: each answers "when is a question worth asking", never "how
  * many children"; never phrase a derived value as "keep under N", since a cap is
  * gamed with empty buckets.
@@ -402,7 +402,7 @@ export const VAULT_KIND_SCHEMA = {
 
 /**
  * Kind-named lists (spec §5): what their entries are and which kinds keep them.
- * Every rewriter after a kind change (`redirectBacklinks` in `vault.mjs`, the
+ * Every rewriter after a kind change (`redirectBacklinks` in `vault/backlink-rewrite.mjs`, the
  * app's `rename-ref-rewrites.ts`) asks this table, or an element stays listed
  * under `capabilities:`, resolves silently, and is counted as a capability. The
  * same-kind bridge spec §5 allows is absent: a bridge is a person's decision.

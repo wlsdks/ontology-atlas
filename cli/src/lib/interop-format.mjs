@@ -12,7 +12,7 @@ const GRAPHML_GRAPH_ID = 'atlas';
 const NODE_UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /**
- * Every edge key the compiler can emit as `via` → its oatlas predicate; keep in sync with `mcp/src/vault.mjs`
+ * Every edge key the compiler can emit as `via` → its oatlas predicate; keep in sync with `mcp/src/vault/`
  * NEIGHBOR_KEYS and INLINE_NEIGHBOR_KEYS. An unknown `via` becomes `oatlas:<via>`, never dropped.
  */
 const VIA_PREDICATE = Object.freeze({

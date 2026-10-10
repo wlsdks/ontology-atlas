@@ -30,7 +30,7 @@ const RELATION_KEY = Object.freeze({
   domain: 'domain',
 });
 
-// Authoring aliases per canonical key (mcp/src/vault.mjs NEIGHBOR_KEY_ALIASES). Reading only the
+// Authoring aliases per canonical key (mcp/src/vault/ NEIGHBOR_KEY_ALIASES). Reading only the
 // canonical key would split one edge type across two keys that MCP folds.
 const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
 

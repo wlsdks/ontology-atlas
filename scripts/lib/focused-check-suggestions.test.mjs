@@ -389,14 +389,14 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'mcp/src/analyze.mjs',
       'mcp/src/ontology-compiler.test.mjs',
-      'mcp/src/vault.mjs',
+      'mcp/src/vault/documents.mjs',
       'mcp/scripts/json-rpc-lines.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/analyze.test.mjs',
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
-      'pnpm exec node --test mcp/src/vault.test.mjs',
+      'pnpm exec node --test mcp/src/vault/vault.test.mjs',
       'pnpm exec node --test mcp/src/json-rpc-lines.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
@@ -479,7 +479,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP read integration for read/query tool implementation changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault.mjs',
+      'mcp/src/vault/documents.mjs',
       'mcp/src/query.mjs',
       'mcp/src/ontology-engine.mjs',
       'mcp/src/ontology-compiler.mjs',
@@ -490,7 +490,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm test:contracts',
-      'pnpm exec node --test mcp/src/vault.test.mjs',
+      'pnpm exec node --test mcp/src/vault/vault.test.mjs',
       'pnpm exec node --test mcp/src/query.test.mjs',
       'pnpm exec node --test mcp/src/ontology-engine.test.mjs',
       'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
@@ -579,17 +579,17 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP write integration for server write handler changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault.mjs',
+      'mcp/src/vault/documents.mjs',
       'mcp/src/index.js',
-      'mcp/src/redirect-backlinks.test.mjs',
-      'mcp/src/conflict-detection.test.mjs',
+      'mcp/src/vault/redirect-backlinks.test.mjs',
+      'mcp/src/vault/conflict-detection.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
-      'pnpm exec node --test mcp/src/vault.test.mjs',
-      'pnpm exec node --test mcp/src/redirect-backlinks.test.mjs',
-      'pnpm exec node --test mcp/src/conflict-detection.test.mjs',
+      'pnpm exec node --test mcp/src/vault/vault.test.mjs',
+      'pnpm exec node --test mcp/src/vault/redirect-backlinks.test.mjs',
+      'pnpm exec node --test mcp/src/vault/conflict-detection.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:vault-read',
@@ -601,13 +601,13 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP vault-read integration for vault read handlers', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault.mjs',
+      'mcp/src/vault/documents.mjs',
       'mcp/src/validate.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm test:contracts',
-      'pnpm exec node --test mcp/src/vault.test.mjs',
+      'pnpm exec node --test mcp/src/vault/vault.test.mjs',
       'pnpm exec node --test mcp/src/validate.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:vault-read',
@@ -2097,7 +2097,7 @@ describe('security surfaces', () => {
 
   it('asks for the security lens where untrusted input meets a capability', () => {
     for (const path of [
-      'mcp/src/vault.mjs',
+      'mcp/src/vault/documents.mjs',
       'src-tauri/src/lib.rs',
       '.github/workflows/checks.yml',
       'pnpm-lock.yaml',
@@ -2118,7 +2118,7 @@ describe('security surfaces', () => {
   });
 
   it('stays silent outside every security surface', () => {
-    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
+    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
       assert.equal(securityRow(path), undefined, path);
     }
   });

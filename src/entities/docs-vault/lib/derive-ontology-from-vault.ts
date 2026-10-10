@@ -406,7 +406,7 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
-    // `dependencies[]` and `depends_on[]` are aliases (`mcp/src/vault.mjs` NEIGHBOR_KEY_ALIASES); one
+    // `dependencies[]` and `depends_on[]` are aliases (`mcp/src/vault/` NEIGHBOR_KEY_ALIASES); one
     // target counts once. Gate: tests/contract/derive-relation-keys.contract.test.ts.
     const seenDepIds = new Set<string>();
     for (const dep of [...asStringArray(fm.dependencies), ...asStringArray(fm.depends_on)]) {

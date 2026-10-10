@@ -40,7 +40,7 @@ export function walkMd(rootPath) {
 
 export function pathToSlug(rootPath, filePath) {
   // NFC normalisation: macOS returns NFD filenames while users type NFC references, so without it every
-  // edge into such a node dangles (`mcp/src/vault.mjs`). Only the identifier is normalised, never the path on disk.
+  // edge into such a node dangles (`mcp/src/vault/`). Only the identifier is normalised, never the path on disk.
   return relative(rootPath, filePath)
     .replace(/\\/g, '/')
     .replace(/\.md$/, '')
