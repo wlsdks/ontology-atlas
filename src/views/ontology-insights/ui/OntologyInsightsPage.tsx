@@ -49,10 +49,11 @@ export function OntologyInsightsPage() {
   const [inspectRequest, setInspectRequest] = useState<{ text: string; scope: string; nonce: number } | null>(null);
   const [dockHost, setDockHost] = useState<HTMLDivElement | null>(null);
   const record = RECORDS.has(tab);
+  const sampleFlow = tab === 'flow' && mode === 'static';
   const evidence = tab === 'do-next' || tab === 'unmatched';
   return <VaultSourceHydrationBoundary><div className="relative flex min-h-0 min-w-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1px)] lg:pb-0">
-    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} relative min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
-      <header className={cn(PAGE_HEADER_ROW, 'mb-5 gap-x-8 border-b border-[color:var(--color-divider)]')}>
+    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} relative min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${sampleFlow ? 'flex flex-col' : ''} ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
+      <header className={cn(PAGE_HEADER_ROW, 'mb-5 gap-x-8 border-b border-[color:var(--color-divider)]', sampleFlow && 'shrink-0')}>
         <div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t('analysis.title')}</h1></div>
         <div className="lg:hidden"><AppSettingsMenu mode={mode} triggerVariant="chrome-tile" /></div>
         <nav className="order-last min-w-0 w-full lg:order-none lg:-mt-1 lg:w-auto lg:flex-1" aria-label={t('coreAriaLabel')}>
@@ -66,14 +67,14 @@ export function OntologyInsightsPage() {
           />
         </nav>
       </header>
-      <section id={`insights-tabpanel-${record ? tab : 'connections'}`} role="tabpanel" aria-labelledby={`insights-tab-${record ? tab : 'connections'}`} data-insights-panel={record ? tab : 'analysis'} className={tab === 'harness' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : undefined}>
+      <section id={`insights-tabpanel-${record ? tab : 'connections'}`} role="tabpanel" aria-labelledby={`insights-tab-${record ? tab : 'connections'}`} data-insights-panel={record ? tab : 'analysis'} className={tab === 'harness' ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : sampleFlow ? 'flex flex-1 flex-col' : undefined}>
       {error ? <p role="alert" className="text-body text-[color:var(--color-status-danger)]">{error.message}</p> : null}
       {!insight ? <p role="status" className="text-body">{t('loading')}</p> : nodes.length === 0 ? <div className="flex flex-col gap-4"><p className="text-body">{t('analysis.empty')}</p><OpenVaultCta testId="analysis-open-vault" /></div> : <>
         <AnalysisRecords dockHost={dockHost} inspectRequest={inspectRequest} onAgentReady={setAgentReady} active={record} tab={tab} onTab={setTab} nodes={nodes} edges={edges} />
         <div hidden={record}>
           {search.get('tab') && !['connections', 'do-next'].includes(search.get('tab')!) ? <p className="mb-3 text-label text-[color:var(--color-text-tertiary)]">{t('analysis.legacy')}</p> : null}
           <AnalysisWorkspace agentReady={agentReady} onInspect={text => setInspectRequest(previous => ({ text, scope: identity, nonce: (previous?.nonce ?? 0) + 1 }))} active={!record} key={`${identity}:${evidence}`} nodes={nodes} edges={edges} docs={docs} mode={mode} initialQuestion={evidence ? 'evidence' : 'relationships'} initialClaim={initialClaim} initialEdge={initialEdge} />
-        </div>{record ? <Button data-testid="analysis-back-to-system" variant="ghost" size="sm" className="atlas-touch-floor mt-6" onClick={() => setTab('connections')}>{t('analysis.system')}</Button> : null}
+        </div>{record && !sampleFlow ? <Button data-testid="analysis-back-to-system" variant="ghost" size="sm" className="atlas-touch-floor mt-6" onClick={() => setTab('connections')}>{t('analysis.system')}</Button> : null}
       </>}
       </section>
     </main>
