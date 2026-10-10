@@ -132,10 +132,10 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     const registry = JSON.parse(
       readFileSync(join(ROOT, 'src-tauri/src/acp-registry.json'), 'utf8'),
     ) as { agents: Array<{ id: string; launch?: { package?: string } }> };
-    // v2.1.1 src/AgentMode.ts: readOnly, on-request, no network; INITIAL_AGENT_MODE still applies.
+    // v2.2.2 src/AgentMode.ts: readOnly, on-request, no network; INITIAL_AGENT_MODE still applies.
     // The separate workspace-write mode is excluded by mode-safety.ts; MCP keeps its own gate.
     expect(registry.agents.find((agent) => agent.id === 'codex-acp')?.launch?.package).toBe(
-      '@agentclientprotocol/codex-acp@2.1.1',
+      '@agentclientprotocol/codex-acp@2.2.2',
     );
     expect(readFileSync(join(ROOT, 'mcp/src/write-consent.mjs'), 'utf8')).toContain(
       'codex_approval_kind',
