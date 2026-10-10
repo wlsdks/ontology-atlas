@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -58,7 +58,10 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     // tool table must still not carry a hand-copied duplicate of the text.
     const instructionsSource = read("mcp/src/server/instructions.mjs");
     expect(instructionsSource).toContain("${META_MODEL_RULES_EN}");
-    for (const file of ["mcp/src/server/instructions.mjs", "mcp/src/server/registry.mjs", "mcp/src/index.js"]) {
+    const toolDefinitions = readdirSync(resolve(ROOT, "mcp/src/server/tool-definitions"))
+      .filter((file) => file.endsWith(".mjs"))
+      .map((file) => `mcp/src/server/tool-definitions/${file}`);
+    for (const file of ["mcp/src/server/instructions.mjs", "mcp/src/server/registry.mjs", "mcp/src/index.js", ...toolDefinitions]) {
       expect(read(file)).not.toContain(flat(MCP_META_MODEL_RULES_EN));
     }
   });
