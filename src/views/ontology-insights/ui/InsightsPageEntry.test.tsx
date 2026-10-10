@@ -11,7 +11,6 @@ vi.mock('next/dynamic', () => ({
     return <div>Analysis ready</div>;
   },
 }));
-vi.mock('@/entities/vault-session', () => ({ useDataSourceMode: () => 'local' }));
 
 let frames: Map<number, FrameRequestCallback>;
 let nextFrame: number;
@@ -39,7 +38,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('Insights entry', () => {
   it('paints the destination and loading state before mounting any analysis work', () => {
     mount();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(en.ontologyPages.insights.title);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(en.ontologyPages.insights.analysis.title);
     expect(screen.getByRole('status')).toHaveTextContent(en.ontologyPages.insights.loading);
     expect(screen.getByRole('main')).toHaveAttribute('aria-busy', 'true');
     expect(work.render).not.toHaveBeenCalled();
