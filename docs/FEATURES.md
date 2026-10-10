@@ -86,7 +86,7 @@ The desktop rail's order and hrefs come from
 | Harness | `/architecture` | [`harness.md`](features/harness.md) |
 | Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — source import feedback, local Wiki questions, cited ACP reports, document export, Ontology bookmarks, and optional Jev advice |
 | Automations | `/automations` | [`automations.md`](features/automations.md) |
-| Analysis: searchable relationship comparison and claim evidence | `/ontology/insights` | [`analysis.md`](features/analysis.md) |
+| Analysis: searchable relationships, implementation connections and claim evidence | `/ontology/insights` | [`analysis.md`](features/analysis.md) |
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |

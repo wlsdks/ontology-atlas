@@ -862,7 +862,12 @@
       "showMoreItems": "Show {count} more",
       "showLessItems": "Show less",
       "gapClaims": "Record gaps · {count}",
-      "capabilityFilter": "Capability scope"
+      "capabilityFilter": "Capability scope",
+      "connectedElements": "Linked implementation elements · {count}",
+      "openElementDocument": "Open {name} document",
+      "noElementLinks": "No implementation elements linked",
+      "pathsWithoutElements": "{count} source paths are recorded without an element link.",
+      "implementationLegend": "Each line is a recorded composition link. Select an element to read its document."
     }
   }
 }
