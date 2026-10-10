@@ -29,6 +29,9 @@ pnpm decisions:find short-subject
 
 A user-visible change is one concrete fact with category `Added`, `Changed`,
 `Fixed` or `Removed`. Internal maintenance belongs in commit messages.
+`pnpm pr:land` refuses a `feat`, `fix`, `perf` or `design` pull request that
+adds no `changes/` record, unless its body carries the line
+`No change record: <why no user can notice it>`.
 
 ```sh
 pnpm record:new -- --kind=change --date=2026-09-13 --slug=short-subject --category=Fixed --input=/tmp/change.txt
