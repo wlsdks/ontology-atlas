@@ -412,9 +412,9 @@ describe('permission options — the app picks the one that ends with this call'
  * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
  * app launches from: a bump turns this red and the arrays get re-read.
  */
-// v0.86.0 src/permissions/options/{shared,shell,filesystem,tools}.ts retain these builders.
+// v0.89.0 src/permissions/options/{shared,shell,filesystem,tools}.ts retain these builders.
 // options.ts retains allow_once ordering and the defaultToNo decline-first variant.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.86.0';
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.89.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {
