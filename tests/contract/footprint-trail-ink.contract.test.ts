@@ -179,7 +179,7 @@ describe("걸어온 길 렌즈 — 노드와 선의 트레일 잉크", () => {
    */
   it("렌즈가 켜져도 안 밟은 선은 dim 그대로다", () => {
     const source = readFileSync(
-      join(repoRoot, "src/widgets/ontology-map/ui/topology-frame-draw.ts"),
+      join(repoRoot, "src/widgets/ontology-map/ui/frame-draw/paint-edges.ts"),
       "utf8",
     );
     expect(source).toContain("walkedEdgeKeys");

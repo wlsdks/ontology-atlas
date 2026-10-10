@@ -304,7 +304,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
          * the deletion after that cost the walk its last stop — usually the node the person had
          * just clicked — so the end of the path was a hole, and the "here is where the walk
          * ends" cross could almost never draw because the star it rides on was missing.
-         * `topology-frame-draw` separates the two by ink instead: indigo on the focused node,
+         * `frame-draw/node-visual` separates the two by ink instead: indigo on the focused node,
          * star ink on the rest.
          */
         const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);

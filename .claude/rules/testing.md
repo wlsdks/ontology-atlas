@@ -49,6 +49,7 @@ sleeping.
 | Shape | Allowed | Form |
 |---|---|---|
 | Condition wait | yes, the default | `waitFor`, `findBy*`, `expect.poll`, `page.waitForFunction` |
+| Work count | yes, first for "done once" | count the calls a repeated input makes; a cache's speed ratio drifts with GC; model: `node-name-match.test.ts` |
 | Relative in one run | yes | measure both sides in one process and assert the ratio; model: `duplicate-pairs.perf.test.ts` |
 | Product budget with headroom | yes | print the measured value, keep the bound at 5x or more, and comment the measurement and date |
 | Absolute wall clock or fixed sleep | no | an unmeasured `toBeLessThan(n)`, `waitForTimeout(n)`, or `setTimeout` used as a wait |

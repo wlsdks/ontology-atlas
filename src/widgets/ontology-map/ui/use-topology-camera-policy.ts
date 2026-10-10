@@ -60,7 +60,7 @@ export function useTopologyCameraPolicy({
    * without it the bottom row of labels once silently disappeared. Those are
    * layout promises, not covering panels, so measuring over them brings that
    * defect back; and `safeInset*` is also read by label culling
-   * (`topology-frame-draw`), which has nothing to do with the camera.
+   * (`frame-draw/paint-labels`), which has nothing to do with the camera.
    *
    * Takes the **larger** of token and measurement, so width the token reserved
    * for other reasons is never lost.
