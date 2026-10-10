@@ -58,6 +58,7 @@ test('long Flow requests keep the contextual return reachable at the app minimum
   await page.setViewportSize({ width: 1040, height: 720 });
   await openBrowserFolder(page);
   await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
+  await expect(page.getByTestId('flow-request-text')).toBeVisible();
   const back = page.getByTestId('analysis-back-to-system');
   await back.scrollIntoViewIfNeeded();
   const reachable = await back.evaluate(element => {
