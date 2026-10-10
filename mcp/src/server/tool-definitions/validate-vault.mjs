@@ -1,9 +1,9 @@
 import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
+import { VAULT_ISSUE_CODE_DESCRIPTION } from '../tool-schemas/enum-descriptions.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
-  VAULT_ISSUE_CODE_DESCRIPTION,
   paginationOutputSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/field-primitives.mjs';
 
 export const VALIDATE_VAULT_TOOL = {
   name: 'validate_vault',

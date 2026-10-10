@@ -12,14 +12,18 @@ import {
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { GRAPH_ARRAY_KEYS } from '../../vault.mjs';
 import {
-  EDGE_RATIONALE_OUTPUT_SCHEMA,
   EDGE_TARGET_KIND_DESCRIPTION,
   NODE_KIND_DESCRIPTION,
+} from '../tool-schemas/enum-descriptions.mjs';
+import {
   NON_BLANK_STRING_SCHEMA,
-  RELATION_ARRAY_PATCH_SCHEMA,
   nonBlankStringSchema,
   paginationOutputSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/field-primitives.mjs';
+import {
+  EDGE_RATIONALE_OUTPUT_SCHEMA,
+  RELATION_ARRAY_PATCH_SCHEMA,
+} from '../tool-schemas/vault-node-shapes.mjs';
 
 export const COMPILE_ONTOLOGY_TOOL = {
   name: 'compile_ontology',

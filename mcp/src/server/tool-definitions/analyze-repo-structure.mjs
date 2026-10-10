@@ -1,14 +1,16 @@
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from '../../construction-qualification.mjs';
+import { IGNORE_ARRAY_MAX_ITEMS } from '../tool-schemas/array-limits.mjs';
+import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
 import {
   EXTRACTION_CONTRACT_OUTPUT_SCHEMA,
-  IGNORE_ARRAY_MAX_ITEMS,
   MEANING_PROPOSAL_INPUT_SCHEMA,
   MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA,
-  NON_BLANK_STRING_SCHEMA,
+} from '../tool-schemas/meaning-construction.mjs';
+import {
   PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA,
   RUST_FEATURE_CONFIGURATION_EVIDENCE_OUTPUT_SCHEMA,
   SEMANTIC_EVIDENCE_ROW_SCHEMA,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/repository-evidence.mjs';
 
 export const ANALYZE_REPO_STRUCTURE_TOOL = {
   name: 'analyze_repo_structure',

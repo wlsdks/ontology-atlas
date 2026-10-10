@@ -1,4 +1,4 @@
-import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas.mjs';
+import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
 
 export const INSPECT_ARCHITECTURE_TOOL = {
   name: 'inspect_architecture',

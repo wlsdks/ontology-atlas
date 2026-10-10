@@ -4,7 +4,9 @@ import { selectAmbientDependsComets, selectEgoContainsComets } from "../../rende
 import { isSpineNode, type TopologyWorld, type WorldEdge } from "../topology-world";
 import { edgeRevealProgress } from "../../expressive/edge-reveal";
 import { passState } from "./frame-state";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeAlpha } from "./node-alpha";
 
 const EMPTY_EGO_COMET_EDGES: ReadonlySet<WorldEdge> = new Set();
 const ambientDependsCometsReused = new Set<string>();
@@ -32,10 +34,11 @@ function edgeEndsFor(world: TopologyWorld): {
 const edgeLiftByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 const edgeRestDimByEdges = new WeakMap<readonly WorldEdge[], Float64Array>();
 
-export function prepareEdges(F: FrameScope): void {
+export function prepareEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha) {
   const { focusedNodeId, world, selectedEdge, focusRampById, egoRevealById, reducedMotion,
-    clusteredIds, domeLight, trailLensActive, parentOf, litOn, litFocusId,
-    effectiveAlphaByIndex } = F;
+    clusteredIds, domeLight, trailLensActive } = frame;
+  const { parentOf, litOn, litFocusId } = focus;
+  const { effectiveAlphaByIndex } = alpha;
   const egoCometEdges =
     focusedNodeId === null || litOn
       ? EMPTY_EGO_COMET_EDGES
@@ -97,14 +100,10 @@ export function prepareEdges(F: FrameScope): void {
       return !litOn || (litComets && (inLitSubtree(edge.sourceId) || inLitSubtree(edge.targetId)));
     },
     ambientDependsCometsReused);
-  F.egoCometEdges = egoCometEdges;
-  F.edgeAlphaReused = edgeAlphaReused;
-  F.edgeLiftReused = edgeLiftReused;
-  F.edgeRestDimReused = edgeRestDimReused;
-  F.edgeFocusRamp = edgeFocusRamp;
-  F.edgeRevealAt = edgeRevealAt;
-  F.captionCandidates = captionCandidates;
-  F.isSpineEndpoint = isSpineEndpoint;
-  F.edgeEnds = edgeEnds;
-  F.ambientDependsComets = ambientDependsComets;
+  return {
+    egoCometEdges, edgeAlphaReused, edgeLiftReused, edgeRestDimReused, edgeFocusRamp, edgeRevealAt,
+    captionCandidates, isSpineEndpoint, edgeEnds, ambientDependsComets,
+  };
 }
+
+export type EdgePrep = Readonly<ReturnType<typeof prepareEdges>>;

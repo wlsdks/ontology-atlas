@@ -39,7 +39,11 @@ import {
   igniteCurve,
   trailIgniteStartMs,
 } from "./trail-curves";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeAlpha } from "./node-alpha";
+import type { EdgePrep } from "./edge-prep";
+import type { DomeStage } from "./paint-dome-stage";
 
 const EDGE_CULL_MARGIN_PX = 24;
 // Shared scratch: use the result before the next call and never keep it.
@@ -47,17 +51,19 @@ const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 const HOVER_RECEDE_ALPHA_STEP = 0.3;
 
-export function paintEdges(F: FrameScope): void {
-  const { walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep, canvasDpr, viewportWidth,
-    viewportHeight, focusedNodeId, selectedEdge, mapLensKind, pathEdgeIds, hoveredEdge,
-    emphasizedNeighborId, spotlightIds, trailLensOpenedAtMs, footprintNewestStep, now,
+export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, edges: EdgePrep, stage: DomeStage): void {
+  const { walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep, devicePixelRatio,
+    viewportWidth, viewportHeight, focusedNodeId, selectedEdge, mapLensKind, pathEdgeIds,
+    hoveredEdge, emphasizedNeighborId, spotlightIds, trailLensOpenedAtMs, footprintNewestStep, now,
     hoveredNodeId, emphasisById, appearById, tokens, trailStarInk, farT, reducedMotion,
     relationCaptions, captionFoldedIds, previewEdge, world, camera, pulses, ctx, pathLensActive,
-    spotlightSink, trailLensActive, trailRamp, trailGlint, trailGlintLegs, domeOn, domeFrameFor,
-    project, projectEdgePoints, egoGlowRamp, litOn, domeAncestryOn, domeAncestryEdges, litFocusRamp,
-    traceTokensFrame, anyExpanded, egoCometEdges, edgeAlphaReused, edgeLiftReused,
-    edgeRestDimReused, edgeFocusRamp, edgeRevealAt, captionCandidates, isSpineEndpoint,
-    ambientDependsComets, domeHaloColor, edgeDrawOrder } = F;
+    spotlightSink, trailLensActive, trailRamp, trailGlint, trailGlintLegs, domeOn, domeFrameFor } = frame;
+  const { project, projectEdgePoints, egoGlowRamp, litOn, domeAncestryOn, domeAncestryEdges,
+    litFocusRamp, traceTokensFrame } = focus;
+  const { anyExpanded } = alpha;
+  const { egoCometEdges, edgeAlphaReused, edgeLiftReused, edgeRestDimReused, edgeFocusRamp,
+    edgeRevealAt, captionCandidates, isSpineEndpoint, ambientDependsComets } = edges;
+  const { domeHaloColor, edgeDrawOrder } = stage;
   const trailKeysLive =
     (walkedEdgeKeys?.size ?? 0) > 0 ||
     (walkedEdgeDirections?.size ?? 0) > 0 ||
@@ -84,7 +90,7 @@ export function paintEdges(F: FrameScope): void {
           const uAvg = (edgeFrameA.u + edgeFrameB.u) / 2;
           domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
-          domeMinWidthPx = domeEdgeMinWidthPx(canvasDpr) * aMin;
+          domeMinWidthPx = domeEdgeMinWidthPx(devicePixelRatio) * aMin;
           domeHaloWidthPx = litOn ? 0 : domeHaloPx(uAvg) * aMin;
           domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }

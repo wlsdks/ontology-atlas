@@ -60,7 +60,11 @@ import {
   starSwellCurve,
   trailIgniteStartMs,
 } from "./trail-curves";
-import { type FrameScope } from "./frame-scope";
+import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
+import type { NodeAlpha } from "./node-alpha";
+import type { DomeStage } from "./paint-dome-stage";
+import type { NodeLayer } from "./node-layer";
 
 // Spike arms reach 2.6 times the radius.
 const NODE_CULL_SLACK = 3;
@@ -79,20 +83,23 @@ let sheenTopCacheTint = "";
 
 let sheenTopCacheBlend = -1;
 
-export function paintNodes(F: FrameScope): void {
+export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, stage: DomeStage, layer: NodeLayer): void {
   const { chipRevealById, world, clusteredIds, previewEdge, focusedNodeId, selectedEdge,
     colorFocusedNodeId, colorSelectedEdge, focusRampById, emphasisById, emphasizedNeighborId,
     tokens, reducedMotion, footprintStepColor, appearById, batchAppearById, expandRevealById, now,
     hoverReleasedNodeId, hoveredNodeId, hoverStartedAt, realmDepthById, camera, viewportWidth,
-    viewportHeight, spotlightIds, domeLight, selectionPulse, canvasDpr, farT, agentFocusNodeId,
-    spotlightRamp, spotlightDashOffset, glyphStyle, footprintStepsById, footprintPref, trailStarInk,
-    trailLensOpenedAtMs, footprintNewestStep, footprintNewestId, footprintAppear, footprintInk,
-    wardingRing, ctx, spotlightLensActive, recentSpotlightActive, spotlightSink, trailLensActive,
-    trailRamp, isTrailKept, lensNodeEgoState, realmDepthOf, realmParallaxOffsetFor, domeOn, neural,
-    footprintScale, camX, camY, camScale, halfW, halfH, egoGlowRamp, litOn, neighborsOfFocused,
-    colorNeighbors, litFocusRamp, inLitLine, egoAllNormal, colorAllNormal, nodeShapeTokensFrame,
-    effectiveAlphaById, effectiveAlphaByIndex, expandedParentIds, expandedDiscIds, expandedChildIds,
-    anyExpanded, domeHaloColor, drawnScreenRadiusById, nodeDiscReservations } = F;
+    viewportHeight, spotlightIds, domeLight, selectionPulse, devicePixelRatio, farT,
+    agentFocusNodeId, spotlightRamp, spotlightDashOffset, glyphStyle, footprintStepsById,
+    footprintPref, trailStarInk, trailLensOpenedAtMs, footprintNewestStep, footprintNewestId,
+    footprintAppear, footprintInk, wardingRing, spotlightLensActive, recentSpotlightActive,
+    spotlightSink, trailLensActive, trailRamp, isTrailKept, lensNodeEgoState, realmDepthOf,
+    realmParallaxOffsetFor, domeOn, neural, footprintScale } = frame;
+  const { camX, camY, camScale, halfW, halfH, egoGlowRamp, litOn, neighborsOfFocused,
+    colorNeighbors, litFocusRamp, inLitLine, egoAllNormal, colorAllNormal, nodeShapeTokensFrame } = focus;
+  const { effectiveAlphaById, effectiveAlphaByIndex, expandedParentIds, expandedDiscIds,
+    expandedChildIds, anyExpanded } = alpha;
+  const { domeHaloColor } = stage;
+  const { ctx, drawnScreenRadiusById, nodeDiscReservations } = layer;
   const nearestExpandedRevealMul = (nodeId: string): number => {
     if (!chipRevealById || expandedParentIds.size === 0)
       return 1;
@@ -357,7 +364,7 @@ export function paintNodes(F: FrameScope): void {
     }
     if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
       const strength = attended ? 1 : node.kind === "element" ? 0.35 : 0.6;
-      drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, canvasDpr,
+      drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, devicePixelRatio,
         node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
     }
     if (bodyAlpha > 0 || showCount) nodeShapesDraw(

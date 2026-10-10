@@ -1,15 +1,21 @@
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import {
+  NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import {
+  DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+  DESTRUCTIVE_PREVIEW_REQUIRED,
+} from '../tool-schemas/destructive-preview.mjs';
+import {
+  POST_WRITE_MAINTENANCE_GUIDANCE,
+  POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+} from '../tool-schemas/post-write-maintenance.mjs';
+import {
   BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
   BACKLINK_ROW_OUTPUT_SCHEMA,
   CAPTURED_DOC_OUTPUT_SCHEMA,
-  DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
-  DESTRUCTIVE_PREVIEW_REQUIRED,
-  NON_BLANK_STRING_SCHEMA,
-  POST_WRITE_MAINTENANCE_GUIDANCE,
-  POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/vault-node-shapes.mjs';
 
 export const RENAME_CONCEPT_TOOL = {
   name: 'rename_concept',

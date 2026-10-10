@@ -111,7 +111,7 @@ developer) read and write that same folder.
 tool name, and the transport. The public surface — every tool name, description,
 schema and annotation — is `mcp/src/server/registry.mjs`, which lists the
 per-family definitions in `server/tool-definitions/`, with their schema
-fragments in `server/tool-schemas.mjs` and the `initialize` instructions in
+fragments in `server/tool-schemas/` (one file per subject) and the `initialize` instructions in
 `server/instructions.mjs`. Handlers live in `mcp/src/tools/` by workflow: reads,
 git, the compiled graph, vault validation, repo analysis, project source,
 concept writes, relation writes, the destructive lifecycle, and absorb, with

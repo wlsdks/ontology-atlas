@@ -3,6 +3,11 @@ import { NODE_KIND_VALUES, RELATION_TYPE_VALUES } from '../../ontology-engine.mj
 import { NODE_UID_PATTERN } from '../../schema.mjs';
 import { READ_SOURCE_DEFAULT_LIMIT, READ_SOURCE_MAX_LIMIT } from '../../source-text.mjs';
 import {
+  NON_BLANK_MULTILINE_TEXT_SCHEMA,
+  NON_BLANK_STRING_SCHEMA,
+  nonBlankStringSchema,
+} from '../tool-schemas/field-primitives.mjs';
+import {
   BACKLINK_ROW_OUTPUT_SCHEMA,
   BODY_DELIVERY_MODES,
   BODY_INFO_OUTPUT_SCHEMA,
@@ -10,12 +15,9 @@ import {
   CONCEPT_REVIEW_OUTPUT_SCHEMA,
   EDGE_RATIONALE_OUTPUT_SCHEMA,
   GROWTH_HINT_OUTPUT_SCHEMA,
-  NON_BLANK_MULTILINE_TEXT_SCHEMA,
-  NON_BLANK_STRING_SCHEMA,
   OUTGOING_EDGE_OUTPUT_SCHEMA,
   VAULT_WARNING_OUTPUT_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas.mjs';
+} from '../tool-schemas/vault-node-shapes.mjs';
 
 export const CONNECTION_INFO_TOOL = {
   name: 'connection_info',
