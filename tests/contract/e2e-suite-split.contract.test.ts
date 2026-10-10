@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import playwrightConfig, { resolvePlaywrightWorkers } from '../../playwright.config';
+import { loadCheckRules } from '../../scripts/lib/focused-check-suggestions.mjs';
 import { POST_MERGE_SPECS } from '../e2e/post-merge-specs';
 
 /**
@@ -89,6 +90,45 @@ describe('머지 후 스위프 목록은 실재하는 스펙만 담는다', () =
     for (const file of invoked) {
       expect(POST_MERGE_SPECS).not.toContain(file);
     }
+  });
+});
+
+const UNMAPPED_POST_MERGE_SPECS = [
+  'camera-transition.spec.ts',
+  'cjk-locale-sweep.spec.ts',
+  'control-row-geometry.spec.ts',
+  'cursor-affordance.spec.ts',
+  'datasheet-hover-map-brush.spec.ts',
+  'focus-ring-contrast.spec.ts',
+  'gateway-idle-sleep.spec.ts',
+  'hover-contrast.spec.ts',
+  'korean-word-break.spec.ts',
+  'map-3d-grip.spec.ts',
+  'map-3d-lit-strata.spec.ts',
+  'map-flat-dial-frame-work.spec.ts',
+  'map-frame-allocation.spec.ts',
+  'map-hex-board.spec.ts',
+  'map-hex-frame-work.spec.ts',
+  'map-hover-release.spec.ts',
+  'map-sleep-frames.spec.ts',
+  'map-toolbar-no-overlap.spec.ts',
+  'map-trail.spec.ts',
+  'nav-yield-map-frames.spec.ts',
+  'offscreen-node-census.spec.ts',
+  'responsive-overflow-audit.spec.ts',
+  'route-cycle-leak.spec.ts',
+  'route-transition-input.spec.ts',
+  'screen-hierarchy.spec.ts',
+  'scroll-end-gap.spec.ts',
+  'surface-vocabulary-ratchet.spec.ts',
+];
+
+describe('post-merge specs reach the pull requests that change their owner', () => {
+  it('maps every post-merge spec to a source owner unless it is a named sweep', async () => {
+    const registry = await loadCheckRules();
+    const commands = [...registry.rules, ...registry.escalations].map((rule) => rule.command).join('\n');
+    const unmapped = POST_MERGE_SPECS.filter((file) => !commands.includes(`tests/e2e/${file}`));
+    expect([...unmapped].sort()).toEqual(UNMAPPED_POST_MERGE_SPECS);
   });
 });
 

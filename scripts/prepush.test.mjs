@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 
+import { contentTree, proofFile, recordProof, treeOf } from './lib/focused-checks-proof.mjs';
 import { prepushUnitCommand } from './prepush-unit-plan.mjs';
 
 const BASE = 'a'.repeat(40);
@@ -168,4 +169,31 @@ test('planner CLI exits nonzero when the exact Git scope cannot be read', () => 
   const part = prepushUnitCommand({paths:['messages/ko/library.json'],base,exists:()=>true});
   assert.match(part, /--changed=.* && pnpm exec vitest related --run messages\/en\.json messages\/ko\.json/);
   assert.doesNotMatch(prepushUnitCommand({paths:['src/a.ts'],base,exists:()=>true}), /vitest related/);
+ });
+
+ test('the unit lane is skipped only when a proof covers the merge base to HEAD', () => {
+  const cwd=mkdtempSync(join(tmpdir(),'atlas-hook-proof-'));
+  try {
+    const git=(...args)=>execFileSync('git',args,{cwd,stdio:'pipe',encoding:'utf8'}).trim();
+    git('init'); git('config','user.email','test@example.com'); git('config','user.name','Test');
+    mkdirSync(join(cwd,'src')); writeFileSync(join(cwd,'src/a.ts'),'export const a = 1;\n'); git('add','.'); git('commit','-m','base');
+    git('update-ref','refs/remotes/origin/main','HEAD');
+    const base=treeOf('HEAD',{cwd});
+    writeFileSync(join(cwd,'src/a.ts'),'export const a = 2;\n');
+    const content=contentTree({cwd});
+    git('add','.'); git('commit','-m','change');
+    const bin=join(cwd,'bin'); mkdirSync(bin);
+    writeFileSync(join(bin,'pnpm'),'#!/bin/sh\nexit 0\n',{mode:0o755});
+    mkdirSync(join(cwd,'scripts/lib'),{recursive:true});
+    copyFileSync(new URL('./lib/focused-checks-proof.mjs',import.meta.url),join(cwd,'scripts/lib/focused-checks-proof.mjs'));
+    const realNode = "'" + process.execPath.replaceAll("'", "'\"'\"'") + "'";
+    writeFileSync(join(bin,'node'),`#!/bin/sh\ncase "$1" in --input-type=module|scripts/lib/focused-checks-proof.mjs) exec ${realNode} "$@";; esac\nexit 0\n`,{mode:0o755});
+    const hook=new URL('../.githooks/pre-push',import.meta.url).pathname;
+    const run=()=>spawnSync('sh',[hook],{cwd,encoding:'utf8',input:'refs/heads/test abc refs/heads/test def\n',env:{...process.env,PATH:bin+':'+process.env.PATH}});
+    const without=run(); assert.equal(without.status,0,without.stdout+without.stderr);
+    assert.match(without.stdout,/Running .*\bunit\b/); assert.doesNotMatch(without.stdout,/unit: every change/);
+    recordProof({from:base,to:content,file:proofFile({cwd})});
+    const withProof=run(); assert.equal(withProof.status,0,withProof.stdout+withProof.stderr);
+    assert.match(withProof.stdout,/unit: every change since the merge base passed/); assert.doesNotMatch(withProof.stdout,/Running .*\bunit\b/);
+  } finally {rmSync(cwd,{recursive:true,force:true});}
  });
