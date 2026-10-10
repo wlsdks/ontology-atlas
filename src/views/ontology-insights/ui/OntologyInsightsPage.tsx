@@ -51,7 +51,7 @@ export function OntologyInsightsPage() {
   const record = RECORDS.has(tab);
   const evidence = tab === 'do-next' || tab === 'unmatched';
   return <VaultSourceHydrationBoundary><div className="relative flex min-h-0 min-w-0 flex-1 pb-[var(--topology-mobile-bottom-tab-reserve)] lg:pb-0">
-    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
+    <main id="main" tabIndex={-1} className={`${PAGE_FRAME} relative min-h-0 min-w-0 flex-1 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)] ${tab === 'harness' ? 'overflow-y-auto lg:flex lg:h-full lg:flex-col lg:overflow-hidden' : 'overflow-y-auto'}`} data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
       <header className={cn(PAGE_HEADER_ROW, 'mb-5 gap-x-8 border-b border-[color:var(--color-divider)]')}>
         <div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t('analysis.title')}</h1></div>
         <div className="lg:hidden"><AppSettingsMenu mode={mode} triggerVariant="chrome-tile" /></div>
