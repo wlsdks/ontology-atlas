@@ -6,7 +6,7 @@
 export const DEFAULT_VAULT_BASE_NAME = 'my-ontology';
 /**
  * Not `~/Documents`: it is TCC-protected on macOS, so a first run would open a permission dialog.
- * Must match `default_vault_parent_dir` in `src-tauri/src/lib.rs`
+ * Must match `default_vault_parent_dir` in `vault::location`
  * (`just-start-vault-location.contract.test.ts`).
  */
 export const DEFAULT_VAULT_PARENT_LABEL = '~/Ontology Atlas';

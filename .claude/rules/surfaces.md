@@ -46,7 +46,7 @@ never a parallel router or surface fork.
 | Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
-| Folder watch | `start_vault_watch` in `src-tauri/src/lib.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
+| Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
 | Library sources | `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC |
 | Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
 | Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library.rs` | hands over the granted file; reveal, never launch |

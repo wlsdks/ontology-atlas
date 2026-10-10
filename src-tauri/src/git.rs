@@ -63,7 +63,7 @@ const HOOKS_HARDENING: &[&str] = &["-c", "core.hooksPath=/dev/null"];
 const NETWORK_HARDENING: &[&str] = &["-c", "protocol.ext.allow=never"];
 
 /// A `git` command with the base + hooks hardening and prompt silencing applied.
-/// Used by config discovery, the source inspector in `lib.rs`, and `git_probe` —
+/// Used by config discovery, the source inspector, and `git_probe` —
 /// none of which run `commit`, so disabling hooks is always correct for them.
 pub(crate) fn hardened_base_command() -> Command {
     let mut command = Command::new("git");

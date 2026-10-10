@@ -13,7 +13,7 @@ import {
 } from '../../mcp/src/schema.mjs';
 
 const repoRoot = resolve(__dirname, '../..');
-const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/lib.rs'), 'utf8');
+const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/vault/walk.rs'), 'utf8');
 const tsSource = ['walk-vault.ts', 'build-local-manifest.ts']
   .map((file) => readFileSync(resolve(repoRoot, 'src/entities/docs-vault/lib', file), 'utf8'))
   .join('\n');

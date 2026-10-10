@@ -111,8 +111,8 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
     );
     // The URL is never logged. A refused link may be an address somebody was tricked into
     // pressing and its payload is a server config; the reason is what a report needs.
-    const handler = read('src-tauri/src/lib.rs').split('fn answer_deep_link')[1]?.split('\nfn ')[0];
-    expect(handler, 'answer_deep_link must exist in lib.rs').toBeTruthy();
+    const handler = read('src-tauri/src/app_shell/mod.rs').split('fn answer_deep_link')[1]?.split('\n}\n')[0];
+    expect(handler, 'answer_deep_link must exist in app_shell/mod.rs').toBeTruthy();
     expect(handler, 'the arriving URL must never reach the log').not.toMatch(
       /log::(warn|info|error|debug)!\([^)]*\{url\}/,
     );
@@ -121,6 +121,8 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
   it('mints no address but that one, anywhere it ships', () => {
     for (const path of [
       'src-tauri/src/lib.rs',
+      'src-tauri/src/app_shell/mod.rs',
+      'src-tauri/src/webview_verify/mod.rs',
       'src/shared/lib/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
     ]) {

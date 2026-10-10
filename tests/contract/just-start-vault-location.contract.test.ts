@@ -20,9 +20,9 @@ const REPO_ROOT = join(import.meta.dirname, '..', '..');
 const TCC_PROTECTED = ['Documents', 'Desktop', 'Downloads', 'Movies', 'Music', 'Pictures'];
 
 function rustParentDirBody(): string {
-  const source = readFileSync(join(REPO_ROOT, 'src-tauri', 'src', 'lib.rs'), 'utf8');
+  const source = readFileSync(join(REPO_ROOT, 'src-tauri', 'src', 'vault', 'location.rs'), 'utf8');
   const match = source.match(/fn default_vault_parent_dir\(home: &str\) -> PathBuf \{([\s\S]*?)\n\}/);
-  if (!match) throw new Error('default_vault_parent_dir not found in src-tauri/src/lib.rs');
+  if (!match) throw new Error('default_vault_parent_dir not found in src-tauri/src/vault/location.rs');
   return match[1];
 }
 

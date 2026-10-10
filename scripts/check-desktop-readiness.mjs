@@ -101,6 +101,7 @@ const downloadRoute = readText("app/[locale]/download/page.tsx");
 const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
+const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
 const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
@@ -456,16 +457,16 @@ if (pkg.scripts?.["test:desktop:check"]?.startsWith("node --test --test-concurre
 }
 
 if (
-  tauriLib.includes("ensure_inside_canonical") &&
-  tauriLib.includes("resolve_write_target_inside") &&
-  tauriLib.includes("resolve_directory_target_inside") &&
-  tauriLib.includes("vault_commands_reject_symlink_escapes") &&
-  tauriLib.includes('"linked-dir/new/created-outside.md"') &&
-  tauriLib.includes("assert!(!outside.join(\"new\").exists())")
+  tauriVaultScope.includes("ensure_inside_canonical") &&
+  tauriVaultScope.includes("resolve_write_target_inside") &&
+  tauriVaultScope.includes("resolve_directory_target_inside") &&
+  tauriVaultScope.includes("vault_commands_reject_symlink_escapes") &&
+  tauriVaultScope.includes('"linked-dir/new/created-outside.md"') &&
+  tauriVaultScope.includes("assert!(!outside.join(\"new\").exists())")
 ) {
   pass("desktop native vault bridge rejects symlink escapes without outside-vault side effects");
 } else {
-  fail("src-tauri/src/lib.rs must reject symlink escapes for vault read/write/remove/mkdir paths without creating outside-vault directories");
+  fail("src-tauri/src/vault/scope.rs must reject symlink escapes for vault read/write/remove/mkdir paths without creating outside-vault directories");
 }
 
 if (
@@ -1410,10 +1411,10 @@ if (tauriConfig) {
 const REFERENCE_14_INCH_LOGICAL = { width: 1512, height: 982 };
 const MACOS_MENU_BAR_RESERVE_PT = 37;
 const MACOS_TITLE_BAR_PT = 28;
-// Read out of src-tauri/src/lib.rs rather than copied. A second literal here would let the Rust
+// Read out of app_shell/window.rs rather than copied. A second literal here would let the Rust
 // constant drift while this gate stayed green, which is the failure the comment on both sides was
 // written to prevent — and a comment is not a gate.
-const mainWindowMinSource = readText("src-tauri/src/lib.rs").match(
+const mainWindowMinSource = readText("src-tauri/src/app_shell/window.rs").match(
   /const MAIN_WINDOW_MIN_LOGICAL: \(f64, f64\) = \(([\d.]+), ([\d.]+)\);/,
 );
 const MAIN_WINDOW_MIN_LOGICAL = mainWindowMinSource
@@ -1421,7 +1422,7 @@ const MAIN_WINDOW_MIN_LOGICAL = mainWindowMinSource
   : null;
 if (!MAIN_WINDOW_MIN_LOGICAL) {
   fail(
-    "src-tauri/src/lib.rs must declare `const MAIN_WINDOW_MIN_LOGICAL: (f64, f64) = (w, h);` so the window gate can bind the config floor to the Rust constant instead of duplicating it",
+    "src-tauri/src/app_shell/window.rs must declare `const MAIN_WINDOW_MIN_LOGICAL: (f64, f64) = (w, h);` so the window gate can bind the config floor to the Rust constant instead of duplicating it",
   );
 }
 
@@ -1440,7 +1441,7 @@ if (
   );
 } else {
   fail(
-    `src-tauri/tauri.conf.json main window must fit the 14-inch reference panel: width <= ${REFERENCE_14_INCH_LOGICAL.width}, height + ${MACOS_TITLE_BAR_PT}pt title bar <= ${visibleFrameHeight}pt visible frame, and minWidth/minHeight must equal MAIN_WINDOW_MIN_LOGICAL in src-tauri/src/lib.rs (${MAIN_WINDOW_MIN_LOGICAL ? `${MAIN_WINDOW_MIN_LOGICAL.width}x${MAIN_WINDOW_MIN_LOGICAL.height}` : "unreadable"}); got ${mainWindowConfig ? `${mainWindowConfig.width}x${mainWindowConfig.height}, min ${mainWindowConfig.minWidth}x${mainWindowConfig.minHeight}` : "no window labelled main"}`,
+    `src-tauri/tauri.conf.json main window must fit the 14-inch reference panel: width <= ${REFERENCE_14_INCH_LOGICAL.width}, height + ${MACOS_TITLE_BAR_PT}pt title bar <= ${visibleFrameHeight}pt visible frame, and minWidth/minHeight must equal MAIN_WINDOW_MIN_LOGICAL in src-tauri/src/app_shell/window.rs (${MAIN_WINDOW_MIN_LOGICAL ? `${MAIN_WINDOW_MIN_LOGICAL.width}x${MAIN_WINDOW_MIN_LOGICAL.height}` : "unreadable"}); got ${mainWindowConfig ? `${mainWindowConfig.width}x${mainWindowConfig.height}, min ${mainWindowConfig.minWidth}x${mainWindowConfig.minHeight}` : "no window labelled main"}`,
   );
 }
 
