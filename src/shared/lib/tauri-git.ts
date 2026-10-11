@@ -454,3 +454,27 @@ export async function gitPathsLastChange(
     vaultPaths: [...vaultPaths],
   });
 }
+
+/** The native binding selects source authority; the two roots never share path keys. */
+export interface BoundEvidenceDates {
+  status: 'measured' | 'partial' | 'ungranted' | 'binding-changed' | 'no-history' | 'unreadable' | 'ambiguous-source' | 'wrong-folder';
+  vaultChanges: (GitPathLastChange & { dirty: boolean })[];
+  sourceChanges: (GitPathLastChange & { dirty: boolean })[];
+  omittedVaultPaths: string[];
+  omittedSourcePaths: string[];
+}
+
+export async function gitBoundEvidenceDates(
+  vaultPath: string, projectSlug: string, vaultPaths: readonly string[], sourcePaths: readonly string[], selectedSourcePath?: string,
+): Promise<BoundEvidenceDates | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  const result = await invoke<BoundEvidenceDates>('git_bound_evidence_dates', {
+    vaultPath, projectSlug, vaultPaths: [...vaultPaths], sourcePaths: [...sourcePaths], selectedSourcePath: selectedSourcePath ?? null,
+  });
+  const normalize = (row: BoundEvidenceDates['vaultChanges'][number]) => ({
+    ...row,
+    lastChangedAt: !row.exists || row.dirty || row.isDir || !row.lastChangedAt || !Number.isFinite(Date.parse(row.lastChangedAt)) ? null : row.lastChangedAt,
+  });
+  return { ...result, vaultChanges: result.vaultChanges.map(normalize), sourceChanges: result.sourceChanges.map(normalize) };
+}

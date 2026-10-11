@@ -797,11 +797,15 @@
         "reading": "소스 · 확인 중",
         "measured": "소스 · 파일 날짜 비교됨",
         "app-only": "소스 · 이 환경에서 미확인",
-        "no-source": "소스 · 연결된 코드 폴더 없음",
-        "ambiguous-source": "소스 · 여러 코드 폴더로 미확인",
+        "no-source": "소스 · 연결된 코드 폴더가 없어요. 지도에서 코드 폴더를 연결해 주세요",
+        "ambiguous-source": "소스 · 연결이 여러 개예요. 문서를 살펴보거나 지도에서 연결을 수정해 주세요",
         "different-source": "소스 · 별도 코드 폴더는 미확인",
         "no-anchors": "소스 · 비교할 경로 없음",
-        "unreadable": "소스 · 읽을 수 없어 미확인"
+        "unreadable": "소스 · 파일을 읽지 못했어요. 다시 시도하거나 연결된 폴더를 확인해 주세요",
+        "ungranted": "소스 · 연결된 코드 폴더를 선택해 읽기를 허용해 주세요",
+        "binding-changed": "소스 · 연결이 바뀌었어요. 날짜를 다시 비교해 주세요",
+        "no-history": "소스 · Git 날짜를 확인할 수 없어요. 문서와 기록된 경로를 살펴보세요",
+        "partial": "소스 · 일부 날짜를 확인하지 못했어요. 미확인 주장을 살펴보세요"
       },
       "sourceClaim": {
         "missing": "기록된 경로를 찾을 수 없어요.",
@@ -869,7 +873,13 @@
       "openElementDocument": "{name} 문서 열기",
       "noElementLinks": "연결된 구현 요소가 없어요",
       "pathsWithoutElements": "요소 연결 없이 소스 경로 {count}개만 기록되어 있어요.",
-      "implementationLegend": "선 하나가 문서에 기록된 구성 관계예요. 요소를 누르면 해당 문서가 열려요."
+      "implementationLegend": "선 하나가 문서에 기록된 구성 관계예요. 요소를 누르면 해당 문서가 열려요.",
+      "chooseSourceFolder": "연결된 코드 폴더 선택",
+      "sourcePickerTitle": "연결된 코드 폴더를 선택하세요",
+      "retrySourceDates": "날짜 다시 비교",
+      "sourceRecovery": {
+        "wrongFolder": "선택한 폴더가 기존 연결과 달라요. 연결된 코드 폴더를 다시 선택해 주세요. 기존 연결은 바뀌지 않았어요."
+      }
     }
   }
 }
