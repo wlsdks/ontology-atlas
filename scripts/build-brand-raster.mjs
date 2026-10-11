@@ -52,8 +52,8 @@ export const ICON_RASTER_PLAN = Object.freeze([
   ['tile-44', 'compact', 44, 'squircle'],
   ['tile-30', 'micro', 30, 'squircle'],
   ['apple-180', 'full', 180, 'full-bleed'],
-  // Mobile packaging trees are not the current delivery surface, but leaving
-  // their committed PNGs on the retired mark would make the replacement partial.
+  // Mobile packaging trees are not a delivery surface, but their committed PNGs must follow the
+  // current mark.
   ['mobile-20', 'micro', 20, 'squircle'],
   ['mobile-29', 'micro', 29, 'squircle'],
   ['mobile-40', 'compact', 40, 'squircle'],

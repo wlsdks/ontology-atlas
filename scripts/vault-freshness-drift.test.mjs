@@ -51,16 +51,7 @@ describe("vault-freshness-drift script arguments", () => {
     assert.match(result.stderr, /Either --base <ref> or --changed-files <list> is required\./);
   });
 
-  // ⚠️ **This check used to pin the state of the live vault** (found 2026-08-17).
-  // It ran `--changed-files README.md` against **this repository** and asserted
-  // that nothing matched. Once `docs/ontology/ontology-atlas.md` gained
-  // `path: README.md` the detector matched — **correctly** — and it was the
-  // premise that was stale. An assertion that flips when one node is added to the
-  // vault measures the vault, not the script.
-  //
-  // And asserting only "the result is 0" passes even if **the detector always
-  // returns 0**. So both directions are measured against the same fixture: a file
-  // that must not match and a file that must.
+  // Asserts against a fixture, not the live vault, so adding a node there cannot flip the result.
   it("--changed-files dry-run mode reports 0 drift with no vault matches", () => {
     const dir = makeVaultFixture();
     try {
@@ -147,7 +138,6 @@ describe("vault-freshness-drift end-to-end (real git repo + vault fixture)", () 
       assert.equal(driftedPayload.staleNodes[0].slug, "capabilities/auth");
       assert.match(driftedPayload.commentMarkdown, /capabilities\/auth/);
 
-      // Now also update the vault .md in the same diff — no longer stale.
       writeFileSync(
         join(dir, "docs/ontology/capabilities/auth.md"),
         "---\nslug: capabilities/auth\nkind: capability\ntitle: Auth\nelements: [src/features/auth/]\n---\n\n# Auth\n\nUpdated.\n",

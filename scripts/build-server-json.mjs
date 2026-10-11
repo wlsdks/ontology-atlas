@@ -1,23 +1,8 @@
 #!/usr/bin/env node
 /**
- * Writes the `server.json` the official MCP Registry publishes, and checks the
- * invariants that must hold before any release exists.
- *
- *   pnpm mcp:registry:check                          # invariants only; writes nothing
- *   pnpm mcp:registry -- --tag=v1.1.0                # derive from the built artifact
- *   pnpm mcp:registry -- --tag=v1.1.0 --artifact=... # or from an explicit path
- *
- * The registry hosts metadata, not files: the MCPB entry points at a GitHub
- * Release asset and is verified by its URL and SHA-256, and the OCI entry is
- * verified by the image's ownership label. Neither needs a package registry,
- * which is what lets Atlas be discoverable while `docs/DECISIONS.md` (2026-07-27)
- * keeps npm retired.
- *
- * Every published value is derived — version and description from
- * `mcp/package.json`, the artifact digest hashed from the file on disk. A digest
- * typed by hand is a claim the registry would then serve to clients, so this
- * refuses to invent one: without a readable artifact it fails rather than
- * emitting a placeholder.
+ * Writes the `server.json` the official MCP Registry publishes and checks invariants before any
+ * release (`pnpm mcp:registry:check` verifies only). Every value is derived (version, description,
+ * artifact digest); with no readable artifact it fails, never a placeholder.
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -121,10 +106,8 @@ export function runBuildServerJson(argv, io = console, { cwd = ROOT } = {}) {
     withImage: args.withImage,
   });
 
-  // The check that used to say "ready to publish" verified three fields and not
-  // the document. Measured consequence: the server's own description is 126
-  // characters against a schema limit of 100, so a publish would have been
-  // rejected after a green check.
+  // Validate the whole document: the server description is 126 characters against a schema limit of
+  // 100, which a three-field check would pass.
   const invalid = serverJsonProblems(document);
   if (invalid.length > 0) {
     for (const problem of invalid) io.error(`[mcp-registry] ${problem}`);

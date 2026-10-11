@@ -37,20 +37,8 @@ export const rules = [
     command: 'pnpm typecheck',
     reason: 'TypeScript or Next.js static export config changed',
     /*
-     * ⚠️ **Do not exclude test files** (corrected 2026-08-21).
-     *
-     * This used to exclude `.test.`/`.spec.` under `src/**` with a negative lookahead
-     * and never looked at `tests/**` at all, presumably on the premise that tests do
-     * not affect product types. But **`tsconfig.json`'s `include` is all of
-     * `**\/*.ts`**, so CI's `tsc --noEmit` checks them — and **vitest does not check
-     * types**. Anyone who edited only tests therefore had no way to meet a type error
-     * locally, and it first went red in the `Types · Lint · Docs` job.
-     *
-     * It broke exactly that way (2026-08-21, `#1180`): a fake `spawn` stub added to a
-     * contract test did not match `SpawnSyncReturns`. All 25 unit tests were green.
-     *
-     * This is what the repository already decided about gates: **wherever the check's
-     * reach differs from the advisor's reach, that difference surfaces only in CI.**
+     * Do not exclude test files: `tsconfig.json` includes every .ts file, so CI's `tsc --noEmit`
+     * checks them, and vitest does not check types.
      */
     matches: [
       /^app\/.*\.(?:ts|tsx)$/,

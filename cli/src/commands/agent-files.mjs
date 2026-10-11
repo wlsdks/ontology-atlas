@@ -188,8 +188,8 @@ function resolveReferencedPaths(root, files) {
 }
 
 /**
- * Reports how close AGENTS.md is to the Codex cap before crossing it, since Codex truncates silently.
- * The verdict and return shape stay equal to the web twin `src/entities/agent-files/model/agent-files.ts`.
+ * Warns before AGENTS.md crosses the Codex cap, since Codex truncates silently. The return shape
+ * must match `src/entities/agent-files/model/agent-files.ts`.
  */
 const CODEX_HEADROOM_WARN_RATIO = 0.1;
 

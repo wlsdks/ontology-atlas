@@ -9,25 +9,8 @@ import {
 } from './audit-claude-skills.mjs';
 
 /**
- * Locks in that the skill-integrity instrument **is really looking at something.**
- *
- * This tool is for discovery, not a gate. But a discovery tool that is wrong makes
- * people fix the wrong thing — which happened **twice** in one round.
- *
- * **① References counted as one lump.** Of 700 dead references, 666 were conditional
- * ("read this if the project has it") and not defects.
- *
- * **② Counting files that never load (the larger error).** Sweeping all of
- * `~/.claude/plugins` reported **207**, while the authority is
- * `installed_plugins.json` (one installPath per plugin) and the real load was **60**.
- * The rest were per-version download caches and catalogue clones never installed.
- * After narrowing: name collisions 38→**2**, strong overlap 41→**1 pair**, broken
- * self-references 37→**0** (all 7 were false positives that exist at the repository
- * root).
- *
- * A council brief was written from those wrong numbers, and three of five seats had
- * judged on that basis before one seat caught it. **A wrong denominator makes a wrong
- * conclusion** — that denominator is what this test locks.
+ * Locks in that the audit counts what is really loaded and separates conditional references from
+ * defects: a wrong denominator makes a wrong conclusion.
  */
 
 const SKILL = (name, description, body = '') =>

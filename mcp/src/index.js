@@ -12,9 +12,8 @@
  */
 
 /**
- * MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). Its supported protocol
- * versions equal v1's, so old clients (`2024-11-05`) still negotiate
- * and `integration.test.mjs` keeps that pinned.
+ * MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) supports the same protocol versions as
+ * its predecessor, so older clients still negotiate; pinned in `integration.test.mjs`.
  */
 
 import { server } from './server/instance.mjs';

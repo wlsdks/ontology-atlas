@@ -169,9 +169,8 @@ function normalizeInventory(value) {
 
 function normalizeQuestions(competency, projectSlug) {
   /*
-   * An absent competency block (a fresh `init` vault) is not malformed: the
-   * verdict is the same, but the name and remedy say "not written yet" instead
-   * of making a newborn vault report itself broken.
+   * An absent competency block (a fresh `init` vault) is not malformed: same result, but the name
+   * and remedy say "not written yet".
    */
   const absent = competency === null || competency === undefined;
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];

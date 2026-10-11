@@ -1,33 +1,7 @@
 /**
- * Node-drag frame cost measurement — the reproduction harness for the 2026-07-31
- * lag incident.
- *
- * **Why this file exists.** That incident saw **five failed reproductions**, all
- * for the same reason: a synthetic pointer event
- * (`dispatchEvent(new PointerEvent(...))`) has `isTrusted: false`, so
- * `setPointerCapture` is refused, the node-grab path breaks midway, and the
- * gesture **falls through to a background pan.** A pan never wakes the physics
- * simulation, so it was always fast — and "it isn't slow here" was reported five
- * times. It ended only when the owner looked at the screen and said *"you were dragging the background, not a
- * node"* (you were dragging the background, not a
- * node).
- *
- * > **The code path is only real if the input is real.** So this harness uses the
- * > CDP mouse (`page.mouse`) exclusively and never manufactures events inside the
- * > page.
- *
- * **What is measured.** `work` = the time the app's rAF callback spent
- * **synchronously**. Not the frame gap: the gap is contaminated by display
- * refresh rate and harness round trips, whereas callback time is our code's
- * share. The incident's signal was exactly here (3000 nodes 139.9ms vs 31 nodes
- * 0.9ms).
- *
- * Usage:
- *
- *   node scripts/perf-node-drag.mjs [baseUrl]
- *
- * Defaults to `http://localhost:4173`; a static build (`pnpm build` + a static
- * server) must be running.
+ * Node-drag frame cost harness. Uses the CDP mouse (`page.mouse`) only: a synthetic pointer has
+ * `isTrusted: false`, so `setPointerCapture` is refused and the gesture becomes a background pan.
+ * `work` is synchronous rAF callback time, not the frame gap.
  */
 
 import { chromium } from "@playwright/test";
@@ -57,14 +31,9 @@ const stat = (xs) => {
 };
 
 /**
- * **Asks the app** which nodes are draggable (`window.__atlasMap`, enabled by
- * `?e2e=1`).
- *
- * This used to sweep the canvas for a point where the cursor became `pointer`.
- * That is a **hover hit**, not **grabbability** — grabbing must also pass
- * `sim.hasNode()`, and failing it silently becomes a background pan. That is how
- * six runs pushed only the background. Now the app states `draggable` directly,
- * which makes that failure impossible in principle.
+ * Asks the app which nodes are draggable (`window.__atlasMap`, enabled by `?e2e=1`). A
+ * cursor-`pointer` hover hit is not grabbability: grabbing must also pass `sim.hasNode()`, or it
+ * becomes a background pan.
  */
 async function pickDraggable(page) {
   return page.evaluate(() => {
@@ -109,12 +78,8 @@ async function dragNode(page, box, target, moves) {
   // Post-check — pushing the background reports «pan» here, and that measurement is discarded.
   const grabbed = await page.evaluate(() => window.__atlasMap?.interaction());
 
-  // **At human drag speed.** One `mouse.move` is a CDP round trip costing ~24ms,
-  // so 45 separate calls produce slow motion rather than a drag, and that slowness
-  // reads as the app being slow (owner report: "The drag is seriously slow" —
-  // the drag is seriously slow). `steps` fires several interpolated moves **within
-  // one round trip**, dividing the round-trip cost and coming closer to a real
-  // pointer stream.
+  // At human drag speed: one `mouse.move` is a CDP round trip, so 45 separate calls produce slow
+  // motion that reads as a slow app. `steps` fires several interpolated moves within one round trip.
   const LEG = 6; // How many segments the trajectory is split into
   const perLeg = Math.max(2, Math.round(moves / LEG));
   for (let leg = 0; leg < LEG; leg += 1) {

@@ -1,7 +1,6 @@
-// Vault → code path drift: `path:` (a source file) and path-shaped `elements:`
-// entries that no longer exist once code moves. The shared pure core behind
-// scripts/audit-vault-paths.mjs and validate_vault; read-only,
-// and `fileExists` is injectable.
+// Vault-to-code path drift: `path:` and path-shaped `elements:` entries that no longer exist.
+// Shared pure core of scripts/audit-vault-paths.mjs and validate_vault; read-only, `fileExists`
+// injectable.
 
 import { existsSync } from 'node:fs';
 import { basename, resolve } from 'node:path';

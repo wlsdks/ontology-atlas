@@ -1,18 +1,7 @@
 /**
- * Run `origin/main`'s copy of a script when this checkout's copy is older.
- *
- * `pnpm pr:land` runs from whichever branch the lander has checked out, so a fix
- * to the landing train reaches only branches that merged it. On 2026-09-26 a
- * branch cut before #1901 conducted a train with the pre-fix script and landed
- * #1888 twice, the second time as an empty commit, an hour after the fix was on
- * `main`. The lock serialises every landing through one conductor, so the
- * conductor's code is shared infrastructure and must be main's.
- *
- * The script and every local module it imports (the import graph read from
- * `origin/main` itself) are compared by content; if any differs, main's files are
- * written to a temporary directory and run from there, with the repository as the
- * working directory. The scripts import only Node built-ins and each other, which
- * is what makes a copy outside the repository runnable.
+ * Run `origin/main`'s copy of a script when this checkout's copy is older: every landing goes
+ * through one conductor, so its code must be main's. The script and its local imports are compared
+ * by content; any difference runs main's files from a temporary directory.
  */
 
 import { spawnSync } from 'node:child_process';

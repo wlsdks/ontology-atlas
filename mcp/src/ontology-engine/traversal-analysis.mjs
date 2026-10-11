@@ -532,9 +532,7 @@ export function createTraversalAnalysis({
       source: 'persisted_vault',
       focus,
       builder: {
-        // The address the retired `/ontology/studio` redirect resolves to (decision 92).
-        // App-relative and locale-less: the caller adds the workbench origin, its locale
-        // prefix and any base path.
+        // App-relative and locale-less: the caller adds the workbench origin, locale prefix and base path.
         href: `/topology/?p=${encodeURIComponent(focusParam)}&workbench=edit`,
         focusParam,
         unsavedDraftsIncluded: false,

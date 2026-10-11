@@ -27,13 +27,8 @@ export async function generateMetadata({
   });
 }
 
-// Under static export this route's HTML body is entirely the Suspense fallback. The root is this
-// product's first address, so that slot belongs to the real first screen rather than a loading caption.
-//
-// With the 2026-07-29 sign-off, `/`'s first screen changed from the map to the **gateway**, so the
-// fallback moved with it — leaving it behind would make the primary address's link preview say
-// something different from what actually opens. The map description stays on `/topology`, where it
-// is true.
+// Under static export the HTML body is the Suspense fallback, so it must describe the real first
+// screen (the gateway), not the map.
 export default async function Page({
   params,
 }: {

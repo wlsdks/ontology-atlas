@@ -128,24 +128,9 @@ describe('committed surface artifact', () => {
   });
 
   /**
-   * **The contract moved from the schema to runtime while only this check held on to
-   * the old shape** (found 2026-08-17 — this check had been red since before then).
-   *
-   * `get_concept`'s input schema used to pin "slug or uid" with a top-level `oneOf`, and
-   * this check verified that `oneOfRequired`. But Claude Code's tool schema **discards
-   * the tool entirely** when it meets a top-level `oneOf`, so `mcp/src/index.js`
-   * deliberately removed it and "exactly one" is thrown at runtime
-   * (`get_concept requires exactly one of slug or uid.`).
-   *
-   * So the behaviour was right and the check was stale. It now guards **what must hold
-   * today**: are both tools alive, are both selectors still exposed, and is neither
-   * required (which is why `oneOf` was removed).
-   *
-   * "Exactly one" itself cannot be measured here — the artifact is a schema, not
-   * behaviour. That is already covered:
-   * *"get_concept/get_concepts — selector one-of is enforced at runtime"* in
-   * `mcp/src/integration.test.mjs` measures all four cases (both given, neither given, ×
-   * two tools).
+   * `get_concept` has no top-level `oneOf` because Claude Code discards a tool whose schema has one;
+   * "exactly one" is enforced at runtime. This check guards the schema: both tools exist, both
+   * selectors are exposed, neither is required. Runtime enforcement: `mcp/src/integration.test.mjs`.
    */
   it('두 선택자 도구가 살아 있고, 선택자가 여전히 공개된다', () => {
     const exactReaders = surface.mcp.tools.filter((tool) =>

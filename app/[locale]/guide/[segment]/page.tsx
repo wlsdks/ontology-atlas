@@ -55,10 +55,8 @@ export default async function Page({
       title={t(`guidePages.${page.titleKey}`)}
       {...(page.segment === GUIDE_ENTRY_PAGE.segment ? { lead: t('guideLead') } : {})}
       /*
-       * An unknown segment renders the first chapter but **says it substituted** — a silent fallback
-       * is a misdelivery pretending to be that address's document (measured in a 2026-08-14
-       * walkthrough: relative `.md` links in the body landed here and chapter 1 masqueraded as the
-       * specification).
+       * An unknown segment renders the first chapter but says it substituted; a silent fallback would
+       * pass as that address's document.
        */
       {...(matched ? {} : { notice: t('guideUnknownSegment') })}
       sourcePath={`docs/${page.slug}.md`}

@@ -116,7 +116,6 @@ describe('agent-brief --verify-fallbacks --json payload', () => {
     });
     assert.equal(payload.operation, 'agent_fallback_check');
     assert.equal(payload.ok, true);
-    // The fallback verdict and the readiness verdict are different questions, and both are here.
     assert.equal(payload.status, 'needs_attention');
     assert.deepEqual(payload.readiness, { score: 75 });
   });

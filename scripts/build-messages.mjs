@@ -1,27 +1,7 @@
 /**
- * Composes the i18n message catalogues from one file per namespace.
- *
- * Authored source: `messages/<locale>/<Namespace>.json`, each holding only that
- * namespace's object. Generated output: `messages/<locale>.json`, the composite
- * `src/i18n/request.ts` and every test import. The composite is ignored by Git and
- * materialized the same way the Docs Vault output is: installation (`prepare`),
- * checkout and merge hooks, `predev`, `build`, and Vitest's global setup.
- *
- * Why: on 2026-09-26 the two 450-500 KB catalogues had been touched by 44% of the
- * last 170 commits, which made them the repository's largest merge-conflict hot
- * spot. An edit to one screen's copy now touches one small file, and adding a
- * namespace adds two files with no shared index to edit. Namespaces compose in
- * sorted order, so nothing orders them by hand.
- *
- * Modes:
- *   (none)       write every composite whose content changed
- *   --check      fail if a composite is missing or differs from its parts, or a
- *                namespace exists in one locale only
- *   --validate   parts only (structure and namespace parity); the pre-commit hook
- *                runs this on the staged index, which has no composite
- *   --watch      write, then rewrite on every part change (the dev server)
- *   --adopt      migrate a branch that still edits `messages/<locale>.json` after
- *                merging the split: three-way per namespace against the merge base
+ * Composes `messages/<locale>/<Namespace>.json` into the Git-ignored composite
+ * `messages/<locale>.json`; one file per namespace avoids merge conflicts. Modes: (none) write;
+ * --check; --validate parts only (pre-commit has no composite); --watch; --adopt.
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -140,7 +120,6 @@ export function splitComposite(text, label = 'catalogue') {
   return split;
 }
 
-/** Every locale's parts and composite text, with the namespace-parity verdict. */
 export function composeAll(root = ROOT) {
   const locales = listLocales(root);
   if (locales.length === 0) throw new MessagesError('messages/: no locale directories');
@@ -185,10 +164,9 @@ function readState(root) {
 }
 
 /**
- * A composite edited by hand. The file sits where the catalogue used to, so a person
- * or agent with the old layout in mind will edit it. Overwriting that edit would lose
- * it silently, so: if the parts have not moved since the last compose, the edit is
- * carried into the parts; if both moved, composition stops and says so.
+ * A composite edited by hand: overwriting would lose the edit silently. If the parts have not
+ * moved since the last compose, the edit is carried into the parts; if both moved, composition
+ * stops.
  */
 function carryHandEdit({ root, locale, onDisk, composed, recorded, log }) {
   const label = `messages/${locale}.json`;

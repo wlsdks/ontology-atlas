@@ -8,8 +8,8 @@ import { decodePlan, FULL_LANE_COMMANDS, isRelatedSweep } from './classify-chang
 import { collapseCoveredContractCommands } from './suggest-focused-checks.mjs';
 
 /*
- * Measurement files never ride a shard: a ratio's verdict would depend on which files land
- * beside it. The sweeps skip them here, and the `perf` job (`checks.yml`) runs them alone.
+ * Measurement files never ride a shard: a ratio's result depends on which files land beside it.
+ * The sweeps skip them here and the `perf` job (`checks.yml`) runs them alone.
  */
 const MEASURED_LANES_EXCLUDED = "--project=contract-node --project=jsdom";
 
@@ -27,16 +27,9 @@ function planFromEnvironment(env = process.env) {
 }
 
 /**
- * Gate commands that compile the Tauri crate, which the Linux gates runner cannot do.
- *
- * `checks.yml` runs the gates lane on ubuntu with Node only: no GTK, WebKitGTK or glib
- * headers, so `cargo test` on `src-tauri` dies in `glib-sys`'s build script before a single
- * test runs (measured 2026-09-05 on PR #1445 and on the main push for #1442, both of which
- * touched the native bridge Rust sources). The bridge contract is still executed where a Tauri
- * toolchain exists: the Windows beta job runs the crate's tests on every `src-tauri/**`
- * change, and the macOS release rehearsal runs `test:desktop:bridge` before a tag. Dropping
- * the command here on a non-macOS host is therefore a routing decision, not a skipped gate,
- * and the runner says so in its log instead of failing silently.
+ * Gate commands that compile the Tauri crate, which the Linux gates runner cannot (no
+ * GTK/WebKitGTK headers, so `glib-sys` fails). The bridge contract still runs on the Windows beta
+ * job and the macOS release rehearsal, so dropping it here is routing, not a skipped gate.
  */
 export const MACOS_ONLY_GATE_COMMANDS = Object.freeze(['pnpm test:desktop:bridge']);
 
@@ -79,18 +72,9 @@ export function commandsForLane({
   }
 
   /**
-   * The slowest job in PR CI, and the only one that was unsharded.
-   *
-   * Measured over the last 20 runs (2026-09-12): **437 s average, 705 s at the
-   * tail**, against an 8-minute budget for the whole PR. Nothing in it was wasted
-   * work — the impact plan already selects it — it was simply one runner doing all
-   * of it. Both Vitest invocations take `--shard`, so three runners split the files
-   * and the job's wall clock falls to roughly a third.
-   *
-   * What must **not** be sharded is everything that is not a Vitest file sweep:
-   * `pnpm knip` walks the whole dependency graph and a third of the files would
-   * report two thirds of the exports as unused. Those commands run on shard 1 and
-   * the other shards say so in their log, the same way an inactive lane does.
+   * Both Vitest invocations take `--shard`, so runners split the files. Do not shard what is not a
+   * file sweep: `pnpm knip` walks the whole dependency graph. Those commands run on shard 1 and the
+   * other shards say so in their log.
    */
   if (lane === 'unit') {
     const unit = plan.lanes.unit;
@@ -204,9 +188,9 @@ function startConcurrent(command, { cwd, env }) {
 }
 
 /**
- * One JSON line per command into `CI_LANE_REPORT`, so `pnpm gates:yield` can later ask
- * which gates ever caught anything. A report is evidence about the gate, never the gate:
- * a write that fails says so on stderr and the lane's verdict stays what the commands made it.
+ * One JSON line per command into `CI_LANE_REPORT`, for `pnpm gates:yield`. A report is evidence,
+ * never the gate: a failed write says so on stderr and the lane result stays what the commands
+ * made it.
  */
 export function appendLaneReport({ env = process.env, record, appendFile = appendFileSync, stderr = process.stderr }) {
   if (!env.CI_LANE_REPORT) return;
@@ -259,7 +243,7 @@ export async function runCommands({
     stdout.write(`[ci-lane] ${status === 0 ? 'PASS' : 'FAIL'} ${seconds}s: ${command}\n`);
     if (env.GITHUB_STEP_SUMMARY) {
       const safe = command.replace(/[|`\r\n]/g, ' ');
-      try { appendFileSync(env.GITHUB_STEP_SUMMARY, `- ${status === 0 ? 'PASS' : 'FAIL'} **${seconds}s**: ${safe}\n`); } catch { /* Reporting cannot change the gate verdict. */ }
+      try { appendFileSync(env.GITHUB_STEP_SUMMARY, `- ${status === 0 ? 'PASS' : 'FAIL'} **${seconds}s**: ${safe}\n`); } catch { /* Reporting cannot change the gate result. */ }
     }
     if (status !== 0) failures.push({ command, status });
   };

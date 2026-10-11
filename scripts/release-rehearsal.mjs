@@ -80,24 +80,9 @@ export const REHEARSAL_SLOW_STEPS = new Set([
  * number of steps extracted is guarded by a contract test.
  */
 /**
- * Timeout for a tool probe, in ms.
- *
- * **Why a timeout was needed (2026-08-21).** `--list` shows what would run and what
- * does not work on this machine (`docs/engineering/deployment.md`), so it really invokes four
- * tools — that part is right. What was missing was **any bound**.
- *
- * Measured: **0.18 s** on this machine, **9.75 s** on the CI runner. On the runner
- * `cargo`/`rustc` start through rustup shims, so the first call is slow. Those
- * 9.75 s exceeded vitest's default 5 s test timeout and **turned one contract red
- * at random** (observed in `#1178`, 2026-08-21 → passed on re-run).
- *
- * This repository's rule applies: **a gate bound to machine speed is not a gate**
- * (`.claude/rules/architecture.md`). A slow tool is not the question this check
- * answers, so when it cannot wait it **says it could not wait** and moves on.
- *
- * It is opened via env so a test can lower it and actually produce the third state
- * — a state you cannot produce is a state you cannot check, and an uncheckable
- * branch rots quietly.
+ * Timeout for a tool probe, in ms. `--list` really invokes four tools, and slow rustup shims on CI
+ * can exceed the default test timeout. A slow tool is reported `unknown`, not `missing`; the env
+ * override lets a test produce that state.
  */
 export const PROBE_TIMEOUT_MS = Number(process.env.RELEASE_REHEARSAL_PROBE_TIMEOUT_MS) || 5_000;
 

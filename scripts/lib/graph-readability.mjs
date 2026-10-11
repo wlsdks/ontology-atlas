@@ -1,31 +1,7 @@
 /**
- * Graph readability metrics — **pure computation**. It knows nothing of the browser
- * or the DOM.
- *
- * **Why it was pulled out of the browser.** `/gate-probe`'s rule: **a gate that only
- * ever passes is indistinguishable from no gate.** The first measurement returned 0
- * overlaps in all three cases, and there was no way to tell on the spot whether that
- * 0 meant "the map does not overlap" or "the detector is idling" — because with the
- * computation inside the page, **you cannot feed it an answer you already know**.
- *
- * So the page yields coordinates only and the verdict happens here, where it can be
- * probed with fixtures (`tests/contract/graph-readability.contract.test.ts`).
- *
- * **What is measured, and what is deliberately not.**
- *
- * Purchase, *"Which Aesthetic has the Greatest Effect on Human Understanding?"*
- * (Graph Drawing 1997): **minimising edge crossings mattered overwhelmingly most
- * for human comprehension**, while maximising angular resolution and snapping to a
- * grid were not statistically significant.
- *
- * So only two things are measured — **crossings**, and the prerequisite that comes
- * before crossings, **overlap** (an occluded node is off the screen before it is
- * unreadable). Measuring aesthetics shown to be insignificant grows the number of
- * numbers without growing the verdict; that is a dashboard, not an instrument.
- *
- * The same reasoning rules out the off-the-shelf library (`greadability.js`) — it
- * computes the insignificant axes too, and the two we use are this file.
- * `forbidden.md` requires a reason for every new dependency.
+ * Pure computation, so fixtures can probe it: a gate that only ever passes is indistinguishable
+ * from none. Only crossings and overlap are measured: Purchase (Graph Drawing 1997) found
+ * crossings matter most, while angular resolution and grid snapping were not significant.
  */
 
 /** How many segments approximate one curve. */
@@ -77,7 +53,7 @@ const sharesEndpoint = (a, b) =>
  * }} input — all coordinates are screen (CSS) pixels.
  */
 export function measureReadability({ nodes, edges, width, height }) {
-  /** Off-screen geometry is invisible to the user — counting crossings there contaminates the verdict. */
+  /** Off-screen geometry is invisible to the user; counting crossings there contaminates the result. */
   const onScreen = (x, y, pad = 0) => x >= -pad && y >= -pad && x <= width + pad && y <= height + pad;
 
   // ── 1. Edge crossings ──────────────────────────────────────────────────

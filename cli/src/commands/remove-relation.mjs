@@ -72,9 +72,8 @@ function removeRelation(rootPath, { from, to, relation }, runtime) {
   const plan = planRemoval(frontmatter, relation, to);
   if (!plan.found) throw new Error(`nothing to remove: ${plan.reason}`);
 
-  // The rationale goes with the relation it explained. Leaving `relation_notes[to]`
-  // behind would keep a sentence about an edge that no longer exists — the kind of
-  // orphan a later reader trusts because it is written down.
+  // Delete `relation_notes[to]` with the relation; a note on a removed edge would be a trusted
+  // orphan.
   const notes =
     frontmatter.relation_notes && typeof frontmatter.relation_notes === 'object'
       ? { ...frontmatter.relation_notes }

@@ -14,15 +14,8 @@ interface Params {
 }
 
 /**
- * Collects every project slug at build time to generate static pages.
- *
- * Since the permanent removal of the cloud surface, static pages are built from the vault
- * manifest's `kind: project` docs alone; there is no per-user cloud project fetch.
- *
- * ⚠️ **Slugs come from every bundled sample** (2026-08-01). While only the dogfood manifest was
- * read, `/ko/project/storefront/` was a 404 — the one demo the app promotes everywhere had no
- * canonical address. The single source for the full set is `bundledProjectSlugs()`; the gate is
- * `tests/contract/bundled-project-routes.contract.test.ts`.
+ * Slugs come from every bundled sample via `bundledProjectSlugs()`; gate:
+ * tests/contract/bundled-project-routes.contract.test.ts.
  */
 export async function generateStaticParams(): Promise<Params[]> {
   return bundledProjectSlugs().map((slug) => ({ slug }));
@@ -48,12 +41,8 @@ export async function generateMetadata({
 
   const title = project.name;
   const description = project.description || `${project.name} — ontology-atlas`;
-  // ⚠️ **A canonical without the locale points at a URL that does not exist.**
-  // The old `absoluteUrl('/project/<slug>/')` had no `/ko/` or `/en/` prefix and declared an
-  // address that really 404s as canonical (measured 2026-07-29: `/projects/` and `/topology/` had
-  // the same defect, both 404). That tells a search engine "this page's canonical is a page that
-  // does not exist", which drops it from the index entirely.
-  // `buildPageMetadata` assembles the locale, hreflang, and x-default in one place.
+  // The canonical must carry the locale prefix or it names a URL that 404s. `buildPageMetadata`
+  // assembles locale, hreflang and x-default.
   const base = buildPageMetadata({
     locale,
     path: `project/${slug}`,
@@ -121,8 +110,7 @@ export default async function Page({
     '@type': 'CreativeWork',
     name: project.name,
     description: project.description || `${project.name} — ontology-atlas`,
-  // Must be **the same address** as the metadata's canonical — if the structured data names a
-  // different one, we no longer decide which a search engine believes.
+  // Must equal the metadata canonical, or search engines get two answers.
     url: absoluteUrl(`/${locale}/project/${slug}/`),
     inLanguage,
     author: {

@@ -1,33 +1,8 @@
 #!/usr/bin/env node
 /**
- * Fill `/download`'s macOS release facts from the real published GitHub
- * Release.
- *
- * The download page may only state a DMG size and a SHA-256 that actually
- * exist. Rather than hand-copying them out of a release page (which drifts
- * the moment a new version ships), this reads the release the workflow just
- * published and writes a generated module the page imports.
- *
- * Usage:
- *   pnpm download:release-facts                 # tag defaults to v<package.json version>
- *   pnpm download:release-facts -- --tag=v1.0.0
- *   pnpm download:release-facts -- --unpublished  # reset to the pre-release state
- *   pnpm download:release-facts -- --tag=v1.0.0-rc.4 --allow-missing-windows
- *   pnpm download:release-facts:check           # committed facts vs the newest published release
- *
- * ⚠️ **`--check` exists because the write half is not enough.** The release
- * workflow generates this module but cannot commit it: the release token may
- * not push to protected `main`, so it uploads the file as an artifact for a
- * person to apply in an ordinary pull request. On 2026-08-29 the owner found
- * the download page still naming `v1.0.0-rc.14` while `v1.0.0-rc.15` had been
- * published and the repository was already on `rc.16` — the handoff had simply
- * been forgotten, twice, and nothing anywhere went red. `--check` regenerates
- * the module for the newest published release and compares it with the
- * committed one, so the forgotten handoff fails the release gate instead of
- * quietly telling visitors to download an older build.
- *
- * Requires the `gh` CLI to be authenticated for a private/unpublished draft;
- * a public release needs no auth.
+ * Fills `/download`'s macOS release facts (DMG size, SHA-256) from the real published GitHub
+ * Release. `--check` regenerates in memory and compares with the committed module, since the
+ * workflow cannot push to protected `main`.
  */
 
 import { execFileSync } from "node:child_process";
@@ -284,12 +259,8 @@ function committedTag() {
 }
 
 /**
- * `--check`: regenerate into memory and compare, never write.
- *
- * Byte comparison rather than a tag comparison, because a re-cut release keeps
- * its tag while its assets, sizes, and checksums change — and a page publishing
- * a checksum that no longer matches the file behind it is worse than one naming
- * an old version.
+ * Byte comparison, not tag comparison: a re-cut release keeps its tag while assets and checksums
+ * change, and a stale checksum is worse than an old version.
  */
 function compareModule(release) {
   const expected = renderModule(release);

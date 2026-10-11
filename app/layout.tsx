@@ -66,9 +66,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  // The favicon and Apple touch icon are picked up automatically by the Next.js file convention
-  // (app/icon.png, app/apple-icon.png) — declaring them again here produced a duplicate
-  // <link rel="icon">, so it was removed.
 };
 
 export const viewport: Viewport = {
@@ -94,12 +91,8 @@ export default function RootLayout({
           <meta httpEquiv="Content-Security-Policy" content={WEB_CONTENT_SECURITY_POLICY} />
         ) : null}
       </head>
-      {/* The tab-bar reserve padding (pb-56px) was removed (2026-08-08) — it is a relic of the
-          document-scroll era, before the shell owned the viewport with `h-dvh`. That padding now
-          protects nothing while creating 56px of dead document scroll on every page below `md`.
-          The tab-bar reserve is owned by each page's scrolling surface
-          (`.claude/rules/design.md`), not by body.
-          Gates: document-scroll-lock.spec.ts + scroll-end-gap.spec.ts. */}
+      {/* The tab-bar reserve is owned by each page's scrolling surface (`.claude/rules/design.md`), not
+         by body; padding here would add dead document scroll. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
         <LangBootScript />
         {/* Forwards a WebView script error or unhandled rejection to the app log. Inside the

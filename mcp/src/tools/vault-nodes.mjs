@@ -141,12 +141,9 @@ function requireValidFrontmatterPatch(frontmatter) {
 }
 
 /**
- * The human-judgment half of a patch
- * (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`). Raising
- * `review_state: human_decides` is allowed; clearing or confirming is refused,
- * because both assert a person acted and the file cannot tell who typed it.
- * A lane guard for writes through this server, not authentication: direct file
- * edits never meet it, and the Git diff stays the trust record.
+ * Raising `review_state: human_decides` is allowed; clearing or confirming is refused, since both
+ * assert a person acted. A lane guard for this server's writes, not authentication: direct file
+ * edits never meet it.
  */
 function requireAgentWritableReviewFields(frontmatter) {
   for (const key of HUMAN_ONLY_REVIEW_KEYS) {
@@ -190,9 +187,8 @@ function readDocIfPresent(slug) {
 }
 
 /**
- * What a person has ruled on this node, recomputed from the file on every read so
- * `currentness` reveals an approval that no longer describes its node. No digest is
- * returned: the caller is the agent, and the value would let it forge a stamp.
+ * Recomputed from the file on every read so `currentness` exposes an approval that no longer
+ * matches its node. No digest is returned: the caller is the agent and could forge a stamp.
  */
 function describeReview(doc) {
   const frontmatter = doc?.frontmatter ?? {};

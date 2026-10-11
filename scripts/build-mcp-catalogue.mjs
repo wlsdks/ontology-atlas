@@ -1,55 +1,8 @@
 #!/usr/bin/env node
 /**
- * The MCP connector catalogue — **captured once by a person and committed**.
- *
- * ## Why this is a file and not a fetch
- *
- * `scripts/build-acp-registry.mjs` already wrote the reasoning for the agent
- * runtime list and it holds here word for word: fetching a catalogue when the
- * app opens breaks trust-charter promise ① (works without the internet) and
- * promise ② (nothing leaves unless the person turned it on) at the same time.
- * So the list is a committed file. It changes when somebody runs this script,
- * and what changed is a git diff.
- *
- * The PO steward's 2026-09-07 review made that a condition rather than a
- * preference, and added the second half: a runtime "refresh" button would
- * overturn the same two promises and needs its own decision record. There is
- * none, so there is no such button.
- *
- * ## Where each row comes from
- *
- * Two sources, and the file says which for every entry.
- *
- * - `registry` — the official MCP Registry (`registry.modelcontextprotocol.io`).
- *   Its server metadata is CC0-1.0 (registry Terms of Service, read
- *   2026-09-07), so it may be committed here. What is taken: the package
- *   identifier, the runtime hint, the arguments, the remote URL, and the
- *   environment variables **with the publisher's own `isRequired` / `isSecret`
- *   flags**. That last pair is the whole reason to prefer the registry: it is
- *   the publisher saying "this one is a credential", where
- *   `looksLikeSecretKey()` can only guess from the name — and has guessed wrong
- *   before (`OPENAPI_MCP_HEADERS`, recorded in `connector-record.ts`).
- * - `curated` — a person read the vendor's own documentation, wrote the facts
- *   down, and left the URL and the date they read it. Used where the registry
- *   has no entry or the vendor documents something the registry does not, which
- *   is every hosted OAuth endpoint below.
- *
- * A curated row is drawn differently on screen than a registry row. Atlas must
- * not borrow the registry's authority for a line one of us typed.
- *
- * ## What is deliberately absent
- *
- * No popularity, no install count, no star rating, no "recommended", no
- * ordering by anything but the curation order below. Those turn a list into a
- * marketplace, which `.claude/rules/forbidden.md` refuses. No icon URLs either:
- * the app fetches no external images, for the same reason it fetches no list.
- *
- * Usage:
- *   node scripts/build-mcp-catalogue.mjs            # rebuild from the registry
- *   node scripts/build-mcp-catalogue.mjs --check    # deterministic check from committed capture
- *   node scripts/build-mcp-catalogue.mjs --check-online # compare current live registry facts
- *   node scripts/build-mcp-catalogue.mjs --offline  # rebuild curated rows only (no network)
- *   node scripts/build-mcp-catalogue.mjs --from-snapshot # rebuild from the committed capture and its date
+ * The MCP connector catalogue is captured once by a person and committed: fetching at app open
+ * would break the offline and opt-in promises. Rows come from the official MCP Registry (CC0-1.0)
+ * or are `curated` from vendor docs. No popularity, ranking or icons.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -63,15 +16,8 @@ const REGISTRY = 'https://registry.modelcontextprotocol.io/v0/servers';
 const REGISTRY_TIMEOUT_MS = 15_000;
 
 /**
- * The services a person actually asks for by name, in the order they appear.
- *
- * Order is curation, not ranking — the three the owner named on 2026-09-07 come
- * first because they are the three that were asked about, and the file says so
- * rather than implying a measurement nobody took.
- *
- * `registryName` is the id to look up in the official registry. When it is
- * absent, or the lookup finds nothing, the entry ships with its curated facts
- * and `source: 'curated'`.
+ * Order is curation, not ranking. `registryName` is the id to look up in the official registry;
+ * when absent or not found, the entry ships curated facts with `source: 'curated'`.
  */
 const CURATION = [
   {
@@ -293,20 +239,9 @@ function registryEnv(pkg) {
 }
 
 /**
- * Registry package arguments → an argv line — **for npm only.**
- *
- * `npx -y <identifier>` is deterministic: the registry names the package and the rest is fixed.
- * Nothing else is. An OCI entry publishes fragments (`-e VAR={token}`) that only become a command
- * line once somebody decides where `run`, `-i`, `--rm` and the image name go, and a template
- * placeholder like `{token}` written literally into `args` is a command that fails in a way
- * nobody can read. Measured on GitHub's own registry entry, 2026-09-07: taking its
- * `runtimeArguments` produced `docker -e GITHUB_PERSONAL_ACCESS_TOKEN={token}` — no `run`, no
- * image.
- *
- * So for anything but npm the registry corrects the package identifier and the environment
- * variables, and the argv line stays the curated one a person verified against the vendor's page.
- * Returning `[]` here is what leaves it alone: `REGISTRY_FIELDS` only overwrites a non-empty
- * value.
+ * npm only: `npx -y <identifier>` is deterministic. An OCI entry publishes fragments (`-e
+ * VAR={token}`), not a command line, so they would yield an unreadable failure. Returning `[]`
+ * leaves the curated line alone: `REGISTRY_FIELDS` only overwrites a non-empty value.
  */
 function registryArgs(pkg) {
   if (pkg.registryType !== 'npm' || !pkg.identifier) return [];
@@ -321,15 +256,9 @@ function registryArgs(pkg) {
 }
 
 /**
- * **A hosted address that signs in with OAuth is refused here, not on screen.**
- *
- * Measured 2026-09-07 against claude-agent-acp 0.75.0, the adapter the app ships: a hosted OAuth
- * server handed over in `session/new` reports "requires authentication" and the adapter says the
- * session is non-interactive and cannot run the flow. No tool registers. A token the person
- * already earned in the terminal for the same name and address did not carry over. So a row that
- * offers such an address attaches something the in-app agent can never use — the falsifier the
- * morning's record named. Until an adapter is measured running the flow, the catalogue holds only
- * what the press can make work: a local program with a token, or an address that asks nothing.
+ * A hosted OAuth address is refused here: claude-agent-acp reports a non-interactive session that
+ * cannot run the flow, so no tool registers. Until an adapter runs the flow, the catalogue holds
+ * only local programs with a token or addresses that ask nothing.
  */
 function refuseHostedOauth(curated) {
   const offending = curated.variants.filter(

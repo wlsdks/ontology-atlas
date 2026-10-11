@@ -3,11 +3,6 @@
 export const rules = [
   {
     order: 90,
-    // 2026-09-01 review: check:tokens and design:toc:check were unconditional
-    // CI steps before the impact-aware rework and existed afterwards only in
-    // the push-to-main full lane — a raw color slipping into globals.css or a
-    // stale DESIGN-SYSTEM.md table of contents merged green and turned main
-    // red after the fact.
     command: 'pnpm check:tokens',
     reason: 'styles or ramp registries changed — the raw-color and token gates apply',
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],

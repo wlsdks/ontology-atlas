@@ -1,18 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm e2e:sleeps:check` — a change may not add a fixed sleep to an e2e spec.
- *
- * `.claude/rules/testing.md` already forbids waiting by the clock, and nothing
- * enforced it: 126 `waitForTimeout` calls sat in 68 specs on 2026-09-26. One of
- * them read the map tour's card mid-reframe on a slow CI runner and ejected a
- * train; a red train costs a bisect, which is the landing
- * train's throughput limit. Fixing all of them is a separate job; this stops
- * new ones.
- *
- * It judges only the lines this change adds against its merge base, so it keeps
- * no shared baseline number for twenty parallel branches to collide on. A sleep
- * that really is a measurement window says so on its line or the line above:
- * `// measurement window: <why>`.
+ * A change may not add a fixed sleep to an e2e spec (`.claude/rules/testing.md`): a sleep read a
+ * mid-reframe card on a slow runner and ejected a train. Only lines this change adds are judged
+ * against the merge base. A real measurement window says so: `// measurement window: <why>`.
  */
 
 import { spawnSync } from 'node:child_process';

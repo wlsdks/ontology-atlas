@@ -71,12 +71,8 @@ const alignedLanding = `<!doctype html>
   <p>Ontology Atlas</p>
 </main>`;
 
-// The checker reads its expected copy from `messages/ko.json` precisely so a
-// hand-copied string list cannot drift. A fixture that hand-copies the same
-// strings reintroduces that drift one layer down — and did: the `/download`
-// remake (2026-07-27) rewrote every sentence below, so this fixture started
-// failing a checker that was working correctly. Build the fixture from the
-// same catalog the checker reads.
+// The checker reads expected copy from `messages/ko.json`; a fixture that hand-copies the same
+// strings reintroduces drift, so build the fixture from the same catalog.
 const koDownloadCopy = JSON.parse(
   readFileSync(path.join(REPO_ROOT, "messages", "ko.json"), "utf8"),
 ).download;
@@ -217,21 +213,14 @@ test("hosted download surface check rejects a download page without the release 
   }
 });
 
-// The deployed page must offer **something to decide** in any release state — a file
-// if one is downloadable, otherwise the browser map that works today. A page with
-// neither sends the visitor away empty-handed.
-//
-// Re-aimed 2026-08-19: the old version checked whether the Windows platform section
-// had dropped, and that section disappeared along with the install section. What now
-// carries the same "never send them away empty-handed" is the pair of
-// release-state CTAs.
+// The deployed page must offer something to decide in any release state: a file if downloadable,
+// otherwise the browser map. A page with neither sends the visitor away empty-handed.
 test("hosted download surface check rejects a download page with no release-state CTA", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
-      // ⚠️ Do not copy the string here. Deleting by literal removes **nothing** the moment
-      // the copy changes, leaving the fixture intact while only the test turns red (a real
-      // incident, 2026-07-29). Read it from the messages and delete that.
+      // Do not copy the string here: deleting by literal removes nothing once the copy changes, leaving
+      // the fixture intact. Read it from the messages and delete that.
       body: alignedDownload.replace(
         `<a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>`,
         `<a href="https://github.com/wlsdks/ontology-atlas/releases"></a>`,
@@ -252,16 +241,9 @@ test("hosted download surface check rejects a download page with no release-stat
 });
 
 /**
- * **Checks that the detector does not disarm itself** (a real incident, 2026-07-29).
- *
- * The check list is built from values in `messages/ko.json`, so renaming a key makes
- * that slot `undefined`. `String.includes(undefined)` coerces its argument to the
- * literal `"undefined"`, and the page template renders `undefined` in the same slot —
- * **needle and haystack are wrong in the same way and therefore match.** The check
- * passed green, and the Windows guidance could have vanished with nobody knowing.
- *
- * This test creates that state deliberately. If it passes (i.e. does not reject), the
- * detector has disarmed itself again.
+ * Checks that the detector does not disarm itself: a renamed-away message key becomes `undefined`,
+ * which `String.includes` coerces to `"undefined"` and the template renders, so needle and
+ * haystack match. If this passes without rejecting, the detector is disarmed.
  */
 test("hosted download surface check rejects a renamed-away copy key instead of silently passing", async () => {
   const server = await startServer({

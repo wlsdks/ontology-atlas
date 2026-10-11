@@ -49,22 +49,9 @@ const SOURCE = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.
 const BRAND_SOURCE = 'https://cdn.jsdelivr.net/npm/simple-icons@latest/data/simple-icons.json';
 
 /**
- * Launcher id → simple-icons entry title. **Only pairs a person has verified
- * one by one.**
- *
- * ⚠️ Matching by name automatically attaches **the wrong brand colour**. Two
- * measured cases: `amp-acp` (Sourcegraph Amp) matched Google AMP's blue
- * (#005AF0), and `pi-acp` matched Raspberry Pi's black. **A wrong colour is worse
- * than no colour** — with none the screen falls back to neutral, with a wrong one
- * we misrepresent someone else's brand.
- *
- * So there is no automatic matching. A launcher absent from this table is drawn
- * neutral.
- *
- * OpenAI (Codex) is **deliberately absent** — it was removed from simple-icons
- * v16 at the vendor's request. The mark itself comes from what the ACP registry
- * publishes for client UIs; no colour is added. Buzz does not bundle the OpenAI
- * mark for the same reason.
+ * Launcher id to simple-icons entry title; only pairs a person verified one by one. Name matching
+ * attaches wrong brand colours, worse than none. A launcher absent here draws neutral. OpenAI
+ * (Codex) is absent on purpose: no colour is added to the mark from the ACP registry.
  */
 const BRAND_MARK = {
   'claude-acp': 'Claude Code',
@@ -100,14 +87,8 @@ const VERIFIED = new Set(['claude-acp', 'codex-acp']);
  */
 const RUNTIME_LAUNCH_PINS = {
   /*
-   * **No pin stands today (owner direction, 2026-09-07 evening).** `codex-acp` was held at 1.6.2
-   * from 2026-09-03 because 1.8.0–1.10.0 map their `read-only` mode to a `workspaceWrite` sandbox,
-   * so an in-app Codex turn could change a file inside the vault without a permission card. The
-   * owner overturned that on 2026-09-07: *"the version is always the newest; a change is free,
-   * versioning is what has to be right"* — the vault is a Git folder, every write is a diff, and
-   * `git checkout` is the undo. The record, its losing dissent and its falsifier are in
-   * `docs/DECISIONS.md` (2026-09-07). The mechanism stays so a future measured boundary failure can
-   * pin again with a named upstream subject; the table is simply empty.
+   * No pin stands today; the table is empty. The mechanism stays so a measured boundary failure can
+   * pin a version with a named upstream subject (`docs/DECISIONS.md`).
    */
 };
 
@@ -356,23 +337,9 @@ async function fetchIcon(agent) {
 }
 
 /**
- * The runtimes this application **actually runs**, read from Rust rather than transcribed.
- *
- * ⚠️ **Why the gate is narrow now** (measured across rc.11 through rc.14, 2026-08-25/26). The
- * release check blocked on any of 39 listed agents moving, and it fired on all four releases that
- * day. Not once was the mover a runtime this app runs: cline, codebuddy-code, dimcode, droid,
- * glm-acp-agent, grok, gemini-cli, qwen-code. Each cost a full round trip — refresh, PR, CI, retag —
- * to ship a version number for a tool nobody here launches. On rc.14 the check was green when the
- * tag was cut and stale twenty seconds later when the workflow ran, which is the shape of a rule
- * that cannot be satisfied rather than one that is being broken.
- *
- * The danger it was written for is real and stays blocking: on 2026-08-20 the snapshot had fallen
- * behind on `claude-agent-acp` and `codex-acp` themselves, so the app shipped launching adapter
- * versions whose permission behaviour nobody had measured. That is a safety claim, not freshness.
- *
- * So: a stale entry for a runtime in Rust's `ISOLATION` table fails; every other entry is reported
- * and does not block. `ISOLATION` is the honest source — it is exactly the set this app claims
- * specific knowledge about, and `runtime-gate.test.ts` already reads it the same way.
+ * The runtimes this app runs, read from Rust's `ISOLATION` table. A stale entry for one of these
+ * fails the release check; others are reported without blocking. Stays blocking for
+ * `claude-agent-acp` and `codex-acp`: a stale adapter ships unmeasured permission behaviour.
  */
 export function isolatedRuntimeIds() {
   const rust = readFileSync(join(ROOT, 'src-tauri', 'src', 'acp', 'isolation.rs'), 'utf8');

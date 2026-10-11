@@ -101,21 +101,10 @@ test("desktop release run dispatches the protected-main workflow and watches it"
     assert.match(result.stderr, /waiting for release-macos\.yml workflow_dispatch run/);
     assert.match(result.stdout, /watching release-macos\.yml run 12345/);
     assert.match(result.stdout, /completed successfully/);
-    /*
-     * ⚠️ It used to print a list of commands and stop, on the reasoning that the bot token cannot
-     * push to protected main. True, and irrelevant: a person dispatches the release, so the
-     * credentials that pushed the tag can open this PR. Handing somebody a checklist at the end of
-     * a twenty-minute build is handing them a step to forget, and it was forgotten twice on
-     * 2026-08-25 -- the public page advertised rc.10 while rc.11 and rc.12 had both shipped.
-     */
     assert.match(result.stdout, /refreshing \/download for v0\.1\.0/);
   });
 });
 
-/*
- * ⚠️ The three defects the automation's **first real outing** produced, on 2026-08-25, after rc.13
- * had already published. Unit tests were green for all three; only running it found them.
- */
 test("desktop release run gives gh room to stream a whole build", () => {
   const source = readFileSync("scripts/watch-macos-release-run.mjs", "utf8");
   /*

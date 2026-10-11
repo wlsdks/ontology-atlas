@@ -310,9 +310,8 @@ describe('focused check suggestions', () => {
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
-      // The generator decides the shape of the bundled vault data, so the desktop static
-      // budget measurement is suggested with it (2026-08-19 — preventing a repeat of the
-      // budgets being measured only at release time and silently exceeded).
+      // The generator decides the shape of the bundled vault data, so the desktop static budget
+      // measurement is suggested with it.
       'pnpm build && pnpm desktop:perf',
       'pnpm test:vault:migrate',
       'pnpm vault:migrate --list',
@@ -949,9 +948,8 @@ describe('focused check suggestions', () => {
       // This set includes `src/views/docs-vault/**`, so the docs e2e comes with it.
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
         'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
-      // Since the surface split (2026-07-27) a desktop change does not verify the web on
-      // its behalf — the web is unattended, so the smoke test is suggested in the same
-      // set.
+      // A desktop change does not verify the web, which is unattended, so the smoke test is suggested in
+      // the same set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/settings-reading-layout.spec.ts',
@@ -986,10 +984,9 @@ describe('focused check suggestions', () => {
 
   it('points the Agents destination at the three e2e specs that drive it', () => {
     /*
-     * Probe for the 2026-09-19 rule. Before it, every one of these files suggested **no**
-     * Playwright spec, while `mcp-connector-add.spec.ts` is what proves the installed app's
-     * `install=` deep link still opens the connectors dialog — the named falsifier of the
-     * decision that made MCP a tab of this page. Delete the rule and this goes red.
+     * Without this rule none of these files suggests a Playwright spec, while
+     * `mcp-connector-add.spec.ts` proves the `install=` deep link still opens the connectors dialog.
+     * Delete the rule and this goes red.
      */
     const command =
       'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
@@ -1090,17 +1087,9 @@ describe('focused check suggestions', () => {
   });
 
   /*
-   * The shell renders above every page's `Suspense` boundary, so a hook that defers to the
-   * client there breaks the prerender of routes it never touched. On 2026-09-20 `AppShell`
-   * gained a `useSearchParams` call and `pnpm build` failed on `/en/agents` and on
-   * `/en/ontology/edit`, a redirect page the change had nothing to do with; five Playwright
-   * shards went red behind that one broken build. Nothing in the changed-path list asked for a
-   * build, because the unit, contract and e2e lanes all run against a dev server where it
-   * never fails, and the existing build rule watches the export's *configuration* rather than
-   * the code that has to survive it.
-   *
-   * Both directions, because a rule that recommends the slowest command in the advisor has to
-   * be narrow: the shell asks for a build, an ordinary page does not.
+   * The shell renders above every page's `Suspense` boundary, so a hook that defers to the client
+   * there breaks the prerender of routes it never touched; only a real export catches it. The rule
+   * is narrow in both directions because `pnpm build` is the slowest command the advisor recommends.
    */
   it('suggests a real export when the app shell changes, and not for an ordinary page', () => {
     const shell = suggestFocusedChecks(['src/app/providers/AppShell.tsx']);
@@ -1134,11 +1123,8 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  // The situation the 2026-08-04 field trial measured — for one new view file plus
-  // one new route this advisor suggested **only** `pnpm typecheck`. The lint
-  // that carries the design spec, the contracts that classify routes, and the two
-  // ratchets that actually measure were all absent. `AGENTS.md` pins "point at this
-  // command instead of enumerating the checks", so this omission carries weight.
+  // A new view file plus a new route must suggest the lint carrying the design spec, the contracts
+  // that classify routes, and the two ratchets that measure, not only `pnpm typecheck`.
   it('suggests the design and a11y gates for a brand-new view and route', () => {
     const result = suggestFocusedChecks([
       'src/views/brand-new-surface/ui/BrandNewPage.tsx',
@@ -1390,12 +1376,8 @@ describe('focused check suggestions', () => {
     ]);
 
     /*
-     * ⚠️ `tsc` is appended (added 2026-08-21). e2e specs are TypeScript too and
-     * `tsconfig.json`'s `include` is all of `**\/*.ts`, so CI's `tsc --noEmit` really
-     * does check these files. Only the advisor did not know that, so anyone editing a
-     * spec met type errors first in CI (`#1180`).
-     *
-     * The order is unchanged — the direct spec comes first.
+     * `tsc` is appended: e2e specs are TypeScript and `tsconfig.json` includes every .ts file, so CI's
+     * `tsc --noEmit` checks them. The direct spec still comes first.
      */
     assert.deepEqual(domainCommands(result), [
       'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
@@ -1780,10 +1762,8 @@ describe('focused check suggestions', () => {
   });
 
   it('관문의 판·크롬·원점을 고치면 그 격자 검사를 권한다', () => {
-    // 2026-08-08 regression: adding one line to the footer turned
-    // `download-gateway-grid` red at all eight widths, but the advisor never suggested
-    // that spec so it surfaced only in CI. If "point at the tool" is the discipline,
-    // then a check the tool cannot point at is a check that does not exist.
+    // Editing the gateway layout must suggest its grid check; a check the advisor cannot point at does
+    // not exist.
     const grid = 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts';
     for (const path of [
       'src/views/download/ui/DownloadPage.tsx',
@@ -1804,9 +1784,8 @@ describe('focused check suggestions', () => {
   });
 
   it('문구 카탈로그를 고치면 능력 주장을 읽는 게이트도 권한다', () => {
-    // 2026-08-08: a false "app-only" claim was fixed, the advisor suggested only
-    // catalogue consistency, and the desktop gate pinning that copy went red first in
-    // CI.
+    // Editing the message catalogue must also suggest the desktop gate that pins capability claims,
+    // not only catalogue consistency.
     const commands = commandNames(suggestFocusedChecks(['messages/ko.json']));
     assert.ok(commands.includes('pnpm test:i18n:messages'), '카탈로그 정합 검사를 안 권한다');
     assert.ok(
@@ -1823,15 +1802,8 @@ describe('focused check suggestions', () => {
   });
 
   /**
-   * **`tsconfig` decides the reach of type checking — not the advisor.**
-   *
-   * It broke on 2026-08-21 (`#1180`): only a contract test file was edited, and CI's
-   * `Types · Lint · Docs` went red with a type error. There was no way to meet it
-   * locally — the advisor did not suggest `tsc` for test files, and **vitest does not
-   * check types**. Yet `tsconfig.json`'s `include` is all of `**\/*.ts`.
-   *
-   * Wherever the check's reach differs from the advisor's reach, **that difference
-   * surfaces only in CI.**
+   * `tsconfig` decides the reach of type checking, not the advisor: vitest does not check types, and
+   * `tsconfig.json` includes every .ts file, so test files need `tsc` too.
    */
   it('타입 검사를 tsconfig 가 보는 곳 전부에 권한다 — 테스트 파일도 포함', () => {
     const typecheck = (path) =>
@@ -1839,7 +1811,6 @@ describe('focused check suggestions', () => {
         (s) => s.command === 'pnpm typecheck',
       );
 
-    // The two that used to be missing — this is why this test exists.
     assert.ok(typecheck('tests/contract/release-preflight.contract.test.ts'), 'tests/**');
     assert.ok(typecheck('src/shared/lib/cn.test.ts'), 'src 의 테스트 파일');
 
@@ -1859,16 +1830,12 @@ describe('focused check suggestions', () => {
   });
 
   /**
-   * **Do not use a readout as a gate** (2026-08-21).
-   *
-   * `dogfood:status` exits 1 even when the graph is merely immature — including on
-   * main — while its own output says *"Nothing is broken"*. Wiring that into a push
-   * gate blocks every vault-editing push for an unrelated reason.
+   * Do not use a readout as a gate: `dogfood:status` exits 1 on an immature graph, which would block
+   * every vault-editing push for an unrelated reason.
    */
   it('화면에 그려지는 마크다운에는 문구 게이트도 권한다', () => {
-    // The integrity check and the copy check **measure different things**. On
-    // 2026-08-21 an em dash in vault prose passed `vault:validate` and was caught only
-    // in CI.
+    // The integrity check and the copy check measure different things: an em dash in vault prose
+    // passes `vault:validate`.
     const prose = 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts';
     for (const path of [
       'docs/ontology/elements/agents-destination.md',
@@ -1897,11 +1864,6 @@ describe('focused check suggestions', () => {
 });
 
 describe('agent-file surface', () => {
-  /*
-   * These paths recommended nothing that measures them before 2026-08-24. CI ran
-   * `agents:check`, so the answer existed — it just cost an eight-minute round
-   * instead of the fifty milliseconds the command actually takes.
-   */
   it('recommends the agent-file gate for every tree it inventories', () => {
     for (const path of [
       'CLAUDE.md',
@@ -1978,9 +1940,8 @@ describe('agent-file surface', () => {
 });
 
 describe('deleted paths participate in rule matching without reaching file-reading commands', () => {
-  // Bug sweep 2026-09-01: deletions were dropped before ALL matching, so a
-  // deletion-only change printed "nothing to run" and exited 0 — deleting a
-  // route file suggested no decisions:check, a vault doc no docs-vault:check.
+  // Deletions must still take part in rule matching: a deletion-only change must not print "nothing
+  // to run" (a deleted route still needs decisions:check, a deleted vault doc docs-vault:check).
   it('a deleted vault doc still suggests the docs-vault and ledger checks', () => {
     const suggestions = suggestFocusedChecks([], {
       deletedPaths: ['docs/ontology/capabilities/gone.md'],
@@ -2009,9 +1970,7 @@ describe('deleted paths participate in rule matching without reaching file-readi
 });
 
 describe('rule files under scripts/lib/check-rules are the registry', () => {
-  // The rule table was one shared file every new check appended to, and two
-  // branches doing that on one day conflicted twice (2026-09-26). A new check
-  // is now a new file: this proves the file alone is enough.
+  // A new check is a new file in the registry directory; this proves the file alone is enough.
   it('picks up a new rule file without editing any other file', async () => {
     const scratch = mkdtempSync(join(tmpdir(), 'check-rules-'));
     try {

@@ -1,27 +1,8 @@
 #!/usr/bin/env node
 /**
- * **Generates** the table of contents for `docs/DESIGN-SYSTEM.md` from its
- * headings, and with `--check` compares it against the committed one.
- *
- * **Why not hand-written.** The document is 254KB across 23 sections, and of
- * **151 inbound references not one pointed at a section** (measured 2026-08-05) —
- * all of them said only "see DESIGN-SYSTEM.md", so readers either opened the whole
- * thing (≈60k tokens) without knowing where to look, or gave up.
- *
- * A hand-written table of contents drifts every time a section is added, and that
- * drift emits no signal. `documentation.md`'s contract allows only three kinds of
- * check, one of which is **"generate then compare"** — the same method
- * `docs:surface:check` uses for the MCP surface. No human-written sentence is
- * pinned: this script reads only the `## ` heading text, so the body can be
- * rewritten freely without breaking the table of contents.
- *
- * **Why the file was not split.** Splitting was considered and rejected
- * (`docs/DECISIONS.md` 2026-08-05). The document is a **docs-vault node**, so
- * splitting it into 23 would create 23 entries in the app's `/docs` list — a
- * product-surface change, not a documentation tidy-up. Besides, the two larger
- * documents in this repository (`CHANGELOG.md` at 8,100 lines and `DECISIONS.md`
- * at 7,300) work fine unsplit. The way they work is **grep first**, and a table of
- * contents supplies the words to grep for.
+ * Generates the table of contents of `docs/DESIGN-SYSTEM.md` from its headings; `--check` compares
+ * it with the committed one. Only `## ` heading text is read, so no prose is pinned. The file
+ * stays unsplit: it is a docs-vault node, so splitting adds `/docs` entries.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

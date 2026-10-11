@@ -1,24 +1,7 @@
 /**
- * Inventory of static (non-pressable) surfaces — **the ledger and the gate count
- * with the same function.**
- *
- * Built after hitting "the hand-written ledger is wrong" four times in one day on
- * 2026-08-15 (see `/ui-proof`, the section on deriving the ledger from
- * the scanner). The ratchet contract and the inventory report both call **this one
- * file**, so the ledger cannot drift from the measurement and the bidirectional
- * "the ledger is more generous than the measurement" check has meaning.
- *
- * Two things are counted:
- *
- * - **Section cards** — `<div>`/`<section>`/`<article>` carrying both a radius
- *   (card|panel) and an inset. A box that holds content.
- * - **Static badges** — `<span>` carrying a radius plus either an inset or a type
- *   step. Status dots (small circles with no text) are excluded: they belong to
- *   the signal-tone spec, not to badges.
- *
- * Excluded from both: tests · `src/shared/ui/` (the primitive layer is the
- * legitimate home of native elements) · anything already through the value layer
- * (`badgeClass`/`controlClass`/`fieldClass`).
+ * Inventory of static (non-pressable) surfaces: the ratchet contract and the report both call this
+ * file, so the ledger cannot drift. Counts section cards and static badges; excludes tests,
+ * `src/shared/ui/`, and `badgeClass`/`controlClass`/`fieldClass` users.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';

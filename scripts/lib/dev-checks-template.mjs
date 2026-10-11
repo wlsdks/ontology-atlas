@@ -1,23 +1,7 @@
 /**
- * The development-checks reference, as a check.
- *
- * Measured on 2026-09-02: `docs/DEVELOPMENT-CHECKS.md` was 114 KB and 1,402
- * lines, 918 of them prose, for a document whose job is to tell a contributor
- * which command to run first for an area and when to escalate. The commands
- * lived in a 60-row matrix; the other 900 lines retold the incidents behind
- * each gate, which the decision ledger and the gate headers already keep.
- *
- * So the reference is a list of entries, one per check area, each exactly:
- *
- *   ### <area>
- *   **Run**: `<the first command>`
- *   **Proves**: <what a pass means, one sentence>
- *   **Escalate**: `<command>` when <condition>, or none
- *
- * with an optional `**Fix**:` line naming what to change when it is red. One
- * screen per entry, every command a real script, every area named once.
- * `pnpm dev-checks:check` refuses anything else; the reasons behind a gate
- * belong in `docs/DECISIONS.md` and the gate's own header, not here.
+ * Each check area is an entry with Run, Proves, Escalate and optional Fix; one screen per entry,
+ * every command a real script, every area once. Reasons behind a gate belong in
+ * `docs/DECISIONS.md`.
  */
 
 export const FIELDS = ['Run', 'Proves', 'Escalate', 'Fix'];
@@ -125,14 +109,9 @@ export function checkDevChecks(text, { scripts = null } = {}) {
 }
 
 /*
- * Order keys, so two branches that each add an entry insert in different places.
- *
- * Measured on 2026-09-26: 25 of 60 README commits added a row to the
- * contributor command table, each appended after the same last row, and #1913
- * and #1916 conflicted on that anchor within one day; the entries here were
- * appended the same way. A list sorted by a key a writer can derive puts an
- * addition beside its alphabetical neighbour instead. Keys compare by code
- * point after lowercasing, so no locale changes the order.
+ * Order keys: a list sorted by a derivable key puts an addition beside its alphabetical neighbour,
+ * so two branches that each add an entry do not conflict. Keys compare by code point after
+ * lowercasing.
  */
 
 const orderKey = (text) => text.toLowerCase();

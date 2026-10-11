@@ -22,24 +22,9 @@ export default defineConfig({
   test: {
     globals: true,
     /*
-     * **A hang detector, not a budget** (2026-09-12).
-     *
-     * Vitest's default is 5,000 ms, and that default is what actually failed. Measured:
-     * the two `FirstRunStarterModule` modal-close cases cost **152 ms and 15 ms** run
-     * alone, and timed out at 5007 and 5002 ms on an oversubscribed two-core CI runner
-     * (run 34693905255: environment 590 s against 421 s of wall clock) and again in a
-     * 411 s pre-push `unit` lane on a branch that does not touch that file. Nothing
-     * there is slow; 5,000 ms was simply the only ceiling in the suite with no headroom,
-     * and a starved test with no headroom tips over first.
-     *
-     * The pre-push hook used to paper over this with a per-lane `--testTimeout=30000`,
-     * which meant the suite had a different clock depending on who invoked it. One value
-     * here instead, applying to every invocation including CI: ~200x the measured cost of
-     * the slowest ordinary case, so only a genuine hang reaches it.
-     *
-     * This is not a wall-clock assertion. Nothing is asserted about it, no test may
-     * narrow it at a call site, and a product timing claim belongs in a measured budget
-     * with its number printed (`.claude/rules/testing.md`, "The timing rule").
+     * A hang detector, not a budget: the 5,000 ms default has no headroom on starved runners. One value
+     * for every invocation including CI; no test narrows it, and product timing claims belong in a
+     * measured budget (`.claude/rules/testing.md`).
      */
     testTimeout: 30_000,
     /*
@@ -78,8 +63,8 @@ export default defineConfig({
         },
       },
       /*
-       * A performance file runs alone: its verdict is a ratio, and the side holding memory pays
-       * for any company in GC. `fileParallelism: false` keeps sibling workers off the machine.
+       * A performance file runs alone: its result is a ratio and the side holding memory pays for company
+       * in GC. `fileParallelism: false` keeps sibling workers off the machine.
        */
       {
         extends: true,

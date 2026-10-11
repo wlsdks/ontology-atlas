@@ -11,7 +11,7 @@ import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
 import { readSourceText } from './source-text.mjs';
 
 const FILE_BYTES = 256 * 1024;
-// Measured 2026-09-27: at most 5 ms per case.
+// Cases take at most 5 ms each; the budget leaves wide headroom.
 const BUDGET_MS = 200;
 const scratchRoots = [];
 

@@ -268,13 +268,9 @@ async function defaultVerifyGenerated({ root }) {
 
 function assertNoUntrackedOrUnstagedDocs(root, unmerged) {
   const conflictSet = new Set(unmerged);
-  // Every builder input is guarded, not just docs/ — the regeneration also
-  // reads samples/storefront/**.md into the staged generated output
-  // (sample-storefront.*.json), so an unstaged storefront edit was silently
-  // baked into the conflict resolution, violating the "regenerate only from
-  // byte-identical committed inputs" contract (bug sweep 2026-09-01). Deleted
-  // inputs count too (diff-filter D): a removed doc changes the output as
-  // surely as an edited one.
+  // Every builder input is guarded, not just docs/: regeneration also reads samples/storefront
+  // markdown, so an unstaged edit there would be baked into the resolution. Deleted inputs count too
+  // (diff-filter D).
   const inputPathspecs = ['docs', 'samples/storefront'];
   const untrackedDocs = splitNul(
     gitOutput(root, ['ls-files', '--others', '--exclude-standard', '-z', '--', ...inputPathspecs]),
@@ -349,11 +345,9 @@ export async function resolveRepositoryConflicts({
     await writeFile(path.join(root, plan.path), plan.merged, 'utf8');
   }
 
-  // These paths used to be committed mirrors. During the migration, an older
-  // branch that modified one can meet main's deletion as an unmerged modify/delete
-  // path. Remove only those exact conflict paths from the index while retaining the
-  // worktree copy; regeneration below replaces conflict-marker/stale bytes with the
-  // local ignored materialization.
+  // These paths were committed mirrors; an older branch that modified one can meet main's deletion
+  // as an unmerged modify/delete. Remove only those conflict paths from the index, keep the worktree
+  // copy; regeneration replaces stale bytes.
   const materializedConflicts = classified.generated;
   if (materializedConflicts.length > 0) {
     gitOutput(root, ['rm', '--cached', '-f', '--ignore-unmatch', '--', ...materializedConflicts]);

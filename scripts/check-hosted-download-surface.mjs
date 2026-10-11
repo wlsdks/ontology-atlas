@@ -7,12 +7,8 @@ import { fileURLToPath } from "node:url";
 import { evaluateLocaleCluster, parseHead, parseSitemap } from "./check-seo-surface.mjs";
 import { validateHostedUpdaterManifest } from "./stage-hosted-updater-manifest.mjs";
 
-// The expected copy is read from the shipped message catalog rather than
-// duplicated here. A hand-copied string list is how this gate quietly went
-// red: it kept asserting an owner-only checklist (hidden on the public build)
-// and a CTA label that had since been reworded, so every Pages deploy failed
-// verification while the site itself was fine. Sourcing the strings makes the
-// contract "the page renders its own copy", which cannot drift.
+// The expected copy is read from the shipped message catalog, not duplicated: a hand-copied string
+// list drifts and reddens the gate while the site is fine.
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const koMessages = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "messages", "ko.json"), "utf8"),
@@ -180,19 +176,9 @@ function assertOkJson(page, path) {
 }
 
 /**
- * ⚠️ **A missing message key must fail loudly, not pass quietly.**
- *
- * `String.prototype.includes(undefined)` coerces its argument to the literal
- * `"undefined"`. So when a copy key was renamed away, this check did not just
- * stop guarding that string — it started guarding the *word* `undefined`, which
- * the page's own template happily renders in the same spot. The needle and the
- * haystack were both wrong in the same way, so they matched, and the guard
- * reported success (measured 2026-07-29: the Windows-platform assertion had
- * silently disarmed itself after `windowsHeading` / `windowsPendingBadge` were
- * replaced by `platformStatus` / `windowsTrackCta`).
- *
- * A guard that cannot tell "the page lost this text" from "nobody told me what
- * text to look for" is worse than no guard — it is a green light nobody earned.
+ * A missing message key must fail loudly: `String.prototype.includes(undefined)` coerces to the
+ * literal `"undefined"`, which the page template renders in the same slot, so needle and haystack
+ * match and the guard passes.
  */
 const stripKeyTags = (title) => title.replace(/<\/?key>/g, "");
 
@@ -275,18 +261,9 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
 
   const downloadCopy = koMessages.download ?? {};
   assertIncludes(downloadText, downloadPath, [
-    // ⚠️ Needles must survive `renderedText()`, which collapses every run of
-    // whitespace to one space. A string carrying `\n` (the headline does) can
-    // never match after that, so the headline is deliberately NOT a needle —
-    // the eyebrow names the platform and the product in one unbroken line.
-    //
-    // Re-aimed 2026-08-19: the three old needles (`sourceCta`,
-    // `windowsPlatformTitle`, `releaseGateNote`) all lived inside the install section,
-    // and the owner removed that section wholesale (*"The last one seems unnecessary since it's all at the
-    // top anyway"* — the last one seems unnecessary since it's all at the
-    // top anyway). One needle is placed per section: if a section drops out of a
-    // deployment, that section's needle catches it. The evidence and agents sections
-    // left on 2026-10-03; the two figures that replaced them carry a needle each.
+    // Needles must survive `renderedText()`, which collapses whitespace runs to one space; a string
+    // with `\n` (the headline) never matches, so the headline is not a needle. One needle per section,
+    // so a section dropping out of a deployment is caught.
     downloadCopy.eyebrow,
     downloadCopy.demoTitle,
     stripKeyTags(downloadCopy.change.title),

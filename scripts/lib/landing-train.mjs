@@ -245,12 +245,9 @@ export function trainCiStep({ checks, other, inFlight = false, emptyRollupObserv
 }
 
 /**
- * Has `main` moved into this train's files since the train was cut?
- *
- * `strict` is off on `main`, so GitHub merges a train onto whatever `main` is now. That is
- * safe exactly when `main` changed only files the train never touched: the tested tree and the
- * merged tree then differ only there. An overlap means the train was tested against a `main` that
- * no longer exists, and it is rebuilt.
+ * Has `main` moved into this train's files since the train was cut? `strict` is off, so a train
+ * merges onto whatever `main` is now: safe only if `main` changed none of its files. An overlap
+ * means a stale test base, and the train is rebuilt.
  */
 export function driftVerdict({ trainFiles, mainFiles }) {
   if (!Array.isArray(trainFiles) || !Array.isArray(mainFiles)) return { state: 'unknown', overlap: [] };

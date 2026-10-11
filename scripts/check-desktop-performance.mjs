@@ -4,17 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
-// Owner decision, 2026-08-31: artifact size is not a constraint this product
-// optimizes for. The previous ceiling (8 MiB, then 10 MiB) sat at 97% of the
-// measured bundle and was being raised release by release, which turned a
-// bloat detector into a recurring chore. The gate now catches only an
-// order-of-magnitude accident: a build that ships a stray dependency, a
-// duplicated vendor bundle, or a generated file that was never meant to be
-// bundled. Ordinary growth from the append-only ledgers in
-// `src/entities/docs-vault/data/content.json` (4.5 MiB today) is expected and
-// is not what this number is for. If the structural change lands (reading
-// the ledgers from `out/docs-vault/` on demand instead of bundling them), the
-// number can come down again; until then it stays wide.
+// Artifact size is not a constraint this product optimizes for. The gate catches only an
+// order-of-magnitude accident (stray dependency, duplicated vendor bundle, unintended generated
+// file); growth of the append-only ledgers in `content.json` is expected.
 export const DESKTOP_PERFORMANCE_BUDGETS = {
   nextStaticBytes: 64 * 1024 * 1024,
   maxStaticAssetBytes: 8 * 1024 * 1024,

@@ -1,31 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm bundle:plan` / `pnpm bundle:prune` — plan landing many branches, and prune what landed.
- *
- * **Why this exists** (2026-09-26). A Workflow or a parallel round leaves one
- * branch per agent. Landing each through `pnpm pr:land` costs one lock turn, one
- * main merge, one local lane run and one CI run per branch; on 2026-09-24 nine
- * `design/polish-*` branches landed one by one and the queue took most of a day.
- * Every hand-made bundle (#1787, #1874, #1883) landed the same work behind one CI
- * run. The `/land` skill owns the procedure; this script owns the two
- * mechanical questions an agent should not answer by eye:
- *
- *   - **plan**: which selected branches still carry work, which files two of them
- *     both touch, and whether merging them in order conflicts. The trial merge
- *     runs on `git merge-tree` and throwaway commits, so no worktree, index or
- *     ref changes.
- *   - **prune**: after a landing, which selected branches `main` provably landed:
- *     merging the branch into `main`, or into the commit that landed it, would
- *     change nothing, and no branch commit moved past what landed. Only those lose
- *     their worktree (unlocked only when the locking process has exited or is
- *     the caller's own session), local branch, `worktree-agent-*` twin,
- *     remote branch and draft pull request. Anything else is reported and kept,
- *     because a "superseded" label is not evidence that the content arrived.
- *
- * Selection is always explicit: branch names, `--match=<glob>` over local
- * branches, or `--worktrees=<dir>` for the branches checked out under a
- * directory. Nothing sweeps every branch, because other sessions keep theirs in
- * the same repository.
+ * `pnpm bundle:plan` / `pnpm bundle:prune`: plan landing many branches (carry work, file overlap,
+ * in-order conflicts via `git merge-tree`), prune only branches `main` provably landed. Selection
+ * is explicit (names, `--match=<glob>`, `--worktrees=<dir>`); procedure in the `/land` skill.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -107,12 +84,9 @@ export function isContained(git, base, branch) {
 }
 
 /**
- * The newest commit of `branch` that `base` already contains. A branch cut from
- * commits that later landed as one squash still carries them under other shas,
- * so a three-dot diff lists every file the squash brought to main and reports
- * conflicts that are not there (measured 2026-09-26: 148 files listed for a
- * branch that changed 14). Patch ids cannot see it, because a squash joins
- * several commits into one patch; containment of each commit can.
+ * The newest commit of `branch` that `base` already contains. After a squash, a three-dot diff
+ * lists every file the squash brought and reports phantom conflicts; patch ids cannot see it,
+ * per-commit containment can.
  */
 export function landedPoint(git, base, branch) {
   const commits = git.out('rev-list', '--first-parent', '--max-count=200', `${base}..${branch}`).split('\n').filter(Boolean);

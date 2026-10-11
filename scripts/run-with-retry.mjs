@@ -1,51 +1,8 @@
 #!/usr/bin/env node
 /**
- * Runs one command **under a time bound**, retrying a fixed number of times on
- * failure.
- *
- * **Why it exists — apt ate 20 minutes whole** (measured 2026-08-20). The E2E job's
- * setup step (`playwright install-deps chromium`) died **six times in one day**, and
- * the shape of the death was the problem: not a single test ran, the log repeated
- * `Ign: http://azure.archive.ubuntu.com/... InRelease` and then stopped, and 19
- * minutes 42 seconds later the 20-minute job timeout left only
- * `The operation was canceled.` All four shards died at the same place together, so
- * one PR cost six re-runs.
- *
- * **apt has no bound on waiting.** If the mirror does not answer it waits forever,
- * and when the only thing cutting that "forever" is the job timeout, the failure is
- * known **only after paying the full cost**. So this does two things: bound a single
- * attempt, and retry when the bound is hit.
- *
- * **Why a script rather than a bash loop** — because it has to be testable. A `for`
- * loop inside CI YAML is verified only by running CI, and that verification costs 20
- * minutes and a runner. The failure paths (killing a stuck command; the exit code
- * when the last attempt also fails) have to be **caused deliberately** to be
- * exercised, and there is no way to reproduce them in CI. As a script they can all be
- * walked with a fake command — which is what `run-with-retry.test.mjs` does.
- *
- * **A stuck command is killed by process *group*.** `playwright install-deps`
- * re-launches apt itself. Killing only the parent leaves a grandchild holding the
- * lock, and the next attempt blocks on that same lock. So the child is spawned
- * `detached` to become its own process-group leader, and the kill signals the whole
- * group via `-pid`. SIGTERM first, then SIGKILL if it survives the grace period.
- *
- * **`--best-effort`** is for setup work that is nice to have but whose absence the
- * next step reports on its own. Installing system libraries is like that: the runner
- * image already has most of them, and if one is genuinely missing, Playwright fails
- * when the browser launches **and names the missing library**. Better to leave a
- * warning and let the next step make the real verdict than to stop a whole PR because
- * a mirror wobbled.
- *
- * Conversely, something like downloading the browser — **without which nothing
- * works** — is used without this flag, and then a final failed attempt exits 1.
- *
- * Usage:
- *
- * ```bash
- * node scripts/run-with-retry.mjs --attempts=3 --timeout-ms=180000 \
- *   --label="playwright install-deps" --best-effort \
- *   -- pnpm exec playwright install-deps chromium
- * ```
+ * Runs one command under a time bound, retrying on failure: `apt` waits forever on a dead mirror.
+ * A stuck command is killed by process group (`detached` child, kill via `-pid`) so grandchildren
+ * release the lock. `--best-effort` is for setup whose absence the next step reports itself.
  */
 
 import { spawn } from 'node:child_process';

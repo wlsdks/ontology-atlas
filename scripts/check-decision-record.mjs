@@ -1,40 +1,8 @@
 #!/usr/bin/env node
 /**
- * Decision-record gate.
- *
- * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` routes significant decisions by
- * reversibility and Atlas risk, but a trigger list written only in prose is
- * enforced by whoever happens to remember it. The founding incident
- * (2026-07-27) was exactly that: a product pass self-exempted a change that
- * crossed Atlas's meaning and agent-handoff boundary, then shipped.
- *
- * Most of that trigger list is semantic ("positioning", "the words a stranger
- * reads first") and no script can see intent. Three rows are mechanical, and
- * this gate holds those three:
- *
- *   1. a user-facing route is added or removed  → "new or removed surface"
- *   2. the MCP tool set or CLI command set changes → "public contract change"
- *   3. the design system's vocabulary or ramps move → "spec change"
- *
- * When any fires, the same change must append to `docs/DECISIONS.md`. The
- * gate does not judge the record's quality — it makes the decision *exist*,
- * with its dissent and falsifier, where the next pass will read it.
- *
- * Same idea as this repo's lint rules: a spec with no rule is not upheld.
- *
- * ## Row 3 was added on 2026-08-03 — it had been a rule that lived only in a document
- *
- * Rule 3 of "rules for growing the system" in
- * `docs/DESIGN-SYSTEM.md` — *changing a spec means convening the design-systems
- * seat* — existed along with its trigger list (`.claude/rules/design.md`), but
- * **nothing enforced it.** Measured: of five commits that widened a value-layer ramp,
- * one had a ledger record. The shape this repository keeps failing in.
- *
- * The judgement uses an **inventory**, not file names —
- * `scripts/lib/design-spec-census.mjs` explains why it is narrowed that way. In
- * short: the trigger files are among the most frequently touched in this repository
- * (79 of the last 300 commits touched one), so "in the diff means ledger" produces 63
- * false positives. Looking only at vocabulary and ramp values leaves 16 of those 79.
+ * Decision-record gate, three mechanical rows: a user-facing route added or removed, the MCP tool
+ * or CLI command set changing, the design vocabulary or ramps moving. Each needs an appended
+ * `docs/DECISIONS.md` record.
  */
 
 import { readFileSync } from "node:fs";
@@ -53,12 +21,8 @@ import { readLedgerSource } from "./lib/record-ledgers.mjs";
 const LEDGER = "docs/DECISIONS.md";
 
 /**
- * Every record must be the six-field template within one screen (the ledger
- * was condensed to it on 2026-09-02). Checked before the trigger logic and
- * regardless of it: a record that exists but cannot be read in one pass fails
- * the ledger's own first contract ("read before convening"), which is what the
- * gate protects. Measured before the cut: median record 51 lines, nine labels,
- * eleven records a day.
+ * Every record must be the six-field template within one screen. Checked before and regardless of
+ * the trigger logic: a record that cannot be read in one pass fails the ledger's first contract.
  */
 function templateFailures() {
   let source;
@@ -172,11 +136,8 @@ const entries = git(["diff", "--name-status", `${base}...HEAD`])
     const [status, ...paths] = line.split("\t");
     const code = status[0];
     if (code === "R" && paths.length === 2) renamedFrom.set(paths[1], paths[0]);
-    // A rename (R100 with detection on by default) is a deletion of the old
-    // path plus a creation of the new one. Left as a single R entry, a pure
-    // `git mv` of a route file — a change that retires one public URL and
-    // creates another — passed the A/D surface filter with no DECISIONS.md
-    // record required (bug sweep 2026-09-01, reproduced in a scratch repo).
+    // A rename is a deletion plus a creation: left as one R entry, a `git mv` of a route file would
+    // pass the A/D surface filter with no record required.
     if ((code === "R" || code === "C") && paths.length === 2) {
       const expanded = [{ status: "A", path: paths[1] }];
       if (code === "R") expanded.push({ status: "D", path: paths[0] });
@@ -192,12 +153,9 @@ const surfaceChanges = entries
   .map((entry) => `${entry.status === "A" ? "new surface" : "surface removed"}: ${entry.path}`);
 
 /**
- * The entry point is watched only where it decides the contract. Every edit to
- * `mcp/src/index.js` used to demand a decision record, so a one-line internal
- * fix paid for a ledger entry nobody would read (2026-09-26). The tool table
- * itself is under `server/`, still watched whole; in the entry point only
- * a changed line that names the request handlers or the read-only and consent
- * filters moves what a client can call.
+ * The entry point is watched only where it decides the contract. The tool table under `server/` is
+ * watched whole; in the entry point only changed lines naming request handlers or
+ * read-only/consent filters change what a client can call.
  */
 const ENTRY_POINT = "mcp/src/index.js";
 const ENTRY_POINT_CONTRACT = /setRequestHandler|TOOLS_FOR_LIST|TOOL_BY_NAME|READ_TOOL_NAMES|READ_ONLY_MODE|WRITE_CONSENT_MODE/;

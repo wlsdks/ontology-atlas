@@ -49,9 +49,6 @@ export default async function ProjectOgImage({
           justifyContent: 'space-between',
           padding: '72px',
           background:
-            // An indigo glow slightly above and left of centre on a dark canvas. Under the
-            // glassmorphism ban, a single gradient is allowed here as an exception because the OG
-            // image is external (used to emphasize the hub accent).
             `radial-gradient(circle at 22% 28%, ${accent}26 0%, transparent 48%), linear-gradient(180deg, #08090a 0%, #0b0c0e 100%)`,
           color: '#f0f1f3',
           fontFamily:

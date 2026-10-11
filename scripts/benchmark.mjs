@@ -68,29 +68,9 @@ const TASKS = [
       "src/shared/lib/vault-document/validate-vault-document.ts 에서 export 되는 함수들을 모두 나열해줘.",
   },
   /*
-   * **D group: meaning, not lookup.**
-   *
-   * A1-A3 measure how cheaply an agent retrieves a graph fact, and C1-C2 are
-   * negative controls. None of them measure the claim this product actually
-   * makes, which is that a change lands in the right place and respects a
-   * boundary somebody already decided.
-   *
-   * ⚠️ **Do not phrase a D task as "should we build this?"** Measured 2026-08-25:
-   * the first version of D1 asked whether a feature belonged in a capability, and
-   * this repository's own `AGENTS.md` tells any connected agent to run the product
-   * owner gate before a product decision. Codex obeyed, opened
-   * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` and `docs/DECISIONS.md`, and spent
-   * fourteen minutes per cell running a PO pass. That measured our process files,
-   * not the vault, and it is an artifact of dogfooding: a user's repository has no
-   * PO operating system to trip. Ask what the boundary **is**, never what it
-   * should be.
-   *
-   * Each D task is phrased as a change request, the way a person would bring it.
-   * The graded answer is not "did it find the node" but "did it name the
-   * boundary, cite where the boundary lives, and stop where the boundary stops".
-   * The reason is in the vault body and nowhere in the source, so an agent that
-   * only greps has to invent one, and an invented rationale is the failure this
-   * group exists to catch.
+   * D group measures meaning, not lookup. Phrase tasks as change requests, never "should we build
+   * this?": that sends the agent through the product decision gate in `AGENTS.md`. Grade whether the
+   * answer names the boundary and cites where it lives.
    */
   {
     id: "D1",
@@ -104,10 +84,8 @@ const TASKS = [
      */
     key: {
       /*
-       * The prompt itself contains the words for "symbol search", so matching them
-       * would hand a free point to any answer that restates the question. The three signals below are things only
-       * the vault can supply: the exact excluded term, the notion of exclusion, and
-       * a verdict that puts the request outside the capability.
+       * The prompt contains the words for "symbol search", so matching them would give a free point to
+       * any answer restating the question. The signals below only the vault can supply.
        */
       boundary: [/\bAST\b/i, /제외|[Ee]xclud/, /범위 밖|밖입니다|밖에 있|out of scope|not in scope/i],
       provenance: [/capabilities\/mcp-tool-server/, /Inclusions? \/ Exclusions?|## Exclude/],
@@ -159,61 +137,24 @@ const TASKS = [
 const args = process.argv.slice(2);
 
 /*
- * **Why the project config has to move, not just the global one.**
- *
- * `codex mcp remove` edits `~/.codex/config.toml`. This repository also commits
- * `.codex/config.toml`, which declares `mcp_servers.ontology-atlas` so a fresh
- * checkout can connect without setup. Codex merges both, so removing the global
- * entry left the project entry serving the OFF cells.
- *
- * Measured 2026-08-25: an OFF run logged 8 `ontology-atlas/*` calls on A1 and 10
- * on B1. The whole 14-cell matrix was ON against ON, and it had been reporting a
- * clean OFF baseline since the automated path landed. A benchmark whose control
- * arm silently holds the treatment produces a small honest-looking effect, which
- * is worse than no benchmark.
+ * `codex mcp remove` edits only `~/.codex/config.toml`; the committed `.codex/config.toml` also
+ * declares `mcp_servers.ontology-atlas` and Codex merges both. The project config must be parked
+ * too, or OFF cells still serve the MCP server.
  */
 const PROJECT_CODEX_CONFIG = resolve(".codex/config.toml");
 const PARKED_CODEX_CONFIG = resolve(".codex/config.toml.benchmark-parked");
 
 /*
- * **Why a third mode, and why it has to hide the folder.**
- *
- * Measured 2026-08-25: in "MCP off" the agent answered D1 perfectly by running
- * `cat docs/ontology/capabilities/mcp-tool-server.md`. Of course it did — the vault is
- * ordinary markdown inside the repository, and removing the MCP server does not
- * remove the files.
- *
- * So the old two-mode matrix can only ever measure the MCP interface. It cannot
- * answer the question this product exists to answer, which is whether the
- * recorded meaning adds anything the source alone cannot give. For that, the
- * control arm has to have no vault at all.
- *
- *   none : no vault on disk, no MCP  — can the source alone answer?
- *   off  : vault markdown present, no MCP — grep and cat reach it
- *   on   : vault plus the MCP tools
- *
- * `none` is the honest control. `off` measures what the markdown adds over the
- * source; `on` measures what the tools add over the markdown.
+ * Three modes: `none` (no vault on disk, no MCP: can the source alone answer?), `off` (vault
+ * markdown present, no MCP), `on` (vault plus MCP tools). `none` is the control; `off` measures
+ * what markdown adds over source, `on` what the tools add over markdown.
  */
 const PARK_ROOT = join(tmpdir(), "oatlas-benchmark-park");
 
 /*
- * **Everything that has to leave the repository, and why each one.**
- *
- * Measured 2026-08-25, and every line here is a control arm that leaked:
- *
- * - `docs/ontology` is the vault. Renaming it inside the repo was not enough:
- *   the agent found `docs/ontology.benchmark-parked/` and read it 19 times. A
- *   parked folder has to leave the tree the agent can search.
- * - `public/docs-vault` and `src/entities/docs-vault/data` are generated copies
- *   of the same vault. `pnpm docs-vault:build` writes them, so hiding only the
- *   source folder hides nothing.
- * - `docs/benchmark/tasks.md` and `rubric.md` carry the graded answers. They are
- *   parked in **every** mode, not just the no-vault one, because an answer key
- *   inside the repository under measurement is not a control problem, it is a
- *   cheating problem: all nine D1 cells read them, one of them 51 times.
- *
- * `docs/benchmark/results/` deliberately stays: the harness writes into it.
+ * Everything parked must leave the tree the agent can search; renaming inside the repo was not
+ * enough. Generated vault copies are parked too. The answer files are parked in every mode: an
+ * answer key in the repo is cheating. `docs/benchmark/results/` stays: the harness writes into it.
  */
 const VAULT_PARK = ["docs/ontology", "public/docs-vault", "src/entities/docs-vault/data"];
 const ANSWER_PARK = ["docs/benchmark/tasks.md", "docs/benchmark/rubric.md"];
@@ -247,13 +188,8 @@ function setProjectConfig(present) {
 }
 
 /*
- * A killed run must never leave the repository's committed config parked.
- *
- * `process.on("exit")` alone is not enough: measured 2026-08-25, a SIGKILL left
- * `.codex/config.toml` renamed on disk, which silently removes the MCP server
- * from every Codex session in this checkout until someone notices. So the run
- * also repairs the state it finds on the way in, and any later run — or a plain
- * `pnpm benchmark --dry-run` — puts a stranded config back.
+ * A killed run must never leave the committed config parked: `process.on("exit")` is not enough
+ * (SIGKILL), so each run repairs state found on the way in.
  */
 setProjectConfig(true);
 setVault(true);
@@ -271,10 +207,8 @@ const offOnly = args.includes("--off-only");
 const noneOnly = args.includes("--none-only");
 const withNone = args.includes("--with-none") || noneOnly;
 /*
- * **Why repeats.** The 2026-08-25 single-shot run put C2 at 10,534 tokens OFF and
- * 49,196 ON for a task where both modes ran the same two shell commands. At n=1 an
- * agent benchmark reports its own sampling noise, and the mean it produces looks
- * like a finding. A median over an odd number of runs survives one outlier cell.
+ * Repeats: at n=1 an agent benchmark reports its own sampling noise; a median over an odd number
+ * of runs survives one outlier cell.
  */
 /* `--only=B1,A3` narrows the matrix while iterating on one measured failure. */
 const only = (args.find((a) => a.startsWith("--only="))?.split("=")[1] ?? "").split(",").filter(Boolean);

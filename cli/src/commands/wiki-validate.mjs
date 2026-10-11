@@ -1,6 +1,6 @@
-// `ontology-atlas wiki-validate [vault]`: judges every `wiki/` page against `docs/ONTOLOGY-ATLAS-SPEC.md` §11 with
-// `mcp/src/wiki-schema.mjs`, the module every surface uses. Exit codes follow `docs/DECISIONS.md` (2026-09-04):
-// 0 when answered (no pages included), 1 when a page does not fit, 2 when the vault could not be read.
+// `ontology-atlas wiki-validate [vault]`: judges `wiki/` pages against ONTOLOGY-ATLAS-SPEC section
+// 11 with `mcp/src/wiki-schema.mjs`. Exit 0 when answered, 1 when a page does not fit, 2 when
+// unreadable.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';

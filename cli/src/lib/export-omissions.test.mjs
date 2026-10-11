@@ -1,5 +1,5 @@
-// An export states what it did not carry; the payload stays valid JSON-LD and the status line says it
-// (`.claude/rules/surfaces.md`). The verdict is reached by counting, never a hand-written list.
+// An export states what it did not carry; the payload stays valid JSON-LD
+// (`.claude/rules/surfaces.md`).
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';

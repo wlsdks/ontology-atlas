@@ -21,11 +21,6 @@ export async function generateMetadata({
   });
 }
 
-/**
- * `/agents` — the coding tools on this computer on one tab, and everything MCP on the other
- * (2026-09-17). The workspace reads `?tab=` through `useSearchParams`, which needs this
- * `Suspense` boundary under `output: 'export'`.
- */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>

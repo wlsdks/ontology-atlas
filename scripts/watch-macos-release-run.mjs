@@ -209,19 +209,9 @@ function findReleaseRun(options, sha) {
 }
 
 /**
- * Refresh what `/download` says about the release that just published.
- *
- * ⚠️ **Why this runs itself now.** It used to print the commands and stop, on the reasoning that the
- * bot token cannot push to protected `main`. True, and irrelevant: **a person dispatches the
- * release**, so the credentials that just pushed the tag are the same ones that can open this PR.
- * Handing somebody a list of commands at the end of a twenty-minute build is handing them a step to
- * forget, and a forgotten one leaves the public download page advertising an older release.
- *
- * The generator reads the **published** release for real byte sizes and SHA-256 values, so it is run
- * here rather than copied out of the build artifact: same numbers, one less thing to move by hand.
- *
- * Failure here is reported, never fatal. The release itself has already succeeded; a page that is one commit
- * behind is worth a loud message, not an exit code that suggests the build went wrong.
+ * Opens the PR that refreshes `/download` for the published release, with the credentials that
+ * pushed the tag. The generator reads the published release for real sizes and SHA-256 values.
+ * Failure is reported, never fatal.
  */
 function refreshDownloadPage(options) {
   const branch = `chore/download-facts-${options.tag}`;

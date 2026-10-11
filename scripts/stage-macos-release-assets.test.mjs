@@ -55,9 +55,6 @@ test("stages exactly the four release assets, flat", () => {
 });
 
 test("renames the updater archive to a URL-safe, versioned name", () => {
-  // Tauri emits `Ontology Atlas.app.tar.gz`; GitHub turns the space into a dot, so
-  // the URL in latest.json would no longer match and surface as "no update
-  // available" with no error.
   const a = fakeBundle("1.3.0", "aarch64");
   try {
     const staged = stageReleaseAssets({ bundleDir: a.bundleDir, outDir: a.outDir });

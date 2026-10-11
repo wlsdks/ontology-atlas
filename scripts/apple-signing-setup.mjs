@@ -182,17 +182,9 @@ export function commandCsr({ dir, name, email }) {
     );
   }
 
-  // Apple requires 2048-bit RSA.
-  //
-  // **Do not use `-nodes`** (leave unencrypted). This private key will eventually
-  // be backed up off this disk — losing it makes the certificate useless, so a
-  // backup is unavoidable. An unencrypted private key file means **whoever obtains
-  // the file holds the signing authority**: they can sign apps under the owner's
-  // real name.
-  //
-  // So openssl asks for the passphrase itself. **Only the person knows it** — if
-  // the script chose it, the person would not, and the backup would be unusable.
-  // That is why only this call uses `stdio: inherit`.
+  // Apple requires 2048-bit RSA. No `-nodes`: an unencrypted private key lets whoever obtains the
+  // file sign apps. openssl asks for the passphrase itself so only the person knows it; this is the
+  // only call with `stdio: inherit`.
   console.log("[apple-signing] Enter a password to protect the private key (it is not shown on screen).");
   run("openssl", ["req", "-new", "-newkey", "rsa:2048",
     "-keyout", keyPath,

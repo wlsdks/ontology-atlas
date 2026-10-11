@@ -163,7 +163,6 @@ test('--check fails, names both tags, and writes nothing when the committed fact
     assert.equal(runGenerator(root, bin).status, 0, 'could not write the facts to compare against');
     const generatedPath = path.join(root, GENERATED);
     const current = fs.readFileSync(generatedPath, 'utf8');
-    // The exact drift the owner found: an older release still named on the page.
     const stale = current.replace(/tag: "v1\.2\.3"/g, 'tag: "v1.2.2"');
     assert.notEqual(stale, current, 'the fixture no longer contains a tag to age');
     fs.writeFileSync(generatedPath, stale);

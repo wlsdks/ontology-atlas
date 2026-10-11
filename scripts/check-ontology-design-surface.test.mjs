@@ -143,7 +143,6 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  // Only code-surface contracts remain; the three that pinned doc prose were removed.
   assert.equal(report.requiredSurfaceMarkerCount, 3);
   assert.equal(report.violations.length, 0);
   assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 3 workbench structure contracts/);
@@ -170,10 +169,8 @@ test("ontology design surface fails closed when its scan matches zero files", ()
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
-  // The planted string must be one a live check actually matches. Until 2026-09-08 this
-  // fixture planted `linear-gradient`, and the gradient check was lifted the same day —
-  // leaving an assertion that passed whether the ignore rule worked or not. A test that
-  // cannot fail is not a gate; the marker below is what the scanner still refuses.
+  // The planted string must be one a live check still matches, or the assertion passes whether or
+  // not the ignore rule works.
   writeFixture(
     root,
     "src/views/docs-vault/lib/popout-template.test.ts",

@@ -121,9 +121,8 @@ const PALETTE_ROOT_PATTERN =
   /^--color-(?:canvas|panel|elevated|text-[a-z]+|indigo-(?:brand|accent|hover)|status-[a-z]+)$/;
 
 /**
- * **Value-layer files that emit axes and options through cva** — the inventory
- * counts their names and values. `badge-class.ts` (static badge geometry) joined on
- * 2026-08-15.
+ * Value-layer files that emit axes and options through cva; the inventory counts their names and
+ * values.
  */
 const VARIANT_VOCABULARY_FILES = new Set([
   'src/shared/ui/control-class.ts',
@@ -134,18 +133,13 @@ const VARIANT_VOCABULARY_FILES = new Set([
 const PRIMITIVE_EXPORT_FILES = new Set([
   'src/shared/ui/controls.tsx',
   'src/shared/ui/surface.tsx',
-  // The modal authority created on 2026-08-15 with design-system ratification — what it exports is the contract.
   'src/shared/ui/dialog.tsx',
-  // 2026-08-15 (2) form behaviour layer — Input/Textarea · Checkbox.
   'src/shared/ui/input.tsx',
   'src/shared/ui/checkbox.tsx',
-  // 2026-08-15 (3) exclusive single selection — SegmentedControl.
   'src/shared/ui/segmented-control.tsx',
   /*
-   * 2026-08-15 (8) the radiogroup **behaviour layer** — what this file exports is
-   * the contract (changing the shape of `groupProps`/`itemProps` changes every
-   * container wearing it). It emits no values at all, so an export inventory is
-   * correct here rather than a vocabulary inventory.
+   * The radiogroup behaviour layer: its exports are the contract (changing `groupProps`/`itemProps`
+   * changes every container wearing it). It emits no values, so an export inventory fits.
    */
   'src/shared/lib/keyboard/use-roving-radio-group.ts',
 ]);

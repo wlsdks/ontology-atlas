@@ -43,17 +43,8 @@ export const rules = [
   {
     order: 820,
     /*
-     * ⚠️ **Editing the docs surface runs the e2e that drives it** (2026-08-08).
-     *
-     * Missing this mapping caused a real incident. #987 moved the docs header's
-     * "sample | local" radio into the vault chip menu, and
-     * `docs-deeplink.spec.ts` clicks that radio. The advisor **never once pointed at
-     * that spec**, so it was not run locally, and CI stayed red while **six more PRs
-     * merged** (2-minute timeout × 3 retries × two tests).
-     *
-     * `.claude/rules/testing.md` warns about exactly this: delete a screen and sweep
-     * its e2e specs in the same PR. That sweep was left to human memory; the tool does it instead:
-     * **a check the tool cannot point at is a check that does not exist.**
+     * Editing the docs surface must run the e2e specs that drive it (`.claude/rules/testing.md`: sweep
+     * a screen's specs with the screen).
      */
     command:
       'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
@@ -66,22 +57,9 @@ export const rules = [
   {
     order: 830,
     /*
-     * ⚠️ **Editing the Agents destination runs the e2e that drives it** (2026-09-19).
-     *
-     * The same hole the docs rule above was opened for. Measured on this branch: changing
-     * `McpPage.tsx`, `ConnectorsPanel.tsx`, `agents-workspace/index.tsx`, `AgentsPage.tsx` or
-     * `McpRedirectPage.tsx` suggested **no Playwright spec at all**, while three specs drive
-     * exactly those files — including the one that proves `ontology-atlas://mcp?install=…`
-     * still opens the connectors dialog, which is the named falsifier of the 2026-09-19
-     * decision that made MCP a tab of this page. The e2e specs only ran during that work
-     * because the specs themselves were edited; a person changing the screen alone would have
-     * shipped past them.
-     *
-     * All three are true for every path listed: `mcp-connector-add` presses into the
-     * connectors card and arrives through `/mcp/`'s redirect, `agent-connect-panel-census`
-     * reaches the share pane through the rail and the tab strip, and `web-surface-smoke`
-     * registers this screen's degradation cards (`agent-server-unavailable`, the connectors
-     * card) and the tab address they are reached by.
+     * Each spec drives these files: `mcp-connector-add` via `/mcp/`'s redirect,
+     * `agent-connect-panel-census` via the rail and tab strip, `web-surface-smoke` for the degradation
+     * cards and tab address.
      */
     command:
       'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
@@ -108,10 +86,8 @@ export const rules = [
   },
   {
     order: 850,
-    // Since the surface split (2026-07-27) the web does not follow the app, so anyone
-    // touching a capability bridge easily checks only the app and moves on. The web is
-    // an unattended surface, so that pass becomes decay — touching a bridge also
-    // suggests the web smoke test.
+    // The web does not follow the app, so touching a capability bridge must also suggest the web smoke
+    // test; the web is an unattended surface.
     command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
     reason: 'desktop capability bridge or local-vault entry changed — the web surface is unattended',
     matches: [
@@ -139,12 +115,8 @@ export const rules = [
   },
   {
     order: 1020,
-    // 2026-08-04 — for someone adding a route this advisor suggested only tsc. A route
-    // is the input of three gates: the decision ledger (`decisions:check`), the
-    // accessibility classification (`audited-route-coverage` → `pnpm test:contracts`),
-    // and the actual measurement (the two ratchets). Without the third, a new screen's
-    // contrast shortfall passes **while appearing on no list at all** — on 2026-08-03
-    // two 404 pages were carrying AA 4.42:1 that way.
+    // A route is the input of three gates: the decision ledger (`decisions:check`), accessibility
+    // classification (`audited-route-coverage`), and the two ratchets that measure contrast.
     command:
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
@@ -152,19 +124,8 @@ export const rules = [
   },
   {
     order: 1030,
-    // 2026-08-08 — for someone editing the gateway's layout this advisor **did not
-    // suggest that layout's grid check**, and a regression went through the gap:
-    // adding one line to the footer turned `download-gateway-grid` red at all eight
-    // widths, nobody ran that spec locally, and it surfaced only in CI.
-    //
-    // This repository's discipline is "point at the tool instead of a hand-written
-    // list", which makes **a check the tool cannot point at a check that does not
-    // exist**. Even with `download-gateway` right there in the spec name, it is
-    // useless without a path↔check link.
-    //
-    // The origin values (`PAGE_COLUMN`/`PAGE_GUTTER`) are included because they are the
-    // baseline the grid measures against — editing them moves all eight widths without
-    // touching the layout.
+    // Editing the gateway layout must run its grid check. `PAGE_COLUMN`/`PAGE_GUTTER` are included
+    // because they are the baseline the grid measures against.
     command: 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts',
     reason: 'the gateway plate or its frame changed — six elements must still share one origin',
     matches: [

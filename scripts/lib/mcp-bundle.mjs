@@ -1,27 +1,7 @@
 /**
- * The pure part of the MCP Bundle (`.mcpb`) build.
- *
- * An `.mcpb` is a zip holding one MCP server plus a `manifest.json` that says
- * how to start it — the same idea as `.vsix` or `.crx`. It is the one
- * distribution channel the official MCP Registry accepts that publishes nothing
- * to a package registry: the artifact is a GitHub Release asset, and the
- * registry verifies only its URL and SHA-256. That is why Atlas can be
- * discoverable in the MCP ecosystem while `docs/DECISIONS.md` (2026-07-27) keeps
- * the npm channel retired.
- *
- * Two things here are measured, not assumed:
- *
- * 1. **The bundle carries exactly `mcp/package.json`'s `files` list.** That list
- *    is what the server itself declares as its own shipping surface, so the
- *    bundle cannot drift from it by hand-editing a second list.
- * 2. **One file must lose its types.** `mcp/src/analysis-record.mts` is imported
- *    directly and relies on Node's type stripping, which is unflagged only from
- *    Node 23.6. A host supplies its own Node to a bundle, so the server died on
- *    Node 20 and 22 (`ERR_UNKNOWN_FILE_EXTENSION`) until that single file was
- *    compiled to `.mjs`. With it stripped, the same bundle answered `tools/list`
- *    with all 38 tools on Node 20, 22, 24 and 25. The `engines` floor of
- *    `>=24 <25` is this repository's toolchain choice; the SDK's own floor is
- *    `>=20`.
+ * The pure part of the `.mcpb` build: a zip holding one MCP server plus a `manifest.json`. It
+ * carries exactly `mcp/package.json`'s `files` list. `mcp/src/analysis-record.mts` is compiled to
+ * `.mjs` because Node type stripping is unflagged only from Node 23.6.
  */
 
 /** The bundle's own layout. `server/` mirrors `mcp/`, so entry paths stay readable. */
@@ -269,10 +249,9 @@ function registryPackageEntry({ downloadUrl, fileSha256 }) {
 }
 
 /**
- * The registry identity. GitHub-authenticated namespaces are `io.github.<owner>/`,
- * so this name and the repository owner cannot disagree, and the Dockerfile's
- * ownership label must repeat it exactly — `registryInvariantProblems` checks that
- * rather than trusting two files to stay in step.
+ * The registry identity. GitHub-authenticated namespaces are `io.github.<account>/`, so this name
+ * and the repository account cannot disagree; the Dockerfile's ownership label must repeat it
+ * exactly (`registryInvariantProblems`).
  */
 export const REGISTRY_SERVER_NAME = 'io.github.wlsdks/ontology-atlas';
 const OCI_IMAGE_REPOSITORY = 'ghcr.io/wlsdks/ontology-atlas-mcp';

@@ -42,20 +42,9 @@ const SKIP_DIRS = new Set([
   'src-tauri',
   'public',
   /**
-   * **A worktree is somebody else's checkout** (2026-08-01).
-   *
-   * `.claude` is in `KEEP_DOT_DIRS` so the walk descends into it, and this
-   * repository **always** keeps worktrees at `.claude/worktrees/<branch>`
-   * (`CLAUDE.md` says to work that way). Each contains a full copy of the
-   * repository, so the check counted every document twice and resolved that copy's
-   * citations **against this repository's root**, reporting real paths as broken.
-   *
-   * The result is the familiar failure: **the gate, not the code, is wrong and
-   * red.** With even one worktree present `docs:links` becomes unusable, and then
-   * people learn to switch the gate off or ignore it.
-   *
-   * The match is by name, so `worktrees/` is skipped wherever it appears — documents
-   * inside a worktree are checked by that branch's own CI.
+   * A worktree is somebody else's checkout: worktrees live at `.claude/worktrees/<branch>` with a
+   * full repository copy, which would double every document and resolve citations against the wrong
+   * root. Skipped by name wherever it appears; each branch's own CI checks them.
    */
   'worktrees',
 ]);

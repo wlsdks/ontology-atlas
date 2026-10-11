@@ -33,17 +33,8 @@ export async function generateMetadata({
     },
     description: t('siteTagline'),
     /**
-     * ⚠️ **hreflang is not given here — each page gives its own.**
-     *
-     * This layout used to pin `{en: '/en/', ko: '/ko/', 'x-default': '/en/'}`. A layout is the
-     * parent of every route, so **every page advertised "my English counterpart is the site home"** —
-     * `/ko/docs/`'s counterpart is `/en/docs/`, yet it pointed at `/en/` (measured 2026-07-29: 7 of
-     * 9 indexable pages shipped with that signal).
-     *
-     * hreflang is a **per-path fact**, so only something that knows the path can state it.
-     * `buildPageMetadata` in `@/shared/lib/public-pages/page-metadata` assembles the canonical, the locale pair,
-     * and `x-default` in one place. Saying nothing here is better than passing down something wrong —
-     * for routes absent from the sitemap (`/project/new`, `/git`) having no hreflang at all is correct.
+     * hreflang is a per-path fact, so each page sets it through `buildPageMetadata`; a layout-level
+     * value would be wrong for every child route.
      */
   };
 }
@@ -82,8 +73,8 @@ export default async function LocaleLayout({
               `useLocalVault()` — this fixed the eight independent call sites producing two or three
               duplicate instances. */}
           <LocalVaultProvider>
-            {/* The notification region's name is **supplied by the app** — a primitive that reads
-                translations itself becomes this app's rather than portable (2026-08-15). */}
+            {/* The notification region's name is supplied by the app so the primitive does not read
+               translations itself. */}
             <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
               <TooltipProvider delayDuration={300}>
                 {/* Sets the change baseline once when a local vault loads, so agent edits pulse on

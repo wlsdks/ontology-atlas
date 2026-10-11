@@ -1,5 +1,5 @@
-// A command `init` prints must run when pasted; `ontology-atlas` is in no registry (`docs/DECISIONS.md` 2026-07-27).
-// This lives here because the `npm-channel-retired` contract scans files, and this violation lives in runtime stdout.
+// A command `init` prints must run when pasted. Lives here because the `npm-channel-retired`
+// contract scans files, not runtime stdout.
 
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
@@ -16,7 +16,6 @@ const CLI_ENTRY = path.resolve(
   'index.mjs',
 );
 
-/** Strips ANSI colour so only the characters are judged — the verdict is about the command, not the colour. */
 function stripAnsi(text) {
   return text.replace(/\[[0-9;]*m/g, '');
 }

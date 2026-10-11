@@ -151,9 +151,8 @@ impl Drop for ReservedPath {
     }
 }
 
-/// A busy `flock` may be our own child between `fork` and `exec` holding an
-/// inherited copy, so it is retried within a measured budget, then fails closed
-/// (`docs/records/decisions/2026-09-13-audit-log-inherited-lock-59f33326-5629-4cb7-8601-33c3b2f005fd.md`).
+/// A busy `flock` may be our own child between `fork` and `exec` holding an inherited copy, so it
+/// is retried within a fixed budget, then fails closed.
 const AUDIT_LOCK_RETRY_PAUSE: Duration = Duration::from_micros(250);
 const AUDIT_LOCK_RETRIES: u32 = 52;
 
@@ -865,9 +864,7 @@ mod tests {
         );
     }
 
-    /// Positive control for the inherited-lock defect: a second open file description
-    /// held in process stands in for a mid-spawn child, because real children failed on
-    /// timing (`docs/records/decisions/2026-09-13-audit-log-inherited-lock-59f33326-5629-4cb7-8601-33c3b2f005fd.md`).
+    /// Positive control: a second open file description held in process stands in for a mid-spawn child.
     #[cfg(unix)]
     #[test]
     fn a_reserve_right_after_a_finalize_survives_a_foreign_hold_on_the_log() {

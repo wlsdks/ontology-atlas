@@ -31,8 +31,8 @@ export const DESIGN_CHANGE_SIGNALS = Object.freeze({
     directions: false,
     review: false,
     lenses: [],
-    // Words do not need the build-look-correct loop: one fresh capture of the
-    // state that shows them, after the change (policy v2, 2026-09-26).
+    // Words need no build-look-correct loop: one fresh capture of the state that shows them, after the
+    // change.
     proofs: [proof('final-capture', 'affected-state')],
   }),
   'local-visual': Object.freeze({

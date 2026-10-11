@@ -41,12 +41,9 @@ test('builds an npx line from the package identifier and nothing else', () => {
 
 test('leaves a container entry alone rather than assembling a command line out of fragments', () => {
   /*
-   * ⚠️ **Measured against GitHub's own registry entry, 2026-09-07.** Its `runtimeArguments` is a
-   * single `-e GITHUB_PERSONAL_ACCESS_TOKEN={token}`, so reading it as an argv line produced
-   * `docker -e GITHUB_PERSONAL_ACCESS_TOKEN={token}` — no `run`, no `--rm`, no image, and a
-   * literal `{token}` where a value belongs. An OCI entry publishes fragments, not a command;
-   * turning them into one is guesswork, and the curated line a person checked against the
-   * vendor's page beats a guess. An empty array is how that line survives.
+   * An OCI entry publishes fragments, not a command: `runtimeArguments` is only `-e
+   * GITHUB_PERSONAL_ACCESS_TOKEN={token}`, which as argv has no `run`, image or value. An empty
+   * array keeps the curated line.
    */
   assert.deepEqual(
     registryArgs({
@@ -76,10 +73,8 @@ test('drops a templated argument value instead of writing the placeholder down',
 
 test('takes the publisher own isSecret rather than guessing from the name', () => {
   /*
-   * This is the whole reason to prefer the registry. `looksLikeSecretKey()` reads a name, and it
-   * read `OPENAPI_MCP_HEADERS` — Notion's own documented variable, carrying a bearer token — as
-   * ordinary, so the connector attached with its credential absent and looked perfectly healthy
-   * (`connector-record.ts`, measured 2026-09-05).
+   * `looksLikeSecretKey()` reads a name and misses `OPENAPI_MCP_HEADERS`, which carries a bearer
+   * token; the registry's `isSecret` is the publisher's own flag (`connector-record.ts`).
    */
   assert.deepEqual(
     registryEnv({

@@ -633,9 +633,8 @@ function renderSummary({ date, summary, rows, title = 'Greenfield/brownfield lif
   return `${lines.join('\n')}\n`;
 }
 
-// Every point of a delta is a specific token an arm did not write. Printing them
-// stops a reader — including us — from reading a coverage number as a verdict
-// without checking which word decided it.
+// Prints the specific tokens an arm did not write, so a coverage number is not read without
+// checking which word decided it.
 function renderMissedEvidence(rows) {
   const tally = new Map();
   for (const row of rows) {
@@ -898,8 +897,6 @@ function main() {
     return;
   }
   if (options.dryRun) {
-    // This used to print "definitions valid" while calling nothing that could
-    // fail, so the dry run was a permanently green gate.
     const errors = validateDefinitions();
     if (errors.length) {
       for (const error of errors) process.stderr.write(`[lifecycle] ${error}\n`);

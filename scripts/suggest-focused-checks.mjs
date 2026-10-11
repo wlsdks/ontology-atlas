@@ -20,16 +20,8 @@ const SHARED_AGENT_CONFIG_PATTERNS = [
 const LOCAL_AGENT_STATE_PREFIXES = ['.agents/', '.codex/'];
 
 /**
- * A deleted file is not a check subject.
- *
- * ⚠️ **Measured 2026-08-21**: `git diff --name-only` **also returns deleted paths.**
- * Feeding those into the suggester builds `eslint <deleted file>`, and that command
- * dies on "no such file" — which is exactly how the push retiring the connect sheet
- * was blocked (the hook went red in 16 seconds).
- *
- * What was deleted still matters (the ledgers and contracts pointing at that file
- * should break). But that is **the contract checks' job**; handing a non-existent path
- * to a tool that reads files is simply a malfunction.
+ * `git diff --name-only` also returns deleted paths, and a file-reading tool dies on one.
+ * Deletions are matched by `deletedPathsFromGit` instead.
  */
 export function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {}) {
   return paths.filter((path) => exists(resolve(cwd, path)));
@@ -52,13 +44,8 @@ export function changedPathsFromGit({
 }
 
 /**
- * The deleted counterpart. A deleted path must never reach a file-reading tool
- * (the rule above), but it is still a **rule-matching subject**: deleting a
- * route file must still suggest `decisions:check`, deleting a vault doc
- * `docs-vault:check`, deleting a view `test:contracts` — their ratchets scan
- * the filesystem and do move on deletions. Dropping deletions before all
- * matching made a deletion-only change print "nothing to run" and exit 0
- * (bug sweep 2026-09-01).
+ * A deleted path never reaches a file-reading tool but still matches rules: ratchets scan the
+ * filesystem and move on deletions.
  */
 export function deletedPathsFromGit({
   cwd = process.cwd(),
@@ -70,19 +57,8 @@ export function deletedPathsFromGit({
 }
 
 /**
- * The branch's own three-dot range, used when the working tree has nothing to say.
- *
- * ⚠️ **Measured 2026-09-12.** `git diff --name-only HEAD` describes the *working tree*.
- * The moment the work is committed that list is empty, and the advisor printed "no
- * changed paths against HEAD or untracked files" and **exited 0** — which is exactly
- * when an agent runs it, having just committed, and reads the zero as "verified". The
- * one instruction `AGENTS.md` gives about verification therefore returned nothing at the
- * only moment it was asked.
- *
- * `origin/main...HEAD` is the merge-base diff the pre-push hook already scopes itself
- * with, so merging main into the branch does not drag main's files into the plan. It is
- * the fallback, never the default: an uncommitted edit is still the more specific answer
- * and keeps priority.
+ * Fallback when the working tree has nothing to say: `origin/main...HEAD` is the merge-base diff
+ * the pre-push hook uses. An uncommitted edit keeps priority.
  */
 export function branchRangePathsFromGit({
   cwd = process.cwd(),
@@ -157,43 +133,14 @@ export function untrackedPathsForAdvisor(output) {
 }
 
 /**
- * **Runs the recommendations as given**, stopping at the first failure.
- *
- * **Why this mode exists** (2026-08-21). This tool has always named **exactly** what
- * to run. But people (and agents) took that list and **ran only part of it.** Two CI
- * rounds burned that way in one day on 2026-08-20 — only `test:contracts` was run
- * while `test:run` and e2e were skipped, and the break was precisely in what was
- * skipped.
- *
- * The same repository's `pre-commit` hook already recorded the lesson: *"a discipline
- * that relies on memory, once it repeats three times, is not a discipline but an
- * accident queue."* Removing the room to pick is the answer, and the place to remove
- * it is **the suggester itself.**
- *
- * Why it stops at the first failure: later checks usually collapse from the same
- * cause, so running them all lengthens the output without adding information. This
- * gives exactly one thing to fix.
+ * Runs the recommendations as given and stops at the first failure: later checks usually collapse
+ * from the same cause, so this leaves one thing to fix.
  */
 const PLAYWRIGHT_PREFIX = 'pnpm exec playwright test ';
 
 /**
- * Collapse many single-spec Playwright invocations into one.
- *
- * **Why** (measured 2026-08-22). Playwright commands are emitted one spec at a time,
- * which is right for a human who wants to run one. On a large change it is not: a
- * 1,536-file branch produced **657** checks, most of them a separate
- * `playwright test <one spec>`. Each invocation pays its own startup and global
- * setup, and the hook runs them serially — 35 checks took 40 minutes, putting the
- * full run past **twelve hours**. CI runs the same specs sharded in parallel and
- * finishes in about eight minutes.
- *
- * Playwright accepts several spec paths in a single invocation, so the specs are
- * merged into one command. **Coverage is identical** — the same spec files, in one
- * process instead of N. Nothing is dropped and nothing is deferred, which is what
- * separates this from the "pick a few and hope" failure this tool exists to stop.
- *
- * The merged command takes the place of the first Playwright entry so ordering is
- * preserved: whatever ran before e2e still runs before it.
+ * Merges single-spec Playwright commands into one invocation at the first entry's position: same
+ * spec files, one startup, order preserved.
  */
 export const STATIC_BUILD_PAYS_OFF_AT_SPECS = 3;
 

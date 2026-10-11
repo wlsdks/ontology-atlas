@@ -165,7 +165,6 @@ function sameFileKey(path) {
   try {
     if (existsSync(path)) return realpathSync(path).toLowerCase();
   } catch {
-    /* unresolvable real path: the string is still a verdict */
   }
   return resolve(path).toLowerCase();
 }

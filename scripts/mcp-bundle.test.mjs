@@ -214,10 +214,8 @@ describe('what the artifact must not carry, and what it must', () => {
 
 describe('what the registry would actually accept', () => {
   /**
-   * The check that used to print "ready to publish" verified three fields and
-   * not the document. Measured: the server's own npm description is 126
-   * characters against a schema limit of 100, so a publish would have been
-   * rejected after a green check.
+   * The registry check must validate the whole document: the server's npm description is longer than
+   * the schema limit, so a three-field check would pass and the publish would be rejected.
    */
   it('keeps the description inside the schema limit the registry enforces', () => {
     const document = serverJson({ version: '0.13.0', tag: 'v1.1.0', fileSha256: 'a'.repeat(64) });

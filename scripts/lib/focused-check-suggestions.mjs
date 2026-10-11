@@ -118,9 +118,8 @@ export function normalizeChangedPath(path) {
 
 export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnlyPaths = [] } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
-  // Deleted paths participate in RULE matching only — the per-file direct
-  // suggestions below embed paths into file-reading commands, which a deleted
-  // path would kill (measured 2026-08-21), while a rule command is global.
+  // Deleted paths take part in RULE matching only: the per-file suggestions embed paths into
+  // file-reading commands, which a deleted path would break, while a rule command is global.
   const normalizedDeleted = [...new Set(deletedPaths.map(normalizeChangedPath).filter(Boolean))]
     .filter((path) => !normalizedPaths.includes(path));
   const rulePaths = [...normalizedPaths, ...normalizedDeleted];
@@ -199,9 +198,8 @@ function directSourceLanguageSuggestions(paths) {
 
 /**
  * A changed test runs itself, and a changed file runs every suite whose imports reach it
- * (`import-graph/test-reach.mjs`). Contracts run by exact name, so CI runs those files and
- * not the whole contract suite; unit suites go through `vitest related`. A deleted file is
- * no longer in Vitest's graph, so the tests still importing it run by name.
+ * (`import-graph/test-reach.mjs`). Contracts run by exact name, unit suites through `vitest
+ * related`; a deleted file's importers run by name.
  */
 function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
   const reach = loadTestReach();
@@ -252,27 +250,17 @@ function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
 }
 
 /**
- * Runs **ESLint directly** on changed `src/**` and `app/**` sources.
- *
- * In this repository the design-system spec (type, radius, leading, motion, and
- * shadow ramps; forbidden gradients; accent×tint pairing; FSD boundaries) is
- * enforced by `no-restricted-syntax`, not by a document. Yet in the 2026-08-04
- * field trial this advisor suggested only tsc, contracts, and i18n for a new `.tsx`
- * view and **never once suggested lint** — the gate carrying the spec was absent
- * from the list.
- *
- * It runs on **the changed files only**, not the whole `pnpm lint`. The full run is
- * an escalation; what is needed here is an immediate answer to "is the screen I
- * just wrote inside the spec".
+ * Runs ESLint directly on changed `src/**` and `app/**` sources: the design-system ramps and FSD
+ * boundaries are enforced by `no-restricted-syntax`. Changed files only; the full `pnpm lint` is
+ * an escalation.
  */
 function directLintSuggestions(paths) {
   const lintable = paths.filter((path) => /^(?:src|app)\/.+\.(?:ts|tsx)$/.test(path));
   if (lintable.length === 0) return [];
   return [
     {
-      // --max-warnings 0 matches the full `pnpm lint` lane (2026-09-01 review):
-      // the warning ratchet lives at zero, and a bare eslint run exits 0 on a
-      // new warning, so the breach only surfaced as a red main after merge.
+      // --max-warnings 0 matches the full `pnpm lint` lane: the warning ratchet lives at zero, and a
+      // bare eslint run exits 0 on a new warning.
       command: `pnpm exec eslint --max-warnings 0 ${lintable.join(' ')}`,
       reason: 'design-system ramps and FSD boundaries are lint-enforced on changed source',
       paths: lintable,
@@ -281,11 +269,9 @@ function directLintSuggestions(paths) {
 }
 
 /**
- * Lints every other changed JavaScript or TypeScript file the full `pnpm lint` covers.
- * A scripts-only change used to plan no lint at all, so an unused variable in
- * `scripts/pr-land.test.mjs` reached main and failed the next change whose plan
- * happened to run the whole-repository lint (train #1921, 2026-09-26).
- * `--no-warn-ignored` keeps a file the config ignores from counting as a warning.
+ * Lints every other changed JavaScript or TypeScript file the full `pnpm lint` covers, so a
+ * scripts-only change does not plan no lint. `--no-warn-ignored` keeps a config-ignored file from
+ * counting as a warning.
  */
 function directScriptLintSuggestions(paths) {
   const lintable = paths.filter(

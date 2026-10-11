@@ -1,26 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm conflicts:scan` — find the pull requests and branches this branch will
- * conflict with, while there is still time to change the plan.
- *
- * **Why this exists** (2026-09-26). Parallel rounds found their conflicts at
- * landing: the train or an integration branch hit them after every branch was done, and
- * the fix was a hand merge at the most expensive moment. Research on multi-agent
- * development reports cross-agent pull request pairs conflicting at roughly 42%
- * and recommends surfacing overlap during development. This script answers two
- * questions for the current branch:
- *
- *   - **overlap**: which open pull requests (and, with `--match`, which local
- *     branches) change a file this branch also changes;
- *   - **conflict**: whether a trial merge of this branch with each overlapping
- *     head conflicts, and in which files.
- *
- * It is read-only toward GitHub: one `gh pr list` call (a single GraphQL query)
- * carries every open pull request's changed files. Heads missing locally are
- * fetched by `refs/pull/<n>/head` without writing a ref; the trial merge runs on
- * `git merge-tree --write-tree`, which touches no worktree, index or ref.
- *
- * Exit status: 0 no conflict, 1 at least one conflict, 2 the scan could not run.
+ * `pnpm conflicts:scan`: finds PRs and branches this branch will conflict with. overlap: another
+ * change touches a file this branch changes; conflict: a trial `git merge-tree --write-tree`,
+ * touching no worktree. Exit 0 clean, 1 conflict, 2 scan failed.
  */
 
 import { execFileSync } from 'node:child_process';

@@ -44,23 +44,8 @@ export const rules = [
   {
     order: 1310,
     /*
-     * ⚠️ **Do not use a readout as a gate** (corrected by measurement, 2026-08-21).
-     *
-     * What used to be here was `pnpm dogfood:status`. That command exits **1 even when
-     * the graph is merely immature** — its `health` child reports `needs_attention` for
-     * "this project's competency answers are not filled in yet", while the output
-     * itself says ***"Nothing is broken"***.
-     *
-     * Measured: **it is 1 on main too.** So every push that edited the vault was
-     * blocked **for an unrelated reason** (this rule is wired into the pre-push hook,
-     * and it really did block). Clearing that state (`finalize_project_meaning`) is
-     * something the tool itself pins as **not to be done without human approval**, so an
-     * agent cannot quietly step past it either.
-     *
-     * Instead the gate is **a check that only speaks when something is broken**:
-     * `vault:validate` measures frontmatter integrity and graph references and fails
-     * only when they are actually broken (CI uses it too). `dogfood:status` remains a
-     * readout for a person — it is not removed, it is **taken out of the gate slot**.
+     * Do not use a readout as a gate: `dogfood:status` exits 1 on an immature graph, which would block
+     * unrelated pushes. `vault:validate` speaks only when frontmatter or references are broken.
      */
     command: 'pnpm vault:validate',
     reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
@@ -88,15 +73,8 @@ export const rules = [
   {
     order: 1340,
     /*
-     * **A vault section that outgrows its cap is holding more than one idea.**
-     *
-     * Measured 2026-08-25: `capabilities/mcp-server.md` carried a single
-     * `## Core Flow` of 12,865 bytes — five lines of flow followed by twenty-two
-     * paragraphs of hard limits and fail-closed rules. Nothing there was wrong;
-     * an agent simply had to read 12 KB named "Core Flow" to reach any rule.
-     *
-     * `vault:validate` checks frontmatter integrity and the em-dash ratchet
-     * checks copy, so neither can see body shape. This is a third measurement.
+     * A vault section that outgrows its cap holds more than one idea; neither `vault:validate`
+     * (frontmatter) nor the em-dash ratchet (copy) sees body shape.
      */
     command: 'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
     reason: 'vault node bodies changed — a section may now hold more than one idea',

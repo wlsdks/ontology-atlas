@@ -398,9 +398,8 @@ function invalidAssessment(input) {
 }
 
 /**
- * A project that never ran finalize_project_meaning: the verdict is still "not
- * confirmed", but `competency: null` routes it to "not written yet" instead
- * of `assessment_input_invalid`.
+ * A project that never ran finalize_project_meaning: still "not confirmed", but `competency: null`
+ * routes it to "not written yet" instead of `assessment_input_invalid`.
  */
 function notAuthoredAssessment(input) {
   return deriveMeaningAssessment({

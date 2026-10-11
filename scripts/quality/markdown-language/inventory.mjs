@@ -153,13 +153,9 @@ export function auditMarkdownEntries(entries) {
         result.languageSwitcherLines += 1;
         continue;
       }
-      // A focused-test coordinate quotes a test title from source. When that
-      // title is Korean, the Hangul is quoted evidence, the same class as the
-      // path beside it, not contributor-facing prose: `docs:language` held
-      // these at zero and thirteen vault elements could cite no test at all
-      // (2026-09-04). Only the exact bullet shape qualifies, only when every
-      // Hangul code point sits inside the backticks, and the lines are counted
-      // under their own ratchet so the carve-out cannot widen into prose.
+      // A focused-test coordinate quotes a test title from source; a Korean title is quoted evidence,
+      // like the path beside it, not contributor prose. Only the exact bullet shape qualifies, only when
+      // every Hangul code point is inside the backticks, and it is counted under its own ratchet.
       if (!inLeadingFrontmatter && QUOTED_EVIDENCE_COORDINATE.test(line)) {
         const quoted = line.match(QUOTED_EVIDENCE_COORDINATE)[1];
         const outside = line.replace(quoted, '');

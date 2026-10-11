@@ -143,9 +143,8 @@ describe('decision ledger retrieval', () => {
     // must cope, which the test above pins, rather than assume uniqueness.
     const withDecision = real.filter((r) => r.fields.decision).length;
     const withFalsifier = real.filter((r) => r.fields.falsifier).length;
-    // Measured 2026-09-02: 418/478 decisions, 365/478 falsifiers. The margin
-    // below catches a label census the parser stopped understanding, not a
-    // handful of records written without one.
+    // The margin catches a label census the parser stopped understanding, not a handful of records
+    // written without one.
     assert.ok(withDecision / real.length > 0.8, `only ${withDecision}/${real.length} records expose a decision label`);
     assert.ok(withFalsifier / real.length > 0.7, `only ${withFalsifier}/${real.length} records expose a falsifier label`);
   });

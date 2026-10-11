@@ -15,9 +15,6 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/widgets/acp-chat-panel",
   "src/views/ontology-edit-redirect",
   "src/views/ontology-insights",
-  // feat/rail-rollout retired `operations-nav` (top tab bar) and
-  // `ontology-sub-nav` (their inline sub-tab) in favor of the persistent
-  // `app-nav-rail` + per-page `app-settings-menu` — those replace them here.
   "src/widgets/app-nav-rail",
   "src/widgets/app-settings-menu",
   "src/widgets/bottom-tab-bar",
@@ -29,11 +26,7 @@ const DEFAULT_ALLOWED_EXTENSIONS = new Set([".css", ".ts", ".tsx"]);
 const DEFAULT_IGNORED_FILE_PATTERN = /(?:^|\/)(?:[^/]+\.)?(?:test|spec)\.[^/]+$/;
 
 export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
-  // The visual-expression checks that used to sit here (hover shadow, scale hover,
-  // backdrop blur, purple/pink, decorative gradient, glow ring) were lifted by the
-  // owner on 2026-09-08 — `docs/DECISIONS.md`, "The expression bans are lifted".
-  // What stays is structural: a full-height coloured rail is a layout decision,
-  // not an effect.
+  // What stays is structural: a full-height coloured rail is a layout decision, not an effect.
   {
     id: "no-kind-decision-stripe",
     pattern: /ontology-kind-decision-stripe/g,

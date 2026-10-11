@@ -1,39 +1,8 @@
 #!/usr/bin/env node
 /**
- * **Builds and signs** the only updater archive, from the signed `.app`
- * (`createUpdaterArtifacts: false` keeps `tauri build` from making one).
- *
- * **Why this step exists.** An archive packed before `desktop:sign` /
- * `desktop:sign:adhoc` holds **the unsigned app**. Measured on a clean checkout,
- * 2026-07-28:
- *
- *   tar xzf "Ontology Atlas.app.tar.gz"
- *   codesign --verify --deep --strict "Ontology Atlas.app"
- *     → code has no resources but signature indicates they must be present
- *
- * That message is a state this repository has already fought once. A Tauri bundle
- * has only the binary linker-signed and no `Contents/_CodeSignature`, so macOS
- * judges it **"is damaged" rather than "unidentified developer"**. The former dialog
- * offers "open anyway"; the latter **does not** (which is exactly why #717 added
- * ad-hoc signing to unsigned releases).
- *
- * So the fork in the road is:
- *
- *   users who downloaded the DMG   → a signed app (fine)
- *   users who updated in-app        → a damaged app (cannot install or launch)
- *
- * Only the update path breaks, and silently: the release finishes green, every DMG
- * check passes, and nobody knows — until **the first person to receive an update**
- * finds out.
- *
- * This script runs **after** signing, rebuilds the archive from the signed app, and
- * re-signs it with minisign. It uses Tauri's layout (`<app>.app/` at the root) and
- * disables macOS tar's AppleDouble (`._*`) companions, matching Tauri's tar, which
- * also carries no extended attributes.
- *
- * Fail-closed: the `.app`'s signature structure is verified **before** repacking.
- * Repacking a broken signature would make this step hand out a green result while
- * fixing nothing.
+ * Builds and signs the only updater archive from the signed `.app` (`createUpdaterArtifacts:
+ * false`). An archive packed before signing holds the unsigned app, which macOS judges "damaged",
+ * so only the update path would break. The `.app` signature is verified before repacking.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
