@@ -6,24 +6,9 @@ import { expect, test } from "@playwright/test";
 import { validateWebviewVerifyPayload } from "../../scripts/lib/verify-macos/payload-contract.mjs";
 
 /**
- * **The packaged app's own probe, run against the rendered screen.**
- *
- * The installed app collects DOM markers with `src-tauri/src/webview_verify/dom_marker_probe.js`
- * and `scripts/lib/verify-macos/payload-contract.mjs` judges them. Those two files and this
- * screen can drift apart in complete silence: nothing in a unit run executes the probe against
- * real HTML, so the first sign is a failed verification eight minutes into a bundle build — or,
- * worse, a verification that quietly stopped measuring anything.
- *
- * Measured 2026-09-20: the contract pinned `[role="tab"] === 10` from the era when every entry
- * on this board was a tab. After the row was split in two the board opens on the brief, whose
- * first row is a radiogroup and which draws no question tabs at all, so `/ontology/insights`
- * could not pass under any correct rendering. This spec runs the real probe over the real screen
- * and hands the result to the real contract, in seconds.
- *
- * ⚠️ **Only the insights markers come from the browser.** The shell fields below are the app's,
- * because a browser tab is not a WebView: it has no `tauri://` address and no packaged window
- * size. Forcing them keeps a failure here meaning "the board and its contract disagree" rather
- * than "this is not the desktop app".
+ * Runs the packaged app's DOM probe over the rendered screen and hands the result to the real
+ * contract. Only the insights markers come from the browser; shell fields are the app's, since a
+ * browser tab has no `tauri://` address or packaged window size.
  */
 const PROBE_SOURCE = readFileSync(
   join(process.cwd(), "src-tauri", "src", "webview_verify", "dom_marker_probe.js"),
@@ -36,12 +21,7 @@ const APP_SHELL_BODY_TEXT = "Atlas\n지도\n문서함\n공방\n인사이트\n프
 type Markers = Record<string, unknown>;
 
 async function collectMarkers(page: import("@playwright/test").Page): Promise<Markers> {
-  /*
-   * ⚠️ **Let the panel finish arriving.** The panel crossfades in, so it starts at opacity 0 and
-   * the probe's own visibility test — which the packaged app applies after a nine-second hold —
-   * reads it as not visible. Locally the fade is over before the probe runs and this passed; on a
-   * CI runner it did not, three times (2026-09-20). Measure settled, or measure nothing.
-   */
+  /* Let the panel finish its crossfade: the probe's visibility test reads opacity 0 as not visible. */
   await page.locator("[data-insights-panel]").first().evaluate(async (node) => {
     await Promise.all(node.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => undefined)));
   });

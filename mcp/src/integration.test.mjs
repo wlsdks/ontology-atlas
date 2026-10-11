@@ -198,11 +198,7 @@ function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = 
   });
 }
 
-/**
- * The version `2024-11-05` is under test, not stale: the oldest supported protocol version,
- * so old clients keep connecting. If the SDK drops it this turns red first, and
- * that is when the oldest supported version is raised.
- */
+/** The oldest supported protocol version is tested deliberately, so legacy clients keep connecting. */
 const INIT_REQUESTS = [
   {
     jsonrpc: "2.0",

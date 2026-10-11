@@ -33,9 +33,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     appPath: positional[0] ?? defaultAppPath,
     holdMs: holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : defaultHoldMs,
     killExisting: argv.includes("--kill-existing"),
-    // The release preflight asserts a claim about the *default* window, so it must run without the
-    // owner's saved geometry. Without this the `--min-window-size` verdict would be decided by
-    // whatever size a developer last dragged the window to.
+    // The preflight claims the default window, so it must not inherit a developer's saved geometry.
     resetWindowState: argv.includes("--reset-window-state"),
     leaveRunning: argv.includes("--leave-running"),
     openApp: argv.includes("--open-app"),
@@ -88,13 +86,9 @@ export function parseVerifyAppLaunchArgs(argv, {
 
 
 /**
- * `--leave-running` keeps the app alive after the harness returns, and the window-state plugin
- * writes geometry when that app eventually quits — directly over the owner's file the harness
- * just restored in its `finally` block. No ordering makes both flags honest at once, so the pair
- * is refused before anything launches. Mirrors `staleInstanceFailure`: a pure message so the
- * refusal itself is testable without a process exit.
- *
- * Returns the failure message, or `null` when the flags can coexist.
+ * `--leave-running` keeps the app alive, and the window-state plugin writes geometry on its later
+ * quit, over the file the harness restored. The pair is refused before launch. Returns the failure
+ * message, or `null` when the flags can coexist.
  */
 export function windowStateFlagConflict({ resetWindowState, leaveRunning } = {}) {
   if (!resetWindowState || !leaveRunning) {

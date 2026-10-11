@@ -26,25 +26,8 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 
 /*
- * Quiet scroller — **the conversation scrolls, and the bar does not draw** (owner,
- * 2026-09-06: *"a scrollbar appears on the right while we are talking … which AI chat
- * does that? it should just move down smoothly. keep the scrollbar hidden (it still
- * scrolls)"*).
- *
- * It is the same two declarations `.docs-vault-tab-strip` already carries, promoted to a
- * name any scroller can wear, because the strip's rule is the repository's existing answer
- * to "scrolls but shows no bar" and a second spelling is how two rules drift apart.
- *
- * ⚠️ **It removes a mark, not a behaviour.** Keyboard, trackpad and wheel scrolling are
- * untouched, so nothing about reach changes. What does change is the only *visual* signal
- * that more content exists below — so a surface where the bar was the sole "there is more"
- * cue pairs this with a `--tabbar-edge-fade` mask (the history popover does). The transcript
- * says it with its jump-to-latest chip, and a view whose content ends at a card boundary
- * needs no cue: the last line's position already says it.
- *
- * Applies to: the chat transcript, the slash menu, the past-conversation list, the
- * presentation body, and the workbench's two view scrollers.
- * Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
+ * Hides the scrollbar without changing behaviour; where the bar was the only 'more below' cue, pair
+ * it with a `--tabbar-edge-fade` mask. Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
  */
 .atlas-scroll-quiet {
   scrollbar-width: none;
@@ -54,37 +37,9 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 
 /*
- * **No scroller in this product draws a bar** (owner, 2026-09-07: *"I don't want
- * scrollbars to appear when things scroll. Everything, just smooth scrolling"*).
- *
- * The rule above was written for the conversation on 2026-09-06 and applied by hand, one
- * class at a time, to six surfaces. The owner then read the Library and asked for the same
- * thing everywhere — which is the honest shape anyway: a per-surface opt-in means every
- * new `overflow-y-auto` in the repository is a bar the author has to remember to remove,
- * and the six that had it were themselves the record of that not happening.
- *
- * So the two declarations move to the document, and `.atlas-scroll-quiet` stays as the
- * name a surface wears to say *this scroller was designed without one* — the marker
- * `chat-scroller-quiet.contract.test.ts` counts, and the reason each of those surfaces
- * either needs no "there is more" cue or pairs the hidden bar with a `--tabbar-edge-fade`
- * mask.
- *
- * ⚠️ **It removes a mark, not a behaviour.** Keyboard, trackpad, wheel and programmatic
- * scrolling are untouched; only the painted bar is gone. Where the bar was the sole signal
- * that content continues, the surface owes a fade — the Library's index column and the
- * conversation's history list both pay it.
- *
- * ⚠️ **Smooth is the page scroller only, and that is a deliberate narrowing.**
- * `scroll-behavior: smooth` changes what `element.scrollTop = n` *means*: the assignment
- * returns before the scroller has arrived. Eight measuring specs across this repository
- * set `scrollTop` or call `scrollIntoView` on inner scrollers and read the result on the
- * next line, so applying it to every box would have made those measurements race rather
- * than measure. The document scroller has no such caller. Surfaces that want to glide drive
- * it in their own code, as the chat transcript does (`use-transcript-follow.ts`).
- *
- * The reduced-motion block above carries `scroll-behavior: auto !important`, so the
- * preference already wins here and no second opinion is written.
- * Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
+ * No scroller draws a bar; only the page scroller is smooth, since `scroll-behavior: smooth` makes
+ * `element.scrollTop = n` return before arrival and races measuring specs. Reduced motion carries
+ * `scroll-behavior: auto !important`. Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
  */
 html,
 body,
@@ -104,26 +59,9 @@ body *::-webkit-scrollbar {
 }
 
 /*
- * **The Library's spine folds its finished steps when its own pane is short.**
- *
- * The landing draws three step cards and the saved questions inside the third, so the
- * one target a returning person is looking for — the row of the answer they saved — is
- * the last thing in the stack. Measured on the branch export (design-responsive,
- * 2026-09-11): at 390×844 that row stood 272px below the pane's fold, 270 at 1023×768,
- * 108 at 744×1133 and 34 at 1024×640, because below `lg` the reader is the upper half of
- * one column rather than a full-height pane.
- *
- * The question is therefore **how tall this pane is**, not how wide the window is, which
- * is what makes it a container query: the same window is fine at `lg` and short below it.
- * A `done` step's caption and action row are a record of work already finished, so they
- * are what folds; the number, the name and the state word stay, at the 44px
- * `--touch-target-min` head row, and the step keeps its border and its order.
- *
- * ⚠️ **The 640 is written twice on purpose, and a spec holds the two together.** CSS does
- * not substitute `var()` inside an `@container` condition, so the authority stays
- * `--library-spine-collapse-height` in the token block above and
- * `tests/e2e/library-spine.spec.ts` reads that token to drive the fold boundary it
- * measures — a drift between the two turns that spec red rather than shipping quietly.
+ * Container query on the pane height, not window width: below `lg` the reader is half a column.
+ * Finished steps fold their caption and actions. 640 is written twice since `var()` does not work in
+ * `@container`; `tests/e2e/library-spine.spec.ts` reads `--library-spine-collapse-height`.
  */
 .library-spine-scope {
   container-type: size;
@@ -176,24 +114,8 @@ body *::-webkit-scrollbar {
 }
 
 /*
- * Korean lines break between words, not between syllables (2026-09-25).
- *
- * The browser default (`word-break: normal`) lets Hangul wrap after any syllable, so a line can
- * end one syllable short of a word, with the verb's last syllable alone on the next. Every screen
- * had been fixing that one element at a time: 364 sites on 2026-09-25 — 256 `break-keep` classes
- * plus 108 hand-written `[word-break:keep-all]` — and three screen reviews in one round each
- * asked for it again. A fix per site is a promise the next site is born broken.
- *
- * On `body`, so it inherits: an element that means to break anywhere (`break-all`, a path with
- * `[overflow-wrap:anywhere]`) declares that on itself and wins over inheritance whatever its
- * layer. `overflow-wrap: break-word` is the safety for a run with no space at all — it breaks
- * only when the run would otherwise overflow, and leaves min-content sizing alone. Scoped to
- * `:lang(ko)` because `keep-all` only means "between words" for a script that puts spaces
- * between words. Outside every layer, beside the caps override, for the same reason it gives.
- * `:lang(ko)` holds from the first paint because the inline boot script sets `<html lang>` from
- * the path. It is the first script in `<body>` (`app/layout.tsx`, `<LangBootScript />`; served
- * after only Next's empty hidden div) and runs before any rendered body content is parsed
- * (`lang-boot-script.tsx`, `LANG_BOOT`).
+ * `keep-all` on `body` so Korean breaks between words, scoped to `:lang(ko)` (set before first paint
+ * by `LANG_BOOT`). Elements that break anywhere override it. Unlayered like the caps override.
  * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {
@@ -201,14 +123,11 @@ body *::-webkit-scrollbar {
   overflow-wrap: break-word;
 }
 
-/* ── Position of agent panel and selected-node inspector (2026-07-27) ──────────────────
-   The inspector is a fixed surface attached to the right edge of the viewport, and the agent panel is a column taking width from the same side. If both remain as-is, the inspector covers the panel — but
-   these two are **a pair that must be read together** (the basis of the proposal: looking at the node in the proposal while instructing the agent). So while the panel is open, the inspector stands inward by the panel's width.
-
-   **Written outside the layer**: The inspector's `right` is determined by Tailwind utility (`lg:right-[…]`)
-   and the utility layer wins over the component layer. Putting it in a layer quietly neutralizes this rule (in cascading layers, declarations without layers win).
-
-   New value 0 — sum of two existing tokens, and translation shares the **same duration·same curve** as panel reflow so they move as one body (if arriving separately, the inspector appears pushed). prefers-reduced-motion immediately downgrades to placement via the global base layer rule above. */
+/*
+ * The inspector shifts inward by the panel width while the agent panel is open, on the same duration
+ * and curve as panel reflow so they move as one body. Written outside any layer: the inspector's
+ * `right` comes from a Tailwind utility, and utilities beat the component layer.
+ */
 [data-fixed-surface-role='selected-node-inspector'] {
   transition: right var(--agent-panel-reflow-duration) var(--topology-motion-ease-out);
 }
@@ -219,11 +138,10 @@ body *::-webkit-scrollbar {
   }
 }
 
-/* ── Map control rail next to agent dock (2026-08-22) ───────────────────────
-   Even after the dock itself reduces the map column, the right-side map control remains at the wide default inset
-   (32px), and the new conversation surface was inset 12px further on the opposite side of the seam. The sum of these two, 44px, looked like two unrelated columns rather than a pair (measured on 14-inch).
-
-   Only when the dock opens is the map-side inset also adjusted to `--chrome-inset / 2` (12px). Since both sides of the seam match `right-3` of the conversation surface, the actual gap is 24px, with no screen-specific correction values. The right translation follows the dock's width with the same clock/curve, preserving existing hover color transition via `--motion-fast`. Reduced motion is immediately lowered to placement by the global rule above. */
+/*
+ * With the dock open, the map-side control inset becomes `--chrome-inset / 2` so both sides of the
+ * seam match and the gap is 24px; `right` follows the dock width on the same clock and curve.
+ */
 [data-agent-dock-adjacent-rail='true'] {
   transition-property: right, color, background-color, border-color;
   transition-duration:
@@ -256,19 +174,11 @@ body *::-webkit-scrollbar {
   transition-timing-function: var(--topology-motion-ease-out);
 }
 
-/* ── Toast (sonner) motion — swapping vendor factory values with app ramp (2026-07-28) ──
-   Measurement (1512×853, 60fps rAF sample): entrance opacity
-   increases as 0.025 → 0.101 → 0.177 → 0.267 → 0.362 → 0.497 … with **increasing delta** before bending. First frame share is **2.5%**, peak at the **6th frame**, ramp width **350ms+**.
-   Thus ① entrance uses ease-in (what the charter "marks as a named defect") ② exceeds DOM confirmation ceiling (240ms). Source is sonner's `transition: transform 400ms, opacity
-   400ms …` + browser default `ease` — **numbers no one adjusted effectively became**
-   the app's notification motion (#707 caught "Tailwind factory value 150ms" of the same type).
-
-   New value 0 — changed only to app ramp (`--motion-base` entrance / `--motion-fast` exit).
-   The rule that exit is faster than entrance matches overlay 3 types and map chrome.
-
-   **Written outside layer + high specificity**: sonner injects its own `<style>` into `<head>` at runtime,
-   coming **after** our stylesheet. With same specificity, vendor wins (reduced-motion side even uses `!important`). `[data-sonner-toaster]
-   [data-sonner-toast].app-toast` (0,3,0) raises it to win regardless of order. */
+/*
+ * Replaces sonner's factory transition (400ms, default `ease`, slow ramp) with the app ramp:
+ * `--motion-base` in, `--motion-fast` out. Outside any layer, with specificity (0,3,0): sonner
+ * injects its own `<style>` at runtime after ours, so equal specificity would lose.
+ */
 [data-sonner-toaster] [data-sonner-toast].app-toast {
   transition:
     transform var(--motion-base) var(--motion-ease),
@@ -281,17 +191,11 @@ body *::-webkit-scrollbar {
   transition-duration: var(--motion-fast);
 }
 
-/* ── The two walls a corner-anchored toaster stops short of ──────────────────────────
-   A toast that anchors to a pane's bottom-right corner (`useToastAnchor`, the Library
-   since 2026-09-12) has two edges that are not the window's, and both of them exist only
-   at some widths. They are reserves rather than JavaScript because the breakpoints are
-   already here: the conversation dock is a flex sibling of the reader from `xl`
-   (`LibraryAgentDock`) and below that it is a full-width overlay, and the bottom tab bar
-   is `lg:hidden`. So each reserve collapses to 0 exactly where its thing stops existing,
-   and `src/shared/ui/toast-position.ts` only has to add the gutter.
-
-   `--app-right-dock-width` is published by the view that has a dock open
-   (`right-dock-reserve.ts`); absent, the fallback is 0. */
+/*
+ * A pane-anchored toast has two walls that exist only at some widths: the conversation dock (from
+ * `xl`) and the bottom tab bar (`lg:hidden`). Each reserve collapses to 0 where its wall is absent;
+ * `--app-right-dock-width` comes from `right-dock-reserve.ts`, fallback 0.
+ */
 :root {
   --app-toast-dock-reserve: 0px;
   --app-toast-bottom-reserve: var(--topology-mobile-bottom-tab-reserve);
@@ -309,15 +213,11 @@ body *::-webkit-scrollbar {
   }
 }
 
-/* The toaster is bottom-centred in the **free lane** (owner, 2026-09-24): the space
-   between the innermost wall a screen declares on each side (`data-toast-wall` — the nav
-   rail, the map's INDEX stack, the map's docked panel), published while a toast stands
-   by `src/shared/ui/toast-walls.ts`. With no walls both variables are 0 and this is the
-   viewport's centre, the 2026-09-07 rule. It replaces top-centred on the viewport, which
-   stood over INDEX at 1040 and over an open dock below 1480. `%` rather than `vw`: the
-   toaster is fixed, so `100%` is the viewport less any scrollbar. sonner injects its own
-   stylesheet at runtime, after ours, with the same `[data-sonner-toaster][data-x-position]`
-   selector, so the `html` prefix is what makes this rule win. */
+/*
+ * Bottom-centred in the free lane between the innermost walls (`data-toast-wall`) published by
+ * `src/shared/ui/toast-walls.ts`; with none it is the viewport centre. `%` not `vw`: the fixed
+ * toaster excludes the scrollbar. The `html` prefix wins over sonner's runtime stylesheet.
+ */
 html [data-sonner-toaster][data-x-position='center'] {
   left: calc(
     var(--app-toast-left-wall, 0px) +
@@ -352,11 +252,10 @@ html [data-sonner-toaster][data-sonner-theme='dark'] [data-sonner-toast].app-toa
   color: var(--color-text-primary);
 }
 
-/* A floating panel that holds nothing to press passes the pointer through, its positioning
- * wrapper included (2026-09-25 interaction review). `Tooltip`'s `panelClassName="pointer-events-none"`
- * reached only the panel: Radix wraps it in a positioned box of the same size, and that box
- * still answered `elementFromPoint` and took the clicks meant for the row the panel lay over
- * (the Git remote hints across the "now" row, 246x34 at every width). */
+/*
+ * A floating panel with nothing to press passes the pointer through, including Radix's positioned
+ * wrapper, which otherwise answers `elementFromPoint` and takes clicks meant for the row below.
+ */
 [data-radix-popper-content-wrapper]:has(> .pointer-events-none) {
   pointer-events: none;
 }

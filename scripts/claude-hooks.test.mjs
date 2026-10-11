@@ -6,18 +6,6 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 
-// ⚠️ **This table was red from 2026-07-31 to 2026-08-17.** The hooks grew from two
-// to four that day (`block-unsafe-git` · `block-generated-edit`) while this table
-// stayed at two, and nobody ran this check so nobody knew. In the meantime even
-// the **shape** of the command strings recorded here changed (a
-// `${CLAUDE_PROJECT_DIR:-.}` prefix plus quoting).
-//
-// > A check nobody runs equals no check, and **a check left red is worse** — the
-// > next person cannot tell whether the red is a real defect or a stale
-// > expectation.
-//
-// So this table is filled **from measurement**. Adding or removing a hook breaks
-// here first, and that is this check's job.
 const HOOK_CONFIGS = [
   {
     name: 'Claude Code',
@@ -25,8 +13,6 @@ const HOOK_CONFIGS = [
     settingsFile: '.claude/settings.json',
     expectedCommands: [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-generated-edit.sh"',
-      // The landing guard: `gh pr merge`, `gh pr update-branch`, and
-      // `gh pr create` without `--draft` (2026-09-12).
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-manual-landing.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
@@ -58,11 +44,8 @@ const HOOK_CONFIGS = [
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
-      // The sensor lane, mirrored 2026-09-01 after measuring codex-cli 0.151.0
-      // firing PostToolUse for edit tools.
       'bash .codex/hooks/fast-sensor.sh',
-      // Once: Codex PreCompact/PostCompact output carries no model context
-      // (hooks reference), so the 2026-09-01 PreCompact wiring was removed.
+      // Once: Codex PreCompact/PostCompact output carries no model context.
       'bash .codex/hooks/inject-ontology-summary.sh',
     ],
     expectedPreToolMatchers: [
@@ -156,12 +139,8 @@ describe('agent hooks', () => {
   });
 
   /**
-   * The landing guard (2026-09-12).
-   *
-   * Landing is serialized by `pnpm pr:land`, which holds a shared lock, pours
-   * main into the branch, runs the local lanes and fires the one CI run. Every
-   * command below defeats one of those steps, and each is the obvious thing to
-   * type, which is why prose was not enough.
+   * Each command defeats a step of `pnpm pr:land`: shared lock, main merge, local lanes, single CI
+   * run.
    */
   const LANDING_HOOKS = [
     { name: 'Claude Code', hook: '.claude/hooks/block-manual-landing.sh' },
@@ -226,10 +205,6 @@ describe('agent hooks', () => {
   });
 });
 
-// The Git safety guard refuses the commands `.claude/rules/git.md` forbids:
-// hook bypass, force push, a direct push to main, and `reset --hard`. It had no
-// behaviour test until 2026-09-26, when `git -C <dir> push --force` and
-// `git push origin HEAD:main` were found to walk past it.
 describe('Git safety guard', () => {
   const GUARDS = ['.claude/hooks/block-unsafe-git.sh', '.codex/hooks/block-unsafe-git.sh'];
   const run = (hook, command) =>
@@ -284,11 +259,8 @@ const INJECT_HOOKS = [
   '.codex/hooks/inject-ontology-summary.sh',
 ];
 
-// ⚠️ **Omit `uid:` and these fixtures measure nothing** (measured 2026-08-17).
-// Since R14 every node has a `uid:`. Without it the whole graph fails to compile,
-// and the old hook was **silent** on that failure — so these three checks were
-// **comparing an empty string to an empty string** instead of measuring that an
-// inventory is produced.
+// Every node needs a `uid:`; without it the graph fails to compile and the hook stays silent, so
+// fixtures would compare an empty string to an empty string.
 const ALPHA_UID = '9b0f5a2c-7d31-4e58-b0c6-2f1a4e7d3c88';
 const BETA_UID = '4c7e1d90-6a2b-4f13-9d5e-8b0c3a6f2e41';
 
@@ -530,12 +502,6 @@ describe('commit-msg language gate', () => {
     assert.equal((await runHook(`chore: ${'\uFF76\uFF80\uFF76\uFF85'} pass\n`)).status, 1);
   });
 
-  /**
-   * The shape half of `.claude/rules/git.md`'s "Commit messages". The language half
-   * was enforced on 2026-08-24 for the reason a rule nothing checks is not a rule;
-   * the prefix list stayed unchecked until `wip`, `wip2` and `wip3` reached a branch
-   * on 2026-09-12.
-   */
   it('refuses a subject with no conventional prefix and quotes the allowed list', async () => {
     for (const subject of ['wip', 'wip2', 'WIP: the library work', 'just fixing things']) {
       const { status, stderr } = await runHook(`${subject}\n`);
@@ -699,14 +665,8 @@ describe('Codex secret read guard', () => {
   });
 });
 
-// The fast-sensor lane.
-//
-// The fixture project carries a stand-in for the markdown-language gate that
-// always fails, so the Markdown branch and its path handling are exercised
-// without depending on this repository's own docs. The eslint branch runs
-// against the real repository once (a clean file must stay silent); its RED
-// case was proven live when the lane landed and again when it was trimmed
-// (planted unused variable, 2026-09-26). The lint lane stays eslint's authority.
+// The fixture's stand-in for the markdown-language gate always fails, exercising the Markdown
+// branch without this repository's docs. The eslint branch runs against the real repository once.
 async function sensorFixture() {
   const { mkdir } = await import('node:fs/promises');
   const dir = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
@@ -768,12 +728,8 @@ describe('fast-sensor lane', () => {
   });
 });
 
-// Codex sends an edit as `apply_patch` with a patch envelope in
-// `tool_input.command` and no `file_path` key at all (measured 2026-09-01,
-// codex-cli 0.151.0). Both edit-side guards read the Claude shape and therefore
-// saw nothing on that runtime: the generated-output guard was live in main and
-// denied nothing, while the mirror table said it was covered. These cases pin
-// the payload the runtime actually sends.
+// Codex sends an edit as `apply_patch` with a patch envelope in `tool_input.command` and no
+// `file_path` key; these cases pin that payload.
 describe('Codex apply_patch payload parity', () => {
   const codexEdit = (path) => ({
     hook_event_name: 'PreToolUse',

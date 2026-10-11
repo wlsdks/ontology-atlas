@@ -171,9 +171,8 @@ test("no running instance is not a failure", () => {
 });
 
 
-// The window-state helpers take an injected fsImpl precisely so these tests never touch the real
-// `~/Library/Application Support/` — a test that rewrote the owner's saved geometry would be the
-// exact defect the helper exists to prevent.
+// The helpers take an injected `fsImpl` so these tests never touch the real `~/Library/Application
+// Support/`.
 function makeFakeFs(initialFiles = {}) {
   const files = new Map(Object.entries(initialFiles));
   const renames = [];
@@ -202,8 +201,8 @@ test("window state path follows the tauri-plugin-window-state layout under the g
 });
 
 test("no bundle identifier yields no window state path, and setting a null path aside is inert", () => {
-  // An unreadable Info.plist must degrade to "nothing to isolate", not crash the harness before
-  // the verdict; the guard shape stays uniform so the finally-block restore never branches.
+  // An unreadable Info.plist degrades to nothing to isolate; the uniform guard shape keeps restore
+  // branch-free.
   assert.equal(windowStatePath({ bundleIdentifier: null, home: "/Users/owner" }), null);
   assert.equal(windowStatePath({ home: "/Users/owner" }), null);
 
@@ -233,7 +232,6 @@ test("an existing window state file is moved — not deleted — and restore put
   const guard = setAsideWindowState(statePath, { fsImpl: fakeFs });
   assert.equal(guard.moved, true);
   assert.equal(guard.parked, `${statePath}.verify-backup`);
-  // Moved, not deleted: the owner's geometry must survive the run byte-for-byte at the parked path.
   assert.equal(fakeFs.files.has(statePath), false);
   assert.equal(fakeFs.files.get(guard.parked), geometry);
 
@@ -285,8 +283,8 @@ test("window state restore waits for the app to exit before putting the file bac
 });
 
 test("window state stays parked — loudly — while the app still runs", async () => {
-  // Restoring under a live writer would let the app overwrite the owner's geometry on quit.
-  // The honest behaviour is to keep the parked backup and report it, never a silent restore.
+  // Restoring under a live writer lets the app overwrite the geometry on quit, so the parked backup
+  // is kept and reported.
   const guard = makeFakeGuard({ moved: true });
   const warnings = [];
   const result = await restoreWindowStateAfterExit({

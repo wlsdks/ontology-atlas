@@ -1,23 +1,12 @@
 /**
- * Contract for the installed app's [Settings → AI connection → connect by
- * address] flow.
- *
- * The one discipline this file keeps: **if it was not found, say it was not
- * found.** The failure mode that has burned this repository repeatedly is "the
- * element was never found, so violations are 0 and the check is green", so every
- * verdict here requires a *positive* fact — a missing marker is a failure, not a
- * pass. That is why each marker is tested with `!== true`; `?? true` and
- * "check only if present" are forbidden here.
+ * A missing marker is a failure, not a pass: each marker is tested with `!== true`; `?? true` and
+ * check-only-if-present are forbidden here.
  */
 
 /** Ollama's default address. Same value as `src/shared/lib/llm-connection/tauri-secrets.ts`. */
 export const AI_SETTINGS_DEFAULT_BASE_URL = "http://localhost:11434";
 
-/**
- * Only this flow gets a wide marker-wait window — it is five clicks with a real
- * HTTP round trip in the middle. Widening the window is not the same as
- * softening the verdict.
- */
+/** This flow gets a wide marker-wait window: five clicks with an HTTP round trip in the middle. */
 export const AI_SETTINGS_PAYLOAD_TIMEOUT_MS = 45000;
 
 /**
@@ -44,13 +33,6 @@ export function isSafeAiSettingsBaseUrl(value) {
   return !/[\s"'`<>\\]/.test(url);
 }
 
-/**
- * Marker verdict — `null` on pass, otherwise a string naming **where it
- * stopped**.
- *
- * The failure string is the report a person reads, so it is phrased as "what
- * could not be done", not "what was missing".
- */
 export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = {}) {
   const run = markers?.aiSettingsVerification;
   if (!run || typeof run !== "object") {
@@ -81,9 +63,6 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
     return `WebView local base URL field held ${observedBaseUrl || "an empty value"}, expected ${expected}`;
   }
 
-  // If there is failure text, **that text is the verdict**. Ollama being off
-  // lands here — rather than passing silently, relay what the screen told the
-  // user.
   const failure = String(markers.aiSettingsFailureText || run.failureText || "").trim();
   if (failure) {
     return `installed app reported a local runner failure at ${observedBaseUrl || expected || "the configured address"}: ${failure}`;
@@ -96,11 +75,8 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
   if (!Number.isFinite(modelCount) || modelCount < 1) {
     return "installed app verified the local runner but offered no model to choose";
   }
-  // **"Choosable" includes being visible** (measured on the installed app
-  // 2026-08-02). The old verdict stopped at `modelOptionCount >= 1` while on
-  // screen an ancestor's `overflow: hidden` clipped a 264px list to 39px, showing
-  // 1 of 7 — and every role, aria, and text marker still passed. Counted is not
-  // the same as visible.
+  // Choosable includes visible: an ancestor's `overflow: hidden` can clip the list while role, aria
+  // and text markers still pass.
   const listHeight = Number(run.modelListHeight);
   const visibleHeight = Number(run.modelListVisibleHeight);
   if (!Number.isFinite(listHeight) || listHeight < 1) {
@@ -150,10 +126,8 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
 }
 
 /**
- * Verdict on the in-vault audit record — compares what the screen called success
- * against **the fact left on disk**. Screen markers alone cannot prove the call
- * actually went to that host (the audit record's host is never drawn into the
- * DOM).
+ * Screen markers cannot prove the call went to that host; the audit record's host is never drawn
+ * into the DOM.
  */
 export function validateAiSettingsAuditTrail(lines, {
   since = 0,
@@ -168,8 +142,6 @@ export function validateAiSettingsAuditTrail(lines, {
       const parsed = JSON.parse(text);
       if (parsed && typeof parsed === "object") entries.push(parsed);
     } catch {
-      // A malformed line is not this verdict's concern — if the line we want is
-      // absent, the check below fails.
     }
   }
 

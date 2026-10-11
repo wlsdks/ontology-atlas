@@ -8488,7 +8488,6 @@ const RECORD_PROFILE_DOC = {
     'role_adapter: [src/payments/adapters/**]',
     'allow_domain: []',
     'allow_adapter: [domain]',
-    // Excluding type-only edges from the verdict is a reviewed declaration under the shipped encoding.
     'dependency_usages: [value]',
     'evidence: [ARCHITECTURE.md]',
     '---',

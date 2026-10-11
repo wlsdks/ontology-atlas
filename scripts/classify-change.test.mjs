@@ -384,10 +384,6 @@ test('the external judgment example is inventoried and runs its offline contract
   }
 });
 
-// 2026-09-01 review regressions: four formerly-unconditional gates ran on no
-// pull request, rendering .ts in ui/ segments planned zero browser evidence,
-// two MCP-spawning smokes missed the needsMcp flag, and PLANNER_SURFACE was a
-// hand-copy that disagreed with the advisor's own planner rule.
 test('token, toc, and package gates reach the PRs that touch their inputs', () => {
   const tokens = buildImpactPlan({ files: ['app/globals.css'] });
   assert.ok(tokens.lanes.gates.commands.includes('pnpm check:tokens'));
@@ -408,8 +404,7 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
 
   const cli = buildImpactPlan({ files: ['cli/src/commands/relate.mjs'] });
   assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
-  // The command tests spawn the source MCP server (growth.test.mjs), so the
-  // lane must install mcp/node_modules first; PR #1801 went red without it.
+  // The command tests spawn the source MCP server, so the lane must install mcp/node_modules first.
   assert.equal(cli.lanes.gates.needsMcp, true);
 });
 

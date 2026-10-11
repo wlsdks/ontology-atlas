@@ -1248,7 +1248,7 @@ DER parsing and unrelated encodings.
     });
     assert.equal(registration.focus.capability?.slug, 'capabilities/agent-server');
 
-    // `Excluded:` inside the legacy combined section is still a boundary.
+    // `Excluded:` inside the combined section is still a boundary.
     const excluded = buildCompactAgentBrief({
       brief,
       artifact,

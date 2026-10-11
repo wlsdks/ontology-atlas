@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// Rewrites the advisory per-file weights that balance browser CI shards
-// (scripts/run-playwright-ci.mjs) from Playwright JSON reports. The weights go
-// stale as specs are added: on 2026-09-27 the 16 unmeasured files carried
-// about a third of a full run and left one shard 4.5 minutes behind the others.
-//
-// Usage: gh run download <run-id> -p 'playwright-timings-*' -D output/timings
-//        pnpm e2e:durations -- output/timings [--run=<run-id>]
+// Rewrites advisory per-file weights that balance browser CI shards from Playwright JSON reports.
+// Usage: gh run download <run-id> -p "playwright-timings-*" -D output/timings
+// then pnpm e2e:durations -- output/timings [--run=<run-id>]
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

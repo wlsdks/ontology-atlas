@@ -28,14 +28,8 @@ const ROUTES = (maybeBase?.startsWith("http") ? maybeRoutes : [maybeBase, ...may
   Boolean,
 );
 /**
- * The default sweep — **every screen a person can reach**.
- *
- * Until the 2026-08-04 audit this list had five lines, and among the six missing
- * screens was `/ko/ontology/insights` — **the screen with the densest data marks**.
- * Measuring it found 0 shortfalls, but that had been **unmeasured**, not passing.
- * When the list is narrowed by a subjective "screens people look at for a long
- * time", an unmeasured screen and a clean screen look like the same green. Adding a
- * route means adding it here (gate:
+ * The default sweep covers every screen a person can reach; an unmeasured screen looks like a
+ * clean one. Adding a route means adding it here (gate:
  * tests/contract/contrast-sweep-coverage.contract.test.ts).
  */
 export const DEFAULT_ROUTES = [
@@ -55,18 +49,12 @@ export const DEFAULT_ROUTES = [
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/git/",
-  // Agents (added 2026-08-20, ledger 90) — promoted to a destination, so it became auditable.
   "/ko/agents/",
-  // MCP (added 2026-09-05) — the folder's own connection and the connectors split off
-  // `/agents` into their own destination.
   "/ko/agents/?tab=mcp",
-  // Models (added 2026-09-25) — the API Key pane moved here from the settings sheet.
   "/ko/agents/?tab=models",
   "/ko/library/",
   "/ko/automations/",
-  // 404 is **two pages** — with and without a locale prefix. This is exactly where
-  // the AA shortfall of 4.42:1 hid on 2026-08-03, and neither ratchet had ever looked
-  // here. Including only one blocks half of that incident.
+  // 404 is two pages, with and without a locale prefix; both are swept.
   "/ko/this-route-does-not-exist/",
   "/this-route-does-not-exist/",
 ];
@@ -119,7 +107,6 @@ function collectInPage() {
     if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) === 0) continue;
     const rect = el.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) continue;
-    // Off-screen text is unreadable to the user — counting defects there contaminates the verdict.
     if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) continue;
     const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(el)}`;
     // Each (colour, size, background) combination once — printing 200 repeated cards as

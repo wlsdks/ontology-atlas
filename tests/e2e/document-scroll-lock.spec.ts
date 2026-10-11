@@ -3,36 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **The document (html) does not scroll — the shell owns the viewport.**
- *
- * **What happened (full responsive measurement, 2026-08-08).** On the gateway
- * (`/`), expanding "why you can trust this download" and wheeling to the end left
- * **the whole screen blank black** (measured at 600×900: the footer at −270px
- * above the viewport, document scrollHeight 862→1970). The body is held by the
- * shell's inner scroll slot, but the document itself also gained a scroll range,
- * producing **double scrolling**, and once wheel chaining exhausted the inner one
- * it pushed the document past all its content.
- *
- * **Two causes — counter-examples to the property this spec measures.**
- *
- * 1. **An `absolute` element with no positioned ancestor stretches the document.**
- *    A `sr-only` (`position: absolute`) span inside the expanded content took **the
- *    viewport** as its positioning reference, because the shell root was `static`;
- *    and a static `overflow-hidden` cannot clip an element that is not in its own
- *    containing block, so the document's scroll range grew to include that span.
- *    Fix: `relative` on the shell root — after which no absolute element can
- *    stretch the document.
- * 2. **The body's 56px tab-bar reservation padding is a relic of the pre-shell
- *    era** (present since the initial import on 2026-04-30). Now that the shell
- *    owns the viewport with `h-dvh`, that padding protects nothing while creating
- *    56px of dead document scroll on every page below `md`.
- *
- * **Why the gate has this shape.** `scroll-end-gap.spec.ts` measures the scroll-end
- * gap in the **closed default state** — it never measured expanded collapsible
- * surfaces, so this defect family passed that gate forever. Here exactly one thing
- * is measured across changing states (including expanded): **is the document's
- * scroll range 0**. With one property the counter-example is unambiguous: if the
- * document scrolls by even 1px, some element has leaked outside the viewport.
+ * The document does not scroll; the shell owns the viewport. Any document scroll range means an
+ * element leaked outside the viewport, so exactly that is measured across states, including
+ * expanded ones.
  */
 
 const WIDTHS = [

@@ -3,109 +3,29 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { waitForAnimationsDone, waitForBoxStill, waitFrames } from "./settle";
 
 /**
- * **The gateway's grid is one grid** — width is the independent variable, so
- * neither lint nor jsdom can measure it.
- *
- * **The regression this gate blocks.** Measured 2026-07-29: `/download` is designed
- * to pin the plate to **the left of the stage**, but the wrapper around it used the
- * same `mx-auto max-w-[var(--page-max)]` as the body. So the plate's x became a
- * function of viewport width:
- *
- * | Width | Plate right edge | Inset the camera reserved | Divergence |
- * |---|---|---|---|
- * | 1512 | 520 | 544 | 0 (correct only here) |
- * | 1920 | 640 | 544 | **+96** |
- * | 2560 | 960 | 544 | **+416** |
- *
- * The camera avoids only the 544 the token declares, so the wider the screen the
- * further the graph burrows behind the plate. It is the kind of defect that
- * **looks right at one width and is silently wrong at every other**, so it passes
- * human review.
- *
- * On top of that the footer section was centred again by `--page-col-utility`, so
- * one page had **two** alignment origins (at 1920: plate x=160, footer x=480).
- *
- * **And that same night: left/right asymmetry (promoting the origin).** After
- * fixing the above, the column still stopped at `--page-max` (1600) and all the
- * spare width piled up **on the right**. Measured:
- *
- * | Width | Left | Right | Ratio |
- * |---|---|---|---|
- * | 1512 | 40 | 40 | 1.0 |
- * | 1728 | 64 | 64 | 1.0 |
- * | 1920 | 64 | **256** | 4.0 |
- * | 2560 | 96 | **864** | 9.0 |
- *
- * Asymmetry starts **at 1728** — below that the column fills the screen and is
- * symmetric by itself. So the alignment origin was promoted to
- * `max(gutter, (vw − page-max)/2)`, and the six elements plus the camera's
- * reserved width all consume **that one value**.
- *
- * **What is measured (revised 2026-08-19, after the install section was deleted).**
- *
- * 1. The x of the GNB logo, headline, and footer are **all identical** (three
- *    elements; the map section and its caption left on 2026-10-03).
- * 2. **Left and right margins are equal** — `band.left === vw − band.right`.
- * 3. **The top bar's right group ends at `vw − origin`** (the owner's "the gap is
- *    long" report).
- * 4. **All of it survives a resize.**
- * 5. **Both addresses show the same thing** — `/` and `/download` both render the
- *    demo section.
- * 6. **Stage width follows the token** (wide-width revision 2026-08-19) — the demo
- *    stage's rendered width equals the computed value of `--gateway-stage-max`, it
- *    closes the column on the right while its head starts at the origin. The
- *    resize test also measures whether the stage width **actually moved** with the
- *    viewport — watching for a recurrence of the defect in the owner's 2560
- *    screenshot, where the stage was pinned at 30% of the viewport and the screen
- *    looked empty.
+ * The gateway's grid is one grid: width is the independent variable, so neither lint nor jsdom can
+ * measure it.
  */
 
 /**
- * ⚠️ **Do not copy the origin value here** (prescription from the design-systems
- * seat, 2026-07-29).
- *
- * It used to be `width >= 768 ? 40 : 24`. That makes this file **a second source of
- * truth** — the test then verifies "does the rendered x equal the number I copied
- * here" rather than "does the rendered x equal what the token says", and changing
- * the token turns the test red **defending its own copy instead of the product**.
- *
- * Now `--gateway-origin` is read live (registered as `@property <length>`, so the
- * computed value settles as `160px`). Only the width list lives here; every number
- * expected at those widths is read from what the browser computed.
- *
- * The `<md` band is governed by `max(1.5rem, safe-area)` rather than this token, so
- * it is not in the x-test width list — the 320px test measures **overflow**, not
- * x.
+ * Do not copy the origin value here: read `--gateway-origin` live (registered as `@property
+ * <length>`), so the test defends the token, not a copy. Only the width list lives here.
  */
 const WIDTHS = [
   { width: 1512, height: 982 },
   { width: 2560, height: 1440 },
-  // The threshold where symmetry used to break. At 1728 origin = gutter = 64 and the
-  // two rules meet exactly — the witness that the promotion left existing bands
-  // untouched. (1440 and 1920 are walked by the resize test below.)
+  // At 1728 origin equals gutter (64) and the two rules meet; 1440 and 1920 are walked by the resize
+  // test.
   { width: 1728, height: 1080 },
 ];
 
-/** Width for measuring that both addresses show the same thing — the owner's real 14-inch window. */
 const UNIFIED_ROUTE_VIEWPORTS = [{ width: 1512, height: 982 }];
 
 async function measure(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     /**
-     * ⚠️ **Measure only what is laid out** (caught by council measurement,
-     * 2026-08-08).
-     *
-     * This used to measure the **first match** from `querySelector`, so when that place
-     * was `display:none` it returned `x=0, w=0` as if correct. It really happened:
-     * `GatewayReadingLinks`, added to the front of the footer on 2026-08-07, is
-     * `sm:hidden` and is not rendered at `≥sm`, yet it became the first match for
-     * `main footer > div` and **all eight widths** went red with *"footer is outside
-     * the origin (200) — 0"*. The layout was fine and the instrument was wrong.
-     *
-     * The discriminator is not "is it visible" but **"is it laid out"**
-     * (`getClientRects()`): something transparent or pushed off screen is still part of
-     * the grid, while `display:none` does not participate in that width's grid at
-     * all.
+     * Measure only what is laid out (`getClientRects()`): a `display:none` first match returns x=0,
+     * w=0 as if correct.
      */
     const laidOut = (sel: string) =>
       [...document.querySelectorAll(sel)].find((el) => el.getClientRects().length > 0) ?? null;
@@ -130,27 +50,19 @@ async function measure(page: import("@playwright/test").Page) {
         headline: bx("h1"),
         footer: bx("main footer > div"),
       },
-      // The right edge of the band (the column inside the origin) — symmetry is measured
-      // from this number and `vw` alone.
-      // ⚠️ The ruler must be **an element that really fills the column's full width**.
-      // The facts strip (gateway-facts) is the hero's bottom rule, so full column width
-      // is its definition, and it renders on both the published and unpublished
-      // branches. (The previous ruler, the three-step install, left the page on
-      // 2026-08-19.)
+      // The ruler must fill the column's full width: the facts strip is the hero's bottom rule and
+      // renders on both release branches.
       bandRight: right('[data-testid="gateway-facts"]'),
       /**
-       * Stage width (wide-width revision 2026-08-19). The no-copying rule is the same as
-       * for the origin — `--gateway-stage-max` is clamp(rem, vw, rem), so the browser
-       * settles the computed `max-width` in px. The test only checks that computed value
-       * against the rendered rect (the formula's own invariants live in
-       * `tests/contract/gateway-stage-width.contract.test.ts`).
+       * Stage width follows the computed `--gateway-stage-max`; formula invariants live in
+       * `tests/contract/gateway-stage-width.contract.test.ts`.
        */
       stage: (() => {
         const demo = laidOut('[data-testid="demo-stage"]');
         if (!demo) return null;
         const demoRect = demo.getBoundingClientRect();
-        // The track the stage stands in, and the section's column around it (2026-09-25: from
-        // 90rem the head takes a track beside the stage, so the two are no longer one box).
+        // From 90rem the head takes a track beside the stage, so the stage track and the section column
+        // are different boxes.
         const trackRect = demo.parentElement!.getBoundingClientRect();
         const colRect = document
           .querySelector('[data-testid="gateway-demo-section"] > div')!
@@ -179,7 +91,6 @@ async function measure(page: import("@playwright/test").Page) {
           })(),
         };
       })(),
-      // The right edge of the top bar's right group — the gate for the owner's "why is the gap so long?".
       gnbActionsRight: right('[data-testid="download-gnb-actions"]'),
       /**
        * ⚠️ **The ruler for symmetry is `clientWidth`, not `innerWidth`.**
@@ -226,24 +137,12 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     expect(x, `${label}: ${name} 이 원점(${origin}) 밖에 있다`).toBe(origin);
   }
 
-  /**
-   * **Are left and right equal** (owner report 2026-07-29: *"Left and right must match."*
-   *
-   * This is the defect that passed while only the left was measured: when the origin
-   * was a fixed value, 1920 gave left 64 and right 256 while all six elements
-   * **shared** x=64. The alignment principle can be honoured while the screen still
-   * leans one way, so symmetry needs its own assertion.
-   */
   expect(m.bandRight, `${label}: 밴드 오른끝을 못 읽었다`).not.toBeNull();
   expect(
     m.layoutWidth - m.bandRight!,
     `${label}: 좌우 여백이 다르다 (왼 ${origin} · 스크롤바 ${m.scrollbar})`,
   ).toBe(origin);
 
-  /**
-   * **The top bar is inside the same frame** (owner: *"The gap is long, why is that?"*). The right group stops at the column's right edge, so
-   * this edge follows when the origin grows.
-   */
   expect(m.gnbActionsRight, `${label}: GNB 우측 그룹을 못 읽었다`).not.toBeNull();
   expect(m.gnbActionsRight, `${label}: 상단 바 우측이 화면 끝과 안 맞는다`).toBe(
     m.layoutWidth - origin,
@@ -252,14 +151,8 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
   expect(m.overflowX, `${label}: 가로 오버플로`).toBe(0);
 
   /**
-   * **The stage follows the token** (wide-width revision 2026-08-19 — the owner's
-   * 2560 screenshot: the stage was pinned at 768px, floating at 30% of the viewport
-   * and leaving the screen looking empty).
-   *
-   * Rendered width = the token's computed value (or its track, if narrower);
-   * the head at the origin and the stage on the column's right edge. Values are read
-   * from what the browser computed — copying numbers here would make this file a
-   * second source of truth (the rule at the top).
+   * Rendered stage width equals the token's computed value, or its track if narrower; values are
+   * read from the browser, not copied.
    */
   expect(m.stage, `${label}: 무대를 못 읽었다`).not.toBeNull();
   const stage = m.stage!;
@@ -270,15 +163,8 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     `${label}: 시연 무대 폭(${stage.demoW})이 토큰 계산값(${expectedStageW})과 다르다`,
   ).toBeLessThanOrEqual(1);
   /*
-   * **The demo section starts at the origin and closes the column** (2026-09-25).
-   *
-   * Until this date the section was the page's one centred block — head and stage on the column's
-   * centre line, asserted here as a shared axis (2026-08-23). Measured at 1512 that made the page
-   * run two alignment grammars: every other section's text began at x=200 and this head's ink at
-   * ≈508. From 90rem the head now stands in a track beside the stage, so the relation to hold is
-   * the page's own: the head's ink starts where the column starts, and the stage — keeping its
-   * token width — ends where the column ends. Either half alone would pass a centred section or
-   * a stage floating mid-column; together they are the one layout.
+   * The head's ink starts where the column starts and the stage ends where the column ends; either
+   * half alone would pass a centred section or a stage floating mid-column.
    */
   expect(stage.headInkLeft, `${label}: 절 제목의 글자를 못 읽었다 — 이 시험이 헛돈다`).not.toBeNull();
   expect(
@@ -300,12 +186,8 @@ test.describe("관문 다운로드의 그리드", () => {
       await page.setViewportSize(viewport);
       await seedFirstRunSeen(page);
       /**
-       * `load` plus an explicit element wait, not `networkidle` (measured 2026-08-19).
-       * At large viewports (2560×1440) the demo section falls within the first screen and
-       * the video starts autoplaying, and while that streams `networkidle` **by
-       * definition never arrives** — the same timeout reproduced on pre-fix builds. What
-       * this test measures is the grid, and the grid is already settled once the facts
-       * strip is visible.
+       * `load` plus an element wait, not `networkidle`: the autoplaying demo video keeps the network
+       * busy at large viewports.
        */
       await page.goto("/ko/download/", { waitUntil: "load" });
       await expect(page.getByTestId("gateway-facts")).toBeVisible({ timeout: 15_000 });
@@ -314,17 +196,7 @@ test.describe("관문 다운로드의 그리드", () => {
     });
   }
 
-  /**
-   * **Is it still one grid after a resize** (watching the recurrence path of the
-   * 2026-07-29 verdict).
-   *
-   * [Revised 2026-08-18] The old version's unique target — a stale JS-derived camera
-   * reservation width — disappeared when the remake retired that derivation. The
-   * remaining properties are "the CSS origin formula really follows a resize" and
-   * "the five elements share one grid at every width", and calling `assertGrid` again
-   * at each width is all of it. Both directions are measured: widening (the origin
-   * grows) and narrowing (it returns to the gutter).
-   */
+  /** Both directions are measured: widening grows the origin, narrowing returns it to the gutter. */
   test("리사이즈하면 세 원소가 새 원점을 따라간다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedFirstRunSeen(page);
@@ -365,27 +237,13 @@ test.describe("관문 다운로드의 그리드", () => {
       sawOriginChange,
       "폭 목록이 원점을 한 번도 바꾸지 못했다 — 이 시험은 지금 아무것도 지키지 않는다",
     ).toBe(true);
-    // The same idling guard for stage width — if the stage reverts to a fixed 768px at
-    // wide viewports (the defect in the owner's 2560 screenshot, 2026-08-19), this
-    // turns red.
+    // Idling guard for stage width: red if the stage stops growing at wide viewports.
     expect(
       sawStageChange,
       "폭 목록이 무대 폭을 한 번도 바꾸지 못했다 — 넓은 폭 비례 성장이 죽었다",
     ).toBe(true);
   });
 
-  /**
-   * **Both addresses show the same thing** (owner decision 2026-08-01).
-   *
-   * A single `showDemo` line used to branch on the address, and no test knew about
-   * that branch.
-   *
-   * [Vessel replaced 2026-08-19] This assertion originally rode inside the "the
-   * three-step install does not wrap" test as its idling guard. Deleting the
-   * three-step install removed the outer test, but this property belongs to
-   * **address unification** rather than to those three steps, so it becomes its own
-   * test.
-   */
   for (const viewport of UNIFIED_ROUTE_VIEWPORTS) {
     for (const route of ["/ko/", "/ko/download/"]) {
       test(`${viewport.width}×${viewport.height} ${route} — 시연 절이 두 주소 모두에 있다`, async ({
@@ -430,8 +288,8 @@ test.describe("관문 다운로드의 그리드", () => {
 
 test.describe("the headline types only its own sentence (council, 2026-09-03)", () => {
   /*
-   * The decoder ghost read as a misspelling. The 2026-09-03 decision makes the landing
-   * opacity-only above 4px drift; preserve both regression barriers.
+   * No decoder ghost glyph (it reads as a misspelling), and landing is opacity-only above 4px of
+   * drift.
    */
   test("no ghost glyph, and the headline does not wander while it types", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 982 });
@@ -500,17 +358,11 @@ test.describe("the headline types only its own sentence (council, 2026-09-03)", 
 
 test.describe("the decision block reads over the stage at every split width", () => {
   /*
-   * [2026-09-02] The object is no longer a column beside the decision block — it is the stage
-   * behind the whole first screen (the plane form of the graph, anchored right of centre). So
-   * "no destination stands on the object" stopped being the contract: every destination stands
-   * on it by design. What a reader would see now is whether the type stays legible over it, and
-   * that is measured directly: the share of lit canvas pixels under the decision block and under
-   * the headline. The 2026-08-30 lesson survives unchanged — the destinations must keep their
-   * rows, and none may be squeezed narrower than its label.
+   * The object is the stage behind the first screen, so the contract is legibility over it: the lit
+   * canvas share under the decision block and headline. Destinations keep their rows, none narrower
+   * than its label.
    */
-  /* 1280 and 1366 sit below the 90rem split (the plinth), 1440 is its first band, 1512 the owner's
-     laptop. The council measured 8–16% lit under the type at 1280–1366 while the split opened at
-     80rem; the split moved and these widths now guard it. */
+  /* 1280 and 1366 sit below the 90rem split, 1440 is its first band, 1512 a common laptop width. */
   /* Both engines draw this stage: the 2D engine is what a software renderer (this headless
      browser) gets, and `?hero=three` forces the WebGL object a hardware-backed browser gets
      (`HeroAtlas`). The type must stay clear of either. */
@@ -527,26 +379,16 @@ test.describe("the decision block reads over the stage at every split width", ()
       }
       await page.evaluate(() => document.fonts.ready);
       /*
-       * What this case measures is **layout and ink**: the destinations' rows, the stage's
-       * width, and the share of lit canvas pixels under the type. So the condition is the
-       * first screen having laid out and the stage having stopped animating.
-       *
-       * ⚠️ **Not "the headline finished typing"**, which was tried first and is the wrong
-       * condition twice over. The un-typed glyphs already occupy their layout, so the h1's
-       * box — the thing `litShare` reads — is complete from the first frame. And on this
-       * headless browser's software WebGL the typing interval is starved badly enough that
-       * 59 characters take about 25 s (measured 2026-09-13 at 1100px with `?hero=three`:
-       * 1, 3, 6, 8, 10, 12 lit after each of the first six seconds), so the old 3,200 ms
-       * had never waited for the end of the typing either.
+       * Wait for layout and ink, not for the headline to finish typing: the h1 box is complete from the
+       * first frame, and typing is starved under this headless browser's software WebGL.
        */
       await waitForBoxStill(page.locator('[data-testid="gateway-hero"]'));
       await waitForAnimationsDone(page.locator('[data-testid="gateway-hero-object"]'));
       const m = await page.evaluate(() => {
         const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
-        // The hero is a WebGL canvas since 2026-09-08 (the 2D engine stays as its fallback), and a
-        // WebGL canvas has no 2D context to read; copy its last frame into one (`?e2e=1` keeps
-        // the drawing buffer so the copy is the frame just drawn).
+        // The hero is a WebGL canvas with no 2D context; copy its last frame into one (`?e2e=1` keeps the
+        // drawing buffer).
         const ctx =
           canvas.getContext("2d") ??
           (() => {
@@ -595,8 +437,7 @@ test.describe("the decision block reads over the stage at every split width", ()
       /* Two rows plus one for the destination the second row cannot hold; five is a column. */
       expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")}`).toBeLessThanOrEqual(3);
       expect(m.stageWidth, "the stage is the hero's whole width").toBeGreaterThanOrEqual(width - 1);
-      /* Measured 2026-09-02 at 1512: 0.0% under the headline, 0.5% under the block. The
-         thresholds leave room for narrower widths, where the plane sits closer to the type. */
+      /* The thresholds leave room for narrower widths, where the plane sits closer to the type. */
       expect(m.inkUnderHeadline, `ink under the headline at ${width}`).toBeLessThanOrEqual(0.03);
       expect(m.inkUnderBlock, `ink under the decision block at ${width}`).toBeLessThanOrEqual(0.06);
     });

@@ -100,14 +100,9 @@ export function judgeText({ fg, bg, fontSizePx, fontWeight }) {
 }
 
 /**
- * Do two adjacent data marks separate **by luminance**? (WCAG 1.4.11 non-text,
- * 3:1.)
- *
- * Why this repository specifically needs this function: on 2026-07-26 adjacent
- * segments separated only by hue, at 1.14:1 by luminance. **Hue is not a channel for
- * 8% of users**, so the verdict on "are they distinguishable" is this ratio, not
- * hue. Below 3:1 a colour-independent distinguisher (a seam, label, pattern, or
- * order) must exist.
+ * Do two adjacent data marks separate by luminance (WCAG 1.4.11 non-text, 3:1)? Hue alone is not a
+ * channel for colour-blind users; below 3:1 a colour-independent distinguisher (seam, label,
+ * pattern, or order) must exist.
  */
 export function judgeAdjacentMarks({ a, b, over }) {
   const base = parseColor(over) ?? [0, 0, 0, 1];
@@ -115,19 +110,8 @@ export function judgeAdjacentMarks({ a, b, over }) {
   const ma = parseColor(a);
   const mb = parseColor(b);
   /**
-   * **An unparseable colour is "not measured", not "passed"** — the same contract as
-   * `judgeText` (code review, 2026-08-07).
-   *
-   * Without this guard, a `null` from `parseColor` made the `composite` just below
-   * read `fg[3]` and **throw a TypeError**. The sibling function returns `null` at the
-   * same point; only this one died. `parseColor` reads `#hex` and `rgb()/rgba()` only,
-   * so its input becomes whatever Chromium serialises as `color(srgb …)` or
-   * `oklch(…)` (wide-gamut displays, `color-mix()`).
-   *
-   * While this function lived only inside a manual instrument a person was watching,
-   * but when it entered a CI ratchet on 2026-08-06 it became **a path where the gate
-   * crashes**. The caller already counted unmeasured cases with
-   * `if (!judged) continue`, and that line was dead.
+   * An unparseable colour is not measured, not passed: return null like `judgeText`. `parseColor`
+   * reads only `#hex` and `rgb()/rgba()`, so `color(srgb ...)` or `oklch(...)` fail it.
    */
   if (!ma || !mb) return null;
   const ca = composite(ma, solidBase);

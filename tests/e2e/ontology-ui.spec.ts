@@ -3,36 +3,12 @@ import { seedFirstRunSeen } from "./first-run-seed";
 import { useDogfoodSample } from "./sample-source";
 
 /**
- * /ontology surface smoke — trimmed (2026-07 e2e decontamination).
- *
- * This file used to cover the old `/ontology` tree/workbench page
- * (`OntologyViewPage`, `ontology-command-bar`, `#tree-data-warnings`, the
- * MCP/Agents settings tab, the Insights maintenance board, …). That page was
- * retired when `/ontology` converged into a thin redirect to
- * `/topology?index=expanded` (B3 — "the hub is the map"), so those 17 tests only
- * failed waiting for markup that no longer renders — no product defect, just
- * e2e rot. They were deleted rather than repaired because the surface itself
- * is gone; equivalent current-surface coverage lives in
- * `map-smoke.spec.ts`.
- *
- * One more test ("detail panel is not exposed when there is no data") was dropped even
- * though it still reported green: it asserted zero `ontology-node-detail`
- * elements, but that testid has zero producers left in `src/` — the
- * assertion passes vacuously forever regardless of actual empty-state
- * behavior, so it stopped being a real regression guard.
- *
- * The three tests below survive because they exercise routes/testids that
- * are still live today (`/download/`, `/projects/`, and `/ontology/`'s
- * redirect-then-render-topology behavior) and still fail for a real reason
- * if broken. The `/` and `/topology` first-paint checks live in
- * `web-surface-smoke.spec.ts`; the `/download` scroll end and overflow in
- * `scroll-end-gap.spec.ts` and `overflow-sweep.spec.ts`. Phone widths are not
- * a target (owner direction, 2026-09-27).
+ * Smoke for live routes: `/download/`, `/projects/` and the `/ontology/` redirect to topology.
+ * First-paint and scroll checks live in web-surface-smoke, scroll-end-gap and overflow-sweep
+ * specs.
  */
 test.describe("ontology view UI", () => {
-  // Every assertion in this file depends on dogfood vault data (project name, deep-link
-  // slug, node labels). Since the default sample became the example business on
-  // 2026-07-26, this selects explicitly per file rather than relying on the default.
+  // These assertions depend on dogfood vault data, so each file selects the sample explicitly.
   test.beforeEach(async ({ page }) => {
     await useDogfoodSample(page);
   });
@@ -41,10 +17,7 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/download/");
 
-    // The headline comes from the catalog, not from a copy of it. Pinning the
-    // sentence is what broke this spec on the 2026-07-27 remake: the assertion
-    // was about *the page having one headline*, but it was written as "this
-    // exact sentence", so a rewrite read as a regression.
+    // The headline comes from the catalog; assert one headline, not its exact sentence.
     const headings = page.getByRole("heading", { level: 1 });
     await expect(headings).toHaveCount(1);
     await expect(headings).toBeVisible();
@@ -75,8 +48,8 @@ test.describe("ontology view UI", () => {
       .getByRole("link", { name: "View on map" });
     await expect(topologyLink).toBeVisible();
     await topologyLink.click();
-    // The project's own node, whose inspector carries its code evidence (2026-09-25 sweep);
-    // the bare slug opened the project drawer, which cannot connect the code folder.
+    // The project's own node: its inspector carries code evidence, while the bare slug opened a drawer
+    // that cannot connect the code folder.
     await expect(page).toHaveURL(/\/en\/topology\/\?p=project%3Aontology-atlas/);
     await expect(page.getByTestId("map-detail-panel")).toHaveAttribute(
       "data-selected-node-id",

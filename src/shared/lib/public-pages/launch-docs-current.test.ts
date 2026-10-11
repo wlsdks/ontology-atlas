@@ -16,9 +16,8 @@ const FEATURE_DOCS = [
     .sort(),
 ];
 
-// `docs/archive/PUBLISH-NPM.md` moved to `docs/archive/` when the npm publishing
-// plan was retired (docs/DECISIONS.md 2026-07-27). Archived documents preserve
-// what was true at the time, so they are out of scope for current-surface gates.
+// Archived documents preserve what was true at the time, so they are out of scope for
+// current-surface gates.
 const CURRENT_SURFACE_DOCS = [
   'README.md',
   ...FEATURE_DOCS,
@@ -93,30 +92,13 @@ describe('current-surface launch docs', () => {
     expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
     expect(workflow).toContain('tools/list');
     expect(workflow).toContain('mcp-verify');
-    // **No vault node count is required here.** Anyone adds nodes and nobody
-    // edits this document, so requiring one makes the document comply and then
-    // go stale on the very next node. That happened: next to the "98 nodes" this
-    // gate enforced, the graph hash, edge count and file count of an old vault
-    // were all frozen in place too (surfaced 2026-08-01 by regenerating the
-    // vault). That section is now a procedure naming the command, and whoever
-    // runs it reads the numbers off their own screen.
+    // No vault node count is required: nodes are added without editing this document, so a count goes
+    // stale.
   });
 
   /**
-   * **A link that says "see the map with no install" must point at the map.**
-   *
-   * On 2026-07-30 the site root changed from the map to the **gateway face**
-   * (ledger: the implementation that overturned "root-first-open"). At that
-   * moment all three "Hosted demo — no install" links in the launch assets and
-   * the README became **loops back to a screen recommending installation**.
-   * Inside the app `map-destination-route.contract` blocks the same decay, but
-   * that gate only reads source code — absolute URLs in prose were outside its
-   * field of view.
-   *
-   * The verdict weighs label and destination together. Pointing at the site root
-   * is **not itself a defect** (release docs and mentions of the first page
-   * correctly point at the root); the defect is a line that says *"demo"* or
-   * *"no install"* and sends the reader to the root.
+   * A line promising a demo or no install must not point at the site root, which is the gateway
+   * face. The root alone is fine elsewhere; the label and destination are judged together.
    */
   it('demo links promise the map, so they point at the map', async () => {
     const SITE = 'https://ontologyatlas.com/';

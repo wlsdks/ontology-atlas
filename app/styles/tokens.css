@@ -24,26 +24,9 @@
   --color-text-secondary: #d0d6e0;
   --color-text-tertiary: #8a8f98;
   /*
-   * The weakest ink. Corrected twice:
-   * ① #62666d (canvas 3.45:1, AA insufficient) → #787c84 — canvas/panel passed but
-   *   **it was a value that only broke through on the surface one level up** (panel+overlay-1 4.37 ·
-   *   elevated 4.16). All 8 axe violations on screen were this token, and with 584 consumers,
-   *   replacing it by location would only reduce the count, not fix the issue.
-   * ② #787c84 → #82828a (2026-08-03, "System" judgment — docs/DECISIONS.md) —
-   *   All four static surfaces passed AA (canvas 5.23 · panel 5.00 · panel+overlay-1
-   *   4.81 · elevated 4.57). It is the practically minimum luminance exceeding 4.5 for elevated
-   *   (#828282 has a lower bound of 4.54), preserving the hierarchy gap with tertiary (#8a8f98) as much as
-   *   possible, and converging with the value that --map-panel-text-quaternary on the map panel
-   *   already arrived at in 2026-07 for the same reason — the system's quaternary
-   *   solution reduced to one. Only achromatic luminance moved, new hue 0.
-   * ⚠️ hover/selected surfaces (overlay-2 composite 4.36) are still insufficient — text on clickable
-   *   rows uses tertiary from AtlasGitPanel's rule onward.
-   *   The open surface trigger on 2026-08-04 was elevated to specification by verifying this passage on screen (global search 4.38 ·
-   *   4.14 · 4.39): **The license covers static achromatic backgrounds
-   *   (bottom 3 tiers + canvas/panel above overlay-1); text on backgrounds above that (overlay-2
-   *   and higher · elevated+overlay · tint composite) must use tertiary from the start.** The path to raise ink further is rejected — composite depth has no upper limit, but raising it erodes the hierarchy gap with tertiary (panel step 1.17, accepted minimum 1.06). Gate:
-   *   tests/contract/quaternary-ink-surface.contract.test.ts (value · location) +
-   *   tests/e2e/a11y-open-surfaces.spec.ts (screen, color-contrast baseline 0).
+   * Minimum luminance above 4.5:1 on elevated (#828282 gives 4.54), keeping the gap to tertiary. Valid
+   * on static achromatic backgrounds up to overlay-1; above that use tertiary. Gates:
+   * `tests/contract/quaternary-ink-surface.contract.test.ts`, `tests/e2e/a11y-open-surfaces.spec.ts`.
    */
   --color-text-quaternary: #82828a;
   /*
@@ -51,38 +34,24 @@
    * This is not a new hue (monochrome #fff). Contrast against `--color-indigo-brand`(#5e6ad2) is 4.71:1, passing WCAG AA(4.5:1) — it is an existing combination already on screen today.
    */
   --color-text-on-accent: #ffffff;
-  /* Keycap border on accent surfaces. Of 14 `<kbd>`s, only this one sits on indigo fill,
-     so the white alpha ladder (0.02~0.14) for dark canvas makes the border disappear.
-     Added 2026-08-05 — previously `border-white/35`. */
+  /*
+   * Only this `<kbd>` sits on indigo fill, where the white alpha ladder made for the dark canvas makes
+   * the border disappear.
+   */
   --color-keycap-edge-on-accent: rgba(255, 255, 255, 0.35);
 
   /*
-   * ── Plate where other products' marks sit (Added 2026-08-16) ─────────────────────────
-   *
-   * It lives **only inside** the 32px tiles of the executor list. This app has only one dark screen,
-   * but the marks placed here are not ours, but **the vendor's**, and most are drawn based on light backgrounds (measured: 6 out of 11 checked colors were black~#2D2D2D).
-   * Placing them directly on a dark plate makes it black art on a black board — the owner's first
-   * seen screen was exactly that.
-   *
-   * **No new hue** — the plate is monochrome(#f2f3f5), base ink is also monochrome(#1a1a1e).
-   * Color comes only from the vendor mark's own brand color, and those values are not written in code (`src-tauri/src/acp-registry.json`'s `brandInk`, generated at build time).
-   * Thus, widening this plate is not expanding the color system, but **placing others' assets
-   * under the conditions their assets require**. We do not expand usage —
-   * gate: `tests/contract/vendor-mark-plate.contract.test.ts`.
+   * The plate sits only inside the 32px executor tiles: vendor marks are mostly drawn for light
+   * backgrounds and vanish on dark. Monochrome, so no new hue; brand colour comes from `brandInk` in
+   * `src-tauri/src/acp-registry.json`. Gate: `tests/contract/vendor-mark-plate.contract.test.ts`.
    */
   --color-vendor-plate: #f2f3f5;
   --color-vendor-plate-edge: rgba(0, 0, 0, 0.12);
   --color-vendor-mark-ink: #1a1a1e;
 
   /*
-   * ── Layer ladder (z-index, Added 2026-08-05) ──────────────────────────────
-   *
-   * **The ladder existed but had no name.** Measured: 11 tiers were used regularly
-   * and correctly (10·20·25·30·40·50·60·70·75·80·100), but nowhere in the code was it written which sits above which. z-index collisions are a typical bug source that spreads by «trying to raise and matching» — without names, the next person will just raise the number.
-   *
-   * Values were added **as they were used** — neither pixels nor stacking order changed to 0.
-   *
-   * ⚠️ **Below 20 is not here.** «Local stacking valid only within one surface» like 1~13 in the workshop compass stage is not a global app layer. Naming those would make local context appear as a global contract. The gate also only looks at 20 and above.
+   * Names the global z-index ladder from 20 up; below 20 is local stacking within one surface and is
+   * not a global contract.
    */
   /*
    * ⚠️ **The bottom five are not tokens — they still live as Tailwind name steps.**
@@ -102,11 +71,9 @@
   --z-skip-link: 100;          /* Skip link — above everything else */
 
   /*
-   * Kind tone — the one qualitative data mark (docs/DESIGN-SYSTEM.md "Kind tone", 2026-09-08).
-   *
-   * Four hues, one per authored kind, allowed only where colour is the sole identity channel:
-   * the map's kind light and its legend dots. The triplet is the source; a consumer draws it
-   * through `rgb(var(--color-kind-<kind>-rgb) / <alpha>)`.
+   * Four hues, one per authored kind, allowed only where colour is the sole identity channel (map kind
+   * light, legend dots). Draw via `rgb(var(--color-kind-<kind>-rgb) / <alpha>)`. See
+   * docs/DESIGN-SYSTEM.md "Kind tone".
    */
   --color-kind-project-rgb: 126 134 216;
   --color-kind-domain-rgb: 74 177 196;
@@ -118,35 +85,16 @@
   --color-indigo-accent: #7170ff;
   --color-indigo-hover: #828fff;
   /*
-   * Hover for filled accent buttons — **darkens.** (2026-08-05)
-   *
-   * The convention for dark UI is to brighten on hover, and this app did so. But on filled
-   * buttons, that convention **conflicts with accessibility**: since ink is white, as the surface brightens,
-   * contrast drops. Measured (reading values calculated by actually hovering):
-   *
-   *   Get for Apple Silicon   4.70 → 3.51      Get App      4.70 → 3.17
-   *   Select existing folder   4.70 → 4.01      (AA body 4.5)
-   *
-   * The product's main CTAs **were breaking AA during hover.** WCAG does not distinguish states.
-   *
-   * Cannot fix by brightening — the base(#5e6ad2) is already 4.70, so there is only
-   * **5.7%** room to brighten while keeping AA, and at that level, hover is not visible. Calculated the path of darkening ink, but to keep 4.5 on #7170ff it would become nearly black,
-   * making black text on a purple button.
-   *
-   * Thus, **only filled buttons** darken on hover (contrast 5.38, brightness −16.3%).
-   * Hover for tint/transparent background controls remains brightening — there ink is not white,
-   * so no conflict.
-   *
-   * Gate: tests/e2e/hover-contrast.spec.ts (measures by actually hovering).
+   * Filled accent buttons darken on hover: white ink loses contrast as the surface brightens (4.70
+   * down to 3.17 at worst), and base #5e6ad2 leaves only 5.7% room to brighten while keeping AA. Tint
+   * and transparent controls still brighten. Gate: `tests/e2e/hover-contrast.spec.ts`.
    */
   --color-indigo-brand-hover: #5661c4;
 
-  /* Status (status dot + warning/error/success surfaces) — three signal tones:
-     warning(amber) · error(red) · success(emerald). Each signal has a symmetric solid dot +
-     surface/border/text alpha ladder (Design Guardian
-     verdict, .qa-scratch/audit-2026-07/guardian-color-verdict.md §①,
-     2026-07-20). Success is used only for positive status
-     signals like "write confirmed / connected / completed" — decorative green, green unrelated to success is prohibited. */
+  /*
+   * Three signal tones, each with a solid dot plus surface/border/text alpha ladder. Success is only
+   * for positive status signals (write confirmed, connected, completed), never decoration.
+   */
   --color-status-success: #32b97d;
   --color-status-warning: #f4b731;
   --color-status-paused: #8a8f98;
@@ -165,8 +113,6 @@
   --color-indigo-a16: rgba(94, 106, 210, 0.16);
   --color-indigo-a18: rgba(94, 106, 210, 0.18);
   --color-indigo-a22: rgba(94, 106, 210, 0.22);
-  /* Alternative B color tokenization (2026-07-20) — Added high-frequency orphan alpha to color inventory.
-     Same hue(94,106,210) as existing ladder, exact alpha without shift. */
   --color-indigo-a26: rgba(94, 106, 210, 0.26);
   --color-indigo-a28: rgba(94, 106, 210, 0.28);
   --color-indigo-a32: rgba(94, 106, 210, 0.32);
@@ -175,8 +121,8 @@
   --color-indigo-a46: rgba(94, 106, 210, 0.46);
   /* For border/hover:border only. */
   /*
-   * Focus ring only — **opaque.** The app's focus indication was judged «present» and finished on 2026-08-05 (197/197), and «visible» was not re-checked then. Re-checking on 2026-08-18 showed alpha 0.46 compositing with background to **1.75:1** — half the baseline for visual indicators of state (WCAG 1.4.11 non-text contrast 3:1). Kept color(hue) as is, removed alpha: dark background 4.24 · panel 3.95 · lighter surface 3.66.
-   * Did not introduce new color, but **using existing indigo without hiding it**.
+   * Opaque: at alpha 0.46 the ring composited to 1.75:1, below the WCAG 1.4.11 non-text 3:1; opaque
+   * gives 4.24 on canvas, 3.95 on panel, 3.66 on lighter surfaces.
    */
   --color-indigo-focus-ring: rgb(94, 106, 210);
   --color-indigo-a50: rgba(94, 106, 210, 0.5);
@@ -187,9 +133,10 @@
   /* Pale indigo text — different tuple from the exact rgb three above. */
   --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
 
-  /* Accent(#7170ff) alpha steps — not new color, but transparency stages of the charter color.
-     2026-08-04 audit: these two values were manually written as `rgba(113,112,255,·)` literals in 3 places, and passed because the color gate **only contrasts registered tuples**.
-     Added to eliminate literals (values remain — pixel change 0). */
+  /*
+   * Alpha steps of the accent #7170ff, not a new colour; the colour gate only contrasts registered
+   * tuples, so literals must not be written inline.
+   */
   --color-indigo-accent-a32: rgba(113, 112, 255, 0.32);
   --color-indigo-accent-a50: rgba(113, 112, 255, 0.5);
 
@@ -235,7 +182,6 @@
   --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
   --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
   --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
-  /* Option B color tokenization (2026-07-20) — added high-frequency orphan alpha, same hue shift. */
   --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
   --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
   --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
@@ -263,42 +209,20 @@
   --color-shadow-a42: rgba(0, 0, 0, 0.42);
   --color-shadow-a46: rgba(0, 0, 0, 0.46);
 
-  /* Elevation ladder — fixes how far a floating surface "rises" into 3 layers.
-     Previously, ontology-edit had hand-tuned shadows like 0_24px_72px·0_24px_80px·0_22px_54px·
-     0_18px_44px·0_18px_40px·0_10px_32px·0_6px_16px scattered across 8 types each,
-     making layer relationships unreadable by value. We keep only three layers:
-       1 = coach-mark / temporary hints/toolbars/rails/inline handoffs attached to canvas
-       2 = popover   / header anchor popovers/relation composers (anchored panels)
-       3 = dialog    / central modals/confirmation dialogs (scrim-bearing topmost)
-     Values are representative values per layer from the original 8, composited with alpha tokens.
-
-     **Scattered then gathered again** (2026-07-28). Shadow lint exempted any value containing `var(`,
-     leaving **color as token but geometry free**, causing hand-tuned drop shadows to diffuse back to 23 types — including 2 light-source inversions (bottom tabbar y negative · right panel y=0) and 1 layer inversion (blur 90 > dialog 80).
-
-     Lessons from re-convergence: some scattered values were **not preferences but non-existent layers**.
-     Surfaces attached to screen edges cast shadows downward, falling off-screen,
-     so layer 3 cannot exist there → we listed only the two bottom-docking types. Pressed
-     controls are also not about "how much they float" but serve a different role.
-
-     Now lint checks **which token** (geometry allowance list) rather than `var(` presence.
-     Reduced from 23 to 0. */
+  /*
+   * Three elevation layers: 1 coach-mark and rails attached to canvas, 2 anchored popovers, 3 central
+   * modals with a scrim. Lint checks which token supplies the geometry (allowance list), not `var(`
+   * presence. Edge-docked surfaces and pressed controls are not layers.
+   */
   --shadow-elevation-1: 0 18px 40px var(--color-shadow-a35);
   --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
   --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
 
-  /* ── Docking shadows (re-converged 2026-07-28) ────────────────────────────────────────
-     The above 3 layers all use **downward-casting** shadows (positive y). One surface
-     breaks this premise: **surfaces attached to screen edges**. The bottom tabbar's downward
-     shadow falls off-screen, providing zero visual cue; the right panel's right-side
-     shadow is similar.
-
-     Thus, they were hand-crafted twice — and **with different values**
-     (`0 -16px 36px` vs `-24px 0 60px`, plus offset-less variants `0 0 24px`·`0 0 48px`).
-     They were not exceptions but an **unlisted 6th layer**.
-
-     Pair: both directions use the same blur and alpha. Only axis differs, layer is one.
-     This is not an exception to light-source rules but **the same rule at edges** — light
-     still comes from one place; the surface is just attached to the opposite side. */
+  /*
+   * Edge-attached surfaces (bottom tab bar, right panel) would cast a downward shadow off-screen, so
+   * they use dock shadows: same blur and alpha, only the axis differs; light still comes from one
+   * place.
+   */
   --shadow-elevation-dock-bottom: 0 -12px 32px var(--color-shadow-a35);
   --shadow-elevation-dock-side: -20px 0 48px var(--color-shadow-a35);
 
@@ -354,19 +278,10 @@
 
   /* Linear proprietary — 510 weight (between regular and medium) */
   --font-weight-signature: 510;
-  /* Variable font (Pretendard Variable) weight ladder — we use only these three,
-     not Tailwind defaults (500/600/700). Registered 2026-08-05: `font-[560]`(4 places)·`font-[650]`(9 places)
-     were hand-written, with only one token `signature`(510). Listed values as-is,
-     pixel count is 0; now three steps exist by name.
-
-     ⚠️ **This comment was false for a while** (audit 2026-08-05 afternoon). On the day we wrote "use only these three",
-     `font-medium`(500)·`font-semibold`(600) were actually rendering in 216 places — lint only checked `font-[NNN]` brackets,
-     so no rule caught name steps. Moved 216 places to lamp and registered name step selector;
-     now comment matches screen.
-
-     **400 is not a step of this ladder but the baseline below it.** `font-normal` means
-     "turn off emphasis," which is valid and lint doesn't block — lamp adds
-     three emphasis steps on top of baseline. */
+  /*
+   * Weight ladder for Pretendard Variable: three emphasis steps (510, 560, 650) above the 400
+   * baseline, not Tailwind's 500/600/700. `font-normal` means "turn off emphasis" and is allowed.
+   */
   --font-weight-emphasis: 560;
   --font-weight-strong: 650;
 
@@ -385,117 +300,31 @@
   --page-max: 1600px;
 
   /*
-   * Gateway (`/download`) grid **atomic values**. Change only here when modifying values.
-   * (Derived from old camera reservation range — `computeGatewaySafeInset` — deleted in 2026-08-18
-   * remake: map became self-contained background instead of behind panel,
-   * leaving nothing to reserve.)
-   *
-   * **Why it lives in `:root`**: Global gutter is needed from the first frame pages render,
-   * but gateway scope (`html[data-gateway-stage]`) only activates after map mounts. Placing
-   * there causes gutter jump pre/post-mount. It belongs with page composition
-   * properties like `--page-max`.
-   *
-   * **Why unitless**: Contract for camera token reader to parse via `parseFloat`
-   * (`src/widgets/ontology-map/tokens/read-map-tokens.ts`).
-   * Adding px silently becomes NaN. CSS consumers use `calc(var(…) * 1px)`.
+   * Atomic values for the gateway grid. In `:root`, not the gateway scope: the gutter is needed from
+   * the first frame. Unitless: `read-map-tokens.ts` parses with `parseFloat`, so adding px gives NaN;
+   * CSS consumers use `calc(var(...) * 1px)`.
    */
   /*
-   * 40 → 64 → 120 → 200 (2026-07-30, owner observed three times. Hitting the same spot
-   * three times proves each value was insufficient. Owner selected from values side-by-side in same window).
-   *
-   * **Not visible on 1920.** Origin is `max(gutter, (viewport − column cap)/2)`, so
-   * at that time (cap `--page-max` 1600), 160 won on 1920, and **on 1512 gutter value
-   * exposes directly**. (From 2026-08-19 cap is `--gateway-page-max` 1920 — now gutter wins up to
-   * 2320, but the fact measured by this lineage remains.) Owner screen is 14-inch (1512);
-   * checking only wide windows hides this spot.
-   *
-   * **Why 64 was insufficient — what needed revival was structure, not ink.** Structurally left/right
-   * are always symmetric (footer `64 → 1448`). But filling the right lane is map canvas,
-   * and its **ink stays fixed at 390px on both 1512 and 1920** — it doesn't grow whether lane is 928 or 1240.
-   * So it doesn't reach the right wall; whitespace entering user's eye is
-   * not structural value 64 but **258 from ink right edge to wall**. Left/right reads 1:4.
-   *
-   * 1512 actual measurements (same window/same moment):
-   *
-   * | Gutter | Left Wall | Lane | Map Ink | Ink→Right Wall | L/R Ratio | Lane Fill |
-   * |---|---|---|---|---|---|---|
-   * | 64 | 64 | 928 | 390 | 258 | 1 : 4.03 | 42.0% |
-   * | 96 | 96 | 896 | 390 | 242 | 1 : 2.52 | 43.5% |
-   * | 120 | 120 | 872 | 390 | 230 | 1 : 1.92 | 44.7% |
-   * | **200** | **200** | **792** | **390** | **190** | **1 : 0.95** | **49.2%** |
-   *
-   * Key point: right side barely moves — ink already detached from wall, so while gutter
-   * rose 136px, right whitespace shrank only 68px. **Only left breathes.**
-   *
-   * 200 slightly **exceeds symmetry** (L/R ratio 1:1) — exact balance point is near gutter 193;
-   * at 200, left (200) is 10px larger than right visual whitespace (190). Indistinguishable by eye,
-   * we chose a memorable integer. Do not read this 10px as defect.
-   *
-   * ⚠️ Narrowing lane seems to make map tighter, but opposite — ink fixed so
-   * lane fill rate rises 42.0% → **49.2%**. Noted here to avoid confusion.
-   *
-   * **Still, this treats symptoms.** Root cause is map ink not proportional to its lane
-   * (fill rate 31.5% on 1920); remedy is camera framing, not gutter. Chasing L/R ratio via gutter
-   * only narrows lane — if same spot hits again next time, raise value? No, fix camera.
-   *
-   * Gateway reads this token as **origin**, asserting all blocks share same x;
-   * changing value makes headline/panel/caption/footer and camera reservation range follow together.
+   * On 1512 the gutter shows directly: map ink stays 390px wide, so a larger gutter balances left and
+   * right whitespace (200 gives about 1:0.95). This treats a symptom; the root cause is map ink not
+   * scaling with its lane, which camera framing should fix.
    */
   --gateway-gutter: 200;
   /*
-   * Gateway body column cap — single source of «columns stop here» shared by
-   * gateway surfaces (landing `/download`·`/` · docs `/guide`·`/changelog` · gateway GNB)
-   * (2026-08-19 wide-width revision part 2 — same round as stage width).
-   *
-   * Owner's 2560 screenshot measurement: column stops at `--page-max`(1600), leaving
-   * 480px whitespace each side — 37.5% of screen was blank canvas. Among options,
-   * owner chose **「widen only on gateway」**: [320][1920][320] on 2560. Other screens
-   * (docs/project/insight) keep `--page-max` as-is — hence need for another value,
-   * and reason name lives in `--gateway-*` namespace.
-   *
-   * Basis for two values (not preference):
-   * - **1920** — Owner-selected value (480→320 whitespace on 2560). Origin formula
-   *   `max(gutter, (vw − this value)/2)` means gutter 200 baseline **keeps left/right symmetry via
-   *   column = vw − 2×gutter up to vw ≤ 2320**, then stops at 1920.
-   * - **≥ `--page-max`(1600) invariant** — As long as this cap is ≥1600, for vw ≤ 2000
-   *   (= 1600 + 2×200), origin/column matches previous formula identically (both gutter wins,
-   *   column = vw − 400). Thus gateway-protected 1440–1920 width renders move zero pixels —
-   *   1440·1680·1920 rect measurements identical (2026-08-19).
-   *
-   * Reading paragraphs don't grow wider: hero lead uses `max-w-[40rem]`(actual 34 chars/line),
-   * docs prose uses `--measure-prose`(60ch — 79 characters, see that token's block) as their
-   * own cap, not following column. The docs/Library body applies it per prose element
-   * (`DocsVaultViewer`'s `p`/`ul`/`ol`/`blockquote`); headings, tables and code keep the column.
-   * Full column width used by monument headline(display type · `4.8cqw` proportional) ·
-   * event strip · divider · GNB — all «non-reading paragraphs» elements.
-   *
-   * Gateway: `tests/contract/gateway-column-width.contract.test.ts`(value fixed · ≥ page-max invariant · single origin/column consumer · docs registration) +
-   * `tests/e2e/download-gateway-grid.spec.ts`(width-by-width rect measurement — reads origin live,
-   * so automatically follows if this value changes).
+   * Gateway body column cap. Origin is `max(gutter, (vw - this) / 2)`; keep it at least `--page-max`
+   * (1600) so 1440 to 1920 renders do not move. Gates:
+   * `tests/contract/gateway-column-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
    */
   --gateway-page-max: 1920px;
   /*
-   * Gateway landing section rhythm (2026-08-18 remake). One section = one thought; this
-   * interval is its punctuation — if value differs per section, it's chance not rhythm.
+   * One section is one thought; the shared interval is its punctuation, so it must not vary per
+   * section.
    */
   --gateway-section-gap: 160px;
   /*
-   * Gateway stage width — single source of «stage is this wide» shared by
-   * DemoStage and agent scene (AcpChatScene wrapper) (2026-08-19 wide-width revision).
-   *
-   * Director (83) set stage to 48rem due to **proportion** issue — on 1512 screen,
-   * clip consumed 73% of width, obscuring first impression entirely (owner: *"video is too big now"*). But hardcoding that remedy as absolute px made proportion correct only on one width:
-   * owner's 2560 screenshot measurement showed stage at **30%** of viewport (768/2560),
-   * so eye hit blank canvas around it before stage. What to preserve is proportion, not pixels.
-   *
-   * Basis for three values (none are preference):
-   * - **floor 48rem** — Owner-approved value from director (83). Width where 40vw hits 768px
-   *   is exactly 1920, so **below 1920 this token outputs same 768px as before, moving zero pixels**(1440·1536·1728·1920 rect measurements identical).
-   * - **slope 40vw** — Largest proportional factor allowed by 1440–1920 no-regression constraint.
-   *   40vw×1920 = 768 = 48rem — growth starts only just above gateway-protected widest no-regression width. (Owner-approved proportion range is 50.8vw on 1512 ~ 40vw on 1920 — this coefficient is that conservative end.)
-   * - **cap 80rem(1280px)** — Demo clip original is 1512px width; last standard step (Tailwind max-w-7xl) not upsampling beyond original at 1x density. Stops stage from becoming 「screen」 instead of 「scene」 even on 3440 ultrawide.
-   *
-   * Gateway: `tests/contract/gateway-stage-width.contract.test.ts`(invariants of three values + single consumer) · `tests/e2e/download-gateway-grid.spec.ts`(measures rendered stage width per width matches token calculation, and whether demo/agent scenes share same width).
+   * Proportional stage width: floor 48rem (equals 40vw at 1920, so nothing moves below it), slope
+   * 40vw, cap 80rem (the demo clip is 1512px wide). Gates:
+   * `tests/contract/gateway-stage-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
    */
   --gateway-stage-max: clamp(48rem, 40vw, 80rem);
 
@@ -523,69 +352,32 @@
   --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 
   /*
-   * **Alignment origin** — the single x consumed by all gateway elements (2026-07-29 owner
-   * critique: *"Isn't there too little whitespace on the left? Left and right should be equal."*).
-   *
-   *   Origin = max(gutter, (viewport − --page-max) / 2)
-   *
-   * Why gutter alone is insufficient: columns stop at `--page-max` (1600), so when the viewport
-   * exceeds 1600 + 2×gutter, **all remaining width stacks on the right**. Measured
-   * 2026-07-29: at 1920, left 64 · right 256 (ratio 4.0); at 2560, left 96 · right 864
-   * (ratio 9.0). The top bar's right group also stops at the column's right edge (1664), leaving
-   * 256px empty to the screen edge — this is what the owner meant by *"Why is the whitespace so long? What's going on?"*.
-   *
-   * The alternative of centering only the outer wrapper with `mx-auto` was **rejected** (verdict ③, reconfirmed
-   * night of 2026-07-29). Not because centering is bad, but because **there would be two origins** —
-   * the wrapper centers relative to the viewport, but the camera reservation width is fixed at 544, causing
-   * a misalignment of +96 at 1920 and +416 at 2560. Elevating the origin to a single token ensures both consumers
-   * read the **same number**, making this error structurally impossible.
-   *
-   * **Why register with `@property`**: Registration allows computed values to resolve as their **written length**
-   * (e.g., `160px`), enabling ① CSS to recalculate automatically when the viewport changes and
-   * ② JS to read the **same number** via `parseFloat` to derive camera reservation width. Without registration, the computed value remains a token stream, causing JS to see NaN.
-   *
-   * The reason not to register the atomic values (`--gateway-*`) is the opposite — those are values manually set by humans,
-   * so natural typos like `2.5rem` silently drift back as initial-value without error.
-   * This origin is a derived value, so no one writes it manually.
+   * Origin = max(gutter, (viewport - `--page-max`) / 2): the single x every gateway element and the
+   * camera reservation read. Registered with `@property` so JS can read the resolved length via
+   * `parseFloat`; hand-written atomics stay unregistered so typos are not hidden.
    */
   /*
-   * [Revision 2026-08-19] The column cap in the formula changed from `--page-max` to `--gateway-page-max`
-   * (due to the token read-only block — owner choice "widen only for the gateway"). The origin and
-   * column (`PAGE_COLUMN`) must read the **same cap** — changing only one makes the column wider while the origin
-   * centers on the old number, causing left-right asymmetry. `gateway-column-width.contract.test.ts` enforces this pair.
+   * Origin and column (`PAGE_COLUMN`) must read the same cap; changing one alone makes left and right
+   * asymmetric. `gateway-column-width.contract.test.ts` enforces the pair.
    */
   --gateway-origin: max(
     calc(var(--gateway-gutter) * 1px),
     calc((100vw - var(--gateway-page-max)) / 2)
   );
-  /* `--page-col-utility` (960px) has been **deleted** (2026-07-29 Council Verdict ③).
-     Its sole consumer was `/download`, where this token's only real effect was creating a second central column that **misaligned with the floor panel** (measured at 1920: panel x=160 · floor x=480). The gateway grid is a single set starting from one left gutter. Unused tokens are misinformation, not spec (`design.md`). */
   --section-gap: 28px;
   --card-gap: 20px;
   /*
-     **Common content box inset** — named `card` but most actual consumers
-     are `rounded-panel` section boxes (2026-08-15 measurement: 13 of 16 token adopters · all 12 who manually wrote the same value used panels). The mismatch between name and usage is known; renaming would touch 29 consumers, burying the pixel-perfect diff in round two (`docs/DECISIONS.md` 2026-08-15 (5)).
-  */
+   * Named `card` but most consumers are `rounded-panel` section boxes; renaming would touch 29
+   * consumers, so the name stays.
+   */
   --card-pad: 16px;
   /* List slot height for one row inside repeated cards — this space is reserved even if empty.
      A spec preventing content length from determining card height (dimension regularity). */
   --card-row-h: 22px;
   /*
-   * ── One number, two shapes ────────────────────────────────────────────────────
-   *
-   * `--measure-prose-steps` is the measure. Everything below is derived from it, so
-   * changing this 66 moves the line cap, the document column, the notice cards, the
-   * header, the meta bar and the outline rail together. Before 2026-09-11 the column
-   * was an independent `760px` and the cap was `70ch`; they disagreed by 180px inside
-   * one reading column, and the wider one was the box a person actually saw.
-   *
-   * ⚠️ **60 → 66, and the size it is spent at 14 → 16** (owner, 2026-09-12: *"isn't the
-   * empty space to the left of where the text comes out far too much? make the text
-   * itself run wider — stretch left and right at the same time so the proportion is
-   * right"*). 60 steps spent at `--text-body-lg` bought a 500px run inside a 1168px
-   * pane, leaving 334px of nothing on its left; 66 steps spent at `--text-reading` buy
-   * **629px** (86 Latin characters, 46 Hangul). Record: `docs/DECISIONS.md`, "The
-   * reading column is worth more of its pane than the measure was buying".
+   * `--measure-prose-steps` is the single measure: the line cap, document column, notice cards,
+   * header, meta bar and outline rail all derive from it. Spent at `--text-reading`, 66 steps give
+   * 629px (86 Latin characters, 46 Hangul).
    */
   --measure-prose-steps: 66;
   /*
@@ -609,125 +401,36 @@
      a pane-width residue away from it. */
   --measure-doc-gutter: 40px;
   /*
-   * Prose measure — the upper limit of line length readable by eye, in `ch`.
-   *
-   * ⚠️ **`ch` is not a character.** `1ch` is the advance of the digit `0`, and in
-   * Pretendard Variable that is **0.596em** — 9.53px at the 16px root, 8.34px at
-   * `text-body-lg` (14px). A proportional Latin average is only **0.454em**
-   * (7.27px at 16px), i.e. **0.76 of a `ch`**, so a `ch` cap always fits *more*
-   * characters than its number. Measured in the built export with the real font,
-   * identically at 14/15/16/17px because both sides scale with the font size.
-   *
-   * | measure | Latin characters per line | Hangul syllables |
-   * |---|---:|---:|
-   * | `70ch` (until 2026-09-11) | 92 | 42 |
-   * | `60ch` (until 2026-09-12) | 79 | 36 |
-   * | **`66ch` (now)** | **86** | **46** |
-   * | `57ch` | 75 | 34 |
-   * | `50ch` | 65 | 30 |
-   *
-   * The stated intent of this token was once *"65–75 characters per line"*, and 60ch
-   * landed inside it at 79. **66ch is deliberately outside it**: the owner read a 500px
-   * run inside a 1168px pane and asked for the line, not the void
-   * (`docs/DECISIONS.md`, 2026-09-12). What the step buys is not only Latin length —
-   * spent at `--text-reading` (16px) rather than `text-body-lg` (14px) it also lifts
-   * Hangul from 36 syllables to **46**, which is the first step where a `break-keep`
-   * Korean paragraph stops stranding a particle on its own line. The losing guidance
-   * (45–75) and the falsifier are both written into that record. It is the cap on a
-   * *line*; `--measure-doc-column` below is that same measure plus the gutter the
-   * column has always paired with, so the box does not disagree with the text inside it.
-   *
-   * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders `"0".repeat(100)`
-   * and a fixed English sample in the shipped font and fails outside 80–92
-   * characters per measure — so neither the token nor the font can drift this back
-   * to 60 (74–81 on the same runners) without saying so.
+   * `ch` is the advance of `0` (0.596em in Pretendard Variable), about 0.76 of an average Latin
+   * character, so 66ch fits 86 Latin or 46 Hangul characters. Gate:
+   * `tests/e2e/prose-measure-calibration.spec.ts` fails outside 80-92 characters per measure.
    */
   --measure-prose: calc(var(--measure-prose-steps) * 1ch);
   /*
-   * Document column — the reading column a document, wiki page or check report sits in.
-   *
-   * **= the prose measure, spent at the size the body is set in, plus one gutter each side**
-   * → 66 × 0.5957 × 16px + 2 × 40px = **709.1px**.
-   *
-   * History, because the derivation replaced a number rather than joining it: from
-   * 2026-09-08 this was an independent `760px`, named after the literal that eleven sites
-   * had hand-written, always paired with this same gutter. That box was never a reading
-   * column — measured on the installed app at 1512, it held a **668px run at 104 English
-   * characters per line**. When the line was capped at the measure on 2026-09-11 the two
-   * stopped agreeing: the notice cards, the page header, the source disclosure, the
-   * frontmatter block and the meta bar still spanned 680px of content while the prose under
-   * them ended at 497px — two widths stacked inside one reading column, which is worse than
-   * one wrong width. So the box is now the measure, and everything in the column follows it.
-   *
-   * It stays a separate **token** because it is a different **quantity**. `--measure-prose` is
-   * in `ch`, which is relative to *the element's own* font size, and that is right for a line:
-   * a cap on how far the eye travels along the glyphs it is reading. A **box** cannot be
-   * element-relative, because the eleven consumers that wear this one read it from
-   * `text-label` (11px) to the 16px root, and a `ch`-bearing column resolved to three
-   * different widths on one page (measured on `/en/docs/`: 651.9px on the viewer article and
-   * the frontmatter block, 473.2px on the meta bar). So the box converts the measure once, at
-   * the size the body is actually set in, and every consumer gets the same width.
-   *
-   * ⚠️ That is a statement about **the type inside the box**, not about the reader's font
-   * setting — a distinction the token could ignore while the ramp was absolute and cannot
-   * ignore now (2026-09-12). `--text-reading` is `1rem`, so this column is root-relative: one
-   * width per page, still, because every consumer resolves the same root — and a width that
-   * grows when the reader asks for bigger words, because a reading column whose words doubled
-   * inside it is not a reading column. 709.1px at the 16px root, 1338.1px at a 32px one, both
-   * measured. The three JS consumers that cannot read this variable each decide separately
-   * whether to follow the root; `src/shared/ui/reading-measure.ts` holds that table.
-   *
-   * Two consumers cannot see a CSS variable at all — the popout window's inlined stylesheet
-   * and Next's `sizes` hints — and they read `DOC_COLUMN_PX` from
-   * `src/shared/ui/reading-measure.ts`, which carries this same derivation from the same
-   * three constants. The rendered token and that constant are gated against each other in
-   * `tests/e2e/prose-measure-calibration.spec.ts`.
+   * Prose measure at the body size plus a gutter each side (66 x 0.5957 x 16px + 2 x 40px = 709.1px);
+   * a box cannot use `ch`, since consumers differ in font size. JS consumers read `DOC_COLUMN_PX` in
+   * `src/shared/ui/reading-measure.ts`, gated in `tests/e2e/prose-measure-calibration.spec.ts`.
    */
   --measure-doc-column: calc(
     var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-reading) +
       2 * var(--measure-doc-gutter)
   );
   /*
-   * Stage column — the content column of a destination's stage (2026-09-08).
-   *
-   * `page-frame.ts` already carried this number and its rule: *"640 is what the assembly entry
-   * already used, and it has now gained a second consumer — a value earns a name the moment
-   * something else needs it."* By today it had seven consumers and only three read the name, so
-   * the number is the token and `PAGE_COLUMN_STAGE` reads it. Distinct from `--measure-prose`
-   * (a line-length cap in `ch` — 66ch, 86 characters), `--measure-doc-column` (709.1, a
-   * document page, derived from that cap) and
-   * `--git-setup-measure` (520, one task in an empty destination).
+   * Content column of a destination's stage; `PAGE_COLUMN_STAGE` reads this token. Distinct from
+   * `--measure-prose`, `--measure-doc-column` and `--git-setup-measure`.
    */
   --measure-stage-column: 640px;
   /*
-   * Note column — a narrow block of explanatory content inside an otherwise empty
-   * destination: the Docs empty state's card, its sample note, the starter CTA's note
-   * (2026-09-08, owner direction "one value per role"). Distinct from
-   * `--git-setup-measure` (520, one *task* column, with a form and a command in it) and
-   * from `--measure-stage-column` (640, a whole stage). The three sites wrote 560 by hand.
+   * Narrow block of explanatory content in an otherwise empty destination. Distinct from
+   * `--git-setup-measure` (520, one task column) and `--measure-stage-column` (640, a whole stage).
    */
   --measure-note-column: 560px;
 
   --page-bottom-breath: 40px;
 
   /*
-   * ── The floating «back to top» pill, and the room the page owes it ─────────────────
-   *
-   * `BackToTopButton` is laid over the reading pane's scroll area on purpose, so it holds
-   * its screen position while the body scrolls. That is fine everywhere except at the end
-   * of the scroll, where the page stops moving and whatever the pill covers stays covered.
-   *
-   * Owner report on the installed app, 2026-09-08: at the foot of the Library's check
-   * results the pill sat on the "N more names" fold chip and hid its words. Measured
-   * the same day on the wiki reader at 1400×860 / 1200×800 / 1040×720, the last line of the
-   * page ended **8px below the pill's top edge** at all three, and at 1040 (the app's window
-   * floor, where the pane is narrowest) 60px of that line's width sat behind the pill —
-   * `pb` on the scroll container was 0 and the whole gap was the last paragraph's own margin.
-   *
-   * So the two values are **one arithmetic**, not two decisions: the page reserves the
-   * pill's inset plus its own height plus 12px of breath, and the pill's inset is the only
-   * number anyone edits. `--chrome-tile-size` is the pill's height and rises to 44 on coarse
-   * pointers, so the reserve follows it without a second rule.
+   * The page reserves the pill's inset plus its height plus 12px, so the last line never ends behind
+   * the pill. `--chrome-tile-size` is the pill's height, so the reserve follows it on coarse pointers.
    */
   --doc-reading-back-to-top-inset: 24px;
   --doc-reading-back-to-top-clearance: calc(
@@ -735,38 +438,22 @@
   );
 
   /*
-   * Setup measurement width — the single column width holding one task for destinations "not yet capable of their own work" (2026-07-26, destination redesign).
-   *
-   * Why a token: The `/git/` disconnected state has three steps (open in app → choose folder → start recording), and users pass through these three **continuously**. If widths differ per state, the surface expands and contracts with each step, reading as "jumped to another page." Sharing one measurement width makes the three steps feel like **one task surface**.
-   *
-   * Why 520px: At 12.5px body text, one line holds 45–55 characters (readable measure cap), and this surface's widest content (CLI line `ontology-atlas snapshot` mono + copy button ≈ 300px) is not clipped.
-   *
-   * Responsive fallback: Consumers receive `w-full max-w-[var(--git-setup-measure)]`, collapsing to 100% on narrow viewports (no separate breakpoint).
-   * Marker: `data-testid="atlas-git-setup"` — unit tests fix that all three states use this frame.
+   * One column width for all three `/git/` disconnected steps so they read as one task surface; 520px
+   * holds 45 to 55 characters at 12.5px without clipping the CLI line. Consumers use `w-full
+   * max-w-[var(--git-setup-measure)]`; unit tests check `data-testid="atlas-git-setup"`.
    */
   /* Vertical margins for the setup stage. As screen size increases, margins decrease slightly; on narrow screens, they collapse.
      Values fall between standard spacing ramp steps (24–72px), avoiding a new ladder. */
   --git-setup-top: clamp(24px, 7vh, 72px);
 
   /*
-   * 2026-08-02 Revision — the **consumer location** for this value has changed (value remains 520px).
-   *
-   * Previously, the entire setup screen used this width. Thus, in a 1512×806 measurement,
-   * the 520×464 column used only 19.8% of the screen, leaving 348px (57.2% of panel width) on left/right and
-   * 298px below doing nothing — owner verdict *"Why is it stuck to the top with small content and poor layout?"* Top/center alignment was the result, not the cause:
-   * the cause was **a single task column trying to occupy the full destination width**.
-   *
-   * Now this token measures only the **left (speaking) column** of the stage. The right is filled by `1fr` with a preview of 「Connected like this」. Thus, the token's premise
-   * (12.5px body 45–55 chars = prose measure) remains **intact and more accurate** — only the column with prose uses the prose measure.
+   * This token measures only the left (speaking) column of the stage; the right `1fr` shows a preview,
+   * so the 45 to 55 character prose measure still holds.
    */
   /*
-   * ── Workbench Ratio Ramp (2026-08-02, owner instruction: *"Near-perfect responsive ratio on 1920×1080 and above, or laptops"* ) ────────────────────────
-   *
-   * Fixed px **only fits one window**. The prototype was 560/870 at 1512; hardcoding that value shrinks the list to 29% of the window at 1920 (sentence columns die first) and consumes 44% on a 1280 laptop, making details unreadable. So three values are wrapped in one `clamp` — **minimum** (width fitting three columns on laptops) · **ideal** (viewport ratio) ·
-   * **maximum** (width beyond which becomes whitespace rather than list).
-   *
-   * Measurement contrast: 1280 → 460 (36%) · 1512 → 514 (34%) · 1920 → 653 (34%) ·
-   * 2560 → 720 (28%, cap). At every width, visual/name/why three columns survive, and the right side has an 11px mono diff above the width that doesn't collapse 80 columns.
+   * `clamp(min, ideal, max)`: the minimum fits three columns on laptops, the ideal is a viewport
+   * ratio, the maximum is where extra width would become whitespace. Fixed px fits one window only:
+   * 560 at 1512 shrinks the list to 29% at 1920 and takes 44% on a 1280 laptop.
    */
   --git-timeline-w: clamp(460px, 34vw, 720px);
   --git-setup-measure: 520px;
@@ -796,13 +483,8 @@
   --git-ego-facts-w: clamp(220px, 22vw, 320px);
 
   /*
-   * ── Destination Workbench (Redesigned 2026-07-27) ──────────────────────────────
-   *
-   * Owner verdict: *"This recording page also feels too AI-ish."* Two measured causes
-   * were dimensions — ① **forcing** two columns and leaving only one line on the right
-   * (at 1512×950, right column valid ink 1 row / empty height 1,010px, yet vertical dividers extend to screen edge) ② list row height determined by character count, causing uncontrolled grid rhythm wobble. Both violate "container dimensions are design decisions, not content byproducts" (design.md dimension regularity).
-   *
-   * Hence the row height below is a token rather than something content dictates.
+   * Row height is a token, not a content byproduct: container dimensions are design decisions
+   * (design.md dimension regularity).
    */
 
   /* Changed list row height. As a repeated set, content length must not determine height —
@@ -822,13 +504,7 @@
   --git-single-measure: 920px;
 
 
-  /*
-   * ── Phase 2 Color Full Tokenization (2026-07-20) ─────────────────────────────
-   * Design Guardian verdict: .qa-scratch/audit-2026-07/guardian-color-verdict.md
-   * Original mapping: .qa-scratch/audit-2026-07/remaining-color-map.md
-   * All new tokens below are dark-single — light mode was fully deprecated on 2026-07-19
-   * (design.md). Do not use theme-aware branching.
-   */
+  /* All tokens below are dark-only; do not use theme-aware branching. */
 
   /* success surface — ONE hue(50,185,125) alpha ladder. Symmetric to danger pattern.
      Converge 73,190,146 / 130,230,180 drift to this hue (SHIFT-RISK, approved). */
@@ -873,11 +549,11 @@
   --color-amber-signal-a28: rgba(255, 179, 71, 0.28);
   --color-amber-signal-a30: rgba(255, 179, 71, 0.3);
 
-  /* @provisional — QUARANTINE: Unapproved decorative gold. Not listed in the
-     docs/DESIGN-SYSTEM.md charter as an exception. Design Guardian verdict §③ disposition —
-     Only converge decorative gold accents on the docs/vault/agent surface (links, outlines, MCP status,
-     import flow, blast-radius text) to a single anchor from 4 drift hues (224,196,140 /
-     232,200,148 / 238,198,128 / 244,196,130) — this is not new charter approval. Follow-up ticket: review demotion to neutral/indigo (owner decision pending). Do not extend — only tokenize existing literals. */
+  /*
+   * Provisional: decorative gold on the docs/vault/agent surface (links, outlines, MCP status, import
+   * flow, blast-radius text), collapsed from four drifted hues. Not a charter exception; do not
+   * extend, only tokenize existing literals.
+   */
   --color-amber-docs-a08: rgba(234, 198, 138, 0.08);
   --color-amber-docs-a10: rgba(234, 198, 138, 0.1);
   --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
@@ -894,7 +570,10 @@
   --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
   --color-amber-docs-a100: rgba(234, 198, 138, 1);
 
-  /* pale indigo text — dark-single only (theme-aware prohibited after light mode was fully deprecated on 2026-07-19). Converge 205,212,255 / 211,215,255 to 200,210,255 — different role from existing --color-indigo-text-strong/-soft (lighter surface-on-surface text), so it gets its own ladder. */
+  /*
+   * Pale indigo text for surface-on-surface text, a different role from `--color-indigo-text-strong`
+   * and `-soft`, so it gets its own ladder.
+   */
   --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
   --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
   --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
@@ -911,16 +590,13 @@
   --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
   --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
 
-  /* Canvas with alpha, for the vignette that fades the Library's ambient fields into the
-     canvas at a pane's rim (2026-09-09). An existing rung of the alpha canon, not a new
-     stop. The matching panel step was cut with the glass panel it was written for: the
-     empty state stands its copy *beside* the object rather than over it. */
+  /*
+   * Canvas with alpha for the vignette that fades the Library's ambient fields into the canvas at a
+   * pane's rim.
+   */
   --color-canvas-a70: rgba(8, 9, 10, 0.7);
 
-  /* drop shadow alpha — existing a22/a42/a46 siblings. Snap new literals to an 8-step canon scale (imperceptible) — Guardian verdict §⑥. */
-  /* a16 was removed on 2026-08-06 — its only consumer was the hand-drawn
-     drop shadow on the project selection card, and since that card is static, removing the drop made consumption zero.
-     `unused-token-ratchet` caught it there: tokens with definitions but no consumers are misinformation, not specs. Re-list when needed along with its consumer. */
+  /* Drop shadow alphas snap to an 8-step canon scale, siblings of a22/a42/a46. */
   --color-shadow-a12: rgba(0, 0, 0, 0.12);
   --color-shadow-a35: rgba(0, 0, 0, 0.35);
   --color-shadow-a50: rgba(0, 0, 0, 0.5);
@@ -946,58 +622,9 @@
      pair — combining it automatically with text-<step> would change tracking for ~1k elements at once, violating the "not a codification redesign" principle. The codex table specifies which tracking pairs with which, and new code applies that pair together.
      Apple optical principle: small steps use positive tracking to secure reading lines, large steps use negative tracking for cohesion. */
   /*
-   * ── The ramp is written in `rem`, so browser text zoom reaches it (2026-09-12) ──────
-   *
-   * Every step below is the **same rendered pixel** it has always been, divided by the 16px
-   * root: `9.5px → 0.59375rem`, `12.5px → 0.78125rem`, `23px → 1.4375rem`. Each numerator is
-   * a multiple of 0.5 and each denominator is 16, so every quotient terminates exactly in
-   * binary — at the default root there is no rounding step and no sub-pixel drift. Measured:
-   * a fresh-element computed-style probe over all nine steps and all eight `leading` steps on
-   * `/ko/library/`, `/ko/docs/`, `/ko/topology/` and `/ko/download/` reports byte-identical
-   * `font-size` and `line-height` strings before and after, and the four routes screenshot
-   * to a **0-pixel** diff at 1512 and 1040.
-   *
-   * **Why it had to change.** A browser's *text-only* zoom (Chrome → Appearance → Font size,
-   * Firefox → Zoom text only, Safari's Accessibility text size) multiplies the **root font
-   * size** and nothing else. A ramp written in `px` is immune to it: before this change,
-   * every one of those settings, at every step up to 200%, left Atlas rendering pixel-for-pixel
-   * identical — the accessibility setting was inert on every surface. Carry-forward finding,
-   * U2 council, 2026-09-11: *"Text-only 200% zoom has no effect — the type scale is absolute
-   * px."* Page zoom worked, but page zoom is not the same setting: it scales the layout, so a
-   * person who wants larger words without a narrower window had no way to ask for them.
-   *
-   * **The `leading` ramp moves with it, or the fix is worse than the defect.** These eight
-   * steps are bound to the steps above through the `--text-<step>--line-height` companions
-   * further down, and they are *px line boxes on a 2px grid* on purpose (see that block). Left
-   * in px while the sizes doubled, a 25px glyph would sit in a 20px line box and consecutive
-   * paragraphs would overlap. They are the same quantity as the size they pair with, so they
-   * follow the same root. The three **ratio** steps (`--leading-display-tight`,
-   * `--leading-prose`, `--leading-monument`) already followed and are untouched.
-   *
-   * **What deliberately stays in `px`** — the boundary is *type follows the reader, boxes do
-   * not*:
-   *   - **Chrome geometry.** `--chrome-tile-size` (36), `--app-nav-rail-icon-size` (20), rail
-   *     and dock widths, hit floors, the dialog tiers, `--measure-doc-gutter` (40). The
-   *     fixed-scale contract (owner, 2026-07-24) pins them, and a hit target that shrank or
-   *     grew with a font setting would be a different promise than the one measured.
-   *   - **`--text-monument`.** `clamp(40px, 4.8cqw, 96px)` is not a ramp step spent on
-   *     reading; it is derived from its own container, and its whole specification is that the
-   *     owner's two-line headline *stands on one line inside its measure* (the derivation and
-   *     its gates are written beside the token). Text zoom cannot reach a `cqw` term at all,
-   *     so converting only the clamp arms would produce a size that scales or not depending on
-   *     which arm wins. It is honest in px, and at its 53.4px floor it is already more than
-   *     200% of the body around it.
-   *   - **`DOC_COLUMN_PX` in `src/shared/ui/reading-measure.ts`.** Three consumers cannot read
-   *     a CSS variable; the reason each one stays a number at the 100% root is written there.
-   *
-   * **What follows for free.** `--measure-doc-column` is derived from `--text-reading`, so the
-   * reading column now grows with the words inside it: 709.1px at the 16px root, 1338.2px at a
-   * 32px root (629.06 × 2 + two 40px gutters). `--measure-prose` is in `ch`, which is
-   * font-relative, so the line cap followed the moment the size did.
-   *
-   * Gates: `tests/e2e/text-zoom-ramp.spec.ts` (the probe described above, plus the 200% reflow
-   * assertions at 1512 and 1040) and `tests/contract/type-ramp-root-relative.contract.test.ts`
-   * (no ramp step may be reintroduced in `px`).
+   * The ramp is in `rem` so browser text-only zoom reaches it; each step equals its old px value over
+   * the 16px root. Chrome geometry, `--text-monument` and `DOC_COLUMN_PX` stay in px. Gates:
+   * `tests/e2e/text-zoom-ramp.spec.ts`, `tests/contract/type-ramp-root-relative.contract.test.ts`.
    */
   --text-caption: 0.59375rem; /* micro labels/legends/timestamps (pair: tracking-caption) */
   --text-label: 0.6875rem; /* chips/badges/auxiliary labels (pair: tracking-label) */
@@ -1005,16 +632,8 @@
   --text-body-lg: 0.875rem; /* emphasized body/subtitles (pair: tracking-body-lg) */
   --text-title: 1rem; /* panel/card titles (pair: tracking-title) */
   /*
-   * **The size authored prose is read at** (2026-09-12) — the same 16px as `--text-title`
-   * and a different quantity, which is why it is a step and not an alias.
-   *
-   * `--text-title` is chrome: a panel or card title, paired with `--leading-title` (24px)
-   * because it is one or two lines of a label. This step is the body of a document, paired
-   * with `--leading-prose` (1.7) because it is paragraphs, and it is the size
-   * `--measure-doc-column` is derived at — so the two can never be swapped without moving
-   * the reading column. Reading bodies used `--text-body-lg` (14px) until the owner read
-   * the line against the void beside it (`docs/DECISIONS.md`, 2026-09-12); captions,
-   * labels, tables and chrome keep their own grades.
+   * Size of authored prose, a step of its own rather than an alias of `--text-title`: it pairs with
+   * `--leading-prose` (1.7), and `--measure-doc-column` is derived at this size.
    */
   --text-reading: 1rem; /* authored document body (pair: leading-prose) */
   --text-display: 1.4375rem; /* page headlines (pair: tracking-display) */
@@ -1025,43 +644,14 @@
      `DesktopVaultWelcome` was bypassing the ramp with `md:text-[34px]` + eslint-disable. The moment a second consumer appears is when to promote the value to a name. */
   --text-hero-lg: 2.125rem; /* old gateway headline */
 
-  /* Monument headline for the gateway landing (2026-08-18 remake, `docs/DECISIONS.md`).
-     The step at the top of the ramp — a single space where the owner's two-line headline becomes the protagonist of the first screen.
-     34px(hero-lg) was the value when the map was the background; as the map disappeared from the first screen (remake decision), typography takes on that weight.
-
-     ## Why cqw instead of vw (2026-08-18 2nd, `docs/DECISIONS.md`)
-
-     The monument's constraint is not the viewport but **its own measure** — the definition of a monument is that the sentence stands on one line, and the glyph budget for the longest sentence was measured as
-     ko 11.68×F(「People accumulate cognitive debt」) · en 16.78×F("People
-     accumulate the cognitive debt.") so the size **follows** from measure width ÷ budget. The old 5vw split the two Korean sentences into four lines in the
-     1512~1920 range where the measure was much narrower than vw (measured at 1728: measure 800px with
-     line budget 1009px).
-
-     ## Coefficient 5.8 → 4.8 (2026-08-18 3rd — Owner: *"Text too large"*)
-
-     5.8cqw (1/17.2 of the measure) was near the upper limit of «one-line budget» — the longest English line filled 97.3% of the measure,
-     rendering at 64.5px on 1512, which the owner deemed excessive.
-     Line count contract and size are separate: lowering the coefficient only increases margin. At 4.8cqw
-     (1/20.8 of the measure) the longest English line stops at 80.5% of the measure, ko at 56.1% —
-     measured at 1512 as 53.4px, both sentences remain on one line (re-measurement complete for 1440~2560).
-
-     The consumer (gateway hero) declares the measure via a `container-type: inline-size` wrapper.
-     In places without a container, cqw falls back to small-viewport width, so it behaves in the same order as the old 5vw — the ramp is not held hostage by a single consumer.
-     The 40px floor is maintained: the longest English line is 671px at the floor, so below measure 671px (≈viewport
-     1090px) it folds — below that is either stack layout (<lg) or phone,
-     and the longest ko line (467px) remains on one line for all widths where split hero is used (≥lg: measure 624px+).
-
-     Pairing: tracking-monument(−0.018em) · leading-monument(1.08, ratio — since clamp size,
-     creating px pairings would require tokens per size. Same category as display-tight). */
   /*
-   * ⚠️ **The floor is the reader's, the `cqw` term is the column's, the ceiling is the
-   * layout's** (2026-09-12). `2.5rem` is the same 40px it has always been at the default
-   * root, and it is `rem` because that arm is the *guarantee* — the size below which the
-   * headline stops being a monument. Measured on `/ko/download/` at a browser text size of
-   * 200%: with a `40px` floor the `h1` rendered **40px at 768 and 44.54px at 1024 while its
-   * own `h2`s rendered 46px** — a page whose headline was smaller than its sections. The
-   * `4.8cqw` term still answers to the container, and the `96px` ceiling stays absolute
-   * because it is the layout's limit, not the reader's.
+   * Gateway headline sized from its own measure: `cqw` of a `container-type: inline-size` wrapper
+   * keeps the longest sentence on one line (4.8cqw is 53.4px at 1512). Without a container `cqw` falls
+   * back to small-viewport width. The 40px floor keeps the split hero from folding.
+   */
+  /*
+   * The floor is the reader's, the `cqw` term the column's, the ceiling the layout's: the floor is
+   * `rem` so text zoom cannot leave the h1 smaller than its own h2s; the 96px ceiling stays absolute.
    */
   --text-monument: clamp(2.5rem, 4.8cqw, 96px); /* Gateway monument headline (pair: tracking-monument) */
   --tracking-monument: -0.018em;
@@ -1076,17 +666,8 @@
   --tracking-title: -0.01em;
 
   /*
-   * ── Uppercase Micro Label Letter-spacing (Registered 2026-08-05 etc.) ─────────────────────────
-   *
-   * **This layer was not registered.** The pairs above (caption 0.04 · label 0.02) are for body text, and the places actually needing letter-spacing in this app are almost entirely **`uppercase` + `font-mono` micro labels** — measured 194 instances of that combination. But there was no line step there, so values were scattered manually: `0.08 · 0.1 · 0.10 · 0.12 ·
-   * 0.14 · 0.15 · 0.16 · 0.18 · 0.2 · 0.22em`. Just having `0.1em` and `0.10em` for the **same value** in two notations accounted for 31 instances — evidence that no one set them.
-   *
-   * Same prescription as for docking shadow slots (`-dock-bottom/-side`) and `--radius-micro`:
-   * **Register the layer instead of making exceptions.**
-   *
-   * Values are the **five already in use** as steps. So 186 places move to pixel 0, and only rarely used branches (0.15 · 0.18 · 0.2 · 0.22em) move. Reason for not rearranging values into «a prettier ladder»: that would be a taste decision changing the appearance of 200 uppercase labels at once, and in this repo, «system» decides.
-   *
-   * How to choose — **choose by emphasis step, not number**. Default is `-12`.
+   * Caps tracking steps are the five values already in use on `uppercase` `font-mono` micro labels;
+   * choose by emphasis step, default `-12`.
    */
   --tracking-caps-08: 0.08em;
   --tracking-caps-10: 0.10em;
@@ -1095,36 +676,9 @@
   --tracking-caps-16: 0.16em;
 
   /*
-   * ── Caps tracking is a Latin device (owner, 2026-09-06) ────────────────────────────────────
-   *
-   * Owner, of the Korean workbench and the MCP tabs in the installed app: the uppercase eyebrow
-   * style is applied to Korean strings, and *"it spaces the syllables apart and reads broken."*
-   *
-   * The five steps above exist to open up **capital Latin letters**, whose forms are narrow and
-   * whose word boundaries survive the extra space. Hangul is written in syllable blocks that are
-   * already square and already separated; 0.14em pushes the blocks of one word as far apart as
-   * the space between two words, so a two-word label stops reading as two words and starts
-   * reading as five characters. `text-transform: uppercase` is a no-op on Hangul, which is why
-   * the pairing was never noticed: only half of the eyebrow specification ever applied, and it
-   * was the destructive half.
-   *
-   * ⚠️ **Measured before the rule existed** (2026-09-06, twelve `/ko/` routes at 1512x949): 26
-   * distinct Hangul strings rendered at 1.14-1.76px of tracking across eight routes, through four
-   * different `tracking-*` classes. Every one is a `--tracking-caps-*` consumer, so the rule
-   * lives on the tokens rather than in 26 class strings — a fix per site is 26 chances to miss
-   * one, and the twenty-seventh site would be born broken.
-   *
-   * The type-ramp pairs (`--tracking-caption` 0.04em, `--tracking-label` 0.02em) are **not**
-   * touched: they are body-text pairs, they apply to both scripts, and at 9.5px they come to
-   * 0.38px — below the threshold the gate measures and below what the complaint was about.
-   *
-   * `:root:lang(ko)` rather than a utility class: it beats this block on specificity, custom
-   * properties inherit, and no consumer has to opt in. `LocaleHtmlLang` plants the locale on
-   * `<html>` after hydration, so a Korean page shows Latin tracking for its first frames — the
-   * same window in which the web font has not loaded either.
-   *
-   * Gate: `tests/e2e/hangul-tracking.spec.ts` measures rendered letter-spacing on every element
-   * whose own text contains Hangul, across the `/ko/` routes, and probes its own detector.
+   * Caps tracking is a Latin device: wide tracking spreads Hangul syllable blocks as far apart as
+   * words. `:root:lang(ko)` overrides these tokens; lang is set after hydration, so first frames use
+   * Latin. Gate: `tests/e2e/hangul-tracking.spec.ts`.
    */
 
   /* Line-height ramp — 7 px values + 2 free, 1:1 pair with type steps. Tailwind v4
@@ -1151,18 +705,11 @@
   /* Pair: text-monument — clamp size, so it is a ratio step (same reason as the free step above). */
   --leading-monument: 1.08;
 
-  /* Combine line-height pairs with size steps — Tailwind v4 companion token.
-     One text-<step> class carries both font-size and line-height.
-
-     This combination is required for the spec to close. If you only define pairs, "places without line-height classes" remain outside the spec, rendering with browser inheritance 1.5 — ramp departure checks (hardcoded literals) and ratchets **cannot see unregistered classes**. It is the same category of blind spot as unregistered steps quietly rendering at root 16px.
-     Measurement (2026-07-27): 927 places without line-height classes while using ramp sizes.
-
-     Before combining, measured radius: 8 screens × ko/en 687 elements, 400 changes, of which
-     394 were ≤ ±1.25px (mostly one-line chips/labels, so pixels don't even move).
-     Visible change is only in 3 page headlines (34.5 → 28px), and that 34.5px was
-     the product of inheritance 1.5 which no one chose. This change returns line height to design decision per the Dimension Regularity Charter. font-size does not change at all, so line breaks cannot structurally increase.
-
-     Explicit leading utilities beat companions — explicit classes laid down in B1 (74 places) act as shields as is. */
+  /*
+   * Companion tokens give each `text-<step>` class both font-size and line-height, so no element falls
+   * back to the inherited 1.5, which ramp checks cannot see. Explicit `leading-*` utilities still beat
+   * the companions.
+   */
   --text-caption--line-height: var(--leading-caption);
   --text-label--line-height: var(--leading-label);
   --text-body--line-height: var(--leading-body);
@@ -1187,7 +734,7 @@
      Pair for step registration: `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`(tailwind-merge conflict merge), `tests/contract/control-class.contract.test.ts` RADIUS_STEPS. */
   --radius-micro: 4px; /* Micro badges · command tags · kbd — one layer below chips */
   --radius-chip: 6px; /* Chips · badges · small buttons */
-  --radius-card: 9px; /* Cards · medium surfaces — **inputs are not here**: measurement shows most are chip (6px) and `fieldClass` spec is also chip (2026-08-06) */
+  --radius-card: 9px; /* Cards and medium surfaces; inputs use chip (6px), as `fieldClass` does. */
   --radius-panel: 12px; /* Panels · modals · large surfaces */
   /* `sheet`(18px) is listed in the system stone on 2026-08-04. One layer of **floating sheets · palettes** (shortcut/search/agent connection sheets, mobile bottom sheets,
      floating hints) that float above and cover below — in 1512px measurement this one thing split into
@@ -1204,7 +751,9 @@
   --default-transition-duration: var(--motion-fast);
   --default-transition-timing-function: var(--motion-ease);
 
-  /* Padding does not have a separate ramp. Previously `--pad-card`/`--pad-panel` existed but **0 usage**, and `--pad-card` actually overlapped values with the used `--card-pad`, while `--pad-panel`(12px) **differed in value** from what panels actually use `--map-panel-pad`(14px) — meaning docs pointed to dead tokens with wrong values. Card uses `--card-pad`, panel uses
-     `--map-panel-pad` as single source. (2026-07-26) */
+  /*
+   * Padding has no separate ramp: cards use `--card-pad` and panels use `--map-panel-pad` as the
+   * single source.
+   */
 }
 

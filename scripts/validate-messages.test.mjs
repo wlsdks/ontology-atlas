@@ -37,12 +37,8 @@ describe('i18n message catalog', () => {
   });
 
   /*
-   * ⚠️ **A borrowed label is not a name.** "Unmatched" is the word the reference product
-   * this list was studied from puts in its own navigation. Shipping it here would make
-   * Atlas's screen quote a competitor's vocabulary for a fact Atlas states differently:
-   * these are names this folder was asked for and does not hold, not rows that failed to
-   * match something. The key stays `unmatched` because it is a URL parameter people have
-   * bookmarked; only what a person reads is checked (design-lead, 2026-09-05).
+   * The key stays `unmatched` because it is a bookmarked URL parameter; only what a person reads is
+   * checked. "Unmatched" is a reference product's navigation word and must not appear on screen.
    */
   it('never puts the reference product\'s label in front of a person', async () => {
     for (const locale of ['en', 'ko']) {
@@ -88,17 +84,6 @@ describe('i18n message catalog', () => {
       assert.equal(ko.download[gone], undefined, `download.${gone} must stay removed`);
     }
 
-    // 2026-07-29 — the size **left the translation string** (council verdict ④).
-    // With `· {size}` inside the label, a `whitespace-nowrap` button overflows the
-    // panel at 320px (measured, en: 22px over), and an interpolation inside the
-    // string cannot be pulled out responsively on its own. An `AssetSize` span
-    // renders it now — the syntax the Intel button already used, so the two buttons
-    // matching is a bonus.
-    //
-    // What this gate guarded was "the catalog holds no second copy of a release
-    // fact", and that discipline is now **stronger**: the label names only the
-    // architecture. Whether the size actually renders is verified by
-    // `DownloadPage.test.tsx` against the generated module's value (`12.4 MB`).
     assert.match(en.download.primaryCtaPublished, /Apple Silicon/);
     assert.match(ko.download.primaryCtaPublished, /Apple Silicon/);
     for (const [locale, value] of [
@@ -110,22 +95,12 @@ describe('i18n message catalog', () => {
     }
     assert.match(en.download.factShaLink, /\{file\}/);
 
-    // 2026-07-27 — the Developer ID certificate exists (docs/DECISIONS.md),
-    // so the unsigned-era copy is now false. It said "not signed yet" and
-    // walked every downloader through System Settings → Open Anyway; leaving
-    // that in place would send people down a detour macOS no longer asks for,
-    // on the page where a first impression is spent exactly once. The signed
-    // claim itself is guarded against drift by `release-facts.test.ts`
-    // against the real `desktop:release-artifact` chain.
     const downloadCopy = { en: JSON.stringify(en.download), ko: JSON.stringify(ko.download) };
     assert.doesNotMatch(downloadCopy.en, /Not signed yet|Open Anyway|certificate pending/i);
     assert.doesNotMatch(downloadCopy.ko, /아직 서명되지 않음|확인 없이 열기|인증서 준비 중/);
     assert.match(en.download.trustLine, /Signed and notarized by Apple/);
     assert.match(ko.download.trustLine, /Apple 서명·공증/);
 
-    // The release-notes excerpt used to be a hand-maintained Korean constant
-    // rendered verbatim on the English page. Whatever replaces it must not
-    // reintroduce a second, locale-blind copy of the changelog.
     for (const gone of ['releaseNotesHeading', 'releaseNotesSource', 'releaseNotesCaption']) {
       assert.equal(en.download[gone], undefined, `download.${gone} must stay removed`);
       assert.equal(ko.download[gone], undefined, `download.${gone} must stay removed`);
@@ -148,24 +123,9 @@ describe('i18n message catalog', () => {
   it('keeps Korean primary navigation understandable without topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    // feat/rail-rollout retired `OperationsNav`/`OntologySubNav`/`ModeBadge`
-    // (their top-tab, sub-tab, and vault-chip copy below) — `navRail.*` (the
-    // AppNavRail rail + BottomTabBar's shared label source) is now the one
-    // primary-navigation copy surface for both desktop and mobile.
     /*
-     * ⚠️ **Lock the property, not the value** (2026-08-12).
-     *
-     * This used to pin five labels as literal strings (`'Workshop'`, `'Insight'`, …). But
-     * the intent stated in this test's own name is "is this understandable", and
-     * pinning worked against that intent: when the owner said *"I have no idea what
-     * 'Graph Insight' means"*, fixing
-     * the name required **fixing this test first**. That is a gate blocking an
-     * improvement to the spec — the same conclusion this repository already reached
-     * for doc gates: do not pin sentences a human wrote.
-     *
-     * So what is locked becomes a property: ① all six slots are filled ② no jargon and
-     * no **hard-to-understand loanwords** ③ labels are short (they fit the rail width).
-     * Which word to choose is a human judgement this test does not make.
+     * Lock the property, not the value: all six slots are filled, no jargon or hard loanwords, and
+     * labels are short enough for the rail width.
      */
     const railLabels = [
       ko.navRail.map,
@@ -188,31 +148,15 @@ describe('i18n message catalog', () => {
       /지형도|토폴로지|운영|Operations/,
       '레일에 전문용어가 들어왔다',
     );
-    /*
-     * Ban hard-to-understand loanwords. "Insight" is on this list because the owner
-     * genuinely did not recognise that screen's name (2026-08-12). "Builder" is a
-     * retired name and is blocked from coming back.
-     *
-     * "Studio" came off the ban list by owner decision on 2026-08-12, after the
-     * name was changed twice (Workshop → Assembly Table → Studio): *"The name 'Assembly
-     * Table' isn't great.. it should be more common"* → *"Let's go with Studio"* (that name is no good; something
-     * more common is fine → let's go with studio). The route was already
-     * /ontology/studio, so address and label finally say the same thing.
-     * Ledger: docs/DECISIONS.md 2026-08-12 "The name of the writing screen is Studio".
-     */
+    /* Ban hard-to-understand loanwords; "Builder" is a retired name and stays blocked. */
     assert.doesNotMatch(
       railLabels.join('\n'),
       /인사이트|빌더|온톨로지/,
       '레일에 알아듣기 어려운 외래어가 들어왔다',
     );
     /*
-     * One destination, one name (2026-08-13). The /git screen calls itself "Records"
-     * while only the rail said "Git" — every other rail item is Korean, developer
-     * vocabulary leaked into just this one, and one destination ended up with two
-     * names. Instead of pinning the word, this locks **whether the two surfaces use
-     * the same name** (the same doc-gate principle of not fixing sentences a human
-     * chose — to rename, change both places, and this test points at whichever one
-     * was not changed).
+     * One destination, one name: the rail label and the screen title must match. The test locks that
+     * they agree, not which word they use.
      */
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     assert.equal(
@@ -238,13 +182,8 @@ describe('i18n message catalog', () => {
       '온톨로지 섹션 카드가 자료실 목적지 전체를 연다고 말하면 안 된다',
     );
     assert.equal(ko.topology.documentTitle, '지도');
-    // The old topologyWidgets.controls shortcut/depth copy (depthHop,
-    // shortcutDepthAll, shortcutDoubleClick, shortcutEsc) went with the removal of the
-    // dead map-controls panel (2026-07-21). Only the Fit tile remains, so only
-    // fitViewTooltip is verified — its `fitViewAriaLabel` twin went on 2026-09-05 when
-    // the rail tiles started showing their labels: a `ChromeTile` in label mode takes
-    // its accessible name from the word on screen, so a second name could only differ
-    // from it (WCAG 2.5.3).
+    // Only `fitViewTooltip` is checked: a `ChromeTile` in label mode takes its accessible name from
+    // the word on screen (WCAG 2.5.3), so a second aria label could only differ from it.
     assert.equal(ko.topologyWidgets.controls.fitViewTooltip, '지도 전체 맞추기');
     assert.doesNotMatch(
       [
@@ -271,11 +210,6 @@ describe('i18n message catalog', () => {
   it('keeps Korean app settings MCP proof copy readable without internal client jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
-    // 2026-08-02 — three names all started with "AI" so the eye could not separate
-    // them by first character (the "AI Agent" section, the "Connect AI Agent"
-    // row, and the "AI Connection" subview). With the corridor gone, two destinations moved
-    // up into the LNB and the names split into "My"/"In-app". Instead of frozen
-    // sentences, this scans **the whole section-name set**.
     const visibleCopy = [
       JSON.stringify(settings.section),
       ko.settingsAgents.codingToolsLabel,
@@ -375,7 +309,6 @@ describe('i18n message catalog', () => {
     );
     assert.equal(commands.sourceServer, '샘플 폴더 보기');
     assert.equal(commands.sourceLocal, '내 PC 폴더 열기');
-    // folder-topology was removed; assert those command keys have not come back.
     assert.equal(commands.viewFolderTopology, undefined);
     assert.equal(commands.scaffoldTopology, undefined);
     assert.doesNotMatch(commands.sourceServer, /소스|Source/);
@@ -404,13 +337,8 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.docsVault.desktopWelcome.title, '로컬 폴더를 열거나 만드세요');
     /*
-     * ⚠️ **Wording is no longer pinned here** (2026-08-22). These two used to pin
-     * 'Document Execution Contract' and 'Document Property Meaning Graph'. `docs/GLOSSARY.md` retired
-     * "Contract" and "Document Property" as screen words — the very jargon this test's name
-     * says it guards against — so the pins broke on a change made *in their
-     * direction*. Pinning an authored sentence is what `documentation.md` forbids;
-     * what is checked now is the property, and `ui-copy-glossary.contract.test.ts`
-     * owns the banned-word list.
+     * Properties are checked, not authored wording; `ui-copy-glossary.contract.test.ts` owns the
+     * banned-word list.
      */
     assert.doesNotMatch(ko.docsVault.desktopWelcome.contractAriaLabel, /계약/);
     assert.ok(ko.docsVault.desktopWelcome.contractAriaLabel.length > 0);
@@ -580,33 +508,18 @@ describe('i18n message catalog', () => {
   it('keeps active download/settings copy free of untranslated English nouns mixed into Korean sentences', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
-    // 2026-07-27 — widened from pinning the single old `download.includeCliBody` line
-    // to **scanning the whole download namespace**. Freezing one string means the gate
-    // disappears the moment that string does (which nearly happened in the `/download`
-    // remake). What was being guarded is not a particular sentence but the rule that
-    // untranslated English nouns are not mixed into Korean sentences.
+    // Scan the whole download namespace for untranslated English nouns in Korean sentences, not one
+    // frozen string.
     const mixedLanguageCopy = [
       JSON.stringify(ko.download),
-      // LNB section names — on 2026-08-02 the single "AI Agent" row split into two
-      // destinations, "Connect My Agent" and "In-app Agent". Instead of freezing one
-      // string, the **whole** section-name set goes into the scan (same reason as the
-      // comment above — a frozen sentence takes the gate with it when it disappears; the
-      // old `settings.agentBody` pin was exactly that, and it went with the corridor).
       JSON.stringify(settings.section),
       settings.agentNoVaultHint,
       settings.mcpProofBody,
     ].join('\n');
 
     /*
-     * ⚠️ **The `assert.equal` on `agentNoVaultHint` was removed on 2026-09-05**, for the reason
-     * this test's own comments give twice: freezing a sentence takes the gate with it when the
-     * sentence changes, and it fires on correct edits. It fired on one — the design council
-     * replaced the Korean word for "workspace" with the word for "folder", which is the vocabulary rule
-     * (`user-facing-vocabulary.contract.test.ts`) being followed, not broken.
-     *
-     * The string stays in `mixedLanguageCopy` below, so what this test is actually for — no
-     * untranslated English noun dropped into a Korean sentence — still covers it. The rule is
-     * guarded; the wording is not pinned.
+     * `agentNoVaultHint` is not pinned by equality; `mixedLanguageCopy` covers it without freezing
+     * wording.
      */
     assert.equal(
       settings.mcpProofBody,
@@ -618,15 +531,7 @@ describe('i18n message catalog', () => {
     );
   });
 
-  /*
-   * Walkthrough, 2026-09-05: a first-time visitor read the whole first screen without meeting
-   * either word that says how Atlas is actually used — the coding agent they already run, and the
-   * protocol it speaks. "People and agents maintain a reviewable map" leaves both of those to be
-   * guessed, and the guess a walker made was that Atlas is a diagram editor.
-   *
-   * A property, not a sentence: the lede must name a coding agent and MCP. Anyone may rewrite the
-   * wording around them.
-   */
+  /* A property, not a sentence: the lede must name a coding agent and MCP. */
   it('names the coding agent and the protocol on the gateway first screen, in both languages', async () => {
     for (const locale of ['en', 'ko']) {
       const messages = await readJson(path.join(MESSAGES_DIR, `${locale}.json`));

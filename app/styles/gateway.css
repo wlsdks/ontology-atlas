@@ -1,11 +1,7 @@
-/* ─── Gateway landing — living screen (2026-08-18 remake) ────────────────────────
- *
- * Principle: **Only information motion** moves (demo autoplay · map 1 assembly · terminal round-trip
- * 1 cycle · first 3 seconds entrance choreography). Facts (SHA·size·version·census) never move,
- * and the download section is completely static — stillness is the hierarchy device.
- *
-   The field, grain and cursor ring read the `--gateway-fx-*` tokens; their reduced-motion still
-   frame is `gateway-fx-reduced-motion.contract.test.ts`.
+/*
+ * Only information motion moves; facts (SHA, size, version, census) never move and the download
+ * section is fully static. The field, grain and cursor ring read `--gateway-fx-*` tokens; their
+ * reduced-motion still frame is `gateway-fx-reduced-motion.contract.test.ts`.
  */
 
 /* FX layer — fixed behind body. No pointer-events, not in screen reader (aria-hidden). */
@@ -26,12 +22,9 @@
 }
 
 /*
- * Custom cursor ring (owner instruction) — **does not erase** native cursor: no cursor:none,
-   pointer affordance contract (`tests/e2e/cursor-affordance.spec.ts`) intact.
-   One piece of information carried by the ring: "expansion + accent coloring = target under pointer is currently pressed". Rest 28px (scale .636) → interaction up 44px (scale 1).
-   z-index should be below --z-skip-link (100), above tooltip (80) — pointer decoration
-   must not be covered by any surface, but there is no reason to be above keyboard escape. raw
-   value 90: --z-* ladder is for surfaces, and this ring is not a surface but the pointer's shadow.
+ * The ring does not hide the native cursor (no `cursor: none`), keeping the contract in
+ * `tests/e2e/cursor-affordance.spec.ts`. z-index 90 sits below `--z-skip-link` (100) and above
+ * tooltip (80); the `--z-*` ladder is for surfaces and this ring is the pointer's shadow.
  */
 .gateway-cursor {
   position: fixed;
@@ -88,26 +81,8 @@
    700ms eyebrow·lead → 800ms CTA → 950ms trust line·trigger strip. After that, foreground is permanently static. Delay literals are the score values of this choreography, not ramp tokens.
  */
 /*
- * ⚠️ **Resting state is "visible" — choreography is layered on top** (corrected 2026-08-22).
- *
-   The `opacity: 0` here was the starting frame of choreography, but since it was the **default**,
-   practically "this page is blank until JS attaches `.is-in`". Measurement:
-   opening static export `/ko/download/` and taking the first screenshot immediately showed only GNB,
-   with the entire hero empty. What stood behind that was **JS 32 files ·
-   decode 2,572KB**. There is no reason for the download page's first sentence to come after bundle parsing —
-   it was already all in the markup.
- *
-   So the starting frame was moved to `@starting-style`. Values and timeline are exactly as before (`gateway-t***` delays remain as score), only **who pulls the trigger** changed: not rAF after hydration but **first style calculation**.
-   So choreography starts earlier and more evenly.
- *
-   All three branches are safe.
- * - `@starting-style` support (Chrome/Edge/Safari): same choreography as before.
- * - No support (old Firefox): at-rule is entirely ignored so **everything is visible from the start** —
- *   what is lost is only entrance order (decoration), and all information remains. The equivalent given to reduced motion users
- *   matches exactly the alternative below (base layer carve-out).
- * - JS failure: permanently blank before, now full text.
- *
- * `.is-in` is kept — same value as resting state, so it does nothing but end the hero's rise.
+ * Resting state is visible; the choreography start frame lives in `@starting-style`, so without
+ * support or without JS the page is fully visible and only entrance order is lost.
  */
 .gateway-rise {
   opacity: 1;
@@ -132,13 +107,8 @@
 }
 
 /*
- * The rise waits for the headline to start, not to finish (2026-09-03, overturning the
- * 700/800/950 delays of the 2026-08-18 remake in part). Measured, the filled CTA stood at
- * `opacity: 0` yet hit-testable for 920ms while the page's one action waited for a stagger
- * that said nothing the typing did not; the motion seat put the same-input stage spread at
- * 267ms against the 120ms rule. Now the eyebrow and lead follow the first characters at 240ms,
- * the CTA at 320ms, and the strip at 400ms — one arrival, headline first, inside half a second —
- * and the typing carries the sense of arrival for the remaining 1.6s.
+ * Eyebrow and lead follow the first headline characters at 240ms, CTA at 320ms, strip at 400ms: one
+ * arrival inside half a second, so the CTA is never hit-testable but invisible for long.
  */
 .gateway-t240 {
   transition-delay: 240ms;
@@ -153,41 +123,16 @@
 }
 
 /*
- * ── Entrance brought by scroll — `animation-timeline: view()` (2026-08-22) ──────
- *
- * ## Why scroll instead of timer
- *
-   The entrance of the three section stages below hero (demo·evidence·agent) has until now
-   attached `.is-in` at the **moment** `useInViewOnce` exceeds threshold 0.18, and from there
-   the 120/240ms transition runs on **its own clock**. So whether scrolling stops or continues or rewinds, choreography flowed identically — fingers and screen were not connected.
- *
-   Scroll timeline creates that seam: the only input for progress is **how much of that element
-   has entered the scroll viewport**. Roll slowly and it arrives slowly,
-   stop and it stops, rewind and it rewinds. So `linear` easing is correct — acceleration/deceleration is already given by the person's hand. Adding ramp duration here causes two clocks to overlap and become sticky.
- *
-   Does not use main thread either. No rAF or scroll listener; compositor rolls without them,
-   so this page does **not add a single frame** to the single rAF loop (`gateway-frame-loop.ts` — current field +
-   hero object, idle after 30 seconds of no input) it already carries.
- *
- * ## All three branches are safe
- *
- * - Support (Chrome/Edge 115+ · Safari 26+): scroll drives choreography.
- * - No support (today's Firefox): `@supports` turns off entirely and `.gateway-rise`'n   resting state (= visible) and `.is-in` transition remain. **What is lost
- *   is only scroll sync, but entrance and content remain.**
- * - Reduced motion: the declaration itself is inside `no-preference` so **does not exist.** Sections are
- *   fully visible from the start — the same alternative given by other gateway choreography to reduced motion.
- *   So these classes are listed in `INTENTIONALLY_STILL` of the `reduced-motion-equivalent` contract (reason also written there).
- *
- * ## Scope — why not hero
- *
-   Hero is first screen so scroll progress is always near 0. Hooking it there means giving choreography to "everything already entered from the start" so nothing happens. First screen choreography is handled by `@starting-style` above, and below scroll drives — **one element receives neither.**
+ * Entrance is driven by `animation-timeline: view()`, so easing is `linear` and the main thread is
+ * idle. Unsupported browsers keep the resting state and `.is-in`. Reduced motion has no declaration
+ * (see `INTENTIONALLY_STILL` in the `reduced-motion-equivalent` contract). Hero is excluded.
  */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    /* One entrance per section: the stage (demo video · screens), the one
-       thing with mass. The section head above it is still (2026-08-30 — the head's three
-       lines used to rise too, twelve entrances on one page that all said "something arrived").
-       `scale` is not used — in this repository, zoom means map camera. */
+    /*
+     * One entrance per section, on the stage only (the thing with mass); the section head stays still.
+     * No `scale`: in this repository zoom means map camera.
+     */
     .gateway-scroll-stage {
       /* Backwards only: past its range the stage keeps no fill and no layer. */
       animation: gatewayScrollStage linear backwards;
@@ -226,11 +171,10 @@
   white-space: nowrap;
 }
 
-/* ⚠️ `visibility`, **not** `opacity`. The caret is a pseudo-element of the character that has
- * not been typed yet, and `opacity` applies to an element together with its pseudo-elements —
- * so hiding the glyph that way hid the caret with it and the caret never appeared once
- * (measured 2026-08-23). `visibility` inherits but a descendant can override it back, which is
- * exactly the seam needed here. Both keep the character's box, which is what stops the reflow. */
+/*
+ * `visibility`, not `opacity`: opacity also hides the caret pseudo-element of the untyped character,
+ * while a descendant can override `visibility` back. Both keep the box, so there is no reflow.
+ */
 /* Hidden only where a script will type it: with scripting off the headline is plain text. */
 @media (scripting: enabled) {
   .gateway-type-ch {
@@ -243,11 +187,8 @@
 }
 
 /*
- * The landing (2026-09-02). A character that has just been typed settles into the line: it
- * arrives at three-fifths ink and takes `--motion-settle` to reach full ink. The 2026-09-03
- * decision's 4px width-drift falsifier fired (4.109px in the static export), so the landing
- * now preserves each character's weight and changes only ink. Under `no-preference` only:
- * reduced motion already shows every character complete.
+ * Typed characters land at three-fifths ink and change only ink, because changing weight drifted
+ * line width. Reduced motion already shows every character complete.
  */
 @media (prefers-reduced-motion: no-preference) {
   /* `gateway-type-land` is the landing's own class (set with `is-on` by HeroTypewriter) so the
@@ -292,10 +233,8 @@
  * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
  * present from the first frame and carries only the atmosphere behind the ink. */
 /*
- * The stage is positioned by its utility classes (2026-09-02: `absolute inset-0`, the hero's
- * ground). This unlayered rule used to pin `position: relative`, which outranks a layered
- * Tailwind utility — measured, the stage collapsed to 0px tall and the canvas drew nothing.
- * Only the deep spot (`::before`) needs a containing block, and any positioned value gives one.
+ * The stage is positioned by its utility classes; an unlayered `position: relative` would outrank
+ * them and collapse the stage to 0px. Only `::before` needs a containing block.
  */
 .gateway-hero-stage {
   isolation: isolate;

@@ -334,13 +334,9 @@ export function windowStatePath({ bundleIdentifier, home = os.homedir() } = {}) 
 }
 
 /**
- * Moves the owner's saved window geometry aside for the duration of a verification run.
- *
- * Two things go wrong without it. The run inherits whatever size the developer last dragged the
- * window to, so a `--min-window-size` verdict stops being about the shipped default; and the app
- * writes the harness's own geometry back on exit, so a verification run silently resizes the
- * owner's next real launch. The file is moved rather than deleted — the harness must not destroy
- * user state to measure the product.
+ * Moves the saved window geometry aside so a `--min-window-size` result is about the shipped
+ * default and the run does not resize the next real launch. Moved rather than deleted: the harness
+ * must not destroy user state.
  */
 export function setAsideWindowState(statePath, { fsImpl = fs } = {}) {
   const noop = { moved: false, restore() {} };

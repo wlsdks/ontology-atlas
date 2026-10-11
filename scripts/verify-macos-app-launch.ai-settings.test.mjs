@@ -112,10 +112,6 @@ test("AI settings verification fails loudly instead of passing on missing elemen
       },
       /offered no model to choose/,
     ],
-    // Measured in the installed app, 2026-08-02 — **counted is not the same as visible.**
-    // The 7 the runner returned all passed the role/aria/text markers while only 1 was on
-    // screen (a 264px list clipped to 39px by an ancestor's overflow). The old verdict was
-    // green here, so this defect was caught by no gate at all.
     [
       {
         ...PASSING_MARKERS,
@@ -395,8 +391,8 @@ test("installed-app AI settings driver walks the real settings testids", () => {
 
   // Re-clicking a toggle control on every poll just opens and closes it repeatedly.
   assert.equal(tauriLib.includes("CLICK_COOLDOWN"), true);
-  // The code that **measures** the list is actually loaded — with the contract present
-  // but nothing producing the marker, the verdict runs forever over `undefined`.
+  // The code that measures the list must be loaded; with only the contract present, the check
+  // runs over `undefined`.
   for (const marker of [
     "modelListVisibleHeight",
     "modelListOverflowing",
@@ -431,8 +427,8 @@ test("model list row cap matches the shipped rule", () => {
 });
 
 test("AI settings web surface testids still exist in the shipped panel", () => {
-  // The runner rows' markers are spelled out in the runner model (`rowTestId`), so both files
-  // make up "the shipped panel" (2026-09-25: the panel moved to Agents → Models).
+  // The runner rows' markers are spelled out in the runner model (`rowTestId`), so both files make
+  // up the panel.
   const panel = [
     "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
     "src/widgets/app-settings-menu/model/local-runners.ts",

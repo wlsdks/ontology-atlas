@@ -10,9 +10,8 @@ import {
   defaultBody as mcpDefaultBody,
 } from "../../mcp/src/schema.mjs";
 /*
- * ⚠️ Only the names the CLI runtime re-exports; `cli/src/lib/schema.mjs` executes
- * `mcp/src/schema.mjs` since 2026-08-30, so the CLI arm proves the authoring
- * channel really reaches the canon rather than that two files happen to match.
+ * Only the names the CLI re-exports; `cli/src/lib/schema.mjs` executes `mcp/src/schema.mjs`, so
+ * this proves the CLI reaches the canon.
  */
 import {
   VAULT_KINDS as CLI_VAULT_KINDS,

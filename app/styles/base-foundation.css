@@ -14,25 +14,9 @@
 }
 
 /*
- * The **width response of the gateway gutter now follows the origin formula entirely** — no discrete steps.
- *
-     * 2026-07-29 verdict ③("one set of grids") protected was that *all elements stand at the same x*
-     * not *what that x is*. At that time the gutter was fixed at 40, so as screen size increased its proportion decreased inversely (1024→3.9% · 2560→1.6%), hence discrete steps per width (`@media (min-width: 96rem) { --gateway-gutter: 64 }`) were placed.
-     *
-     * **Deleted those steps (2026-07-30).** With gutter default becoming 120, the 64 step cannot win — worse, leaving it creates a **discontinuity dropping from 120 → 64 at 1536**(padding decreases as width increases). This follows the same rule used when this file deleted old `150rem` steps: **a step that never wins is misinformation, not spec** (`design.md`).
-     *
-     * ⚠️ At the previous stage (64) this step was **already the same value as default, making it meaningless** — quietly dead because we didn't notice the step when raising 40 → 64. Leaving two places for one value remains a case study in "if you change one place, no one knows."
-     *
-     * **Width response is not gone.** Actual x is
-     `--gateway-origin = max(gutter, (vw − --page-max) / 2)`, and the gutter wins
-     up to viewport ≤ 1600 + 2×gutter = **1840**. Above that the formula takes over,
-     growing proportionally with width (1920→160 · 2560→480). Below is 120 flat —
-     value chosen by owner seeing 64·96·120 side-by-side at 1512.
-     *
-     * **Reason for `:root` not `@theme`**: `@theme` is static token declaration, cannot be reassigned with media queries. Keeping `:root` now also follows the "needed from first frame" note in the comment above.
-     *
-     * Reserved width follows — `computeGatewaySafeInset` takes **origin** as argument, so changing gutter auto-adjusts camera. No need to recalculate arithmetic.
-     */
+ * `--gateway-origin` = max(gutter, (vw - `--page-max`) / 2); the gutter wins up to 1600 + 2xgutter.
+ * Declared in `:root`, not `@theme`, because `@theme` tokens cannot be reassigned in media queries.
+ */
 
 /*
  * **A lens dims what has already said it is not the point.**
@@ -58,14 +42,9 @@
 
 @layer base {
   /*
-   * **Focus moved by route navigation does not draw a ring** (2026-08-01).
-   *
-   * `RouteFocusManager` attaches `tabindex="-1"` to the destination `h1` when screen changes and programmatically focuses — a valid pattern for screen reader users to hear the first sentence of the new screen. But WebKit draws a **default focus ring** on that, leaving a blue box around titles every time tab moves (owner complaint: captured in demo video).
-   *
-   * Elements with `tabindex="-1"` **cannot be reached by keyboard** — not in Tab order.
-   * So erasing the ring here loses no signal for keyboard users. Conversely, leaving the ring gives a false signal "you can input here now" to mouse-only movers. Screen reader benefit (focus actually moves) remains intact.
-   *
-   * ⚠️ Do not widen range. This rule applies only to **titles** with `tabindex="-1"`. Widely applying `:focus { outline: none }` is an accessibility hazard.
+   * WebKit draws a focus ring on headings focused by route navigation. `tabindex="-1"` is not keyboard
+   * reachable, so hiding it loses no signal. Do not widen: a blanket `:focus { outline: none }` hurts
+   * accessibility.
    */
   h1[tabindex="-1"]:focus,
   [id="main"][tabindex="-1"]:focus {
@@ -73,28 +52,8 @@
   }
 
   /*
-   * **Everything clickable uses the same cursor** (2026-08-05, owner confirmed).
-   *
-   * Measurement (1512, 7 routes): link `a` 75 are `pointer`, button 58 are `default`.
-   * Browser defaults differed by tag, left unchosen as is,
-   * resulting in **same «clickable» responding differently by tag.**
-   * Hand-written `cursor-pointer` was scattered across 10 files 22 places on top —
-   * even buttons contradicted each other 5:56, so it split not by policy but
-   * by author whim at the time.
-   *
-   * Reason for choosing direction «all pointer»: ① already majority (71 of 127)
-   * and ② on web pointer is the de facto standard signal for «clickable». To revert, just delete this block.
-   *
-   * ⚠️ Exclude inactive. `disabled:cursor-not-allowed`(7 places)·`disabled:cursor-wait`
-   (5 places) already say «cannot click», and overwriting pointer here erases that
-   signal — reverting «if cannot click, must look like cannot click» (chrome-chip.tsx
-   2026-08-03 real report).
-   *
-   * ⚠️ Not here: `[role="button"]` is **0 cases** in this repo, so no selector used (no detector running on empty set — `/gate-probe`).
-   * `role="tab"`·`role="radio"` are all on `<button>`, covered by rule below. Scrims (`cursor-default`, HomePage 3 places) close on click but are «surface» not control, so left as is.
-   *
-   * Gate two: `tests/e2e/cursor-affordance.spec.ts`(measures rendered cursor) +
-   * `eslint.config.mjs` duplicate `cursor-pointer` selector.
+   * Disabled controls are excluded so `disabled:cursor-not-allowed` and `disabled:cursor-wait` keep
+   * saying "cannot click".
    */
   button:not(:disabled):not([aria-disabled="true"]),
   summary {
@@ -102,27 +61,9 @@
   }
 
   /*
-   * **Keyboard focus also follows the same policy as cursor** (2026-08-05).
-   *
-   * ## Why base layer — fixing 104 places by hand was not the answer
-   *
-   * Audit measurement: interactive elements with **no `focus-visible` indicator**
-   * are **104 places / 53 files**. Put `FOCUS` in value layer (`controlClass`) to cover 106 places, but places it doesn't reach (rails · chrome · inline links · hand-written buttons) remain, drawing browser default **OS highlight color** — outside the Charter's "achromatic + one indigo".
-   *
-   * The cursor rule above solved exactly this problem: **policy owned by base,
-   * components override only when needed.** 104 edits cannot stop the next
-   * 105th, but this one rule stops it.
-   *
-   * ## Why `:where()`
-   *
-   * Specificity 0 so **beats any component class**. Places with own ring turn off this rule with `focus-visible:outline-none` and draw their own, which value layer `FOCUS` constant does. So this rule is **floor**, not ceiling.
-   *
-   * ## Why `outline-offset: -2px`
-   *
-   * Draws inward so **does not change box dimensions by a single pixel** — prevents outer ring from overlapping neighbors in dense rows · chip bundles (same reason value layer uses `ring-inset`).
-   *
-   * Reason for `[tabindex]:not([tabindex="-1"])`: places with keyboard access but non-native tags (`role="treeitem"` etc. using roving tabindex tree rows) actually exist, and those are places no gate ever saw.
-   * `tabindex="-1"` is **programmatically moved focus** (modal container), so excluded — drawing ring there was what 2026-08-04 audit judged as defect.
+   * `:where()` gives specificity 0 so any component ring wins; `outline-offset: -2px` draws inward
+   * without changing box size. `tabindex="-1"` is excluded: it marks programmatically moved focus,
+   * which should draw no ring.
    */
   :where(
       button:not(:disabled):not([aria-disabled="true"]),
@@ -240,16 +181,6 @@
    * do not know how many", not a decoration standing in for one. Nothing moves at rest: the element
    * only exists while the read is in flight.
    */
-  /*
-   * **The result arriving, rather than a spinner being swapped for a table.**
-   *
-   * The read ends and the whole region changed in one commit: the wait unmounted and the matrix
-   * mounted with no easing on either side — 100% of the region hard-cutting, which is the defect
-   * the charter's first rule names. The finding is the protagonist (the one `text-title` line on
-   * the screen, "no check names N of M domains"), so it rises and the body follows it inside one
-   * event: 8px on `--motion-base`, entry easing, well under the window where a stagger stops
-   * reading as one thing (design-motion, 2026-09-13).
-   */
   @keyframes harnessResultArrive {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
@@ -275,33 +206,17 @@
   }
 
   /*
-   * ⚠️ **`linear`, not `--motion-ease`.** The ease family is the *entry* curve: it decelerates into
-   * place, which is right for arriving and wrong for a loop that never arrives. Measured on the
-   * curve: cubic-bezier(.25,.1,.25,1) puts 80% of the travel in the first half of the cycle, so the
-   * bar covered 444px in 600ms and the remaining 111px in the next 600ms — a 4x velocity ratio
-   * inside one cycle, read as burst, crawl, burst, on the one mark whose whole job is to prove the
-   * read has not stalled (design-motion, 2026-09-13). `.architecture-observation-scan` already runs
-   * its scan line `linear`; this takes the same curve and the same period rather than inventing a
-   * second scan rhythm with no reason written down.
+   * `linear`, not `--motion-ease`: an entry curve decelerates, so a never-arriving loop would burst
+   * and crawl. Same curve and period as `.architecture-observation-scan`.
    */
   .harness-scan-sweep {
     animation: harnessScanSweep calc(var(--motion-settle) * 4) linear infinite;
   }
 
   /*
-   * ⚠️ **Under reduced motion this mark stops, and that decision is registered rather than written
-   * in CSS here.** The first attempt added a `@media (prefers-reduced-motion: reduce)` block that
-   * swapped the sweep for an opacity breath — and it was dead on arrival: the global kill rule 2,800
-   * lines below is `!important` in the same layer, so the override lost, and what a reduced-motion
-   * reader actually saw was a **static, solid, full-width indigo bar for the whole read** — the
-   * universal picture of "100% done", on the one screen built never to assert a number its files
-   * cannot support (design-motion, 2026-09-13).
-   *
-   * So it takes the answer this repository already decided for the same shape: the global rule stops
-   * the travel, the bar rests left-anchored at a third of the track — which claims no scale — and
-   * the stage name, the running count and the seven-stage route list carry the fact, all of them
-   * driven by state rather than by CSS. Registered in `INTENTIONALLY_STILL` beside
-   * `.architecture-observation-scan`, whose reasoning is identical.
+   * Reduced motion is not handled here: the global kill rule is `!important` in the same layer, so a
+   * local override loses. The bar rests at a third of the track, registered in `INTENTIONALLY_STILL`
+   * beside `.architecture-observation-scan`.
    */
 
   /* Agent panel waiting dot — reuses same heartbeat syntax (slow low-contrast cycle).
@@ -323,24 +238,9 @@
   }
 
   /*
-   * **Words still being worked on — a light band sweeping across them** (owner, 2026-09-24:
-   * "while it works I cannot tell whether it is doing anything; make the letters ripple").
-   *
-   * Worn by a running tool row's label and its 「running」 word, an active work group's title and
-   * the composer's 「thinking · 25s」, and removed the frame the work lands, so a sweeping line is
-   * in flight and a still line is finished. `src/widgets/acp-chat-panel/ui/working-ink.ts` owns
-   * which states qualify.
-   *
-   * The ink at rest is the row's own `--color-text-tertiary`, so a running row and a finished one
-   * share a column and differ only by the band — `--color-text-primary`, the brightest ink the
-   * text ramp has, which is what makes the travel visible on a 12px line. The gradient is painted
-   * through the glyphs (`background-clip: text`), never behind them: no box, no glow.
-   *
-   * ⚠️ **`linear`, and twice the scan period.** A loop that never arrives takes the linear curve
-   * for the reason `.harness-scan-sweep` records. The period is that bar's `--motion-settle * 4`
-   * doubled: the bar crosses an empty track, this band crosses words someone is reading, and at
-   * 960ms it flickered across a label before the eye settled on it. Two scan beats keep one
-   * rhythm family rather than inventing a second.
+   * `linear`, at twice the `.harness-scan-sweep` period: the band crosses words being read and a
+   * shorter period flickered. `src/widgets/acp-chat-panel/ui/working-ink.ts` owns which states wear
+   * it.
    */
   @keyframes acpWorkingShimmer {
     from { background-position: 100% 0; }
@@ -408,30 +308,9 @@
   --color-architecture-sketch-ink: #6d7080;
 
   /*
-   * ## Layer planes — the import direction, drawn as depth (2026-09-08)
-   *
-   * `app → views → widgets → features → entities → shared` is a depth rule, and the ladder stated
-   * it only as row order. Each layer now gets a sheared plane its role rests on, so a permitted
-   * edge visibly runs *down* onto a lower plane and a violation is the stroke that climbs.
-   *
-   * ⚠️ **The fill is capped under `--color-panel`.** A role's face is `#0f1011` = `rgb(15 16 17)`;
-   * white at `0.02` over `--color-canvas` `#08090a` lands on `rgb(13 14 15)`, two steps under it.
-   * Measured 2026-09-08 the ramp renders `13 · 12 · 11 · 10` against a canvas of `8`. Any stronger
-   * and the nearest plane would close on the face standing on it — the reversed-depth defect the
-   * Don'ts name, on the one surface whose whole subject is which layer is above which. The lit
-   * top edge carries the rest of the reading: it is a line, not a surface, so it may be brighter
-   * (`rgb 25`), and it stays under a node's own lit edge `--architecture-node-lit-edge` (`rgb 46`).
-   * Measured 2026-09-08 at 1512: at `0.1` that line was the brightest mark on the canvas and the
-   * planes read as four rules rather than as surfaces.
-   *
-   * There is no lightness ramp down the stack. One was shipped on 2026-09-08 (opacity
-   * 1 → 0.28 by depth) and the design council cut it the same day: measured at 1512 the
-   * planes rendered `rgb 13 · 12 · 11 · 10`, so **every adjacent pair was 1.00:1** — an
-   * order no eye can read — while the ramp dimmed the deepest plane's lit edge to 1.02:1
-   * against the canvas and took the bottom layers' only surface mark with it. Depth is
-   * carried by the shear (one `PLANE_STEP` per layer), the rank numeral, and the arrows
-   * that name the direction in words. One value also makes the under-face cap structural:
-   * with a single fill there is no ramp end that could ever pass `--color-panel`.
+   * The fill is capped under `--color-panel`: any stronger and the nearest plane would close on the
+   * face standing on it. One flat fill, no per-depth ramp; depth comes from the shear, the rank
+   * numeral and the arrows.
    */
   --architecture-plane-fill: var(--color-overlay-1);
   --architecture-plane-edge: rgba(255, 255, 255, 0.07);
@@ -441,36 +320,11 @@
   --architecture-plane-climb-halo-raised: 0.7;
 }
 
-/*
- * ## Depth on a dark surface is made of face lightness, not shadow (2026-08-28)
- *
- * The usual elevation trick fails here: a cast shadow barely reads on a near-black ground. What
- * reads on dark is the thing light actually does — **a lighter face is a higher face**, because a
- * surface nearer the viewer catches more of it. This product's surface ramp is already that
- * statement (canvas #08090a → panel #0f1011 → elevated #191a1b), so the canvas needs no new
- * colour: it needs the ramp used as a height ladder rather than as three interchangeable greys.
- *
- * Two faces, stated with two devices the design system already licenses:
- *
- * - **The ground is a well.** An inset hairline along its top edge is the shadow the wall casts
- *   into a recess, which is what says "things sit *in* here" rather than "this is another card".
- * - **A node is a raised slab.** A one-pixel lighter line along its top edge is the lit top face.
- *   The shadow ramp's comment names exactly this: an inset hairline is material, and material is
- *   allowed where a hand-written elevation shadow is not.
- *
- * No gradient, no glow, no blur. Both devices are a single flat line of colour.
- */
 .architecture-canvas-ground {
   background-color: var(--color-canvas);
   box-shadow: inset 0 1px 0 var(--color-shadow-a35);
 }
 
-/*
- * The download hero's spotlight (2026-09-08): one radial pool of the accent behind the three.js
- * object's anchor. It is a still gradient on tokens — the allowed gradient after the 2026-09-08
- * lift — and says one thing: this is where the object stands. Centred below the split width,
- * at the object's 72%/52% anchor above it.
- */
 .gateway-hero-atlas-wash {
   background: radial-gradient(48% 42% at 50% 50%, var(--color-indigo-a22) 0%, var(--color-indigo-a06) 45%, transparent 72%);
 }
@@ -521,12 +375,6 @@
   transition: fill var(--motion-fast) var(--motion-ease);
 }
 
-/*
- * A paired architecture role has two deliberately different faces: reviewed intent and observed
- * source. Selection draws one persistent rule through the delta gap. That short left-to-right
- * reveal explains the relationship and then stays as state, unlike the retired playback flash
- * that ended without leaving any new information behind.
- */
 .architecture-selection-trace {
   opacity: 0;
   transform: scaleX(0);
