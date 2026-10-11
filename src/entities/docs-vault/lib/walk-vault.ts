@@ -10,10 +10,9 @@ export interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
- * The top-level raw-source folder: listed by name, format, size and mtime, never read
- * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
- * Mirrored in `vault::walk` (`vault-walk-rules.contract.test.ts`); if the walks diverge the
- * fingerprint counts a different file set, so the app rebuilds constantly or misses a new document.
+ * Top-level raw-source folder: listed by name, format, size and mtime, never read. Mirrored in
+ * `vault::walk` (`vault-walk-rules.contract.test.ts`); if the walks diverge the fingerprint counts
+ * a different file set.
  */
 export const VAULT_SOURCES_DIR = 'sources';
 
@@ -22,8 +21,8 @@ export function isVaultSourcePath(relativePath: string): boolean {
 }
 
 /**
- * Source-code extensions, counted but never read, so first run can tell a repository from a documents folder
- * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
+ * Source-code extensions, counted but never read, so first run can tell a repository from a
+ * documents folder.
  */
 const SOURCE_EXT =
   /\.(m?[jt]sx?|vue|svelte|dart|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|scala|ex|exs|sh)$/i;

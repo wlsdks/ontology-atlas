@@ -2,16 +2,9 @@ import { clsx, type ClassValue } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
 
 /**
- * Registering our type ramp with tailwind-merge, which otherwise classifies any
- * `text-<step>` outside its own scale as a **colour**.
- *
- * Root cause of an owner report, 2026-07-23 ("the chrome text is too large"):
- * `text-label` / `text-body` were misread as colours, "conflicted" with a
- * following `text-[color:…]` arbitrary value, and were dropped silently — those
- * surfaces had been rendering at the root 16px. Found by measuring chrome pills.
- *
- * Must stay in sync with the `--text-*` ramp in `app/styles/tokens.css`: a new step
- * there needs a new step here (contract test: `cn.test.ts`).
+ * Registers our type ramp with tailwind-merge, which otherwise classifies `text-<step>` outside its
+ * scale as a colour and drops the size next to `text-[color:...]`. Keep in sync with the `--text-*`
+ * ramp in `app/styles/tokens.css` (contract test: `cn.test.ts`).
  */
 export const TYPE_RAMP_STEPS = [
   'caption',
@@ -19,15 +12,14 @@ export const TYPE_RAMP_STEPS = [
   'body',
   'body-lg',
   'title',
-  // Authored document body (2026-09-12): 16px paired with `leading-prose`, the size
-  // `--measure-doc-column` is derived at. See its block in `app/styles/tokens.css`.
+  // Authored document body: 16px paired with `leading-prose`, the size `--measure-doc-column` is
+  // derived at.
   'reading',
   'display',
   'hero',
   'hero-lg',
-  // Gateway headline only (2026-08-18): clamp(40px, 5.8cqw, 96px), proportional
-  // to the measure. Values and the glyph-budget arithmetic are in the
-  // `--text-monument` doc-block in `app/styles/tokens.css`.
+  // Gateway headline only: clamp(40px, 5.8cqw, 96px); see the `--text-monument` doc-block in
+  // `app/styles/tokens.css`.
   'monument',
 ] as const;
 

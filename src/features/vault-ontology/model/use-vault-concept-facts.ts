@@ -6,7 +6,6 @@ import { useLocalVault } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
 
-/** Only the document facts the to-do queue's meaning-gap verdict needs — the input to `MeaningGapRow`. */
 export interface VaultConceptFacts {
   /**
    * The meaning findings the manifest recorded for this document, as portable

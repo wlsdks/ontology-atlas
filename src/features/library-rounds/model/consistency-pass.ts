@@ -22,7 +22,6 @@ export interface ConsistencyPassInput {
 export interface ConsistencyPassResult {
   /** Pages the pass judged: every wiki page that is not furniture. */
   checked: number;
-  /** Wiki slugs whose source bytes no longer match the hash they recorded. */
   stalePages: string[];
   /** Vault-relative source paths behind those pages — what a redraft compiles. */
   staleSources: string[];

@@ -1,22 +1,7 @@
 /**
- * The answer to "what should I even ask" — derived from **this folder's current state**.
- *
- * Why (owner instruction, 2026-08-17). Opening the conversation gives you one empty input. Having an
- * agent attached and not knowing what to ask it makes that connection worth nothing.
- *
- * But the common answer — pinning three example sentences — is decoration, not a recommendation.
- * *"Ask me anything"* and *"explain the code"* could be attached to any app, and so carry no value.
- * Worse, a user who presses one gets an answer unrelated to their folder and stops trusting the
- * recommendations at all.
- *
- * So one rule: **a recommendation about a fact appears only when that fact is actually observed in
- * the current vault.** With no disconnected cluster, "connect them" never appears. The material is
- * already computed (`computeVaultHealth`'s `islands` and `missingContainment`) — the same values the
- * map and the analysis screen use.
- *
- * **Why keys and values rather than sentences.** This function stays pure and the screen does the
- * translation. Building sentences here would, in a repository with two locales, either emit Korean
- * only or let the translation files and this file diverge.
+ * Suggestions derived from this folder's state: a recommendation appears only when its fact
+ * is observed (`computeVaultHealth`: `islands`, `missingContainment`). Returns keys, not
+ * sentences, so the screen translates.
  */
 
 /** How many are shown at once. Given too many choices, people choose none (Hick). */
@@ -71,13 +56,7 @@ function displayName(input: SuggestionInput, slug: string): string {
   return tail.replaceAll('-', ' ');
 }
 
-/**
- * The asks for **one picked concept** (round four, 2026-09-25). With a node picked, the dock's
- * header and the composer name that node ("Ask about Checkout…"), while the list above offered
- * folder-wide repairs about other documents — the screen named one subject and suggested others.
- * A picked concept now gets asks about itself; the folder-wide list returns when nothing is
- * picked. Both still come from the vault: the slug is the picked record, not an example sentence.
- */
+/** Asks about one picked concept; the folder-wide list returns when nothing is picked. */
 export function subjectSuggestions(subject: { slug: string; label: string }): ChatSuggestion[] {
   const params = { slug: subject.slug, subject: subject.label };
   return [

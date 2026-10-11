@@ -1,38 +1,9 @@
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 
 /**
- * Footprint glyph — the visual notation for the path you walked.
- *
- * It lives in `shared` because the map canvas and the **settings preview** must
- * draw the same picture. A second implementation for the preview would drift, and
- * a preview that drifts is not a preview.
- *
- * **Why footprints and not a ring** (owner decision, 2026-07-29). The previous
- * notation was a concentric hairline ring on visited nodes (the old
- * `model/footprint-ring.ts` under `widgets/ontology-map`). Its structural limit
- * was that a ring shares the grammar of the node outline — the selection ring, the
- * expansion aura and the boundary are already circles, so the footprint ring became
- * a fourth circle whose meaning the user had to re-learn each time. Owner:
- * *"Show the visit order on the nodes you walked, and leave small
- * footprints along the connecting lines too."* (show the visit order on the nodes you walked, and leave small
- * footprints along the connecting lines too). A footprint sits **outside the circle
- * grammar**, so that collision cannot arise, and it carries what a ring could not:
- * direction (the toes point the way of travel) and order (the step number beside
- * the node).
- *
- * **The shape is not a setting.** Both-feet shoe prints, fixed. Letting users pick
- * the shape means different people see different pictures, and the screen can no
- * longer state what the mark means. The only thing a user chooses is **how loudly
- * the same meaning is stated** (`FootprintPreference`).
- *
- * **Beside the line, not on it.** Owner: *"Don't overlap the
- * line."* (don't overlap the line). A relation line is the channel carrying a typed fact (containment /
- * dependency); a mark laid on top makes two facts fight over one ink. Footprints
- * are offset along the normal and say only "someone passed along here".
- *
- * Drawn only for pairs that **have** a relation. Two consecutively visited nodes
- * may have none, and tracing prints between them would break the contract that a
- * line means a relation.
+ * Footprint glyph: the notation for the path you walked. It lives in `shared` because the map canvas
+ * and the settings preview must draw the same picture. The shape is fixed; the user chooses only how
+ * loudly it is stated. Prints sit beside relation lines, only for pairs that have a relation.
  */
 
 import { type FootprintPreference } from "../preferences/appearance-preferences";
@@ -45,15 +16,8 @@ export interface FootprintPaintContext {
   pref: FootprintPreference;
   ink: FootprintInk;
   /**
-   * Size factor taken from camera zoom — zooming out shrinks the prints too.
-   *
-   * Owner decision: *"I want to avoid overlaps; it is fine for footprints to shrink
-   * as nodes recede."* (nothing should overlap; it is fine for footprints to shrink
-   * as nodes recede). Overlap is worst when **zoomed out**: nodes and relation lines
-   * crowd the screen, and prints held at a fixed pixel size would bury the graph.
-   * Tying them to zoom makes the prints retreat first.
-   *
-   * Defaults to 1.
+   * Size factor from camera zoom, so prints retreat first when zoomed out and nodes and lines crowd
+   * the screen. Defaults to 1.
    */
   scale?: number;
   /**
@@ -71,11 +35,8 @@ export interface FootprintPaintContext {
 export const FOOTPRINT_SCALE_RANGE = { min: 0.55, max: 1.1 } as const;
 
 /**
- * Camera zoom → footprint size factor. Pure function (under test).
- *
- * 1.0 at zoom 1.0, shrinking as you zoom out but stopping at the floor. Not left
- * strictly proportional, because at deep zoom-out the print collapses to **a single
- * dot** and can no longer say "you walked here".
+ * Camera zoom to footprint size factor; the floor keeps the print from collapsing to a single dot at
+ * deep zoom-out.
  */
 export function footprintScaleFor(cameraScale: number): number {
   if (!Number.isFinite(cameraScale) || cameraScale <= 0) return 1;
@@ -84,31 +45,9 @@ export function footprintScaleFor(cameraScale: number): number {
 }
 
 /**
- * A print **never grows larger than the node it marks** (2026-08-02, owner:
- * *"Tighten how the
- * footprint size adapts when the window gets small."* — tighten how the
- * footprint size adapts when the window gets small).
- *
- * `footprintScaleFor` above is the **square root** of camera zoom while node radius
- * is **linear**, so the further you zoom out the larger a print gets relative to its
- * node. Measured:
- *
- * | Camera zoom | Print vs node |
- * |---|---|
- * | 1.0 | 1.00× |
- * | 0.5 | 1.41× |
- * | 0.3 | 1.83× |
- * | 0.2 | 2.75× |
- *
- * The square root itself is right — strict proportionality collapses the print to a
- * dot at deep zoom-out (see above). **What needs fixing is the cap, not the slope**:
- * clamp the print radius to `FOOTPRINT_NODE_RATIO` × the node radius. Large nodes
- * (domains, projects) are already under the cap and do not move at all; only small
- * element nodes shrink. The change lands only where the problem was.
- *
- * The separate floor (`FOOTPRINT_MIN_SIZE`) exists because at deep zoom-out, where a
- * node is 2px, a cap alone erases the print — returning to the exact failure the
- * square root was there to prevent.
+ * A print never grows larger than the node it marks: `footprintScaleFor` is the square root of zoom
+ * while node radius is linear, so the print is clamped to `FOOTPRINT_NODE_RATIO` times the node
+ * radius. `FOOTPRINT_MIN_SIZE` keeps the cap from erasing the print on a 2px node at deep zoom-out.
  */
 export const FOOTPRINT_NODE_RATIO = 1.0;
 /** Below this the four arms merge into a blob and the mark stops reading as a star. */
@@ -146,13 +85,9 @@ export function footprintPairRadius(size: number): number {
 }
 
 /**
- * Where the pair sits beside a node — upper right, the quadrant the label (below) does
- * not use.
- *
- * ⚠️ The distance **includes the print radius**. Without it `gap` is the distance to the
- * print's *centre*, and the print bites into the node disc (measured in the installed
- * app — owner: *"I want to avoid overlapping."*, nothing should overlap). Overlap is an
- * edge condition, not a centre condition.
+ * Where the pair sits beside a node: upper right, the quadrant the label below does not use. The
+ * distance includes the print radius, since `gap` alone measures to the print's centre and overlap
+ * is an edge condition.
  */
 export function footprintAnchor(
   x: number,

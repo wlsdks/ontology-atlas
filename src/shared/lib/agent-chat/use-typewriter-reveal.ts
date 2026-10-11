@@ -16,27 +16,9 @@ import { usePrefersReducedMotion } from '../render-timing/use-prefers-reduced-mo
 const CATCH_UP_FRAMES = 12;
 
 /**
- * Reveals text the way it was written rather than the way it arrived.
- *
- * ⚠️ **Why** (owner, 2026-08-24): *"can the characters not come out one at a time, smoothly? right
- * now they burst out. …I would like it to be like the other agents."* An ACP adapter sends
- * `agent_message_chunk` in whatever sizes its transport happens to produce — sometimes a word,
- * sometimes a whole paragraph — and the panel rendered each chunk the instant it landed. The
- * content was correct and the delivery was not: a sentence appeared in three jerks, which reads as
- * a machine stuttering rather than as something being written.
- *
- * This does **not** slow the answer down. It only smooths the *reveal* of text that has already
- * arrived, and the stride grows with the backlog so it can never fall behind the stream. The moment
- * `streaming` goes false — the turn ended, or this is no longer the live bubble — the full text is
- * returned with no animation at all, so a finished conversation is never partially drawn.
- *
- * Reduced motion returns the full text immediately, which is the honest equivalent here: the
- * information is the text, and the animation carries none of it.
- *
- * **Graphemes, not bytes.** `Array.from` splits by code point, so a Hangul syllable emerges whole
- * instead of a byte at a time. Combining marks can still separate for a frame; that is the one case
- * where finer segmentation would cost an `Intl.Segmenter` allocation per frame for no gain a reader
- * can see.
+ * Smooths the reveal of already-arrived text; the stride grows with the backlog so it never falls
+ * behind. When `streaming` is false or reduced motion is set, the full text returns with no
+ * animation. Splits by code point so a Hangul syllable emerges whole.
  */
 export function useTypewriterReveal(text: string, streaming: boolean): string {
   const reducedMotion = usePrefersReducedMotion();

@@ -41,20 +41,9 @@ import {
  * leader press, charging that cost to the most frequent input.
  */
 /**
- * Is a blocking surface **actually rendered** right now.
- *
- * ⚠️ **A single `querySelector('[aria-modal="true"]')` is wrong** (2026-08-09,
- * caught by e2e). It returns the document's **first** match, which may not be on
- * screen — surfaces here stay in the DOM through their exit animation
- * (`EXIT_WINDOW_MS` in `use-presence.ts`) and take `aria-hidden` meanwhile. If a
- * hidden one matches first, **the destination shortcuts die permanently** with
- * no clue on screen; opening the settings sheet reproduced exactly that.
- *
- * So scan them all and block only if one is rendered and not leaving (`isLeavingSurface`) — the
- * test is what is on screen and still taking input, not what is in the tree.
- *
- * Exported for the shell's `?` (2026-09-26): the shortcut sheet must not stack over a dialog the
- * way a destination key must not move the screen behind one, and one test keeps them agreeing.
+ * Is a blocking surface actually rendered. Surfaces stay in the DOM through their exit animation, so
+ * the first `querySelector` match may be off screen; scan all and skip leaving ones. Exported for
+ * the shell's `?`, so the sheet and destination keys agree.
  */
 export function blockingSurfaceOpen(): boolean {
   for (const el of document.querySelectorAll('[aria-modal="true"]')) {
@@ -69,25 +58,9 @@ export function blockingSurfaceOpen(): boolean {
 }
 
 /**
- * **Is this surface on its way out** — closed, and only still drawn for its exit motion.
- *
- * A leaving surface blocks nothing: it no longer takes input, and counting it swallowed the next
- * key. Measured on 2026-09-26 against a real folder: `?` pressed right after Esc closed the
- * Automations sheet (the `Dialog` primitive) did not open the shortcut sheet, because the guard
- * above saw the sheet at opacity 0.99 in the first frame of its exit and refused.
- *
- * Every exit path here already stops input at its first frame, so that mark is what is read —
- * not the opacity, which says "on its way out" only once the motion is nearly over:
- *
- * - `Surface`, the settings sheet and the guided tour go `inert` (the settings sheet also
- *   `aria-hidden`) for the length of their exit.
- * - A Radix dialog's content (the search) keeps `data-state="closed"` through its exit animation.
- * - Every framer exit takes `pointer-events: none` from `useExitLockout` on its first exit frame
- *   (`framer-exit-asymmetry.contract.test.ts`), and the Radix and `Surface` exits carry the same
- *   value from their exit classes.
- *
- * An open modal never computes `pointer-events: none` — one that cannot be clicked is not a
- * modal — so none of these marks can let a key through while a blocking surface is really up.
+ * A leaving surface blocks nothing: it no longer takes input. Read the first-frame marks (`inert`,
+ * `aria-hidden`, `data-state="closed"`, `pointer-events: none`), not opacity. An open modal never
+ * computes `pointer-events: none`, so these marks cannot let a key through.
  */
 function isLeavingSurface(el: Element): boolean {
   if (el.closest('[aria-hidden="true"], [inert]')) return true;
@@ -96,27 +69,8 @@ function isLeavingSurface(el: Element): boolean {
 }
 
 /**
- * Is this key that letter — **without losing to the IME or the keyboard layout.**
- *
- * ⚠️ **Reading `event.key` alone kills the feature entirely while a Korean IME
- * is on** (2026-08-10, measured in the installed app). With Hangul input active,
- * the physical `G` reports `event.key` as `hah` and `P` as `e`. No modifier was
- * held, focus was on body, no blocking surface was open — the letter simply did
- * not match `DESTINATION_BY_KEY`.
- *
- * **Korean is this product's primary language**, so that is not an exotic
- * environment but the owner's and the target users' normal state, and browser
- * e2e cannot catch it in principle because it types Latin.
- *
- * So either match passes:
- *
- * - `event.code === 'KeyG'` — the **physical position**, independent of any IME
- *   (Korean, Japanese, Chinese).
- * - `event.key === 'g'` — the **printed letter**, which is what the user
- *   actually presses on a non-QWERTY Latin layout (AZERTY, Dvorak).
- *
- * Either one alone loses the other case: `code` alone makes AZERTY users press
- * `A` to produce `KeyQ`, and `key` alone does nothing under Hangul.
+ * Match either `event.code` (physical position, independent of any IME) or `event.key` (printed
+ * letter on non-QWERTY Latin layouts); either alone loses the other case.
  */
 function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: string): boolean {
   if (event.key.toLowerCase() === letter) return true;
@@ -144,18 +98,8 @@ export interface DestinationShortcutOptions {
   /** Context-dependent overrides for the default href; falls back to `DESTINATION_HREF`. */
   hrefOverrides?: Partial<Record<DestinationId, string>>;
   /**
-   * Called when navigation was refused because a blocking surface is open —
-   * **only once the user has actually named a destination**.
-   *
-   * ⚠️ Without it the studio was a **keyboard trap** (found in the 2026-08-10
-   * full review). Arriving at the studio opens a "what would you like to do?"
-   * chooser, which is `aria-modal`, so the shortcuts refuse as designed — and
-   * said nothing. In the review, `G I`, `G P`, `G K` and `G G` all did nothing
-   * after `G S`, with no clue on screen.
-   *
-   * The fix is not to let shortcuts through the modal: a modal that does not
-   * block is not a modal, and it may hold unsaved input. Say **why** instead —
-   * the same prescription as any other dead end.
+   * Called when navigation was refused because a blocking surface is open, only once the user has
+   * named a destination. A modal must not let shortcuts through, so say why instead of staying silent.
    */
   onBlockedByOverlay?: (() => void) | null;
   /** The destinations the rail draws; a key for a hidden one does nothing. */
@@ -170,20 +114,9 @@ export function useDestinationShortcuts({
   visible = null,
 }: DestinationShortcutOptions) {
   /**
-   * When the leader was pressed; `null` means it was not.
-   *
-   * ⚠️ **Do not use `event.timeStamp`** (2026-08-10, measured in the installed
-   * app). The first version read the time from `event.timeStamp` and treated 0
-   * as "not pressed". It worked in Chromium and passed e2e, but **in the
-   * installed app (WKWebView) no leader combination fired at all** — neither
-   * `G P` nor `G M`. `?` worked on the same screen, so the keys were reaching
-   * the WebView.
-   *
-   * So the clock is detached from the event: the time comes from
-   * `performance.now()` and "was it pressed" is **is it non-null**. Overloading
-   * 0 to also mean "not pressed" makes the whole feature vanish, with no clue on
-   * screen, the moment a runtime hands out 0.
-  */
+   * When the leader was pressed; `null` means not pressed. Do not use `event.timeStamp`: WKWebView may
+   * report 0, so the time comes from `performance.now()` and pressed means non-null.
+   */
   const leaderAt = useRef<number | null>(null);
   const navigateToDestination = useEffectEvent((id: DestinationId) => {
     navigate(hrefOverrides?.[id] ?? DESTINATION_HREF[id], id);
@@ -210,9 +143,8 @@ export function useDestinationShortcuts({
         const id = destinationForEvent(event);
         leaderAt.current = null;
         if (!id) return;
-        // A hidden destination has no tile, so its key is not a door either. The two
-        // aliases live on another tile: Docs is Library's Ontology tab, and MCP is a
-        // section of the Agents page (2026-09-18), so each is a door while its host is.
+        // A hidden destination has no tile, so its key is not a door either. Docs and MCP live on other
+        // tiles (`HOST_TILE`), so each is a door while its host is.
         if (visible && !visible.has(HOST_TILE[id] ?? id)) return;
         event.preventDefault();
         /*

@@ -3,15 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useTypewriterReveal } from './use-typewriter-reveal';
 
-/**
- * Owner, 2026-08-24: *"can the characters not come out one at a time, smoothly? right now they
- * burst out."* An ACP adapter sends `agent_message_chunk` in whatever size its transport produces,
- * and the panel rendered each chunk the instant it landed — one sentence arriving in three jerks.
- *
- * What these tests hold is the pair of promises that make the smoothing safe: it never delays the
- * answer, and it never leaves a finished conversation partly drawn.
- */
-
 let frames: Array<() => void> = [];
 
 function runFrames(count: number) {

@@ -4,8 +4,7 @@ export async function copyText(text: string): Promise<boolean> {
       await navigator.clipboard.writeText(text);
       return true;
     } catch {
-      // Browser permission prompts can reject even when the Clipboard API exists.
-      // Fall back to the legacy path so copy buttons can show a deterministic failure state.
+      // Permission prompts can reject even when the Clipboard API exists; fall back to the legacy path.
     }
   }
 

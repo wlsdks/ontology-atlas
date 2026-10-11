@@ -143,8 +143,7 @@ export function useVaultChoice({
         }));
         return NOT_OPENED;
       }
-      // Same reason the hardcoded Korean "Failed to open folder" was removed — null lets
-      // LocalVaultPicker fall back to `t('errorFallback')`.
+      // `null` lets `LocalVaultPicker` fall back to `t('errorFallback')`.
       setState((s) => ({
         ...s,
         status: 'error',

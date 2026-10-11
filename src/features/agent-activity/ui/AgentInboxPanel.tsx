@@ -26,30 +26,9 @@ import { inboxDuration } from '../model/inbox-duration';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 
 /**
- * The bell's inside: **three questions, not one log.**
- *
- * Owner, 2026-09-12: this panel's inside matters very much, because it may be the only
- * place the difference can be told — and tabs inside it are fine. So the distinction has
- * to live inside the panel itself. The quote is in the PR that brought this.
- *
- * Before this the panel was an event log in two stacked sections: receipts whose
- * decision and result were four dot-separated words, then a feed that printed a task's
- * start and its end as two separate rows with the same title. A person coming back
- * after an agent worked for an hour could not tell from it whether anything was waiting
- * on them. The three tabs answer three different questions (`model/bell-inbox.ts` owns
- * the derivation):
- *
- * - `todo` — the only tab that can cost the person something by being missed.
- * - `results` — one row per finished task, unread until opened.
- * - `history` — the same tasks as a timeline under a day label.
- *
- * **Why the tab strip is `shared/ui/tab-bar`**: that file is declared the one tab-bar
- * pattern for the app (caps label, engraved count, 2px indigo underline, roving
- * tabindex). A popover-local second tab implementation is how two tab dialects begin.
- *
- * **Which tab opens**: the one used last, remembered across sessions — unless it is
- * empty and another has something, because a panel that opens on an empty tab while a
- * request waits two tabs away is the defect this slice exists to remove.
+ * The bell's inside is three questions, not one log (`model/bell-inbox.ts` derives them): `todo`
+ * costs something if missed, `results` is one row per finished task, `history` a timeline. Tab strip
+ * is `shared/ui/tab-bar`. Opens on the last used tab unless it is empty and another has content.
  */
 const TAB_STORAGE_KEY = 'atlas.agentActivity.tab';
 const TAB_ID_PREFIX = 'agent-inbox';
@@ -74,13 +53,9 @@ function writeStoredTab(tab: BellTab): void {
 }
 
 /**
- * What a finished write **did**, as one verb-first sentence.
- *
- * The leading kind is the largest count, ties resolved added → edited → removed. Both
- * Both the results and the history tab say this same sentence: four rows reading
- * "<agent> finished a task" is the repetition the owner named, and a generic heading
- * repeated down a list is refused by
- * `.claude/rules/design.md` as well.
+ * What a finished write did, as one verb-first sentence. The leading kind is the largest count, ties
+ * resolved added, edited, removed. Results and history share it, since a generic heading repeated
+ * down a list is refused by `.claude/rules/design.md`.
  */
 function writeSentence(
   t: (key: string, values?: Record<string, number>) => string,
@@ -309,9 +284,8 @@ export function AgentInboxPanel({
    * reader.
    */
   const [tab, setTab] = useState<BellTab>(() => {
-    // The bell's filled badge and the tab that opens have to name the same thing: a
-    // remembered tab that is merely non-empty used to win over a waiting request, so the
-    // request sat two tabs away behind the digit that advertised it.
+    // The badge and the opening tab must name the same thing: a remembered non-empty tab must not win
+    // over a waiting request.
     if (counts.todo > 0) return 'todo';
     const remembered = readStoredTab();
     if (remembered && counts[remembered] > 0) return remembered;
@@ -336,13 +310,9 @@ export function AgentInboxPanel({
   };
 
   /*
-   * ⚠️ **A press must not delete the list it was invited into** (design-interaction,
-   * 2026-09-12). Pressing a result used to close the panel, and because selecting a node
-   * raises the datasheet the whole bell is suppressed with it — one press on the first of
-   * four unread rows and the other three had no door left, with focus on `<body>`. A task
-   * row now focuses the map **behind** the open panel and the row's own dot goes out in
-   * place, which is also the press feedback it had none of. Only a door that genuinely
-   * leaves (the conversation) closes the panel, and that path returns focus to the bell.
+   * A press must not delete the list it was invited into: selecting a node suppresses the bell,
+   * leaving other unread rows no door. A task row focuses the map behind the panel and its dot goes
+   * out in place. Only a door that leaves (the conversation) closes the panel.
    */
   const openRow = (row: BellResult) => {
     feed.markReadUpTo(row.at);
@@ -370,24 +340,6 @@ export function AgentInboxPanel({
               count: counts.results,
               countTitle: t('tabResultsTitle'),
             },
-            /*
-             * **History carries no digit** (design-lead's prescription, accepted 2026-09-12).
-             *
-             * The other two digits are counts of things a person can act on or take
-             * credit for: To do is how many things wait on them and is the number the
-             * bell's badge advertises, Results is how much got done. History would be the
-             * **length of a day-grouped, time-windowed log** — a different kind of
-             * quantity sitting in the same engraved slot, which is the count channel
-             * asked to carry two units at once. On the seeded folder it also reads 5
-             * while its neighbours read 1 and 4, i.e. exactly their sum, in a body that
-             * clips the fifth row at `max-h-[264px]` — a number a reader cannot verify
-             * from what is on screen. Dropping it leaves the strip readable in one pass:
-             * one waits, four are done. `counts.history` still decides which tab opens.
-             *
-             * `TabBar` documents `count` as omittable, so this is the pattern's own
-             * option, not a fork; its label span names its leading, so a digit-less tab
-             * keeps the same 28px height and underline distance as its neighbours.
-             */
             { key: 'history', label: t('tab.history') },
           ]}
         />
@@ -415,13 +367,8 @@ export function AgentInboxPanel({
         {tab === 'todo' ? (
           counts.todo === 0 ? (
             /*
-             * ⚠️ **This is the one empty state that could lie** (po-evidence and po-steward,
-             * 2026-09-12). Atlas never receives a permission request: the ask row stands on a
-             * heartbeat, which goes stale after five minutes, and a folder problem leaves the
-             * list after a day whether or not anybody fixed it. So the sentence says what has
-             * reached **this list** rather than what is true of the world, and the standing
-             * repair queue stays one press away — "nothing waiting" must never be read as
-             * "nothing to fix".
+             * The sentence says what has reached this list, not what is true of the world: the ask row stands on
+             * a heartbeat that goes stale after five minutes, and a folder problem leaves after a day.
              */
             <InboxEmpty testId="agent-inbox-todo-empty">
               {t('todoEmpty')}
@@ -493,12 +440,8 @@ export function AgentInboxPanel({
                         <span
                           className={cn(
                             /*
-                             * ⚠️ **Not `shrink-0`** (design-responsive, 2026-09-12). At 200%
-                             * browser text the sentence held its full width and the object it
-                             * names was erased instead — measured 0px wide with 38px clipped,
-                             * and the four rows became four copies of one sentence. Both
-                             * halves truncate now, so the row loses words rather than the
-                             * thing it is about.
+                             * Not `shrink-0`: at large text sizes the sentence kept its width and the object it names was
+                             * erased. Both halves truncate.
                              */
                             'min-w-0 truncate text-label',
                             row.unread
@@ -670,10 +613,8 @@ function TodoRow({
               onClose?.();
             }}
             /*
-             * `atlas-touch-floor` because the control ramp's coarse promotion asks
-             * `pointer: coarse` while the rows ask `any-pointer: coarse`: on a mouse-primary
-             * machine with a touchscreen the rows grew to 44 and the only door out of this
-             * tab stayed 28 (design-responsive, 2026-09-12).
+             * `atlas-touch-floor`: the control ramp promotes on `pointer: coarse` while the rows use
+             * `any-pointer: coarse`, so this door would stay 28px beside 44px rows.
              */
             className="atlas-touch-floor shrink-0"
           >
@@ -721,33 +662,13 @@ function TodoRow({
 }
 
 /**
- * Kind → the sentence a timeline row says, for everything that is not a finished write.
- *
- * A finished write says what it did (`writeSentence`) rather than "<agent> finished a task": the
- * seeded folder drew that same line four times in a row, which is the repetition the owner
- * reported in the first place. The agent moved to the second line, where it belongs beside
- * the duration and the time.
+ * The sentence a timeline row says for everything that is not a finished write. A finished write
+ * says what it did (`writeSentence`); the agent goes on the second line.
  */
 /**
- * The timeline's object is a control, so it wears a **control's mark, not the panel's
- * indigo** (guardian verdict, 2026-09-12).
- *
- * Measured on the seeded folder — an accent-ink pixel count of the same crops
- * `pil-edges.json` reads — indigo ink in the panel **body** was To do 154 px · Results
- * 128 px · History **823 px**. The tab where nothing is outstanding carried 6.4× the
- * accent ink of the tab holding four unread results, because three node names were
- * `tone: 'accent'` (13px type) while the results tab spends its indigo on four 6px
- * unread dots. Everywhere else in this panel indigo means *this needs you*: the ask
- * glyph, the review chip, the unread dot, the bell's own badge. A settled timeline needs
- * nobody, so it must not hold the loudest hue in the panel.
- *
- * The ink therefore drops to `secondary` — the exact step the results tab already gives
- * the same node name, so one name reads one way in both tabs — and what tells a reader
- * that this particular *word* presses is the app's existing quiet-link underline
- * (`--color-indigo-line-a32` at a 2px offset, the `.prose-link` values, written the way
- * `GatewayDocPage` already writes them). That underline is the mark a Results row must
- * **not** wear: there the whole row presses, not a word inside it. Text decoration is
- * painted inside the line box, so the 52px row pitch does not move.
+ * Control mark, not the panel's indigo: indigo means this needs you, and a settled timeline needs
+ * nobody. Ink is `secondary` like the results tab; a quiet-link underline marks that the word
+ * presses.
  */
 const HISTORY_OBJECT_CLASS = controlClass({
   shape: 'link',

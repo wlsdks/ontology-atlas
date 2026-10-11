@@ -14,32 +14,9 @@ import {
 import { useLocalVault } from './local-vault-context';
 
 /**
- * Visual notification of vault polling results — changes detected by polling are surfaced as a
- * toast on whichever page is open.
- *
- * Behaviour:
- *   - mounted inside `LocalVaultProvider`, tracking the (slug, mtime) map of `manifest.docs`
- *   - the first mount records a baseline only (blocking false positives)
- *   - thereafter: a new slug → added; the same slug with a newer mtime → modified
- *   - one toast per burst (the fan-out was dropped — see the `diff-manifest.ts` comment)
- *   - text is assembled per locale from `featuresMisc.vaultDiffToaster.*`. `diffVaultManifest` and
- *     `planVaultDiffToasts` are pure helpers returning structure only, so the strings are finished
- *     here with `useTranslations`
- *
- * ## A notification has to carry information (owner instruction, 2026-08-01)
- *
- * The old text was `edited: capabilities/payment-authorization`. Four things were missing at once:
- * ① `capabilities/` is a developer folder name, not words for a screen; ② a slug is not what a
- * person calls the concept (`display_<locale>` exists, and only the toast ignored it); ③ it never
- * said what kind of thing changed; ④ "edited" states that an event occurred, which is not information.
- *
- * So what reaches the screen is three parts — *kind (in plain words) + event + human name* — as in
- * **"Capability edited — Payment authorization"**. For several at once it counts by kind:
- * "3 capabilities · 12 elements added". **When the kind cannot be obtained it is not invented** —
- * the text becomes "Added — name", and the digest counts them honestly as "N other".
- *
- * Deletion detection is excluded here: an explicit user action is more valuable as its own toast
- * (a command like delete_concept raises one), and repeating it from a polling result is noise.
+ * Toasts surface polling changes; the first mount records a baseline only. Kind is never invented:
+ * when unknown, text uses the plain event and the digest counts it as other.
+ * Deletions are not detected here; `delete_concept` raises its own toast.
  */
 export function VaultDiffToaster() {
   const { status, manifest, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog } =
@@ -87,11 +64,8 @@ export function VaultDiffToaster() {
     // itself; re-reporting them from a polling diff is a burst of noise.
     const observedSlugs = new Set([...added, ...modified]);
     const selfWritten = consumeSelfWrittenSlugs(observedSlugs);
-    // A save this session refused as a conflict already said the file changed elsewhere, and
-    // that refusal is the message the person needs in front: a second, green notice for the
-    // same outside write would bury it and read as the save having landed (map-edit QA D5,
-    // 2026-09-26). Only the exact change the refusal reported is dropped — the same slug at
-    // the same modification time.
+    // A save refused as a conflict already reported this change; a second green notice would bury it.
+    // Only the same slug at the same mtime is dropped.
     const alreadyReported = consumeReportedConflicts(
       new Map(modified.map((slug) => [slug, currentMap.get(slug) ?? null])),
     );

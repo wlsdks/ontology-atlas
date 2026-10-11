@@ -50,7 +50,7 @@ describe("computeDomainCensusRows", () => {
   });
 
   it("keeps domain totals within the containing project total", () => {
-    // Every concept has one owner, so domains can only partition the project's total.
+    // Every concept has one parent, so domains can only partition the project's total.
     const nodes = [
       node("p", "project"),
       node("a", "domain"),

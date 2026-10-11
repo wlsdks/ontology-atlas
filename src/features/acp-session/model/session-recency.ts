@@ -1,18 +1,9 @@
 import type { AcpSessionSummary } from './acp-client';
 
 /**
- * **Which past conversation is the latest one** — the only ordering question the panel asks.
- *
- * `session/list` arrives in whatever order the adapter kept it in, and the screen drew it
- * that way: the list has a date column, so the reader takes the top row to be the most
- * recent conversation whether or not the adapter agreed. Once reopening the dock resumes
- * *the latest* conversation (owner, installed app, 2026-09-08), that reading stops being a
- * cosmetic question — the row a person points at and the conversation that opens have to
- * be the same one.
- *
- * So the order is ours, from the one fact the adapter gives us. A row with a readable
- * `updatedAt` sorts newest first; rows without one keep the adapter's own order and stand
- * below the dated ones, because an unknown time is not a claim that it is old.
+ * Which past conversation is the latest. `session/list` order is the adapter's, so sort here
+ * by readable `updatedAt`, newest first; rows without one keep adapter order below dated
+ * ones, since unknown time is not old.
  */
 function timeOf(session: AcpSessionSummary): number | null {
   if (!session.updatedAt) return null;

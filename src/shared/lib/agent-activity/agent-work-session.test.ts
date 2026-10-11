@@ -53,7 +53,6 @@ describe("deriveAgentWorkSessions", () => {
   });
 
   it("실측 로그(53줄 · 11분 40초 · 최대 침묵 329초)는 작업 2개가 된다", () => {
-    // The result the owner called "one or two"; counted per line it was 53.
     const entries = [
       ...Array.from({ length: 20 }, (_, i) => entry({ at: at(700_000 - i * 2_000) })),
       // 329 s of silence.

@@ -63,7 +63,6 @@ function rejectingTransport() {
   };
 }
 
-/** The shape of a permission request as actually received in measurement (2026-08-16). */
 function permissionRequest(filePath: string, id = 7, kind = 'edit') {
   return {
     jsonrpc: '2.0',
@@ -229,8 +228,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   });
 
   it('우리 서버의 읽기가 볼트 상대 경로를 들고 오면 앱이 대신 허용한다 — `read_source` 는 `sources/…` 로 부른다', async () => {
-    // Measured 2026-09-07: the Rust verdict judges absolute paths only, so `sources/plan.docx`
-    // came back `ask` and the first read_source call stopped at a card titled "outside this folder".
+    // Rust judges absolute paths only, so vault-relative `sources/...` reads need this allowance.
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
     const autoAllowed = vi.fn();
@@ -261,11 +259,6 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   });
 
   it('볼트 안이라도 **편집**은 묻는다 — 경로가 안전하다는 것이 변경을 봤다는 뜻은 아니다', async () => {
-    /*
-     * Caught in the 2026-09-01 review. Path containment auto-allowed the agent's own edit tool
-     * on vault Markdown, so frontmatter/relations could be rewritten with no card while the
-     * Atlas write path dutifully asked — a gate on one door of the same file.
-     */
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
     createAcpClient(t.transport, { verdict: insideVault, askUser });
@@ -291,11 +284,6 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   });
 
   it('판정이 실패해도 **답은 나간다** — 상대를 영원히 기다리게 하지 않는다', async () => {
-    /*
-     * Caught in the 2026-08-16 review. When the verdict IPC was rejected (the window closing, a bridge
-     * error) no answer went out for this request and the adapter stalled forever. The conversation died
-     * with neither a card nor an error, leaving no way to learn the cause.
-     */
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
     const notices: string[] = [];
@@ -382,7 +370,7 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   it('경로를 모르면 묻는다 — 판단할 수 없는 것을 통과시키지 않는다', async () => {
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
-    // Even given a verdict that answers "inside the vault", the verdict itself is meaningless with no path.
+    // Without a path the answer is meaningless, even one saying inside the vault.
     createAcpClient(t.transport, {
       verdict: async (filePath) => (filePath ? 'allow-inside-vault' : 'ask'),
       askUser,
@@ -763,11 +751,6 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
   });
 
   it('악수에 답이 없으면 시간이 지나 실패한다 — 「켜는 중」에 붙박이지 않는다', async () => {
-    /*
-     * Caught in the 2026-08-16 review. With the adapter up but not answering (a wrong binary, or npx
-     * waiting on something), the status stuck at "starting", and in that state "new conversation" was
-     * locked too, leaving no way out but closing the panel.
-     */
     vi.useFakeTimers();
     try {
       const t = fakeTransport();
@@ -784,13 +767,7 @@ describe('ACP 클라이언트 — 답이 안 오면 언젠가 끝난다', () => 
   });
 
   it('내려받는 중에는 악수 시계가 다시 시작된다 — 첫 대화가 영영 안 열리던 자리다', async () => {
-    /*
-     * Owner's installed app, 2026-08-24. The first launch of `codex-acp` fetches 274 MB through
-     * `npx`; nothing answers `initialize` until it lands, so the 45s ceiling expired, the child was
-     * killed mid-download, and the panel said "the tool is not responding". Deleting the half-built
-     * cache and retrying failed at the same second, so below roughly 6 MB/s the first conversation
-     * could never open. Progress is proof of life and restarts the clock.
-     */
+    /* Download progress is proof of life and restarts the handshake clock; the first `npx` fetch is large. */
     vi.useFakeTimers();
     try {
       const t = fakeTransport();
@@ -893,7 +870,6 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
       sessionId: null,
       title: null,
       toolCallId: null,
-      // Null when even the tool name is unknown — the MCP auto-allow verdict reads this value.
       toolName: null,
       toolKind: null,
       filePath: null,
@@ -905,11 +881,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
 
   it('제목이 없으면 도구가 남긴 문장을 읽는다 — 서버가 스스로 묻는 자리다', () => {
     /*
-     * Wire capture, 2026-08-24. The vault server pauses a write with `elicitation/create`;
-     * `codex-acp` forwards it as `session/request_permission` with **no `toolCall.title`**, putting
-     * the question in `toolCall.content[]`. The screen was reading only `title`, so the one sentence
-     * that makes the decision answerable never reached the card, which then printed two lines of
-     * "unknown" instead.
+     * The vault server pauses a write with `elicitation/create`; `codex-acp` forwards it with no
+     * `toolCall.title`, so the question is read from `toolCall.content[]`.
      */
     const parsed = toPermissionRequest({
       options: [{ kind: 'allow_once', optionId: 'accept', name: 'Accept' }],
@@ -940,9 +913,8 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
 });
 
 /**
- * `current_mode_update` carries **one field** — the id the session is now in. No name, no
- * description, no `_meta`. So the state this produces has to be built from what is already on hand
- * plus the standing safety verdict, and the three cases are genuinely different.
+ * `current_mode_update` carries only the mode id, so state comes from what is on hand
+ * plus the standing safety decision.
  */
 describe('applyCurrentMode — the adapter moved the session, not the person', () => {
   const base: AcpSessionChoices = readSessionChoices({

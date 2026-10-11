@@ -1,24 +1,8 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * The one place that actually opens links pointing **outside** the app.
- *
- * **Why it exists** (caught in the 2026-08-20 walkthrough). Inside the app,
- * `<a target="_blank">` **did nothing**: the Tauri WebView opens no new window
- * and this app carried no plugin to handle it. So pressing "↗ install
- * instructions" in settings silently did nothing — and that was the **only next
- * step** we offered someone with no tooling at all.
- *
- * The owner reported it as: *"Nothing happens when I press it! Install instructions!"* (pressing "install
- * instructions" does nothing).
- *
- * **Why intercept instead of fixing each link.** Outbound links are scattered
- * across **10 files**. Fixing them one by one misses the eleventh, and that link
- * then dies **silently** — no error at all. So the click is intercepted in one
- * place, which covers new links automatically.
- *
- * **On the web it does nothing.** Browsers already open `target="_blank"`
- * correctly, and outside Tauri this interceptor is never installed.
+ * Opens links pointing outside the app: the Tauri WebView opens no new window for `<a
+ * target="_blank">`, so the click is intercepted in one place. Outside Tauri it is never installed.
  */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;

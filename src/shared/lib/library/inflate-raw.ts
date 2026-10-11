@@ -1,34 +1,7 @@
 /**
- * **Raw DEFLATE, decompressed inside the bundle.**
- *
- * A DOCX and an XLSX are zips of XML, and a zip stores its entries as raw DEFLATE
- * (RFC 1951). `mcp/src/source-text.mjs` reaches for `node:zlib`'s `inflateRawSync` for
- * exactly this; the web bundle has no `node:zlib`, and its twin in
- * `source-passage.ts` needs the same bytes to produce the same units.
- *
- * ## Why not the platform's own decompressor
- *
- * `DecompressionStream('deflate-raw')` exists — from Safari 16.4. `src-tauri/tauri.conf.json`
- * sets `minimumSystemVersion: "12.0"`, and what that pins is the OS floor, not the
- * WebKit build: a Monterey machine that took Safari 16.4 has it and one that did not
- * does not, which is the honest claim (po-evidence corrected an earlier flat "macOS 12
- * does not have it" here, 2026-09-11). Either way it is **not guaranteed at the floor**,
- * and the fallback would have to exist anyway — so it is the only path rather than the
- * second one, and there is one thing to keep correct instead of two. It is also a
- * stream: every caller of the reader would become asynchronous to borrow one
- * synchronous step.
- *
- * ## Why not a dependency
- *
- * The same reason `mcp/src/source-text.mjs` gives for writing its own zip reader: a
- * third-party parser between a person's document and the quote that cites it. This is
- * ~120 lines of a published, frozen format, and
- * `tests/contract/source-passage-parity.contract.test.ts` holds it against
- * `node:zlib` itself — the fixture DOCX and XLSX, plus generated streams at every block
- * type — so the claim "the same bytes" is measured rather than asserted.
- *
- * The decoder is the canonical bit-by-bit one (Mark Adler's `puff` shape): correctness
- * and a small footprint over speed, which is right for a file a person pressed once.
+ * Raw DEFLATE decompressed in the bundle (zip entries, RFC 1951): the web bundle has no `node:zlib`.
+ * Not guaranteed at the OS floor: `DecompressionStream('deflate-raw')` needs Safari 16.4. Parity
+ * with `node:zlib`: `source-passage-parity.contract.test.ts`.
  */
 
 /** Copy lengths for symbols 257–285, and the extra bits each reads (RFC 1951 §3.2.5). */

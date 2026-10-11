@@ -1,23 +1,7 @@
 /**
- * Where this machine's `npx`, `node`, `uvx`, `python3` and `docker` actually are — the Tauri
- * bridge over `resolve_connector_runtimes` in `src-tauri/src/connectors.rs`.
- *
- * ## Why the form stopped asking for a typed path
- *
- * A connector the agent spawns inherits a sanitized environment with **no `PATH`**
- * (`SHARED_RUNTIME_ENV`, `src-tauri/src/acp/runtime_environment.rs`), so a bare `npx` resolves to nothing and the
- * session comes up with that connector's tools silently absent. `connectorProblems` reports it as
- * `command-not-absolute` and the form's hint said so — and the owner's answer was
- * still *"I don't know what I'm supposed to write here"*. Nobody knows where their own `npx` is;
- * `src-tauri/src/acp/command_lookup.rs` already worked it out for the agent runtimes, so the form picks from that answer
- * instead of asking for it.
- *
- * ## Web degradation contract
- *
- * A browser cannot look at `/opt/homebrew/bin`. Outside Tauri `resolveConnectorRuntimes()`
- * returns `null` — **"not asked", never "none installed"**. The form then falls
- * back to a typed path with the hint it always had, which still works; what is missing is the
- * convenience, not the ability (`.claude/rules/surfaces.md`).
+ * Bridge over `resolve_connector_runtimes` in `src-tauri/src/connectors.rs`. A spawned connector
+ * inherits an environment with no `PATH`, so a bare `npx` resolves to nothing. Outside Tauri it
+ * returns `null`: "not asked", never "none installed".
  */
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 

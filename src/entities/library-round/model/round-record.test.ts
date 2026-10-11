@@ -131,7 +131,7 @@ describe('cadence', () => {
   });
 
   it('a weekday round skips Saturday and Sunday', () => {
-    // 2026-09-18 is a Friday.
+    // September 18 is a Friday.
     expect(nextDueAt({ daily: '09:00', weekdaysOnly: true }, local(2026, 9, 18, 9, 30))).toEqual(local(2026, 9, 21, 9, 0));
   });
 

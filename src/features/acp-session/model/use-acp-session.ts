@@ -136,24 +136,15 @@ export interface UseAcpSessionOptions {
   /** Captures bounded local evidence after the turn exists but before any prompt reaches the actor. */
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   /**
-   * Lets the screen answer a permission request itself. Return a short note (what was
-   * allowed, for the transcript) to allow the request at once without a card; return null
-   * to ask the person as before. The Library uses it for a wiki page that fits the
-   * contract (owner direction 2026-09-07: agents act, people can step in — not every write
-   * waits). An ontology write never comes here: the caller's judge does not know nodes.
-   *
-   * Return `{ reject: reason }` to refuse without a card. An unattended Library round runs
-   * with nobody at the screen (decision 2026-09-17), so for it "ask" is not an answer: what
-   * its standing scope does not allow is refused, and the transcript names the refusal so
-   * the ledger can.
+   * Lets the screen answer a permission request itself. Return a short note to allow without a
+   * card, `{ reject: reason }` to refuse, or null to ask. An unattended round has nobody to
+   * ask, so what its scope disallows is refused. Ontology writes never come here.
    */
   autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
   onToolSettled?: (toolCallId: string, status: string) => void;
   /**
-   * A paragraph the consumer appends after the vault handoff, for the rules that hold only on
-   * its own screen. The Library adds how an answer must cite so it can be filed as a page
-   * (2026-09-19): a free question typed into its composer went out with no citation rule, the
-   * agent answered in prose, and "Save answer" refused the answer as `no-cited-fact`.
+   * A paragraph the consumer appends after the vault handoff, for rules that hold only on its
+   * screen (the Library's citation rule).
    */
   systemPromptAppendix?: string | null;
   resumeLatest?: boolean;
@@ -256,35 +247,14 @@ function terminalMatchesWriter(update: Record<string, unknown>, receipt: AcpWork
 }
 
 /**
- * A paragraph **appended to** the session's start instructions.
- *
- * Why it is needed: the vault has a slot for the reason behind a relation (`why`) and `depends_on`
- * requires it, yet measured 2026-08-16, all 15 activity-log lines in a live vault had an empty
- * `why`.
- *
- * Moving the conversation into the app does not fill it — the same measurement showed that too
- * (in-app chat can already write `why`, and only 6.5% of the vault had it). **What fills it is the
- * instruction, not the slot.**
- *
- * It is appended rather than replacing the default instructions: those instructions are what make
- * that tool itself, and we have no grounds to rewrite them.
+ * A paragraph appended to the session's start instructions; it fills the relation `why`,
+ * which the slot alone does not. It is appended, not replacing the defaults, because those
+ * make the tool itself.
  */
 /**
- * Where the answer-language rule is spliced in.
- *
- * ⚠️ **"the language the person wrote in" has a hole, and a button falls straight through it.**
- * That was the whole rule until 2026-09-09. It works for anything typed into the composer and
- * fails for everything started by pressing something: the architecture workbench's source check,
- * the insights tab's "analyse with AI", the map's meaning review. Those send a prompt this app
- * wrote, in English, and the person wrote nothing at all — so the most recent language in the
- * conversation is English and the agent answers in English.
- *
- * Measured on the installed app at /ko/architecture: pressing the source-check button returned
- * a full report opening "92 unmapped edges. The brief reports the count but not their identity"
- * to a Korean interface, on a Korean vault, with every visible label in Korean.
- *
- * So the interface language is stated outright, and what the person types still overrides it —
- * someone writing English into a Korean build is asking for English.
+ * Where the answer-language rule is spliced in. "The language the person wrote in" fails for
+ * turns started by a button, whose only text is this app's English. So the interface
+ * language is stated outright; what the person types still overrides it.
  */
 const ANSWER_LANGUAGE_SLOT = '__ANSWER_LANGUAGE__';
 
@@ -305,18 +275,8 @@ const VAULT_HANDOFF_BASE = [
   'If you are unsure whether two things are the same concept, that is a question for the person, not a judgement call for you. Ask first: an extra node is harder to remove than to add.',
   ANSWER_LANGUAGE_SLOT,
   /*
-   * ⚠️ **Say what happened, do not paste what came back** (owner's screen, 2026-08-24: *"there are
-   * times it shows the user `{}` JSON like this — that should not happen, right? an explanation is
-   * what is needed, not the shape"*).
-   *
-   * A tool result is a machine answer. Pasted into the conversation it hands the person the exact
-   * material this product exists to translate — Atlas's whole promise is that meaning is judged in
-   * plain files and plain sentences. The person opening this panel is often not the one who knows
-   * what `{"ok":true,"changed":true}` means, and quoting it makes them feel the tool is talking
-   * past them.
-   *
-   * The raw value is not forbidden — it is demoted. Say the outcome first, in their language, and
-   * keep the payload for when they ask for it.
+   * Report outcomes as sentences, not raw payloads: tool results are machine answers, and the
+   * product exists to translate them. The raw value is demoted, not forbidden.
    */
   'Report results as sentences, not as payloads. Say what changed in this folder and what it means for the person; do not paste raw tool output, JSON, or field names into your answer unless they explicitly ask to see it. If a tool fails, say what did not happen and what they can do, not the error object.',
   /*
@@ -327,38 +287,16 @@ const VAULT_HANDOFF_BASE = [
   'Keep your work inside this folder. If something genuinely needs a path outside it, say so before trying.',
 ];
 /**
- * ⚠️ **Only claim it is wired when it is**.
- *
- * This sentence used to be attached unconditionally. But an empty server list really does happen
- * (no binary in the bundle, or not ready yet) — and then a session with no tools at all is given an
- * instruction **insisting it is already connected**. The agent hunts for tools that do not exist,
- * produces strange answers, and the user has no way to know why.
+ * Claim the vault server is wired only when it is: an empty server list happens, and
+ * insisting on absent tools sends the agent hunting.
  */
 const VAULT_MCP_SENTENCE =
   'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made. When you report counts, keep their units explicit and treat `query_ontology` health `relationCensus` as the authority: MCP `graph.edges` and `internalEdges` count compiled frontmatter relation declarations, so parent and child declarations can describe the same containment twice; the map\'s canonical relation census counts deduplicated normalized typed edges across the loaded ontology, not the current view filter. The MCP process does not know that app-side numeric census. Neither number is wrong, and never present them as the same census.';
 
 /**
- * Construction is a different path from ordinary one-node editing. This is a routing
- * instruction, not a qualification result, and it never grants write authority — every write it
- * leads to still stops at the permission card.
- *
- * ⚠️ **It used to route every build into the bulk qualification lifecycle, which cannot finish
- * here.** Reproduced on the app's own first-run path (the 「build a first ontology」 door, this
- * handoff, the atlas-vault MCP) against an unfamiliar repository: turn 1 surveyed for 41 s and
- * wrote nothing; after the person said "go ahead and build all of it", turn 2 spent 146 s and
- * $3.23 authoring a full `analyze_repo_structure` proposal, got `canWrite:false` because an app
- * session has no independent evaluator, and stopped with the vault still empty — the small-batch
- * path was mentioned only afterwards, so a third "go" was needed before any node existed.
- *
- * So the sentence now describes one path that completes in this session, and names the bulk
- * route once as the thing a terminal run with a separate evaluator lane can take.
- *
- * **What a body must carry is stated here because the write door only advises.** `add_concepts`
- * returns `definition-missing`, `boundary-missing`, `uncertainty-missing`, `epistemic-exclusion`,
- * `folder-only-evidence`, and `slug-outside-kind-folder` as findings, not refusals — an agent that
- * learns the shape from them has already written the node. The `## Uncertainty` line is the one a
- * prompt cannot leave out: a node with no stated unknown claims completeness, and an evidence
- * limit pushed into `## Excludes` states a product boundary that was never observed.
+ * Construction routing, not a qualification result; it grants no write authority, every
+ * write still stops at the card. The bulk lifecycle needs an evaluator the app lacks, so one
+ * completing path is named.
  */
 const VAULT_CONSTRUCTION_SENTENCE =
   'When the person asks you to build or rebuild this repository\'s ontology: verify `connection_info` and read the construction card in its `guide`; survey with `analyze_repo_structure`, `index_project`, and `infer_imports` where structure does not say what depends on what; propose in plain sentences — each candidate one definition, what it includes and excludes, and the file proving it — preferring few well-evidenced concepts to many thin ones; then wait. Once they agree, write in reviewed batches of ≤12 with `add_concepts`: each slug under its kind folder, each body carrying the definition, `## Includes` / `## Excludes`, an `## Uncertainty` line naming what you did not read or could not check, and on a capability or element a `path:` naming a file. Then `add_relations` each with a `why`, `validate_vault`, `connect_project_source`, `finalize_project_meaning`. Answer every warning by the repair it names, or say why not. This session does not have an independent evaluator, and the bulk `analyze_repo_structure` writePlan route needs one, so do not author a qualification proposal or wait for `canWrite`; it stays open to a terminal run with one. Do not fabricate an evaluator.';
@@ -434,16 +372,9 @@ export function useAcpSession({
    */
   const statusRef = useRef<AcpSessionStatus>('idle');
   /**
-   * First-download indicator — `null` means nothing is downloading.
-   *
-   * Why (owner's real machine, 2026-08-19): the adapter's first run has npx fetch tens of MB while
-   * the screen showed only a "starting" chip. The user thought it had hung, quit the app — and that
-   * interruption left a half-built npx cache that made it never start again (self-healing lives on
-   * the Rust side, `src-tauri/src/acp/npx_cache.rs`). So this indicator is not decoration; it removes that accident's trigger.
-   *
-   * `mb` is the measured size the cache directory has grown to (the `npx-download-progress:<mb>`
-   * notice). The total size is unknown, so a percentage is **not invented** — it states only what
-   * has been received. While only the first notice has arrived, `mb` is `null`.
+   * First-download indicator; `null` means none. Interrupting the first npx fetch leaves a
+   * half-built cache (healed in `src-tauri/src/acp/npx_cache.rs`). `mb` is the cache size so
+   * far, `null` until the first notice; no percentage since the total is unknown.
    */
   const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
@@ -474,13 +405,7 @@ export function useAcpSession({
    */
   const [diagnostics, setDiagnostics] = useState<readonly string[]>([]);
   const gateOffRef = useRef(false);
-  /**
-   * Collects diagnostic lines — **never put into the conversation.**
-   *
-   * What lived in this slot really appeared on screen like this (review 2026-08-16):
-   * `UNPARSABLE:{"JSONRPC":"2.0","ID":7,…` and `SEND-FAILED: …`, in fixed-width caps in the middle
-   * of the conversation. Not for a person to read, and nothing to do about it if they did.
-   */
+  /** Diagnostic lines are collected, never put into the conversation. */
   const resetDiagnostics = useCallback(() => {
     gateOffRef.current = false;
     stderrRef.current = [];
@@ -566,12 +491,8 @@ export function useAcpSession({
   /** The resolver of a permission request awaiting an answer — closed with a rejection on cleanup. */
   const pendingResolverRef = useRef<((optionId: string | null) => void) | null>(null);
   /**
-   * Serializes concurrent permission requests (2026-09-01 review). The adapter can issue two
-   * `session/request_permission`s in one turn (parallel tool calls, an elicitation overlapping a
-   * built-in-tool permission), and with a single resolver slot the second card overwrote the
-   * first: its resolver became unreachable, its JSON-RPC id was never answered, and the agent
-   * hung on the unanswered request for the rest of the session. Each ask now waits for the
-   * previous card to settle before presenting.
+   * Serializes concurrent permission requests: with one resolver slot the second card
+   * overwrote the first and its JSON-RPC id was never answered.
    */
   const askChainRef = useRef<Promise<unknown>>(Promise.resolve());
   /** Timer that hands control back to ACP after the approval confirm motion. Always cancelled when the window closes. */
@@ -655,25 +576,9 @@ export function useAcpSession({
   }, [keepDiagnostic, updateEvents]);
 
   /**
-   * **The screen stops claiming a gate it no longer has.**
-   *
-   * One sentence, two ways to arrive at it: the adapter moved a standing session
-   * (`current_mode_update`), or the session opened in such a mode already. Both are the same fact
-   * about the same conversation, so both say it the same way; `reason` separates them in the folded
-   * diagnostics, where a person looking for the cause will read it.
-   *
-   * ⚠️ **It is not the `gate-off` sentence** (council, 2026-09-05). That one reads *"Atlas cannot
-   * ask you before a file outside this folder is touched. The tool follows the settings you gave it
-   * directly"* — and on these two paths **both halves are wrong**. The person gave no such setting;
-   * the adapter moved the session on its own. And the mode it moves into accepts edits **inside**
-   * the folder, which is the half the outside-the-folder sentence never mentions. `gate-off` keeps
-   * its own job: the isolated configuration could not be written.
-   *
-   * The mode is named verbatim so the sentence points at something the person can find in the tool
-   * itself, and the reassurance about the Atlas server checkpoint is attached **only when that
-   * checkpoint is actually on** (`vaultWriteConsentOn`) — for a config-isolated runtime it is
-   * deliberately switched off, and promising it there would be a sentence the machinery does not
-   * keep.
+   * Stops the screen claiming a gate it no longer has. This is not the `gate-off` sentence,
+   * whose settings and outside-folder wording is wrong here. The Atlas server checkpoint
+   * reassurance is attached only when it is on (`vaultWriteConsentOn`).
    */
   const noteModeMoved = useCallback(
     (modeId: string, reason: string) => {
@@ -710,19 +615,9 @@ export function useAcpSession({
       }
       if (kind === 'current_mode_update') {
         /*
-         * ⚠️ **The adapter moves the session on its own, and this used to be dropped on the floor.**
-         *
-         * Read from `claude-agent-acp` 0.74.0 `dist/session-mode.js` (2026-09-05):
-         * `AUTO_MODE_FALLBACK = "acceptEdits"`. Choosing `auto` on a model without `supportsAutoMode`
-         * — or switching to such a model mid-conversation — silently moves the session there and
-         * announces it with nothing but this notification. Ignoring it left the dropdown stating a
-         * mode the session had already left, on the one value that decides whether a person is asked
-         * before something outside the folder is touched.
-         *
-         * So two things happen, and they are separate. The state follows the session
-         * (`applyCurrentMode`), and when the verdict says the new mode removes the gate the screen
-         * **says so in the sentence it already has** — the same `gate-off` notice raised when the
-         * isolated config could not be written. The detail is kept as a diagnostic beside it.
+         * The adapter moves the session on its own and announces it only with this notification.
+         * State follows (`applyCurrentMode`); if the new mode removes the gate, the `gate-off`
+         * notice is raised.
          */
         const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
         if (!modeId) return;
@@ -811,8 +706,8 @@ export function useAcpSession({
             });
             approvedReceiptRef.current = null;
           }
-          // Legacy receipts have no explicit origin/correlation. Their same live session + tool id
-          // still closes the old UI state, but remains unverified because no provenance is added.
+          // Legacy receipts have no explicit origin or correlation; the same live session and tool id still
+          // close the UI state, but stay unverified.
           if (!approvedReceipt || (receiptMatches && originMatches && writerMatches)) {
             setApprovedOntologyWriteTracked(null);
           }
@@ -925,23 +820,9 @@ export function useAcpSession({
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
     /*
-     * ⚠️ **The lock is taken before the first `await`** (found by measurement, 2026-08-16).
-     *
-     * The old lock was `clientRef.current` alone, and that value is filled only **after** the
-     * process is spawned and the events are attached. A second `start()` in that window passes the
-     * lock too, and **two adapters start**.
-     *
-     * It really happened — two adapters for one conversation:
-     * ```
-     * 83796  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
-     * 83797  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
-     * ```
-     * `sessionIdRef` then points at the later one while the lines travel over the earlier, so
-     * talking to it dies with `Session not found`. And the first process becomes a ghost nobody stops.
-     *
-     * There is more than one reason it gets called twice — development mode's double invocation, and
-     * `mcpServers` being a new array every render, which changes `start`'s identity. So **fixing the
-     * caller is not enough**: the lock lives here.
+     * The lock is taken before the first `await`: `clientRef.current` fills only after spawn, so a
+     * second `start()` in that window would start two adapters. Dev double invocation and a new
+     * `mcpServers` array each render both trigger it.
      */
     if (clientRef.current || startingRef.current) return;
     startingRef.current = true;
@@ -993,18 +874,8 @@ export function useAcpSession({
             const mb = Number(message.slice('npx-download-progress:'.length));
             setDownload({ mb: Number.isFinite(mb) ? mb : null });
             /*
-             * ⚠️ **A download in flight is not a hang** (owner's installed app, 2026-08-24).
-             *
-             * The handshake has a 45s ceiling. The first launch of a tool spends far longer than
-             * that inside `npx` — measured 274 MB for `codex-acp` — and nothing answers
-             * `initialize` until it lands. So the ceiling expired, the child was killed **mid
-             * download**, and the panel said "the tool is not responding". The next try deleted the
-             * half-built cache and restarted the same 274 MB, failing at the same second: below
-             * roughly 6 MB/s the first conversation could never open at all.
-             *
-             * This notice is proof the fetch is advancing, so it restarts the deadline. The ceiling
-             * keeps its meaning — 45 seconds with **no sign of life** — and a download that truly
-             * stalls still times out exactly as before.
+             * A download in flight is not a hang: this notice restarts the handshake deadline, so the ceiling
+             * means 45s with no sign of life. A download that truly stalls still times out.
              */
             if (!stale() && acpSessionRef.current === acpSessionId) {
               clientRef.current?.extendPendingDeadlines();
@@ -1021,12 +892,8 @@ export function useAcpSession({
             return;
           }
           /*
-           * ⚠️ **A fact about a promise is not a diagnostic** (review 2026-08-16).
-           *
-           * Most notices are diagnostics and are folded away. Anything starting with `gate-off:` is
-           * different — it means this screen's promise that "outside the folder, we ask first" is not
-           * being kept in this session. Folding it away leaves the screen making a promise it cannot
-           * keep. The detail is still recorded as a diagnostic alongside.
+           * A `gate-off:` notice means the "we ask first outside the folder" promise is not kept, so it must
+           * show, not fold away. The detail is still kept as a diagnostic.
            */
           if (message.startsWith('gate-off')) {
             push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
@@ -1034,19 +901,8 @@ export function useAcpSession({
           keepDiagnostic(message);
         },
         /*
-         * ⚠️ **Collect it, but do not put it on screen** (2026-08-16, fixed twice).
-         *
-         * At first nobody was listening, so the adapter's last words vanished entirely — which is
-         * what made "it never moves past starting" impossible to explain. So it was listened to, and
-         * then two paragraphs of English npm warnings sat permanently at the top of the conversation
-         * **with nothing wrong at all** (owner's screen):
-         *
-         *   npm warn Unknown env config "_jsr-registry" …
-         *
-         * Launching the adapter through `npx` emits that **every time**. A diagnostic is a clue when
-         * something breaks, not something to read routinely. Hence two rules: obvious noise is never
-         * collected (`isDiagnosticStderr`), and what is collected is shown **only when something goes
-         * wrong** (`diagnostics` → "details" in the error block).
+         * Collect stderr but do not put it on screen: `npx` emits npm warnings every run. Noise is never
+         * collected (`isDiagnosticStderr`); what is collected shows only on error.
          */
         onStderr: (line) => {
           if (!isDiagnosticStderr(line)) return;
@@ -1054,20 +910,9 @@ export function useAcpSession({
         },
         onExit: () => {
           /*
-           * Unsubscribing from events does not stop callbacks already queued from arriving late.
-           * After switching sessions, an old callback clearing the current ref would make a new
-           * conversation `exited` for no reason. This callback owns only the generation and process
-           * it was born with.
-           *
-           * ⚠️ **Dying mid-answer and finishing are different statements** (2026-08-17).
-           *
-           * Both used to set status to `exited`, and the screen showed a small chip reading
-           * "finished". Dying halfway through an answer looked **identical to a clean exit**, so the
-           * user believed that was the whole answer.
-           *
-           * So when it dies **during a turn**, it says so. That is not a diagnostic but the fact
-           * "what you received is all there is", and folding it away leaves the user waiting for an
-           * answer that is not coming, or reading a truncated one as complete.
+           * A late callback from an old session must not clear the current ref, so this owns only its own
+           * generation and process. Dying mid-answer is reported as `died-mid-turn`, not as a clean finish, so
+           * a truncated answer is not read as complete.
            */
           if (stale() || acpSessionRef.current !== acpSessionId) return;
           if (statusRef.current === 'thinking') {
@@ -1085,11 +930,8 @@ export function useAcpSession({
           setPending(null);
           setApprovedOntologyWriteTracked(null);
           /*
-           * ⚠️ **Dispose the client of a finished session**.
-           * It used to set status to `exited` and leave the client in place. Then ① a call awaiting a
-           * response never finished, and ② `clientRef` stayed populated so `start()` hit the lock and
-           * could never restart. The adapter dying is an irreversible event, so that fact is passed
-           * on to whoever is waiting.
+           * Dispose the client of a finished session, or pending calls never finish and `clientRef` blocks
+           * `start()` from restarting.
            */
           clientRef.current?.dispose();
           clientRef.current = null;
@@ -1105,12 +947,8 @@ export function useAcpSession({
       }
 
       /**
-       * Did we really wire the vault server? Both auto-allow and the instructions read this value.
-       *
-       * ⚠️ **Looked up by name, not by the array being non-empty** (2026-09-05). External
-       * connectors now share this array, so a person with one switched on and no bundled MCP
-       * binary would have had a non-empty list — and this would have told the agent it had the
-       * vault, and auto-allowed the `atlas-vault` name for whatever else answered to it.
+       * Looked up by name, not by a non-empty array: external connectors share the array, so a non-empty
+       * list does not mean the vault server is wired.
        */
       const hasVaultMcp = hasVaultMcpServer(mcpServers);
       const client = createAcpClient(transport, {
@@ -1126,15 +964,9 @@ export function useAcpSession({
           }
         },
         /*
-         * Tools from the vault server we wired are allowed on the user's behalf **when there is no
-         * path** — without this line the agent **cannot write anything to the map** (measured
-         * 2026-08-16).
-         *
-         * ⚠️ **Pass the name only when it is really wired**. It used
-         * to be passed unconditionally, but an empty server list really happens (the web, no MCP
-         * binary in the bundle, not ready yet). Passing the name then lets **someone else's
-         * `atlas-vault` server that we did not wire** inherit that auto-allow. The contract already
-         * said so: *"not passing it turns that auto-allow off — we do not pretend something exists."*
+         * Vault server tools are allowed on the user's behalf when there is no path; without this the agent
+         * cannot write to the map. Pass the name only when wired, or someone else's `atlas-vault` server
+         * would inherit the auto-allow.
          */
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),
@@ -1145,16 +977,9 @@ export function useAcpSession({
 
       await client.initialize();
       /*
-       * **Nobody asked for a particular conversation, so the folder's latest one is the answer.**
-       *
-       * Read before the session is created rather than after, which is the only order that can
-       * change which session is created. The list is also handed to the screen here, so the
-       * history door is reachable from the first frame the panel is ready — until 2026-09-08 it
-       * appeared only after `session/list` returned *following* a successful start, and a person
-       * whose session was still starting had no way to reach an earlier conversation at all.
-       *
-       * An adapter without `session/list` answers with an empty list (`acp-client.ts` swallows the
-       * method error), which lands on `newSession` below exactly as before.
+       * With no requested conversation, resume the folder's latest; read before the session is created,
+       * since only that order changes which one is created. The list also feeds the history door early. An
+       * adapter without `session/list` yields an empty list and falls to `newSession`.
        */
       if (!resumeIdRef.current && resumeLatestRef.current && !freshRequestedRef.current) {
         const known = await client.listSessions(vaultRoot).catch(() => [] as AcpSessionSummary[]);
@@ -1203,13 +1028,8 @@ export function useAcpSession({
       if (gatedMode) {
         if (await client.setMode(session.sessionId, gatedMode)) {
           /*
-           * ⚠️ **Reflect it on the screen too.** Missing this left the session at `read-only` while
-           * the dropdown read `Agent` (confirmed on the real thing, 2026-08-16) — the screen stating
-           * the current state incorrectly, and on the very value that decides whether it asks about
-           * things outside the folder, which is the worst place to be wrong.
-           *
-           * What `session/new` returned is from **before** the mode was applied, so leaving it makes
-           * it stale. What we applied is the current value.
+           * Reflect the applied mode on screen: `session/new` answered from before it was applied, so the
+           * dropdown would show a stale value.
            */
           choices = { ...choices, currentModeId: gatedMode };
         } else {
@@ -1220,17 +1040,9 @@ export function useAcpSession({
       }
 
       /*
-       * ⚠️ **A session can *begin* in a mode the filter hides, and nothing judged that** (evidence
-       * review, 2026-09-05). Only `GATED_SESSION_MODE` was consulted here, and it names `codex-acp`
-       * alone — so whatever `session/new` or `session/load` reported went into the state unexamined.
-       * A resumed conversation reports the mode it was left in, so a claude session could open on
-       * `acceptEdits` with no verdict, no notice, and a Select rendering its placeholder because
-       * that mode is not on the offered list. The screen fell silent on the one value that decides
-       * whether a person is asked.
-       *
-       * Beginning in a mode and being moved into it are the same fact about the same session, so the
-       * verdict and the sentence are the same as the clamp path's. This runs **after** the gate above
-       * because what was just applied, not what `session/new` answered, is where the session is.
+       * A session can begin in a mode the filter hides (a resumed `session/load` reports the mode it was
+       * left in); `GATED_SESSION_MODE` names `codex-acp` alone. Same decision and sentence as the clamp
+       * path; runs after the gate above because the applied mode is where the session is.
        */
       const openingMode = choices.currentModeId;
       const openedWithoutGate = openingMode !== null && !modeKeepsGate(openingMode);
@@ -1254,22 +1066,15 @@ export function useAcpSession({
         });
     } catch (err) {
       /*
-       * **The failure path is generation-guarded like every await on the success path**
-       * (2026-09-01 review). A superseded start can reject long after `stop()` ran and the
-       * replacement start repopulated these refs — cleaning up "the current session" here then
-       * unsubscribes the replacement's listener, disposes its client, stops its process, and
-       * paints the healthy conversation with a stale error. A stale failure has nothing left to
-       * clean: `stop()` already stopped the process this start() had registered.
+       * The failure path is generation-guarded like every await on the success path: a superseded start
+       * can reject after `stop()` and must not clean up the replacement's listener, client or process.
        */
       if (!stale()) {
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
         /*
-         * ⚠️ **If starting failed, stop what was started**.
-         * It used to set status to `error` and stop there, but depending on where it failed the child
-         * process is **already up** (a failed event subscription, say). The next `start()` then spawns
-         * a new process while the previous becomes a ghost nobody stops until the app quits — the same
-         * discipline as "closing mid-start stops itself" was missing on the failure path.
+         * If starting failed, stop what was started: the child may already be up, and the next `start()`
+         * would spawn another and orphan it.
          */
         const orphan = acpSessionRef.current;
         if (orphan) {

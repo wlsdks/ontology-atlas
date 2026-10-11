@@ -1,28 +1,6 @@
 /**
- * **What "always allow" actually allows** — exactly as the adapter declared it.
- *
- * ## Why (2026-08-17)
- *
- * The permission card's third button **asserted** *"allow the entire folder containing the path above
- * for this whole conversation"*. But the adapter, not us, decides that scope. The adapter states it
- * through `_meta.permission.changes[].targets[]`, and measured, that value was **a tool, not a folder**:
- *
- * ```
- * { type: 'tool', toolName: 'mcp__atlas-vault__add_concept' }
- * ```
- *
- * Writing "allow the folder" while actually allowing a tool leaves the user believing **they granted
- * a permission they never gave, or the reverse.** That is the screen lying at this product's most
- * expensive decision.
- *
- * ## The rule
- *
- * **State only what the adapter declared.** The folder is not computed from the path and written down
- * by us — that would be guessing at the adapter's rules, and a wrong guess makes the card lie. Given
- * nothing, it asserts nothing.
- *
- * Mixed types is also "unknown". Forcing something that cannot be stated honestly in one sentence into
- * one sentence makes that sentence wrong about one of the two.
+ * States only what the adapter declared in `_meta.permission.changes[].targets[]`, which is
+ * a tool, not a folder. Never compute a folder from the path; mixed types are unknown.
  */
 
 export type PermissionScope =

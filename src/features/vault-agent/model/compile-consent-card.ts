@@ -1,11 +1,6 @@
 import type { AgentProposal, ProposalChange } from './types';
 import type { CompileSourceRefusal, WikiPageProposal } from './wiki-proposal';
 
-/**
- * The card a Compile turn ends at: which page, written from what, and what could not be read
- * (docs/DECISIONS.md 2026-09-06). A page that fails validation has no write action at all.
- */
-
 export interface CompileCardRow {
   /** `wiki/quarter-plan.md`. */
   path: string;

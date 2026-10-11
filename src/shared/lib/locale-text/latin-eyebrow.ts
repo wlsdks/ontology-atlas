@@ -3,27 +3,9 @@
 import { useLocale } from 'next-intl';
 
 /**
- * Turns the Latin-only eyebrow treatment (mono + uppercase + wide tracking) on
- * **for Latin-script locales only**.
- *
- * This is the code-side single source for `docs/DESIGN-SYSTEM.md`
- * "Do not put Latin-only decoration on Hangul" (do not put Latin-only decoration on
- * Hangul, 2026-07-26). That section's reasoning is the whole of this function:
- *
- * - `uppercase` plus wide tracking is how a Latin small-caps subhead reads, but
- *   Hangul has no capitalisation, so **only the letter spacing** widens.
- * - `font-mono` (JetBrains Mono) is a Latin subset, so Hangul falls back and
- *   **only the spaces** keep the monospace advance — "First execution" ends up reading
- *   as "First  execution".
- * - The eyebrow itself is not banned, though: on English labels, tabs and
- *   legends it is a legitimate signal.
- *
- * So the condition drops to the locale. Measured at 1512×950 in Korean: 12 places
- * on the first screen were putting 1.36–2.09px of tracking on Hangul.
- *
- * `tracking` is passed through by the caller — eyebrows differ in width, and it
- * is safer to leave the literal where Tailwind's source scanner can see it, at
- * the call site.
+ * Latin-only eyebrow treatment (mono, uppercase, wide tracking) for Latin-script locales only:
+ * Hangul has no capitalisation, and `font-mono` is a Latin subset so only the spaces keep monospace
+ * advance. `tracking` stays a literal at the call site so Tailwind's scanner sees it.
  */
 const LATIN_SCRIPT_LOCALES = new Set(['en']);
 

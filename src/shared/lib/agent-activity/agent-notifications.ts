@@ -1,24 +1,6 @@
 /**
- * Data model for the notification inbox — it reports **whole tasks only**.
- *
- * What becomes a notification (owner agreement, 2026-08-01):
- *
- * | Event                      | Why                                                   |
- * |----------------------------|-------------------------------------------------------|
- * | Task started               | Something is happening in my folder right now          |
- * | Task finished              | With a summary — "34 added · 2 edited · 4 deleted"     |
- * | A domain appears/disappears| The map's large-scale skeleton changed                 |
- * | A bridge is inserted       | One more layer — rare and hard to undo                 |
- * | A problem appears          | The vault got sicker: dangling references, cycles      |
- *
- * What does **not** become one:
- *
- * - **A single node or a single relation** — the map already shows it clearly.
- *   Notifications are for when nobody is looking at the screen; when someone is,
- *   the map is the better channel.
- * - **Tool calls** — explicitly rejected by the 2026-08-01 verdict: *"Drawing a tool-call log turns
- *   Atlas into an MCP call viewer competing with the agent's terminal; this
- *   product's moat is the meaning layer above the tool layer."*
+ * Notification inbox model; it reports whole tasks only. A single node or relation and tool calls do
+ * not become notifications.
  */
 import type { AgentWriteCounts, AgentWorkSession } from "./agent-work-session";
 import { hasWrites } from "./agent-work-session";

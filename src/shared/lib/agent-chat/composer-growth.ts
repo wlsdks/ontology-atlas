@@ -1,33 +1,7 @@
 /**
- * The composer's **height and scroll alignment** — pure arithmetic.
- *
- * **Why height has to be computed.** The input used a fixed `rows={2}`. A
- * three-line sentence left the box unchanged and scrolled inside it, and the
- * `scrollTop` the browser picks has nothing to do with the line grid, so **a row
- * of glyphs sat cut in half at the top edge**. Measured (1512×806, dark):
- * `line-height 20px` · `padding 8+8` · `border 1+1` → `clientHeight 56`; at three
- * lines `scrollHeight 76`, max scroll 20px. 20 is a multiple of the line height,
- * but the text starts 8px past the padding, so only the bottom 8px of the first
- * line survives.
- *
- * So the height is decided **in whole lines**: `rows * lineHeight + padding +
- * border`. A box that is always an integer number of lines has nowhere to clip.
- * Inner scrolling appears only at the growth cap (6 rows), and from there on it
- * is the user's own scroll.
- *
- * **Why pure functions.** The caller does the DOM measurement
- * (`getComputedStyle`, the mirror's `scrollHeight`) and this module decides, so
- * invariants like "a multiple of 20px, never 9px" can be pinned by unit tests
- * without jsdom. This is alignment, not motion — the rule must hold under
- * reduced-motion too.
- *
- * **Why it moved down to `shared` (2026-08-16).** It used to live in
- * `features/vault-agent/model/`. Once there were **two** composers (the key-entry
- * branch and the conversation with the user's coding agent), both needed the same
- * arithmetic — and borrowing another feature's model means **the day that feature
- * is retired, someone else's composer dies with it** (the fate of the BYOK panel
- * is still an open question). Standard repo discipline: shared code moves one
- * layer down.
+ * Composer height in whole lines (`rows * lineHeight + padding + border`) so no row of glyphs is
+ * clipped at the top edge. Pure functions: the caller measures the DOM, so invariants are testable
+ * without jsdom.
  */
 
 /** The minimum size offered to someone who has not typed anything yet. */
@@ -43,16 +17,8 @@ export const COMPOSER_MIN_ROWS = 2;
 export const COMPOSER_MAX_ROWS = 6;
 
 /**
- * The **share** of the space the composer may take. The conversation is the main
- * event, so it never exceeds half.
- *
- * Owner, 2026-08-16: *"It shouldn't grow forever, but it should be able to grow a fair
- * bit."* (it shouldn't grow forever, but it should be able to grow a fair
- * bit). The request was right: 6 rows came from a narrow strip and did not fit a
- * tall conversation column. Pinning a new constant such as "12 rows" would only
- * be right **at one window size** — shrink the window and the composer pushes the
- * conversation out entirely. Hence a ratio, resolved against the height actually
- * available.
+ * The share of available space the composer may take; a ratio, since a fixed row count fails when
+ * the window shrinks.
  */
 const COMPOSER_MAX_SHARE = 0.4;
 

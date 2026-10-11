@@ -14,10 +14,9 @@ export interface SummaryFreshnessRowProps {
 }
 
 /**
- * Says a domain or project description has fallen behind its membership and is owed a
- * re-judgement. Painted as a plain fact, not a warning, with no colour, motion or fix
- * affordance, because the body is an accepted human judgement. Mounted only with a
- * real `summaryStalenessOf` verdict; without Git history nothing renders.
+ * Says a domain or project description has fallen behind its membership. Plain fact, no colour,
+ * motion or fix affordance, because the body is an accepted human judgement. Renders nothing
+ * without Git history.
  */
 export function SummaryFreshnessRow({
   prefixLabel,

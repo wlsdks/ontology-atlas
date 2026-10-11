@@ -13,14 +13,8 @@ import {
 } from "./footprint-glyph";
 
 /**
- * A print **never grows larger than the node it marks** (2026-08-02, owner:
-   * "Tighten how the footprint size adapts when the window gets small" — tighten how the footprint
-   * size adapts when the window gets small).
- *
- * This gate locks the **ratio**, not the pixels. The previous implementation had no cap, so
- * a print scaling with the square root of camera zoom outran a node shrinking linearly.
- * Measured: at zoom 0.3, a 6.4px print beside a 2.1px node radius (**3.1×**); at 0.2,
- * **4.6×**. If the cap ever disappears quietly, that screen comes back.
+ * The print is capped by a ratio to the node it marks, so a print scaling with the square root of
+ * zoom cannot outgrow a node shrinking linearly. This gate locks the ratio, not pixels.
  */
 describe("footprintSizeFor — 자국은 노드보다 커지지 않는다", () => {
   it("큰 노드에서는 기본 크기를 그대로 쓴다 — 문제 없던 자리는 안 건드린다", () => {
@@ -73,11 +67,7 @@ describe("formatStepNumbers", () => {
   });
 });
 
-/**
- * The defect where prints bit into the node disc (measured in the installed app — owner:
- * "I want to avoid overlaps", nothing should overlap). The cause was that `gap` measured
- * to the print's **centre**; overlap is an edge condition, not a centre condition.
- */
+/** `gap` must measure to the print's edge, not its centre: overlap is an edge condition. */
 describe("footprintAnchor — 노드와 겹치지 않는다", () => {
   it.each([
     [13, 8, 13],
@@ -99,8 +89,8 @@ describe("footprintAnchor — 노드와 겹치지 않는다", () => {
 });
 
 /**
- * Overlap is worst when zoomed out: nodes and relation lines crowd the screen, and prints at
- * a fixed pixel size bury the graph. Shrinking them is the mitigation the owner allowed.
+ * Overlap is worst when zoomed out, so prints shrink with zoom rather than staying at a fixed pixel
+ * size.
  */
 describe("footprintScaleFor", () => {
   it("배율 1 에서는 원래 크기다", () => {

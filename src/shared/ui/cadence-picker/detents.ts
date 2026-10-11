@@ -1,7 +1,6 @@
 /**
- * The rail's arithmetic (`docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2). Detents sit
- * at even distances whatever their values, because the hand reads distance; proportional
- * spacing would crush the useful intervals into the first pixel.
+ * Detents sit at even distances whatever their values, because proportional spacing would crush
+ * the useful intervals into the first pixel.
  */
 
 /** Under an hour, intervals that divide it, so rounds share a `:00 :05 :10` grid. */

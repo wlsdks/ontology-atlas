@@ -2,25 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { permissionIntent } from './permission-intent';
 
-/**
- * The permission card must state not only **where** but **what it means to do.**
- *
- * ## Why (measured 2026-08-17)
- *
- * The card showed the path large and in mono, but whether it meant to read, edit, or delete was
- * nowhere. **Reading** `/etc/hosts` and **editing** `/etc/hosts` are entirely different decisions, and
- * the screen looked identical.
- *
- * The value was arriving — `toolKind` comes with the request, and that field's own comment says it is
- * *"the typed fact the screen picks its icon and colour from"*. The screen simply was not using it.
- *
- * ## Unknown is stated as unknown
- *
- * The kind names differ per adapter and may not be sent. Guessing "read" then **errs toward the most
- * dangerous side** — a person allows it with confidence. Unknown is stated as unknown, and the
- * judgement is left to the path and the tool name.
- */
-
 describe('무엇을 하려는지 말한다', () => {
   it('고치는 것과 읽는 것을 가른다', () => {
     expect(permissionIntent('read')).toBe('read');

@@ -39,7 +39,6 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
-  /** Page text by wiki slug as last read; a slug absent here gets no verdict rather than a guess. */
   pageTexts: ReadonlyMap<string, string>;
   /** Last Compile and Check runs from `wiki/_log.md`; null when the log has no such line. */
   log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
@@ -223,7 +222,7 @@ export function useLibraryModel({
           read.set(stamp, raw);
         } catch {
           if (cancelled) return;
-          // An unreadable page has no verdict. A later folder poll may retry it.
+          // An unreadable page has no result; a later folder poll may retry it.
         }
       }
       if (cancelled || read.size === 0) return;
@@ -275,8 +274,8 @@ export function useLibraryModel({
   );
 
   return useMemo(() => {
-    // A folder whose log was removed shows no line: the entries are read only while the
-    // file is there, and are ignored, not cleared, when it is not.
+    // Log entries are read only while the file exists; they are ignored, not cleared, when it is
+    // removed.
     const entries = logDoc ? logEntries : [];
     const lastCompile = [...entries].reverse().find((entry) => entry.kind === "compile") ?? null;
     const lastLint = [...entries].reverse().find((entry) => entry.kind === "lint") ?? null;

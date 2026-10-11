@@ -141,7 +141,6 @@ describe("shell column owns the viewport", () => {
   });
 
   it("renders no built-in terminal handle", () => {
-    // The bottom terminal dock was removed on purpose; people run agents in their own terminal.
     render(
       <AppShell>
         <div>page</div>

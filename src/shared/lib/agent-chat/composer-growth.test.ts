@@ -86,15 +86,6 @@ describe('composerTopIsHidden', () => {
   });
 });
 
-/**
- * The cap is decided by **the height of the slot it sits in** (2026-08-16, owner:
-   * "It should be allowed to grow a fair amount" — it should be allowed to grow a fair amount).
- *
- * The default of 6 rows came from a narrow bottom strip and was stingy in a tall
- * conversation column. But hard-coding a larger number instead lets the composer push the
- * conversation off the screen entirely **when the window shrinks** — that is the failure
- * pinned here.
- */
 describe('작성 칸 상한 — 자기 높이에서 구한다', () => {
   const LINE = 20;
 

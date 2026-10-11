@@ -1,48 +1,7 @@
 /**
- * `ontology-atlas://mcp?install=<base64 json>` — **an invitation, never an install.**
- *
- * ## The shape, and why it is somebody else's
- *
- * Cursor and VS Code already put "Add to …" buttons on vendor pages, and their
- * link is one query parameter holding a base64 (Cursor) or url-encoded
- * (VS Code) JSON server config. Inventing a third shape would mean every vendor
- * has to learn ours; taking Cursor's means a page that already renders one
- * button can render this one from the same object.
- *
- * ## What the CVEs taught, encoded here
- *
- * This is the exact surface that produced CVE-2025-54133 and its "DeepJack"
- * follow-up: Cursor's confirmation dialog did not show the real arguments, so a
- * malicious command could hide behind a friendly name, and a nested
- * `mcp/install` URI slipped through because the decoder did not recurse
- * (`docs/benchmark/MCP-ONE-CLICK-2026-09-07.md` §3). CVE-2025-54136 was the same
- * lesson from the other side: Cursor trusted the config *key name* instead of the
- * command.
- *
- * So four rules hold here, and each one is a test:
- *
- * 1. **The parser produces a draft, not a connector.** Nothing is written, and
- *    `enabled` is `false`. The person still presses Add in a dialog that shows
- *    the decoded command and every argument, verbatim and untruncated.
- * 2. **Unknown keys are refused, not ignored.** A payload carrying a field this
- *    build does not understand is a payload doing something this build cannot
- *    show, and a confirmation that cannot show everything is the DeepJack shape.
- * 3. **No value crosses.** `env` and `headers` contribute **names only**. A link
- *    that carried a value has that value dropped before the record exists, and
- *    the names it tried to set are reported so the screen can say so out loud.
- * 4. **One level of decoding, no recursion.** The payload is parsed once as
- *    JSON. Nothing here re-parses a string field as a URL or a nested config.
- *
- * ## Where a link comes from
- *
- * `ontology-atlas://mcp?install=<payload>` is registered with macOS by the installed
- * app (`src-tauri/src/deep_link.rs`, 2026-09-07). That door answers one grammar and
- * nothing else: any other destination, and any query key besides `install`, refuses the
- * whole URL, so an address cannot carry a credential or a second destination past it.
- * What it does on success is put the payload back on
- * `/<locale>/mcp/?tab=connectors&install=…` — the same address a person can paste into
- * the web app — and this parser is what reads it there. One parser, one set of refusals,
- * two callers.
+ * An invitation, never an install: the parser yields a draft, writes nothing, and sets `enabled` to
+ * `false`. Unknown keys are refused, `env` and `headers` give names only, and decoding is one level
+ * with no recursion.
  */
 import {
   looksLikeSecretKey,

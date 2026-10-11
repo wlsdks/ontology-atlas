@@ -3,21 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 /**
- * **The launch path is decided by how many folders are known, and by nothing else.**
- *
- * Owner report, relaunching the installed app (2026-09-13): once you have set the app up,
- * relaunching always puts you back in the same folder, with no say in it.
- *
- * These tests hold the two halves of the rule and the reason there is no third option:
- *
- *  1. **One folder resumes silently.** A chooser here would be a toll on every launch for a
- *     screen with one button, so the restore must still load without asking.
- *  2. **Two or more stops at the chooser.** The app cannot know which was meant, and the
- *     stored `current` record must survive untouched - it is the answer to "which folder was
- *     I in last", which the chooser marks.
- *
- * There is deliberately no preference consulted in either case. A setting would be one more
- * control nobody finds, and not finding the control is the defect, not a detail of it.
+ * Launch path depends only on how many folders are known: one resumes silently,
+ * two or more stop at the chooser. The stored `current` record must survive untouched.
  */
 
 const tauri = vi.hoisted(() => ({
@@ -398,18 +385,8 @@ describe('useLocalVaultInternal launch path', () => {
 
   it('does not make a load wait for the count to be written', async () => {
     /*
-     * **`load()` resolving means "the manifest is live", and nothing may be added to that
-     * promise.** `handleRenameCurrent` awaits `renameDoc` (which loads) and only then records
-     * the slugs it touched in the guard that keeps the missing-document verdict quiet for the
-     * app's own action. An awaited cache write after `setState` let React commit the rename
-     * while that guard was still empty, so the screen told the person the document they had
-     * just renamed could not be found (`tests/e2e/docs-rename-address.spec.ts`, CI 2026-09-13).
-     *
-     * `restoreAttempted` is the observable: the restore awaits `load` and only then settles
-     * that flag in its `finally`. So a `load` held open by the cache write leaves the flag
-     * false - and the whole app waits on that flag, which is the same stall in a different
-     * costume. The write here never settles, which is the shape of an IndexedDB round trip
-     * cut off by a navigation.
+     * `load()` resolving means the manifest is live; an awaited cache write would delay
+     * `restoreAttempted`. The write here never settles, like an IndexedDB trip cut off by navigation.
      */
     const only = record('atlas');
     store.getLocalFsHandle.mockResolvedValue(only);

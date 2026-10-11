@@ -91,7 +91,7 @@ export async function currentAnalysisBasis(context: AnalysisCaptureContext, slug
       if (parsed.diagnostics?.length) continue;
       if (slug === context.profileDocumentSlug) profileSnapshot = { slug, markdown, digest: await analysisTextDigest(markdown) };
       documents.push({ slug, digest: await analysisDigest({ frontmatter: parsed.frontmatter, body: parsed.body }) });
-    } catch { /* Missing current evidence is unknown, never a clean verdict. */ }
+    } catch { }
   }
   let sourceFingerprint = context.sourceFingerprint;
   if (context.sourceRoot && context.mode === 'architecture') {

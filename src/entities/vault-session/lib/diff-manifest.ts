@@ -1,19 +1,9 @@
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 
 /**
- * Classifies a vault polling result into *added* and *modified*. A pure helper with no React
- * dependency, called by `VaultDiffToaster`.
- *
- * Input: the previous and current manifests as (slug, mtime|null) maps.
- * Output: newly appeared slugs, and slugs whose mtime changed.
- *
- * Policy:
- *   - a slug absent from prev → added
- *   - the same slug with a non-null mtime on both sides and current > prev → modified
- *   - a null mtime on either side (a static manifest) makes the comparison meaningless, so the
- *     modified verdict is skipped (blocking false positives)
- *   - removals are deliberately excluded — an explicit user action (`delete_concept` and the like)
- *     raises its own toast, and repeating it from a polling result is noise
+ * Classifies a polling result into added and modified slugs from (slug, mtime|null) maps: absent
+ * from prev is added; a larger non-null mtime is modified. A null mtime on either side skips
+ * modified. Removals are excluded: explicit deletes raise their own toast.
  */
 export function diffVaultManifest(
   prev: Map<string, number | null>,
@@ -44,20 +34,8 @@ export function diffVaultManifest(
 type VaultDiffToastKind = 'added' | 'edited' | 'removed' | 'digest';
 
 /**
- * **The contract that a toast never speaks a slug** (owner instruction, 2026-08-01).
- *
- * It used to say `edited: capabilities/payment-authorization`. That line gives a user close to zero
- * information — `capabilities/` is a developer folder name and `payment-authorization` is a file
- * name, not what a person calls that concept (vault nodes carry `display_ko`/`display_en`, and the
- * map, INDEX, and popovers already render those — only the toast used the raw slug).
- *
- * So this type pins the three pieces that reach the screen:
- *   - `kind` — the raw kind, to be rendered in plain words. **Left `undefined` when the manifest
- *     does not have it. Never invented.**
- *   - `name` — what a person calls it: `display_<locale>` → `title` → the slug's tail.
- *     **A folder path never enters here under any circumstance** (`toVaultDiffNode` takes only the
- *     last segment).
- *   - `slug` — kept only for off-screen uses (deeplinks, deduplication).
+ * `kind` stays undefined when the manifest lacks it; `name` is `display_<locale>`, `title`,
+ * then the slug tail. A folder path never enters `name`; `slug` is for off-screen uses only.
  */
 export type VaultDiffNode = {
   slug: string;
@@ -142,24 +120,9 @@ function countByKind(nodes: VaultDiffNode[]): VaultDiffActionCount {
 }
 
 /**
- * **What lasts longest has to say the most** (verdict, 2026-08-01).
- *
- * The previous version emitted the first three as slugs and the rest as a **separate toast** reading
- * `+N more`. Toasts expire independently, so when the earlier ones went first **only a number with
- * nothing to refer to remained on screen** — the owner caught exactly that state (a lone "+4 more").
- * When an agent writes 34 at once, the residue reads "+31 more".
- *
- * So the fan-out is dropped in favour of **one toast per burst**. It has to say **what changed**
- * rather than how many, so it is not folded into a total: additions, edits, and deletions are
- * counted separately. When the total is small (≤ `previewLimit`) names beat numbers, and the slugs
- * are emitted as before.
- *
- * **Why the deletion count is not computed here.** The manifest is a set of slugs, so **a rename
- * looks like "1 deleted + 1 added"** (measured 2026-08-01: `appointment-booking` →
- * `appointment-booking-renamed` was exactly that shape, and files holding backlinks were caught as
- * "edited" for good measure). A merge is the same. So deletions alone are **counted by the caller
- * from the `delete_concept` entries in `.ontology-atlas/activity.jsonl`** — a tool name knows the
- * intent, a slug set does not.
+ * A rename or merge looks like one deletion plus one addition in a slug set, so the caller
+ * counts deletions from `delete_concept` entries in `.ontology-atlas/activity.jsonl`.
+ * One toast per burst; names are listed up to `previewLimit`.
  */
 export function planVaultDiffToasts(
   diff: { added: VaultDiffNode[]; modified: VaultDiffNode[]; removed?: number },

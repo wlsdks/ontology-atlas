@@ -30,7 +30,6 @@ describe('오류 옮기기 — 아는 것만 옮기고 모르면 원문을 접�
   });
 
   it('반쯤 남은 npx 캐시 — 오류 문자열이 아무 말도 안 하면 stderr 가 말한다 (2026-08-19 실기계)', () => {
-    // Exactly as on the owner's screen: this was the entire error,
     const raw = 'acp session closed';
     // and every clue was on stderr.
     const stderr = [

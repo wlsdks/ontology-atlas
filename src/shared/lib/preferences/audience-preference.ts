@@ -1,20 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
 
-/**
- * Plain (non-developer) audience mode — hides developer chrome such as the
- * history and Atlas Git surfaces.
- *
- * It used to be local state inside `HomePage`. Once the rail's bottom utility
- * tier moved up into the shell, the shell had to read the same value, so it was
- * promoted to a shared store — two places each reading localStorage produce the
- * classic drift where changing it in settings updates only one of them.
- *
- * Same local-first persistence grammar as `appearance-preferences`: localStorage
- * is the source of truth, with a `useSyncExternalStore` subscription plus a
- * custom event for live updates within the same tab. SSR and static-export
- * prerender return false to avoid a hydration mismatch.
- */
-
 const AUDIENCE_PLAIN_KEY = "demo:audience-plain:v1";
 const AUDIENCE_EVENT = "ontology-atlas:audience-preference-change";
 

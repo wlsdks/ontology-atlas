@@ -20,29 +20,22 @@ export interface EvidenceChange {
 export interface EvidenceRow {
   id: string;
   /**
-   * The concept's own verdict, carried so a screen lists exactly the concepts a line counted.
-   * Without it the screen had to guess from the arrays — and a concept whose path is gone can
-   * *also* have another path that moved, so it appeared under both the missing line and the
-   * moved line while only one of them had counted it (2026-09-20).
+   * Which state this concept was counted under, so a screen lists exactly the concepts a line counted;
+   * a concept can be missing and also have a moved path.
    */
   verdict: 'stale' | 'missing' | 'unknown';
   /** Why, for the unknown verdicts: `folder-only` is the one the brief names on its own line. */
   reason: string | null;
   /**
-   * The concept's vault document slug, which is what `get_concept` takes.
-   *
-   * The screen shows a concept's display title, and an agent handed that title has to search for
-   * the document before it can read anything. Carrying the slug the walk already knew turns the
-   * request into calls the agent can make (2026-09-20).
+   * The vault document slug that `get_concept` takes; the display title alone forces an agent to
+   * search first.
    */
   slug: string | null;
   /** ISO time of the concept document's own newest commit, when the walk supplied one. */
   docChangedAt: string | null;
   /** Files cited by this concept that changed after the document. */
   moved: readonly { path: string; changedAt: string }[];
-  /** Cited paths no longer on disk. */
   gone: readonly string[];
-  /** Folder-level paths that changed: something under them moved, which is not yet a verdict. */
   folders: readonly { path: string; changedAt: string }[];
 }
 
@@ -51,7 +44,6 @@ export interface EvidenceStates {
   current: ReadonlySet<string>;
   /** Some evidence path changed after the document did: the meaning stands on moved ground. */
   stale: ReadonlySet<string>;
-  /** Some evidence path is no longer on disk. */
   missing: ReadonlySet<string>;
   /** No evidence recorded, or a change time the walk could not supply. */
   unknown: ReadonlySet<string>;
@@ -66,10 +58,8 @@ export interface EvidenceStates {
 }
 
 /**
- * Compare each concept's document with the code it cites, through the one rule the MCP
- * server uses (`shared/lib/git/evidence-verdict.mjs`). This is the line the cognitive-diff
- * experiment (2026-09-13) found worth the most — "meaning unchanged, files underneath
- * moved" — and the screen and an agent must never answer it two ways.
+ * Compares each concept's document with the code it cites through the one rule the MCP server uses,
+ * so the screen and an agent agree.
  */
 export function resolveEvidenceStates(
   concepts: readonly EvidenceConceptInput[],

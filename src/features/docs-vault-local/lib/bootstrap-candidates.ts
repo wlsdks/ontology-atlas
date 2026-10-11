@@ -24,7 +24,6 @@ import { WIKI_DIR, WIKI_SOURCES_DIR } from '@/shared/lib/library/wiki-page-schem
 export interface BootstrapDocInput {
   slug: string;
   title: string;
-  /** Used to exclude documents that already carry a `kind:`. */
   frontmatter: Record<string, unknown>;
 }
 
@@ -51,7 +50,6 @@ export interface BootstrapPlan {
   existingProjectSlug: string | null;
   domains: BootstrapDomainCandidate[];
   elements: BootstrapElementCandidate[];
-  /** How many documents already carry a `kind:` — used to explain a partially built vault. */
   alreadyTypedCount: number;
   /** Runtime-owned `SKILL.md` files excluded, so the screen can say why they are missing. */
   runtimeOwnedSkipped: number;

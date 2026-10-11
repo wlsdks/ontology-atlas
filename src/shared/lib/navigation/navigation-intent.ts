@@ -1,31 +1,7 @@
 /**
- * Navigation-intent signal — "I am leaving this screen, yield the frame budget".
- *
- * **Why (measured 2026-08-19).** How long a new screen took to appear after a rail
- * tap **depended on where you left from**. From a quiet screen it was 90–200ms
- * under 4× throttling; from an active map:
- *
- * | Departing state                       | Time to docs |
- * |---------------------------------------|--------------|
- * | 2D, 2,000 nodes                       | 194ms        |
- * | **3D, 2,000 nodes (dome auto-rotating)** | **529ms**  |
- * | **3D, 3,000 nodes**                   | **745ms**    |
- *
- * The new screen is not slow. The map's rAF loop repaints in full every frame
- * **right up to the moment it unmounts**, so the incoming screen's first render
- * competes with those frames for the budget. The user has already said "I am
- * leaving", which makes those frames **pictures nobody will see**.
- *
- * **Why this shape.** The map must not know about the nav rail (a widget knowing
- * about chrome is the reverse of the FSD import direction), and the rail must not
- * know about the map's loop. So **the only thing both know is that navigation
- * started**, and that alone travels as a shared-layer event. Any future surface
- * with a standing loop subscribes to the same signal.
- *
- * **It releases itself — there is no freeze failure mode.** A listener records a
- * deadline for how long to yield and returns on its own once it passes. Even if
- * navigation is cancelled (press-and-drag-away, or a router no-op because the
- * address is unchanged), the map cannot stop forever.
+ * Standing loops (the map's rAF) yield frames once navigation starts, so the incoming screen gets
+ * the budget. Only the fact that navigation started travels, so map and rail stay unaware of each
+ * other; listeners release themselves after a deadline.
  */
 
 /** Navigation started (a window event). */

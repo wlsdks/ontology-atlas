@@ -124,10 +124,6 @@ describe('diffVaultManifest', () => {
   });
 });
 
-/**
- * **A slug never reaches the screen** (owner instruction, 2026-08-01). This describe *is* that
- * contract — reverting it is caught here.
- */
 describe('toVaultDiffNode', () => {
   it('display_<locale> 이 있으면 그 이름을 쓴다 — 폴더 경로도 슬러그도 아니다', () => {
     const result = toVaultDiffNode(
@@ -185,9 +181,6 @@ describe('planVaultDiffToasts', () => {
     expect(planVaultDiffToasts({ added: [], modified: [] })).toEqual([]);
   });
 
-  // The text is no longer finished into a string here (which is what leaked a hardcoded English
-  // "Added: <slug>" into Korean). Only the structure is returned, and `VaultDiffToaster` assembles
-  // the localized text with `useTranslations`.
   it('added 와 modified 를 노드 + variant 구조로 변환한다', () => {
     const added = node('new', 'capability');
     const modified = node('existing', 'domain', 'domains/existing');
@@ -197,12 +190,6 @@ describe('planVaultDiffToasts', () => {
     ]);
   });
 
-  /**
-   * **The fan-out was dropped** (2026-08-01). It used to emit the first three as slugs and the rest
-   * as a separate `+N more` toast, but toasts expire independently, so when the earlier ones went
-   * first **only a number with nothing to refer to remained** — the owner caught that state on screen
-   * (a lone "+4 more"). For a 34-file write the residue reads "+31 more".
-   */
   it('preview 를 넘으면 한 장으로 접고, 합계가 아니라 세 갈래로 센다', () => {
     expect(
       planVaultDiffToasts(

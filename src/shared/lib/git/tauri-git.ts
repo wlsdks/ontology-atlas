@@ -102,12 +102,8 @@ export interface GitStatusResult {
   /** Already-staged paths outside the vault; the snapshot leaves them alone (informational). */
   stagedOutsideVault: string[];
   /**
-   * Whether a remote named `origin` exists, read locally — nothing is contacted.
-   *
-   * **Absent means unknown, never "no remote".** A bridge older than this field does not send
-   * it, and reading its absence as `false` is the exact claim this field exists to stop making:
-   * "no remote yet" over a repository whose branch was simply never pushed, with a button that
-   * then rewrote the real `origin` (2026-09-25).
+   * Whether a remote named `origin` exists, read locally. Absent means unknown, never "no remote": an
+   * older bridge does not send it.
    */
   hasOrigin?: boolean;
   /** HEAD names a commit, not a branch; `branch` then reads `HEAD`. Absent means unknown. */
@@ -214,11 +210,8 @@ export interface GitProbeResult {
 }
 
 /**
- * Check whether git is installed — **read-only**, installs nothing.
- *
- * Why it exists: a missing git used to surface only as a generic error string,
- * so the UI could not tell "git is missing" from "the folder is wrong". A typed
- * signal is what lets it pick the right platform-specific install guidance.
+ * Read-only check that git is installed; a typed signal lets the UI choose platform-specific install
+ * guidance.
  */
 export async function gitProbe(): Promise<GitProbeResult | null> {
   const invoke = getInvoke();
@@ -232,13 +225,8 @@ export function isGitBridgeAvailable(): boolean {
 }
 
 /**
- * Start tracking this folder (`git init`) — **only when the user presses it**.
- *
- * Never call automatically. What the charter forbids is *automatic* execution,
- * and a user click is not in that category (owner decision, 2026-07-25) — but
- * that boundary is the caller's to hold. The Rust side only inits; it never
- * chains into add/commit/push, so the state right after starting is "N changes
- * not yet recorded".
+ * Start tracking this folder (`git init`) only when the user presses it; never call automatically.
+ * The Rust side only inits, it never chains into add, commit or push.
  */
 export async function gitInit(vaultPath: string): Promise<GitInitResult | null> {
   const invoke = getInvoke();

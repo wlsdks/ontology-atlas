@@ -1,45 +1,7 @@
 /**
- * **The one line that actually works** when the app's Claude login has gone stale.
- *
- * ## Corrected 2026-08-20 — the previous guidance was creating the trap
- *
- * This file used to offer `CLAUDE_CONFIG_DIR=<app folder> claude /login`.
- * **That was the cause of the defect.**
- *
- * The app launches Claude with a dedicated config folder (which is what makes it ask before working
- * outside the folder) and **links** `.credentials.json` to the user's own so the login does not
- * split. That design does work — measured 2026-08-20: with only a link in a fresh folder that has no
- * keychain entry, `claude auth status` answers `loggedIn: true` as the user's own account.
- * **No re-login is needed.**
- *
- * The problem is that Claude Code **looks at the keychain before the file**. So once an entry exists
- * for that folder, the link is never read again. And there is exactly one way an entry appears —
- * **a person logging in with that folder.** The previous guidance instructed exactly that; when the
- * token rotated it died, and when it died the screen gave the same guidance again. To the user it
- * looks like "it asks me to log in every time".
- *
- * Measurement overturned it: deleting that entry returned the same folder to `loggedIn: true`
- * immediately (`authMethod: "claude.ai"`, the user's email unchanged).
- *
- * ## So what happens now
- *
- * **The app clears it itself.** Before starting a session, `prepare_isolated_config` links the
- * credentials and then deletes any keychain entry standing in front of that folder
- * (`clear_shadowing_credentials`, `src-tauri/src/acp/isolation.rs`). So this command is **the last resort for
- * when even that failed** — a person's hand is needed only where keychain access is blocked.
- *
- * The name stays `...LoginRepair` because what this slot does (restore the app's login) is unchanged;
- * only the method was inverted.
- *
- * ## Why the permission gate is not given up
- *
- * Two alternatives were measured and **neither raised a gate** (2026-08-16):
- * - passing the permission mode through the session `_meta` → the adapter decides the mode from the
- *   on-disk config first. Writes outside the vault went out with no card.
- * - setting the session mode to `Manual` → the same result.
- *
- * The dedicated folder is the only permission gate available today. Its cost (a split login) is now
- * removed by the link plus clearing the shadow.
+ * Last-resort login repair command when the app's Claude login is stale. Claude Code reads
+ * the keychain before the linked `.credentials.json`; the app clears shadowing entries first
+ * (`clear_shadowing_credentials`, `src-tauri/src/acp/isolation.rs`).
  */
 
 export const APP_BUNDLE_IDENTIFIER = 'dev.jinan.ontology-atlas';

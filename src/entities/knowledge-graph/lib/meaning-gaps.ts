@@ -1,4 +1,4 @@
-/** The single verdict on meaning gaps, read by the agent panel's chips. */
+/** The single source for meaning gaps, read by the agent panel's chips. */
 
 /** Gaps a person can fill once they know what the thing means. */
 type MeaningGapKind = "missing-definition" | "missing-domain";
@@ -24,7 +24,8 @@ export function detectMeaningGaps(
   doc: ConceptDocFacts,
 ): MeaningGapKind[] {
   const gaps: MeaningGapKind[] = [];
-  // The definition verdict is the validator's; a caller without findings gets no rows, never a clean claim.
+  // The definition result is the validator's; a caller without findings gets no rows, never a clean
+  // claim.
   const findings = doc.findings ?? [];
   if (findings.includes("definition-missing")) gaps.push("missing-definition");
   if (DOMAIN_REQUIRED_KINDS.has(node.kind) && !doc.domainRef) {

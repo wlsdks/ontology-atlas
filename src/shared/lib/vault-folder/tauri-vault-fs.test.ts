@@ -471,11 +471,8 @@ describe('tauri vault file-system shim', () => {
 
 describe('vaultRootRejectionReason — 거절은 실패와 다르게 읽힌다', () => {
   /*
-   * 2026-08-16 — the folder picker accepted `/` (Macintosh HD) as a vault, and the only thing
-   * that stopped it was a macOS warning dialog. Rust now returns a reason code and the screen
-   * picks its own wording from that code. If this parser fails to extract the code, the screen
-   * falls back to "couldn't open the folder, please try again" — false guidance, because
-   * trying again gives the same result every time.
+   * Rust returns a reason code and the screen picks its wording from it; if extraction fails the
+   * screen would show a retry message, which is false guidance.
    */
   it('사유 코드를 뽑아낸다 — Error 와 문자열 둘 다', () => {
     expect(vaultRootRejectionReason(new Error('vault-root-rejected:filesystem-root'))).toBe(

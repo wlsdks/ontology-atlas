@@ -64,7 +64,6 @@ export interface StartTurnInput {
 
 export interface TurnRunResult {
   turn: AgentTurn;
-  /** The node slugs actually read this turn — used to decide the proposal card's warning row. */
   readSlugs: string[];
   /** The writes the model attempted — the caller turns these into proposal cards. */
   writeIntents: Array<{ name: string; args: unknown }>;

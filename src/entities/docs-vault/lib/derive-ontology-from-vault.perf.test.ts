@@ -86,8 +86,8 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
     );
 
     /*
-     * measurement window: 7.6 ms for 611 docs (2026-09-12), so 2,500 ms is ~300x headroom; only a
-     * quadratic regression reaches it (`.claude/rules/testing.md`, "The timing rule").
+     * 2,500 ms is generous headroom over the real run time; only a quadratic regression reaches it
+     * (`.claude/rules/testing.md`, "The timing rule").
      */
     expect(elapsed).toBeLessThan(2500);
   });

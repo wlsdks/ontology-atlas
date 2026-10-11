@@ -11,8 +11,8 @@ import {
 } from '@/entities/knowledge-graph';
 
 /**
- * Browser twin of the CLI `health` verdict: reads the same rule outcomes from raw frontmatter
- * (`computeVaultHealth`) with `useOntologyInsight`'s mode selection, so it agrees with the CLI.
+ * Browser twin of the CLI `health`: same rule outcomes from raw frontmatter, with
+ * `useOntologyInsight`'s mode selection.
  */
 // The manifest only through the resolver (tests/contract/static-vault-source.contract.test.ts).
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;
@@ -45,7 +45,6 @@ function useHealthManifest(): VaultManifest | null {
   }, [mode, sampleSource, localManifestUsable, vault.manifest]);
 }
 
-/** The documents the verdict measured, so a repair changes the same folder. */
 export function useVaultHealthDocs(): readonly VaultManifest['docs'][number][] {
   const manifest = useHealthManifest();
   return useMemo(() => manifest?.docs ?? [], [manifest]);

@@ -1,17 +1,9 @@
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
 /**
- * What a finished task's duration says in the bell inbox, as parts the messages word.
- *
- * ⚠️ **Under a second says nothing** (owner review, 2026-09-26). The duration runs from a
- * task's first change to its last, so a task that wrote once lasted 0 ms and its row read
- * "Claude Code · 0s · 3 days ago": a number with no information in it, standing where a
- * reader looks for how long the work took. It is left out instead.
- *
- * **One precision at every size.** The largest unit, then the next one only when it is not
- * zero: 45s, 2m 5s, 2m, 1h 5m, 1h. The inbox used to drop the seconds from minutes but keep
- * the minutes of an hour, zero included ("1h 0m"), and the live status beside it already
- * counts in the same two units.
+ * Duration of a finished task as parts for the messages. Under a second says nothing (a single write
+ * lasts 0 ms), so it is left out. One precision at every size: the largest unit, then the next only
+ * when not zero.
  */
 type InboxDuration =
   | { unit: 'seconds'; seconds: number }

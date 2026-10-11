@@ -1,42 +1,9 @@
 import { inflateRaw } from './inflate-raw';
 
 /**
- * **One raw source, cut into the units a citation can name — in the bundle this time.**
- *
- * `[[src:sources/settlement-policy.md#l14]]` is an address, and until now the only thing
- * that could resolve it was the MCP server: `mcp/src/source-text.mjs` reads the file and
- * returns its text already split into `l<n>` lines, `r<n>` records, `h:<slug>` document
- * headings and `s<i>r<n>` workbook rows. A person pressing that citation in the Library
- * got the file's card instead — path, format, size, sha256 — and had to leave the app,
- * open the document and count to line 14 to check the claim (measured 2026-09-11).
- *
- * This is that reader's TypeScript twin, for the same reason
- * `src/shared/lib/library/wiki-page-schema.ts` is `mcp/src/wiki-schema.mjs`'s twin: the MCP
- * package ships separately from the web bundle, so one physical module cannot serve both,
- * and `tests/contract/source-passage-parity.contract.test.ts` runs one fixture table
- * through the two of them. **The anchors and the unit text must match byte for byte** —
- * a reader shown a different passage than the one an agent cited is worse than a reader
- * shown nothing, because it looks like an answer.
- *
- * Three things are deliberately *not* copied from the MCP module:
- *
- * - `node:zlib`. A DOCX and an XLSX are zips of XML; `inflate-raw.ts` carries the
- *   decompressor the bundle needs and its header says why not the platform's.
- * - The 200-unit / 60,000-character window. That bound exists because the tool's answer
- *   leaves the machine on the next round trip; this reader hands the text to the screen
- *   of the person who pressed the citation, and nothing leaves. `readSourceUnits` keeps
- *   the windowed shape anyway so the parity table can compare like with like, and
- *   `citedPassage` reads the whole split. One consequence is worth naming: this reader
- *   can never report an anchor absent because it fell outside a window, which is a
- *   different fact from the file having changed (po-steward, 2026-09-11).
- * - Length-only verification of a zip entry. What this reader returns is shown to a
- *   person as the document's own words, so each entry's CRC-32 is checked and a mismatch
- *   is refused rather than quoted. The units of a sound file are identical either way;
- *   what differs is what happens to a damaged one.
- *
- * Nothing here is stored. The caller reads one file the person asked for, shows the unit
- * it names, and drops the text when the pane closes — `docs/DECISIONS.md`, 2026-09-07
- * "The MCP server reads a source's text on request; Atlas still keeps no converted copy".
+ * TypeScript twin of `mcp/src/source-text.mjs`; anchors and unit text must match byte for byte
+ * (`source-passage-parity.contract.test.ts`). Not copied: `node:zlib`, and the answer window
+ * (nothing leaves the machine here). Nothing is stored.
  */
 
 /** Units returned at most per call; `from` pages past it. Mirrors the MCP module. */
@@ -84,13 +51,8 @@ const utf8 = new TextDecoder('utf-8');
 let crcTable: Uint32Array | null = null;
 
 /**
- * CRC-32 of one decompressed entry, checked against the number the zip itself stores.
- *
- * The MCP module compares the inflated length only. That is enough for a tool whose
- * answer an agent reads and then cites; it is not enough for a passage offered to a
- * person **as the document's own words**, because a decoder defect that produces the
- * right number of wrong bytes would render as a quote (po-steward, 2026-09-11). A failed
- * check refuses with a stated reason; it never renders.
+ * CRC-32 of a decompressed entry checked against the zip's stored value: the passage is shown as the
+ * document's own words, so a damaged entry is refused, never quoted.
  */
 function crc32(bytes: Uint8Array): number {
   if (!crcTable) {
@@ -825,10 +787,9 @@ export interface CitedPassage {
   anchor: string;
   format: SourceTextFormat;
   /**
-   * `resolved` — the anchor named units in this file, and `cited` holds them.
-   * `unresolved` — the file no longer has that address; `candidates` is non-empty only
-   * when the extractor itself reported an ambiguity, never as a guess.
-   * `no-text` — a format this reader does not turn into text (a PDF). `note` says so.
+   * `resolved`: the anchor named units and `cited` holds them. `unresolved`: the file no longer has
+   * that address; `candidates` is non-empty only on a reported ambiguity. `no-text`: a format this
+   * reader does not turn into text.
    */
   state: 'resolved' | 'unresolved' | 'no-text';
   /**

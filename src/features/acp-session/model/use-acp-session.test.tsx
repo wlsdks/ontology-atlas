@@ -3,20 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 /**
- * **Never start two adapters.**
- *
- * Why this test is at the hook level: the defect surfaced only on the real thing, 2026-08-16 — one
- * conversation window, two processes:
- * ```
- * 83796  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
- * 83797  npm exec @agentclientprotocol/claude-agent-acp@0.68.0
- * ```
- * The session id points at the later one while the lines travel over the earlier, so talking to it
- * dies with `Session not found`, and the first process becomes a ghost nobody stops.
- *
- * ⚠️ **A widget-level test was tried first and did not catch it.** There the effect ran only once,
- * so deliberately delaying the lock still went green — a test that passed for the wrong reason. The
- * real condition is "**called again while starting**", so that is constructed directly here.
+ * Never start two adapters. Tested at hook level because the defect needs the real
+ * condition: `start` called again while starting. Two processes leave the session id on one
+ * and the lines on the other (`Session not found`) and orphan the first.
  */
 
 const bridge = vi.hoisted(() => ({
@@ -34,7 +23,6 @@ const bridge = vi.hoisted(() => ({
   failSetMode: false,
   /** The `modes` block `session/new` answers with. Null means the adapter advertised none. */
   sessionModes: null as unknown,
-  /** The Rust path verdict used by the direct read auto-allow branch. */
   permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
@@ -485,12 +473,6 @@ describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {
 
 describe('진단 — 모아 두되 평소에는 안 보여 준다', () => {
   it('진짜 단서는 모으고, npm 경고 같은 소음은 안 모은다', async () => {
-    /*
-     * This spot was fixed twice in one day. At first nobody listened to stderr, so the adapter's last
-     * words vanished entirely; once it was listened to, two paragraphs of English npm warnings sat
-     * permanently at the top of the conversation **with nothing wrong at all** (owner's screen).
-     * A diagnostic is a clue when something breaks, not something to read routinely.
-     */
     const { result } = renderHook(() =>
       useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
     );
@@ -520,10 +502,6 @@ describe('진단 — 모아 두되 평소에는 안 보여 준다', () => {
 
 describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
   it('서버를 넘기면 session/new 가 그것을 싣고, 지시문도 그렇게 말한다', async () => {
-    /*
-     * Raised in the 2026-08-16 review: **no test verified** that this app's agent actually receives our
-     * MCP tools. A single comment (a measurement record) was the only evidence.
-     */
     const { result } = renderHook(() =>
       useAcpSession({
         runtimeId: 'claude-acp',
@@ -547,11 +525,8 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
     expect(meta?.systemPrompt?.append).toContain('atlas-vault');
     /*
-     * The construction routing used to send every build into the bulk qualification lifecycle,
-     * which an app session cannot finish: it has no independent evaluator, so the reproduction
-     * spent a whole turn on a proposal and left the vault empty. What is pinned here is the path
-     * that does finish — reviewed batches — and the refusal that names why the other one is not
-     * taken here.
+     * App sessions have no independent evaluator, so construction must route to reviewed
+     * batches, not the bulk qualification lifecycle.
      */
     expect(meta?.systemPrompt?.append).toContain('reviewed batches');
     expect(meta?.systemPrompt?.append).toContain('verify `connection_info` and read the construction card');
@@ -600,10 +575,8 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
 
   it('외부 연결 도구만 실려도 볼트 서버가 있다고 말하지 않는다', async () => {
     /*
-     * 2026-09-05. `hasVaultMcp` used to be «the array is not empty», which was the same sentence
-     * while the array was ours alone. With external connectors in it, a person with one switched
-     * on and no bundled MCP binary would have had the session claim a vault server it never
-     * wired — and pass `atlas-vault` as an auto-allowed name to whatever else answered to it.
+     * `hasVaultMcp` must mean our vault server is present, not that the array is non-empty;
+     * external connectors alone must not make the session claim it or auto-allow `atlas-vault`.
      */
     const { result } = renderHook(() =>
       useAcpSession({
@@ -705,12 +678,7 @@ describe('Codex 권한 바닥 — 대화가 준비되기 전에 read-only를 건
 
 describe('이어받은 대화 — 규칙이 달라지지 않는다', () => {
   it('session/load 에도 새 대화와 같은 지시가 실린다', async () => {
-    /*
-     * Review 2026-08-16: the instructions were attached **to new conversations only**. So a session
-     * resumed from "past conversations" ran under different rules — no requirement to write the reason
-     * when changing a relation, no requirement to stay inside the folder. If a conversation started
-     * yesterday and one started today behave differently on the same screen and folder, it is not a rule.
-     */
+    /* A resumed conversation must get the same instructions as a new one. */
     const { result } = renderHook(() =>
       useAcpSession({
         runtimeId: 'claude-acp',
@@ -750,20 +718,7 @@ describe('이어받은 대화 — 규칙이 달라지지 않는다', () => {
 });
 
 describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린다', () => {
-  /**
-   * Experiment 2026-08-16 (same vault, same task, five runs against the real adapter):
-   *
-   * | | current instructions | new instructions |
-   * |---|---|---|
-   * | given an overlapping concept | **created a new node without asking** | found it, reported, and stopped |
-   * | elapsed | 88s | 50s · 45s |
-   * | reading shell/files directly | 2× | **0×** |
-   * | duplicate check | never | every time |
-   *
-   * This test does not pin the sentences themselves (the wording will keep being refined). What it
-   * pins is **whether those four instructions actually go out with the session** — without that, the
-   * table above means nothing.
-   */
+  /** Pins that the four instructions go out with the session, not their wording. */
   it("carries the screen's own paragraph after the handoff, and the handoff still goes out whole", async () => {
     const { result } = renderHook(() =>
       useAcpSession({
@@ -820,18 +775,14 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
     // ④ If ambiguous, ask — the line changed most in actual measurement
     expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
     /*
-     * ⑤ the answer's language. This used to read "the language the person wrote in", which
-     * covers everything typed into the composer and nothing started by pressing a button —
-     * where the person wrote nothing and the only text in the turn is this app's own English.
-     * Measured 2026-09-09 on /ko/architecture: the source-check button returned a full English
-     * report to a Korean interface. So the interface language is now named outright, and what
-     * the person types still wins over it.
+     * The answer language is named outright from the interface language, since a turn started by
+     * a button has only this app's English text. What the person types still wins.
      */
     expect(prompt, '한국어 화면인데 답할 언어를 정해 주지 않는다').toMatch(/Answer in Korean/);
     expect(prompt, '사람이 쓴 언어가 화면 언어를 못 이긴다').toMatch(/write to you in another language, follow theirs/);
     expect(prompt, '버튼으로 시작한 턴이라는 사정이 빠졌다').toMatch(/arrived from a button/);
-    // ⑥ compiler declarations and map lines are different censuses; collapsing them made 222 and
-    // 141 look like contradictory answers in the installed app on 2026-09-03.
+    // Compiler declarations and map lines are different censuses; merging them makes two counts
+    // look contradictory.
     expect(prompt, 'MCP 선언 수와 지도 선 수를 같은 관계 수로 말하게 된다').toMatch(
       /relationCensus.*graph\.edges.*compiled frontmatter relation declarations.*deduplicated normalized typed edges.*not the current view filter/i,
     );
@@ -845,10 +796,8 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
 describe('관문을 못 세웠으면 화면이 말한다', () => {
   it('`gate-off:` 로 온 알림은 접어 두지 않고 대화에 남는다', async () => {
     /*
-     * Review 2026-08-16: a failure while building the isolated config was swallowed by `.ok()`, and
-     * the session came up inheriting the user's global config — what that state means was measured and
-     * recorded in `docs/DECISIONS.md` (2026-08-16): "it wrote files outside the working folder without ever asking, and
-     * even ran a terminal." Yet the screen kept calling that runtime "gated".
+     * A failure building the isolated config falls back to the user's global config, which skips
+     * permission requests, so the screen must say the gate is off.
      */
     const { result } = renderHook(() =>
       useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
@@ -1060,10 +1009,8 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
 
   it('두 번째 요청이 첫 카드를 덮어쓰지 않고, 두 JSON-RPC id 모두 답장이 나간다', async () => {
     /*
-     * Caught in the 2026-09-01 review. With a single resolver slot, the second concurrent
-     * `session/request_permission` (parallel tool calls in one turn) replaced the first card's
-     * resolver: the first request's id was never answered and the agent hung on it for the rest
-     * of the session.
+     * With a single resolver slot a second concurrent `session/request_permission` replaced the
+     * first card's resolver and left its id unanswered.
      */
     const { result } = renderHook(() =>
       useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
@@ -1130,17 +1077,9 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
 });
 
 /**
- * **The adapter can move the session on its own, and the screen has to follow it.**
- *
- * Read from `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js` on 2026-09-05:
- * `AUTO_MODE_FALLBACK = "acceptEdits"`. Selecting `auto` on a model without `supportsAutoMode`, or
- * switching to such a model afterwards, silently moves the session to `acceptEdits` and announces it
- * with `{ sessionUpdate: "current_mode_update", currentModeId }` — nothing else.
- *
- * The dispatcher ignored that notification. So the session could land in a mode this repository
- * measured to remove the permission gate while the dropdown still read whatever was picked, and
- * nothing on screen said the promise had stopped being kept. `gate-off` is the sentence that already
- * exists for exactly this fact; it is reused rather than invented.
+ * The adapter can move the session itself via `current_mode_update` (`AUTO_MODE_FALLBACK =
+ * "acceptEdits"`), so the screen follows it and reuses the `gate-off` notice for
+ * gate-removing modes.
  */
 describe('the adapter moves the session itself', () => {
   const CLAUDE_MODES = {
@@ -1188,10 +1127,8 @@ describe('the adapter moves the session itself', () => {
     // Following the session is not the same as offering the mode back: it stays unselectable.
     expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
     /*
-     * ⚠️ Not the `gate-off` sentence. That one says *"the tool follows the settings you gave it
-     * directly"* — on this path the person gave no such setting, the adapter moved the session — and
-     * it speaks only of files outside the folder, while `acceptEdits` accepts edits **inside** it.
-     * Reusing it here would have been wrong in both halves (council, 2026-09-05).
+     * Not the `gate-off` sentence: it speaks of settings the person gave and of files outside
+     * the folder, while `acceptEdits` accepts edits inside it.
      */
     const moved = result.current.events.find((e) => e.kind === 'notice');
     expect(moved, 'the screen still claims a gate it no longer has').toMatchObject({
@@ -1286,18 +1223,9 @@ describe('the adapter moves the session itself', () => {
 });
 
 /**
- * **A session can *begin* in a gate-removing mode, and nothing was judging that.**
- *
- * The clamp path above re-runs the safety verdict, but the start path did not: whatever
- * `session/new` or `session/load` reported as `currentModeId` went straight into the state. Only
- * `GATED_SESSION_MODE` was consulted, and that names `codex-acp` alone — so a claude session that
- * opened on `acceptEdits` (a resumed conversation is the obvious way: `session/load` reports the
- * mode the conversation was left in) set the value with no verdict, raised no notice, and left the
- * Select rendering its placeholder because the mode is not on the offered list. The screen went
- * quiet on exactly the value that decides whether a person is asked.
- *
- * Beginning in a mode and being moved into it are the same fact about the same session, so they get
- * the same treatment: state it, never offer it back, and say `gate-off`.
+ * A session can begin in a gate-removing mode (for example a resumed `session/load`);
+ * starting in a mode and being moved into it get the same treatment: state it, never offer
+ * it back, say `gate-off`.
  */
 describe('a session that begins in a mode the filter hides', () => {
   const AVAILABLE = [
@@ -1383,8 +1311,6 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
     });
 
   it('allows at once with a transcript line when the screen says so, and still asks otherwise', async () => {
-    // Owner direction 2026-09-07: agents act, people can step in. The Library judges a wiki
-    // page against its contract; a fitting page lands without a card.
     const { result } = renderHook(() =>
       useAcpSession({
         runtimeId: 'claude-acp',

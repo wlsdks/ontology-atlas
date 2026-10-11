@@ -59,12 +59,8 @@ export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChange
 }
 
 /**
- * Mirror of the CLI's parsePorcelain — `git status --porcelain -z` output → rows.
- *
- * `-z` (NUL-separated, no quoting) matches the CLI, which moved off the newline
- * form because git's default `core.quotePath` C-quotes any non-ASCII path and a
- * Korean filename broke the whole snapshot (bug sweep 2026-09-01). A rename
- * record is `XY new\0orig\0` — new path first, no ` -> `.
+ * `-z` (NUL-separated, no quoting) matches the CLI: git's default quoting C-quotes non-ASCII paths.
+ * A rename record is `XY new\0orig\0`, new path first.
  */
 export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
   const tokens = out.split("\0");

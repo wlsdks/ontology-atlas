@@ -150,13 +150,7 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
     expect(excerpt).not.toMatch(/^\s*-\s/);
   });
 
-  /*
-   * The search palette draws this excerpt as a result's reason. A `path#symbol` reference —
-   * how every element document in the dogfood vault names its entrypoint — lost the `#` to the
-   * residual-mark strip, so the row read `src/widgets/topology-controls/ui/HubRail.tsxHubRail`
-   * and the two names glued into one word nobody can read (2026-09-21). A `#` away from the
-   * start of a line is content, not a heading mark.
-   */
+  /* A `#` away from the start of a line is content: `path#symbol` references must keep the separator. */
   it('keeps the separator between a path and the symbol it names', () => {
     const body = [
       '- Primary implementation: `src/widgets/topology-controls/ui/HubRail.tsx#HubRail`',
@@ -234,15 +228,8 @@ describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ v
 });
 
 /**
- * ⚠️ **The renderer and the folder check must fold a bare `[[slug]]` into the same
- * name** (measured 2026-09-09).
- *
- * `docs/ONTOLOGY-ATLAS-SPEC.md` §11.4 says a page link is `[[wiki/<slug>]]` **or**
- * `[[<slug>]]`, and `validateWikiFolder` has always resolved the bare form inside
- * `wiki/`. This function did not, and the two disagreed in both directions on one
- * folder: a bare `[[budget]]` rendered as plain text with no anchor and drew no edge on
- * the Library graph, while the folder check reported the link as perfectly resolved. A
- * genuinely dead link passed every gate the product has.
+ * The renderer and the folder check must fold a bare `[[slug]]` inside `wiki/` into the same name
+ * (`docs/ONTOLOGY-ATLAS-SPEC.md` section 11.4).
  */
 describe('extractOutLinksWithContext — a bare wikilink inside wiki/ names a page in wiki/', () => {
   it('wiki/ 문서 안의 맨 슬러그는 wiki/ 안의 페이지로 풀린다', () => {
@@ -318,8 +305,6 @@ describe('parseFrontmatter — malformed-quoted-scalar', () => {
   }
 
   it('names the key and offers the repaired line', () => {
-    // The line that stood in docs/ontology/elements/agents-destination.md while
-    // `pnpm vault:validate` reported 0 issues (2026-08-31).
     const { frontmatter, diagnostics } = parseFrontmatter(
       '---\ndisplay_ko: "에이전트" 목적지\n---\n',
     );

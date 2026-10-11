@@ -3,12 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { floatingRightBound } from './right-dock-reserve';
 
 /**
- * The **right-hand wall** for everything floating over the map.
- *
- * A 2026-08-16 review found the same defect four times over — toasts, update
- * notices, hover cards, and the context menu all treated `window.innerWidth` as the
- * wall. With a chat panel standing to the right of the map, that wall points
- * **beyond the panel**, and surfaces describing the map get drawn on top of it.
+ * Floating surfaces over the map must stop at the left edge of a right-docked panel, not at
+ * `window.innerWidth`.
  */
 describe('떠 있는 것의 오른쪽 벽', () => {
   it('도크가 없으면 화면 끝이 벽이다 — 회귀 0', () => {

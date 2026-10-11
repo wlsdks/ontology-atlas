@@ -1,46 +1,7 @@
 /**
- * Groups activity-log lines into **work sessions**.
- *
- * **Why sessions and not lines.** In the 2026-08-01 experiment an agent wrote
- * **53 times in 11 minutes 40 seconds**. Per line that is 53 notifications —
- * nobody reads them, and a bell badge that is always red means nothing. Grouped
- * into sessions the same log produces two.
- *
- * **How "the work finished" is known: it went quiet.** Atlas does not connect to
- * the agent (it only watches a folder), so there is no "done" callback and the
- * only observable signal is **how long writing has stopped**. The threshold came
- * from the distribution of two measured logs (98 lines, 96 inter-write gaps):
- *
- * ```
- * p50 1.9s · p90 23.2s · p95 48.5s · p98 133.9s · p99 329.5s · max 1733.3s
- * 80.2% of gaps are 4s or less
- * ```
- *
- * The tail mixes two things: **silence inside a session** (the agent reading,
- * thinking and editing code — only successful writes reach the log, so that
- * stretch produces no lines) and **silence between sessions**. The largest
- * observed in-session silence was 133.9s; the next values are 329.5s and 1733.3s
- * (28.9 min — where a session actually ended).
- *
- * How each threshold splits the logs, measured:
- *
- * | Threshold | Gaps split on | Result |
- * |---|---|---|
- * | 60s | 5 | 7 sessions across two logs — a 40s pause read as an ending |
- * | 120s | 4 | 6 sessions — still reads the 133.9s silence as an ending |
- * | **300s** | **2** | **2 sessions per log** — the "one or two" the owner asked for |
- * | 600s | 1 | one session across a 29-minute silence — the "done" notice arrives 10 min late |
- *
- * **Three reasons for 5 minutes (300s):**
- * 1. It is **2.24×** the largest observed in-session silence (133.9s), so an
- *    agent thinking twice as long as anything measured still stays one session.
- * 2. It is the **same value** as `AGENT_ACTIVITY_STALE_AFTER_MS` (when a
- *    heartbeat is considered stale). "This agent is gone" must not have two
- *    different numbers inside one product.
- * 3. The cost of being wrong is asymmetric and bounded — too long delays the
- *    "done" notice by at most 5 minutes, too short splits one session into
- *    several notifications, which is exactly the failure this grouping exists to
- *    prevent.
+ * Groups activity-log lines into work sessions. Atlas only watches a folder, so the end of a session
+ * is inferred from how long writing has stopped. The idle threshold is 2.24x the largest observed
+ * in-session silence and equals `AGENT_ACTIVITY_STALE_AFTER_MS`.
  */
 import { toSlugTarget, type AgentActivityEntry } from "./agent-activity-log";
 
@@ -59,7 +20,6 @@ export const AGENT_TASK_IDLE_MS = 5 * 60 * 1000;
  */
 export const AGENT_TASK_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** The three things a session can do to the vault. Owner-agreed wording: 「Added · Edited · Removed」 (added · edited · removed). */
 type AgentWriteKind = "added" | "edited" | "removed";
 
 export type AgentWriteCounts = Record<AgentWriteKind, number>;

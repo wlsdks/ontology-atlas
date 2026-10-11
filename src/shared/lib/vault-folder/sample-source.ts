@@ -1,24 +1,6 @@
 /**
- * Which built-in sample vault to show when no vault is selected (static mode). Two
- * values:
- *
- * - **storefront** (default) — an example business a non-developer (planning,
- *   marketing, leadership) recognises instantly (`samples/storefront/`).
- * - **dogfood** — the vault describing the code of this app itself (`docs/ontology/`).
- *
- * **Why storefront is the default** (switched 2026-07-26). With dogfood on the first
- * screen, a first-time visitor meets names like `Dev Route Smoke`, `Resolve Write
- * Target`, and `Clean Next Dev Cache` — at exactly the spot where the tour says
- * "press one of the bright dots". At the moment they have to decide whether this tool
- * is relevant to them, they are looking at somebody else's build scripts.
- *
- * Dogfood is persuasive because it **exists** ("we describe ourselves in our own
- * format"), not because it occupies the default slot. So the proof goes to whoever
- * opens it and the understanding goes to everyone: one click away, under an honest
- * name.
- *
- * Once a vault is loaded (local mode) this preference is ignored entirely — the
- * user's disk always wins (`.claude/rules/architecture.md`, single source of truth).
+ * Which built-in sample vault to show when no vault is selected: `storefront` (default,
+ * `samples/storefront/`) or `dogfood` (`docs/ontology/`). Ignored once a vault is loaded.
  */
 
 export type SampleSource = 'dogfood' | 'storefront';
@@ -56,13 +38,8 @@ function handleStorageEvent(event: StorageEvent): void {
 }
 
 /**
- * Drops the cache only, so the next read consults storage again.
- *
- * For test isolation. Calling `localStorage.removeItem` alone leaves the module cache
- * holding the previous test's value, isolation leaks, and any test that passes in
- * that state is **accidentally relying on what the previous test left behind** — as
- * the 2026-07-26 default switch actually exposed. Clear the cache whenever you clear
- * storage.
+ * Test isolation: drops only the module cache. Clear it whenever storage is cleared, or a test
+ * silently relies on the previous test's value.
  */
 export function resetSampleSourceCacheForTests(): void {
   cachedSnapshot = null;

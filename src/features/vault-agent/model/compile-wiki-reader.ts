@@ -103,7 +103,6 @@ function finiteCursor(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-/** The one owner of addresses, inventory, snapshots, cursors and receipts for Compile's wiki reads. */
 export function createCompileWikiReader(
   slugs: readonly string[],
   readPage: (slug: string) => Promise<CompileWikiPageSnapshot | null>,

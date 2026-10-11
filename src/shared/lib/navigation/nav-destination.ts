@@ -33,17 +33,8 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/architecture")) return "architecture";
   if (path.startsWith("/git")) return "git";
-  // Agents — destination added 2026-08-20 (decision ledger 90). `/agents` is its
-  // only route so the rung's position is arbitrary; it matches the rail's order.
   if (path.startsWith("/agents")) return "agents";
-  // MCP — destination added 2026-09-05. `/mcp` is its only route; it sits beside
-  // `/agents` because the two answer different questions about the same work
-  // (which tools this computer has vs. what an agent reaches over MCP).
   if (path.startsWith("/mcp")) return "mcp";
-  // Library — destination added 2026-09-06. Gathering documents of any format and
-  // the wiki pages compiled from them left `/docs`, which is the graph's Markdown
-  // again. Matched before `/docs` only in reading order; the two prefixes cannot
-  // collide.
   if (path.startsWith("/library")) return "library";
   if (path.startsWith("/automations")) return "automations";
   if (path.startsWith("/docs")) return "library";
@@ -53,38 +44,16 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
 }
 
 /**
- * Routes that are gateway surfaces **by path alone**.
- *
- * `/` is deliberately absent: that address is decided by **who the visitor is**,
- * not by the path, so `isGatewaySurface` judges it separately.
- *
- * ⚠️ **Adding a gateway surface means adding a line here.** Forget it and that
- * one screen wears the workbench rail instead — which actually happened when
- * `/guide` and `/changelog` were added on 2026-07-30 (the rail's six destinations
- * appeared on first render). That was the failure mode back when this was a
- * single `startsWith("/download")`; promoting it to a list is what makes the next
- * person look here.
+ * Routes that are gateway surfaces by path alone. `/` is absent because who the visitor is decides
+ * it (`isGatewaySurface`). A new gateway surface needs a line here, or that screen wears the
+ * workbench rail.
  */
 const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
 
 /**
- * Is this a gateway route — **a surface that does not wear the workbench chrome
- * (the left rail)**?
- *
- * `.claude/rules/surfaces.md` pins the web's primary job as the **gateway**: a
- * place to open the map with no install, and a link to share. The left rail is
- * chrome for someone already working in a vault. Standing workbench destinations (map,
- * architecture, library, automations, insights, projects, agents, git; MCP is an Agents tab) in front of a visitor who has
- * opened nothing makes it a workbench, not a gateway — they see nine doors none of which
- * they can walk through yet.
- *
- * **Why the shell decides this, not the page**: making each page remember its own
- * shell structure means the next gateway surface forgets again (the same drift
- * described in `AppShell`'s comments, where the studio failed to register the
- * rail's utility slot and ended up with one bottom icon). One path, one decision,
- * in the shell.
- *
- * Owner decision, 2026-07-28.
+ * A gateway route does not wear the workbench chrome (the left rail): workbench destinations in
+ * front of a visitor who opened nothing are doors they cannot walk through. The shell decides this,
+ * not each page, so the next gateway surface cannot forget it.
  */
 export function isGatewayRoute(pathname: string): boolean {
   const path = stripLocalePrefix(pathname || "/");
@@ -111,17 +80,9 @@ export interface GatewayContext {
 }
 
 /**
- * Is this surface **a gateway right now**? The path alone cannot say.
- *
- * Since 2026-07-30, `/` is the marketing face **only for a web visitor**; for
- * someone with a vault open, and inside the installed app, it stays the work
- * entry point. Hence the visitor context in the judgement.
- *
- * **Why `/` was not simply made a gateway wholesale.** Then the installed app
- * would tell its own user to download the app — the very contradiction the
- * 2026-07 「root-first-open」 decision (the map as the first screen) removed. That
- * decision was overturned in the part that said "the map is the first screen",
- * not in the part that said "never offer the install to someone who installed it".
+ * Is this surface a gateway right now. `/` is the marketing face only for a web visitor; with a
+ * vault open, or in the installed app, it stays the work entry point, so the app never tells its own
+ * user to download itself.
  */
 export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
   const path = stripLocalePrefix(pathname || "/");
@@ -145,15 +106,9 @@ export function stripLocalePrefix(
 }
 
 /**
- * Which first-visit guide a screen gets, which is **not** the same question as which rail tile
- * lights (2026-09-20).
- *
- * Three screens answer differently from their destination. The map owns an eight-step journey
- * with canvas anchors, so the shell draws none. `/project/<slug>` lights the projects tile, but
- * the projects guide describes the list ("they stand as cards"), so only the list gets it. And
- * MCP folded into `/agents` as a tab while `/mcp` became a redirect, so the destination is
- * "agents" on both tabs — the `mcp` guide, whose two pages describe exactly that tab, would
- * never appear unless the tab is read from the address here.
+ * Which first-visit guide a screen gets differs from which rail tile lights. The map gets none,
+ * `/project/<slug>` gets none (the projects guide describes the list), and the `mcp` guide needs the
+ * Agents tab read from the address.
  */
 export function resolveGuideDestination({
   surface,

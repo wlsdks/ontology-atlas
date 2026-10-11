@@ -1,24 +1,7 @@
 /**
- * Translates what the adapter emitted into **one sentence a person can read.**
- *
- * Why (owner's screen, 2026-08-16). The conversation window showed the user this verbatim:
- *
- * ```
- * An error occurred: {"code":-32603,"message":"Internal error: Failed to
- * authenticate: OAuth session expired and could not be refreshed",
- * "data":{"errorKind":"authentication_failed"}}
- * ```
- *
- * Owner: *"how is a user supposed to understand this?"* (how is a user supposed to understand this?).
- * Correct — that line states neither **what happened** nor **what to do** in human words. All it
- * contains is the material we use for debugging.
- *
- * **What is recognized, and what is called unknown.** Only known shapes are translated. What is not
- * recognized is left as "an unknown problem" with the original folded away, **rather than invented** —
- * a plausible mistranslation is worse than the original (the original can at least be searched).
- *
- * Every kind carries **what to do next**. An error screen with nothing to do is a dead end, and this
- * repository counts that as a defect.
+ * Translates what the adapter emitted into one readable sentence plus a next step. Only
+ * known shapes are translated; anything else stays "an unknown problem" with the original
+ * folded away, since a plausible mistranslation is worse than the searchable original.
  */
 
 type AcpTroubleKind = 'limit' | 'auth' | 'install' | 'timeout' | 'launch' | 'network' | 'unknown';
@@ -34,24 +17,14 @@ export interface AcpTrouble {
  * shapes are matched (measured: claude gives `authentication_failed`, some tools
  * `Authentication required`).
  */
-// The tool's own plan ran out, not the app: "You've hit your session limit · resets 1am" came back
-// as `errorKind: rate_limit` and the screen called it a generic problem with a retry that could not
-// work until the hour named in the message (installed app, 2026-09-07).
+// The tool's own plan limit, not the app: retrying cannot work until the hour in the
+// message.
 const LIMIT = /rate[_ ]?limit|session limit|usage limit|quota|too many requests|429/i;
 const AUTH = /authentication[_ ]?(failed|required)|oauth|not logged ?in|unauthorized|401/i;
 /**
- * The first download was interrupted and it hit a half-built npx cache (owner's real machine,
- * 2026-08-19). The shapes matched are the measured stderr verbatim:
- *
- * ```
- * npm error code ENOENT
- * npm error path /Users/…/.npm/_npx/8757e2301903ae53/package.json
- * npm error enoent Could not read package.json …
- * ```
- *
- * An `_npx/<16 hex>` path, or npm's "could not read package.json" — both appear only in this
- * failure. The app deletes that entry and re-downloads on the next start (the npx cache self-heal in
- * `src-tauri/src/acp/npx_cache.rs`), so the next step is "new conversation".
+ * An interrupted first download leaves a half-built npx cache. Matches an `_npx/<hex>` path
+ * or npm's "could not read package.json". The app self-heals it
+ * (`src-tauri/src/acp/npx_cache.rs`), so the next step is a new conversation.
  */
 const INSTALL = /_npx[\\/][0-9a-f]{4,16}|could not read package\.json/i;
 /** It hit the ceiling we set. */
@@ -62,10 +35,9 @@ const LAUNCH = /ENOENT|command not found|spawn|cli-missing|node-missing|npx-miss
 const NETWORK = /ENOTFOUND|ECONNREFUSED|ECONNRESET|EAI_AGAIN|network|fetch failed|offline/i;
 
 /**
- * @param diagnostics Lines the adapter left on stderr. They take part **only in the install
- * verdict** — in that failure the error string says nothing (`acp session closed`) and every clue was
- * on stderr (measured). Judging the other kinds by stderr too would misclassify on a passing word
- * (such as "network"), so it is not widened.
+ * `diagnostics` are stderr lines and count only for the install case, where the error string
+ * says nothing (`acp session closed`). Other kinds would misclassify on a passing word like
+ * "network".
  */
 export function readAcpTrouble(raw: string, diagnostics: readonly string[] = []): AcpTrouble {
   const detail = raw.trim();
@@ -91,21 +63,8 @@ export function readAcpTrouble(raw: string, diagnostics: readonly string[] = [])
 }
 
 /**
- * Is this line worth carrying as a diagnostic — **or is it noise?**
- *
- * The moment stderr went on screen, the first thing the user saw was this (2026-08-16):
- *
- * ```
- * npm warn Unknown env config "_jsr-registry". This will stop working in the
- * next major version of npm. See `npm help npmrc` for supported config options.
- * ```
- *
- * The adapter is launched through `npx`, so lines like this appear **every time**, including when
- * nothing is wrong. So two paragraphs of English warnings sat permanently at the top of the
- * conversation window — eating the screen rather than diagnosing anything.
- *
- * Two rules settle it: ① obvious noise is never collected ② what is collected is shown **only when
- * something breaks** (when those lines are the only clue).
+ * Is this stderr line worth carrying? The adapter runs through `npx`, so warnings appear
+ * every time; noise is never collected, and collected lines show only when something breaks.
  */
 const STDERR_NOISE = [
   /^npm (warn|notice)\b/i,

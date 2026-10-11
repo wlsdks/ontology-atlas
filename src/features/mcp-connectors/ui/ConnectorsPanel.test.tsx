@@ -538,8 +538,8 @@ describe('connectors panel explains what runs before enabling', () => {
 
   it('announces the removal and moves focus after deleting', async () => {
     /*
-     * The opener lived in a row that no longer exists, so focus goes to "Add a connector" instead
-     * of `<body>`, and the removal is announced.
+     * The opener's row no longer exists, so focus goes to "Add a connector" and the removal is
+     * announced.
      */
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);

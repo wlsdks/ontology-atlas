@@ -1,24 +1,7 @@
 /**
- * Picks **names of nodes that really exist** out of chat text.
- *
- * ## Why "only known names" (owner instruction, 2026-08-17)
- *
- * Owner: *"hovering in the chat could highlight our node"* (hovering in the chat could highlight our node). That requires knowing which characters in the text are a node.
- *
- * The common approach — link anything shaped like `a/b` — cannot be used here. An agent's answers are
- * full of file paths (`src/features/acp-session/model/x.ts`), URLs, and dates, and turning all of
- * them into nodes creates **a link on every other word that goes nowhere when pressed.** Meeting one
- * such link once stops a person pressing any of the others.
- *
- * We have the graph, so there is no reason to guess: **only known names are picked.** False positives
- * are zero, and a new node is picked up automatically from the day it exists.
- *
- * ## Boundary rules
- *
- * Not picked when flanked by word characters (`xcapabilities/invoicey` is a different name). But
- * parentheses, quotes, full stops, and backticks do count as boundaries — that is how names are
- * actually used in a sentence. And **longer names go first**: picking the shorter one first splits
- * `a/b-c` into `a/b` + `-c`.
+ * Picks names of nodes that really exist out of chat text; arbitrary `a/b` shapes would link
+ * file paths. Not picked when flanked by word characters; longer names go first so `a/b-c`
+ * is not split.
  */
 
 interface PlainSegment {

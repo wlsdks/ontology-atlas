@@ -29,11 +29,8 @@ export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   const invoke = getInvoke();
   if (!invoke) {
     /*
-     * ⚠️ `reason` is **null** on the web, and that is the point. It carries a *diagnosis* the
-     * screen shows verbatim, and a browser has nothing to diagnose: not being the installed app
-     * is the ordinary state of a web session, and the panel already says so in the reader's own
-     * language. Filling this with an English sentence put untranslated developer prose one render
-     * away from a Korean screen (census state 5d, 2026-08-31).
+     * `reason` is `null` on the web: it carries a diagnosis shown verbatim, and a browser has nothing to
+     * diagnose.
      */
     return { path: null, available: false, reason: null };
   }

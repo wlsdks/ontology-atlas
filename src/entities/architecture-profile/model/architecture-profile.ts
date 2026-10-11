@@ -130,7 +130,10 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
-  /* The retired key is refused by name: an alias would keep two spellings forever, and ignoring it would flip a verdict silently. */
+  /*
+   * A replaced key is refused by name: an alias would keep two spellings, and ignoring it would flip
+   * a result silently.
+   */
   if (frontmatter.type_only_dependencies !== undefined) {
     throw new Error(
       'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
@@ -374,12 +377,9 @@ export function buildArchitectureAgentPrompt(
 }
 
 /**
- * The empty state's request to a connected agent; the app never calls MCP itself, since analysing the
- * repository here would be a second canonical `analyze_repo_structure`, which `AGENTS.md` forbids. It must not ask for
- * `allow_*`, `dependency_policy`, `dependency_usages`, pattern or role names, or generated evidence:
- * rules derived from imports approve the status quo, and `patterns` stays a person's decision.
- * Why: `docs/DECISIONS.md` 2026-08-26, "The first architecture draft is proposed by an agent and named by a
- * person"; role names: 2026-08-28, "A role may say what it is for, and the pattern axis is the stage's subject".
+ * The empty state's request to a connected agent. The app never calls MCP itself: analysing the
+ * repository here would be a second `analyze_repo_structure`. It must not ask for rules or role
+ * names derived from imports, which would approve the status quo.
  */
 export function buildArchitectureDraftPrompt(
   context: ArchitectureHandoffContext | null = null,

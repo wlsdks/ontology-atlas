@@ -298,10 +298,7 @@ export function useAgentDoctor(
         className="mt-1.5 min-w-0 border-t border-[color:var(--color-divider)] pt-2"
       >
         {progressRow}
-        {/*
-          No `checks` means not measured, not fine: without this guard, progress alone would render
-          "no problems right now". The verdict needs a measurement; the progress line stays above.
-        */}
+        {/* No `checks` means not measured, not fine: progress alone would render "no problems". */}
         {failed ? (
           <p
             data-testid="agent-doctor-failure"

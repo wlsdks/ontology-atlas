@@ -99,8 +99,6 @@ describe("humanizeCodePathTitle", () => {
   });
 
   it("두문자어는 첫 글자만 올리지 않고 전부 대문자로 쓴다", () => {
-    // Measured 2026-07-26: `mcp/src/index.js` sat in the insights ranking as
-    // "Mcp", so one concept carried a different name per screen.
     expect(humanizeCodePathTitle("mcp/src/index.js")).toBe("MCP");
     expect(humanizeCodePathTitle("src/features/vault-api/index.ts")).toBe("Vault API");
   });

@@ -2,39 +2,15 @@ import { useCallback, useSyncExternalStore } from "react";
 import type { MapLayoutView } from "../map-canvas/map-layout-morph-store";
 
 /**
- * Appearance preferences (`docs/plans/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
- * the single source of truth for map canvas background and node glyph set, read
- * live by every surface.
- *
- * **Why a store rather than a Context provider.** These values are read from the
- * map canvas (a non-React renderer) *and* from DOM glyphs in several widgets at
- * the same time, and a change in settings has to reach both instantly — fable:
- * "If only one surface updates, that is a defect." So
- * localStorage is the source of truth and `useSyncExternalStore` + a custom event
- * deliver the live update, the same local-first persistence idiom as
- * `docs-vault-local` / `audiencePlain`.
- *
- * SSR / static-export prerender returns the defaults (`getServerSnapshot`) so
- * hydration cannot mismatch.
+ * Appearance preferences: the single source of truth for canvas background and glyph set, read live
+ * by every surface. A store, not a Context: the non-React canvas and DOM glyphs both need the live
+ * update. SSR returns defaults so hydration cannot mismatch.
  */
 
 /**
- * Map canvas backgrounds.
- *
- * **Why only three survived** (council 2026-07-29, owner confirmed). Eleven
- * candidates were rejected, and the measurement said the cause was the *shape*
- * of the ink, not its amount: every rejected background was lines or closed
- * figures — the same visual grammar as nodes and edges — so it competed with the
- * graph for the eye. Dots survived precisely because they do not pretend to be
- * data. Continuous particles were also rejected: 78% of the pixels that changed
- * per frame carried no information.
- *
- * - `dot` — static blueprint grid. Says only that a coordinate system exists.
- * - `web` — proximity constellation. The one moving background kept (owner call).
- * - `depth` — the same dots in three layers, reacting to the camera **only**.
- *   Zero autonomous motion, so idle burn is structurally impossible.
- *
- * Retired: `constellation`, `contour`, `flow`, `gravity`.
+ * `dot`: static grid. `web`: proximity constellation, the one moving background. `depth`: dots in
+ * three layers moving only with the camera. Line or closed-figure backgrounds compete with nodes and
+ * edges for the eye.
  */
 export type CanvasBackground = "dot" | "web" | "depth";
 export type GlyphSet = "geometric" | "line";
@@ -43,15 +19,13 @@ export const CANVAS_BACKGROUNDS: readonly CanvasBackground[] = ["dot", "web", "d
 export const GLYPH_SETS: readonly GlyphSet[] = ["geometric", "line"];
 
 /**
- * Retired value → successor. Falling back to the default would silently discard
- * what the user picked, so each retired background maps to its nearest survivor:
+ * Removed value to successor: falling back to the default would discard the user's pick, so
  * constellation-like choices go to `web`, static ones to `dot`.
  */
 const RETIRED_CANVAS_BACKGROUNDS: Readonly<Record<string, CanvasBackground>> = {
   constellation: "web",
   contour: "dot",
-  // Retired by the 2026-07-29 council; both were chosen for their motion, so
-  // they map to the surviving moving background.
+  // Both were chosen for their motion, so they map to the surviving moving background.
   flow: "web",
   gravity: "web",
 };
@@ -75,7 +49,6 @@ function isGlyphSet(value: string | null): value is GlyphSet {
   return value !== null && (GLYPH_SETS as readonly string[]).includes(value);
 }
 
-/** Stored value → live value: retired ones to their successor, unknown ones to the default. */
 export function resolveCanvasBackground(saved: string | null): CanvasBackground {
   if (isCanvasBackground(saved)) return saved;
   if (saved !== null && saved in RETIRED_CANVAS_BACKGROUNDS) return RETIRED_CANVAS_BACKGROUNDS[saved];
@@ -152,20 +125,8 @@ export function useGlyphSet(): GlyphSet {
 /* ── Frame meter ────────────────────────────────────────────────────────── */
 
 /**
- * Whether the frame meter is drawn over the map.
- *
- * **Off by default** because it is a diagnostic, not product chrome: permanent
- * numbers over the map are noise to someone who came to read the graph, and the
- * attention budget belongs to the map. It lives opt-in in settings, next to the
- * footprint controls.
- *
- * **Why it exists at all** — to end "it isn't slow on my machine". On 2026-07-31
- * the owner reported node-drag lag while the reproduction environment (Playwright
- * Chromium) measured 2.1 ms of frame work; frame timestamps from a screen
- * recording showed real 150 ms stalls. The same code hurt differently per
- * environment, so what was needed was a number from the machine that hurts, not a
- * developer's repro. Without an on-screen number every performance discussion is
- * one person's feeling against someone else's benchmark.
+ * Whether the frame meter is drawn over the map. Off by default: it is a diagnostic, not product
+ * chrome; opt-in in settings so a number can come from the machine that hurts.
  */
 const FRAME_METER_KEY = "atlas.appearance.frameMeter";
 
@@ -268,21 +229,9 @@ export function useMapZoomSpeed(): MapSpeed {
 /* ── 3D view (map view mode) ────────────────────────────────────────────── */
 
 /**
- * Whether the map is drawn with a 3D arrangement rather than the flat map.
- *
- * Owner request, 2026-08-18: "Put our actual map into a 3D dome that still zooms
- * and can be moved around freely." (put our actual map into a 3D dome that still zooms
- * and can be moved around freely). The toolbar picker now presents one flat view
- * (the default) plus the Strata and Neural 3D arrangements in one place. There is no
- * duplicate switch in the settings sheet.
- *
- * **Off by default on a measurement, not a preference.** The same data in the
- * original Dome arrangement raises edge crossings sharply: 58.0 → 190.7 on
- * the hero graph, 3.29×.
- * Crossing count dominates graph readability (Purchase 1997), so the default map
- * stays planar and 3D is opt-in for people who want to see structure as shape.
- * Geometry and cost: `src/widgets/ontology-map/model/dome-view/`,
- * `docs/DECISIONS.md`.
+ * Whether the map is drawn with a 3D arrangement rather than the flat map. Off by default: the 3D
+ * arrangement raises edge crossings about 3x, and crossing count dominates graph readability.
+ * Geometry: `src/widgets/ontology-map/model/dome-view/`.
  */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
@@ -319,13 +268,8 @@ export function useDomainStructure(): boolean {
 /* ── Territories (2D map, nothing folded) ───────────────────────────────── */
 
 /**
- * Whether the flat map is drawn as **Territories** — every capability named, gathered in its
- * domain's own slice of the plane, with no expansion step (owner decision, 2026-09-24).
- *
- * It sits beside the other map modes: to a reader it is
- * one more answer to "how does the map look", chosen in the same picker. The three flags are
- * written together by that picker so at most one of them is on. The home route mirrors this
- * flag into `?view=territories`, so a link can open the view and a reload keeps it.
+ * Whether the flat map is drawn as Territories: every capability named, gathered in its domain's
+ * slice, with no expansion step. The home route mirrors this flag into `?view=territories`.
  */
 const TERRITORIES_KEY = "atlas.appearance.territories";
 
@@ -379,41 +323,14 @@ export function useHexRelief(): boolean {
 /* ── Arrangement (3D map) ───────────────────────────────────────────────── */
 
 /**
- * Which structural question decides a node's **position** in 3D. This is a
- * question, not a style, and the picker names the resulting visible
- * arrangements Strata and Neural:
- *
- * - `strata` (default since 2026-09-25) — *who contains what, read by level.*
- *   Four stacked, lit planes, one per kind, and every domain owns one sector of
- *   the planes under it, so "which level" and "which domain" are both a glance.
- *   `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/` is
- *   the geometry.
- * - `coupling` — *what attaches to what.* Every relation contributes to a free,
- *   deterministic 3D force cloud gathered around the domains. It releases the
- *   kind tiers so dependencies can decide height as well as bearing; keeping
- *   the tiers produced only a distorted Dome and was explicitly reverted.
- *   Decision 84 records the rejected tier-constrained hybrid.
- *
- * **Why `strata` breaks the "key is the question" habit.** It joined the Cone
- * (`ownership`), which asked the same containment question with another shape,
- * so a question-shaped key would have collided. The shape's name stayed the
- * honest key after the Cone left.
- *
- * **The Cone is retired (2026-09-25).** The approved 3D direction keeps Strata
- * as the one containment view. A stored `ownership` (or a hand-written `cone`)
- * opens Strata, so a returning reader who had the Cone lands on the view that
- * replaced it rather than on a silent fallback. Ledger: the decision fragment
- * "The 3D map drops the Cone" under `docs/records/decisions/`.
- *
- * **Why this shares one picker with Flat.** Splitting 3D on/off from its
- * arrangement makes the current view depend on two controls. The toolbar's one
- * picker states the whole view choice without duplicating it in settings.
+ * `strata`: who contains what, read by level (`buildStrataTargets` in
+ * `src/widgets/ontology-map/model/dome-view/`). `coupling`: what attaches to what, a force cloud
+ * without kind tiers. A stored `ownership` or `cone` opens Strata.
  */
 export type MapArrangement = "strata" | "coupling";
 
 const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["strata", "coupling"];
 
-/** Stored values from before the Cone was retired, and the view each opens now. */
 const LEGACY_MAP_ARRANGEMENTS: Readonly<Record<string, MapArrangement>> = {
   ownership: "strata",
   cone: "strata",
@@ -427,7 +344,6 @@ function isMapArrangement(value: string | null): value is MapArrangement {
   return value !== null && (MAP_ARRANGEMENTS as readonly string[]).includes(value);
 }
 
-/** A stored arrangement, current or legacy, as the arrangement it opens today. */
 export function resolveStoredMapArrangement(saved: string | null): MapArrangement {
   if (isMapArrangement(saved)) return saved;
   if (saved !== null && Object.prototype.hasOwnProperty.call(LEGACY_MAP_ARRANGEMENTS, saved)) {
@@ -622,13 +538,8 @@ export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
 export type FootprintTone = "amber" | "indigo" | "star";
 
 /**
- * The one place a tone names its token.
- *
- * ⚠️ There used to be three: the map loop, the settings preview, and a bare hex default. The
- * preview still branched two ways after the star tone landed, so picking "starlight" painted
- * **amber** in the preview while the map painted white — and that module's own header says a
- * preview that drifts stops being a preview (design-system, 2026-09-10). Every consumer reads
- * this, so a fourth tone cannot be added to the union and forgotten in one of them.
+ * The one place a tone names its token, so every consumer reads it and a new tone cannot be added to
+ * the union and forgotten in the settings preview or the map.
  */
 export const FOOTPRINT_TONE_TOKEN: Record<FootprintTone, string> = {
   star: "--color-footprint-trail-star",
@@ -644,41 +555,19 @@ export const FOOTPRINT_TONE_FALLBACK: Record<FootprintTone, readonly [number, nu
 };
 
 /**
- * Footprint appearance — the values the owner tunes directly (2026-07-29).
- *
- * **Shape is not a preference.** It is fixed to a two-foot shoe print: letting
- * users pick the shape means everyone sees a different picture, and the screen
- * can then no longer say what the mark means. What is adjustable is only how
- * loudly the same meaning is said.
- *
- * The owner named 11 values; the 2026-07-29 council cut them to 8. All three
- * removed were values with no decision behind them — edge mark size (now fixed),
- * edge offset (folded into the node's `gap`, because it is one sentence to the
- * user), and edge mark count (replaced by the two-step density).
- *
- * Field names describe what is seen, not the value behind it ("Intensity" rather
- * than "alpha") — a settings screen is not a code review.
+ * Footprint appearance. The shape is fixed to a two-foot shoe print: letting users pick it would
+ * make the screen unable to say what the mark means. Only how loudly it is said is adjustable. Field
+ * names describe what is seen ("Intensity", not "alpha").
  */
 /**
- * What a person may choose about their walked path.
- *
- * ⚠️ **Six of these were retired on 2026-09-10 and the reason is worth keeping.** They
- * described a *glyph* — its fill, its outline weight, its bloom, whether it repeated along the
- * relation, how densely, and on which side. There is no glyph: the owner asked for the
- * footprint mark to go and for the node's own border to light instead, so the walked path is
- * now the node emitting, a line, and a number. A control whose value nothing reads is worse
- * than a missing one, because a person spends attention setting it and gets nothing back.
- *
- * Stored preferences carrying the old keys still load — `resolveFootprint` reads the fields it
- * knows and ignores the rest — so nobody's saved settings break; the retired values simply
- * stop being consulted.
+ * What a person may choose about their walked path. The walked path is the node emitting, a line and
+ * a number, so only four live fields exist. Stored preferences with older keys still load:
+ * `resolveFootprint` reads the fields it knows and ignores the rest.
  */
 export interface FootprintPreference {
   /**
-   * How far the step number sits from the node, in px, before the gap is added.
-   *
-   * It sized the glyph once. It now only places the ordinal, which is why the settings screen
-   * no longer calls it "star size": the star is the node, and the node's size is the map's.
+   * How far the step number sits from the node, in px, before the gap is added. It only places the
+   * ordinal; the node's size is the map's.
    */
   size: number;
   /** Extra offset for the step number, in px. */
@@ -739,11 +628,8 @@ export function resolveFootprint(raw: unknown): FootprintPreference {
     return clamp(v, FOOTPRINT_RANGES[key].min, FOOTPRINT_RANGES[key].max);
   };
   /*
-   * Only the four live fields are read. A preference saved before 2026-09-10 still carries
-   * `filled`, `strokeWidth`, `bloom`, `onEdges`, `edgeDensity` and `placement`; they are
-   * ignored rather than migrated, because there is nothing to migrate them *to* — the glyph
-   * they described no longer exists. Ignoring is also what keeps this function total: a stored
-   * shape from any version resolves, and no key is required to be present.
+   * Only the four live fields are read; older stored keys are ignored rather than migrated, which
+   * keeps this function total: a stored shape from any version resolves.
    */
   return {
     size: num("size"),
@@ -829,22 +715,9 @@ export function useFootprint(): FootprintPreference {
 export type ExpandAffordance = "pill" | "bar" | "badge";
 
 /**
- * How expanded children are laid out.
- *
- * All but `disc` come from the mockup's three candidates; `disc` is the previous
- * production layout (golden-angle phyllotaxis spiral,
- * `placePhyllotaxisDisk` in the map's `model/layout.ts`). The default is `fan`
- * (owner decision 2026-08-02), which makes `disc` more important, not less: it is
- * the only way back to the previous screen if the fan's falsifier is observed.
- * **Do not delete it** (`docs/DECISIONS.md`).
- *
- * - `disc` — spiral disc. Area grows only as √n, so it stays bounded.
- * - `fan` — sector fanning outward. Widens as rows stack and can collide with
- *   sibling domains.
- * - `ring` — a ring around the parent. Uses every direction, so the same count
- *   fits in less area.
- * - `column` — a line running outward. Labels sit side by side, the easiest to
- *   read, at the cost of length.
+ * `disc` (golden-angle spiral, area grows as the square root of n) is the only way back if the `fan`
+ * default's falsifier is observed: do not delete it (`docs/DECISIONS.md`). `ring` surrounds the
+ * parent; `column` runs outward.
  */
 export type ExpandStructure = "disc" | "fan" | "ring" | "column";
 
@@ -870,16 +743,9 @@ export interface ExpandPreference {
 }
 
 /**
- * ⚠️ Two of these deliberately change what is on screen today: `affordance: "bar"`
- * (owner, 2026-08-01: *"How about making the overhead bar the default?"* — make the overhead bar
- * the default) and `structure: "fan"` (owner, 2026-08-02). The three numbers are
- * the previous constants unchanged.
- *
- * Overlap was measured before promoting the fan: three parents expanded (48
- * children, 1512×982) gave 26 overlapping mark pairs; raising arc spacing from 26
- * to 34 and centring the last row brought it to **0**, with labelled marks rising
- * 31% → 34% — above the spiral's 27%. Values and falsifier: `docs/DECISIONS.md`,
- * 2026-08-02.
+ * `affordance: "bar"` and `structure: "fan"` deliberately change what is on screen; the three
+ * numbers are the original constants. Fan arc spacing 34 with a centred last row gave no overlapping
+ * marks (`docs/DECISIONS.md`).
  */
 export const DEFAULT_EXPAND: ExpandPreference = {
   affordance: "bar",
@@ -973,21 +839,8 @@ export function useExpand(): ExpandPreference {
 /* ── Library index (which list, and whether the column stands) ───────────── */
 
 /**
- * **Which of the Library's two lists the index is showing**, remembered per machine.
- *
- * The column carried both — sources above, wiki below, one scroll — until the owner read
- * it in the installed app on a folder of seven sources and seven pages (2026-09-07):
- * *"I hate this structure: sources on top, wiki underneath, one long scroll. A switch at
- * the top is better."* One segmented control now names both lists with their counts and
- * draws one of them, so the doors on screen are the ones that belong to the list on
- * screen.
- *
- * **Sources is the default** because it is the first half of the work: a folder with no
- * sources has no pages to list, and the three doors that are the reason somebody opens
- * this destination — add, find, bring from a service — are that segment's own. The stored
- * answer wins from the second visit onward, and opening a file from the graph or from the
- * guide moves the switch to the list that file is in, so the index can never name one
- * thing while the reader shows another.
+ * Sources is the default: a folder with no sources has no pages to list. Opening a file moves the
+ * switch to that file's list so the index never disagrees with the reader.
  */
 export type LibraryIndexSegment = "sources" | "wiki";
 
@@ -1028,30 +881,8 @@ export function useLibraryIndexSegment(): LibraryIndexSegment {
 }
 
 /**
- * **What the person had typed in the index's field, so a door can give it back.**
- *
- * Measured 2026-09-11 on the day-one folder (design-interaction, council): typing `T+2`,
- * pressing the caption, then pressing the Agents door and coming back through the rail
- * left the field empty — the door U2 exists to give somebody costs them the retype, and on
- * a capped folder a second read of every file as well. A door that makes a person redo
- * their own work is a door they stop pressing.
- *
- * ⚠️ **It is memory for this tab, not a stored preference, and that is a boundary rather
- * than a shortcut.** The scope this column is handed is `useVaultSessionIdentityScope` — a
- * per-session token that `use-vault-identity-scope.ts` says in as many words must never
- * become a persisted storage key. A `sessionStorage` slot keyed by it would be refused on
- * the next page load anyway, because the token is minted fresh per load, so the storage
- * bought nothing and `tests/contract/scope-registry.contract.test.ts` would have had to
- * certify a per-vault *persisted* key whose protection is a scope check inside the value.
- * A route round trip does not need persistence: this module outlives the unmounted column
- * and dies with the tab, which is the exact lifetime of the trip the door asks for.
- *
- * Two properties follow from the shape, and both are what the council asked for:
- *
- * - **Keyed by the folder.** Another folder never opens holding this folder's question;
- *   a scope that does not match reads back as nothing.
- * - **Cleared when the folder closes**, which is the same statement — the scope changes —
- *   and cleared when the person empties the field, which is them saying so.
+ * Tab-lifetime memory, not a stored preference: the identity scope is a per-session token that
+ * must never become a persisted storage key. Keyed by folder; cleared on close or empty field.
  */
 let libraryIndexQuery: { scope: string; query: string } | null = null;
 
@@ -1065,17 +896,8 @@ export function writeLibraryIndexQuery(vaultScope: string, query: string): void 
 }
 
 /**
- * **Whether the Library's index column is folded to its edge tab**, per machine.
- *
- * Same verdict, same day: *"the left panel must be closable, I may want only the graph."*
- * The map's INDEX panel already answers this — it folds to a slim vertical tab and its
- * camera refits against the width it gained — so the Library borrows the vocabulary
- * rather than inventing a second one. Off by default: the column is how a person reaches
- * the doors, and a destination that opens folded hides them.
- *
- * The fold is a `lg`-and-above answer only. Below `lg` the index is the bottom half of one
- * column and the graph is the top of it; there is no second pane for the column to give
- * its width to.
+ * Folded to its edge tab, `lg` and above only: below `lg` there is no second pane to give width
+ * to. Off by default so the index doors stay reachable.
  */
 const LIBRARY_INDEX_COLLAPSED_KEY = "atlas.library.index-collapsed";
 
@@ -1095,14 +917,8 @@ export function useLibraryIndexCollapsed(): boolean {
 }
 
 /**
- * **How an agent's wiki page lands**, per machine.
- *
- * Owner direction 2026-09-07: agents act and the person can step in. `auto` lets a page
- * that fits the wiki contract be written without a permission card; `ask` stops every
- * page at the card. It is a setting, not a door: it changes how every Compile, Fix and
- * proposal behaves, so it lives in Settings beside the folder's shape rather than in the
- * Library's index column, where two chips beside the doors read as scattered (owner,
- * 2026-09-07 evening). The key predates this move so a person's earlier choice carries.
+ * `auto` writes a page that fits the wiki contract without a permission card; `ask` stops every
+ * page at the card. The key is kept so earlier choices carry over.
  */
 export type WikiWriteMode = "auto" | "ask";
 
@@ -1136,18 +952,8 @@ export function useWikiWriteMode(): WikiWriteMode {
 }
 
 /**
- * **Whether this machine has already been shown the Library's three-step guide.**
- *
- * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
- * come up every time … isn't this a screen for the first use only and never again?"* The
- * guide is therefore a popup behind a door, and it raises itself exactly once — the first
- * time the Library's home is drawn on this computer — after which only the door opens it.
- *
- * ⚠️ **Per machine, not per folder.** The owner's sentence is "only on first use", and a
- * person who has read the three steps has read them; scoping the flag to the vault would
- * re-teach the same three sentences to someone opening their second folder. It shares the
- * key prefix and the `on`/`off` shape with `atlas.library.index-collapsed` so both of the
- * Library's remembered answers read the same way in a person's own storage.
+ * Per machine, not per folder: someone who has read the three steps should not be re-taught on a
+ * second folder.
  */
 const LIBRARY_GUIDE_SEEN_KEY = "atlas.library.guide-seen";
 

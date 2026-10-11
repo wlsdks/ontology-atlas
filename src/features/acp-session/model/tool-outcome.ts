@@ -1,43 +1,7 @@
 /**
- * **How much a tool call actually returned** — the missing half of a tool line.
- *
- * ## Why (2026-09-05)
- *
- * A tool line that says only 「Read the map · domains/agent-integration」 tells you the
- * agent looked; it does not tell you what came back. When the answer above it is wrong,
- * that line cannot say whether the tool found nothing, found one thing, or found forty —
- * so a wrong answer stays undiagnosable and the only remedy is to ask again and hope.
- *
- * A count makes the same line diagnostic: 「found 0」 under a confident paragraph is a
- * visible contradiction, and a person can act on it without reading a transcript dump.
- *
- * ## It counts only our own server's answer, and only what that answer counted
- *
- * ⚠️ `total` and `count` are **our** field names. On anything else the wire carries
- * somebody else's JSON, where those words can mean a byte count, a token budget or a page
- * index — and the row would print that beside 「Read the map」 as a result count. A number
- * that is confidently wrong is worse on a diagnostic row than no number at all, because
- * this row exists to be believed. So `fromVaultServer` is a required argument rather than
- * an option with a default: every caller has to say whose answer it is holding.
- *
- * The count is read from the tool's **own** top-level `total` or `count` field and from
- * nowhere else. Measured against the live server: `list_concepts({kind:'domain',limit:1})`
- * answers `{"total":8,"nodes":[…],"returned":1,"limited":true,"pagination":{…}}`, and
- * `mcp/src/index.js` returns every result through `ok()` as one text block holding
- * `JSON.stringify(result, null, 2)`.
- *
- * Three refusals keep the line from lying:
- *
- * - **No nesting.** `pagination.total` is not read. A number found by digging belongs to
- *   some inner object whose meaning this module does not know.
- * - **No array lengths.** `get_concept` returns a node whose `capabilities:` array has a
- *   length, and that length is not a result count.
- * - **No count on a call that did not finish well.** `failed` and `cancelled` describe an
- *   answer nobody received; printing a number beside them would describe work that never
- *   landed.
- *
- * When none of that yields a number the line falls back to the status the tool reported,
- * which is always true and never invented.
+ * How much a tool call returned. A count is read only from our vault server's top-level
+ * `total` or `count`, so `fromVaultServer` is required. No nesting, no array lengths, no
+ * count on a call that did not finish well; else it falls back to the reported status.
  */
 
 /** Statuses the ACP adapter uses once a tool call is over. */
@@ -97,15 +61,9 @@ export function readToolOutcome(
   /** Did this call go to the vault server we wired in? Only then is a count readable. */
   fromVaultServer: boolean,
   /**
-   * Is the turn this call belongs to **still running**?
-   *
-   * ⚠️ Required, and deliberately not defaulted, for the same reason `fromVaultServer` is: only
-   * the caller knows, and either default is a lie in one direction. Measured 2026-09-19 — press
-   * Stop while a read is in flight, or let a turn end without the adapter closing its call, and
-   * the row kept the word 「running」 and its pulsing ring for the rest of the conversation, with
-   * the session sitting at Ready and the composer open. The panel was claiming work in progress
-   * that had already stopped, which is the defect this repository already recorded once in the
-   * silent-turn case.
+   * Is the turn still running? Required, not defaulted, like `fromVaultServer`: the adapter
+   * stops reporting without closing a call, and either default would claim work in progress
+   * that stopped.
    */
   turnRunning: boolean,
 ): ToolOutcome {

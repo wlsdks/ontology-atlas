@@ -137,12 +137,8 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // ⚠️ **No separator is used** (2026-08-08). This file and its counterpart
-    // (`cli/src/lib/interop-format.mjs`) used to use **different** separators — NUL (U+0000)
-    // there, a space here. The docs and a contract test both say the two must produce the same
-    // output for the same input, and differing sort keys break that promise silently, on
-    // certain inputs only. A space separator is also **ambiguous**: ["a b","c"] and
-    // ["a","b c"] collapse to the same key. `JSON.stringify` fixes both problems.
+    // No separator: this file and `cli/src/lib/interop-format.mjs` must produce the same output for the
+    // same input, and a space separator is ambiguous. `JSON.stringify` avoids both problems.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);

@@ -16,10 +16,6 @@ describe('알림 읽음 시각 — 볼트별 자리', () => {
     expect(readAtStorageKey('local:alpha')).toBe('atlas.agentActivity.readAt:local:alpha');
   });
 
-  /**
-   * **This test locks the defect.** There used to be one global key, so opening the bell in one vault
-   * marked another vault's unseen items as read.
-   */
   it('한 볼트에서 읽음 처리해도 다른 볼트는 그대로다', () => {
     writeReadAt('local:alpha', 1_700_000_000_000);
 

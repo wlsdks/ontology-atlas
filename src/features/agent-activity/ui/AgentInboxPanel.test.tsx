@@ -93,16 +93,9 @@ describe('빈 탭', () => {
 });
 
 /**
- * Guardian verdict, 2026-09-12 — **indigo marks what needs the person, and the strip
- * counts only what can be acted on.**
- *
- * Measured before the correction (accent-ink pixels in the panel body of the same crops
- * `pil-edges.json` reads): To do 154 · Results 128 · History 823. A settled timeline held
- * 6.4× the accent ink of the tab holding four unread results, because its node names were
- * `tone: 'accent'`. Two seats prescribed opposite ink moves; both are refused here. The
- * timeline's object keeps its link — it is the only control in an inert row — and trades
- * the hue for the app's quiet-link underline, while a result row, whose *whole row* is the
- * button, gains no word-level mark and says its destination where there is room for it.
+ * Indigo marks what needs the person, and the strip counts only what can be acted on. A settled
+ * timeline's node names are not accent-coloured; a result row, whose whole row is the button, gains
+ * no word-level mark.
  */
 describe('패널의 잉크와 숫자 — 주의를 끄는 것만 인디고', () => {
   const history: BellInbox = {
@@ -150,7 +143,6 @@ describe('패널의 잉크와 숫자 — 주의를 끄는 것만 인디고', () 
     renderHistory();
     fireEvent.click(screen.getByRole('tab', { name: '기록' }));
     const object = screen.getByRole('button', { name: '지도에서 주문 열기' });
-    // The hue leaves: the loudest ink in the panel no longer sits on a settled timeline.
     expect(object.className).not.toContain('text-[color:var(--color-indigo-accent)]');
     // It takes the step the results tab already gives the same name, so one name reads
     // one way in both tabs.
@@ -185,9 +177,8 @@ describe('패널의 잉크와 숫자 — 주의를 끄는 것만 인디고', () 
 });
 
 /**
- * Owner review, 2026-09-26: a task that wrote once lasted 0 ms from its first change to its last,
- * and its row read "Claude Code · 0s · 3 days ago". Under a second the duration says nothing and is
- * left out; above it every size keeps the next unit only when it is not zero.
+ * A task that wrote once lasts 0 ms, so under a second the duration is left out; above it every size
+ * keeps the next unit only when not zero.
  */
 describe('걸린 시간 — 1초 미만은 말하지 않고, 긴 시간은 한 규칙으로', () => {
   const historyRow = (durationMs: number | null): BellHistoryRow => ({

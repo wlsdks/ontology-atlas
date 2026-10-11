@@ -69,8 +69,8 @@ export function CensusBigNumber({
   suffix?: string;
   scale?: 'signature' | 'section';
   /**
-   * The `warning` tone marks a number whose subject is an absence (the one amber allowed), and
-   * the `primary` tone takes the ink of a verdict word beside it so the number is not out-ranked.
+   * `warning` marks a number whose subject is an absence; `primary` takes the ink of the word beside
+   * it so the number is not out-ranked.
    */
   tone?: 'numeral' | 'warning' | 'primary';
   testId?: string;

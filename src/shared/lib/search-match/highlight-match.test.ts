@@ -91,17 +91,8 @@ describe("splitHighlightSegments", () => {
     expect(segs.filter((s) => s.match)).toHaveLength(2);
   });
 
-  // Landing defect: `searchDocs` in search.ts treats a multi-token query as an AND
-  // match — every token merely has to appear somewhere in the document (title,
-  // excerpt, body) to count as a hit, scored at bodyTierScore when the phrase is not
-  // contiguous. It never requires the phrase to exist. Viewer highlighting
-  // (splitHighlightSegments) used to require the whole phrase contiguously, and when
-  // the two contracts disagree the result is "search says it matched but the viewer
-  // shows 0 marks".
-  //
-  // Repro: `/ko/docs/` → search "Relationship type" → click the CLI Developer Entry body
-  // match → scrollTop 0, 0 marks. That phrase is nowhere contiguous in the document,
-  // while the tokens "Relationship" and "type" each occur.
+  // `searchDocs` treats a multi-token query as AND over scattered tokens, so highlighting must match
+  // individual tokens when the phrase is not contiguous.
   it("멀티 토큰 쿼리 — 구절이 어디에도 연속으로 없으면 개별 토큰을 OR 로 매치(스캐터드 AND 매치 착지)", () => {
     const text = "이 관계는 유용하다. 나중에 타입을 정의한다.";
     // The phrase "Relationship type" occurs nowhere contiguously in this text.

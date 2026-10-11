@@ -6,21 +6,9 @@ import {
 } from './tauri-secrets';
 
 /**
- * Client-side knowledge for the "Connect by address" path — where to
- * send requests, which model to use, and **why** a verify attempt failed.
- *
- * **Why localStorage.** The surface contract (`.claude/rules/surfaces.md`) already
- * splits this three ways: secrets in the keychain, preferences in localStorage, facts
- * that must cross surfaces in the vault. A runner address and the chosen model are
- * **not secrets** (this path has no key) and not vault facts — they describe what is
- * running on *this* machine, so carrying them to another machine would make them
- * wrong. Preferences is the right slot.
- *
- * **Why the model list is not stored.** The runner is the source of truth for it. A
- * stored list means one `ollama rm` leaves the screen offering a model that no longer
- * exists. The list is re-fetched from the runner on every verify connection
- * press — one request answering all three of "is it up", "is it
- * compatible" and "what can I pick".
+ * Client-side knowledge for the "Connect by address" path. Address and chosen model are preferences
+ * in localStorage (`.claude/rules/surfaces.md`): not secrets, not vault facts. The model list is not
+ * stored; it is re-fetched on every verify press, or a removed model would stay offered.
  */
 
 const STORAGE_KEY = 'ontology-atlas:local-endpoint';
@@ -110,25 +98,9 @@ export function subscribeLocalEndpointChange(handler: () => void): () => void {
 }
 
 /**
- * Can the name alone prove this model **cannot hold a conversation**.
- *
- * OpenAI-compatible `/v1/models` does not carry that fact — only Ollama's native
- * `/api/tags` has `capabilities`, and fetching it would turn one verify press into two
- * requests, so **the audit log and the screen would disagree** (one press, one logged
- * line). The verdict therefore comes from the name only, and returns true **only where
- * it is certain**.
- *
- * Two branches. ① The name contains `embed` — catches `embeddinggemma`,
- * `nomic-embed-text`, `mxbai-embed-large`, `snowflake-arctic-embed`,
- * `granite-embedding`, `qwen3-embedding`, `text-embedding-3-*`. ② Known families that
- * emit embeddings without the word `embed` — `bge-*`, `gte-*`, `e5-*`, `all-minilm`,
- * `paraphrase-multilingual`.
- *
- * **False-positive risk**: a chat-capable model starting with one of those prefixes
- * would be pushed to the end of the list and labelled "embedding only", which is wrong.
- * No such model exists today, and even then it stays **selectable** — nothing is
- * removed. The other direction (an embedding model we do not know) leaves the list
- * exactly as it was before: not a regression, just a miss.
+ * True only when the name alone proves the model cannot chat. OpenAI-compatible `/v1/models` carries
+ * no capabilities, and a second request would make the audit log and the screen disagree. A false
+ * positive stays selectable and merely sorts last.
  */
 export function isEmbeddingOnlyModel(name: string): boolean {
   // Strip the tag (`:latest`) — `bge-m3:latest` belongs to the same family.
@@ -149,21 +121,9 @@ const EMBEDDING_ONLY_PREFIXES = [
 ];
 
 /**
- * OpenAI-compatible `/v1/models` response → list of model names.
- *
- * Embedding-only models are **not removed**: removing them would make the screen deny
- * something that is really in the user's runner. What changes is the **order** —
- * alphabetical becomes useful-first. Alphabetical put `embeddinggemma:latest` in slot 1,
- * and the owner did pick it and got a saved "Connected" state (measured
- * 2026-08-01: 4 of the runner's 7 models were embedding-only). The defect was **a state
- * that will fail the first question being reported as success**, not the model's
- * presence in the list.
- *
- * Labelling is not hiding — rows judged to be embeddings carry a "Can't chat"
- * note via `Select`'s `description`, and a person still chooses.
- *
- * Within a tier the order is alphabetical as before. The only change is that there are
- * now two tiers, so a runner with no embedding models sees exactly the previous list.
+ * OpenAI-compatible `/v1/models` response to model names. Embedding-only models are not removed,
+ * only ordered after the rest, so the screen never denies a model that is in the runner. Within a
+ * tier the order is alphabetical.
  */
 export function parseOpenAiModelList(body: string): string[] {
   try {

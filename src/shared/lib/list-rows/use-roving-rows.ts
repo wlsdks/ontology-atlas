@@ -3,19 +3,9 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 
 /**
- * **One tab stop for the whole list; the arrows walk the rows.**
- *
- * A list of four thousand rows is not four thousand tab stops. Before this, Tab moved
- * through every row, which nobody asked for, and past the rows a windowed list had
- * rendered (`useWindowedRows`) a fast Tab could leave the list before the next rows
- * arrived (measured 2026-09-19: forty presses landed on the rail; at a human 80 ms pace
- * they stayed on the fortieth row). The roving pattern the radiogroups already use
- * (`use-roving-radio-group.ts`) is the answer for lists too: one row carries `tabIndex=0`,
- * the rest `-1`; ArrowDown/Up, Home/End and PageDown/Up move the stop, and a windowed list
- * scrolls the row into its scroller first so the row exists when focus moves onto it.
- *
- * The caller puts `onKeyDown` on the list, `tabIndexOf(i)` and `onRowFocus(i)` on each
- * row, `data-row-index` on the row's focusable, and hands over the window hook's `scrollToRow`.
+ * One tab stop for the whole list; arrows walk the rows. One row carries `tabIndex=0`, the rest
+ * `-1`; a windowed list scrolls the row into view first so it exists when focus moves. Caller wires
+ * `onKeyDown`, `tabIndexOf(i)`, `onRowFocus(i)`, `data-row-index` and `scrollToRow`.
  */
 export const ROVING_PAGE_ROWS = 10;
 
@@ -33,9 +23,8 @@ export function useRovingRows({
   /** Brings a row into the scroller before focus moves onto it; a windowed list supplies it. */
   scrollToRow?: (index: number) => void;
   /**
-   * The rows a windowed list has in the DOM. When the stop has scrolled out of them, the
-   * nearest rendered row carries the tab stop instead, so Shift+Tab from below the list
-   * still lands in it (measured 2026-09-19: with the stop unrendered the list had none).
+   * The rows a windowed list has in the DOM. When the stop has scrolled out of them, the nearest
+   * rendered row carries the tab stop so Shift+Tab from below still lands in the list.
    */
   rendered?: { start: number; end: number };
 }) {

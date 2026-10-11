@@ -2,14 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
-/**
- * Owner, 2026-08-24: *"so now, whether inside the project or outside it, if there is an atlas folder
- * we read it and draw the ontology?"* — asked about a hole the "map lives inside the project"
- * decision had just opened, and which nothing yet covered.
- *
- * These tests hold both halves of the answer: the map inside a project is found, and a folder that
- * merely shares the name never quietly replaces what the person actually picked.
- */
 describe('고른 폴더 안의 지도 찾기 — 사람은 프로젝트를 고르고, 지도를 보길 기대한다', () => {
   const vaultInside = (names: Record<string, string[]>) =>
     vi.fn(async (path: string) => names[path] ?? null);

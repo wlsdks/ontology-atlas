@@ -19,29 +19,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 export const EXIT_WINDOW_MS = 140;
 
 /**
- * **Do not draw a loading indicator for work that takes 0ms.**
- *
- * Measured 2026-08-08 (owner report: *"Three grey lines appear and vanish, right? It flickers away in well under a second"* — three grey lines appear and vanish, a
- * flicker gone in well under a second): switching documents in the workspace
- * drew the viewer's 3-line skeleton for **8.2–15.9ms** (median 9.7ms), inside a
- * single 60Hz frame (16.7ms). It happened on all 8 transitions.
- *
- * The cause is not slow loading. The parent remounts the viewer via
- * `key={doc.slug}`, so body state restarts at `null` every time, and even when
- * the body is already in memory the promise resolves on the next tick — so
- * **the skeleton wins at least one frame**. It was telling the user to wait when
- * there was nothing to wait for.
- *
- * So anything finishing before this window elapses **draws nothing at all**.
- *
- * The value comes from Nielsen (1993): under 0.1s a person perceives no delay,
- * so there is nothing to announce. The extra 50ms keeps a couple of slow frames
- * from tripping the skeleton back into a flicker, and a genuinely slow read
- * still gets its indicator far ahead of the 1-second "train of thought breaks"
- * boundary.
- *
- * Same category as `EXIT_WINDOW_MS` — **a mount timer, not a motion value**, so
- * it does not read the `--motion-*` ramp.
+ * Work finishing before this window draws nothing. Under 0.1s no delay is perceived; the extra
+ * 50ms keeps slow frames from flickering the skeleton. A mount timer, not a `--motion-*` value.
  */
 export const SKELETON_DELAY_MS = 150;
 
@@ -93,29 +72,15 @@ export function usePanelPresence(
     return () => clearTimeout(id);
   }, [open, exitMs]);
   /*
-   * Closed mounted frames are exiting immediately, before passive effects. An
-   * effect-owned flag left the first close commit interactive. Open frames must
-   * never inherit exit lockout on an immediate reopen (locale-switch focus loss,
-   * 2026-09-25); the timer owns mounting only.
+   * Closed mounted frames are exiting immediately, before passive effects; an open frame must not
+   * inherit exit lockout on an immediate reopen. The timer owns mounting only.
    */
   return { mounted, exiting: mounted && !open };
 }
 
 /**
- * Two surfaces **taking turns in the same slot**. Unlike the gate above, the
- * outgoing and incoming surfaces must exist **at the same time** for a
- * crossfade to happen at all.
- *
- * Why it is needed (frame measurement, 2026-07-28): collapsing INDEX made the
- * thing the user actually clicked (300px wide, 23% of the viewport) disappear in
- * one frame with `animation: none · opacity 1` (delta 13.25 @17ms), while the
- * map — merely the consequence — got a 217ms ease. Only the arriving surface had
- * entry grammar; the departing one had nothing. That is charter rule ① exactly:
- * a hard-cut winner over an eased background is a defect.
- *
- * `leaving` holds the previous value for the exit window. Consumers draw both
- * frames stacked in the same slot and give the outgoing one `inert` +
- * `pointer-events-none`.
+ * Two surfaces taking turns in the same slot: outgoing and incoming must exist at once to
+ * crossfade. `leaving` holds the previous value for the exit window; render it `inert`.
  */
 export function useSurfaceSwap<T>(
   current: T,
@@ -137,24 +102,8 @@ export function useSurfaceSwap<T>(
 }
 
 /**
- * Keeps **the box from jumping** when a surface is swapped.
- *
- * Measured 2026-07-28 (insights tab switch): the content crossfaded correctly on
- * `--motion-fast` (first frame 5.4%, ramp ~120ms), but in the same frame the
- * container height went `878.5 → 605` in **one frame** and the whole document
- * jumped 246px. The crossfade **did not wrap the reflow** — the text bleeds
- * through while the box snaps.
- *
- * The technique matches the list-row expansion contract: right after the swap,
- * restore the previous height, transition in one step (`--motion-base`) to the
- * measured new height, then hand it back to `auto`. Layout is never pinned
- * permanently, so responsive behaviour and scrolling are untouched.
- *
- * **Not applied under `prefers-reduced-motion`** — height is the axis that
- * shakes, and that is exactly the axis those users need removed. The content
- * crossfade stays, so "what changed" is still readable.
- *
- * Zero new duration/easing values — ramp tokens are only referenced inline.
+ * Prevents the box height snapping on a surface swap: restore the previous height, transition to
+ * the new one, then return to `auto`. Skipped under `prefers-reduced-motion`.
  */
 export function useSwapHeight<T>(token: T) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -240,17 +189,8 @@ export function useSwapHeight<T>(token: T) {
  */
 export function useHeldValue<T>(value: T | null | undefined, key?: string | number | null): T | null {
   /*
-   * ★ **Compare by key, not by identity** — learned by measurement 2026-08-03.
-   *
-   * The first version compared `value !== held`, and attaching it to the map's
-   * edge panel **killed the whole map with React #301 (infinite re-render)**.
-   * The consumer's model was a `useMemo` whose identity was recreated on every
-   * render, so `setState` ran on every render and the loop never ended.
-   *
-   * Hence the key requirement. When holding an object, pass a **primitive** that
-   * identifies the surface (e.g. `` `${sourceId}→${targetId}` ``). With no key
-   * the value itself is used as the key, so **a non-primitive value must always
-   * be given one**.
+   * Compare by key, not identity: a consumer whose value is recreated each render would loop
+   * forever. When holding an object pass a primitive key.
    */
   const identity = key ?? (value as unknown as string | number | null | undefined) ?? null;
   const [state, setState] = useState<{ key: unknown; value: T | null }>({

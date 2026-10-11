@@ -15,22 +15,13 @@ export interface DiffractionSpikeDrawState {
   /** farT-gated — spike is invisible at farT<=0.02, fully present by farT=1 (prototype: `alpha = farT`). */
   alpha: number;
   /**
-   * Arm rotation in radians, default 0 (upright cross).
-   *
-   * The magnitude spike says *this node is large*; the walked star wears the same primitive
-   * to say *you were here*, and inside one open-lens frame both are on screen at once. They
-   * were separated only by ink, at 1.68:1 — a hue difference no colour-vision deficiency and
-   * no dim tier can be relied on to hold (design-infoviz, 2026-09-10). Rotating one set of
-   * arms separates them by **form**, which is nominal-safe by construction.
+   * Arm rotation in radians, default 0 (upright cross). Rotating one set of arms separates a walked
+   * star from a magnitude spike by form, which holds for colour-vision deficiency where hue does not.
    */
   rotation?: number;
   /**
-   * Ceiling on the long arm, in screen px. Default: none.
-   *
-   * At `r*2.6` a 23px node throws a 60px arm while its domain label anchors at r+17 = 40px,
-   * so the arm is the brightest thing in the label's own row (measured: `rgb(184,184,193)`
-   * against every glyph in it). The walked star clamps; the far-field starfield, which has
-   * no labels near it, does not.
+   * Ceiling on the long arm, in screen px. Default: none. A long arm on a small node outshines its own
+   * domain label's row; the walked star clamps, the far-field starfield does not.
    */
   maxLong?: number;
 }

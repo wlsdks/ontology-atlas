@@ -2,22 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { permissionScope } from './permission-scope';
 
-/**
- * The card must state exactly **what "always allow" allows.**
- *
- * ## Why (2026-08-17)
- *
- * The card's third button **asserted** *"allow the entire folder containing the path above for this
- * whole conversation"*. But the adapter, not us, decides that scope, and it states it through
- * `_meta.permission.changes[].targets[]` — measured, that value was **a tool, not a folder**
- * (`{ type: 'tool', toolName: 'mcp__atlas-vault__add_concept' }`).
- *
- * Writing "allow the folder" while actually allowing a tool leaves the user believing **they granted
- * a permission they never gave, or the reverse.** That is the screen lying at the most expensive decision.
- *
- * So it **states only what the adapter declared.** Given nothing, it asserts nothing.
- */
-
 const withTargets = (targets: unknown[]) => [
   { optionId: 'reject', kind: 'reject_once' },
   { optionId: 'allow', kind: 'allow_once' },

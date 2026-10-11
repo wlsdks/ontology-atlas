@@ -1,40 +1,7 @@
 /**
- * The supported MCP clients and **the file each one uses** — the source of truth for the per-tool
- * buttons.
- *
- * **Why this table exists.** One press of "Connect to Claude Code" wrote three files (`.mcp.json`,
- * `.mcp.json.example`, `.codex/config.toml`), because the planner emitted the entire allowlist as
- * targets and the call site iterated all of them.
- *
- * **That is a label telling a lie** — the class of defect this repository already gates against
- * ("back to the map" pointing at `/`, decorative trailing arrows on labels, dead npm commands). On
- * top of that, a config for a tool the user does not use shows up in their git diff, contradicting
- * this product's own claim that every change is a readable diff.
- *
- * **The list was decided by research** (2026-07-30). Three criteria: ① does it accept stdio
- * JSON-RPC ② does it have a **project-scoped** config (writing inside the vault and auditing by git
- * diff is the contract) ③ does it actually exist.
- *
- * | Tool | Basis |
- * |---|---|
- * | Claude Code | `.mcp.json` — the official docs name it as "checked into version control" |
- * | Codex | in-repo `.codex/config.toml` officially supported (trusted-folder condition) |
- * | Cursor | `.cursor/mcp.json` project scope — **promoted from a deeplink to writing the file** |
- * | Antigravity | workspace `.agents/mcp_config.json`, stdio explicit |
- *
- * **Leaving VS Code out is not a preference.** It supports `.vscode/mcp.json`, but its key is
- * **`servers`** rather than `mcpServers` — it alone demands a second writer while having the
- * smallest target overlap. Cursor and Antigravity use the same `mcpServers` key and so fall through
- * **the existing writer** (`agentConfigContents`'s default branch).
- *
- * **openclaw and Hermes Agent were rejected.** Both exist and have users
- * (`~/.openclaw/openclaw.json`, `~/.hermes/config.yaml`), but they support **global home config
- * only**, which would require breaking criterion ② above. Star counts are not grounds for bending a
- * contract.
- *
- * **First on the waiting list: opencode** — its project `opencode.json` satisfies the contract. Its
- * `command` is an array and needs one adapter, so it goes in when there is a reason to write that
- * adapter.
+ * The supported MCP clients and the one file each uses: the source of truth for the per-tool buttons.
+ * Each accepts stdio JSON-RPC and a project-scoped config, so auditing by git diff holds.
+ * VS Code is out: its key is `servers`, which needs a second writer.
  */
 
 export type AgentClientId = 'claude-code' | 'codex' | 'cursor' | 'antigravity';

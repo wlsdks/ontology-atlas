@@ -1,19 +1,6 @@
 /**
- * The notification box's **"seen up to here" timestamp** — a per-vault slot.
- *
- * ## Why a separate module
- *
- * With the key computed inside the hook, **reverting it turns no test red** (measured 2026-08-01:
- * the scoping was removed from inside the hook and the registry contract test stayed green, because
- * the file still *mentioned* the scoping function's name). A check that looks for a name in the source
- * cannot prove the wiring exists. So the derivation is extracted as a pure function and locked
- * **by behaviour** (`read-at-storage.test.ts`).
- *
- * ## What was broken
- *
- * There used to be one global key. The feed is per vault while the threshold was global, so **opening
- * the bell in one vault marked another vault's unseen items as read.** A notification's only job is to
- * say "what you have not seen yet", and that verdict became false because of someone else's folder.
+ * The "seen up to here" timestamp, one slot per vault. The key derivation is a pure function so
+ * tests lock it by behaviour; a source scan for the scoping name cannot prove the wiring exists.
  */
 const READ_AT_KEY_PREFIX = 'atlas.agentActivity.readAt:';
 

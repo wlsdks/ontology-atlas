@@ -6,24 +6,9 @@ import { buildAcpPresentationTrace } from './presentation-trace';
 import type { AcpEvent } from './use-acp-session';
 
 /**
- * **The blocked card may only name reasons it can actually give.**
- *
- * ## What was measured (2026-09-20)
- *
- * The card listed ten reasons. Two of them could never be read, because the panel re-checks the
- * same conditions before it draws the card at all:
- *
- * | reason | the builder returns it when | the panel already requires |
- * |---|---|---|
- * | `intent_inactive` | the intent is null, or this turn is not the request | intent non-null **and** this turn is the request |
- * | `turn_incomplete` | the session is not `ready` | the session is `ready` |
- *
- * So the two sentences were written, translated and shipped for a state the surface cannot be in.
- * They are gone, and this holds the two halves together: the catalogue must carry a sentence for
- * every reason the card can reach, and must not carry one for a reason it cannot.
- *
- * ⚠️ **Removing copy only pays if the unreachability is checked.** If a guard is ever relaxed, the
- * reason becomes reachable and `t()` would print the raw key on screen. These cases fail first.
+ * The blocked card may name only reasons the panel can reach: `intent_inactive` and
+ * `turn_incomplete` are re-checked before the card draws. If a guard relaxes, `t()` would
+ * print a raw key; these cases fail first.
  */
 
 const user = (text: string): AcpEvent => ({ kind: 'user', id: 'u', text });

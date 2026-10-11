@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeDomainRef } from "./canonicalize-domain-ref";
 
 describe("canonicalizeDomainRef", () => {
-  /*
-   * Map-edit QA D10 (2026-09-26): the map's "add under this domain" wrote `domain: code-evidence`
-   * while every agent-written node in the same vault — and the dogfood vault, 93 of 93 — writes
-   * `domain: domains/code-evidence`. The domain document's own address is the one spelling.
-   */
+  /* The domain document's own address is the one spelling: `domains/<name>`. */
   it("keeps the folder-qualified address every other writer uses", () => {
     expect(canonicalizeDomainRef("domains/code-evidence")).toBe("domains/code-evidence");
     expect(canonicalizeDomainRef("domains/문의-처리")).toBe("domains/문의-처리");

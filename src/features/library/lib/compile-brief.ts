@@ -9,9 +9,8 @@ import {
 } from "@/shared/lib/library/wiki-page-schema";
 
 /**
- * The one place a runner is told the compilation contract (ACP: `WIKI_PAGE_TEMPLATE`; local: typed
- * fields). Source text is untrusted data, or a document's imperative becomes a directive
- * (docs/ONTOLOGY-ATLAS-SPEC.md §7); one page per source: docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md.
+ * The one place a runner is told the compilation contract. Source text is untrusted data, or a
+ * document's imperative becomes a directive (docs/ONTOLOGY-ATLAS-SPEC.md, section 7).
  */
 
 export interface CompileBriefInput {
@@ -32,7 +31,6 @@ export interface CompileBriefInput {
   now?: Date;
 }
 
-/** Sources a Compile run acts on: the ones with no write-up, or one that no longer fits. */
 export function selectCompileTargets(
   sources: readonly LibrarySourceRow[],
 ): LibrarySourceRow[] {

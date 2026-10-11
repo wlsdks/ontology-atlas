@@ -17,12 +17,8 @@ import {
 } from "./detents";
 
 /**
- * "How often" as one draggable rail with detents
- * (`docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2). Every word arrives
- * through `labels`, so the messages stay in `messages/{en,ko}.json`. Pointer capture keeps a
- * drag working off the rail; the nearest detent is reported while dragging, and release springs
- * the thumb onto it (`--motion-ease-drag-release`). The thumb is a `role="slider"` with a 44px
- * hit area, and every detent label is a button.
+ * Rail with detents. The thumb is a `role="slider"` with a 44px hit area; every detent label is a
+ * button.
  */
 
 export type CadenceUnit = "minutes" | "hours" | "day";

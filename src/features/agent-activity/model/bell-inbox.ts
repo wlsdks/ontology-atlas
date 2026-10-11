@@ -1,29 +1,7 @@
 /**
- * The bell panel's three answers, derived once.
- *
- * **Why this module exists.** The panel used to be one log: work receipts stacked over
- * an event feed, every line an event. Measured on the seeded fixture, a person returning
- * after an hour read a receipt's title, its path in parentheses, and then four
- * dot-separated state words — agent, allowed, completed, one change — then the same title
- * again, then "<agent> finished a task" and "<agent> started a task" for one single piece
- * of work, and nothing at all about the request the agent was blocked on. Four dot-separated state words are not a sentence,
- * and a start plus an end are not two events to a person: they are one task.
- *
- * So the panel asks three different questions and this module answers all three from the
- * **same sources the feed already reads** (owner, 2026-09-12: this panel's inside matters
- * very much, and tabs inside it are fine):
- *
- * | Tab | Question | Source |
- * |---|---|---|
- * | `todo` | What waits on me? | a blocked turn (`work.phase === 'blocked'`) · folder problems the last turn added |
- * | `results` | What got done? | finished sessions joined to their `task-end` notification, plus decisions that produced no write |
- * | `history` | What happened, when? | the same notifications, folded per task and grouped by day |
- *
- * **What this module refuses to invent.** It never turns silence into a claim: a session
- * with no end notification is not a result, a receipt is attributed to a task only inside
- * the product's own "same piece of work" window, and a problem stops being a thing to do
- * once it is older than the 24-hour newsworthiness window the activity log already
- * defines. Copy lives in `messages/*.json`; this file returns facts and counts only.
+ * The bell panel's three answers, derived once from the feed's sources: `todo`, `results`,
+ * `history`. Silence is never a claim: no end notification is no result; a problem stops being a
+ * to-do after 24 hours.
  */
 import type { AcpWorkDecision, AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import type { AgentNotification, AgentNotificationKind, VaultProblemCounts } from '@/shared/lib/agent-activity/agent-notifications';
@@ -90,13 +68,8 @@ export type BellResult =
     };
 
 /**
- * One row of the timeline: a whole task, a shape/problem event, or **a decision the person
- * themselves made**.
- *
- * The last one is here because the timeline was answering "what happened, when" without
- * the person's own allow and reject in it (design-lead and po-steward, 2026-09-12). A
- * rejected write produces no log line at all, so before this its only rendering anywhere
- * was the folded Results row.
+ * One timeline row: a whole task, a shape or problem event, or a decision the person made; a
+ * rejected write otherwise produces no log line.
  */
 export interface BellHistoryRow {
   id: string;
@@ -180,20 +153,9 @@ function agentFamily(raw: string | null | undefined): string | null {
 }
 
 /**
- * Which task a human decision belongs to.
- *
- * A decision is made **before** the write it permits, so a receipt's time sits just
- * outside the session's first and last write. The product already owns one definition of
- * "still the same piece of work" — `AGENT_TASK_IDLE_MS`, five minutes of quiet — so the
- * same number is used here rather than a second, invented tolerance. A receipt counts for
- * at most one task; one that matches nothing stands on its own row, which is the only way
- * a **rejected** write is ever seen (it produces no log line at all).
- *
- * ⚠️ **Time alone is not enough** (po-evidence, 2026-09-12): two agents can work minutes
- * apart in one folder, and a decision credited to the wrong turn makes a task row say
- * "1 allowed" for permission the person never gave it. When both records name an agent, they
- * have to be the same one; when either is silent, time decides alone rather than the row
- * being dropped.
+ * Which task a human decision belongs to. A decision precedes its write, so `AGENT_TASK_IDLE_MS` is
+ * the tolerance, and a receipt counts for at most one task. When both records name an agent they
+ * must match; when either is silent, time decides alone.
  */
 function sessionForReceipt(
   receipt: AcpWorkReceipt,
@@ -237,14 +199,9 @@ function leadingWrite(counts: AgentWriteCounts): string {
 }
 
 /**
- * What a result row **says**, which is what may be folded.
- *
- * ⚠️ Keyed on the subject alone, the fold could invert a person's own decision
- * (po-steward, 2026-09-12): reject-then-retry-then-allow on the same request by the same
- * agent — the ordinary shape of a correction — folded into one row, the newer row won, and
- * the panel printed "You allowed it ×2" over a rejection that had happened. Receipts never
- * reach the timeline, so that row is the only rendering the decision gets. Two rows fold
- * only when they would print the same sentence.
+ * What a result row says, which is what may be folded: reject then retry then allow on one request
+ * must not fold into one row printing "allowed ×2". Rows fold only when they print the same
+ * sentence.
  */
 function resultSubject(row: BellResult): string {
   return row.kind === 'task'

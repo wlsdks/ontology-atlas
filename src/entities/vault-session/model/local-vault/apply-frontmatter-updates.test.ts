@@ -26,9 +26,6 @@ describe('applyFrontmatterUpdates', () => {
     expect(result).toContain('name: A');
   });
 
-  // Follow-up to the 2026-07-26 walkthrough — the starter writes arrays in block style
-  // (`capabilities:` + `  - …`), and the old implementation, which replaced only the key line, left
-  // the previous item lines in the file and produced a document unreadable as standard YAML.
   it('블록 스타일 배열을 교체하면 옛 항목 줄이 남지 않는다', () => {
     const raw = `---\nkind: domain\ncapabilities:\n  - capabilities/a\n  - capabilities/b\ntitle: T\n---\n\n본문`;
     const result = applyFrontmatterUpdates(raw, {

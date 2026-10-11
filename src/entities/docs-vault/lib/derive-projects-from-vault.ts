@@ -2,7 +2,6 @@ import { readDisplayNames, type Project } from '@/entities/project';
 import type { VaultDoc, VaultManifest } from '../model/types';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
-/** Project docs (`kind: project`, or a legacy `projects/` path) as `Project`s; synchronous. */
 export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
   const projects: Project[] = [];
   for (const doc of manifest.docs) {

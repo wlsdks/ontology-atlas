@@ -1,15 +1,12 @@
 import { canAutoStartGuidedTour } from "./auto-start-guard";
 
 /**
- * Cancels the first-visit tour when the user starts exploring while it waits (900ms plus
- * retries, so up to seconds later), rather than adding firing exceptions. Replay stays in
- * Settings and on the map compass tile. Input while a modal is up does not count; the verdict
- * reuses `canAutoStartGuidedTour` so the two cannot diverge.
+ * Cancels the first-visit tour when the user starts exploring while it waits. Input while a modal is
+ * up does not count; reuses `canAutoStartGuidedTour` so the two cannot diverge.
  */
 export interface WatchGuidedTourAutoStartCancelOptions {
   /** Defaults to `window`. */
   target?: Pick<Window, "addEventListener" | "removeEventListener">;
-  /** For the modal verdict; defaults to the global `document`. */
   doc?: Document;
 }
 

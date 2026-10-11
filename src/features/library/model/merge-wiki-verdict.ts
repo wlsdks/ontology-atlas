@@ -17,8 +17,8 @@ export interface WikiVerdictLike {
 }
 
 /**
- * The folder and advisory code sets live in `mcp/src/wiki-report.mjs`, so the app and the CLI
- * split findings one way (docs/DECISIONS.md 2026-09-11). Advisory findings never flip `ok`.
+ * The folder and advisory code sets live in `mcp/src/wiki-report.mjs` so the app and the CLI split
+ * findings one way.
  */
 export { isWikiFolderCode };
 /** Kept under its original name: every Library surface already imports this spelling. */

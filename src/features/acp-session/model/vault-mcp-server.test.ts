@@ -9,14 +9,6 @@ import {
   vaultWriteConsentOn,
 } from './vault-mcp-server';
 
-/**
- * Measured 2026-08-17. Opening a codex session in a vault created by `init` had **the same server
- * running twice** — one from the vault's `.codex/config.toml`, one wired by the app. Both names gave
- * the same result:
- *
- *   mcp.ontology-atlas.list_kinds → {"total": 5, …}
- *   mcp.atlas-vault.list_kinds    → {"total": 5, …}
- */
 const BINARY = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
 const launch = { kind: 'app-bundled' as const, command: BINARY, args: [] };
 const VAULT = '/Users/me/Documents/vault';
@@ -95,13 +87,6 @@ describe('어느 런타임이 볼트 설정을 스스로 읽나 — 실측한 �
     expect(vaultSelfReadSlot(undefined)).toBeNull();
   });
 });
-
-/**
- * Measured in the installed app, 2026-08-25. The door created `<project>/atlas`, opened it, and
- * handed the work to Claude — which stopped at the first step and said the Atlas server reported its
- * code root as the vault folder itself, refusing to look one level up at the product. The feature
- * built to make a map from somebody's code could not see their code.
- */
 
 
 describe('저장소 루트 — 지도가 프로젝트 안에 있으면 코드는 한 단계 위다', () => {

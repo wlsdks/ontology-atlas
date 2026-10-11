@@ -3,8 +3,8 @@ import { WIKI_DIR, validateWikiPage } from "@/shared/lib/library/wiki-page-schem
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
 
 /**
- * Judges a wiki page before the person allows the write, on the text the tool would leave.
- * Not a wiki page or an edit that cannot apply gives `null`: no verdict rather than a guess.
+ * Judges a wiki page on the text the tool would leave; a non-wiki page or an inapplicable edit gives
+ * `null`.
  */
 
 export interface PageWriteVerdict {

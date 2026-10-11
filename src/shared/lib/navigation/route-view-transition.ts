@@ -1,70 +1,7 @@
 /**
- * **Route changes crossfade instead of cutting** (2026-09-02).
- *
- * Measured on the static build with a real display recording, 30 fps frames,
- * whole-window pixel diff per frame: a rail click reached the new screen within
- * 33–100 ms, and then **84–99 % of the whole change landed in one frame**
- * (Architecture 84 %, Projects 96 %, Agents 99 %). Every other surface in the
- * app eases (panels, sheets, the map's own transitions), so the one place where
- * the entire screen changed was the one place with no motion at all.
- *
- * The browser's View Transitions API does the work: `document.startViewTransition`
- * snapshots the old screen, the navigation updates the DOM, and the two are
- * crossfaded by the compositor. `app/globals.css` sets the crossfade to
- * `--motion-base` on the `--motion-ease` curve. Reduced motion keeps the
- * crossfade: an opacity-only change is the least-shaking equivalent the design
- * system asks for, not something to switch off.
- *
- * ⚠️ **What is captured is the pane, and only while a transition runs**
- * (2026-09-13). The crossfade used to capture the whole document and lift the nav
- * rail out of it under its own name. In WebKit — the installed app's engine — the
- * root group paints over every other group, so a named sibling spends the whole
- * transition underneath the departing screen's snapshot (the engine table is in
- * `app/globals.css`). `ROUTE_CROSSFADE_CLASS` is therefore put on the document
- * element for exactly as long as the transition lasts: the stylesheet uses it to
- * stop capturing the root and to name the shell's pane instead. Off a transition
- * the document carries no `view-transition-name` at all, so nothing here changes
- * paint or containment while the app is sitting still.
- *
- * ⚠️ **This was not what blanked the installed app, and the record used to say it
- * was** (corrected 2026-09-13). Inspection 122's B1 — *"every rail navigation
- * blanks the whole window, rail included"* — survived the change above, and the
- * reason is that a rail press in the installed app was never a route change at
- * all. `src-tauri/tauri.conf.json`'s `connect-src` refused the App Router's fetch
- * of the arriving route's own payload, so the router fell back to a **full document
- * load**: the blank was the app booting and restoring the folder again, which is
- * why it lasted 33-67 ms on a six-document folder and 100-300 ms on a
- * 104-document one. `scripts/lib/desktop-csp.mjs` carries that measurement and the
- * gates.
- *
- * With navigation restored to a route change, the crossfade **paints correctly on
- * WKWebView**. Measured on the installed app, change-driven frame burst at 1/120 s
- * over a rail band and a pane band: a Library crossing ran the transition for 231 ms
- * with its four `::view-transition` animations occupying the declared 180 ms, and
- * **every frame of it was painted** — rail ink 0.0243-0.0307, never 0. So the
- * crossfade is not engine-gated. Explicit Map entry uses its live preparation
- * boundary instead of holding a snapshot; other destinations use this helper.
- * A browser without the API still takes the direct path below.
- *
- * **Why the promise resolves on the pathname, not on `router.push`.** The App
- * Router's push returns before the new tree is committed. The transition must
- * hold the old snapshot until the new screen is in the DOM, so the shell resolves
- * the pending transition in a layout effect keyed on the pathname — after commit,
- * before paint. A safety timeout resolves it regardless, so a navigation that
- * never changes the pathname (already there, or blocked) cannot freeze input
- * behind a held snapshot for more than a moment.
- *
- * ⚠️ **"For more than a moment" was not measured until 2026-09-12, and it was
- * wrong.** Resolving the update callback is not the end of the transition: the
- * animations run afterwards, and while any of them runs the captured document is
- * not painted and therefore not hit-tested — `elementFromPoint` answers `html` at
- * every point and a press lands on nothing. Arriving at the Library the hold ran to
- * 480-489 ms against a 180 ms declared crossfade, and a press at +300 ms missed the
- * door. So this file now owns a second bound — the crossfade budget below, armed
- * when the route commits — and `app/globals.css` no longer lets the browser's own
- * group animations outlive the crossfade it declares.
- *
- * Browsers without the API (or a build without `document`) navigate as before.
+ * Crossfades route changes (opacity only, kept under reduced motion). `ROUTE_CROSSFADE_CLASS` is on
+ * the document element only while a transition runs. The hold is bounded (timeout, crossfade budget)
+ * because a captured document is not hit-testable.
  */
 
 /** Longest a transition may hold the old snapshot while waiting for the new route (ms). */
@@ -85,18 +22,8 @@ interface ViewTransitionHandle {
 }
 
 /**
- * **A skipped transition is not an error here** (installed app, 2026-09-04).
- *
- * When the document is hidden the browser refuses to run the transition and
- * *rejects* `ready` (and, depending on when it is skipped, `finished` and
- * `updateCallbackDone`). Nothing awaited them, so the WebView logged
- * `webview unhandledrejection: View transition was skipped because document
- * visibility state is hidden.` on an ordinary background navigation.
- *
- * The navigation itself already happened inside the update callback, so there
- * is nothing to recover: the only correct response is to stop the rejection
- * from escaping. Handlers are attached to whichever promises the handle
- * actually carries.
+ * A skipped transition is not an error: a hidden document makes the browser reject `ready` and the
+ * other promises, so handlers are attached to whichever promises the handle carries.
  */
 function silenceSkippedTransition(handle: unknown): void {
   if (!handle || typeof handle !== 'object') return;
@@ -107,36 +34,9 @@ function silenceSkippedTransition(handle: unknown): void {
 }
 
 /**
- * **A crossfade that could not start is a delay, not motion** (measured 2026-09-12).
- *
- * While a view transition runs, the captured document is not painted, and an unpainted
- * document is not hit-testable: `document.elementFromPoint` answers `html` at every
- * point and a press lands on nothing. So the length of the transition is the length of
- * time the arriving screen refuses input.
- *
- * `app/globals.css` declares one 180 ms crossfade and (since the same day) removes the
- * UA group animations that used to outlive it. What it cannot control is *when* the
- * browser gets to start that crossfade: the animations begin on the first frame after
- * the new route commits, so a route whose first render costs 200 ms pays that 200 ms
- * **and then** the whole 180 ms fade. Measured across six rail crossings on the static
- * export at 1512x901:
- *
- * | arriving at | committed | animations started | finished |
- * |---|---|---|---|
- * | Agents / MCP / History | 20-43 ms | 39-56 ms | 278-301 ms |
- * | Library | 22-24 ms | 229-239 ms | 480-489 ms |
- *
- * A press at +300 ms landed on `HTML` rather than on the Library's own door.
- *
- * So the hold is bounded from the moment the route commits — the one moment this module
- * is told about. One crossfade's worth of time later, either the fade has begun (and
- * will end on its own, on the duration somebody chose) or it never will, and the
- * transition is skipped. Nothing that can play is cut: on the three routes above the
- * fade starts at 39-56 ms, long inside the bound, and is untouched. What ends is the
- * hold that had no picture in it.
- *
- * The budget is read from `--motion-base` so this file and the stylesheet cannot drift;
- * a document that cannot answer falls back to the same number the stylesheet ships.
+ * A crossfade that could not start is a delay, not motion: while it runs the document is not
+ * hit-testable. The hold is bounded from route commit by one crossfade budget, read from
+ * `--motion-base` so this file and the stylesheet cannot drift.
  */
 export const ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS = 180;
 

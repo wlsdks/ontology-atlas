@@ -49,9 +49,8 @@ function feed(overrides: Partial<AgentActivityFeed> = {}): AgentActivityFeed {
 }
 
 /**
- * **One line lives in one place** (2026-08-17, reverting the split). The status line and the bell are
- * in the same chip, so the tests do not light up fragments either. `renderBell` is kept as a name —
- * that name carries the condition that seeing the bell requires having a notification to see.
+ * The status line and the bell share one chip, so tests render the chip whole. `renderBell` keeps
+ * its name because seeing the bell requires a notification.
  */
 function renderChip(next: Partial<AgentActivityFeed> = {}) {
   mocks.feed = feed(next);
@@ -149,7 +148,6 @@ describe("AgentActivityChip", () => {
     });
     expect(screen.getByTestId("agent-activity-chip")).toHaveAttribute('data-work-mode', 'live');
     expect(screen.getByTestId("agent-activity-status")).toHaveTextContent("Codex · 검증 중");
-    // The node lives in the status view since 2026-09-24; the row keeps who and which step.
     expect(screen.queryByTestId("agent-activity-target")).toBeNull();
     fireEvent.click(screen.getByTestId("agent-activity-status-trigger"));
     const current = screen.getByTestId("agent-activity-current-work");
@@ -245,10 +243,6 @@ describe("AgentActivityChip", () => {
     expect(current).toHaveTextContent('validate_vault');
   });
 
-  /*
-   * **The status is a segment of the toolbar row, joined to the bell** (owner,
-   * 2026-09-24). It used to hang under the row, attached to nothing.
-   */
   it("상태는 종과 한 몸인 도구줄 조각이다 — 줄 아래로 떠 있지 않다", () => {
     renderBell({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning" } });
     const dock = screen.getByTestId("agent-activity-dock");
@@ -265,8 +259,8 @@ describe("AgentActivityChip", () => {
   });
 
   /*
-   * **Nothing said twice** (2026-09-19; owner, 2026-09-24): an in-app turn's status is
-   * already streaming in the open conversation panel, so the toolbar stops saying it.
+   * An in-app turn's status already streams in the open conversation panel, so the toolbar does not
+   * repeat it.
    */
   it("대화 패널이 열려 있으면 앱 안 턴의 상태를 도구줄에서 다시 말하지 않는다", () => {
     mocks.feed = feed({ writing: true, agentName: "Codex", work: { ...feed().work, mode: "live", agentName: "Codex", phase: "planning", startedAt: NOW - 6_000 } });
@@ -322,9 +316,8 @@ describe("AgentActivityChip", () => {
     );
   });
 
-  // The badge alone did not survive a glance (owner report, 2026-08-24): a bell
-  // holding unread receipts and an empty bell looked identical. The glyph itself
-  // has to change, so the signal is shape and weight rather than a small badge.
+  // A badge alone does not survive a glance; the glyph itself changes (filled) so the signal is shape
+  // and weight.
   it("안 읽은 결과가 있으면 종 글리프 자체가 채워진다", () => {
     const task = finishedTask("a", NOW - 1000);
     renderBell({ sessions: [task.session], notifications: [task.notification] });
@@ -387,10 +380,8 @@ describe("AgentActivityChip", () => {
   });
 
   /*
-   * ⚠️ Opening the bell used to mark **everything** read. Looking in to check one thing
-   * therefore erased the unread mark from the four results nobody had read, which is the
-   * one fact the panel exists to keep. The boundary now moves only when a person says so
-   * — the header door — or when they open a row.
+   * Opening the bell must not mark everything read; the boundary moves only through the header door or
+   * opening a row.
    */
   it("벨을 여는 것만으로는 읽음이 되지 않는다 — 「모두 읽음」이 그 문이다", () => {
     const markAllRead = vi.fn();
@@ -644,8 +635,8 @@ describe('알림함 — 세 탭', () => {
 });
 
 /**
- * The target node link does **not float above** the neighbouring text (owner report, 2026-08-17).
- * The cause and the measurements are in `tests/contract/agent-bar-link-alignment.contract.test.ts`.
+ * The target node link must not float above neighbouring text; the cause is in
+ * `tests/contract/agent-bar-link-alignment.contract.test.ts`.
  */
 describe('하단 바 — 대상 링크 정렬', () => {
   it('모양의 flex 를 지킨다 — truncate 축을 쓰면 깨진다', () => {

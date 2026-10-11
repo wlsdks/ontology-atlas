@@ -1,12 +1,7 @@
 /**
- * A guard for `history.replaceState` / `pushState`.
- *
- * WebKit (the macOS app's WebView) throws `SecurityError` once a page makes more than 100 of
- * these calls in 10 seconds, and an exception there takes the whole route to its error screen
- * (measured in the installed app, 2026-09-25). A burst that large is always a loop between two
- * writers, never a person, so past a budget the write is dropped — the screen's state already
- * holds the value; only the address lags — and the loop is reported once, by name, so it is
- * fixed at its cause rather than hidden.
+ * Guard for `history.replaceState` / `pushState`: WebKit throws `SecurityError` past 100 calls in 10
+ * seconds, taking the route to its error screen. Such a burst is a loop between two writers, so past
+ * a budget the write is dropped and the loop is reported once by name.
  */
 
 /** Writes allowed in any 10-second window. Well under WebKit's 100, which counts every caller. */

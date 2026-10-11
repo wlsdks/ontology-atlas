@@ -2,11 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { isErrorEcho, withoutErrorEcho } from './error-echo';
 
-/**
- * The two strings measured on the real thing (installed app, 2026-08-17). The adapter sends the
- * failure **as a message too** and also rejects the RPC, so leaving the screen as-is shows the same
- * failure twice, with the English original reading before the plain-language card.
- */
 const AGENT_ECHO = 'Failed to authenticate: OAuth session expired and could not be refreshed';
 const RPC_ERROR =
   '{"code":-32603,"message":"Internal error: Failed to authenticate: OAuth session expired and could not be refreshed","data":{"errorKind":"authentication_failed"}}';
