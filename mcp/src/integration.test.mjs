@@ -10536,6 +10536,14 @@ Writer Implementation anchors encoded output.
 
 ## Evidence
 
+\`\`\`md
+- Primary implementation: \`src/example-only.ts#example\`
+\`\`\`
+
+<!--
+- Focused test: \`tests/example-only.test.ts#example\`
+-->
+
 - Primary implementation: \`src/writer.ts#writeDerSet\`
 - Supporting implementation: \`src/writer.ts#writeOptionalValue\`
 - Focused test: \`tests/writer.test.ts#writes optional DER SET values\`

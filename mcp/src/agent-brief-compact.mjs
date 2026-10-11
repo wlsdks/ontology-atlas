@@ -4,7 +4,7 @@ import {
   completeMarkdownUnits, createUncertaintyPlan, formatUncertaintyLines,
   markdownSection, projectUncertainty,
 } from './agent-brief/recorded-evidence.mjs';
-
+import { readReviewedEvidence } from './agent-brief/reviewed-evidence.mjs';
 import {
   buildTaskNavigationEvidence,
   verifyTaskNavigationEvidencePath,
@@ -547,9 +547,8 @@ function compactImpact(artifact, capabilitySlug) {
 
 function evidencePaths(doc) {
   if (!doc) return [];
-  const section = markdownSection(doc.body, 'Evidence');
-  return [...section.matchAll(/`([^`]+)`/g)]
-    .map((match) => match[1].trim())
+  return readReviewedEvidence(doc.body).paths
+    .map((path) => path.trim())
     .filter(Boolean);
 }
 

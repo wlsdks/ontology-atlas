@@ -6918,6 +6918,12 @@ path: src/writer.ts
 
 Writer Implementation anchors encoded output.
 
+\`\`\`md
+## Evidence
+
+- Primary implementation: \`src/example-only.ts#example\`
+\`\`\`
+
 ## Evidence
 
 - \`package.json\`

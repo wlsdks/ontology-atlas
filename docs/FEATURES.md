@@ -20,6 +20,8 @@ The cream-hooded planet traveler is the shared mascot across brand and in-app su
 
 Compact MCP/CLI task handoffs carry whole uncertainty statements, per-document
 omissions and project-inclusive full-body recovery; see [MCP server](features/mcp-server.md).
+Exact navigation, scope boundaries and runner manifests exclude literal
+Markdown examples, HTML blocks/comments and blockquotes from their authored evidence.
 
 The folder entry uses a static welcome portrait, and the missing-page screen
 uses a curious map-search portrait in its existing icon slot. These expressions

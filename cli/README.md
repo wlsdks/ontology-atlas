@@ -200,7 +200,10 @@ coordinates and the bound source is current, `taskNavigation` verifies only
 those named files and prints the exact current symbol/test lines plus the
 reviewed non-exhaustive IN/OUT boundary before the trust diagnostics. Stale,
 missing, ambiguous, outside-root, symlinked, or unrecorded coordinates return no
-exact target. The same source fingerprint/revision/graph is checked again after
+exact target. Code blocks, HTML blocks/comments, and blockquotes cannot
+supply coordinates, scope boundaries or runner manifests; coordinate fields
+must be direct hyphen-list items in the element's top-level Evidence section.
+The same source fingerprint/revision/graph is checked again after
 the reads. Human output includes the verified runner/manifest and the
 non-overlapping verification policy: separately named positive/negative
 regressions, exact observable output, one focused check, and one full check.

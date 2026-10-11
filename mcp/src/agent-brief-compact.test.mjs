@@ -193,6 +193,33 @@ DER parsing and unrelated encodings.
     }
   });
 
+  it('does not recommend a runner manifest recorded only in a Markdown example', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-compact-manifest-example-'));
+    try {
+      mkdirSync(join(root, 'src'));
+      mkdirSync(join(root, 'tests'));
+      writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --test"}}\n');
+      writeFileSync(join(root, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+      writeFileSync(join(root, 'tests/writer.test.ts'), "test('writes optional DER SET values', () => {});\n");
+      for (const example of ['```md\n- `package.json`\n```', '<!--\n- `package.json`\n-->', '> - `package.json`']) {
+        const navigationDocs = docs.map((row) => ({ ...row, body: row.slug === 'elements/writer'
+          ? `## Evidence\n\n${example}\n\n- Primary implementation: \`src/writer.ts#writeDerSet\`\n- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`\n\n## Includes\n\nWriting values.\n\n## Excludes\n\nParsing values.\n`
+          : row.body }));
+        const result = buildCompactAgentBrief({
+          brief, artifact, docs: navigationDocs, sourceRoot: root,
+          task: 'Encode an optional DER SET and keep present elements ordered.',
+        });
+        assert.equal(result.focus.taskNavigation.status, 'ready');
+        assert.deepEqual(result.focus.verification.recordedPaths, ['tests/writer.test.ts']);
+        assert.equal(result.focus.verification.manifest, null, example);
+        assert.equal(result.focus.verification.runner, null);
+        assert.ok(!result.handoffPrompt.includes('package-script/package.json'));
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('withdraws exact targets when source currentness changes after named-file reads', () => {
     const root = mkdtempSync(join(tmpdir(), 'atlas-compact-navigation-race-'));
     try {
