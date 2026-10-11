@@ -797,11 +797,15 @@
         "reading": "源码 · 检查中",
         "measured": "源码 · 已比较文件日期",
         "app-only": "源码 · 此环境中未检查",
-        "no-source": "源码 · 未连接代码文件夹",
-        "ambiguous-source": "源码 · 多个代码文件夹，未检查",
+        "no-source": "源代码 · 尚未连接代码文件夹，请在地图上连接此项目",
+        "ambiguous-source": "源代码 · 存在多个连接，请检查文档或在地图上修复连接",
         "different-source": "源码 · 独立代码文件夹，未检查",
         "no-anchors": "源码 · 没有可比较的记录路径",
-        "unreadable": "源码 · 无法读取，未检查"
+        "unreadable": "源代码 · 无法读取文件，请重试或检查已连接的文件夹",
+        "ungranted": "源代码 · 选择已连接的代码文件夹以允许读取",
+        "binding-changed": "源代码 · 连接已更改，请重新比较日期",
+        "no-history": "源代码 · Git 日期不可用，请检查文档及其记录的路径",
+        "partial": "源代码 · 部分日期未知，请检查尚未确认的声明"
       },
       "sourceClaim": {
         "missing": "找不到已记录的路径。",
@@ -869,7 +873,13 @@
       "openElementDocument": "打开 {name} 文档",
       "noElementLinks": "没有连接实现要素",
       "pathsWithoutElements": "仅记录了 {count} 个源路径，没有连接要素。",
-      "implementationLegend": "每条线表示文档中记录的组成关系。选择要素即可阅读其文档。"
+      "implementationLegend": "每条线表示文档中记录的组成关系。选择要素即可阅读其文档。",
+      "chooseSourceFolder": "选择已连接的代码文件夹",
+      "sourcePickerTitle": "选择连接到此项目的代码文件夹",
+      "retrySourceDates": "重新比较日期",
+      "sourceRecovery": {
+        "wrongFolder": "所选文件夹与此项目的连接不匹配。请选择已连接的代码文件夹。现有连接未更改。"
+      }
     }
   }
 }

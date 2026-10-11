@@ -86,7 +86,7 @@ Your agent reaches the folder two ways:
 
 A project's source-path repair opens the affected concept and recorded relative path; stale or missing targets require remeasurement.
 
-Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. [Analysis](docs/features/analysis.md)
+Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
 
 ## Local-first
 

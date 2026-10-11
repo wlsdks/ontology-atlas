@@ -113,6 +113,8 @@ The desktop rail's order and hrefs come from
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Redirects | `/ontology`, `/ontology/edit`, `/ontology/studio`, `/mcp` | [`compatibility-redirects.md`](features/compatibility-redirects.md) |
 
+Native Analysis compares document and implementation Git dates across the granted vault and its single bound code repository. Missing access or history remains unknown; the source picker must match the existing connection and never rebinds it. See [Analysis source currentness](features/analysis.md#source-currentness).
+
 ## Web and app capabilities
 
 Frontmatter readers preserve quoted mapping keys and nested quoted strings.

@@ -797,11 +797,15 @@
         "reading": "Source · checking",
         "measured": "Source · file dates compared",
         "app-only": "Source · not checked in this environment",
-        "no-source": "Source · no connected code folder",
-        "ambiguous-source": "Source · multiple code folders; unchecked",
+        "no-source": "Source · no connected code folder; connect this project on the map",
+        "ambiguous-source": "Source · multiple connections; inspect the document or repair its connection on the map",
         "different-source": "Source · separate code folder; unchecked",
         "no-anchors": "Source · no recorded paths to compare",
-        "unreadable": "Source · unreadable; unchecked"
+        "unreadable": "Source · files could not be read; retry or check the connected folder",
+        "ungranted": "Source · choose the connected code folder to allow reading",
+        "binding-changed": "Source · connection changed; compare dates again",
+        "no-history": "Source · Git dates unavailable; inspect the document and its recorded paths",
+        "partial": "Source · some dates are unknown; inspect the unchecked claims"
       },
       "sourceClaim": {
         "missing": "A recorded path could not be found.",
@@ -869,7 +873,13 @@
       "openElementDocument": "Open {name} document",
       "noElementLinks": "No implementation elements linked",
       "pathsWithoutElements": "{count} source paths are recorded without an element link.",
-      "implementationLegend": "Each line is a recorded composition link. Select an element to read its document."
+      "implementationLegend": "Each line is a recorded composition link. Select an element to read its document.",
+      "chooseSourceFolder": "Choose connected code folder",
+      "sourcePickerTitle": "Choose the code folder connected to this project",
+      "retrySourceDates": "Compare dates again",
+      "sourceRecovery": {
+        "wrongFolder": "The selected folder does not match this project's connection. Choose the connected code folder; the connection is unchanged."
+      }
     }
   }
 }

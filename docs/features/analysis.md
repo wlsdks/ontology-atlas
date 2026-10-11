@@ -79,16 +79,27 @@ selected-capability diagram.
 ## Source currentness
 
 Browser/sample sessions state that source currentness was not checked. The
-native ontology read first reads the project's source binding and compares it
-with the vault Git repository root. Missing, malformed, multiple or different
-roots remain unknown. This is necessary because the existing Git date bridge
-resolves paths against the vault's repository, not an arbitrary bound folder.
+native read resolves one project's recorded binding and receipt identity, then
+reads document dates from the granted vault and implementation dates from the
+bound source under its separate read grant. The folders may belong to different
+Git repositories. Identical relative names remain separate document and source
+coordinates, including when the vault is nested in the source repository.
 
-For a matching root, the existing evidence resolver compares path existence and
-Git change dates with the concept document date. Missing paths, newer files,
-folder-only evidence and unavailable dates remain distinct. An earlier file date
-is not semantic validation. A changed document/path set retires the old request;
-a late result from another request cannot populate the current selection.
+An ungranted source offers the native code-folder picker. Its selection grants
+source reading only; date comparison separately requires the selected folder to
+match the current binding. Cancellation preserves the claim, a mismatch offers
+another choice without rebinding, and changed connections or unreadable reads
+offer a retry. Multiple project scopes stay unknown and retain the document and
+map recovery paths.
+
+The total budget is 512 paths, with documents first, and each repository walk
+covers at most 3,000 commits. Omitted paths, uncommitted files, folder-only anchors
+and unavailable or invalid dates remain unknown. Missing paths and newer file
+commits retain the existing verdict precedence. Binding/receipt identity, both
+canonical roots and both Git revisions are checked before and after reading;
+changed identities discard the comparison. A changed document/path or project
+scope retires the old async request. Cross-repository date ordering is advisory
+evidence to reread a claim, never semantic validation or proof of causality.
 
 ## Supporting records and agent authority
 
