@@ -34,9 +34,8 @@ function withRepo(files, fn) {
 
 describe('markdown link extraction', () => {
   it('ignores links written inside fenced code blocks', () => {
-    // Real incident: a storyboard document embedded a not-yet-created gif as an
-    // example inside a ```markdown fence. Without stripping fences that reads as a
-    // violation.
+    // A document embedding a not-yet-created gif inside a ```markdown fence must not read as a
+    // violation, so fences are stripped.
     const markdown = ['[real](./a.md)', '```markdown', '[example](./nope.md)', '```', '[after](./b.md)'].join('\n');
 
     assert.deepEqual(

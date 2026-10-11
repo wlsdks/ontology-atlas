@@ -1,6 +1,6 @@
-// `ontology-atlas analysis [rootPath]`: writes a dated record (committed Markdown, no `kind:`) and compares it
-// with the last one. Findings come from this CLI's `health`, `validate` and `architecture`, never a second
-// definition of a problem (docs/DECISIONS.md, 2026-08-16 (16)).
+// `ontology-atlas analysis [rootPath]`: writes a dated record and compares it with the last one.
+// Findings come from `health`, `validate` and `architecture`, never a second definition of a
+// problem.
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';

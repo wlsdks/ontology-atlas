@@ -8,8 +8,8 @@ const ALL_ISSUES = [...new Set([...RUNTIME_BLOCKERS, ...RATCHET_TYPES])];
 const WITHOUT_MANIFEST = ALL_ISSUES.filter(type => !MANIFEST_ISSUES.includes(type));
 const source = (entry, project, include = ALL_ISSUES, extras = {}) => ({ entry, project, include, ...extras });
 
-// The root manifest has one dependency owner: frontend/runtime. Scripts share
-// that manifest but cannot truthfully claim its UI dependencies as script deps.
+// Scripts share the root manifest but cannot claim its UI dependencies as script deps, so the
+// manifest belongs to frontend/runtime only.
 export const SCOPE_CONFIGS = Object.freeze({
   frontend: Object.freeze({
     cwd: '.',

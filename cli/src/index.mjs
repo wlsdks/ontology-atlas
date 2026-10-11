@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// ontology-atlas CLI: vault scaffold and setup helper. Not published to npm (docs/DECISIONS.md 2026-07-27); it runs
-// from a checkout as `node cli/src/index.mjs <command>`. The help writes `ontology-atlas <command>` to stay narrow
-// and states the real invocation first.
+// Not on npm; runs from a checkout as `node cli/src/index.mjs <command>`. Help writes
+// `ontology-atlas <command>` for brevity and states the real invocation first.
 
 import { COLORS } from './lib/colors.mjs';
 import { cliInvocation } from './lib/self-invocation.mjs';
@@ -331,9 +330,8 @@ function resolveMcpServerCommand() {
     }
   }
 
-  // The npm publication plan was abandoned (docs/DECISIONS.md 2026-07-27) — an
-  // `npx` fallback would plant a command that fails 100% of the time into a config
-  // file. Look for the binary the installed app carries in its bundle instead.
+  // Look for the binary bundled in the installed app; an `npx` fallback would write a command that
+  // always fails.
   if (isFile(BUNDLED_MCP_BINARY)) {
     return { command: BUNDLED_MCP_BINARY, args: [] };
   }

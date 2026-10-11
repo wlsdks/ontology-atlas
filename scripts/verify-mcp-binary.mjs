@@ -195,10 +195,8 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
   }
 }
 
-// The probe passed and then the release run failed on this line (Windows, 2026-09-05): EPERM
-// while removing the fixture, because the just-exited child or Defender still held a handle.
-// Node retries EBUSY/EPERM-style removals only when asked; and a scratch folder that stays
-// behind is not a verification failure, so the last resort is a warning, not an exit code.
+// Retried removal: on Windows a just-exited child or Defender can still hold a handle (EPERM). A
+// leftover scratch folder only warns.
 function removeFixtureRoot(fixtureRoot) {
   try {
     fs.rmSync(fixtureRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
@@ -282,7 +280,7 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
       }),
     );
     child.stdin.write(request(2, 'tools/list'));
-    child.stdin.write(request(3, 'tools/call', { name: 'get_concept', arguments: { slug: 'ontology-atlas' } } /* the dogfood project node; 'project' used to resolve by accident to elements/project, which the product-built vault does not have */));
+    child.stdin.write(request(3, 'tools/call', { name: 'get_concept', arguments: { slug: 'ontology-atlas' } } ));
 
     deadline = setTimeout(() => {
       finish(

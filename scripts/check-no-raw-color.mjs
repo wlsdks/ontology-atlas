@@ -1,17 +1,7 @@
 #!/usr/bin/env node
-// Colour-tokenisation regression gate (2026-07-20).
-//
-// Mechanically enforces the design charter — "every colour goes through a CSS
-// variable; no hardcoded hex" (`.claude/rules/design.md`) — across every chromatic
-// hue this project has tokenised. It replaced `check-no-raw-indigo.mjs`, which
-// covered only two indigos, by widening scope to the full chromatic inventory:
-// signal tones (success emerald, amber warning/source) plus the kind-tone hues.
-//
-// The only exemption is `ALLOWLIST` — JS constant sources in contexts CSS
-// variables cannot reach (canvas, WebGL, OpenGraph), each with its reason in that
-// file's own doc-block.
-//
-// Registered as `pnpm check:tokens`.
+// Colour-tokenisation gate: every colour goes through a CSS variable (`.claude/rules/design.md`).
+// The only exemption is `ALLOWLIST`: JS constants where CSS variables cannot reach (canvas, WebGL,
+// OpenGraph). Run as `pnpm check:tokens`.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
@@ -25,9 +15,7 @@ export const SRC_DIR = join(ROOT, "src");
 const HUE_FAMILIES = [
   { name: "indigo", rgbs: [[94, 106, 210]] },
   { name: "indigo-line", rgbs: [[139, 151, 255]] },
-  // Registered 2026-08-04 — the audit found these three hand-written as literals,
-  // and all three now have tokens. They are listed here **to name which token to
-  // use**; the verdict itself is already made by the achromatic rule below.
+  // These hues are listed to name which token to use; pass/fail is decided by the achromatic rule below.
   { name: "indigo-accent → var(--color-indigo-accent-a32/-a50)", rgbs: [[113, 112, 255]] },
   { name: "indigo-text-strong → var(--color-indigo-text-strong)", rgbs: [[159, 170, 235]] },
   { name: "search-mark → var(--color-search-mark-text)", rgbs: [[210, 218, 255]] },
@@ -74,33 +62,9 @@ const HUE_FAMILIES = [
 ];
 
 /**
- * `HUE_FAMILIES` is now a **label set, not the verdict** (inverted 2026-08-04).
- *
- * **Why it was inverted — a gate that only knows registered tuples cannot see a
- * new value.** The old verdict was "a literal exactly matching an rgb tuple in the
- * list above", and in that shape **everything off the list passes** — a genuinely
- * new colour and a hand-copied existing token pass alike. Measured 2026-08-04:
- * with `pnpm check:tokens` reporting OK, **26** raw rgba literals were alive,
- * among them
- *
- *   - `rgba(113,112,255,·)` ×3 — `--color-indigo-accent` (#7170ff) written by hand
- *   - `rgba(159,170,235,0.95)` ×2 — **byte-identical** to `--color-indigo-text-strong`
- *   - `rgba(210,218,255,0.98)` ×3 — a pale indigo with **no corresponding token at all**
- *
- * None of them follow when the token moves.
- *
- * **The current verdict — an allowlist of achromatics, not a denylist.** Only rgba
- * with `r === g === b` passes. Such values are shadows and overlays
- * (black/white/grey), not palette colours, and **other gates** own those (the
- * shadow ramp, `--color-overlay-*`). Anything with any hue mixed in — even
- * something that reads grey to the eye, like `rgba(15,16,17)` — must go through a
- * token. The near-achromatic surface literals the old rule missed
- * (`rgba(11,12,14,0.98)` and similar) sat in exactly that gap.
- *
- * ⚠️ **Inventory before switching on** (`/gate-probe`): under the inverted verdict
- * the violations are 2 in `starfield.ts` and 2 in `grid.ts`, all four canvas, all
- * four going to `ALLOWLIST`. So this change moves 0 pixels and leaves 0 residual
- * violations; what it blocks is **every colour hand-written from here on**.
+ * `HUE_FAMILIES` is a label set, not the pass/fail rule: a gate that knows only registered tuples
+ * cannot see a new value. Only rgba with r === g === b passes (shadows, overlays); any hue, even
+ * `rgba(15,16,17)`, needs a token.
  */
 const FAMILY_BY_TUPLE = new Map(
   HUE_FAMILIES.flatMap(({ name, rgbs }) => rgbs.map((rgb) => [rgb.join(","), name])),
@@ -117,58 +81,30 @@ const RGBA_LITERAL = /rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,/g;
 // OG image). Each cited file states the reason in its own doc-block; a new
 // exemption must leave the same evidence at the top of its file.
 export const ALLOWLIST = new Set([
-  // `shared/config/indigo-tokens.ts` **left this list** on 2026-08-04. Under the
-  // inverted verdict it needs no exemption: it holds rgb triples as bare strings like
-  // `"94, 106, 210"` and composes `rgba(` through a template, so the scan never
-  // matches it. Leaving a row that exempts nothing blurs what the list actually
-  // forgives (gate: "every ALLOWLIST entry actually contains a literal", below).
+  // `shared/config/indigo-tokens.ts` needs no entry: it holds rgb triples as bare strings and
+  // composes `rgba(` through a template, so the scan never matches it. A row that exempts nothing
+  // blurs what the list forgives.
   "views/docs-vault/lib/popout-template.ts",
-  // The two below are the canvas files the 2026-08-04 inversion (achromatics only)
-  // caught for the first time. `ctx.fillStyle` and `CanvasGradient.addColorStop`
-  // take **strings only** and do not resolve `var()` — a 2D context is not the DOM,
-  // so there is no cascade. Alpha is computed per frame, so a single token cannot
-  // fold them either. Both are very close to achromatic but not exactly r=g=b
-  // (stars 236,236,240 · vignette 3,3,4), so the automatic exemption does not apply.
-  // The same reason is in each file's doc-block.
+  // The two below are canvas files: `ctx.fillStyle` and `CanvasGradient.addColorStop` take strings
+  // only and do not resolve `var()`, and alpha is computed per frame. They are near-achromatic but
+  // not r=g=b (stars 236,236,240; vignette 3,3,4), so the automatic exemption does not apply.
   "widgets/ontology-map/render/starfield.ts",
   "widgets/ontology-map/render/grid.ts",
 ]);
 
 /**
- * **Directory-wide exemption is not this repository's spec** — an exemption is one
- * file plus a reason comment, and that is `ALLOWLIST`.
- *
- * This used to skip all of `ontology-map` (the canvas engine). The reason was
- * legitimate: canvas `fillStyle` cannot take `var()`. But **exempting a whole
- * directory means nobody knows what grows inside it** — 59 files had never once
- * been checked, and there was no way to tell a 0 that means "clean" from a 0 that
- * means "not looked at".
- *
- * ⚠️ **Inventory before switching on** (`/gate-probe`, `design-system-audit` §4):
- * with the skip removed, that directory's violations are **0** (measured
- * 2026-08-04 — the only rgba literals in non-test files are `rgba(3,3,4)` ×2 and
- * `rgba(236,236,240)` ×2, none of which is in any `HUE_FAMILIES`). So this change
- * moves 0 pixels and leaves 0 violations; it blocks only **future re-entry**.
- *
- * If a canvas file genuinely needs a raw literal, register it in `ALLOWLIST` as
- * **one file plus the reason in that file's doc-block** — `starfield.ts` and
- * `grid.ts` are the precedent.
+ * Exemption is one file plus a reason comment in `ALLOWLIST`, never a whole directory: skipping
+ * `ontology-map` made a 0 mean either clean or not looked at. A canvas file that needs a raw
+ * literal registers there; `starfield.ts` and `grid.ts` are the precedent.
  */
 function shouldSkipDir(name) {
   return name === "node_modules";
 }
 
 /**
- * **`.css` is scanned too** (2026-08-05).
- *
- * This used to look at `.ts`/`.tsx` only, and in that gap `::selection` in
- * `app/globals.css` hand-wrote an rgba **byte-identical** to `--color-indigo-a40`
- * — whose name already existed 3,600 lines above. When the token moves, that one
- * line does not follow.
- *
- * In a stylesheet the **only legitimate home for a literal is a token
- * declaration**, so `findRawColorLiterals` below skips lines starting with
- * `--token:`.
+ * `.css` is scanned too: a stylesheet can hand-write an rgba identical to a token and not follow
+ * when the token moves. The only legitimate home for a literal there is a token declaration, so
+ * lines starting with `--token:` are skipped.
  */
 function isTargetFile(name) {
   const ext = extname(name);
@@ -191,13 +127,8 @@ function walk(dir, out = []) {
 }
 
 /**
- * **`app/` is scanned too** (2026-08-05).
- *
- * This used to walk `src/` only. `app/` holds `layout.tsx`, `global-error.tsx`
- * (which **replaces** the root layout), `opengraph-image.tsx`, and 10 routes — the
- * places structurally most likely to hand-write a colour were entirely outside.
- * The sibling gate `design-forbidden-class-guard` already walked `['src','app']`,
- * so the asymmetry was an omission, not a decision.
+ * `app/` is scanned too: `layout.tsx`, `global-error.tsx` (which replaces the root layout),
+ * `opengraph-image.tsx` and routes are likely places to hand-write a colour.
  */
 export const SCAN_ROOTS = [SRC_DIR, join(ROOT, "app")];
 
@@ -210,18 +141,9 @@ export function findRawColorLiterals(roots = SCAN_ROOTS) {
     if (ALLOWLIST.has(rel)) continue;
     const content = readFileSync(file, "utf8");
     /*
-     * **Erase block comments wholesale** (corrected 2026-08-05).
-     *
-     * This used to check only whether a line **starts** with `//`, `*`, or `/*`, so
-     * the **middle lines** of a multi-line comment (unindented, or starting with a
-     * non-ASCII word) were treated as code. This file itself quotes the values while
-     * explaining why they must not be used, so the moment scope widened to `.css`,
-     * **three of its own explanatory lines were reported as violations**.
-     *
-     * The same disease appeared four times in this round alone (`unused-token-ratchet`
-     * under-counting, `implicit-bold-weight` over-counting, `named-offramp`
-     * over-counting, and here). A line-prefix test cannot beat block comments — erase
-     * them, then count. Newlines are kept so line numbers stay correct.
+     * Erase block comments wholesale, then count: a line-prefix test treats the middle lines of a
+     * multi-line comment as code, and this file quotes the values while explaining why not to use
+     * them. Newlines are kept so line numbers stay correct.
      */
     const scanned = content
       .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))

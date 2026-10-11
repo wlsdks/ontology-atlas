@@ -1,21 +1,7 @@
 /**
- * **Browser-side collector** for adjacent data marks — the judgement is made by
- * `contrast.mjs`.
- *
- * ## Why it is a separate file (2026-08-06)
- *
- * This collector lived inside `measure-contrast.mjs` (the instrument a person runs),
- * so **the CI gate never once measured adjacent marks** — `contrast-ratchet` called
- * only `judgeText`. A check that exists only in an instrument runs only when someone
- * remembers it, which is exactly how this repository missed a 1.14:1.
- *
- * Moving the collector here makes **the instrument and the gate use the same
- * function.** Copying the same judgement logic into two places starts them drifting
- * immediately (Carbon).
- *
- * ⚠️ This function **runs inside the browser** (`page.evaluate`), so it references
- * nothing from the outer scope — anything it referenced would die on
- * serialisation.
+ * Browser-side collector for adjacent data marks; the judgement is in `contrast.mjs`. Shared by
+ * the instrument and the CI gate so the logic cannot drift. Runs inside `page.evaluate`, so it
+ * references nothing from the outer scope.
  */
 export function collectAdjacentMarks() {
   const out = [];
@@ -36,19 +22,9 @@ export function collectAdjacentMarks() {
     for (let i = 1; i < segs.length; i++) {
       if (segs[i - 1].bg === segs[i].bg) continue;
       /**
-       * ⚠️ **A gap means they are not adjacent.**
-       *
-       * `design.md`: *"the boundary between two series is drawn not by colour but by a
-       * **1px gap** (the interval where the track colour shows through)"* — that gap is
-       * precisely the colour-independent separator WCAG 1.4.11 requires. The first version
-       * of this collector treated "a gap of 2px or less" as adjacent, swallowed the domain
-       * capacity bars' `gap-px` (exactly 1px), and **reported all 16 conforming pairs as
-       * failures** (measured 2026-08-04). An instrument that contradicts the prescription
-       * makes people fix healthy screens.
-       *
-       * So only touching marks count as adjacent. Pairs with a gap are not discarded but
-       * counted as `separated` — dropping them silently would make "measured" and "not
-       * measured" the same green again.
+       * A gap means not adjacent: `design.md` draws the boundary between series as a 1px gap, the
+       * colour-independent separator WCAG 1.4.11 requires. Gapped pairs are counted as `separated`, not
+       * dropped.
        */
       const gap = segs[i].r.left - segs[i - 1].r.right;
       if (gap >= 0.5) {

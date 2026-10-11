@@ -226,9 +226,8 @@ function quotedScalarFault(value) {
   const trimmed = value.trim();
   const quote = trimmed[0];
   if (quote !== '"' && quote !== "'") return null;
-  // Match the renderer, not YAML: `unquote` strips a wrapping pair whenever the
-  // last character is the same quote, so `'Owner's guide'` renders as written.
-  // Only a value that never closes is a fault.
+  // Match the renderer, not YAML: `unquote` strips a wrapping pair when the last character is the
+  // same quote, so `'Ann's guide'` renders as typed. Only a value that never closes is a fault.
   if (closesWithQuote(trimmed, quote)) return null;
   for (let i = 1; i < trimmed.length; i += 1) {
     // The same escape rule `unquote` reverses, so a `\\"` is not a closer.
@@ -367,19 +366,9 @@ function serializeValue(v) {
 }
 
 /*
- * Which values need quoting — **four places must give the same answer.**
- *
- * **Why the rule changed** (review 2026-08-16, reproduced): the newline was
- * missing from it. That one character destroys the whole frontmatter block —
- * `note\nkind: element` **changes the node's kind**, and `note\n---\nx: 1` ends
- * the frontmatter there and drops every remaining key into the body. With no
- * warning at all.
- *
- * Quoting alone does not fix it, because the line is already broken. So the
- * writer **escapes** the newline as `\n` and the reader reverses it (`unquote`).
- *
- * Single quotes joined the rule too: `unquote` strips unmatched quotes from both
- * ends, so a value like `'map'` written unquoted reads back as `map`.
+ * Which values need quoting; this must agree with `unquote`. A newline is escaped as `\n` and
+ * reversed on read, since a raw one can change `kind` or end the frontmatter. Single quotes are
+ * quoted too: `unquote` strips unmatched quotes from both ends.
  */
 function needsQuote(s) {
   if (/[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s)) return true;

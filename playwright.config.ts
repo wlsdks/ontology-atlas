@@ -39,13 +39,9 @@ export default defineConfig({
   },
   fullyParallel: false,
   forbidOnly: isCI,
-  // Local/dev remains sequential because Turbopack compiles routes on demand. CI's read-only
-  // static export has no compilation race or shared writable state, so it runs two workers.
-  // Pre-enable proof (2026-09-01): the same slowest 107-test shard passed with zero retries
-  // in 4.4 minutes locally at two workers; its preceding one-worker GitHub run took 9.7 minutes.
-  // Not four, although a public repository's runner has four vCPUs: the suite is CPU-bound,
-  // and on the same four cores four workers ran a 129-test sample only 10% faster, each test
-  // 44% slower (2026-09-27). More shards in e2e.yml buy the time instead.
+  // Local/dev stays sequential because Turbopack compiles routes on demand; CI's read-only static
+  // export has no such race, so it runs two workers. Not four: the suite is CPU-bound, and four
+  // workers made each test about 44% slower for a 10% total gain. Add shards in e2e.yml instead.
   workers: resolvePlaywrightWorkers(process.env),
   // CI retries absorb runner variance but remain visible in the report; true regressions fail
   // after every attempt. Local runs keep retries at zero so flakiness is exposed directly.
@@ -71,20 +67,9 @@ export default defineConfig({
   use: {
     baseURL,
     /*
-     * A press that never lands fails in 15 seconds naming what it waited for, rather than
-     * spending the whole test budget and saying nothing.
-     *
-     * Without this, the action timeout is 0, which Playwright reads as unlimited: a bare
-     * `click()` on an element that never arrives waits out `timeout` (60s) and then reports a
-     * test timeout, which names no step. Measured on 2026-09-20: one spec's boot sequence hung
-     * this way case after case, each costing a minute, and pushed a shard from its usual 11
-     * minutes past the workflow's 30-minute ceiling — three landings died with every assertion
-     * passing, on three different branches.
-     *
-     * 15 seconds is `expect.timeout`, deliberately: an explicit wait and an implicit one should
-     * give the page the same patience, and that value already absorbs on-demand compilation
-     * locally (it failed sporadically at 10). A step that genuinely needs longer says so at its
-     * call site, which is also how a reader learns it is slow.
+     * Fail a press that never lands in 15 s, naming what it waited for; the default action timeout is
+     * 0 (unlimited). 15 s equals `expect.timeout` and absorbs on-demand compilation locally (10 s
+     * failed sporadically). A slower step says so at its call site.
      */
     actionTimeout: 15_000,
     headless: true,
@@ -95,15 +80,9 @@ export default defineConfig({
   // R11 #24 — Automatically start the dev server when running e2e in CI. Locally, reuse the already
   // started dev (3100). Without webServer, CI cannot connect to baseURL.
   webServer: {
-    // R11 #24 — pnpm entry point that also runs the predev hook (docs-vault build).
-    // Verify from cold-start in CI; reuse the already started dev server locally.
-    //
-    // If `PLAYWRIGHT_STATIC=1`, **serve the built static export**. This is because
-    // there are specs measuring layers not present in dev — 2026-07-28 measurement: same-route
-    // navigation in the workshop only failed in the production export (paths were identical, only query differed,
-    // so it was a no-op at the routing level), while dev succeeded for both regardless of slash presence/mechanism,
-    // making it **diagnostically useless** for this defect. A gate running only in dev
-    // will forever let this class of regression pass.
+    // pnpm entry point that also runs the predev hook (docs-vault build). With `PLAYWRIGHT_STATIC=1`,
+    // serve the built static export: some specs measure layers absent in dev, e.g. same-route
+    // navigation that only fails in production.
     command: servesStaticExport
       ? `node scripts/serve-static-export.mjs --port=${webServerPort}`
       : `pnpm dev -p ${webServerPort}`,

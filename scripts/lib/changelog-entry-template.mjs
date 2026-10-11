@@ -1,20 +1,7 @@
 /**
- * The changelog entry template, as a check.
- *
- * Measured on 2026-09-02: 415 entries in `docs/CHANGELOG.md`, 761 KB, a
- * median entry of 1.5 KB, 341 entries in Korean, and only three entries that
- * named a version. The file promised "user-visible changes, not PR-level
- * grain" and had become one entry per pull request, each a narrative. What a
- * reader of a changelog needs is one entry per release that says what was
- * added, changed, fixed, or removed, in one line each.
- *
- * So an entry is a dated heading that names a release (`vX.Y.Z:`) or the
- * single `Unreleased:` entry at the top, followed by one to four category
- * lines in a fixed order, inside a size that fits one screen. Entries dated
- * before the versioning baseline (2026-09-01) may carry a plain headline,
- * because no version existed to name. The rule is mechanical for the same
- * reason the decision-record template is: prose conventions are followed by
- * whoever remembers them.
+ * An entry is a dated heading naming a release (`vX.Y.Z:`) or the single `Unreleased:` entry, then
+ * one to four category lines in fixed order, within one screen. Entries before the versioning
+ * baseline may carry a plain headline.
  */
 
 const VERSIONING_BASELINE = '2026-09-01';

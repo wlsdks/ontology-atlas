@@ -1,73 +1,8 @@
 #!/usr/bin/env node
 /**
- * **Sweeps the installed Claude Agent Skills and measures their integrity** — a
- * discovery tool.
- *
- * ## Why it lives in this repository (2026-08-09)
- *
- * Owner: *"Since skills are all made of md too, can't we graph the skills themselves?
- * With a structure linking skills?"*
- * (skills are all markdown too, so could the skills themselves be turned into a
- * graph, with the skills linked to each other?)
- * This was built to **measure** whether there is anything real in that direction.
- * It is not a product feature, has no screen, and is not a public CLI command
- * (that would require a routed product review).
- *
- * ## How a skill is triggered (the premise for what this measures)
- *
- * A skill is a folder containing one `SKILL.md`. At session start only the
- * frontmatter's `name` and `description` are loaded (50–100 tokens per skill). If
- * it looks relevant the body is read, and if the body points at another file, only
- * that file is read then — three-stage progressive disclosure. So **one
- * `description` line decides triggering**, and if the body's pointers do not
- * resolve the third stage silently comes back empty.
- *
- * Public documentation:
- * platform.claude.com/docs/en/agents-and-tools/agent-skills/overview
- *
- * ## The three things measured, and why those three
- *
- * ① **Name collisions** — with several installs under one name, which one wins is
- *    non-deterministic. When the descriptions differ too, things with different
- *    trigger conditions compete under the same name.
- * ② **Trigger overlap** — even with distinct names, descriptions sharing words let
- *    one skill mask another. The published prescription is to narrow the scope and
- *    write `Do not use for X`, which means a human has to maintain it.
- * ③ **Integrity of self-folder references** — does the file a skill points at
- *    inside its own folder actually exist?
- *
- * ## ⚠️ What gets counted is the whole tool — and it was wrong twice
- *
- * **First misclassification: references counted as one lump.** 700 references
- * pointed at non-existent files, but 666 of them were **conditional** ("read this
- * file if the project has one") and not defects. The number only becomes actionable
- * once they are separated.
- *
- * **Second misclassification (the larger one): counting files that are never
- * loaded.** The first version swept all of `~/.claude/plugins` and reported
- * **207**. That tree mixes in ⓐ `cache/` — version-pinned download snapshots (the
- * same plugin at 5.1.0 **and** 6.2.0, one copy per commit hash) and ⓑ
- * `marketplaces/` — catalogue clones that include things **never installed**. The
- * authority is `~/.claude/plugins/installed_plugins.json`, which names exactly
- * **one** `installPath` per plugin.
- *
- * Narrowing and recounting changed the numbers (measured 2026-08-09):
- *
- * | | Whole disk | **Actually loaded** |
- * |---|---|---|
- * | Skills | 209 | **60** |
- * | Name collisions | 38 names | **2** (`frontend-design` · `skill-creator`) |
- * | Strong trigger overlap | 41 pairs | **1 pair** |
- * | Missing self-folder references | 37 | **0** (all 7 were false positives that really exist at the repository root) |
- *
- * So the first report's "8 copies of `frontend-design` are competing" was **wrong**
- * — six of the eight were unused snapshots and catalogues, and the description
- * differences were **version drift within one plugin**. That is what a download
- * cache normally looks like.
- *
- * **So the default counts only what is loaded.** `--all` sweeps the whole disk, and
- * in that mode the output says of itself that it includes things that are not
- * loaded.
+ * Measures installed Claude Agent Skills: name collisions, trigger overlap, broken self-folder
+ * references. A discovery tool, not a product feature. Counts only loaded skills
+ * (`installed_plugins.json`); `--all` sweeps the whole disk.
  */
 
 import fs from 'node:fs';
@@ -206,13 +141,8 @@ export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process
       bundledTotal += 1;
       if (exists(path.resolve(dir, ref))) continue;
       /*
-       * ⚠️ **Look again at the repository root** (corrected 2026-08-09). A reference
-       * beginning `scripts/…` may be something the skill carries in its own folder, or
-       * **a script in the repository that uses the skill** — the string alone cannot
-       * tell. Without this check, all 7 of our skills were reported as broken
-       * references, and all 7 really existed at the repository root
-       * (`scripts/measure-contrast.mjs` among them). The instrument was calling healthy
-       * things defects.
+       * A `scripts/...` reference may be a script in the repository that uses the skill, not one the
+       * skill carries, so check the repository root before reporting it missing.
        */
       if (exists(path.resolve(repoRoot, ref))) {
         repoRelative += 1;

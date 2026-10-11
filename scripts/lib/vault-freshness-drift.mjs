@@ -1,15 +1,6 @@
-// R+ — PR vault freshness bot (⑦). Pure drift computation: given the PR's
-// changed files and the vault's docs, find capability/element nodes whose
-// `path:`/`elements:` frontmatter references a changed file, but whose own
-// `.md` was NOT touched in the same PR — i.e. the code moved on and the
-// vault memory of it risks going stale.
-//
-// Same path/elements: frontmatter convention as `mcp/src/detect-drift.mjs`
-// (fs-existence direction) and `cli/src/lib/preflight-match.mjs` (git-staged
-// direction, same idea one commit earlier). This copy is scoped to
-// scripts/ — repo-internal tooling, not a published package — so it is a
-// small intentional mirror rather than a cross-package import; if the
-// path/elements matching rules change, check those two siblings too.
+// Pure drift computation for the PR vault freshness check: nodes whose `path:`/`elements:`
+// reference a changed file but whose own `.md` was not touched. Mirrors `mcp/src/detect-drift.mjs`
+// and `cli/src/lib/preflight-match.mjs`; check both if matching changes.
 
 const ONTOLOGY_SLUG_PREFIXES = ["capabilities/", "domains/", "elements/", "documents/"];
 

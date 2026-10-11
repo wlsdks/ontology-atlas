@@ -66,25 +66,9 @@ export function installedMcpBinaryPath(installedApp) {
 }
 
 /**
- * Launching alone cannot catch this defect — which is why the v1.0.0 draft passed
- * here.
- *
- * This verification copies the app and launches it, and **a copy carries no
- * quarantine attribute.** Gatekeeper only evaluates quarantined items, so on this
- * path no evaluation happens at all: a bundle with a structurally broken signature
- * runs quietly and the verification goes green. The DMG a user downloads in a
- * browser *is* quarantined, and that is where the verdict first lands.
- *
- * Measured 2026-07-27 on the v1.0.0 draft: the Tauri bundle has no
- * `_CodeSignature`, so `codesign --verify` rejects it with "code has no resources
- * but signature indicates they must be present". That is **"is damaged"** (no
- * button) rather than "unidentified developer" (→ System Settings offers
- * **"Open Anyway"**, the path our download page documents).
- *
- * So the structure of the signature itself is checked before launching. An identity
- * (Developer ID) is not required — on an unsigned release an ad-hoc signature is
- * the correct answer, and what must be blocked here is **a broken structure**, not
- * a missing identity.
+ * A copied app carries no quarantine attribute, so launching it never triggers Gatekeeper; check
+ * the signature structure here. A broken one shows as 'is damaged' with no Open Anyway. An ad-hoc
+ * signature is enough.
  */
 export function verifyBundleSignature(appPath, { label = appBundleName } = {}) {
   const verified = spawnSync("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath], {

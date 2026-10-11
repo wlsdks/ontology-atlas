@@ -1,64 +1,8 @@
 #!/usr/bin/env node
 /**
- * Every `.md` path cited from a code comment must resolve.
- *
- * ## Why this exists
- *
- * `docs/GLOSSARY.md` §6 tells authors to move long rationale out of doc-blocks
- * into a markdown file and leave a one-line pointer behind. That trade is only
- * safe if the pointer is guaranteed to keep working — otherwise one folder
- * rename silently breaks every pointer at once, and the rationale a comment used
- * to carry is now unreachable from the code it explains.
- *
- * The owner named this risk before the first pointer was written: *"the doc
- * location has to be exact — the moment a folder moves, everything breaks"* ("the doc
- * location has to be exact — the moment a folder moves, everything breaks").
- *
- * `pnpm docs:links` already gives this guarantee for markdown-to-markdown links,
- * but it only walks markdown files (`listMarkdownFiles`). Code comments were
- * outside every gate's field of view.
- *
- * ## What counts as a citation
- *
- * A repo-relative path ending in `.md`, inside a comment. Both backticked
- * (`` `docs/<NAME>.md` ``) and bare forms are scanned: the pointer
- * idiom in the glossary is a bare path on its own line, so requiring backticks
- * would leave the idiom itself unchecked.
- *
- * ## What is deliberately not an error
- *
- * - **Vault paths** (`docs/ontology/**`, `domains/foo.md`). `docs/ontology/` is
- *   this project's own vault — a comment naming `docs/ontology/project.md` is
- *   citing a node address as an example, not pointing at documentation. Measured
- *   2026-08-22: 5 of the first 10 hits were exactly this.
- * - **Deleted files named as history.** "we removed `docs/GUIDE.md`" is a record,
- *   not rot. Same carve-out `doc-links.mjs` makes.
- * - **Placeholders** — anything containing `<`, `{`, `*`, or `...`.
- *
- * ## Why bare filenames are not scanned
- *
- * A citation must carry a repo-relative path. `design.md` on its own is below
- * this gate's pattern and therefore unchecked — `docs/GLOSSARY.md` §6 asks
- * authors to write `.claude/rules/design.md` instead, and a 2026-08-22 pass
- * upgraded the ones that mattered.
- *
- * Widening the pattern to bare names was measured and **rejected**. Inventory of
- * the 302 bare `.md` mentions in comments at the time:
- *
- *   146  resolve to exactly one file   → real pointers, already fine
- *   130  match several files           → `AGENTS.md`, `SKILL.md`, `README.md`;
- *                                        only context disambiguates them
- *    29  match nothing in the repo     → and **none of them is a pointer**:
- *                                        `baz.md`, `oldSlug.md`, `path.md`,
- *                                        `document.md` are example filenames
- *                                        inside a sentence; `po-pass.md`,
- *                                        `design-prescription.md` name vault
- *                                        and skill concepts
- *
- * So the wide version would report 29 false positives and zero real defects.
- * `.claude/rules/design-gates.md` states the rule this follows: count the
- * violations before switching a rule on, and if the count is noise rather than
- * defects, the rule buries the signal it was meant to raise.
+ * Every `.md` path cited from a code comment must resolve (`docs/GLOSSARY.md` section 6). Not
+ * errors: vault paths (`docs/ontology/**`), deleted files named as history. Bare filenames are not
+ * scanned: ambiguous.
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -156,17 +100,8 @@ for (const file of files) {
 }
 
 /*
- * ⚠️ **A decision number is a pointer too, and nothing was checking it.**
- *
- * Measured 2026-08-26: three code comments cited a decision number in the hundred-and-twenties.
- * No such record exists — the ledger's numbering stops at 115 and the newest records carry only
- * a date and a title. The number was invented while writing the comment, and it read as
- * authority: a reviewer following it finds nothing, and the rule the comment claims to be
- * enforcing appears unsourced.
- *
- * This is the same failure this file already guards for `.md` paths — a pointer that stops
- * resolving — so it belongs in the same lane rather than a new one. The repair is to cite the
- * record by date and title when it has no number, which is what the ledger itself does.
+ * A decision number cited in a comment must exist in `docs/DECISIONS.md`; an invented number reads
+ * as authority. Cite a record without a number by date and title.
  */
 const LEDGER = path.join(ROOT, "docs/DECISIONS.md");
 const ledgerText = existsSync(LEDGER) ? readFileSync(LEDGER, "utf8") : "";

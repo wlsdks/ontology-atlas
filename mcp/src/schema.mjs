@@ -123,12 +123,9 @@ export function agentCreatedBy(agentName) {
 }
 
 /**
- * Human judgment (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`): two facts,
- * not one enum, because they go stale in opposite directions. `human_decides`
- * reserves the node and must survive content changes; only a person clears
- * it. `confirmed` judges the content of its time and must expire when it changes,
- * or it launders a rewrite as accepted. Absence is unknown, never a defect: no
- * warning and no "unreviewed" wall (`docs/DECISIONS.md`, record 93 §5).
+ * Human judgment is two facts, not one enum, because they go stale oppositely. `human_decides`
+ * reserves the node and only a person clears it; `confirmed` expires when content changes. Absence
+ * is unknown, never a defect: no warning, no "unreviewed" wall (docs/DECISIONS.md, record 93).
  */
 export const REVIEW_STATE_KEY = 'review_state';
 export const REVIEW_NOTE_KEY = 'review_note';

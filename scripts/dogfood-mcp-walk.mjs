@@ -1,19 +1,7 @@
 #!/usr/bin/env node
-// AI-agent dogfood simulation: calls the MCP server's read tools and the
-// first-contact graph diagnosis in the same order a user follows after
-// registering .mcp.json, measuring the quality of what a real agent gets back.
-//
-// Never writes (the dogfood vault must survive); destructive tools are dry-run
-// only. list_kinds / list_concepts / project probe / get_concepts /
-// find_evidence / find_path / find_backlinks / find_orphans /
-// tools/list schema contract / strict unknown-tool, unknown-argument, invalid-enum, and invalid-filter rejection / validate_vault / compile_ontology(summary + indexed full artifact) /
-// query_ontology overview / query_plan / neighbors / path / all_paths / pattern_walk / project_scope / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health / health tuned.
-//
-// This file is a thin orchestrator. The walk itself is decomposed by seam under
-// scripts/lib/dogfood-walk/*.mjs (cli args, rpc client, request builder, shape
-// validators, gate evaluator, summaries, console report). Every symbol this file
-// used to export is re-exported below from its new home so existing consumers
-// (scripts/dogfood-mcp-walk.test.mjs, other scripts) keep working unchanged.
+// AI-agent dogfood simulation: calls the MCP read tools in the order a user follows after
+// registering .mcp.json. Never writes; destructive tools are dry-run only. The walk lives in
+// scripts/lib/dogfood-walk/*.mjs.
 
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";

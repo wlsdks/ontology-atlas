@@ -10,11 +10,7 @@
 
 import { readFileSync } from 'node:fs';
 
-// Includes the Jamo blocks (U+1100-11FF; U+3130-318F, the compatibility jamo
-// used for laughter shorthand; U+A960-A97F; U+D7B0-D7FF) and halfwidth
-// Kana/Hangul (U+FF65-FFDC): the
-// repo's own markdown-language HANGUL class already counts them, and a
-// jamo-only Korean subject used to pass this gate (bug sweep 2026-09-01).
+// Includes Jamo blocks and halfwidth Kana/Hangul, matching the markdown-language HANGUL class.
 // Mirror: cli/src/lib/agent-files.mjs NON_ENGLISH_SCRIPT_RE.
 const NON_ENGLISH_SCRIPT_RE =
   /[\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\u3400-\u4DBF\u4E00-\u9FFF\uA960-\uA97F\uAC00-\uD7FF\uF900-\uFAFF\uFF65-\uFFDC]/u;
@@ -24,26 +20,8 @@ const NON_ENGLISH_SCRIPT_RE =
 const GENERATED_SUBJECT = /^(Merge |Revert |squash! |fixup! |amend! )/;
 
 /**
- * The prefix list from `.claude/rules/git.md`, section "Commit messages".
- *
- * ⚠️ **The reason this is enforced and not merely written down (2026-09-12).** The
- * rule has said "allowed prefixes" since the repository started, and the language
- * gate beside it was added on 2026-08-24 for exactly the reason that a rule nothing
- * checks is not a rule. The shape half stayed unchecked, and `wip`, `wip2`, `wip3`
- * reached a branch — subjects that say nothing to the reviewer, to `git log`
- * archaeology, or to the next agent reading history for context, which is the whole
- * audience a commit message has.
- *
- * An optional `(scope)` is allowed because the repository already uses it
- * (`feat(map):`, `design(library):`). Nothing else is: an invented prefix defeats
- * the point of having a list.
- *
- * `design` is on the list because a census of the last 200 subjects found it 9 times,
- * including the commit this gate landed on. `.claude/rules/git.md` had not listed it.
- * A gate that refuses a prefix the repository actively and deliberately writes is a
- * gate somebody reaches past on its first day, so the rule was corrected to the
- * practice rather than the practice to the stale rule — the design gates are a
- * first-class workflow here and their commits say so.
+ * The prefix list from `.claude/rules/git.md`, section "Commit messages". An optional `(scope)` is
+ * allowed; no other prefix is.
  */
 const ALLOWED_PREFIXES = [
   'feat',

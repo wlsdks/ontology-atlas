@@ -17,8 +17,8 @@ test('never leaves the original at zero bytes during a write', () => {
   writeFileSync(target, original, 'utf-8');
 
   /*
-   * The write is synchronous, so the verdict comes from the trace left on disk: through a temp file, the
-   * original keeps its old content right up to the rename.
+   * The write is synchronous, so check the trace on disk: via a temp file the original keeps its
+   * content until the rename.
    */
   const before = statSync(target).size;
   assert.equal(before, original.length);

@@ -133,8 +133,8 @@ async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs =
   const report = await buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs, concurrency });
   if (json) {
     /*
-     * The readiness verdict travels with the report because it decides the exit code; this report
-     * carries neither `status` nor `readiness` otherwise, so an exit 1 would have no visible reason.
+     * The readiness result sets the exit code and the report has no `status`/`readiness`, so it
+     * travels with it.
      */
     process.stdout.write(JSON.stringify(fallbackReportPayload(report, result), null, 2) + '\n');
     return report;
@@ -329,8 +329,8 @@ function stripAnsi(value) {
 }
 
 /**
- * Extracts everything after the subcommand from `node <abs>/cli/src/index.mjs <sub>` or the legacy
- * `ontology-atlas <sub>` (installed nowhere, docs/DECISIONS.md 2026-07-27), so older output still parses.
+ * Extracts the args after the subcommand from `node <abs>/cli/src/index.mjs <sub>` or legacy
+ * `ontology-atlas <sub>`.
  */
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);

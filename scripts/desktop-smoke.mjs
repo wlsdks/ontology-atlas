@@ -14,14 +14,8 @@ export const DESKTOP_SMOKE_ROUTES = [
 ];
 export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
 /**
- * Two samples proving the vault made it into the bundle.
- *
- * [Revised 2026-08-01] The second entry used to be
- * `ontology/capabilities/desktop-app-distribution.md`, and rebuilding the vault to
- * spec removed that file. This check asks whether **the whole vault directory was
- * copied into the bundle**, not whether a particular concept exists, so the samples
- * must be **files present in any vault**. `ontology/README.md` is always produced by
- * the generator as `kind: vault-readme`.
+ * Two samples proving the whole vault directory was copied into the bundle; they must be files
+ * present in any vault. `ontology/README.md` is always generated as `kind: vault-readme`.
  */
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
@@ -45,8 +39,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLE_KEYS = {
   "/ontology/insights": "ontologyInsights",
 };
 
-// Download uses absolute homeTitle; workbenches template pages with siteName.
-// Follow route metadata so release checks cannot demand a retired title.
+// Download uses an absolute homeTitle; workbenches template pages with siteName. Follow route
+// metadata so the check cannot demand a retired title.
 export function resolveRouteTitles({ root = process.cwd(), locales = DESKTOP_SMOKE_LOCALES } = {}) {
   if (locales.length === 0) throw new Error("Desktop title inventory requires at least one locale");
   return Object.fromEntries(locales.flatMap((locale) => {
@@ -76,16 +70,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = resolveRouteTitles();
  * at once. The gate protects whether today's screen landed in the static output.
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
-  // `download.title` disappeared in the 2026-07-29 gateway redesign — the hero split
-  // into `eyebrow` + `stageTitle`, and the latter contains a line break so its
-  // rendered text differs from the source (the same reason as the ICU rule in the
-  // doc-block above). `eyebrow` is one line and names both the platform and the
-  // product's character, which suits this slot.
-  //
-  // 2026-08-19: of the previous key set, two disappeared from the screen when the
-  // install section was deleted, and the third rendered **only on the unpublished
-  // branch** — all three are strings a published build's static HTML cannot contain.
-  // Replaced with three section titles that render in every release state.
+  // `eyebrow` is one line (the hero's `stageTitle` has a line break, so its rendered text differs
+  // from the source). All three keys are section titles that render in every release state.
   "/download": [
     "download.eyebrow",
     "download.demoTitle",
@@ -137,19 +123,12 @@ export function resolveRouteText({
 }
 
 /**
- * Stable source markers that state what each packaged route means today.
- *
- * These are not a substitute for the installed-app WebView verifier. They
- * prove that the static export packaged the live route implementation instead
- * of a retired browse, builder, or query-cockpit chunk.
+ * Stable source markers stating what each packaged route means; they prove the static export
+ * packaged the live route implementation.
  */
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
-  // A marker must say what this route is today, not what it used to be. (Retired
-  // marker names are not written here: the contract test reads this file as text, so
-  // naming one even in prose is caught as "still present" — a text gate reads its own
-  // documentation too.) When the install section disappeared on 2026-08-19 the trust
-  // section's marker retired with it, and the markers are now three sections that
-  // make up this route today: the hero's download, the demo, and the screens.
+  // A marker must say what this route is today. Retired marker names are not written here: the
+  // contract test reads this file as text and would flag them.
   "/download": [
     "gateway-hero-cta",
     "gateway-demo-section",

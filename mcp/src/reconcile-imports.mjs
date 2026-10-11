@@ -12,9 +12,9 @@ const DEFAULT_SCANNED_EXTENSIONS = new Set([
 ]);
 
 /**
- * Can the scanner read this endpoint's implementation? Reporting "did not see"
- * as "does not exist" makes an agent delete a correct relation (a native C
- * endpoint has no scannable imports), so the verdict must be able to defer.
+ * Can the scanner read this endpoint's implementation? A native C endpoint has no scannable
+ * imports; reporting "did not see" as "does not exist" would make an agent delete a correct
+ * relation.
  */
 function readabilityOf(slug, pathMap, extensions) {
   if (!pathMap) return { readable: true, reason: null };

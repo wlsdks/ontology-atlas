@@ -309,8 +309,8 @@ test('planner CLI exits nonzero when the exact Git scope cannot be read', () => 
  });
 
  test('lanes never inherit the pushing repository through GIT_DIR', () => {
-  // Git exports GIT_DIR to hooks. A lane that builds a scratch repository in a temp
-  // directory then configured and committed to the real one (2026-09-26).
+  // Git exports GIT_DIR to hooks; a lane that builds a scratch repository in a temp directory must
+  // not configure or commit to the real one.
   const cwd=mkdtempSync(join(tmpdir(),'atlas-hook-env-'));
   try {
     const git=(...args)=>execFileSync('git',args,{cwd,stdio:'pipe'}).toString().trim();

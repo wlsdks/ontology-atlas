@@ -76,11 +76,9 @@ function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Budget for one `mcp-verify` pass over a starter vault. Measured 2026-08-31 on a
-// source checkout: step 2 (server boot plus the full read/analysis tool probe)
-// takes 4.1-4.4 s here, so the earlier 3 s budget failed on `main` as well. The
-// CLI's own quick-start recovery hint recommends 15 s; the smoke uses the same
-// number so it measures the packaging, not this machine's clock.
+// Budget for one `mcp-verify` pass over a starter vault: server boot plus the full tool probe is
+// slow on a source checkout, and the CLI's own quick-start hint recommends 15 s, so the smoke
+// measures packaging, not this machine's clock.
 const VERIFY_TIMEOUT_MS = 15_000;
 
 function run(cmd, args, options = {}) {

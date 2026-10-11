@@ -201,8 +201,8 @@ describe('agent-files — drift check ② duplicated skill trees byte diff', () 
 });
 
 /**
- * The seat-brief pair (`.claude/agents/*.md` ↔ `.agents/agents/*.md`) exists so both tools run the same
- * council protocol, so a seat on one side only is drift, not informational.
+ * Seat briefs in `.claude/agents` and `.agents/agents` must match, so a seat on one side only is
+ * drift.
  */
 describe('agent-files — drift check: .claude/agents ↔ .agents/agents', () => {
   const claudeAgent = (name, content) => ({ path: `.claude/agents/${name}`, content });

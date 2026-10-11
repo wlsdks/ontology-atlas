@@ -13,17 +13,8 @@ import {
 } from './inventory.mjs';
 
 /**
- * Zero — and this time it is measured rather than assumed.
- *
- * Until 2026-08-24 the Rust tokenizer treated every `'` as a string quote, so one odd lifetime —
- * `&'static str` — put it inside a string for the rest of the file. `src-tauri/src/lib.rs` alone
- * lost 2,624 consecutive lines that way and reported **zero** Korean comments while holding 199.
- * Repairing the tokenizer recovered 1,085 comment tokens across the repository and revealed the
- * real figure: 9 files, 979 comment lines, 20,229 code points, all under `src-tauri/src/`.
- *
- * That debt was then paid rather than recorded: all 979 lines were translated to English in the
- * same round, verified line by line to have changed comment text only. So the number below is the
- * true one, and any increase is new debt rather than an old file finally being seen.
+ * Zero. The scanner reads comment tokens repo-wide including Rust, where a lifetime such as
+ * `&'static str` must not be taken as a string quote. Any increase is new debt.
  */
 export const SOURCE_COMMENT_LANGUAGE_BASELINES = Object.freeze({
   current: Object.freeze({
@@ -110,14 +101,9 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
 ]);
 
 /**
- * Zero everywhere the strings are already English, and one measured debt.
- *
- * Measured 2026-08-31: the release scripts and the MCP server printed Korean on ~250 lines that
- * `source:language` could not see, because it reads comment tokens and a string literal is not a
- * comment — the same blind spot `cli-output-language.contract.test.ts` was written for after the
- * CLI printed Korean on 140 lines under a green gate. Those lines were translated rather than
- * recorded, so every scope below starts at zero: a new Korean runtime string anywhere in these
- * scopes is a regression, and the only way to admit one is an allowlist row with a reason.
+ * Zero everywhere the strings are already English. `source:language` reads comment tokens and
+ * cannot see string literals, so a new Korean runtime string in these scopes is a regression;
+ * admit one only with an allowlist row and a reason.
  */
 export const SOURCE_STRING_LANGUAGE_BASELINES = Object.freeze({
   scripts: Object.freeze({

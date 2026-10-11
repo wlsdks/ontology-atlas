@@ -44,10 +44,9 @@ test('a related sweep is split across every shard and leaves the measurement pro
 });
 
 /**
- * The unit lane was 437 s average / 705 s at the tail and the only unsharded job in
- * PR CI (measured 2026-09-12). Sharding it is only safe if what gets split is a file
- * sweep: `pnpm knip` walks the whole dependency graph, and a third of the files would
- * report two thirds of the exports as unused.
+ * Sharding the unit lane is safe only if what gets split is a file sweep: `pnpm knip` walks the
+ * whole dependency graph, and a third of the files would report two thirds of the exports as
+ * unused.
  */
 test('sharding the unit lane splits the file sweeps and keeps whole-graph checks on shard 1', () => {
   const plan = buildImpactPlan({ files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'] });
@@ -76,11 +75,7 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
   ]);
 });
 
-/*
- * A ratio's verdict depends on which files share its runner, so this pins the shape, not the
- * strings: every sweep names the two non-measurement projects, no unit shard runs the
- * measurement project, and the `perf` lane runs it once, by itself.
- */
+/* A ratio's result depends on which files share its runner, so this pins the shape, not the strings. */
 test('the measurement files never ride a unit runner, and run once in their own lane', () => {
   const plans = [
     buildImpactPlan({ files: ['src/shared/lib/search-match/node-name-match.ts'] }),
@@ -245,9 +240,9 @@ test('lint runs beside the serial commands and its failure still fails the lane'
 });
 
 /*
- * The Linux gates runner has no GTK headers, so `cargo test` on the Tauri crate cannot even
- * build there (glib-sys, 2026-09-05). The bridge contract belongs to the hosts that own a
- * Tauri toolchain; on any other host it must leave the gates lane, and only it.
+ * The Linux gates runner has no GTK headers, so `cargo test` on the Tauri crate cannot build
+ * there; the bridge contract belongs to hosts with a Tauri toolchain and must leave the gates lane
+ * elsewhere, and only it.
  */
 test('the Tauri bridge gate leaves the gates lane on a host without a Tauri toolchain', () => {
   const plan = buildImpactPlan({ files: ['src-tauri/src/lib.rs'] });
@@ -284,10 +279,6 @@ test('shared build consumers omit rebuilding and dedicated surface tests have a 
   assert.doesNotMatch(commandsForLane({lane:'e2e',plan:narrow})[0],/--exclude/);
 });
 
-/*
- * The lane report feeds `pnpm gates:yield`. It must record every command with its verdict,
- * and a report that cannot be written must never change the lane's exit code.
- */
 test('the lane runner appends one report line per command when CI_LANE_REPORT is set', async () => {
   const writes = [];
   const status = await runCommands({

@@ -511,10 +511,9 @@ export function validateMeaningProposalAgainstAnalysis(
         ));
       }
       /*
-       * A project exclusion inherits the scope answer that governs it. An exclusion
-       * is the one claim a source-hidden reader can never check, so when the same
-       * proposal marks its scope answer unfinished the pairing is a warning for the
-       * reviewer. Fabrication itself is not detected.
+       * A project exclusion inherits the scope answer that governs it. A source-hidden reader cannot
+       * check an exclusion, so an unfinished scope answer beside one is a warning. Fabrication is not
+       * detected.
        */
       if (concept === proposal.project && concept.excludes.some((row) => nonEmpty(row))) {
         const scopeStatus = proposal.competencyAnswers?.scope?.status;

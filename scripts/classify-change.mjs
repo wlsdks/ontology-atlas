@@ -108,8 +108,7 @@ const GENERATED = [
   /^src\/entities\/docs-vault\/data\//,
 ];
 
-// One source of truth with the advisor's own planner rule — a hand-copied pair
-// disagreed about setup-playwright/action.yml until the 2026-09-01 review.
+// One source of truth with the advisor's own planner rule: a hand-copied pair disagrees.
 const PLANNER_SURFACE = CI_PLANNER_SURFACE_PATTERNS;
 
 const ROOT_ALL_LANE_INPUTS = [
@@ -160,11 +159,9 @@ const BROWSER_INPUTS = [
   /^app\//,
   /^src\/.*\.(?:tsx|css)$/,
   /*
-   * Plain .ts inside a `ui/` segment is rendering code by FSD convention —
-   * pointer handlers, canvas renderers, layout math — and the "pure TypeScript
-   * relies on affected units" rule below it does not hold there (2026-09-01
-   * review: a rewrite of the map's pan/zoom handlers planned zero browser
-   * evidence). Model/lib .ts stays with affected Vitest, as designed.
+   * Plain .ts inside a `ui/` segment is rendering code by FSD convention (pointer handlers, canvas
+   * renderers, layout math), so affected Vitest alone is not enough there. Model/lib .ts stays with
+   * affected Vitest.
    */
   /^src\/.*\/ui\/.*\.ts$/,
   /^messages\//,
@@ -407,13 +404,9 @@ function gatesPlan({ suggestions, full }) {
       .filter((row) => commandLane(row.command) === 'gates')
       .map((row) => row.command),
   );
-  // smoke:onboarding and smoke:memory-loop spawn the source MCP server
-  // (2026-09-01 review: without them here, a PR touching those scripts got a
-  // gates lane that died on missing mcp/node_modules — a false red no rerun
-  // fixes, because checks.yml gates `pnpm --dir mcp install` on this flag).
-  // test:cli:commands joined on 2026-09-23: `cli/src/commands/growth.test.mjs`
-  // runs the real `growth` command, which calls the source MCP server through
-  // `callMcpTool`, and PR #1801's first CI run died on exactly that.
+  // These scripts spawn the source MCP server (`test:cli:commands` runs the real `growth` command,
+  // which calls it). Without them listed, a gates lane dies on missing mcp/node_modules, a false red
+  // no rerun fixes, since checks.yml gates `pnpm --dir mcp install` on this flag.
   const needsMcp = commands.some((command) =>
     /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
       command,

@@ -1,132 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm pr:land <number>` — the only way a pull request reaches `main`.
- *
- * **The measurement this shape answers** (2026-09-26). `main` requires eight status contexts,
- * `strict` is off (no "must be up to date"), original commit ancestry is preserved, and the owner is a personal
- * account, so GitHub's merge queue is unavailable (below). One CI run on a pull request costs
- * `checks.yml` 2-5 minutes and `e2e.yml` 17-21 minutes, fanned out to about eight jobs. The
- * previous version of this file held **one lock per pull request** across merge main in → local
- * lanes → mark ready → about 20 minutes of CI → squash merge, and the median gap between merges on
- * `main` was 55 minutes. The target load is 20 people with 20 agents each: about 400 pull requests
- * in a burst, which serial landing turns into roughly 200 hours, and one CI run per pull request
- * at that scale saturates the Actions runners on its own.
- *
- * So the lock now protects a **train**, not a pull request, and a pull request that does not need
- * the lock does not wait for it.
- *
- *   1. **Enqueue, don't lock.** `pnpm pr:land <n>` refuses what it always refused (closed, fork,
- *      conflicting), then puts the `landing-queue` label on the pull request. With the default it
- *      then waits, printing progress, and exits with the pull request's outcome: 0 landed, 1
- *      ejected or closed. `--no-wait` exits right after enqueueing. Whoever finds the lock free
- *      becomes the conductor; `pnpm pr:land --conduct` conducts without queueing anything.
- *   2. **The conductor runs trains.** It takes up to `--batch=<n>` queued pull requests in queue
- *      order (default: measured, below), creates `train/<timestamp>-<first>` from `origin/main`
- *      through the Git refs API, and merges each component's head into it server-side
- *      (`POST .../merges`). A 409 conflict ejects that component with a comment and the train
- *      continues without it.
- *   3. **One CI run per train.** The train branch gets its own pull request, opened ready, so its
- *      `opened` event fires the required contexts once for every component. Components stay
- *      drafts and run nothing.
- *   4. **Green → merge.** Before merging, the conductor checks that `main` moved only in files the
- *      train never touched (`strict` is off, so GitHub merges onto today's `main`); an overlap
- *      rebuilds the train. The train keeps every original commit and its
- *      author, body and trailers, with named component integration merges. Each component is then closed with a comment linking
- *      the train, and its branch is deleted only when `origin/main` provably contains it
- *      (`isContained` from `bundle-branches.mjs`).
- *   5. **Red → bisect.** A red train of more than one component splits into halves that run as
- *      successive trains (bors-style); a red train of one ejects that pull request, naming the
- *      failing contexts and the run. When every failing context is flaky (`--flaky=<name,...>`
- *      or `--allow-failing`), the failed jobs are rerun once before any split or ejection.
- *   6. **Lock-free fast path.** Before enqueueing, a pull request merges immediately, without
- *      the train lock, when all of these hold: every required context is already green on its
- *      head (it was made ready earlier, e.g. `pnpm pr:ci`); `git merge-tree` onto `origin/main` is
- *      clean; the files it changes do not intersect the files `main` changed since its merge base;
- *      no train in flight records a file set that intersects it; and `classify-change` does not
- *      plan the full lanes for it. Each rule prints pass or FAIL. `--no-fast` forces the train.
- *      Fast-path merges serialize on `refs/atlas/landing-fast`, a two-minute lease held only for
- *      the seconds between the last check and the merge call. A train takes the same lease for its
- *      drift check and merge, so a fast path and a train can never interleave check and merge.
- *
- *   7. **Two trains in flight (speculation).** While train A's CI runs, the conductor cuts train
- *      B from A's head (not `main`) out of the next queued pull requests and opens it, so B's CI
- *      runs concurrently on exactly the tree `main` becomes if A lands. Verdicts are acted on in
- *      order: B lands only after A lands (still under the drift check and the fast lease, against
- *      A's head as its base); if A goes red, is rebuilt or times out, B is closed and never merged,
- *      and its pull requests ride a train cut from `main` after A's bisect. A component that
- *      conflicts on top of A stays queued instead of being ejected, since A may be the cause. The
- *      lock records both trains' file sets (`trains`), so the fast path refuses an overlap with
- *      either. `--no-speculate` keeps one train in flight.
- *
- * **Commit history (owner, 2026-10-05).** Keep the original commit SHAs, messages,
- * authors and parent links. Fast-path PRs and trains both use merge commits. Component
- * branches merge into the train without squash or rebase; the train adds a final integration
- * merge on main. Several PRs can still share one CI run. This supersedes the 2026-09-27
- * per-PR synthetic-commit policy. Main must permit non-linear history; required checks,
- * conflict/drift checks and the landing locks continue to apply.
- *
- * **Throughput, measured 2026-09-26.** A train costs one CI run (~20 min, ~10 jobs). A public
- * repository runs 20 jobs at once, so two trains fit side by side, which is why speculation stops
- * at two (Uber SubmitQueue, Zuul and Mergify all pair batching and bisection with speculation):
- * with A green, B's verdict is ready when A's is, and the queue drains at about two trains per
- * 25 minutes instead of one. The weak point is the per-PR red rate `p`: a train of `n` is red
- * with `1 - (1 - p)^n` (64 % at p = 5 %, n = 20), each red train bisects sequentially, and a red A
- * wastes B's run. So without `--batch` the size is measured: the conductor reads the last 60
- * train pull requests (merged is green; closed with `Red on` is red; drift rebuilds, timeouts and
- * discarded speculation say nothing), estimates `p` by maximum likelihood, and takes
- * `n = floor(ln 0.5 / ln(1 - p))` clamped to [2, 20], the largest train green at least half the
- * time (13 at p = 5 %). Fewer than 8 decided trains keep 20. On 2026-09-26 the 14 decided trains
- * (2 red, 13 of one pull request) measured p = 11.8 % and chose 5. Flaky contexts belong in `--flaky`, not in a
- * smaller batch.
- *
- * **Why merging onto a moved `main` is safe here, and exactly when.** Both the fast path and the
- * train merge a tree CI never ran: the tested tree plus whatever reached `main` since. That is
- * sound only when the two differ in files the landing never touched, which is what the disjoint
- * rule and the train's drift check enforce, and the post-merge `push` run on `main` still runs
- * (the workflows' `push: branches: [main]` trigger). Anything that shares a file goes through a
- * train whose CI saw the combination.
- *
- * **What the previous version did that this one no longer does, and why.**
- * - *Local lanes on the merged source.* Every author already ran `pnpm checks:changed`, the train
- *   runs the full required contexts once, and a bisect finds the breaker. Running the local lanes
- *   per component would serialize the conductor by minutes per pull request, which is the cost this
- *   rewrite exists to remove; for the fast path, the disjoint rule already guarantees the merge
- *   cannot change a file the author's own run did not see. `--worktree` is accepted and ignored.
- * - *Merging `main` into each pull request.* The train starts from `main`, so components are never
- *   pushed to, stay drafts, and cost no CI.
- * - *`--parallel-ci`.* Early CI for backlog-only drafts. `pnpm pr:ci <n>` followed by
- *   `pnpm pr:land <n>` does the same for any disjoint change through the fast path. Accepted and
- *   ignored with a note.
- * - *The `refs/atlas/landing-queue` waiting line.* It ordered waiters racing for a per-PR lock.
- *   Order now lives in the label, so a waiter that dies stays queued and still lands.
- *
- * **Why a label is the queue, not a ref.** A label is set and removed atomically per pull request,
- * so two enqueuers can never overwrite each other (the ref was one JSON blob, last write wins,
- * and a waiter could lose its place — measured 2026-09-19). It survives the enqueuing process,
- * which `--no-wait` requires. Listing it is one paginated GraphQL query, which spends the GraphQL
- * budget rather than the REST budget the lock reads already use (2026-09-20: lock and protection
- * reads cost 2 REST each, and twenty-six landers exhausted 5,000/hour). And a person sees the queue
- * in GitHub's own pull-request list and can dequeue by removing the label. Arrival order is the
- * time of the latest `LabeledEvent` for the label.
- *
- * **Why this script and not GitHub's merge queue.** The merge queue requires an
- * organization-owned repository and `wlsdks/ontology-atlas` is owned by a personal account:
- * `POST /repos/.../rulesets` answers `422 Invalid rule 'merge_queue'` (2026-09-12). The workflows
- * carry the `merge_group` trigger, so an organization transfer turns the queue on and leaves this
- * script a wrapper. Train pull requests need no workflow change: `pull_request` has no branch
- * filter, so `train/**` heads run the same required contexts, once.
- *
- * **What is kept.** Never merge a skipped required context (`requiredCheckState`), refuse any
- * unnamed red check (`otherCheckState`, `--allow-failing` escapes only unrequired ones), drafts
- * run no CI, the lock is a Git-refs create (a second creator gets 422), a lease plus the holder's
- * pid proves a dead conductor, and a read that failed never reads as an open door. Never call
- * `gh pr merge` or `gh pr update-branch` by hand and never open a pull request without `--draft`:
- * `.claude/hooks/block-manual-landing.sh` refuses all three. This script is the only caller of the
- * merge API.
- *
- * **Marking ready is still one-way.** A component that was made ready (`pnpm pr:ci`) fires CI on
- * every push. Check `gh pr view <n> --json isDraft` before pushing again to one that failed the
- * fast path, and `gh pr ready --undo` puts it back.
+ * `pnpm pr:land <n>` is the only way a PR reaches `main`: it enqueues with the `landing-queue`
+ * label, and the lock-holding conductor merges queued PRs into a train with one CI run, bisecting
+ * red trains. Disjoint changes take a lock-free fast path.
  */
 
 import { runMainCopyIfStale } from './lib/run-main-copy.mjs';
@@ -177,12 +53,9 @@ export const FAST_LOCK_REF = 'refs/atlas/landing-fast';
 export const FAST_LEASE_MINUTES = 2;
 
 /**
- * How long a lock survives without a refresh.
- *
- * The conductor rewrites the lock on every poll, so this is not "how long a train may take" but
- * "how long after a crash the next lander waits" on another machine; on this machine a dead pid
- * frees it at once (`classifyHolderLiveness`). Long enough that a live conductor inside one slow
- * CI round is never robbed (the exhaustive lane measured 28 minutes on 2026-09-12).
+ * How long a lock survives without a refresh: how long after a crash another machine waits, not
+ * how long a train takes; a dead pid on this machine frees it at once (`classifyHolderLiveness`).
+ * Long enough that a live conductor in one slow CI round is not robbed.
  */
 export const LEASE_MINUTES = 45;
 
@@ -211,8 +84,8 @@ export const POLL_SECONDS = 30;
 const SPECULATION_QUEUE_RECHECK_SECONDS = 300;
 
 /**
- * A train with no verdict after this long is closed and the conductor stops, leaving the queue
- * intact. Four times the slowest measured run (e2e 21 minutes), so only a stuck run reaches it.
+ * A train with no result after this long is closed and the conductor stops, leaving the queue
+ * intact. Four times the slowest CI run, so only a stuck run reaches it.
  */
 export const TRAIN_TIMEOUT_MINUTES = 90;
 
@@ -289,15 +162,9 @@ export function parseLockToken(token) {
 }
 
 /**
- * Is the process that took this lock still running?
- *
- * ⚠️ **A lease is a guess about liveness; the pid is the fact.** Twice on 2026-09-20 a landing
- * process died holding the lock and it sat for its full 45 minutes with nobody behind it; once it
- * was **561 minutes** old when found.
- *
- * Three answers, never two: `alive`, `dead`, and `unknown`. `unknown` is the honest answer for a
- * lock taken on another machine, and it leaves the lease as the only rule there. The command line
- * is checked, not only the pid's existence: pids are recycled.
+ * Is the process that took this lock still running? A lease is a guess about liveness; the pid is
+ * the fact. Answers are `alive`, `dead` and `unknown` (a lock from another machine, where only the
+ * lease applies). The command line is checked too: pids are recycled.
  */
 export function classifyHolderLiveness(payload, {
   host = hostname(),
@@ -322,17 +189,9 @@ export function classifyHolderLiveness(payload, {
 }
 
 /**
- * What the lock ref says, and whether it still counts.
- *
- * `unreadable` is deliberately not `free`: a lock whose payload cannot be parsed is still a lock
- * somebody took. `unknown` is the same rule one layer down: a read that never arrived (on
- * 2026-09-19, with the REST quota at 0/5000, `pnpm pr:queue` printed `nothing is landing` while a
- * lock was held and refreshed every minute). A read that did not happen never renders as an open
- * door.
- *
- * A train conductor's payload keeps the numeric `pr` field (the train's pull request, or its first
- * component while it assembles), so an older `pr:land` still running elsewhere reads it as held
- * rather than as unreadable and takeable.
+ * `unreadable` is deliberately not `free`: an unparseable lock is still a lock. `unknown` is the
+ * same rule for a read that never arrived; it never renders as an open door. A train payload keeps
+ * the numeric `pr` field so an older `pr:land` reads it as held.
  */
 export function classifyLock({
   payload,
@@ -380,7 +239,7 @@ export function describeLock(lock, nowMs = Date.now()) {
  * ------------------------------------------------------------------------------------------------
  */
 
-/** 2 — completed with a real verdict. 1 — still running. 0 — `SKIPPED`. */
+/** 2 means completed with a real result, 1 still running, 0 `SKIPPED`. */
 function verdictRank(run) {
   const status = String(run?.status ?? run?.state ?? '').toUpperCase();
   const conclusion = String(run?.conclusion ?? run?.state ?? '').toUpperCase();
@@ -403,12 +262,9 @@ function runStamp(run) {
 }
 
 /**
- * The newest real verdict per context name.
- *
- * ⚠️ One name reports several times: a draft's `SKIPPED`, then the real run after `ready`, then a
- * rerun. Keeping whichever the API listed last once read a genuine FAILURE as "never ran" and held
- * the lock 45 minutes (#1578, 2026-09-12); ranking by verdict first then aborted a landing on its
- * own superseded `CANCELLED` run. The newest run wins; the verdict rank breaks ties without stamps.
+ * The newest real result per context name. One name reports several times (a draft's `SKIPPED`,
+ * the real run, a rerun): the newest run wins and rank breaks ties without stamps. Keeping the
+ * last listed misread a real FAILURE as never ran.
  */
 export function latestByName(rollup = []) {
   const byName = new Map();
@@ -435,11 +291,9 @@ function isFailedRun(run) {
 }
 
 /**
- * **Every check that is not a required context, and whether it failed** (2026-09-13).
- *
- * `windows-beta-check.yml` was red on `main` and on the v1.2.2 release pull request and produces
- * no required context, so "every required context is green" merged it twice. Accepting a red lane
- * is a decision made **by name** (`--allow-failing`), never a blanket `--force`.
+ * Every check that is not a required context, and whether it failed: a red unrequired lane must
+ * not pass as "every required context is green". Accepting a red lane is decided by name
+ * (`--allow-failing`), never a blanket force.
  */
 export function otherCheckState({ rollup = [], requiredContexts = [], allowFailing = [] }) {
   const required = new Set(requiredContexts);
@@ -460,11 +314,9 @@ export function otherCheckState({ rollup = [], requiredContexts = [], allowFaili
 }
 
 /**
- * The required contexts' verdict, read against the protection's own list.
- *
- * **`SKIPPED` is not green**, and that is the draft design's safety catch: a draft's jobs report
- * `skipped`, branch protection counts that as satisfied, and a lander inheriting that reading
- * would merge a tree nothing ran on. `missing` (never reported) and `pending` both wait.
+ * The required contexts' result against the protection's own list. `SKIPPED` is not green: a
+ * draft's jobs report skipped, which branch protection counts as satisfied, so a lander inheriting
+ * that would merge an untested tree. `missing` and `pending` both wait.
  */
 export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   const byName = latestByName(rollup);
@@ -556,10 +408,7 @@ export function protectionFrom(read) {
   return { contexts: Array.isArray(read.value.contexts) ? read.value.contexts : [], failure: null };
 }
 
-/**
- * **Which worktree a landing removes: `--cleanup`'s path, and nothing else.** `--worktree` never
- * removed anything (2026-09-13, an agent believed it had), and it now does nothing at all.
- */
+/** The worktree a landing removes: `--cleanup`'s path only. `--worktree` removes nothing. */
 export function worktreeToRemove(args) {
   return args.cleanup ?? null;
 }
@@ -809,8 +658,8 @@ export function createGithub(slug, run = ghRun) {
     createBranch: (branch, sha) => ok(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=refs/heads/${branch}`, '-f', `sha=${sha}`]),
     deleteBranch: (branch) => ok(['api', '-X', 'DELETE', `repos/${slug}/git/refs/heads/${branch}`]),
     /**
-     * `POST /repos/{owner}/{repo}/merges`: `201` created a merge commit, `204` means the base
-     * already contains the head, `409` is a conflict. Server-side; no checkout is touched.
+     * `POST .../merges`: `201` created a merge commit, `204` means the base already contains the head,
+     * `409` is a conflict. Server-side; no checkout is touched.
      */
     mergeInto: (base, head, message) => {
       const result = run(['api', '-X', 'POST', `repos/${slug}/merges`, '-f', `base=${base}`, '-f', `head=${head}`, '-f', `commit_message=${message}`],
@@ -1212,8 +1061,8 @@ function cutTrain({ batch, parent = null, deps, holder, key }) {
 }
 
 /**
- * Read one train's CI once and record its verdict. Reruns and refires happen here for any train,
- * speculative or not; acting on a verdict is `settleHead`'s, and only for the train at the head.
+ * Read one train's CI once and record its result. Reruns and refires happen here for any train;
+ * acting on a result is `settleHead`'s, only for the train at the head.
  */
 function pollTrain({ train, deps, requiredContexts, args }) {
   if (train.verdict) return;
@@ -1252,9 +1101,8 @@ function pollTrain({ train, deps, requiredContexts, args }) {
 }
 
 /**
- * Act on the verdict of the train at the head, whose base `main` already contains: merge, split,
- * eject, rebuild or give up. `wait` leaves it for the next poll. A speculative train reaches this
- * only after the train under it landed, which is what makes its base the `main` it merges onto.
+ * Act on the result of the train at the head, whose base `main` already contains: merge, split,
+ * eject, rebuild or give up. `wait` leaves it for the next poll.
  */
 function settleHead({ train, deps, requiredContexts, token }) {
   const { gh, git, log } = deps;
@@ -1285,9 +1133,8 @@ function settleHead({ train, deps, requiredContexts, token }) {
     return { outcome: 'ejected', number: only.number };
   }
 
-  // Green. The drift check and the merge run under the fast-path lock, the same lock a fast-path
-  // merge holds between its last check and its merge, so neither can land between the other's
-  // check and merge (the window left open when only the fast path took it, 2026-09-26).
+  // The drift check and the merge run under the fast-path lock, the lock a fast-path merge holds
+  // between its last check and its merge, so neither can land between the other's check and merge.
   const { trainPr, other } = verdict;
   if (!takeFastLock(deps, token, number)) {
     log(`a fast-path merge is holding ${FAST_LOCK_REF}; checking again next poll`);
@@ -1351,9 +1198,8 @@ function discardTrain({ train, deps, why }) {
  * the integrated result can conflict.
  */
 /**
- * Fetch until `origin/main` is the merge commit GitHub just made. Right after a merge the ref can
- * still read the old main, and judging containment against it re-queued a landed component: #1898
- * landed twice, the second time as an empty commit (2026-09-26).
+ * Fetch until `origin/main` is the merge commit GitHub just made: right after a merge the ref can
+ * still read the old main, and judging containment against it would re-queue a landed component.
  */
 function waitForMainAt(deps, sha) {
   if (!sha) return;

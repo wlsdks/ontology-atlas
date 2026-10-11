@@ -5,12 +5,9 @@ export const rules = [
     order: 140,
     command: 'pnpm docs-vault:build',
     reason: 'static docs-vault input or generated output changed',
-    // Every build input and every generated output (bug sweep 2026-09-01): the
-    // storefront sample is a build input, and a hand edit to any generated
-    // file — content.json, headings, gateway-*, sample-storefront.*, the
-    // public copies — is exactly what the check exists to flag. The old list
-    // covered only docs/**.md and manifest.json, so those edits got a green
-    // advisor run before the pre-commit hook's broader grep caught them.
+    // Every build input and generated output: the storefront sample is a build input, and a hand edit
+    // to any generated file (content.json, headings, gateway-*, public copies) is what the check
+    // flags.
     matches: [
       /^docs\/.+\.md$/,
       /^docs\/records\/.+\.json$/,
@@ -136,16 +133,9 @@ export const rules = [
   {
     order: 1330,
     /*
-     * **Vault markdown is drawn on screen.** `/docs` renders this folder as is, and so
-     * do `samples/storefront` and `docs/guide`. So the prose written here is **product
-     * copy**, not code, and it is within reach of the copy gate (no em dashes).
-     *
-     * ⚠️ Without this rule it was actually breached (2026-08-21): two vault nodes were
-     * written with em dashes in the prose, `vault:validate` only looks at frontmatter
-     * integrity so it passed, and the pre-push hook passed it too. It went red only
-     * **after CI's Unit · Contract job had run for 7 minutes**. The integrity check and
-     * the copy check **measure different things**, so neither substitutes for the
-     * other.
+     * Vault markdown is drawn on screen (`/docs`, `samples/storefront`, `docs/guide`), so its prose is
+     * product copy under the copy gate (no em dashes); `vault:validate` checks only frontmatter
+     * integrity.
      */
     command: 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
     reason: 'rendered doc markdown changed (vault, guide, sample)',

@@ -3,11 +3,6 @@
 export const rules = [
   {
     order: 110,
-    // cli/src/lib has had this aggregate for a while (test:cli:lib below);
-    // cli/src/commands never got its twin, so a command suite whose file name
-    // is not the sibling `<command>.test.mjs` — relate.snapshot-write,
-    // validate.exit-codes — ran only inside `pnpm package:check` on the
-    // push-to-main lane and on no pull request at all (2026-09-01 review).
     command: 'pnpm test:cli:commands',
     reason: 'a CLI command implementation changed',
     matches: [/^cli\/src\/commands\//],

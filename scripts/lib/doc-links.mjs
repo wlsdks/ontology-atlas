@@ -150,31 +150,8 @@ const REPO_TOP_LEVEL = new Set([
 ]);
 
 /**
- * **Citations whose evidence is a path not in the repository** — a layer the
- * check above could not see in principle, because it was outside the allowlist
- * (found by measurement, 2026-08-15).
- *
- * `REPO_TOP_LEVEL` is a hand-maintained 13-line allowlist, so **for a citation
- * pointing at a directory not on that list, no check existed at all.** Through
- * that gap, the colour charter's evidence (`signal tone 3 types`) and the bar-colouring
- * discipline's evidence each pointed at a `.md` inside a gitignored scratch
- * folder for three weeks — files that are not on this machine either, and for
- * anyone who clones, the **whole folder** is missing. One lint message was citing
- * that non-existent file to a developer as its evidence.
- *
- * ## Why dot-directories rather than "everything off the list"
- *
- * Inventory before switching it on (2026-08-15): **255** citations sit off the
- * list and most are legitimate — `@docs/…` (import syntax) 35 ·
- * `domains/foo.md` (vault-relative examples) 10 · root filenames 199. Catching
- * them all buries the signal in noise. A citation whose evidence is a
- * **gitignored dot-directory**, by contrast, is by definition something nobody
- * can open.
- *
- * These are caught **unconditionally** rather than via `exists()` — the folder
- * exists only on the author's machine, so an existence test would make a check
- * that is green locally and red in CI (a gate that differs per machine is not a
- * gate).
+ * Citations to a gitignored dot-directory are caught unconditionally, not via `exists()`: the
+ * folder exists on one machine only, so an existence test would be green locally and red in CI.
  */
 const KEPT_DOT_DIRS = new Set(['.claude', '.agents', '.codex', '.github']);
 

@@ -21,12 +21,8 @@ export const rules = [
     reason:
       'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
     matches: [
-      // 2026-08-04 — for a new `.tsx` view and a new route this advisor suggested
-      // nothing beyond tsc and i18n. But several gates in `tests/contract/` **read the
-      // file system directly**: ramp coverage, the named-utility ratchet, the control
-      // adoption ratchet, forbidden classes, inline hex, surface motion, label
-      // decoration, and `audited-route-coverage`, which classifies routes. A newly
-      // created UI file is their input, not somebody else's business.
+      // Several gates in `tests/contract/` read the file system directly (ramp coverage, ratchets,
+      // forbidden classes, `audited-route-coverage`), so a newly created UI file is their input.
       /^(?:src|app)\/.*\.tsx$/,
       /^tests\/contract\//,
       /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,

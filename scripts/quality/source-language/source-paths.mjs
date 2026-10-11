@@ -53,18 +53,9 @@ export function sourceCommentSyntax(path) {
 }
 
 /**
- * Where a *printed* string is held to English, and under which ratchet.
- *
- * `source:language` reads comment tokens, so a Korean string literal was invisible to it. That is
- * not a hypothetical: measured 2026-08-25 the CLI printed Korean on 140 lines while this gate
- * reported zero, and measured 2026-08-31 the release and MCP surfaces still printed it on ~250
- * more — error text, `--help` output, refusal reasons, and MCP tool responses an agent reads.
- *
- * The scan is deliberately narrower than the comment scan. These three roots are programs whose
- * strings are *output*: scripts an operator runs, the MCP server an agent talks to, and the CLI.
- * `src/**` and `messages/**` are excluded because their Korean is the product's own locale data,
- * which `docs:language` and the locale contracts already own — pointing this ratchet at them would
- * measure translation, not drift.
+ * Where a printed string is held to English; `source:language` reads comment tokens, so a Korean
+ * string literal was invisible to it. The scan covers programs whose strings are output (scripts,
+ * MCP server, CLI); `src/**` and `messages/**` are locale data owned by `docs:language`.
  */
 export const STRING_SCAN_SCOPES = Object.freeze({
   scripts: 'scripts/',

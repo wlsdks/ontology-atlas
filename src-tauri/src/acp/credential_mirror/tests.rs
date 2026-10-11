@@ -140,7 +140,6 @@ fn the_mirror_is_filed_under_the_account_claude_code_itself_reads() {
     assert_eq!(parse_keychain_account(attributes).as_deref(), Some("probe"));
     assert_eq!(parse_keychain_account("keychain: \"login\"\n"), None);
 
-    // The legacy literal `claude` account was never read by Claude Code.
     let keychain = CredentialCarrier {
         label: "Claude Code-credentials".to_string(),
         digest: "369750".to_string(),

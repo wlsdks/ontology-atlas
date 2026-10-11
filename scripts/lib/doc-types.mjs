@@ -8,18 +8,9 @@
 // (`.claude/rules/documentation.md`, "What CI may check about prose").
 
 /**
- * Files and folders that are history. Nothing rewrites them, no template applies
- * to them, and the metadata check skips them.
- *
- * - `DECISIONS`, `CHANGELOG`, `PO-PILOT`: keyed by path and hash in
- *   `docs/records/legacy.json`.
- * - `records/**`: immutable fragments. `records/README.md` is the one living
- *   file there.
- * - `archive`, `audits`, `benchmark`, `prototypes`: dated evidence and drafts.
- *   `benchmark/rubric.md` is fed into grader prompts, so even frontmatter would
- *   change the instrument.
- * - `ontology/**`: the dogfood vault. `mcp/src/schema.mjs` owns its schema.
- * - `.generated/**`, `.templates/**`: machine output and the templates themselves.
+ * Files and folders that are history: nothing rewrites them, no template applies, the metadata
+ * check skips them. `benchmark/rubric.md` feeds grader prompts, so even frontmatter would change
+ * the instrument.
  */
 export function isFrozenDocPath(repoPath) {
   const p = repoPath.split('\\').join('/');
@@ -41,7 +32,7 @@ export function isFrozenRepoPath(repoPath) {
   );
 }
 
-/** The owning area. It stands in for an owner, because a person's name is barred (`forbidden.md`). */
+/** The owning area; a person's name is barred (`forbidden.md`). */
 export const DOC_AREAS = Object.freeze([
   'product',
   'architecture',

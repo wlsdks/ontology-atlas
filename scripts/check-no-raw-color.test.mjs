@@ -28,10 +28,6 @@ test("flags a raw indigo rgba() literal in a className string", () => {
     (dir) => {
       const violations = findRawColorLiterals(dir);
       assert.equal(violations.length, 1);
-      // 2026-08-05: reported paths became **repo-relative**. Prefixing by hand was correct
-      // while only `src/` was walked, but now that `app/` is walked too the root has to be
-      // visible. This fixture lives in a temp directory outside the repository, so the
-      // root-relative path is used as is.
       assert.equal(violations[0].file, "Widget.tsx");
       assert.equal(violations[0].line, 2);
       assert.equal(violations[0].family, "indigo");
@@ -129,14 +125,8 @@ test("skips .test. files", () => {
 });
 
 /*
- * This place used to hold a test asserting that the ontology-map directory is
- * skipped. The 2026-08-04 audit removed that directory-wide exemption (see the
- * `shouldSkipDir` comment in `check-no-raw-color.mjs` — the directory's violation count
- * at removal was 0). Exemptions now exist only as the per-file `ALLOWLIST`.
- *
- * **This test pins the opposite direction** — a resurrected directory skip turns it
- * red. Without this assertion, "0 because clean" and "0 because not looked at" become
- * the same green again.
+ * Pins that the `ontology-map` directory is scanned: without it, "0 because clean" and "0 because
+ * not looked at" look the same. Exemptions exist only as per-file `ALLOWLIST` entries.
  */
 test("scans the ontology-map canvas engine directory — no directory-wide exemption", () => {
   withTempSrc({}, (dir) => {
@@ -157,13 +147,9 @@ test("documented ALLOWLIST entries stay clean of raw literals so future edits do
   assert.ok(ALLOWLIST.has("widgets/ontology-map/render/grid.ts"));
 });
 
-/* ════════════════════════════════════════════════════════════════════
- * Verdict inversion (2026-08-04) — from "reject registered tuples" to "only achromatics pass"
- * ════════════════════════════════════════════════════════════════════
- *
- * Every test above asks whether a **registered hue** is caught. On that question
- * alone the old gate also passed everything, while what was actually leaking was 26
- * **values absent from the list**. The four below pin that hole.
+/*
+ * Pass/fail inversion: only achromatics pass. The four tests below cover values absent from the
+ * hue table, which a registered-tuple check lets through.
  */
 
 test("flags an rgba() the hue table has never heard of — 이것이 종전 게이트의 구멍이었다", () => {

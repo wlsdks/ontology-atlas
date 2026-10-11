@@ -167,9 +167,8 @@ test('ratchets every source-comment scope in both directions', () => {
 
 
 test("a rust lifetime is not a string, so comments after it stay visible", () => {
-  // Measured 2026-08-24: treating every `'` as a quote put the scanner inside a string from the
-  // first `&'static str` onward, blinding it to 2,624 consecutive lines of src-tauri/src/lib.rs
-  // while the gate reported zero. One lifetime is enough to reproduce it.
+  // Treating every `'` as a quote would put the scanner inside a string from the first `&'static
+  // str` onward; one lifetime is enough to reproduce it.
   const comments = extractCommentTokens("x.rs", "fn f(x: &'static str) {}\n// 한국어 주석\n");
   assert.equal(comments.length, 1);
   assert.match(comments[0].text, /한국어/);

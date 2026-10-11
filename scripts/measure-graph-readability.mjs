@@ -1,24 +1,7 @@
 /**
- * Graph readability measurement — numbers for whether the map reads **as a graph**.
- *
- * **Why this exists.** From the 2026-08-03 audit: this app's primary surface is a
- * node-link graph, and there was **not one number** for whether it read as one.
- * Node specs (shape, radius, parity) had contract tests, the type ramp had lint,
- * motion had frame measurements — but **the layout occupying most of the screen**
- * had no verdict tool beyond "looks complicated".
- *
- * **What this file does — collection, not judgement.** It pulls **coordinates
- * only** from the page. The metrics are computed by
- * `scripts/lib/graph-readability.mjs`, which is pure and therefore probeable with
- * fixtures (`tests/contract/graph-readability.contract.test.ts`). Computing inside
- * the page means **you cannot feed in a known answer**, so "the score is 0 — is the
- * detector idle or is the map good?" can never be settled; the first measurement
- * stood in exactly that spot.
- *
- * **Usage**
- *
- *   node scripts/serve-static-export.mjs --port=4173 &   # after pnpm build
- *   node scripts/measure-graph-readability.mjs [baseUrl]
+ * Graph readability measurement: collection, not judgement. It pulls coordinates only; the metrics
+ * are computed in `scripts/lib/graph-readability.mjs`, which is pure and probeable with fixtures.
+ * Usage: `node scripts/measure-graph-readability.mjs [baseUrl]` on a static export.
  */
 
 import { chromium } from "@playwright/test";

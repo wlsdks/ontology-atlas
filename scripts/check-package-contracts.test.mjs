@@ -1,29 +1,7 @@
 #!/usr/bin/env node
-//
-// **This file's criterion** (2026-08-01, owner's decision — `docs/DECISIONS.md`):
-//
-//   Check only what a machine can generate. Never check a sentence a human wrote.
-//
-// The previous version was 3,419 lines with 2,126 assertions, of which 1,915 (90%)
-// asked "does the README contain this sentence". Those pins **failed to catch what
-// they were for** — when a tool's behaviour changed and the docs did not, the
-// sentence was unchanged and it passed — and they **blocked improvement**: rewriting
-// a document in better words turned it red. This file itself repeatedly carried
-// comments saying the gate was wrong and the document was right.
-//
-// Only three kinds remain:
-//   1. Comparison against values derived from code (enums, counts, versions,
-//      computed summary strings)
-//   2. Referential integrity (does a `pnpm ...` a document names exist, does a node
-//      the vault README names exist, does a glob cover everything on disk)
-//   3. Executability (does the script actually run) + package structure (tarball,
-//      entry points)
-//
-// What the prose *describes* is now covered by two other nets:
-//   - `pnpm docs:surface:check` — regenerates the surface from the registry and
-//     diffs it, then checks the registered tool/command names appear in the README.
-//   - `pnpm docs:links` — broken links and citations of files that do not exist.
-//
+// Check only what a machine can generate, never a sentence a human wrote (`docs/DECISIONS.md`):
+// values derived from code, referential integrity (`pnpm` commands, vault nodes, globs),
+// executability and package structure.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -94,12 +72,8 @@ describe('package contract helpers', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const mcpPkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
     /*
-     * Derived, not listed. The hand-written array this replaces named seven of
-     * ten rules and three of twenty skills, and no seat brief at all: thirty-five
-     * of the forty-five agent files that can cite a `pnpm` command were outside
-     * the gate (measured 2026-08-24). A list of files to check rots the same way
-     * every hand-maintained list in this repository has, and the fix is the same
-     * one `documentation.md` names — compute both sides.
+     * Derived, not listed: a hand-written file list rots, so both sides are computed from the rule,
+     * skill and agent directories (`documentation.md`).
      */
     const agentFiles = [
       ...readdirSync('.claude/rules').filter((name) => name.endsWith('.md'))
@@ -191,13 +165,9 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * Checks that the shortcuts the README advertises **actually run**. The 30-odd
-   * assertions pinning each help line verbatim were removed — help text is prose a
-   * human wrote, and pinning it breaks the gate when the wording improves.
-   *
-   * What that gives up: a help text listing a shortcut that does not exist is not
-   * caught here. `assertPnpmScriptsExist` covers that instead, via
-   * `pnpm test:dogfood:script-refs`, which runs against the help text.
+   * Checks that the shortcuts the README advertises actually run. Help text is prose and is not
+   * pinned verbatim; a help line naming a missing shortcut is caught by `assertPnpmScriptsExist` via
+   * `pnpm test:dogfood:script-refs`.
    */
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
     const result = runNodeScript(['cli/src/index.mjs', 'mcp-verify', '--help']);
@@ -319,10 +289,8 @@ describe('package contract helpers', () => {
   });
 
   /**
-   * **Referential integrity of the vault README.** The previous gate required this
-   * document to contain particular sentences (a prose pin), while the incident it
-   * actually wanted to catch was "the vault was regenerated and the README now points
-   * at a node that is gone". A machine can decide that.
+   * Referential integrity of the vault README: it must not point at a node that is gone after
+   * regeneration; a machine can decide that.
    */
   it('keeps the self-ontology README naming nodes that exist', () => {
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');
@@ -339,9 +307,8 @@ describe('package contract helpers', () => {
 
   it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {
     const pkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
-    // The `Server` construction moved to `server/instance.mjs` when the entry
-    // point became wiring only (docs/DECISIONS.md, 2026-09-12); that is the file
-    // that must import the version instead of writing one in.
+    // The `Server` construction lives in `server/instance.mjs`, the file that must import the version
+    // instead of writing one in.
     const source = readFileSync('mcp/src/server/instance.mjs', 'utf-8');
 
     assert.equal(SERVER_VERSION, pkg.version);

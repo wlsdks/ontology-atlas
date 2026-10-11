@@ -1,19 +1,8 @@
 @import "tailwindcss" source(none);
 
 /*
- * ⚠️ Do not scan documents (2026-08-04).
- *
- * Tailwind v4 automatically scans the repository if there is no `@source` declaration. Thus,
- * **characters resembling class names written in markdown prose** are also read as candidates. In fact,
- * `.claude/rules/design.md` explains the rules and writes a single line `text-[var(…)]`,
- * which creates `.text-\[var\(…\)\] { color: var(…) }`, and Turbopack's CSS parser
- * rejects it, causing **`pnpm dev` to fail with 500** entirely.
- *
- * The production build is fine, so CI was green — only local dev breaks,
- * so no one noticed. A document explaining the rules broke the code that uses those rules.
- *
- * Therefore, limit the scan scope **to code**. Writing class examples in documents
- * is correct going forward, and ensuring they do not leak into the build is also correct.
+ * Tailwind v4 scans the whole repository without `@source`; class-like text in markdown
+ * (`text-[var(…)]`) generates CSS that Turbopack rejects and breaks `pnpm dev`. Scan code only.
  */
 @source "../app/**/*.{ts,tsx}";
 @source "../src/**/*.{ts,tsx}";

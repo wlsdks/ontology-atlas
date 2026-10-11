@@ -117,18 +117,9 @@ describe('resolveWikilinkTargetSlug / extractOutLinksWithContext — nested onto
 });
 
 /**
- * Determinism contract — "generating twice from the same source yields identical
- * bytes".
- *
- * What it catches: if generated output depends on **the wall clock or the git commit
- * time at generation**, the baseline diverges the moment the commit carrying that
- * value is restamped by squash-merge, rebase, or amend. Measured across 25 commits on
- * main, 1–32 documents were always wrong, and a later regeneration put lines nobody
- * had touched into the diff, producing rebase conflicts and phantom diffs (including
- * an incident where a conflict marker left inside JSON broke tsc).
- *
- * So the tests below restamp **only the commit time** in a temporary git repository
- * and check the output is byte-identical — which is exactly what a merge does.
+ * Determinism contract: generating twice from the same source yields identical bytes. Output
+ * depending on the wall clock or commit time diverges once a squash-merge, rebase or amend
+ * restamps the commit. So the tests restamp only the commit time and check byte identity.
  */
 describe('build-docs-vault 결정성 계약', () => {
   let repo = null;
@@ -212,12 +203,8 @@ describe('build-docs-vault 결정성 계약', () => {
     const edited = path.join(repo, 'docs', 'GUIDE.md');
     await writeFile(edited, '# Guide\n\n본문 두 줄.\n추가.\n', 'utf8');
     /*
-     * ⚠️ The expected value is derived from **that file's mtime**. It used to call
-     * `localDayStamp(new Date())` after the scan, which lets "when the file was written"
-     * and "when the expectation was built" fall on different days — writing just before
-     * midnight and measuring just after breaks by a day for reasons unrelated to the
-     * product. Using the same source the scan reads (mtime) removes the window entirely
-     * (full check audit, 2026-08-17).
+     * Derive the expected value from that file's mtime, not `new Date()`: the two can fall on
+     * different days around midnight.
      */
     const { mtime } = await stat(edited);
     const { manifest } = await scan();

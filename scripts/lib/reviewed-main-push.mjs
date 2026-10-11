@@ -1,7 +1,6 @@
 /**
- * Pure, fail-closed verdict for reusing an exact pull request review on the
- * resulting main push. The caller owns complete GitHub pagination, ruleset
- * exclusion, and commit-tree resolution.
+ * Pure, fail-closed decision for reusing an exact pull request review on the resulting main push.
+ * The caller owns complete GitHub pagination, ruleset exclusion, and commit-tree resolution.
  */
 export function reviewedMainPushVerdict(input) {
   const run = (reason) => ({ skip: false, reason });

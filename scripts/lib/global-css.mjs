@@ -1,12 +1,6 @@
-// app/globals.css is the entry Next imports; its rules live in app/styles/*.css
-// parts pulled in by `@import "./styles/<part>.css";` lines. Gates and tests
-// that read the stylesheet as text read it through here, so they see the same
-// single body the entry used to hold, in the same order.
-//
-// Where a part boundary falls inside `@layer base`, the parts close and reopen
-// the layer: one part ends with `}` and the next begins with `@layer base {`.
-// Tailwind merges them, so the built CSS is unchanged, and the join drops that
-// seam so readers see one block, exactly as before the split.
+// app/globals.css is the entry Next imports; its rules live in app/styles/*.css parts. Gates that
+// read the stylesheet as text read it through here, as one body in order. A part boundary inside
+// `@layer base` closes and reopens the layer; the join drops that seam.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';

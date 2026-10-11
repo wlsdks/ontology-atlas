@@ -39,18 +39,9 @@ const CONTENT_OUT = path.join(
   'data',
   'content.json',
 );
-// The gateway needs body text synchronously before first paint on the client
-// surface. To keep the whole of content.json out of that path, only guide/* goes
-// into this small map; every other document is read as a raw asset from
-// public/docs-vault.
-//
-// Since 2026-08-19 the CHANGELOG is **not included in full** — the file had grown
-// to 634KB and pushed the chunk shared by every route past the desktop
-// performance budget (max chunk 1.5MiB). All the gateway's `/changelog` needs
-// synchronously at first paint is a few recent sections plus how many were
-// folded, so only that much is cut into gateway-changelog.json. `/docs` reads the
-// full CHANGELOG asynchronously from public/docs-vault/CHANGELOG.md like any
-// other document.
+// The gateway needs body text synchronously before first paint, so only guide/* goes into this
+// small map; other documents are raw assets in public/docs-vault. The CHANGELOG is cut to a few
+// recent sections to stay inside the chunk budget (max 1.5MiB); `/docs` reads the full file.
 const GATEWAY_CONTENT_OUT = path.join(
   ROOT,
   'src',
@@ -260,14 +251,9 @@ export function parseArgs(argv = process.argv.slice(2)) {
   return { check: argv[0] === '--check' };
 }
 
-// Directories under docs/ that are not product documentation and must not ship.
-//
-// `analyses/` holds dated per-run findings records written by `ontology-atlas
-// analysis`. They are committed on purpose — that is what makes them versioned
-// and diffable — but they are this repository's own working output, not
-// documentation anybody installs. Bundling them would grow the shipped app on
-// every run, against a static budget already at 78% (docs/DECISIONS.md,
-// 2026-08-31). These two names are skipped at any depth.
+// Directories under docs/ that must not ship. `analyses/` and `records/` are this repository's own
+// committed working output; bundling them would grow the shipped app against a static budget.
+// Skipped at any depth.
 const NOT_PRODUCT_DOCS = new Set(['analyses', 'records']);
 
 // Top-level docs/ folders that stay in the repository but leave the app: dated
@@ -282,12 +268,8 @@ const NOT_SHIPPED_TOP_DIRS = new Set(['archive', 'audits', 'benchmark', 'plans',
 // staleness check uses it on the public output so a leftover file is reported.
 async function walk(dir, { root = dir, product = true } = {}) {
   const out = [];
-  // Sorted by name — readdir order is filesystem-enumeration order, which
-  // happens to be byte-sorted on APFS and fresh ext4 checkouts but is not
-  // guaranteed anywhere. Without the sort, content.json key order and the
-  // manifest's insertion-ordered maps depend on the machine, so "same source
-  // regenerates to the same bytes" (this script's stated contract) could
-  // report stale on a current tree (bug sweep 2026-09-01).
+  // Sorted by name: readdir order is not guaranteed, and an unsorted walk would make key order
+  // machine-dependent, so "same source, same bytes" could report stale.
   const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
@@ -926,11 +908,8 @@ export async function scanVaultDir(
       ...(revision ? { revision } : {}),
       linksOut,
     };
-    // The stabiliser that carried values over from the previous manifest was
-    // removed: when generated output depends on its own previous output, "same input
-    // → same bytes" no longer holds (losing the baseline or regenerating in a
-    // different order splits the value). Date precision already absorbs the mtime
-    // jitter that stabiliser existed to hide.
+    // Nothing is carried over from the previous manifest: output depending on its own earlier output
+    // breaks "same input, same bytes". Date precision already absorbs mtime jitter.
     docs.push(nextDoc);
 
     publicFiles.push({ relativePath: `${slug}.md`, raw });

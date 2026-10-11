@@ -24,10 +24,8 @@ export async function generateMetadata({
 }
 
 /**
- * `/ontology` — the convergence entry where the hub became the map. The former tree/ego hub
- * (`OntologyViewPage`) is retired; this route now redirects to `/topology` with INDEX expanded,
- * translating the `?node=<id>` deep-link contract into `?p=<id>` so every existing agent-handoff,
- * search, and docs-viewer link built via `buildOntologyNodeHref` keeps resolving.
+ * Redirects to `/topology` with INDEX expanded, translating `?node=<id>` into `?p=<id>` so links
+ * built via `buildOntologyNodeHref` keep resolving.
  */
 export default function Page() {
   return (

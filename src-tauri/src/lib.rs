@@ -105,8 +105,8 @@ pub fn run() {
         builder = builder.plugin(map_entry_diagnostic::init());
     }
 
-    // Not under the harness: the plugin writes on exit, so a harness resize would
-    // overwrite the owner's geometry and make `--min-window-size` verdicts depend on it.
+    // Not under the harness: the plugin writes on exit, so a harness resize would overwrite the saved
+    // window geometry and make `--min-window-size` results depend on it.
     if !verify_webview {
         builder = builder.plugin(
             tauri_plugin_window_state::Builder::new()

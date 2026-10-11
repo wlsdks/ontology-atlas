@@ -29,16 +29,8 @@ const hreflangOf = (locale: string): string =>
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /**
-   * The sitemap's project list must come from **the same source as route generation** — exactly the
-   * set of addresses `bundledProjectSlugs()` produces.
-   *
-   * It used to read only the dogfood manifest. So when the `/project/storefront/` 404 was fixed by
-   * switching only route generation to the full set, addresses existed **in the build but not in the
-   * sitemap** (measured 2026-08-01: `public-routes-coherence` reported
-   * `en: slug present as HTML but missing from sitemap: storefront`). The one demo the app promotes
-   * everywhere still did not exist as far as crawlers were concerned.
-   *
-   * A value derived in two places lets a half-fix pass. They are merged into one.
+   * The project list must come from the same source as route generation, `bundledProjectSlugs()`, or
+   * built pages go missing from the sitemap.
    */
   const projects = deriveBundledProjects();
   const entries: MetadataRoute.Sitemap = [];

@@ -7,20 +7,9 @@ import boundaries from 'eslint-plugin-boundaries';
 // `boundaries/dependencies` + v7 entity selectors/policies (2026~).
 //   Docs: https://www.jsboundaries.dev/docs/rules/dependencies/
 
-// ── Checkbox accent selectors ────────────────────────────────────────────────
-// The expression bans that used to live in this array (glassmorphism, scale hover, the
-// purple-pink gradient, canvas `shadowBlur`) were lifted by the owner on 2026-09-08
-// (`docs/DECISIONS.md`, "The expression bans are lifted"). What remains is the checkbox
-// accent, which is a token-discipline rule, not a taste rule. The array is reused across
-// several config objects: in flat config a later `no-restricted-syntax` replaces, never
+// The array is reused across config objects: a later `no-restricted-syntax` replaces, never
 // merges, so every block that adds a ramp rule must spread this too.
 const checkboxAccentSelectors = [
-  /*
-   * Checkbox accent — the canonical brand is the only one (approved in the "System" section on 2026-08-15).
-   *
-   // Before enabling, a full sweep found accents-[ 6 locations split into three types — brand 4 · accent(#7170ff) 1 ·
-   * **undefined (UA default color) 1** (current violation of the "no multiple color systems" rule). All 6 locations were migrated to the Checkbox primitive (`shared/ui/checkbox.tsx`) before enabling — upon enabling, violations dropped to 0. Zero exempt files designed (precedent: disabled:opacity): only brand token references are allowed through, so the primitive itself remains under this rule.
-   */
   {
     selector: 'Literal[value=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
     message:
@@ -53,88 +42,21 @@ const closureScopeSelectors = [
   },
 ];
 
-// ── Indigo Ink License (2026-08-03) ─────────────────────────────────────
-// `tone accent` (#7170ff, mark indigo) is only AA (4.5:1) down to the darkest background —
-// when indigo/amber tints are applied, composite contrast drops to 3.5~4.4 (measured:
-// tests/contract/accent-ink-contrast.contract.test.ts). Controls with tinted backgrounds
-// use `accentOnTint` (--color-indigo-text-soft, front surface 6.46+) for ink.
-// This selector only looks at **literal pairings within the same call/element** — className
-// bypassed via file constants are handled by source scanning in the above contract test.
+// `accent` (#7170ff) is AA only on the darkest backgrounds; on indigo/amber tints contrast falls
+// to 3.5-4.4, so tinted controls use `accentOnTint`. Only literal pairings in one call/element are
+// seen; constants are covered by tests/contract/accent-ink-contrast.contract.test.ts.
 /*
- * Inline `style={{ boxShadow }}` — a layer that **cannot be seen** by className selectors **in principle**.
- *
- * ## Why was this needed (2026-08-04 design audit)
- *
- * The above height ladder guard looks for the **class string** `shadow-[…]`. However,
- * if shadows are written as JSX inline styles, no class is generated at all, so there
- * is nothing for the selector to catch. In that gap, the workshop (`StudioCompass.tsx`) was spinning **parallel ladders**
- * — 8 manually written shadows, 3 shapes:
- *
- *   0 -12px 30px  ×1  Bottom docking panel      → already has `-dock-bottom` (0 -12px 32px)
- *   0 12px 34px   ×6  Anchored popovers          → already have `elevation-2`(popover)
- *   0 18px 48px   ×1  Scream companion center modal → already have `elevation-3`(dialog)
- *
- * All three were **not missing layers, but layers that already had names**. This is the same pattern as the "unregistered 6th layer" incident recorded in the ladder definition comments, with the only difference being that this time it was
- * **syntax** rather than values that bypassed the gate.
- *
- * ## Why load into global blocks instead of ramp blocks
- *
- * `StudioCompass.tsx` is excluded from the ramp block due to `rampDebtExemptions`.
- * If this selector were placed in the ramp array, **only the file where the violation lives would be exempted**. Therefore,
- * it is loaded into **both** global blocks (`src/**`+`app/**`) and ramp blocks — flat config
- * does not merge rule options but replaces them, so putting it in only one side causes loss on the other.
- *
- * ## The allowance criteria are the **same list** as for className
- *
- * Since color was the token and manual geometry was what broke the ladder,
- * we do not use «pass if `var(` exists» here. One must reference a
- * token·inset dedicated to ladders·docking·pressing·surfaces.
- *
- * ⚠️ Pre-enforcement full count: 8 violations out of 9 inline boxShadow cases (all in one file) · 1 normal case
- * (`GuidedTourOverlay`'s `0 0 0 9999px var(--topology-tour-scrim-surface)` —
- * a scrim created with a massive spread, not a height shadow, and uses a surface-only token).
- * The 8 cases were converged first before enabling.
+ * Inline `style={{ boxShadow }}` creates no class, so className selectors cannot see it. Loaded in
+ * both global and ramp blocks: flat config replaces rule options, never merges. Allowed values
+ * must reference ladder, docking, pressing or surface tokens, not any `var(`.
  */
 const ALLOWED_SHADOW_TOKEN =
   'var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--map-|var\\(--chrome|var\\(--git|inset';
 
 /**
- * Allowance judgment is done **per layer** (2026-08-06).
- *
- * ## What leaked out
- *
- * Previously, the two rules (class/inline) placed a negative lookahead on the **entire value**:
- * `^(?!.*(?:allowedList)).+`. So if even one allowed mark existed **anywhere** inside brackets,
- * the entire value was exempted — `inset` is 「not light but material」, so it is
- * in the allowed list; thus, **a normal single layer of inset hairline washed away
- * a hand-written elevation shadow next to it.**
- *
- * Measured proof (2026-08-06):
- *
- * | Value | Previous | Now |
- * |---|---|---|
- * | Hand-written geometry single layer | Caught | Caught |
- * | Add one inset layer before the same value | **Not caught** | Caught |
- * | Ladder token reference | Pass | Pass |
- * | Inset hairline + ladder token (normal 2 layers) | Pass | Pass |
- *
- * There were 4 leaks, one of which was a **shared button primitive**, spreading to all
- * primary buttons in the app (render census 16 instances / 10 routes). We converged all four first and enabled it — violations became 0 upon enabling.
- *
- * ## Why regex?
- *
- * Layers are split by commas. We express 「if there is **at least one** layer without an allowed mark」
- * via backtracking: skip previous layers with `(?:[^\\]]*,)?`, and place the negative lookahead
- * only on the layer at that position (`[^,\\]]*`).
- *
- * ⚠️ Reason for requiring `[a-zA-Z(]`: If a value inside a layer contains commas like `rgba(0,0,0,.2)`,
- * numeric fragments like `0` would be caught as 「layers without marks」. There are currently **0** raw
- * rgba inside brackets (hex is already blocked by a separate rule), and even if they appear later,
- * catching them is correct, but counting numeric fragments makes the message point to the wrong place.
- *
- * ⚠️ **For the same reason, `var()` fallbacks also cause false positives** (2026-08-07 Code Review).
- * `var(--shadow-elevation-1, 0 18px 40px black)` is valid syntax, but splitting by comma
- * makes the trailing fragment (`0 18px 40px black)`) look like a layer without a mark. There are currently **0** such usages in the repo — this app's shadow tokens are all declared in `:root`, so there is no reason to use fallbacks — false positives result in **red messages, not crashes**, so they do not leak quietly. To count comma nesting, we would need a parser instead of regex, and the value is not yet there. If/when we truly need fallbacks, we will upgrade this rule to a parser then.
+ * Judged per layer: split by commas, flag when at least one layer lacks an allowed mark.
+ * `[a-zA-Z(]` keeps numeric fragments of `rgba(0,0,0,.2)` from counting. `var()` fallbacks
+ * containing commas false-positive; fixing that needs a parser, not regex.
  */
 /** Class string — brackets indicate the end of the layer list. */
 const SHADOW_CLASS_LAYER_VIOLATION =
@@ -158,37 +80,9 @@ const inlineShadowSelectors = [
 ];
 
 /*
- * Inline style size/radius — the other half of the shadow inline rule (above) (2026-08-15).
- *
- * ## Why
- *
- * The class ramp rule only looks at className strings. Writing `style={{ fontSize }}`
- * means no class is generated at all, so nothing would be caught — it's the exact same
- * syntax hole through which 8 StudioCompass inline shadows slipped out, and the
- * 2026-08-15 audit measured one instance in source separately from the render census
- * (6 routes deviated, 0): locale-redirect's fontSize '0.875rem' — the value is identical
- * to body-lg (0 pixels), but the adjacent class already loads the same size, making it
- * **a duplicate and a line-height-unpaired size**. Clean it up first,
- * then enable — enabling it results in 0 violations.
- *
- * ## Allowance criteria
- *
- * `var(` references pass — consuming surface-only size tokens (--topology-chrome-title-size type)
- * inline is justified. However, **type ramp tokens (--text-*) must be blocked via separate selectors** —
- * gaining only the size while losing the line-height pair that unit carries
- * is the same bug as class-side ramp bypass rules.
- *
- * Ternary branches have been caught from day one (anticipating the "direct children
- * can't see ternaries" trap stepped on by the accent tint rule on 2026-08-13). Comparison literals are under BinaryExpression,
- * so they don't hit `ConditionalExpression > Literal`.
- *
- * ## Satori exception (filename-scoped block)
- *
- * `opengraph-image.tsx` / `twitter-image.tsx` are Next.js reserved filenames, and files
- * with those names are structurally all drawn by Satori — CSS variables don't reach,
- * making numeric literals the only notation (same reason as "surfaces CSS variables can't reach" in the hex rule).
- * Since it's a full sweep of 1 file with 8 instances, adding disables per line is noise, so following footprint precedent,
- * the rear scope block reloads everything except this array.
+ * Inline `fontSize`/`borderRadius` create no class, so ramp rules cannot see them. `var(` passes
+ * for surface tokens; `--text-*` is blocked separately. `opengraph-image.tsx`/`twitter-image.tsx`
+ * are drawn by Satori, which has no CSS variables, so a later block reloads all but this array.
  */
 const inlineSizeSelectors = [
   {
@@ -217,28 +111,9 @@ const inlineSizeSelectors = [
 ];
 
 /*
- * Duplicate `cursor-pointer` — rewriting what the central rule already established.
- *
- * ## Why (owner confirmed 2026-08-05)
- *
- * The base layer in `app/globals.css` establishes "non-disabled `button` and `summary` are
- * pointer". After that, `<button className="… cursor-pointer">` is
- * **a duplicate that changes nothing**, and as duplicates pile up, the next person must
- * re-evaluate "is this special here?" every time. In fact, 22 such instances piled up,
- * and buttons contradicted each other 5:56.
- *
- * ## Intentionally narrowed scope
- *
- * We do **not** ban `cursor-pointer` entirely. There are actually 8 places the central rule doesn't reach (`li[role=option]` · `label` · cmdk items · clickable cards ·
- * SVG `<g>` · checkboxes). Banning those too would make a rule that kills normal usage.
- * `cursor-default` is also not banned — 3 scrim instances use it legitimately
- * (closes on click but it's a surface, not a control).
- *
- * So the criterion is simply: **«Is the tag button/summary and was it written again on top?»**
- * This selector only looks at literal tag + literal className combinations — it can't see things assembled via `cn()` or component wrappers. That layer is handled by **measuring render results**
- * `tests/e2e/cursor-affordance.spec.ts` (the division of labor in this repo where contracts handle what lints can't).
- *
- * ⚠️ Pre-enable census: cleaned up 13 instances first, then enabled (0 violations · lint total unchanged).
+ * Only `button`/`summary` with a literal `cursor-pointer` are flagged: the base rule in
+ * `app/globals.css` already sets it. Other cursor uses (options, labels, cards, SVG) are
+ * legitimate; `cn()` output is covered by tests/e2e/cursor-affordance.spec.ts.
  */
 const cursorAffordanceSelectors = [
   {
@@ -256,22 +131,8 @@ const cursorAffordanceSelectors = [
 ];
 
 /*
- * Disabled blur — single value layer (2026-08-06 "system" meeting).
- *
- * ## Why
- *
- * `disabled:opacity-*` was split into four values in the repo: 60, 55, 50, 45.
- * The value layer (`CONTROL_DISABLED_CLASS` in `control-class.ts`) settled on 55 on 2026-08-03 — but after that, 6 `controlClass()` call sites overwrote the base-loaded value
- * into `className`, and 3 hand-controls copied values and drifted.
- * Rendering the same state (unclickable) with four brightness levels is coincidence, not a system.
- *
- * ## Rule shape — query values, no file exemptions
- *
- * Writing "ban `disabled:opacity-` itself outside the value layer file" would create another exemption file block, and this config has had three accidents forgetting to reload selector arrays for such blocks (footprint · app-settings block's 2026-08-05 comment).
- * So we write it with 0 exemptions: **block only values other than 55**. The cost of the number 55 being written in both lint and the value layer is repaid by `disabled-affordance.contract.test.ts` contrasting the two values — if the value layer moves, this rule must move too to turn red.
- *
- * ⚠️ Pre-enable census: made violations 9 places (60×5 · 50×3 · 45×1) into 0 first, then enabled
- * (lint total unchanged). The 60·50 instances in the comment don't hit anyway since they're outside the AST.
+ * Blocks any `disabled:opacity-*` other than 55, the value in `CONTROL_DISABLED_CLASS`.
+ * `disabled-affordance.contract.test.ts` compares both, so moving one turns this red.
  */
 const disabledAffordanceSelectors = [
   {
@@ -289,37 +150,14 @@ const disabledAffordanceSelectors = [
 ];
 
 /*
- * Letter spacing · weight · Tailwind palette — three axes closed on 2026-08-05.
- *
- * ## Letter spacing (`tracking-[…em]`)
- *
- * The ramp **existed but no one used it**. Measurement: while 9 tokens were used by 13 files,
- * 146 files manually wrote `tracking-[Nem]`, with 21 distinct values — **31 instances of writing the same value in two notations** like `0.1em` and `0.10em`. The cause wasn't preference but **a missing layer**: places actually needing letter spacing were almost all `uppercase`
- * micro-labels (measured 194 instances), but the ramp's caption/label (0.04/0.02em) are body values, so there was no line step there. Listing five `--tracking-caps-08~16` moved 213 places to pixel 0.
- *
- * ## Weight (`font-[NNN]`)
- *
- * There's only one token: `--font-weight-signature`(510), yet `560`·`650` were manually written in 13 places. While not using Tailwind's default 3 steps (500/600/700) for variable fonts is intentional,
- * that intention **lived unnamed**. Listed both as-is.
- *
- * ## Tailwind palette utilities
- *
- * `text-white` 3 places + `border-white/35` 1 place. Small number but **monochrome+indigo one**
- * is the exact opposite of the charter. And there was a trap here — if we changed `text-white` to «not a token» as `--color-text-primary`, the contrast on indigo would have dropped from 4.70 → 4.42
- * **failing AA**. The correct destination was already `--color-text-on-accent`(#ffffff). It's not the value but the **position** that defines the token.
- *
- * ⚠️ Pre-enable census: zeroed all three axes first, then enabled (lint total unchanged).
+ * Closes three axes: `tracking-[…em]` (use `--tracking-*`), `font-[NNN]` (use `--font-weight-*`)
+ * and Tailwind palette utilities. White text on indigo is `--color-text-on-accent`;
+ * `--color-text-primary` there drops contrast to 4.42 and fails AA.
  */
 const typographyAxisSelectors = [
   /*
-   * **Named line-height utilities — handover finished but rule not enabled** (2026-08-17).
-   *
-   * The `design.md` line-height ramp item states *"all named utilities (numeric leading-4~7 · ratio-style
-   * relaxed·snug·none·tight) are banned"*, but the actual rule only looked at bracket forms. We did that intentionally then — as noted in comments below this file,
-   * named usage was 199 instances then, so enabling it as a rule would have drowned existing signals in noise.
-   *
-   * That handover is finished. Current live usage is 0 (the one caught had a comment "moved from here"). It's now a place where we can close without
-   * noise — "specs only in docs aren't followed" is the discipline of this repo.
+   * Named leading utilities (`leading-relaxed` etc.) are banned by the line-height ramp in
+   * `design.md`, not only bracket forms.
    */
   {
     selector:
@@ -352,19 +190,8 @@ const typographyAxisSelectors = [
     message: 'Font weight is a ramp too (template literal). Use --font-weight-*.',
   },
   /*
-   * ## Named weight steps — the other half of what was only blocking brackets (2026-08-05)
-   *
-   * The two selectors above only looked at **numbers written in brackets** like `font-[560]`. But
-   * the actual majority used `font-medium`/`font-semibold` — **216 places** unseen by any rule or ratchet. These are the very values `globals.css`'s weight block wrote as "*only these three, not Tailwind
-   * default (500/600/700)*".
-   * Same shape as `text-sm`/`rounded-md` 268 instances bypassing the ramp entirely,
-   * same bug recurring on one axis: **syntax evades gates, not values.**
-   *
-   * `font-normal`(400) is **not banned.** 400 is the document's base weight, not a ramp step, and `font-normal` means "turn off emphasis" — all 6 measured instances
-   * used it that way (two of them revert browsers drawing `<b>` as 700).
-   * The ramp adds three emphasis steps on top of that base.
-   *
-   * ⚠️ Pre-enable census: moved all 216 places to the ramp first, then enabled — 0 violations.
+   * Named weight steps are banned; `font-normal` (400) is allowed as the base weight, meaning "turn
+   * off emphasis".
    */
   {
     selector:
@@ -392,37 +219,13 @@ const typographyAxisSelectors = [
 ];
 
 /*
- * Layering (z-index) — **20+ is a global app contract.**
- *
- * Measurement (2026-08-05): 11 steps were used regularly, but nowhere in code was it written which sits on top of what. z-index conflicts are a prime bug source spreading as "it doesn't show so raise the number",
- * and without names, the next person raises it again.
- * Listed `--z-*` ladder (values as-is) and moved 17 global band places.
- *
- * ⚠️ **Narrowed scope to 20+.** Blocking even "local stacking valid only within one surface" like 1~13 in the combat compass stage would make local context act like a global contract,
-   * turning the rule into noise. Leave those 11 places as-is.
- *
- * ⚠️ Pre-enable census: 17 arbitrary instances 20+ existed, all pre-replaced (0 violations).
+ * z-index 20+ is a global app contract with the `--z-*` ladder; lower values are local stacking
+ * and are not checked.
  */
 /*
- * ⚠️ **The arbitrary bracket was only half the door** (2026-09-05 audit, F17).
- *
- * The two selectors below saw `z-[N]`. In Tailwind v4 `z-*` is a **dynamic
- * utility**, so `z-25`, `z-70` and `z-999` are equally valid class names that emit
- * exactly the same declaration — measured in the browser on this build: 25, 70 and
- * 999 respectively. So the whole ladder could be bypassed by dropping two brackets,
- * and the syntax that read as "on the ramp" was the one nothing checked.
- *
- * **Named 20/30/40/50 stay legal.** `design-gates.md`, "z-index has a partial
- * ramp": those four Tailwind steps *are* the names for sticky, map hints, map
- * popovers and floating chrome, and tokenizing them was rejected because a token
- * with zero consumers is misinformation. The new selector therefore blocks named
- * layering at or above 20 that is **not** one of them — the values that duplicate a
- * `--z-*` token (60/70/75/80/100) or invent a step between two tiers.
- *
- * Pre-enable census (src + app, `.ts`/`.tsx`/`.css`): z-0 ×2, z-10 ×17, z-20 ×19,
- * z-30 ×18, z-40 ×16, z-50 ×18 — **zero off-ladder**, so lint signal does not grow.
- * The four `z-70` hits in the repository are prose inside comments, which no
- * `Literal`/`TemplateElement` selector reaches.
+ * Tailwind v4 `z-*` is dynamic, so `z-25` or `z-70` emits the same as `z-[N]`. Named 20/30/40/50
+ * stay legal (design-gates.md). Other named values at or above 20 duplicate a `--z-*` token or
+ * invent a step.
  */
 const OFF_LADDER_NAMED_Z = '(?:[2-9][1-9]|[6-9]0|[1-9][0-9]{2,})';
 const NAMED_Z_MESSAGE =
@@ -449,10 +252,9 @@ const layerSelectors = [
 ];
 
 /*
- * ⚠️ **Direct children (`>`) only misses ternaries** (2026-08-13 measurement — design-gates.md
- * "static selectors only see literals" series). `tone={cond ? "accent" : …}` is under Literal in JSXExpressionContainer→ConditionalExpression, so it didn't hit the previous selector,
- * and VaultStartChecklist was actually alive with accent+indigo tints on one element that way. So we widen each pair to "direct literal ∪ ternary branch literal" —
- * `ConditionalExpression > Literal` only catches branch (consequent/alternate) positions, so it doesn't false-positive comparison literals like `x === "accent"` (under BinaryExpression).
+ * Direct-child matching misses ternaries such as `tone={cond ? "accent" : …}`, so pairs match
+ * direct literals plus `ConditionalExpression > Literal` branches, which does not hit comparison
+ * literals like `x === "accent"`.
  */
 const accentTintPairingSelectors = [
   {
@@ -477,20 +279,9 @@ const accentTintPairingSelectors = [
 // no-restricted-syntax -- <reason>`. Migrated directories = error,
 // incomplete (ontology-map · views/home) = warn.
 /*
- * Colour literals outside the token layer (2026-09-08).
- *
- * The 2026-07-26 hex gate looks only inside Tailwind arbitrary values (`-[#…]`), so a hex in a
- * style object, an `rgba()` anywhere, a named `ease-*` class, and a mask stencil were never seen.
- * Inventory before enabling (design-system-audit, 2026-09-08): 41 hex outside brackets and 41
- * `rgb()/rgba()` in code lines, most of them one qualitative kind palette (now the
- * `--color-kind-*` tokens), a documented JS indigo mirror, and
- * surfaces a CSS variable cannot reach (Satori, standalone HTML, canvas). Those keep their
- * scope blocks or a per-line disable with a reason; everything else moved to a token first,
- * so this array enables at 0 violations.
- *
- * `rgba(${…` and `rgb(var(` are the correct pattern for a canvas or a paint that must read a
- * token at runtime, so the regex requires a digit right after the paren.
- * ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+ * The hex gate sees only Tailwind arbitrary values; this also bans rgb()/rgba()/hsl() literals.
+ * `rgba(${...` and `rgb(var(` suit canvas paint reading tokens at runtime, so a digit must follow
+ * the paren. No literal utility syntax in messages: the Tailwind v4 scanner reads this file.
  */
 export const colorLiteralSelectors = [
   {
@@ -529,27 +320,9 @@ export const colorLiteralSelectors = [
 
 export const arbitrarySizeSelectors = [
   /*
-   * ── Named Tailwind base steps are also outside the ramp (2026-08-03 Census) ──────
-   *
-   * The bracket selectors below only look at **arbitrary syntax** like `text-[13px]`. However,
-   * Tailwind v4 only *adds* our ramps without overwriting its own base scale, so
-   * **named classes like `text-sm`(14) · `rounded-md`(6) pass through any rule and
-   * render**. Measured 268 instances — the second system bypassing the ramp entirely.
-   *
-   * We replaced all values with matching ones (md=chip 6px · xl=panel 12px · sm=body-lg 14px) with ramp
-   * names, then enabled this selector. Violations were 0 upon enabling.
-   *
-   * We exclude `rounded-full` — perfect circles (dots/avatars/pills) are not questions the linear 3-step ramp
-   * can answer.
-   *
-   * The 2026-08-03 design review closed these holes:
-   *
-   * - `rounded-sm`(4px) and un-suffixed `rounded`(4px, 37 instances) were **not drift
-   *   but steps missing from the ramp** — a value repeating 96 times is not an exception.
-   *   After listing `--radius-micro`(4px) and performing full machine replacement (pixel shift 0), we
-   *   enabled the selector below (violations 0 upon enabling).
-   * - `rounded-2xl`(19) · `text-base|lg|xl|2xl|3xl`(total 8) needed pixel-moving, per-site
-   *   replacements; once paid down they joined the named-step selectors further below.
+   * Tailwind v4 adds our ramps without replacing its base scale, so named classes like `text-sm` and
+   * `rounded-md` pass the bracket selectors. `rounded-full` is excluded: circles are not a question
+   * the radius ramp answers.
    */
   {
     selector: 'Literal[value=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
@@ -561,11 +334,7 @@ export const arbitrarySizeSelectors = [
     message:
       'Geometry Codex: no Tailwind default type steps (template literal). Use the text-* ramp.',
   },
-  /*
-   * 2026-08-04 — Included directional suffix forms (`rounded-t-*` etc.) in the scope. Previously
-   * the pattern only looked at `rounded-(sm|…)` so `rounded-r-md`(HubRail) · `rounded-t-[28px]`
-   * (ProjectDrawer mobile sheet) **passed through any rule** alive — having a rule is useless if its scope is too short (precedent of arrow gates). Pre-enable census: 1 directional name step + 2 directional arbitrary instances, all replaced in the same PR.
-   */
+  /* Directional radius forms (`rounded-t-*` etc.) are in scope, or `rounded-r-md` would pass. */
   {
     selector:
       'Literal[value=/(^|[^-\\w])rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?(sm|md|lg|xl)([^-\\w]|$)/]',
@@ -579,24 +348,12 @@ export const arbitrarySizeSelectors = [
       'Geometry Codex: no Tailwind default radius steps (template literal). Use the rounded-* ramp.',
   },
   /*
-   * Un-suffixed `rounded`(4px) — an alias kept alive by Tailwind v4, so it doesn't
-   * catch in the name step selector. After listing `--radius-micro` on 2026-08-03 and replacing all 37 instances, we enabled it
-   * (violations 0 upon enabling). We include `:` as a delimiter to also catch variant prefix forms (`[&_code]:rounded`).
+   * Un-suffixed `rounded` (4px) is a Tailwind v4 alias the name-step selector misses; `:` as
+   * delimiter also catches variant prefixes such as `[&_code]:rounded`.
    */
   /*
-   * Tailwind's named type and radius steps — the ramp's last bypass.
-   *
-   * `named-offramp-utility-ratchet.contract.test.ts` held these with a budget of 0
-   * each, which is a ratchet that has finished ratcheting: it only ever restated
-   * "zero", and it re-scanned the whole tree to do it. Moving the check here makes
-   * it fire at edit time instead of at test time.
-   *
-   * ⚠️ **Probed before moving** (2026-08-22). An audit had reported the ratchet as
-   * fully covered by eslint already. It was not — of its 21 families, **nine had no
-   * selector at all** (`rounded-xs` `rounded-2xl` `rounded-3xl` `text-base` `text-lg`
-   * `text-xl` `text-2xl` `text-3xl` `text-4xl`). Deleting the contract on that
-   * report would have opened a hole rather than removed a duplicate. These nine are
-   * the selectors that close it.
+   * Tailwind's named type and radius steps are the ramp's last bypass; this covers the families that
+   * had no selector (`rounded-xs`, `rounded-2xl`, `rounded-3xl`, `text-base` to `text-4xl`).
    */
   {
     selector:
@@ -630,10 +387,8 @@ export const arbitrarySizeSelectors = [
     message:
       'Geometry Codex: no hard-coded text-[Npx] (template literal). Use the text-* ramp.',
   },
-  // The ramp moved to `rem` on 2026-09-12 so that a browser's text-only zoom reaches it
-  // (`app/globals.css`, "The ramp is written in `rem`"). The two selectors above only know the
-  // px spelling, so `text-[0.8125rem]` was an off-ramp size no rule could see — the same hole
-  // the px selectors were written to close, reopened by the unit. Both spellings are banned.
+  // The ramp is in `rem` (`app/globals.css`) so text-only zoom reaches it; the px selectors cannot
+  // see `text-[0.8125rem]`, so both spellings are banned.
   {
     selector: 'Literal[value=/text-\\[[0-9.]+rem\\]/]',
     message:
@@ -679,21 +434,9 @@ export const arbitrarySizeSelectors = [
     message:
       'Geometry Codex: no hard-coded rounded-[Npx] (template literal). Use the rounded-* ramp.',
   },
-  // 2026-07-26 — Hole revealed by owner question ("box shape or corner or border spec ... **also in code**"). `text`/`rounded` were caught, but **shadows had no rule** — even though `design.md` defined the `--shadow-elevation-1/2/3` ladder, 5 hardcoded rgba shadows remained alive (replacement complete).
-  //
-  // **We only catch those without `var(`.** `shadow-[var(--chrome-shadow)]` is **valid syntax** for referencing CSS variables in Tailwind, not a violation — initially we banned `shadow-\[` entirely, warning over 90 normal token usages, causing lint output to jump from 144 →
-  // 548. If noise covers the signal, the gate is powerless.
-  // ⚠️ **Do not use literal utility syntax in messages.** Tailwind v4's source
-  // scanner scans strings in this file too, so class names used as examples become actual
-  // classes — on 2026-07-26 one example created unparsable CSS `--tw-shadow: var(--...)`, breaking the production build (full Playwright failure).
-  // 2026-07-28 re-convergence — **narrow the exemption that looked only at `var(` to a geometry allowed list.**
-  //
-  // The previous rule passed if `var(` existed in the value. This exemption was meant to preserve normal token usage (the initial draft false-positive warned over 90 instances), but had large side effects: **color was tokenized, but geometry was free**, causing hand-tuning that the ladder had converged to 3 steps to re-spread into 23 types. Among them were 2 light source inversions (bottom tab bar y negative · right panel y=0) and 1 layer inversion (blur 90 > dialog 80).
-  //
-  // So we look not at "did you use a token" but **"which token did you use"**. Allowed:
-  // ladder (elevation-*/dock-*) · press (control-press) · surface-specific tokens
-  // (topology/chrome/git) · inset hairline (material, not light). We converged the 23 instances first and enabled it, so violations were 0 upon enabling · lint total unchanged.
-  // ⚠️ Prohibition on using literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // Flag only shadows without an allowed token: a CSS variable reference is valid, so a blanket ban
+  // floods lint. Allowed: ladder (elevation-*/dock-*), press, surface tokens (topology/chrome/git),
+  // inset hairline. No literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector: `Literal[value=/${SHADOW_CLASS_LAYER_VIOLATION}/]`,
     message:
@@ -704,15 +447,9 @@ export const arbitrarySizeSelectors = [
     message:
       'Off the elevation ladder (template literal): checked per layer. Use --shadow-elevation-* / -dock-* / --shadow-control-press.',
   },
-  // 2026-07-26 hex — **a preventive gate with 0 current violations.** Full sweep measurement showed no src/app had hex embedded in
-  // Tailwind arbitrary values, and the remaining 127 hex instances were all justified exceptions: test fixtures 83 · PR number comments 16 ·
-  // surfaces CSS-vars can't reach 16 (next/og Satori · viewport.themeColor ·
-  // standalone HTML) · JS-side token truth source 7 · token reader fallback 3 · mask
-  // alpha stencil 2.
-  //
-  // So "ban all hex" would only create noise for 27 instances with 0 signals to catch.
-  // **Narrowing it inside Tailwind arbitrary values** blocks today's 0 and future inflow only.
-  // (Correction learned from the shadow rule — broad rules count normal usage as violations.)
+  // Preventive gate scoped to Tailwind arbitrary values: remaining hex literals are fixtures,
+  // comments and surfaces CSS variables cannot reach (Satori, `viewport.themeColor`, standalone
+  // HTML, mask stencil).
   {
     selector: 'Literal[value=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
     message:
@@ -723,23 +460,9 @@ export const arbitrarySizeSelectors = [
     message:
       'Design charter: no hex inside a Tailwind arbitrary value (template literal). Reference --color-* tokens via var().',
   },
-  // 2026-07-27 motion duration — **the same failure mode** as the shadow ladder. Defined the ramp
-  // (--motion-fast/base/settle) but had no rule, so while only one component referenced it, 30 literals lived beside it.
-  //
-  // Pre-enable measurement (design.md step 4): violations were only 30 tsx files, with no category misidentified as normal use — token-reference types have brackets following, so they don't hit this regex (number after) anyway. The `var(` exception narrowing needed for the shadow rule is unnecessary here.
-  // Since we replaced the 30 instances **first** and enabled the rule, it's 0 violations on enable, lint total unchanged.
-  //
-  // The leading `(?:^|[^-\w])` prevents false positives from CSS property name strings like `transition-duration-…`.
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file (one example broke production build on 2026-07-26).
-  // 2026-07-28 motion budget — **frequency cuts the budget.** Surfaces triggered by hover/focus are encountered dozens of times a day: objectively fast curves feel slow at that frequency,
-  // and the answer is curve adjustment, not budget reduction. The ramp's move/settle steps are for events happening a few times a day (mode switch · commit convergence · surface swap).
-  //
-  // Pre-enable census measurement (design.md step 4): among 21 ramp references, **6** coexist in className with hover/focus (info-hint · copy button · chrome chips 2 · cluster expand · project card). One PR's replacement scope, and the control group measured normal chrome chip (0.12s declaration · ramp 124ms · peak 3 frames) is already ideal,
-  // so there's no category counting normal use as violation. Replaced the 6 instances **first** and enabled the rule,
-  // so 0 violations on enable · lint total unchanged.
-  //
-  // Discrimination is "coexist in the same className string" — that's all AST rules can see, and indeed all those 6 instances were inside one string. Order doesn't matter for both.
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // Motion budget is set by frequency: hover/focus surfaces are met dozens of times a day, so use a
+  // fast token. Matches only when both coexist in one className string, all an AST rule can see. No
+  // literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector:
       'Literal[value=/(?:hover|focus-within|focus-visible):[^"]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^"]*(?:hover|focus-within|focus-visible):/]',
@@ -757,12 +480,9 @@ export const arbitrarySizeSelectors = [
     message:
       'No hard-coded motion duration. For the default (--motion-fast) omit the duration class; reference --motion-base for surface moves and --motion-settle for confirmations via var() inside the duration utility.',
   },
-  // 2026-07-28 — **scope hole** of the duration rule. The selector above only sees duration utilities, but surfaces using keyframes load duration inside animation shorthand syntax:
-  // ms embedded there didn't hit any gate. Full sweep measurement showed 3 instances alive (150/180/220ms), and 220 was a value not even in the ramp. Replaced the 3 first
-  // and enabled the rule, so 0 violations on enable · lint total unchanged.
-  //
-  // Token-reference types (`var(--motion-base)`) don't start with numbers, so they don't hit this regex.
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // Duration also hides in keyframe animation shorthand; token references start with `var(`, not a
+  // digit, so they do not match. No literal utility syntax in messages: the Tailwind v4 scanner
+  // reads this file.
   {
     selector: 'Literal[value=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
     message:
@@ -773,9 +493,8 @@ export const arbitrarySizeSelectors = [
     message:
       'No hard-coded motion duration inside the animation shorthand (template literal). Reference --motion-* tokens via var().',
   },
-  // 2026-07-28 duration's **bracket form** — the `duration-<number>` rule only sees utility number suffixes. `duration-[180ms]` is outside that regex since it's in brackets,
-  // and doesn't hit the ramp bypass rule (referencing ramp tokens as arbitrary length). Measured 1 instance (document sidebar width transition) replaced and enabled — 0 violations, total unchanged.
-  // Token-reference types (`duration-[var(--motion-base)]`) don't start with numbers so they don't hit this regex.
+  // The bracket form of a duration escapes the number-suffix rule; token references do not start
+  // with a digit, so they do not match.
   {
     selector: 'Literal[value=/duration-\\[[0-9.]+m?s\\]/]',
     message:
@@ -786,10 +505,8 @@ export const arbitrarySizeSelectors = [
     message:
       'No hard-coded motion duration inside brackets (template literal). Reference --motion-* tokens via var().',
   },
-  // 2026-07-28 Tailwind **named shadows** — defined the high ladder (`--shadow-elevation-1/2/3`)
-  // but the rule only saw arbitrary values, so framework defaults like `shadow-2xl` lived outside the ladder. Full sweep measured 6 instances all in sheet/dialog (= dialog tier), replaceable in one PR, and 0 violations · total unchanged after replacement.
-  // `shadow-none` is excluded from the list as a justified declaration of "no shadow".
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // Tailwind named shadows sit outside the elevation ladder; `shadow-none` is allowed as an explicit
+  // no-shadow. No literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector: 'Literal[value=/(?:^|[^-\\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\\w])/]',
     message:
@@ -805,13 +522,9 @@ export const arbitrarySizeSelectors = [
     message:
       'No hard-coded motion duration (template literal). Use --motion-fast/base/settle tokens.',
   },
-  // 2026-07-27 line-height — letter size had specs, but line spacing didn't. Full sweep
-  // measurement showed arbitrary 19 types split into 4 clusters, and value differences **within** clusters (1.5·1.55·1.6·1.65 in the same panel) were all drift.
-  //
-  // Pre-enable measurement (design.md step 4): 0 categories misidentified as normal use — ramp steps don't use brackets, and existing named utilities (leading-4/relaxed etc. 199 instances) aren't bracket-number forms required by this regex, so they don't hit anyway. Reason not to catch named side with rules: 199 warnings are noise drowning the baseline 143, and
-  // the dominant leading-4/5/6 values (16/20/24px) match ramp pairs, so they aren't violations either.
-  // Replaced 74 instances **first** and enabled the rule, so 0 violations on enable, total unchanged.
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // Arbitrary line heights only: ramp steps use no brackets, and named leading utilities are covered
+  // by the typography axis selectors. No literal utility syntax in messages: the Tailwind v4 scanner
+  // reads this file.
   {
     selector: 'Literal[value=/leading-\\[[0-9.]+\\]/]',
     message:
@@ -822,18 +535,9 @@ export const arbitrarySizeSelectors = [
     message:
       'No hard-coded line height (template literal). Use utilities from the --leading-* ramp tokens.',
   },
-  // 2026-07-27 ramp bypass — a new failure mode after line-height companion combination (B2).
-  // As size steps started carrying line-height together, **bypassing ramp tokens as arbitrary length**
-  // gains only the size but loses that unit's line-height. If other ramp classes for different units exist on the same element, that unit's line-height remains,
-  // creating ratios no one ever aligned — measurement: /git headline had 23px text with title pair 24px line-height (1.04), the biggest deviation in this repo.
-  //
-  // Pre-enable measurement (design.md step 4): 3 violations (all pointing to ramp tokens),
-  // 0 categories misidentified as normal use — size tokens outside the ramp (rail labels · chrome titles etc. 5 instances) don't have `--text-` prefix, so they don't hit this regex anyway. Replaced the 3 first
-  // and enabled the rule, so 0 violations on enable, lint total unchanged.
-  //
-  // The **general form** of mismatched pairs (ramp class + responsive arbitrary px) isn't caught by this rule — evaluating requires the full class list of one element, which doesn't fit in one selector when split as `cn()` args. That layer is handled by contract tests
-  // (tests/contract/type-ramp-leading-pair.contract.test.ts).
-  // ⚠️ Ban literal utility syntax in messages — Tailwind v4 scanner scans this file.
+  // A ramp token through an arbitrary length gains the size but loses that step's paired
+  // line-height. Mismatches in general: tests/contract/type-ramp-leading-pair.contract.test.ts. No
+  // literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector: 'Literal[value=/text-\\[length:var\\(--text-/]',
     message:
@@ -844,12 +548,8 @@ export const arbitrarySizeSelectors = [
     message:
       'Do not reference a type-ramp token through an arbitrary length (template literal). Use the ramp utility directly.',
   },
-  // framer-motion literals (2026-07-28 design council "system").
-//
-// The existing duration rule only sees Tailwind class strings (`duration-<number>`). framer's
-// `transition={{ duration: 0.28 }}` was **outside any gate's scope**,
-// so JS-side motion constants split from the CSS ramp (0.28·0.42), with 15 of 22 instances rendering outside the ramp.
-// When values live where gates don't see, they inevitably split.
+  // The duration rule sees only Tailwind class strings; framer `transition={{ duration }}` literals
+  // would split JS motion constants from the CSS ramp.
   {
     selector:
       'JSXAttribute[name.name="transition"] ObjectExpression > Property[key.name="duration"] > Literal',
@@ -862,22 +562,9 @@ export const arbitrarySizeSelectors = [
     message:
       'No literal framer transition ease. Use `MOTION_EASE` (a copy of the --motion-ease value); an element taking a ramp duration takes its easing from the same family.',
   },
-  // 2026-08-27 inline style time literals — **the third syntax of the duration rule.**
-  // The class rules above see className strings and the framer rule sees `transition={{...}}`,
-  // but a JSX `style` object was outside every detector: /ui-proof measured a raw
-  // '--architecture-flow-delay': '100ms' shipping inside a style expression with zero lint
-  // signal (finding F). The value has since moved to the stagger-token pattern
-  // (--architecture-flow-stagger in globals.css × a unitless step custom property), so the
-  // pre-enable census is 0 — enabling cost 0, lint total unchanged.
-  //
-  // Two shapes: whole-value times on timing properties and on `--*` custom-property keys
-  // (the exact F escape), and times embedded in animation/transition shorthand strings.
-  // Descendant `Literal` (not `> Literal`) covers ternary branches from day one
-  // (design-gates: direct-child selectors miss conditional branches). The `--*` key's own
-  // Literal cannot match the time regex, so the descendant form is safe there.
-  // Unitless step values (`'--x-step': depth - row`) are numbers, not time strings — clean.
-  // Template-literal times (`${i * 30}ms`) are runtime-computed, a different detector's job;
-  // see design-gates.md before widening.
+  // JSX `style` objects bypass the class and framer rules: times on timing properties and `--*`
+  // keys, and shorthand strings. Descendant `Literal` covers ternary branches. Template-literal
+  // times are runtime-computed; see design-gates.md before widening.
   {
     selector:
       'JSXAttribute[name.name="style"] Property:matches([key.name=/^(animation|transition)(Delay|Duration)$/], [key.value=/^--/]) Literal[value=/^[0-9.]+m?s$/]',
@@ -893,46 +580,19 @@ export const arbitrarySizeSelectors = [
 ];
 
 /*
- * ── Ramp coverage is a **blocklist** (2026-08-04) ───────────────────────────
- *
- * What was here was an allowlist (`codexMigratedGlobs`) — "only block directories where replacement is done" as error. It was honest design when we couldn't clear the fan at once,
- * but side effects inverted the purpose: **newly created directories are in neither list, so they receive no specs.**
- *
- * 2026-08-04 live usage test measurement — new `src/views/<name>/ui/*.tsx` one line
- *
- *     text-[13px]  rounded-[5px]  leading-[1.9]  duration-300
- *
- * We planted 4 violations and ran `pnpm exec eslint`, resulting in **0 errors, 0 warnings.**
- * Re-checking with `calculateConfigForFile` showed that the path received only **7** `no-restricted-syntax`
- * selectors (scale/gradient 5 + accent tint 2) and **0** ramp selectors. The owner's goal is "when you give a command, the screen comes out based on the design system", but **new screens are precisely where no specs are enforced.**
- *
- * So we flip it. The default is "overridden", and exceptions are **listed per file**.
- *
- * ⚠️ Pre-enable census measurement (`design.md` "must measure before enabling rules"):
- * Forcing ramp selectors over the entire `src/**` + `app/**` revealed **125 violations**,
- * and those 125 instances were clustered in **12 files**. 8 directories were blind spots,
- * but actual debt was 12 files — so the cost of flipping is "12 lines of exceptions".
- * We are not clearing these 125 instances in this PR due to scale, but **nature**: most are values not in the ramp (13 · 27 · 11.5px …), so replacement means render pixel changes requiring per-location design judgment. That judgment belongs to the design pass, not the lint PR. Until then, debt is held by the ratchet.
+ * Ramp coverage is a blocklist: every file under `src/**` and `app/**` is covered, with exceptions
+ * listed per file. An allowlist left newly created directories with no ramp rules at all.
  */
 export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
 
 /**
- * Files **temporarily exempted** from ramp blockade. The key is that it is a **file**, not a directory — files newly created next to legacy files are overridden from day one.
- *
- * The adjacent numbers are measured violation counts on 2026-08-04, and the master ledger is
- * `tests/contract/type-ramp-coverage.contract.test.ts`. That contract measures (1) if paths listed here actually exist, (2) if debt does not exceed the ledger, (3) if no files have reached 0, and (4) if **the cover glob has not narrowed back to an allowed list**.
- *
- * ⚠️ **Do not put directory globs in this list.** The contract rejects it — excluding by directory
- * also exempts new files inside it, which was the cause of flipping this block.
+ * Files exempted from the ramp. The key is a file, never a directory glob, or new files beside it
+ * would be exempt. tests/contract/type-ramp-coverage.contract.test.ts checks the paths exist, debt
+ * stays within the ledger, and the cover glob is not narrowed.
  */
 export const rampDebtExemptions = [
-  // **2026-08-05: Empty.** This list was a temporary
-  // exemption for 「files used before the ramp existed」, and reached 0 when we moved the last 7 files' 93 instances (text 68 · radius 25) to the ramp. Now `rampCoveredGlobs` truly covers everything.
-  //
-  // ⚠️ **Putting a file back here is turning off specs.** If you need new values,
-  // do not create an exception; list a step in the ramp (convene 「system」) and include lint in the same PR — that is what this repo already did with `--radius-micro`.
-  // Even if the list is empty, the contract does not run idle: `type-ramp-coverage` runs
-  // ESLint itself to measure 「whether new non-existent paths also receive all ramp selectors」.
+  // Empty. A file put back here turns the ramp off for it; add a ramp step instead.
+  // `type-ramp-coverage` runs ESLint itself to check that new paths receive every ramp selector.
 ];
 
 // Tests assert rendered className strings, so exclude from ramp rules.
@@ -1039,11 +699,8 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Slice public API — a slice is imported through its `index.ts`, never through
-  // `@/<layer>/<slice>/<segment>/…`. Measured 2026-08-30 before the rule: 64 files
-  // reached past a barrel (33 in views, 21 in widgets, 12 in features), and two
-  // features (`acp-session`, `acp-doctor`) had no public API at all because every
-  // consumer read their model files directly. Tests keep deep access.
+  // Slice public API: import a slice through its `index.ts`, never through
+  // `@/<layer>/<slice>/<segment>/...`. Tests keep deep access.
   {
     files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
     ignores: codexTestIgnores,
@@ -1080,10 +737,9 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Ramp blockade — `src/**` + `app/**` **all** error, except legacy debt files.
-  // Also reload the checkbox accent selectors so flat-config replacement cannot drop them.
-  //
-  // Excluded files are not defenseless — the checkbox accent · accent tint guards from the global block above (`src/**`+`app/**`) still apply. What is excluded is only the ramp (type/radius/line-height/motion/shadow) selectors, and that debt is held by the `tests/contract/type-ramp-coverage.contract.test.ts` ratchet.
+  // Ramp blocks cover `src/**` and `app/**` except debt files. Reload the checkbox accent selectors
+  // so flat-config replacement cannot drop them. Excluded files still get the checkbox accent and
+  // accent tint guards from the global block.
   {
     files: rampCoveredGlobs,
     ignores: [...codexTestIgnores, ...rampDebtExemptions],
@@ -1104,18 +760,9 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Colour mirrors and canvas paint — the surfaces a CSS variable cannot reach (2026-09-08).
-  //
-  // ⚠️ **This block must come after the ramp block above.** Flat config replaces the rule
-  // wholesale, so it reloads every ramp selector and drops only `colorLiteralSelectors`.
-  // Census on enabling (design-system-audit, 2026-09-08), every one a copy of a token or a
-  // canvas fallback for one:
-  //   - `src/shared/config/indigo-tokens.ts` — the documented JS mirror of `--color-indigo-*`.
-  //   - `src/views/docs-vault/lib/popout-template.ts` — a standalone HTML document with no
-  //     stylesheet of ours to read.
-  //   - `src/widgets/ontology-map/render/**` — canvas paint, which reads its tokens through
-  //     `read-map-tokens` and keeps a literal only as the fallback for a missing one.
-  // A new file here is a new exception and needs the same sentence.
+  // Surfaces a CSS variable cannot reach: JS indigo mirror, standalone popout HTML, canvas paint
+  // fallbacks. A new file here needs the same reason. Must come after the ramp block: flat config
+  // replaces the rule, so it reloads every ramp selector except `colorLiteralSelectors`.
   {
     files: [
       'src/shared/config/indigo-tokens.ts',
@@ -1140,12 +787,9 @@ const eslintConfig = defineConfig([
     },
   },
   /*
-   * Satori surface — exempt only inline size/radius rules (2026-08-15, see 「Satori Exception」 section in inlineSizeSelectors comment).
-   *
-   * `opengraph-image.tsx` / `twitter-image.tsx` are Next.js reserved filenames, and all files with those names are drawn by Satori — CSS variables do not reach, so numeric literals are the only notation. Census (2026-08-15): 1 file, 8 instances.
-   *
-   * ⚠️ Flat config does not merge rule option arrays but replaces them — this block must
-   // exclude what to exempt (inlineSizeSelectors) and **reload all others**. It must come after the ramp blocks above.
+   * Satori surface: exempts only the inline size/radius rules, since CSS variables do not reach
+   * Satori. Flat config replaces rule options, so this block reloads all other selectors and must
+   * come after the ramp blocks.
    */
   {
     files: ['**/opengraph-image.tsx', '**/twitter-image.tsx'],
@@ -1164,17 +808,9 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Prohibit `--color-amber-docs-*` isolation tokens in settings sheet (2026-08-02 design review).
-  //
-  // `VaultAgentSetupPanel` was mixing two amber lineages **within the same badge**:
-  // background used `--color-amber-source-a12`(warning ladder, normal) but text used
-  // `--color-amber-docs-a92`(document surface decoration quarantine). The comment on that token block in `globals.css` itself wrote *"prohibit expansion · pending subsequent downgrade review"*, yet this file was actually the **largest consumer** with 15 instances.
-  //
-  // ⚠️ **Pre-enable census measurement** (`design.md` "must measure before enabling rules"):
-  // Violations in this path are 0 after replacement. The reason for narrowing scope to this directory is also the same — enabling globally would turn red document surfaces (the legitimate home of that token) and 17 legacy instances in `ProjectDrawer` and the retired activity surface simultaneously, making it noise rather than enforcement. Those two are not this council's surface, so they are next in sequence.
-  //
-  // ⚠️ **Flat config does not merge rule option arrays but replaces them.** So
-  // this block must **reload ramp selectors** — if not, the ramp guard `rampCoveredGlobs`(`src/**` all) quietly disappears from this directory. No subsequent blocks overwrite this glob.
+  // Bans `--color-amber-docs-*` tokens in the settings sheet, where they mixed with warning amber in
+  // one badge. Scoped here because document surfaces legitimately use them. Flat config replaces
+  // rule options, so this block reloads the ramp selectors.
   {
     files: ['src/widgets/app-settings-menu/**/*.{ts,tsx}'],
     ignores: codexTestIgnores,
@@ -1184,8 +820,8 @@ const eslintConfig = defineConfig([
         ...checkboxAccentSelectors,
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
-        // 2026-08-05: This block was also stepping in the same trap. The comment above correctly warned to «reload ramp selectors» but only loaded `arbitrarySize`, so weight/spacing/palette/layer were **never enforced** in this directory (including the three axes enabled by #940). Confirmed via probe:
-        // `font-semibold`·`tracking-[…]`·`text-white` in this path passed with 0 error. Census 0, so enabling cost is 0.
+        // Reload every ramp selector here too, or weight, spacing, palette and layer rules silently stop
+        // applying in this directory.
         ...inlineShadowSelectors,
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
@@ -1207,29 +843,9 @@ const eslintConfig = defineConfig([
     },
   },
   /*
-   * The `_` prefix is a **marker left by the author** meaning "intentionally unused" (2026-08-06).
-   *
-   * ## Why this block exists
-   *
-   * This repository already used that convention, but the configuration ignored it —
-   * three different authors each used `_hasLoadedVault` (a parameter left to maintain
-   * the signature, as noted in the comment above), `_path` (a loop variable counting
-   * three paths by name), and `_omit` (destructuring to extract only the key needed
-   * for `...rest`). All three remained as warnings. **If a convention lies, the next
-   * person won't trust it.**
-   *
-   * ## Direction of exemption (`design-gates.md` "Exemptions have direction")
-   *
-   * This exemption protects only «explicitly marked unused» items. To mark them,
-   * you must rename them, so **there is no path for accidental leakage** — hiding
-   * dead variables requires intentionally prefixing `_`, which remains visible in the diff.
-   * Thus `ignoreRestSiblings` is **not enabled**: it exempts unmarked names wholesale,
-   * which is the opposite direction.
-   *
-   * Pre-enable measurement (2026-08-06): The warnings eliminated by this exemption are
-   * **3**, all at the locations mentioned above. Unmarked unused variables remain caught —
-   * the probe in `tests/contract/lint-warning-ratchet.contract.test.ts`
-   * (`const unusedByProbe = 1;`) proves this every time.
+   * The `_` prefix marks intentionally unused names. `ignoreRestSiblings` stays off because it would
+   * exempt unmarked names; the probe in tests/contract/lint-warning-ratchet.contract.test.ts proves
+   * unmarked unused variables are still caught.
    */
   {
     rules: {

@@ -51,7 +51,7 @@ describe('record ledgers', () => {
     const result = readLedgerSource('docs/CHANGELOG.md', { root });
     assert.match(result.content, /Unreleased[\s\S]*\*\*Fixed\*\*\n\n- fixed B\n/);
     assert.match(result.content, /v1\.1\.0: release[\s\S]*\*\*Added\*\*\n\n- new A/);
-    // One fact per bullet, never glued with "; " into one paragraph (the 9,997-character changelog paragraph, 2026-09-25).
+    // One fact per bullet, never glued with "; " into one paragraph.
     assert.doesNotMatch(result.content.split('## 2026-01-01')[0], /\.; |\*\*(?:Added|Changed|Fixed|Removed)\*\*: /);
     assert.ok(result.inputs.some((p) => p.endsWith(`${b}.md`)));
   });
@@ -71,17 +71,9 @@ describe('record ledgers', () => {
     assert.throws(() => readLedgerSource('docs/CHANGELOG.md', { root }), /already exists in the frozen changelog/);
   });
   /**
-   * **Why this was invisible until a release.** The only Windows runner in this
-   * repository is `release-macos.yml`; `checks:changed`, pre-push and CI are all
-   * LF. A Windows checkout with `core.autocrlf` hands back every frozen ledger as
-   * CRLF, the raw-byte hash missed, and `prepare` refused to compose the changelog
-   * at all, so `Install dependencies` failed before any release step ran. Measured
-   * on v1.2.2: `docs/CHANGELOG.md` hashed `d6f09b6d…` as CRLF against a frozen
-   * `9bf78389…`, the exact pair the runner reported.
-   *
-   * All three ledgers the policy names are checked here, so the next one added to
-   * `legacy.json` cannot rot quietly, and the negative control keeps this from
-   * becoming a test that passes because the check was switched off.
+   * The only Windows runner is `release-macos.yml`; a CRLF checkout misses the raw-byte hash, so
+   * every frozen ledger must hash the same on either line ending. All three ledgers in `legacy.json`
+   * are checked, plus a negative control.
    */
   it('reads a frozen ledger the same way on either line ending, and still refuses a real edit', () => {
     const root = repo();

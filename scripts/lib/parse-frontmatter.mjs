@@ -10,10 +10,8 @@
 // module so the build script and the runtime cannot drift apart.
 
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-// Graph-edge keys must be arrays — same set and diagnostic as
-// mcp/src/parser.mjs (ported in the 2026-09-01 bug sweep; this parser and the
-// TS one stayed silent while mcp diagnosed, a divergence the 4-way contract
-// fixtures did not cover).
+// Graph-edge keys must be arrays: same set and diagnostic as mcp/src/parser.mjs, so the parsers do
+// not diverge.
 const GRAPH_ARRAY_KEYS = new Set([
   "domains",
   "capabilities",
@@ -85,23 +83,9 @@ function decodeDoubleQuoted(value) {
 }
 
 export function parseFrontmatter(input) {
-  // Newline and encoding normalisation — **on the read path only** (measured
-  // 2026-07-28).
-  //
-  // CRLF: splitting on `\n` leaves a `\r` at the end of every line, and the block
-  // list regex's `.` does not match `\r` while `$` only matches end-of-string →
-  // no match → the list comes back empty. Scalars survive because `.trim()` rescues
-  // them, so the symptom appears as **"the nodes are there but every relation
-  // vanished"**, with 0 warnings.
-  //
-  // BOM: `raw.startsWith('---')` is false for `\uFEFF---` → the whole frontmatter
-  // block falls through into the body and `kind:` disappears, so **the document
-  // vanishes from the graph as a node entirely**.
-  //
-  // Both are produced by the default editor of a population `surfaces.md` records as
-  // explicitly supported (Windows Chromium). The 4-way contract test only guarantees
-  // the four parsers *agree*, and it was passing because **all four were wrong in the
-  // same way.**
+  // Newline and encoding normalisation, on the read path only. CRLF leaves a `\r` that the
+  // block-list regex does not match, so lists come back empty; a BOM makes `raw.startsWith('---')`
+  // false, so the frontmatter falls into the body and the node vanishes.
   const raw = input.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   if (!raw.startsWith("---")) return { frontmatter: {}, body: raw };
   const end = raw.indexOf("\n---", 3);
@@ -236,10 +220,9 @@ function quotedScalarFault(value) {
   const trimmed = value.trim();
   const quote = trimmed[0];
   if (quote !== '"' && quote !== "'") return null;
-  // **Match the renderer, not YAML.** `unquote` strips a wrapping pair whenever
-  // the last character is the same quote, so `'Owner's guide'` and
-  // `"He said "hi" today"` render exactly as written. Only a value that never
-  // closes is a fault; anything else would fail a vault that reads correctly.
+  // Match the renderer, not YAML: `unquote` strips a wrapping pair whenever the last character is
+  // the same quote, so `'Ann's guide'` renders as written. Only a value that never closes is a
+  // fault.
   if (closesWithQuote(trimmed, quote)) return null;
   for (let i = 1; i < trimmed.length; i += 1) {
     // The same escape rule `unquote` reverses, so a `\\"` is not a closer.
@@ -310,11 +293,8 @@ function unquote(value) {
   return value.replace(/^["']|["']$/g, "");
 }
 
-// Quote-aware separator splitting (fix measured 2026-07-28).
-//
-// This used to split inline lists and objects on every comma, so a comma inside a
-// value split it and the tail of `labels: { ko: "map, search" }` silently vanished.
-// A separator inside quotes is data, not a separator.
+// Quote-aware separator splitting: a separator inside quotes is data, so a comma inside a value
+// must not split it.
 function splitTopLevel(input, separator, mapping = false) {
   const parts = [];
   let start = 0;
@@ -346,14 +326,9 @@ function splitTopLevel(input, separator, mapping = false) {
 }
 
 /**
- * Consumes a block scalar (`|`, `>`, and their chomping variants) as the value.
- *
- * **Why it is needed (measured while dogfooding, 2026-07-29).** Without it the
- * indicator is stored as the value (`definition: "|"`) and the indented body lines
- * that follow spill into the top-level loop. That loop `.trim()`s keys, erasing the
- * indentation, so a line such as `kind: element` inside a description
- * **overwrote that node's kind** — a document changing its own type through its own
- * description, with 0 warnings.
+ * Consumes a block scalar (`|`, `>` and chomping variants) as the value. Otherwise the indicator
+ * is stored and the indented lines spill into the top-level loop, where a line such as `kind:
+ * element` would overwrite the node's kind.
  */
 function readBlockScalar(lines, start, indicator) {
   const fold = indicator.startsWith('>');

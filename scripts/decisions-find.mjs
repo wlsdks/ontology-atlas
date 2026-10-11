@@ -1,27 +1,8 @@
 #!/usr/bin/env node
 /**
- * `pnpm decisions:find <terms...>` — find the one decision record to cite or
- * overturn, without reading the ledger.
- *
- * **Why this exists.** `docs/DECISIONS.md` is append-only and, on 2026-09-02,
- * 495 records and 1.98 MB. Every pass and review is told to "search the
- * ledger for the same surface and question" and to cite a standing decision
- * or overturn it explicitly, and the only mechanism behind that sentence was
- * grep over two megabytes, which returns lines, not records. A ledger nobody
- * can retrieve from is a ledger that gets silently re-decided, which is the
- * exact failure it exists to prevent (its own first section says so).
- *
- * **What it knows.** Records begin with `## YYYY-MM-DD (n)? — title`. Inside,
- * bold labels mark the parts a reader needs: the decision, the falsifier
- * (English and Korean label spellings alike), the prior decisions it builds on
- * or overturns, and dissent. Records cite each other as `YYYY-MM-DD (n)` or
- * `(n)`, so the reverse index (which later records cite this one) is derivable
- * and is the cheapest signal that a decision may already be overturned.
- *
- * **What it prints.** Records, not lines: file:line for a clickable jump, the
- * date and number, the title, the decision's first sentence, the falsifier's
- * first sentence, and the later records that cite it. Nothing is generated or
- * written; the ledger stays the single source and stays hand-authored.
+ * `pnpm decisions:find <terms...>`: finds the decision record to cite or overturn without reading
+ * the ledger. Records begin `## YYYY-MM-DD (n)? - title` and cite each other as `YYYY-MM-DD (n)`
+ * or `(n)`. Prints records, writes nothing.
  */
 
 import { readFileSync } from 'node:fs';
@@ -35,11 +16,8 @@ const LABEL = /^\*\*([^*]+)\*\*[:：]?\s*(.*)$/;
 const SUBHEADING = /^#{3,4}\s+(.+?)\s*$/;
 const REF = /(\d{4}-\d{2}-\d{2}) \((\d+)\)|(?:^|[\s(（,·])\((\d{1,3})\)(?=[\s,.;:)）]|$)/g;
 
-// Order matters: "Dissent and falsifier" is dissent, "Observed falsifier" is a
-// falsifier. The Korean spellings in the patterns are the ledger's own labels
-// for decided / falsifier / dissent / prior, measured against the live label
-// census on 2026-09-02 (the Korean "decided" label 911, Korean falsifier 317,
-// Recorded dissent 109, Decision 85, Falsifier 82, prior-record labels 52).
+// Order matters: "Dissent and falsifier" is dissent, "Observed falsifier" is a falsifier. The
+// Korean spellings are the ledger's own labels for decided, falsifier, dissent and prior.
 const FIELD_KINDS = [
   { kind: 'dissent', test: /dissent|반대/i },
   { kind: 'prior', test: /^(prior|standing decision|이전 결정|선행 (결정|기록))/i },
@@ -164,10 +142,8 @@ export function searchRecords(records, terms, { since = null, limit = 8 } = {}) 
 }
 
 /**
- * Resolve one citation from `from`. Decision numbers repeat in this ledger
- * (record 96 records the overlap; measured 2026-09-02: 177 numbered records,
- * 115 distinct numbers), so a bare `(n)` means the nearest record numbered n
- * on or before the citing record's date, and a dated citation is exact.
+ * Resolve one citation from `from`. Decision numbers repeat in this ledger, so a bare `(n)` means
+ * the nearest record numbered n on or before the citing record's date; a dated citation is exact.
  */
 export function resolveRef(records, ref, from) {
   if (ref.date) return records.find((r) => r.date === ref.date && r.number === ref.number) ?? null;

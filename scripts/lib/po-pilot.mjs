@@ -8,9 +8,8 @@ import {
 } from './po-risk-router.mjs';
 import { parseFrontmatter as parseSharedFrontmatter } from './parse-frontmatter.mjs';
 
-// The pilot register was written while two reviewers sat on every review
-// route. The 2026-09-27 decision record replaced them with one independent
-// reviewer; these frozen names keep the historical register checkable.
+// The register was written with two reviewers on every review route; these frozen names keep the
+// historical register checkable.
 const PILOT_EVIDENCE_SEAT = 'po-evidence';
 const PILOT_SPECIALIST_SEATS = Object.freeze({
   meaning: 'po-steward',
@@ -89,14 +88,9 @@ const runIdentifier = (value, label) => {
 
 const parseFrontmatter = (source) => {
   /*
-   * Delegates to the shared frontmatter parser (2026-09-01 review). The private
-   * line-split copy this replaces threw on valid YAML the six sibling scripts
-   * already accept — a comment line, a block scalar, a block list — so an
-   * innocuous owner edit to the register turned the required gates lane red on
-   * every PR. The shared parser also carries the __proto__ and block-scalar
-   * hardening this file's copy never received. What stays local is the register
-   * strictness the shared parser deliberately does not impose: required keys,
-   * date shapes, the outcome enum, and duplicate top-level keys.
+   * Delegates to the shared frontmatter parser, which accepts valid YAML (comment lines, block
+   * scalars, block lists) and carries the `__proto__` and block-scalar hardening. What stays local
+   * is register strictness: required keys, date shapes, the outcome enum, duplicate top-level keys.
    */
   if (!source.startsWith('---\n')) fail('frontmatter is required');
   const close = source.indexOf('\n---\n', 4);

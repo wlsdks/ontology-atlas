@@ -1,23 +1,9 @@
 /**
- * The decision-record template, as a check.
- *
- * Measured on 2026-09-02: 478 records over 38 days (median 11 a day), median
- * 51 lines and 3.7 KB each, nine bold labels apiece, and the "active format"
- * of 2026-09-01 asked for fifteen fields. The ledger's own contract needs six
- * things from a record: what forced it, what it builds on, what was decided,
- * the strongest losing argument, the observation that reopens it, and who is
- * accountable. Everything else the pilot register already types per run.
- *
- * So a record is exactly these six fields in this order, inside a size that
- * fits one screen. `TEMPLATE_SINCE` predates the first record: on 2026-09-02
- * every earlier record was condensed into the template, so nothing is exempt.
- * The rule is mechanical on purpose: a template that lives in prose is
- * followed by whoever remembers it, which is how the ledger got to two
- * megabytes.
+ * A record is exactly six fields in this order, within one screen. The rule is mechanical because
+ * a template in prose is followed only by whoever remembers it.
  */
 
-// Every record: the ledger was condensed to the template on 2026-09-02, so
-// there is no historical shape left to exempt.
+// `TEMPLATE_SINCE` predates the first record, so no record is exempt.
 const TEMPLATE_SINCE = '2026-07-01';
 
 export const FIELDS = ['Why', 'Prior', 'Decision', 'Dissent', 'Falsifier', 'Owner'];

@@ -700,8 +700,8 @@ function hasUntouchedStarterBody(body) {
 }
 
 /**
- * One starter example no longer alone. Pure: the caller says which real sibling
- * exists (a whole-vault question); `realSlug` may be null when unknown.
+ * Pure: the caller says which real sibling exists (a whole-vault question); `realSlug` may be null
+ * when unknown.
  */
 export function starterExampleFinding({ slug, kind, title, body, realSlug = null }) {
   const address = typeof slug === 'string' ? slug.trim() : '';

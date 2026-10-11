@@ -199,9 +199,8 @@ export function parseArchitectureProfile(frontmatter) {
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
   /*
-   * The retired `type_only_dependencies` key is refused by name: an alias would
-   * keep two spellings of one policy in two parsers, and ignoring it would flip a
-   * profile's verdict silently. `dependency_usages` is the shipped encoding.
+   * `type_only_dependencies` is refused by name: an alias would keep two spellings of one policy in
+   * two parsers, and ignoring it would silently flip a profile's result.
    */
   if (frontmatter.type_only_dependencies !== undefined) {
     throw new Error(

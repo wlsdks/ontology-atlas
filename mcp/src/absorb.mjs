@@ -188,7 +188,6 @@ const INJECTION_PATTERNS = [
   },
 ];
 
-/** Every matched injection pattern, so a reviewer sees why a section was excluded. */
 export function scanForInjection(text) {
   const value = String(text || '');
   const matches = [];

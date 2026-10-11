@@ -46,12 +46,9 @@ function policyAt(root) {
 }
 
 /**
- * The freeze is a claim about a ledger's **content**, not about the line endings this
- * filesystem happened to check out. A Windows checkout with `core.autocrlf` hands the
- * same three ledgers back as CRLF, so hashing raw bytes reported every one of them as
- * tampered with and refused to compose the changelog at all. Normalizing first keeps
- * `legacy.json`'s existing checksums valid, so nothing is re-frozen and no history moves,
- * and it returns one canonical text so a composed document does not vary by platform.
+ * The freeze is a claim about a ledger's content, not its line endings: a Windows checkout with
+ * `core.autocrlf` returns CRLF, so hashing raw bytes would report tampering. Normalizing first
+ * keeps `legacy.json`'s checksums valid and the composed text platform-independent.
  */
 export function readFrozenDocument(relativePath, { root = process.cwd() } = {}) {
   const raw = readFileSync(path.join(root, relativePath), 'utf8').replace(/\r\n/g, '\n');
@@ -184,12 +181,9 @@ function changelog(root, legacy) {
   const renderFacts = (facts) => CHANGE_CATEGORIES.flatMap((category) => {
     const rows = facts.filter((f) => f.meta.category === category).sort((a, b) => a.meta.id.localeCompare(b.meta.id));
     /*
-     * One bullet per fact under a bold category label, with a blank line between
-     * categories. Joining facts with "; " on one line made every release a single
-     * paragraph (measured 2026-09-25: 9,997 characters, 99 ".;" seams on /ko/changelog),
-     * and category lines without a blank line between them folded into that same
-     * paragraph, so "Fixed" started mid-line. The frozen ledger keeps its one-line
-     * template; this is the rendering of fragments only.
+     * One bullet per fact under a bold category label, with a blank line between categories; joining
+     * facts with "; " made each release one paragraph, and category lines without a blank line folded
+     * into it. The frozen ledger keeps its one-line template.
      */
     return rows.length ? [`**${category}**\n\n${rows.map((r) => `- ${r.body}`).join('\n')}`] : [];
   }).join('\n\n');

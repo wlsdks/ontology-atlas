@@ -156,12 +156,9 @@ export function buildDogfoodRequests(targets) {
     call(56, "query_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
     call(60, "query_concepts", { filter: `slug!=${projectSlug}`, limit: 1 }),
     call(57, "analyze_repo_structure", { rootPath: ROOT, maxDepth: 2 }),
-    // A default call without reviewMode switches automatically to the compressed review
-    // packet (inferImportsReview:v1, no raw arrays) the moment it exceeds 128 KiB — this
-    // repository is already past that threshold, and the gate asserting the full array
-    // shape turned red on 2026-08-13. What the gate measures is the full response
-    // contract, so the full form is requested explicitly, matching the equivalent smoke
-    // test in mcp/scripts/verify.mjs.
+    // A default call without reviewMode switches to the compressed review packet
+    // (inferImportsReview:v1, no raw arrays) above 128 KiB. The gate measures the full response
+    // contract, so request the full form explicitly, as `mcp/scripts/verify.mjs` does.
     call(58, "infer_imports", {
       rootPath: ROOT,
       maxFiles: 5000,

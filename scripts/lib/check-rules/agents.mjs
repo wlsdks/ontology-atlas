@@ -12,13 +12,7 @@ export const rules = [
     order: 590,
     command: 'pnpm test:claude:hooks',
     reason: 'agent hook wiring, a guard, or the commit-message gate changed',
-    /*
-     * This list named two of the four hook scripts, so editing the Git guard or
-     * the generated-output guard recommended nothing that tests them (measured
-     * 2026-08-24). A gate that covers half its own subject set is the shape this
-     * repository keeps finding; match the directories instead of enumerating
-     * files, so a new hook is covered the day it lands.
-     */
+    /* Match the hook directories, not an enumerated file list, so a new hook is covered the day it lands. */
     matches: [
       /^\.claude\/hooks\/.+\.sh$/,
       /^\.claude\/settings\.json$/,
@@ -33,12 +27,6 @@ export const rules = [
     order: 600,
     command: 'pnpm agents:check',
     reason: 'agent instructions changed: per-harness integrity, references, MCP grants, and the Codex cap',
-    /*
-     * CI has run this since it existed, but nothing recommended it locally, so
-     * the answer to "did I break the mirror" cost an eight-minute CI round
-     * instead of the fifty milliseconds it actually takes (measured
-     * 2026-08-24).
-     */
     matches: [
       /^CLAUDE\.md$/,
       /^AGENTS\.md$/,
@@ -57,11 +45,9 @@ export const rules = [
     command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
     reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
     /*
-     * `cli/src/lib/agent-files.mjs` and `src/entities/agent-files/model/agent-files.ts`
-     * are two implementations of one contract, and the nested `AGENTS.md`
-     * pointers derive their expected rule set from `.claude/rules/` frontmatter.
-     * Editing either side alone recommended neither contract, which is how a
-     * mirror silently diverged for a full iteration (measured 2026-08-24).
+     * The two agent-files implementations are one contract, and nested `AGENTS.md` pointers derive
+     * their rule set from `.claude/rules/` frontmatter; editing either side must recommend both
+     * contracts.
      */
     matches: [
       /^cli\/src\/lib\/agent-files\.mjs$/,
@@ -119,11 +105,6 @@ export const rules = [
   },
   {
     order: 700,
-    /*
-     * The skill-integrity instrument. It is a discovery tool rather than a product
-     * feature, but its verdict logic is a pure function and has tests. A check the tool
-     * cannot point at is a check that does not exist.
-     */
     command: 'pnpm test:skills:audit',
     reason: 'Claude skill integrity instrument changed',
     matches: [/^scripts\/audit-claude-skills\.(?:mjs|test\.mjs)$/],

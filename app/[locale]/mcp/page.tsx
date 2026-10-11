@@ -12,8 +12,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'mcp' });
-  // A redirect, not a destination (2026-09-17): the canonical address is the Agents
-  // destination that now holds the MCP tab, so search engines see one page, not two.
+  // Canonical is the Agents destination so search engines see one page.
   return { title: t('title'), alternates: { canonical: absoluteUrl(`/${locale}/agents/`) } };
 }
 

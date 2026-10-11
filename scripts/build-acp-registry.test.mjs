@@ -73,19 +73,8 @@ test("the hardened set is read from Rust and the committed snapshot carries a cu
 });
 
 /**
- * ⚠️ **Why this gate is narrow, and what must stay wide.**
- *
- * The release check used to block on any of 39 listed agents moving. Measured across rc.11 through
- * rc.14 on 2026-08-25/26, it fired on all four releases of that day, and **not once was the mover a
- * runtime this app runs**: cline, codebuddy-code, dimcode, droid, glm-acp-agent, grok, gemini-cli,
- * qwen-code. Each cost a full round trip -- refresh, pull request, CI, retag -- to ship a version
- * number for a tool nobody here launches. On rc.14 the check was green when the tag was cut and
- * stale twenty seconds later when the workflow ran, which is a rule that cannot be satisfied rather
- * than one being broken.
- *
- * The danger it was written for is real and stays blocking. On 2026-08-20 the snapshot had fallen
- * behind on `claude-agent-acp` and `codex-acp` themselves, so the app shipped launching adapter
- * versions whose permission behaviour nobody had measured. That is a safety claim, not freshness.
+ * The gate blocks only on runtimes this app runs (a stale `claude-agent-acp` or `codex-acp` would
+ * ship unmeasured permission behaviour); other agents moving must not block a release.
  */
 test("the blocking set is read from Rust, not transcribed", () => {
   const ids = isolatedRuntimeIds();
@@ -135,9 +124,8 @@ test("a launch without a package still gets a label instead of undefined", () =>
 
 test("no launch pin stands today, and the mechanism reports nothing", () => {
   /*
-   * The owner overturned the Codex pin on 2026-09-07 ("the version is always the newest"); the
-   * table is empty but kept, so a future measured boundary failure can pin again with a named
-   * upstream subject. An empty table must scan to nothing rather than to an error.
+   * The Codex pin table is empty but kept so a measured boundary failure can pin again with a named
+   * upstream subject. An empty table must scan to nothing, not an error.
    */
   assert.deepEqual(runtimeLaunchPinIds(), []);
   assert.deepEqual(

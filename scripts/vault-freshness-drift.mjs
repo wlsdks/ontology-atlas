@@ -1,21 +1,7 @@
 #!/usr/bin/env node
-// R+ — PR vault freshness bot (⑦).
-//
-// Computes which vault capability/element nodes reference source files that
-// changed in a PR diff, but whose own `.md` was NOT updated in the same
-// diff — i.e. the vault description of that code risks going stale. The
-// `.github/workflows/vault-freshness.yml` Action calls this script and only
-// wires up `git`/GitHub comment plumbing; all the actual drift logic lives
-// here (and is unit tested in scripts/lib/vault-freshness-drift.test.mjs)
-// so it's runnable and testable locally without touching GitHub Actions.
-//
-// Usage:
-//   node scripts/vault-freshness-drift.mjs --base <ref> --head <ref>
-//        [--vault docs/ontology] [--repo .] [--json]
-//   node scripts/vault-freshness-drift.mjs --changed-files a.ts,b.ts --json
-//
-// Exit 0 always (informational — same non-blocking principle as the
-// pre-commit preflight command). `--json` output is what the Action reads.
+// Finds vault nodes whose source files changed in a diff while their own `.md` did not. Exit 0
+// always (informational); `--json` is what the Action reads. Usage: node
+// scripts/vault-freshness-drift.mjs --base <ref> --head <ref> [--vault dir] [--json]
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";

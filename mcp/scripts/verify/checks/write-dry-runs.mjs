@@ -270,8 +270,8 @@ function backlinkKeyChangeFailure(row) {
 }
 
 /**
- * Shape validation, including the `relation_notes` map, lives in
- * `mcp/src/backlink-key-shape.mjs`; do not re-implement the verdict here.
+ * Shape validation, including the `relation_notes` map, lives in `mcp/src/backlink-key-shape.mjs`;
+ * do not re-implement it here.
  */
 function isBacklinkRewriteValue(value) {
   return isBacklinkKeyValue(value);

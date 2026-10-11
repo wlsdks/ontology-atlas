@@ -20,11 +20,11 @@ const WARM_UP_CALLS = 5;
 const FIRST_MEASURED_COMMIT = 2;
 
 const BUDGETS = {
-  // measured 2026-09-28: at most 12.6 KB per call (agent_brief)
+  // At most 12.6 KB per call (agent_brief).
   leakBytesPerCall: 64 * KB,
-  // measured 2026-09-28: 85 KB per commit
+  // 85 KB per commit.
   headMoveBytesPerCommit: 2 * MB,
-  // measured 2026-09-28: 46.9 KB of validation per brief
+  // 46.9 KB of validation per brief.
   briefValidationBytes: 256 * KB,
 };
 

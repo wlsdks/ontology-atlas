@@ -1,20 +1,8 @@
 #!/usr/bin/env node
 /**
- * Serves the built static export (`out/`) with **zero dependencies**.
- *
- * Why it exists: some e2e specs must measure a layer the dev server does not
- * have. Measured 2026-07-28, same-route navigation in the studio was dead only in
- * the production export (a `router.push` differing solely in query string was a
- * no-op), while dev succeeded on the same code — giving the dev server **zero
- * diagnostic power** for that defect. A gate that runs only against dev passes
- * that whole class of regression forever.
- *
- * Why not a package: adding `serve`/`http-server` puts one more dependency on the
- * release surface for the sake of one e2e. Routing for a `trailingSlash: true`
- * static site is one line ("a directory means `index.html`"), so it is not worth
- * it.
- *
- * Usage: `node scripts/serve-static-export.mjs [--port=4173] [--dir=out]`
+ * Serves the built static export (`out/`) with zero dependencies. Some e2e specs must measure a
+ * layer the dev server lacks, and no package is added to the release surface for one e2e. Usage:
+ * `node scripts/serve-static-export.mjs [--port=4173] [--dir=out]`.
  */
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";

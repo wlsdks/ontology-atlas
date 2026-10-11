@@ -1,14 +1,9 @@
 /** CI planning and landing: the impact planner, Playwright allocation, pre-push, the lander, and this advisor itself. */
 
 /**
- * The one list of files that ARE the CI planner. `classify-change.mjs` imports
- * it (through `focused-check-suggestions.mjs`) as its full-plan trigger
- * (PLANNER_SURFACE), so the "planner changes run exhaustive lanes" promise and
- * the `test:ci:impact` rule below can never drift apart — the 2026-09-01 review
- * caught the hand-copied pair disagreeing about setup-playwright/action.yml,
- * which then rode a focused plan built on the assumption the CI infrastructure
- * had not changed. The rule files in this directory are planner surface too:
- * `classify-change.mjs` asks them what CI runs.
+ * The one list of files that ARE the CI planner. `classify-change.mjs` imports it as its full-plan
+ * trigger (PLANNER_SURFACE), so that promise and the `test:ci:impact` rule cannot drift apart. The
+ * rule files here are planner surface too.
  */
 export const BROWSER_EXECUTION_SURFACE_PATTERNS = Object.freeze([
   /^scripts\/run-playwright-ci(?:\.test)?\.mjs$/,
@@ -50,8 +45,6 @@ export const rules = [
   },
   {
     order: 80,
-    // The lander decides when a pull request is safe to merge; its state
-    // machine is the one place a wrong verdict merges something untested.
     command: 'pnpm test:pr:land',
     reason: 'the landing sequence or its state machine changed',
     matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing-train(?:\.test)?\.mjs$/],
@@ -69,13 +62,6 @@ export const rules = [
   },
   {
     order: 680,
-    /*
-     * **The script that decides what CI runs had no suggestion mapping of its own**
-     * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no
-     * focused mapping" — the highest-consequence script in this repository had no line
-     * pointing at its own tests. One classification defect in that file actually made
-     * main skip the entire Playwright suite.
-     */
     command: 'pnpm exec node --test scripts/classify-change.test.mjs',
     reason: 'the CI change classifier decides what CI runs at all',
     matches: [/^scripts\/classify-change\.(?:mjs|test\.mjs)$/],

@@ -1,6 +1,5 @@
-// How the CLI names itself so a printed command runs: `ontology-atlas` is in no registry (`docs/DECISIONS.md`
-// 2026-07-27). Strings meant to be copied and run go through this module; prose naming a command (usage,
-// did-you-mean) keeps `ontology-atlas <sub>` for readability.
+// `ontology-atlas` is in no registry, so printed commands go through this module to run when
+// pasted; prose naming a command keeps `ontology-atlas <sub>`.
 
 import path from 'node:path';
 

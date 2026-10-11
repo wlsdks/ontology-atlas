@@ -1,12 +1,7 @@
 /**
- * Who serves the port Playwright is about to reuse.
- *
- * `reuseExistingServer` accepts any process listening on the port. Locally that
- * has been a dev server from another worktree (2026-09-19) and, on 2026-09-26,
- * an unrelated project's server that had held :3100 for four days, so a spec
- * measured someone else's code and reported it as ours. The
- * config asks this module first and refuses a server whose working directory is
- * outside this checkout, naming it and the fix.
+ * Who serves the port Playwright is about to reuse. `reuseExistingServer` accepts any listening
+ * process, so a spec could measure another worktree's or project's server. The config asks this
+ * module first and refuses a server whose working directory is outside this checkout.
  */
 
 import { execFileSync } from 'node:child_process';

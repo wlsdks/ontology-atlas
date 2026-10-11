@@ -19,14 +19,8 @@ const allowedDevOrigins = [
 ];
 
 /*
- * ⚠️ **One version, not a copy of one.** `release-facts.ts` used to carry the version as a
- * hand-typed literal beside `package.json`, `tauri.conf.json` and `Cargo.toml` — a fourth place
- * that is not an independent source, only a transcription of the first. Nothing caught a stale copy
- * until release time, because `desktop:release-status` runs at the tag and not in CI, so a wrong
- * download page survived every check until somebody tried to ship.
- *
- * It is passed through `env` rather than imported into a component: a JSON import would pull the
- * whole manifest, dependency list included, into the client bundle. Only this string crosses.
+ * Passed through `env`, not imported: a JSON import would pull the whole manifest into the client
+ * bundle. Only the version string crosses.
  */
 const releaseVersion = (packageJson as { version?: string }).version;
 if (!releaseVersion) throw new Error('package.json has no version to publish on /download');
@@ -52,13 +46,8 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  // The dev-only Next indicator (N circle) originally covered the actual Chrome UI (settings
-  // gear · SETTINGS · Workspace chip) and hijacked clicks from its default top-right position
-  // (overlap elimination 2026-07-23, measured at 768px — identity of the owner's "N avatar overlap" report).
-  // Moving it to bottom-left caused it to exactly overlap the "Map Settings" gear at the bottom
-  // of the left rail, hijacking all clicks (final sweep P3). Among the four corners, only the
-  // bottom-right lacks interactive Chrome — it may overlap with the relationship legend (info display)
-  // but does not steal clicks. This is a dev-only surface not rendered in production builds.
+  // Bottom-right is the only corner with no interactive chrome, so the dev-only Next indicator
+  // cannot steal clicks there.
   devIndicators: {
     position: 'bottom-right',
   },

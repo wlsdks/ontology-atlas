@@ -1,68 +1,8 @@
 #!/usr/bin/env node
 /**
- * 3D dome cost harness — the reproduction rig for the 2026-08-19 incident.
- *
- * **What happened.** The 3D view **never fell asleep, even 45 s after the last
- * input.** Its autonomous rotation (48 s per revolution) sat alone outside the
- * `model/ambient-sleep.ts` contract and burned **520 ms per second** (half a core)
- * forever on a 2,000-node vault — 2D in the same state burned 3 ms/s. That is 170×.
- * And a 3D node drag measured p95 **52.1 ms** (≈19 fps), of which 73% was 2D physics
- * **that never appears on screen as a single pixel** (a fully assembled dome's draw
- * coordinates do not depend on world coordinates — `updateDomeFrame`).
- *
- * **Why the eye cannot catch it.** Both defects look normal on screen: the dome
- * rotates prettily and dragging works, only slowly. A spinning fan and a draining
- * battery do not appear in a screenshot, and 19 fps on a node drag gets waved off as
- * "3D is heavy". So measurement decides.
- *
- * **Discipline** (same as `scripts/perf-node-drag.mjs`):
- *
- * 1. **Real mouse only** — a synthetic pointer is `isTrusted:false` and the grab
- *    path breaks.
- * 2. **`headless: false`** — fps measured without the display pipeline does not
- *    predict a real machine.
- * 3. **Quote `work` only** (synchronous time inside the rAF callback) — frame
- *    *intervals* are contaminated by refresh rate.
- * 4. **Measure the control alongside** — without 2D at the same scale next to it,
- *    "3D is like that" and "it is broken" are indistinguishable.
- *
- * **Windowed or headless** (measured 2026-08-19). The default opens a window. A
- * window covers the person's screen, and **on macOS it cannot be moved off-screen**
- * — neither `--window-position=-2400,-2400` nor CDP `Browser.setWindowBounds`
- * survives; the window server pulls it back on screen (requested -2400,-2400 →
- * actual 0,33; requested 3000,60 → actual 288,60). "Open it invisibly" is not an
- * option, so unattended runs and concurrent work use `--headless`.
- *
- * The same vault (synth=2000, 3D rotating), 3 runs each way:
- *
- * | | Frames / 5 s | `work` median | `work` p95 |
- * |---|---|---|---|
- * | Windowed (3D rotating) | **600** (=120 fps, this machine's refresh rate) | 4.3–4.8 ms | 7.4–7.6 ms |
- * | `--headless` (3D rotating) | **120** (=24 fps) | 4.6–4.8 ms | 5.0–5.4 ms |
- * | `--headless` (3D idle) | **600** | ~0 | ~0 |
- *
- * - **Median `work` per frame is the same.** The map-perf skill's "only the JS
- *   compute cost transfers" is confirmed — how expensive one frame is can be
- *   measured headless too.
- * - **Frame *counts* cannot be trusted.** Windowed, they pin to the refresh rate;
- *   headless there is no vsync or compositor backpressure, so the same run yields
- *   24 fps or 120 fps depending on load (the bottom two rows above are both headless
- *   and differ 5×). So **never compare CPU per second (ms/s) across the two modes** —
- *   that value is proportional to frame count.
- * - Therefore **the idle verdict counts busy frames** (`IDLE_BUDGET_BUSY_FRAMES`).
- *   However many frames arrive, asleep means 0 of them do work and awake means all of
- *   them do — only that ratio is stable across run modes. Measured: sleeping 3D
- *   0/600, non-sleeping 3D 300/300.
- * - Do not compare `p95` across modes either — a different sample count is not the
- *   same tail. Use it to compare **before and after within one mode**.
- *
- * Usage:
- *   pnpm build && node scripts/serve-static-export.mjs --port=4173 &
- *   node scripts/perf-dome.mjs [baseUrl] [--synth=2000] [--json] [--headless]
- *
- * The idle check must wait out the ambient-sleep delay (30 s) plus ramp (2 s), so it
- * costs about 45 s per run. `--skip-idle` removes it, but **that item is the first
- * reason this harness exists.**
+ * 3D dome cost harness. Real mouse only (a synthetic pointer is `isTrusted:false`); `headless:
+ * false` by default; quote `work`, not frame intervals. Frame counts differ by mode, so the idle
+ * check counts busy frames (`IDLE_BUDGET_BUSY_FRAMES`). `--skip-idle` drops the 45 s idle check.
  */
 import { chromium } from "@playwright/test";
 import { rmSync } from "node:fs";

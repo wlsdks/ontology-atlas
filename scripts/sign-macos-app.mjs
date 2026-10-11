@@ -134,31 +134,9 @@ function resolveSigningIdentity() {
 }
 
 /**
- * `--adhoc` means **signing without an identity, not skipping the signature.**
- * That distinction blocked v1.0.0.
- *
- * The bundle Tauri emits is linker-signed on the binary only and has no
- * `Contents/_CodeSignature`. In that state the embedded signature claims resources
- * must be present while `CodeResources` is missing, so macOS judges it **a damaged
- * app rather than an unidentified developer**:
- *
- *   codesign --verify → code has no resources but signature indicates
- *                       they must be present
- *
- * The difference shows up in the dialog the user sees. "unidentified developer" is
- * the path where System Settings offers **"Open Anyway"** — exactly the path our
- * download page documents — whereas "is damaged" has **no such button**. So
- * dropping the ad-hoc bundle signature from an unsigned release makes that guidance
- * entirely false, and the only route left for the user is deleting the xattr in a
- * terminal.
- *
- * With an ad-hoc signature the bundle becomes `valid on disk` +
- * `satisfies its Designated Requirement`, and the Gatekeeper verdict drops to an
- * ordinary `rejected` (= unidentified developer). Measured 2026-07-27 on the
- * v1.0.0 draft's aarch64 bundle.
- *
- * Hardened runtime and timestamping are not used here — both assume a real
- * certificate, and timestamping calls Apple's servers.
+ * `--adhoc` means signing without an identity, not skipping the signature. Tauri's bundle is
+ * linker-signed on the binary only, which macOS judges "damaged" (no "Open Anyway") instead of
+ * "unidentified developer". No hardened runtime or timestamping: both assume a real certificate.
  */
 const adhoc = process.argv.includes("--adhoc");
 const identity = adhoc ? "-" : resolveSigningIdentity();

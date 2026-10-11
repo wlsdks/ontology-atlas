@@ -34,12 +34,9 @@ import {
 import { EJECTED_MARKER, LANDED_MARKER, QUEUE_LABEL, RED_CLOSE_PREFIX, trainCiStep } from './lib/landing-train.mjs';
 
 /**
- * The landing train, driven by `gh` output recorded from this repository and by a fake GitHub.
- * No network: every input here is a literal or the in-memory world below, which is the only way
- * this suite can run in the same lane as the gates it guards.
- *
- * The recorded rollup is PR #1572's: eleven contexts reported, eight of them required, and one of
- * the eight (`Unit · Contract`) red. A lander that read "eleven checks, ten green" would merge it.
+ * The landing train, driven by recorded `gh` output and a fake GitHub; no network. The recorded
+ * rollup has eleven contexts, eight required, one required context red: a lander counting "ten of
+ * eleven green" would merge it.
  */
 const REQUIRED_CONTEXTS = [
   'Types · Lint · Docs',
@@ -115,7 +112,7 @@ const readyPr = (overrides = {}) => ({
 
 const NOW = Date.parse('2026-09-12T12:00:00Z');
 
-/** The train's CI verdict for a rollup, the way the conductor reads it. */
+/** The train's CI result for a rollup, the way the conductor reads it. */
 const trainStep = (rollup, extra = {}) => trainCiStep({
   checks: requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }),
   other: otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS, allowFailing: extra.allowFailing ?? [] }),
@@ -164,10 +161,7 @@ describe('pr:land argument parsing', () => {
     assert.match(args.notes.join('\n'), /--worktree is retired/);
   });
 
-  /**
-   * ⚠️ **`--worktree` removes nothing, in either spelling.** On 2026-09-13 an agent believed a
-   * landing had deleted its `--worktree` path; it had not. Removal is `--cleanup`'s alone.
-   */
+  /** `--worktree` removes nothing, in either spelling; removal is `--cleanup`'s alone. */
   it('removes a worktree only when --cleanup asks, never for --worktree', () => {
     assert.equal(worktreeToRemove(parseArgs(['12', '--worktree', '/tmp/wt'])), null);
     assert.equal(worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt'])), null);
@@ -305,11 +299,6 @@ describe('the landing lock', () => {
     assert.match(describeLock(classifyLock({ payload: riding, nowMs: NOW, liveness: () => 'unknown' }), NOW), /^train #1999 carrying #12 #13, 10 min held by stark@mbp/);
   });
 
-  /*
-   * Observed on 2026-09-19: the REST quota reached 0/5000 and `pnpm pr:queue` printed `nothing is
-   * landing` while a lock was held and refreshed every minute. An answer that arrived versus a
-   * read that never did.
-   */
   it('does not render a read that failed as an open door', () => {
     const failure = { reason: 'rate-limited', detail: 'the shared GitHub REST quota is exhausted' };
     const lock = classifyLock({ payload: null, unreadable: failure, nowMs: NOW });
@@ -375,9 +364,8 @@ describe('the required contexts, read from the protection', () => {
   });
 
   /**
-   * **The state that wedged the repository** (PR #1578, 2026-09-12). Every context reports twice,
-   * `SKIPPED` as a draft and then for real; keeping whichever came last read a real FAILURE as
-   * "never ran" and polled for 45 minutes.
+   * Every context reports twice, `SKIPPED` as a draft and then for real; keeping whichever came last
+   * would read a real FAILURE as never ran.
    */
   it('resolves a name that reported twice, so a draft skip cannot bury a real failure', () => {
     const draftTwin = (name) => ({ name, status: 'COMPLETED', conclusion: 'SKIPPED', startedAt: '2026-09-12T13:20:00Z', completedAt: '2026-09-12T13:20:01Z' });
@@ -399,10 +387,7 @@ describe('the required contexts, read from the protection', () => {
     }
   });
 
-  /**
-   * **A landing aborted on its own superseded run** (#1578). A cancelled run and a newer live run
-   * for the same name: recency settles it, by `startedAt`.
-   */
+  /** A cancelled run and a newer live run for the same name: recency settles it, by `startedAt`. */
   it('treats a cancelled context as pending when a newer run for the same head is live', () => {
     const superseded = (name) => ({ name, status: 'COMPLETED', conclusion: 'CANCELLED', startedAt: '2026-09-12T14:34:27Z', completedAt: '2026-09-12T14:34:27Z' });
     const live = (name) => ({ name, status: 'IN_PROGRESS', conclusion: null, startedAt: '2026-09-12T14:34:55Z', completedAt: '0001-01-01T00:00:00Z' });
@@ -459,7 +444,6 @@ describe('the required contexts, read from the protection', () => {
   });
 });
 
-/** **The Windows lane that was red for three landings** (recorded 2026-09-13). */
 const ROLLUP_WITH_RED_UNREQUIRED = [
   ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Checks' })),
   {
@@ -579,7 +563,7 @@ function fakeWorld({ prs = [], queued = [], ci = () => green(), conflicts = new 
       const train = trains.get(number);
       if (train && pr.state === 'OPEN') {
         train.polls += 1;
-        // The first poll sees nothing yet; the next one sees the verdict.
+        // The first poll sees nothing yet; the next one sees the result.
         if (train.polls >= 2) train.rollup = ci(train.components, train.reruns);
       }
       return view(pr);

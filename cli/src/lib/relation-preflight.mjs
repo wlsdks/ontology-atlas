@@ -1,5 +1,5 @@
-// Shared relation_check preflight call and render for `relation-check` (read-only) and `relate` (writer),
-// so both show the identical verdict before `relate` decides whether to touch the vault.
+// Shared `relation_check` preflight call and render for `relation-check` and `relate`, so both
+// show the same result.
 
 import { COLORS } from './colors.mjs';
 import { callMcpTool } from './mcp-call.mjs';

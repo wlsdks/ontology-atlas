@@ -1,27 +1,8 @@
 #!/usr/bin/env node
 /**
- * Collects the four release assets into one folder — **so that we decide the
- * artifact's root.**
- *
- * Several upload paths would make their lowest common ancestor the artifact root
- * and hide the files one level deeper than the downloading side expects.
- *
- * Uploading **one** path makes that folder the root. So the assets are gathered
- * here: the producing side declares the layout, and the consuming side (manifest
- * builder, release upload glob) knows only that.
- *
- * **Why the updater archive is renamed.** Tauri emits it as
- * `<product name>.app.tar.gz`, with no version or architecture and with a
- * **space**. GitHub converts spaces in asset names to dots, so the URL in
- * `latest.json` would no longer match the real asset, and the installed app
- * shows the 404 as "no update available".
- *
- * So it is renamed under the same rule as the DMG
- * (`ontology-atlas_<version>_<arch>`). Version and architecture are **read from
- * the DMG file name** — the asset users actually download already treats that
- * rule as the source of truth (`check-macos-download-release.mjs` checks the
- * name), and recomputing them separately creates a place for the two to
- * diverge.
+ * Collects the four release assets into one folder so the producing side decides the artifact
+ * root. The updater archive is renamed `ontology-atlas_<version>_<arch>`: GitHub turns the space
+ * in Tauri's name into a dot. Version and architecture come from the DMG name.
  */
 
 import { spawnSync } from "node:child_process";

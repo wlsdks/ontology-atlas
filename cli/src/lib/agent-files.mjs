@@ -41,8 +41,8 @@ export const AGENT_FILE_RULES = Object.freeze([
   // `.claude/agents` is Claude Code's summoning registry (a seat missing there cannot be spawned); this twin
   // is where a tool without subagents reads the same brief. Purposes differ, content must match (agent-copy).
   Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
-  // `.cursorrules` is the legacy form Cursor ignores in agent mode, the mode every consumer here runs in;
-  // `.cursor/rules/*.mdc` is the format to write.
+  // Cursor ignores legacy `.cursorrules` in agent mode; `.cursor/rules/*.mdc` is the format to
+  // write.
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),

@@ -159,10 +159,6 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
   }
 }
 
-/**
- * Reads an existing doc and returns its raw text, parsed data and revision;
- * throws when the file is missing. Used to read current state before a patch.
- */
 export function readDocFrontmatter(rootPath, slug) {
   const filePath = slugToPath(rootPath, slug);
   const before = readFileRevision(filePath);

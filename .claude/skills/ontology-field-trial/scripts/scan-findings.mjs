@@ -1,27 +1,6 @@
 /**
- * What the write door would have said about a vault that already exists.
- *
- * `meaningFindings` runs inside the MCP writers, so it only ever speaks at the
- * moment a node is created. After a trial the vault is on disk and the findings
- * are gone — and "the rules are stricter now" is then an opinion. This replays
- * the same function over every node in a finished vault, so two runs can be
- * compared on the one number that says whether the door worked: how many nodes
- * it would still complain about.
- *
- * It also counts, per kind, how many bodies keep a section where the builder
- * admits what it did not check. That is the finding the sealed reader's seventh
- * question asks for from the other side, and the two should agree.
- *
- * ## Per-node and whole-vault findings
- *
- * `meaningFindings` judges one node from its own text. Three codes cannot be
- * decided that way — `starter-example-node` has to know whether a real node of
- * the same kind exists, and `dependency-unwitnessed` has to know what file the
- * node at the far end of an edge cites — so they run once over the collected
- * vault after the per-node loop. Without that second pass this scanner reported
- * a clean vault for exactly the defect the 2026-09-22 trials found: three
- * scaffold examples left standing in a finished map.
- *
+ * Replays `meaningFindings` over every node of a finished vault. Whole-vault codes
+ * (`starter-example-node`, `dependency-unwitnessed`) run in a second pass after the per-node loop.
  * usage: node scan-findings.mjs <vault> <repo-root>
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';

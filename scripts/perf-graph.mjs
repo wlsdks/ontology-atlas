@@ -74,10 +74,8 @@ function parseSize(value, flag) {
 }
 
 /*
- * The compiler requires an immutable `uid` per node (identity rule, 2026-08-02).
- * The bench fixture is generated here rather than hand-written, so it mints uids
- * the same way a real vault does (`randomUUID`) — otherwise the bench dies at the
- * compile step and never reaches what it measures, query performance.
+ * The compiler requires an immutable `uid` per node; the bench mints uids the way a real vault
+ * does (`randomUUID`), or it dies at the compile step before measuring query performance.
  */
 function doc(slug, frontmatter, mtime = 1) {
   // Benchmark fixtures are ephemeral but still exercise the v2 identity

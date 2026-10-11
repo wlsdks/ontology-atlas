@@ -105,8 +105,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     skipped,
   });
 
-  // `features/` alone is enough for fsd. Detect only on folders the FSD path scans:
-  // a verdict that cannot change what gets read must not be made, or a lone
+  // `features/` alone is enough for fsd. Detect only on folders the FSD path scans, or a lone
   // `src/shared/` yields zero capabilities with no explanation.
   let framework = 'generic';
   if (srcDir) {

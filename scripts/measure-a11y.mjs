@@ -1,22 +1,7 @@
 /**
- * Accessibility inventory — **count the violations before switching a rule engine on.**
- *
- * **Why this order.** The `/gate-probe` discipline: take the full inventory before
- * switching a rule on. A rule at a scale one PR cannot clear is noise rather than
- * enforcement, and it buries the existing signal too, neutralising the gate. This
- * repository has already paid that price — banning `shadow-[` wholesale took lint from
- * 144 to 548, most of them legitimate uses.
- *
- * **Why the hand-written checks are not enough.** As of 2026-08-03 `tests/e2e/` holds
- * five accessibility specs (15 cases), each **pinning one defect a person noticed**:
- * heading/landmark structure, unnamed buttons and links, focus return, 44px hit areas.
- * Good checks, but they **cover only what was noticed.** axe-core runs 105 rules. That
- * difference is why this file exists — and also why it is an **inventory**, not a gate.
- *
- * Usage:
- *
- *   node scripts/serve-static-export.mjs --port=4173 &   # after pnpm build
- *   node scripts/measure-a11y.mjs [baseUrl] [route...]
+ * Accessibility inventory: count the violations before switching a rule engine on, since a rule at
+ * a scale one PR cannot clear is noise. It is an inventory, not a gate. Usage: serve the static
+ * export after `pnpm build`, then `node scripts/measure-a11y.mjs [baseUrl] [route...]`.
  */
 
 import { chromium } from "@playwright/test";

@@ -136,10 +136,6 @@ describe("validate-vault script arguments", () => {
     }
   });
 
-  // Regression — the exact line that stood in
-  // `docs/ontology/elements/agents-destination.md` while this script reported
-  // "93 files scanned — 0 issues" (2026-08-31). The node parsed, so nothing
-  // failed; the app simply rendered the stray quote on the map and in lists.
   it("fails closed when a scalar closes its quote before the end of the value", () => {
     const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-"));
     const file = join(dir, "agents-destination.md");

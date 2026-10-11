@@ -2110,8 +2110,8 @@ export const okShape = {
   },
   strictMaintenancePhaseFilter: strictValueErrorResponse("phases items", ["validate", "repair", "link", "materialize", "review"], "repiar", "repair"),
   strictMaintenanceSeverityFilter: strictValueErrorResponse("severities items", ["fail", "warn", "info"], "fatal", "fail"),
-  // Derived, not transcribed — a hand-copied list here silently stopped matching
-  // the server the day the node-eligibility gate added two kinds (2026-07-31).
+  // Derived, not transcribed: a hand-copied list stops matching the server when its eligible kinds
+  // change.
   strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", [...MAINTENANCE_KIND_VALUES], "add_mising_relation", "add_missing_relation"),
   strictRelationFilter: strictValueErrorResponse("dependencyTypes items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictFindNeighborsTypeFilter: strictValueErrorResponse("types items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),

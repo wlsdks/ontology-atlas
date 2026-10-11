@@ -1,28 +1,8 @@
 #!/usr/bin/env node
 /**
- * Packs the MCP server into an `.mcpb` bundle and proves it boots.
- *
- *   pnpm mcp:build-bundle                      # build, verify, print the sha256
- *   pnpm mcp:build-bundle -- --check           # verify inputs only; write nothing
- *   pnpm mcp:build-bundle -- --keep-dir        # leave the staged folder for inspection
- *   pnpm mcp:build-bundle -- --tag=v1.1.0      # stamp the release this artifact belongs to
- *   pnpm mcp:build-bundle -- --also-node=/path # witness a second runtime, not just this one
- *
- * Why this exists: the official MCP Registry accepts an MCPB artifact hosted on
- * a GitHub Release, verifying only its URL and SHA-256. That makes Atlas
- * discoverable in the MCP ecosystem without publishing to npm, which
- * `docs/DECISIONS.md` (2026-07-27) retired.
- *
- * fail-closed: the bundle is unpacked into a scratch directory and started the
- * way a host starts it — `node server/src/index.js` with `OATLAS_VAULT` — then
- * asked to `initialize`, list its tools, and read one real concept. A bundle
- * that cannot boot is this channel's worst failure mode, so it never reaches an
- * artifact.
- *
- * A host supplies its own Node, so one runtime is one data point. This build
- * witnesses the Node it runs under, plus every `--also-node=<path>` it is given;
- * the manifest's `>=20` floor rests on a hand measurement (Node 20, 22, 24 and
- * 25 each answered with every tool) until a build passes those binaries in.
+ * Packs the MCP server into an `.mcpb` bundle and proves it boots (fail-closed: unpack, start,
+ * initialize, list tools, read a concept). Flags: --check, --keep-dir, --tag=<vX.Y.Z>,
+ * --also-node=<path>. The manifest's `>=20` floor rests on a hand test of Node 20, 22, 24, 25.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';

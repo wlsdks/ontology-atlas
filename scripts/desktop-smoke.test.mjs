@@ -137,15 +137,8 @@ test("desktop title expectations follow a changed catalogue and reject missing m
 });
 
 /**
- * This test used to check only **whether a constant equalled its own literal**. So
- * when #730 removed the download screen's sentences all 249 tests stayed green, and
- * the defect surfaced only where `desktop:smoke` actually runs after `pnpm build` —
- * **the release build after the tag was cut**. A gate that verifies itself is not a
- * gate.
- *
- * It now pins **keys** rather than sentences and checks that they resolve against
- * the live catalogue. Copy changes bring the gate with them, and a deleted key turns
- * this red immediately.
+ * Pins keys, not sentences, and checks that they resolve against the live catalogue, so copy
+ * changes bring the gate along.
  */
 test("desktop smoke download copy is read from the live message catalog", () => {
   assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT_KEYS), ["/download"]);
@@ -177,10 +170,8 @@ test("desktop smoke copy contract refuses a message key the catalog dropped", ()
 
 test("desktop smoke copy contract refuses a message with an ICU placeholder", () => {
   assert.throws(
-    // The key must be live and carry a placeholder — using a deleted key makes this
-    // probe throw "missing key" instead of "ICU rejected", so **it tests something
-    // other than what it was written to test** (which happened on 2026-07-29 when
-    // `macosPublishedBadge` disappeared in the gateway redesign).
+    // The key must be live and carry a placeholder: a deleted key makes the probe throw "missing key"
+    // instead of "ICU rejected".
     () => resolveRouteText({ keysByRoute: { "/download": ["download.factShaLink"] } }),
     /ICU placeholder/,
   );
@@ -222,27 +213,9 @@ test("desktop smoke chunks prove current route meaning", () => {
 });
 
 /**
- * **A marker cannot outlive the product** (added 2026-08-01).
- *
- * The table above is a hand-maintained list of strings, which is why the top of this
- * file says a marker *"must say what this route is today, not what it used to be"*.
- * That discipline had **nothing enforcing it**, and it duly collapsed.
- *
- * `/topology`'s marker set (`canvas-v2` · `active-relation-inspector` ·
- * `focus-path-state`) kept passing the gate after those components retired. Why it
- * passed is the point: those names survived **in prose inside the generated docs
- * JSON** (`src/entities/docs-vault/data/*`), that JSON was inlined into the page, and
- * so `html.includes(marker)` was true. The gate was measuring whether a document
- * fragment mentioning old components had entered the bundle, not the topology screen.
- *
- * So when #806 regenerated the vault and that prose disappeared, the rc.5 release
- * rehearsal stopped here — with topology perfectly healthy. **Passing for the wrong
- * reason and then going red on an unrelated change** are exactly the two directions
- * `.claude/rules/documentation.md` warns about for pinned strings.
- *
- * This test closes that hole: every marker must exist in **product source outside
- * generated output**. A marker present only in generated data points at that day's
- * documentation, not at the product.
+ * Every marker must exist in product source outside generated output: a marker found only in
+ * generated docs data passes for the wrong reason and goes red on an unrelated change
+ * (`.claude/rules/documentation.md`).
  */
 test("smoke markers must exist in product source, not only in generated data", () => {
   const repoRoot = path.resolve(import.meta.dirname, "..");
@@ -276,9 +249,8 @@ test("smoke markers must exist in product source, not only in generated data", (
   const orphaned = [];
   for (const [route, markers] of Object.entries(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT)) {
     for (const marker of markers) {
-      // Ordinary words (`index`) are not stable markers. Route fragments are:
-      // they must still appear in current product source or a retired redirect can
-      // survive here until the release build, which happened for `/ontology/edit`.
+      // Ordinary words (`index`) are not stable markers. Route fragments must still appear in current
+      // product source, or a retired redirect survives until the release build.
       if (!marker.startsWith("/") && !/[-.]/.test(marker)) continue;
       if (!haystack.includes(marker)) orphaned.push(`${route} → ${marker}`);
     }

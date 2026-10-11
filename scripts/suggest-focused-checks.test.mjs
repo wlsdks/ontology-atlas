@@ -15,11 +15,6 @@ import {
   hooksPathWarning,
 } from './suggest-focused-checks.mjs';
 
-/**
- * The defect: on a **committed** branch with a clean tree, `git diff --name-only HEAD`
- * is empty, so the advisor used to print "no changed paths" and exit 0 — at the exact
- * moment an agent runs it to check the work it just committed. Measured 2026-09-12.
- */
 describe('branch-range fallback', () => {
   /** A `spawnSync` stand-in: one canned answer per git subcommand. */
   function gitStub({ head = '', untracked = '', range = '', baseExists = true }) {
@@ -227,13 +222,6 @@ describe('focused check suggestion CLI', () => {
   });
 });
 
-/**
- * `--run` — **executes the recommendations as given.**
- *
- * Added 2026-08-21. This tool has always named exactly what to run, and people and
- * agents took that list and **ran only part of it.** Two CI rounds burned that way in
- * one day on 08-20. So the room to pick is removed.
- */
 describe('focused checks --run', () => {
   it('추천을 순서대로 다 돌린다', () => {
     const ran = [];
@@ -315,13 +303,6 @@ describe('focused checks --run', () => {
   });
 });
 
-/**
- * **A deleted file is not a check subject.**
- *
- * Measured 2026-08-21: `git diff --name-only` also returns deleted paths. Passing them
- * through builds `eslint <deleted file>` and that command dies — which is exactly how
- * the push retiring the connect sheet was blocked.
- */
 describe('deleted paths', () => {
   it('git 이 준 목록에서 실재하지 않는 경로를 뺀다', () => {
     const paths = changedPathsFromGit({
@@ -353,12 +334,6 @@ describe('deleted paths', () => {
 
 describe('collapsePlaywrightCommands', () => {
   it('collapsePlaywrightCommands merges every spec into one invocation, keeping order', () => {
-  /*
-   * Measured 2026-08-22: a 1,536-file branch produced 657 checks, most of them one
-   * `playwright test <single spec>` each. Serially that ran past twelve hours while
-   * CI finished the same specs in about eight minutes. The fix must not drop a spec —
-   * this repository's whole reason for `--run` is that picking a subset burns CI.
-   */
   const merged = collapsePlaywrightCommands([
     { command: 'pnpm typecheck' },
     { command: 'pnpm exec playwright test tests/e2e/a.spec.ts' },

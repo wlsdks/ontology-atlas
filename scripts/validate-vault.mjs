@@ -50,11 +50,8 @@ const GRAPH_ARRAY_KEYS = [
   "relates",
   "contains",
   "describes",
-  // `broader` (is_a / SKOS) was introduced alongside the studio but was missing
-  // from this list (audit, 2026-07-25). This list drives **both** the canonical
-  // ordering check and the dangling-reference check, so the omission meant "an
-  // agent can put a typo slug in broader and CI stays green". A contract fixture
-  // pins this drift.
+  // This list drives both the canonical ordering check and the dangling-reference check, so every
+  // relation key must appear.
   "broader",
 ];
 
@@ -157,15 +154,7 @@ const MEANING_CODES = [
   "slug-outside-kind-folder",
 ];
 
-/**
- * The half of a node the frontmatter checks never opened.
- *
- * Warnings, all of them, and the exit code does not move: a thin body is not a
- * broken vault, and turning this lane red the day the check landed would say the
- * repository broke when what changed is that somebody finally asked. The summary
- * states the counts, which is the point — the honest state of `docs/ontology`
- * printed where the owner already looks.
- */
+/** Warnings only, and the exit code does not move: a thin body is not a broken vault. */
 function meaningIssues(raw, slug) {
   const { frontmatter, body = "" } = parseMcpFrontmatter(raw);
   const kind = typeof frontmatter?.kind === "string" ? frontmatter.kind.trim() : "";
@@ -471,22 +460,8 @@ function collectGraphRefs(frontmatter) {
 }
 
 /**
- * Two documents claiming the same canonical slug (measured 2026-07-29).
- *
- * **A per-file check cannot catch this in principle** — each file on its own is
- * perfectly valid. So it lives in the same place as the dangling check: the
- * whole-vault pass.
- *
- * How it happens: `patch_concept` does not block overwriting `frontmatter.slug`
- * with a value another node already holds (`add_concept` blocks it and
- * `rename_concept` requires `overwrite:true`; only this path is open). Two files
- * then claim the same name and every relation pointing at that name becomes
- * **ambiguous** — the compiler sees `ambiguous-alias` while `validate` stayed
- * silent.
- *
- * Raised as an error. A dangling reference may just be "not created yet", hence a
- * warning; a duplicate slug is **a contradiction between two documents that both
- * exist**, so the graph does not hold.
+ * A whole-vault check: each file alone is valid. `patch_concept` can overwrite `frontmatter.slug`
+ * with a value another node holds, making relations to that name ambiguous. Raised as an error.
  */
 function findDuplicateSlugIssues(entries) {
   const byDeclared = new Map();

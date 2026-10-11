@@ -117,10 +117,9 @@ const NON_BLOCKING_ADVISORY_CHECKS = new Set(["meaning_assessment"]);
 const NON_BLOCKING_ADVISORY_ACTIONS = new Set(["meaning_assessment"]);
 
 
-// The public `mcp-verify` warns on warning-level vault diagnostics and fails
-// only on errors (2026-09-04, matching `validate`). The dogfood walk is this
-// repository's own release gate: its vault must carry no warning at all, so
-// the stricter reading lives here and nowhere else.
+// The public `mcp-verify` warns on warning-level vault diagnostics and fails only on errors. This
+// repository's own release gate requires no warning at all, so the stricter reading lives here
+// only.
 function dogfoodVaultWarningsFailure(list) {
   const warnings = list?.vaultWarnings;
   if (!warnings || !Number.isInteger(warnings.warningCount) || warnings.warningCount === 0) return null;

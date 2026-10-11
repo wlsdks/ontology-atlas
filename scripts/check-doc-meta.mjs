@@ -227,9 +227,8 @@ const LIVE_STATUS = new Set(['current', 'draft', 'active']);
 const HISTORY_PREFIX = 'docs/history/';
 
 /**
- * Instruction files an agent loads as guidance. They may not cite a retired
- * document: an agent follows what it is pointed at, and a historical record
- * read as an instruction replays a reversed decision.
+ * Instruction files an agent loads as guidance may not cite a retired document: an agent follows
+ * what it is pointed at, and a historical record replays a reversed decision.
  */
 export function isInstructionPath(repoPath) {
   return (

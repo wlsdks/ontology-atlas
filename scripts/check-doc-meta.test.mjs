@@ -177,7 +177,6 @@ test('instruction files cite no retired document; a live citation of a supersede
     'docs/benchmark/GONE.md': doc('superseded', 'superseded_by: docs/benchmark/SPLIT.md\n'),
     'docs/history/2026.md': '# no frontmatter\n',
     'docs/DECISIONS.md': '# ledger\nSee `docs/benchmark/GONE.md` and `docs/benchmark/OLD.md`.\n',
-    // Flagged: a skill, a rule, and AGENTS.md citing retired or history files.
     '.claude/skills/probe/SKILL.md': '# s\nRead [old](../../../docs/benchmark/OLD.md).\n',
     '.claude/rules/probe.md': '# r\nSee `docs/history/2026.md`.\n',
     'AGENTS.md': '# a\nSee `docs/benchmark/GONE.md` and `docs/benchmark/SPLIT.md`.\n',

@@ -72,10 +72,6 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ Tauri Rust package builds a ontology-atlas executable, not an ontology-atlas app binary/,
   );
-  // The old `bundle guard covers the hosted download and local-first app routes`
-  // was removed together with `check-bundle.mjs` when web hosting collapsed to
-  // GitHub Pages alone (see docs/ARCHITECTURE.md). The ban on reintroducing SDKs is
-  // caught by the dependency check below.
   assert.match(
     result.stdout,
     /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
@@ -190,12 +186,8 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    // Check the **marker**, not the sentence. On 2026-08-08 this line pinned the
-    // whole wording and went red on a legitimate improvement — splitting the
-    // degradation notice from the shortcut description according to their different
-    // natures. That is the direction .claude/rules/documentation.md forbids: better
-    // copy blocked by the gate. The gate had written that very failure into its own
-    // preamble.
+    // Check the marker, not the sentence, so better copy is not blocked by the gate
+    // (`.claude/rules/documentation.md`).
   /✓ .*(?:demotion|degrad).*(?:FSA|File System Access)/,
   );
   assert.match(
@@ -454,17 +446,9 @@ test("desktop release helper scripts expose credential-aware help", () => {
 });
 
 /**
- * This gate also reads **local git tags** — and that was the one part still
- * reading the real repository. `APP_TAG` comes from the package.json version, so
- * the moment the repository actually tagged that version (v1.0.0, 2026-07-27) the
- * fixture collided with reality and the case broke — inside the release workflow,
- * blocking the release.
- *
- * The remote was already isolated behind a fake `gh`; only git was leaking. The
- * script already supports injecting `OATLAS_GIT_BIN`, so that is used here too.
- * The test now checks **the script's logic** rather than this machine's tag state.
- *
- * `tagExists: false` → `git rev-parse --verify --quiet` answers 1 (absent).
+ * This gate also reads local git tags, and `APP_TAG` comes from the package.json version, so a
+ * real tag of that version would collide with the fixture. `OATLAS_GIT_BIN` injects a fake git;
+ * `tagExists: false` makes `git rev-parse --verify --quiet` answer 1 (absent).
  */
 function writeFakeGit(dir, { tagExists = false } = {}) {
   const gitPath = join(dir, "git");
