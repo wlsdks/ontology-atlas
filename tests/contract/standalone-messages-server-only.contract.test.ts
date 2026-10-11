@@ -3,15 +3,8 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **The message files never enter client JavaScript through a static import.**
- *
- * `messages/ko.json` and `messages/en.json` are about 836 KB together. The locale layout reads
- * them on the server (`src/i18n/request.ts`). On PR #1839 a `'use client'` module imported both
- * for the root 404 and error screens; the root error boundary belongs to the root layout's client
- * tree, so the whole of both files rode in every page's JavaScript.
- *
- * The rule: one module may import them statically, `standalone-messages.ts`, and it and
- * everything that imports it (other than for types) must be server code, with no `'use client'`.
+ * The message files never enter client JavaScript through a static import: only
+ * `standalone-messages.ts` may import them, and it and its importers must be server code.
  */
 const ROOT = process.cwd();
 const SCAN_DIRS = ["src", "app"];

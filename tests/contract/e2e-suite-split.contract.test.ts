@@ -10,20 +10,9 @@ import { loadCheckRules } from '../../scripts/lib/focused-check-suggestions.mjs'
 import { POST_MERGE_SPECS } from '../e2e/post-merge-specs';
 
 /**
- * **Watches the wiring of the PR-gate / post-merge-sweep split.**
- *
- * The split (2026-08-21) is three pieces: the list (`post-merge-specs.ts`), the
- * projects (`playwright.config.ts`), and the workflow branch (`e2e.yml`). If any
- * one of them drifts **there is no visible signal**: renaming a spec in the list
- * makes it silently belong to no project, deleting `--project=smoke` from the
- * workflow puts PRs back to 13 minutes, and deleting the project wiring from the
- * config kills `--project=smoke` outright as an unknown project. So all three are
- * locked together.
- *
- * ⚠️ The workflow check looks at **run blocks only**. This repository once wrote a
- * contract that passed even after the step was deleted, because the same string
- * appeared in a comment (2026-08-19, caught by `/gate-probe`). The same mistake is
- * now prevented structurally.
+ * Watches the wiring of the PR-gate and post-merge-sweep split: the spec list
+ * (`post-merge-specs.ts`), the projects (`playwright.config.ts`) and the workflow branch
+ * (`e2e.yml`) drift without a visible signal. The workflow check reads run blocks only.
  */
 
 const ROOT = process.cwd();

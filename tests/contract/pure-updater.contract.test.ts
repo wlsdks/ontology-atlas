@@ -3,24 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **State updater functions are pure** — the body of `setX((prev) => …)` never
- * calls persistence or event dispatch **directly**.
- *
- * **Where it actually bit** (2026-08-13, twice). The studio's `stage()` called
- * `saveStudioDraft` straight from inside an updater. React may run an updater
- * **during render**, and that save synchronously dispatched `DRAFT_EVENT`, waking a
- * setState in the "in progress" list's subscriber mid-render — "Cannot update a
- * component while rendering". An exhaustive sweep the same day found 3 more direct
- * `localStorage.setItem` calls on the docs page (silent, since they dispatch no
- * event, but the same illness — dev's double invocation runs the write twice).
- *
- * **What passes.** Calls deferred **inside a callback**, such as
- * `queueMicrotask(() => save(...))` — a callback runs outside render. So this check
- * catches only the direct calls that remain after **stripping every nested function
- * body** from the updater.
- *
- * Why lint cannot do it: the target is the **structural scope** "inside the updater
- * body but outside any nested function", which no single node selector expresses.
+ * State updaters must be pure: React may run them during render, so the body of `setX((prev) => ...)`
+ * must not call persistence or event dispatch directly. Calls inside nested callbacks are allowed.
  */
 
 const SIDE_EFFECT_CALL =

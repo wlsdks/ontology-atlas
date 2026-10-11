@@ -5,22 +5,8 @@ import { KNOWN_CODES } from '../../cli/src/commands/validate.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../mcp/src/validate.mjs';
 
 /**
- * R+ — cycle 45: KNOWN_CODES (cli/src/commands/validate.mjs) ↔
- * Blocks drift in `validateVaultDocument`'s output (cli/src/lib/validate.mjs).
- *
- * The unknown-code checks behind `--list-codes` and `--fail-on` depend on the static
- * KNOWN_CODES list. If validate.mjs (the 3-way contract) adds or removes a code without
- * updating KNOWN_CODES:
- *   - `--list-codes` omits the new code
- *   - `--fail-on=newcode` silently reports "no match" (treating a real code as a typo)
- *   - a severity mismatch throws off `--fail-on`'s decision flow
- *
- * Three contracts:
- * 1. Document-scope KNOWN_CODES matches every code the fixtures elicit.
- * 2. Each document-scope KNOWN_CODES entry's severity equals the validator's actual
- *    output severity.
- * 3. The issue-code set is identical between the CLI's list-codes / fail-on and the MCP
- *    `validate_vault` outputSchema.
+ * `KNOWN_CODES` must match the codes the validator emits, with equal severities, and the CLI and MCP
+ * `validate_vault` outputSchema must share one issue-code set.
  */
 
 interface ValidatorReport {

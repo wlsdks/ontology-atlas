@@ -9,19 +9,9 @@ import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import { vaultMcpServers } from '@/features/acp-session/model/vault-mcp-server';
 
 /**
- * **A connector rides only a runtime whose permission path was measured.**
- *
- * The promise this screen makes is that every call an external server makes stops at a
- * permission card first. That is true where the runtime's own configuration raises a
- * `session/request_permission` for an MCP child, and only Claude's isolated configuration has
- * been measured to do it. Codex was measured **not** to for our own server (installed app,
- * 2026-08-24: a self-registered `add_relation` changed the vault with no request and no card),
- * and nobody has measured what it does with somebody else's.
- *
- * So the sentence and the wiring have to agree, and they are written in different files by
- * different people. This pins them together: an unmeasured runtime receives the vault server and
- * nothing else, and the set that decides it is the one `runtime-gate.ts` already keeps rather
- * than a second hand-maintained list.
+ * A connector rides only a runtime measured to raise `session/request_permission` for an MCP
+ * child. An unmeasured runtime gets the vault server only, decided by the set `runtime-gate.ts`
+ * already keeps.
  */
 
 const connector: ConnectorRecord = {

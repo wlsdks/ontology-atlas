@@ -17,13 +17,9 @@ import {
 import { parseArchitectureRecord } from '@/entities/architecture-record';
 
 /*
- * architectureRecord:v1 cross-surface contract (2026-08-27 decision).
- *
- * The CLI writes the record through the MCP package's builder/validator; the
- * web /architecture surface reads the same sidecar file through its own
- * parser. One fixture record must validate identically on both sides, and a
- * profile-shaped document must be rejected by both — a reviewed profile and a
- * machine receipt are never interchangeable.
+ * `architectureRecord:v1` cross-surface contract: the CLI writes via the MCP package's
+ * builder/validator, the web reads through its own parser. One fixture validates identically;
+ * profile-shaped documents are rejected by both.
  */
 
 const MEASURED_STAMP_INPUT = {
@@ -72,12 +68,7 @@ describe('architectureRecord:v1 cross-surface contract', () => {
     expect(() => assertArchitectureRecord(stored)).not.toThrow();
     const parsed = parseArchitectureRecord(stored);
     expect(parsed).toEqual(record);
-    /*
-     * ⚠️ Was `typeOnlyEdgeCount` on the branch. The 2026-08-29 reconciliation kept the fact and
-     * dropped the name: `excludedByUsage` counts what a profile's own declaration removed from the
-     * verdict, whatever the usage, which is the same receipt under a name that stays true if a
-     * third usage is ever classified.
-     */
+    /* `excludedByUsage` counts what a profile's own declaration removed, whatever the usage. */
     expect(parsed.brief.conformance.excludedByUsage).toBe(1);
     expect(parsed.brief.measured.source).toEqual({
       kind: 'folder',

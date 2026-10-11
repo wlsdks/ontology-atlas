@@ -7,19 +7,9 @@ import { describe, expect, it } from 'vitest';
 import { readSkillProcedure } from '../helpers/read-skill-procedure';
 
 /**
- * **The field trial's replay assets have to still run.**
- *
- * These four files are the only way the ontology trial gets repeated after a
- * construction-rule change instead of being skipped. They are shell and Node
- * scripts, so nothing else in this repository type-checks, lints, or imports
- * them — a broken quote or a lost executable bit would be found by the next
- * person who needed the measurement, at the moment they needed it.
- *
- * The sharpest check here is the last one. `acp-replay.sh` must read the app's
- * handoff **out of the app source at run time**. A copy pasted into the script
- * would keep the trial measuring a wording the app stopped sending, and every
- * number the trial produces would then be about a prompt that no longer exists —
- * silently, and in the direction that makes the results look stable.
+ * Replay scripts are shell and Node that nothing type-checks, so a broken quote surfaces late.
+ * `acp-replay.sh` must read the app's handoff from the app source at run time; a pasted copy would
+ * measure a prompt that no longer exists.
  */
 
 const ROOT = process.cwd();

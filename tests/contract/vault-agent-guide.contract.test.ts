@@ -15,32 +15,9 @@ import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
 import { runCliJson } from "../helpers/run-cli-json";
 
 /**
- * Contract for the **agent guide** placed inside the vault.
- *
- * **Why this file appears in the vault** (measured 2026-08-17). Even with the MCP
- * server attached, agents did not pick it up. Asked in the installed app,
- * *"list every concept slug in this folder"*, codex did:
- *
- * | | What it did | MCP calls |
- * |---|---|---|
- * | Without the guide | read five files with `sed`, then again with `grep '^slug:'` | **0** |
- * | With the guide | *"I'll call list_concepts first"* → called it immediately | **1** |
- *
- * **What this contract locks.**
- *
- * **① The CLI and the app produce the same file.** The starter documents are already
- * locked for the same reason (`starter-templates.contract.test.ts`) — if vaults built
- * by the two paths differ, people using the same product two ways read different
- * guidance.
- *
- * **② The tools the guide names exist.** This is the file's real job. The guide is
- * prose, so it goes stale while nobody edits it, and stale guidance tells an agent to
- * call a tool that does not exist — the same species as the previous day's defect of
- * sending a person to a settings section that did not exist. So instead of pinning
- * sentences (forbidden by `.claude/rules/documentation.md`) it measures a
- * **relation**: is every `snake_case` name inside backticks a registered MCP tool?
- * The source of that verdict is the generated
- * `docs/.generated/mcp-surface.json`, so no human maintains it.
+ * Contract for the agent guide placed in the vault: the CLI and the app produce the same file, and
+ * every `snake_case` name in backticks is a registered MCP tool, read from
+ * `docs/.generated/mcp-surface.json` rather than a hand-kept list.
  */
 
 const templatePath = (locale: "en" | "ko", relPath: string) =>
@@ -134,14 +111,9 @@ describe("볼트 에이전트 안내문", () => {
       });
 
       /*
-       * ⚠️ **A single guide file leaves one of the two runtimes with nothing.** This
-       * repository's own tool table: Codex reads `AGENTS.md` directly, while Claude Code
-       * reaches it through `CLAUDE.md`'s `@AGENTS.md` import.
-       *
-       * The verdict comes from **the product's own checker** (`analyzeAgentFiles`'s
-       * `claude-agents-bridge`). Reimplementing the rule here would create a copy that
-       * eventually diverges from the original, a failure this repository has had several
-       * times.
+       * A single guide file leaves one runtime with nothing: Codex reads `AGENTS.md` directly, Claude Code
+       * reaches it through the `@AGENTS.md` import in `CLAUDE.md`. The product own checker
+       * (`claude-agents-bridge`) decides, so the rule is not reimplemented here.
        */
       it("Claude Code 로 가는 다리가 실제로 이어져 있다 — 제품 자신의 검사기로 판정", () => {
         const analysis = analyzeAgentFiles({
@@ -182,14 +154,9 @@ describe("볼트 에이전트 안내문", () => {
   }
 
   /*
-   * The guide **claims** that every node in this folder keeps `title` in English.
-   * Rather than pinning that claim as a sentence, **ask the shipped data** — if the
-   * convention changes, that sentence becomes false and this check breaks first.
-     *
-     * Measured 2026-08-17: with a guide lacking that line, codex wrote
-     * `title: Payment refund processing` (the same value as `display_ko`); with it, codex wrote
-     * `title: Payment refund processing`.
-     */
+   * The guide claims every node keeps `title` in English; the shipped starter data is asked instead of
+   * pinning the sentence, so a changed convention breaks this check first.
+   */
   it("스타터가 실제로 그 규약을 지킨다 — 안내문의 주장이 데이터와 맞는가", () => {
     const named = starterFilesForLocale("ko").filter((file) =>
       /^display_en:/m.test(file.content),

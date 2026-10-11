@@ -3,27 +3,8 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Gate against the agent-facing packages handing out an address nothing serves.
- *
- * `query_ontology { operation: "builder_context" }` emitted
- * `/ontology/studio/?node=…` — a **retired legacy redirect** — to every agent that
- * asked where meaning is edited. The vault's own `ontology-edit-redirect` element
- * says of those addresses: "neither old address is a navigation destination or write
- * surface". The MCP server was contradicting the ontology it exists to serve.
- *
- * Three PO council seats found it independently on 2026-08-24 while rejecting an OS
- * URL scheme, and the council named fixing this as the one repair to do instead:
- * the requester's own defect class — "a prescribed action name with no executor" —
- * found alive, in MCP output.
- *
- * **Why a contract test rather than lint.** The offence is a string literal that is
- * perfectly valid code; nothing about `'/ontology/studio/'` is syntactically wrong.
- * What makes it a defect is a routing decision recorded in `AGENTS.md` and
- * `.claude/rules/forbidden.md`, which ESLint cannot read.
- *
- * **Why only `mcp/` and `cli/`.** These are the surfaces that hand addresses to
- * someone who cannot see the app. `app/` and `src/` legitimately contain the retired
- * routes, because that is where the redirects themselves live.
+ * The agent-facing packages must not hand out retired addresses. Only `mcp/` and `cli/` are scanned:
+ * they give addresses to someone who cannot see the app, while `app/` and `src/` host the redirects.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -86,11 +67,8 @@ describe('addresses handed to agents point at live surfaces', () => {
         body
           .split('\n')
           .map((line, index) => ({ path, line: line.trim(), number: index + 1 }))
-          // Position decides, not the glyph — the same discriminator the retired-npm-channel gate
-          // uses. A retired route inside a comment is a quotation, and explaining what an address
-          // replaced is exactly how this repository documents a repair. Inside code it is an
-          // instruction to an agent, and that still fires. Only whole comment lines are excused;
-          // a trailing comment on a line of code is not, because the code is what ships.
+          // Position decides, not the glyph: a retired route inside a comment is a quotation and is excused,
+          // inside code it is an instruction to an agent. A trailing comment on a code line is not excused.
           .filter(({ line }) => !line.startsWith('//') && !line.startsWith('*'))
           .filter(({ line }) => RETIRED_ADDRESS.test(line)),
       );

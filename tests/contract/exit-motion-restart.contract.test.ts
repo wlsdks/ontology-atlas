@@ -2,24 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Contract that exit motion **actually plays** (frame measurement 2026-07-28).
- *
- * Why: most exits in this app were written as "rewind the entrance keyframes with
- * `reverse`", which reads as correct. But where **only the class changes on the
- * same element** it does not play — a CSS animation whose `animation-name` is
- * unchanged does not restart when only duration or direction change, and because
- * the start time is unchanged an already-finished animation meeting `reverse` +
- * `both` is interpreted as being past its end, so it **immediately shows the
- * reverse playback's end state**.
- *
- * Measured (closing the node popover, 1512×853, 60fps rAF sampling): opacity
- * `1 → 0` in **one frame**, after which only transform moves
- * `1 → 0.9877 → 0.9829 → 0.9804` — an already-invisible element shrinking slowly.
- * The axis to keep and the axis to drop had been exactly swapped.
- *
- * This defect is caught **neither by eye nor by a value lint.** Duration and
- * easing are both tokens, and the declaration is syntactically complete. So it is
- * pinned structurally: an exit plays forward under its own name.
+ * Exit motion must actually play. Where only the class changes on one element, an unchanged
+ * `animation-name` does not restart, and a finished animation with `reverse` and `both` shows its end
+ * state at once. Pinned structurally: an exit plays forward under its own name.
  */
 const CSS = readGlobalCss();
 
@@ -38,24 +23,10 @@ describe('퇴장 모션 재시작 계약', () => {
   });
 
   /**
-   * ⚠️ **The hand-written list was deleted** (2026-08-11).
-   *
-   * This file used to name four exit classes and four exit keyframes and check only
-   * those, so any surface not on the list was **silently outside the check** — the
-   * dropdown (`.select-listbox[data-state="closed"]`, `select-unpop`) really was
-   * missing, and nothing was watching that screen's open/close motion. Exactly the
-   * discipline this repository already wrote down (`/gate-probe`): *"Forcing a person to
-   * manually maintain a banned list means the check quietly becomes ineffective whenever an
-   * entry is not added."*
-   * (making a person hand-maintain a banned list means the check quietly dies
-   * whenever an entry is not added).
-   *
-   * Now it is **derived from the CSS**: a "disappearing rule" is one with
-   * `[data-state="closed"]` or a class name ending in `-out`, and the keyframe names
-   * it uses are collected as they are. A new surface is covered from the day it
-   * lands.
+   * Derived from the CSS, not a hand list: a disappearing rule has `[data-state="closed"]` or a class
+   * ending in `-out`, and its keyframe names are collected as found, so a new surface is covered from
+   * the day it lands.
    */
-  /** Every defined keyframe name — used to decide which token inside `animation:` is the name. */
   const definedKeyframes = new Set(
     [...CODE.matchAll(/@keyframes\s+([A-Za-z][\w-]*)/g)].map(([, name]) => name),
   );
@@ -99,7 +70,7 @@ describe('퇴장 모션 재시작 계약', () => {
   };
 
   it('사라지는 규칙을 CSS 에서 실제로 찾아낸다 — 빈손으로 통과하지 않는다', () => {
-    // Measured 8 on 2026-08-11. A drop means either a rule disappeared or the scanner went blind.
+    // A drop means a rule disappeared or the scanner went blind.
     expect(exitRules.length, `사라지는 규칙을 ${exitRules.length}개만 찾았다 — 스캐너가 헛돈다`).toBeGreaterThanOrEqual(6);
     expect(enterKeyframes.size, '등장 규칙을 하나도 못 찾았다').toBeGreaterThan(2);
   });

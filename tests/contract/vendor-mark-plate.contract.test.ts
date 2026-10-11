@@ -4,18 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The **light plate** third-party product marks sit on — its use is not widened.
- *
- * **Why this gate exists.** This app is a single dark screen and that rule takes no
- * exceptions. The 32px tiles in the runtime list are the one **light plate**,
- * because what sits there is a vendor's mark rather than ours, and 6 of the 11 marks
- * whose colours were checked are black through `#2D2D2D` — placed on a dark plate
- * they become a black drawing on a black plate (which is exactly how it shipped on
- * 2026-08-16, found by the owner).
- *
- * **Writing an exception down does not keep it.** The gate takes the same form this
- * repository used for the footprint bloom exception: is the value neutral, is there
- * exactly one consumer, and is it recorded in the document.
+ * The light plate under third-party product marks is not widened. The app is a single dark screen;
+ * vendor marks can be black, so only the 32px runtime tiles use a light plate. The value must be
+ * neutral, have exactly one consumer, and be recorded in the document.
  */
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -96,11 +87,8 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
     // globals.css always appears, since it is the definition site. The only other file
     // allowed to remain is the one that draws the mark tile.
     /*
-     * The drawing file moved to `shared/ui` on 2026-08-25 so a second surface — the start checklist —
-     * could show the tool it found with the vendor's own mark instead of only naming it. The
-     * exception did not widen: still exactly one file paints the light plate, and every consumer
-     * goes through it. That is the invariant this test exists for, and a second copy of the painting
-     * is precisely what it must keep catching.
+     * Exactly one file paints the light plate and every consumer goes through it; a second copy of
+     * the painting is what this test must keep catching.
      */
     expect(users.sort()).toEqual(['app/styles/tokens.css', 'src/shared/ui/vendor-mark.tsx']);
   });

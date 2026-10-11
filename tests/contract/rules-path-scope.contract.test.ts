@@ -158,29 +158,13 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   /**
-   * `AGENTS.md` tells an agent which addresses are live and which only redirect.
-   * That sentence named `/ontology` and `/ontology/edit` while a third page,
-   * `/ontology/studio`, rendered the very same redirect view — so an agent read
-   * that studio was gone, then found the directory and had no way to tell
-   * whether it was live, retired, or something it should not have seen
-   * (measured 2026-08-24).
-   *
-   * A redirect page is identifiable without asking: it imports a view from
-   * `@/views/*-redirect` and renders nothing else. Deriving the set means a page
-   * that becomes a redirect, or stops being one, fails here rather than leaving
-   * the sentence quietly wrong.
+   * `AGENTS.md` lists which addresses are live and which only redirect. A redirect page is identifiable
+   * by importing a view from `@/views/*-redirect` and rendering nothing else, so the set is derived.
    */
   /**
-   * `CLAUDE.md` inventories the hooks and says which are mirrored into
-   * `.codex/hooks/`. A hook that exists on one side only is the interesting
-   * case, because the reason it is not mirrored is a judgement someone made —
-   * and the sentence went stale the moment a Codex-only guard was added two
-   * sessions after the sentence was written (measured 2026-08-24). The resident
-   * ratchet could not catch it: a claim can rot without changing size.
-   *
-   * Only the asymmetric hooks are required by name. The mirrored four are
-   * already covered by `pnpm test:claude:hooks`, which asserts the wiring on
-   * both sides; naming them here would be a second list to keep.
+   * `CLAUDE.md` inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
+   * are required by name; the mirrored ones are covered by `pnpm test:claude:hooks`, and a size ratchet
+   * cannot catch a claim rotting without changing size.
    */
   it("names every hook that exists on one side only", () => {
     const shellScripts = (dir: string): string[] =>
@@ -241,48 +225,16 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   /**
-   * The rules are only part of what loads before the task does. `AGENTS.md` and
-   * the `CLAUDE.md` wrapper that imports it are read every turn too, and the
-   * 32 KiB Codex cap is far above what is healthy — it is a truncation limit,
-   * not a budget.
-   *
-   * A plain ceiling was not enough here. Over five sessions of harness work the
-   * resident share was trimmed by 1,667 bytes and then quietly grew 484 bytes
-   * back, one justified documentation paragraph at a time, and nothing noticed
-   * because every individual addition was small and correct (2026-08-24). So
-   * this ratchets in one direction only.
-   *
-   * The direction is judged against the change's own merge base
-   * (`tests/contract/lib/ratchet-base.ts`), not against a literal: the literal
-   * changed in seven of this file's twelve commits, so parallel branches that
-   * each saved bytes conflicted on one line and bundle merges recounted it by
-   * hand. A saving is now permanent without bookkeeping, because the next
-   * branch's base already contains it. A deliberate raise is a
-   * `tests/contract/ratchet-raises/resident-context-bytes/<slug>.json` record
-   * saying why the bytes must be resident; the raises made before that
-   * mechanism, with their reasons, are in this file's Git history.
-   *
-   * 18,779 is the measurement on 2026-09-26, the day of the conversion. It is
-   * never edited; it serves a clone with no merge base and is a floor for a tree
-   * compared with itself.
+   * The resident context (`AGENTS.md`, `CLAUDE.md`, rules) ratchets in one direction only, judged
+   * against the merge base (`tests/contract/lib/ratchet-base.ts`); a deliberate raise is a
+   * `ratchet-raises/resident-context-bytes/<slug>.json` record. The fallback is never edited.
    */
   const RESIDENT_FALLBACK_BYTES = 18_779;
 
   /**
-   * One region of `AGENTS.md` is not ours (2026-09-11). `@vercel/detect-agent`
-   * reports an agent from environment variables alone, so whenever an **agent**
-   * runs `pnpm dev` or `pnpm build`, Next writes its own block between
-   * `<!-- BEGIN:nextjs-agent-rules -->` and its END marker. A human contributor
-   * never sees it; an agent session gets a dirty `AGENTS.md` and a red ratchet,
-   * twice in one session before this. There is no opt-out environment variable,
-   * and `hasCurrentAgentRules()` stops the writer only once the current block is
-   * committed — so the block is committed, and this measurement excludes it.
-   *
-   * The exclusion is bookkeeping, not permission: we cannot shrink a region the
-   * tool rewrites, and pretending we own those bytes would mean either a
-   * permanently red gate or a ceiling raised for someone else's prose. What the
-   * gate still guards is every byte we write, and the test below refuses the
-   * obvious abuse — our own paragraphs smuggled inside the markers.
+   * `AGENTS.md` has a region Next writes itself when an agent runs `pnpm dev` or `pnpm build`,
+   * between the `nextjs-agent-rules` markers. It is committed and excluded from this measurement;
+   * the test below refuses our own paragraphs placed inside the markers.
    */
   const VENDOR_REGION = /<!-- BEGIN:nextjs-agent-rules -->[\s\S]*?<!-- END:nextjs-agent-rules -->\n?/g;
 

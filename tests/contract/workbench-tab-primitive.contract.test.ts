@@ -3,31 +3,9 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **The meaning workbench's sections are tabs, and their panels answer to them** (2026-09-06).
- *
- * Two separate defects, one gate, because neither is visible to lint.
- *
- * ## ① A section picker is not a value picker
- *
- * The three sections were a `SegmentedControl`. That primitive is this repository's **exclusive
- * single-selection** container and reaches the accessibility tree as a **radiogroup** — a grammar
- * that says "these are the possible values of one setting". Meaning, Findings & history and
- * Conversation are not values of a setting; they are views of one surface. A screen-reader user
- * was told the panel had a setting whose options were three nouns, and arrow keys moved a
- * selection rather than a view. `shared/ui/tab-bar.tsx` is the one tab pattern in this app and
- * says so in its own header; a second implementation is what that file exists to prevent.
- *
- * ## ② `idPrefix` is half a contract, and the other half is the consumer's
- *
- * `TabBar` writes `aria-controls={`${idPrefix}-tabpanel-${key}`}` on every tab. If the consumer
- * does not render a panel with that exact `id`, the selected tab points at nothing — axe
- * `aria-valid-attr-value`, WCAG 4.1.2. That is not hypothetical: it is the measured defect
- * recorded in `tab-bar.tsx` from the 2026-08-04 audit, and it appeared at one of two consumers
- * because the other rendered only the active panel. The workbench renders two conditionally and
- * keeps the conversation mounted, so it has both shapes at once.
- *
- * Source is the right unit here: the ids are written as literals, and the failure they cause is
- * silent in every runtime that is not running axe.
+ * The meaning workbench sections are tabs, not a `SegmentedControl` (a radiogroup of values), and
+ * `TabBar` writes `aria-controls` as `${idPrefix}-tabpanel-${key}`, so each panel must render with
+ * that exact `id`. Source is the unit: the ids are literals and the failure is silent without axe.
  */
 const WORKBENCH = 'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx';
 const source = readFileSync(WORKBENCH, 'utf8');

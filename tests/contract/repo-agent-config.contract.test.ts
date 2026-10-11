@@ -3,35 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **The connection config this repository commits must work on anyone's machine.**
- *
- * ## Why this check exists (2026-08-16 — it actually happened)
- *
- * `.mcp.json` and `.codex/config.toml` are **files that rewrite themselves** — every
- * run of `ontology-atlas init` or the app's "connect an agent" rewrites them with
- * whatever vault path is current. On a user's machine that is correct behaviour.
- *
- * The problem is **running those commands inside this repository**. On 2026-08-16 a
- * single run against a temporary vault, done to measure the gateway, repointed both
- * files at that temporary folder, and it was committed as is:
- *
- * ```
- * "args": ["/Users/jinan/orca/workspaces/ontology-atlas/main-3/mcp/src/index.js"],
- * "OATLAS_VAULT": "../../../../../../private/tmp/.../scratchpad/trial-vault"
- * ```
- *
- * One absolute path points at **one person's working folder**, and the vault path
- * points at **a temporary folder that no longer exists**. Someone cloning this
- * repository starts with an agent that can read nothing, and no way to find out why.
- *
- * This repository's briefing discipline already names the cause — **do not use
- * `git add -A`**. That discipline is kept by people, and people forget. Hence a
- * check.
- *
- * ## What is blocked
- *
- * No values are pinned (the path structure may change). Two **properties** are:
- * ① nothing points outside the repository ② nobody's home directory is written down.
+ * `ontology-atlas init` rewrites `.mcp.json` and `.codex/config.toml` with the current vault path, so
+ * committing them here would leave one person absolute path. Nothing may point outside the repository.
  */
 
 const ROOT = process.cwd();
@@ -88,8 +61,7 @@ describe('저장소가 커밋하는 연결 설정 — 누구 컴퓨터에서든 
     const vault = mcp.mcpServers['ontology-atlas']?.env?.OATLAS_VAULT ?? '';
     // Must be a relative path, and a vault must really be at that location.
     expect(vault.startsWith('.'), `볼트 경로가 상대 경로가 아니다: ${vault}`).toBe(true);
-    // Existence, said as existence. `.length > 0` on the same file only ever fired if
-    // someone emptied it, which is not a change anyone makes (clarified 2026-09-12).
+    // Existence, stated as existence: a `.length > 0` check only fires if someone empties the file.
     expect(existsSync(join(ROOT, vault, 'README.md')), `${vault} 에 볼트가 없다`).toBe(true);
   });
 });

@@ -5,42 +5,9 @@ import { fieldClass, type FieldFrame, type FieldSize } from '@/shared/ui/control
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The `fieldClass` contract — the value layer for form fields.
- *
- * ## Why a separate cva rather than a ninth `shape`
- *
- * The 2026-08-06 design council's verdict (system + hierarchy — the design-systems and
- * lead seats). All three reasons come from the value layer's own discipline:
- *
- * 1. The eight shapes were justified by an exhaustive count of **419 `<button>`s**;
- *    fields are a **different population** (63 form elements).
- * 2. Essentially none of the 10 `tone` steps mean anything for a field, so most
- *    combinations would be **dead**.
- * 3. Arithmetic — a ninth shape adds **+320** cases to the
- *    `control-class.contract` sweep, while a separate cva ends at **16**
- *    (frame 2 × size 4 × multiline 2).
- *
- * ## Why three axes — two seats drew the same line independently
- *
- * The hierarchy (lead) seat opened the real product and split forms into three:
- * **recording** (the value lands on disk; the eye is on the input) · **lookup**
- * (you arrive at something that already exists; the eye is on the **result**) ·
- * **stage** (writing, in place, the text a card will show). The first two are the
- * `frame` axis, and the reason they cannot be merged came from that same reading:
- * make recording transparent and the form disappears; make lookup heavy and **the
- * input beats the result**.
- *
- * ## ⚠️ The most important assertion in this file — do not write it as "is it in
- * the vocabulary"
- *
- * One of system's four negative probes **leaked through green**: "single-line `md`
- * at `h-9` (36)". 36 is inside the height vocabulary, so a vocabulary check passed
- * it.
- *
- * So this contract is written as a **step ↔ token 1:1 mapping** — it **reads** the
- * px values of `--control-h-{sm,md,lg}` from `globals.css` and checks each step
- * emits that value. Copying the values here would create a blind spot the moment
- * the copy drifted from the ramp.
+ * `fieldClass` is a separate cva, not a ninth `shape`: fields are a different population and most
+ * `tone` steps mean nothing for them. The key assertion maps each step 1:1 to the px of
+ * `--control-h-{sm,md,lg}` read from `globals.css`; a vocabulary check passes wrong heights like 36.
  */
 
 const GLOBALS = readGlobalCss();
@@ -158,10 +125,8 @@ describe('frame — 누가 상자를 내는가', () => {
   });
 
   /**
-   * **`bare` must not emit a box.** The parent already emitted one, and a second
-   * box pushes that one outward from the inside. The hierarchy seat's verdict: all 10
-   * lookup places are ones where **the result is the attention winner**, so an input
-   * carrying an affordance beats the result.
+   * `bare` must not emit a box: the parent already emitted one, and a second box pushes it outward. In
+   * lookup places the result must win attention over the input.
    */
   it.each(SIZES.flatMap((s) => MULTILINE.map((m) => [`${s}/multiline=${m}`, s, m] as const)))(
     'bare/%s 는 치수·보더·반경을 하나도 내지 않는다',
@@ -227,10 +192,8 @@ describe('base — 모든 필드가 공유하는 것', () => {
   });
 
   /**
-   * **Width is not the value layer's share.** Consumers differ (some use `w-full`,
-   * others get their width from a parent grid). If the base emitted a width, the
-   * latter would no longer be a 0px migration — the first implementation did put
-   * `w-full` on `boxed` and removed it for exactly this reason.
+   * Width is not the value layer's share: consumers get width from `w-full` or a parent grid, and an
+   * emitted width would stop migration being 0px.
    */
   it('폭을 내지 않는다', () => {
     for (const c of all) {

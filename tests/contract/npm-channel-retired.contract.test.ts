@@ -5,50 +5,9 @@ import { describe, expect, it } from "vitest";
 import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../cli/src/lib/cli-commands.mjs";
 
 /**
- * Gate against guidance that resurrects the retired npm channel.
- *
- * The npm publishing plan was retired on 2026-07-27 (`docs/DECISIONS.md`).
- * `ontology-atlas` and `ontology-atlas-mcp` are not in the registry and never will
- * be — so guidance like `npx ontology-atlas init` is not future tense but **a
- * lie**. Running it produces a 404. The live app and documentation surfaces were
- * swept, and this gate stops it creeping back.
- *
- * **Why a contract test rather than lint**: the violations live in markdown prose,
- * YAML issue templates, and launch drafts — a layer ESLint's AST selectors cannot
- * see. So a contract test carries `design.md`'s "a spec without a rule is not
- * kept" here.
- *
- * **No exception list.** The archive (`docs/archive/**`), past CHANGELOG entries,
- * dated audit and benchmark records, and prototype drafts **were true at the
- * time** and must stay as they are. So the gate is an **allowlist**, not a
- * denylist — history is not on the list and is therefore structurally untouched.
- * Having zero exceptions to maintain is the point of this design.
- *
- * The tiers exist because **quoting and instructing are different**:
- *
- * - **Tier A — banned outright.** These surfaces have no reason to mention the
- *   dead channel: launch drafts, issue templates, contribution guidance, starter
- *   READMEs. Any `npx` here is 100% an instruction to a user.
- * - **Tier B — banned inside code blocks only.** Documents that must tell users
- *   "that does not work" (TROUBLESHOOTING, README status, the CLI README) have to
- *   **name the command**. The discriminator is **position, not glyph** — inside a
- *   fence means "copy and paste this", in prose it is a quotation. The same
- *   principle by which the label-decoration gate judges an arrow by position
- *   rather than glyph.
- * - **Tier C — bare invocations in source.** Added 2026-07-29; see "reach" below.
- *
- * **Why the reach was widened** (measured 2026-07-29). For a long time this gate
- * saw only `npx ontology-atlas`. But what the app had users copy was the **bare**
- * `ontology-atlas validate .` — with no runner it did not match the pattern, and
- * `which ontology-atlas` returns not found. An exhaustive count found 116
- * occurrences across 22 source files in that form.
- *
- * **A rule whose reach is short is the same as no rule.** The same failure as the
- * label-decoration gate exempting `→` wholesale and the primary save button
- * slipping through that exemption the next day. Hence Tier C: bare invocations in
- * an executable form are banned in TS/TSX under `src/` and `app/`, and the live
- * form is produced by a single source
- * (`src/shared/config/cli-invocation.ts`).
+ * Guidance must not resurrect the retired npm channel (`docs/DECISIONS.md`). The gate is an allowlist,
+ * so history is untouched. Tier A bans any `npx` outright, Tier B only inside code blocks, and Tier C
+ * bare invocations in source; the live form comes from `src/shared/config/cli-invocation.ts`.
  */
 
 /**
@@ -57,8 +16,7 @@ import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../cli/src/lib/cli-c
  * order") is not a command, so it is a violation **only when a real CLI command
  * name follows**.
  */
-// Derived from the CLI's own registry: a hand-kept copy had drifted to miss ten
-// real commands (`analysis`, `architecture`, `wiki-validate`, …) by 2026-09-27.
+// Derived from the CLI's own registry so the list cannot drift from the real commands.
 const CLI_COMMANDS: readonly string[] = [...REGISTERED_CLI_COMMANDS];
 if (CLI_COMMANDS.length === 0) throw new Error("the CLI command registry is empty");
 

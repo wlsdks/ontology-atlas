@@ -10,18 +10,8 @@ import {
 } from '@/views/download/model/demo-clips';
 
 /**
- * Does the demo clip's **declaration match the real file**?
- *
- * `demo-clips.ts` says in its own comment *"length in seconds (measured); a gate
- * compares it after filming"* — and **that gate did not exist** (found 2026-08-20).
- * So after the 2026-08-19 swap to an 88.83 s recording, nobody would have noticed
- * `seconds` still holding the previous take's value. A place where a number rots
- * quietly was blocked with a comment; this file makes that comment true.
- *
- * The length is **read directly from the MP4's `mvhd` box** — calling ffprobe would
- * require ffmpeg on the CI runner, and without it the check would silently skip
- * (exactly how this repository lost a release to a gate that had never once gone
- * red). `mvhd` has a fixed layout and reads in 40 lines.
+ * The length is read from the MP4 `mvhd` box directly: ffprobe would need ffmpeg on the CI runner
+ * and the check would silently skip. Declared `seconds` must match the real file.
  */
 
 const DEMO_DIR = join(process.cwd(), 'public', 'demo');
@@ -79,20 +69,8 @@ describe('시연 클립 — 선언과 자산', () => {
       }
 
       /**
-       * **The two locales must be two recordings, not one file under two names.**
-       *
-       * For its first two days this asset was a single Korean master copied to both paths, and
-       * every check above stayed green throughout: both files existed, both were over 10KB, both
-       * measured the declared length. Nothing in the suite could tell the difference, so the only
-       * thing keeping the page honest was a clause in `demoProvisionalNote` — and that clause is
-       * now gone, because per-locale footage was filmed on 2026-08-22.
-       *
-       * Which is exactly when this needs a gate. Re-copying one locale over the other is a
-       * one-line accident during any future swap, and it would put an English speaker back in
-       * front of a Korean screen with no signal anywhere.
-       *
-       * Bytes, not pixels: two takes of the same beats are never byte-identical, and anything
-       * subtler than "these are the same file" is not what this is defending against.
+       * The two locales must be two recordings, not one file copied under two names, which every check
+       * above would pass. Compares bytes, not pixels.
        */
       it('두 로케일이 같은 파일이 아니다 — 한쪽을 덮어써도 위 검사는 전부 초록이다', () => {
         for (const ext of ['webm', 'mp4', '-poster.png'] as const) {

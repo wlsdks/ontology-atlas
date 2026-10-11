@@ -7,25 +7,8 @@ import {
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Measures the spring's **stability margin** — a hole created by the token and the
- * clamp living in different files.
- *
- * **What is at stake.** The camera integrates with semi-implicit Euler. That
- * integrator diverges as `ω·dt` grows, and **the measured boundary is 1.0** (the
- * probe below uses that boundary as a case). Divergence means NaN, and **a NaN camera
- * propagates through every projection and kills the whole canvas** — a failure where
- * the map disappears entirely.
- *
- * Today's actual margin (measured 2026-07-28):
- *   ω(interactive) = 15 · dt clamp = 0.05 → ω·dt = **0.75**
- *
- * Only 1.33× of headroom to the boundary — raising the token to just 20 crosses it.
- * But ω lives in `app/globals.css` and the dt clamp lives in the render loop, so
- * **whoever touches one side cannot see the other.**
- *
- * Why lint cannot do it: the verdict needs **a value from another file**, and
- * `no-restricted-syntax` matches AST selectors within one file. Same basis as
- * `type-ramp-step-defined`.
+ * Spring stability margin: semi-implicit Euler diverges as `w*dt` reaches 1.0, and a NaN camera kills
+ * the canvas. The token and the dt clamp live in different files, so both are read here.
  */
 
 const CSS = readGlobalCss();

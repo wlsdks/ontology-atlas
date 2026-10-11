@@ -58,28 +58,14 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
   it("얼릴 대상인 pnpm 락파일이 저장소에 있다", () => {
     const lockfile = readFileSync(join(root, "mcp/pnpm-lock.yaml"), "utf8");
     expect(lockfile).toContain("lockfileVersion");
-    // 2026-07-29: migrated from the v1 single package to the v2 split packages. This
-    // is the name the app sidecar actually compiles in, so this checks the lockfile
-    // freezes it.
+    // The name the app sidecar actually compiles in; this checks the lockfile freezes it.
     expect(lockfile).toContain("@modelcontextprotocol/server");
   });
 
   /**
-   * npm reads the top-level `overrides`, pnpm reads `pnpm.overrides`. Writing only
-   * one makes npm consumers and the release runner receive **different trees** —
-   * measured 2026-07-28: while only `overrides` existed, npm installed
-   * `@hono/node-server@2.0.11` (the value #543 pinned to harden the trust boundary)
-   * while `pnpm --dir mcp install` installed `1.19.17`. The sidecar that ships in the
-   * app is compiled with the latter.
-   *
-   * ⚠️ **As of 2026-07-29 there are 0 overrides** — moving to the v2 SDK removed
-   * `@hono/node-server`, the pin's target, from the dependency tree (v2 depends only
-   * on `core`, `server`, and `zod`). A pin nobody uses is misinformation rather than a
-   * spec, so it was deleted.
-   *
-   * The two tests below therefore **compare two empty sets** today. That looks
-   * pointless but stays — the moment an override reappears they arm themselves.
-   * Deleted, nobody would be watching then.
+   * npm reads top-level `overrides` and pnpm reads `pnpm.overrides`; writing only one gives npm
+   * consumers and the release runner different trees. There are currently no overrides, so the two
+   * tests compare empty sets and arm themselves when one reappears.
    */
   it("npm 과 pnpm 이 같은 override 를 본다", () => {
     const mcpPkg = JSON.parse(readFileSync(join(root, "mcp/package.json"), "utf8")) as {
@@ -104,17 +90,9 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
 
 describe("업데이터 아카이브는 서명된 앱을 담아야 한다", () => {
   /**
-   * `tauri build` emits `.app.tar.gz` **together with** the `.app`, but this
-   * repository code-signs separately afterwards. So the archive contains the unsigned
-   * app, and only users who receive the update meet "is damaged" — users who
-   * downloaded the DMG are fine, so no check catches it.
-   *
-   * Measured 2026-07-28 on a clean checkout:
-   *   before repacking  code has no resources but signature indicates they must be present
-   *   after repacking   valid on disk
-   *
-   * So there is exactly one correct slot — **immediately after app signing, before DMG
-   * packaging.**
+   * `tauri build` emits `.app.tar.gz` with the unsigned app and signing happens afterwards, so only
+   * updater users meet "is damaged". The one correct slot is immediately after app signing and
+   * before DMG packaging.
    */
   const pipelines = [
     [
@@ -193,18 +171,8 @@ describe("리허설이 릴리스 잡을 빠짐없이 덮는다", () => {
   });
 
   /*
-   * ⚠️ **This test used to go red at random** (observed 2026-08-21 in `#1178`).
-   *
-   * `--list` really invokes all four tools, since that is the answer to "what does not
-   * work on this machine". With no timeout, a slow first call to `cargo`/`rustc`
-   * through the rustup shim on a runner took **9.75 seconds**, exceeding vitest's
-   * default 5-second limit and breaking the contract (0.18s on this machine, so it is
-   * never visible locally).
-   *
-   * Two fixes: the script now applies a per-tool timeout (`PROBE_TIMEOUT_MS`), and
-   * here it is **made explicit that what is measured is what it prints, not how
-   * fast**. Relying on the default limit makes this contract a gate tied to machine
-   * speed again.
+   * `--list` really invokes all four tools; a slow first `cargo`/`rustc` call through the rustup shim
+   * can exceed vitest's 5-second default on a runner. The test asserts what is printed, not how fast.
    */
   it("태그 없이 목록을 보면 admission이 검증됐다고 가장하지 않고 명시적으로 SKIP 한다", { timeout: 60_000 }, () => {
     const rehearsal = spawnSync(process.execPath, ["scripts/release-rehearsal.mjs", "--list"], {
@@ -355,11 +323,9 @@ describe("다운로드 스모크 문구는 살아 있는 카탈로그에서 온�
 });
 
 /**
- * **A tool check says one of three things — `ok`, missing, or "could not check".**
- *
- * Folding "unknown" into "missing" sends the next person off to install a tool that
- * is already fine. And without a timeout this check ties the whole test to machine
- * speed (the incident described above).
+ * A tool check says one of three things: `ok`, missing, or could not check. Folding unknown into
+ * missing sends someone to install a tool that is fine, and without a timeout the test ties to
+ * machine speed.
  */
 describe("릴리스 리허설의 도구 확인", () => {
   it("답한 도구는 버전을 그대로 돌려준다", () => {

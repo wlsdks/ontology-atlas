@@ -5,18 +5,8 @@ import ko from "../../messages/ko.json";
 import { MEASURED_MODE_IDS, modeCopyKey } from "@/features/acp-session/model/mode-copy";
 
 /**
- * The working-mode list must be **in human words** (owner, 2026-08-17).
- *
- * The old screen: `Auto · Not Confirmed` / `Manual` / `Plan Mode` /
- * `Don't Ask · Not Confirmed`. Every name was English, and descriptions were attached
- * only to the two we had not measured — the two actually worth choosing said
- * nothing about how they differ.
- *
- * Two things this contract keeps:
- * ① every id we decided to translate exists in **both** languages (filling one side
- *    only leaves the other stale).
- * ② an unknown id **gets no translation key** — an invented line becomes a promise
- *    we never verified.
+ * Every translated mode id exists in both languages; an unknown id gets no translation key, since an
+ * invented line is an unverified promise.
  */
 type Bundle = { acpChat?: { modeName?: Record<string, string>; modeHint?: Record<string, string> } };
 

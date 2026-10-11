@@ -3,39 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { decodeWikilinkSlug, rewriteWikilinks, WIKILINK_SENTINEL } from '@/shared/lib/library/source-citation';
 
 /**
- * **A wikilink sentinel must not be a URL scheme** — the markdown renderer strips it.
- *
- * **What happened** (measured 2026-08-08). The viewer rewrote `[[slug|name]]` into a
- * standard markdown link `[name](WIKILINK:slug)` and then caught the `WIKILINK:`
- * prefix in the `a` component to route internally. The design makes sense but
- * **skipped one layer**:
- *
- * `react-markdown` sanitises URLs (`defaultUrlTransform`). Its allowlist is http,
- * https, mailto, xmpp, irc and similar, and it **turns an unknown scheme into an
- * empty string.** Measured:
- *
- * ```
- * defaultUrlTransform('WIKILINK:capabilities/x') === ''
- * ```
- *
- * So `href` was empty and the `a` component's first line
- * (`if (!href) return <span>{children}</span>`) returned **a plain span with no
- * marking** instead of a link. On screen there is only text — not a link, and not the
- * dotted "slug not found" marker either. **Two failures rendered as one picture.**
- *
- * **Why nobody saw it.** The dogfood vault had **zero** wikilinks in body text
- * (exhaustive count, 2026-08-08). Nobody traversed that path, so it stayed broken,
- * and the shipped samples have none either. The feature was the kind that is
- * documented, implemented, and has never once worked.
- *
- * It surfaced when the editor's `@` mention started putting wikilinks into body text
- * and walked that path for the first time.
- *
- * **What this gate locks:** *the URL a wikilink produces survives the renderer's
- * sanitiser.* How the implementation shapes the sentinel does not matter — scheme,
- * query, or data attribute. It only has to **still exist after sanitisation**. And
- * since the sanitiser is the library's, not ours, a version bump that changes its
- * allowlist breaks here first.
+ * A wikilink sentinel must not be a URL scheme: `react-markdown` sanitises URLs and turns an unknown
+ * scheme into an empty string, leaving a plain span. The URL a wikilink produces must survive the
+ * sanitiser, so a library bump that changes its allowlist breaks here first.
  */
 
 describe('위키링크 URL 은 마크다운 렌더러의 살균을 통과한다', () => {

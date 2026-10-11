@@ -1,25 +1,6 @@
-// R11 #27 — vault validator contract fixture. src/shared/lib/validate-vault-
-// Guarantees document.ts (runtime + UI) and mcp/src/validate.mjs (the AI agent
-// surface) return the same issue-code set for the same raw input. Adding or changing a
-// code on either side is blocked immediately by the contract test.
-//
-// fixture shape:
-//   { name, input, options?, expectedCodes: string[], expectedOk: boolean }
-// expectedCodes is a *severity-independent set comparison* — each implementation
-// returning the same set is a pass.
-//
-// `options` is the second argument the validators take — today only `{ slug }`,
-// which is how a caller states where the file sits. `slug-outside-kind-folder`
-// is a fact about position, not about bytes, so a case eliciting it must supply
-// one.
-//
-// ⚠️ **Bodies matter now.** Since 2026-09-22 the validators read the prose too
-// (`definition-missing`, `boundary-missing`, `uncertainty-missing`,
-// `epistemic-exclusion`), so a case meant to elicit exactly one frontmatter code
-// has to carry a body that is genuinely finished — an empty body under
-// `kind: capability` now elicits four more codes and stops testing what it was
-// written to test. `CLEAN_CAPABILITY_BODY` and `CLEAN_ELEMENT_BODY` below are
-// those finished bodies, written once so a new case cannot drift from them.
+// Contract fixture: the `src/shared/lib` validator and `mcp/src/validate.mjs` must return the same
+// issue-code set for the same input. Use `CLEAN_CAPABILITY_BODY` or `CLEAN_ELEMENT_BODY` so a case
+// elicits only its frontmatter code; `options` is `{ slug }`.
 
 /**
  * A body that answers every meaning check for a `capability`: one non-circular
@@ -77,11 +58,8 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
-    // Bug sweep 2026-09-01: the raw-text check ran before the parser's BOM/CRLF
-    // normalization, so a Windows-authored `﻿---` file looked like "no
-    // frontmatter" and passed validate clean — while the manifest and graph
-    // treated the same bytes as a live node. All checks must apply after the
-    // same normalization the parser uses.
+    // The raw-text check must run after the parser's BOM/CRLF normalization, or a Windows-authored file
+    // looks like it has no frontmatter and passes clean.
     name: 'BOM + CRLF file is validated like its normalized bytes (missing-uid still caught)',
     input: '﻿---\r\nkind: project\r\ntitle: Foo\r\n---\r\nbody',
     expectedCodes: ['missing-uid'],
@@ -194,15 +172,8 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
-    // Audit 2026-07-25 — `broader` (is_a / SKOS) existed only in the MCP validator and
-    // was missing from `GRAPH_ARRAY_KEYS` in all three of scripts, web, and CLI. That list
-    // drives **both** `non-canonical-graph-array` and `dangling-graph-reference`, so the
-    // omission meant "an agent can write a typo'd slug in `broader:` and CI stays green"
-    // (the web deriver mints unresolved refs as new nodes — the same class as the phantom
-    // accident in `derive-ontology-from-vault.ts`).
-    //
-    // This fixture pins that drift three ways: adding the key on one side alone turns red
-    // immediately.
+    // `broader` must be in `GRAPH_ARRAY_KEYS` in scripts, web and CLI: that list drives both
+    // `non-canonical-graph-array` and `dangling-graph-reference`. This case pins the three-way sync.
     name: 'broader 배열도 canonical 검사를 받는다 (검증기 3-way drift 차단)',
     // `kind: project` — using capability here would also attach `missing-expected-field`
     // (no domain) and blur the contract this fixture checks. Same condition as the
@@ -212,10 +183,7 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
-    // Regression fixture — the exact line that stood in
-    // `docs/ontology/elements/agents-destination.md` while `vault:validate`
-    // reported "0 issues" (2026-08-31). The value renders with a stray quote,
-    // so this is an error: the document is readable but says the wrong thing.
+    // The value renders with a stray quote, so this is an error: the document is readable but wrong.
     name: 'quoted scalar closing early → malformed-quoted-scalar (error, ok=false)',
     input:
       '---\nuid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0\nkind: element\ndomain: domains/agent-integration\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n' +

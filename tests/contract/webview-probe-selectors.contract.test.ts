@@ -3,39 +3,9 @@ import { describe, expect, it } from "vitest";
 import { collectProbeSelectors, findDeadSelectors, readProbeSources } from "./lib/probe-selectors";
 
 /**
- * WebView probe selectors ↔ the real UI (audit, 2026-07-25).
- *
- * ## Why it is needed — the same accident happened three times
- *
- * Desktop verification collects evidence through JS probes — the files under
- * `src-tauri/src/webview_verify/` plus the scripts still templated inside
- * `src-tauri/src/webview_verify/mod.rs` — that find UI with `document.querySelector`. But
- * **deleting UI does not delete the probes.**
- *
- * The 2026-07 map rebuild removed the Sigma renderer while the probes kept poking
- * at `.sigma-mouse` and `[data-testid="sigma-topology-viewport"]`, leaving two gates
- * (`desktop:verify-topology-frame-profile` and `:focus-noop`) **silently rotted into
- * a state no code could ever make pass**. The gates the project treats as
- * "installed-app proof" were dead.
- *
- * Three cases of the same family in this wave alone — the `desktop:check` ENOENT
- * crash (#64), `package:check` dying silently, and this. One shared cause: **a gate
- * not wired into CI rots, and you go on saying "proven" without knowing.** So this
- * test checks not the gate itself but **whether what the gate points at is still
- * alive**, in CI. It runs without an installed app, so it is always on.
- *
- * ## What it checks
- *
- * Every `data-testid` the Rust probes query that exists nowhere in `src/` or
- * `app/`. Deleting UI without deleting its probe is caught here immediately.
- *
- * ## Why there is an allowlist
- *
- * Probes also perform **optional evidence collection** — record it if present,
- * record its absence otherwise (graceful degradation). Such a selector pointing at
- * removed UI does not break the gate, so it is not an immediate defect — but it is
- * **noise that will eventually be misread**, so it is surfaced in a list and left as
- * cleanup. A growing list is itself a signal.
+ * Every `data-testid` the Rust probes query must exist in `src/` or `app/`: deleting UI does not
+ * delete its probe, and a gate whose target is gone rots silently. Runs without an installed app, so
+ * always on.
  */
 
 /**

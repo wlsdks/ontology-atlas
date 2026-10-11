@@ -8,23 +8,9 @@ import {
 } from "../../mcp/src/schema.mjs";
 
 /**
- * Two rules for the dogfood vault (2026-08-01):
- *
- * 1. **A slug is a flat identifier** (`docs/DECISIONS.md` verdict). A regenerated
- *    vault carried 43 path-shaped slugs such as `elements/src/views/home`, and
- *    tail-alias collisions were measured as 3 nodes folding into 1 on screen plus 4
- *    relations lost. The write checkpoint (`flatSlugIssue`) blocks new arrivals;
- *    hand edits that bypass it are caught here.
- *
- * 2. **Every node carries authorship provenance** (owner instruction — `human` means
- *    a node whose existence depends on human judgement: the project definition,
- *    domain boundaries, and direction-promise capabilities; everything else is
- *    `agent:*`). The count is not pinned — a fixed number is noise that breaks every
- *    time the vault grows. Only the value's shape and its presence on every node are
- *    the contract.
- *
- * This contract applies to the dogfood vault only — in an ordinary user's vault a
- * missing `created_by` is unknown, not a defect (decision ledger, 2026-07-31).
+ * Dogfood vault only: slugs are flat identifiers (`flatSlugIssue` blocks new arrivals; hand edits
+ * that bypass it are caught here) and every node carries `created_by`. No count is pinned; in an
+ * ordinary vault a missing `created_by` is unknown, not a defect.
  */
 
 const VAULT_ROOT = join(process.cwd(), "docs/ontology");

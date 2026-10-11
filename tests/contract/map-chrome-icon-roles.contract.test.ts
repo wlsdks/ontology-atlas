@@ -4,20 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * One glyph, one role — inside the map chrome, where two of them sit in the same viewport.
- *
- * Measured on the installed app 2026-09-09: a circled question mark opened the **meaning
- * workbench** from the utility lane, and another circled question mark two slots down the
- * support rail opened the **keyboard shortcut sheet**. Same glyph, ~260px apart, and only one
- * of them was help. A reader who learned either one learned the wrong thing about the other.
- *
- * The same action also disagreed with itself: the map chip used `HelpCircle` while the node
- * detail panel's primary button for the same label used `MessageCircle`.
- *
- * So this gate holds two things at once — `HelpCircle` is reserved for help, and the two
- * meaning-review entry points carry the same glyph. `MessageCircle` was not free to take:
- * the Agent chip beside the chip owns it, and putting two speech bubbles in one lane would
- * have traded one collision for another.
+ * One glyph, one role in the map chrome: `HelpCircle` is reserved for help, and the two meaning-review
+ * entry points carry the same glyph. `MessageCircle` is owned by the Agent chip.
  */
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), "utf8");
 

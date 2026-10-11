@@ -4,25 +4,9 @@ import { NEXT_STEP_MAX_CHARS, splitNextStep } from '@/features/vault-agent/model
 import { PRODUCT_DISCIPLINE } from '@/features/vault-agent/model/system-prompt';
 
 /**
- * **The `NEXT:` line is a sentence a person could send, not a work order.**
- *
- * ## Why this file exists (2026-08-31)
- *
- * `next-step.ts` lifts the model's last `NEXT:` line onto a chip **verbatim** and
- * prefills the input box with it. Nothing downstream rewrites that text, so
- * whatever the model wrote is what the person is invited to send back. The only
- * place that can decide how the line reads is the instruction in
- * `PRODUCT_DISCIPLINE`, and the first version of it asked only for "the single
- * next gap worth looking at, phrased the way the person could ask you for it" —
- * which left a model free to answer with a slug, an internal noun, or an order.
- *
- * ## What is asserted, and what is deliberately not
- *
- * Nothing here pins a sentence (`.claude/rules/documentation.md`). Each check is
- * a mechanical property of the instruction: the cap it quotes is **read out of
- * the code that enforces it** rather than typed twice, and the example it teaches
- * is run through the real splitter and measured against the real cap. Prose may
- * be rewritten freely; it may not lose a constraint or drift from the cap.
+ * `next-step.ts` lifts the `NEXT:` line verbatim onto a chip, so only the `PRODUCT_DISCIPLINE`
+ * instruction shapes it. The cap it quotes is read from the enforcing code and the example is run
+ * through the real splitter; no sentence is pinned.
  */
 
 /** The paragraph that governs the chip. Isolated so a failure names the right thing. */

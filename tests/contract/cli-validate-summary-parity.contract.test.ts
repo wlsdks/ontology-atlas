@@ -6,19 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { BROKEN_VAULT, HEALTHY_VAULT } from "../e2e/fixtures/broken-vault";
 
 /**
- * Do `ontology-atlas validate`'s **human-readable line and machine-readable JSON
- * state the same numbers?**
- *
- * Why this contract exists (measured 2026-08-04): for a folder with 5 errors and 4
- * warnings, the final summary line read `9 files / 8 issues (error 5 · warning 3)`. All
- * three numbers were **file** counts (8 files with problems, 5 with errors, 3 with
- * warnings only), so one warning inside a file that also had errors **disappeared
- * entirely**. The same command's `--json` counted per issue and said 5/4. When two
- * outputs call one folder by different numbers, neither can be trusted.
- *
- * Expectations are not written by hand — they are **taken from the JSON and
- * compared against the text**. That way the contract follows a changed fixture, and
- * this gate does not pin sentences.
+ * Expectations are taken from the JSON output and compared against the text, so the contract
+ * follows a changed fixture and pins no sentence.
  */
 
 const CLI = path.resolve(process.cwd(), "cli/src/index.mjs");

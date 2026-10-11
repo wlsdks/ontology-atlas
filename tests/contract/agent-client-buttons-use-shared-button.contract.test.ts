@@ -2,31 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * The tool-connect button row **goes through the primitive** (2026-08-02, design
- * council S3).
- *
- * **What was there** (exhaustive measurement). `src/shared/ui/button.tsx` already
- * has a `variant: primary | ghost | outline` cva, and `primary` uses the opaque
- * `--color-indigo-brand` (#5e6ad2). `AgentClientButtons` did not use it and instead
- * **reimplemented its own**, with the translucent `--color-indigo-a24` wash. That
- * wash appeared 24 times across 19 files with **0** of them going through the
- * `Button` primitive — a spec nobody uses is a document, not a spec.
- *
- * The same reimplementation **also omitted the focus-visible ring**: these were the
- * only buttons on the screen with no `focus-visible:ring`, so the browser default
- * `outline: rgb(208,214,224) auto 1px` appeared, while nine or more other places in
- * the app used the indigo ring token. Using the primitive brings that along
- * automatically.
- *
- * **What this gate locks.** Value lint cannot see this defect — everything the
- * reimplementation used is a legitimate token and breaks no value rule. And **what is
- * absent leaves no literal**: a missing focus ring is outside the hardcoded-value
- * check's field of view. So this measures whether the primitive was used, not which
- * tokens were used.
- *
- * The render results (whether the four share a weight, whether any glyph lacks a
- * state) are measured by the sibling unit test
- * `src/features/docs-vault-local/ui/AgentClientButtons.test.tsx`.
+ * The tool-connect button row must use the shared primitive, not reimplement it: value lint cannot
+ * see a missing focus ring. Render results live in `AgentClientButtons.test.tsx`.
  */
 
 const SOURCE = "src/features/docs-vault-local/ui/AgentClientButtons.tsx";
@@ -42,10 +19,8 @@ const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""
 
 describe("AgentClientButtons goes through a shared control primitive", () => {
   /*
-   * Round 3 (2026-09-25): the primitive moved from `Button` to `Chip`. These are now row actions on
-   * the Agents destination, where every sibling row and heading action is a `Chip` at `lg`; the
-   * rule this gate exists for (go through a shared primitive, do not reimplement one) is unchanged,
-   * and the value layer both primitives share (`controlClass`) is what carries the focus ring.
+   * The row actions use `Chip` at `lg` like sibling Agents rows; `controlClass` carries the focus
+   * ring.
    */
   it("imports the shared control primitive", () => {
     expect(source).toMatch(/from ["']@\/shared\/ui\/controls["']/);

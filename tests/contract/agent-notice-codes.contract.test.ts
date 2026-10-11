@@ -8,24 +8,8 @@ import {
 } from '@/features/vault-agent/model/agent-loop';
 
 /**
- * Gate against the screen and the Rust backend drifting apart on how a failure is recognised.
- *
- * `noticeFor` in `agent-loop.ts` decides which notice a failed LLM turn shows. Until 2026-08-24 it
- * decided by matching **Korean substrings** of the Rust error text — one phrase meaning "audit
- * record" for a ledger write failure, another meaning "within the time" for a curl timeout.
- * Nothing pinned the two sides together: the Rust
- * test suite checked the Rust sentence, the TypeScript test checked its own hard-coded copy of that
- * sentence, and editing the real string left both green.
- *
- * **The trap was armed by this repository's own rules.** `forbidden.md` says contributor-facing
- * prose must not be Korean, which points the next agent straight at those exact strings. Translating
- * them would have dropped an unwritable vault through to the `network-failed` branch — telling
- * someone to check their network while the real blocker was a read-only folder, which is precisely
- * the diagnosis the `audit-blocked` notice exists to give. A round of comment translation ran the
- * day this was found and stopped at string literals only because it was told to.
- *
- * So the contract is now a **code**, following `vault-root-rejected:`, and this file is what holds
- * the two copies of that code together across a language boundary neither compiler spans.
+ * `noticeFor` in `agent-loop.ts` recognises failures by a code, not Korean substrings of Rust error
+ * text; this holds the two copies of that code together across a language boundary.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');

@@ -7,18 +7,8 @@ import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Blank out comments before scanning, preserving line numbers so reported
- * locations stay right.
- *
- * **Why (measured 2026-08-22).** This gate looks for class-like literals in the
- * source. A comment is not a class literal — nothing in a comment ever renders —
- * but the scan read the raw file, so prose could trip it. Translating the
- * repository's comments to English made that live: `text-width` written inside a
- * sentence in `DomainCapacityBar.tsx` was reported as an undefined `text-*` ramp
- * step, and token names mentioned in prose were counted as ink/fill pairings.
- *
- * Korean prose rarely contains hyphenated Latin compounds, which is why the hole
- * stayed closed for as long as the comments were Korean.
+ * Blank out comments before scanning, keeping line numbers, so prose cannot trip the
+ * class-literal scan.
  */
 function stripComments(source: string): string {
   return source
@@ -28,37 +18,9 @@ function stripComments(source: string): string {
 
 
 /**
- * **Ink licence on a solid brand fill** (2026-08-15).
- *
- * **Where the hole was.** This repository already has an indigo ink licence:
- * `accent-ink-contrast.contract.test.ts` locks, by measured contrast, which indigo
- * ink may sit **on a tint** (an alpha indigo fill). But that contract only judges
- * when the ink is **indigo**, and when the background is a **100% opaque brand
- * fill** (`--color-indigo-brand`), **no check looked at** what ink may sit on it.
- *
- * It leaked through that hole (2026-08-15, exhaustive badge colour-role count). Of
- * the 4 places putting text on a brand fill, **3 used `--color-text-primary`
- * (#f7f8f8)**, a pairing measuring **4.42:1 — below AA (4.5)** at 9.5px. Only 1
- * used the correct `--color-text-on-accent` (#ffffff, 4.70:1).
- *
- * No value was wrong — all three are legitimate ramp tokens. What was wrong is the
- * **place**. `.claude/rules/design-gates.md` "The place, not the value, decides the token"
- * diagnosed exactly this disease on 2026-08-05 (three `text-white` places) and prescribed exactly this fix
- * (`text-on-accent`), but **no gate was built then, so three places regressed.**
- *
- * **The verdict is a calculation, not an allowlist.** Writing "only these tokens
- * are allowed" makes the check silently wrong the day that list diverges from
- * `globals.css`. So this **reads the token values and computes contrast**, passing
- * any ink above 4.5:1 (the same grammar as `accent-ink-contrast`). When a token
- * value moves, this test recomputes the truth of that moment.
- *
- * **What it does not look at:**
- *
- * - **Brand fills with no text** — dots, bars, underlines, progress marks. With no
- *   ink there is nothing for §1.4.3 (§1.4.11 belongs to a separate contract).
- * - **Tint fills** (`--color-indigo-a*`) — `accent-ink-contrast`'s jurisdiction.
- *   Counting them again here would have two gates judging the same place, and on
- *   the day they diverge nobody can tell which is the spec.
+ * Ink on a solid brand fill (`--color-indigo-brand`) must pass AA 4.5:1, computed from the token
+ * values rather than an allowlist. Tint fills belong to `accent-ink-contrast`; text-free fills are
+ * out of scope.
  */
 
 const ROOT = process.cwd();
@@ -109,9 +71,8 @@ describe("브랜드 면 위 잉크 — 라이선스는 값이 아니라 대비�
 
   it("분리의 근거가 아직 실재한다 — text-primary 는 브랜드 면에서 실제로 AA 를 깬다", () => {
     /*
-     * `/gate-probe` forbids a detector idling over an empty set. The day this
-     * assertion turns red is the day the two inks converge and either may be used
-     * anywhere — and then this contract can be retired. Today they split 4.42 vs 4.70.
+     * Detector liveness: if `text-primary` ever passes AA on a brand fill, the two inks have
+     * converged and this contract can be retired.
      */
     const primary = cssToken("--color-text-primary");
     const r = ratioOn(primary, SOLID_FILLS["indigo-brand"]);
@@ -232,52 +193,8 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
 
   it("사각이 커지지 않는다 — 잉크 없는 브랜드 면 리터럴의 상한", () => {
     /*
-     * This gate's only blind spot is "a pair whose fill and ink are split across
-     * different literals". That count cannot be measured directly, but the number of
-     * **fill literals with no ink** is an upper bound on it. All 24 were opened
-     * exhaustively on 2026-08-15 and every one was legitimate:
-     *
-     * | Kind | n | Why it is legitimate |
-     * |---|---:|---|
-     * | Hover fills (`hover:bg-…-brand-hover`) | **1** | ⚠️ Went 8 → 1 on 2026-08-15 (11). That rule (**only filled buttons darken**) moved **down into the value layer's `onAccent` tone definition**, so 7 consumers hand-writing the same string disappeared. The remaining 1 is a constant reassembling the tone by hand (`AtlasGitPanel`) |
-     * | Dots, 1px rails, underlines | 13 | No text. Not subject to §1.4.3 |
-     * | 3 conditional fill branches (GuidedTourCard dot · ProjectDrawer rail · SearchPalette rail) | 3 | All `aria-hidden` textless marks |
-     *
-     * If this number rises, one of them may be a genuine pair with its ink in another
-     * literal. In that case open the place before raising the ceiling.
-     */
-    /*
-     * **2026-08-18: 17 → 20.** All three new places were opened and verified — all
-     * `aria-hidden` with no text (not subject to §1.4.3): 1 preview dot in the accent
-     * palette picker, and 2 static accent dots from the gateway remake (hero eyebrow and
-     * section heads). (The accent reverted to indigo the same day, but this number is
-     * independent of colour — it counts brand-fill literal sites, not the fill's colour.)
-     */
-    /*
-     * **2026-08-20: 20 → 21.** The one new place was opened and verified — the filled
-     * portion of the agent-tool install progress bar (`AgentDoctor.tsx`). That `<span>`
-     * sits inside an `aria-hidden` track and **has no children** (it receives only a
-     * width via inline style). The percentage is not **on** the bar but in the paragraph
-     * above it, in achromatic ink — so no text sits on a brand fill.
-     */
-    /*
-     * **2026-08-22: 15 → 16, and the place did not change — the counter did.**
-     *
-     * `literals()` ran on the raw file, so comment text was scanned as if it were
-     * code. A `'` inside a comment opens a literal that runs to the next quote,
-     * which merged or hid neighbouring literals. `scan()` now strips comments
-     * first, and the true count is one higher.
-     *
-     * Measured both ways on the same tree, so the direction is not in doubt:
-     *
-     *   HEAD, no strip → 15      HEAD, stripped → 16
-     *   work, no strip → 16      work, stripped → 16
-     *
-     * The stripped sets for HEAD and the working tree are **identical**, so the
-     * sixteenth literal was always there — the English comment pass did not add
-     * it, it only changed which comment happened to corrupt the scan. Nothing was
-     * opened that had not been opened before, and the violation assertion above
-     * (ink on a brand fill below AA) stays at zero.
+     * Blind spot: a fill and its ink split across different literals. The count of ink-less brand fill
+     * literals bounds it; open the place before raising the ceiling.
      */
     const { inklessFills } = scan();
     expect(inklessFills, "잉크 없는 브랜드 면 리터럴이 늘었다 — 각 자리가 정말 글자 없는 면인지 확인하라").toBeLessThanOrEqual(16);
@@ -285,10 +202,8 @@ describe("브랜드 면 × 잉크 페어링 — 소스 전수", () => {
 
   it("사각이 줄었으면 상한도 내린다 — 여유를 무료로 두지 않는다", () => {
     /*
-     * System seat's recommendation (2026-08-15): when a dot is deleted and the blind spot
-     * shrinks while the ceiling stays, that slack becomes a free pass for the next
-     * **genuine pair** that arrives. The same grammar as `accent-ink-contrast`'s "repay
-     * the debt, lower the baseline".
+     * Lower the ceiling when the blind spot shrinks, so slack cannot become a free pass for the next
+     * genuine pair.
      */
     const { inklessFills } = scan();
     expect(

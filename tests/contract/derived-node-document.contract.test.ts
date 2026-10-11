@@ -8,30 +8,9 @@ import {
 import { resolveNodeDocument } from "@/entities/knowledge-graph";
 
 /**
- * The contract separating derived nodes (concepts named only in another document's
- * relation keys) from document nodes.
- *
- * Background (measured 2026-07-26): of the dogfood sample's 294 concepts only 96 had
- * their own `.md`, and the other 198 were derived. Yet the map's opening sentence
- * said "everything here is a real document", and the popover's `Document`
- * button on a derived node opened *somebody else's document that cited it*.
- *
- * ⚠️ Surgery (2026-08-01): this contract once required derived nodes to **exist** in
- * the dogfood sample (`derived.length > 0`) to pass — a gate that requires a defect
- * (an unresolved reference) preserves the defect. In a vault that keeps the spec,
- * zero derived nodes is correct. So it is now **conditional**: if derived nodes
- * exist, they are not called document nodes (the lie is still blocked). The derived
- * path itself is always verified against a **synthetic sample** (a manifest with one
- * ghost document added) rather than a dogfood defect — the same shape as the
- * `launch-docs-current` demoNote surgery ("if you state a number it must be true, but
- * you are not obliged to state one").
- *
- * Why neither count is pinned as a constant: `docs/ontology/` is dogfooded, so the
- * manifest is regenerated often — a fixed number is noise that breaks CI on every
- * vault edit, not a gate. Instead an **identity that cannot drift** is asserted: the
- * number of nodes with their own document == the `sourceConceptCount` derive
- * reports. If `hasOwnDocument` wrongly returns true for a derived node, that equation
- * breaks immediately.
+ * Derived nodes (named only in another document's relation keys) are never called document nodes.
+ * Conditional, since zero derived nodes is correct; the derived path runs on a synthetic ghost
+ * document. No count is pinned: nodes with their own document must equal `sourceConceptCount`.
  */
 
 /** Adds a ghost document with one unresolved reference to the dogfood manifest. */

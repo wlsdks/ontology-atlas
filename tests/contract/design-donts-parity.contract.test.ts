@@ -70,9 +70,7 @@ describe('디자인 금지 목록 — 정본 하나 + 부분집합 사본', () =
   const canonList = [...canonSection().matchAll(SLUG)].map((m) => m[1]);
   const canon = new Set(canonList);
 
-  // Floors: 15 and 8 until 2026-09-08, when the owner lifted the seven expression rows
-  // (`docs/DECISIONS.md`, "The expression bans are lifted"). The eight structural rows
-  // remain; the resident copy carries three of them.
+  // Floor of 8: the structural rows. The resident copy carries three of them.
   it('정본이 비어 있지 않다 — 공집합 위의 게이트는 게이트가 아니다', () => {
     expect(canonList.length).toBeGreaterThanOrEqual(8);
     expect(canon.size, '정본 안에 같은 슬러그가 두 번 있다').toBe(canonList.length);

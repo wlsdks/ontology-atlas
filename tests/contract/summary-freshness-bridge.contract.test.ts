@@ -1,30 +1,6 @@
 /**
- * Keeps the summary-freshness bridge wired, and records why it is not a degraded surface.
- *
- * The app answers "has this domain's description fallen behind what it holds?" by reading
- * Git history through the `vault_node_revisions` command. Nothing in `DEGRADED_SURFACES`
- * protects it, and nothing in the UI would look wrong if it silently stopped: the row
- * simply never appears, which is indistinguishable from "every domain is current". A
- * capability whose failure mode is invisible needs a gate that watches the wiring itself.
- *
- * ## Why not `DEGRADED_SURFACES`
- *
- * Every row in that registry is a place where the browser is asked to do something and
- * must explain why it cannot, with `/download/` as the destination. This is not that.
- * Nothing is offered here and nothing is withdrawn — the row is a passive advisory that
- * renders when there is something to say, exactly as it does in the app when a vault is
- * current. `surfaces.md` permits "removes the action", and there is no action to remove:
- * no button goes dead, and no sentence claims the vault was checked.
- *
- * It would also be the wrong claim. The signal is not app-only: a web user with a coding
- * agent reaches the same verdict through `validate_vault.summaryFreshness` and the
- * `rejudge_summary_membership` maintenance action, because MCP attaches to the folder
- * rather than to the Atlas screen. A card saying "you cannot see this on the web" would
- * understate the capability, which `surfaces.md` calls the opposite but equal lie.
- *
- * What the web genuinely loses is the map's *confirm on arrival* affordance. That is a
- * screen-level difference the surface contract already permits: the two surfaces share a
- * folder and a parser, not identical screens.
+ * Keeps the summary-freshness bridge wired. It is not a degraded surface: nothing is offered or
+ * withdrawn, and the same signal reaches web users through `validate_vault.summaryFreshness`.
  */
 
 import { readFileSync } from 'node:fs';

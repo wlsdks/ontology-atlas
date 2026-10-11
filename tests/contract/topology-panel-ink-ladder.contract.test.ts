@@ -1,59 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-// Uses the same ESM import as its sibling contract (`contrast.contract.test.ts`).
-// `require` bypasses the Vitest module graph, so editing `contrast.mjs` would stop
-// `pnpm checks:changed` from **recommending this contract** (2026-08-07 review).
+// Same ESM import as the sibling contract: `require` bypasses the Vitest module graph, so editing
+// `contrast.mjs` would stop `pnpm checks:changed` recommending this contract.
 import { composite, contrastRatio, parseColor } from '../../scripts/lib/contrast.mjs';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Holds the map panel's **second ink ramp** as a spec.
- *
- * ## Why this contract exists (2026-08-06 design system audit)
- *
- * Live measurement found `--map-panel-*` running a **parallel system that
- * differs from the global neutrals by a few steps each**. There were 0 hard-coded
- * values, so every value rule passed and `check-no-raw-color` was doing its job.
- * What was missing is a different question: **nobody was measuring whether a
- * surface-only token upholds the design system's properties.**
- *
- * ## Why the values were not converged onto the global ones
- *
- * Convergence was measured and it **improves** contrast (putting the global tokens
- * on the panel surface gives primary 15.16 → 16.79 · secondary 7.14 → **12.23** ·
- * tertiary 4.96 → 5.5). But raising secondary from 7.14 to 12.23 **changes this
- * panel's entire ink hierarchy**: the panel is a dense surface whose hierarchy is
- * deliberately compressed (global secondary/tertiary ratio 2.23 vs the panel's
- * 1.44), and the global ramp is cool (`#d0d6e0` · `#8a8f98`) while the panel's is
- * achromatic (`#a3a3ac` · `#868690`). Removing the chroma is the more legible
- * choice on a data-dense surface, so it is a judgement rather than taste, and
- * `.claude/rules/design.md` records that the map's values are research-based.
- * And `text-quaternary` **already matches the global value** (#82828a, converged
- * 2026-08-03) — so this ramp is not a copy unaware of the global one but
- * **partially and deliberately divergent**.
- *
- * So this contract fixes **properties**, not values: is it legible on that
- * surface, is the hierarchy monotonic, does the ink set grow unnoticed? Changing a
- * value is still free, but the table below has to change with it, so **the
- * judgement lands in the diff.**
- *
- * ## What this contract cannot do
- *
- * It does not judge whether there should be two ramps at all. That is a human
- * decision, recorded with its falsifier in `docs/DECISIONS.md` under 2026-08-06.
+ * Holds the map panel second ink ramp as properties, not values: legible on the panel surface,
+ * monotonic hierarchy, and the ink set cannot grow unnoticed. Whether two ramps should exist at all
+ * is a human decision recorded in `docs/DECISIONS.md`.
  */
 
 const CSS = readGlobalCss();
 
 /**
- * Reads the **base declaration** of `--x: <value>;`.
- *
- * ⚠️ Not "the last declaration in the file" — the first version of this gate did
- * that and was wrong (2026-08-06). `--color-text-quaternary`'s effective value is
- * the `#82828a` in `@theme`, but a `#8f95a0` appears later inside
- * `@media (prefers-contrast: more)`, so reading the last declaration **mistakes a
- * conditional override for the base value.** The base declaration always comes
- * first (`@theme` or a top-level `:root`).
+ * Reads the base declaration, not the last one: a later `prefers-contrast: more` override would be
+ * mistaken for the base value. The base comes first (`@theme` or a top-level `:root`).
  */
 function declaredValue(token: string): string | null {
   const match = new RegExp(`${token}\\s*:\\s*([^;]+);`).exec(CSS);
@@ -115,23 +77,8 @@ describe('지도 패널 잉크 램프 (표면 전용 두 번째 램프)', () => 
      * only one notation). A new ink on the panel fires here first.
      */
     /**
-     * ⚠️ Fixed twice (2026-08-07 review).
-     *
-     * ① The first pattern, `text-[a-z]+`, could not cross a **hyphen** in the name and
-     * missed inks such as `--map-panel-text-on-accent` — the assertion claiming
-     * "a new ink fires here first" was passing silently, repeating design-gates.md's
-     * "a scanner that sees one notation misses everything else" exactly.
-     *
-     * ② Widening it to catch every name containing `text` then dragged in the three
-     * **accent inks** (`domain-text` · `count-text` · `primary-text`). Those are indigo
-     * and sit **on tint surfaces**, so they must not be measured with the same ruler as
-     * the neutral ladder on the panel surface (both their contrast and their hierarchy
-     * belong to a different contract).
-     *
-     * Excluding them by hand would drift again, so they are separated **by
-     * classification**: referencing indigo makes it an accent ink (owned by the
-     * `accent-ink-contrast` contract), otherwise it is the neutral ladder and must be in
-     * the ledger. A new neutral ink still fires here.
+     * Neutral inks are separated from accent inks by classification: a value referencing indigo is an
+     * accent ink owned by the `accent-ink-contrast` contract; other panel text inks must be in the ledger.
      */
     const allInks = [
       ...CSS.matchAll(/^\s*(--map-panel-[a-z0-9-]*text[a-z0-9-]*)\s*:/gm),
@@ -180,11 +127,7 @@ describe('지도 패널 잉크 램프 (표면 전용 두 번째 램프)', () => 
   });
 
   it('전역 램프와 값이 같아진 잉크는 별칭이 아니라 같은 값으로 남는다', () => {
-    /**
-     * `text-quaternary` converged with the global value on 2026-08-03 (#82828a). That
-     * fact is pinned here: **how far** the divergent ramp diverges is this contract's
-     * information, and a converged place quietly diverging again is a regression.
-     */
+    /** `text-quaternary` equals the global value; pinned so a converged place cannot quietly diverge. */
     expect(resolve('--map-panel-text-quaternary')?.toLowerCase()).toBe(
       resolve('--color-text-quaternary')?.toLowerCase(),
     );

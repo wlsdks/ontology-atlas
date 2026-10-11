@@ -3,45 +3,16 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Gate against the capability silently falling behind what the frontend calls.
- *
- * On 2026-08-24 the main window's capability was narrowed from `core:default`'s nine
- * permission sets to four, each with a named caller, verified on a packaged build. That
- * narrowing is only correct for the code that existed on that day, and nothing made it
- * stay correct.
- *
- * **The trap this exists to close.** `@tauri-apps/api/core` exports a `Resource` class
- * whose `close()` calls `invoke('plugin:resources|close')`, and `core:resources` is not
- * granted. Nothing constructs a `Resource` today, so it never fires. But a future feature
- * that uses one would **construct it successfully** — construction is not IPC — and fail
- * only when it tried to clean up, as a denied permission, with a symptom ("something is
- * not being released") a long way from its cause. The person who added the feature would
- * have no reason to suspect a capability file.
- *
- * So the check is not "is `core:resources` granted". Granting a permission nothing calls
- * is the habit the narrowing removed. The check is that **whatever the frontend actually
- * uses, the capability covers** — which fires in the commit that introduces the usage,
- * where the author can still see why.
- *
- * **Why a contract test rather than lint.** The rule spans two files that share no import
- * graph: a TypeScript import in `src/` and a JSON permission list in `src-tauri/`. ESLint
- * sees one and never the other.
+ * The capability must cover whatever the frontend uses from `@tauri-apps/api`: a `Resource` is
+ * constructed fine and only fails at `close()` without `core:resources`. A contract test, since
+ * the rule spans TS imports and a JSON permission list that share no import graph.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 
 /**
- * Each row: a frontend surface, and the permissions it cannot work without.
- *
- * Each detector matches a static `from '...'` **and** a dynamic `import('...')`. That is not
- * pedantry: the one `@tauri-apps/api/app` call this app makes is a dynamic import, and a
- * from-only detector reported the module unused while it was being used on every settings
- * screen. The known-surfaces assertion below caught exactly that while this file was written.
- *
- * Verified against `node_modules/@tauri-apps/api` on 2026-08-24. `Image` and `TrayIcon`
- * both extend `Resource`, so they need the resources grant as well as their own.
- * `Channel` deliberately has no row: it is **not** a `Resource` and calls nothing under
- * `plugin:resources`, so adopting one needs no new permission.
+ * Detectors match static `from` imports and dynamic `import()`. `Image` and `TrayIcon` extend
+ * `Resource`, so they need its grant too; `Channel` is not a `Resource` and needs no new permission.
  */
 const REQUIREMENTS: { label: string; detect: RegExp; needs: string[] }[] = [
   {

@@ -46,32 +46,8 @@ function collectTsx(): string[] {
 }
 
 /**
- * **The keyboard focus ring is emitted by the value layer** — and no gate asserted
- * it.
- *
- * ## Why this file exists (2026-08-05 audit)
- *
- * Only three tests in the whole repository mentioned focus rings, and **none of
- * them asked whether a ring exists**:
- *
- * - `prose-link.contract.test.ts` — asserts in-prose links **do not declare** focus
- *   (the opposite direction)
- * - `agent-client-buttons-use-shared-button.contract.test.ts` — whether one file
- *   uses `<Button>`
- * - `tests/e2e/dialog-focus-ring.spec.ts` — whether **one sheet container** avoids
- *   `outline: auto`
- *
- * Meanwhile `controlClass` and `controls.tsx` contained the word `focus` **zero**
- * times. `Chip` 52 · `IconButton` 35 · `RowButton` 19 — 106 controls drew the **OS
- * accent colour** on keyboard focus. axe has no focus-visible rule, so
- * `a11y-ratchet` cannot catch it either.
- *
- * **Why a contract and not e2e**: a focus ring is only visible after an actual tab
- * press, so a DOM sweep of the resting state cannot see it in principle. But the
- * value layer emits strings, so **the combinations can be assembled and inspected
- * right here** — the same method the `control-class` contract uses to assemble all
- * eight shapes × three sizes × nine tones, and because it runs without a browser it
- * runs on every PR.
+ * Keyboard focus ring comes from the value layer and shows only after a real tab press, so a DOM
+ * sweep cannot see it. The value layer emits strings, so combinations are assembled here instead.
  */
 
 const ROOT = process.cwd();
@@ -83,21 +59,9 @@ const SIZES = ['sm', 'md', 'lg'] as const;
 
 describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 그 위에 얹는다', () => {
   /**
-   * **The floor is the base rule in `globals.css`** (2026-08-05, second pass).
-   *
-   * Even after adding `FOCUS` to the value layer covered 106 places, **104
-   * interactive elements across 53 files** still did **not** go through the value
-   * layer (rails, chrome, hand-written buttons, inline links). 104 edits cannot stop
-   * the 105th that appears next.
-   *
-   * So it was solved in **the same shape** as the cursor policy just above: the base
-   * owns it and components override only when needed. It uses `:where()` so
-   * specificity is 0, and `outline-offset: -2px` so box dimensions do not change.
-   *
-   * What this assertion protects: **that the floor does not disappear.** It and the
-   * value-layer assertion below are both required — with only the floor, the value
-   * layer losing its ring would be invisible; with only the value layer, the 104
-   * places that bypass it would be bare again.
+   * The floor is the base rule in `globals.css`: `:where()` gives specificity 0 and
+   * `outline-offset: -2px` keeps box size. Both checks are needed: floor alone hides a value layer
+   * that lost its ring; value layer alone leaves bypassing elements bare.
    */
   it('base 레이어가 모든 상호작용 요소에 초점 바닥을 깐다', () => {
     const css = readGlobalCss();
@@ -108,10 +72,8 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
     for (const needed of ['button', 'summary', 'a[href]', 'role="button"', 'tabindex']) {
       expect(selector, `초점 바닥이 ${needed} 를 안 덮는다`).toContain(needed);
     }
-    // Programmatically moved focus (a modal container) must be excluded — a ring is a
-    // defect there. `toContain('-1')` is not enough: it passes as long as `-1` appears
-    // anywhere in the selector, so it stayed green even when the exemption was removed
-    // (confirmed by probe).
+    // Programmatically moved focus (a modal container) must be excluded. `toContain('-1')` is not enough:
+    // it passes while `-1` appears anywhere in the selector.
     expect(
       selector.replace(/\s+/g, ''),
       'tabindex="-1" 를 면제하지 않으면 프로그램으로 옮긴 초점(모달 컨테이너)에도 링이 그려진다',
@@ -159,29 +121,9 @@ describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 �
   });
 
   /**
-   * Even when the value layer emits a ring, **a consumer overriding it via
-   * `className`** makes it meaningless. Turning off the browser's default ring with
-   * `outline-none` and providing **no replacement indicator** leaves focus entirely
-   * invisible (WCAG 2.4.7).
-   *
-   * ## This predicate was too narrow twice — the first implementation's 4 hits were
-   * all false positives
-   *
-   * The first version was "if `outline-none` appears, the same **file** must also
-   * contain `ring-`", and all 4 measured hits were legitimate:
-   *
-   * 1. **A ring is not the only focus indicator** — changing the border colour with
-   *    `focus-visible:border-*` is a visible focus too (2 cases).
-   * 2. **Programmatically moved focus deliberately removes the ring** — a modal or
-   *    panel container with `tabIndex={-1}` receives focus for announcement, so a
-   *    ring is the defect. The 2026-08-04 audit specifically ruled that the ring on
-   *    the first-run sheet **be removed**, and `tests/e2e/dialog-focus-ring.spec.ts`
-   *    protects that (2 cases).
-   *
-   * So the predicate was narrowed **from file scope to opening-tag scope**, the range
-   * of accepted indicators was widened, and `tabIndex={-1}` is exempt. Measuring your
-   * own false positives before switching a rule on is this repository's discipline
-   * (`design-gates.md`, on always measuring before enabling a rule).
+   * A consumer turning off the browser ring with `outline-none` and giving no replacement leaves focus
+   * invisible (WCAG 2.4.7). Scope is the opening tag; a border change counts as an indicator and
+   * `tabIndex={-1}` containers are exempt because a ring there is the defect.
    */
   it('초점을 끄기만 하고 아무 표시도 안 주는 자리가 없다', () => {
     const files = collectTsx();

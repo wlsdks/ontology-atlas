@@ -12,107 +12,8 @@ import {
 import { judgeRatchet } from './lib/ratchet-base';
 
 /**
- * Enter/exit ratchet — **hard-cut surfaces can never grow.**
- *
- * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 — this gate had been running on an empty list
- * ════════════════════════════════════════════════════════════════════
- *
- * The day before, this file iterated over `HARD_CUT_REGISTRY` **alone**, and that
- * registry was empty. So "0 hard-cut surfaces" was not a truth about the product but
- * **a truth about an empty list**. The owner proved it by measurement — adding
- * `{open && <div className="fixed …">}` to a new panel file and running it produced
- * **5 passed**, green.
- *
- * The "detector probe" present at the time proved only that the predicate
- * **function** was alive. That is necessary, not sufficient: with the function alive
- * but **nothing feeding it the product**, the gate does not exist. This round changes
- * the input — not a list but the **whole** of `src/` and `app/`
- * (`lib/surface-motion-census.ts`).
- *
- * ### But "switch to exhaustive" was not the answer by itself — false positives were
- * measured first
- *
- * Exactly as the old registry's preamble warned: *only "the parent renders it
- * conditionally" is a defect; always-rendered surfaces and ones the parent already
- * animates are not.* Counting by suffix over-reports, and counting places that need
- * no fix as defects makes the next person attach exit paths where none are needed —
- * that is noise, not enforcement.
- *
- * So a **false-positive inventory was measured** before switching it on, and three
- * predicates brought it down:
- *
- * | Predicate | What it filters out | Measured |
- * |---|---|---|
- * | **look only at call sites** | "always rendered" is excluded structurally | — |
- * | **if the alternate branch draws something it is a «swap»** | "the parent already animates" is filtered mechanically | 2 survivor sites (`VaultAgentSetupPanel` · `ProjectQuickEditPanel`) |
- * | **an unpressable root is not a surface** | hover readouts, tour anchors | false-positive rate ~40% → **1 of 11** |
- *
- * Four false positives were **defects in the detector itself** — the interpretation
- * was wrong, not the values:
- *
- * | False positive | Cause | Fix |
- * |---|---|---|
- * | 5 surface kinds | a barrel (`index.ts`) was read as the real definition file | follow re-exports |
- * | `Tooltip` | the mechanism list lacked Radix's exit (`animate-out`) | added to the list |
- * | 2 hover cards | the root is `pointer-events-none` — a class where the motion budget **permits** 0ms | excluded from surfaces |
- * | tour anchor | `aria-hidden` and unpressable | same |
- *
- * One **false negative** also appeared: `DeltaPreviewModal` (a genuine hard-cut
- * modal) was classified as a "swap" and dropped entirely. The cause was terminating
- * the opening tag without brace depth, reading the `=>` in `onSave={() => {` as the
- * end of the tag — **the trap the control ratchet's preamble had already recorded**.
- * Fixed by replacing JSX walking with a brace-depth scan. Measure the wrong element
- * and the number is wrong even though it is a number.
- *
- * ════════════════════════════════════════════════════════════════════
- * ## 2026-08-04 (same day, second round) — 13 repaid. It is 0.
- * ════════════════════════════════════════════════════════════════════
- *
- * The morning's exhaustive count was 13 (11 inline + 2 named), and all thirteen were
- * moved to `<Surface>` the same day. The per-site table is in the PR body. What is
- * worth keeping is **why one day was enough**, and the answer is the lesson this
- * repository is learning for the second time:
- *
- * > What was missing was not discipline but **assets**.
- *
- * Ten of the thirteen took a single line, `<Surface open={…} origin="…">`. Only
- * three needed real design, and those three exposed holes in the primitive:
- *
- * | What was blocked | Why | What was added |
- * |---|---|---|
- * | full detail · docs drawer · studio preview | large screen-covering surfaces, while the primitive had **only one translate+scale grammar**. `globals.css` already had a brightness-only pair (`map-overlay-in/out`) that `Surface` could not apply | a `motion="overlay"` axis |
- * | 9 menu and dialog sites | nowhere to pass the root's `role`/`aria-label`/`id`, so wrapping them traded away **their accessible name** | pass-through for `role`, `id`, `aria-*`, `style`, `ref`, `onClick` |
- *
- * Full detail in particular had **only one wing** — `map-overlay-in` was attached by
- * hand so entering took 180ms, while there was no exit class, so closing made the
- * whole screen vanish in one frame. Exactly the class that passes value lint
- * flawlessly (an element with no transition at all leaves no literal either).
- *
- * ### Repaying it exposed **two defects in the gate itself**
- *
- * 1. **Repaying shrank the denominator.** Converting a site changes the call from
- *    `{cond && <div className="fixed … z-50">}` to `<Surface open={cond}>`, and the
- *    old detector looked only at **conditional call sites**, so that surface left the
- *    field of view entirely. Measured: repaying 13 took the total of entering
- *    surfaces from **19 to 8** — back to the state where "0 violations" and "not
- *    looking" are indistinguishable. → detector ⓪ (`<Surface open=`) was added, and
- *    positioner/definition duplicates were removed via `EXIT_DELEGATED`. After the
- *    fix the total is **20** — the one absent from the old 19 is the edge panel
- *    (`<Surface>` has no surface suffix so ① missed it, and it is not a `<div>` so ②
- *    missed it too. **Already-converted surfaces were outside the denominator from
- *    the start**).
- * 2. **Probe ① required a violation to exist.** With `census.length > 0` it turns red
- *    the moment the debt is fully repaid — a gate shaped to prevent its own repair.
- *    A probe's job is not "a violation exists" but **"it really consumes the
- *    product"**, so it is aimed at the number of files scanned and the **total of
- *    entering surfaces** (20 even when hard cuts are 0).
- *
- * ### This count is 0 now, and a new hard cut is caught wherever it is put
- *
- * The 0 is not "a truth about an empty list" — the five probes below really catch
- * three fixtures on every run, and the exhaustive scan proves it is alive via the
- * file count and the denominator.
+ * Hard-cut surfaces can never grow. The census walks all of `src/` and `app/`, not a registry, so an
+ * empty list cannot make zero a truth about nothing; the probes below prove the scanner is alive.
  */
 
 /**
@@ -127,27 +28,9 @@ import { judgeRatchet } from './lib/ratchet-base';
 const BASELINE_HARD_CUTS = 0;
 
 /**
- * **The total of openable surfaces** — anything that appears conditionally, whether
- * or not it has an exit path.
- *
- * This is the hard-cut denominator, and also the denominator of
- * `tests/e2e/a11y-open-surfaces.spec.ts`'s "measures N/M". Unlike `BASELINE_HARD_CUTS`
- * it is **not a literal** (2026-09-26): it grows whenever a product surface is born,
- * so its literal changed in 34 of this file's 42 commits, fourteen times in the two
- * weeks before the conversion, and two branches adding a surface on the same day
- * conflicted on it and had to reconcile the arithmetic by hand. It is now judged
- * against the change's merge base (`tests/contract/lib/ratchet-base.ts`): the census
- * runs on the working tree and on the base tree, and only growth this change did not
- * record fails.
- *
- * A new surface is recorded as `tests/contract/ratchet-raises/appearing-surfaces/<slug>.json`,
- * whose `why` names the surface and **where its open path is exercised** (an `OPENERS`
- * entry, or the component or e2e test that opens it when the static sweep cannot).
- * The notes written before this mechanism, one per surface, are in this file's Git
- * history.
- *
- * 57 is the measurement at conversion. It is never edited: it serves a clone with no
- * merge base, and is a floor for a tree compared with itself.
+ * The total of openable surfaces, also the denominator of `tests/e2e/a11y-open-surfaces.spec.ts`.
+ * Judged against the merge base (`tests/contract/lib/ratchet-base.ts`); a new surface is a
+ * `tests/contract/ratchet-raises/appearing-surfaces/<slug>.json` record. The fallback is never edited.
  */
 const APPEARING_SURFACES_FALLBACK = 57;
 
@@ -199,16 +82,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('① 소스 전수를 실제로 먹는다 — 빈 집합 위에서 놀지 않는다', () => {
     /*
-     * ⚠️ **This assertion changed its aim on 2026-08-04.** It used to be
-     * `census.length > 0` — "the detector is alive only if at least one hard cut
-     * exists". That held on the day the debt was 13, but it is **a shape that stops the
-     * gate from ever being fully repaid**: it turns red the moment the count reaches 0.
-     *
-     * A probe's job is not "a violation exists" but **"it really consumes the
-     * product"**. So it is aimed at two things independent of the hard-cut count — the
-     * number of files scanned, and the **total of entering surfaces**, which is 20 even
-     * when hard cuts are 0. A detector that reads no files and returns 0 passes
-     * neither.
+     * Aimed at the number of files scanned and the total of entering surfaces, not at a violation
+     * existing, so repaying the debt to 0 cannot turn it red.
      */
     const scanned = [...walkTsx(join(process.cwd(), 'src')), ...walkTsx(join(process.cwd(), 'app'))];
     expect(scanned.length, '스캐너가 제품 트리를 못 걸었다면 모든 수가 거짓이다').toBeGreaterThan(200);
@@ -223,10 +98,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('①-b 전환된 표면이 분모에서 사라지지 않는다 — 갚을수록 눈이 머는 결함', () => {
     /*
-     * Measured 2026-08-04: moving 13 sites to `<Surface>` dropped the total of entering
-     * surfaces from **19 to 8**. The detector looked only at conditional call sites, so
-     * the converted surfaces (`<Surface open={cond}>`) left the field of view entirely —
-     * and then "0 hard cuts" is once again indistinguishable from **not looking**.
+     * Converted `<Surface>` sites must stay in the denominator, else 0 hard cuts is indistinguishable from
+     * not looking.
      */
     const appearing = censusAppearingSurfaces(process.cwd());
     const converted = appearing.filter((c) => c.what === '<Surface>');

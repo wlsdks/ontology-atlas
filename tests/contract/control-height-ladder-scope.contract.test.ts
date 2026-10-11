@@ -5,36 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The **scope** gate for the control-height ladder.
- *
- * **Why a separate file — the layer `control-class.contract.test.ts` cannot see.**
- * That file measures the **string `controlClass()` emits**, so it puts every
- * control that uses the value layer on the ladder, while **places outside the value
- * layer where a chrome token owns the dimension** stay out of view. That is the
- * hole the ledger counted for five consecutive rounds as "a chrome token owns the
- * dimension".
- *
- * The real cost of that blind spot was **34** (measured 2026-08-03):
- *
- * - `--docs-header-tile-size: 34px` was born when chrome tiles were **44px**, on
- *   the grounds that *"44 does not suit header density"*.
- * - On 2026-07-23 chrome tiles **came down to 36px**. The only evidence for 34
- *   disappeared that day and **no gate made a sound.**
- * - So the same role (a square icon tile) carried two values and two coarse
- *   promotion rules for 9 days, until the next audit rediscovered it.
- *
- * For the ladder to say "outside this table is a deviation", the rule must say
- * **which shapes it applies to**, and a machine must hold that scope. Source table:
- * docs/DESIGN-SYSTEM.md "Which shapes does the ladder apply to".
- *
- * | Category | What the ladder holds | Held here? |
- * |---|---|---|
- * | Single-row horizontal controls (chip·pill·segment·row·card) | outer height | the `control-class` contract |
- * | Square icon controls (icon, chrome/docs tiles) | the side | **here** — the chrome-token side |
- * | Vertically stacked controls (tile, nav rail items) | **the inner tile** (not the outer total) | **here** |
- * | Inline text links | exempt | n/a |
- *
- * Ledger: `docs/DECISIONS.md` 2026-08-03 "Tile dimensions are one".
+ * Scope gate for the control-height ladder: `control-class.contract.test.ts` sees only the string
+ * `controlClass()` emits, so places outside the value layer where a chrome token owns the dimension
+ * are held here. Source table: `docs/DESIGN-SYSTEM.md`.
  */
 describe('컨트롤 높이 사다리 — 적용 범위', () => {
   const GLOBALS = readGlobalCss();

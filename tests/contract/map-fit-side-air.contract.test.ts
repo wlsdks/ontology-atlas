@@ -3,21 +3,8 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **The overview keeps equal air on both sides of the drawing** (2026-09-25).
- *
- * The side lanes of the map's safe area (`--map-safe-inset-left/right`) are what the
- * overview fit reserves beside the drawing, and the fit centres the drawing between
- * them. They are unitless numbers because canvas 2D reads them, so they cannot follow
- * the chrome they stand for by themselves — and they had drifted apart: the open INDEX
- * reserved 26 px past its edge while the utility rail reserved 52 px past its own, so
- * even a correctly bounded drawing sat 13 px left of the free map's centre at 1512
- * wide (measured on the installed app's window, 1512×949).
- *
- * Each lane is the footprint of the chrome standing on that side plus one air, and the
- * air is the same everywhere. The footprints are read from the tokens and the classes
- * that actually place the chrome, so moving the rail or widening INDEX turns this red
- * instead of shifting the map quietly. The rendered result is measured by
- * `tests/e2e/map-overview-centre.spec.ts`.
+ * The overview fit centres the drawing between the safe-area side lanes. Each lane is the footprint of
+ * the chrome on that side plus one air, read from tokens and classes so moving chrome turns this red.
  */
 
 const css = readGlobalCss();

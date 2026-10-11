@@ -3,22 +3,8 @@ import { describe, expect, it } from "vitest";
 import ko from "../../messages/ko.json";
 
 /**
- * A Korean particle attaches to the word in front of it, with no space — including after a
- * Latin word, a digit, a closing bracket, or an interpolation placeholder. The pattern below
- * is the list of particles; the rule is that none of them may be preceded by a space.
- *
- * This is not a taste rule. Measured on 2026-09-09 the bundle was split almost
- * evenly: 151 spaced against 127 attached, and 23 identical letter+particle pairs
- * appeared **both ways**. The Agents screen showed the product name spaced from its subject
- * particle one paragraph above the same name attached to it. Whichever style wins, a bundle
- * that uses both for the same pair is wrong, so this gate keeps the one that is
- * orthographically correct rather than the one that happened to be more common.
- *
- * ⚠️ **One syllable is the trap.** The subject particle and the determiner "this" are spelled
- * the same. After an interpolated value it is usually the particle and must attach; in front of
- * a noun it is the determiner and must keep its space. The exemptions below are the four
- * measured determiners, listed literally so a new one has to be looked at rather than absorbed
- * by a widened pattern.
+ * A Korean particle attaches to the word before it with no space, including after Latin words,
+ * digits, brackets and placeholders. Determiner exemptions are literal so new ones get reviewed.
  */
 const PARTICLE_BASE =
   "(?:에서|으로|로서|로써|로|를|을|의|와|과|이라고|이라|이며|이고|이나|이|가|은|는|에게|에|도|만|부터|까지|보다|처럼|밖에|나)";
@@ -82,12 +68,7 @@ describe("Korean particle spacing", () => {
   });
 
   it("leaves the determiner 이 alone", () => {
-    /*
-     * This used to be checked against a catalogue string that no longer exists:
-     * `korean-particle-choice` removed every parenthesised allomorph on 2026-09-20, and two of
-     * this list's four entries went with those sentences. The rule is unchanged — a determiner
-     * keeps its space — so the probe now uses an entry that is still live.
-     */
+    /* The determiner keeps its space; the probe uses a catalogue entry that is still live. */
     const determiner = "{ago} 이 지도를 마지막으로 봤어요";
     expect(DETERMINER_EXEMPTIONS.some((exempt) => determiner.includes(exempt))).toBe(true);
   });

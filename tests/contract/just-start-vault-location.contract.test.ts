@@ -6,15 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_VAULT_PARENT_LABEL } from '@/features/docs-vault-local/lib/default-vault-naming';
 
 /**
- * "Just start" builds its path in **two places that cannot share code**: Rust knows `$HOME` and
- * creates the folder, TypeScript writes the label the person reads. Nothing but agreement keeps them
- * describing the same location, and a label naming a folder the app did not create is a lie told at
- * the exact moment somebody is deciding whether to trust the product with their disk.
- *
- * ⚠️ The folder must also stay **out of the directories macOS protects with TCC**. It used to be
- * `~/Documents/Ontology Atlas`; Documents is protected, so the button whose whole promise is "no
- * decisions, just begin" made a system permission dialog the first thing a new person saw, before
- * any map existed to justify it.
+ * Rust creates the folder and TypeScript writes the label, so only this test keeps them describing
+ * the same location. The folder must stay outside the directories macOS protects with TCC.
  */
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 const TCC_PROTECTED = ['Documents', 'Desktop', 'Downloads', 'Movies', 'Music', 'Pictures'];
@@ -39,11 +32,8 @@ describe('그냥 시작하기의 금고 위치 — 두 쪽이 같은 곳을 말�
   });
 
   /*
-   * ⚠️ **The door's own sentence is a third place that names the location** (2026-09-25). Both
-   * catalogues still promised Documents on the card and on the launch chooser a month after the
-   * folder moved to `~/Ontology Atlas` — the exact lie this file exists to prevent, told on the
-   * button itself. The container name is derived from the label, and the protected folders are the
-   * list above, so neither side of the check is a sentence pinned here.
+   * The door's own sentence is a third place naming the location; the container name derives from
+   * the label and the protected folders from the list above.
    */
   it('문 문구도 같은 곳을 말한다 — 만드는 폴더를 이름으로 대고, 보호된 폴더는 대지 않는다', () => {
     const container = DEFAULT_VAULT_PARENT_LABEL.replace(/^~[/\\]/, '');

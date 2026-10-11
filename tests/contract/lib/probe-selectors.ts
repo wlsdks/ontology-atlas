@@ -38,21 +38,8 @@ export function collectProbeSelectors(rustSource: string): string[] {
  * those as alive would neutralise this gate.
  */
 /**
- * **testids assembled at runtime** — absent from source as literals but alive.
- *
- * This gate decides "alive" by whether the string appears in the source text. But
- * some primitives append a suffix to the testid their parent received and put it on a
- * child — for example `src/shared/ui/select.tsx` marks the list with
- * `data-testid={`${dataTestid}-listbox`}`. So `ai-local-model-listbox` **exists in the
- * DOM and not in the source.**
- *
- * Putting such a selector in `KNOWN_STALE_OPTIONAL` is the wrong fix: that list is for
- * **optional** evidence pointing at dead UI, whereas this one is alive and hard-fails
- * when its probe is missing. Listing it would also pass silently once it really dies.
- *
- * So the suffix is stripped and the verdict is whether **the stem exists**. If the
- * stem disappears it is still caught — the gate is not weakened. When adding a new
- * suffix, name the primitive file that assembles it in the comment.
+ * Some primitives append a suffix to a parent's testid, so the selector is alive in the DOM but absent
+ * from source; the suffix is stripped and the stem must exist. Name the assembling file per suffix.
  */
 const COMPOSED_SUFFIXES = [
   // src/shared/ui/select.tsx — appends `-listbox` to the open list.

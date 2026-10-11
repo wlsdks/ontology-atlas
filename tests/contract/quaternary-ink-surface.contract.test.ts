@@ -9,48 +9,9 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { classNameOf, readClassSource, stringsOf } from "./lib/jsx-class-source";
 
 /**
- * The **surface licence contract** for quaternary ink (system seat verdict,
- * 2026-08-04).
- *
- * **What it locks.** The 2026-08-03 lift (#787c84 → #82828a) measured the four
- * static surfaces (canvas · panel · panel+overlay-1 · elevated) against the licence
- * and passed them all. But surfaces with **one more overlay** were not among those
- * four backgrounds, and the new open-surface instrument
- * (`tests/e2e/a11y-open-surfaces.spec.ts`) confirmed that blind spot with numbers on
- * its first run — global search's kbd (panel+overlay-2, 4.38), the selected row's
- * chip (overlay-1∘indigo-a14∘panel, 4.14), and the selected row's span
- * (indigo-a14∘panel, 4.39).
- *
- * Verdict: **do not lift the ink again.** Overlay composition has no ceiling on
- * depth in principle, so no single ink value can win at every depth, and each lift
- * digs into the hierarchy gap against tertiary (step ratio 1.17 on panel; the lowest
- * this repository has accepted is 1.06). Instead the **boundary is written into the
- * licence**:
- *
- * > **quaternary is licensed up to static neutral backgrounds** — the three base
- * > steps (canvas / panel / elevated) plus a single overlay-1 on canvas or panel.
- * > **Text on any background above that** (overlay-2 or deeper, elevated+overlay,
- * > indigo or amber tint composition) **starts at tertiary.** (A generalisation of
- * > AtlasGitPanel's 2026-08-02 rule "text on a pressable row starts at tertiary" —
- * > the rule came from the background rising, not from the row being pressable.)
- *
- * **Why a contract plus a runtime instrument rather than lint.** A static scan
- * **does not know which background the ink is drawn on** — the same
- * `text-quaternary` lives on panel (5.00, passes) and on overlay-2 (4.36, fails). The
- * same-tag pairing heuristic does not work here either: this layer's dominant idiom
- * is a **branch** such as `active ? 'tint background + bright ink' : 'quaternary
- * ink'`, so most of the 18 pairs where both literals share a tag were false
- * positives that never coexist at runtime (exhaustive count, 2026-08-04). So the
- * work is split across three layers:
- *
- * 1. **Value layer (here)** — computes the licence boundary itself from the real
- *    values in globals.css. If a token moves, this test recomputes the truth of that
- *    moment.
- * 2. **Site layer (here)** — a source assertion that the site caught by measurement
- *    this round (global search) does not return to quaternary.
- * 3. **Screen layer (`a11y-open-surfaces.spec.ts`)** — a ratchet that actually opens
- *    the open surfaces and measures with axe. Its color-contrast baseline went 5 → 0
- *    this round.
+ * Quaternary ink is licensed only up to static neutral backgrounds (the three base steps plus a single
+ * overlay-1 on canvas or panel); text on anything above starts at tertiary. A static scan cannot know
+ * the background, so this recomputes the boundary from globals.css and a site assertion backs it.
  */
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
@@ -159,10 +120,8 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 
   it("위계 간격이 남아 있다 — panel 위 tertiary/quaternary 스텝비 ≥ 1.06", () => {
     /*
-     * The 2026-08-03 lift already narrowed this from 1.29 to 1.17. The lowest this
-     * repository has accepted at the same step is 1.06 (the map panel ramp), so a value
-     * change below that has dug into the hierarchy — and the next time someone lifts
-     * quaternary "one more time", this turns red first.
+     * The lowest tertiary/quaternary step ratio accepted on this ramp is 1.06 (the map panel ramp); below
+     * it the hierarchy is dug into.
      */
     const step = ratioOn(tertiary, panel) / ratioOn(quaternary, panel);
     expect(step).toBeGreaterThanOrEqual(1.06);
@@ -172,10 +131,8 @@ describe("quaternary 잉크 라이선스 — 정지한 무채 바탕까지", () 
 describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 글로벌 검색", () => {
   it("kbd·선택 행 자식들은 tertiary 다", () => {
     /*
-     * All 3 color-contrast findings in the first open-surface sweep (2026-08-04) were in
-     * this file: kbd (4.38), the selected row's kind chip (4.14), and the selected row's
-     * span (4.39). cmdk's selection travels every row, so the slug and status spans fall
-     * under the same rule.
+     * cmdk's selection travels every row, so the slug and status spans fall under the same rule as the
+     * kbd and the selected row's kind chip.
      */
     const search = readJsx("src/widgets/global-search/ui/GlobalSearch.tsx");
     const kbds = search.filter((element) => element.tag === "kbd");

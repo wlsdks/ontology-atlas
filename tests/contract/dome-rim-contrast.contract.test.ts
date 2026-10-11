@@ -5,36 +5,9 @@ import { domeFogAlpha, DOME_RIM_FOG_FLOOR } from "@/widgets/ontology-map/model/d
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Depth fog may darken a node's rim only to 3 : 1** (2026-09-05, owner
- * direction B2).
- *
- * ## What was measured
- *
- * `domeFogAlpha` runs from 1.0 at the front to **0.09** at the back and
- * multiplies the whole node — the fill, the shading, and the rim. On the sample
- * vault at 1920 that left the median node rim at **1.15 : 1** against the pixels
- * beside it, with 117 of 125 nodes under 3 : 1 and 92 under 1.5 : 1: a hundred
- * shapes whose edge you cannot see. The flat map holds its own painted nodes to
- * the 3 : 1 ink floor, and the same four stroke tokens are what the 3D map paints
- * with — only the alpha differed.
- *
- * ## What this locks
- *
- * The composite the draw actually commits: `stroke token` laid over the canvas
- * ground at the rim's floored alpha, at **every depth**, must clear 3 : 1. The
- * arithmetic is done here from the shipped token values rather than from a
- * remembered number, so a darker ground, a dimmer stroke token or a lowered
- * floor all fail in the same place.
- *
- * The fog itself is untouched: the fill still sinks to 0.09, and the halo, the
- * line-width attenuation, the perspective size and the painter's-algorithm draw
- * order all still carry depth. Only the edge has a floor.
- *
- * A pixel measurement is deliberately *not* the gate. In a 3D view of 125 nodes the
- * "adjacent background" is often another node's containment edge or its own base
- * ring rather than the ground, so a screen sample measures the crowd as much as
- * the rim; the retired Cone drawing spec recorded that number as an
- * observation, and this file owns the floor.
+ * Depth fog may darken a node's rim only to 3:1: the stroke token composited over the canvas ground
+ * at the rim's floored alpha, at every depth, must clear 3:1. Computed from shipped token values;
+ * a pixel sample is not the gate because the adjacent background is often another node's edge.
  */
 
 const CSS = readGlobalCss();

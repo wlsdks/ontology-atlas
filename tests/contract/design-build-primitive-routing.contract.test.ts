@@ -6,44 +6,16 @@ import { describe, expect, it } from "vitest";
 import { readSkillProcedure } from "../helpers/read-skill-procedure";
 
 /**
- * **Ratifying a primitive means updating the signpost with it** (2026-08-15).
- *
- * **Why this gate exists — a real-use trial caught it.** Portability trial,
- * 2026-08-15: an agent that did not know this repository was handed only the design
- * system bundle and asked to build three screens containing forms. The five
- * primitives ratified that same day (`Input` · `Textarea` · `Checkbox` ·
- * `SegmentedControl` · `Select`) appeared **zero times** in the `/ui-build`
- * routing table, whose last row said "a shape not among those eight → stop and
- * recount everything". In other words, **an agent following instructions receives a
- * stop signal on forms.** That agent did in fact abandon the signpost and recovered
- * by opening 12 `ui/` sources directly — the primitives existed, the gates existed,
- * and **only the signpost did not point there.**
- *
- * The diagnosis `/ui-build` wrote in its own preamble recurred one layer up:
- * *"what was blocking this was not the model's taste but the absence of parts to
- * reach for and of a written order of operations"*. The parts arrived and **the
- * order of operations did not follow.**
- *
- * **What it enforces.** Every **component name** exported by a file in the spec
- * watch list (`PRIMITIVE_EXPORT_FILES` in `design-spec-census.mjs`) must appear by
- * name in the `/ui-build` signpost. The list is extracted from source rather
- * than maintained by hand — the moment a new primitive is registered, this check
- * demands its name.
- *
- * Both host entrypoints must reach the shared procedure that names the current
- * primitives; matching metadata alone does not establish that coverage.
+ * Every component name exported by a file in the spec watch list (`PRIMITIVE_EXPORT_FILES` in
+ * `design-spec-census.mjs`) must appear in the `/ui-build` signpost, so a new primitive demands its
+ * name. Both host entrypoints must reach the shared procedure.
  */
 
 const ROOT = process.cwd();
 
 /**
- * The **primitive-layer files** whose routing the signpost is responsible for.
- *
- * Based on `PRIMITIVE_EXPORT_FILES` in `design-spec-census.mjs`, plus `button.tsx`
- * and `select.tsx` — their value axes live in `control-class.ts` so they are not
- * watched by the spec ledger, but they are **parts anyone building a screen must
- * reach**, which puts them in the signpost's scope (in the 2026-08-15 trial
- * `Select` was absent from the table and really could not be found).
+ * Primitive-layer files whose routing the signpost owns: `PRIMITIVE_EXPORT_FILES` plus `button.tsx`
+ * and `select.tsx`, whose value axes live in `control-class.ts` but which a screen builder must reach.
  */
 const PRIMITIVE_FILES = [
   "src/shared/ui/controls.tsx",

@@ -3,23 +3,8 @@ import { describe, expect, it } from "vitest";
 import manifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
 
 /**
- * **The sample vault gets checked too.**
- *
- * **What happened (2026-08-09).** `pnpm vault:validate` scans only the dogfood
- * vault (`docs/ontology`) — **nobody checked the sample vault**
- * (`samples/storefront`). That hole was fallen into twice in a row: two newly
- * written capabilities pointed at slugs that do not exist
- * (`capabilities/order-confirmation`, `capabilities/payment-authorization`) and
- * the build passed and the screen rendered. The real slugs were `order-placement`
- * and `payment-authorize`.
- *
- * The sample vault is **the only data a first-time visitor sees**. Broken here,
- * the product looks broken — and we cannot tell, because we only look at dogfood.
- *
- * **Why read the manifest.** The manifest is **generated** from
- * `samples/storefront/**` by `pnpm docs-vault:build`, so checking it checks the
- * source and the parser together (`documentation.md`'s "generate then compare"
- * branch). No second parser re-parses the source.
+ * The sample vault is the only data a first-time visitor sees, and `pnpm vault:validate` scans
+ * only the dogfood vault. The generated manifest is read so source and parser are checked together.
  */
 
 interface SampleDoc {
@@ -81,15 +66,8 @@ describe("예시 볼트 무결성", () => {
   });
 
   /**
-   * **Does the sample actually reveal what the product is meant to reveal?**
-   *
-   * This was the root of the owner's 2026-08-09 observation: domain composition
-   * ratios were almost flat at 38–57%, so the bar that points out "an area with much
-   * said and thin evidence" had nothing to say in the demo. An evenly built sample
-   * **makes the product look weak.**
-   *
-   * Rather than pinning a value, this measures the **spread** — growing or editing
-   * the sample passes as long as it stays spread out.
+   * Measures the spread of domain composition ratios rather than pinning a value: an evenly built
+   * sample leaves nothing to point out in the demo.
    */
   it("도메인 구성비가 퍼져 있다 — 평평한 예시는 제품을 약하게 보이게 한다", () => {
     const byDomain = new Map<string, { capability: number; element: number }>();

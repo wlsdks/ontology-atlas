@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Design-token gate — verifies the status signal colours meet WCAG AA (>= 4.5:1) on
- * the dark canvas. Since the app became dark-only (2026-07-19, light mode retired
- * entirely), this blocks a regression where status text is unreadable on the canvas.
- *
- * Parses the `@theme` block in globals.css and checks the real dark token values.
+ * Status signal colours meet WCAG AA (>= 4.5:1) on the dark canvas, checked against the real token
+ * values in the `@theme` block of globals.css.
  */
 
 const GLOBALS = readGlobalCss();

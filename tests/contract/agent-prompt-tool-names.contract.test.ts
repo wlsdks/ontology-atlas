@@ -94,8 +94,6 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
     });
 
     it(`${label} 프롬프트는 볼트 경로를 문장 안에 싣는다`, () => {
-      // Without the path the agent does not know which folder is meant — the hard-coded
-      // `.` incident was exactly that shape.
       expect(prompt).toContain("/tmp/vault");
     });
   }
@@ -108,12 +106,8 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
      */
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
 
-    // Assert the invariant, not one sentence carrying it. This used to match a
-    // blanket "do not call add_concept", which was a stricter rule than the
-    // server's own: the bulk `writePlan` is gated, ordinary writing is not, and
-    // that blanket ban is what left a solo installer with no move at all. The
-    // arbitration contract survives that correction and is what must not be
-    // deletable — both paths write only what a person approved first.
+    // Assert the invariant, not one sentence: the bulk `writePlan` is gated and ordinary writing is not;
+    // both paths write only what a person approved first.
     expect(
       prompt,
       "the bulk plan must stay unwritten while the server says canWrite is false",
@@ -132,22 +126,8 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
   });
 
   /**
-   * **A prompt that names the write tools must name the field that authorizes them.**
-   *
-   * This one used to end "write only approved items". A walkthrough pasted it into a
-   * fresh agent, approved the proposal, and got nothing written: the server answered
-   * `canWrite: false`, because acceptance binds to a generated plan digest that a
-   * blanket approval predates. The instruction had promised a path the server
-   * refuses and named none of the fields that would explain the refusal, so the
-   * person had no way to learn what they had missed.
-   *
-   * The gate was right. The second, hand-shortened copy of the lifecycle was wrong —
-   * and a second hand-written copy of a contract is exactly what drifted when the
-   * insights surface disagreed with the CLI about what a node is.
-   *
-   * These two assertions are the cheapest thing that keeps the copies honest: the
-   * field names come from the server's own required output schema, so a prompt
-   * cannot again promise a write while staying silent about what authorizes one.
+   * A prompt that names the write tools must name the fields that authorize them, taken from the
+   * server's required output schema, since acceptance binds to a generated plan digest.
    */
   it("쓰기 도구를 부르는 프롬프트는 그 쓰기를 허가하는 필드도 말한다", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });

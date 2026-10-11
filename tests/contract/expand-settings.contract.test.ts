@@ -87,10 +87,8 @@ const chipInput = (over: Partial<Parameters<typeof clusterChipOccupancyRect>[0]>
 
 describe("확장 설정 — 기본값", () => {
   /**
-   * **Owner decision 2026-08-01: the default affordance is the overhead bar.**
-   * This single value is the only one that deliberately changes today's screen. If
-   * it quietly reverts the decision is gone, so it is pinned here (background and
-   * falsifier: `docs/DECISIONS.md`).
+   * The default affordance is the overhead bar. It is the one default that deliberately changes the
+   * screen, so it is pinned (`docs/DECISIONS.md`).
    */
   it("설정을 안 건드린 사람은 「머리 위 막대」를 받는다", () => {
     expect(DEFAULT_EXPAND.affordance).toBe("bar");
@@ -101,10 +99,8 @@ describe("확장 설정 — 기본값", () => {
   });
 
   /**
-   * **Two defaults change the screen** — the affordance (bar) and the layout (fan).
-   * Owner decisions 2026-08-01 and 08-02. The three numbers must stay at their
-   * pre-existing constants: moving those too makes it impossible to tell what caused
-   * a screen to change.
+   * Two defaults change the screen: the affordance (bar) and the layout (fan). The three numbers stay
+   * at their existing constants, else the cause of a screen change cannot be told.
    */
   it("화면을 바꾸는 기본값은 어포던스와 배치 둘뿐이다", () => {
     expect(DEFAULT_EXPAND.affordance).toBe("bar");
@@ -115,11 +111,8 @@ describe("확장 설정 — 기본값", () => {
   });
 
   /**
-   * **`disc` stays because it is the way back.** With fan as the default, the
-   * spiral disc became the only value that restores the previous screen — if the
-   * falsifier is observed, that is where it returns to (`docs/DECISIONS.md`
-   * 2026-08-02). Removing it from the list turns that reversal into a code
-   * change.
+   * `disc` stays selectable because it is the way back to the previous layout; removing it turns that
+   * reversal into a code change (`docs/DECISIONS.md`).
    */
   it("종전 배치(나선 원반)는 선택지로 남아 있다", () => {
     expect(EXPAND_STRUCTURES).toContain<ExpandStructure>("disc");
@@ -188,15 +181,8 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     expect(new Set(centers).size, `셋이 같은 자리다: ${centers.join(" / ")}`).toBe(3);
 
     const [pill, bar, badge] = rects;
-    // **The bar has no empty width.** The pill seats a `＋` in a 14px leading glyph
-    // zone; the bar draws nothing there — it once inherited that zone verbatim and
-    // carried width with nothing drawn in it (measured 2026-08-02).
-    //
-    // The assertion must not be "narrower than the pill": once the bar became a text
-    // button, longer copy makes that inequality a function of the copy, so it would
-    // measure **the language rather than the empty width** (it already inverts on the
-    // Korean 「Expand All」). So the empty width is measured directly — the plate's
-    // width is *exactly* text width plus horizontal padding.
+    // The bar draws nothing in the pill's leading glyph zone. Assert the plate width is exactly text width
+    // plus horizontal padding, not 'narrower than the pill', which would measure the language.
     const barLabel = clusterBarLabel({ expanded: false, count: 31, batchSize: 24, labels: KO_BAR_LABELS });
     expect(bar.w, "막대에 그리는 것 없는 폭이 생겼다").toBeCloseTo(
       estimateCanvasTextWidth(barLabel, 12) + 20,
@@ -258,14 +244,8 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
    * visible but unclickable.
    */
   /**
-   * **What cannot dock does not disappear; it stays in an undocked form** — defect
-   * measured 2026-08-02.
-   *
-   * The batch-reveal `+N more` chip has a synthetic string as its parent id, so no
-   * such node exists in the graph (this is structural — a synthetic id maps 1:1 to a
-   * real parent but is not a node). After docking became the default, this chip was
-   * **neither drawn nor clickable**, leaving anyone who lowered "how many open at
-   * once" with no way to open the rest.
+   * What cannot dock stays in an undocked form: the `+N more` chip has a synthetic parent id with no
+   * node in the graph, so docking would leave it neither drawn nor clickable.
    */
   it("부모 좌표를 모르면 도킹 형태 대신 알약으로 남는다 — 사라지지 않는다", () => {
     for (const affordance of ["bar", "badge"] as const) {
@@ -417,10 +397,8 @@ describe("확장 구조 — 자식 좌표가 실제로 바뀐다", () => {
   });
 
   /**
-   * A call passing no option must equal **the default (fan)** — otherwise call
-   * sites unaware of the setting (pure functions, tests, future consumers) draw a
-   * different map. This pairing moved with the default when it changed from `disc`
-   * to `fan` on 2026-08-02.
+   * A call passing no option must equal the default (fan), else call sites unaware of the setting draw
+   * a different map.
    */
   it("옵션을 안 넘기면 기본값 배치가 나온다", () => {
     const withOption = computeConcentricLayout(nodes, rings, {
@@ -610,19 +588,8 @@ describe("그려진 것 — 기본값에서 지도에 서는 것은 「머리 �
 });
 
 /**
- * Controls attached to one node use **different compass points** — prescription
- * measured 2026-08-02.
- *
- * Measured (1512×982, sample vault "Marketing"): **80% of the shoulder badge
- * (513px²)** sat under the orbit "show only this" button, and
- * `document.elementFromPoint(badge centre)` returned that button — the badge was
- * never clickable. The default overhead bar had 80px² of its bottom-right corner
- * caught too. One cause for both: **they were both at upper-right 45°**.
- *
- * So this test locks not "they do not overlap on today's screen" but **they do
- * not overlap at any radius or any zoom**. That is exactly the difference between
- * this rule and the patch of enlarging one value until this particular screen
- * separates.
+ * Controls on one node use different compass points so they cannot overlap at any radius or zoom,
+ * rather than separating one value on today's screen.
  */
 describe("노드 컨트롤 방위 — 막대·배지·궤도 버튼이 자리를 안 다툰다", () => {
   const overlapArea = (
@@ -675,12 +642,8 @@ describe("노드 컨트롤 방위 — 막대·배지·궤도 버튼이 자리를
 });
 
 /**
- * **Deep links take the user's cap too** — defect measured 2026-08-02.
- *
- * `?open=` parsing is a pure function unaware of settings, so it used the default
- * of 3. A screen with "parents open at once" lowered to 1 therefore expanded three
- * parents from one link (measured: 82 nodes where it should have been 51). A cap
- * honoured only on the click path is not a cap.
+ * Deep links take the user's cap too: `?open=` parsing is a pure function unaware of settings, so it
+ * must receive the cap or one link expands more parents than allowed.
  */
 describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () => {
   it("상한을 넘긴 목록은 뒤쪽만 남는다", () => {
@@ -701,18 +664,9 @@ describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () 
 });
 
 /**
- * **A bar is only a bar if it is a text button** — owner report 2026-08-02:
- * *"The overhead bar seems slightly different, but it is no different from the overhead badge."*
- * (the overhead bar
- * seems slightly different, but it is no different from the overhead badge).
- *
- * The prototype separates the three by more than position: the floating pill is
- * "empty space away from the node + a dotted tether", the shoulder badge is "a
- * small circle that speaks on hover", and the overhead bar is "directly above the
- * selected node + **a text button** + a number saying how many will open". The
- * implementation ported only the position and the selection gating and still drew
- * just `+N`, leaving "a small mark near the node" — identical to the badge. The
- * owner's reading was exact.
+ * A bar is only a bar if it is a text button: the pill, shoulder badge and overhead bar differ by more
+ * than position. The bar sits directly above the selected node with a verb and a number saying how
+ * many will open.
  */
 describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
   it("접히면 동사를 말하고, 펼쳐지면 되돌리는 동사를 말한다", () => {
@@ -787,14 +741,9 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
   });
 
   /**
-   * **Two controls, two scopes, two names** (map round, 2026-09-20).
-   *
-   * The map toolbar's button opens **every** folded node and refits the view; the
-   * bar over a selected parent opens **that parent's** children. In English both
-   * said the literal words "Expand all", and in Korean two synonyms of it. The
-   * bar now says the bare verb, the mirror of its own Collapse, so the words
-   * with "all" belong to the toolbar alone. The count still appears only when
-   * the batch is smaller than the fold (the 2026-08-02 ledger decision).
+   * Two controls, two scopes, two names: the toolbar button opens every folded node; the bar over a
+   * selected parent opens that parent's children and says the bare verb. The count appears only when
+   * the batch is smaller than the fold.
    */
   it("칩 바는 펼칠 개수를 말한다 — 「전체 펼치기」는 도구 막대 하나뿐", () => {
     // One press opens everything left: the bare verb, no number (the node engraves it).

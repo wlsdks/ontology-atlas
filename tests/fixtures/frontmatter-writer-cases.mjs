@@ -1,15 +1,8 @@
 export const WRITER_CASES = [
   {
     /*
-     * ⚠️ **A newline destroys frontmatter** (review 2026-08-16, reproduced).
-     *
-     * When the writer emits a raw newline, the next line is read as a new key — a
-     * `kind: element` inside a `note` value **changed the node's kind**. A `---` inside a
-     * value ends the frontmatter there and drops the remaining keys into the body. No
-     * warning is produced.
-     *
-     * Quoting alone cannot prevent it (the line is already broken). It is folded to
-     * `\n` and the reader restores it.
+     * A raw newline in a value breaks frontmatter: the next line reads as a new key and `---` ends the
+     * block. Quoting cannot prevent it, so newlines fold to a backslash-n escape that the reader restores.
      */
     name: 'newlines fold into \\n instead of breaking the block',
     input: {
@@ -107,12 +100,8 @@ export const WRITER_CASES = [
   },
   {
     /*
-     * Bug sweep 2026-09-01, reproduced: with the plain `|-` header the reader
-     * took its base indent from the first non-blank line, so a value whose first
-     * line has its own leading whitespace re-read with a deeper base and every
-     * later line escaped the scalar into the top-level loop (`kind: capability`
-     * inside a description changed the node's kind). The writer must emit the
-     * explicit indentation indicator for exactly these values.
+     * With a plain `|-` header the reader takes its base indent from the first non-blank line, so such
+     * values need the explicit indentation indicator.
      */
     name: 'first-line leading whitespace gets an explicit indentation indicator',
     input: {
@@ -133,10 +122,8 @@ export const WRITER_CASES = [
   },
   {
     /*
-     * Bug sweep 2026-09-01: an unquoted 'true' or '2026' re-read as a
-     * boolean/number, and consumers gating on typeof string (buildMdEntry's
-     * title, readDisplayLocales) silently dropped the value after one round
-     * trip. Strings the reader would re-type are now written quoted.
+     * Strings the reader would re-type as boolean or number are written quoted, or typeof-string consumers
+     * drop them after one round trip.
      */
     name: 'quotes strings the reader would re-type as boolean or number',
     input: {

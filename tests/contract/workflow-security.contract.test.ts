@@ -3,16 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Gates against the paths by which an open-source repository loses its CI
- * credentials.
- *
- * This repository is public and its signing and notarisation credentials live in
- * Actions secrets. Anyone can read the code; nobody can read the secrets — and what
- * keeps that boundary is **how the workflows are written**. The three below are the
- * known ways it collapses, and all three are easy to miss in review (they open with
- * one line of YAML, not a setting).
- *
- * Baseline measured 2026-07-27: 0 violations. From here this blocks new ones.
+ * Gates against the paths by which a public repository loses its CI credentials: signing and
+ * notarisation secrets live in Actions secrets, and the boundary is how the workflows are written.
  */
 
 const WORKFLOW_DIR = join(process.cwd(), ".github/workflows");
@@ -548,26 +540,9 @@ describe("워크플로 보안 계약", () => {
 });
 
 /**
- * The landing contract, as YAML (2026-09-12).
- *
- * Two settings and four workflows have to agree, and none of them can see the
- * others. `main` requires eight status contexts; a pull request is opened as a
- * draft and runs nothing; `pnpm pr:land` merges main in, runs the local lanes
- * and marks it ready, and `ready_for_review` is what fires the one CI run.
- * Remove `ready_for_review` from a trigger and a draft can never run, so every
- * landing waits forever on contexts that will not report. Forget the draft
- * guard on one job and that job burns a runner on every draft push. Both are
- * one line of YAML, and neither shows up in a green pull request.
- *
- * `merge_group` is the same shape in reverse: it is wired for the day this
- * repository belongs to an organization and GitHub's own merge queue becomes
- * available (the queue is org-only, proven 2026-09-12 by a `422 Invalid rule
- * 'merge_queue'` on a ruleset and by `requiresMergeQueue` being absent from
- * this account's GraphQL schema). A required context that never reports on
- * `merge_group` would make a queue that can never merge, so the workflows that
- * produce one carry the trigger. `windows-beta-check.yml` must not: the event
- * supports no `paths` filter, so the trigger would run a 20-minute Windows job
- * on every merge group while gating nothing.
+ * Landing contract as YAML: `ready_for_review` fires the one CI run, so a trigger without it never
+ * runs a draft, and a missing draft guard burns a runner per draft push. `merge_group` is wired for a
+ * future org-only merge queue; `windows-beta-check.yml` must not carry it.
  */
 describe("landing: draft, ready_for_review, and the merge group", () => {
   const all = workflows();

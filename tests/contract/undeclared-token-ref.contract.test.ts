@@ -5,41 +5,9 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
- * Blocks **`var()` calling a token that does not exist** — a gate for the class of
- * defects that break silently.
- *
- * **Why lint cannot do this in principle.** `var(--color-status-warning-a36)` is
- * **a perfectly valid string syntactically**. Whether the token is declared can
- * only be known from a list in *another file* (`app/globals.css`), and
- * `no-restricted-syntax` matches AST selectors within one file and cannot express
- * that verdict. The same reason `type-ramp-step-defined` exists.
- *
- * **What it caught (measured 2026-07-28).** The "cannot start the MCP server"
- * warning card in
- * `src/features/docs-vault-local/ui/AgentClientButtons.tsx` called
- * `--color-status-warning-a36/-a10` and **neither was declared anywhere**. An
- * undefined `var()` becomes invalid at computed-value time, so `border-color`
- * falls back to `currentColor` and `background-color` to `transparent` — the
- * warning card was rendering with none of its warning colour, while passing tsc,
- * eslint, and the full test suite.
- *
- * This is the same family as the `text-large` incident: **something that does not
- * exist leaves no literal either, so it is outside the reach of hardcoded-value
- * checks.**
- *
- * **What counts as "declared."** The union of these sources, all of which really
- * produce a value at runtime:
- * 1. A `--name:` declaration in `app/globals.css`
- * 2. Injection from JS — `setProperty('--name', …)` and `'--name':` in a style object
- * 3. A Tailwind arbitrary **property** declaration — `[--name:value]` (declared on the element)
- * 4. `next/font`'s `variable: '--name'`
- *
- * Both directions read code: a comment neither declares a token nor calls one.
- *
- * **References with a fallback (`var(--x, #08090a)`) are exempt** — the render is
- * defined even without the token, so nothing breaks silently. What this gate
- * blocks is exactly the references whose value disappears when the token is
- * missing.
+ * Blocks `var()` calling a token that does not exist: it becomes invalid at computed-value time and
+ * drops the colour silently. Declared means `--name:` in `app/globals.css`, JS injection, a Tailwind
+ * `[--name:value]` property or `next/font`; references with a fallback are exempt.
  */
 
 const ROOT = process.cwd();

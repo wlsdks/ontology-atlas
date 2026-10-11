@@ -3,30 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The `ontology-atlas://` scheme is registered, and it has exactly one door.
- *
- * ## What this file replaces, and why it is not a deletion
- *
- * `url-scheme-rejected.contract.test.ts` banned OS scheme registration outright, on the
- * 2026-08-24 PO council that refused `ontology-atlas://` 0/24, and its companion record said
- * the scheme "may return only by overturning the council record first". That overturn is the
- * 2026-09-07 record "The installed app answers one address, and it only fills in a form"; this
- * file is the narrowed gate that record leaves behind, renamed so its name states what it now
- * enforces. Renaming rather than deleting keeps the gate — and the reviewer's ability to see it
- * change — instead of trading a checked boundary for a promise.
- *
- * ## What the 2026-08-24 rejection still owns
- *
- * Most of that council's OUT list is untouched and is checked here: **no uid addresses, no node
- * addresses, no second address vocabulary for vault meaning, and no URL that writes or executes
- * anything.** A uid is prohibited as a URL token by `mcp/README.md` and the spec, a uid link is
- * invisible to `findBacklinks` and renders as a dead span in Atlas's own Markdown viewer, and a
- * minted address is the irreversible half — a registration can be withdrawn, an address already
- * written into somebody's notes cannot. So `mcp/` and `cli/` still mint none at all.
- *
- * What was reopened is one narrow thing: a vendor page's "Add to Atlas" button, whose whole
- * effect is that the add-connector form opens with its boxes filled in. Four rules make that
- * survivable, and each is asserted below.
+ * The `ontology-atlas://` scheme has exactly one door: no uid addresses, no node addresses, no second
+ * address vocabulary for vault meaning, and no URL that writes or executes anything. The one door only
+ * opens the add-connector form with its fields filled in.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -137,8 +116,8 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
   });
 
   it('keeps the agent surfaces free of a second address vocabulary', () => {
-    // The council's OUT list bans any second address vocabulary for vault meaning. `mcp/` and
-    // `cli/` are what hand an address to an agent, so a uid or node link would land there first.
+    // `mcp/` and `cli/` are what hand an address to an agent, so a uid or node link would land there
+    // first; they mint no second address vocabulary.
     for (const file of [...sourceFiles('mcp/src'), ...sourceFiles('cli/src')]) {
       expect(
         readFileSync(file, 'utf8'),

@@ -4,31 +4,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Dialog adoption ratchet — **`role="dialog"` outside the primitive can never
- * exceed the ledger.**
- *
- * **Why** (ratified by the design-system seat 2026-08-15,
- * docs/DECISIONS.md). 26 places across 23 files were each assembling modality
- * themselves: 5 different scrim tokens, 8 hardcoded widths, a focus trap actually
- * present in only 8 of 20 places declaring aria-modal, and 2 aria-modals with
- * neither scrim nor trap. The answer is `src/shared/ui/dialog.tsx`. This ratchet
- * makes **new files use the primitive from day one** and holds existing debt so
- * it can only fall.
- *
- * **Why a contract test and not lint.** The verdict is "how many across the whole
- * repository", which no single-file AST selector can count — exactly the ratchet
- * row in design.md's "layer lint cannot see". And it **walks all of src/** rather
- * than a hand-written file list, because a hand list is the path that let
- * surface-motion-ratchet sit green on an empty list.
- *
- * **The scanner's reach.**
- *
- * - Comments are stripped before counting (avoiding the icon ratchet's defect of
- *   counting prose comments as values).
- * - Occurrences **inside a selector string** such as `[role="dialog"]` are not
- *   markup — that is code looking for the surface, not the surface itself
- *   (route-focus-manager).
- * - `src/shared/ui/dialog.tsx` itself is the source of truth and is excluded.
+ * `role=dialog` outside the primitive can never exceed the ledger. Walks all of `src/` because a
+ * hand list can sit green on nothing. Comments and selector strings like `[role=dialog]` are not
+ * markup; `src/shared/ui/dialog.tsx` is the source of truth and excluded.
  */
 
 const ROOT = process.cwd();
@@ -114,18 +92,7 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
   ],
 ];
 
-/**
- * **Debt** — to be repaid. It turns red if the count rises, and the row is
- * deleted when it reaches 0. Repayment order (the design-system seat's prescription):
- * ProjectDrawer (the only remaining modal-without-modality) → the 7
- * backdrop-medium files (scrim convergence, after the hierarchy seat approves) → the 3
- * palettes (together with registering `variant="palette"`).
- *
- * Founding inventory 2026-08-15: of 26 places across 23 files, the first three
- * consumers (NewDocKindDialog, StudioMaterializeDialog, StudioPracticeCleanup)
- * migrated in the same PR, leaving the 17 files / 17 places below (plus 1 Radix
- * case outside the scanner's view).
- */
+/** Debt to repay: red if the count rises; a row is deleted when it reaches 0. */
 /*
  * GlobalSearch is absent here — its modality is composed by Radix, so no
  * `role="dialog"` markup string exists in the source and it is outside this
@@ -141,9 +108,8 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx", 1],
   ["src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
-  // 2026-08-21 — that sheet was retired (ledger entry 90). Recovered rows are
-  // deleted from the ledger: holding a file that no longer exists lets a "decrease"
-  // be achieved by a move or rename alone, which loosens the ratchet.
+  // Rows for files that no longer exist are deleted: holding them lets a decrease be achieved by a
+  // move or rename alone, loosening the ratchet.
   ["src/widgets/docs-vault/ui/DocsVaultUnifiedPalette.tsx", 1],
   ["src/widgets/search-palette/ui/SearchPalette.tsx", 1],
   ["src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx", 1],
@@ -162,15 +128,9 @@ describe("Dialog 채택 래칫", () => {
     // If the source of truth disappears (a rename, say), this whole ratchet loses its target.
     const primitive = readFileSync(path.join(ROOT, PRIMITIVE), "utf8");
     /*
-     * ⚠️ **The primitive stopped writing the role as a literal on 2026-09-05** and now passes a
-     * prop, because a confirmation that names what it is about to destroy is `alertdialog` in the
-     * APG and the alternative was a consumer hand-building a modal to get one attribute.
-     *
-     * So what the anti-idle check asks for is unchanged in substance — **does the primitive still
-     * own the role** — and is asked of the shape it now has: it must default the prop to
-     * `dialog`, offer only `dialog | alertdialog`, and put the prop on the element. A rename
-     * still empties all three and kills this ratchet loudly, which is the whole point of the
-     * check.
+     * The primitive passes the role as a prop (`alertdialog` for confirmations). Anti-idle check: it must
+     * default the prop to `dialog`, offer only `dialog | alertdialog`, and put the prop on the element;
+     * a rename empties all three and kills this ratchet loudly.
      */
     expect(
       primitive.includes('role = "dialog"'),

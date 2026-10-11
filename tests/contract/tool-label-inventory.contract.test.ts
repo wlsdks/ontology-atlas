@@ -10,17 +10,8 @@ import {
 import { TOOLS_FOR_LIST } from '../../mcp/src/server/registry.mjs';
 
 /**
- * **Every tool our own server advertises reads as words in the transcript.**
- *
- * `tool-label.ts` exists because the conversation was printing function names at people —
- * `Run mcp__atlas-vault__list_concepts`. It fixed fifteen of them, and then the server grew to
- * forty while the table stood still, so on 2026-09-19 the rendered dock was again showing
- * `read_source`, `compile_ontology`, `validate_wiki`, `delete_concept` and twenty-one more.
- *
- * ⚠️ **The subject list is the server's own, not a list written here.** A gate that checks a
- * hand-kept list of tools against a hand-kept table of labels is two copies of the same mistake,
- * and it passes on the day someone adds a tool to neither. `TOOLS_FOR_LIST` is what the server
- * answers `tools/list` with, so a new tool arrives in this test the moment it arrives on the wire.
+ * The subject list is the server's own (`TOOLS_FOR_LIST`), not hand-kept, so a new tool arrives here
+ * the moment it arrives on the wire.
  */
 const ADVERTISED: string[] = (TOOLS_FOR_LIST as Array<{ name: string }>).map((tool) => tool.name);
 

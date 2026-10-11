@@ -7,54 +7,13 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 import { judgeRatchet } from "./lib/ratchet-base";
 
 /**
- * **Hover axis adoption ratchet** — hand-written hovers can never grow
- * (2026-08-15, ledger 11).
- *
- * **Why this ratchet is born in the same PR as the axis.** This repository's
- * post-mortems are unambiguous: `Card`, `Badge`, and `DetailCard` all died with
- * **zero consumers**, and the cause of death was not the component but **a
- * component without a gate**. Everything alive today (Dialog, Checkbox,
- * SegmentedControl, badgeClass) shipped **migration and ratchet in the same
- * round**. An axis is no different — build the axis without the gate and the next
- * person simply hand-writes it.
- *
- * **What is counted.** Hand-written hover declarations (`hover:text-`,
- * `hover:bg-`, `hover:border-`) **inside a `controlClass({ … })` call block**.
- * Outside a call (native elements, hoisted constants) is **not this ratchet's
- * jurisdiction** — those places never went through the value layer at all, so the
- * debt is not "did not use the axis" but "this control is outside the value
- * layer", which belongs to `control-adoption-ratchet`.
- *
- * **The unit is a declaration, not a file.** Ledger entry 9 of 2026-08-15 learned
- * that from a probe: counting per file left a file with two of them green after
- * reverting one. **A ratchet whose unit is coarser than the defect's misses that
- * much.**
- *
- * **Why today's number is large — most places the axis does not cover.** The axis
- * carries only the measured majority (2 ink steps, 1 surface, 1 border). Of the
- * remaining 387, most are ⓐ indigo-family hovers (an axis the value layer
- * deliberately lacks — tint steps are a hierarchy call), ⓑ conditional or `active`
- * places (each needing its own guard decision), and ⓒ steps whose value differs
- * from the axis. **Reaching 0 is not the goal** — not growing is, and when it
- * falls the floor comes down.
+ * Hand-written hover declarations inside a `controlClass({ ... })` call block may not grow; the
+ * unit is a declaration, not a file, since a coarser unit misses that much.
  */
 
 /**
- * **Judged against the change's merge base, not a literal** (2026-09-26).
- *
- * This file used to hold `CEILING` plus a dated line for every fall, and the literal
- * changed in 21 of its 22 commits, ten of them in the two weeks before the conversion.
- * Parallel branches that each migrated a hover conflicted on that line and on the
- * history paragraph above it. Now the census runs on the working tree and again on the
- * merge-base tree (`tests/contract/lib/ratchet-base.ts`), and only growth fails. A fall
- * is banked by the next branch's base without anyone writing it down; the history of
- * falls is in this file's Git history.
- *
- * A hover that must be hand-written, with a reason the axis cannot carry, is a
- * `tests/contract/ratchet-raises/hand-hover-declarations/<slug>.json` record.
- *
- * 280 is the measurement at conversion. It is never edited: it serves a clone with no
- * merge base, and is a floor for a tree compared with itself.
+ * Judged against the merge base (`tests/contract/lib/ratchet-base.ts`); only growth fails.
+ * `FALLBACK_CEILING` serves a clone with no merge base and is never edited.
  */
 const FALLBACK_CEILING = 280;
 

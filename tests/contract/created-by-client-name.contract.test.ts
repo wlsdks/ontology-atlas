@@ -5,13 +5,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `created_by` names the connecting client (2026-09-07).
- *
- * The authorship stamp and the activity log resolve one identity: the heartbeat in
- * `.ontology-atlas/agent-activity.json` first, otherwise the `clientInfo.name` the MCP
- * client sent in its connect greeting. Before this, a node written from the app's own
- * agent conversation said `agent:unknown` while the log beside it said `claude-code`.
- * The proof is the real server over stdio, not the primitive it wraps.
+ * `created_by` names the connecting client: the heartbeat in `.ontology-atlas/agent-activity.json`,
+ * else the `clientInfo.name` sent at connect. The proof is the real server over stdio.
  */
 function addConcept(vaultRoot: string, clientName: string, args: Record<string, unknown>) {
   const script = `

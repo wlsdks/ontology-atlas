@@ -4,10 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { HERO_SPLIT_MIN_WIDTH_REM } from '../../src/views/download/ui/HeroObject';
 
 /**
- * The hero's split width is one number (council, 2026-09-02). `HeroObject` reads it through
- * `matchMedia`; `DownloadPage` and the caption spell it as Tailwind `min-[Nrem]:` variants, which
- * no lint compares to the constant. This test does: every `min-[…rem]:` in the two files carries
- * the constant's value, and there is no stray `xl:` left on the sites the split owns.
+ * `HeroObject` reads the split width through `matchMedia`; the Tailwind `min-[Nrem]:` variants
+ * in the two files must carry the same value as the constant.
  */
 const root = join(import.meta.dirname, '..', '..');
 const files = ['src/views/download/ui/DownloadPage.tsx', 'src/views/download/ui/HeroObject.tsx'];

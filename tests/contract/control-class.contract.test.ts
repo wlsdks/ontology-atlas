@@ -12,18 +12,7 @@ import {
 } from '@/shared/ui/control-class';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
-/**
- * The contract for `controlClass`.
- *
- * **Without this file the function is worthless.** Moving hand-written classNames
- * behind a function only gathers the off-ramp values into one place; they are
- * still off-ramp values. The single reason this function beats writing them by
- * hand is that **every value it emits is forced onto a ramp**, and this file is
- * that enforcement.
- *
- * Evidence: the 300+ off-ramp values found by the 2026-08-03 design-system audit
- * all came from places written by hand because no component existed.
- */
+/** Every value `controlClass` emits is forced onto a ramp; this file is that enforcement. */
 
 const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile', 'segment'];
 const SIZES: ControlSize[] = ['xs', 'sm', 'md', 'lg'];
@@ -59,7 +48,7 @@ const all = (fn: (s: ControlShape, z: ControlSize, t: ControlTone, a: boolean) =
   for (const s of SHAPES) for (const z of SIZES) for (const t of TONES) for (const a of [true, false]) fn(s, z, t, a);
 };
 
-/** The same exhaustive sweep plus the `scope` axis — used to check that a new axis does not leak off the ramp. */
+/** The same exhaustive sweep plus the `scope` axis, checking a new axis does not leak off the ramp. */
 const allScoped = (fn: (cls: string, label: string) => void) => {
   for (const s of SHAPES)
     for (const z of SIZES)
@@ -88,9 +77,8 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
   });
 
   it('폰트 크기는 등록된 타입 램프 스텝만 쓴다', () => {
-    // An undefined step **leaves no literal behind** — Tailwind simply does not emit
-    // the class and it renders at the root 16px, which puts it outside the
-    // hardcoded-value check's field of view (measured 2026-07-27).
+    // An undefined step leaves no literal behind: Tailwind emits no class and the text renders at the
+    // root 16px, outside the hardcoded-value check's view.
     const offenders: string[] = [];
     all((shape, size, tone, active) => {
       for (const c of controlClass({ shape, size, tone, active }).split(' ')) {
@@ -171,18 +159,8 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
 
   it('칩·필의 `md`·`lg` 는 사다리 위에 선다 — `sm` 만 24px 바닥에 남는다', () => {
     /*
-     * **An inverted assertion** (owner decision 2026-08-03 · `docs/DECISIONS.md`).
-     *
-     * The assertion here used to be **"by default, padding decides the height"**
-     * (`expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/)`). That rule
-     * produced chip 24/30/34 and pill 20/22/30, and **30 · 34 · 22 · 20 are not in
-     * this app's height vocabulary**. When those values collided with the contract
-     * (32), an exception axis (`fixedHeight`) was bolted on instead of fixing the
-     * values — the axis was a symptom.
-     *
-     * So the rule is inverted: **the ladder decides the height and padding follows
-     * inside it.** `md` and `lg` stand on `--control-h-md` (32px); only `sm` stays at
-     * the WCAG 2.5.8 minimum target of 24px.
+     * The ladder decides the height and padding follows inside it: `md` and `lg` stand on
+     * `--control-h-md` (32px); only `sm` stays at the WCAG 2.5.8 minimum target of 24px.
      */
     for (const shape of ['chip', 'pill'] as const) {
       for (const size of ['md', 'lg'] as const) {
@@ -218,9 +196,6 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
   });
 
   it('세로 타일은 아이콘 위·글자 아래다 — 가로 모양들과 축이 다르다', () => {
-    // A hole the 2026-08-03 normalisation found: all six shapes were horizontal, so
-    // 5 vertical action tiles sat outside the system. The inventory had counted
-    // "shape" along one axis only.
     const cls = controlClass({ shape: 'tile' });
     expect(cls).toContain('flex-col');
     expect(cls).toContain('text-center');
@@ -332,11 +307,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * this test must turn red and say to delete it.
      */
     /*
-     * It was four until 2026-08-03. Raising the global quaternary (#787c84 →
-     * #82828a, docs/DECISIONS.md) made quaternary **converge to the same value** in
-     * both ramps; this test turned red as designed and that step's panel compound was
-     * deleted. So the axis now remaps three steps, and each of the three has its own
-     * evidence that the values really differ.
+     * A step whose values are identical in both ramps makes the axis a no-op, so this must fail and say
+     * to delete the compound for that step.
      */
     const DIVERGING_STEPS = ['primary', 'secondary', 'tertiary'] as const;
     const pairs: Array<[string, string]> = [];
@@ -368,17 +340,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('quaternary 는 수렴 상태로 고정한다 — 다시 갈라지면 panel 컴파운드를 되살려야 한다', () => {
     /*
-     * The mirror of the test above. On 2026-08-03 quaternary converged to `#82828a`
-     * in both ramps and the panel compound was deleted. The value is now written in
-     * two places, but **this pin catches the drift mechanically** — the reason they
-     * were not merged behind an alias var() is that `prefers-contrast: more` raises
-     * only the global quaternary to #8f95a0, and under an alias quaternary would at
-     * that moment **invert above** tertiary (#868690) in the panel ladder. Evidence:
-     * docs/DECISIONS.md, 2026-08-03 quaternary entry.
-     *
-     * Without this test two failures are silent: ① only one value moves, they diverge
-     * again, and with no remap `muted` on a panel emits the wrong ink; ② the compound
-     * is resurrected without evidence. Both turn red here.
+     * Quaternary is pinned as converged in both ramps. It is not an alias `var()`: `prefers-contrast:
+     * more` raises only the global quaternary, which would invert it above tertiary in the panel ladder.
      */
     const app = cssVar('--color-text-quaternary');
     const panel = cssVar('--map-panel-text-quaternary');
@@ -424,11 +387,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
   });
 
   it('`scope` 가 실제로 무언가를 바꾼다 — 값이 갈리는 무채 단은 패널에서 다른 잉크다', () => {
-    // The test above only checks "nothing changes", so without this one the axis
-    // could be turned into a complete no-op and both would stay green. `muted` is not
-    // here — its remap was deleted by the 2026-08-03 quaternary convergence, and that
-    // state is caught from the other direction by the test pinning quaternary as
-    // converged.
+    // Without this the axis could become a complete no-op with the test above still green. `muted` is
+    // excluded because it has no remap (quaternary is pinned converged).
     for (const tone of ['default', 'secondary', 'strong'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
@@ -508,39 +468,9 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('가로 한 줄 모양 전 조합이 명시 높이를 선언하고, 그 값은 높이 어휘 안이다', () => {
     /*
-     * **The other half of #884** (second exhaustive count, 2026-08-03 · system seat).
-     *
-     * The ladder restoration had stopped at chips and pills. What the second count
-     * found:
-     *
-     * | Combination | Value | Consumers |
-     * |---|---:|---:|
-     * | segment/sm | 22px — below the WCAG 2.5.8 (24×24) floor | 0 |
-     * | row/lg | 42px — outside the height vocabulary | 0 |
-     * | card/sm | 30px — outside the vocabulary | 15 |
-     * | card/md | 34px — coincidentally occupying a chrome-locked step (`--docs-header-tile-size`) | 5 |
-     *
-     * All four are by-products of "padding decides the height". Asserting one
-     * combination at a time would let the next shape slip out again, so the verdict is
-     * raised to **a gate over the whole family**: every combination of the
-     * single-row horizontal shapes (chip · pill · segment · row · card) must declare
-     * an explicit `min-h-*`, the square shape (icon) an `h-*`, and the pixel value
-     * must be inside the height vocabulary.
-     *
-     * The vocabulary is not written by hand — it is derived by reading
-     * `--control-h-{sm,md,lg}`, `--chrome-tile-size`, and `--touch-target-min` from
-     * the CSS and adding the WCAG floor of 24. If a token moves, this turns red with
-     * it.
-     *
-     * (The 34 that card/md occupied in the table above was then a separate token,
-     * `--docs-header-tile-size`. That token was deleted on 2026-08-03 and the docs
-     * header tile moved onto `--chrome-tile-size` (36) — 34 is now no token's value at
-     * all, simply outside the vocabulary. Ledger: 2026-08-03 「Tile dimensions are one」
-     * (there is one tile dimension).)
-     *
-     * `link` (floor 24 — see the test above) and `tile` (two vertical axes, content
-     * decides the height) are not covered by this gate; each is locked by its own test
-     * above.
+     * Every single-row horizontal shape (chip, pill, segment, row, card) declares an explicit `min-h-*`,
+     * icon an `h-*`, and the px value is inside the height vocabulary, derived from
+     * `--control-h-{sm,md,lg}`, `--chrome-tile-size`, `--touch-target-min` and the WCAG floor of 24.
      */
     const WCAG_TARGET_FLOOR_PX = 24;
     const tokenPx = (name: string): number => {
@@ -594,17 +524,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('마이크로 티어는 칩에서만 실재한다 — 다른 모양의 `xs` 는 `sm` 의 별칭이다', () => {
     /*
-     * **Why an alias** (2026-08-03, system seat).
-     *
-     * "There is no step below sm" is a hole the ratchet ledger recorded three rounds
-     * running, and the measured consumers (micro command tags · px-1.5 py-0.5 · 9px
-     * mono · radius 4px) were all **chip-shaped**. The cva size axis is a type shared
-     * across shapes, so adding a step gives it to all eight shapes — and outside chips
-     * there is no consumer for `xs`. Rather than invent a value with zero consumers it
-     * stays an alias for `sm` (the same idiom as the `true`=`md` alias #884 left
-     * behind). When a micro-tier consumer is measured outside chips, the alias is
-     * unwound and a real value is defined; this test makes that moment an explicit
-     * decision.
+     * `xs` is an alias for `sm` outside chips: the size axis is shared across shapes and only chips have
+     * a micro-tier consumer. Unwinding the alias must be an explicit decision.
      */
     for (const shape of SHAPES.filter((sh) => sh !== 'chip')) {
       expect(
@@ -666,14 +587,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 
   it('신호 톤의 잉크는 글자 역할 토큰이다 — success 가 신호색이면 소비처가 램프 밖에 남는다', () => {
     /*
-     * Locks the 2026-08-03 correction. danger (`--color-danger-text`) and success
-     * (`--color-success-text-a94`) are text roles — a signal colour (#32b97d and the
-     * like) belongs to dots and borders, not to ink inside a sentence. While success
-     * was a signal token this tone had 0 real consumers.
-     * warning is still a signal token (`--color-status-warning`): its single consumer
-     * is correct on that value, and convergence with the amber text idiom
-     * (amber-source-a90) was left as a separate verdict together with an inventory. If
-     * that convergence is decided, fix this test with it.
+     * Danger and success tones use text-role tokens; a signal colour belongs to dots and borders, not ink
+     * in a sentence. `warning` still uses the signal token `--color-status-warning`.
      */
     expect(controlClass({ shape: 'chip', tone: 'success' })).toContain('--color-success-text-a94');
     expect(controlClass({ shape: 'chip', tone: 'danger' })).toContain('--color-danger-text');
@@ -739,17 +654,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
 });
 
 /**
- * **Three hover axes** (2026-08-15, ledger entry 11).
- *
- * What this file's long-standing rule that "hover is the consumer's job" actually
- * produced, measured: **752 hover declarations across 511 places in 129 files**,
- * with different ink sets for the same role. It was not a discipline but a
- * **vacancy** — the third such finding after `DISABLED` (2026-08-03) and `FOCUS`
- * (08-05).
- *
- * lint cannot lock this: the thing being judged is **the result string cva
- * composes**, so the code holds only keys like `hoverInk: 'strong'` and the values
- * are joined at run time.
+ * Hover is composed by cva at run time from keys like `hoverInk: 'strong'`, so lint cannot see it;
+ * the contract judges the resulting string.
  */
 describe('호버 축 — 값 층이 내는 결과 문자열', () => {
   const hovers = (s: string) => s.split(' ').filter((c) => c.startsWith('hover:'));
@@ -804,9 +710,8 @@ describe('호버 축 — 값 층이 내는 결과 문자열', () => {
 
   it('골라진 것은 호버를 안 받는다 — 「곧」과 「지금」이 같은 말을 하면 안 된다', () => {
     /*
-     * Measured (2026-08-15, ledger entry 10): where they overlapped, hover covered the
-     * selection border and **weakened** it from 2.09 to 1.48. Consumers were writing
-     * that guard by hand every time; this key absorbs it structurally.
+     * Hover over a selected item's border weakens it, so selected items take no hover; the key absorbs
+     * a guard consumers used to write by hand.
      */
     for (const v of [
       { hoverInk: 'strong' },

@@ -7,31 +7,9 @@ import { FONT_WEIGHT } from '../../src/shared/ui/font-weight';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Type values on drawing surfaces** — canvas `ctx.font` and inline SVG attributes.
- *
- * **Why this gate is required (measured 2026-08-05).** After closing the weight axis
- * everywhere in the DOM (#942, #947) and confirming "0 off-ramp" by on-screen
- * measurement, **two layers were still off the ramp**:
- *
- * | Layer | What | Why nobody saw it |
- * |---|---|---|
- * | canvas | `ctx.font = \`600 …\`` in 4 places | numbers interpolated into a **template string** inside `.ts` — out of range for both the lint selector (className) and the ramp ratchet (`.tsx` utilities) |
- * | inline SVG | `fontSize={10}` · `fontWeight={600}` | **JSX attributes**, so there is no class string |
- *
- * A DOM sweep cannot catch them either — canvas leaves no text in the DOM, and the
- * SVG renders on exactly one route (`/ko/project/storefront/`), so its existence is
- * invisible until that route is opened.
- *
- * **They had already diverged within one layer**: `footprint-glyph.ts` used `650`
- * (on the ramp) while the other four used `600` (off it).
- *
- * **What it enforces:**
- *
- * 1. CSS ↔ JS mirror agreement (`--font-weight-*` ↔ `FONT_WEIGHT`).
- * 2. **No weight literal** in a canvas `ctx.font` — reference `FONT_WEIGHT`.
- * 3. **No `fontSize`/`fontWeight` attributes** on inline SVG — passing them via
- *    `className` makes CSS apply to SVG `<text>` too, which puts them inside the
- *    range of the existing lint rules and ratchets.
+ * Type values on drawing surfaces escape the lint selector and ramp ratchet (template-string numbers,
+ * JSX attributes). Enforces CSS/JS mirror agreement (`--font-weight-*` and `FONT_WEIGHT`), no weight
+ * literal in `ctx.font`, and no `fontSize`/`fontWeight` attributes on inline SVG (use `className`).
  */
 
 const ROOT = process.cwd();

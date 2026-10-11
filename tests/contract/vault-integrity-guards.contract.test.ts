@@ -27,23 +27,9 @@ import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/
 import { walkMd as cliWalkMd } from "../../cli/src/lib/walk-vault.mjs";
 
 /**
- * **Vault integrity — every case here looks valid when you read one file, so a
- * per-file check cannot catch it.**
- *
- * All were reproduced by the 2026-07-29 sweep, and all touch user data directly.
- *
- * ## Why the functions are called directly instead of running the CLI
- *
- * The first version ran the real CLI via `execFileSync`. It passed locally and six
- * cases died in CI with `mcp exited code 1 while calling query_ontology` —
- * `compile`, `overview`, and `relate` **spawn the MCP server as a child process**,
- * and that runtime is not guaranteed in the contract job.
- *
- * When a contract test depends on two process layers and their environment
- * variables, what it catches is **the CI environment**, not a defect. Every contract
- * guarded here lives in the pure-function layer (path resolution, slug
- * normalisation, node selection), so that layer is called directly. A real CLI round
- * trip is not this file's job.
+ * Cases that look valid in one file and so escape a per-file check. The pure functions are called
+ * directly, because `compile`, `overview` and `relate` spawn the MCP server, and a missing runtime
+ * in CI would test the environment rather than a defect.
  */
 
 const made: string[] = [];

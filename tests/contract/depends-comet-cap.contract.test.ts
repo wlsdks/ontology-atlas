@@ -8,8 +8,8 @@ import {
 } from "@/widgets/ontology-map/render/edge-fireflies";
 
 /**
- * The always-on `depends` comets carry the same cap as the focused node's `contains` comets. They
- * still flow regardless of focus (#512); the cap bounds how many dots move at once.
+ * The always-on `depends` comets carry the same cap as the focused node's `contains` comets; the
+ * cap bounds how many dots move at once.
  */
 const edges = (n: number, kind: "contains" | "depends" = "depends") =>
   Array.from({ length: n }, (_, i) => ({ sourceId: `s${i}`, targetId: `t${i}`, kind }));

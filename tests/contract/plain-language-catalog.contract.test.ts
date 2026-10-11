@@ -9,44 +9,8 @@ import { column } from '../../scripts/lib/locale-vocabulary.mjs';
 import { GLOSSARY_TERMS, type GlossaryTerm } from '../../src/shared/config/term-glossary';
 
 /**
- * **Every string a person reads is scanned, not four hand-picked namespaces.**
- *
- * ## Why this file exists (measured 2026-08-31)
- *
- * `topology-plain-language.contract.test.ts` owns a denylist of words this
- * repository invented, and it is the right denylist. What it could not do is
- * find them: it stringified **four** namespaces (`topology.nodeDatasheet`,
- * `topology.realm`, `edgeTypesPlain`, `fullDetailA1`) out of a catalogue of
- * roughly 3,700 strings. A full-tree sweep for its own seven terms found seven
- * more leaks it had no way to see, including the relation names in the panel
- * opened by the "edit this relation" action, and two facts on the public download
- * page, which is a stranger's first impression of the product.
- *
- * So the unit of judgement here is the **whole `ko` tree**, the way
- * `user-facing-vocabulary.contract.test.ts` already treats its own terms. The
- * older file keeps its four-namespace assertion (a narrower claim stays true)
- * and adds nothing; this one is the catalogue-wide net.
- *
- * ## Three separate failures, three gates
- *
- * | Gate | Failure it catches |
- * |---|---|
- * | Internal vocabulary | A word this repository invented reaches a label |
- * | Untranslated English | A Korean screen shows a sentence nobody translated |
- * | Unexplained term | `MCP` / `ACP` / `CLI` has no glossary entry or no screen draws its `TermHint` |
- *
- * ## Why ratchets and not bans
- *
- * Same reason as every other copy gate here: some of these words have honest
- * uses. The word for "violation" is ordinary Korean for a rule violation and the
- * architecture screen means exactly that; the word for the guard an agent must
- * pass is a real product concept that seven strings currently lean on. Freezing
- * them at today's count lets the number fall and refuses to let it rise. **When a number falls, lower its baseline with it** —
- * otherwise every repair becomes new headroom.
- *
- * Nothing here pins a sentence. Each gate counts occurrences and names the key,
- * which is the mechanical-inventory shape `.claude/rules/documentation.md`
- * permits.
+ * Every string a person reads in the `ko` tree is scanned, not hand-picked namespaces. Counts are
+ * ratchets because some flagged words have honest uses; when a number falls, lower its baseline too.
  */
 
 type Json = { [key: string]: string | Json };
@@ -213,8 +177,8 @@ describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
     }
   });
 
-  // One Latin word slips past the rule above ("Kind", "Project · {count}"), and on the map's
-  // search palette two such group labels sat on the Korean screen (formerly an e2e spec).
+  // One Latin word slips past the rule above ("Kind", "Project · {count}"), and the search palette
+  // group labels show on the Korean screen.
   it('검색 팔레트의 한국어 문자열은 모두 한글을 담는다', () => {
     const latinOnly = flatten(CATALOG)
       .filter(({ key }) => key.startsWith('searchWidgets.globalSearch.'))
@@ -246,11 +210,8 @@ describe('한국어 카탈로그 — 번역되지 않은 영어 문장', () => {
  * ------------------------------------------------------------------------- */
 
 /**
- * Terms developers say in English stay as written, and the explanation lives in
- * a `TermHint` tooltip (owner, 2026-10-02). So the demand is no longer a Korean
- * gloss in parentheses beside the term: every term the catalogue uses has a
- * glossary entry (expansion and one sentence, both locales) and at least one
- * screen draws its `TermHint`.
+ * Terms developers say in English stay as written, explained by a `TermHint` tooltip: each term needs
+ * a glossary entry (expansion and one sentence, both locales) and a screen that draws its `TermHint`.
  */
 const TERM_PATTERNS: Record<GlossaryTerm, RegExp> = {
   mcp: /\bMCP\b/,

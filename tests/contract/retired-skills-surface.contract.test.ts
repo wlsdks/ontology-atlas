@@ -6,11 +6,9 @@ import { DESTINATION_IDS } from "@/shared/config/destinations";
 import { resolveActiveNavDestination } from "@/shared/lib/navigation/nav-destination";
 
 /**
- * `/skills` was retired entirely by owner decision on 2026-08-21.
- *
- * Real Agent Skills, the docs library's copy-parity check, and the CLI `agent-files`
- * are separate. This contract preserves those capabilities while preventing the
- * standalone Skills product surface from coming back.
+ * `/skills` is retired. Real Agent Skills, the docs library copy-parity check and the CLI
+ * `agent-files` are separate capabilities; this prevents the standalone Skills surface from coming
+ * back.
  */
 describe("retired Skills product surface", () => {
   it("keeps the primary destination set exact and Skills-free", () => {
@@ -24,9 +22,8 @@ describe("retired Skills product surface", () => {
       "insights",
       "projects",
       "agents",
-      // MCP joined 2026-09-05, which reopened the seven-cap decision (91) closed on the
-      // same day `/skills` was retired. That record moved the ceiling; it did not
-      // reinstate the retired surface, and the two assertions below still say so.
+      // MCP reopened the seven-cap decision (91) but did not reinstate the retired surface, and the two
+      // assertions below still say so.
       "git",
     ]);
     expect(resolveActiveNavDestination("/skills")).toBeNull();

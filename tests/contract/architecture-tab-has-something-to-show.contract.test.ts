@@ -15,17 +15,8 @@ const docsOf = (manifest: unknown): Doc[] =>
   ((manifest as { docs?: Doc[] }).docs ?? []) as Doc[];
 
 /**
- * **A tab in the rail must have something to show.**
- *
- * ⚠️ **Why** (measured 2026-08-26, on the built static export). `/architecture` rendered its empty
- * state for every first-time visitor, and the reason was not that the data was missing. The dogfood
- * vault carried a complete profile, the parser accepted it, and the values were in the shipped
- * bundle. The screen reads whichever **sample** is selected, `readSampleSourcePreference` defaults
- * to `storefront` for anyone with no stored choice, and the storefront sample had **zero** profiles.
- *
- * So the tab was permanently empty for a stranger — while the tool that built it had the answer on
- * disk the whole time. A rail entry that can only ever say "nothing here" is worse than no entry:
- * it spends the one click somebody gives a new surface.
+ * A rail tab must have something to show: the default `storefront` sample needs a profile, else the
+ * tab is empty for first-time visitors.
  */
 describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어야 한다', () => {
   it('두 샘플 모두 프로필을 하나 이상 담는다', () => {
@@ -54,15 +45,8 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   });
 
   /*
-   * ⚠️ **A profile is not a Map node, and the schema alone must not be what says so.**
-   *
-   * `docs/ARCHITECTURE.md` and the 2026-08-26 decision "Architecture is a separate reviewed
-   * contract and primary workbench destination" settle it: a file carrying this schema has no
-   * `kind:`, because it is "not an ontology kind and not an overloaded ontology `document`". I
-   * broke that rule while adding the sample -- gave it `kind: document`, a `uid` and a `relates`
-   * edge -- because the sample's own graph contract demanded every document be a connected node,
-   * and satisfying the nearer test was easier than reading the standing decision. The gate exists
-   * so the next person cannot make that trade quietly.
+   * A profile is not a Map node: no `kind:`, `uid` or `relates` (`docs/ARCHITECTURE.md`); the schema
+   * alone must not make it one.
    */
   it('프로필은 지도 노드가 아니다 — kind 도 uid 도 갖지 않는다', () => {
     const everyDoc = [...docsOf(dogfoodManifest), ...docsOf(storefrontManifest)];
@@ -77,17 +61,8 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   });
 
   /*
-   * ⚠️ **It is listed in Docs, and it is never what Docs opens by itself.**
-   *
-   * This case used to assert the opposite -- that a profile never appears in Docs at all -- and
-   * that was an unrecorded overturn of the standing 2026-08-26 architecture record, whose §2 says
-   * a profile "appears in Docs but never in the ontology graph". The comment defending it cited a
-   * decision number the ledger has never issued.
-   *
-   * The measured defect was narrower than the fix. The profile sorted first in its folder, Docs
-   * *auto-opened* it, and `<main>` fell to 26 elements against the floor of 40 in
-   * `a11y-vault-backed.spec.ts` -- the reading surface's opening screen became a twenty-line
-   * frontmatter record. Membership was never the problem; the unattended choice was.
+   * A profile is listed in Docs but is never what Docs auto-opens: first in its folder it would open a
+   * frontmatter record and drop `<main>` below the floor in `a11y-vault-backed.spec.ts`.
    */
   it('문서함 목록에 프로필이 있다 — 기록이 그렇게 정했다', () => {
     for (const [name, manifest] of [
@@ -138,11 +113,8 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   });
 
   /*
-   * ⚠️ The empty state still exists for a genuinely empty vault, and what it says then is the whole
-   * point. It used to name the schema (`architecture-profile/v1`) and tell the reader to write the
-   * document by hand — this repository's private vocabulary in the first sentence a stranger reads,
-   * asking them to do the tool's job. Owner, 2026-08-26: *"a user is never going to write the
-   * architecture down — we should analyse it and record it."*
+   * The empty state for a genuinely empty vault must not name the schema or ask the reader to
+   * write the document by hand.
    */
   it('빈 상태는 스키마 이름을 대지 않고, 손으로 쓰라고 하지 않는다', () => {
     for (const [locale, messages] of [

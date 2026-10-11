@@ -12,17 +12,9 @@ import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
 import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
 
 /**
- * C1 (codex-audit 2026-07-25) — vault-health contract. The app's
- * `/ontology/insights` health verdict (`src/entities/knowledge-graph/lib/
- * vault-health.ts`) must agree with the CLI/MCP `node $ATLAS/cli/src/index.mjs health`
- * (`query_ontology({operation:'health'})`) on the SAME vault. Previously the app
- * auto-healed containment in its derived graph and reported "100% repair needed
- * none" (100%, nothing to repair) while the CLI reported `needs_attention` — a trust
- * hole.
- *
- * This test feeds one fixture vault through BOTH implementations and asserts an
- * identical status + per-check {status,count}. Either side drifting fails here,
- * exactly like the parser/validator contract tests.
+ * Vault-health contract: the app health status (`src/entities/knowledge-graph/lib/vault-health.ts`)
+ * must agree with the CLI/MCP `health` on the same vault. One fixture runs through both and compares
+ * status and per-check status and count.
  */
 
 interface McpCheck {
@@ -157,28 +149,14 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
 });
 
 /**
- * **Between them, the browser's checks and its declared gaps must account for
- * every check the command reports.**
- *
- * The parity above pins this mirror against the compiled-graph engine, and it
- * holds. The command reports more: the MCP tool layer adds frontmatter
- * validation and a project meaning assessment on top of the engine's verdict, and
- * both can flip its status. On this repository's own vault the command answers
- * `needs_attention` on the strength of the second one while every check this
- * mirror runs passes — so a screen reporting only these six, and saying nothing
- * about the rest, tells a person the opposite of what the command says.
- *
- * Re-deriving meaning assessment here would be a second implementation of a
- * semantic judgement, which is the drift this file's subject was written against.
- * So the mirror names what it does not run, and this asserts the naming stays
- * complete — reading the extra ids from the server source rather than from a
- * second hand-maintained list.
+ * The browser checks plus its declared gaps must account for every check the command reports: the MCP
+ * tool layer adds frontmatter validation and a meaning assessment that can flip the status. The extra
+ * ids are read from the server source, not a second list.
  */
 describe('vault health — 안 돌리는 검사는 이름으로 남는다', () => {
   it('브라우저가 도는 검사 + 안 돈다고 밝힌 검사 = 명령이 보고하는 검사', () => {
-    // The tool layer is the `tools/` modules now, not the entry point — both
-    // files are read so this gate cannot go green on a file that no longer
-    // carries the ids.
+    // The tool layer is the `tools/` modules, so both files are read; this gate cannot go green on a file
+    // that no longer carries the ids.
     const serverSource = ['maintenance.mjs', 'graph.mjs']
       .map((file) => readFileSync(join(process.cwd(), 'mcp', 'src', 'tools', file), 'utf8'))
       .join('\n');

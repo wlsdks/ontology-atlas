@@ -3,25 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **A guide step's anchor must name a testid some screen actually carries.**
- *
- * A destination guide is two pages: what the screen is for, then one thing on it
- * (`tour-steps.ts`). The second page is drawn only when its anchor resolves —
- * `computeVisibleSteps` drops a step whose element is absent, which is the right
- * behaviour for a surface that is collapsed right now, and the *wrong* one when the
- * testid was renamed or deleted: the guide quietly becomes one page and nothing says so.
- *
- * That is exactly what happened to Insights. `do-next-touchups` was a grouping the
- * 2026-09-06 "one list, one total" round removed, and the anchor kept naming it, so the
- * second page never appeared again. No test failed, because every test in the chain was
- * about something else.
- *
- * So the gate reads the anchors out of the source rather than holding its own copy of them:
- * a new guide is covered the day it is written, without anybody registering it here.
- *
- * **What it cannot see**: a testid built at runtime (`data-testid={`brief-core-${x}`}`).
- * Anchoring a guide to one of those needs a different proof, and the failure message says
- * so rather than pretending the element does not exist.
+ * A guide step anchor must name a testid some screen renders: `computeVisibleSteps` drops a step
+ * whose element is absent, so a renamed testid silently shortens the guide. Anchors are read from
+ * source. A testid built at runtime cannot be seen here.
  */
 
 const TOUR_STEPS_FILE = join(process.cwd(), "src/features/guided-tour/model/tour-steps.ts");
@@ -36,15 +20,8 @@ function tourAnchorTestids(): string[] {
 }
 
 /**
- * Every literal testid rendered by product source (tests excluded).
- *
- * Two spellings reach the DOM as `data-testid`. The attribute is one; the other is the
- * `testId` prop the shared primitives forward (`tab-bar`, `dialog`, `segmented-control`,
- * `census-tile`, `hidden-count-line` all end in `data-testid={testId}`). Measured on
- * 2026-09-21: 142 literal `testId="…"` props in product source were invisible here, and the
- * first anchor to land on one — `automations-tabs`, the Automations header tab strip — was
- * reported as "no screen renders it" although the element is really in the DOM. A gate that
- * cannot see half the spelling of the thing it checks fails honest screens.
+ * Every literal testid rendered by product source. Two spellings reach the DOM: `data-testid` and the
+ * `testId` prop that shared primitives forward; both must be scanned.
  */
 function renderedTestids(): Set<string> {
   const stack = [join(process.cwd(), "src")];
@@ -76,8 +53,7 @@ describe("guided tour anchors", () => {
   const rendered = renderedTestids();
 
   it("names enough anchors to be worth checking", () => {
-    // Eleven testid anchors on 2026-09-21. A parser that quietly matched none would make
-    // every case below vacuous, so the count is the gate's own liveness check.
+    // A parser that matched none would make every case below vacuous, so the count is its liveness check.
     expect(anchors.length).toBeGreaterThanOrEqual(10);
   });
 

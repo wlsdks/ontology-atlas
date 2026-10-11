@@ -6,61 +6,25 @@ import { describe, expect, it } from "vitest";
 import { censusStaticSurfaces, isHandCard } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * Section-card adoption ratchet — **hand-written box insets cannot grow**
- * (2026-08-15).
- *
- * **Why** (ratified by the system seat · docs/DECISIONS.md 2026-08-15, entry 5). A
- * five-axis inventory (radius × padding × surface × border × header): 71 cases
- * across 36 files with **51 distinct combinations**, the top three covering 18%, and
- * 41 singletons. Unlike badges, **a value layer was rejected** — fixing any padding
- * as an axis forces pixel movement on 58 or more cases, which is the shape of the
- * `fixedHeight` accident.
- *
- * What surfaced instead was that **an existing token was not being used**:
- * `--card-pad` (16px) had 16 consumers, and **12 more boxes hand-wrote the same 16px**
- * (and all 12, along with 13 of the 16 token adopters, used `rounded-panel`, so
- * reality inverted the spec table's pairing of "card = --card-pad"). These are the
- * "values hand-rewritten without looking them up" that `/ui-build` 0-Z forbids,
- * so the migration moved 0 pixels.
- *
- * This ratchet blocks their return. The remaining 62 are debt needing **per-place
- * design decisions**, and the ledger holds them.
- *
- * The scanner is the single `scripts/lib/static-surface-census.mjs` — the ledger and
- * the gate must count with the same function for "the ledger is more generous than
- * the measurement" to mean anything.
- *
- * ⚠️ **Width-conditional insets (`sm:px-5`) count as hand insets too.** So a place
- * that moved only its base value onto the token does not come down in the ledger —
- * that is a fact rather than scanner error: hand-written pixels still remain there,
- * and whether to raise the ladder into the spec is a per-place decision. (Measured
- * during probing: it stayed at 1 both before and after migration, so the revert
- * probe's target had to be re-aimed at a place with no responsive remainder.)
+ * Hand-written box insets cannot grow. Width-conditional insets (`sm:px-5`) count as hand insets too.
+ * The scanner is the single `scripts/lib/static-surface-census.mjs`.
  */
 
 const ROOT = process.cwd();
 
-/**
- * **The debt ledger** — exactly what the scanner produced after migration, never
- * hand-tuned. (On 2026-08-15 a hand-written ledger was wrong four times, and that
- * discipline was codified into `/ui-proof`.)
- */
+/** Per-file ceilings exactly as the scanner produces them, never hand-tuned. */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/app-update/ui/UpdateToast.tsx", 1],
   ["src/features/docs-vault-local/ui/OntologyStarterCta.tsx", 1],
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", 1],
   ["src/features/project-edit/ui/DependencyPicker.tsx", 3],
   ["src/features/project-edit/ui/MarkdownField.tsx", 1],
-  // 8 → 7 (2026-08-17): removed the panel box wrapping "fill in more" — a 92px box
-  // wrapped a single collapsed line. Chrome containing nothing.
   ["src/features/project-edit/ui/ProjectForm.tsx", 1],
   ["src/features/project-edit/ui/ProjectFormActions.tsx", 1],
   ["src/features/project-edit/ui/ProjectFormBanners.tsx", 2],
   ["src/features/project-edit/ui/ProjectFormPreview.tsx", 2],
   ["src/features/project-edit/ui/project-form-parts.tsx", 1],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
-  // 1 → 0 (2026-08-19): that single card was the download panel, and it went with the
-  // wholesale deletion of the install section (`docs/DECISIONS.md`, entry 83).
   ["src/views/home/ui/CreateNodeForm.tsx", 1],
   ["src/views/home/ui/TopologyBlockingOverlays.tsx", 1],
   ["src/views/home/ui/TopologyNoMatchesState.tsx", 1],
@@ -68,10 +32,7 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],
   ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
   ["src/views/project-selector/ui/ProjectSelectorPage.tsx", 0],
-  // 2026-08-21: the executor and MCP-connect sections moved out to the Agents
-  // destination, taking two hand cards from this file with them (ledger 90). What was
-  // recovered comes down in the ledger — a ledger more generous than the measurement
-  // is not a ratchet.
+  // A ledger more generous than the measurement is not a ratchet: recovered rows come down.
   ["src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx", 0],
   ["src/widgets/app-settings-menu/ui/ExpandSettings.tsx", 3],
   ["src/widgets/app-settings-menu/ui/FootprintSettings.tsx", 1],

@@ -10,16 +10,9 @@ import {
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Every trail tone reaches every consumer.
- *
- * ⚠️ **Written after the failure it describes.** A third tone was added to the union and to
- * the settings control, the map loop learned it, and the settings **preview** did not — so
- * choosing starlight painted the preview amber while the canvas painted white. The glyph
- * module lives in `shared` precisely so the two draw the same picture, and its own header
- * says a preview that drifts has stopped being a preview (design-system, 2026-09-10).
- *
- * The tokens are one exported table now, so this pins the property rather than the names: a
- * fourth tone fails here instead of shipping half-wired.
+ * Every trail tone reaches every consumer, including the settings preview, which must draw the same
+ * picture as the canvas through the shared glyph module. The tokens are one exported table, so a new
+ * tone fails here instead of shipping half-wired.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");

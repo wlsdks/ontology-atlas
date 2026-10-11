@@ -5,25 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { locateGlobalCssLine, readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Every step of the type ramp follows the root font size.**
- *
- * A browser's *text-only* zoom — Chrome's Appearance → Font size, Firefox's "Zoom text only",
- * Safari's accessibility text size — multiplies the **root font size** and nothing else. A ramp
- * written in `px` is immune to it, and until 2026-09-12 this one was: every setting, at every
- * step up to 200%, left Atlas rendering pixel-for-pixel identical, so the whole accessibility
- * control was inert on every surface (carry-forward finding, U2 council, 2026-09-11).
- *
- * The defect left **no value in the code** — `9.5px` is a legitimate size, and the screen looked
- * right. What was wrong was the *unit*, and nothing in the repository could see a unit: the
- * ramp's own inventory gate (`type-ramp-step-defined`) stops at the colon, the lint selectors
- * match class strings, and the computed-pixel gates measure a rendered page at one root, where
- * `px` and `rem` are indistinguishable by construction. That is why this file exists and why it
- * reads the declaration rather than a screen: it is the only instrument that can fail.
- *
- * The complement — that the ramp still renders the same pixels at 100%, and that it actually
- * doubles at 200% while the chrome holds still — is measured in the browser by
- * `tests/e2e/text-zoom-ramp.spec.ts`. Neither gate replaces the other: this one cannot see a
- * screen, and that one cannot tell `px` from `rem` at the default root.
+ * Every step of the type ramp must follow the root font size, because browser text-only zoom changes
+ * only the root. A `px` ramp is immune to it. The unit leaves no value to see, so this reads the
+ * declaration; `tests/e2e/text-zoom-ramp.spec.ts` measures the rendered complement in the browser.
  */
 const ROOT = process.cwd();
 const CSS = readGlobalCss();
@@ -135,8 +119,8 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
   });
 
   it('예외는 rem 으로 슬그머니 바뀌지 않는다 — 바뀌면 예외가 아니라 단이다', () => {
-    // The other direction of the same rule: if a documented exception becomes a plain `rem`
-    // value, its reason no longer describes it and the entry must leave this list.
+    // The other direction: if a documented exception becomes a plain `rem` value, its reason no longer
+    // describes it and the entry must leave this list.
     const all = [...declarations('text'), ...declarations('leading')];
     const stale = all
       .filter((entry) => NOT_ROOT_RELATIVE.has(entry.name))
@@ -156,11 +140,8 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
   });
 
   it('접두사 밖의 타입 크기 토큰도 루트를 따른다 — 접두사가 사양이 되면 안 된다', () => {
-    // `--text-*` is a naming convention, not the quantity. A size token under any other name
-    // that a component consumes as a font size through `text-[length:var(…)]` is still type,
-    // and until 2026-09-12 `--topology-chrome-title-size: 12px` was exactly that: a 12px type
-    // step no ramp gate could see, sitting behind two consumers. The detector reads the
-    // consumers rather than guessing from names, so a new one is covered on its first day.
+    // `--text-*` is a naming convention, not the quantity: a size token under any other name consumed
+    // through `text-[length:var(...)]` is still type. The detector reads consumers, not names.
     const sources = sourceFiles();
     expect(sources.length, '스캔이 비었다 — src/app 에서 소비자를 못 찾았다').toBeGreaterThan(50);
     const consumed = new Set<string>();

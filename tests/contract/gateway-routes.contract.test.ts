@@ -7,16 +7,8 @@ import { isGatewayRoute, isGatewaySurface } from '@/shared/lib/navigation/nav-de
 const repoRoot = resolve(__dirname, '../..');
 
 /**
- * **A new gateway surface must be known to the shell.**
- *
- * Measured 2026-07-30: `/guide` and `/changelog` were created, and the first render
- * showed the workbench's six left-rail destinations intact, because
- * `isGatewayRoute()` was the single line `startsWith("/download")` and did not know
- * the new routes. The screen rendered fine and types and lint passed — **a missing
- * verdict is not an error but wrong chrome**, so no value check catches it.
- *
- * So the **existence of a route directory** is compared against the **predicate**. A
- * new gateway route whose registration is forgotten breaks here first.
+ * A new gateway route must be registered in `isGatewayRoute()`; a missing one renders wrong chrome
+ * that no type or lint check catches, so route directories are compared against the predicate.
  */
 const GATEWAY_ROUTES = ['download', 'guide', 'changelog'] as const;
 
@@ -37,11 +29,7 @@ describe('관문 라우트 등록', () => {
     }
   });
 
-  /**
-   * ⚠️ `/docs` is **the workspace library**, not gateway reading material. Mixing the
-   * two sends someone who clicked "guide" in the top nav into the vault picker — that
-   * collision is precisely why the name `/guide` was chosen (ledger, 2026-07-30).
-   */
+  /** `/docs` is the workspace library, not gateway reading material, so it must stay a workbench route. */
   it('`/docs` 는 워크벤치로 남는다 — 가이드와 이름이 갈렸다', () => {
     expect(isGatewayRoute('/docs')).toBe(false);
     expect(isGatewayRoute('/guide')).toBe(true);
@@ -131,11 +119,8 @@ describe('X 링크 자리', () => {
   it('핸들이 비면 URL 이 null · 채워지면 그 핸들의 주소다', async () => {
     const { X_HANDLE, xProfileUrl } = await import('@/shared/config/social-links');
     /**
-     * `X_HANDLE` is typed as `string` because with a literal type the `=== ''` comparison
-     * becomes a **type error** the moment the value is filled in, and this contract loses
-     * its "empty" clause. This place must hold in **both** states — the handle is a value
-     * the owner adds and removes, and the contract this file guards is that removing it
-     * returns the chrome to inactive (the handle was filled in on 2026-08-08).
+     * `X_HANDLE` is typed `string` so the `=== ''` comparison stays valid when the handle is filled in;
+     * both states must hold.
      */
     const handle: string = X_HANDLE;
     if (handle === '') expect(xProfileUrl()).toBeNull();

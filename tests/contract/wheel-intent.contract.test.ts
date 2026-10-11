@@ -6,27 +6,9 @@ const ROOT = join(import.meta.dirname, '..', '..');
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
 /**
- * **A map inside a scrolling document must not swallow the page's wheel.**
- *
- * A P0 caught by the motion seat's measurement on 2026-07-28: the canvas on
- * `/download` covers **62.1%** of the viewport, and the wheel handler called
- * `preventDefault()` unconditionally, ahead of every guard. The listener is
- * attached with `{ passive: false }`, so **the first thing a visitor landing on
- * the page does — scroll — did nothing except zoom the map.** The entire sales
- * argument (thesis, the human/agent columns, verification) sits below the fold and
- * was unreachable. With `touch-action: none` it was worse on a phone.
- *
- * The cause is not a bug but **a premise leaking**: in the workbench the map is
- * the whole screen and there is no page to scroll, so that line is correct there.
- * The decision leaked to a surface where its premise does not hold — the failure
- * pattern this repository already named on the studio width gate.
- *
- * **Why a contract test (a layer lint cannot see).** The defect is not **the
- * presence of one line** but **the order of two** — is `preventDefault()` before
- * the early return. `no-restricted-syntax` cannot ask "is this call after that
- * guard" with a single selector. And no literal survives into the render output,
- * so it is outside the reach of value checks (exactly the layer this repository
- * classifies as "the value is right and nothing catches it").
+ * A map inside a scrolling document must not swallow the page wheel: `preventDefault()` must come
+ * after the page-scroll early return. The defect is the order of two statements, which no single
+ * lint selector can express.
  */
 describe('wheel intent — 스크롤하는 문서 안의 지도', () => {
   const handlers = read('src/widgets/ontology-map/ui/input/topology-pointer-zoom.ts');

@@ -5,12 +5,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 const read = (relativePath: string) => readFileSync(join(ROOT, relativePath), "utf8");
 
-/**
- * Every file whose text reaches a user of the installed CLI: the sources that
- * print (tests excluded) and the README. Reading `cli/src/index.mjs` alone let
- * `bootstrap`, `analyze` and `index` keep sending users to `ontology-bootstrap`
- * (found 2026-09-26).
- */
+/** Every file whose text reaches a user of the installed CLI: printing sources and the README. */
 const CLI_SURFACE = [
   ...globSync("cli/src/**/*.mjs", { cwd: ROOT }).filter((path) => !path.endsWith(".test.mjs")),
   "cli/README.md",
@@ -25,22 +20,8 @@ const withoutComments = (text: string) =>
 const TEMPLATE_SKILLS = "cli/templates/vault/.claude/skills";
 
 /**
- * **A setup command may only name things the person now has.**
- *
- * `init` used to finish by telling every new user to "use a connected agent's
- * `ontology-bootstrap` flow", in two separate output paths. That skill lives only
- * in this repository and `init` has never installed it; `agent-prompts.ts` says so
- * in its own header. So the last thing the product said to a stranger was an
- * instruction they could not follow, and the funnel's second step was a dead end
- * for every installed copy.
- *
- * This is the same defect class as a walkthrough finding already fixed once: a
- * surface naming a destination that is not there. It is cheap to reintroduce,
- * because the repository's own agents really do have that skill, so the sentence
- * reads as true to whoever writes it here.
- *
- * The gate reads the shipped template rather than a hard-coded list, so adding a
- * skill to `init` widens what the output may name, and removing one narrows it.
+ * A setup command may only name things the person now has. The gate reads the shipped template
+ * rather than a hard-coded list, so the allowed skill names follow what `init` installs.
  */
 describe("init describes only what it installed", () => {
   const installedSkills = readdirSync(join(ROOT, TEMPLATE_SKILLS), { withFileTypes: true })

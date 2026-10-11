@@ -5,21 +5,8 @@ import { describe, expect, it } from "vitest";
 import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../e2e/audited-routes";
 
 /**
- * **Stops the accessibility gates from missing a route.**
- *
- * This contract exists because of a real incident. Two ratchets (`a11y-ratchet`
- * and `contrast-ratchet`) each carried a hand-written route array — 8 and 5 —
- * while the authoritative count at the time was 17. Neither list recorded why it
- * had that many, and hidden in the gap was **the two 404 pages' AA failure
- * (4.42:1)**. Every baseline reached 0, but that 0 was "0 across 8 routes".
- *
- * So what is blocked here is not a **violation** but an **unclassified route**.
- * Whoever adds a route must **choose**: measure it or exclude it. Excluding is a
- * legitimate choice, provided the reason is recorded in `EXCLUDED_ROUTES`.
- *
- * ⚠️ This check **reads the filesystem.** Duplicating the route list here would
- * create a blind spot the moment the copy drifts from the source — which is the
- * very disease that made this file necessary.
+ * Every route is either measured or excluded with a reason in `EXCLUDED_ROUTES`; an unclassified
+ * route fails. Reads the filesystem on purpose: a copied route list would drift from the source.
  */
 
 const APP_LOCALE_DIR = path.resolve(__dirname, "../../app/[locale]");
@@ -54,9 +41,7 @@ describe("접근성 래칫의 라우트 커버리지", () => {
   const routes = ["/", ...discoverRoutes(APP_LOCALE_DIR)];
 
   it("정본 인벤토리를 실제로 찾아낸다 — 탐지기가 빈 집합 위에서 놀지 않는다", () => {
-    // Without this assertion, `discoverRoutes` returning 0 would leave every check
-    // below green (an empty set satisfies any universal statement). The current
-    // authoritative count is 19 (`/library` joined 2026-09-06).
+    // Without this assertion `discoverRoutes` returning 0 would leave every check below green.
     expect(routes.length).toBeGreaterThanOrEqual(19);
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
@@ -92,10 +77,7 @@ describe("접근성 래칫의 라우트 커버리지", () => {
   });
 
   it("404 를 로케일 안팎 두 주소에서 잰다", () => {
-    // This is where the 2026-08-03 round found the AA failure, and at the time the
-    // ratchet had never once looked at this screen. Today both addresses resolve to
-    // **the same file** (`app/not-found.tsx`) — confirmed by probe, with the evidence
-    // in `audited-routes.ts`. Both are kept anyway so that a change to the not-found
+    // Both addresses resolve to `app/not-found.tsx`; both are kept so a change to the not-found
     // wiring cannot slip an unaudited surface back in.
     expect(AUDITED_ROUTES.some((url) => /^\/ko\/.*does-not-exist/.test(url))).toBe(true);
     expect(AUDITED_ROUTES.some((url) => /^\/[^/]*does-not-exist/.test(url))).toBe(true);

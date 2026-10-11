@@ -131,18 +131,8 @@ describe("the coverage matrix over this repository", () => {
 
   it("prints a mirrored guard once, with both tools, instead of its bare name twice", async () => {
     /*
-     * ⚠️ **A repeated name was a lost distinction, not a duplicate bug.** Most hook scripts in this
-     * repository exist in **both** `.claude/hooks/` and `.codex/hooks/` as real, separately
-     * maintained files — `AGENTS.md` requires the Codex side to be an adapted `apply_patch` mirror
-     * rather than a copy. `ScopeDeclaration.label` is the bare script name for both, so the first
-     * build's list printed each of those names twice and the owner read it, correctly, as a
-     * rendering fault.
-     *
-     * What this asserts is the shape of the repair rather than a count, which moves with
-     * every hook added or removed: every mirrored pair collapses to **one** row, that row names **more than
-     * one** tool, and the files behind it are still both there so the cell's declaration count
-     * stays a count of files. A repair that deduplicated by dropping a file would pass the first
-     * clause and fail the third.
+     * Pins the shape of the repair: each mirrored hook pair collapses to one row naming more than
+     * one tool, with both files still present.
      */
     /* The real capability paths, because a candidate that touches none of them is dropped before
        the disk is consulted — with an empty list the scan has no hooks to mirror. */
@@ -172,10 +162,8 @@ describe("the coverage matrix over this repository", () => {
 
   it("splits authored Markdown by whether a guide sends an agent to it", async () => {
     /*
-     * The census, not a verdict. What is asserted is that the three states partition the set and
-     * that the unnamed bucket is neither empty (which would mean the citation search is matching
-     * everything) nor everything (which would mean it is matching nothing). The exact numbers move
-     * with every document written, so they are printed rather than pinned.
+     * The three states must partition the set, and the unnamed bucket is neither empty nor everything;
+     * exact numbers move with every document, so they are printed rather than pinned.
      */
     const port = fsPort();
     const read = port.readText.bind(port);

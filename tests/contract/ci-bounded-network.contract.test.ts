@@ -4,24 +4,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **CI's network waits must have a ceiling.**
- *
- * On 2026-08-19~20 the E2E job died six times in one day. It died not in the tests
- * but in the preparation step (`playwright install-deps chromium`), and the shape was
- * this: `Ign: http://azure.archive.ubuntu.com/... InRelease` repeating for 19 minutes
- * 42 seconds until the job timeout produced `The operation was canceled.` **Not one
- * line of tests ran**, all four shards died at the same place, and one PR cost six
- * re-runs.
- *
- * apt has no ceiling on waiting, so one was imposed from outside — and that
- * imposition is **far too easy to undo**: reverting the step to its one-line
- * "original" does nothing on a normal day and only costs another 20 minutes when the
- * mirror wobbles. There is no way to notice it on that day, so it is locked here.
- *
- * **Why it is read as text.** This repository has no YAML parser dependency and will
- * not add one for a single check. Instead an assertion accompanies it that blocks
- * **going green when nothing was found** — if a step is renamed and the regex misses,
- * that assertion fails first.
+ * CI network waits need a ceiling: apt has none, and reverting the step is silent until a mirror
+ * stalls. Read as text (no YAML parser dependency); an assertion fails if nothing is found.
  */
 
 const ACTION = join(process.cwd(), '.github', 'actions', 'setup-playwright', 'action.yml');

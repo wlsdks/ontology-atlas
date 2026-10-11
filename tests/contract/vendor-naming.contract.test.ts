@@ -3,34 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Use another company's product name **only in the form they permit.**
- *
- * ## Why this gate exists (2026-08-16)
- *
- * The in-app agent list's name was overridden from the registry's `Claude Agent` to
- * `Claude Code`, on the grounds that *"nobody calls it Claude Agent"*. That name is
- * one Anthropic **explicitly forbids**:
- *
- * > **Not permitted:** "Claude Code" or "Claude Code Agent"
- * > **Allowed:** "Claude Agent", preferred for **dropdown menus**;
- * >   "Claude", when within a menu already labeled "Agents"
- * > — Claude Agent SDK documentation, "Branding guidelines"
- * >   https://code.claude.com/docs/en/agent-sdk/overview
- *
- * The registry was already using a permitted name — **we broke it by "fixing" it.**
- * And this cannot be caught by eye: the screen simply shows a familiar name, lint
- * and types pass, and nobody feels a rule is being broken.
- *
- * ## What is checked and what is not
- *
- * **Checked**: the **display names** in the agent list we ship. That list is the
- * "dropdown menu" in the quotation above.
- *
- * **Not checked**: sentences referring to a product the user installed separately on
- * their own machine (for example "connect to Claude Code" in the MCP setup
- * guidance). That is **calling someone else's product by its real name**, and
- * changing it there would make the guidance wrong. What is forbidden is attaching
- * that name to an agent our product ships.
+ * Another company's product name is used only in the form they permit. The agent list display names
+ * use `Claude Agent`, never `Claude Code`. Sentences naming a separately installed product by its real
+ * name are not checked.
  */
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -63,19 +38,8 @@ describe('남의 제품 이름 — 그쪽이 허용한 형태로만', () => {
 
   it('**우리 목록을 설명하는 문구**도 같은 규칙을 지킨다', () => {
     /*
-     * ⚠️ This gate had a hole (found in review, 2026-08-16). It looked only at the
-     * registry's `name`, leaving **on-screen copy** out of range — and the runner
-     * list's empty state really did say "install Claude Code or Codex…". The list's
-     * names obeyed the rule while the sentence describing the list did not.
-     *
-     * ⚠️ **Do not widen the range to all copy.** This app has more than 20 places that
-     * **name the product itself**, such as "connect to Claude Code", and those are
-     * legitimate (calling someone else's product by its own name). Switching the rule
-     * on that way turns 20 legitimate places into noise and buries the real violation —
-     * the reason this repository records "count the violations before switching a rule
-     * on".
-     *
-     * So only **the places describing our runner list** are checked.
+     * Only the copy describing our own runner list is checked, not all copy: more than 20 legitimate
+     * places name someone else's product, and widening the rule would bury the real violation in noise.
      */
     const NAMESPACES = [
       ['nav', 'settingsMenu', 'runtimes'],

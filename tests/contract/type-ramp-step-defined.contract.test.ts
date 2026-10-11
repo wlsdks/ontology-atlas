@@ -4,18 +4,8 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Blank out comments before scanning, preserving line numbers so reported
- * locations stay right.
- *
- * **Why (measured 2026-08-22).** This gate looks for class-like literals in the
- * source. A comment is not a class literal — nothing in a comment ever renders —
- * but the scan read the raw file, so prose could trip it. Translating the
- * repository's comments to English made that live: `text-width` written inside a
- * sentence in `DomainCapacityBar.tsx` was reported as an undefined `text-*` ramp
- * step, and token names mentioned in prose were counted as ink/fill pairings.
- *
- * Korean prose rarely contains hyphenated Latin compounds, which is why the hole
- * stayed closed for as long as the comments were Korean.
+ * Blank out comments before scanning, preserving line numbers: a hyphenated compound in prose such as
+ * `text-width` would otherwise be reported as an undefined ramp step.
  */
 function stripComments(source: string): string {
   return source
@@ -25,33 +15,9 @@ function stripComments(source: string): string {
 
 
 /**
- * Checks that `text-<step>` / `leading-<step>` point at **tokens that are actually
- * defined**.
- *
- * ## Why this test exists
- *
- * Measured 2026-07-27: the node name on the studio's centre card called
- * `text-large`, and `--text-large` did not exist anywhere. Tailwind **emits no class
- * at all** for an undefined step, so that place inherited the root 16px, and the
- * screen's protagonist (the node name) ended up only 1.28× larger than a satellite
- * card's name (12.5px). Under the lock contract in `.claude/rules/design.md`,
- * **inheriting the root 16px is a ramp-not-applied defect**.
- *
- * **No gate caught it.** A class naming a non-existent token is a syntactically
- * valid string, so it passes tsc, eslint, and the unit tests. Something that does
- * not exist leaves no literal either, so `type-ramp-coverage`'s hard-coded ratchet
- * cannot see it. What settles it is that the same accident had already happened once
- * in the same file: `text-callout` (also an unregistered step) was found by hand and
- * fixed in #618, while the two remaining `text-large` survived that review. Human
- * eyes miss this family.
- *
- * ## Why a contract test and not ESLint
- *
- * The judgement needs **the token list in `app/globals.css`**.
- * `no-restricted-syntax` matches AST selectors and cannot reference another file's
- * token definitions — duplicating step names into the rule lets that copy drift
- * silently from the ramp, so the gate creates the very blind spot it exists to
- * guard. So the source (globals.css) is **read** and used for the judgement.
+ * Checks that `text-<step>` / `leading-<step>` point at tokens defined in `app/globals.css`. Tailwind
+ * emits no class for an undefined step, so the element inherits the root 16px. The token list lives in
+ * another file, which a lint selector cannot reference without a copy that drifts.
  */
 
 /** Comment lines. A defect history must be able to cite an old step name. */

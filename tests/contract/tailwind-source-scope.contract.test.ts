@@ -2,28 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Tailwind scans code only — never documents.**
- *
- * **Why this contract exists** (2026-08-04, a real incident). With only
- * `@import "tailwindcss"`, Tailwind v4 **scans the repository automatically**, which
- * means it reads **class-shaped text written in `.md` prose** as candidates.
- *
- * One `text-[var(…)]` written in `.claude/rules/design.md` while explaining a rule
- * produced `.text-\[var\(…\)\] { color: var(…) }`, Turbopack's CSS parser rejected
- * it, and **`pnpm dev` returned 500 for everything**.
- *
- * **The worst part is that it was silent.** The production build (`pnpm build`) was
- * fine and CI was green — only the local dev server broke, so no automated check
- * caught it, and it surfaced only when another agent working on something else hit
- * it by chance. A document explaining a rule broke the code using that rule.
- *
- * **What is blocked.** Automatic detection is switched off (`source(none)`) and
- * scanning is **limited to code**. Writing class examples in documents stays correct,
- * and so does keeping them out of the build.
- *
- * ⚠️ **Deleting `source(none)` revives automatic detection** — the incident then
- * recurs exactly, with CI green again and only the dev server dead. Hence this
- * pin.
+ * Tailwind scans code only: with automatic detection on, class-shaped text in `.md` prose becomes
+ * a candidate and can break the dev server. Deleting `source(none)` revives that.
  */
 
 describe('Tailwind 소스 스캔 범위', () => {

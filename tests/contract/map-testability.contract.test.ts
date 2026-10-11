@@ -4,20 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Contract for the map inspection hook (`window.__atlasMap`).
- *
- * **Why a contract test.** This hook is **the only window automation has for
- * telling the map apart from outside**. If it quietly disappears, or if its gate
- * comes off, each fails badly in its own way:
- *
- * - Window gone → the harness does not die with "node not found"; it **falls back
- *   to the old method (cursor sweeping), pushes the background, and reports "it
- *   isn't slow here".** That wrong answer was given six times on 2026-07-31.
- * - Gate (the `e2e` query) gone → the diagnostic window is attached **for every
- *   user**.
- *
- * Lint cannot catch either: this is not a value rule but "does this code exist and
- * is it conditional".
+ * `window.__atlasMap` is the only way automation can tell the map apart from outside. If it vanishes
+ * the harness falls back to cursor sweeping, and if its `e2e` gate goes it attaches for every user.
  */
 const INSTRUMENTATION = join(
   process.cwd(),
@@ -51,7 +39,7 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   const REQUIRED_ACCESSORS = [
     "nodes:", // What is where, and what can be dragged
     "edges:", // Where the lines run — the only input for whether the map reads *as a graph*
-    "interaction:", // Is the current drag a node or the background — the core of the incident
+    "interaction:", // Whether the current drag is a node or the background
     "backing:", // Is the resolution cap actually applied
     "camera:", // Where the map is looking
     "selection:", // What is selected
@@ -80,9 +68,8 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   });
 
   it("`draggable` 을 노출한다 — 호버 히트와 «잡히는지» 는 다르다", () => {
-    // A pointer cursor still fails to grab if the node is absent from the
-    // simulation, and it silently becomes a pan. Without this field the harness
-    // cannot see that difference — which is exactly the incident.
+    // A pointer cursor still fails to grab a node that is absent from the simulation; it becomes a pan.
+    // Without this field the harness cannot see the difference.
     expect(source).toMatch(/draggable:\s*sim\?\.hasNode/);
   });
 

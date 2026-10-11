@@ -5,14 +5,8 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Gateway FX (current field, grain, cursor ring) — the reduced-motion equivalent.
- *
- * Until 2026-09-08 this file sealed the gateway field as the one exception to
- * the animated-background ban: single consumer, alpha ceiling, documented
- * listing. The owner lifted that ban (`docs/DECISIONS.md`, "The expression bans
- * are lifted"), so the seal is gone. What stays is accessibility: under
- * `prefers-reduced-motion` the field draws one static frame, the cursor snaps,
- * and the entrance choreography is replaced by "always visible".
+ * Under `prefers-reduced-motion` the field draws one static frame, the cursor snaps,
+ * and the entrance choreography is replaced by always visible.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
@@ -31,19 +25,12 @@ describe("관문 FX — 감속 동등물", () => {
   });
 
   /*
-   * The Library's two ambient canvases join this file rather than
-   * `reduced-motion-equivalent.contract.test.ts`, which scans `app/globals.css` for
-   * `animation:` and cannot see a rAF loop at all. They shipped on 2026-09-09 with the
-   * still-frame behaviour measured once (0 rAF callbacks per second) and nothing
-   * defending it; a measurement nobody can repeat is not a gate (guardian, 2026-09-09).
+   * The Library's ambient canvases are checked here because rAF loops are invisible to
+   * `reduced-motion-equivalent.contract.test.ts`, which only scans `app/globals.css` for `animation:`.
    */
   /*
-   * The insights board's two staged figures join the same roster for the same reason: they
-   * animate from JavaScript timers, so `reduced-motion-equivalent.contract.test.ts`, which
-   * scans `app/globals.css` for `animation:`, cannot see them at all. design-motion measured
-   * both paths on 2026-09-09 — forced `prefers-reduced-motion` and a deleted
-   * `IntersectionObserver` — and found the finished figure on the first painted frame with
-   * **zero** build timers in each. A measurement nobody can repeat is not a gate.
+   * The insights figures animate from JavaScript timers, which
+   * `reduced-motion-equivalent.contract.test.ts` cannot see; they must draw finished with zero timers.
    */
   it("(d) the growth figures draw finished on the first frame, with no schedule", () => {
     for (const rel of [
@@ -78,13 +65,8 @@ describe("관문 FX — 감속 동등물", () => {
     expect(field.slice(0, guard)).toMatch(/\n\s*draw\(\);/);
 
     /*
-     * ⚠️ **Pin the guarantee, not the two lines that happened to provide it** (2026-09-09).
-     * This case first matched `if (reduced) {\n draw();\n } else {` literally, and went red
-     * the moment the reduced branch gained a second correct statement — landing the
-     * self-assembly at t=0 so the still frame is the *settled* object rather than an
-     * object frozen mid-arrival. A contract that fails on a correct edit teaches people to
-     * loosen it under pressure. What must hold is: the reduced branch draws exactly one
-     * frame, and no loop or pointer listener is registered before the `else`.
+     * Pins the guarantee, not the lines: the reduced branch draws exactly one frame and registers
+     * no loop or pointer listener before the `else`.
      */
     const scene = read("src/views/library/expressive/constellation-scene.ts");
     const branch = scene.indexOf("if (reduced) {");

@@ -12,16 +12,8 @@ import {
 } from "@/shared/ui/transient-surface";
 
 /**
- * **Stops declarations of transient surfaces from silently shrinking** (2026-08-11).
- *
- * The sweeping check (`tests/e2e/transient-surface-contract.spec.ts`) measures
- * **only declared surfaces**. So a deleted declaration turns that surface into
- * something that **does not exist** rather than something that violates, and the
- * sweep reports green without a word — the shape that cost this repository a release
- * in 2026-08 (a gate that had never once checked what it claimed to check).
- *
- * So what is locked here is not values but **count and vocabulary**: the number of
- * declaring places never falls below today's, and the kind name is one of five.
+ * The sweep in `tests/e2e/transient-surface-contract.spec.ts` measures only declared surfaces, so a
+ * deleted declaration would pass silently. This locks the declaring-place count and kind vocabulary.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
@@ -52,29 +44,14 @@ const declaredKinds = declaringFiles.flatMap((file) =>
   [...readCode(join(REPO_ROOT, file)).matchAll(/transientSurface\("([^"]+)"\)/g)].map(([, kind]) => kind),
 );
 
-/**
- * **Kinds this harness cannot measure today** — with the reason recorded
- * (2026-08-11).
- *
- * ⚠️ An empty list is the ideal, but **pretending it is empty is worse.** A
- * declaration nobody measures is decoration, which is the dissent recorded against
- * this change in the decision ledger. So what cannot be measured becomes **something
- * written here**, not something absent.
- *
- * Shrinking this list is allowed; growing it is not (the ratchet below).
- */
+/** Kinds the harness cannot measure, with the reason recorded. The list may shrink but not grow. */
 const UNMEASURED_KINDS: Readonly<Record<string, string>> = {
   menu: "캔버스 오른쪽 클릭으로만 열린다. 볼트를 안 고른 브라우저에서는 지도 위 패널이 캔버스를 덮어 클릭이 120초 타임아웃이 나고, 합성 PointerEvent 는 캔버스의 포인터 파이프라인에 닿지 않는다(2026-08-11 실측 3회). 볼트를 실제로 붙이는 하네스가 생기면 이 줄을 지운다.",
   hint: "마우스를 올려서만 열린다. 위와 같은 이유로 포인터를 못 보낸다. 그리고 어느 좌표에 대상이 있는지는 그래프가 정하므로, 억지로 열려고 좌표를 훑으면 「없는 것」을 결함으로 신고하게 된다.",
 };
 
 describe("잠깐 뜨는 표면 선언 계약", () => {
-  /**
-   * First registered 2026-08-11, 7 places — map guidance · node detail popover ·
-   * context menu · cluster hint · edge hint · settings sheet · search palette ·
-   * dropdown list.
-   * **Growing is allowed; shrinking is not** (a ratchet).
-   */
+  /** The number of declaring places never falls below this floor. */
   it("선언하는 자리가 줄지 않는다", () => {
     expect(
       declaringFiles.length,
@@ -148,7 +125,7 @@ describe("잠깐 뜨는 표면 선언 계약", () => {
   });
 
   it("못 재는 종류가 늘지 않는다", () => {
-    // Measured 2026-08-11: 2 kinds (menu, hint). Growing this needs evidence that the kind cannot be measured.
+    // Growing the unmeasured set needs evidence that the kind cannot be measured.
     expect(
       Object.keys(UNMEASURED_KINDS).length,
       `못 재는 종류가 ${Object.keys(UNMEASURED_KINDS).length}개로 늘었다 — 재는 하네스를 만드는 쪽이 답이다.`,

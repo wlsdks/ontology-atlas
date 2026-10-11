@@ -26,12 +26,9 @@ import {
   kindForContainmentKey as kindForContainmentKeyApp,
 } from "@/shared/lib/vault-document/containment-keys";
 /*
- * ⚠️ Only the names the CLI runtime actually re-exports are imported here. Since
- * 2026-08-30 `cli/src/lib/schema.mjs` re-exports `mcp/src/schema.mjs` rather than
- * copying it, so a "cli === mcp" assertion over a name the CLI never uses would
- * compare an object with itself. Names the CLI does not consume are read from the
- * canonical module directly above; `schema-copy-sync.contract.test.ts` is what
- * keeps the re-export from growing a body again.
+ * Only the names the CLI runtime re-exports are imported here, since `cli/src/lib/schema.mjs`
+ * re-exports `mcp/src/schema.mjs`; a cli === mcp assertion on other names would compare an object to
+ * itself. `schema-copy-sync.contract.test.ts` keeps the re-export from growing a body.
  */
 import {
   buildFrontmatter as buildCli,
@@ -111,9 +108,8 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 
   /*
-   * Which list a kind change moves an entry into (2026-09-26, map-edit review). The app's
-   * reclassify and MCP's reclassify_concept / merge_concepts answer from two copies of one table;
-   * a drift would move an entry on one surface and leave it in place on the other.
+   * Which list a kind change moves an entry into: the app reclassify and MCP `reclassify_concept` /
+   * `merge_concepts` use two copies of one table, so a drift would move an entry on one surface only.
    */
   describe("containment lists — app and MCP place an entry in the same list", () => {
     const kinds = [...VAULT_KINDS, "vault-readme", "unknown", ""];
@@ -227,9 +223,8 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 });
 
-// Per-locale display names (owner instruction, 2026-07-24) — MCP (agents) and the
-// CLI (developers) must normalise identically or the vault ends up with different
-// keys. Fixing only one side breaks here.
+// Per-locale display names: MCP and the CLI must normalise identically or the vault ends up with
+// different keys.
 describe("display_<locale> 정규화 2-way contract", () => {
   it("emits display_<locale> in both builders identically", () => {
     const args = {
@@ -245,14 +240,8 @@ describe("display_<locale> 정규화 2-way contract", () => {
 });
 
 /**
- * The **value authority** for the node qualification gate (2026-07-31 council —
- * `docs/DECISIONS.md`).
- *
- * The spec is split three ways — values, logic, text — and this is the value gate.
- * The logic lives in `commitDoc` (`mcp/src/vault/`) and the text in
- * `mcp/src/construction-rules.mjs`. The CLI reached these thresholds through a
- * literal copy until 2026-08-30; it now imports the same module, so what remains
- * to pin is the value itself rather than the agreement between two files.
+ * Value authority for the node qualification gate. The logic lives in `commitDoc` (`mcp/src/vault/`)
+ * and the text in `mcp/src/construction-rules.mjs`; the CLI imports the same module.
  */
 describe("노드 자격 게이트 상수 — 값 정본", () => {
   it("잠긴 값들", () => {
@@ -266,9 +255,8 @@ describe("노드 자격 게이트 상수 — 값 정본", () => {
     expect(gateMcp.REFERENCE_SAMPLE_LIMIT).toBe(5);
   });
 
-  // Correction record 2026-07-31 — the researched starting range, promoted from
-  // po-evidence's literature and measurement review. It is a trigger, not a hard cap,
-  // and it steps aside once a vault has grown enough to produce its own p90.
+  // The researched starting range is a trigger, not a hard cap, and steps aside once a vault has grown
+  // enough to produce its own p90.
   it("부트스트랩 트리거는 8/6 이고 project→domain 은 없다", () => {
     expect(gateMcp.BOOTSTRAP_FANOUT_TRIGGER).toEqual({
       domain_to_capability: 8,
@@ -299,19 +287,8 @@ describe("노드 자격 게이트 상수 — 값 정본", () => {
 });
 
 /**
- * Three-way check on the construction-rules text — the mcp authority against the
- * in-app chat prompt.
- *
- * It lives here because it is the same kind of work this file already does: `src/`
- * and `mcp/` are separate packages, so cross-imports are physically impossible and,
- * like the schema, the text can only exist as literal copies.
- *
- * Two copies with no gate means drift is the default — and here that is not a
- * hypothesis but what actually happened in this file. `system-prompt.ts`'s header
- * said *"must move atomically with schema.mjs"* with nothing enforcing it, and the
- * kind hierarchy had quietly diverged (project's ownership scope, and a missing
- * `vault-readme` warning — measured 2026-07-31). A comment is not a contract; a test
- * is.
+ * Three-way check on the construction-rules text, mcp authority against the in-app chat prompt: `src/`
+ * and `mcp/` are separate packages that cannot cross-import, so the text exists as literal copies.
  */
 describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프트", () => {
   it("절차 전문이 바이트 그대로 실려 있다", () => {

@@ -10,14 +10,7 @@ import { trailNodeInkStrength } from "@/widgets/ontology-map/model/focus-state";
 import { draw as traceDraw } from "@/widgets/ontology-map/render/traces";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
-/**
- * Footprint trail ink — the two values a person can pick must both stay readable.
- *
- * Until 2026-09-08 this file also locked the "bloom" exception (default 0, cap
- * 6px, one `shadowBlur` consumer). The owner lifted the glow ban that day
- * (`docs/DECISIONS.md`, "The expression bans are lifted"), so those locks are
- * gone; what stays is contrast, which is accessibility, not taste.
- */
+/** Both selectable footprint trail inks must stay readable; contrast is accessibility, not taste. */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
 const read = (rel: string): string => readFileSync(join(repoRoot, rel), "utf8");
@@ -43,16 +36,9 @@ function contrastRatio(a: readonly number[], b: readonly number[]): number {
 
 describe("걸어온 길 잉크 — 고를 수 있는 세 톤은 모두 읽힌다", () => {
   /**
-   * The footprint must be readable in **every combination the user can choose**.
-   *
-   * Defect found by measurement (2026-07-29): with the indigo tone at
-   * `--color-indigo-accent` (#7170ff), the lowest intensity (0.5) gave **2.08:1**
-   * against the canvas — below 3:1. "Indigo plus subtle" is a selectable
-   * combination, so that is not a matter of taste but **a selectable defect**. The
-   * freedom to make something invisible is not a setting.
-   *
-   * It is the kind of thing a single value edit breaks again, so it is locked by
-   * value. WCAG 1.4.11 non-text contrast, 3:1.
+   * The footprint must be readable in every combination the user can choose: each tone at the lowest
+   * intensity clears 3:1 against the canvas (WCAG 1.4.11 non-text contrast). A selectable invisible
+   * trail is a defect, not a setting.
    */
   it("세 톤 모두 최저 진하기에서 3:1 을 넘는다", () => {
     const css = readGlobalCss();
@@ -60,8 +46,7 @@ describe("걸어온 길 잉크 — 고를 수 있는 세 톤은 모두 읽힌다
     const tones = {
       amber: /--color-footprint-trail:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
       indigo: /--color-footprint-trail-indigo:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
-      // Added 2026-09-10 with the star tone. A third choice is a third way to pick an
-      // invisible trail, so it is held to the same floor as the two before it.
+      // A third choice is a third way to pick an invisible trail, so it is held to the same floor.
       star: /--color-footprint-trail-star:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
     };
     for (const [name, hexValue] of Object.entries(tones)) {
@@ -87,21 +72,8 @@ describe("걸어온 길 잉크 — 고를 수 있는 세 톤은 모두 읽힌다
 });
 
 /**
- * The "path walked" lens tinting **nodes and relation lines too** with the trail
- * colour — reported by the owner on 2026-08-02: *"Should the selected node light up?
- * In yellow, including the lines?"* (the selected node should light up — in yellow, lines
- * included?).
- *
- * This is an **extension** of amber, so why it stays inside the charter is proved
- * by value:
- *
- * - **The same ink** — no new hue is opened. Both the node stroke and the relation
- *   line use `--color-footprint-trail` (one of the user's two choices) as is. That
- *   it differs from hub amber is already locked by the test above.
- * - **Lens-scoped** — only while the popover is open. When the ramp is 0 the ink is
- *   0, so this is not permanent amber. Same structure as the two preceding
- *   exceptions (the agent focus ring and the recent-change spotlight).
- * - **Contrast, not bloom** — what grows here is the ink's strength on the line.
+ * The path-walked lens tints nodes and relation lines with the trail ink: the same ink (no new hue),
+ * lens-scoped (ramp 0 gives ink 0, so never permanent amber), and a contrast change, not bloom.
  */
 describe("걸어온 길 렌즈 — 노드와 선의 트레일 잉크", () => {
   it("렌즈가 꺼져 있으면(램프 0) 아무 노드도 트레일 잉크를 안 받는다", () => {
@@ -126,9 +98,8 @@ describe("걸어온 길 렌즈 — 노드와 선의 트레일 잉크", () => {
   });
 
   /**
-   * A walked relation line is **not background ink** while the lens is on. That was
-   * the core of the defect the owner saw: the lens dimmed every edge, so the "path
-   * walked" showed no path. The colour actually painted is recorded and measured.
+   * A walked relation line is not background ink while the lens is on: the lens dims every edge, so the
+   * colour actually painted is recorded and measured.
    */
   it("밟은 선은 dim 이 아니라 트레일 색으로 칠해진다", () => {
     const tokens = {
@@ -172,10 +143,8 @@ describe("걸어온 길 렌즈 — 노드와 선의 트레일 잉크", () => {
   });
 
   /**
-   * Unwalked lines **recede as before** — the 2026-08-02 verdict on what happens to
-   * what was not visited: it dims. Clearing the field the moment the trail is read is
-   * this lens's reason for existing, so keeping unwalked relations lit would mean the
-   * lens did nothing.
+   * Unwalked lines recede as before: the lens exists to clear the field around the trail, and
+   * keeping them lit would make it do nothing.
    */
   it("렌즈가 켜져도 안 밟은 선은 dim 그대로다", () => {
     const source = readFileSync(
@@ -196,14 +165,9 @@ describe("별빛 톤은 지도가 이미 쓰는 별 잉크와 같은 값이다",
    * change exists to end.
    */
   /*
-   * ⚠️ **This assertion could not fail, and shipped claiming it had been probed red**
-   * (design-system, 2026-09-10). It searched the whole file for the value's `rgba(...)`, and
-   * `starfield.ts` line 3 *documents* its own literal in a comment — so the comment alone
-   * satisfied the match. Rewriting both painted lines to a peach left it green: the map
-   * would paint peach dust beside a white trail, which is the exact two-whites failure this
-   * test names. It now strips comments, and asserts **every** painted literal rather than
-   * the existence of one, so a second white cannot be added either, and a length floor
-   * catches the way a text-presence gate really dies — the literals being deleted.
+   * Strips comments and asserts every painted literal, not the existence of one: `starfield.ts` names
+   * its own literal in a comment, which would satisfy a whole-file search. A length floor catches
+   * deleted literals.
    */
   it("starfield 이 칠하는 모든 값과 어긋나지 않는다", () => {
     const css = readGlobalCss();

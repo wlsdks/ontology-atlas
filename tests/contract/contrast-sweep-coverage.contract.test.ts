@@ -6,26 +6,8 @@ import { describe, expect, it } from "vitest";
 import { AUDITED_ROUTES, EXCLUDED_ROUTES } from "../e2e/audited-routes";
 
 /**
- * Pins the contrast sweep so it **cannot become narrower than the accessibility
- * ratchet**.
- *
- * **Why this contract exists** (audit, 2026-08-04). The default routes in
- * `scripts/measure-contrast.mjs` were five lines, and the comment called them
- * *"the surfaces people actually look at for a long time"*. Among the screens that
- * subjective criterion left out was **`/ko/ontology/insights`** — the screen with the
- * densest data marks in this app. Measuring it found 0 shortfalls, but **an
- * unmeasured screen is not a passing screen.** Unmeasured green and clean green were
- * indistinguishable.
- *
- * The same failure had already happened once: the 2026-08-03 incident recorded in
- * `audited-routes.ts`'s doc-block — two ratchets each held a hand-written subset, and
- * the 4.42:1 hiding in that blind spot surfaced only just before a release. The
- * answer built then was "a single source, with exclusions carrying reasons", and the
- * contrast sweep was the one thing left outside it.
- *
- * So the criterion is not "the list is long" but **"it misses nothing in
- * `AUDITED_ROUTES`"**. When a route is added, the `audited-route-coverage` contract
- * breaks first and this one breaks next.
+ * The contrast sweep must cover every route in `AUDITED_ROUTES`; an unmeasured screen is not a
+ * passing screen. A new route breaks `audited-route-coverage` first, then this contract.
  */
 const HARNESS = join(process.cwd(), "scripts/measure-contrast.mjs");
 

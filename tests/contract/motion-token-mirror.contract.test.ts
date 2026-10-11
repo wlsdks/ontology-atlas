@@ -13,41 +13,9 @@ import {
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The **CSS ↔ JS mirror contract** for motion tokens.
- *
- * **Why this gate is required** (design council "system" measurement, 2026-07-28).
- * framer-motion cannot read a CSS `var()` in `transition`'s numeric fields, so
- * `src/shared/motion` **copies** the values from `app/globals.css` — and without a
- * gate a copy inevitably diverges. It had:
- *
- *   JS `MOTION` had four steps (0.12 / 0.18 / **0.28** / **0.42**), and the last two
- *   were values found nowhere in the CSS ramp. Of 22 usages, **15 were rendering
- *   with off-ramp durations**.
- *
- * Why no gate caught it: the lint selector (`duration-<number>`) sees **Tailwind
- * class strings only**. framer's `transition={{ duration: 0.28 }}` and this constant
- * object were within no gate's reach. The value diverged because it lived where no
- * gate looked.
- *
- * The agreement between `OVERLAY_SPRING` and `--overlay-spring-*` was until then
- * guarded by **a comment** ("drift audits use this comment as the reference"). A
- * comment is not a gate.
- *
- * **What this file guards:**
- *
- * 1. The JS durations equal the CSS ramp values.
- * 2. The JS **name set** does not exceed the ramp's names — blocking the return of
- *    `medium`/`slow`.
- * 3. The spring copy equals the CSS tokens.
- * 4. Every step rides the same easing family (an element receiving a ramp duration
- *    also takes the family's easing — `design.md`).
- * 5. **Exits are the one licensed second family.** `--motion-ease-exit` accelerates
- *    away; entries keep decelerating. A leaving surface reached through `--motion-ease`
- *    is the entrance clock played backwards (design-system seat, 2026-09-05), and an
- *    arriving surface reached through the exit curve pops in on its last frame. The
- *    rule is directional in both syntaxes: CSS may reference the exit token only from
- *    a rule that leaves (`-out` / `[data-state="closed"]`) on a keyframe named `*Out`,
- *    and JS may reach it only through `EXIT_TRANSITION`.
+ * CSS and JS mirror for motion tokens: framer-motion cannot read CSS `var()` in numeric transition
+ * fields, so `src/shared/motion` copies values from `app/globals.css`. Exits are the one licensed
+ * second easing family, reachable in CSS only from leaving rules and in JS only via `EXIT_TRANSITION`.
  */
 
 const CSS = readGlobalCss();
@@ -165,20 +133,8 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
    */
   it("CSS 에서 `var(--motion-ease-exit)` 는 나가는 규칙의 *Out 키프레임에만 붙는다", () => {
     /*
-     * Split on `}` rather than matching `([^{}]*)\{([^{}]*)\}` globally.
-     *
-     * ⚠️ **Measured 2026-09-12.** The regex form took **2,388 ms** on this 339 KB
-     * stylesheet: the leading `[^{}]*` backtracks from every position in the file. It
-     * was the slowest contract test in the repository, and the reason the pre-push
-     * hook carried `--testTimeout=30000` — under eight parallel lanes it went past the
-     * ordinary 5-second ceiling and failed as a timeout, in a file whose diff could
-     * not have touched it. The stretched timeout hid a quadratic parser instead of
-     * fixing it.
-     *
-     * The split form takes **1 ms** and yields the identical 262 rules and the
-     * identical verdict; verified by comparing both readings before the change. The
-     * flat `selector { body }` shape is unchanged, which is what keeps this consistent
-     * with `exit-motion-restart.contract.test.ts`.
+     * Split on `}` rather than a global `([^{}]*)\{([^{}]*)\}` match: the leading `[^{}]*` backtracks from
+     * every position in the 339 KB stylesheet and is quadratic.
      */
     const rules = CSS.split("}")
       .map((chunk) => {
@@ -211,12 +167,8 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
     }
     expect(offenders, `the exit curve reached an entrance:\n${offenders.join("\n")}`).toEqual([]);
     /*
-     * ⚠️ **20 seconds, because this case runs a backtracking regex over the whole of
-     * `app/globals.css`.** It passes alone in 3.9s and timed out at vitest's 5s default
-     * inside the 264-file contract run on a laptop with four branches building (measured
-     * 6.75s, 2026-09-12) — a lane going red on machine load rather than on a defect, and
-     * CI's own `Unit · Contract` run was green on the same commit. The assertions are
-     * untouched; only the clock they get is.
+     * 20 seconds: this case runs a backtracking regex over the whole of `app/globals.css` and exceeds the
+     * 5-second default under machine load.
      */
   }, 20_000);
 

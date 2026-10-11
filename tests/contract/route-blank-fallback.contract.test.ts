@@ -5,58 +5,15 @@ import koMessages from "../../messages/ko.json";
 import enMessages from "../../messages/en.json";
 
 /**
- * Gate against a blank screen right after entry (2026-07-27, audit D1 and D2).
- *
- * Background: every full-screen route in this app is a client view using
- * `useSearchParams()`. `output: 'export'` cannot prerender such a view and
- * **bakes the nearest Suspense fallback into the HTML instead**. If that fallback
- * is `null`, the deployed `index.html` body contains nothing — not even the
- * `#main` landmark. Until the bundle downloads and hydrates, the user sees a black
- * screen with only the rail, and during that time "broken", "empty vault", and
- * "loading" all look identical.
- *
- * Measured (static export, 2026-07-27): under 6× CPU throttling both the studio
- * and insights were blank in 50/50 samples at 500ms after entry; adding fast3G
- * left them blank in 30/30 samples even at 3s. A timing defect returns quietly, so
- * it is locked with a source gate.
- *
- * What this test locks:
- *  1. Nowhere in `app/` or `src/` is there a `<Suspense fallback={null}>`. It
- *     covers not just route `page.tsx` files but **boundaries inside views** — if
- *     an inner boundary is nearer, its fallback is what gets baked into the HTML,
- *     so fixing only the route leaves surfaces such as the docs vault silently
- *     blank (measured 2026-07-27).
- *  2. Files using Suspense use **approved shared fallbacks** only (hand-made
- *     placeholders per screen mean nobody notices when one is missing).
- *  3. The placeholder copy exists in both locales.
- *  4. The fallbacks for the entry routes (`/`, `/topology`) carry **content**, not
- *     a loading caption. In a static export the HTML body of those two routes is
- *     the fallback and nothing else, and `/topology` is the **demo URL** that the
- *     README and launch assets point at — measured 2026-07-27, it served 197KB
- *     containing 142 human-readable characters whose key sentence was "loading the
- *     screen". That was the entire page content seen by link-preview cards and
- *     crawlers. This row locks that regression.
+ * `output: "export"` bakes the nearest Suspense fallback into HTML for `useSearchParams()` views,
+ * so a `null` fallback leaves an empty body. Entry-route fallbacks must carry content.
  */
 
 const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
 
 /**
- * The approved shared fallbacks, each with a different job.
- *
- * - `RouteLoadingFallback` — the default. One sentence: this screen is still
- *   coming.
- * - `MapEntryFallback` — for the map entry route (`/topology`) only.
- * - `GatewayEntryFallback` — for the root `/` only.
- *
- * **Why a third exists** (2026-07-30): `/` changed from the map to the gateway
- * (the product's face) — the ledger's reversal of "root-first-open". Both places
- * share the property that the HTML body is nothing but the fallback, but **what
- * they must say differs**: one describes the map, the other the product's face.
- * Merging them makes the link preview of the primary address say something other
- * than what actually opens.
- *
- * Keeping this array short is the contract. Adding a fourth requires first
- * establishing why that screen needs its own placeholder.
+ * `RouteLoadingFallback` is the default, `MapEntryFallback` serves `/topology` and
+ * `GatewayEntryFallback` serves `/`. The latter two must say different things.
  */
 const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
@@ -66,12 +23,8 @@ const APPROVED_FALLBACKS = [
 ] as const;
 
 /**
- * Places where the fallback *is* the page content — [route, the fallback that
- * place must use].
- *
- * **The pairing matters.** It used to be "both use `MapEntryFallback`", and if
- * that check still passed after `/` became the face, the gate would be guarding
- * exactly the wrong thing.
+ * Places where the fallback is the page content: [route, the fallback that route must use]. The
+ * pairing matters so the gate guards the right fallback for each route.
  */
 const CONTENT_FALLBACK_ROUTES = [
   [join(process.cwd(), "app/[locale]/page.tsx"), "GatewayEntryFallback"],
@@ -151,12 +104,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
       join(process.cwd(), "src/shared/ui/gateway-entry-fallback.tsx"),
       "utf-8",
     );
-    // What the face must say: what it is (the headline) plus the two places to go.
-    // 2026-08-18 remake: the headline key moved from `stageTitle` to
-    // `heroTitleLine1/2` — following this file's own contract that the fallback
-    // carries the same sentences as the real screen (the old key vanished from the
-    // catalogue while this source kept requesting it, so `/ko/` printed
-    // MISSING_MESSAGE).
+    // The fallback carries the same sentences as the real screen: the headline plus the two places to go.
     expect(source).toContain("heroTitleLine1");
     expect(source).toContain("heroTitleLine2");
     expect(source).toContain("heroLead");

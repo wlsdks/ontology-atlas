@@ -3,30 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Gate against a slow Tauri command landing back on the macOS main thread.
- *
- * A `#[tauri::command]` without `(async)` runs **inline on the main thread** — verified in
- * `tauri-macros`, whose blocking wrapper calls the function body directly, and in `wry`, whose
- * `startURLSchemeTask` handler WebKit delivers on the main thread. While such a body runs, the
- * tao event loop is stopped: the window cannot be moved, resized or closed, input is ignored,
- * and macOS eventually paints the beachball.
- *
- * **The defect that made this worth gating.** Events emitted from *any* thread are delivered by
- * the main thread's event loop. So the install-progress streaming this repository deliberately
- * built — npm's stderr pumped line by line, the Node download reported every 250ms, both
- * argued at length in their own comments as the cure for the owner's "quiet waiting" report of
- * 2026-08-20 — could never appear, because the command whose progress it reports was itself
- * holding the thread that would deliver it. A 52 MB download froze the window and then replayed
- * every progress event at once. The feature was built, argued, merged, and dead.
- *
- * So this file does not assert a style. It asserts that the commands which wait on a network,
- * a subprocess, or a filesystem walk are not the ones holding the main thread.
- *
- * **`pick_vault_directory` is the deliberate counterexample** and is asserted to stay sync:
- * `rfd::FileDialog::pick_folder` opens an `NSOpenPanel`, which macOS requires on the main thread
- * and which runs its own modal event loop. It stays responsive *because* it blocks there. A
- * blanket "make every command async" would break the one command that needs the opposite — which
- * is why the rule is a named list rather than a lint.
+ * A `#[tauri::command]` without `(async)` runs on the main thread and stops the event loop, which
+ * also delivers emitted progress events. Commands that wait on network, subprocess or filesystem
+ * must be async; `pick_vault_directory` stays sync because `NSOpenPanel` needs the main thread.
  */
 
 const repoRoot = join(import.meta.dirname, '..', '..');

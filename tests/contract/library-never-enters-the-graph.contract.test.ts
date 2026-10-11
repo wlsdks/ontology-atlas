@@ -10,26 +10,8 @@ import { walkMd } from '../../mcp/src/vault/slug-paths.mjs';
 import { loadVaultDocs } from '../../mcp/src/vault/documents.mjs';
 
 /**
- * **A vault holds three kinds of file and only one is the graph** (`docs/DECISIONS.md`,
- * 2026-09-05).
- *
- * The library exists so a person can keep project documents of every format in the
- * folder they already opened. That is only safe while the graph stays exactly what it
- * was: files with a frontmatter `kind:`. Two things could break it, and neither would
- * announce itself — a graph full of PDF stubs is not an error, only a map nobody trusts.
- *
- * 1. **A raw source becoming a node.** `sources/plan.pdf` has no frontmatter to parse,
- *    so a parser reaching it would either fail or invent. Every walk — the app's
- *    `buildLocalManifest` and the MCP and CLI `walkMd` — must keep it out of the
- *    document list entirely rather than filter it later.
- * 2. **A wiki page becoming a node.** `wiki/quarter-plan.md` *is* Markdown, and the
- *    parser reads it like any other document. What keeps it out of the graph is the
- *    absence of `kind:`, which `deriveDocNode` requires. That is a real property of the
- *    data rather than a folder-name rule, and this gate holds it: a wiki page must
- *    contribute no node even while it carries `sources`, `source_hash` and `created_by`.
- *
- * The two are checked together because they fail together: the moment either becomes a
- * node, `find_path` and the map start answering with material nobody reviewed.
+ * Only files with a frontmatter `kind:` are graph nodes. Raw sources must never enter the document
+ * list, and a wiki page must contribute no node even while it carries `sources` or `source_hash`.
  */
 
 const fixtureRoot = mkdtempSync(join(tmpdir(), 'atlas-library-graph-'));
@@ -41,9 +23,8 @@ mkdirSync(join(fixtureRoot, 'capabilities'), { recursive: true });
 // Bytes that are not Markdown and not text. The point is that nothing reads them.
 writeFileSync(join(fixtureRoot, 'sources/plan.pdf'), Buffer.from('%PDF-1.7\n%âãÏÓ\n'));
 writeFileSync(join(fixtureRoot, 'sources/budget.xlsx'), Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-// Markdown filed under `sources/` is a raw source like the PDF beside it (2026-09-07
-// decision): listed by name and size, never parsed as a page, never a node. A Notion or
-// Obsidian export and every imported document arrive in exactly this shape.
+// Markdown under `sources/` is a raw source like the PDF beside it: listed by name and size,
+// never parsed as a page, never a node.
 writeFileSync(
   join(fixtureRoot, 'sources/plan-notes.md'),
   '---\norigin: sources/plan.pdf\n---\n\n# Plan notes\n',

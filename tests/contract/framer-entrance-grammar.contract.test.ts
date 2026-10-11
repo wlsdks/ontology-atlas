@@ -11,20 +11,9 @@ import {
 } from "@/shared/motion";
 
 /**
- * **A surface's starting place is a name, not a number.**
- *
- * `src/shared/motion` had the entry clock (`MOTION`) and the exit clock
- * (`EXIT_TRANSITION`) under the mirror contract from 2026-07 and 2026-09-05, and the
- * distance stayed a literal: on 2026-09-08 eight files wrote their own
- * `{ opacity: 0, y: 8 }` or `{ opacity: 0, y: 12, scale: 0.985 }`, 16 sites in all. That
- * is the setup every doc-block in that module warns about — duplicate a value and
- * eventually only one copy changes.
- *
- * This gate is the reason the names hold. It scans the tracked source for a framer
- * `initial` / `animate` / `exit` prop carrying its own `y:` offset and requires the
- * module's constants instead. Two grammars are named because two exist; a third would
- * be a new motion decision, and this test is where it has to be argued rather than
- * typed.
+ * A surface's starting place is a name, not a number: scans tracked source for a framer `initial`,
+ * `animate` or `exit` prop with its own `y:` offset and requires the module's constants. Two grammars
+ * are named; a third is a new motion decision argued here, not typed.
  */
 const ROOT = path.join(import.meta.dirname, "..", "..");
 
@@ -39,14 +28,9 @@ const TRACKED = execFileSync("git", ["ls-files", "src", "app"], {
   .filter((f) => !f.startsWith("src/shared/motion/"));
 
 /**
- * The gate is **narrow on purpose**: it refuses a literal that duplicates a value the
- * module already names, not every offset in the codebase. A census on 2026-09-08 found
- * six entrance shapes; two of them were copy-pasted 16 times and are now named, while
- * `y: 4` (the similar-node warning), `y: 10` (the project detail header), `y: -8` with
- * `scale: 0.98` (the palette dropping from above) and the drawer's `x`/`y` pairs each
- * have one consumer. A single-consumer value is not a token — that is the module's own
- * rule and `design.md`'s — so naming them would be misinformation, and gating them
- * would be a rule with nothing to catch.
+ * Narrow on purpose: refuses only a literal duplicating a value the module already names.
+ * Single-consumer values (`y: 4`, `y: 10`, `y: -8` with `scale: 0.98`, the drawer's `x`/`y` pairs) are
+ * not tokens, so naming or gating them would mislead.
  */
 const NAMED_STARTS = [
   { name: "OVERLAY_RISE", axes: [/\bopacity:\s*0\b/, /\by:\s*8\b/], forbidExtra: /\bscale:/ },

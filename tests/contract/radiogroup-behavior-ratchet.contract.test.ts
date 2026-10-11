@@ -6,39 +6,9 @@ import { describe, expect, it } from "vitest";
 import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * radiogroup **behaviour** ratchet — does the keyboard the role promises actually
- * exist? (2026-08-15)
- *
- * **Why this gate is needed — the value axis already declared completion.**
- * `control-adoption-ratchet` declared **"zero hand-styled places"** on 2026-08-06.
- * Yet this inventory found **11 hand-written radiogroups outside the primitive plus
- * 9 groups expressing exclusive selection through `aria-pressed` = 18 groups**, with
- * **0 roving implementations and 0 onKeyDown — 100%**. Almost all 11 call
- * `controlClass`, so **they are green under the value-axis ratchet**.
- *
- * > **The value layer is fully adopted; the behaviour layer has never been
- * > checked.**
- *
- * **Why neither lint nor axe catches it** (both measured):
- *
- * - **lint** — a missing roving implementation is **a missing class**.
- *   `no-restricted-syntax` cannot find the absence of something.
- * - **axe** — it runs static DOM rules only. A `radiogroup > radio` structure is
- *   perfectly valid, and arrow-key movement is **behaviour**, so no rule exists.
- *
- * **What is counted — behaviour reduced to an import.** The moment
- * `useRovingRadioGroup` becomes **the single implementation of the behaviour**,
- * "is the behaviour present" reduces to "does it call that hook". That is the
- * second reason for this structure.
- *
- * Places using the primitive (`SegmentedControl`) never hand-write a `role`, so
- * they are outside this scanner's view — **what is caught here is only places that
- * hand-wired a role**, and those pass only by calling the hook in the same file.
- *
- * Registration is not an exemption: a registered file passes only if **the hook
- * call really exists**. Writing the name down without wiring it turns red
- * (inherited from the Dialog ratchet's "if the ledger is more generous than the
- * measurement, it turns red").
+ * Radiogroup behaviour ratchet: a hand-wired `role="radiogroup"` passes only if the same file calls
+ * `useRovingRadioGroup`, the single implementation of arrow-key behaviour. Lint cannot find a missing
+ * class and axe runs static DOM rules only. Registering a file without wiring the hook fails.
  */
 
 const ROOT = process.cwd();
@@ -68,17 +38,8 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + 「눌린 칩의 인디고를 덮지 마라」 조건부 보더"],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas 우물 · Chip 아이템 · Tooltip 래퍼 · 켜진 칩만 라벨"],
   /*
-   * ⚠️ The five below were **migration targets** in the system seat's verdict.
-   * Measurement overturned that assignment — all five carry **hover ink that does not
-   * exist in the value layer**, so migrating them would remove hover feedback on
-   * inactive items. In this repository hover is hand-written per place rather than an
-   * axis (inventory: **312 `controlClass` call sites** hand-write hover — chip 88 ·
-   * link 74 · row 42 · card 34 · icon 28 · pill 24 · segment 19), and three places use
-   * **different ink** for the same "inactive segment hover" role (`text-primary` ·
-   * `text-secondary` · `map-panel-text-primary`).
-   *
-   * So container convergence waits **until the hover axis is decided**. The behaviour
-   * is fully attached now.
+   * Hover ink is hand-written per place, not an axis in the value layer, so migrating these would
+   * remove hover feedback on inactive items.
    */
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", "p-1/gap-1 인셋 + 비활성 세그먼트 hover"],
   ["src/features/first-run-starter/ui/FirstRunStarterModule.tsx", "패널 스코프 hover 잉크"],
@@ -102,19 +63,13 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
 const HOOK_ADOPTION_FLOOR = 10;
 
 /**
- * **The debt ledger** — hand-written radiogroups that have neither migrated nor put
- * the hook on. It cannot grow; repaying one deletes its row. Each row's disposition
- * is in the system seat's verdict (docs/DECISIONS.md 2026-08-15, entry 8).
+ * Debt ledger: hand-written radiogroups with neither migration nor the hook. It cannot grow; repaying
+ * one deletes its row.
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   /*
-   * ✅ **Empty (2026-08-15).** Hand-wired `role="radiogroup"` outside the primitive
-   * is **0**, and the 9 groups that expressed exclusive selection through
-   * `aria-pressed` have all been re-expressed. Behaviour-layer defects went 18/18 →
-   * **0/18.**
-   *
-   * What remains is **container** convergence, which is a design task rather than a
-   * defect (see the registration above).
+   * Empty: no hand-wired radiogroups remain outside the primitive. What remains is container
+   * convergence, a design task rather than a defect.
    */
 ];
 
@@ -132,11 +87,8 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /**
- * Counts `role="radiogroup"` occurrences per file.
- *
- * ⚠️ Both quote variants are matched — on 2026-08-05 the icon ratchet matched single
- * quotes only and stayed green while blind to **73%** of the repository. That lesson
- * is the coverage assertion below.
+ * Counts `role="radiogroup"` per file, matching both quote variants so a single-quote-only match
+ * cannot hide most of the repository.
  */
 const ROLE_RE = /role=\{?["']radiogroup["']\}?/g;
 
@@ -160,14 +112,8 @@ function scan() {
       scanned += 1;
       if (EXEMPT_FILES.has(rel)) continue;
       /*
-       * ⚠️ **Strip comments first.** On the day it was switched on, this scanner caught
-       * `settings-primitives.tsx` as a violation — the match was **a quotation inside a
-       * comment explaining "this is how it used to be"**. If documenting a migration
-       * counts as a violation of that migration, the next person chooses not to record the
-       * evidence.
-       *
-       * The helper is **the same one** the static surface inventory uses — building two
-       * scanners makes them drift by default.
+       * Comments are stripped first, using the same helper as the static surface inventory, so a quotation
+       * in a comment is not a violation and the two scanners cannot drift.
        */
       const src = stripComments(readFileSync(file, "utf8"));
       // Skip generic arguments (`useRovingRadioGroup<T>({…})`) — literal matching dies
@@ -273,10 +219,8 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
 
   it("표기 커버리지 — 따옴표 한 종류만 보고 있지 않다", () => {
     /*
-     * "Not an empty set" and "seeing the whole set" are different (the 2026-08-05 icon
-     * ratchet set the precedent). This proves synthetically that the regex really
-     * matches both notations — even if only one notation exists in the repository today,
-     * the other must be caught when it arrives.
+     * Proves synthetically that the regex matches every notation even if only one exists today, since
+     * a non-empty set is not the same as seeing the whole set.
      */
     const probe = `role="radiogroup" role='radiogroup' role={"radiogroup"}`;
     expect([...probe.matchAll(ROLE_RE)]).toHaveLength(3);

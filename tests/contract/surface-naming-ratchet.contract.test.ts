@@ -6,45 +6,14 @@ import { column, concept } from '../../scripts/lib/locale-vocabulary.mjs';
 import { judgeRatchet } from './lib/ratchet-base';
 
 /**
- * ⚠️ **A string that names the surface the reader is on can only be right on one of them.**
- *
- * Two of these were found on 2026-08-28, both by looking at the installed app rather than by
- * reading code, and neither was catchable any other way — the sentences were grammatical, and a
- * full-page screenshot shows nothing wrong with a sentence that is simply in the wrong place:
- *
- * | Where | What the app said |
- * |---|---|
- * | architecture record stamp | "this browser cannot confirm the source still matches" — beside a panel listing 87 modules it had just read from disk |
- * | docs editor, git panel | an unsaved draft "kept in browser", and any blocked clipboard blamed on "the browser" |
- *
- * The defect is never the word. It is a sentence naming a surface while sitting on a code path
- * that runs on both, and whether that is true depends on the render site, not on the string. So
- * this counts rather than judges: `.claude/rules/documentation.md` allows a mechanical inventory
- * ratchet and forbids a hand-written list of forbidden words, because a word list weakens silently
- * unless somebody keeps expanding it while a count cannot.
- *
- * **The number may fall and never rise.** Adding one is not forbidden — the download call to
- * action, the degraded-runtime notes and the unsupported-picker warning all name the browser
- * correctly, because the browser is what their reader is actually in. It is a decision, and this
- * makes it one somebody has to take deliberately by recording the raise.
+ * A string naming the surface the reader is on can be right on only one of them, and that depends on
+ * the render site. So this counts instead of judging, and the count may fall but never rise.
  */
 
 /**
- * **Judged against the change's merge base, not a literal** (2026-09-26).
- *
- * The ceiling was a literal with a dated paragraph for every deliberate raise, and every
- * one of this file's commits moved it. Two branches that each added a correctly placed
- * surface name conflicted on that line. Now the count runs on the working tree and on the
- * merge-base tree (`tests/contract/lib/ratchet-base.ts`); only growth fails, and a removal
- * is banked by the next branch's base without anyone lowering a number.
- *
- * A deliberate addition is a `tests/contract/ratchet-raises/surface-named-strings/<slug>.json`
- * record whose `why` names the render-site check and the test that holds it, as the
- * paragraphs here used to (they are in this file's Git history). One record covers both
- * locales, which must tell the same story (below).
- *
- * 25 is the measurement at conversion. It is never edited: it serves a clone with no merge
- * base, and is a floor for a tree compared with itself.
+ * Judged against the merge base (`tests/contract/lib/ratchet-base.ts`); only growth fails. An addition
+ * is a `tests/contract/ratchet-raises/surface-named-strings/<slug>.json` record. The fallback serves
+ * a clone with no merge base and is never edited.
  */
 const SURFACE_NAMED_FALLBACK: number = concept('surfaceNaming').fallback;
 

@@ -10,28 +10,9 @@ import {
 import { readAcpRust } from '../helpers/read-acp-rust';
 
 /**
- * **A runtime the screen says will ask must actually have a checkpoint in place.**
- *
- * **Why this gate exists (measured 2026-08-16).** Only after measuring did it
- * emerge that each tool establishes the checkpoint differently:
- *
- * | | Claude | Codex |
- * |---|---|---|
- * | config isolation | works | provides credentials/sandbox floor; approval policy is overridden |
- * | session mode | has no "read only" | exact 1.6.2 `read-only` gates direct files |
- * | Atlas MCP writes | isolated config asks | server-owned typed checkpoint asks |
- *
- * With codex, putting `approval_policy = "untrusted"` in an isolated `CODEX_HOME`
- * still produced **a file outside the vault after zero permission requests**. Switching to
- * `read-only` blocked that direct-file path, but installed-app acceptance on 2026-08-24 proved
- * that a self-registered Atlas `add_relation` still executed with **zero**
- * `session/request_permission` requests and changed the vault immediately. Installed acceptance on
- * 2026-09-03 then found 1.8.0 mapping that mode to `workspaceWrite`; the exact 1.6.2 pin, forced
- * mode, and server-owned checkpoint passed reject, allow-once, and fresh-request probes together.
- *
- * So the danger is **the two sides diverging**: the screen says this tool will ask
- * while the session does not set that mode, or the mode is set and the screen does
- * not say so. The user can detect neither — no error is raised.
+ * The screen and the session must agree on whether a checkpoint exists. Claude asks via isolated
+ * config; Codex needs the forced `read-only` mode plus a server-owned typed checkpoint for Atlas MCP
+ * writes.
  */
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -78,8 +59,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     const lib = readFileSync(join(ROOT, 'src-tauri/src/acp_session/mod.rs'), 'utf8');
     const acp = readAcpRust(ROOT);
     const start = lib.slice(lib.indexOf('fn acp_start('), lib.indexOf('fn acp_permission_verdict('));
-    // The login probe spawns from its own function so a failed run can be logged and retried;
-    // slice **that** function, or this gate measures a wrapper that no longer starts a process.
+    // The login probe spawns from its own function; slice that function or the gate measures a wrapper
+    // that starts no process.
     const probe = acp.slice(
       acp.indexOf('fn run_login_probe('),
       acp.indexOf('pub(crate) fn real_probe()'),
@@ -109,13 +90,8 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
 
   it('건 모드를 **화면에도 반영한다** — 지금 상태를 틀리게 말하지 않는다', () => {
     /*
-     * Defect caught in live verification on 2026-08-16: the session was set to
-     * `read-only` while the dropdown read `Agent`. The value `session/new` returns is
-     * from **before** the mode is applied, so leaving it as-is goes stale.
-     *
-     * That value happens to be the one deciding whether the agent asks before leaving
-     * the folder, which makes it the worst place to be wrong — the user trusts or
-     * distrusts safety based on that screen.
+     * The value `session/new` returns predates the mode being applied, so the dropdown must show the
+     * gated mode; users judge safety by that screen.
      */
     const src = readFileSync(
       join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),

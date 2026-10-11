@@ -4,30 +4,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Design-system extraction boundary — **core parts are not bound to this app**
- * (2026-08-15).
- *
- * **Why.** On 2026-08-15 the PO council deferred extraction into a separate
- * repository and confirmed as its slice "draw the boundary now so the cost on
- * extraction day converges to zero". A boundary drawn only in a document gets redrawn
- * by the next person, so a machine holds it here.
- *
- * **What the measurement overturned.** The council briefing said "8 files in
- * `shared/ui` are bound to next-intl/@i18n/sonner". Counting exhaustively, **only 1
- * of them was a real defect**:
- *
- * | Kind | n | Verdict |
- * |---|---:|---|
- * | Name mentioned only in a comment (`transient-surface`, `toast-position`) | 2 | Not bound |
- * | **App-only parts** where binding is correct (gateway, map, routing fallback, chrome tile) | 5 | Not extraction candidates |
- * | A general part reading translations directly (one `containerAriaLabel` line in `toast.tsx`) | **1** | **A real defect — fixed** |
- *
- * Another case of false debt (the third, after the icon ratchet's 9 and the 3 files
- * said to bypass the form layer). **Before repaying debt, measure whether it is debt.**
- *
- * **What is enforced.** Files under `src/shared/ui/**` not registered in `ATLAS_BOUND`
- * (the core) may not import an app binding. A core part that fetches its own strings,
- * routing, or upper layers belongs to this app rather than to the system.
+ * Files under `src/shared/ui/**` not registered in `ATLAS_BOUND` (the core) may not import an app
+ * binding: a core part that fetches its own strings, routing or upper layers belongs to this app.
  */
 
 const ROOT = process.cwd();

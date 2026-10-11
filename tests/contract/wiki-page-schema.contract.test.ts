@@ -24,25 +24,9 @@ import {
 } from '../../mcp/src/wiki-schema.mjs';
 
 /**
- * **One format, however many things write a page.**
- *
- * A wiki page can come from an ACP agent, from a local model through the app's own LLM
- * path, or from a person typing. If the shape each of them is told differs by one field
- * from the shape a reader enforces, the format does not exist — every consumer is back
- * to guessing what it is holding. The owner's instruction on 2026-09-05 was exactly
- * this: whatever produces pages must write them in our format, and that format must
- * exist as a clear template of our own.
- *
- * The MCP package ships separately from the web bundle, so the contract lives in two
- * physical modules. This table is their unification, the same pattern as
- * `validate-vault-document.contract.test.ts`: messages may be worded differently,
- * **codes may not**, because the Docs sidebar, `wiki-validate`'s exit code, and an
- * agent's retry all branch on the code rather than on the sentence.
- *
- * The template is compared character for character rather than by shape. It is prompt
- * material: a writer told a slightly older template writes pages the current validator
- * rejects, and the rejection would look like a model failure rather than a drift between
- * two constants.
+ * One format however many things write a page: the TS and MCP validators must share the same codes
+ * (messages may differ), since the Docs sidebar, `wiki-validate` exit code and agent retries branch
+ * on the code. The template is compared character for character because it is prompt material.
  */
 
 interface Validator {
@@ -107,12 +91,9 @@ describe('the wiki page contract — both implementations agree', () => {
   });
 
   /**
-   * `init` writes the template into every new vault, so a hand-edit there would hand a
-   * person — and the model reading it — a shape the validator no longer accepts. The
-   * English file is the schema string byte for byte. The Korean one is a translation of
-   * the placeholder prose only: keys, section headings and citation syntax are the
-   * format itself and stay identical, which is why it is checked by validating it rather
-   * than by comparing text.
+   * `init` writes the template into every new vault. The English file is the schema string byte for
+   * byte; the Korean one translates placeholder prose only, so it is validated rather than compared as
+   * text.
    */
   it('the vault templates the CLI ships are the contract', () => {
     const repoRoot = resolve(__dirname, '../..');
@@ -141,10 +122,8 @@ describe('the wiki page contract — both implementations agree', () => {
 });
 
 /**
- * The folder half. The accumulation probe (2026-09-06) found every page an orphan and
- * no two pages that shared a source aware of each other, in every condition, while
- * the page validator stayed green — so the three facts only the whole folder can tell
- * are judged here, by both implementations, on the same cases.
+ * The folder half: three facts only the whole folder can tell are judged by both implementations on
+ * the same cases, since the page validator alone stays green.
  */
 describe('the wiki folder contract — both implementations agree', () => {
   const FOLDER_VALIDATORS = {

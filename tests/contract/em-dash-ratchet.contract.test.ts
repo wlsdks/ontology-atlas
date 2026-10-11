@@ -5,54 +5,15 @@ import { readLedgerSource } from '../../scripts/lib/record-ledgers.mjs';
 import { describe, expect, it } from "vitest";
 
 /**
- * **Em-dash (`—`) ratchet — it can never grow in user-facing text.**
- *
- * **Why** (owner, 2026-08-09):
- *
- * > *"Scan my entire folder at a glance — all numbers are auto-calculated in the document … This is an AI pattern? If there are any like this, change them all to avoid using the dash."*
- * > (that dash construction is an AI pattern; change every instance so it is not
- * > used)
- *
- * Correct. "Short lead — long explanation" is a sentence shape models reach for
- * by default, and human-written Korean UI copy usually breaks with a full stop.
- *
- * **Why it was not all fixed at once — a judgement made after counting.**
- * Measured: of 3,206 strings, **501** (ko 234, en 267 = 15.6%) use the dash. They
- * split by shape and **the right answer differs per place**:
- *
- * | Shape | n | Replaced with |
- * |---|---|---|
- * | Short lead — explanation (label-like) | 282 | Full stop, line break, or two separate fields |
- * | One mid-sentence dash | 205 | Usually a full stop |
- * | Parenthetical (two or more) | 11 | The sentence must be rewritten |
- * | **Empty-value glyph** | 2 | **Left alone** — a symbol, not prose |
- *
- * Bulk-replacing 487 strings by machine breaks the writing: this repository
- * treats copy as something a person judges, which is why the documentation gate
- * also holds the rule "never pin a sentence a human wrote". So the fix proceeds
- * **screen by screen while the count is held from growing**.
- *
- * ⚠️ **When it falls, lower the cap with it.** Otherwise every fix becomes new
- * headroom.
+ * Em-dash ratchet: the dash must not appear in user-facing text, since it is a sentence shape models
+ * default to. A lone empty-value glyph is excluded as a symbol, not prose.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /**
- * **Zero — a ban, not a cap** (exhaustive cleanup completed 2026-08-09).
- *
- * It started as a cap (ko 232, en 265). The owner replaced the plan of fixing
- * screen by screen with *"Do all of it perfectly, from the first"* (do all of it perfectly, from
- * the first), so **all 494 were cleared**: a full stop where the sentence ends, a
- * colon where it continues, parentheses for parentheticals.
- *
- * **19 places broken by machine replacement were fixed by hand** (11
- * parentheticals + 8 where two colons collided). Those 19 are the evidence for
- * why this cannot be a bulk replace — `downloads: with their real sizes and
- * checksums: appear here` is grammatical but meaningless.
- *
- * **The single `—` used as an empty-value glyph is excluded** — a symbol, not
- * prose.
+ * Zero is a ban, not a cap. Bulk machine replacement breaks sentences (`downloads: with their real
+ * sizes and checksums: appear here`), so fixes are by hand. A lone dash meaning no value is excluded.
  */
 const BASELINE = { ko: 0, en: 0 } as const;
 
@@ -109,36 +70,13 @@ describe("작대기 래칫 — 사용자 문구", () => {
 });
 
 /**
- * **The sample vault does not use the dash either** (2026-08-09).
- *
- * With the UI-copy ratchet in place, editing the sample vault **introduced about
- * 40 new dashes** there, because the ratchet watched only `messages/*.json` — yet
- * UI copy is not the only text users read, and the sample vault is **the only data
- * a first-time visitor reads**.
- *
- * After cleanup the count was 0, and at 0 a **ban** is right rather than a cap.
+ * The sample vault carries no dash either: it is the only data a first-time visitor reads, and at 0
+ * a ban fits better than a cap.
  */
 /**
- * **Documents rendered on screen carry no dash either** (exhaustive cleanup
- * 2026-08-09).
- *
- * | Target | Where it renders | Removed |
- * |---|---|---|
- * | `samples/storefront/**` | The sample vault (the only data a first-time visitor reads) | 93 |
- * | `docs/guide/**` | `/guide` | 148 |
- * | `docs/ontology/**` | Vault nodes, and the default manifest for users with no folder | 105 |
- * | `docs/CHANGELOG.md` | `/changelog` | 1,722 |
- *
- * **What was deliberately excluded.**
- *
- * - **`docs/DECISIONS.md`** (2,158) — an **append-only ledger**. Its own contract
- *   is "past entries are not edited", so rewriting old sentences is itself a rule
- *   violation.
- * - **`AGENTS.md`, `DESIGN-SYSTEM.md`, `.claude/rules/**`, `FEATURES.md`** —
- *   documents agents and we read. "It reads as AI-written" costs something on
- *   **screens users see**, and these are not that.
- *
- * So this gate's boundary is not "is it markdown" but **"does a user read it"**.
+ * Documents rendered on screen carry no dash: `samples/storefront/**`, `docs/guide/**`,
+ * `docs/ontology/**`, `docs/CHANGELOG.md`. The boundary is whether a user reads it; the append-only
+ * decisions ledger and agent-facing docs are excluded.
  */
 describe("작대기 — 화면에 그려지는 문서", () => {
   const RENDERED_DOC_ROOTS = [
@@ -167,19 +105,8 @@ describe("작대기 — 화면에 그려지는 문서", () => {
       expect(markdownFiles(root).length, `${root} 에서 문서를 못 읽었다`).toBeGreaterThan(0);
     }
     /**
-     * ⚠️ **Code blocks are exempt** (learned 2026-08-09, after switching this gate
-     * on).
-     *
-     * At first the dash was banned across whole files. But code blocks in
-     * `docs/guide/**` transcribe **what the CLI actually prints**, and the CLI prints
-     * dashes such as `— blast radius` (`cli/src/commands/blast-radius.mjs`). Changing
-     * that transcript to a colon is not polishing a sentence but **writing down
-     * something the program does not say**. It was done once (16 lines) and reverted.
-     *
-     * So the subject of this verdict is **prose**. Inside code blocks is a record of
-     * fact and is left alone. Whether the CLI output itself should drop the dash is a
-     * separate question, and the order there must be: fix the CLI, then let the docs
-     * follow.
+     * Code blocks are exempt: guide transcripts record what the CLI actually prints, dashes included, and
+     * editing them would document output the program does not produce. Fix the CLI first, then the docs.
      */
     const proseHasDash = (text: string): boolean => {
       let inFence = false;

@@ -2,52 +2,12 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 /**
- * Hard-cut inventory — **counts, across all source, every surface that appears
- * conditionally and has no way out.**
- *
- * This used to walk a hand-written registry, and when that registry was empty the
- * gate ran over an empty set. "Zero hard cuts" was then true of the list, not of the
- * product. This module replaces that: the input is an exhaustive walk of `src/` and
- * `app/`, not a list.
- *
- * **What counts as an appearance** — the number only means something once three
- * categories are separated. The old registry's preamble already warned that counting
- * by suffix over-reports; following the parent's render gate splits them three ways:
- *
- * | Category | This inventory | How it is decided |
- * |---|---|---|
- * | The parent renders it conditionally | **Counted** | The call site is `{cond && <X/>}` or `{cond ? <X/> : null}` |
- * | Always rendered | Not counted | **Structurally excluded** — only conditional call sites are examined, so it is never matched |
- * | The parent already animates it | Not counted | If the alternative branch **renders something**, this is a swap, not an appearance. Places where only the content changes inside an already-mounted container (sections of the settings sheet, step branches of the connect sheet) all fall out here |
- *
- * That third row is this inventory's key discriminator. It filters out the survivor
- * sites `VaultAgentSetupPanel` and `ProjectQuickEditPanel` — the category the old
- * registry had hand-annotated as "the parent already animates it" is now filtered
- * **mechanically**.
- *
- * **An element that cannot be interacted with is not a surface.** A root that is
- * `pointer-events-none` or `aria-hidden` is not counted, on two grounds:
- *
- * 1. **The motion-budget rule already says so** — `.claude/rules/design.md`:
- *    *"Frequency eats the budget. Hover/focus surfaces are `0~--motion-fast`."* (frequency
- *    eats the budget; hover/focus surfaces get 0 to `--motion-fast`). For a passive
- *    readout that follows the pointer, 0ms is a **permitted value**, not a defect.
- *    Measured: the map's edge and cluster hover cards are exactly this category
- *    (root is `pointer-events-none fixed z-40`).
- * 2. Position markers that are **neither visible nor clickable** — a tour anchor
- *    (`aria-hidden` plus zero size) — drop out here. Before this exclusion the
- *    measured false-positive rate was about 40%; after it, 1 of 11 (a borderline
- *    case).
- *
- * ⚠️ **This exclusion has a direction.** Ask whether an exemption that "keeps
- * legitimate use alive" also becomes "keeps illegitimate use alive" (the lesson from
- * the shadow rule leaking through its `var(` exemption). Here it is narrow: only
- * elements whose root genuinely cannot be clicked drop out, and such an element has
- * no reason to own an exit window anyway (the pointer has already left by the time
- * it closes).
+ * Counts conditionally appearing surfaces with no exit, from an exhaustive walk of `src/` and `app/`.
+ * Swaps (the alternative branch renders something) and non-interactive roots (`pointer-events-none`,
+ * `aria-hidden`) are not appearances; only roots that genuinely cannot be clicked drop out.
  */
 
-/** Surface naming convention. The **call site** makes the verdict, not the suffix — this only narrows candidates. */
+/** The call site decides, not the suffix; this only narrows candidates. */
 const SURFACE_SUFFIXES = [
   'Panel',
   'Sheet',
@@ -64,25 +24,16 @@ const SURFACE_SUFFIXES = [
 ];
 
 /**
- * The **recognised mechanisms** that give a surface an entrance and an exit.
- *
- * ⚠️ The verdict is **substring containment** over source, so comments read as code
- * — writing a mechanism name into a probe fixture silently kills the probe.
- *
- * `animate-out` / `data-[state=closed]` are the Radix-family exits. The first
- * version lacked both and wrongly counted `Tooltip` as a hard cut: **a short
- * mechanism list produces false positives.** Conversely an **entrance-only** class
- * such as `map-overlay-in` does not belong here — having no way out is exactly the
- * debt this gate counts.
+ * Matching is substring containment over source, so a mechanism name in a probe fixture comment
+ * silently kills the probe. Entrance-only classes do not belong: no way out is the debt counted.
  */
 export const MOTION_MECHANISMS = [
   'AnimatePresence',
   'usePanelPresence',
   'useSurfaceSwap',
   '<Surface',
-  // Dialog is the modal primitive holding AnimatePresence inside, so it owns its
-  // entrance and exit even when mounted conditionally (ratified by the system seat,
-  // 2026-08-15, dialog.tsx).
+  // `Dialog` holds `AnimatePresence` inside, so it owns its entrance and exit even when mounted
+  // conditionally.
   '<Dialog',
   'atlas-tooltip',
 ];
@@ -123,12 +74,8 @@ function resolveImport(root: string, fromFile: string, spec: string): string | n
 }
 
 /**
- * Follows barrels (`index.ts`) through to the real definition file.
- *
- * Without this, the **barrel** is read instead of the file behind the re-export and
- * the verdict becomes "no mechanism". That happened in the first measurement: five
- * surfaces reached through a widget barrel were all caught as false hard cuts. The
- * false positive is structural, so the interpretation was wrong, not the value.
+ * Follows barrels (`index.ts`) to the real definition file; reading the barrel yields a false
+ * hard cut.
  */
 function resolveComponent(root: string, file: string | null, name: string, seen = new Set<string>()): string | null {
   if (!file || seen.has(file + name) || !existsSync(file)) return file;
@@ -216,11 +163,7 @@ function branchSource(src: string, from: number): string {
   return src.slice(from, from + 4000);
 }
 
-/**
- * The marker that a child owns the exit. `onExited` is this repository's `Surface`
- * contract's **exit-complete notification**, so its presence means the owner of the
- * way out is inside.
- */
+/** `onExited` is the `Surface` exit-complete notification, so its presence means a child owns the exit. */
 const EXIT_DELEGATED = [...MOTION_MECHANISMS, 'onExited'];
 
 /** An alternative branch rendering nothing is an appearance; rendering something is a swap. */
@@ -236,25 +179,12 @@ function notASurface(openingTag: string): boolean {
 }
 
 /**
- * Slices out the opening tag alone — **terminated by brace depth.**
- *
- * Without a boundary the verdict leaks outside the tag. Measured: a
- * `<div className="fixed …">` written inside a probe fixture's **comment** paired
- * with a `z-50` in the real code that followed and counted one place twice. A comment
- * is not code, and another element's classes are not this element's classes.
- *
- * Simply finding the first `>` catches the `=>` in `onClick={() => …}` — the trap
- * recorded in the control ratchet's preamble, so it is terminated the same way, by
- * brace depth.
+ * Slices the opening tag alone, terminated by brace depth: the first `>` would hit the `=>` in
+ * `onClick={() => ...}`, and without a boundary the result leaks outside the tag.
  */
 /**
- * Blank out comments before tag parsing, preserving byte offsets and line
- * numbers. `openingTag` tracks quotes, and a comment inside a JSX opening tag
- * defeats that: an English apostrophe (`This scrim's name`) opens a quote that
- * never closes, so the parser runs past the tag and swallows what follows.
- * Measured 2026-08-22 in `control-adoption-ratchet`, where a census silently
- * fell 5 to 4 when the repo's comments were translated to English. Latent here
- * for the same reason, and closed the same way.
+ * Comments are blanked before tag parsing, preserving offsets: an apostrophe in a comment inside a JSX
+ * opening tag opens a quote that never closes and the parser runs past the tag.
  */
 function stripComments(source: string): string {
   return source
@@ -355,22 +285,15 @@ function collect(root: string, roots: readonly string[], extraFiles: readonly st
       namedSites.set(name, entry);
     }
 
-    // ── Detector ② inline overlays — exactly the shape the owner's probe used:
-    //    `{open && <div className="fixed …">}`. It has no name, so ① cannot see it.
+    // Detector 2: inline overlays such as `{open && <div className="fixed ...">}` have no name.
     for (const m of src.matchAll(/(&&|\?)\s*\(?\s*<(div|section|aside|nav)\s/g)) {
       const ltIndex = m.index! + m[0].length - m[2].length - 1;
       const tag = openingTag(src, ltIndex);
       if (!/className=\{?["'`][^"'`]*\b(fixed|absolute)\b[^"'`]*\bz-\d/.test(tag)) continue;
       if (notASurface(tag)) continue;
       if (!branchAppears(src, m.index!, m[0])) continue;
-      // The way out must be **inside this branch** — an `AnimatePresence` somewhere else
-      // in the file does not belong to this element, and conversely, if a child owns it
-      // then this wrapper is a positioner, not a surface.
-      //
-      // ⚠️ This exclusion must apply to the **denominator too** (2026-08-04). Without it a
-      //    positioner and the `<Surface>` inside it count **one surface twice** — the
-      //    recorded precedent: measure the wrong element and the number is wrong even
-      //    though it is a number.
+      // The way out must be inside this branch; if a child owns it, this wrapper is a positioner. The
+      // exclusion applies to the denominator too, or a positioner and its `<Surface>` count twice.
       if (EXIT_DELEGATED.some((x) => branchSource(src, ltIndex).includes(x))) continue;
       const line = src.slice(0, ltIndex).split('\n').length;
       inline.push({ what: `<${m[2]}>`, file: rel(file), at: [`${rel(file)}:${line}`], kind: 'inline' });

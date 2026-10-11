@@ -6,15 +6,9 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault/model/types"
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from "../../mcp/src/vault/relation-refs.mjs";
 
 /**
- * A 2-way contract — relation keys are read in two packages:
- *   - mcp/src/vault/ (the AI agent surface — canonical, GRAPH_ARRAY_KEYS)
- *   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts (the web map, studio,
- *     and insights)
- *
- * If the web derive fails to read one of MCP's relation keys, a relation an agent
- * wrote under the canonical key is lost on the human screen — describes (2026-07-27)
- * and depends_on (2026-08-12) leaked exactly that way. The same fixture table
- * (`tests/fixtures/relation-keys-cases.mjs`) is fed to both sides and compared.
+ * Relation keys are read in `mcp/src/vault/` (canonical) and in
+ * `src/entities/docs-vault/lib/derive-ontology-from-vault.ts` (web). A key the web misses is lost
+ * on the human screen; one fixture table (`tests/fixtures/relation-keys-cases.mjs`) feeds both.
  */
 
 function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {

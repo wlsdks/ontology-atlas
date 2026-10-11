@@ -5,28 +5,9 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The contract that **an agent file never sends a reader to a deleted file**.
- *
- * Rules, skills and seat briefs cite source files constantly, and a citation is
- * how an agent decides where to look. When the cited file is gone, the agent
- * does not get an error — it gets nothing, and either invents a location or
- * stops. This repository has already paid for that twice: the guard hooks cited
- * rule sections that no longer existed (2026-08-24), and `design-guardian`
- * claimed `camera-fit.ts` owned safe-inset fitting after that file was deleted
- * with the Sigma renderer, while `topology-camera-math.ts` had owned it since.
- *
- * `agents:check` covers `@references`; this covers the backticked path form,
- * which is what these documents actually use — 158 of them at the time of
- * writing. It lives here rather than in `agent-files` because it resolves
- * against `git ls-files`, and the shipped `agent-files` command has no business
- * knowing how one repository lays out its source.
- *
- * A basename resolves anywhere in the tree on purpose. These documents cite
- * `control-class.ts` and `globals.css` without a path because the reader is
- * expected to find them, and twenty-five of twenty-six such citations were
- * legitimate. Demanding full paths would trade one real finding for
- * twenty-five edits and a rule nobody follows. What this catches is the file
- * that exists nowhere at all, which is the deletion case.
+ * An agent file never cites a deleted file. Covers the backticked path form (`agents:check` covers
+ * `@references`). A basename resolves anywhere in the tree on purpose; only files that exist nowhere
+ * fail.
  */
 
 const ROOT = process.cwd();

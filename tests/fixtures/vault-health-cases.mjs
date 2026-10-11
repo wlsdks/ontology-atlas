@@ -10,11 +10,7 @@
 
 export const VAULT_HEALTH_CASES = [
   {
-    // Ordinary markdown (design documents, backlogs, release notes) is **not** an
-    // ontology node — it has no `kind:`. The MCP compiler does not count those as nodes
-    // while the web copy did, so for our own docs folder (83 of 163 files being ordinary
-    // markdown) the screen reported "83 places to fix" while the CLI called the same
-    // vault healthy (measured 2026-08-17).
+    // Ordinary markdown without `kind:` is not a node; the MCP compiler and the web copy must agree.
     name: 'plain markdown without kind: is not a node',
     docs: [
       { slug: 'domains/auth', frontmatter: { kind: 'domain', title: 'Auth', capabilities: ['capabilities/login'] } },
@@ -24,9 +20,8 @@ export const VAULT_HEALTH_CASES = [
     ],
   },
   {
-    // Checking a folder that is not a vault made both report healthy (measured
-    // 2026-08-16: `health <empty folder>` → healthy), because every other check passed
-    // with nothing to count — a check idling on an empty set is not a check.
+    // A folder with nothing to count must not report healthy: a check idling on an empty set is not a
+    // check.
     name: 'empty folder is not a healthy vault',
     docs: [],
   },

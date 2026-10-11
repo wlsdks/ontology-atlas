@@ -8,50 +8,8 @@ import { stripComments } from "../../scripts/lib/static-surface-census.mjs";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Ink licence on alpha tint surfaces — including hover** (2026-08-15).
- *
- * ## Where the hole was — three contracts stepped past it side by side
- *
- * This repository already has three ink licences, and none of them looks here:
- *
- * | Contract | Jurisdiction | Why it cannot see this place |
- * |---|---|---|
- * | `accent-ink-contrast` | **indigo** ink on tint | out of jurisdiction when the ink is danger/success/amber |
- * | `brand-fill-ink-license` | **opaque** brand surfaces | out of jurisdiction when the surface is an alpha tint |
- * | `quaternary-ink-surface` | overlay steps on achromatic backgrounds | a colour-mixed surface is not on that ladder |
- *
- * **Alpha tint surface × non-indigo ink** fell through the gap entirely, and one
- * defect really leaked: the studio's delete-confirmation chip turns on a
- * `--color-danger-a32` surface on hover, and `--color-danger-text` on top of it was
- * below AA **on every host surface** (canvas 4.30 · panel 4.05 · elevated 3.72).
- * At rest it was 5.32, so **hover was making it harder to read.**
- *
- * No value was wrong — both `danger-a32` and `danger-text` are legitimate ramp
- * tokens. What was wrong is the **place** (`design-gates.md`, 「The place, not the value, decides the token」 — the place, not the value, decides the token), and on top of
- * that `a32` was a token used **14 times as a border and once as a surface** (that
- * defect).
- *
- * ## Why hover is especially dangerous
- *
- * Inventory of hover surfaces (2026-08-15): **222 improve contrast, 73 worsen it.**
- * 71 of the 73 are places where only the surface changes — the ink stays and the
- * surface brightens, which is this app's hover default. Most do not break today
- * because of the **starting point**, not a rule: most of those 71 start at 16–18:1
- * and stay above 14 after losing 1–2. **Only places starting from a low-contrast
- * ink (danger · accent · tertiary) broke, and all three that broke were exactly
- * those.**
- *
- * ## The verdict is a calculation, not an allowlist
- *
- * Same construction as `brand-fill-ink-license` — token values are read from
- * `app/globals.css` and the composited contrast is computed. A hand-written list
- * goes silently wrong the day the ramp moves.
- *
- * The host surface cannot be known from source alone, so it is measured **on all
- * four opaque surfaces**. Passing on any one leaves it as "depends on the place"
- * (the borderline list); **failing on all of them is a host-independent defect** and
- * turns red. That threshold is what keeps this contract from catching innocents by
- * guesswork.
+ * Ink on alpha tint surfaces, including hover, must meet contrast; token values are read from
+ * `app/globals.css`. Red only when it fails on all four opaque host surfaces.
  */
 
 const ROOT = process.cwd();
@@ -103,21 +61,8 @@ const literals = (src: string): string[] =>
     .filter((s) => !JSX_INSIDE.test(s));
 
 /**
- * **Reads the tone → ink table from the value layer.**
- *
- * When this contract was first switched on, a probe found a hole: reverting the
- * very defect it had fixed (the `StudioLaneOverlays` delete-confirmation chip) left
- * it **green**. The className literal carried no ink — that place's ink comes from
- * `tone: "danger"`, and tone is not a string but **another property of the
- * `controlClass` call**.
- *
- * The scanner's unit (the literal) was smaller than the defect's unit (the call).
- * That is the opposite direction of the lesson learned on 2026-08-15 (9) — **a unit
- * too coarse or too fine misses exactly that much.** So the call block is scanned
- * alongside the literals.
- *
- * The table is **read** from `control-class.ts` rather than copied — a value
- * written in two places starts drifting from then on (Carbon).
+ * The tone to ink table is read from `control-class.ts`, and whole `controlClass` call blocks
+ * are scanned because tone is a separate property from the className literal.
  */
 function toneInkMap(): Map<string, string> {
   const src = readFileSync(path.join(ROOT, "src/shared/ui/control-class.ts"), "utf8");

@@ -3,35 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **A link that says it goes to the map must point at the map's address.**
- *
- * **Why this gate exists.** By owner decision on 2026-07-29, `/` becomes the
- * **marketing page** (ledger — the reversal of 2026-07 「root-first-open」). Until
- * then `/` and `/topology` were **the same screen**, so a link to the map could
- * point at either one and nobody would know.
- *
- * Measured just before the switch, that indifference turned out to be **three dead
- * promises**:
- *
- * | Label | Pointed at | After the switch |
- * |---|---|---|
- * | 「Back to map」 (back to the map) | `/` | lands on marketing |
- * | 「Try it in the browser, no install」 (try it in the browser, no install) | `/` | lands on marketing |
- * | 〃 (unpublished branch) | `/` | lands on marketing |
- *
- * The second is the worst — the owner defined the marketing page's job as
- * *"Drive a download or move to the web version"* (drive a download or move to the web
- * version), and that "move to the web version" button becomes **a loop back into
- * marketing**.
- *
- * **Why a contract test rather than lint.** The verdict needs **label and
- * destination together**. `href="/"` is not a defect by itself — the logo and the
- * 404's "home" correctly point at `/`. The defect is saying *"map"* and sending the
- * user to `/`, and that verdict does not fit in a single AST node.
- *
- * **What this gate does not guard.** Links that go home (logo, error pages,
- * breadcrumbs) are out of scope. The marketing page being home is correct, and
- * those links never promised a map.
+ * A link labelled as the map must point at `/topology`, not `/`. The check needs label and
+ * destination together, so lint cannot do it. Links that go home are out of scope.
  */
 
 const MAP_ROUTE = "/topology";
@@ -49,41 +22,14 @@ const MAP_ROUTE = "/topology";
 const MAP_DESTINED = [
   { testid: "gateway-hero-web-cta", why: "히어로의 「브라우저에서 열기」 — 웹 제품을 여는 버튼" },
   /**
-   * ⚠️ `download-web-cta`'s **control itself disappeared on 2026-08-19** — the owner
-   * removed the whole install section (*"Does this last one seem unnecessary? It's all at the top anyway."* — the last one seems unnecessary since it's all at the top
-   * anyway). The hero's web CTA now carries the same promise.
-   */
-  /**
-   * ⚠️ `download-back-to-map`'s **control itself disappeared on 2026-07-31**
-   * (owner: *"This is a promotional page, so make it navigable only from the main screen."* — this is a
-   * promotional page, so make it navigable only from the main screen). Putting a path
-   * to the workbench in the gateway chrome offers the working surface to visitors who
-   * have no vault yet, and people who do have one reach the map from `/` anyway.
-   *
-   * Removing the row **does not weaken the gate** — the proposition it guards is "a
-   * control that promises the map goes to the map", not "that control exists". A
-   * promise that does not exist cannot be broken, and the remaining row keeps
-   * carrying the proposition.
-   *
-   * Conversely, **reviving the control means restoring a row here.** Without that,
-   * only that link stands outside the watch, which is the shape this file exists to
-   * prevent.
+   * Removing a row does not weaken the gate: it guards that a control promising the map goes to the
+   * map. Reviving a removed control means restoring its row here.
    */
 ] as const;
 
 /**
- * Collects the gateway chrome's sources **without depending on file location**.
- *
- * ⚠️ This used to read the single file `src/views/download/ui/DownloadPage.tsx`.
- * When the GNB moved down into `widgets/gateway-chrome` on 2026-07-30 (so that
- * `/guide` and `/changelog` could share the chrome), **the testid vanished from
- * that file and the gate went blind** — fortunately a "not found" assertion made it
- * fail red instead of leaking green. Without that assertion it would have passed
- * silently.
- *
- * The lesson is **not to tie a gate's aim to a path**. Controls move under
- * refactoring; a testid is identity and does not. So `src/` is swept and only files
- * carrying the marker are collected — the gate follows the next move too.
+ * Collects the gateway chrome's sources by sweeping `src/` for files carrying the marker, so the
+ * gate follows controls when they move between files.
  */
 function collectSources(): string {
   const roots = [join(process.cwd(), "src")];
@@ -169,25 +115,8 @@ describe("지도를 약속하는 링크의 목적지", () => {
 });
 
 /**
- * **A gate that works only if you remember to register does not exist for whatever
- * you forgot.**
- *
- * The test above iterates the `MAP_DESTINED` allowlist. That precisely guards "this
- * control goes to the map", but **a control not on the list is structurally out of
- * view**. So in the 2026-08-01 measurement, `/projects`'s "← map" link
- * was going to `/` (the gateway) while this whole file stayed green — that link had
- * no testid at all.
- *
- * This test inverts the aim. It searches by **what the label promises, not who
- * registered it**: collect the keys whose i18n value is literally "Map",
- * then look at the href of the links rendering those keys. Forgetting to register a
- * new link here no longer hides it, as long as the label promises a map.
- *
- * The reach is narrowed to **labels that are exactly "map"** because including
- * sentences that merely contain it ("view on the map") would also
- * catch explanatory copy that is not a link, producing noise. The class that
- * actually broke was exactly this narrow one; widening can wait until a violation
- * is observed.
+ * Inverts the allowlist test: finds links by what the label promises (an i18n value that is exactly
+ * "Map"), so an unregistered link is still checked. Sentences containing it are excluded as noise.
  */
 const MAP_LABEL = /^[\s←→]*(?:지도|map)[\s←→]*$/i;
 
@@ -220,24 +149,8 @@ function mapLabelKeys(): Set<string> {
  * of scope and skipped.
  */
 /**
- * Reads the **value** of `href` from one opening tag; `null` if it cannot.
- *
- * ⚠️ **This function's reach is the gate's reach** (lesson measured 2026-08-01).
- * It used to see only `href="…"`, ``href={`…`}``, and `href={"…"}`, so a real
- * defect **escaped in two forms**:
- *
- * - `href={workspaceHref}` — with `const workspaceHref = '/'` earlier in the file
- * - `href={'/'}` — **single quotes** inside the braces
- *
- * Both were the "map" link on `/project/[slug]`, labelled "map" but sending
- * the user to the gateway. The gate was green, because those were forms it did not
- * look at. It is the same illness this repository already learned from the
- * label-decoration rule: **a rule with too short a reach is the same as no rule.**
- *
- * Forms whose value cannot be determined (a call expression such as
- * `getTopologyProjectHref(slug)`) return `null` and are **skipped** — guessing here
- * produces false positives, and a gate that produces false positives is soon
- * switched off. For those links the function name itself states the destination.
+ * Reads the value of `href` from one opening tag, following a same-file constant one level.
+ * Undeterminable forms such as call expressions return `null` and are skipped (no false positives).
  */
 function hrefValue(tag: string, source: string): string | null {
   const literal = /href=(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\}|\{"([^"]*)"\}|\{'([^']*)'\})/.exec(tag);
@@ -319,9 +232,8 @@ describe("라벨이 「지도」인 링크는 등록 없이도 감시된다", ()
   });
 
   /**
-   * **The two forms that actually escaped.** These probes live here to stop the gate
-   * narrowing silently — on 2026-08-01 both forms passed, and they passed not because
-   * there was no defect but because **the extractor did not see that syntax**.
+   * The extractor must read variable and single-quoted `href` forms; these probes stop the gate
+   * from narrowing silently.
    */
   it("추출기가 변수 href 와 작은따옴표 href 도 읽는다 (사정거리 프로브)", () => {
     const viaConst = `

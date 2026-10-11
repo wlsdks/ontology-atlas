@@ -389,16 +389,8 @@ export const WIKI_FOLDER_CASES = [
     expected: { 'wiki/a.md': [], 'wiki/b.md': [] },
   },
   /*
-   * ⚠️ **A link into the rest of the vault is not this check's to judge** (2026-09-09).
-   *
-   * `validateWikiFolder` is handed the `wiki/` folder and nothing else, so it cannot know
-   * whether `capabilities/checkout` exists. It used to answer anyway: every such link came
-   * back `dangling-wikilink`. On the owner's folder that produced *3 broken links* in the
-   * Library's status strip over the exact three links the Library's own graph was drawing
-   * as concepts, and which the reader rendered as live links — a check reporting the
-   * opposite of the screen beside it.
-   *
-   * Both pages here link a concept and each other. The only correct answer is silence.
+   * `validateWikiFolder` is handed only the `wiki/` folder, so it cannot know whether a linked concept
+   * exists; a link into the rest of the vault must stay silent, not `dangling-wikilink`.
    */
   {
     name: 'a link into the vault outside wiki/ is left to the vault, not called dangling',

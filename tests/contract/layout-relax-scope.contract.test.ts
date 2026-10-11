@@ -9,23 +9,8 @@ import {
 import { DENSITY_GATE_THRESHOLD } from "@/widgets/ontology-map/model/density-gate";
 
 /**
- * The contract that layout relaxation runs **only on nodes that will be drawn**.
- *
- * Background (measured 2026-07-31): seed placement (fan + phyllotaxis) is cheap
- * and relaxation is expensive — at N=3,000 the seed takes 4.3ms against 2,253ms
- * total, so **relaxation is 99.8%** of it. And most of that relaxation was for
- * nodes never drawn at all: the density gate folds parents with more than 12
- * children, hiding **95%** of elements behind a chip.
- *
- * Resolving overlaps for things that are not drawn produced a **13.5 second
- * freeze** on a slow machine (measured under 6× CPU throttling, round 42).
- * Narrowing the scope takes the same vault to 7.5ms — **284×** faster, with
- * better overlap quality.
- *
- * ⚠️ **The gate locks counts and sets, not milliseconds.** Precedent from
- * `architecture.md`: *"Performance budgets differ per machine and become flaky, but 'closed means zero traversals' is true on every machine."*
- * So nothing is timed here; what is measured is **whether the nodes relaxation
- * actually moved stay inside the scope**.
+ * Layout relaxation must run only on nodes that will be drawn, since it dominates cost and the density
+ * gate hides most elements. Counts and sets are locked, not milliseconds, which differ per machine.
  */
 
 const RINGS = { domain: 250, capability: 145, element: 90 };
@@ -173,11 +158,8 @@ describe("layout relax scope contract", () => {
       );
 
     it("bbox 밖의 **먼** 노드는 결과에 영향을 주지 않는다 — 비용이 클릭 수와 무관한 이유", () => {
-      // Neighbours (sibling fans in the same domain) naturally influence each other —
-      // that is the overlap this function resolves. What is pinned here is that
-      // **distant nodes are never looked at**, so the per-click cost is the same
-      // whether 2 or 24 clusters are already expanded (measured 2026-07-31: 107–134
-      // items per click, independent of click order).
+      // Neighbours influence each other; what is pinned is that distant nodes are never looked at, so
+      // per-click cost is independent of how many clusters are expanded.
       const near = twoFans(DENSITY_GATE_THRESHOLD * 3);
       // One more fan of the same size in the opposite domain — spatially distant.
       const withFar: LayoutGraphNode[] = [

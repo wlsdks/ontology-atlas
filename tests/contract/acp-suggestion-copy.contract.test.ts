@@ -47,9 +47,8 @@ describe('ACP suggestion prompt catalog', () => {
     });
 
     it(`${locale} labels read as a request a person could send, not a bare noun phrase`, () => {
-      // 2026-08-31: the owner read "align A's membership under B" on the installed app and could not
-      // tell what pressing it would do. Every chip is the sentence the person is about to send,
-      // so it must name the observed fact and end as a request or an action.
+      // Every chip is the sentence the person is about to send, so it names the observed fact and ends as
+      // a request or action.
       const t = createTranslator({ locale, messages, namespace: 'acpChat' });
       const params = {
         count: 2,

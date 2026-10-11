@@ -3,31 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Starter-vault language gate — **every** creation path builds the vault in the
- * screen's language.
- *
- * Walkthrough 2026-07-26 D2: on a Korean screen, "create a new vault → start fresh in
- * an empty folder" produced a starter with English bodies. The cause was
- * `scaffoldOntology()`'s default of `'en'` plus two paths that relied on that default
- * and passed no argument. When the same action produces a vault in a different
- * language depending on the entry path, the user cannot tell what they did wrong.
- *
- * The first line of defence is the type: `scaffoldOntology(starterLocale: string)` has
- * no default, so a missing argument fails to compile. This test is the second line and
- * blocks a **hardcoded locale string** — the type accepts `scaffoldOntology('en')`,
- * which is the same defect. The argument must be an identifier carrying the screen's
- * language.
- *
- * Only call sites are scanned; the type declaration
- * (`scaffoldOntology: (starterLocale: string) =>`) and the definition
- * (`const scaffoldOntology = useCallback(async (…)`) carry a type annotation in the
- * argument position and are filtered out naturally.
- *
- * **Two forms carry the locale** (2026-09-25, D1). A door that creates a folder no longer calls
- * `scaffoldOntology()` after the open — the screen that pressed it is gone by then — but asks the
- * open itself for the starter: `open({ starter: { locale, shape } })`. That request is the same
- * creation path in a different call, so it is judged by the same rule; scanning only the first
- * form would have left the two doors that most need it outside the gate.
+ * Every starter-vault creation path builds in the screen language: `scaffoldOntology()` must receive
+ * an identifier carrying the locale, not a hardcoded string, in either of the two call forms.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');
@@ -71,8 +48,7 @@ describe('스타터 볼트 언어 — 생성 경로 전부가 화면 언어를 �
       const source = stripComments(readFileSync(file, 'utf8'));
       const rel = path.relative(process.cwd(), file);
       for (const match of source.matchAll(SCAFFOLD_CALL)) {
-        // The locale is the first argument; a second one (the vault shape, 2026-09-06) is
-        // not a locale and is not judged here.
+        // The locale is the first argument; a second one (the vault shape) is not judged here.
         const arg = (match[1].split(',')[0] ?? '').trim();
         callSites.push(`${rel}: ${match[0]}`);
         if (!LOCALE_IDENTIFIER.test(arg)) {

@@ -3,23 +3,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Single-source guard — in static mode (no user vault selected), the answer to
- * "which bundled vault is this" must come from **one place**.
- *
- * Measured defect (2026-07-26): only 2 consumers respected the sample selection
- * (`dogfood` / `storefront`) while the rest imported the dogfood manifest directly,
- * so choosing the example storefront still left the search palette, project drawer,
- * and document list searching dogfood. Two vaults mixed on one screen read as
- * "broken".
- *
- * So the entry point was narrowed to `resolveStaticVaultSource` /
- * `useStaticVaultSource`, and this scans the code directly so that discipline does
- * not collapse again.
- *
- * Implementation note: no external process (ripgrep and the like). A missing tool
- * returns 0 hits quietly and is misread as "no violations". This walks with node:fs
- * and asserts the number of files scanned, so a dead parser breaks the guard
- * first.
+ * Single-source guard: in static mode the answer to which bundled vault is in use must come from
+ * `resolveStaticVaultSource` / `useStaticVaultSource`. Walks with node:fs and asserts the file count,
+ * since a missing external tool returns 0 hits quietly.
  */
 
 const SRC_DIR = path.join(process.cwd(), 'src');

@@ -6,12 +6,8 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { LOCALE_META, type AppLocale } from "../../src/i18n/locales";
 
 /**
- * Korean text breaks between words on every screen, from one rule.
- *
- * Before 2026-09-25 each screen opted in with its own `break-keep`, and any element that
- * forgot wrapped mid-word (a lone final syllable on the last line). The rule now lives on `body` under
- * `:root:lang(ko)`; this gate keeps it there, keeps it inherited rather than per class, and
- * keeps it out of every `@layer`, where a utility layer would quietly win it back.
+ * Korean word-keep lives on `body` under `:root:lang(ko)`, inherited and outside every `@layer`,
+ * where a utility layer would win it back.
  */
 const ROOT = process.cwd();
 const CSS = readGlobalCss();
@@ -87,24 +83,8 @@ describe("<html lang> is right before the first paint", () => {
 });
 
 /**
- * **`break-keep` may not grow** (2026-09-25). The body rule makes a per-element `break-keep`
- * redundant on Korean pages, but the 364 existing sites stay until each screen is touched —
- * removing them is churn with no visible change. What must not happen is the old habit
- * continuing: a new site is a vote for "each element opts in", the pattern the body rule
- * replaced. Both spellings count — the utility `break-keep` and the hand-written
- * `[word-break:keep-all]` — in production source after comments are stripped (a comment that
- * *mentions* the class is not a use). Measured 2026-09-25: 256 + 108 = 364. The ceiling is
- * exact in both directions: a removal fails the gate until the ceiling is lowered to the new
- * count, so the room a removal frees cannot be spent silently by the next site.
- *
- * 364 → 357 (2026-09-25, polish bundle): the screens that landed beside this rule (projects,
- * download, gateway, library ops, history, insights, agents) had added per-element sites; each
- * was dropped from its new line, which also took seven sites on moved or rewritten lines.
- * 357 → 356 (2026-09-25): a settings-sheet caption rewritten by the chrome interaction fix
- * dropped its per-element site; the root `:lang(ko)` rule covers it.
- *
- * 356 → 342 (2026-09-25, models tab): the API Key pane moved from the settings sheet to the
- * Agents destination and was rewritten without per-element sites.
+ * Per-element `break-keep` may not grow. The ceiling is exact in both directions: lower it when
+ * sites are removed so the freed room cannot be spent silently.
  */
 const BREAK_KEEP_CEILING = 294;
 

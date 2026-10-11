@@ -4,29 +4,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The contract that **non-Claude agents can find the rules that bind them**.
- *
- * `.claude/rules/` holds roughly 70 KB of guidance and Claude Code loads it from
- * the `paths:` frontmatter. Nothing surfaces it to Codex, Cursor or Gemini CLI:
- * the repository's own visibility table records that those tools do not read
- * `.claude/**`. They do read `AGENTS.md`, and Codex merges one root-down along
- * the working directory, so a nested `AGENTS.md` is the only mechanism that puts
- * the right rule in front of them at the right moment.
- *
- * The standing decision of 2026-07-31 is that these files carry **a pointer, a
- * reference and not a copy** — duplicating rule bodies would blow Codex's 32 KiB
- * `project_doc_max_bytes`, past which it truncates in silence.
- *
- * A pointer's failure mode is going stale: a rule gains a glob, or a directory
- * is renamed, and the nested file keeps naming yesterday's set. Nobody notices,
- * because a wrong pointer looks exactly like a right one. So the expectation
- * here is derived from the frontmatter rather than written down: every directory
- * a rule reaches must have a nested `AGENTS.md`, and it must name exactly the
- * rules that reach it.
- *
- * `docs/` is deliberately excluded. `scripts/build-docs-vault.mjs` sweeps
- * `docs/**\/*.md` into the shipped documentation vault, so a nested agent file
- * there would become product surface.
+ * Non-Claude agents do not read `.claude/**`, so each directory a rule reaches needs a nested
+ * `AGENTS.md` that points at exactly those rules, derived from frontmatter. `docs/` is excluded
+ * because `scripts/build-docs-vault.mjs` would ship a nested agent file there as product surface.
  */
 
 const RULES_DIR = join(process.cwd(), ".claude/rules");
