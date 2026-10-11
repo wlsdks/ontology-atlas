@@ -3,6 +3,6 @@
   "count": 4,
   "claim": "no-spec",
   "proof": "accent-[color:var(--color-indigo-brand)]",
-  "why": "체크박스 둘과 그 라벨 둘. 체크박스 계약이 고정한다.",
-  "conditional": "체크박스 계약이 사라지면 부채로 내린다."
+  "why": "Two checkboxes and their labels. The checkbox contract fixes their size and target.",
+  "conditional": "When the checkbox contract is removed, move this row to the debt list."
 }

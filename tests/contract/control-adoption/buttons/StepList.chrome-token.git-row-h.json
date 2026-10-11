@@ -3,5 +3,5 @@
   "count": 3,
   "claim": "chrome-token",
   "proof": "--git-row-h",
-  "why": "변경 행 · 「나머지」 토글 · STEP_ROW 3열 그리드 행 3. 높이가 clamp(38px, 4.2vh, 48px) 이고 좁은 폭에서 26px, coarse 포인터에서 44px 로 재정의된다. 값 층의 높이 어휘는 고정 단뿐이라 **뷰포트 함수를 표현할 수 없다**."
+  "why": "The change rows, the \"rest\" toggle and the `STEP_ROW` grid rows have a height of `clamp(38px, 4.2vh, 48px)`, redefined to 26px at narrow widths and 44px on coarse pointers. The value layer's height vocabulary has only fixed steps, so it cannot express a viewport function."
 }

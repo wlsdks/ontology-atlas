@@ -3,5 +3,5 @@
   "count": 1,
   "claim": "standard-button",
   "proof": "buttonVariants",
-  "why": "The Wiki preview footer's \"Start from the Library\" (2026-09-25), the same primary sm standard button as the Guidance footer beside it, for the same reason."
+  "why": "The Wiki preview footer's \"Start from the Library\" is the primary sm standard button, the same as the Guidance footer beside it. It navigates, so it is a `<Link>` styled through `buttonVariants`; `control-class.ts` does not replace standard buttons."
 }

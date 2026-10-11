@@ -3,5 +3,5 @@
   "count": 1,
   "claim": "prose",
   "proof": "prose-link",
-  "why": "관문 읽을거리(PROSE_COMPONENTS)의 마크다운 a-override — 같은 산문 계약."
+  "why": "The markdown `a` override in the gateway reading components (`PROSE_COMPONENTS`) follows the same prose link contract: it renders inside body text."
 }

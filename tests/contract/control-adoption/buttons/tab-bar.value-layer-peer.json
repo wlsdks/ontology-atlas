@@ -3,5 +3,5 @@
   "count": 1,
   "claim": "value-layer-peer",
   "proof": "--tabbar-underline",
-  "why": "밑줄 탭 프리미티브 자신. 반경 0 · items-baseline · pb-[11px] · border-b-[length:var(--tabbar-underline)] 로 **다른 표기법**을 소유한다. segment 는 「보더 0」이 정의라 이 표기법을 못 그린다."
+  "why": "The underline tab primitive owns a different notation: radius 0, `items-baseline`, `pb-[11px]` and `border-b-[length:var(--tabbar-underline)]`. `segment` is defined by zero border and cannot draw it."
 }

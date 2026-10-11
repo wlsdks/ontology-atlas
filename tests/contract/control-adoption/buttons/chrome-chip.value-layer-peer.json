@@ -3,5 +3,5 @@
   "count": 1,
   "claim": "value-layer-peer",
   "proof": "--chrome-tile-size",
-  "why": "크롬 칩 프리미티브. 높이가 --chrome-tile-size 크롬 계약이고 소비처는 className 만 얹는다."
+  "why": "The chrome chip primitive. Its height is the `--chrome-tile-size` chrome contract, and callers add only `className`."
 }

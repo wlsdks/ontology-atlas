@@ -3,5 +3,5 @@
   "count": 2,
   "claim": "standard-button",
   "proof": "buttonVariants",
-  "why": "The Guidance preview footer (2026-09-25): \"Open Harness\" as `buttonVariants({ variant: \"primary\", size: \"sm\" })` and \"Get the app\" as outline sm. They were fully round `pill` links at 32px beside the Analysis views' 32px rounded-panel buttons, two shapes for one kind of panel action. Both navigate, so they stay `<Link>`, and `control-class.ts` does not replace standard buttons."
+  "why": "The Guidance preview footer links, \"Open Harness\" (primary sm) and \"Get the app\" (outline sm), match the 32px buttons of the Analysis views. They navigate, so they are `<Link>` through `buttonVariants`."
 }

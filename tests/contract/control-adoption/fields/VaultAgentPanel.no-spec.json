@@ -3,6 +3,6 @@
   "count": 1,
   "claim": "no-spec",
   "proof": "invisible pointer-events-none absolute",
-  "why": "컴포저의 **높이 계측용 숨김 미러**. 사용자에게 안 보이고 `scrollHeight` 를 재려고만 존재한다 — 컨트롤이 아니라 계측 장치라 씌울 규격이 없다.",
-  "conditional": "오토그로우를 CSS 로 대체해 미러가 사라지면 이 줄도 지운다."
+  "why": "The composer's hidden mirror exists only to measure `scrollHeight` for auto height. It is a measuring device, not a control, so it has no spec to wear.",
+  "conditional": "When CSS replaces the JavaScript auto-grow and the mirror is removed, delete this row."
 }
