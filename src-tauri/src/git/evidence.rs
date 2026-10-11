@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+pub(crate) mod bound;
+
 use super::repo::{require_repo_root, vault_pathspec};
 use super::runner::{run_git, validate_vault_dir};
 
@@ -22,9 +24,7 @@ pub struct PathLastChange {
 const MAX_EVIDENCE_PATHS: usize = 512;
 const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
 
-/// `repo_paths` are repository-relative; `vault_paths` resolve through the vault
-/// pathspec. Anything that could climb, be absolute or look like an option is
-/// dropped, since every value reaches a `git log` argument.
+/// Date vault-relative documents and repository-relative paths under the vault grant.
 #[tauri::command(async)]
 pub fn git_paths_last_change(
     vault_path: String,

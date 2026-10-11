@@ -1,6 +1,5 @@
-// Native git commands for the vault, with the safety rules of `git-snapshot.mjs`
-// (cli/ and mcp/ mirror): local commits only, push or pull only on request, no
-// auto-init, no credentials, nothing outside the vault pathspec.
+// Git writes stay vault-scoped; bound evidence reads require the recorded source
+// binding and its source grant. Network operations run only on request.
 
 mod changes;
 mod classify;

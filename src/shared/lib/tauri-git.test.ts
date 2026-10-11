@@ -175,3 +175,26 @@ describe('gitErrorMessage', () => {
     expect(gitErrorMessage(42)).toBe('42');
   });
 });
+
+describe('bound evidence dates', () => {
+  it('has no native effect on the web', async () => {
+    const { gitBoundEvidenceDates } = await import('./tauri-git');
+    expect(await gitBoundEvidenceDates('/vault', 'project', ['p.md'], ['src/p.ts'])).toBeNull();
+    expect(tauriApiMock.invoke).not.toHaveBeenCalled();
+  });
+  it('passes scope without source authority and normalizes incomplete native dates', async () => {
+    const { gitBoundEvidenceDates } = await import('./tauri-git');
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({ status: 'partial', omittedVaultPaths: [], omittedSourcePaths: [],
+      vaultChanges: [{ path: 'p.md', exists: true, isDir: false, dirty: false, lastChangedAt: '2026-01-02T00:00:00Z' }],
+      sourceChanges: [
+        { path: 'invalid', exists: true, isDir: false, dirty: false, lastChangedAt: 'invalid' },
+        { path: 'folder', exists: true, isDir: true, dirty: false, lastChangedAt: '2026-01-01T00:00:00Z' },
+        { path: 'dirty', exists: true, isDir: false, dirty: true, lastChangedAt: '2026-01-01T00:00:00Z' },
+      ] });
+    const result = await gitBoundEvidenceDates('/vault', 'project', ['p.md'], ['invalid', 'folder', 'dirty'], '/selected');
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_bound_evidence_dates', { vaultPath: '/vault', projectSlug: 'project', vaultPaths: ['p.md'], sourcePaths: ['invalid', 'folder', 'dirty'], selectedSourcePath: '/selected' });
+    expect(result?.sourceChanges.every(row => row.lastChangedAt === null)).toBe(true);
+    expect(result?.vaultChanges[0].lastChangedAt).toBe('2026-01-02T00:00:00Z');
+  });
+});

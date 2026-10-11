@@ -66,11 +66,6 @@ export interface EvidenceStates {
 }
 
 /**
- * Compare each concept's document with the code it cites. This is the line the cognitive-diff
- * experiment (2026-09-13) found worth the most — "meaning unchanged, files underneath moved" —
- * stated per concept from Git alone. A missing time is `unknown`, never `current`.
- */
-/**
  * Compare each concept's document with the code it cites, through the one rule the MCP
  * server uses (`shared/lib/evidence-verdict.mjs`). This is the line the cognitive-diff
  * experiment (2026-09-13) found worth the most — "meaning unchanged, files underneath
@@ -79,6 +74,7 @@ export interface EvidenceStates {
 export function resolveEvidenceStates(
   concepts: readonly EvidenceConceptInput[],
   changes: ReadonlyMap<string, EvidenceChange>,
+  sourceChanges: ReadonlyMap<string, EvidenceChange> = changes,
 ): EvidenceStates {
   const current = new Set<string>();
   const stale = new Set<string>();
@@ -90,7 +86,7 @@ export function resolveEvidenceStates(
     const doc = concept.docPath ? changes.get(concept.docPath) : undefined;
     const { verdict, reason, moved, folders, gone } = judgeEvidence({
       docChangedAt: concept.docPath ? (doc?.lastChangedAt ?? null) : null,
-      entries: concept.evidencePaths.map((path) => ({ path, change: changes.get(path) ?? null })),
+      entries: concept.evidencePaths.map((path) => ({ path, change: sourceChanges.get(path) ?? null })),
     });
     if (verdict === 'current') current.add(concept.id);
     else if (verdict === 'stale') stale.add(concept.id);

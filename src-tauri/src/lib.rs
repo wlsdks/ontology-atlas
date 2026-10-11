@@ -302,6 +302,7 @@ pub fn run() {
             git::history::vault_node_revisions,
             git::history::vault_node_revision_content,
             git::evidence::git_paths_last_change,
+            git::evidence::bound::git_bound_evidence_dates,
             git::commits::git_diff,
             git::commits::git_commit_diff,
             git::remote::git_pull,

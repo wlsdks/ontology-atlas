@@ -63,3 +63,12 @@ describe('resolveEvidenceStates', () => {
     expect(states.rows.some((row) => row.id === 'ship')).toBe(false);
   });
 });
+
+describe('root-scoped evidence dates', () => {
+  const concepts = [{ id: 'pay', docPath: 'capabilities/pay.md', evidencePaths: ['capabilities/pay.md'] }];
+  const vault = new Map([['capabilities/pay.md', { exists: true, lastChangedAt: '2026-01-02T00:00:00Z' }]]);
+  it('keeps identical document and source paths in separate roots', () => {
+    const source = new Map([['capabilities/pay.md', { exists: true, lastChangedAt: '2026-01-03T00:00:00Z' }]]);
+    expect(resolveEvidenceStates(concepts, vault, source).stale.has('pay')).toBe(true);
+  });
+});

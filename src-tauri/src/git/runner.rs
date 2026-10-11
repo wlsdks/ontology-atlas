@@ -219,7 +219,20 @@ fn filter_overrides_for(cwd: &Path) -> Arc<Vec<String>> {
 /// Every invocation carries the base hardening, per-repo filter neutralisers, and
 /// the diff-family guard so no call site can forget them.
 pub(super) fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    run_git_with_read_policy(cwd, args, false)
+}
+
+pub(super) fn run_git_read(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    run_git_with_read_policy(cwd, args, true)
+}
+
+fn run_git_with_read_policy(cwd: &Path, args: &[&str], local_read: bool) -> Result<GitRun, String> {
     let mut command = Command::new("git");
+    if local_read {
+        command
+            .env("GIT_NO_LAZY_FETCH", "1")
+            .env("GIT_ALLOW_PROTOCOL", "");
+    }
     command.args(BASE_HARDENING);
     // Every verb but the snapshot commit runs with hooks off; commit keeps them so
     // the user's pre-commit hook still guards the write.
