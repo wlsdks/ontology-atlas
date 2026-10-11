@@ -99,7 +99,7 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/docs-vault-local/ui/WebManualConnectPanel.tsx", 1],
   ["src/features/project-edit/ui/DependencyPicker.tsx", 1],
   ["src/features/project-edit/ui/MarkdownField.tsx", 1],
-  ["src/features/project-edit/ui/ProjectForm.tsx", 2],
+  ["src/features/project-edit/ui/project-form-parts.tsx", 2],
   ["src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx", 4],
   ["src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx", 1],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", 1],
