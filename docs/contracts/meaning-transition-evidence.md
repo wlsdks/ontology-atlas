@@ -5,12 +5,12 @@ status: current
 area: ontology-model
 stores: "nothing yet; an in-memory candidate that roundtrips through Markdown"
 contract_version: 1
-enforced_by: [src/shared/lib/meaning-transition.ts]
+enforced_by: [src/shared/lib/meaning-transition/meaning-transition.ts]
 ---
 
 # Meaning transition evidence candidate
 
-`src/shared/lib/meaning-transition.ts` prepares an immutable in-memory evidence
+`src/shared/lib/meaning-transition/meaning-transition.ts` prepares an immutable in-memory evidence
 candidate and roundtrips it through Markdown. It does not store records, read
 canonical Markdown, authenticate a person, verify Git blobs, or grant permission
 to write. The workbench/controller and durable transition work remain tracked by

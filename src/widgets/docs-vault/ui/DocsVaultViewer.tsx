@@ -16,21 +16,21 @@ import {
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { IconButton, controlClass } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { splitHighlightSegments } from '@/shared/lib/highlight-match';
-import { githubAnchorSlug } from '@/shared/lib/github-anchor-slug';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
-import { useDelayedVisible } from '@/shared/lib/use-presence';
-import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { splitHighlightSegments } from '@/shared/lib/search-match/highlight-match';
+import { githubAnchorSlug } from '@/shared/lib/library/github-anchor-slug';
+import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
+import { useDelayedVisible } from '@/shared/lib/render-timing/use-presence';
+import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import {
   decodeWikilinkSlug,
   normalizeOriginalPaths,
   parseWikilinkHref,
   resolveSourceCitation,
   rewriteWikilinks,
-} from '@/shared/lib/source-citation';
+} from '@/shared/lib/library/source-citation';
 import { sourceCitationWords } from '@/features/library';
-import { resolveWikilinkTargetSlug } from '@/shared/lib/parse-frontmatter';
+import { resolveWikilinkTargetSlug } from '@/shared/lib/vault-document/parse-frontmatter';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
 import { getTopologyProjectHref } from '@/entities/project';
@@ -106,7 +106,7 @@ export function DocsVaultViewer({
   const reducedMotion = usePrefersReducedMotion();
   /*
    * A body already read once arrives painted: the memory key carries mtime
-   * (`shared/lib/route-arrival-memory.ts`), so an edited file is read again. The read below still
+   * (`shared/lib/navigation/route-arrival-memory.ts`), so an edited file is read again. The read below still
    * runs and replaces it.
    */
   const [raw, setRaw] = useArrivalMemory<string | null>(

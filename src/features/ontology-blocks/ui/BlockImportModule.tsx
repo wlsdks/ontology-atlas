@@ -12,13 +12,13 @@ import {
   SHEET_SETTLED,
   useExitLockout,
 } from '@/shared/motion';
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
-import { isPickerAbort } from "@/shared/lib/picker-abort";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
+import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
 import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
-} from "@/shared/lib/tauri-vault-fs";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+} from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { CloseButton } from "@/shared/ui/close-button";
 import { useLocalVault } from "@/entities/vault-session";

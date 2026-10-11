@@ -11,8 +11,8 @@ import {
   type AnalysisRun,
   type AnalysisScope,
 } from '@/entities/analysis-record';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { getTauriVaultRootPath, inspectTauriProjectSource } from '@/shared/lib/tauri-vault-fs';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { getTauriVaultRootPath, inspectTauriProjectSource } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { resolveNodeAgentTarget, type KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 
 import { parseAtlasToolCall } from './atlas-tool-call';

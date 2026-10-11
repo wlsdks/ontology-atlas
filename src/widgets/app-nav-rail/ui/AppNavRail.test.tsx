@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { MouseEventHandler, ReactNode } from "react";
 import koMessages from "../../../../messages/ko.json";
-import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
+import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
 import { AppNavRail } from "./AppNavRail";
 
 const mocks = vi.hoisted(() => ({

@@ -1,4 +1,4 @@
-// Frontmatter parser — kept capability-synced with src/shared/lib/parse-frontmatter.ts.
+// Frontmatter parser — kept capability-synced with src/shared/lib/vault-document/parse-frontmatter.ts.
 // Node ESM, pure JS, no gray-matter dependency.
 //
 // Supported shapes:

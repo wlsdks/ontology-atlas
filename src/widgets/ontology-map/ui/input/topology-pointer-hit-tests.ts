@@ -7,7 +7,7 @@ import type { CameraAxes } from "../../engine/camera";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable } from "../../model/tier-visibility";
 import type { EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../../render/cluster-chips";
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm-depth-parallax";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import { HIT_TOUCH_SLACK_PX, hitTestWorld, worldToScreen } from "../camera/topology-camera-math";

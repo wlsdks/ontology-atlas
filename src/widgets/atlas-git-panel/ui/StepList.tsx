@@ -1,11 +1,11 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useRovingRows } from "@/shared/lib/use-roving-rows";
+import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { stepFileNames, stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";
-import { describeSnapshotSubject } from "@/shared/lib/atlas-git-record";
-import type { GitCommitInfo } from "@/shared/lib/tauri-git";
+import { describeSnapshotSubject } from "@/shared/lib/git/atlas-git-record";
+import type { GitCommitInfo } from "@/shared/lib/git/tauri-git";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";

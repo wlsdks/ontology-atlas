@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { OntologyMapKindGlyph } from "./map-kind-glyph";
-import type { GlyphSet } from "@/shared/lib/appearance-preferences";
+import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
 
 const KINDS = ["project", "domain", "capability", "element"] as const;
 

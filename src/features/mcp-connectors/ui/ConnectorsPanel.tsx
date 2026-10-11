@@ -31,14 +31,14 @@ import {
   type ConnectorProblem,
   type ConnectorRecord,
   type ConnectorValueEntry,
-} from '@/shared/lib/connector-record';
-import { CONNECTORS_RELATIVE_PATH, type ConnectorWriteResult } from '@/shared/lib/connector-store';
+} from '@/shared/lib/connectors/connector-record';
+import { CONNECTORS_RELATIVE_PATH, type ConnectorWriteResult } from '@/shared/lib/connectors/connector-store';
 import {
   discoverMcpConnectors,
   isConnectorDiscoveryAvailable,
   type ConnectorDiscoveryState,
   type DiscoveredConnector,
-} from '@/shared/lib/tauri-connectors';
+} from '@/shared/lib/connectors/tauri-connectors';
 import {
   connectorSecretDelete,
   connectorSecretRef,
@@ -46,13 +46,13 @@ import {
   connectorSecretStatus,
   isConnectorSecretBridgeAvailable,
   subscribeConnectorSecretChange,
-} from '@/shared/lib/tauri-connector-secrets';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/connectors/tauri-connector-secrets';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 import {
   parseMcpInstallLink,
   type McpInstallLinkProblem,
-} from '@/shared/lib/mcp-install-link';
+} from '@/shared/lib/connectors/mcp-install-link';
 
 import {
   AddConnectorDialog,
@@ -269,7 +269,7 @@ export function ConnectorsPanel({
   /*
    * `?install=<base64 json>` is the "Add to …" shape Cursor and VS Code publish.
    * `parseMcpInstallLink` refuses any unknown field, because a confirmation showing less than
-   * the truth is the CVE this surface avoids (`src/shared/lib/mcp-install-link.ts`). The link
+   * the truth is the CVE this surface avoids (`src/shared/lib/connectors/mcp-install-link.ts`). The link
    * only opens the dialog: nothing is written and the switch stays off. The installed app's
    * `ontology-atlas://mcp?install=` reaches this address through `src-tauri/src/deep_link.rs`.
    * `useSearchParams`, not `window.location`: an effect would paint the dialog closed first, and

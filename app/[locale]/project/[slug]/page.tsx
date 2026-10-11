@@ -6,7 +6,7 @@ import { isAppLocale, LOCALE_META } from '@/i18n/locales';
 import { getTranslations } from 'next-intl/server';
 import { ProjectDetailPage, projectBreadcrumb } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
-import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { JsonLd, RouteLoadingFallback } from '@/shared/ui';
 
 interface Params {

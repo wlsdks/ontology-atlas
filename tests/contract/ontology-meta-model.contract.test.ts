@@ -21,7 +21,7 @@ import {
 import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../src/features/vault-agent/model/system-prompt";
-import { githubAnchorSlug } from "../../src/shared/lib/github-anchor-slug";
+import { githubAnchorSlug } from "../../src/shared/lib/library/github-anchor-slug";
 import { readSkillProcedure } from "../helpers/read-skill-procedure";
 
 const ROOT = resolve(__dirname, "../..");

@@ -7,9 +7,9 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { cn } from '@/shared/lib/cn';
-import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
+import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { availableDemoClips } from '../model/demo-clips';
@@ -40,7 +40,7 @@ import type { StageGraph } from '../lib/stage-graph';
 /**
  * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at
  * max(--gateway-gutter, (viewport − --gateway-page-max) / 2), the --gateway-origin
- * (`shared/lib/gateway-frame.ts`, `tests/e2e/download-gateway-grid.spec.ts`).
+ * (`shared/lib/public-pages/gateway-frame.ts`, `tests/e2e/download-gateway-grid.spec.ts`).
  */
 
 const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';

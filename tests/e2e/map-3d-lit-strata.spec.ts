@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { parseFrontmatter } from "../../src/shared/lib/parse-frontmatter";
-import { judgeEvidence } from "../../src/shared/lib/evidence-verdict.mjs";
+import { parseFrontmatter } from "../../src/shared/lib/vault-document/parse-frontmatter";
+import { judgeEvidence } from "../../src/shared/lib/git/evidence-verdict.mjs";
 import { installDesktopRailRuntime, type StubPathChange } from "./desktop-rail-arrival-harness";
 import { waitForDomeEntered, waitForMapStill } from "./settle";
 
@@ -16,7 +16,7 @@ import { waitForDomeEntered, waitForMapStill } from "./settle";
  * measured on the drawn result of the product's own vault (`docs/ontology`), opened through
  * the installed-app runtime with the Git walk answered from this repository's real history:
  *
- * - the legend's evidence counts are the rule's (`shared/lib/evidence-verdict.mjs`) over the
+ * - the legend's evidence counts are the rule's (`shared/lib/git/evidence-verdict.mjs`) over the
  *   same Git times, and the frame drew those lights — never current for an unmeasured node;
  * - a single click selects and leaves pose and camera where they were;
  * - a double-click flies to the node and Esc flies back to the view it left;

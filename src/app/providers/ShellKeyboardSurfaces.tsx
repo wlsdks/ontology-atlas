@@ -3,14 +3,14 @@
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
-import { useShellKeyClaimed } from "@/shared/lib/shell-key-claims";
+import { useShellKeyClaimed } from "@/shared/lib/keyboard/shell-key-claims";
 import {
   OPEN_SHORTCUTS_EVENT,
   requestSettingsOpen,
   useSurfaceRequest,
-} from "@/shared/lib/surface-requests";
-import { blockingSurfaceOpen } from "@/shared/lib/use-destination-shortcuts";
-import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
+} from "@/shared/lib/keyboard/surface-requests";
+import { blockingSurfaceOpen } from "@/shared/lib/keyboard/use-destination-shortcuts";
+import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 
 /*
  * The `ssr: false` option is load-bearing: the sheet calls `useSearchParams`, which in the static prerender
@@ -28,7 +28,7 @@ const MountedGlobalSearch = dynamic(
 
 /**
  * The keys `?`, ⌘K and ⌘, answer on every screen the rail stands on, as the shortcut sheet
- * promises. Screens that answer a key themselves claim it (`shared/lib/shell-key-claims.ts`).
+ * promises. Screens that answer a key themselves claim it (`shared/lib/keyboard/shell-key-claims.ts`).
  * `disabled` is the rail's verdict: no rail, no keys, the same rule as the `G` keys.
  *
  * - `?` does not stack the sheet over another dialog (`blockingSurfaceOpen`), but always closes

@@ -28,7 +28,7 @@ const docsVault = vi.hoisted(() => ({
   computeLocalVaultFingerprintWithStamps: vi.fn(async () => ({ fingerprint: 'fp-vault', nativeStamps: null })),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => tauri);
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauri);
 vi.mock('@/entities/local-fs-handle', () => ({ CURRENT_LOCAL_FS_HANDLE_ID: 'current', ...store }));
 vi.mock('@/entities/docs-vault', () => docsVault);
 

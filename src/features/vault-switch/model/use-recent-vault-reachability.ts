@@ -6,7 +6,7 @@ import {
   type LocalFsHandleRecord,
 } from '@/entities/local-fs-handle';
 import { isMissingFolderError } from '@/entities/vault-session';
-import { isTauriVaultRuntime, tauriVaultPathExists } from '@/shared/lib/tauri-vault-fs';
+import { isTauriVaultRuntime, tauriVaultPathExists } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import {
   recentVaultRowKey,
   type RecentVaultReachability,

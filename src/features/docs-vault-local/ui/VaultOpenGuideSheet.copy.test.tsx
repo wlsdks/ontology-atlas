@@ -22,10 +22,10 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 const isDesktopShell = vi.fn(() => false);
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => isDesktopShell(),
 }));
-vi.mock('@/shared/lib/use-hydrated', () => ({ useHydrated: () => true }));
+vi.mock('@/shared/lib/render-timing/use-hydrated', () => ({ useHydrated: () => true }));
 
 afterEach(() => {
   isDesktopShell.mockReturnValue(false);

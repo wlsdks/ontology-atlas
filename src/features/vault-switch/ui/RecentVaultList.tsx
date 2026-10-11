@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
-import { computeEditAge } from '@/shared/lib/edit-age';
+import { computeEditAge } from '@/shared/lib/edit-provenance/edit-age';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';

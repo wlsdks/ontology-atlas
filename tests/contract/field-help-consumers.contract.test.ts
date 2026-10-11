@@ -10,8 +10,8 @@ import {
   RELATION_EDGE_TYPE,
   type MeaningEditRelation,
 } from '@/entities/knowledge-graph';
-import { looksLikeCodePath } from '@/shared/lib/humanize-code-path-title';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { looksLikeCodePath } from '@/shared/lib/concept-display/humanize-code-path-title';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 import { buildCompactAgentBrief } from '../../mcp/src/agent-brief-compact.mjs';
 import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';

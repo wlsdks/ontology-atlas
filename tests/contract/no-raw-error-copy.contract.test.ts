@@ -484,7 +484,7 @@ const PERMITTED_SITES: readonly { path: string; count: number; reason: string }[
     reason: 'errorMessage on the heartbeat parse result; no surface reads it, only its unit test',
   },
   {
-    path: 'src/shared/lib/local-endpoint.ts',
+    path: 'src/shared/lib/llm-connection/local-endpoint.ts',
     count: 1,
     // `LocalVerifyVerdict.detail` is declared, in its own doc comment, as "the fact the screen
     // appends" — the machine half of the sentence-plus-detail shape. The verdict's `reason` is

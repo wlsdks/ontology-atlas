@@ -75,7 +75,7 @@
 > **Replaced 2026-08-25.** The old B1 asked for the five validator issue codes,
 > and the May run scored MCP-on 3/3 because `capabilities/vault-validator` listed
 > them verbatim in its body. That node is gone, and the codes now live only in
-> `src/shared/lib/validate-vault-document.ts`.
+> `src/shared/lib/vault-document/validate-vault-document.ts`.
 >
 > The removal was correct and the task was the problem. It measured the vault as a
 > documentation cache: a second copy of something the source already owned, which
@@ -146,7 +146,7 @@ the D-only axes in [`rubric.md`](rubric.md).
 ### C1 — Function exports
 
 **Prompt:**
-> List all functions exported from `src/shared/lib/validate-vault-document.ts`.
+> List all functions exported from `src/shared/lib/vault-document/validate-vault-document.ts`.
 
 **Correct answer:**
 - Verifiable by reading the file. Currently exports `validateVaultDocument`, `validateVaultDocFrontmatter`, `summarizeVaultValidation` (verify at measurement time).

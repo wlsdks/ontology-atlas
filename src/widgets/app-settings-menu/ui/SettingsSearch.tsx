@@ -3,7 +3,7 @@
 import { useCallback, useState, type KeyboardEvent, type Ref } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { isImeComposing } from '@/shared/lib/ime-composition';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { controlClass } from '@/shared/ui/control-class';
 import { Input } from '@/shared/ui/input';
 

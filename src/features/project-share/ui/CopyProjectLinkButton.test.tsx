@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   toast: vi.fn(),
 }));
 
-vi.mock("@/shared/lib/copy-text", () => ({
+vi.mock("@/shared/lib/clipboard/copy-text", () => ({
   copyText: (text: string) => mocks.copyText(text),
 }));
 

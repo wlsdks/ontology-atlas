@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskReportFileCurrent, questionTerms } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';

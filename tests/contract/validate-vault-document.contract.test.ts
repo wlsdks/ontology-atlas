@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { VALIDATE_CASES } from '../fixtures/validate-vault-cases.mjs';
-import { validateVaultDocument as validateTs } from '@/shared/lib/validate-vault-document';
+import { validateVaultDocument as validateTs } from '@/shared/lib/vault-document/validate-vault-document';
 import { validateVaultDocument as validateMcp } from '../../mcp/src/validate.mjs';
 import { validateVaultDocument as validateCli } from '../../cli/src/lib/validate.mjs';
 

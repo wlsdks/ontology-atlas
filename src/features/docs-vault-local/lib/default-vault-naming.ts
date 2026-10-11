@@ -1,6 +1,6 @@
 /**
  * Picks a collision-free vault folder name under `~/Ontology Atlas/` for "just start" from the
- * existing names; filesystem access belongs to `@/shared/lib/tauri-vault-fs`.
+ * existing names; filesystem access belongs to `@/shared/lib/vault-folder/tauri-vault-fs`.
  */
 
 export const DEFAULT_VAULT_BASE_NAME = 'my-ontology';

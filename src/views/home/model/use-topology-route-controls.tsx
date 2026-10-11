@@ -1,6 +1,6 @@
 import type { useTopologyPreferences } from "./use-topology-preferences";
 
-import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
+import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
 import { resolveIndexPanelState, resolveLeftSlotOwner, resolveRenderedIndexPanelState, type IndexPanelState } from "@/widgets/topology-index-panel";
 import { useCallback, useMemo, useState } from "react";
 import { enterRealmRouteState, exitRealmRouteState, limitExpandedParents, toggleExpandedParent } from "./url-state";

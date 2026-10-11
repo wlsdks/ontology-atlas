@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import type { NativeErrorLookup } from "@/shared/lib/native-error";
-import { gitErrorMessage, gitRestoreFile } from "@/shared/lib/tauri-git";
+import type { NativeErrorLookup } from "@/shared/lib/desktop-shell/native-error";
+import { gitErrorMessage, gitRestoreFile } from "@/shared/lib/git/tauri-git";
 import type { Translator } from "../lib/translator";
 import type { FollowedStep, WorkbenchSelection } from "./use-workbench-selection";
 

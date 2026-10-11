@@ -1,21 +1,21 @@
 "use client";
 
-import type { CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
+import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";
 import type { DocumentFollow } from "../lib/document-follow";
 import { RefreshCw } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { countChangesByStatus } from "@/shared/lib/atlas-git-changes";
-import { describeSnapshotSubject, type AtlasGitDiffFile } from "@/shared/lib/atlas-git-record";
+import { countChangesByStatus } from "@/shared/lib/git/atlas-git-changes";
+import { describeSnapshotSubject, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";
 import type {
   GitChangeEntry,
   GitCommitInfo,
   GitSnapshotResult,
   GitStatusResult,
-} from "@/shared/lib/tauri-git";
+} from "@/shared/lib/git/tauri-git";
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
-import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
+import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git/git-install-guide";
 import { Button, controlClass } from "@/shared/ui";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";

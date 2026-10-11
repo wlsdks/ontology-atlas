@@ -3,7 +3,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MAP_CANVAS_SURFACE_ROLE } from '@/shared/lib/focus-map-canvas';
+import { MAP_CANVAS_SURFACE_ROLE } from '@/shared/lib/map-canvas/focus-map-canvas';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/ui/button';
 import { Chip, RowButton } from '@/shared/ui/controls';

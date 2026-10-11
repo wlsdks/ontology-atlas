@@ -1,4 +1,4 @@
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
@@ -252,7 +252,7 @@ export interface UseTopologyLoopArgs {
   mapArrangement?: MapArrangement;
   /**
    * Lit 3D (2026-09-25) — node id → evidence state, from the product's one evidence rule
-   * (`shared/lib/evidence-states.ts`). An absent id is unknown; null means nothing was
+   * (`shared/lib/git/evidence-states.ts`). An absent id is unknown; null means nothing was
    * measured, so every node is unknown. It decides how much each node emits.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;

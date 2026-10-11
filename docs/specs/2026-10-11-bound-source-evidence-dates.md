@@ -41,13 +41,13 @@ The following implementation observations describe base `583eca926`; the impleme
   commits (`evidence.rs:21-23`). It cannot safely be reused by calling it with a source root: source and vault
   grants are different authorities.
 - The resolver currently uses one path map for the document and its source anchors
-  (`src/shared/lib/evidence-states.ts:87-108`). Identical relative strings from different roots therefore need
+  (`src/shared/lib/git/evidence-states.ts:87-108`). Identical relative strings from different roots therefore need
   separate identities.
 - Native source resolution already validates the single project binding, receipt identity and a binding digest
   (`src-tauri/src/gray_area_scope.rs:42-114`). `verify_identity` checks actual Git-root/kind/source identity
   (`gray_area_scope.rs:688-699`). Vault and source grants are separate (`src-tauri/src/vault/scope.rs:25-51`);
   `pickTauriSourceDirectory` grants source reading through the existing picker
-  (`src/shared/lib/tauri-vault-fs.ts:456`).
+  (`src/shared/lib/vault-folder/tauri-vault-fs.ts:456`).
 - The Git runner disables repo-controlled hooks, fsmonitor, external diff, textconv and signature commands for
   reads (`src-tauri/src/git/runner.rs:37-64`, `86-116`). This remains the owner for every new Git read.
 - Analysis already shows source status, claim verdicts, paths and an original document action

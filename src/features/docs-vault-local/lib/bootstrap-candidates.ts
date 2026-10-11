@@ -18,8 +18,8 @@
  */
 
 import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
-import { VAULT_SIDECAR_DIR } from '@/shared/lib/vault-sidecar';
-import { WIKI_DIR, WIKI_SOURCES_DIR } from '@/shared/lib/wiki-page-schema';
+import { VAULT_SIDECAR_DIR } from '@/shared/lib/vault-folder/vault-sidecar';
+import { WIKI_DIR, WIKI_SOURCES_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 export interface BootstrapDocInput {
   slug: string;

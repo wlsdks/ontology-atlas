@@ -103,7 +103,7 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
       /if key != "install"/,
     );
     // **One level of decoding, no recursion** — the fourth CVE lesson in
-    // `src/shared/lib/mcp-install-link.ts`. The doorman never opens the payload: it checks the
+    // `src/shared/lib/connectors/mcp-install-link.ts`. The doorman never opens the payload: it checks the
     // characters, caps the length, and hands it on. A decoder here would be a second place that
     // has to agree with the first about what a config means.
     expect(door, 'the doorman must not decode the payload').not.toMatch(
@@ -123,7 +123,7 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
     expect(crate.length, 'the crate scan found no sources').toBeGreaterThan(30);
     for (const path of [
       ...crate,
-      'src/shared/lib/mcp-install-link.ts',
+      'src/shared/lib/connectors/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
     ]) {
       const body = path === 'src-tauri/src/deep_link.rs' ? shippedBody(path) : read(path);

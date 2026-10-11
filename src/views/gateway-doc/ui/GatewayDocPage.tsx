@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { cn } from '@/shared/lib/cn';
-import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
+import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { ChevronRight, Languages } from 'lucide-react';
 import { GithubMark } from '@/shared/ui';

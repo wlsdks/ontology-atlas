@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createConstructionExecutor, sourceCitation, type ConstructionSourcePort } from './construction-executor';
-import type { ConstructionSourceRange } from '@/shared/lib/tauri-local-construction';
+import type { ConstructionSourceRange } from '@/shared/lib/llm-connection/tauri-local-construction';
 import type { VaultReadPort } from './vault-read-port';
 
 const vault:VaultReadPort={nodes:[],edges:[],docs:[],readDocText:async()=>null};

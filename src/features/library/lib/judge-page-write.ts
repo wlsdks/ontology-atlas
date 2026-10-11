@@ -1,4 +1,4 @@
-import { WIKI_DIR, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
 
 import type { WikiTemplateProblem } from "./describe-wiki-problem";
 

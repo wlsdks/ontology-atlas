@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FrameMeter } from './frame-meter';
-import { writeFrameMeter } from '@/shared/lib/appearance-preferences';
+import { writeFrameMeter } from '@/shared/lib/preferences/appearance-preferences';
 import en from '../../../messages/en.json';
 import ko from '../../../messages/ko.json';
 

@@ -1,11 +1,11 @@
 /** IndexedDB store for `LocalFsHandleRecord`; the legacy raw-handle key migrates on first read. */
 
-import { idbDel, idbGet, idbSet } from '@/shared/lib/idb-kv';
+import { idbDel, idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '../model/types';
 
 export const CURRENT_LOCAL_FS_HANDLE_ID = 'current';

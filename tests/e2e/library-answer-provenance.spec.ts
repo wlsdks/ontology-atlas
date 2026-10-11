@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 import { installLibraryWorkHarness } from "./library-work-harness";
-import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '../../src/shared/lib/vault-document/parse-frontmatter';
 
 const SOURCE = "sources/room-capacity.md";
 const ORIGINAL = "The room allows 24 participants.\n";

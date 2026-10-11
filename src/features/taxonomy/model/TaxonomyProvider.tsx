@@ -4,7 +4,7 @@ import { useLocale } from 'next-intl';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { DEFAULT_CATEGORIES, type Category } from '@/entities/category';
 import { DEFAULT_STATUSES, type Status } from '@/entities/status';
-import { pickTaxonomyLabel } from '@/shared/lib/taxonomy-label';
+import { pickTaxonomyLabel } from '@/shared/lib/locale-text/taxonomy-label';
 
 export interface TaxonomyContextValue {
   categories: Category[];

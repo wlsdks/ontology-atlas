@@ -2,7 +2,7 @@
 
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
-import { countVaultContents } from '@/shared/lib/vault-shape';
+import { countVaultContents } from '@/shared/lib/vault-folder/vault-shape';
 import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
@@ -14,10 +14,10 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { classifyVaultAccessError } from '../classify-vault-access-error';
-import { toErrorMessage } from '@/shared/lib/error-message';
-import { codedFailure } from '@/shared/lib/failure-code';
+import { toErrorMessage } from '@/shared/lib/failures/error-message';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { AGENT_ACTIVITY_STALE_AFTER_MS, emptyAgentActivityStatus } from '../agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
 import { createVaultLoadProgressStore } from '../vault-load-progress';

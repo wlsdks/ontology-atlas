@@ -1,4 +1,4 @@
-import type { DataSourceMode } from '@/shared/lib/data-source-mode';
+import type { DataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
 
 /**
  * Which name the insights board gives itself. On a bundled sample the board names the sample, since its numbers

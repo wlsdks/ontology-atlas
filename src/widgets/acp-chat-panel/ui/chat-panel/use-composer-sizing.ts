@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, type RefObject } from 'react';
 
-import { composerGrowth, composerMaxRows, snapScrollTop } from '@/shared/lib/composer-growth';
+import { composerGrowth, composerMaxRows, snapScrollTop } from '@/shared/lib/agent-chat/composer-growth';
 
 export function useComposerSizing({
   draft,

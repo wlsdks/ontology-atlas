@@ -15,11 +15,11 @@ import { underCollation } from "../helpers/under-collation";
 import { deriveProjectSourceWitnesses } from "../../src/views/home/lib/project-source-witnesses";
 import { deriveProjectSourceWitnessesFromDocs } from "../../mcp/src/project-source-witnesses.mjs";
 import { extractProjectMeaningEvidencePaths as extractMcpMeaningEvidence } from "../../mcp/src/project-meaning-evidence.mjs";
-import { buildProjectSourceReceipt } from "../../src/shared/lib/project-source-receipt";
-import { extractProjectMeaningEvidencePaths as extractAppMeaningEvidence } from "../../src/shared/lib/project-meaning-evidence";
+import { buildProjectSourceReceipt } from "../../src/shared/lib/project-source/project-source-receipt";
+import { extractProjectMeaningEvidencePaths as extractAppMeaningEvidence } from "../../src/shared/lib/project-source/project-meaning-evidence";
 import { buildProjectSourceReceipt as mintMcp } from "../../mcp/src/project-source-mint.mjs";
 import { projectSourceRemedy } from "../../mcp/src/project-source-remedy.mjs";
-import { proposeProjectSourceFromInspection } from "../../src/shared/lib/project-source-proposal";
+import { proposeProjectSourceFromInspection } from "../../src/shared/lib/project-source/project-source-proposal";
 
 const ROOT = path.resolve(__dirname, "../..");
 const SURFACE = JSON.parse(

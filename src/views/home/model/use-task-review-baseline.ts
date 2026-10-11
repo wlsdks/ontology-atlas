@@ -7,8 +7,8 @@ import {
   type TaskBaselineSourceInspection,
 } from '@/features/acp-session';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
-import { createVaultFileProjectSourceStore, type ProjectSourceStore } from '@/shared/lib/project-source-store';
-import { inspectTauriProjectSource, type ProjectSourceInspection } from '@/shared/lib/tauri-vault-fs';
+import { createVaultFileProjectSourceStore, type ProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
+import { inspectTauriProjectSource, type ProjectSourceInspection } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 const TASK_REVIEW_ONTOLOGY_KINDS = new Set(['project', 'domain', 'capability', 'element']);
 

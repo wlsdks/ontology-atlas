@@ -1,5 +1,5 @@
-import { createTauriVaultTextFile, getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { WIKI_DIR } from '@/shared/lib/wiki-page-schema';
+import { createTauriVaultTextFile, getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { WIKI_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 /** Removes a file the app just wrote (a toast's undo); folders created on the way stay. */
 export async function deleteWikiFile(vault: FileSystemDirectoryHandle, relPath: string): Promise<void> {

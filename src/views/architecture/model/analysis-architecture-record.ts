@@ -1,7 +1,7 @@
 import type { AnalysisRun } from '@/entities/analysis-record';
 import { parseArchitectureProfile } from '@/entities/architecture-profile';
 import { parseArchitectureRecord, type ArchitectureRecord } from '@/entities/architecture-record';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /** Reconstruct a dated measurement only against the exact profile captured with that run. */
 export function architectureRecordFromAnalysis(run: AnalysisRun): ArchitectureRecord | null {

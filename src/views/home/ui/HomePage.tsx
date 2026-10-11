@@ -31,17 +31,17 @@ import { useChatSuggestions } from "@/features/acp-session";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { useProjects } from "@/features/project-data-source";
 import { useRouter } from "@/i18n/navigation";
-import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/map-navigation-pending";
-import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
-import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
-import { useDocumentTitle } from "@/shared/lib/use-document-title";
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
-import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
+import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
+import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
+import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
+import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
-import { OPEN_SHORTCUTS_EVENT, useSurfaceRequest } from "@/shared/lib/surface-requests";
+import { OPEN_SHORTCUTS_EVENT, useSurfaceRequest } from "@/shared/lib/keyboard/surface-requests";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { GestureHint } from "@/widgets/gesture-hint";
 import { useTranslations } from "next-intl";
@@ -78,7 +78,7 @@ export function HomePage() {
   const tMapError = useTranslations('topology.widgetError');
   const [mapEntryTicket] = useState(() => readMapNavigationPending()?.id ?? null);
   // Only the first load splits: later arrivals already hold the map's code and graph, and
-  // splitting them crossfades into a loading visual. `shared/lib/route-arrival-memory.ts` is empty
+  // splitting them crossfades into a loading visual. `shared/lib/navigation/route-arrival-memory.ts` is empty
   // during static render and hydration, so the exported HTML and first commit are unchanged.
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);

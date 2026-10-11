@@ -6,9 +6,9 @@ import { buildOntologyChangeSet, type MeaningEditRelation, meaningEditRelationFo
 import { useAgentServer, VaultConflictError } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session";
 import { type MeaningEditorPreview } from "@/features/ontology-meaning-editor";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
-import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import { replaceVaultBody } from "@/shared/lib/vault-document/replace-vault-body";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { MOTION } from "@/shared/motion";
 import { useToast } from "@/shared/ui";
 import { type AcpOntologyRelationPreview } from "@/widgets/acp-chat-panel";

@@ -23,7 +23,7 @@ import {
   vaultPlace,
 } from "@/entities/library-round";
 import { cn } from "@/shared/lib/cn";
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
 import { controlClass, fieldLabel } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";

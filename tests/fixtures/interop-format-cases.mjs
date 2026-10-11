@@ -1,6 +1,6 @@
 /**
  * Interop-format contract fixtures — single source of truth for the
- * web-builder serializer (`src/shared/lib/interop-format.ts`) ↔ CLI serializer
+ * web-builder serializer (`src/shared/lib/ontology-graph/interop-format.ts`) ↔ CLI serializer
  * (`cli/src/lib/interop-format.mjs`) drift guard.
  *
  * Each case is a compile-artifact-shaped graph:

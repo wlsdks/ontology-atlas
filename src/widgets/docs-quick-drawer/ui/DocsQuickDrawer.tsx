@@ -5,7 +5,7 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { AGENT_DOCK_INSET_SURFACE_CLASS } from '@/shared/ui/agent-dock-surface';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
+import { useLatinEyebrow } from "@/shared/lib/locale-text/latin-eyebrow";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
@@ -40,9 +40,9 @@ import {
 } from "../lib/tree-utils";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
-import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-display-name";
 import { IconButton, RowButton, controlClass } from "@/shared/ui";
 
 function readStoredSlugs(key: string, limit: number): string[] {

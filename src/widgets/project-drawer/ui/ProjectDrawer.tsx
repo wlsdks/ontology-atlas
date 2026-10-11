@@ -26,7 +26,7 @@ import { cn } from "@/shared/lib/cn";
 import { Chip, CloseButton, controlClass } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
 import { useStaticVaultSource } from "@/entities/vault-session";
-import { formatDate } from "@/shared/lib/format-date";
+import { formatDate } from "@/shared/lib/locale-text/format-date";
 import {
   formatProjectIntegrityIssue,
   getProjectRelationshipMeta,
@@ -44,9 +44,9 @@ import {
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useTaxonomy } from "@/features/taxonomy";
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { PublicQuickActions } from "@/widgets/public-quick-actions";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { IMPACT_MODE_COPY_KEYS } from "../lib/impact-mode-copy";
 
 interface Props {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-import type { AgentNotification } from '@/shared/lib/agent-notifications';
-import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import type { AgentNotification } from '@/shared/lib/agent-activity/agent-notifications';
+import type { AgentWorkSession } from '@/shared/lib/agent-activity/agent-work-session';
 import { deriveBellInbox } from './bell-inbox';
 import type { AgentWorkProjection } from './agent-work-projection';
 

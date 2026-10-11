@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { InsightsCensusStrip } from "./InsightsCensusStrip";
 
-vi.mock("@/shared/lib/use-count-up", () => ({
+vi.mock("@/shared/lib/render-timing/use-count-up", () => ({
   useCountUp: (value: number) =>
     ({ 125: 123, 258: 254, 98: 97 } as Record<number, number>)[value] ?? value,
 }));

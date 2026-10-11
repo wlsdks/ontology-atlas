@@ -11,14 +11,14 @@ import { Input } from '@/shared/ui/input';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/tauri-connector-secrets';
+import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/connectors/tauri-connector-secrets';
 import {
   resolveConnectorRuntimes,
   runtimePath,
   type ResolvedRuntime,
-} from '@/shared/lib/tauri-connector-runtimes';
-import type { ConnectorRecord } from '@/shared/lib/connector-record';
-import type { ConnectorWriteResult } from '@/shared/lib/connector-store';
+} from '@/shared/lib/connectors/tauri-connector-runtimes';
+import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
+import type { ConnectorWriteResult } from '@/shared/lib/connectors/connector-store';
 import { serviceVariant } from '../model/import-flow';
 
 import {

@@ -2,7 +2,7 @@
  * The wiki-page contract, as a table.
  *
  * One input, one expected set of problem codes, run through every implementation of the
- * contract (`mcp/src/wiki-schema.mjs` and `src/shared/lib/wiki-page-schema.ts`) by
+ * contract (`mcp/src/wiki-schema.mjs` and `src/shared/lib/library/wiki-page-schema.ts`) by
  * `tests/contract/wiki-page-schema.contract.test.ts`. The MCP package is delivered
  * separately from the web bundle, so the two cannot be one physical module; this table
  * is the effective unification, the same pattern as `validate-vault-cases.mjs`.

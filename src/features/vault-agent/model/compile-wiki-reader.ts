@@ -1,5 +1,5 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { isWikiFurnitureSlug, WIKI_DIR } from '@/shared/lib/wiki-page-schema';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { isWikiFurnitureSlug, WIKI_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 import { wrapUntrusted } from './concept-evidence-pack';
 import type { ToolExecution } from './tool-executor';

@@ -42,13 +42,13 @@ import {
   type LibraryUiModel,
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
-import { useWikiWriteMode } from "@/shared/lib/appearance-preferences";
-import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
-import { citedPassage as resolveCitedPassage } from "@/shared/lib/source-passage";
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import { useWikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
+import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import { citedPassage as resolveCitedPassage } from "@/shared/lib/library/source-passage";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useToast } from "@/shared/ui";
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
+import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../../lib/compile-availability";
 import { useLibraryAgent } from "../../lib/use-library-agent";
 import { useAnswerRefresh } from "../../lib/use-answer-refresh";

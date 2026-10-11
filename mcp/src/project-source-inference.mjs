@@ -1,6 +1,6 @@
 /**
  * Project source inference, the pure half shared by the MCP server, the CLI and
- * the browser bridge (`src/shared/lib/project-source-inference.mjs`). Callers
+ * the browser bridge (`src/shared/lib/project-source/project-source-inference.mjs`). Callers
  * collect candidates (`project-source-discovery.mjs`, or the
  * app's `inspect_project_source`); this ranks them. An enclosing git repository wins
  * (a boundary the person drew, and the probe normalizes to it anyway); else the

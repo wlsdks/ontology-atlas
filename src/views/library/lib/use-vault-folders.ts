@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { useLocalVault } from "@/entities/vault-session";
-import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
+import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 
 /**
  * **The folders that actually exist in the open folder.**

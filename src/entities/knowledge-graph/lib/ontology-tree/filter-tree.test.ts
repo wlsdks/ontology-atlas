@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../../model";
-import { normalizeForMatch } from "@/shared/lib/node-name-match";
+import { normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
 import { buildOntologyTree } from "./build-tree";
 import {
   countMatchingTreeNodes,

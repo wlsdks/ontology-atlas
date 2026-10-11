@@ -44,13 +44,13 @@ import {
   DEFAULT_EXPAND,
   DEFAULT_MAP_ARRANGEMENT,
   DEFAULT_MAP_NAVIGATION_SPEED,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import { createStrataLodState, type StrataLodState } from "../../model/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../../model/tier-visibility";
 import type { TopologyPointerHandlers } from "../input/topology-pointer-types";
 
-import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
+import type { MapLayoutMark } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { readOntologyMapMarks } from "../../morph/map-marks";
 import { useTopologyMapInstrumentation } from "./use-topology-map-instrumentation";
 import {

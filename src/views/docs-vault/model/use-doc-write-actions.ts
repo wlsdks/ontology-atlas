@@ -13,10 +13,10 @@ import {
   planKindChangeReferrers,
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault';
-import { codedFailure } from '@/shared/lib/failure-code';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { findSimilarNodeByTitle, type SimilarNodeMatch } from '@/shared/lib/similar-node-title';
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
+import { findSimilarNodeByTitle, type SimilarNodeMatch } from '@/shared/lib/search-match/similar-node-title';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { useToast } from '@/shared/ui';
 import {
   PINNED_DOCS_STORAGE_PREFIX,

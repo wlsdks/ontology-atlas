@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useLocalVault } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledge-graph";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
 /**
  * Vault path plus session changeset, so the git destination and the rail badge read

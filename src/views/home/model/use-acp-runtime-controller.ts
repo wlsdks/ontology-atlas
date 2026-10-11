@@ -1,6 +1,6 @@
 import { isGuardedRuntime, type InvestigationSendGuard } from "@/features/acp-session";
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
-import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
+import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
 

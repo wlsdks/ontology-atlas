@@ -5,7 +5,7 @@ import {
   idSearchText,
   NAME_TIER_SCORE,
   normalizeForMatch,
-} from "@/shared/lib/node-name-match";
+} from "@/shared/lib/search-match/node-name-match";
 
 /**
  * Detects file-path-shaped element titles (a slash segment ending in a short code extension) to
@@ -70,8 +70,8 @@ export interface MatchOntologyOptions {
  * O(|name|·|query|) literal or Hangul check, plus summary and id normalised per query; then
  * O(m log m) over the m matches.
  * Scores: 7 exact name, 6 name prefix, 5 name substring, 4 Hangul-aware prefix, 3 Hangul-aware
- * substring (`shared/lib/hangul-match`), 2 summary, 1 id slug, 0 excluded. Names are the title and
- * every display name (`shared/lib/node-name-match`). The id matches its slug unless the query has a
+ * substring (`shared/lib/search-match/hangul-match`), 2 summary, 1 id slug, 0 excluded. Names are the title and
+ * every display name (`shared/lib/search-match/node-name-match`). The id matches its slug unless the query has a
  * colon. Every hit carries `matched`. An empty query returns the most recent nodes; ties sort by
  * lastApprovedAt desc. Filters apply before scoring.
  */

@@ -33,12 +33,12 @@ import { DETAIL_TOGGLE_CHIP, SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow 
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
-import { copyText } from '@/shared/lib/copy-text';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
 import { Dialog, InfoHint } from '@/shared/ui';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
 import {

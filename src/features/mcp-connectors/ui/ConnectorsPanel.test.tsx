@@ -17,13 +17,13 @@ const bridge = vi.hoisted(() => ({
 }));
 const motion = vi.hoisted(() => ({ reduced: false }));
 
-vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({
+vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => motion.reduced,
 }));
 
-vi.mock('@/shared/lib/tauri-connectors', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/tauri-connectors')>(
-    '@/shared/lib/tauri-connectors',
+vi.mock('@/shared/lib/connectors/tauri-connectors', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/connectors/tauri-connectors')>(
+    '@/shared/lib/connectors/tauri-connectors',
   );
   return {
     ...actual,
@@ -35,9 +35,9 @@ vi.mock('@/shared/lib/tauri-connectors', async () => {
   };
 });
 
-vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/tauri-connector-secrets')>(
-    '@/shared/lib/tauri-connector-secrets',
+vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/connectors/tauri-connector-secrets')>(
+    '@/shared/lib/connectors/tauri-connector-secrets',
   );
   return {
     ...actual,
@@ -65,7 +65,7 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
 });
 
 import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
-import type { ConnectorRecord } from '@/shared/lib/connector-record';
+import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
 import { groupDiscovered, shortSourceKey } from './discovered-groups';

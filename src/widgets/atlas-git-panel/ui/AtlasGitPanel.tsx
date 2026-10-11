@@ -2,10 +2,10 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useFormatter, useTranslations } from "next-intl";
-import { countChangesByStatus, formatSnapshotSummary } from "@/shared/lib/atlas-git-changes";
-import { describeChangePath, parseUnifiedDiff, splitConceptChanges } from "@/shared/lib/atlas-git-record";
-import { isGitBridgeAvailable } from "@/shared/lib/tauri-git";
-import { useNativeErrorLookup } from "@/shared/lib/use-native-error-lookup";
+import { countChangesByStatus, formatSnapshotSummary } from "@/shared/lib/git/atlas-git-changes";
+import { describeChangePath, parseUnifiedDiff, splitConceptChanges } from "@/shared/lib/git/atlas-git-record";
+import { isGitBridgeAvailable } from "@/shared/lib/git/tauri-git";
+import { useNativeErrorLookup } from "@/shared/lib/desktop-shell/use-native-error-lookup";
 import {
   isCanonicalConcept,
   type OntologyChangeset,

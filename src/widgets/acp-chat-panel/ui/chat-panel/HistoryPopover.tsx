@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 
-import { formatDate } from '@/shared/lib/format-date';
+import { formatDate } from '@/shared/lib/locale-text/format-date';
 import { RowButton, Surface } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 

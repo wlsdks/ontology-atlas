@@ -32,18 +32,18 @@ const vault = vi.hoisted(() => ({
   scaffoldOntology: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({ isDesktopShell: () => env.desktop }));
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => env.desktop }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => vault }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => env.connectors }));
 vi.mock('@/features/ontology-blocks', () => ({ BlockImportModule: () => null }));
 vi.mock('@/entities/library-round', () => ({
   createVaultFileRoundStore: () => ({ read: env.roundsRead }),
 }));
-vi.mock('@/shared/lib/project-source-store', () => ({
+vi.mock('@/shared/lib/project-source/project-source-store', () => ({
   createVaultFileProjectSourceStore: () => ({ read: env.sourcesRead }),
 }));
-vi.mock('@/shared/lib/tauri-git', () => ({ gitStatus: env.gitStatus }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/git/tauri-git', () => ({ gitStatus: env.gitStatus }));
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => (env.desktop ? '/Users/probe/atlas-vault' : null),
   isTauriVaultRuntime: () => env.desktop,
   openTauriVaultInFinder: vi.fn(),

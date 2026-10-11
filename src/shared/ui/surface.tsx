@@ -3,7 +3,7 @@
 import { useEffect, useRef, type CSSProperties, type MouseEventHandler, type ReactNode, type Ref } from 'react';
 
 import { cn } from '@/shared/lib/cn';
-import { usePanelPresence } from '@/shared/lib/use-presence';
+import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 
 /**
  * The surface's size picks the grammar. `chrome` (move, scale and brightness) is for small

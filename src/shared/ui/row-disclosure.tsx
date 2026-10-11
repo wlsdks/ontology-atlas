@@ -2,7 +2,7 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
+import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import { Button } from './button';
 import { ICON_SIZE } from './icon-size';

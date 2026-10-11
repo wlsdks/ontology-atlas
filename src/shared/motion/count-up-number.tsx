@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/shared/lib/cn';
-import { useCountUp } from '@/shared/lib/use-count-up';
+import { useCountUp } from '@/shared/lib/render-timing/use-count-up';
 
 export function CountUpNumber({
   value,

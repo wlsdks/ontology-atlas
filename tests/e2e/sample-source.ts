@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-/** Where the first-run card's sample choice is stored — the same key as `src/shared/lib/sample-source.ts`. */
+/** Where the first-run card's sample choice is stored — the same key as `src/shared/lib/vault-folder/sample-source.ts`. */
 const SAMPLE_SOURCE_KEY = 'demo:sample-source:v1';
 
 /**

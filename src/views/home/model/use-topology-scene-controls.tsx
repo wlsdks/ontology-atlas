@@ -7,8 +7,8 @@ import type { useTopologyRouteControls } from "./use-topology-route-controls";
 import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model";
 
 import { useProjects } from "@/features/project-data-source";
-import { completeMapNavigation } from "@/shared/lib/map-navigation-pending";
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import { completeMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useToast } from "@/shared/ui";
 import type { DialLabels } from "@/widgets/ontology-map";
 import { useTranslations } from "next-intl";

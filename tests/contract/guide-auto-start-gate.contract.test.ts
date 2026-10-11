@@ -52,7 +52,7 @@ const AUTO_START_SITES = [
 ] as const;
 
 /** Where the switch is **defined**. Not a consumer, so it is not in the list above. */
-const SWITCH_DEFINITION = "src/shared/lib/guide-auto-start.ts";
+const SWITCH_DEFINITION = "src/shared/lib/preferences/guide-auto-start.ts";
 
 describe("화면 안내 자동 표시 — 스위치가 모든 발화 지점을 덮는다", () => {
   it.each(AUTO_START_SITES)("%s 가 스위치를 읽는다", (path) => {

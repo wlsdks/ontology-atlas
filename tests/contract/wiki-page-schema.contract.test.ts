@@ -12,7 +12,7 @@ import {
   WIKI_SECTION_ORDER as SECTIONS_TS,
   validateWikiFolder as validateFolderTs,
   validateWikiPage as validateTs,
-} from '@/shared/lib/wiki-page-schema';
+} from '@/shared/lib/library/wiki-page-schema';
 import {
   WIKI_CITATION_PATTERN as PATTERN_MCP,
   WIKI_FIELDS as FIELDS_MCP,

@@ -17,10 +17,10 @@ Evidence: `/tmp/atlas-gray-area-audit/walker/report.md`, `04-retry-evidence.png`
 
 ## Today
 
-- At source base `0b644920b`, local Markdown becomes a generic flattened excerpt at `src/entities/docs-vault/lib/build-local-manifest.ts:351` and `:383`. `src/shared/lib/parse-frontmatter.ts:448` strips headings and joins text, including list and table content.
+- At source base `0b644920b`, local Markdown becomes a generic flattened excerpt at `src/entities/docs-vault/lib/build-local-manifest.ts:351` and `:383`. `src/shared/lib/vault-document/parse-frontmatter.ts:448` strips headings and joins text, including list and table content.
 - `src/entities/docs-vault/lib/derive-ontology-from-vault.ts:170` selects `description ?? excerpt`; an empty description therefore blocks fallback. `src/widgets/analysis-workbench/ui/MeaningContext.tsx:44` presents that result as the definition and `:46` offers `analysisWorkbench.openDefinition`.
 - Generated documents have the same generic excerpt path at `scripts/build-docs-vault.mjs:370` and `:894`. MCP's distinct `extractSummaryExcerpt` at `mcp/src/vault.mjs:297` scans beyond headings and falls back to raw block content; it is a preview contract, not a safe definition selector.
-- Generic table previews are deliberate (`src/shared/lib/parse-frontmatter.test.ts:113`). The manifest clones retained fields to release source text (`build-local-manifest.ts:404`); its retained-body regression is `build-local-manifest.perf.test.ts:133`.
+- Generic table previews are deliberate (`src/shared/lib/vault-document/parse-frontmatter.test.ts:113`). The manifest clones retained fields to release source text (`build-local-manifest.ts:404`); its retained-body regression is `build-local-manifest.perf.test.ts:133`.
 - Read through MCP: `capabilities/ontology-map` and `capabilities/meaning-write-review`; both describe human inspection and preserve Excludes/Uncertainty, with currentness unconfirmed. They authorize no canonical edits. `docs/PRODUCT-DIRECTION.md:24` requires distinguishing evidence from unknowns. The standing summary decision, `docs/DECISIONS.md:1976`, preserves authored meaning rather than rewriting it; this repair does not change its freshness rule or rely on its historical figures.
 
 ## Problem and alternatives
@@ -89,7 +89,7 @@ Change only `analysisWorkbench.definitionMissing` in `messages/en/analysisWorkbe
 
 1. Given the planted retry definition followed by Includes, Excludes, and Uncertainty, when the actual local-manifest → graph derivation runs, then only the introductory definition is eligible for `node.summary`; `Persisting a report.` is absent there and remains under Excludes in the full document. Add a regression to `src/entities/docs-vault/lib/derive-ontology-from-vault.test.ts` that exercises the real local builder.
 2. Given populated, absent, empty, and whitespace-only descriptions, when derivation runs, then populated authored text wins intact and all blank variants use the same introductory fallback. Given no qualifying opening prose, including list-only and section-only variants, then the fallback is unavailable. Prove in the same derivation regression with a leading document title and misleading section H1 among the cases.
-3. Given a multiline/Hangul introduction, inline negation, and a paragraph longer than 320 characters, when projected, then a complete eligible paragraph of at most 320 characters preserves its words and qualifications, a longer paragraph yields no clipped definition, and no later section enters it. Prove in `src/shared/lib/parse-frontmatter.test.ts` without altering the existing generic table/path-symbol expectations.
+3. Given a multiline/Hangul introduction, inline negation, and a paragraph longer than 320 characters, when projected, then a complete eligible paragraph of at most 320 characters preserves its words and qualifications, a longer paragraph yields no clipped definition, and no later section enters it. Prove in `src/shared/lib/vault-document/parse-frontmatter.test.ts` without altering the existing generic table/path-symbol expectations.
 4. Given equivalent authored inputs in local and generated manifests, when they become graph nodes, then definition eligibility and over-budget abstention agree; generic excerpts keep their existing contracts and MCP remains unchanged. Prove with focused cases in `scripts/build-docs-vault.test.mjs` and the local derivation test.
 5. Given available and unavailable definition previews in the shared Meaning view, when rendered in English and Korean, then the existing messages/action are visible and the action reaches the selected full document. Prove with a focused `MeaningContext` component regression and root's browser replay; do not pin unrelated prose.
 6. Given the original seven-concept fixture on a freshly installed build identified from the fixed source, when root repeats walker steps 3 and 6, then screenshots/AX show the clean definition, the labeled Excludes/Uncertainty source, and a working full-document action. Include one list-only and one overlong-introduction variant, preserve canonical fixture bytes, and record the deployed identity; the old `9558974` capture is only the failure baseline.
@@ -98,7 +98,7 @@ Change only `analysisWorkbench.definitionMissing` in `messages/en/analysisWorkbe
 Exact implementation verification commands (planned, not yet run):
 
 ```sh
-pnpm test:run src/shared/lib/parse-frontmatter.test.ts src/entities/docs-vault/lib/derive-ontology-from-vault.test.ts src/widgets/analysis-workbench/ui/MeaningContext.test.tsx
+pnpm test:run src/shared/lib/vault-document/parse-frontmatter.test.ts src/entities/docs-vault/lib/derive-ontology-from-vault.test.ts src/widgets/analysis-workbench/ui/MeaningContext.test.tsx
 node --test scripts/build-docs-vault.test.mjs
 pnpm test:perf src/entities/docs-vault/lib/build-local-manifest.perf.test.ts -t 'does not keep whole file texts alive through the kept fields'
 pnpm checks:changed -- --run

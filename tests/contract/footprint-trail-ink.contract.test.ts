@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   FOOTPRINT_RANGES,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import { trailNodeInkStrength } from "@/widgets/ontology-map/model/focus-state";
 import { draw as traceDraw } from "@/widgets/ontology-map/render/traces";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';

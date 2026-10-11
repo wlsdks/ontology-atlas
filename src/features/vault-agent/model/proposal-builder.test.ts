@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { buildProposal, type BuildProposalInput } from './proposal-builder';
 import { applyProposal, type VaultWritePort } from './proposal-applier';
 

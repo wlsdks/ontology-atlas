@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { fieldClass } from '@/shared/ui/control-class';
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { Plus, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Button, Select, Surface, controlClass } from "@/shared/ui";

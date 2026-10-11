@@ -232,7 +232,7 @@ Selected-fact requests remain adjacent to evidence. Sample copies quote example 
 3. **Verdicts are measured in frames**, not screenshots; a design verdict names the winner's transition token.
 4. **Frequency eats budget.** Hover and focus surfaces end by `--motion-fast`; movement and settling belong to events a few times a day.
 5. **An exit plays under its own animation name**: a `reverse` on the same element does not restart and shows the end state instantly (`exit-motion-restart`). Opacity-only classes use `--motion-ease`, never a movement curve.
-6. **A swap keeps both frames** (`usePanelPresence`, `useSurfaceSwap`, `useSwapHeight` in `src/shared/lib/use-presence.ts`): the departing surface stays for one shared `EXIT_WINDOW_MS`, inert and `pointer-events-none`, and a crossfade wraps reflow by measuring height just before replacement.
+6. **A swap keeps both frames** (`usePanelPresence`, `useSurfaceSwap`, `useSwapHeight` in `src/shared/lib/render-timing/use-presence.ts`): the departing surface stays for one shared `EXIT_WINDOW_MS`, inert and `pointer-events-none`, and a crossfade wraps reflow by measuring height just before replacement.
 7. **Inline expansion is one surface with two states**: the header band is constant and the detail grows; open, close and content swap share one transition (height `--motion-base`, content `--motion-fast`: space first on open, text clears first on close). The closing detail is `inert`.
 
 ### Reduced motion
@@ -263,7 +263,7 @@ Spending by event tier. 0, constant (hover, focus ring, typing, scroll): ink onl
 ## Copy and typography
 
 - **Korean breaks between words from one rule**: `:root:lang(ko) body { word-break: keep-all; overflow-wrap: break-word }` in `app/styles/shell.css`, holding from first paint because an inline boot script sets `<html lang>` from the path. New Korean prose adds no `break-keep` (the per-element count only falls); an element that must break anywhere (a path, a hash) declares `break-all` or `[overflow-wrap:anywhere]` (`hangul-word-keep`, `hangul-first-paint.spec.ts`).
-- **Caps tracking and mono eyebrows are Latin devices.** `--tracking-caps-*` is zeroed under `:root:is(:lang(ko), :lang(ja), :lang(zh))` on the tokens, not per site. Uppercase plus wide tracking only spreads Hangul blocks, and `font-mono` on a Korean sentence leaves only the spaces monospaced (read as double spaces): wrap just the machine string (path, identifier, shortcut) in a mono span. Bilingual components get the eyebrow from `useLatinEyebrow(tracking)` (`src/shared/lib/latin-eyebrow.ts`; `hangul-tracking.spec.ts`).
+- **Caps tracking and mono eyebrows are Latin devices.** `--tracking-caps-*` is zeroed under `:root:is(:lang(ko), :lang(ja), :lang(zh))` on the tokens, not per site. Uppercase plus wide tracking only spreads Hangul blocks, and `font-mono` on a Korean sentence leaves only the spaces monospaced (read as double spaces): wrap just the machine string (path, identifier, shortcut) in a mono span. Bilingual components get the eyebrow from `useLatinEyebrow(tracking)` (`src/shared/lib/locale-text/latin-eyebrow.ts`; `hangul-tracking.spec.ts`).
 - One accurate word per thing (`.claude/rules/design.md`, "One word per thing"). Each line of copy stays in one language and tone.
 
 ## Brand

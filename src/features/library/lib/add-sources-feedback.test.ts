@@ -3,7 +3,7 @@ import { addSources } from './add-sources';
 
 const bridge = vi.hoisted(() => ({ pick: vi.fn(), import: vi.fn() }));
 vi.mock('@/entities/docs-vault', () => ({ VAULT_SOURCES_DIR: 'sources' }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({ pickTauriSourceFiles: bridge.pick, importTauriSourceFiles: bridge.import }));
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ pickTauriSourceFiles: bridge.pick, importTauriSourceFiles: bridge.import }));
 const options = { root: {} as FileSystemDirectoryHandle, vaultRootPath: '/fixture', dialogTitle: 'Pick source' };
 
 describe('source import start observation', () => {

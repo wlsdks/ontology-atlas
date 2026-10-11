@@ -4,14 +4,14 @@ import { execFileSync } from 'node:child_process';
 
 import { describe, expect, it } from 'vitest';
 
-import { inflateRaw } from '@/shared/lib/inflate-raw';
+import { inflateRaw } from '@/shared/lib/library/inflate-raw';
 import {
   citedPassage,
   readSourceUnits,
   READ_SOURCE_DEFAULT_LIMIT,
   READ_SOURCE_MAX_CHARS,
   READ_SOURCE_MAX_LIMIT,
-} from '@/shared/lib/source-passage';
+} from '@/shared/lib/library/source-passage';
 import {
   CITED_PASSAGE_CASES,
   SOURCE_PASSAGE_CASES,
@@ -51,7 +51,7 @@ const readSourceTextMcp = readSourceTextUntyped as (
  *
  * `[[src:sources/settlement-policy.md#l14]]` is written by an agent through the MCP
  * server's `read_source` (`mcp/src/source-text.mjs`) and, since slice U1, resolved for a
- * person by the Library pane through `src/shared/lib/source-passage.ts`. Two physical
+ * person by the Library pane through `src/shared/lib/library/source-passage.ts`. Two physical
  * modules exist for the reason `tests/contract/wiki-page-schema.contract.test.ts` gives
  * about the wiki format: the MCP package ships separately from the web bundle, and
  * neither imports the other.
@@ -63,7 +63,7 @@ const readSourceTextMcp = readSourceTextUntyped as (
  * unit text itself.
  *
  * The DOCX and XLSX halves also pin the one piece of machinery the twin does not share:
- * `mcp/` inflates a zip entry with `node:zlib`, the bundle with `src/shared/lib/inflate-raw.ts`,
+ * `mcp/` inflates a zip entry with `node:zlib`, the bundle with `src/shared/lib/library/inflate-raw.ts`,
  * and "the same bytes" has to be measured rather than asserted.
  */
 

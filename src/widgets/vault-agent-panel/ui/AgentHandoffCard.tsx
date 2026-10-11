@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { controlClass } from '@/shared/ui';
-import { COPY_FEEDBACK_RESET_MS } from '@/shared/lib/use-copy-feedback';
+import { COPY_FEEDBACK_RESET_MS } from '@/shared/lib/clipboard/use-copy-feedback';
 
 /**
  * The boundary card — it states honestly 「what cannot be done here」 and hands over

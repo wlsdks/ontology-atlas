@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import {
   SECRET_PROVIDERS,
   SECRET_PROVIDER_HOSTS,
-} from '@/shared/lib/tauri-secrets';
+} from '@/shared/lib/llm-connection/tauri-secrets';
 
 const FIXTURE = join(__dirname, '../fixtures/llm-provider-hosts.json');
 

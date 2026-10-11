@@ -5,9 +5,9 @@ import { useDataSourceMode } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
-import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
+import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /** Document slug → its manifest date: the file's own date locally, the build's stamp in a sample. */
 export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, string> {

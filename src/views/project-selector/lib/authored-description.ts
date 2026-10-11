@@ -1,6 +1,6 @@
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { Project } from "@/entities/project";
-import { compactOntologyDescription } from "@/shared/lib/ontology-description";
+import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
 /**
  * Only what a person wrote as a description reaches the screen, never the entity layer's excerpt

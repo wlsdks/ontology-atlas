@@ -5,10 +5,10 @@
  */
 
 // Defined in `shared` because `docs-vault-local` needs the same name from the same layer.
-// See `src/shared/lib/project-vault-dir.ts`.
-export { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+// See `src/shared/lib/vault-folder/project-vault-dir.ts`.
+export { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
-import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
 export interface ProjectVaultLocation {
   /** Becomes the connected source. */

@@ -1,8 +1,8 @@
 import type { CameraAxes } from "../../engine/camera";
 import type { EdgePairFocus } from "../../model/focus-state";
 import type { TopologyMapLensKind } from "../../model/path-lens";
-import type { FootprintInk } from "@/shared/lib/footprint-glyph";
-import type { ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
+import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
+import type { ExpandPreference, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import type { DomeLightFrame } from "../../render/dome-light";

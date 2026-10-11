@@ -1,5 +1,5 @@
 import type { BriefLineDetail } from './brief-model';
-import type { EvidenceRow } from '@/shared/lib/evidence-states';
+import type { EvidenceRow } from '@/shared/lib/git/evidence-states';
 
 /**
  * The named concepts under each evidence line, one row per concept because the sentence counts concepts. Each row

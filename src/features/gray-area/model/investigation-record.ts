@@ -1,5 +1,5 @@
 import type { AnalysisRun } from '@/entities/analysis-record';
-import type { GrayAreaSnapshot, GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot, GrayAreaWitness } from '@/shared/lib/project-source/tauri-gray-area';
 import type { GrayAreaCandidate } from './candidates';
 
 export interface InvestigationPacket {

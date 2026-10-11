@@ -25,15 +25,15 @@
  * once it is older than the 24-hour newsworthiness window the activity log already
  * defines. Copy lives in `messages/*.json`; this file returns facts and counts only.
  */
-import type { AcpWorkDecision, AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/acp-work-receipt';
-import type { AgentNotification, AgentNotificationKind, VaultProblemCounts } from '@/shared/lib/agent-notifications';
+import type { AcpWorkDecision, AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import type { AgentNotification, AgentNotificationKind, VaultProblemCounts } from '@/shared/lib/agent-activity/agent-notifications';
 import {
   AGENT_TASK_IDLE_MS,
   AGENT_TASK_VISIBLE_WINDOW_MS,
   type AgentWriteCounts,
   type AgentWorkSession,
-} from '@/shared/lib/agent-work-session';
-import type { VaultShapeNode } from '@/shared/lib/vault-shape-events';
+} from '@/shared/lib/agent-activity/agent-work-session';
+import type { VaultShapeNode } from '@/shared/lib/agent-activity/vault-shape-events';
 import type { AgentWorkProjection } from './agent-work-projection';
 
 export const BELL_TABS = ['todo', 'results', 'history'] as const;

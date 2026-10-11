@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { WIKI_PAGE_TEMPLATE } from "@/shared/lib/wiki-page-schema";
+import { WIKI_PAGE_TEMPLATE } from "@/shared/lib/library/wiki-page-schema";
 import { judgePageWrite, proposedPageText, wikiPagePathOf } from "./judge-page-write";
 
 const ROOT = "/Users/probe/Ontology Atlas/launch";

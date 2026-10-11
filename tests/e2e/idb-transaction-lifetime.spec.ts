@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import ts from 'typescript';
 import { test, expect, type Page } from '@playwright/test';
-import type * as Kv from '../../src/shared/lib/idb-kv';
+import type * as Kv from '../../src/shared/lib/vault-folder/idb-kv';
 import type * as Handles from '../../src/entities/local-fs-handle/api/store';
 
 type Fixture = { kv: typeof Kv; handles: typeof Handles; done: boolean; aborted: number; settled: Promise<void>[]; opened: Set<IDBDatabase>; closes: Map<IDBDatabase, number> };
@@ -10,7 +10,7 @@ declare global { interface Window { idbFixture: Fixture } }
 const compile = (path: string) => ts.transpileModule(readFileSync(resolve(path), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
-const kvSource = compile('src/shared/lib/idb-kv.ts');
+const kvSource = compile('src/shared/lib/vault-folder/idb-kv.ts');
 const handleSource = compile('src/entities/local-fs-handle/api/store.ts');
 
 async function install(page: Page) {
@@ -19,8 +19,8 @@ async function install(page: Page) {
   await page.addScriptTag({ content: `(() => {
     const kv = {}; (function(exports) { ${kvSource} })(kv);
     const handles = {}; (function(exports, require) { ${handleSource} })(handles, name => {
-      if (name === '@/shared/lib/idb-kv') return kv;
-      if (name === '@/shared/lib/tauri-vault-fs') return { getTauriVaultRootPath: () => null, isTauriVaultRuntime: () => false };
+      if (name === '@/shared/lib/vault-folder/idb-kv') return kv;
+      if (name === '@/shared/lib/vault-folder/tauri-vault-fs') return { getTauriVaultRootPath: () => null, isTauriVaultRuntime: () => false };
       throw new Error('Unexpected fixture import: ' + name);
     });
     window.idbFixture = { kv, handles, done: false, aborted: 0, settled: [], opened: new Set(), closes: new Map() };

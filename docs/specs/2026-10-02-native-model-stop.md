@@ -37,7 +37,7 @@ Source baseline: `112127a49`. These are source facts, not runtime measurements.
   `src/features/vault-agent/model/use-local-compile.ts:235`). The loop's normal
   and closing requests have no cancellation parameter
   (`src/features/vault-agent/model/agent-loop.ts:31`, `:182`, `:311`).
-- The bridge has no cancellation argument (`src/shared/lib/tauri-llm.ts:74`),
+- The bridge has no cancellation argument (`src/shared/lib/llm-connection/tauri-llm.ts:74`),
   and native chat waits for a child to finish
   (`src-tauri/src/llm/http_output.rs:45`). Local and named-provider deadlines
   remain 60 and 180 seconds (`src-tauri/src/llm/chat.rs:24`).

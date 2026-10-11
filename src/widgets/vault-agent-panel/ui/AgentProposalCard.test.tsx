@@ -225,7 +225,7 @@ describe('AgentProposalCard copy feedback', () => {
 
 
   it('waits for an old clipboard fallback before copying a new selection', async () => {
-    const { copyText } = await import('@/shared/lib/copy-text');
+    const { copyText } = await import('@/shared/lib/clipboard/copy-text');
     const { proposalToClipboardPacket } = await import('@/features/vault-agent');
     const previousClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
     const previousExec = Object.getOwnPropertyDescriptor(document, 'execCommand');

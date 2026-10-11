@@ -21,7 +21,7 @@ function titleCaseFromSlug(slug) {
 
 /**
  * The slug a growth hint suggests. It keeps the Hangul syllable range
- * (U+AC00–U+D7A3) like the other slugifiers (shared/lib/slugify.ts, analyze.mjs,
+ * (U+AC00–U+D7A3) like the other slugifiers (shared/lib/vault-document/slugify.ts, analyze.mjs,
  * absorb.mjs), or Korean titles become `untitled`; a `/` stays a separator, so a
  * title like `Payment/Billing` becomes `payment-billing`.
  */

@@ -4,14 +4,14 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../messages/en.json';
 import ko from '../../../../../messages/ko.json';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 
 const mocks = vi.hoisted(() => ({
   status: vi.fn(), judge: vi.fn(),
 }));
-vi.mock('@/shared/lib/tauri-jev', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/shared/lib/tauri-jev')>();
+vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib/llm-connection/tauri-jev')>();
   return { ...actual, jevSecretStatus: mocks.status, jevJudge: mocks.judge };
 });
 

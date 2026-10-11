@@ -1,5 +1,5 @@
-import { containmentKeyFor } from '@/shared/lib/containment-keys';
-import type { ConstructionSourcePreview, ConstructionSourceRange } from '@/shared/lib/tauri-local-construction';
+import { containmentKeyFor } from '@/shared/lib/vault-document/containment-keys';
+import type { ConstructionSourcePreview, ConstructionSourceRange } from '@/shared/lib/llm-connection/tauri-local-construction';
 import type { NormalizedToolCall, ProviderAdapter } from './provider-adapter';
 import type { AgentToolDefinition } from './tool-catalog';
 import type { ToolExecution } from './tool-executor';

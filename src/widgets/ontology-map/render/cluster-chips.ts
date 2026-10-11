@@ -21,7 +21,7 @@
  * as are `clusterChipLabel` and `clusterChipScale`.
  */
 
-import type { ExpandAffordance } from "@/shared/lib/appearance-preferences";
+import type { ExpandAffordance } from "@/shared/lib/preferences/appearance-preferences";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { lerpColorHex } from "./grid";
 

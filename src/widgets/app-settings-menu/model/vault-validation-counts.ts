@@ -1,5 +1,5 @@
 import type { VaultManifest } from '@/entities/docs-vault';
-import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
+import { summarizeVaultValidation } from '@/shared/lib/vault-document/validate-vault-document';
 
 type ValidationCounts = { errorCount: number; warningCount: number } | null;
 

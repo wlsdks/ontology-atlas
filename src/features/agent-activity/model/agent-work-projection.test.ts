@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AgentActivityStatus } from '@/entities/vault-session';
-import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
+import type { AgentWorkSession } from '@/shared/lib/agent-activity/agent-work-session';
 import { deriveAgentWorkProjection } from './agent-work-projection';
 
 const NOW = Date.parse('2026-08-22T00:00:00.000Z');

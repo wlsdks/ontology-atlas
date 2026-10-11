@@ -6,7 +6,7 @@ const bridge = vi.hoisted(() => ({
   detect: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/tauri-acp', () => ({
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => bridge.available,
   detectAcpRuntimes: bridge.detect,
 }));

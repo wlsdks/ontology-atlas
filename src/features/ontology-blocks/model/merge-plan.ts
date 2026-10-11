@@ -1,5 +1,5 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { slugify } from '@/shared/lib/slugify';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { slugify } from '@/shared/lib/vault-document/slugify';
 import type { BlockManifest } from './block-manifest';
 
 /**

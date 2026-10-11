@@ -16,7 +16,7 @@ import {
   parseRoundLedger,
   roundFingerprint,
 } from '@/entities/library-round';
-import { readMachineApprovals, recordApproval } from '@/shared/lib/machine-approvals';
+import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 
 import { useRoundsRunner } from './use-rounds-runner';
 
@@ -93,11 +93,11 @@ vi.mock('@/features/library', async () => ({
   }),
 }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => h.connectors }));
-vi.mock('@/shared/lib/tauri-acp', () => ({
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => h.runtimes),
   isAcpBridgeAvailable: () => true,
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
   listTauriVaultLinks: async () => [],
@@ -271,7 +271,7 @@ describe('the rounds runner', () => {
   it('records a review that had no agent as failed, with no summary claiming it completed', async () => {
     h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [review('first', 'Ontology refinement')] }));
     h.runtimes = [];
-    const { detectAcpRuntimes } = await import('@/shared/lib/tauri-acp');
+    const { detectAcpRuntimes } = await import('@/shared/lib/agent-chat/tauri-acp');
     const { result } = renderHook(() => useRoundsRunner(), { wrapper });
     await waitFor(() => expect(result.current.rounds).toHaveLength(1));
     // Both scans answered (the fast one and the login probe), and neither found an agent.

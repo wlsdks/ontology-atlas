@@ -8,11 +8,11 @@ import {
   type VaultDoc,
   type VaultSourceFile,
 } from "@/entities/docs-vault";
-import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
+import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/answer-revision";
 import { parseWikiLog, type WikiLogEntry } from "../lib/wiki-log";
-import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
-import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/wiki-report.mjs";
+import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
+import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/library/wiki-report.mjs";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
 import { useStampedCache } from "./use-stamped-cache";
 

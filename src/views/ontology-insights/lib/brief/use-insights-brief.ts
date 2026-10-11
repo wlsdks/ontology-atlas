@@ -14,9 +14,9 @@ import { buildCoverageMatrix } from '@/entities/agent-files';
 import { parseWikiLog, useLibraryModel, type WikiLogEntry } from '@/features/library';
 import { deriveCoverageAreas, useHarnessReport } from '@/features/harness-report';
 import { atlasBareToolMode } from '@/features/acp-session';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { useOntologyEvidence } from '../use-ontology-evidence';
 
 import {

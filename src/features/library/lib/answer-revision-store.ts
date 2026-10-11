@@ -1,7 +1,7 @@
-import { codedFailure } from '@/shared/lib/failure-code';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { getTauriVaultRootPath, nativeVaultFileHashes } from '@/shared/lib/tauri-vault-fs';
-import { validateWikiPage } from '@/shared/lib/wiki-page-schema';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { getTauriVaultRootPath, nativeVaultFileHashes } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { validateWikiPage } from '@/shared/lib/library/wiki-page-schema';
 import type { AnswerPageResult } from './answer-page';
 import { answerHistoryUnreadable, isRetainedAnswerPath } from './answer-revision';
 import { createWikiFile } from './write-wiki-file';

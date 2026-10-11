@@ -1,4 +1,4 @@
-import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
+import type { MapLayoutMark } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { collectCanvasObstacles, computeFreeArea, type Rect } from "../interaction/free-area";
 import {
   computeHexBoard,

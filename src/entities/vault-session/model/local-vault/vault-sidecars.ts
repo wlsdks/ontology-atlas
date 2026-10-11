@@ -3,15 +3,15 @@ import {
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from '../../lib/ontology-starter';
-import { getTauriVaultRootPath, readTauriVaultTextTail } from '@/shared/lib/tauri-vault-fs';
-import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
+import { getTauriVaultRootPath, readTauriVaultTextTail } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
 import {
   ACP_WORK_RECEIPT_FILE,
   parseAcpWorkReceipts,
   type AcpWorkReceipt,
-} from '@/shared/lib/acp-work-receipt';
+} from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { bundledServerLaunch, inspectMcpServerLaunch, type McpServerLaunch } from '@/shared/config';
-import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
+import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,

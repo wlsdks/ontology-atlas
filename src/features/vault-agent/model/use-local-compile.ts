@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { buildWikiRetrievalIndex, isWikiPage, sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
+import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { llmChat, llmChatErrorMessage } from "@/shared/lib/tauri-llm";
-import { LOCAL_PROVIDER } from "@/shared/lib/tauri-secrets";
+import { llmChat, llmChatErrorMessage } from "@/shared/lib/llm-connection/tauri-llm";
+import { LOCAL_PROVIDER } from "@/shared/lib/llm-connection/tauri-secrets";
 
 import { runTurn, startTurn } from "./agent-loop";
 import { compileAdapter } from "./compile-adapter";

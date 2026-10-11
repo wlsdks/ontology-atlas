@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type RefObject } from "react";
-import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
+import { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-sync";
 
 /**
  * Back-to-top visibility and click for the article scroll container. A new `dependencyKey` is a new

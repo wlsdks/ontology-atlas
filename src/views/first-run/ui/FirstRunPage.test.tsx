@@ -36,7 +36,7 @@ const tauriFsMocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => tauriFsMocks);
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauriFsMocks);
 
 const toastMocks = vi.hoisted(() => ({
   show: vi.fn(),

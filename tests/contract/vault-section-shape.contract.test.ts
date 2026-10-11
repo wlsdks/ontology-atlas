@@ -66,7 +66,7 @@ const CAP_HEADROOM = 100;
 /**
  * **`## Competency answers` is exempt — it is parsed, not authored.**
  *
- * `src/shared/lib/project-meaning-evidence.ts` matches this heading exactly, and
+ * `src/shared/lib/project-source/project-meaning-evidence.ts` matches this heading exactly, and
  * MCP `finalize_project_meaning` owns its contents. Its size follows the number
  * of qualified domains and capabilities, so capping it would cap the graph.
  */

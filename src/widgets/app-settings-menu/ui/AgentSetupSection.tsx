@@ -7,12 +7,12 @@ import { Link } from '@/i18n/navigation';
 import { Button, buttonVariants } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { Check, Copy, Download } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { vaultValidationCounts } from '../model/vault-validation-counts';
 
 import { TermHint } from '@/shared/ui/term-hint';

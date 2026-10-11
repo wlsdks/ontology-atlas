@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
-import { webglAccelerated } from '@/shared/lib/webgl-probe';
+import { webglAccelerated } from '@/shared/lib/map-canvas/webgl-probe';
 
 import type { AtlasHandle } from '../lib/hero-atlas-scene';
 import { echoFact } from '../lib/hero-echo';

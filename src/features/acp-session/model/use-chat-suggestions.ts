@@ -7,7 +7,7 @@ import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entiti
 import { useVaultHealth } from '@/features/vault-ontology';
 import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
 

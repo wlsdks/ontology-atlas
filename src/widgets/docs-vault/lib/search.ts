@@ -1,7 +1,7 @@
 import type { VaultDoc } from '@/entities/docs-vault';
-import { buildPhraseMatcher } from '@/shared/lib/highlight-match';
+import { buildPhraseMatcher } from '@/shared/lib/search-match/highlight-match';
 import type { DocsBodyEntry, DocsBodyIndex } from './body-index';
-import { readDisplayLocales } from '@/shared/lib/locale-display-name';
+import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
 
 /** A body hit snippet — {@link BODY_SNIPPET_CONTEXT} characters of context on each
  *  side of the match, plus the highlight range within the snippet. */

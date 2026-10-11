@@ -1,4 +1,4 @@
-import { elapsedParts } from '@/shared/lib/elapsed';
+import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
 /**
  * What a finished task's duration says in the bell inbox, as parts the messages word.

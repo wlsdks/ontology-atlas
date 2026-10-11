@@ -153,7 +153,7 @@ const GRAPH_ARRAY_KEYS = [
 /**
  * Detects silent corruption in vault frontmatter, reading the raw text so an
  * unclosed block and a zero-key parse are caught. Issue codes
- * match `src/shared/lib/validate-vault-document.ts`; a contract test blocks
+ * match `src/shared/lib/vault-document/validate-vault-document.ts`; a contract test blocks
  * drift. `slug-outside-kind-folder` needs `options.slug` (where the file sits), and a
  * caller holding only bytes cannot be told it.
  *

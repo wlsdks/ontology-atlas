@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ko from "../../../../messages/ko.json";
 import { GuideReplayProvider, useGuideReplay } from "../model/guide-replay-context";
 import { destinationTourStatusKey } from "../model/tour-storage";
-import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
+import { EXIT_WINDOW_MS } from "@/shared/lib/render-timing/use-presence";
 import { DestinationGuide } from "./DestinationGuide";
 
 const DOCS_KEY = destinationTourStatusKey("docs");

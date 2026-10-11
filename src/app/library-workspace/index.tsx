@@ -10,8 +10,8 @@ import type { DocsVaultPage } from '@/views/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
-import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/appearance-preferences';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
+import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/preferences/appearance-preferences';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 

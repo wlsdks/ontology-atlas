@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DownloadPage, downloadStructuredData } from '@/views/download';
-import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { JsonLd } from '@/shared/ui';
 
 export async function generateMetadata({

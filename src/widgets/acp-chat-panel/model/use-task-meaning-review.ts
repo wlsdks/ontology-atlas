@@ -2,8 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { parseAtlasToolCall, type AcpEvent, type AcpTurnStart, type PendingPermission, type TaskBaselineCaptureResult } from '@/features/acp-session';
 import { buildMeaningDiff, buildProposalBinding, type MeaningDiffItem } from '@/entities/knowledge-graph';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { previewDocumentPatch } from '@/shared/lib/document-patch.mjs';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { previewDocumentPatch } from '@/shared/lib/meaning-transition/document-patch.mjs';
 
 export interface TaskMeaningDecision {
   action: 'accept_meaning';

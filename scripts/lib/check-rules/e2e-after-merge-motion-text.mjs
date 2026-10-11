@@ -60,7 +60,7 @@ export const rules = [
     matches: [
       /^src\/shared\/ui\/disclosure\.tsx$/,
       /^src\/shared\/ui\/row-disclosure\.tsx$/,
-      /^src\/shared\/lib\/use-row-disclosure\.ts$/,
+      /^src\/shared\/lib\/list-rows\/use-row-disclosure\.ts$/,
     ],
   },
   {

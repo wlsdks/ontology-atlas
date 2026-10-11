@@ -1,6 +1,6 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { ProjectSourceWitnessInput } from "@/shared/lib/project-source-receipt";
-import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
+import type { ProjectSourceWitnessInput } from "@/shared/lib/project-source/project-source-receipt";
+import { looksLikeCodePath } from "@/shared/lib/concept-display/humanize-code-path-title";
 
 interface WitnessDoc {
   slug: string;

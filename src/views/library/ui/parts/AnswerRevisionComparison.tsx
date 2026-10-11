@@ -6,15 +6,15 @@ import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { answerObservation, sourceCitationWords } from '@/features/library';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import {
   normalizeOriginalPaths,
   parseWikilinkHref,
   resolveSourceCitation,
   rewriteWikilinks,
-} from '@/shared/lib/source-citation';
-import { WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
+} from '@/shared/lib/library/source-citation';
+import { WIKI_SECTION_ORDER } from '@/shared/lib/library/wiki-page-schema';
 import { Button, controlClass, Dialog, Disclosure } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';

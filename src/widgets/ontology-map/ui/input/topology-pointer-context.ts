@@ -1,5 +1,5 @@
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import { commitDomeEntrySweep } from "../../model/dome-view/frame";
 import type { DomeNodeFrame, DomeRuntime } from "../../model/dome-view/runtime";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/topology-camera-math";

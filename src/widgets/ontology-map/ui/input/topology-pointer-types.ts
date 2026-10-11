@@ -7,7 +7,7 @@ import type { TierRevealConfig } from "../../model/tier-visibility";
 import type { DragTugSets } from "../../interaction/drag-tug";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
 import type { ClusterChip } from "../../model/density-gate";
-import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { DepthParallaxOffset } from "../../model/realm-depth-parallax";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { WorldOffset } from "../../interaction/node-drag";

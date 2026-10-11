@@ -7,7 +7,7 @@
  * the focus and hover ids this module reads.
  */
 
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 
 export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
 export type EdgeEgoState = "ego" | "dim" | "normal";

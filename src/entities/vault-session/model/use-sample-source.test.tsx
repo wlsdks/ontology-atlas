@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useSampleSource } from './use-sample-source';
-import { writeSampleSourcePreference } from '@/shared/lib/sample-source';
+import { writeSampleSourcePreference } from '@/shared/lib/vault-folder/sample-source';
 
 // Two independent components each call `useSampleSource` — when one (the card) changes the
 // value, the other (insight) must re-render immediately without a reload. Not doing so was

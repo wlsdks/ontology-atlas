@@ -5,7 +5,7 @@ import {
   buildJsonLd as jsonldTs,
   INTEROP_SCHEMA_VERSION as schemaVersionTs,
   type InteropGraph,
-} from '@/shared/lib/interop-format';
+} from '@/shared/lib/ontology-graph/interop-format';
 import {
   buildGraphML as graphmlCli,
   buildJsonLd as jsonldCli,

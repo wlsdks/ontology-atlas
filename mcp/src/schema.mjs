@@ -258,7 +258,7 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: ['domains', 'capabilities', 'elements'],
     // `display` is the short name labels draw when `title` is long. Without it the
     // renderer derives one from `title` before " ("
-    // (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`); search keeps the full title.
+    // (`deriveDisplayTitle`, `src/shared/lib/concept-display/derive-display-title.ts`); search keeps the full title.
     optional: ['dependencies', 'relates', 'relation_notes', 'description', 'status', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     requiredExtras: [],
     // Key order for a human reading the file; unknown keys go last.
@@ -406,7 +406,7 @@ export const VAULT_KIND_SCHEMA = {
  * app's `rename-ref-rewrites.ts`) asks this table, or an element stays listed
  * under `capabilities:`, resolves silently, and is counted as a capability. The
  * same-kind bridge spec §5 allows is absent: a bridge is a person's decision.
- * The app copy `src/shared/lib/containment-keys.ts` is compared over every kind
+ * The app copy `src/shared/lib/vault-document/containment-keys.ts` is compared over every kind
  * pair by `tests/contract/vault-schema.contract.test.ts`.
  */
 export const CONTAINMENT_KEY_FOR_KIND = Object.freeze({

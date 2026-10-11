@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '../../src/shared/lib/vault-document/parse-frontmatter';
 import { seedFirstRunSeen } from './first-run-seed';
 import {
   installLibraryWorkHarness,

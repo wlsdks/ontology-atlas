@@ -6,8 +6,8 @@ import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
-import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { IconButton } from '@/shared/ui/controls';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 

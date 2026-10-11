@@ -3,7 +3,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/entities/knowledge-graph";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { RecentVaultList } from "@/features/vault-switch";
 import { DOGFOOD_VAULT_PATH } from "../../lib/dogfood-vault-path";

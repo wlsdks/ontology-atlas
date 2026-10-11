@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildWikiRetrievalIndex, type VaultDoc } from '@/entities/docs-vault';
 import { createCompileExecutor } from '@/features/vault-agent/model/compile-executor';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 import { evaluateAccumulation } from '../../scripts/lib/wiki-accumulation-eval.mjs';
 import { accumulationCases, distractors, negativeRetrieval } from '../fixtures/wiki-accumulation-cases.mjs';

@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { parseFrontmatter } from "../../src/shared/lib/parse-frontmatter";
-import { judgeEvidence } from "../../src/shared/lib/evidence-verdict.mjs";
+import { parseFrontmatter } from "../../src/shared/lib/vault-document/parse-frontmatter";
+import { judgeEvidence } from "../../src/shared/lib/git/evidence-verdict.mjs";
 import { installDesktopRailRuntime, type StubPathChange } from "./desktop-rail-arrival-harness";
 import { waitForMapStill } from "./settle";
 
@@ -18,7 +18,7 @@ import { waitForMapStill } from "./settle";
  *
  * - every capability in the vault has a name on screen, and no two drawn names or marks overlap;
  * - the stale count the view shows equals the count this spec computes itself, from the same
- *   rule (`shared/lib/evidence-verdict.mjs`) over the same Git times;
+ *   rule (`shared/lib/git/evidence-verdict.mjs`) over the same Git times;
  * - clicking a capability opens the same inspector the flat map opens.
  */
 

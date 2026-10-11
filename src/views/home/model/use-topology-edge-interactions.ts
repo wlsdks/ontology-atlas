@@ -1,7 +1,7 @@
 import { buildDocsVaultHref, type VaultManifest } from "@/entities/docs-vault";
 import type { KnowledgeProjectInsight, useRelationVocabulary } from "@/entities/knowledge-graph";
 import { buildTopologyMeaningEditorEdgeHref, edgeAuthoredByFromNode, meaningEditRelationForEdgeType } from "@/entities/knowledge-graph";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import type { HoverAvoidRect } from "@/widgets/ontology-map";
 import { useCallback, useMemo, useState } from "react";
 import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../lib/edge-sentence";

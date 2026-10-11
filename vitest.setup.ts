@@ -2,7 +2,7 @@ import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
 
-import { clearArrivalMemory } from './src/shared/lib/route-arrival-memory-store';
+import { clearArrivalMemory } from './src/shared/lib/navigation/route-arrival-memory-store';
 
 /**
  * One condition-wait ceiling for the whole suite, instead of a millisecond number
@@ -82,7 +82,7 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
 /**
  * **Route-arrival memory is forgotten between cases** (2026-09-12).
  *
- * `src/shared/lib/route-arrival-memory.ts` keeps what a pane resolved for the life of the tab,
+ * `src/shared/lib/navigation/route-arrival-memory.ts` keeps what a pane resolved for the life of the tab,
  * so a returning screen arrives painted instead of loading. In a test file the "tab" is the whole
  * module, so one case's resolved value is the next case's starting value — and two
  * `AtlasGitPanel` cases that assert the *loading* stage went red the moment the memory landed,

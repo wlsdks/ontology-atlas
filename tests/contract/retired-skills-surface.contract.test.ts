@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import en from "../../messages/en.json";
 import ko from "../../messages/ko.json";
 import { DESTINATION_IDS } from "@/shared/config/destinations";
-import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import { resolveActiveNavDestination } from "@/shared/lib/navigation/nav-destination";
 
 /**
  * `/skills` was retired entirely by owner decision on 2026-08-21.

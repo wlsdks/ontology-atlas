@@ -3,7 +3,7 @@ import {
   WIKI_DIR,
   WIKI_SECTION_ORDER,
   validateWikiPage,
-} from '@/shared/lib/wiki-page-schema';
+} from '@/shared/lib/library/wiki-page-schema';
 
 import { anchorResolves, type SourceMeasurement } from './source-text';
 

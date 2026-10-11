@@ -1,6 +1,6 @@
 import { withAnswerLanguage } from "@/i18n/answer-language";
 import type { LintNodeCandidate } from "./lint-brief";
-import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /**
  * Turns a name the wiki keeps mentioning into a node candidate through one `add_concept` turn

@@ -1,4 +1,4 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /**
  * The markdown body of a raw project.md, for display only. Keep it out of `Project.detail`, or the

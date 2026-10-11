@@ -608,7 +608,7 @@ walk already granted (`read_vault_binary_file` in the app, the File System Acces
 a browser, one ability on both surfaces), the text is stored nowhere and dropped when the
 pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
 never opened the file, and its sha256 row says it was measured on this read. The splitter
-is `src/shared/lib/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
+is `src/shared/lib/library/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
 unit by `tests/contract/source-passage-parity.contract.test.ts`; it carries its own
 raw-DEFLATE decoder (a Word or Excel file is a zip, and the app's macOS floor does not
 guarantee `DecompressionStream`) and verifies each zip entry's CRC-32, because what it

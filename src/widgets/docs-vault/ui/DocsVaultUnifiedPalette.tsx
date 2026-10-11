@@ -23,8 +23,8 @@ import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import type { DocsBodyIndex } from '../lib/body-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
-import { isImeComposing } from '@/shared/lib/ime-composition';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 
 // Canonical document shortcuts offered on zero results; they live in the repo, so they open as
 // GitHub blob links (resolve-doc-link.githubBlobUrl).

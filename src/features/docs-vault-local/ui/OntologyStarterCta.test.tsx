@@ -9,9 +9,9 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from './OntologyStarterCta';
-import { copyText } from '@/shared/lib/copy-text';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
 
-vi.mock('@/shared/lib/copy-text', () => ({
+vi.mock('@/shared/lib/clipboard/copy-text', () => ({
   copyText: vi.fn(),
 }));
 

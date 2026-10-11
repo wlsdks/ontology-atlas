@@ -19,7 +19,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 // jsdom has no working clipboard, so `copyText` is pinned to success, as in the CopyAgentTextButton tests.
-vi.mock("@/shared/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }));
+vi.mock("@/shared/lib/clipboard/copy-text", () => ({ copyText: vi.fn(async () => true) }));
 
 const GROUP_NAMES: Record<DoNextGroupKey, string> = {
   "blocked-document": "Documents the check stops",

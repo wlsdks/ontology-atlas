@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { agentServerFromBundle, agentServerUnavailable } from '@/shared/config';
-import { copyText } from '@/shared/lib/copy-text';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { TooltipProvider } from '@/shared/ui';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -12,10 +12,10 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 /** Copy is read from the catalogue, so a wording change does not break the behaviour checks. */
 const setupCopy = koMessages.docsVault.agentSetup;
 
-vi.mock('@/shared/lib/copy-text', () => ({
+vi.mock('@/shared/lib/clipboard/copy-text', () => ({
   copyText: vi.fn(),
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: FileSystemDirectoryHandle) =>
     (handle as unknown as { rootPath?: string }).rootPath,
 }));

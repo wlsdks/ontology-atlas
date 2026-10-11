@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { buildProjectSourceReceipt, serializeProjectSourceState } from "@/shared/lib/project-source-receipt";
-import { createMemoryProjectSourceStore } from "@/shared/lib/project-source-store";
-import type { ProjectSourceInspection } from "@/shared/lib/tauri-vault-fs";
+import { buildProjectSourceReceipt, serializeProjectSourceState } from "@/shared/lib/project-source/project-source-receipt";
+import { createMemoryProjectSourceStore } from "@/shared/lib/project-source/project-source-store";
+import type { ProjectSourceInspection } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import {
   loadProjectSourceSnapshot,
   projectSlugForSource,

@@ -65,7 +65,7 @@ const TASKS = [
     id: "C1",
     label: "Function exports (negative control)",
     prompt:
-      "src/shared/lib/validate-vault-document.ts 에서 export 되는 함수들을 모두 나열해줘.",
+      "src/shared/lib/vault-document/validate-vault-document.ts 에서 export 되는 함수들을 모두 나열해줘.",
   },
   /*
    * **D group: meaning, not lookup.**

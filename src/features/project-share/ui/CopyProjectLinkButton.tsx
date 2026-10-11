@@ -4,8 +4,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, Link2 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { getProjectRuntimeDetailUrl } from "@/entities/project";
-import { BASE_PATH } from "@/shared/lib/base-path";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { BASE_PATH } from "@/shared/lib/public-pages/base-path";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Button, type ButtonProps } from "@/shared/ui";
 
 interface Props extends Omit<ButtonProps, "onClick"> {

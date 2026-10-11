@@ -18,8 +18,8 @@ import {
   type DocsTreeOrder,
   type DocsTreeSort,
 } from '../lib/tree-order';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { normalizeForMatch } from '@/shared/lib/node-name-match';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
+import { normalizeForMatch } from '@/shared/lib/search-match/node-name-match';
 import { RowButton } from '@/shared/ui';
 import { matchesDocsTreeQuery } from '../lib/tree-query';
 

@@ -3,11 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useGuideAutoStart, useGuideReplay, writeGuideAutoStart } from '@/features/guided-tour';
-import { useAudiencePlain } from '@/shared/lib/audience-preference';
+import { useAudiencePlain } from '@/shared/lib/preferences/audience-preference';
 import { cn } from '@/shared/lib/cn';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { TEXT_SIZES, useTextSize, writeTextSize } from '@/shared/lib/preferences/text-size';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { Chip } from '@/shared/ui/controls';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { GlyphSetPicker } from '../AppearancePickers';

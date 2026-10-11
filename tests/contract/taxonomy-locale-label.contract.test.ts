@@ -4,7 +4,7 @@ import path from "node:path";
 import { DEFAULT_CATEGORIES } from "@/entities/category";
 import { DEFAULT_STATUSES } from "@/entities/status";
 import { routing } from "@/i18n/routing";
-import { pickTaxonomyLabel } from "@/shared/lib/taxonomy-label";
+import { pickTaxonomyLabel } from "@/shared/lib/locale-text/taxonomy-label";
 
 /**
  * Locale gate for taxonomy (category / status) labels.
@@ -38,7 +38,7 @@ const RESOLVER_PATHS = [
   path.join("src", "features", "taxonomy"),
   path.join("src", "entities", "category"),
   path.join("src", "entities", "status"),
-  path.join("src", "shared", "lib", "taxonomy-label.ts"),
+  path.join("src", "shared", "lib", "locale-text", "taxonomy-label.ts"),
 ];
 
 /**

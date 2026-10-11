@@ -9,7 +9,7 @@ import { useAppUpdate } from './use-app-update';
 const check = vi.fn();
 let desktop = true;
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
 

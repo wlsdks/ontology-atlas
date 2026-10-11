@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { AcpWorkReceipt } from "@/shared/lib/acp-work-receipt";
+import type { AcpWorkReceipt } from "@/shared/lib/meaning-transition/acp-work-receipt";
 import {
   createVaultFileProjectSourceStore,
   type ProjectSourceStore,
-} from "@/shared/lib/project-source-store";
+} from "@/shared/lib/project-source/project-source-store";
 
 /**
  * Lifts "no code folder connected" out of a single node click into the INDEX beside the map. Never

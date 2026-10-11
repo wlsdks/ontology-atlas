@@ -3,7 +3,7 @@
 import { Bot } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { BuildFromCodeConfirmDialog } from './BuildFromCodeConfirmDialog';

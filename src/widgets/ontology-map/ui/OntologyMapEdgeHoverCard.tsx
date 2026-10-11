@@ -1,8 +1,8 @@
 "use client";
 import { useLayoutEffect, useRef, useState } from "react";
 import { transientSurface } from "@/shared/ui/transient-surface";
-import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
-import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { currentFloatingRightBound } from "@/shared/lib/overlays/right-dock-reserve";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { placeHoverCard, type Rect } from "../interaction/hover-card-placement";
 import { collectCanvasObstacles } from "../interaction/free-area";
 

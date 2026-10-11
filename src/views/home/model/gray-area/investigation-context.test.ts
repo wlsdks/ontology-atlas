@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalysisCaptureContext } from '@/features/acp-session';
 import { buildGrayAreaCandidates, buildGrayAreaInvestigation } from '@/features/gray-area';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { investigationCaptureContext } from './investigation-context';
 

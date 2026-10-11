@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetSampleSourceCacheForTests } from '@/shared/lib/sample-source';
+import { resetSampleSourceCacheForTests } from '@/shared/lib/vault-folder/sample-source';
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from '../model/first-run-starter-dismiss';
 import { FirstRunStarterModule } from './FirstRunStarterModule';
 
@@ -25,9 +25,9 @@ const mocks = vi.hoisted(() => ({
   ensureChildDir: vi.fn(async (_root: string, _name: string) => undefined),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/tauri-vault-fs')>(
-    '@/shared/lib/tauri-vault-fs',
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>(
+    '@/shared/lib/vault-folder/tauri-vault-fs',
   );
   return {
     ...actual,
@@ -52,11 +52,11 @@ vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOrig
   useDataSourceMode: () => mocks.mode,
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => mocks.desktop,
 }));
 
-vi.mock('@/shared/lib/agent-chat-intent', () => ({
+vi.mock('@/shared/lib/agent-chat/agent-chat-intent', () => ({
   requestAgentChat: (...args: unknown[]) => mocks.requestAgentChat(...args),
 }));
 

@@ -1,6 +1,6 @@
-import { codedFailure } from '@/shared/lib/failure-code';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { WIKI_CITATION_PATTERN, validateWikiPage } from '@/shared/lib/wiki-page-schema';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { WIKI_CITATION_PATTERN, validateWikiPage } from '@/shared/lib/library/wiki-page-schema';
 import { answerSlug, type AnswerPageResult } from './answer-page';
 
 const SHA256 = /^[a-f0-9]{64}$/i;

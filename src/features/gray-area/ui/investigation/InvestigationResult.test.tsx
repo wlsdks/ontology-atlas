@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AnalysisRun } from '@/entities/analysis-record';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import messages from '../../../../../messages/en/grayArea.json';
 import { buildGrayAreaCandidates } from '../../model/candidates';
 import { buildGrayAreaInvestigation } from '../../model/investigation';

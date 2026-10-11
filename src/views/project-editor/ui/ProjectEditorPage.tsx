@@ -22,7 +22,7 @@ import {
   type Project,
   type ProjectInput,
 } from "@/entities/project";
-import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { controlClass, useToast } from "@/shared/ui";
 
 interface Props {

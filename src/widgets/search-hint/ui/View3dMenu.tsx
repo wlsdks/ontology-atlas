@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import { armMapLayoutMorph } from '@/shared/lib/map-layout-morph-store';
-import { usePanelPresence } from '@/shared/lib/use-presence';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { armMapLayoutMorph } from '@/shared/lib/map-canvas/map-layout-morph-store';
+import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
+import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import {
@@ -17,7 +17,7 @@ import {
   useView3d,
   writeMapView,
   type MapArrangement,
-} from '@/shared/lib/appearance-preferences';
+} from '@/shared/lib/preferences/appearance-preferences';
 
 /**
  * The view picker the map-view chip opens. A control that changes what you are looking at

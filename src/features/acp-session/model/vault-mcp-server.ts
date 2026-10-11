@@ -5,7 +5,7 @@ import type { McpServerLaunch } from '@/shared/config';
  * on 2026-08-16 read the vault through this server. A Codex name collision
  * silently discarded the injected server, so use a distinct session name.
  */
-import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
 export const VAULT_MCP_SERVER_NAME = 'atlas-vault';
 

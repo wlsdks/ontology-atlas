@@ -27,17 +27,17 @@ import {
   type DeskClaim,
   type DeskSourceHit,
 } from '@/features/library';
-import { buildJevPayload, jevJudge, jevSecretStatus, JEV_DESTINATION, type JevJudgment } from '@/shared/lib/tauri-jev';
-import { citedPassage, sourceUnits, type SourceUnit } from '@/shared/lib/source-passage';
+import { buildJevPayload, jevJudge, jevSecretStatus, JEV_DESTINATION, type JevJudgment } from '@/shared/lib/llm-connection/tauri-jev';
+import { citedPassage, sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
 import { controlClass } from '@/shared/ui/control-class';
-import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewriteWikilinks } from '@/shared/lib/source-citation';
-import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/wiki-page-schema';
+import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewriteWikilinks } from '@/shared/lib/library/source-citation';
+import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/library/wiki-page-schema';
 import { Button, Chip, Dialog, Disclosure, RowButton, RowDisclosure } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED, STAGGER } from '@/shared/motion';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
-import { latinEyebrowClass } from '@/shared/lib/latin-eyebrow';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
+import { latinEyebrowClass } from '@/shared/lib/locale-text/latin-eyebrow';
 import { StateBadge } from './StateBadge';
 
 const INLINE_CITATION = /\[\[src:[^\]]+\]\]/g;

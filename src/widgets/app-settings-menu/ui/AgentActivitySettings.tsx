@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { AGENT_NOTIFICATION_KINDS } from '@/shared/lib/agent-notifications';
+import { AGENT_NOTIFICATION_KINDS } from '@/shared/lib/agent-activity/agent-notifications';
 import {
   useAgentActivityStatusEnabled,
   useAgentNotificationsEnabled,
@@ -10,7 +10,7 @@ import {
   writeAgentActivityStatus,
   writeAgentNotificationsEnabled,
   writeMutedAgentNotificationKinds,
-} from '@/shared/lib/appearance-preferences';
+} from '@/shared/lib/preferences/appearance-preferences';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { controlClass } from '@/shared/ui/control-class';
 

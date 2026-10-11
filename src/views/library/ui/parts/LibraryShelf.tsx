@@ -5,8 +5,8 @@ import type { useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import { useRovingRows } from "@/shared/lib/use-roving-rows";
-import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
+import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
+import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 import { controlClass } from "@/shared/ui/control-class";
 import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
 import type { LibraryUiModel } from "@/features/library";

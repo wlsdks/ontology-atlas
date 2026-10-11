@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { shouldShowOutlineRail } from '@/widgets/doc-reading-pane';
 import type { VaultManifest, StaticVaultHeadings } from '@/entities/docs-vault';
 

@@ -6,13 +6,13 @@ const mocks = vi.hoisted(() => ({
   scan: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/project-source-store', () => ({
+vi.mock('@/shared/lib/project-source/project-source-store', () => ({
   createVaultFileProjectSourceStore: (handle: FileSystemDirectoryHandle) => ({
     list: (slug: string) => mocks.list(handle, slug),
   }),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: { root?: string } | null) => handle?.root ?? null,
   listTauriVaultEntries: vi.fn(),
   readTauriVaultTextFile: vi.fn(),

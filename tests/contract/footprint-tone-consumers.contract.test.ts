@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   FOOTPRINT_TONE_FALLBACK,
   FOOTPRINT_TONE_TOKEN,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**

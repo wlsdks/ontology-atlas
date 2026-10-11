@@ -8,8 +8,8 @@ import {
   isLocalEndpointReady,
   readLocalEndpoint,
   subscribeLocalEndpointChange,
-} from "@/shared/lib/local-endpoint";
-import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+} from "@/shared/lib/llm-connection/local-endpoint";
+import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
@@ -36,7 +36,7 @@ import type { LibraryAgentOpeningRequest } from "../ui/parts/LibraryAgentDock";
  * *"for people who care about security, support a local LLM like Ollama … so it can run
  * on a local model."* The **address** for that already exists: Settings → AI connection's
  * connect-by-address path stores a base URL and a chosen model in
- * `@/shared/lib/local-endpoint`, and `llm_chat` sends to it with an audit line written
+ * `@/shared/lib/llm-connection/local-endpoint`, and `llm_chat` sends to it with an audit line written
  * before the request leaves. So `route` gains `local`, and the shelf can name which brain
  * would answer instead of saying only that none can.
  *

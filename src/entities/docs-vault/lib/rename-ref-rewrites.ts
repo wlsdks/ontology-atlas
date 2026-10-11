@@ -1,9 +1,9 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import {
   CONTAINMENT_KEYS,
   containmentKeyFor,
   type ContainmentKey,
-} from '@/shared/lib/containment-keys';
+} from '@/shared/lib/vault-document/containment-keys';
 import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,

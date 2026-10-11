@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { EMPTY_LIBRARY_WORK_ACTIVITY, type LibraryWorkActivity } from "@/features/library";
 import { useRouter } from "@/i18n/navigation";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";

@@ -9,7 +9,7 @@ import {
   type MeaningFindingGapKind,
   type MeaningGapKind,
 } from "@/entities/knowledge-graph";
-import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
+import { canonicalizeDomainRef } from "@/shared/lib/vault-document/canonicalize-domain-ref";
 import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
 
 /**
@@ -19,7 +19,7 @@ import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
  * A definition goes in frontmatter `description`: the schema (`mcp/src/schema.mjs`) gives every kind one, MCP,
  * CLI and the map popover read it, and it changes one field without rewriting the body. Whether a body already
  * defines the concept is the manifest's recorded finding (`VaultDoc.meaningFindings`,
- * from `src/shared/lib/meaning-findings.ts`), the same rule `validate_vault` reports. Only nodes with their own
+ * from `src/shared/lib/vault-document/meaning-findings.ts`), the same rule `validate_vault` reports. Only nodes with their own
  * document appear (`resolveNodeDocument`), so nothing is written into another concept's file.
  */
 

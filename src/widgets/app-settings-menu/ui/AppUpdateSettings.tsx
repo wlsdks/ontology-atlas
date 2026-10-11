@@ -10,7 +10,7 @@ import {
   useUpdateAutoCheck,
   writeUpdateAutoCheck,
 } from '@/features/app-update';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';

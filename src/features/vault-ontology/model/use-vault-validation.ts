@@ -8,7 +8,7 @@ import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-va
 import {
   summarizeVaultValidation,
   type VaultValidationSummary,
-} from '@/shared/lib/validate-vault-document';
+} from '@/shared/lib/vault-document/validate-vault-document';
 
 /** The settings sheet's `summarizeVaultValidation`, with `useVaultHealth`'s mode selection, so both screens agree. */
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;

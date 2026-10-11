@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import type { TaskBaselineCaptureRequest, TaskBaselineCaptureResult } from '@/features/acp-session';
-import type { ProjectSourceBinding } from '@/shared/lib/project-source-receipt';
-import type { ProjectSourceStore } from '@/shared/lib/project-source-store';
+import type { ProjectSourceBinding } from '@/shared/lib/project-source/project-source-receipt';
+import type { ProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import { captureTaskReviewBaseline } from './use-task-review-baseline';
 
 const file = {} as FileSystemFileHandle;

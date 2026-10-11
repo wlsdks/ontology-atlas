@@ -154,7 +154,7 @@
     {
       "key": "mcp:runtime:exports:src/meaning-assessment.mjs:normalizeMeaningStructureStatus",
       "reason": "The web meaning-assessment test exercises the shared normalizer; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/meaning-assessment.test.ts",
+      "consumer": "src/shared/lib/project-source/meaning-assessment.test.ts",
       "witness": "normalizeMeaningStructureStatus"
     },
     {
@@ -172,7 +172,7 @@
     {
       "key": "mcp:runtime:exports:src/project-source-receipt.mjs:serializeProjectSourceState",
       "reason": "The web project-source store serializes through the MCP receipt format; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/project-source-store.ts",
+      "consumer": "src/shared/lib/project-source/project-source-store.ts",
       "witness": "serializeProjectSourceState"
     },
     {
@@ -202,37 +202,37 @@
     {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_CITATION_PATTERN",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_CITATION_PATTERN"
     },
     {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_FIELDS",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_FIELDS"
     },
     {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_PAGE_TEMPLATE",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_PAGE_TEMPLATE"
     },
     {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_REQUIRED_FIELDS",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_REQUIRED_FIELDS"
     },
     {
       "key": "mcp:runtime:exports:src/wiki-schema.mjs:WIKI_SECTION_ORDER",
       "reason": "The web wiki page schema mirrors the MCP wiki schema from one source; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "src/shared/lib/wiki-page-schema.ts",
+      "consumer": "src/shared/lib/library/wiki-page-schema.ts",
       "witness": "WIKI_SECTION_ORDER"
     },
     {
       "key": "mcp:runtime:files:src/wiki-report.mjs:src/wiki-report.mjs",
       "reason": "The wiki check's report grouping is one physical module on purpose: the Library reaches it through a cross-runtime bridge so the app, wiki-validate and validate_wiki cannot enumerate one folder two ways (docs/DECISIONS.md 2026-09-11 makes that difference a falsifier). Every consumer is outside the mcp scope, where Knip cannot see it.",
-      "consumer": "src/shared/lib/wiki-report.mjs",
+      "consumer": "src/shared/lib/library/wiki-report.mjs",
       "witness": "src/wiki-report.mjs"
     },
     {

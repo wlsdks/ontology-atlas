@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { AnalysisRun } from '@/entities/analysis-record';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { Button, Disclosure } from '@/shared/ui';
 import type { GrayAreaCandidate } from '../../model/candidates';
 import { buildGrayAreaInvestigation } from '../../model/investigation';

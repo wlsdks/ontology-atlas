@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { STAGGER_MAX_STEPS } from '@/shared/motion/stagger';
 
 /**

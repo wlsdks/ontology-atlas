@@ -141,7 +141,7 @@ test.describe("목적지 이동 단축키", () => {
    * obtained from the ⌘K palette is inside an `aria-modal`, so the modal condition
    * fires first and **deleting the typing condition still left it green**. Conditions
    * that mask each other are not a gate.
-   * That condition is measured by `src/shared/lib/use-destination-shortcuts.test.ts`.
+   * That condition is measured by `src/shared/lib/keyboard/use-destination-shortcuts.test.ts`.
    */
 
   /**

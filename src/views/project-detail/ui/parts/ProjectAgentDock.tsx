@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
-import { usePanelPresence } from "@/shared/lib/use-presence";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, OntologyMapKindGlyph, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";
 

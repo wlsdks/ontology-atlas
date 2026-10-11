@@ -853,7 +853,7 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
     ["scripts/check-macos-download-release.mjs", (source) => `${source}// aarch64|x64|universal\n`],
     ["src/views/download/ui/DownloadPage.tsx", (source) => `${source}// /docs/?intent=local\n`],
     ["app/[locale]/download/page.tsx", (source) => `${source}// NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING\n`],
-    ["src/shared/lib/tauri-vault-fs.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
+    ["src/shared/lib/vault-folder/tauri-vault-fs.ts", (source) => `${source}// __TAURI_INTERNALS__\n`],
   ]));
 
   assert.equal(result.status, 0, result.stderr);
@@ -861,7 +861,7 @@ test("desktop readiness verdicts survive deleting comments and comments that nam
 
 test("desktop readiness does not pass a check on text that survives only in a comment", () => {
   const result = readinessWith({
-    "src/shared/lib/tauri-vault-fs.ts": (source) =>
+    "src/shared/lib/vault-folder/tauri-vault-fs.ts": (source) =>
       `${source.replace("from '@tauri-apps/api/core'", "from '@tauri-apps/api/mocks'")}// from '@tauri-apps/api/core'\n`,
     ".github/workflows/deploy-pages.yml": (source) =>
       source.replace(/uses: (actions\/setup-node)@([0-9a-f]{40})/g, "uses: $1@v6 # uses: $1@$2"),

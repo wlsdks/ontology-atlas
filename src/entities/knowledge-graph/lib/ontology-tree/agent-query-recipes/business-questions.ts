@@ -1,5 +1,5 @@
 import { AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND } from "../agent-readiness";
-import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/ontology-graph/business-ontology-lens";
 import { formatAgentGraphDbQueryPackItemPrompt } from "./graph-db-query-pack";
 import { formatAgentMcpQueryPayload } from "./mcp-payloads";
 import { formatAgentQueryCallCliCommand, uniqueString } from "./query-recipes";

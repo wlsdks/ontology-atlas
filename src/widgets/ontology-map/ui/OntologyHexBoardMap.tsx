@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
-import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { Chip } from "@/shared/ui/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
-import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";

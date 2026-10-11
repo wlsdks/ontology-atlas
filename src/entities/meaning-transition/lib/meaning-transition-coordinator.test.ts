@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-import { meaningTransitionV2TextDigest } from '@/shared/lib/meaning-transition-v2';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import { meaningTransitionV2TextDigest } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 import { buildProposalBinding } from '@/entities/knowledge-graph';
 
 import {
@@ -79,7 +79,7 @@ function harness(readback?: MeaningTransitionReadback) {
 describe('meaning transition decision coordinator', () => {
   it('archives the action immediately and completes only from an exact allowed writer receipt and two matching readbacks', async () => {
     const input = await fixture();
-    const expected = (await import('@/shared/lib/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
+    const expected = (await import('@/shared/lib/meaning-transition/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
     if (expected.status !== 'available') throw new Error('preview expected');
     const { coordinator, archive, read } = harness({ status: 'available', content: expected.markdown, mtime: 10, contextId: 'vault-3' });
     const decision = await coordinator.recordDecision(input);
@@ -184,7 +184,7 @@ describe('meaning transition decision coordinator', () => {
 
   it('deduplicates concurrent decisions and retries terminal publication with identical sealed bytes', async () => {
     const input = await fixture();
-    const expected = (await import('@/shared/lib/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
+    const expected = (await import('@/shared/lib/meaning-transition/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
     if (expected.status !== 'available') throw new Error('preview expected');
     const { coordinator, archive, read } = harness({ status: 'available', content: expected.markdown, mtime: 10, contextId: 'vault-3' });
     const [left, right] = await Promise.all([coordinator.recordDecision(input), coordinator.recordDecision(input)]);
@@ -202,7 +202,7 @@ describe('meaning transition decision coordinator', () => {
 
   it('takes a fresh Git observation for the terminal snapshot', async () => {
     const input = await fixture();
-    const expected = (await import('@/shared/lib/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
+    const expected = (await import('@/shared/lib/meaning-transition/document-patch.mjs')).previewDocumentPatch({ rawBefore, frontmatterPatch: input.patch.frontmatter });
     if (expected.status !== 'available') throw new Error('preview expected');
     let index = 0;
     const archive = vi.fn().mockResolvedValue(undefined);

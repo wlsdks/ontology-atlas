@@ -8,7 +8,7 @@ import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
 import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import type { MeaningGapKind, OntologyHealthActionTarget } from "@/entities/knowledge-graph";
-import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
+import type { VaultDocumentIssue } from "@/shared/lib/vault-document/validate-vault-document";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
 import type { DuplicatePairRow } from "../../lib/duplicate-pairs";

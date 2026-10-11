@@ -122,7 +122,7 @@ describe('the window capability covers what the frontend actually calls', () => 
     // Without this the gate is loudest when broken: a renamed directory would scan nothing
     // and report every requirement satisfied.
     expect(sources.length).toBeGreaterThan(100);
-    expect(sources.map((file) => file.path)).toContain('src/shared/lib/tauri-acp.ts');
+    expect(sources.map((file) => file.path)).toContain('src/shared/lib/agent-chat/tauri-acp.ts');
   });
 
   it('still detects the surfaces this app is known to use', () => {

@@ -1,6 +1,6 @@
 import { defaultUrlTransform } from 'react-markdown';
 import { describe, expect, it } from 'vitest';
-import { decodeWikilinkSlug, rewriteWikilinks, WIKILINK_SENTINEL } from '@/shared/lib/source-citation';
+import { decodeWikilinkSlug, rewriteWikilinks, WIKILINK_SENTINEL } from '@/shared/lib/library/source-citation';
 
 /**
  * **A wikilink sentinel must not be a URL scheme** — the markdown renderer strips it.

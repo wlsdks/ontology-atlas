@@ -1,4 +1,4 @@
-import { ensureSidecarIgnore, isNotFoundError, VAULT_SIDECAR_DIR } from '@/shared/lib/vault-sidecar';
+import { ensureSidecarIgnore, isNotFoundError, VAULT_SIDECAR_DIR } from '@/shared/lib/vault-folder/vault-sidecar';
 
 import {
   type RoundRecord,

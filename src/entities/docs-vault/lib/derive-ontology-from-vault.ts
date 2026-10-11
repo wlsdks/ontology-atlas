@@ -1,6 +1,6 @@
-import { deriveDisplayTitle } from '@/shared/lib/derive-display-title';
-import { readDisplayLocales } from '@/shared/lib/locale-display-name';
-import { humanizeCodePathTitle } from '@/shared/lib/humanize-code-path-title';
+import { deriveDisplayTitle } from '@/shared/lib/concept-display/derive-display-title';
+import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
+import { humanizeCodePathTitle } from '@/shared/lib/concept-display/humanize-code-path-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
@@ -155,7 +155,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     rawKind === 'element' && baseDisplay === title
       ? humanizeCodePathTitle(title) ?? baseDisplay
       : baseDisplay;
-  // One source for locale display names (`shared/lib/locale-display-name`), shared with list and search.
+  // One source for locale display names (`shared/lib/locale-text/locale-display-name`), shared with list and search.
   const displayLocales = readDisplayLocales(fm);
   return {
     id,

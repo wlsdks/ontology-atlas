@@ -1,7 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { copyText } from "@/shared/lib/copy-text";
-import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/use-copy-feedback";
+import { copyText } from "@/shared/lib/clipboard/copy-text";
+import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/clipboard/use-copy-feedback";
 import type { OntologyMapEdge, OntologyMapNode } from "@/widgets/ontology-map";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { resolveTopologyNodeTitle } from "../lib/resolve-topology-node-title";

@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 /**
  * **Never start two adapters.**
@@ -45,7 +45,7 @@ const bridge = vi.hoisted(() => ({
   newSessionId: 's-1',
 }));
 
-vi.mock('@/shared/lib/tauri-acp', () => ({
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => true,
   startAcpSession: async () => {
     bridge.starts += 1;

@@ -5,7 +5,7 @@ import { Check, PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 
 /**
  * One frontmatter field switching between read, edit and save/cancel; labels arrive as props, so it

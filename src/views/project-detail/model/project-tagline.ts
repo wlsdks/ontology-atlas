@@ -1,4 +1,4 @@
-import { compactOntologyDescription } from "@/shared/lib/ontology-description";
+import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
 /** One whole first sentence; the hero column fits 320 in three lines at 1512 (measured). */
 const TAGLINE_MAX_CHARS = 320;

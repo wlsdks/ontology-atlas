@@ -21,7 +21,7 @@ The native Jev transfer bridge keeps the user's TypeSafe key in the OS keychain 
 - Establishing that an input is semantically correct or that a response accepts meaning. Library's current-source guard and the person's evidence review remain separate responsibilities.
 
 ## Evidence
-- `src-tauri/src/jev.rs` implements validation, audit reservation and transfer. `src/shared/lib/tauri-jev.ts` exposes that boundary to the two rendered entry points.
+- `src-tauri/src/jev.rs` implements validation, audit reservation and transfer. `src/shared/lib/llm-connection/tauri-jev.ts` exposes that boundary to the two rendered entry points.
 
 ## Uncertainty
 - Rust tests exercise validation, receipt reservation before sending, and parsing with a fake sender. One owner-authorized synthetic live request through the installed macOS app in PR #2059 returned contradicted; this replaces the earlier no-native-call note.

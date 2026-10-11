@@ -62,7 +62,7 @@ describe('summary freshness bridge', () => {
 
   it('keeps the client calling the command by the name Rust exports', () => {
     const hook = read('src/entities/vault-session/model/use-summary-freshness.ts');
-    const bridge = read('src/shared/lib/tauri-git.ts');
+    const bridge = read('src/shared/lib/git/tauri-git.ts');
     expect(bridge, 'the invoke name drifted from the Rust command name').toContain(
       "'vault_node_revisions'",
     );

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { connectorAcpServers } from '@/features/acp-session/model/connector-servers';
 import { runtimeCarriesConnectors } from '@/features/acp-session/model/runtime-gate';
-import type { ConnectorRecord } from '@/shared/lib/connector-record';
+import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import { vaultMcpServers } from '@/features/acp-session/model/vault-mcp-server';
 
 /**

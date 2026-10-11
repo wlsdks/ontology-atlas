@@ -1,5 +1,5 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import type { VaultDoc } from '../model/types';
 import { isWikiPage } from './vault-library';

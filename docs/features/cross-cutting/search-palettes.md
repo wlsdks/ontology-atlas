@@ -18,7 +18,7 @@ substrings only, so the two things a Korean typist does first found nothing on t
 bundled Online Store sample: initials alone (the four consonants of a four-syllable
 capability), and any name mid-syllable — which every Korean word passes through,
 because the IME emits one jamo at a time, so the list blinked empty on most
-keystrokes. `shared/lib/hangul-match` adds exactly two rules, no general fuzziness:
+keystrokes. `shared/lib/search-match/hangul-match` adds exactly two rules, no general fuzziness:
 consonant initials matched in order with spaces ignored on both sides, and a trailing
 partial syllable whose jamo must prefix the syllable it lands on, or that syllable plus
 the next one's initial, which a two-set keyboard shows as a final until a vowel moves it
@@ -57,7 +57,7 @@ kept its own match rule. Measured on the bundled sample: INDEX answered "no matc
 concept" to a chosung query and to a half-typed syllable that the palette resolved
 against the same vault, and it pulled every element for the word "element" because it
 compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
-in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
+in `shared/lib/search-match/node-name-match`, which is the single contract; the palette's ranking
 stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
 **INDEX marks where the query landed** (2026-09-19). The panel's own search field
@@ -65,7 +65,7 @@ filtered 125 concepts down to two and marked nothing in either, on an 11px label
 while the palette on the same screen had been marking its rows for months — the
 filter said which rows survived, nothing said where. Both index panels now hand their
 trimmed query to `TopologyIndexTreeRow`, which draws the name through
-`HighlightedText`, so a chosung query marks there too (`shared/lib/highlight-match`
+`HighlightedText`, so a chosung query marks there too (`shared/lib/search-match/highlight-match`
 already reads a Hangul keyboard). Measured on the map panel's own surface: the mark's
 ink clears **8.59:1** against its composited background. Rows kept only as the path to
 a match stay unmarked, which is what they are; telling a match apart from the path it

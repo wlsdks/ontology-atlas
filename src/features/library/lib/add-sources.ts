@@ -3,7 +3,7 @@ import {
   importTauriSourceFiles,
   pickTauriSourceFiles,
   type TauriSourceImportResult,
-} from "@/shared/lib/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/tauri-vault-fs";
 
 /**
  * Raw originals copy into `sources/` through Rust or the granted browser folder handle.

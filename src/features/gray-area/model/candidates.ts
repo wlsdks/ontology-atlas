@@ -1,4 +1,4 @@
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 
 export interface GrayAreaCandidate {
   id: string;

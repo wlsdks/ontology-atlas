@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAnalysisCapture, type AnalysisCaptureContext, type AcpTurnActivity } from '@/features/acp-session';
 import { AnalysisWorkbench } from '@/widgets/analysis-workbench';
 import { cn } from '@/shared/lib/cn';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
-import { usePanelPresence } from '@/shared/lib/use-presence';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
+import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface } from '@/shared/ui';
 import {
   AcpChatPanel,

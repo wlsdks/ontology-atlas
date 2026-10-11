@@ -5,7 +5,7 @@ import type { VaultManifest } from '../model/types';
 const nativeVaultFingerprint = vi.fn();
 const readTauriVaultTextFile = vi.fn();
 const readTauriVaultTextFiles = vi.fn();
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
   readTauriVaultTextFile: (rootPath: string, relativePath: string) => readTauriVaultTextFile(rootPath, relativePath),
   readTauriVaultTextFiles: (rootPath: string, relativePaths: string[]) =>

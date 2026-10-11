@@ -1,4 +1,4 @@
-import type { VaultDocumentIssue, VaultValidationSummary } from "@/shared/lib/validate-vault-document";
+import type { VaultDocumentIssue, VaultValidationSummary } from "@/shared/lib/vault-document/validate-vault-document";
 import type { SessionAbilities } from "./session-abilities";
 import { queueGroupOrder } from "./queue-work-groups";
 

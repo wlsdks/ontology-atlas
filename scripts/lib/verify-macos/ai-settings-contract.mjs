@@ -10,7 +10,7 @@
  * "check only if present" are forbidden here.
  */
 
-/** Ollama's default address. Same value as `src/shared/lib/tauri-secrets.ts`. */
+/** Ollama's default address. Same value as `src/shared/lib/llm-connection/tauri-secrets.ts`. */
 export const AI_SETTINGS_DEFAULT_BASE_URL = "http://localhost:11434";
 
 /**

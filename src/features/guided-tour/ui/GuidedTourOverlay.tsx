@@ -2,8 +2,8 @@
 
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { cn } from "@/shared/lib/cn";
-import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
-import { useHeldValue, usePanelPresence } from "@/shared/lib/use-presence";
+import { useDialogFocusTrap } from "@/shared/lib/overlays/use-dialog-focus-trap";
+import { useHeldValue, usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import {
   computeCardPlacement,

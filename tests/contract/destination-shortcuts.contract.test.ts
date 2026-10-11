@@ -87,14 +87,14 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
    * **first**.
    */
   it("조합키가 눌린 입력은 우리 것이 아니다", () => {
-    const hook = read("src/shared/lib/use-destination-shortcuts.ts");
+    const hook = read("src/shared/lib/keyboard/use-destination-shortcuts.ts");
     expect(hook, "메타/컨트롤/알트가 눌린 사건을 안 걸러낸다").toMatch(
       /if\s*\(event\.metaKey\s*\|\|\s*event\.ctrlKey\s*\|\|\s*event\.altKey\)\s*return/,
     );
   });
 
   it("입력 중에는 이동하지 않는다", () => {
-    const hook = read("src/shared/lib/use-destination-shortcuts.ts");
+    const hook = read("src/shared/lib/keyboard/use-destination-shortcuts.ts");
     expect(hook).toContain("INPUT");
     expect(hook).toContain("TEXTAREA");
     expect(hook).toContain("isContentEditable");
@@ -107,7 +107,7 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
    * missed by one surface).
    */
   it("막는 표면이 열려 있으면 이동하지 않는다", () => {
-    const hook = read("src/shared/lib/use-destination-shortcuts.ts");
+    const hook = read("src/shared/lib/keyboard/use-destination-shortcuts.ts");
     expect(hook, "aria-modal 로 막는 표면을 판정하지 않는다").toContain('[aria-modal="true"]');
   });
 
@@ -119,11 +119,11 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
    * **all of them and counts only the rendered ones**.
    */
   it("숨은 모달을 막는 표면으로 세지 않는다", () => {
-    const hook = read("src/shared/lib/use-destination-shortcuts.ts");
+    const hook = read("src/shared/lib/keyboard/use-destination-shortcuts.ts");
     expect(hook, "첫 일치만 보면 숨은 모달에 걸린다").toContain("querySelectorAll");
     expect(hook, "화면에 그려졌는지 재지 않는다").toContain("getClientRects");
     expect(hook, "aria-hidden 조상을 건너뛰지 않는다").toContain('aria-hidden="true"');
-    expect(readCode("src/shared/lib/use-destination-shortcuts.ts"), "querySelector 한 번으로 판정하는 코드가 남았다").not.toMatch(
+    expect(readCode("src/shared/lib/keyboard/use-destination-shortcuts.ts"), "querySelector 한 번으로 판정하는 코드가 남았다").not.toMatch(
       /querySelector\(\s*'\[aria-modal/,
     );
   });
@@ -131,7 +131,7 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
   it("리더를 누른 뒤 기다리는 시간이 있다", () => {
     expect(NAV_LEADER_WINDOW_MS).toBeGreaterThan(300);
     expect(NAV_LEADER_WINDOW_MS).toBeLessThanOrEqual(3000);
-    expect(read("src/shared/lib/use-destination-shortcuts.ts")).toContain("NAV_LEADER_WINDOW_MS");
+    expect(read("src/shared/lib/keyboard/use-destination-shortcuts.ts")).toContain("NAV_LEADER_WINDOW_MS");
   });
 });
 

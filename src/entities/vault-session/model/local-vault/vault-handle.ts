@@ -5,7 +5,7 @@ import {
   isTauriVaultRuntime,
   listTauriDirectoryNames,
   tauriVaultPathExists,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
 /**

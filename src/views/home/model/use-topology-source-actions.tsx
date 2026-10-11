@@ -2,15 +2,15 @@ import type { useTopologyCanvasFocus } from "./use-topology-canvas-focus";
 import type { useTopologyPreferences } from "./use-topology-preferences";
 import type { useTopologySourceReadiness } from "./use-topology-source-readiness";
 
-import { copyText } from "@/shared/lib/copy-text";
-import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
+import { copyText } from "@/shared/lib/clipboard/copy-text";
+import { formatProjectSourceHandoff } from "@/shared/lib/project-source/project-source-receipt";
 import { useToast } from "@/shared/ui";
 import { useCallback, useMemo } from "react";
 import { copyHandoffWithFeedback } from "../lib/copy-handoff-with-feedback";
 
 interface Options {
   toast: ReturnType<typeof useToast>;
-  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
+  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/edit-provenance/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "projectSource" | "projectSourceMeasuredAtLabel">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t">;

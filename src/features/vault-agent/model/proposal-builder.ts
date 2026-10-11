@@ -13,8 +13,8 @@ import type {
   ProposedFileChange,
 } from './types';
 import type { VaultReadPort } from './vault-read-port';
-import { containmentKeyFor } from '@/shared/lib/containment-keys';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { containmentKeyFor } from '@/shared/lib/vault-document/containment-keys';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /** A model's attempted write becomes a proposal card; `after` is both what the card draws and what the applier writes. */
 

@@ -21,7 +21,7 @@
 import { smoothstep } from "../model/altitude";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { computeHoverShimmer } from "../model/hover-shimmer";
-import { drawStarEmission } from "@/shared/lib/star-emission";
+import { drawStarEmission } from "@/shared/lib/map-canvas/star-emission";
 
 /**
  * How far outside the disc the recent-changes ring is drawn. The label placer
@@ -572,7 +572,7 @@ export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawS
 /** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */
 core = 0): void {
     // The map's only contribution is the silhouette: a hexagon, square or circle that converges
-    // with altitude. The light is `shared/lib/star-emission.ts`, so the settings preview and this
+    // with altitude. The light is `shared/lib/map-canvas/star-emission.ts`, so the settings preview and this
     // canvas cannot drift apart again.
     drawStarEmission(ctx, {
         x,

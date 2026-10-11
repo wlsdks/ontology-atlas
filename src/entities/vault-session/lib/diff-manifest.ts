@@ -1,4 +1,4 @@
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 
 /**
  * Classifies a vault polling result into *added* and *modified*. A pure helper with no React

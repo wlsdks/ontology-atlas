@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/markdown-prose";
 import { fieldClass } from '@/shared/ui/control-class';
 import { controlClass } from '@/shared/ui/control-class';

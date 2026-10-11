@@ -41,7 +41,7 @@ vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOrig
   useDataSourceMode: () => "static",
 }));
 
-vi.mock("@/shared/lib/desktop-shell", () => ({
+vi.mock("@/shared/lib/desktop-shell/desktop-shell", () => ({
   isDesktopShell: () => shellMocks.desktop,
 }));
 

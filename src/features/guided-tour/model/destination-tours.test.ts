@@ -8,7 +8,7 @@ import {
 } from "./tour-steps";
 import { destinationTourStatusKey } from "./tour-storage";
 import { DESTINATION_HREF, DESTINATION_IDS } from "@/shared/config/destinations";
-import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import { resolveActiveNavDestination } from "@/shared/lib/navigation/nav-destination";
 
 const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
 

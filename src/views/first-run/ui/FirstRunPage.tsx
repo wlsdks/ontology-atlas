@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
-import type { VaultShape } from "@/shared/lib/vault-shape";
+import type { VaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { RecentVaultList, recentVaultRowKey } from "@/features/vault-switch";
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";

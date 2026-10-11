@@ -17,7 +17,7 @@ Binds a project node to the local code folder it describes, and measures how man
 
 ## Includes
 - Connecting, re-measuring, and disconnecting the folder a project speaks about.
-- A missing-path repair in the map opens the exact current concept and safe relative path. Stale, duplicate, missing or foreign targets require remeasurement; copied repair handoffs exclude the absolute source root (`src/views/home/model/project-source-repair.ts`, `src/shared/lib/project-source-receipt.ts`).
+- A missing-path repair in the map opens the exact current concept and safe relative path. Stale, duplicate, missing or foreign targets require remeasurement; copied repair handoffs exclude the absolute source root (`src/views/home/model/project-source-repair.ts`, `src/shared/lib/project-source/project-source-receipt.ts`).
 - A receipt of how many declared paths resolved, written without the absolute folder path leaving the machine.
 
 ## Excludes

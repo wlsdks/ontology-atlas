@@ -1,7 +1,7 @@
 import { Check, Clipboard } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { IconButton } from "@/shared/ui";
 import { GROUP_GLYPH_SLOT, GROUP_ROW_LIST, RelationGroupShell } from "./RelationGroupShell";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";

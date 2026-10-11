@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { citedPassage, type CitedPassage } from '@/shared/lib/source-passage';
+import { citedPassage, type CitedPassage } from '@/shared/lib/library/source-passage';
 
 /**
  * **Read one file, because a person pressed the citation that names it.**

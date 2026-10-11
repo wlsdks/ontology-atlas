@@ -8,7 +8,7 @@ import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network } from "luc
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { CloseButton, controlClass, useToast } from "@/shared/ui";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,

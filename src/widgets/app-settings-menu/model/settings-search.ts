@@ -1,4 +1,4 @@
-import { hangulIncludes, hangulStartsWith } from '@/shared/lib/hangul-match';
+import { hangulIncludes, hangulStartsWith } from '@/shared/lib/search-match/hangul-match';
 
 import type { SettingId, SettingsSectionId } from './catalog/types';
 

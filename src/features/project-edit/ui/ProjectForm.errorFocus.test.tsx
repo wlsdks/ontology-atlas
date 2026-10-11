@@ -10,7 +10,7 @@ import { ProjectForm } from "./ProjectForm";
 
 const motion = vi.hoisted(() => ({ reduced: false }));
 
-vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({
+vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => motion.reduced,
 }));
 

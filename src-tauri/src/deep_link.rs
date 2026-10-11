@@ -44,7 +44,7 @@ fn is_payload_character(character: char) -> bool {
 }
 
 /// Returned still encoded, so the route receives exactly what the web parser
-/// (`src/shared/lib/mcp-install-link.ts`) would get from an address bar.
+/// (`src/shared/lib/connectors/mcp-install-link.ts`) would get from an address bar.
 pub(crate) fn parse_install_deep_link(raw: &str) -> Result<String, DeepLinkRefusal> {
     let trimmed = raw.trim();
     let rest = trimmed

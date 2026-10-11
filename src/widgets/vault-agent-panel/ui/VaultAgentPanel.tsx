@@ -12,24 +12,24 @@ import {
   composerGrowth,
   composerTopIsHidden,
   snapScrollTop,
-} from '@/shared/lib/composer-growth';
+} from '@/shared/lib/agent-chat/composer-growth';
 import {
   hostOfBaseUrl,
   isLocalEndpointReady,
   readLocalEndpoint,
   subscribeLocalEndpointChange,
   type LocalEndpointSettings,
-} from '@/shared/lib/local-endpoint';
-import { useHeldValue } from '@/shared/lib/use-presence';
+} from '@/shared/lib/llm-connection/local-endpoint';
+import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip, CloseButton, Surface } from '@/shared/ui';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
-import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
+import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-connection/llm-audit-log';
 import { useRouter } from '@/i18n/navigation';
 import { AGENTS_MODELS_HREF } from '@/shared/config/destinations';
-import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
-import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
-import { pickTauriSourceDirectory } from '@/shared/lib/tauri-vault-fs';
-import { previewConstructionSource, type ConstructionSourcePreview } from '@/shared/lib/tauri-local-construction';
+import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { isLlmChatBridgeAvailable } from '@/shared/lib/llm-connection/tauri-llm';
+import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { previewConstructionSource, type ConstructionSourcePreview } from '@/shared/lib/llm-connection/tauri-local-construction';
 import {
   SECRET_PROVIDER_HOSTS,
   LOCAL_PROVIDER,
@@ -37,7 +37,7 @@ import {
   secretStatus,
   subscribeSecretChange,
   type ConnectionProvider,
-} from '@/shared/lib/tauri-secrets';
+} from '@/shared/lib/llm-connection/tauri-secrets';
 
 import { isLocalConstructionEndpoint, useVaultAgent } from '../model/use-vault-agent';
 import { AgentFirstWords } from './AgentFirstWords';
@@ -47,8 +47,8 @@ import { AgentProposalCard } from './AgentProposalCard';
 import { AgentPromptText } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
-import { josa } from '@/shared/lib/ko-josa';
-import { isImeComposing } from '@/shared/lib/ime-composition';
+import { josa } from '@/shared/lib/locale-text/ko-josa';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
 
 /**

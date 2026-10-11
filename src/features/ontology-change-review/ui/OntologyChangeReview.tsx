@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
+import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { RowButton } from '@/shared/ui';

@@ -1,4 +1,4 @@
-import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
+import type { ConnectionProvider } from '@/shared/lib/llm-connection/tauri-secrets';
 
 /**
  * i18n keys for vendor labels, shared so every screen uses the same name; a record makes

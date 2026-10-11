@@ -28,7 +28,7 @@ const tauriFsMocks = vi.hoisted(() => ({
   getTauriVaultRootPath: vi.fn(() => null as string | null),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   isTauriVaultRuntime: tauriFsMocks.isTauriVaultRuntime,
   getTauriVaultRootPath: tauriFsMocks.getTauriVaultRootPath,
 }));

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import type { AtlasGitDiffFile } from "@/shared/lib/atlas-git-record";
-import type { GitCommitInfo } from "@/shared/lib/tauri-git";
+import type { AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";
+import type { GitCommitInfo } from "@/shared/lib/git/tauri-git";
 import { HISTORY_PAGE } from "./git-workspace-read";
 import type { DocumentFollow } from "../lib/document-follow";
 

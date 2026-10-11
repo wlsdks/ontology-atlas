@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 
 export function BrandPortrait({ expression }: { expression: 'welcome' | 'curious' }) {
   return (

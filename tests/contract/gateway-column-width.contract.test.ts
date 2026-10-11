@@ -30,7 +30,7 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
  *      centres on the old number, making the sides asymmetric — this pairing is the
  *      premise behind "five elements on the same x, sides equal".
  *  (d) **One source of truth for the column cap** — `PAGE_COLUMN`
- *      (shared/lib/gateway-frame.ts) consumes this token, and no
+ *      (shared/lib/public-pages/gateway-frame.ts) consumes this token, and no
  *      `max-w-[var(--page-max)]` remains in gateway surface code. A half migration
  *      (column widened, origin still on the old cap, or the reverse) is the drift
  *      this repository has caught repeatedly.
@@ -96,7 +96,7 @@ describe("관문 본문 컬럼 상한 — --gateway-page-max 의 불변식", () 
   });
 
   it("(d) 컬럼 상한의 진실원은 토큰 하나다 — PAGE_COLUMN 소비 + 관문 코드에 --page-max 0곳", () => {
-    const frame = read("src/shared/lib/gateway-frame.ts");
+    const frame = read("src/shared/lib/public-pages/gateway-frame.ts");
     expect(
       frame,
       "PAGE_COLUMN 이 max-w-[var(--gateway-page-max)] 를 소비해야 한다",

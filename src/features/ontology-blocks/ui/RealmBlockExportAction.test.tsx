@@ -22,7 +22,7 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
   useLocalVault: () => mocks.vault,
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => tauriMocks);
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',

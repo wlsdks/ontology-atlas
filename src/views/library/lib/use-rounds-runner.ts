@@ -59,11 +59,11 @@ import {
 } from "@/features/library-rounds";
 import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
-import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/machine-approvals";
-import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
-import { getTauriVaultRootPath, listTauriVaultLinks, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
-import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
+import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/connectors/machine-approvals";
+import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
+import { getTauriVaultRootPath, listTauriVaultLinks, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 
 import { runHeadlessTurn } from "./headless-turn";

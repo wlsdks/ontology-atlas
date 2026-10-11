@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { OntologyTerritoriesMap, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { useMapEvidenceStates, type MapEvidenceAvailability } from "../model/use-map-evidence-states";
 

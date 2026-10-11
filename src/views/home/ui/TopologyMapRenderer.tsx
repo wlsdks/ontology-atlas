@@ -15,8 +15,8 @@ import type { useTopologyRouteControls } from "../model/use-topology-route-contr
 import type { useTopologySceneControls } from "../model/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
-import type { MapLayoutView } from "@/shared/lib/map-layout-morph-store";
-import { cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
+import type { MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
+import { cancelMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
 import { WidgetErrorFallback } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import {
@@ -31,7 +31,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useFlatRingMemory } from "../model/use-flat-ring-memory";
-import { readHexRelief } from "@/shared/lib/appearance-preferences";
+import { readHexRelief } from "@/shared/lib/preferences/appearance-preferences";
 import { readHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates } from "../model/use-map-evidence-states";
 import { useMapLayoutMorph } from "../model/use-map-layout-morph";

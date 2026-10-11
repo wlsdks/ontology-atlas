@@ -19,7 +19,7 @@ import {
 } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
-import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
+import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import {
   type AcpTurnActivity,
   type AnalysisCaptureContext,
@@ -31,13 +31,13 @@ import {
   vaultSelfReadSlot,
 } from '@/features/acp-session';
 import { useVaultConnectors } from '@/features/mcp-connectors';
-import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
+import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
   listTauriVaultEntries,
   readTauriVaultText,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
 import {
   deriveRoleSourceModules,

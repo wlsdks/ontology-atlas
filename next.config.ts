@@ -33,7 +33,7 @@ if (!releaseVersion) throw new Error('package.json has no version to publish on 
 
 // Optional for forks that deploy the static export below a subpath. The official
 // GitHub Pages deployment uses the ontologyatlas.com root. Paired with
-// src/shared/lib/base-path.ts.
+// src/shared/lib/public-pages/base-path.ts.
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || undefined;
 
 const nextConfig: NextConfig = {

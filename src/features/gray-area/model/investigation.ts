@@ -1,4 +1,4 @@
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import type { GrayAreaCandidate } from './candidates';
 
 export function buildGrayAreaInvestigation(snapshot: GrayAreaSnapshot, candidate: GrayAreaCandidate, options?: { projectUid: string; explicit?: boolean }): string {

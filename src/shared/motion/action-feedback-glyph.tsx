@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { CopyFeedbackState } from '@/shared/lib/use-copy-feedback';
+import type { CopyFeedbackState } from '@/shared/lib/clipboard/use-copy-feedback';
 import { FeedbackGlyph } from './feedback-glyph';
 import { WorkGlyph } from './work-glyph';
 

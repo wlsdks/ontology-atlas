@@ -36,7 +36,7 @@ vi.mock('next-intl', () => ({
   },
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => mocks.isDesktopShell,
 }));
 

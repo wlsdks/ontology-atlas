@@ -51,7 +51,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
     reason: 'insights census rendering or its domain-capacity consumer changed',
     matches: [
-      /^src\/shared\/lib\/use-count-up\.ts$/,
+      /^src\/shared\/lib\/render-timing\/use-count-up\.ts$/,
       /^src\/views\/ontology-insights\/lib\/census-health\.ts$/,
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/parts\/InsightsHeroCensus\.tsx$/,

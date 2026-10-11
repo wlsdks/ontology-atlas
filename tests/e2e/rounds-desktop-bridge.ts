@@ -1,12 +1,12 @@
 import type { Page } from "@playwright/test";
 
 import { roundFingerprint, type RoundRecord } from "../../src/entities/library-round/model/round-record";
-import { connectorFingerprint, type ConnectorRecord } from "../../src/shared/lib/connector-record";
+import { connectorFingerprint, type ConnectorRecord } from "../../src/shared/lib/connectors/connector-record";
 import {
   MACHINE_APPROVALS_STORAGE_KEY,
   serializeApprovals,
   type ApprovalEntry,
-} from "../../src/shared/lib/machine-approvals-format";
+} from "../../src/shared/lib/connectors/machine-approvals-format";
 
 /**
  * **The Rounds tab's desktop bridge, stubbed** — shared by every Rounds spec.

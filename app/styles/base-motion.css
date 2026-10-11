@@ -1,6 +1,6 @@
 @layer base {
   /*
-   * **Route crossfade** (2026-09-02) — `shared/lib/route-view-transition.ts` runs a rail
+   * **Route crossfade** (2026-09-02) — `shared/lib/navigation/route-view-transition.ts` runs a rail
    * navigation inside `document.startViewTransition`, and these rules give the browser's
    * crossfade this system's time and curve. Measured before it existed, on the static
    * build: 84-99% of a route change landed in one frame, on the one surface in the app
@@ -69,7 +69,7 @@
    * the hold it adds is real: measured at 278-301 ms on three destinations and 480-489 ms on
    * the Library, against the 180 ms this file declares. Removing it makes the transition
    * exactly as long as the crossfade somebody chose, plus the arriving route's own first
-   * render, which `shared/lib/route-view-transition.ts` bounds.
+   * render, which `shared/lib/navigation/route-view-transition.ts` bounds.
    */
   ::view-transition-group(app-pane) {
     animation: none;

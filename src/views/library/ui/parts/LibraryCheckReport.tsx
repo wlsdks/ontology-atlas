@@ -5,7 +5,7 @@ import { Stethoscope } from "lucide-react";
 import type { useTranslations } from "next-intl";
 
 import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/library";
-import type { WikiReport, WikiReportRow } from "@/shared/lib/wiki-report.mjs";
+import type { WikiReport, WikiReportRow } from "@/shared/lib/library/wiki-report.mjs";
 import { Chip, Disclosure, Tooltip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '../../src/shared/lib/vault-document/parse-frontmatter';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from './library-work-harness';
 import { seedFirstRunSeen } from './first-run-seed';
 import enMessages from '../../messages/en.json';

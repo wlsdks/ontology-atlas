@@ -4,7 +4,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { SourceDateRecovery } from './SourceDateRecovery';
 import { useOntologyEvidence } from '../../lib/use-ontology-evidence';
 import { Link } from '@/i18n/navigation';

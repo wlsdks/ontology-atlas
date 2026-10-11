@@ -1,4 +1,4 @@
-import { findNameMatch, idSearchText, normalizeForMatch } from "@/shared/lib/node-name-match";
+import { findNameMatch, idSearchText, normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
 import type { KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeNode } from "./types";
 

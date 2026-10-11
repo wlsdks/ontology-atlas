@@ -1,4 +1,4 @@
-import { isSoftwareRenderer } from "@/shared/lib/webgl-probe";
+import { isSoftwareRenderer } from "@/shared/lib/map-canvas/webgl-probe";
 
 import {
   BLOOM_FRAGMENT,

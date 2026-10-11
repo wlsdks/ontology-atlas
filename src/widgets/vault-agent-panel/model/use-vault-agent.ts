@@ -25,10 +25,10 @@ import {
   proposalToClipboardPacket,
   buildProposal,
 } from '@/features/vault-agent';
-import { previewConstructionSource, readConstructionSource, type ConstructionSourcePreview, type ConstructionSourceRange } from '@/shared/lib/tauri-local-construction';
-import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
-import { copyText } from '@/shared/lib/copy-text';
-import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
+import { previewConstructionSource, readConstructionSource, type ConstructionSourcePreview, type ConstructionSourceRange } from '@/shared/lib/llm-connection/tauri-local-construction';
+import { llmChat, llmChatErrorMessage } from '@/shared/lib/llm-connection/tauri-llm';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
+import type { ConnectionProvider } from '@/shared/lib/llm-connection/tauri-secrets';
 
 /**
  * The panel's state — the turn list, the in-flight request, and one pending

@@ -14,14 +14,14 @@ import {
   SECRET_PROVIDER_HOSTS,
   type SecretProvider,
   type SecretStatus,
-} from '@/shared/lib/tauri-secrets';
+} from '@/shared/lib/llm-connection/tauri-secrets';
 import {
   JEV_DESTINATION,
   jevSecretClear,
   jevSecretSet,
   type JevSecretStatus,
-} from '@/shared/lib/tauri-jev';
-import { useNativeErrorLookup } from '@/shared/lib/use-native-error-lookup';
+} from '@/shared/lib/llm-connection/tauri-jev';
+import { useNativeErrorLookup } from '@/shared/lib/desktop-shell/use-native-error-lookup';
 import {
   clearLocalEndpoint,
   countChatCapableModels,
@@ -33,10 +33,10 @@ import {
   writeLocalEndpoint,
   type LocalEndpointSettings,
   type LocalVerifyReason,
-} from '@/shared/lib/local-endpoint';
-import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
-import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
-import { getTauriVaultRootPath, revealTauriVaultFile } from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/llm-connection/local-endpoint';
+import type { LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
+import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-connection/llm-audit-log';
+import { getTauriVaultRootPath, revealTauriVaultFile } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useLocalVault } from '@/entities/vault-session';
 import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/route-focus-manager';
 import { fieldClass } from '@/shared/ui/control-class';
@@ -47,8 +47,8 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Download } from 'lucide-react';
 import { Select } from '@/shared/ui/select';
 import { cn } from '@/shared/lib/cn';
-import { isImeComposing } from '@/shared/lib/ime-composition';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
+import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import {
   LOCAL_RUNNERS,

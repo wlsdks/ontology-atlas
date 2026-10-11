@@ -4,7 +4,7 @@
  * invented name. The first spelling wins the row and every source becomes a chip.
  * One pass over a Map keyed by that identity: O(n × sources per group).
  */
-import type { DiscoveredConnector } from '@/shared/lib/tauri-connectors';
+import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connectors';
 
 export interface DiscoveredGroup {
   key: string;

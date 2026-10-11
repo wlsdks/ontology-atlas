@@ -1,6 +1,6 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-import type { AgentActivityEntry } from '@/shared/lib/agent-activity-log';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import type { AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
 import type { VaultManifest, VaultStampIndex } from '@/entities/docs-vault';
 import { emptyAgentActivityStatus, type AgentActivityStatus } from '../agent-activity-status';
 import type { AgentConfigStatus } from './vault-sidecars';

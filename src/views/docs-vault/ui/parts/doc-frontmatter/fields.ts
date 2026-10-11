@@ -1,4 +1,4 @@
-import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
+import { looksLikeCodePath } from "@/shared/lib/concept-display/humanize-code-path-title";
 
 const GRAPH_KEYS = [
   "kind",

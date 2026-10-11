@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WRITER_CASES } from "../fixtures/frontmatter-writer-cases.mjs";
-import { parseFrontmatter as parseRenderer } from "@/shared/lib/parse-frontmatter";
+import { parseFrontmatter as parseRenderer } from "@/shared/lib/vault-document/parse-frontmatter";
 import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontmatter.mjs";
 import {
   buildMarkdown as buildMcpMarkdown,

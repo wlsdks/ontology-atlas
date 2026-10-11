@@ -4,7 +4,7 @@ import { Fragment, useEffect } from 'react';
 import { detectLocale } from '@/i18n/detect-locale';
 import type { AppLocale } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
-import { withBasePath } from '../lib/base-path';
+import { withBasePath } from '../lib/public-pages/base-path';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
 

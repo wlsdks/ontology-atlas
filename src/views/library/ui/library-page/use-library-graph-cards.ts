@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useLocalVault } from "@/entities/vault-session";
 import type { LibraryGraphCardFacts, LibraryGraphCardRow, LibraryGraphNode } from "@/widgets/library-graph";
-import { compactOntologyDescription } from "@/shared/lib/ontology-description";
-import { WIKI_CITATION_PATTERN } from "@/shared/lib/wiki-page-schema";
+import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
+import { WIKI_CITATION_PATTERN } from "@/shared/lib/library/wiki-page-schema";
 import { sectionSlices } from "../../lib/section-slices";
 import { useLibraryAgent } from "../../lib/use-library-agent";
 import type { LibraryUiModel } from "@/features/library";

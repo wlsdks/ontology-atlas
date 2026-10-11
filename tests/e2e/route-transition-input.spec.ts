@@ -7,7 +7,7 @@ import { waitForAnimationsDone, waitFrames } from "./settle";
  * **Arriving from the rail, the new screen takes a press** — slice S7's third proof.
  *
  * A route change runs inside `document.startViewTransition`
- * (`src/shared/lib/route-view-transition.ts`, 2026-09-02), and while a view transition is
+ * (`src/shared/lib/navigation/route-view-transition.ts`, 2026-09-02), and while a view transition is
  * running the captured document is **not painted** — so it is not hit-tested either.
  * `document.elementFromPoint` answers `html` at every point and a press lands on nothing.
  * The length of the transition is therefore the length of time the arriving screen refuses

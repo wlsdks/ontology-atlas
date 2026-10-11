@@ -27,11 +27,11 @@ vi.mock('@/entities/vault-session', () => ({
   useVaultSessionIdentityScope: () => mocks.scope,
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   nativeVaultFileHashes: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/tauri-llm', () => ({
+vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   llmChat: vi.fn(),
   llmChatErrorMessage: () => 'failed',
 }));
@@ -57,7 +57,7 @@ vi.mock('./compile-consent-card', () => ({
 }));
 
 import { useLocalCompile } from './use-local-compile';
-import { llmChat } from '@/shared/lib/tauri-llm';
+import { llmChat } from '@/shared/lib/llm-connection/tauri-llm';
 
 const args = {
   vaultRoot: '/vault',

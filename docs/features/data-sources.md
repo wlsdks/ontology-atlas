@@ -108,7 +108,7 @@ ingress paths converge on the same shape. The dialog never says "ontology".
 ## 4. Desktop first run
 
 In the installed app (Tauri — detected via `isDesktopShell()`,
-`src/shared/lib/desktop-shell.ts`), `/` with no vault renders **FirstRunPage**
+`src/shared/lib/desktop-shell/desktop-shell.ts`), `/` with no vault renders **FirstRunPage**
 (`src/views/first-run/`): local-only actions to open a vault folder or create
 one; the local-first sentence lives only in the chooser's help dialog. **Just start** (`first-run-just-start` in
 `FirstRunPage.tsx`, and the create menu of `FirstRunFolderActions.tsx` when
@@ -123,7 +123,7 @@ points to Settings › Workspace.
 
 **Project-local vault**: the map lives inside the project it describes, at
 `<project>/atlas`. One name — `PROJECT_VAULT_DIR`,
-`src/shared/lib/project-vault-dir.ts` — is shared by the door that creates the
+`src/shared/lib/vault-folder/project-vault-dir.ts` — is shared by the door that creates the
 folder (`src/features/first-run-starter/model/use-build-from-code.ts`) and the
 open path that finds it
 (`src/entities/vault-session/model/local-vault/resolve-picked-vault-folder.ts`). Choosing a

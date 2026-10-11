@@ -8,7 +8,7 @@ import { parseFrontmatter } from './parser.mjs';
  * is loud), `sources_truncated` (which were only partly read) and a citation on
  * every `## Facts` bullet; ungrounded text goes under `## Not in sources`. A
  * page never has `kind:` (`deriveDocNode` requires it), checked first.
- * The app twin src/shared/lib/wiki-page-schema.ts must return the same problem
+ * The app twin src/shared/lib/library/wiki-page-schema.ts must return the same problem
  * codes; tests/contract/wiki-page-schema.contract.test.ts runs both on one table.
  */
 

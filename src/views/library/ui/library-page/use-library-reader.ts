@@ -3,7 +3,7 @@ import { useLocalVault } from "@/entities/vault-session";
 import type { LibraryOriginalLink, VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { isRetainedAnswerPath, type LibraryUiModel } from "@/features/library";
 import { useBackToTop, useDocReadingScrollSpy } from "@/widgets/doc-reading-pane";
-import { vaultImageUrl } from "@/shared/lib/open-vault-file";
+import { vaultImageUrl } from "@/shared/lib/library/open-vault-file";
 import { useCitedPassage } from "../../lib/use-cited-passage";
 import { useSourceOutline } from "../../lib/use-source-outline";
 import { useAnswerHistory } from "../../lib/use-answer-history";

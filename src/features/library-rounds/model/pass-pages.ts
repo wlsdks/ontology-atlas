@@ -1,6 +1,6 @@
 import type { RoundUndoReason, RoundUndone } from '@/entities/library-round';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { isNotFoundError } from '@/shared/lib/vault-sidecar';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { isNotFoundError } from '@/shared/lib/vault-folder/vault-sidecar';
 
 export type RoundDraftProblem = Pick<RoundUndone, 'reason' | 'key'>;
 

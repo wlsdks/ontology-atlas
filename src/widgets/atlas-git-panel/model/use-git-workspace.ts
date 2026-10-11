@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
+import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
 import {
   gitErrorMessage,
   type GitChangeEntry,
   type GitCommitInfo,
-} from "@/shared/lib/tauri-git";
-import type { NativeErrorLookup } from "@/shared/lib/native-error";
+} from "@/shared/lib/git/tauri-git";
+import type { NativeErrorLookup } from "@/shared/lib/desktop-shell/native-error";
 import { describeRemoteState } from "../lib/remote-state";
 import {
   HISTORY_PAGE,

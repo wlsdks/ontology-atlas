@@ -14,7 +14,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { CONTROL_DISABLED_CLASS, CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from "@/shared/ui/control-class";
-import { usePanelPresence } from "@/shared/lib/use-presence";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import {
   listboxBottomIsHidden,
   listboxGrowth,

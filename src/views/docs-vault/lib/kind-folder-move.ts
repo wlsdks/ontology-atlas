@@ -1,4 +1,4 @@
-import { folderForKind } from "@/shared/lib/meaning-findings";
+import { folderForKind } from "@/shared/lib/vault-document/meaning-findings";
 
 /**
  * Where a document belongs for its kind, the address `slug-outside-kind-folder` asks for.

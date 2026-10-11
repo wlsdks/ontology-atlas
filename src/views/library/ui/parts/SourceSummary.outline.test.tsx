@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
-import type { SourceOutline } from "@/shared/lib/source-passage";
+import type { SourceOutline } from "@/shared/lib/library/source-passage";
 import type { SourceOutlineState } from "../../lib/use-source-outline";
 import { SourceSummary } from "./SourceSummary";
 

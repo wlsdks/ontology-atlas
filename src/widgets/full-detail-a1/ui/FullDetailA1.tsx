@@ -14,12 +14,12 @@ import {
   buildTopologyMeaningEditorNodeHref,
 } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
+import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
 import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
-} from "@/shared/lib/project-source-receipt";
+} from "@/shared/lib/project-source/project-source-receipt";
 import { CloseButton, controlClass, LastEditSubjectRow, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,

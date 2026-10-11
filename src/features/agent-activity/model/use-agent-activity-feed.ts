@@ -15,7 +15,7 @@ import {
   activeSession,
   deriveAgentWorkSessions,
   type AgentWorkSession,
-} from '@/shared/lib/agent-work-session';
+} from '@/shared/lib/agent-activity/agent-work-session';
 import {
   AGENT_NOTIFICATION_KINDS,
   countUnread,
@@ -26,24 +26,24 @@ import {
   type AgentNotification,
   type AgentNotificationKind,
   type VaultProblemCounts,
-} from '@/shared/lib/agent-notifications';
+} from '@/shared/lib/agent-activity/agent-notifications';
 import {
   diffVaultShape,
   snapshotVaultShape,
   type VaultShapeNode,
   type VaultShapeSnapshot,
-} from '@/shared/lib/vault-shape-events';
+} from '@/shared/lib/agent-activity/vault-shape-events';
 import {
   useAgentActivityStatusEnabled,
   useAgentNotificationsEnabled,
   useMutedAgentNotificationKinds,
-} from '@/shared/lib/appearance-preferences';
+} from '@/shared/lib/preferences/appearance-preferences';
 import {
   deriveAgentWorkProjection,
   type AgentLiveWorkInput,
   type AgentWorkProjection,
 } from './agent-work-projection';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 /**
  * One place for "what is happening in my folder right now" — the status chip and the notification box

@@ -4,7 +4,7 @@ import {
   useLibraryIndexSegment,
   writeLibraryIndexCollapsed,
   type LibraryIndexSegment,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import type { LibraryUiModel } from "@/features/library";
 
 const INDEX_COLUMN_PX = 280;

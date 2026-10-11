@@ -4,7 +4,7 @@ import { AgentsPage } from '@/views/agents';
 import { McpPage } from '@/views/mcp';
 import { useVaultConnectors } from '@/features/mcp-connectors';
 import { useLocalVault } from '@/entities/vault-session';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 
 /**
  * One Agents page with MCP as its second body tab; only the selected tab mounts. `McpPage` is

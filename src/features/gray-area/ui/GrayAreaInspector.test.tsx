@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import messages from '../../../../messages/en/grayArea.json';
 import korean from '../../../../messages/ko/grayArea.json';
 import { GrayAreaInspector } from './GrayAreaInspector';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { parseInvestigationPacket } from '../model/investigation-record';
 
 const runtime = vi.hoisted(() => ({ invoke: vi.fn() }));

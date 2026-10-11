@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import enMessages from '../../../../messages/en.json';
-import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 

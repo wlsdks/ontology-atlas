@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import type { NativeErrorLookup } from "@/shared/lib/native-error";
-import { gitErrorMessage, gitFetch, gitPull, gitSetRemote, gitSnapshot } from "@/shared/lib/tauri-git";
+import type { NativeErrorLookup } from "@/shared/lib/desktop-shell/native-error";
+import { gitErrorMessage, gitFetch, gitPull, gitSetRemote, gitSnapshot } from "@/shared/lib/git/tauri-git";
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import type { Translator } from "../lib/translator";
 

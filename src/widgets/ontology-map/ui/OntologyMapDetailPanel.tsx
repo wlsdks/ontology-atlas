@@ -19,8 +19,8 @@ import {
   ScanSearch,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useHeldValue } from "@/shared/lib/use-presence";
-import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
+import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { Button, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/transient-surface";

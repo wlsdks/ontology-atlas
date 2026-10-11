@@ -6,9 +6,9 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/shared/lib/cn";
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
-import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
+import { useDialogFocusTrap } from "@/shared/lib/overlays/use-dialog-focus-trap";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import {
   EXIT_TRANSITION,
   OVERLAY_RISE,

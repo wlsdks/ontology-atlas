@@ -6,11 +6,11 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
-import { isPickerAbort } from "@/shared/lib/picker-abort";
+import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
 import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
-} from "@/shared/lib/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";

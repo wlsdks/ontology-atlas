@@ -1,5 +1,5 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { isOntologyNodeId } from "@/shared/lib/ontology-node-id";
+import { isOntologyNodeId } from "@/shared/lib/ontology-graph/ontology-node-id";
 
 export function resolveTopologySelectedOntologyNode(
   selectedSlug: string | null,

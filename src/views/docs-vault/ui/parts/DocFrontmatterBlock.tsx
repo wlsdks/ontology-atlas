@@ -13,22 +13,22 @@ import {
   CONTAINMENT_KEYS,
   containmentKeyForKind,
   kindForContainmentKey,
-} from "@/shared/lib/containment-keys";
+} from "@/shared/lib/vault-document/containment-keys";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { VaultConflictError, type AgentActivityStatus } from "@/entities/vault-session";
 import { LOCALE_NAME_KEY } from "@/i18n/locales";
 import { routing } from "@/i18n/routing";
-import { computeEditAge } from "@/shared/lib/edit-age";
-import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
-import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { useFailureSentence, type FailureCopy } from "@/shared/lib/use-failure-sentence";
+import { computeEditAge } from "@/shared/lib/edit-provenance/edit-age";
+import { looksLikeCodePath } from "@/shared/lib/concept-display/humanize-code-path-title";
+import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
+import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 import {
   validateVaultDocFrontmatter,
   type VaultDocumentIssue,
   type VaultIssueCode,
-} from "@/shared/lib/validate-vault-document";
-import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-issue-plain-message";
+} from "@/shared/lib/vault-document/validate-vault-document";
+import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-document/vault-issue-plain-message";
 import {
   CompactCopyButton,
   IconButton,

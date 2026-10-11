@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildEvidenceDetails } from './evidence-details';
-import { resolveEvidenceStates } from '@/shared/lib/evidence-states';
+import { resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
 import { buildOntologyBrief } from './ontology-brief';
-import type { EvidenceRow } from '@/shared/lib/evidence-states';
+import type { EvidenceRow } from '@/shared/lib/git/evidence-states';
 
 const titleById = new Map([['pay', 'Payment'], ['cart', 'Cart']]);
 

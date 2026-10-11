@@ -1,4 +1,4 @@
-import { describeSnapshotSubject } from "@/shared/lib/atlas-git-record";
+import { describeSnapshotSubject } from "@/shared/lib/git/atlas-git-record";
 import type { Translator } from "./translator";
 
 /**

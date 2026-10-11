@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { connectorFingerprint, type ConnectorRecord } from '@/shared/lib/connector-record';
+import { connectorFingerprint, type ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import {
   type ConnectorReadResult,
   type ConnectorStore,
   type ConnectorWriteResult,
   createVaultFileConnectorStore,
-} from '@/shared/lib/connector-store';
-import { forgetApproval, recordApproval, useMachineApprovals } from '@/shared/lib/machine-approvals';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/connectors/connector-store';
+import { forgetApproval, recordApproval, useMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /**
  * The connectors beside the open vault as screen state. The file is the source of truth: each

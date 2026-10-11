@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { MapLayoutMark } from "@/shared/lib/map-layout-morph-store";
+import type { MapLayoutMark } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { planLayoutMorph, sampleLayoutMorph, sampleLayoutMorphFrame } from "./layout-morph";
 
 const FRAMES = 30;

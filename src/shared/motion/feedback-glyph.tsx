@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
-import type { CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
+import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";
 import { DrawnCheck } from "./drawn-check";
 
 const LAYER =

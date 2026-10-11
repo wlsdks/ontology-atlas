@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { GatewayDocPage, GUIDE_ENTRY_PAGE } from '@/views/gateway-doc';
-import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 
 export async function generateMetadata({
   params,

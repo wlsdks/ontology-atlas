@@ -4,13 +4,13 @@ import { type ReactNode } from "react";
 
 import { useSlidingIndicator } from "@/shared/motion/use-sliding-indicator";
 import { cn } from "@/shared/lib/cn";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass, type ControlSize } from "./control-class";
 
 /**
  * Exclusive single choice as a radiogroup, even for two options: each label names a value,
  * and `aria-pressed` on siblings would not state exclusivity. Keyboard behaviour
- * is `shared/lib/use-roving-radio-group`; this file applies the two measured containers
+ * is `shared/lib/keyboard/use-roving-radio-group`; this file applies the two measured containers
  * (`well`, `chips`). Busy never disables the group, which would drop its only tab stop.
  * The `well` needs `border-soft`, since the overlay-1 surface alone is invisible, and `p-px`, which
  * keeps it 28/36 tall on the control-height ramp. A selected segment answers no hover, because

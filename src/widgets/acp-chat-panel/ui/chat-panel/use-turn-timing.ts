@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { turnLiveness } from '@/features/acp-session';
-import { elapsedParts } from '@/shared/lib/elapsed';
+import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
 import type { ChatT, SessionState } from './types';
 

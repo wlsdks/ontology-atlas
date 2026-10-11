@@ -8,8 +8,8 @@
  * locate. Two copies of a parser over one file format is how two screens come to read the
  * same page differently, so the function moved rather than being written again.
  */
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import { WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import { WIKI_SECTION_ORDER } from '@/shared/lib/library/wiki-page-schema';
 
 export interface SectionSlices {
   /** Body text before the first contract heading, verbatim. */

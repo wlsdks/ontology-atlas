@@ -9,7 +9,7 @@ const tauriFsMocks = vi.hoisted(() => ({
   createTauriVaultHandle: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   ensureDefaultVaultParentDir: tauriFsMocks.ensureDefaultVaultParentDir,
   listTauriDirectoryNames: tauriFsMocks.listTauriDirectoryNames,
   ensureTauriChildDirectory: tauriFsMocks.ensureTauriChildDirectory,

@@ -13,12 +13,12 @@ import { LibraryImportDialog } from './LibraryImportDialog';
  */
 
 const secretSet = vi.fn(async (_ref: string, _value: string) => true);
-vi.mock('@/shared/lib/tauri-connector-secrets', () => ({
+vi.mock('@/shared/lib/connectors/tauri-connector-secrets', () => ({
   connectorSecretRef: (id: string, name: string) => `${id}:${name}`,
   connectorSecretSet: (...args: unknown[]) => secretSet(...(args as [string, string])),
 }));
 
-vi.mock('@/shared/lib/tauri-connector-runtimes', () => ({
+vi.mock('@/shared/lib/connectors/tauri-connector-runtimes', () => ({
   resolveConnectorRuntimes: async () => [{ name: 'npx', path: '/opt/homebrew/bin/npx' }],
   runtimePath: (runtimes: Array<{ name: string; path: string | null }> | null, name: string) =>
     runtimes?.find((runtime) => runtime.name === name)?.path ?? null,

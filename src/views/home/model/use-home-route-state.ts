@@ -8,7 +8,7 @@ import {
   parseHomeRouteState,
   type HomeRouteState,
 } from './url-state';
-import { guardedHistoryWrite } from '@/shared/lib/history-write-guard';
+import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
 /** Dispatched right after history.pushState. */
 const HOME_URL_CHANGE_EVENT = 'app:urlchange';
@@ -102,7 +102,7 @@ export function useHomeRouteState(): [
         return;
       }
       // Through the shared budget, or a runaway loop hits WebKit's 100-per-10s limit and throws
-      // (`shared/lib/history-write-guard.ts`).
+      // (`shared/lib/navigation/history-write-guard.ts`).
       if (!guardedHistoryWrite(options?.replace ? 'replace' : 'push', nextUrl)) return;
       window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
     },

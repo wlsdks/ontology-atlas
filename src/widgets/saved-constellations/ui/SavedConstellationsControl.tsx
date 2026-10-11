@@ -19,7 +19,7 @@ import { Button, Checkbox, Dialog, IconButton, RowButton, Surface, Textarea, Too
 import { Input } from '@/shared/ui/input';
 import { ChromeChip } from '@/shared/ui/chrome-chip';
 import { cn } from '@/shared/lib/cn';
-import { placeAnchoredPopover } from '@/shared/lib/anchored-popover';
+import { placeAnchoredPopover } from '@/shared/lib/overlays/anchored-popover';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 interface Props {

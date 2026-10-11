@@ -1,4 +1,4 @@
-import { WIKI_SOURCES_DIR } from '@/shared/lib/wiki-page-schema';
+import { WIKI_SOURCES_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 /**
  * What Atlas can honestly read without a parser dependency: a source is `readable`,

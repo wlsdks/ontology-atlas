@@ -6,7 +6,7 @@
 //   key:\n  - item1\n  - item2          (block list)
 //   key:\n  child: 1\n  other: 2        (block object)
 //
-// Behaves identically to src/shared/lib/parse-frontmatter.ts. Unified as an ESM
+// Behaves identically to src/shared/lib/vault-document/parse-frontmatter.ts. Unified as an ESM
 // module so the build script and the runtime cannot drift apart.
 
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);

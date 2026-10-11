@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { useHydrated } from '@/shared/lib/use-hydrated';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import { RouteLoadingFallback } from '@/shared/ui';
 
 /**

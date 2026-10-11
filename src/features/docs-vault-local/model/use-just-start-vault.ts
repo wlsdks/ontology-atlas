@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { codedFailure, failureCodeOf } from '@/shared/lib/failure-code';
-import type { VaultShape } from '@/shared/lib/vault-shape';
+import { codedFailure, failureCodeOf } from '@/shared/lib/failures/failure-code';
+import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 import {
@@ -8,7 +8,7 @@ import {
   ensureDefaultVaultParentDir,
   ensureTauriChildDirectory,
   listTauriDirectoryNames,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/default-vault-naming';
 import type { CreationReport } from './use-vault-create-flow';
 

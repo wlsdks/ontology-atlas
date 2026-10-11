@@ -1,5 +1,5 @@
-import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
-import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
+import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { lastDialFrame } from "../dial/frame/frame";
 import { smoothstep } from "../dial/frame/disclosure";
 import { dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx } from "../dial/frame/marks";

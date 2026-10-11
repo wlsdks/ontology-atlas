@@ -1,4 +1,4 @@
-import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-layout-morph-store";
+import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { easeMotion } from "@/shared/motion/ease";
 import { MOTION } from "@/shared/motion/tokens";
 import { readContainmentTree, type TreeInputEdge, type TreeInputNode } from "../model/containment-tree";

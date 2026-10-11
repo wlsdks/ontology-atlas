@@ -1,7 +1,7 @@
 'use client';
 
 import { filesForClient, type AgentClientId } from '../../lib/agent-clients';
-import type { VaultShape } from '@/shared/lib/vault-shape';
+import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { useCallback, useRef, useState } from 'react';
 import {
   applyFrontmatterUpdates,

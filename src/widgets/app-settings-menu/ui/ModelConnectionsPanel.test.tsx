@@ -5,8 +5,8 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModelConnectionsPanel } from './ModelConnectionsPanel';
 import type { AiConnectionState } from '../model/use-ai-connection';
-import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
-import { buildJevPayload } from '@/shared/lib/tauri-jev';
+import type { LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
+import { buildJevPayload } from '@/shared/lib/llm-connection/tauri-jev';
 
 const mocks = vi.hoisted(() => ({
   secretSet: vi.fn(),
@@ -19,8 +19,8 @@ const mocks = vi.hoisted(() => ({
   toast: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/tauri-secrets', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/shared/lib/tauri-secrets')>();
+vi.mock('@/shared/lib/llm-connection/tauri-secrets', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib/llm-connection/tauri-secrets')>();
   return {
     ...actual,
     secretSet: mocks.secretSet,
@@ -29,8 +29,8 @@ vi.mock('@/shared/lib/tauri-secrets', async (importOriginal) => {
   };
 });
 
-vi.mock('@/shared/lib/tauri-jev', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/shared/lib/tauri-jev')>();
+vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib/llm-connection/tauri-jev')>();
   return {
     ...actual,
     jevSecretSet: mocks.jevSecretSet,
@@ -39,7 +39,7 @@ vi.mock('@/shared/lib/tauri-jev', async (importOriginal) => {
   };
 });
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   revealTauriVaultFile: (...args: unknown[]) => mocks.reveal(...args),
   getTauriVaultRootPath: () => null,
 }));

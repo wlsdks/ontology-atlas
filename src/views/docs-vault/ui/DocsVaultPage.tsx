@@ -11,12 +11,12 @@ import {
 import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
 import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
-import { useDocumentTitle } from '@/shared/lib/use-document-title';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { useClaimShellKey } from '@/shared/lib/shell-key-claims';
-import { usePanelPresence } from '@/shared/lib/use-presence';
-import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
+import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
+import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
+import { useTypingShortcuts } from '@/shared/lib/keyboard/use-typing-shortcut';
 import {
   RouteLoadingFallback,
   SimilarNodeWarning,

@@ -546,8 +546,8 @@ test('exhaustive architecture coverage is owned once across the three lanes', ()
  */
 test('the perf lane starts only for code a measurement could import, and on every full plan', () => {
   const mode = (options) => buildImpactPlan(options).lanes.perf.mode;
-  assert.equal(mode({ files: ['src/shared/lib/node-name-match.ts'] }), 'affected');
-  assert.equal(mode({ files: ['src/shared/lib/source-passage.perf.test.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/search-match/node-name-match.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/library/source-passage.perf.test.ts'] }), 'affected');
   // The import graph decides, wherever the imported code lives.
   assert.equal(mode({ files: ['mcp/src/wiki-schema.mjs'] }), 'affected');
   assert.equal(mode({ files: ['app/[locale]/page.tsx'] }), 'skip');
@@ -556,12 +556,12 @@ test('the perf lane starts only for code a measurement could import, and on ever
   assert.equal(mode({ files: ['mcp/src/schema.mjs'] }), 'skip');
   assert.equal(mode({ files: ['tests/contract/workflow-budgets.contract.test.ts'] }), 'skip');
   // A vanished module is in nobody's import graph, so `--changed` could not find its users.
-  assert.equal(mode({ files: [], deletedFiles: ['src/shared/lib/hangul-match.ts'] }), 'full');
+  assert.equal(mode({ files: [], deletedFiles: ['src/shared/lib/search-match/hangul-match.ts'] }), 'full');
   // The Vitest configuration decides what the perf project is.
   assert.equal(mode({ files: ['vitest.config.ts'] }), 'full');
   assert.equal(mode({ files: [], forceFull: true }), 'full');
   // The plan survives the encode/validate round trip the workflow performs.
-  const plan = buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] });
+  const plan = buildImpactPlan({ files: ['src/shared/lib/search-match/node-name-match.ts'] });
   assert.equal(decodePlan(encodePlan(plan)).lanes.perf.mode, 'affected');
   assert.throws(
     () => decodePlan(encodePlan({ ...plan, lanes: { ...plan.lanes, perf: { mode: 'sometimes' } } })),

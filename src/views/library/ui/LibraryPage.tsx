@@ -8,7 +8,7 @@ import { isWikiPage } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
 import { MCP_CONNECTORS_HREF } from "@/shared/config/destinations";
 import { useVaultConnectors } from "@/features/mcp-connectors";
-import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import {
   buildCompileBrief,
   FindDocumentsDialog,
@@ -23,10 +23,10 @@ import {
   writeLibraryIndexSegment,
   writeWikiWriteMode,
   type LibraryIndexSegment,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import { cn } from "@/shared/lib/cn";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
@@ -35,9 +35,9 @@ import {
   LIBRARY_TOAST_DIALOG_OFFSET,
   LIBRARY_TOAST_RIGHT_OFFSET,
 } from "@/shared/ui/toast-position";
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { Button, Chip, useToast, useToastAnchor } from "@/shared/ui";
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
+import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { useAnswerRefresh } from "../lib/use-answer-refresh";
 import { LocalCompileCard } from "./parts/LocalCompileCard";
@@ -45,7 +45,7 @@ import { LibraryStatusStrip } from "./parts/LibraryStatusStrip";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
 import { LibraryConversationDoor } from "./parts/LibraryConversationDoor";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
-import { selectOpenVaultHandle } from "@/shared/lib/select-open-vault-handle";
+import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 import { LibraryQuestionDesk } from "./parts/LibraryQuestionDesk";
 import { AnswerRevisionComparison } from "./parts/AnswerRevisionComparison";
 import { LibraryHomeStrip } from "./parts/LibraryHomeStrip";

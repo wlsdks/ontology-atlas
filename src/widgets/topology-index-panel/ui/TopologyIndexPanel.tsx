@@ -11,7 +11,7 @@ import {
 } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
 import {

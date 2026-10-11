@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from '@/i18n/navigation';
-import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 
 const ROUTE_FOCUS_INTENT_KEY = 'ontology-atlas:route-focus-intent';
 const ROUTE_FOCUS_INTENT_MAX_AGE_MS = 10_000;

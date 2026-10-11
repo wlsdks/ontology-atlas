@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { readMeaningTransitionHistory } from '@/entities/meaning-transition';
-import type { MeaningTransitionCandidate } from '@/shared/lib/meaning-transition';
-import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition-v2';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { canArchiveMeaningTransitions, observeMeaningTransitionRoot, readTauriMeaningTransitionArtifact } from '@/shared/lib/tauri-meaning-transition-archive';
+import type { MeaningTransitionCandidate } from '@/shared/lib/meaning-transition/meaning-transition';
+import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { canArchiveMeaningTransitions, observeMeaningTransitionRoot, readTauriMeaningTransitionArtifact } from '@/shared/lib/meaning-transition/tauri-meaning-transition-archive';
 import { Chip, Disclosure, RowButton } from '@/shared/ui';
 
 type Transition = MeaningTransitionCandidate | MeaningTransitionV2;

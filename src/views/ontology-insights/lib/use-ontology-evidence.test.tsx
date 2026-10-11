@@ -1,13 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VaultDoc } from '@/entities/docs-vault';
-import type { BoundEvidenceDates } from '@/shared/lib/tauri-git';
+import type { BoundEvidenceDates } from '@/shared/lib/git/tauri-git';
 import { useOntologyEvidence } from './use-ontology-evidence';
 
 const mock = vi.hoisted(() => ({ read: vi.fn(), walk: vi.fn(), picker: vi.fn(), available: true }));
-vi.mock('@/shared/lib/project-source-store', () => ({ createVaultFileProjectSourceStore: () => ({ read: mock.read }) }));
-vi.mock('@/shared/lib/tauri-git', () => ({ isGitBridgeAvailable: () => mock.available, gitBoundEvidenceDates: mock.walk }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({ pickTauriSourceDirectory: mock.picker }));
+vi.mock('@/shared/lib/project-source/project-source-store', () => ({ createVaultFileProjectSourceStore: () => ({ read: mock.read }) }));
+vi.mock('@/shared/lib/git/tauri-git', () => ({ isGitBridgeAvailable: () => mock.available, gitBoundEvidenceDates: mock.walk }));
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ pickTauriSourceDirectory: mock.picker }));
 const document = (path: string) => ({ slug: 'capabilities/pay', frontmatter: { path } }) as unknown as VaultDoc;
 const nodes = [{ id: 'pay', docSlug: 'capabilities/pay' }];
 const handle = { name: 'ontology' } as FileSystemDirectoryHandle;

@@ -10,7 +10,7 @@ import {
   useStaticVaultSource,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
 import { PAGE_TITLE, PAGE_TOP_PAD } from '@/shared/ui/page-frame';

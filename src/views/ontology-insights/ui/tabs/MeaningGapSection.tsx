@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, MessageCircle, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
-import { isImeComposing } from "@/shared/lib/ime-composition";
-import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
+import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
@@ -15,7 +15,7 @@ import {
   RowActionMenu,
   type QueueRowAbilities,
 } from "../parts/QueueRowActions";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import {
   ACCENT_CHIP_IDLE,
   ACCENT_CHIP_OPEN,

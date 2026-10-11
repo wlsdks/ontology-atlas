@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const HELPER = 'isImeComposing';
-const HELPER_MODULE = '@/shared/lib/ime-composition';
+const HELPER_MODULE = '@/shared/lib/keyboard/ime-composition';
 const ENTER_KEYS = new Set(['Enter', 'NumpadEnter']);
 const LEGACY_KEY_CODE_PROPERTIES = new Set(['keyCode', 'which']);
 const ENTER_KEY_CODE = 13;

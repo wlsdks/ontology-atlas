@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 // if the yield window (900ms) shrinks the sampling window must shrink with it, so
 // it is read straight from the source. (That module has zero dependencies, so
 // Playwright compiles it as is.)
-import { NAVIGATION_YIELD_MS } from "../../src/shared/lib/navigation-intent";
+import { NAVIGATION_YIELD_MS } from "../../src/shared/lib/navigation/navigation-intent";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
@@ -33,7 +33,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * So the contract is measured directly: **on a navigation signal the map stops
  * drawing, and it returns when the signal expires or a hand moves over the map.**
  * The signal is a single window event in the shared layer
- * (`shared/lib/navigation-intent.ts`), so it can be fired from outside and the
+ * (`shared/lib/navigation/navigation-intent.ts`), so it can be fired from outside and the
  * incoming screen never contaminates the sample. Whether the rail actually fires it
  * is guarded separately by `AppNavRail.test.tsx` — the circuit closes only with
  * both.

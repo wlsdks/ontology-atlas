@@ -12,7 +12,7 @@ const requestShortcutSheet = vi.fn(() => true);
 const revealAppLogFolder = vi.fn(() => Promise.resolve());
 const copyText = vi.fn((_text: string) => Promise.resolve(true));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
 
@@ -20,15 +20,15 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push }),
 }));
 
-vi.mock('@/shared/lib/surface-requests', () => ({
+vi.mock('@/shared/lib/keyboard/surface-requests', () => ({
   requestShortcutSheet: () => requestShortcutSheet(),
 }));
 
-vi.mock('@/shared/lib/tauri-app-logs', () => ({
+vi.mock('@/shared/lib/desktop-shell/tauri-app-logs', () => ({
   revealAppLogFolder: () => revealAppLogFolder(),
 }));
 
-vi.mock('@/shared/lib/copy-text', () => ({
+vi.mock('@/shared/lib/clipboard/copy-text', () => ({
   copyText: (text: string) => copyText(text),
 }));
 

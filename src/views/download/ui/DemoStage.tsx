@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 
 import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
-import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { MOTION } from '@/shared/motion';
 
 import type { ChatT, SessionState } from './types';

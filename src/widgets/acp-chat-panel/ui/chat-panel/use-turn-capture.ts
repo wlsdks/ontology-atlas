@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 
 import type { AcpEvent, AcpTurnCompletion, AcpTurnStart } from '@/features/acp-session';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 
 import { useMeaningTransitionCapture } from '../../model/use-meaning-transition-capture';

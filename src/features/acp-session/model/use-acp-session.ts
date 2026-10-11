@@ -12,7 +12,7 @@ import {
   sendAcpLine,
   startAcpSession,
   stopAcpSession,
-} from '@/shared/lib/tauri-acp';
+} from '@/shared/lib/agent-chat/tauri-acp';
 
 import { GATED_SESSION_MODE } from './runtime-gate';
 import { modeKeepsGate } from './mode-safety';
@@ -37,7 +37,7 @@ import type {
   AcpWorkDecision,
   AcpWorkReceipt,
   AcpWorkResult,
-} from '@/shared/lib/acp-work-receipt';
+} from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from './task-baseline';
 
 /**

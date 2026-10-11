@@ -19,7 +19,7 @@ import {
 } from '@/entities/knowledge-graph';
 
 import { cn } from '@/shared/lib/cn';
-import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';

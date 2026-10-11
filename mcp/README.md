@@ -1718,7 +1718,7 @@ the raw `title`:
    with zero authoring effort.
 3. Otherwise `title` unchanged.
 
-This derivation (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`)
+This derivation (`deriveDisplayTitle`, `src/shared/lib/concept-display/derive-display-title.ts`)
 is display-only — search and matching (`find_neighbors`, `matchOntologyNodes`,
 the in-app palette) always match against the full `title`, so shortening the
 label never narrows what a query can find. Most nodes never need to set

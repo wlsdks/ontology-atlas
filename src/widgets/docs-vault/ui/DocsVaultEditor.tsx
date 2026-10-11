@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -29,9 +29,9 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { BrandMark } from '@/shared/ui/brand-mark';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
-import { isImeComposing } from '@/shared/lib/ime-composition';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { useDelayedVisible, useHeldValue } from '@/shared/lib/use-presence';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
+import { useDelayedVisible, useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { caretPoint, clampMenuToBox } from '../lib/caret-position';
 import {
   detectMentionTrigger,

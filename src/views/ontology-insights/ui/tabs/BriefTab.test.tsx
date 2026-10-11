@@ -5,7 +5,7 @@ import ko from "../../../../../messages/ko.json";
 import { BriefTab } from "./BriefTab";
 import type { InsightsBrief } from "../../lib/brief/use-insights-brief";
 import { briefCounting, briefTotals, type BriefCore } from "../../lib/brief/brief-model";
-import { SKELETON_DELAY_MS } from "@/shared/lib/use-presence";
+import { SKELETON_DELAY_MS } from "@/shared/lib/render-timing/use-presence";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (

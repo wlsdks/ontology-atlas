@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
   DISMISSED_VERSION_KEY,
   LAST_CHECK_KEY,

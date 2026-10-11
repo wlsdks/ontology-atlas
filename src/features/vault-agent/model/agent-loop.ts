@@ -1,4 +1,4 @@
-import type { LlmChatScope, LlmChatEcho } from '@/shared/lib/tauri-llm';
+import type { LlmChatScope, LlmChatEcho } from '@/shared/lib/llm-connection/tauri-llm';
 
 import { extractCitations } from './citation';
 import { splitNextStep } from './next-step';

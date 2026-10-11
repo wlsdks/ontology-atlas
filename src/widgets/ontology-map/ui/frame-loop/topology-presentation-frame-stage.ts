@@ -1,5 +1,5 @@
-import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/appearance-preferences";
-import type { FootprintInk } from "@/shared/lib/footprint-glyph";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   type RefObject
 } from "react";

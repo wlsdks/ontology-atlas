@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**

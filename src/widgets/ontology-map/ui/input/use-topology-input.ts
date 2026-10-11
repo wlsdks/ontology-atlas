@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import {
   useCallback,
   useEffect,

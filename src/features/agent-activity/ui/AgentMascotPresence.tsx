@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 import {
   isVerifiedMascotCompletion,

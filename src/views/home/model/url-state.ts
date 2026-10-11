@@ -1,4 +1,4 @@
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {

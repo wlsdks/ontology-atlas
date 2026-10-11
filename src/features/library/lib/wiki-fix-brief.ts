@@ -1,5 +1,5 @@
 import { withAnswerLanguage } from "@/i18n/answer-language";
-import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /** One structural finding as the validator hands it over. */
 export interface WikiShapeFinding {

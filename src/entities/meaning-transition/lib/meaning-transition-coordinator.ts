@@ -1,12 +1,12 @@
-import { previewDocumentPatch } from '@/shared/lib/document-patch.mjs';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import { previewDocumentPatch } from '@/shared/lib/meaning-transition/document-patch.mjs';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import {
   meaningTransitionV2DecisionArtifact,
   meaningTransitionV2TextDigest,
   prepareMeaningTransitionV2,
   type MeaningTransitionV2,
   type MeaningTransitionV2Input,
-} from '@/shared/lib/meaning-transition-v2';
+} from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
 import {
   meaningTransitionArtifactRef,

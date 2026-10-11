@@ -2,7 +2,7 @@ import type { VaultManifest } from "../model/types";
 import {
   inferOntologyRelationKey,
   type OntologyRelationKey,
-} from "@/shared/lib/ontology-relation-key";
+} from "@/shared/lib/ontology-graph/ontology-relation-key";
 
 export type VaultRelationKey = OntologyRelationKey;
 

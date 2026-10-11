@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
-import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
-import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
+import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
 import type { Rect } from "../interaction/free-area";

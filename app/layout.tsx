@@ -5,7 +5,7 @@ import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
 import { jetbrainsMono, pretendard, pretendardLatin } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { StandaloneMessagesProvider } from '@/views/terminal-state';
 import { ROUTE_ERROR_PICK, pickStandaloneMessages } from '@/i18n/standalone-messages';
 import './globals.css';

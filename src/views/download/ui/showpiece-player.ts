@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSy
 
 import { EXIT_TRANSITION, MOTION, MOTION_EASE, STAGGER } from '@/shared/motion';
 import { SPRING, springEasing, springSettleMs } from '@/shared/motion/spring';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 
 export const SHOWPIECE_PART = 'data-showpiece-part';
 

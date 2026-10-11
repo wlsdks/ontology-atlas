@@ -6,7 +6,7 @@ const tauriApiMock = vi.hoisted(() => ({
   invoke: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/idb-kv', () => ({
+vi.mock('@/shared/lib/vault-folder/idb-kv', () => ({
   idbGet: vi.fn(async (key: string) => memory.get(key)),
   idbSet: vi.fn(async (key: string, value: unknown) => {
     memory.set(key, value);
@@ -32,7 +32,7 @@ import {
   touchLocalFsHandle,
 } from './store';
 import type { LocalFsHandleRecord } from '../model/types';
-import { idbGet, idbSet } from '@/shared/lib/idb-kv';
+import { idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
 
 function fakeHandle(name: string): FileSystemDirectoryHandle {
   return { kind: 'directory', name } as unknown as FileSystemDirectoryHandle;

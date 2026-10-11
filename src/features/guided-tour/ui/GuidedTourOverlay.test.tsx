@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuidedTourOverlay } from "./GuidedTourOverlay";
 import { useGuidedTour } from "../model/use-guided-tour";
 import { GUIDED_TOUR_STATUS_KEY } from "../model/tour-storage";
-import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
+import { EXIT_WINDOW_MS } from "@/shared/lib/render-timing/use-presence";
 
 vi.mock("next-intl", () => ({
   useLocale: () => 'en',

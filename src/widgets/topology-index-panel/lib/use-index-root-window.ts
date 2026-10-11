@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
-import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
+import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 
 /** A top-level row before it is measured: one step of the 36px control ladder. */
 const ROOT_ROW_ESTIMATE_PX = 36;

@@ -183,7 +183,7 @@ export function escapeHtml(s: string): string {
 }
 
 /** Re-exported so Docs call sites keep this import while the definition lives in shared. */
-export { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
+export { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-sync";
 
 /**
  * Persists the editor buffer through `saveDoc` and always rethrows, a `VaultConflictError`

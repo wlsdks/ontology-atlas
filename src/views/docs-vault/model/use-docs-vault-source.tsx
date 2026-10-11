@@ -7,13 +7,13 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { migrateLegacyRecentDocs, pushRecentDoc } from '@/widgets/docs-vault';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
-import { useHydrated } from '@/shared/lib/use-hydrated';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
+import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,

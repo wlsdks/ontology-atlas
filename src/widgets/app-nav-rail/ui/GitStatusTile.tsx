@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { History } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { listen } from "@tauri-apps/api/event";
-import { gitStatus, isGitBridgeAvailable } from "@/shared/lib/tauri-git";
+import { gitStatus, isGitBridgeAvailable } from "@/shared/lib/git/tauri-git";
 import { cn } from "@/shared/lib/cn";
 
 /**

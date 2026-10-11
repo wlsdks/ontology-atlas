@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { connectorProblems, type ConnectorRecord } from '@/shared/lib/connector-record';
-import { ACP_SECRET_REF_KEY } from '@/shared/lib/tauri-connector-secrets';
+import { connectorProblems, type ConnectorRecord } from '@/shared/lib/connectors/connector-record';
+import { ACP_SECRET_REF_KEY } from '@/shared/lib/connectors/tauri-connector-secrets';
 
 import {
   connectorAcpServers,

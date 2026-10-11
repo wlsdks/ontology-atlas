@@ -5,7 +5,7 @@ import {
   type GitChangeEntry,
   type GitCommitInfo,
   type GitStatusResult,
-} from "@/shared/lib/tauri-git";
+} from "@/shared/lib/git/tauri-git";
 
 export type GitWorkspaceRead = {
   status: GitStatusResult;
@@ -19,7 +19,7 @@ export type GitWorkspaceRead = {
 
 /**
  * One workspace read plus the instant it was read at, which is what the panel remembers
- * across a route change (`shared/lib/route-arrival-memory.ts`).
+ * across a route change (`shared/lib/navigation/route-arrival-memory.ts`).
  */
 export type GitWorkspaceMemory = {
   read: GitWorkspaceRead;

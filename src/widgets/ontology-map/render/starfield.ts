@@ -228,4 +228,4 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
   }
 }
 
-export { drawDiffractionSpike } from "@/shared/lib/diffraction-spike";
+export { drawDiffractionSpike } from "@/shared/lib/map-canvas/diffraction-spike";

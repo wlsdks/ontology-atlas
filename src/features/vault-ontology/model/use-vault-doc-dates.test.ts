@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
-import type { GitChangeEntry, GitDiffResult, GitPathLastChange } from '@/shared/lib/tauri-git';
+import type { GitChangeEntry, GitDiffResult, GitPathLastChange } from '@/shared/lib/git/tauri-git';
 
 const mocks = vi.hoisted(() => ({
   vault: {
@@ -27,14 +27,14 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
   ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
-vi.mock('@/shared/lib/tauri-git', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/tauri-git')>()),
+vi.mock('@/shared/lib/git/tauri-git', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/git/tauri-git')>()),
   isGitBridgeAvailable: () => mocks.bridge,
   gitPathsLastChange: (...args: unknown[]) => mocks.pathsLastChange(...args),
   gitDiff: (...args: unknown[]) => mocks.diff(...args),
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 

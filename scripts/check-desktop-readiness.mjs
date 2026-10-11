@@ -102,7 +102,7 @@ const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
-const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
+const tauriShim = readText("src/shared/lib/vault-folder/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/clean-tauri-macos-apps.mjs");
@@ -420,7 +420,7 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml"
+  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml"
 ) {
   pass(
     "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard",
@@ -1722,7 +1722,7 @@ if (
 ) {
   pass("Tauri vault bridge uses the supported JavaScript invoke API");
 } else {
-  fail("src/shared/lib/tauri-vault-fs.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
+  fail("src/shared/lib/vault-folder/tauri-vault-fs.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
 }
 
 if (
@@ -1734,7 +1734,7 @@ if (
   pass("Tauri getFileHandle create semantics avoid truncating existing vault files");
 } else {
   fail(
-    "src/shared/lib/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
+    "src/shared/lib/vault-folder/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
   );
 }
 
@@ -1886,7 +1886,7 @@ const tauriScaffoldFiles = [
   "src-tauri/capabilities/default.json",
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
-  "src/shared/lib/tauri-vault-fs.test.ts",
+  "src/shared/lib/vault-folder/tauri-vault-fs.test.ts",
   // #72 — the old LocalVaultPicker was an orphan and was deleted. The same contract
   // (recent-vault recovery, copy path / Finder) is carried by the settings sheet and
   // covered by its test.
@@ -1903,7 +1903,7 @@ const tauriScaffoldFiles = [
   "scripts/check-macos-release-github.mjs",
   "scripts/sign-macos-app.mjs",
   "scripts/notarize-macos-dmg.mjs",
-  "src/shared/lib/tauri-vault-fs.ts",
+  "src/shared/lib/vault-folder/tauri-vault-fs.ts",
 ];
 const missingTauriFiles = tauriScaffoldFiles.filter(
   (relativePath) => !fs.existsSync(path.join(root, relativePath)),

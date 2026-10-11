@@ -3,9 +3,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
-import { copyText } from "@/shared/lib/copy-text";
+import { copyText } from "@/shared/lib/clipboard/copy-text";
 
-vi.mock("@/shared/lib/copy-text", () => ({
+vi.mock("@/shared/lib/clipboard/copy-text", () => ({
   copyText: vi.fn(async () => true),
 }));
 

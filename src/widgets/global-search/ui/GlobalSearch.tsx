@@ -21,7 +21,7 @@ import {
 import { CloseButton, controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 import { describeMatchReason, reasonLineClass } from "../lib/match-reason";
-import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 
 /**
  * How many rows each group draws. The heading says "shown / found" whenever this

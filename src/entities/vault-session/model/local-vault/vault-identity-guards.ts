@@ -1,4 +1,4 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { FrontmatterUpdateValue } from '@/entities/docs-vault';
 
 /**

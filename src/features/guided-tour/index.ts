@@ -19,7 +19,7 @@ export {
   readGuideAutoStart,
   useGuideAutoStart,
   writeGuideAutoStart,
-} from "@/shared/lib/guide-auto-start";
+} from "@/shared/lib/preferences/guide-auto-start";
 export {
   resolveAnchorRect,
 } from "./model/resolve-anchor-rect";

@@ -16,10 +16,10 @@ import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
   vaultRootRejectionReason,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { classifyVaultAccessError, isMissingFolderError } from '../classify-vault-access-error';
-import { toErrorMessage } from '@/shared/lib/error-message';
-import { isPickerAbort } from '@/shared/lib/picker-abort';
+import { toErrorMessage } from '@/shared/lib/failures/error-message';
+import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import {
   isSupported,

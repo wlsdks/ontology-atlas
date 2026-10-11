@@ -3,7 +3,7 @@
 import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { useHexRelief, writeHexRelief, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { useHexRelief, writeHexRelief, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../model/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "../model/use-map-evidence-states";

@@ -1,4 +1,4 @@
-import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/appearance-preferences";
 import type { ClusterChip } from "../../model/density-gate";
 import {
   clusterMoreChipId,

@@ -1,5 +1,5 @@
 import type { AnalysisFinding } from "@/entities/analysis-record";
-import { usePanelPresence } from "@/shared/lib/use-presence";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 

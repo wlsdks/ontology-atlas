@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
-import { PAGE_GUTTER } from '@/shared/lib/gateway-frame';
+import { PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 
 /**
  * The one dead-end shape for the 404 and the render error: a centred stage with the gateway's

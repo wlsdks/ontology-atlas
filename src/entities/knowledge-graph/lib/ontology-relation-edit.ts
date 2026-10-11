@@ -1,4 +1,4 @@
-import { slugify } from '@/shared/lib/slugify';
+import { slugify } from '@/shared/lib/vault-document/slugify';
 
 import type { MeaningEditRelation } from './ontology-node-href';
 import { IMPACT_RELATION_TYPES } from './ontology-tree/reachability';

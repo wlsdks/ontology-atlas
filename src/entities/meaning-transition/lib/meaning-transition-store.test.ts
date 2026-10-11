@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { prepareMeaningTransition, serializeMeaningTransition, type MeaningTransitionInput } from '@/shared/lib/meaning-transition';
-import { meaningTransitionV2DecisionArtifact, prepareMeaningTransitionV2, serializeMeaningTransitionV2, type MeaningTransitionV2Input } from '@/shared/lib/meaning-transition-v2';
+import { prepareMeaningTransition, serializeMeaningTransition, type MeaningTransitionInput } from '@/shared/lib/meaning-transition/meaning-transition';
+import { meaningTransitionV2DecisionArtifact, prepareMeaningTransitionV2, serializeMeaningTransitionV2, type MeaningTransitionV2Input } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
 const native = vi.hoisted(() => ({
   append: vi.fn(), observe: vi.fn(), readArtifact: vi.fn(), readRecord: vi.fn(), list: vi.fn(),
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({ getTauriVaultRootPath: (value: { root?: string }) => value.root ?? '/vault' }));
-vi.mock('@/shared/lib/tauri-meaning-transition-archive', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ getTauriVaultRootPath: (value: { root?: string }) => value.root ?? '/vault' }));
+vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => true,
   observeMeaningTransitionRoot: native.observe,
   appendTauriMeaningTransitionBundle: native.append,

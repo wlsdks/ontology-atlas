@@ -1,4 +1,4 @@
-import { tauriVaultPathExists } from "@/shared/lib/tauri-vault-fs";
+import { tauriVaultPathExists } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
 /**
  * The dogfood shortcut's vault paths, from `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS` (comma-separated

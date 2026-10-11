@@ -15,8 +15,8 @@ import {
 import {
   validateWikiFolder as validateFolderTs,
   validateWikiPage as validatePageTs,
-} from '@/shared/lib/wiki-page-schema';
-import { aggregateWikiFindings as aggregateBridged } from '@/shared/lib/wiki-report.mjs';
+} from '@/shared/lib/library/wiki-page-schema';
+import { aggregateWikiFindings as aggregateBridged } from '@/shared/lib/library/wiki-report.mjs';
 import {
   validateWikiFolder as validateFolderMcp,
   validateWikiPage as validatePageMcp,
@@ -45,7 +45,7 @@ import { aggregateWikiFindings as aggregateMcp } from '../../mcp/src/wiki-report
  *    than the contract; the module under it is the shared half either way. The CLI arm
  *    above *does* execute a whole command, which is what keeps this from being a
  *    self-comparison.
- * 3. **The app** — the TypeScript twin in `src/shared/lib/wiki-page-schema.ts`, fed
+ * 3. **The app** — the TypeScript twin in `src/shared/lib/library/wiki-page-schema.ts`, fed
  *    through the aggregator the way `use-library-model.ts` feeds it, reached by the
  *    bridge module the Library imports.
  *
@@ -167,9 +167,9 @@ describe('the structural check — the CLI, the MCP validators and the app enume
 
   it('the bridge and the canonical module are the same function, not a twin', async () => {
     expect(aggregateBridged).toBe(aggregateMcp);
-    const bridge = resolve(__dirname, '../../src/shared/lib/wiki-report.mjs');
+    const bridge = resolve(__dirname, '../../src/shared/lib/library/wiki-report.mjs');
     const { readFileSync } = await import('node:fs');
-    expect(readFileSync(bridge, 'utf8')).toContain('export * from "../../../mcp/src/wiki-report.mjs"');
+    expect(readFileSync(bridge, 'utf8')).toContain('export * from "../../../../mcp/src/wiki-report.mjs"');
   });
 
   it('groups and rows are ordered deterministically, whatever order the pages arrive in', () => {

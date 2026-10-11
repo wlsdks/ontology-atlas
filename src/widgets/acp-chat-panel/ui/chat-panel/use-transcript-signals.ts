@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 
 import type { ChatSuggestion } from '@/features/acp-session';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
 import type { SessionState } from './types';
 

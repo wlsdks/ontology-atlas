@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { withBasePath } from '@/shared/lib/base-path';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 
 /**
  * Decorative company for a real pending operation; the parent owns the status words and

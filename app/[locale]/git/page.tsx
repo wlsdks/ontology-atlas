@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { GitPage } from '@/views/git';
 
 export async function generateMetadata({

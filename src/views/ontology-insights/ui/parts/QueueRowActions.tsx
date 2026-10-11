@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";

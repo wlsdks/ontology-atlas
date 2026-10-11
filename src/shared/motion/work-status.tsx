@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { WorkGlyph, type WorkPhase } from "./work-glyph";
 export type { WorkPhase } from "./work-glyph";
 

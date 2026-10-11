@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDataSourceMode, useLocalVault } from '@/entities/vault-session';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
-import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/evidence-states';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
+import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/git/tauri-git';
 
 type MapEvidenceState = 'current' | 'stale' | 'unknown';
 
@@ -27,8 +27,8 @@ const NO_STATES: ReadonlyMap<string, MapEvidenceState> = new Map();
 const NO_PATHS: ReadonlyMap<string, string> = new Map();
 
 /**
- * Same rule and Git walk as the insights brief and MCP (`shared/lib/evidence-states.ts`
- * over `shared/lib/evidence-verdict.mjs`). `enabled` is Territories being drawn, the only view that
+ * Same rule and Git walk as the insights brief and MCP (`shared/lib/git/evidence-states.ts`
+ * over `shared/lib/git/evidence-verdict.mjs`). `enabled` is Territories being drawn, the only view that
  * reads it.
  */
 export function useMapEvidenceStates({

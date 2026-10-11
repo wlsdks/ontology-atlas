@@ -5,12 +5,12 @@ import { useTranslations } from 'next-intl';
 import { FileText } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
 import { useUpdateAutoCheck } from '@/features/app-update';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import {
   forgetMachineApprovals,
   useMachineApprovalList,
   type MachineApprovalItem,
-} from '@/shared/lib/machine-approvals';
+} from '@/shared/lib/connectors/machine-approvals';
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { Chip } from '@/shared/ui/controls';

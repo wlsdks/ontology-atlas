@@ -51,7 +51,7 @@ import { waitForAnimationsDone } from "./settle";
  * **twice**: the first arrival has nothing remembered and must still show its fallback
  * (History's loading skeleton is asserted to appear), and the second must show none. The
  * first assertion is what proves the second one is looking at something. Verified by
- * planting the defect: reverting `shared/lib/route-arrival-memory.ts` to a plain `useState`
+ * planting the defect: reverting `shared/lib/navigation/route-arrival-memory.ts` to a plain `useState`
  * turns the second-arrival assertions red on all three destinations while the cold-arrival
  * assertion stays green.
  */

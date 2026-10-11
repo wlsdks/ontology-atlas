@@ -3,7 +3,7 @@
  * (`wiki-validate`, `validate_wiki`, the Library), so their numbers cannot
  * disagree (`docs/DECISIONS.md`, "The Library keeps its spine, and computes the
  * structural check itself"). The app imports it
- * through `src/shared/lib/wiki-report.mjs`, a re-export rather than a twin: this module
+ * through `src/shared/lib/library/wiki-report.mjs`, a re-export rather than a twin: this module
  * is pure. Advisory is a field on the group, never a caller's filter: advisory
  * findings are reported, counted and ordered last, and `blockingPageCount` is
  * the blocking-only number. Every list is sorted (groups by advisory then code,

@@ -8,18 +8,18 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 
-import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
+import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { buttonVariants, Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { TermHint } from '@/shared/ui/term-hint';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
+import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/agent-chat/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { RowStateBadge } from '@/features/docs-vault-local';
-import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
+import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
 
 import {
   DETAIL_TOGGLE_CHIP,

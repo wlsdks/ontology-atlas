@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { useFrameMeter } from '@/shared/lib/appearance-preferences';
+import { useFrameMeter } from '@/shared/lib/preferences/appearance-preferences';
 
 /**
  * On-screen readout of delivered frames: the real `requestAnimationFrame` interval, so stutter

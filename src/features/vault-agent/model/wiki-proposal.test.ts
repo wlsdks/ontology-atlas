@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateWikiPage, WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
+import { validateWikiPage, WIKI_SECTION_ORDER } from '@/shared/lib/library/wiki-page-schema';
 
 import { measureSourceText } from './source-text';
 import { buildWikiPageProposal, wikiSlugFromName, type CompileSourceRead } from './wiki-proposal';

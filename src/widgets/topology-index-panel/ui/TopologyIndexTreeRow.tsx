@@ -1,8 +1,8 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
-import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
+import { useLatinEyebrow } from "@/shared/lib/locale-text/latin-eyebrow";
+import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { DomainCensusRow, OntologyTreeNode } from "@/entities/knowledge-graph";

@@ -1,7 +1,7 @@
 import { Clipboard } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { controlClass } from '@/shared/ui/control-class';
 import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 

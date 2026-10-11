@@ -6,17 +6,17 @@ import {
   firstHeading,
   parseFrontmatter,
   type LinkContext,
-} from '@/shared/lib/parse-frontmatter';
-import { countWhitespaceWords } from '@/shared/lib/count-whitespace-words';
-import { meaningFindings } from '@/shared/lib/meaning-findings';
-import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-meaning-evidence';
+} from '@/shared/lib/vault-document/parse-frontmatter';
+import { countWhitespaceWords } from '@/shared/lib/vault-document/count-whitespace-words';
+import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
+import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import {
   nativeVaultFingerprint,
   readTauriVaultTextFile,
   readTauriVaultTextFiles,
   type NativeVaultStamp,
   type NativeVaultTextRead,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultBacklinkEntry,

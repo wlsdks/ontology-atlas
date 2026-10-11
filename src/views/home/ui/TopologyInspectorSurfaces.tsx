@@ -18,7 +18,7 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 
 import { daysBehind } from "@/entities/docs-vault";
 import { MeaningEditorPanel } from "@/features/ontology-meaning-editor";
-import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
+import { formatProjectSourceHandoff } from "@/shared/lib/project-source/project-source-receipt";
 import { Surface, controlClass } from "@/shared/ui";
 import { morphName, runMorph } from "@/shared/motion/shared-element";
 import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailPanel, OntologyMapEdgeHoverCard, OntologyMapEdgePanel } from "@/widgets/ontology-map";

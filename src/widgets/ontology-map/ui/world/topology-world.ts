@@ -6,8 +6,8 @@
  * — never per animation frame, matching the prototype's "layout precomputed
  * once" invariant (`model/layout.ts`'s own contract).
  */
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
-import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
 import { computeDensityGate, type DensityGateParentGeometry } from "../../model/density-gate";
 import {
   readContainmentTree,

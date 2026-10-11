@@ -1,6 +1,6 @@
 import { act, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { EXIT_WINDOW_MS } from "@/shared/lib/use-presence";
+import { EXIT_WINDOW_MS } from "@/shared/lib/render-timing/use-presence";
 import { WorkStatus, type WorkPhase } from "./work-status";
 
 function glyph(container: HTMLElement) {

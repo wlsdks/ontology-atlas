@@ -5,7 +5,7 @@ import {
   WIKI_SECTION_ORDER,
   WIKI_SOURCES_DIR,
   validateWikiPage,
-} from "@/shared/lib/wiki-page-schema";
+} from "@/shared/lib/library/wiki-page-schema";
 
 /**
  * Files an answer back into the wiki as a page the app builds. Canonical headings keep their

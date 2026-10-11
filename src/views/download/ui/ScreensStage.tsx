@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_IDS } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
-import { useSurfaceSwap } from '@/shared/lib/use-presence';
+import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
 import { useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { controlClass } from '@/shared/ui/control-class';
 import { TabBar } from '@/shared/ui/tab-bar';

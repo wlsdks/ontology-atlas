@@ -20,7 +20,7 @@ import { Input } from '@/shared/ui/input';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   connectorProblems,
@@ -29,14 +29,14 @@ import {
   type ConnectorRecord,
   type ConnectorTransport,
   type ConnectorValueEntry,
-} from '@/shared/lib/connector-record';
-import type { ConnectorWriteResult } from '@/shared/lib/connector-store';
+} from '@/shared/lib/connectors/connector-record';
+import type { ConnectorWriteResult } from '@/shared/lib/connectors/connector-store';
 import {
   isAttachableTransport,
   type ConnectorDiscoveryState,
   type DiscoveredConnector,
-} from '@/shared/lib/tauri-connectors';
-import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/tauri-connector-secrets';
+} from '@/shared/lib/connectors/tauri-connectors';
+import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/connectors/tauri-connector-secrets';
 import {
   MCP_CATALOGUE,
   MCP_CATALOGUE_CAPTURED_AT,
@@ -52,7 +52,7 @@ import {
   resolveConnectorRuntimes,
   runtimePath,
   type ResolvedRuntime,
-} from '@/shared/lib/tauri-connector-runtimes';
+} from '@/shared/lib/connectors/tauri-connector-runtimes';
 
 import { groupDiscovered, shortSourceKey, type DiscoveredGroup } from './discovered-groups';
 
@@ -266,7 +266,7 @@ export function AddConnectorDialog({
    * Two resets adjusted during render, not in an effect, so the dialog never paints a frame in
    * the wrong state (`react-hooks/set-state-in-effect` refuses the effect): opening folds
    * everything back, and a draft from outside unfolds the form filled but unsaved, because a link
-   * is an invitation and the press stays the person's (`src/shared/lib/mcp-install-link.ts`).
+   * is an invitation and the press stays the person's (`src/shared/lib/connectors/mcp-install-link.ts`).
    */
   const [seenOpen, setSeenOpen] = useState(open);
   if (open !== seenOpen) {

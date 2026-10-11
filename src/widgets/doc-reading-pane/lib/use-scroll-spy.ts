@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
+import { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-sync";
 
 /**
  * Tracks the heading most recently passed by the 32px baseline, recomputed on each rAF-throttled

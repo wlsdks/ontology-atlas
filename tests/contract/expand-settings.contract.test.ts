@@ -8,7 +8,7 @@ import {
   EXPAND_STRUCTURES,
   resolveExpand,
   type ExpandStructure,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 import {
   CLUSTER_BADGE_HEIGHT,
   CLUSTER_BAR_HEIGHT,

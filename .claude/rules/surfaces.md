@@ -1,6 +1,6 @@
 ---
 paths:
-  - "src/shared/lib/tauri-*.ts"
+  - "src/shared/lib/**/tauri-*.ts"
   - "src/entities/vault-session/**"
   - "src/features/docs-vault-local/**"
   - "src-tauri/**"
@@ -34,20 +34,20 @@ never a parallel router or surface fork.
 
 | Capability | Bridge | Web behaviour |
 |---|---|---|
-| Vault absolute path | `src/shared/lib/tauri-vault-fs.ts` | FSA handle; no absolute path |
-| Git | `src/shared/lib/tauri-git.ts` | degradation card |
-| Keychain | `src/shared/lib/tauri-secrets.ts` | degradation card |
-| Gray-area evidence | `src/shared/lib/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
-| Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
-| Jev evidence check (experimental) | `src/shared/lib/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
-| LLM call | `src/shared/lib/tauri-llm.ts` | action not rendered |
-| Agent setup | `src/shared/lib/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
-| ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp/` | degradation card; an externally launched agent can still attach |
-| Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
-| Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
-| Connector runtimes | `src/shared/lib/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
+| Vault absolute path | `src/shared/lib/vault-folder/tauri-vault-fs.ts` | FSA handle; no absolute path |
+| Git | `src/shared/lib/git/tauri-git.ts` | degradation card |
+| Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | degradation card |
+| Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
+| Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
+| Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
+| LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
+| Agent setup | `src/shared/lib/desktop-shell/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
+| ACP runtime | `src/shared/lib/agent-chat/tauri-acp.ts`, `src-tauri/src/acp/` | degradation card; an externally launched agent can still attach |
+| Connector discovery | `src/shared/lib/connectors/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
+| Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
+| Connector runtimes | `src/shared/lib/connectors/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
 | Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
-| Library sources | `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC |
+| Library sources | `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC |
 | Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
 | Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library.rs` | hands over the granted file; reveal, never launch |
 

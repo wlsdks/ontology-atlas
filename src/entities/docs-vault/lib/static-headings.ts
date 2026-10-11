@@ -1,4 +1,4 @@
-import type { SampleSource } from '@/shared/lib/sample-source';
+import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import type { VaultHeading } from '../model/types';
 
 /**

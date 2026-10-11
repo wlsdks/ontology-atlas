@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
-import { copyText } from '@/shared/lib/copy-text';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
+import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { controlClass, fieldClass, fieldLabel } from '@/shared/ui/control-class';
 import { Checkbox } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';

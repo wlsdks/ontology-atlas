@@ -11,7 +11,7 @@ import {
   type AcpEvent,
 } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { useTypewriterReveal } from '@/shared/lib/use-typewriter-reveal';
+import { useTypewriterReveal } from '@/shared/lib/agent-chat/use-typewriter-reveal';
 import { Chip, Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 

@@ -21,9 +21,9 @@ import {
   type FootprintPresetName,
   FOOTPRINT_TONE_FALLBACK,
   FOOTPRINT_TONE_TOKEN,
-} from '@/shared/lib/appearance-preferences';
-import { drawFootprintSteps } from '@/shared/lib/footprint-glyph';
-import { drawStarEmission } from '@/shared/lib/star-emission';
+} from '@/shared/lib/preferences/appearance-preferences';
+import { drawFootprintSteps } from '@/shared/lib/map-canvas/footprint-glyph';
+import { drawStarEmission } from '@/shared/lib/map-canvas/star-emission';
 
 const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold'];
 

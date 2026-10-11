@@ -63,7 +63,7 @@ vi.mock("@/features/docs-vault-local", () => ({
   OpenVaultCta: ({ testId }: { testId: string }) => <button type="button" data-testid={testId} />,
 }));
 
-vi.mock("@/shared/lib/use-document-title", () => ({
+vi.mock("@/shared/lib/public-pages/use-document-title", () => ({
   useDocumentTitle: vi.fn(),
 }));
 

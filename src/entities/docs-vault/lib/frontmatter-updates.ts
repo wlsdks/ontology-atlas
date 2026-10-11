@@ -3,7 +3,7 @@ import {
   readFrontmatterEntry,
   readVaultSourceShape,
   restoreVaultSourceShape,
-} from '@/shared/lib/parse-frontmatter';
+} from '@/shared/lib/vault-document/parse-frontmatter';
 
 /** Patches frontmatter keys in place, keeping body, comments and key order; shared by local edits and agent proposals. */
 

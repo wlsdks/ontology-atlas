@@ -41,7 +41,7 @@ export async function generateMetadata({
      * 9 indexable pages shipped with that signal).
      *
      * hreflang is a **per-path fact**, so only something that knows the path can state it.
-     * `buildPageMetadata` in `@/shared/lib/page-metadata` assembles the canonical, the locale pair,
+     * `buildPageMetadata` in `@/shared/lib/public-pages/page-metadata` assembles the canonical, the locale pair,
      * and `x-default` in one place. Saying nothing here is better than passing down something wrong —
      * for routes absent from the sitemap (`/project/new`, `/git`) having no hreflang at all is correct.
      */

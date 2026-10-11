@@ -5,7 +5,7 @@ import { FileText, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { EXIT_TRANSITION, MOTION_EASE } from '@/shared/motion';
 import { SPRING, springEasing } from '@/shared/motion/spring';
 import { IconButton } from '@/shared/ui/controls';

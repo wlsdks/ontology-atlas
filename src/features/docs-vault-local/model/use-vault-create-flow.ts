@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { failureCodeOf } from '@/shared/lib/failure-code';
-import type { VaultShape } from '@/shared/lib/vault-shape';
+import { failureCodeOf } from '@/shared/lib/failures/failure-code';
+import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 
 /**

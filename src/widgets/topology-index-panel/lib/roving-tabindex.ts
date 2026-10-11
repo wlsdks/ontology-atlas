@@ -4,7 +4,7 @@
  */
 
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
-import { ROVING_PAGE_ROWS } from "@/shared/lib/use-roving-rows";
+import { ROVING_PAGE_ROWS } from "@/shared/lib/list-rows/use-roving-rows";
 
 /**
  * Visible row ids in top-to-bottom order, skipping children of closed parents; `isOpen` is the

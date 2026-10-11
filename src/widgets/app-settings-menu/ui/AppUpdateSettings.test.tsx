@@ -33,7 +33,7 @@ vi.mock('@tauri-apps/api/app', () => ({
   getVersion: () => versionRead(),
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
 

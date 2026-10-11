@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { buildGrayAreaCandidates, grayAreaCandidatePage, formatRecordedPath } from './candidates';
 
 function snapshot(): GrayAreaSnapshot {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProjectSourceReceipt, deriveProjectSourceView } from "@/shared/lib/project-source-receipt";
+import { buildProjectSourceReceipt, deriveProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 import { resolveProjectSourceRepair } from "./project-source-repair";
 
 const probe = { sourceId: "source", kind: "git" as const, revision: "abc", fingerprint: "abc", dirty: false, truncated: false, files: [] };

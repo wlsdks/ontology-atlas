@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { useCountUp } from '@/shared/lib/use-count-up';
+import { useCountUp } from '@/shared/lib/render-timing/use-count-up';
 import { cn } from '@/shared/lib/cn';
 
 /**

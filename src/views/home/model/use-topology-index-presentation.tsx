@@ -5,14 +5,14 @@ import type { useTopologyRouteControls } from "./use-topology-route-controls";
 import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model";
 
 import { readFirstRunStarterDismissed, writeFirstRunStarterDismissed } from "@/features/first-run-starter";
-import { useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { resolveContextualIndexState } from "../lib/resolve-contextual-index-state";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 
 interface Options {
-  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
+  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/edit-provenance/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
   analysisMode: import("@/views/home/model/url-state").TopologyAnalysisMode;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   routeState: import("@/views/home/model/url-state").HomeRouteState;

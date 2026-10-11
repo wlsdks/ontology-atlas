@@ -7,7 +7,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { BrandMark } from '@/shared/ui/brand-mark';
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
-import { copyText } from "@/shared/lib/copy-text";
+import { copyText } from "@/shared/lib/clipboard/copy-text";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Chip } from "@/shared/ui/controls";

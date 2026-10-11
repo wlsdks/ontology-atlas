@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { requestSettingsOpen } from '@/shared/lib/surface-requests';
+import { requestSettingsOpen } from '@/shared/lib/keyboard/surface-requests';
 import {
   AGENT_GRAPH_WORKFLOW_HREF,
   AppSettingsMenu,
@@ -22,13 +22,13 @@ const mocks = vi.hoisted(() => ({
   rememberRouteFocusIntent: vi.fn(),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   isTauriVaultRuntime: () => mocks.isDesktopRuntime,
   getTauriVaultRootPath: () => mocks.vaultRootPath,
   openTauriVaultInFinder: (...args: unknown[]) => mocks.revealInFinder(...args),
 }));
 
-vi.mock('@/shared/lib/use-copy-feedback', () => ({
+vi.mock('@/shared/lib/clipboard/use-copy-feedback', () => ({
   useCopyFeedback: () => ({ state: 'idle' as const, copy: mocks.copyPath }),
 }));
 

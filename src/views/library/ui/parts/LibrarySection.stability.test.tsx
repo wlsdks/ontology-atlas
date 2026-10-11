@@ -3,7 +3,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
-import { writeLibraryIndexQuery } from "@/shared/lib/appearance-preferences";
+import { writeLibraryIndexQuery } from "@/shared/lib/preferences/appearance-preferences";
 import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
@@ -18,7 +18,7 @@ import { LibrarySection } from "./LibrarySection";
  */
 
 const onRowFocus = vi.fn();
-vi.mock("@/shared/lib/use-roving-rows", () => ({
+vi.mock("@/shared/lib/list-rows/use-roving-rows", () => ({
   useRovingRows: () => ({ focusIndex: 0, onKeyDown: () => {}, onRowFocus, tabIndexOf: () => -1 }),
 }));
 

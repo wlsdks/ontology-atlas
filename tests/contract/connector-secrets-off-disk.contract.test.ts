@@ -8,11 +8,11 @@ import {
   ConnectorSecretLiteralError,
   type ConnectorRecord,
   serializeConnectorState,
-} from '@/shared/lib/connector-record';
+} from '@/shared/lib/connectors/connector-record';
 import {
   CONNECTORS_RELATIVE_PATH,
   createMemoryConnectorStore,
-} from '@/shared/lib/connector-store';
+} from '@/shared/lib/connectors/connector-store';
 
 /**
  * A connector's environment is where its API token goes, and `connectors.json` lives inside the

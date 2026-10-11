@@ -1,4 +1,4 @@
-import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-graph/ontology-query-call";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import {
   buildTopologyMeaningEditorNodeHref,

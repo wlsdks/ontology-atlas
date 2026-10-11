@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
 import { buildHumanPage, humanPageSlug } from "./human-page";
 
 describe("buildHumanPage", () => {

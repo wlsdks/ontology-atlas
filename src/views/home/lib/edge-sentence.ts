@@ -1,9 +1,9 @@
-import { josa, type JosaKind } from "@/shared/lib/ko-josa";
+import { josa, type JosaKind } from "@/shared/lib/locale-text/ko-josa";
 
 /**
  * The relation popover's one sentence: its key and interpolated values. Relation types fold onto
  * five keys; endpoint names match the map labels, so sentence and nodes say the same word. Korean
- * particles are picked from each name by `@/shared/lib/ko-josa`, since a fixed particle breaks
+ * particles are picked from each name by `@/shared/lib/locale-text/ko-josa`, since a fixed particle breaks
  * after a final consonant.
  */
 export type EdgeSentenceKey = "contains" | "depends" | "describes" | "belongsTo" | "related";

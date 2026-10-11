@@ -1,5 +1,5 @@
 import type { CSSProperties, ImgHTMLAttributes } from 'react';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 
 /**
  * Each tier is a separately authored RGBA master; never redraw it as SVG or scale the full

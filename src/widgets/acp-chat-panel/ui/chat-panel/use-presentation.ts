@@ -7,7 +7,7 @@ import {
   type AcpPresentationScene,
   type KnownRelations,
 } from '@/features/acp-session';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
 import { EMPTY_KNOWN_RELATIONS, EMPTY_KNOWN_SLUGS } from './constants';
 import type { ChatT, SessionState } from './types';

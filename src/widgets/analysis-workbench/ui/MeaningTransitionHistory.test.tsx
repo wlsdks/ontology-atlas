@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition-v2';
+import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
 const archive = vi.hoisted(() => ({ available: true, history: vi.fn(), observe: vi.fn(), read: vi.fn() }));
 vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string, values?: { count?: number }) => values?.count === undefined ? key : `${key}:${values.count}` }));
 vi.mock('@/entities/meaning-transition', () => ({ readMeaningTransitionHistory: archive.history }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
-vi.mock('@/shared/lib/tauri-meaning-transition-archive', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
+vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => archive.available,
   observeMeaningTransitionRoot: archive.observe,
   readTauriMeaningTransitionArtifact: archive.read,

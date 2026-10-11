@@ -6,7 +6,7 @@ import { buildFullDetailGroups } from "../lib/full-detail-groups";
 import { buildFullDetailReachModel } from "../lib/full-detail-reach";
 import { FullDetailA1 } from "./FullDetailA1";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { ProjectSourceView } from "@/shared/lib/project-source-receipt";
+import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (

@@ -14,7 +14,7 @@ const readCode = (rel: string): string =>
 
 const LICENSED = {
   "src/views/download/ui/GatewayFx.tsx": "the gateway hero — the field is light itself",
-  "src/shared/lib/star-emission.ts":
+  "src/shared/lib/map-canvas/star-emission.ts":
     "the walked-path star, inside a lens the person opened",
 } as const;
 
@@ -101,7 +101,7 @@ describe("캔버스 합성 — 발광은 허가된 곳에서만", () => {
         expect(users.some((file) => file.startsWith(PLUS_LIGHTER_HOME))).toBe(true);
     });
     it("걸어온 별은 십자를 달지 않는다 — 물러날 것이 없다", () => {
-        const star = readCode("src/shared/lib/star-emission.ts");
+        const star = readCode("src/shared/lib/map-canvas/star-emission.ts");
         expect(/drawDiffractionSpike/.test(star), "걸어온 별이 다시 십자를 그린다 — 크기 스파이크와 한 점에서 겹친다").toBe(false);
     });
 });

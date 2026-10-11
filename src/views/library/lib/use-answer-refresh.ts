@@ -6,8 +6,8 @@ import {
   answerRefreshBrief, answerRevisionStore, buildAnswerRevision,
   prepareAnswerRefresh, saveAnswerRevision, type AnswerRefreshSnapshot,
 } from '@/features/library';
-import { codedFailure } from '@/shared/lib/failure-code';
-import { useFailureSentence, type FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+import { useFailureSentence, type FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 
 interface RefreshTurn {
   id: number;

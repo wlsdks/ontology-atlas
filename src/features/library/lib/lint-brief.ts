@@ -1,6 +1,6 @@
 import { withAnswerLanguage } from "@/i18n/answer-language";
 import type { LibraryWikiPage } from "@/entities/docs-vault";
-import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /**
  * The judgement half of the wiki check: disagreements and superseded claims `wiki-validate` cannot

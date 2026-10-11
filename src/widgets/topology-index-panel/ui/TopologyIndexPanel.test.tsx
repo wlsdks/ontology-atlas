@@ -12,7 +12,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { TopologyIndexPanel } from "./TopologyIndexPanel";
 
 // `@/i18n/navigation`'s Link needs an IntlProvider this file does not set up, so it is a plain
-// anchor. The rows read the screen's language through `shared/lib/latin-eyebrow`.
+// anchor. The rows read the screen's language through `shared/lib/locale-text/latin-eyebrow`.
 vi.mock("next-intl", () => ({
   useLocale: () => "ko",
   useTranslations: () => (key: string) => key,

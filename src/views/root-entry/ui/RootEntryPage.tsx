@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { Button, IconButton } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { isDesktopShell } from "@/shared/lib/desktop-shell";
+import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { GatewayLandingPage } from "@/views/download";
 import { HomePage } from "@/views/home";
 import { FirstRunPage } from "@/views/first-run";

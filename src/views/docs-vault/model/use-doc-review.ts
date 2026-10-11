@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { VaultConflictError, useLocalVault } from '@/entities/vault-session';
 import { useToast } from '@/shared/ui';
 import { useReviewQueue } from '../lib/use-review-queue';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveStaticVaultSource, reviewDigest, type VaultManifest } from '@/entities/docs-vault';
 import type { DocsVaultSource as Source } from '../lib/persistence';
 

@@ -24,7 +24,7 @@ import {
   CONTAINMENT_KEYS,
   containmentKeyFor as containmentKeyForApp,
   kindForContainmentKey as kindForContainmentKeyApp,
-} from "@/shared/lib/containment-keys";
+} from "@/shared/lib/vault-document/containment-keys";
 /*
  * ⚠️ Only the names the CLI runtime actually re-exports are imported here. Since
  * 2026-08-30 `cli/src/lib/schema.mjs` re-exports `mcp/src/schema.mjs` rather than
@@ -40,7 +40,7 @@ import {
   flatSlugIssue as flatSlugCli,
   nodeUidIssue as uidIssueCli,
 } from "../../cli/src/lib/schema.mjs";
-import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
+import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/vault-document/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
 import {
   CHAT_RULES_DELTA_EN,
@@ -54,7 +54,7 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  *
  *   - mcp/src/schema.mjs (AI agent surface — `add_concept`)
  *   - cli/src/lib/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
- *   - KIND_EXPECTED_EXTRAS in src/shared/lib/validate-vault-document.ts
+ *   - KIND_EXPECTED_EXTRAS in src/shared/lib/vault-document/validate-vault-document.ts
  *     (web/UI advisory)
  *
  * Both schemas must produce the same frontmatter shape and the same missing-field

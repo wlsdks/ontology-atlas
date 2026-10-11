@@ -8,7 +8,7 @@ import {
   useTerritories,
   useView3d,
   writeMapView,
-} from '@/shared/lib/appearance-preferences';
+} from '@/shared/lib/preferences/appearance-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 

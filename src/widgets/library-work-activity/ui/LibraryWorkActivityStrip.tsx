@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { BookOpen, Check, ChevronDown, FilePenLine, Pause, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
-import { useDismissibleMenu } from "@/shared/lib/use-dismissible-menu";
+import { useDismissibleMenu } from "@/shared/lib/overlays/use-dismissible-menu";
 import { Chip } from "@/shared/ui/controls";
 import { controlClass } from "@/shared/ui/control-class";
 import { Surface } from "@/shared/ui/surface";

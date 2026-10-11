@@ -4,7 +4,7 @@
  * a colleague's diff and `buildUnmatchedBoard`'s counts ignore it. Scoped per vault
  * (as `agent-activity/model/read-at-storage.ts`), and an empty scope is refused rather than falling back to a shared
  * slot. The scope is the folder's name (`handle.name`, the only persistable part), so two same-named folders share
- * dismissals: a bounded error that hides and never writes. Persistence follows `shared/lib/audience-preference.ts`:
+ * dismissals: a bounded error that hides and never writes. Persistence follows `shared/lib/preferences/audience-preference.ts`:
  * localStorage is the truth, events drive updates, and the server snapshot is empty for static export.
  */
 const DISMISSED_KEY_PREFIX = "atlas.insights.unmatchedDismissed:";

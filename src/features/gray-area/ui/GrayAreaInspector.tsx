@@ -1,12 +1,12 @@
 'use client';
 
-import { isTauriVaultRuntime, pickTauriSourceDirectory } from '@/shared/lib/tauri-vault-fs';
+import { isTauriVaultRuntime, pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { copyText } from '@/shared/lib/copy-text';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
+import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { Link } from '@/i18n/navigation';
-import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/tauri-gray-area';
+import { checkGrayAreaEvidence, grayAreaSourceAccessRequired, readGrayAreaEvidence, previewGrayAreaScope, type GrayAreaScopePreview, type GrayAreaSnapshot, type GrayAreaWitness } from '@/shared/lib/project-source/tauri-gray-area';
 import { Button, Chip, CloseButton, Disclosure, RowButton, Surface, controlClass } from '@/shared/ui';
 import { ArrowRight, Check, ChevronDown, Copy, FileSearch, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';

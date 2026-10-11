@@ -3,7 +3,7 @@
 import { useEffect, type RefObject } from 'react';
 import { ChevronDown, FolderOpen, FolderPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useDismissibleMenu } from '@/shared/lib/use-dismissible-menu';
+import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 

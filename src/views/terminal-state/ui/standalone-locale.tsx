@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { htmlLangOf, isAppLocale } from '@/i18n/locales';
 import type { StandaloneLocale, StandaloneMessages } from '@/i18n/standalone-messages';
 

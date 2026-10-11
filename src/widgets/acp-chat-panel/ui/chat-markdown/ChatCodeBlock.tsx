@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Chip } from '@/shared/ui';
-import { copyText } from '@/shared/lib/copy-text';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
 
 import { useHorizontalOverflowEdges } from './use-horizontal-overflow-edges';
 

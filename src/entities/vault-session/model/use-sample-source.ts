@@ -7,7 +7,7 @@ import {
   subscribeSampleSource,
   writeSampleSourcePreference,
   type SampleSource,
-} from '@/shared/lib/sample-source';
+} from '@/shared/lib/vault-folder/sample-source';
 
 /**
  * Which bundled sample to show in static mode (no vault chosen) — "look around this tool"

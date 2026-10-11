@@ -3,7 +3,7 @@
  * `mcp/src/stale-parent.mjs` (`summary-freshness-parity.contract.test.ts`); no Git, no verdict.
  */
 
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
 /** Frontmatter arrays through which a parent holds what is below it. */
 const CONTAINMENT_KEYS = ["contains", "capabilities", "elements", "domains"] as const;

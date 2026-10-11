@@ -46,7 +46,7 @@ const ROOT = process.cwd();
 /** The single implementation of the behaviour. This file and the primitive are not counted. */
 const HOOK = "useRovingRadioGroup";
 const EXEMPT_FILES = new Set([
-  "src/shared/lib/use-roving-radio-group.ts",
+  "src/shared/lib/keyboard/use-roving-radio-group.ts",
   "src/shared/ui/segmented-control.tsx",
 ]);
 
@@ -210,7 +210,7 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
      * by the hook's `groupProps`.
      */
     const hook = stripComments(
-      readFileSync(path.join(ROOT, "src/shared/lib/use-roving-radio-group.ts"), "utf8"),
+      readFileSync(path.join(ROOT, "src/shared/lib/keyboard/use-roving-radio-group.ts"), "utf8"),
     );
     expect(hook, "훅이 radiogroup role 을 잃었다 — 면제의 전제가 사라졌다").toContain("radiogroup");
     expect(hook, "훅이 roving tabindex 를 잃었다").toContain("tabIndex");

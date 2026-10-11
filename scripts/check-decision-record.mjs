@@ -164,12 +164,14 @@ if (!base) {
 
 // Name-status so an added/removed route is distinguishable from an edited one:
 // changing a page is not a new surface, creating or deleting one is.
+const renamedFrom = new Map();
 const entries = git(["diff", "--name-status", `${base}...HEAD`])
   .split("\n")
   .filter(Boolean)
   .flatMap((line) => {
     const [status, ...paths] = line.split("\t");
     const code = status[0];
+    if (code === "R" && paths.length === 2) renamedFrom.set(paths[1], paths[0]);
     // A rename (R100 with detection on by default) is a deletion of the old
     // path plus a creation of the new one. Left as a single R entry, a pure
     // `git mv` of a route file — a change that retires one public URL and
@@ -239,7 +241,7 @@ function designSpecChanges() {
 
   // A file absent at a ref reads as null = an empty inventory. A change to an
   // `app/styles/` part counts as a change to the `app/globals.css` trigger.
-  return designSpecChangesBetween(base, "HEAD", changedPaths, triggerFiles);
+  return designSpecChangesBetween(base, "HEAD", changedPaths, triggerFiles, process.cwd(), renamedFrom);
 }
 
 const specChanges = designSpecChanges();

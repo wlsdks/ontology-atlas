@@ -11,7 +11,7 @@ import {
   vaultPathForPacket,
 } from '@/shared/config/cli-invocation';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 
 /**
  * The commands are built, not frozen, so they run wherever the packet is pasted: `ATLAS_CLI`

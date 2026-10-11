@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check } from 'lucide-react';
 
-import { describeVaultShape, type VaultShape } from '@/shared/lib/vault-shape';
+import { describeVaultShape, type VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { useLocalVault } from '@/entities/vault-session';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Chip } from '@/shared/ui/controls';
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { useToast } from '@/shared/ui/toast';
 import { DETAIL_TOGGLE_CHIP, SettingsRow } from './settings-primitives';
 

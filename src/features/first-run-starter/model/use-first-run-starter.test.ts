@@ -37,17 +37,17 @@ vi.mock('./use-first-run-sample-mode-settled', () => ({
   useFirstRunSampleModeSettled: () => mocks.sampleModeSettled,
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => mocks.desktop,
 }));
 
-vi.mock('@/shared/lib/agent-chat-intent', () => ({
+vi.mock('@/shared/lib/agent-chat/agent-chat-intent', () => ({
   requestAgentChat: (...args: unknown[]) => mocks.requestAgentChat(...args),
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/tauri-vault-fs')>(
-    '@/shared/lib/tauri-vault-fs',
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>(
+    '@/shared/lib/vault-folder/tauri-vault-fs',
   );
   return {
     ...actual,

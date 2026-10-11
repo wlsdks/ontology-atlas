@@ -1,5 +1,5 @@
 import type { RoundKind } from '@/entities/library-round';
-import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import { pageIdentity, roundDraftProblem } from './pass-pages';
 

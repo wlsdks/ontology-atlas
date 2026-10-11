@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { readAcpTrouble, useAcpSession, type ChatSuggestion } from '@/features/acp-session';
 import { MOTION } from '@/shared/motion';
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { RowButton, Surface } from '@/shared/ui';
 

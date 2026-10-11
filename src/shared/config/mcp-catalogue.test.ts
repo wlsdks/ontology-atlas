@@ -10,7 +10,7 @@ import {
   variantVariables,
   type CatalogueEntry,
 } from './mcp-catalogue';
-import { serializeConnectorState } from '@/shared/lib/connector-record';
+import { serializeConnectorState } from '@/shared/lib/connectors/connector-record';
 
 /** The catalogue is hand-editable data feeding a folder write, so its shape is checked as hard as the code. */
 

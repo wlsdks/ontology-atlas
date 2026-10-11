@@ -96,7 +96,7 @@ export const FSD_ALLOWED_EDGES = Object.freeze([
   { from: 'app/[locale]/topology/page.tsx', to: 'src/views/home/index.ts', kind: 'static', importUsage: 'value' },
   { from: 'src/app/providers/AppShell.tsx', to: 'src/views/home/index.ts', kind: 'static', importUsage: 'value' },
   { from: 'src/views/home/ui/HomePage.tsx', to: 'src/widgets/app-nav-rail/index.ts', kind: 'static', importUsage: 'value' },
-  { from: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx', to: 'src/shared/lib/nav-destination.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx', to: 'src/shared/lib/navigation/nav-destination.ts', kind: 'static', importUsage: 'value' },
   { from: 'src/features/project-edit/model/use-project-edit.ts', to: 'src/entities/project/index.ts', kind: 'static', importUsage: 'value' },
   { from: 'src/entities/project/model/project.ts', to: 'src/shared/lib/date.ts', kind: 'static', importUsage: 'value' },
 ]);

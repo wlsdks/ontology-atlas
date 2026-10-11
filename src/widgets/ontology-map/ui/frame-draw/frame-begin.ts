@@ -6,8 +6,8 @@ import {
   type NodeEgoState,
 } from "../../model/focus-state";
 import { resolveBackgroundOrigin } from "../../model/background-parallax";
-import { footprintScaleFor } from "@/shared/lib/footprint-glyph";
-import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import { footprintScaleFor } from "@/shared/lib/map-canvas/footprint-glyph";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm-depth-parallax";
 import { DOME_RING_ALPHA } from "../../model/dome-view/ink";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";

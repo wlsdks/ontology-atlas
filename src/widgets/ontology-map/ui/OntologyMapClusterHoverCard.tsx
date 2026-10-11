@@ -1,6 +1,6 @@
 "use client";
 import { transientSurface } from "@/shared/ui/transient-surface";
-import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
+import { currentFloatingRightBound } from "@/shared/lib/overlays/right-dock-reserve";
 
 /**
  * S2 part 5C — the cluster chip hover microcard. Owner report: *"hovering a chip should tell me what it means in a tooltip"* (hovering a chip should tell me what it means

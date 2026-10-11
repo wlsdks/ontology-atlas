@@ -1,6 +1,6 @@
 import type { VaultDoc, VaultSourceFile } from '@/entities/docs-vault';
 import { buildLibraryModel, isWikiPage } from '@/entities/docs-vault';
-import { isWikiFurnitureSlug, validateWikiPage } from '@/shared/lib/wiki-page-schema';
+import { isWikiFurnitureSlug, validateWikiPage } from '@/shared/lib/library/wiki-page-schema';
 
 /** Does every page still match its sources? The Library's own verdicts, computed locally with no agent turn. */
 

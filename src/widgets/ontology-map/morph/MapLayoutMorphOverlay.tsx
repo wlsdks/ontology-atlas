@@ -10,7 +10,7 @@ import {
   type MapLayoutMark,
   type MapLayoutMarkShape,
   type MapLayoutSnapshot,
-} from "@/shared/lib/map-layout-morph-store";
+} from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { cubicBezierAt } from "@/shared/motion/ease";
 import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion/tokens";
 import { massForDegree } from "../expressive/mass-spring";

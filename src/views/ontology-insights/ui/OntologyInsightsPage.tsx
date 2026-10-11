@@ -9,7 +9,7 @@ import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { Button, TabBar } from '@/shared/ui';
 import { OpenVaultCta } from '@/features/docs-vault-local';
-import { useDocumentTitle } from '@/shared/lib/use-document-title';
+import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_TITLE } from '@/shared/ui/page-frame';
 import { type KnowledgeGraphNode, type KnowledgeGraphEdge } from '@/entities/knowledge-graph';

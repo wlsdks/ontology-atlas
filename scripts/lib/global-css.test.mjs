@@ -114,3 +114,30 @@ test('maps a joined line back to the part that holds it', () => {
   assert.deepEqual(locateGlobalCssLine(1, repo), { file: 'app/globals.css', line: 1 });
   assert.deepEqual(locateGlobalCssLine(2, repo), { file: 'app/styles/one.css', line: 1 });
 });
+
+test('a moved spec file compares against its old path, so only a real export change reports', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'spec-move-'));
+  try {
+    const run = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: dir, stdio: 'ignore' });
+    const put = (file, text) => {
+      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+      writeFileSync(path.join(dir, file), text);
+    };
+    const from = 'src/shared/lib/use-roving-radio-group.ts';
+    const to = 'src/shared/lib/keyboard/use-roving-radio-group.ts';
+    run('init', '-q');
+    put(from, 'export function useRovingRadioGroup() {}\n');
+    run('add', '.');
+    run('commit', '-qm', 'base');
+    mkdirSync(path.dirname(path.join(dir, to)), { recursive: true });
+    run('mv', from, to);
+    run('commit', '-qm', 'move');
+    const moved = new Map([[to, from]]);
+    assert.deepEqual(designSpecChangesBetween('HEAD~1', 'HEAD', new Set([to]), [to], dir, moved), []);
+    put(to, 'export function useRovingRadioGroup() {}\nexport type RovingRadioGroup = {};\n');
+    run('commit', '-qam', 'move and widen');
+    assert.equal(designSpecChangesBetween('HEAD~2', 'HEAD', new Set([to]), [to], dir, moved).length, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

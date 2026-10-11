@@ -1,6 +1,6 @@
 import type { AgentActivityState, AgentActivityStatus } from '@/entities/vault-session';
-import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
-import { agentDisplayName } from '@/shared/lib/agent-display-name';
+import type { AgentWorkSession } from '@/shared/lib/agent-activity/agent-work-session';
+import { agentDisplayName } from '@/shared/lib/agent-activity/agent-display-name';
 
 type AgentWorkMode = 'idle' | 'live' | 'recent-write' | 'completed';
 

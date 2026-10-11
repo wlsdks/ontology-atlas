@@ -41,8 +41,8 @@ import {
   ownsSecretRef,
   type ConnectorRecord,
   type ConnectorValueEntry,
-} from '@/shared/lib/connector-record';
-import { ACP_SECRET_REF_KEY } from '@/shared/lib/tauri-connector-secrets';
+} from '@/shared/lib/connectors/connector-record';
+import { ACP_SECRET_REF_KEY } from '@/shared/lib/connectors/tauri-connector-secrets';
 
 import { runtimeCarriesConnectors } from './runtime-gate';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';

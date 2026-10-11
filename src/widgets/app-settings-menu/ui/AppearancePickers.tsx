@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
+import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import {
   CANVAS_BACKGROUNDS,
   GLYPH_SETS,
@@ -12,7 +12,7 @@ import {
   writeGlyphSet,
   type CanvasBackground,
   type GlyphSet,
-} from '@/shared/lib/appearance-preferences';
+} from '@/shared/lib/preferences/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
 import type { SettingId } from '../model/catalog/types';

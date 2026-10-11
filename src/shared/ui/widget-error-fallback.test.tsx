@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 
 const reportWebviewError = vi.hoisted(() => vi.fn());
 
-vi.mock('@/shared/lib/report-webview-error', () => ({
+vi.mock('@/shared/lib/failures/report-webview-error', () => ({
   reportWebviewError,
   sendWebviewErrorReport: vi.fn(),
 }));

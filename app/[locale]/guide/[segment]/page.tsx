@@ -7,7 +7,7 @@ import {
   guideCanonicalPath,
   resolveGuidePage,
 } from '@/views/gateway-doc';
-import { buildPageMetadata } from '@/shared/lib/page-metadata';
+import { buildPageMetadata } from '@/shared/lib/public-pages/page-metadata';
 import { routing } from '@/i18n/routing';
 
 /**

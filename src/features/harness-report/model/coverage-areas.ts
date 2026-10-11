@@ -1,5 +1,5 @@
 import type { CoverageAreaInput, CoverageCapability } from '@/entities/agent-files';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 
 /**
  * Coverage matrix rows come only from the vault's domains and their capabilities' `path`. The

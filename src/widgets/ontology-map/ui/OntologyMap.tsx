@@ -5,8 +5,8 @@ import type { HoverAvoidRect } from "./input/topology-pointer-types";
 import type { FlatDialState, FlatRingMemoryStore } from "./loop/topology-loop-contract";
 import type { DialEvidence, DialLabels } from "../dial/types";
 import { Orbit } from "lucide-react";
-import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
-import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-layout-morph-store";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
+import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
@@ -16,10 +16,10 @@ import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
 import type { DomeViewKind } from "../model/dome-view/types";
-import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
-import { usePanelPresence } from "@/shared/lib/use-presence";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
 
 /**
@@ -680,7 +680,7 @@ export function OntologyMap(props: OntologyMapProps) {
     aria-hidden={overlayOpen} inert={overlayOpen} style={{ position: "relative", width: "100%", height: "100%" }}>
       <canvas ref={canvasRef} data-testid="ontology-map-canvas"
     /* The marker `G M` uses to find this canvas and focus it — the full reason is
-       in `shared/lib/focus-map-canvas.ts`. `data-testid` belongs to the tests and
+       in `shared/lib/map-canvas/focus-map-canvas.ts`. `data-testid` belongs to the tests and
        is never used as a runtime selector. */
     data-surface-role={MAP_CANVAS_SURFACE_ROLE}
     /**

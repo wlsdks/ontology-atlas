@@ -8,7 +8,7 @@ import { CheckCircle2, ChevronDown, RotateCcw, Stethoscope } from 'lucide-react'
 import { Chip } from '@/shared/ui/controls';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { formatDownloadProgress } from '@/shared/lib/progress-format';
+import { formatDownloadProgress } from '@/shared/lib/locale-text/progress-format';
 import {
   type AcpCheck,
   type AcpInstallProgress,

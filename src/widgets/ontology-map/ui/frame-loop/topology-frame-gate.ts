@@ -1,4 +1,4 @@
-import type { MapArrangement } from "@/shared/lib/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import { MOTION } from "@/shared/motion";
 import {
   type RefObject

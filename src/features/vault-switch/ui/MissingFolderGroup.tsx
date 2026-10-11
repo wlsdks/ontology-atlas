@@ -4,7 +4,7 @@ import { ChevronDown, FolderX } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import type { useTranslations } from 'next-intl';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
-import { computeEditAge } from '@/shared/lib/edit-age';
+import { computeEditAge } from '@/shared/lib/edit-provenance/edit-age';
 import { cn } from '@/shared/lib/cn';
 import { Button, Chip, Dialog, RowDisclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';

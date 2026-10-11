@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { PanelLeftOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/appearance-preferences";
+import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/preferences/appearance-preferences";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";

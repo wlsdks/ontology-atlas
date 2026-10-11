@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
-import { failureCodeOf } from '@/shared/lib/failure-code';
+import { failureCodeOf } from '@/shared/lib/failures/failure-code';
 import {
   createTauriVaultHandle,
   isTauriVaultRuntime,
@@ -11,7 +11,7 @@ import {
   ensureTauriChildDirectory,
   getTauriVaultRootPath,
   pickTauriVaultDirectory,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 import {
   PROJECT_VAULT_DIR,

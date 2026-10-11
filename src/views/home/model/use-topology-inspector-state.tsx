@@ -6,7 +6,7 @@ import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model"
 
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { buildTopologyMeaningEditorNodeHref, buildTopologyReturnMarker, resolveNodeAgentTarget, resolveNodeDocument } from "@/entities/knowledge-graph";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { buildV2ConnectionGroups, buildV2Connections, buildV2EvidenceRows, formatV2HandoffText } from "@/widgets/ontology-map";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
@@ -19,7 +19,7 @@ interface Options {
   setExpandAllActive: React.Dispatch<React.SetStateAction<boolean>>;
   setRouteState: (updater: Partial<import("@/views/home/model/url-state").HomeRouteState> | ((current: import("@/views/home/model/url-state").HomeRouteState) => import("@/views/home/model/url-state").HomeRouteState), options?: import("@/views/home/model/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   nodeFocus: import("@/views/home/lib/topology-node-focus").TopologyNodeFocusModel | null;
-  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
+  v2DatasheetModel: { slug: string; nodeId: string; title: string; sourceTitle: string | null; kind: string; domain: { id: string; title: string; } | null; powered: boolean; updatedAtLabel: string | null; metric: { contains: number; usedBy: number; dependsOn: number; belongsTo: number; evidence: number; }; groups: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2ConnectionGroupsView; evidence: { rows: import("@/widgets/ontology-map/ui/detail-panel/map-datasheet").V2EvidenceRow[]; total: number; }; codeLocations: string[]; handoffText: string; documentHref: string | null; mentionDocumentHref: string | null; meaningEditHref: string; lastEditSubject: { kind: import("@/shared/lib/edit-provenance/last-edit-subject").LastEditSubjectKind; ageLabel: string; } | null; mtimeConflict: boolean; } | null;
   analysisMode: import("@/views/home/model/url-state").TopologyAnalysisMode;
   selectedSlug: string | null;
   topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "agentDockRequestedOpen" | "renderedIndexState">;

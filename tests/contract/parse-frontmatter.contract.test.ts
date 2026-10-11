@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CASES } from "../fixtures/frontmatter-cases.mjs";
-import { parseFrontmatter as parseTs } from "@/shared/lib/parse-frontmatter";
+import { parseFrontmatter as parseTs } from "@/shared/lib/vault-document/parse-frontmatter";
 import { parseFrontmatter as parseMcp } from "../../mcp/src/parser.mjs";
 import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontmatter.mjs";
 import { parseFrontmatter as parseCli } from "../../cli/src/lib/parse-frontmatter.mjs";

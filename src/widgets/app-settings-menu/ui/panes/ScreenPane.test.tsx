@@ -13,8 +13,8 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
   useLocale: () => 'en',
 }));
-vi.mock('@/shared/lib/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
-vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
+vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => mocks.reducedMotion,
 }));
 vi.mock('@/features/guided-tour', () => ({

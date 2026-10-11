@@ -34,7 +34,7 @@ export const rules = [
       /^cli\/src\/lib\/(?:parse-frontmatter|schema|validate)\.mjs$/,
       /^cli\/src\/commands\/validate\.mjs$/,
       /^scripts\/lib\/parse-frontmatter\.mjs$/,
-      /^src\/shared\/lib\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
+      /^src\/shared\/lib\/vault-document\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
       /^scripts\/migrate-vault\.mjs$/,
       /^scripts\/migrations\/[^/]+\.mjs$/,
     ],

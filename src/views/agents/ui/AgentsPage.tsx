@@ -8,9 +8,9 @@ import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-men
 import { TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
-import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
-import { isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
-import { useSwapHeight } from '@/shared/lib/use-presence';
+import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent';
+import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { TermHint } from '@/shared/ui/term-hint';
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 

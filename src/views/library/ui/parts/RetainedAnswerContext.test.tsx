@@ -9,7 +9,7 @@ import {
   saveAnswerRevision,
   type AnswerRevisionStore,
 } from '@/features/library/lib/answer-revision-store';
-import { useFailureSentence, type FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence, type FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import type { AnswerObservation } from '@/features/library';
 
 import { RetainedAnswerContext } from './RetainedAnswerContext';

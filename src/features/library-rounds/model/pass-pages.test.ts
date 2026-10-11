@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/library/wiki-page-schema';
 
 import {
   createLandings,

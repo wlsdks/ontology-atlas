@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enMessages from '../../../../../messages/en.json';
 import koMessages from '../../../../../messages/ko.json';
-import { recordApproval, listMachineApprovals } from '@/shared/lib/machine-approvals';
+import { recordApproval, listMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
 import { writeUpdateAutoCheck } from '@/features/app-update';
 import { OUTBOUND_DESTINATION_PLACEHOLDERS, OUTBOUND_PATHS } from '../../model/outbound-paths';
 import { PRIVACY_CATALOG } from '../../model/catalog/privacy';
@@ -16,7 +16,7 @@ const vault = vi.hoisted(() => ({
   forgetRecent: vi.fn(async () => {}),
 }));
 
-vi.mock('@/shared/lib/desktop-shell', () => ({ isDesktopShell: () => shell.desktop }));
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => shell.desktop }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => vault }));
 
 function withScope(messages: typeof enMessages, scope: string) {

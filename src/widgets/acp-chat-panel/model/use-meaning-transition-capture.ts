@@ -1,10 +1,10 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { createMeaningTransitionCoordinator, appendMeaningTransitionV2 } from '@/entities/meaning-transition';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-import { meaningTransitionV2TextDigest, type MeaningTransitionV2 } from '@/shared/lib/meaning-transition-v2';
-import { canArchiveMeaningTransitions } from '@/shared/lib/tauri-meaning-transition-archive';
-import { getTauriVaultRootPath, inspectTauriProjectSource, inspectTauriProjectSourceContinuity, type ProjectSourceContinuityInspection } from '@/shared/lib/tauri-vault-fs';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import { meaningTransitionV2TextDigest, type MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
+import { canArchiveMeaningTransitions } from '@/shared/lib/meaning-transition/tauri-meaning-transition-archive';
+import { getTauriVaultRootPath, inspectTauriProjectSource, inspectTauriProjectSourceContinuity, type ProjectSourceContinuityInspection } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 import type { TaskMeaningDecision } from './use-task-meaning-review';
 

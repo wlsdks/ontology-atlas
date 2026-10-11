@@ -12,7 +12,7 @@ import {
 } from '@/entities/library-collection';
 import { useSavedConstellations } from '@/features/saved-constellations';
 import { useRouter } from '@/i18n/navigation';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from '@/shared/ui/page-frame';

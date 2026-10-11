@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { gitNodeRevisionContent, gitNodeRevisions, type GitNodeRevisionRef } from '@/shared/lib/tauri-git';
+import { gitNodeRevisionContent, gitNodeRevisions, type GitNodeRevisionRef } from '@/shared/lib/git/tauri-git';
 import { readSummaryFreshness } from './use-summary-freshness';
 
-vi.mock('@/shared/lib/tauri-git', () => ({ gitNodeRevisions: vi.fn(), gitNodeRevisionContent: vi.fn() }));
+vi.mock('@/shared/lib/git/tauri-git', () => ({ gitNodeRevisions: vi.fn(), gitNodeRevisionContent: vi.fn() }));
 
 const references: GitNodeRevisionRef[] = [3, 2, 1, 0].map((day) => ({
   slug: 'domains/probe', revision: String(day).padStart(40, '0'), isoTime: `2026-09-0${day + 1}T00:00:00Z`,

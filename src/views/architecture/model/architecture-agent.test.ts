@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
+import type { AcpRuntimeStatus } from '@/shared/lib/agent-chat/tauri-acp';
 import {
   resolveArchitectureAgentRoute,
   selectArchitectureAgentRuntimes,

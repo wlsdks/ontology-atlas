@@ -1,7 +1,7 @@
 /** Serializes a new ontology node to vault markdown; edits to existing nodes use the patch path. */
 
-import { slugify } from "@/shared/lib/slugify";
-import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
+import { slugify } from "@/shared/lib/vault-document/slugify";
+import { canonicalizeDomainRef } from "@/shared/lib/vault-document/canonicalize-domain-ref";
 
 const NODE_UID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;

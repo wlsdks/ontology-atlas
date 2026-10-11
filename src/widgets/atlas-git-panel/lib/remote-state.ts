@@ -1,4 +1,4 @@
-import type { GitStatusResult } from "@/shared/lib/tauri-git";
+import type { GitStatusResult } from "@/shared/lib/git/tauri-git";
 
 /**
  * Where this branch's steps can go, read from one status. Only `no-remote` may offer to

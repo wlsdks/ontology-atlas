@@ -17,12 +17,12 @@
  * has moved it, and an ordinary project inside Documents needs no warning once consent is granted.
  * The operating system already answered the question; this reads its answer.
  */
-import { MISSING_TARGET_SIGNATURES, PERMISSION_DENIED_SIGNATURES } from '@/shared/lib/failure-code';
+import { MISSING_TARGET_SIGNATURES, PERMISSION_DENIED_SIGNATURES } from '@/shared/lib/failures/failure-code';
 
 export type VaultAccessErrorKind = 'permission-denied' | 'unknown';
 
 /**
- * The signature tables live in `@/shared/lib/failure-code`, which is where every other catch site
+ * The signature tables live in `@/shared/lib/failures/failure-code`, which is where every other catch site
  * reads them from. Two copies of "what a refusal looks like" would drift the first time an errno
  * was added to one of them, and the screens they feed would then disagree about the same failure.
  */

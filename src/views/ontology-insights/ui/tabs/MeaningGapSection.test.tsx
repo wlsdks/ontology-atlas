@@ -11,7 +11,7 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
 }));
-vi.mock("@/shared/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }));
+vi.mock("@/shared/lib/clipboard/copy-text", () => ({ copyText: vi.fn(async () => true) }));
 
 const labels: MeaningGapLabels = {
   openSource: "Open source",

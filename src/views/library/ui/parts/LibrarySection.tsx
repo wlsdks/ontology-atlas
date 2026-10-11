@@ -23,15 +23,15 @@ import {
   writeLibraryIndexQuery,
   writeLibraryIndexSegment,
   type LibraryIndexSegment,
-} from "@/shared/lib/appearance-preferences";
+} from "@/shared/lib/preferences/appearance-preferences";
 
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../lib/caption-window";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
-import { useRovingRows } from "@/shared/lib/use-roving-rows";
-import { isImeComposing } from "@/shared/lib/ime-composition";
-import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
+import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
+import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 import { StateBadge } from "./StateBadge";
 import { IndexGlyph } from "./IndexGlyph";
 
@@ -42,7 +42,7 @@ const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
 const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking"];
 import type { LibraryUiModel } from "@/features/library";
-import { WIKI_SECTION_ORDER } from "@/shared/lib/wiki-page-schema";
+import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
 
 const WIKI_SECTION_PREVIEW_KEYS = {
   Summary: "summary",

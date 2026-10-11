@@ -36,11 +36,11 @@ import {
   type DocsTreeSort,
   matchesDocsTreeQuery,
 } from "@/widgets/docs-vault";
-import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-display-name";
 import { Chip, IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
-import { normalizeForMatch } from "@/shared/lib/node-name-match";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
+import { normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
 
 /**
  * The docs file tree: Pinned, the Vault tree and Recent stay open; recently changed and tags collapse.

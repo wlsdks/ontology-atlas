@@ -7,7 +7,7 @@ vi.mock('@/widgets/ontology-map', () => ({
   ambientSleepFactor: () => state.asleep ? 0 : 1,
   isAmbientAsleep: (factor: number) => factor === 0,
 }));
-vi.mock('@/shared/lib/use-prefers-reduced-motion', () => ({ usePrefersReducedMotion: () => false }));
+vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({ usePrefersReducedMotion: () => false }));
 vi.mock('../../expressive/synapse-field', () => ({
   createSynapseField: () => [], synapseLinks: () => [], stepSynapseField: state.step,
 }));

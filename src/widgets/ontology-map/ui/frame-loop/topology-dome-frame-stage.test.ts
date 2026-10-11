@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MapArrangement } from "@/shared/lib/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";

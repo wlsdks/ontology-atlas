@@ -11,7 +11,7 @@ import { resolveNodeAgentTarget, resolveNodeDocument, type KnowledgeGraphNode, t
 import { buildBusinessFlowRequest } from '@/features/vault-agent';
 import { analysisGraphFromInsight, presentationRelationKeysForGraphEdge, type AnalysisCaptureContext } from '@/features/acp-session';
 import { useVaultAgentRuntime } from '@/widgets/acp-chat-panel';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useToast } from '@/shared/ui';
 import type { AnalysisBasis, AnalysisRecord } from '@/entities/analysis-record';
 import { useInsightsBrief } from '../../lib/brief/use-insights-brief';

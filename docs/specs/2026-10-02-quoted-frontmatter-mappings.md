@@ -37,11 +37,11 @@ The decoder first collapses escaped backslashes, then interprets the newly expos
 The independently inspected source explains these results:
 
 - Top-level keys use the first colon and are not decoded
-  (`src/shared/lib/parse-frontmatter.ts:105`, `mcp/src/parser.mjs:65`,
+  (`src/shared/lib/vault-document/parse-frontmatter.ts:105`, `mcp/src/parser.mjs:65`,
   `scripts/lib/parse-frontmatter.mjs:80`). Block and inline maps repeat this
   assumption (`parse-frontmatter.ts:159`, `:291`; `parser.mjs:117`, `:149`).
 - Nested values are unquoted before coercion, whereas top-level quoted scalars
-  remain strings (`src/shared/lib/parse-frontmatter.ts:301`, `:317`). Existing
+  remain strings (`src/shared/lib/vault-document/parse-frontmatter.ts:301`, `:317`). Existing
   plain boolean/number and historical quote behavior have explicit cases in
   `tests/fixtures/frontmatter-cases.mjs:74`, `:466` and `:489`.
 - The compiler looks up a rationale by the actual reference or resolved target

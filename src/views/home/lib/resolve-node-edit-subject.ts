@@ -1,6 +1,6 @@
 import type { AgentActivityStatus } from "@/entities/vault-session";
-import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last-edit-subject";
-import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
+import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/edit-provenance/last-edit-subject";
+import { hasUnaccountedMtimeChange } from "@/shared/lib/edit-provenance/mtime-conflict";
 
 /**
  * The graph-node twin of `resolveDocLastEditSubject`: the same two sources keyed by graph id. The

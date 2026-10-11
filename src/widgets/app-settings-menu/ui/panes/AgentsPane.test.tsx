@@ -15,7 +15,7 @@ vi.mock('next-intl', () => ({
     values?.count === undefined ? `${namespace}.${key}` : `${namespace}.${key}:${values.count}`,
 }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('@/shared/lib/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () => mocks.desktop }));
 vi.mock('../../model/use-ai-connection', () => ({
   useAiConnection: ({ enabled }: { enabled: boolean }) => ({
     keysRead: enabled && mocks.keysRead,

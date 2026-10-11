@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import { headingAnchorSlug, stripFencedBlocks } from "../../scripts/lib/doc-links.mjs";
-import { githubAnchorSlug } from "../../src/shared/lib/github-anchor-slug";
+import { githubAnchorSlug } from "../../src/shared/lib/library/github-anchor-slug";
 
 /**
  * Two copies of GitHub's heading-anchor rule exist on purpose: `scripts/` is

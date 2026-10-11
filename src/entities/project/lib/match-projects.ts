@@ -3,7 +3,7 @@ import {
   NAME_TIER_SCORE,
   normalizeForMatch,
   type NodeNameSource,
-} from "@/shared/lib/node-name-match";
+} from "@/shared/lib/search-match/node-name-match";
 import type { Project } from "../model/types";
 
 export type ProjectMatchSource = "name" | "nameEn" | "description" | "tags" | "stack" | "category" | "slug";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyFrontmatterUpdates } from './frontmatter-updates';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 describe('quoted mapping updates', () => {
   it('retains indented malformed source after an unrelated scalar edit', () => {

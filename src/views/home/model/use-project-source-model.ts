@@ -13,20 +13,20 @@ import {
   type ProjectSourceProbe,
   type ProjectSourceView,
   type ProjectSourceWitnessInput,
-} from "@/shared/lib/project-source-receipt";
-import { proposeProjectSourceFromInspection } from "@/shared/lib/project-source-proposal";
+} from "@/shared/lib/project-source/project-source-receipt";
+import { proposeProjectSourceFromInspection } from "@/shared/lib/project-source/project-source-proposal";
 import {
   createVaultFileProjectSourceStore,
   type ProjectSourceStore,
   type ProjectSourceStoreReadResult,
-} from "@/shared/lib/project-source-store";
+} from "@/shared/lib/project-source/project-source-store";
 import {
   getTauriVaultRootPath,
   inspectTauriProjectSource,
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
   type ProjectSourceInspection,
-} from "@/shared/lib/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { resolveProjectSourceRepair } from "./project-source-repair";
 import { deriveProjectSourceWitnesses } from "../lib/project-source-witnesses";
 

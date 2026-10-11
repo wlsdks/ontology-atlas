@@ -83,7 +83,7 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
  */
 test('the measurement files never ride a unit runner, and run once in their own lane', () => {
   const plans = [
-    buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] }),
+    buildImpactPlan({ files: ['src/shared/lib/search-match/node-name-match.ts'] }),
     buildImpactPlan({ files: [], forceFull: true }),
   ];
   for (const plan of plans) {
@@ -107,7 +107,7 @@ test('the measurement files never ride a unit runner, and run once in their own 
 });
 
 test('the perf lane lets Vitest choose affected files, and runs all of them on a full plan', () => {
-  const affected = buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] });
+  const affected = buildImpactPlan({ files: ['src/shared/lib/search-match/node-name-match.ts'] });
   assert.deepEqual(commandsForLane({ lane: 'perf', plan: affected, base: 'abc123' }), [
     "pnpm test:perf --changed='abc123' --passWithNoTests",
   ]);

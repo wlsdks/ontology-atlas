@@ -55,7 +55,7 @@
 
 | Cell | Correctness (0–3) | Tool calls | Hallucinations | Utility (1–5) | Notes |
 |---|---|---|---|---|---|
-| Claude Code OFF | 2 | 2 | 0 | 3 | grep on `src/shared/lib/validate-vault-document.ts` returned export list but not the 5 codes. A second Read on the file would surface them. Two-step. |
+| Claude Code OFF | 2 | 2 | 0 | 3 | grep on `src/shared/lib/vault-document/validate-vault-document.ts` returned export list but not the 5 codes. A second Read on the file would surface them. Two-step. |
 | Claude Code ON  | 3 | 1 | 0 | 5 | `get_concept(slug=capabilities/vault-validator)` returns body excerpt explicitly listing all 5 codes (`unclosed-frontmatter / empty-kind / missing-kind / unknown-kind / parse-zero-keys`) with their meanings. Also documents the two surface paths (CLI + UI chip). |
 | Codex OFF       | — | — | — | — | _pending_ |
 | Codex ON        | — | — | — | — | _pending_ |

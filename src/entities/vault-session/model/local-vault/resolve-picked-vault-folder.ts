@@ -27,7 +27,7 @@
  * opened. Quietly opening a different folder from the one a person chose is how a product teaches
  * people that it does not do what they asked, even when the substitution is the helpful one.
  */
-import { PROJECT_VAULT_DIR } from '@/shared/lib/project-vault-dir';
+import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
 export interface PickedVaultResolution {
   /** The folder to actually open. */

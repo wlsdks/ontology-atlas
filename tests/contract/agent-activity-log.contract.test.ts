@@ -9,7 +9,7 @@ import {
   readActivityEntries,
   ACTIVITY_LOG_RELATIVE_PATH,
 } from "../../mcp/src/activity-log.mjs";
-import { parseAgentActivityLog } from "@/shared/lib/agent-activity-log";
+import { parseAgentActivityLog } from "@/shared/lib/agent-activity/agent-activity-log";
 
 const LINES = [
   '{"v":1,"at":"2026-07-21T10:00:00.000Z","tool":"add_relation","target":"a","summary":"a --depends_on--> b","agent":"claude-code","why":"근거"}',

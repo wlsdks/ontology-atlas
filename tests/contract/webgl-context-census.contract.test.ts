@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { blankComments } from "../../scripts/quality/source-language/inventory.mjs";
 
 const LICENSED = {
-  "src/shared/lib/webgl-probe.ts": "the renderer probe that decides whether WebGL is hardware",
+  "src/shared/lib/map-canvas/webgl-probe.ts": "the renderer probe that decides whether WebGL is hardware",
   "src/widgets/ontology-map/light/light-layer.ts": "the map's light layer, which draws light only",
   "src/views/download/lib/hero-atlas-scene.ts": "the gateway hero's three.js scene",
   "src/views/library/expressive/constellation-scene.ts": "the Library constellation's three.js scene",

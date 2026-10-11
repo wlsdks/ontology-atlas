@@ -15,7 +15,7 @@ import { useTranslations } from "next-intl";
 import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { useSampleSource } from "@/entities/vault-session";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import {
@@ -25,7 +25,7 @@ import {
   StaggeredFadeIn,
   controlClass,
 } from "@/shared/ui";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 import {

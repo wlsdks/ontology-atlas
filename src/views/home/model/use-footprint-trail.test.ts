@@ -9,7 +9,7 @@ vi.mock("next-intl", () => ({
 }));
 
 const copyMocks = vi.hoisted(() => ({ copyText: vi.fn(async () => true) }));
-vi.mock("@/shared/lib/copy-text", () => ({ copyText: copyMocks.copyText }));
+vi.mock("@/shared/lib/clipboard/copy-text", () => ({ copyText: copyMocks.copyText }));
 
 const graphNodes = [
   { id: "capability:auth", label: "Auth", kind: "capability" },

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { it as test } from 'vitest';
 import { readAnalysisHistory, serializeAnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import type { InvestigationPacket } from './investigation-record';
-import type { GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { buildGrayAreaInvestigation } from './investigation';
 import { parseInvestigationPacket, matchInvestigationRun, latestInvestigationMatch, latestScopedInvestigation } from './investigation-record';
 const H='sha256:'+'a'.repeat(64);

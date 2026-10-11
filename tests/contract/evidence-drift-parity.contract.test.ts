@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveEvidenceStates as resolveInApp } from "@/shared/lib/evidence-states";
+import { resolveEvidenceStates as resolveInApp } from "@/shared/lib/git/evidence-states";
 import { resolveEvidenceStates as resolveInServer } from "../../mcp/src/evidence-drift.mjs";
 
 /** The server's answer, as this test reads it; the module ships plain ESM without types. */
@@ -15,7 +15,7 @@ type ServerStates = Record<
  * was last touched; `validate_vault` states the same thing to a coding agent. They were two
  * implementations for a day and disagreed on a concept citing both a path that is gone and a
  * path the walk never reached: one said `missing`, the other `unknown` (design-handoff,
- * 2026-09-19). Both now call `shared/lib/evidence-verdict.mjs`, and this test is what keeps
+ * 2026-09-19). Both now call `shared/lib/git/evidence-verdict.mjs`, and this test is what keeps
  * them there: it feeds one fixture through both and compares the verdicts.
  */
 

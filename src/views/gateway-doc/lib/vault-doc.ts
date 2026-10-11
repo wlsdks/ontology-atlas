@@ -1,5 +1,5 @@
 import { resolveStaticVaultSource } from '@/entities/docs-vault';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /**
  * The gateway's reading pages render vault markdown verbatim: `docs/GUIDE.md` and

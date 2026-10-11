@@ -1,4 +1,4 @@
-import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR } from "@/shared/lib/library/wiki-page-schema";
 
 /** A hand-started page with the full contract shape, `created_by: human` and empty `sources:`. */
 export function humanPageSlug(title: string): string {

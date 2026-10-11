@@ -23,7 +23,7 @@ const bridge = vi.hoisted(() => ({
   started: 0,
 }));
 
-vi.mock("@/shared/lib/tauri-acp", () => ({
+vi.mock("@/shared/lib/agent-chat/tauri-acp", () => ({
   isAcpBridgeAvailable: () => true,
   startAcpSession: async () => {
     bridge.started += 1;

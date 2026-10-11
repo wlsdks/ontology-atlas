@@ -109,7 +109,7 @@ in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 | Desktop-only keychain, Git, updater and absolute-path abilities | Installed-app evidence only |
 | The web surface itself | `tests/e2e/web-surface-smoke.spec.ts` |
 
-A desktop bridge change (`src/shared/lib/tauri-*.ts`, `src-tauri/**`) still runs
+A desktop bridge change (`src/shared/lib/**/tauri-*.ts`, `src-tauri/**`) still runs
 web smoke.
 
 Test keyboard input in the installed app with Computer Use idle, sending keys

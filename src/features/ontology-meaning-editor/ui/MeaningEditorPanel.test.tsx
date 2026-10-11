@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { applyFrontmatterUpdates } from '@/entities/docs-vault';
 import { IMPACT_EDIT_RELATIONS } from '@/entities/knowledge-graph';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 import enMessages from '../../../../messages/en.json';
 import koMessages from '../../../../messages/ko.json';

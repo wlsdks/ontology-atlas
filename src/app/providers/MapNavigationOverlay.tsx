@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
-import { cancelMapNavigation, useMapNavigationPending } from '@/shared/lib/map-navigation-pending';
-import { resolveActiveNavDestination } from '@/shared/lib/nav-destination';
-import { readCrossfadeBudgetMs } from '@/shared/lib/route-view-transition';
-import { SKELETON_DELAY_MS, useDelayedVisible } from '@/shared/lib/use-presence';
+import { cancelMapNavigation, useMapNavigationPending } from '@/shared/lib/navigation/map-navigation-pending';
+import { resolveActiveNavDestination } from '@/shared/lib/navigation/nav-destination';
+import { readCrossfadeBudgetMs } from '@/shared/lib/navigation/route-view-transition';
+import { SKELETON_DELAY_MS, useDelayedVisible } from '@/shared/lib/render-timing/use-presence';
 import { Button, Surface } from '@/shared/ui';
 import { MapEntryLoadingScene } from '@/shared/ui/map-entry-loading-visual';
 

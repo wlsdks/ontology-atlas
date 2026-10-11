@@ -23,16 +23,16 @@ import {
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { useSlidingIndicator } from "@/shared/motion/use-sliding-indicator";
-import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
-import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
-import { navigateWithViewTransition } from "@/shared/lib/route-view-transition";
+import { signalNavigationIntent } from "@/shared/lib/navigation/navigation-intent";
+import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
+import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from "@/shared/ui/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
-import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
-import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { shouldShowGetAppTile } from "@/shared/lib/navigation/show-get-app-tile";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
 /** The runtime never changes after load, so subscribing is a formality — a no-op. */
 const subscribeToRuntime = () => () => {};
@@ -86,7 +86,7 @@ function rememberRailRouteFocus(
     return false;
   }
   // Only a click that navigates signals, so a surface with a permanent loop can yield frames
-  // (`shared/lib/navigation-intent.ts`).
+  // (`shared/lib/navigation/navigation-intent.ts`).
   signalNavigationIntent();
   rememberRouteFocusIntent(pathname);
   return true;
@@ -109,7 +109,7 @@ export function AppNavRail({
   const t = useTranslations("navRail");
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  /** The web-only download tile; the decision lives in `@/shared/lib/show-get-app-tile`. */
+  /** The web-only download tile; the decision lives in `@/shared/lib/navigation/show-get-app-tile`. */
   // The server snapshot is `null` (unknown), so prerendered HTML never asserts web and the tile
   // does not flicker at hydration.
   const desktopRuntime = useSyncExternalStore(
@@ -287,7 +287,7 @@ export function AppNavRail({
       >
         {/*
          * Web-only download tile; the OS is not guessed because a wrong guess is a dead-end
-         * CTA (@/shared/lib/show-get-app-tile).
+         * CTA (@/shared/lib/navigation/show-get-app-tile).
          */}
         {showGetApp ? (
           <Link

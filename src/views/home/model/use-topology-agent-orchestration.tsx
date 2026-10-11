@@ -9,10 +9,10 @@ import type { useTopologyVaultReadModel } from "./use-topology-vault-read-model"
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { buildBusinessFlowRequest, nodeIntent, screenIntentFor, sentenceForIntent, type FirstWordsLabels, type ScreenContextSnapshot } from "@/features/vault-agent";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
-import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared/lib/agent-chat-intent";
-import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
+import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared/lib/agent-chat/agent-chat-intent";
+import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { agentChatDoor, type VaultAgentPrefill } from "./agent-chat-door";

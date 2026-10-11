@@ -1,4 +1,4 @@
-import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { lastDrawnLabelBoxes } from "./topology-frame-draw";
 
 /** A drawn name on the map, with the disc above it, in client (viewport) px. */

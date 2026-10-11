@@ -81,7 +81,7 @@ export function shouldSurfaceVersion(version: string, dismissedVersion: string |
 }
 
 /** Re-exported from `shared/lib`, where the agent tool install shares it. */
-export { formatDownloadProgress } from '@/shared/lib/progress-format';
+export { formatDownloadProgress } from '@/shared/lib/locale-text/progress-format';
 
 /** One paragraph of release notes is enough. A popover that becomes reading material goes unread. */
 export function summarizeNotes(notes: string | null | undefined, maxChars = 220): string | null {

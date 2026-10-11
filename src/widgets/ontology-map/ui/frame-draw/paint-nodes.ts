@@ -1,6 +1,6 @@
 import { trailNodeInkStrength } from "../../model/focus-state";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../../model/selection-pulse";
-import { drawFootprintSteps } from "@/shared/lib/footprint-glyph";
+import { drawFootprintSteps } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   DOME_HALO_ALPHA_CAP,
   DOME_HALO_ALPHA_GAIN,

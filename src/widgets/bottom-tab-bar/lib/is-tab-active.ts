@@ -1,4 +1,4 @@
-import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 
 /**
  * Active-tab matching: `matchPrefixes` with startsWith first, then an exact match with or without a

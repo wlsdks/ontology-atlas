@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { sourceSearchPrefix } from './source-search-prefix';
 
-import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from '@/shared/lib/source-passage';
+import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from '@/shared/lib/library/source-passage';
 
 /**
  * **Search the words inside the documents, because a person typed them.**

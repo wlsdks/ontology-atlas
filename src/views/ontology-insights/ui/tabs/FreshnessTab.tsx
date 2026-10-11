@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { formatDate } from "@/shared/lib/format-date";
+import { formatDate } from "@/shared/lib/locale-text/format-date";
 import { EvidenceOnlyBadge, HiddenCountLine, OntologyMapKindGlyph } from "@/shared/ui";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui/control-class";

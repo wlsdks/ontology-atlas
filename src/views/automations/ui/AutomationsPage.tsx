@@ -10,7 +10,7 @@ import type { RoundRecord } from "@/entities/library-round";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
-import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";

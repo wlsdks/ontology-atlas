@@ -1,4 +1,4 @@
-import { WIKI_DIR } from "@/shared/lib/wiki-page-schema";
+import { WIKI_DIR } from "@/shared/lib/library/wiki-page-schema";
 import { parseLintCounts } from "./lint-brief";
 
 /**

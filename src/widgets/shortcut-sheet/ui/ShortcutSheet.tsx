@@ -20,7 +20,7 @@ import {
   useExitLockout,
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
@@ -154,7 +154,7 @@ const SECTIONS: ShortcutSection[] = [
     /*
      * Every row here works on every screen that opens this sheet: Cmd+K is one row (Shift
      * accepted), `D` lives in the map section, and the shell answers Cmd+K and `?` elsewhere
-     * (`shared/lib/shell-key-claims.ts`).
+     * (`shared/lib/keyboard/shell-key-claims.ts`).
      */
     titleKey: "navigation",
     surface: "global",

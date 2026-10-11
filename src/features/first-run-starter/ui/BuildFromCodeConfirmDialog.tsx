@@ -3,7 +3,7 @@
 import { Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { Dialog } from '@/shared/ui/dialog';
 import { controlClass } from '@/shared/ui/control-class';
 

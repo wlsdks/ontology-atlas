@@ -12,7 +12,7 @@
  * No popularity, counts, ratings, "recommended" or sort other than curation order: that makes
  * a marketplace, which `.claude/rules/forbidden.md` refuses. The generator carries the same rule.
  */
-import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connector-record';
+import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connectors/connector-record';
 
 /** Where one variant's facts came from. Drawn differently, because the authority differs. */
 type CatalogueSource = 'registry' | 'curated';

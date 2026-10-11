@@ -61,7 +61,7 @@ export const rules = [
     command: 'pnpm test:desktop:bridge',
     reason: 'native macOS vault bridge changed',
     matches: [
-      /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
+      /^src\/shared\/lib\/vault-folder\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src-tauri\/src\/(?:lib\.rs|(?:acp_runtime|acp_session|app_shell|project_source|vault|webview_verify)\/[^/]+\.rs)$/,
       /^src-tauri\/Cargo\.(?:toml|lock)$/,
     ],
@@ -84,7 +84,7 @@ export const rules = [
       /^docs\/DESKTOP-MACOS\.md$/,
       /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
       /^src\/entities\/vault-session\/model\/local-vault\/(?:use-vault-choice|vault-sidecars)\.ts$/,
-      /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
+      /^src\/shared\/lib\/vault-folder\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
       /^src\/views\/docs-vault\/ui\/DocsVault(?:Page|Header|DocumentPane|Sidebar)\.tsx$/,
       /^src\/views\/docs-vault\/model\/[^/]+\.tsx?$/,

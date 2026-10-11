@@ -1,7 +1,7 @@
 /**
  * One table of raw sources, run through **both** readers that split them into citable
  * units: `mcp/src/source-text.mjs` (the MCP server's `read_source`) and
- * `src/shared/lib/source-passage.ts` (the twin the Library pane reads a passage with).
+ * `src/shared/lib/library/source-passage.ts` (the twin the Library pane reads a passage with).
  *
  * A wiki fact cites `[[src:sources/<file>#<anchor>]]`. If the two readers disagree by one
  * unit boundary, an agent cites an address that the screen resolves to a *different*

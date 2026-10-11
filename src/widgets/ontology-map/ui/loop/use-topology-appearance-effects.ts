@@ -1,12 +1,12 @@
 "use client";
 
-import type { CanvasBackground, ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
 import {
   FOOTPRINT_TONE_FALLBACK,
   FOOTPRINT_TONE_TOKEN
-} from "@/shared/lib/appearance-preferences";
-import type { FootprintInk } from "@/shared/lib/footprint-glyph";
-import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navigation-intent";
+} from "@/shared/lib/preferences/appearance-preferences";
+import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
+import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navigation/navigation-intent";
 import {
   useEffect,
   type RefObject

@@ -23,7 +23,7 @@ import type {
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
-import { copyText } from '@/shared/lib/copy-text';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/icon-size';

@@ -4,9 +4,9 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 
 import { VaultConflictError } from "@/entities/vault-session";
-import { slugify } from "@/shared/lib/slugify";
-import { useFailureSentence, type FailureCopy } from "@/shared/lib/use-failure-sentence";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { slugify } from "@/shared/lib/vault-document/slugify";
+import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 

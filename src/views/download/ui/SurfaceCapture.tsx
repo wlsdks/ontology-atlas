@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { cn } from '@/shared/lib/cn';
 
 /** The destination the picture was taken from. */

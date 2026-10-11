@@ -22,4 +22,4 @@ Turns the block at the top of a Markdown file into keys and values, and knows wh
 - Reading or writing the file on disk.
 
 ## Uncertainty
-- Read from the module's own header and its graph-array key list. The repository says this file is kept capability-synced with `src/shared/lib/parse-frontmatter.ts`; that mirror was not opened, so whether the two agree today rests on the repository's contract test, not on this scan.
+- Read from the module's own header and its graph-array key list. The repository says this file is kept capability-synced with `src/shared/lib/vault-document/parse-frontmatter.ts`; that mirror was not opened, so whether the two agree today rests on the repository's contract test, not on this scan.

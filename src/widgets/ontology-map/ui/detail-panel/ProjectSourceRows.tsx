@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, CircleDashed, CircleHelp } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import type { ProjectSourceStatus } from "@/shared/lib/project-source-receipt";
-import { useDelayedVisible } from "@/shared/lib/use-presence";
+import type { ProjectSourceStatus } from "@/shared/lib/project-source/project-source-receipt";
+import { useDelayedVisible } from "@/shared/lib/render-timing/use-presence";
 
 /**
  * **The receipt's place while it is read** — its two standing rows (status, then when it

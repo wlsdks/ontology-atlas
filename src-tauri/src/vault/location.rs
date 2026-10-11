@@ -58,7 +58,7 @@ pub(crate) fn open_vault_in_finder(root_path: String) -> Result<(), String> {
 
 /// The "just start" container under `$HOME`, not Documents, which TCC protects with a
 /// permission dialog. Pure for testing. Project vaults go to `<project>/atlas`
-/// (`src/shared/lib/project-vault-dir.ts`).
+/// (`src/shared/lib/vault-folder/project-vault-dir.ts`).
 pub(crate) fn default_vault_parent_dir(home: &str) -> PathBuf {
     PathBuf::from(home).join("Ontology Atlas")
 }

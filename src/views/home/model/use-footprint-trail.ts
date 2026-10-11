@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { requestOntologyMapFrame } from "@/widgets/ontology-map";
-import { copyText } from "@/shared/lib/copy-text";
-import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/use-copy-feedback";
+import { copyText } from "@/shared/lib/clipboard/copy-text";
+import { COPY_FEEDBACK_RESET_MS } from "@/shared/lib/clipboard/use-copy-feedback";
 
 import {
   appendFootprintVisit,

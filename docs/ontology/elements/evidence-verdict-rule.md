@@ -21,4 +21,4 @@ States in one place whether a concept still stands on the code it cites, so the 
 - Deciding what to do about a stale verdict.
 
 ## Uncertainty
-- Read from the module header, which records the day the two implementations disagreed about a concept citing both a missing path and an unreached one. The mirrored copy at `src/shared/lib/evidence-verdict.mjs` was seen in the file list but not opened.
+- Read from the module header, which records the day the two implementations disagreed about a concept citing both a missing path and an unreached one. The mirrored copy at `src/shared/lib/git/evidence-verdict.mjs` was seen in the file list but not opened.

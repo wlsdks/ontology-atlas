@@ -9,7 +9,7 @@ import type {
   VaultDoc,
 } from '@/entities/docs-vault';
 import { OntologyMapKindGlyph, isOntologyMapRenderableKind } from '@/shared/ui/map-kind-glyph';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { Chip, IconButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 

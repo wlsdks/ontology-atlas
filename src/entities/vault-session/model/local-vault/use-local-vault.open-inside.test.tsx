@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
   putRecords: [] as Array<{ name: string; desktopRootPath?: string }>,
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   isTauriVaultRuntime: () => true,
   pickTauriVaultDirectory: async () =>
     mocks.pickedPath === null ? null : { name: 'picked', __picked: true },

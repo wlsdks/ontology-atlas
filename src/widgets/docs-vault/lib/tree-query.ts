@@ -1,6 +1,6 @@
 import type { VaultDoc } from '@/entities/docs-vault';
-import { readDisplayLocales } from '@/shared/lib/locale-display-name';
-import { findNameMatch, normalizeForMatch, type NodeNameSource } from '@/shared/lib/node-name-match';
+import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
+import { findNameMatch, normalizeForMatch, type NodeNameSource } from '@/shared/lib/search-match/node-name-match';
 
 type DocsTreeQueryDoc = Pick<VaultDoc, 'title' | 'slug' | 'path' | 'frontmatter'>;
 
@@ -23,7 +23,7 @@ function nameSource(doc: DocsTreeQueryDoc): NodeNameSource {
 
 /**
  * Matches the tree's name and address fields with the palette's rule
- * (`findNameMatch`); `shared/lib/hangul-match` bounds the Hangul keyboard states.
+ * (`findNameMatch`); `shared/lib/search-match/hangul-match` bounds the Hangul keyboard states.
  */
 export function matchesDocsTreeQuery(doc: DocsTreeQueryDoc, normalizedQuery: string): boolean {
   if (!normalizedQuery) return true;

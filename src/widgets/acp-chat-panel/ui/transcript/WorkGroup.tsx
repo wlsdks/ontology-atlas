@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 
 import type { AcpEvent } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
+import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 

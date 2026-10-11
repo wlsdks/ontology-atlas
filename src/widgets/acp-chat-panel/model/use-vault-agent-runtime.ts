@@ -11,7 +11,7 @@ import {
 } from "@/features/acp-session";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
-import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/tauri-acp";
+import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/agent-chat/tauri-acp";
 
 const subscribeDesktopRuntime = () => () => undefined;
 const readServerDesktopRuntime = () => false;

@@ -9,7 +9,7 @@ import {
   type BootstrapPlan,
 } from "@/features/docs-vault-local";
 import { controlClass, fieldClass } from "@/shared/ui/control-class";
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { Checkbox } from "@/shared/ui";
 
 /**

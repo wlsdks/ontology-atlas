@@ -4,8 +4,8 @@ import {
   type SourceCandidate,
   type SourceDiscoveryReport,
 } from "@/entities/docs-vault";
-import { createVaultFileProjectSourceStore } from "@/shared/lib/project-source-store";
-import { discoverTauriSourceCandidates } from "@/shared/lib/tauri-vault-fs";
+import { createVaultFileProjectSourceStore } from "@/shared/lib/project-source/project-source-store";
+import { discoverTauriSourceCandidates } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
 /**
  * Proposes documents, never copies: listing metadata only, from the open folder (minus

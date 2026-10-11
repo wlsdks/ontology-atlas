@@ -1,5 +1,5 @@
 /**
- * Pure growth arithmetic for the open listbox, matching `src/shared/lib/composer-growth.ts`:
+ * Pure growth arithmetic for the open listbox, matching `src/shared/lib/agent-chat/composer-growth.ts`:
  * the smaller of a row cap (summed heights of the first N rendered rows, so no row is
  * half-clipped) and a space cap (room left in the viewport) wins, and inner scroll and edge
  * affordances appear only when something is genuinely hidden.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeForMatch } from '@/shared/lib/node-name-match';
+import { normalizeForMatch } from '@/shared/lib/search-match/node-name-match';
 import { matchesDocsTreeQuery } from './tree-query';
 
 describe('matchesDocsTreeQuery', () => {

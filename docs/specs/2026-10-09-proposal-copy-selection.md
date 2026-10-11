@@ -76,7 +76,7 @@ Add the following keys to `messages/en/vaultAgentPanel.json` and `messages/ko/va
 
 ## Out of scope
 
-New routes/surfaces/approval powers/automatic selection, packages, native bridge, source inspection changes, diff layout/tokens, new handoff format, and export files: this repairs existing contracts. Reuse `src/shared/lib/copy-text.ts:1-30` and its awaited boolean/fallback. No installed-native or semantic-acceptance claim. Spec author edits only this spec/two catalogues; starts no server and performs no runtime/vault edits, commit/push/landing.
+New routes/surfaces/approval powers/automatic selection, packages, native bridge, source inspection changes, diff layout/tokens, new handoff format, and export files: this repairs existing contracts. Reuse `src/shared/lib/clipboard/copy-text.ts:1-30` and its awaited boolean/fallback. No installed-native or semantic-acceptance claim. Spec author edits only this spec/two catalogues; starts no server and performs no runtime/vault edits, commit/push/landing.
 
 ## Acceptance criteria
 

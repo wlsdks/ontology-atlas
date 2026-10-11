@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { scheduleStateSync } from '../lib/persistence';
 import { settleDocsVaultAddress } from '../lib/url-state';
 import { useOpenDocTabs } from '../lib/use-open-doc-tabs';

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { VaultConflictError } from "@/entities/vault-session";
-import { useFailureSentence, type FailureCopy } from "@/shared/lib/use-failure-sentence";
-import { useHeldValue } from "@/shared/lib/use-presence";
+import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
+import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 
 import type { DeleteDocTarget } from "../../model/use-doc-write-actions";

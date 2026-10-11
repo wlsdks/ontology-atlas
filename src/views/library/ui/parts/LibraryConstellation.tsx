@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
 
 import {

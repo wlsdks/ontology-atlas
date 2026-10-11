@@ -1,4 +1,4 @@
-import { isNotFoundError, VAULT_SIDECAR_DIR } from '@/shared/lib/vault-sidecar';
+import { isNotFoundError, VAULT_SIDECAR_DIR } from '@/shared/lib/vault-folder/vault-sidecar';
 
 /**
  * `.ontology-atlas/rounds-ledger.jsonl`: one line per pass or gap, with no page text or tool

@@ -6,7 +6,7 @@ import {
   getDataSourceMode,
   publishDataSourceModeForDebug,
   type DataSourceMode,
-} from '@/shared/lib/data-source-mode';
+} from '@/shared/lib/vault-folder/data-source-mode';
 
 /**
  * Exposes the current operating mode (`'static' | 'local'`) as React state.

@@ -374,13 +374,13 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'mcp/src/schema.mjs',
       'cli/src/lib/parse-frontmatter.mjs',
-      'src/shared/lib/validate-vault-document.ts',
+      'src/shared/lib/vault-document/validate-vault-document.ts',
       'tests/fixtures/validate-vault-cases.mjs',
       'tests/fixtures/vault-schema-cases.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 src/shared/lib/validate-vault-document.ts',
+      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-document/validate-vault-document.ts',
       'pnpm test:contracts',
       'pnpm test:mcp:unit',
       'pnpm typecheck',
@@ -912,8 +912,8 @@ describe('focused check suggestions', () => {
       'scripts/lib/redact-command.mjs',
       'scripts/check-macos-download-release.mjs',
       'docs/DESKTOP-MACOS.md',
-      'src/shared/lib/tauri-vault-fs.ts',
-      'src/shared/lib/tauri-vault-fs.test.ts',
+      'src/shared/lib/vault-folder/tauri-vault-fs.ts',
+      'src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
       'src/views/root-entry/ui/RootEntryPage.tsx',
       'src/views/root-entry/ui/RootEntryPage.test.tsx',
       'src/views/docs-vault/lib/persistence.ts',
@@ -930,11 +930,11 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/verify-macos-install-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/redact-command.test.mjs',
-      'pnpm exec eslint --max-warnings 0 src/shared/lib/tauri-vault-fs.ts src/shared/lib/tauri-vault-fs.test.ts ' +
+      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-folder/tauri-vault-fs.ts src/shared/lib/vault-folder/tauri-vault-fs.test.ts ' +
         'src/views/root-entry/ui/RootEntryPage.tsx src/views/root-entry/ui/RootEntryPage.test.tsx ' +
         'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
         'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
-      'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
+      'pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm docs-vault:build',
       'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
@@ -1049,7 +1049,7 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests the web surface smoke when a desktop capability bridge changes', () => {
-    const result = suggestFocusedChecks(['src/shared/lib/tauri-secrets.ts']);
+    const result = suggestFocusedChecks(['src/shared/lib/llm-connection/tauri-secrets.ts']);
 
     const commands = domainCommands(result);
     assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
@@ -1313,7 +1313,7 @@ describe('focused check suggestions', () => {
 
   it('suggests the insights census E2E for its exact derivation, page, hero, and domain-capacity owners', () => {
     const paths = [
-      'src/shared/lib/use-count-up.ts',
+      'src/shared/lib/render-timing/use-count-up.ts',
       'src/views/ontology-insights/lib/census-health.ts',
       'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
       'src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx',
@@ -1804,7 +1804,7 @@ describe('focused check suggestions', () => {
       'src/views/download/ui/DownloadPage.tsx',
       'src/widgets/gateway-chrome/ui/GatewayNav.tsx',
       'src/widgets/gateway-chrome/ui/GatewayReadingLinks.tsx',
-      'src/shared/lib/gateway-frame.ts',
+      'src/shared/lib/public-pages/gateway-frame.ts',
     ]) {
       assert.ok(
         suggestFocusedChecks([path]).commands.some((s) => s.command === grid),
@@ -2101,7 +2101,7 @@ describe('security surfaces', () => {
       '.github/workflows/checks.yml',
       'pnpm-lock.yaml',
       'mcp/pnpm-lock.yaml',
-      'src/shared/lib/tauri-external-link.ts',
+      'src/shared/lib/desktop-shell/tauri-external-link.ts',
       'src/features/acp-session/model/acp-client.ts',
     ]) {
       assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);

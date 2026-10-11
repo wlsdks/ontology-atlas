@@ -33,7 +33,7 @@ Retired paths below are historical evidence, not current implementation owners.
 - `messages/en/searchWidgets.json:222-236` lists Flat, Territories, Hex board,
   Galaxy, Strata, and Neural and describes Galaxy as a sky of stars.
 - `src/views/home/model/url-state.ts:85-96` accepts `view=galaxy`;
-  `src/shared/lib/appearance-preferences.ts:321-336` stores an on/off preference.
+  `src/shared/lib/preferences/appearance-preferences.ts:321-336` stores an on/off preference.
 - Decisions `5811e07b-304f-412f-b47d-2a6cb4685091` and
   `4de4259c-7ff0-4489-a5ee-8e248936f826` selected domain galaxies and aggregate
   strands. Their dissent records unnamed contributing capabilities and missing

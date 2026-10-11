@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { reportWebviewError } from '@/shared/lib/report-webview-error';
+import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';
 import { controlClass } from './control-class';
 
 interface WidgetErrorFallbackProps {

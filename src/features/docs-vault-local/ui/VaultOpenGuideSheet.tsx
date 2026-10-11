@@ -2,8 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { isDesktopShell } from "@/shared/lib/desktop-shell";
-import { useHydrated } from "@/shared/lib/use-hydrated";
+import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
+import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
@@ -15,8 +15,8 @@ import {
   useExitLockout,
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
-import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
+import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
+import { useDialogFocusTrap } from "@/shared/lib/overlays/use-dialog-focus-trap";
 import { controlClass } from "@/shared/ui/control-class";
 import { CloseButton } from "@/shared/ui/close-button";
 

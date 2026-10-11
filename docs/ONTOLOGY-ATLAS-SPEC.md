@@ -25,7 +25,7 @@ contract_version: 2.0-rc
 ## Korean summary
 
 This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
-(mirror) · `src/shared/lib/validate-vault-document.ts` (validator) actually do.
+(mirror) · `src/shared/lib/vault-document/validate-vault-document.ts` (validator) actually do.
 
 Key points:
 
@@ -131,7 +131,7 @@ location, owner, team name, or size:
 | `document` | Is the thing itself a narrative or reference artifact whose product value is explaining, deciding, constraining, or operating another concept? | ADR, RFC, policy, runbook, design brief, or README that matters as a document | code artifact merely stored under `docs/`, process steps turned into nodes, or the generated vault README sentinel | “ADR: Local-first persistence” describing the local-vault domain. | “Authentication service” classified as a document because its README describes it. |
 
 The runtime also recognizes a sixth value, `vault-readme`, through
-`KNOWN_VAULT_KINDS` (`src/shared/lib/validate-vault-document.ts`). It is a
+`KNOWN_VAULT_KINDS` (`src/shared/lib/vault-document/validate-vault-document.ts`). It is a
 **reserved reader kind** for the Atlas-generated vault README, not a sixth
 authoring choice. Conformant writers MUST NOT set it on a hand- or agent-authored
 node.
@@ -515,7 +515,7 @@ file is not a recognizable graph node," and a larger **warning** set that
 means "this file is a graph node with a quality issue," so that a partially
 malformed vault degrades gracefully rather than refusing to load.
 
-Reference implementation: `src/shared/lib/validate-vault-document.ts`
+Reference implementation: `src/shared/lib/vault-document/validate-vault-document.ts`
 (runtime + UI surface) and `mcp/src/validate.mjs` (AI-agent / MCP surface),
 kept in lock-step by
 `tests/contract/validate-vault-document.contract.test.ts`.
@@ -557,7 +557,7 @@ number of warnings.
 `dangling-graph-reference` is listed in `mcp/src/validate.mjs`'s
 whole-vault validator (`validate_vault`) but is **not**
 detectable by the fast per-document validator in
-`src/shared/lib/validate-vault-document.ts` (7 codes) — this is a scope
+`src/shared/lib/vault-document/validate-vault-document.ts` (7 codes) — this is a scope
 difference, not drift: detecting a dangling reference requires scanning
 every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
@@ -568,7 +568,7 @@ stands on rather than about frontmatter shape, so **body scope** above means
 they read the Markdown after the frontmatter. The judgement lives in one place,
 `mcp/src/meaning-findings.mjs`, and reaches a reader through four channels: the
 `add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
-`validate_vault`, and the CLI's validate command. `src/shared/lib/meaning-findings.ts`
+`validate_vault`, and the CLI's validate command. `src/shared/lib/vault-document/meaning-findings.ts`
 is the browser port of the same rules, checked against the canonical module by
 `tests/contract/meaning-findings-parity.contract.test.ts`.
 
@@ -732,7 +732,7 @@ transcription of already-tested behavior:
   `requiredExtras` for every kind. This is the direct test of §3 and §4
   (uniqueness/`requiredExtras` behavior) of this spec.
 - **`tests/contract/validate-vault-document.contract.test.ts`** — runs the
-  same 8-fixture matrix through both `src/shared/lib/validate-vault-document.ts`
+  same 8-fixture matrix through both `src/shared/lib/vault-document/validate-vault-document.ts`
   and `mcp/src/validate.mjs`, asserting they agree on issue *codes* and
   *structure* (exact message phrasing is allowed to differ). This is the
   direct test of §6 of this spec.
@@ -860,7 +860,7 @@ something a reader can check.
 ### 11.4 Validation
 
 `validateWikiPage` (`mcp/src/wiki-schema.mjs`, mirrored in
-`src/shared/lib/wiki-page-schema.ts`, run by `ontology-atlas wiki-validate`)
+`src/shared/lib/library/wiki-page-schema.ts`, run by `ontology-atlas wiki-validate`)
 returns these codes. Wording MAY differ between implementations; **codes MUST
 NOT**.
 

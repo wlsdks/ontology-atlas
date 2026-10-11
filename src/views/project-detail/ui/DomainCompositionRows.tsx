@@ -7,7 +7,7 @@ import { getTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
-import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
+import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import type { DomainCompositionRow } from "../model/domain-composition";
 

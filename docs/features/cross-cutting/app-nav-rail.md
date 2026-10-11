@@ -27,7 +27,7 @@ routes: []
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.
 - Active-item detection: shared `resolveActiveNavDestination`
-  (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
+  (`src/shared/lib/navigation/nav-destination.ts`) — `BottomTabBar` uses the same semantic
   resolver, so a route has one destination even when mobile intentionally
   omits its button.
 

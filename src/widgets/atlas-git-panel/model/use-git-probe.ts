@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent } from "react";
-import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
-import { gitProbe } from "@/shared/lib/tauri-git";
+import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
+import { gitProbe } from "@/shared/lib/git/tauri-git";
 
 export function useGitProbe(vaultPath: string | null) {
   /*

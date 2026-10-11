@@ -108,7 +108,7 @@ One accurate word per thing. Canonical spellings live in
   map research through a `reviewer` with the `map-marks` lens.
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
   is licensed only where the mark is light: the gateway hero, the walked-path
-  star (`shared/lib/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
+  star (`shared/lib/map-canvas/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
   a node carries at most one diffraction cross per frame. Gate:
   `tests/contract/canvas-composite-license.contract.test.ts`.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
@@ -144,7 +144,7 @@ record when a listed file's vocabulary or values change. Contract:
 - `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — form behaviour authority
 - `src/shared/ui/badge-class.ts` — static badge geometry
 - `src/shared/ui/segmented-control.tsx` — exclusive single-selection containers and fill
-- `src/shared/lib/use-roving-radio-group.ts` — radiogroup behaviour
+- `src/shared/lib/keyboard/use-roving-radio-group.ts` — radiogroup behaviour
 - `src/shared/ui/page-frame.ts` — page inset, top spacing, width, and title layout
 - `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
 - `.claude/rules/design.md` — this file's “Fixed scale contract” section

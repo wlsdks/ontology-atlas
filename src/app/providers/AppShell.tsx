@@ -2,10 +2,10 @@
 
 import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
-import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
-import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
-import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
-import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
+import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
+import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
+import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
+import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { useToast } from "@/shared/ui";
 import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
 import { useTranslations } from "next-intl";
@@ -17,7 +17,7 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
-import { describeVaultShape } from "@/shared/lib/vault-shape";
+import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape } from "@/shared/config/destinations";
 import {
   DestinationGuide,
@@ -25,26 +25,26 @@ import {
   applyGuideOverride,
 } from "@/features/guided-tour";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
-import { isDesktopShell } from "@/shared/lib/desktop-shell";
+import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import {
   isGatewaySurface,
   resolveActiveNavDestination,
   resolveGuideDestination,
   stripLocalePrefix,
-} from "@/shared/lib/nav-destination";
+} from "@/shared/lib/navigation/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
-import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
-import { useHydrated } from "@/shared/lib/use-hydrated";
+import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
+import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
 
 /**
  * Releases a route crossfade after commit and before paint, when the View Transitions API
- * wants the new state to exist (`shared/lib/route-view-transition.ts`).
+ * wants the new state to exist (`shared/lib/navigation/route-view-transition.ts`).
  */
 function RouteViewTransitionSettle() {
   const pathname = usePathname();
@@ -310,7 +310,7 @@ function AppNavRailSlot() {
       }
       cancelMapNavigation();
       router.push(href);
-      /* The canvas needs focus before arrow keys walk it (`shared/lib/focus-map-canvas.ts`). */
+      /* The canvas needs focus before arrow keys walk it (`shared/lib/map-canvas/focus-map-canvas.ts`). */
       if (id === "map") focusMapCanvasWhenReady();
     },
     /* Say so when a blocking overlay stops the move, or the shortcut silently does nothing. */

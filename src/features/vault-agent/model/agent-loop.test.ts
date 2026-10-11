@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
+import type { LlmChatEcho } from '@/shared/lib/llm-connection/tauri-llm';
 
 import { runTurn, startTurn, type AgentLoopDeps, AUDIT_BLOCKED_PREFIX, TIMED_OUT_PREFIX } from './agent-loop';
 import { anthropicAdapter } from './providers/anthropic';

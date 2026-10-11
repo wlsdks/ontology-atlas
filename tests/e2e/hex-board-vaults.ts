@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import { parseFrontmatter } from "../../src/shared/lib/parse-frontmatter";
-import { judgeEvidence } from "../../src/shared/lib/evidence-verdict.mjs";
+import { parseFrontmatter } from "../../src/shared/lib/vault-document/parse-frontmatter";
+import { judgeEvidence } from "../../src/shared/lib/git/evidence-verdict.mjs";
 import type { StubPathChange } from "./desktop-rail-arrival-harness";
 
 /**

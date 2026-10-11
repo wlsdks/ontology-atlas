@@ -8,9 +8,9 @@ import {
   JEV_DESTINATION,
   jevJudge,
   type JevJudgment,
-} from '@/shared/lib/tauri-jev';
-import { useNativeErrorLookup } from '@/shared/lib/use-native-error-lookup';
-import { nativeErrorMessage } from '@/shared/lib/native-error';
+} from '@/shared/lib/llm-connection/tauri-jev';
+import { useNativeErrorLookup } from '@/shared/lib/desktop-shell/use-native-error-lookup';
+import { nativeErrorMessage } from '@/shared/lib/desktop-shell/native-error';
 import { Chip } from '@/shared/ui/controls';
 import { Textarea } from '@/shared/ui/input';
 

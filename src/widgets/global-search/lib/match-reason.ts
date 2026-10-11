@@ -1,5 +1,5 @@
-import { normalizeForMatch } from "@/shared/lib/node-name-match";
-import { snippetAroundFirstMatch } from "@/shared/lib/highlight-match";
+import { normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
+import { snippetAroundFirstMatch } from "@/shared/lib/search-match/highlight-match";
 import type { SearchMatchEvidence } from "./match";
 
 /**

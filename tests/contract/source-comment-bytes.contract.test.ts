@@ -11,10 +11,12 @@ import { judgeRatchet, resolveRatchetBase } from "./lib/ratchet-base";
 const base = resolveRatchetBase();
 const changed = changedPaths(base).filter(isSupportedSourcePath);
 
+const PATH_PREFIX = /(?:[\w@.-]+\/)+(?=[\w.-])/g;
+
 function sourceCommentBytes(path: string, source: string): number {
   return extractCommentTokens(path, source)
     .filter((token: { text: string }) => !isAttributionMarker(token.text))
-    .reduce((sum: number, token: { text: string }) => sum + Buffer.byteLength(token.text), 0);
+    .reduce((sum: number, token: { text: string }) => sum + Buffer.byteLength(token.text.replace(PATH_PREFIX, "")), 0);
 }
 
 function commentBytes(root: string, path: string): number {
@@ -50,5 +52,11 @@ describe("source comment bytes", () => {
     const marker = "// Adapted from https://example.com/noise.js (MIT, © Example Holder)";
     expect(sourceCommentBytes("probe.ts", `${marker}\nexport const value = 1;\n`)).toBe(0);
     expect(sourceCommentBytes("probe.ts", `// Adapted from a blog post\nexport const value = 1;\n`)).toBeGreaterThan(0);
+  });
+
+  it("counts a cited path by its file name, so a folder move does not grow the comment", () => {
+    const cite = (path: string) => sourceCommentBytes("probe.ts", `// Twin of \`${path}\`.\nexport const value = 1;\n`);
+    expect(cite("src/shared/lib/project-source/receipt.ts")).toBe(cite("src/shared/lib/receipt.ts"));
+    expect(cite("src/shared/lib/receipt-and-more.ts")).toBeGreaterThan(cite("src/shared/lib/receipt.ts"));
   });
 });

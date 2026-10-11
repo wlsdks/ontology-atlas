@@ -14,7 +14,7 @@ The native module reserves a caller-owned slot before file I/O, validates the op
 
 The renderer keeps the existing JSONL admission and normalization contract and publishes count and tail only after completion. This reader does not change transfer approval, acquire the writer lock, write audit history, archive records or delete data. The bounded native path uses Unix identity metadata. Other native platforms explicitly retain the existing file transport; failed bounded reads never switch to whole-file transport.
 
-Implementation evidence: `src-tauri/src/audit_read.rs`, `src-tauri/src/audit_read/tests.rs`, `src/shared/lib/tauri-vault-fs.ts`, `src/shared/lib/llm-audit-log.ts`, and `src/widgets/app-settings-menu/model/use-ai-connection.ts`.
+Implementation evidence: `src-tauri/src/audit_read.rs`, `src-tauri/src/audit_read/tests.rs`, `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src/shared/lib/llm-connection/llm-audit-log.ts`, and `src/widgets/app-settings-menu/model/use-ai-connection.ts`.
 
 Source-level responsibilities are confirmed by the reviewed implementation. Runtime evidence is scoped to the recorded fixtures; this entry does not claim broader accepted project meaning or an aggregate process-memory guarantee.
 

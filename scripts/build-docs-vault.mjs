@@ -398,7 +398,7 @@ function buildDefinitionPreview(
 }
 
 function buildExcerpt(body) {
-  // Kept in sync with src/shared/lib/parse-frontmatter.ts buildExcerpt. Strip
+  // Kept in sync with src/shared/lib/vault-document/parse-frontmatter.ts buildExcerpt. Strip
   // markdown table separator/hr rows and turn cell pipes into middot separators
   // so a table body reads as prose instead of a wall of `|` pipes.
   const stripped = body
@@ -419,7 +419,7 @@ function buildExcerpt(body) {
 }
 
 // Normalises a wikilink target against the vault the document belongs to.
-// Mirrors src/shared/lib/parse-frontmatter.ts#resolveWikilinkTargetSlug — the
+// Mirrors src/shared/lib/vault-document/parse-frontmatter.ts#resolveWikilinkTargetSlug — the
 // same logic is physically duplicated in both places, and unlike the parser's
 // 3-way contract there is no contract test yet, so a fix here must be applied
 // there too or they drift.
@@ -802,7 +802,7 @@ if (!meaningRules) {
  * `null` — it is a node and the rule was not available, so nothing was measured;
  * an array — the rule ran, and an empty array means it found nothing.
  *
- * This mirrors `meaningFindings` in `src/shared/lib/meaning-findings.ts`, which the
+ * This mirrors `meaningFindings` in `src/shared/lib/vault-document/meaning-findings.ts`, which the
  * browser and desktop manifest builder call. The canonical judgements live in
  * `mcp/src/meaning-findings.mjs`; the fifth, `slug-outside-kind-folder`, sits in the write
  * gate instead of that module, so it is read from the schema it is built on — the same two

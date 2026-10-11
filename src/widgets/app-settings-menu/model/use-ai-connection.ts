@@ -7,10 +7,10 @@ import {
   SECRET_PROVIDERS,
   type SecretProvider,
   type SecretStatus,
-} from '@/shared/lib/tauri-secrets';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
-import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/tauri-jev';
-import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAuditEntry } from '@/shared/lib/llm-audit-log';
+} from '@/shared/lib/llm-connection/tauri-secrets';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/llm-connection/tauri-jev';
+import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
 
 /**
  * State for the Agents destination's models tab, owned by the panel so the rows and the sent-log

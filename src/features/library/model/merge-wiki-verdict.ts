@@ -1,4 +1,4 @@
-import { isWikiAdvisoryCode, isWikiFolderCode } from "@/shared/lib/wiki-report.mjs";
+import { isWikiAdvisoryCode, isWikiFolderCode } from "@/shared/lib/library/wiki-report.mjs";
 
 /** One finding; `message` stays the validator's English for the CLI and agents, `detail` is its localizable pieces. */
 export interface WikiProblemLike {

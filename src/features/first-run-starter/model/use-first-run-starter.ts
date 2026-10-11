@@ -7,12 +7,12 @@ import {
   readFirstRunStarterDismissed,
   writeFirstRunStarterDismissed,
 } from './first-run-starter-dismiss';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
-import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
+import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 import type { ProjectVaultLocation } from './project-vault-location';
 import { useBuildFromCode } from './use-build-from-code';

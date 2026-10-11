@@ -7,7 +7,7 @@ let desktop = true;
 let versionRead: () => Promise<string> = () => Promise.resolve('1.4.0');
 const getVersion = vi.fn(() => versionRead());
 
-vi.mock('@/shared/lib/desktop-shell', () => ({
+vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({
   isDesktopShell: () => desktop,
 }));
 

@@ -12,11 +12,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
-import type { FailureCopy } from "@/shared/lib/use-failure-sentence";
-import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
+import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { cn } from "@/shared/lib/cn";
-import { slugify } from "@/shared/lib/slugify";
+import { slugify } from "@/shared/lib/vault-document/slugify";
 import { controlClass } from "@/shared/ui";
 import {
   computeSuggestedDependencies,

@@ -1,4 +1,4 @@
-import type { SampleSource } from '@/shared/lib/sample-source';
+import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import sampleStorefrontContent from '../data/sample-storefront.content.json';
 import sampleStorefrontManifest from '../data/sample-storefront.manifest.json';
 import gatewayContent from '../data/gateway-content.json';

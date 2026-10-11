@@ -1,5 +1,5 @@
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
-import type { SourceUnit } from '@/shared/lib/source-passage';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
+import type { SourceUnit } from '@/shared/lib/library/source-passage';
 import type { VaultDoc } from '@/entities/docs-vault';
 
 export interface DeskCitation { path: string; anchor: string }

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { ACP_SECRET_REF_KEY } from '@/shared/lib/tauri-connector-secrets';
+import { ACP_SECRET_REF_KEY } from '@/shared/lib/connectors/tauri-connector-secrets';
 
 /**
  * One literal has to mean the same thing on both sides of the Tauri boundary, and neither side can

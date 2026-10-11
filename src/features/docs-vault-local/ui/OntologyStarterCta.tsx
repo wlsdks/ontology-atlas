@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
-import { copyText } from '@/shared/lib/copy-text';
-import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import { copyText } from '@/shared/lib/clipboard/copy-text';
+import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 

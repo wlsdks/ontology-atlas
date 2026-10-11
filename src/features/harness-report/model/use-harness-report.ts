@@ -8,12 +8,12 @@ import {
   type HarnessScanPort,
   type HarnessScanProgress,
 } from '@/entities/agent-files';
-import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
+import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import {
   getTauriVaultRootPath,
   listTauriVaultEntries,
   readTauriVaultTextFile,
-} from '@/shared/lib/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /**
  * Reads only through the installed app's bridge: the browser's File System Access API cannot

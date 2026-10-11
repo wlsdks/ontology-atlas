@@ -1,4 +1,4 @@
-import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 

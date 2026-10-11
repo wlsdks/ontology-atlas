@@ -1,9 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-import { previewDocumentPatch } from '@/shared/lib/document-patch.mjs';
-import { meaningTransitionV2TextDigest } from '@/shared/lib/meaning-transition-v2';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import { previewDocumentPatch } from '@/shared/lib/meaning-transition/document-patch.mjs';
+import { meaningTransitionV2TextDigest } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 import { buildProposalBinding } from '@/entities/knowledge-graph';
 
 import type { TaskMeaningDecision } from './use-task-meaning-review';
@@ -20,10 +20,10 @@ vi.mock('@/entities/meaning-transition', async (original) => ({
   ...await original<typeof import('@/entities/meaning-transition')>(),
   appendMeaningTransitionV2: native.append,
 }));
-vi.mock('@/shared/lib/tauri-meaning-transition-archive', () => ({
+vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => native.enabled,
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: { root: string }) => handle.root,
   inspectTauriProjectSource: native.inspect,
   inspectTauriProjectSourceContinuity: native.continuity,

@@ -7,7 +7,7 @@ import {
   WIKI_REQUIRED_FIELDS,
   WIKI_SECTION_ORDER,
   validateWikiPage,
-} from "@/shared/lib/wiki-page-schema";
+} from "@/shared/lib/library/wiki-page-schema";
 
 function row(path: string, state: LibrarySourceRow["state"]): LibrarySourceRow {
   return {

@@ -26,7 +26,7 @@ Lets a person request an advisory comparison of one claim and its evidence throu
 
 ## Evidence
 - `src/features/jev-judgment/ui/JevCheck.tsx` owns the pasted-input entry; `src/views/library/ui/parts/LibraryQuestionDesk.tsx` prepares current cited pairs and explicit consent.
-- `src/shared/lib/tauri-jev.ts` and `src-tauri/src/jev.rs` carry the fixed native boundary. `tests/e2e/library-question-desk.spec.ts` checks preview and usable no-key behavior; the question-desk unit suite checks stale and unavailable pairs.
+- `src/shared/lib/llm-connection/tauri-jev.ts` and `src-tauri/src/jev.rs` carry the fixed native boundary. `tests/e2e/library-question-desk.spec.ts` checks preview and usable no-key behavior; the question-desk unit suite checks stale and unavailable pairs.
 
 ## Uncertainty
 - One owner-authorized synthetic native TypeSafe call during PR #2059 returned contradicted for an intentionally false claim. This closes the earlier absence of a native live-call observation; no project content was used and no wider accuracy claim follows.

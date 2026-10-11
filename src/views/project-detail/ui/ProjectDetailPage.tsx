@@ -10,10 +10,10 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_TITLE } from "@/shared/ui/page-frame";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
-import { useClaimShellKey } from "@/shared/lib/shell-key-claims";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { formatDate } from "@/shared/lib/format-date";
+import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
+import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
+import { formatDate } from "@/shared/lib/locale-text/format-date";
 import { MOTION } from "@/shared/motion";
 import {
   Button,
@@ -41,15 +41,15 @@ import {
 import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { buildProjectOntologyMetrics, computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
 import { ProjectAgentDock } from "./parts/ProjectAgentDock";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
-import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { useConstructionReviewSession } from "@/features/construction-review-local";

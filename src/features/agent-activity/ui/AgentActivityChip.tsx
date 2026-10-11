@@ -10,7 +10,7 @@ import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
-import { elapsedParts } from '@/shared/lib/elapsed';
+import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
 import { AgentWorkFact } from './AgentWorkFact';
 import { AgentMascotPresence } from './AgentMascotPresence';

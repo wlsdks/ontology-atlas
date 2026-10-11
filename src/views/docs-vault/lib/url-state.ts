@@ -1,6 +1,6 @@
 'use client';
 
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import {
   serializeDocsTreeGroup,
   serializeDocsTreeSort,

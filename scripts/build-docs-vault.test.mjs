@@ -88,7 +88,7 @@ describe('build-docs-vault script helpers', () => {
 
 describe('resolveWikilinkTargetSlug / extractOutLinksWithContext — nested ontology/ vault', () => {
   // persona QA (fix/persona-findings ③) — mirror of the shared TS test in
-  // src/shared/lib/parse-frontmatter.test.ts. This .mjs copy is the one that
+  // src/shared/lib/vault-document/parse-frontmatter.test.ts. This .mjs copy is the one that
   // actually builds the static dogfood manifest (`docs-vault:build`), so it
   // needs its own regression guard against the same drift.
   it('ontology/ 문서 안의 위키링크는 ontology/ 접두사를 붙여 정규화한다', () => {

@@ -1,6 +1,6 @@
 import type { useTranslations } from 'next-intl';
 
-import { passageLabelFor, type PassageLabel } from '@/shared/lib/source-passage';
+import { passageLabelFor, type PassageLabel } from '@/shared/lib/library/source-passage';
 
 type Translate = ReturnType<typeof useTranslations<'library'>>;
 

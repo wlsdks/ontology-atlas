@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
-import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
-import type { FailureCopy } from "@/shared/lib/use-failure-sentence";
+import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
+import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 import { PencilLine } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { type Project } from "@/entities/project";
@@ -14,8 +14,8 @@ import {
   type ProjectFrontmatterPatch,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
-import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
+import { useBodyScrollLock } from '@/shared/lib/overlays/use-body-scroll-lock';
+import { useDialogFocusTrap } from '@/shared/lib/overlays/use-dialog-focus-trap';
 import { Button, CloseButton, Surface, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
 

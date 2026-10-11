@@ -9,7 +9,7 @@ import { AgentSetupSection, SettingsGroupHeading } from '@/widgets/app-settings-
 import { ConnectorsPanel, useVaultConnectors, type VaultConnectorsState } from '@/features/mcp-connectors';
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
-import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
+import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 

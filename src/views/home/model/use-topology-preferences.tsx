@@ -1,8 +1,8 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useTerritories, useView3d, type MapNavigationSpeed } from "@/shared/lib/appearance-preferences";
-import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapArrangement, useMapDragSpeed, useMapZoomSpeed, useTerritories, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 

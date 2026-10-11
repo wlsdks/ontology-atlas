@@ -1,4 +1,4 @@
-import { BASE_PATH } from '@/shared/lib/base-path';
+import { BASE_PATH } from '@/shared/lib/public-pages/base-path';
 
 function encodeSlugPath(slug: string): string {
   return slug

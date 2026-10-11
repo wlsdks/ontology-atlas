@@ -6,7 +6,7 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 import { connectorAcpServers, runtimeOwnsWriteGate, vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session";
 import { type AgentLiveWorkInput } from "@/features/agent-activity";
 import { useVaultConnectors } from "@/features/mcp-connectors";
-import { createVaultAcpWorkReceiptStore, type AcpWorkReceipt, type AcpWorkReceiptStore } from "@/shared/lib/acp-work-receipt";
+import { createVaultAcpWorkReceiptStore, type AcpWorkReceipt, type AcpWorkReceiptStore } from "@/shared/lib/meaning-transition/acp-work-receipt";
 import { useCallback, useMemo, useRef } from "react";
 import { acpHeartbeatAgentName, buildAcpTurnHeartbeat, createVaultAcpHeartbeatStore, type AcpHeartbeatStore } from "../lib/acp-agent-heartbeat";
 

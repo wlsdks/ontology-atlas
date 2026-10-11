@@ -7,8 +7,8 @@ import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } fr
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useSoleProjectHref } from '@/features/project-data-source';
-import { describeVaultShape } from '@/shared/lib/vault-shape';
-import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
+import { describeVaultShape } from '@/shared/lib/vault-folder/vault-shape';
+import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/navigation/nav-destination';
 import {
   DESTINATION_HREF,
   MOBILE_DESTINATION_IDS,
@@ -17,8 +17,8 @@ import {
   type MobileDestinationId,
 } from '@/shared/config/destinations';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
-import { shouldShowGetAppTile } from '@/shared/lib/show-get-app-tile';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { shouldShowGetAppTile } from '@/shared/lib/navigation/show-get-app-tile';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /** The runtime never changes after load, so subscribing is a formality. */
 const subscribeToRuntime = () => () => {};

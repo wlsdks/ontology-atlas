@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Bot, KeyRound, Plug } from 'lucide-react';
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { useAiConnection } from '../../model/use-ai-connection';
 import { WikiWriteModeSettings } from '../WikiWriteModeSettings';
 import { SettingsDoorRow, SettingsGroup } from '../settings-primitives';

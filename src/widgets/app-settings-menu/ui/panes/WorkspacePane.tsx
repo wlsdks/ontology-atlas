@@ -10,15 +10,15 @@ import { useVaultConnectors } from '@/features/mcp-connectors';
 import { BlockImportModule } from '@/features/ontology-blocks';
 import { DESTINATION_HREF, MCP_CONNECTORS_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
-import { isDesktopShell } from '@/shared/lib/desktop-shell';
-import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
-import { gitStatus, type GitStatusResult } from '@/shared/lib/tauri-git';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
+import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
+import { gitStatus, type GitStatusResult } from '@/shared/lib/git/tauri-git';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
   openTauriVaultInFinder,
-} from '@/shared/lib/tauri-vault-fs';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip, RowButton } from '@/shared/ui/controls';

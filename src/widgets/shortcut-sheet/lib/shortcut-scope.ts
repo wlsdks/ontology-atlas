@@ -1,4 +1,4 @@
-import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 
 /**
  * The shortcut sheet's contextual scope: what works on the current screen comes first, and the All

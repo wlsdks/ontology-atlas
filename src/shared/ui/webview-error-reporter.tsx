@@ -2,11 +2,11 @@
 
 import { useEffect } from 'react';
 
-import { sendWebviewErrorReport } from '@/shared/lib/report-webview-error';
+import { sendWebviewErrorReport } from '@/shared/lib/failures/report-webview-error';
 
 /**
  * Forwards script errors and unhandled rejections, which React never sees, to the app log
- * (`src/shared/lib/report-webview-error.ts`). In the root layout because nothing else listens
+ * (`src/shared/lib/failures/report-webview-error.ts`). In the root layout because nothing else listens
  * inside the WKWebView. It renders no markup, so it cannot fail to paint.
  */
 export function WebviewErrorReporter() {

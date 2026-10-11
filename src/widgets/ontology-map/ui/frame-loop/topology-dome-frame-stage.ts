@@ -1,4 +1,4 @@
-import type { MapArrangement } from "@/shared/lib/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient-sleep";

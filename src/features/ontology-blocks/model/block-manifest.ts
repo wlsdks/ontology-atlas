@@ -1,4 +1,4 @@
-import { nodeUrn } from '@/shared/lib/interop-format';
+import { nodeUrn } from '@/shared/lib/ontology-graph/interop-format';
 
 /**
  * The block's one non-Markdown file, a calling card of where it came from; node identity uses

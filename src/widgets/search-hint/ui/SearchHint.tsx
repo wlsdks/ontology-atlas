@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/chrome-chip';
-import { useDomainStructure, useHexBoard, useMapArrangement, useTerritories, useView3d } from '@/shared/lib/appearance-preferences';
+import { useDomainStructure, useHexBoard, useMapArrangement, useTerritories, useView3d } from '@/shared/lib/preferences/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {

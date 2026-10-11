@@ -15,7 +15,7 @@ import {
   isEpistemicExclusionBoundary as epistemicRuleTs,
   meaningFindings as meaningFindingsTs,
   parseBodySections,
-} from "@/shared/lib/meaning-findings";
+} from "@/shared/lib/vault-document/meaning-findings";
 import {
   BODY_BOUNDARY_SECTIONS as BOUNDARY_MCP,
   BODY_DEFINITION_SECTIONS as DEFINITION_MCP,
@@ -27,7 +27,7 @@ import {
  * **The body half of the validator contract.**
  *
  * `mcp/src/meaning-findings.mjs` is the canonical judgement and reaches for
- * `node:fs`, so the browser cannot execute it; `src/shared/lib/meaning-findings.ts`
+ * `node:fs`, so the browser cannot execute it; `src/shared/lib/vault-document/meaning-findings.ts`
  * is the port. Two implementations of one rule drift — that is the accident this
  * repository already recorded for the parser and for the frontmatter validator —
  * so both run over one fixture table here and must return the same code set for

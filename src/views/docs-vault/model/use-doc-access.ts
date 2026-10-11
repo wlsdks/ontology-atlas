@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalVault } from '@/entities/vault-session';
-import { vaultImageUrl } from '@/shared/lib/open-vault-file';
+import { vaultImageUrl } from '@/shared/lib/library/open-vault-file';
 import { scheduleStateSync, type DocsVaultSource as Source } from '../lib/persistence';
 
 function readVaultFileText(handles: Pick<Map<string, { getFile(): Promise<File> }>, 'get'>) {

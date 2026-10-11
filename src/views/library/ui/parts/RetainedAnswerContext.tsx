@@ -3,7 +3,7 @@
 import type { useTranslations } from 'next-intl';
 import type { RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
-import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { Button, controlClass } from '@/shared/ui';
 import { AgentDoor } from './AgentDoor';
 

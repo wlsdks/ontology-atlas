@@ -36,7 +36,7 @@ const bridge = vi.hoisted(() => {
   return state;
 });
 
-vi.mock('@/shared/lib/tauri-acp', () => ({
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   isAcpBridgeAvailable: () => bridge.available,
   startAcpSession: () => {
     bridge.starts += 1;
@@ -98,7 +98,7 @@ import {
   AcpChatPanel,
   type AcpOntologyRelationPreview,
 } from './AcpChatPanel';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 /** The agent sends one line. */
 function emit(payload: unknown) {

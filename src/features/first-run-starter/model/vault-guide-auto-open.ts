@@ -4,7 +4,7 @@
  * transient guard waits for the sheet. localStorage because one prompt is enough; the folder CTA
  * always opens the same sheet.
  */
-import { readGuideAutoStart } from '@/shared/lib/guide-auto-start';
+import { readGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
 
 const VAULT_GUIDE_AUTO_OPENED_KEY = 'vault-open-guide:auto:v1';
 

@@ -302,7 +302,7 @@ describe('package contract helpers', () => {
 
   /**
    * `mcp/package.json`'s description is the source from which the launch-docs gate
-   * (`src/shared/lib/launch-docs-current.test.ts`) derives the current tool count.
+   * (`src/shared/lib/public-pages/launch-docs-current.test.ts`) derives the current tool count.
    * That string is human-written, so **without tying it to the registry here** the
    * whole derived gate silently passes with a stale number as its truth.
    */

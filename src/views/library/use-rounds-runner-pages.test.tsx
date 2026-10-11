@@ -7,8 +7,8 @@ import ko from '../../../messages/ko.json';
 import { type RoundLedger, type RoundRecord, createMemoryRoundLedger, createMemoryRoundStore, parseRoundLedger, roundFingerprint } from '@/entities/library-round';
 import { writeWikiFile } from '@/features/library';
 import { proposedPageText } from '@/features/library/lib/judge-page-write';
-import { recordApproval } from '@/shared/lib/machine-approvals';
-import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
+import { recordApproval } from '@/shared/lib/connectors/machine-approvals';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/library/wiki-page-schema';
 
 import { useRoundsRunner } from './lib/use-rounds-runner';
 
@@ -55,11 +55,11 @@ vi.mock('@/features/library', async () => ({
   }),
 }));
 vi.mock('@/features/mcp-connectors', () => ({ useVaultConnectors: () => ({ connectors: [], allowedHere: () => false, isOnHere: () => false }) }));
-vi.mock('@/shared/lib/tauri-acp', () => ({
+vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => [{ id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true }]),
   isAcpBridgeAvailable: () => true,
 }));
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => '/vault',
   nativeVaultFileHashes: async () => new Map(),
   readTauriVaultText: async (_root: string, path: string) => {

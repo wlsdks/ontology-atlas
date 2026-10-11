@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { useClaimShellKey, type ShellKey } from "@/shared/lib/shell-key-claims";
-import { OPEN_SETTINGS_EVENT, requestShortcutSheet } from "@/shared/lib/surface-requests";
+import { useClaimShellKey, type ShellKey } from "@/shared/lib/keyboard/shell-key-claims";
+import { OPEN_SETTINGS_EVENT, requestShortcutSheet } from "@/shared/lib/keyboard/surface-requests";
 
 const mocks = vi.hoisted(() => ({ blocking: false, realGuard: false }));
 
-vi.mock("@/shared/lib/use-destination-shortcuts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/shared/lib/use-destination-shortcuts")>();
+vi.mock("@/shared/lib/keyboard/use-destination-shortcuts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/keyboard/use-destination-shortcuts")>();
   return {
     blockingSurfaceOpen: () => (mocks.realGuard ? actual.blockingSurfaceOpen() : mocks.blocking),
   };

@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { cn } from "@/shared/lib/cn";
-import { isImeComposing } from "@/shared/lib/ime-composition";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {

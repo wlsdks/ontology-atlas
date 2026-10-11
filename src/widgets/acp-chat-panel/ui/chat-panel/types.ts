@@ -15,7 +15,7 @@ import type {
   TaskBaselineCaptureResult,
   useAcpSession,
 } from '@/features/acp-session';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
 export type ChatT = ReturnType<typeof useTranslations<'acpChat'>>;
 export type GrayT = ReturnType<typeof useTranslations<'grayArea'>>;

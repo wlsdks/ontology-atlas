@@ -6,7 +6,7 @@ import {
   type ReferrerListMove,
 } from '@/entities/docs-vault';
 import { verifyHandlePermission } from '@/entities/local-fs-handle';
-import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /** What a move or a kind change did to one document that names the moved one. */
 interface ReferrerRewriteOutcome {

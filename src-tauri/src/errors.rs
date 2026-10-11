@@ -1,7 +1,7 @@
 //! Commands fail as `<code>` or `<code>: <detail>`; the screen localizes the code
 //! through `nativeErrors` because Rust cannot know the reader's locale. `code` is
 //! kebab-case ASCII and `detail` is machine fact (OS error, stderr), never prose,
-//! or it becomes a sentence nobody can translate (`src/shared/lib/native-error.ts`).
+//! or it becomes a sentence nobody can translate (`src/shared/lib/desktop-shell/native-error.ts`).
 
 use std::fmt;
 

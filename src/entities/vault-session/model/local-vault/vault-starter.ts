@@ -1,5 +1,5 @@
-import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
-import type { VaultShape } from '@/shared/lib/vault-shape';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/library/wiki-page-schema';
+import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import {
   materializeStarterFiles,
   vaultAgentGuideForLocale,

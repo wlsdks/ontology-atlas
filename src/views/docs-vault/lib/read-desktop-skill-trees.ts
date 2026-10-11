@@ -1,4 +1,4 @@
-import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/tauri-vault-fs';
+import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 import type { AgentFileEntry } from '@/entities/agent-files';
 

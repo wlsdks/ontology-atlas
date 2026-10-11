@@ -20,9 +20,9 @@ import {
   useExitLockout,
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
-import { splitHighlightSegments } from '@/shared/lib/highlight-match';
-import { isImeComposing } from '@/shared/lib/ime-composition';
-import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
+import { splitHighlightSegments } from '@/shared/lib/search-match/highlight-match';
+import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
+import { useBodyScrollLock } from '@/shared/lib/overlays/use-body-scroll-lock';
 import {
   projectDisplayName,
   rankProjectMatches,

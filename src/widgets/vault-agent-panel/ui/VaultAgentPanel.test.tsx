@@ -7,17 +7,17 @@ import messages from '../../../../messages/ko.json';
 
 const bridge = vi.hoisted(() => ({ available: false }));
 const constructionBridge = vi.hoisted(() => ({ pick: vi.fn(), preview: vi.fn(), read: vi.fn() }));
-vi.mock('@/shared/lib/tauri-local-construction', () => ({ previewConstructionSource: constructionBridge.preview, readConstructionSource: constructionBridge.read }));
-vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
+vi.mock('@/shared/lib/llm-connection/tauri-local-construction', () => ({ previewConstructionSource: constructionBridge.preview, readConstructionSource: constructionBridge.read }));
+vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
 const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>() }));
 
-vi.mock('@/shared/lib/tauri-llm', () => ({
+vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   isLlmChatBridgeAvailable: () => bridge.available,
   llmChat: vi.fn(async () => null),
   llmChatErrorMessage: (err: unknown) => String(err),
 }));
 
-vi.mock('@/shared/lib/tauri-secrets', () => ({
+vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({
   LOCAL_PROVIDER: 'local',
   LOCAL_DEFAULT_BASE_URL: 'http://localhost:11434',
   SECRET_PROVIDERS: ['anthropic', 'openai', 'gemini'],
@@ -58,7 +58,7 @@ vi.mock('@/features/vault-ontology', () => ({
 
 /** git history — the basis for continuity across sessions. The default is "not a git folder". */
 const gitBridge = vi.hoisted(() => ({ available: false, commits: [] as unknown[] }));
-vi.mock('@/shared/lib/tauri-git', () => ({
+vi.mock('@/shared/lib/git/tauri-git', () => ({
   isGitBridgeAvailable: () => gitBridge.available,
   gitHistory: vi.fn(async () => gitBridge.commits),
 }));
@@ -79,8 +79,8 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: (href: string) => navigation.pushed.push(href) }),
 }));
 
-import { llmChat } from '@/shared/lib/tauri-llm';
-import { writeLocalEndpoint } from '@/shared/lib/local-endpoint';
+import { llmChat } from '@/shared/lib/llm-connection/tauri-llm';
+import { writeLocalEndpoint } from '@/shared/lib/llm-connection/local-endpoint';
 import { VaultAgentPanel } from './VaultAgentPanel';
 
 beforeEach(() => {
@@ -295,7 +295,7 @@ describe('VaultAgentPanel', () => {
     // without consent, and it spends someone else's money (BYOK charges).
     bridge.available = true;
     loadQueueFolder();
-    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
 
     renderPanel({ insight: { nodes: [payNode], edges: [] } as never });
@@ -357,7 +357,7 @@ describe('VaultAgentPanel', () => {
 
   it('S7 — 바깥에서 건너온 첫 마디가 입력칸에 앉는다(전송 없이)', async () => {
     bridge.available = true;
-    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
     renderPanel({ prefillRequest: { text: '「환불」의 소속을 찾아 줘', nonce: 1 } });
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
@@ -449,7 +449,7 @@ describe('VaultAgentPanel', () => {
 
   it('holds every Enter that belongs to an IME composition and sends on the next plain Enter', async () => {
     bridge.available = true;
-    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    const { llmChat } = await import('@/shared/lib/llm-connection/tauri-llm');
     vi.mocked(llmChat).mockClear();
     renderPanel();
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));

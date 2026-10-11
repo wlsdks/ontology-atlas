@@ -6,7 +6,7 @@ import {
   WIKI_PAGE_TEMPLATE,
   WIKI_SECTION_ORDER,
   WIKI_SOURCES_DIR,
-} from "@/shared/lib/wiki-page-schema";
+} from "@/shared/lib/library/wiki-page-schema";
 
 /**
  * The one place a runner is told the compilation contract (ACP: `WIKI_PAGE_TEMPLATE`; local: typed

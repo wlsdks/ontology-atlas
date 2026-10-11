@@ -1,6 +1,6 @@
 /**
  * Minting a project source receipt, the pure half. No node imports, so the
- * browser workbench (`src/shared/lib/project-source-receipt.ts`), the CLI and
+ * browser workbench (`src/shared/lib/project-source/project-source-receipt.ts`), the CLI and
  * the MCP server share this one copy and mint byte-identical output.
  */
 

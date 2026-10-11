@@ -1,7 +1,7 @@
 // 4-way frontmatter parser contract — the same input must give the same output.
 //
 // Single source of truth: this fixture. Verified against:
-//   - src/shared/lib/parse-frontmatter.ts        (runtime)
+//   - src/shared/lib/vault-document/parse-frontmatter.ts        (runtime)
 //   - mcp/src/parser.mjs                         (AI agent surface, separate package)
 //   - scripts/lib/parse-frontmatter.mjs          (build scripts + validator CLI)
 //   - cli/src/lib/parse-frontmatter.mjs          (developer CLI, separate package)

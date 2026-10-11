@@ -1,10 +1,10 @@
 import { resolveNodeDocument, type KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { GrayAreaInspector, latestScopedInvestigation, useInvestigationHistory, type GrayAreaCandidate, type GrayAreaSelection } from '@/features/gray-area';
-import { focusMapCanvasWhenReady } from '@/shared/lib/focus-map-canvas';
-import { armMapLayoutMorph } from '@/shared/lib/map-layout-morph-store';
+import { focusMapCanvasWhenReady } from '@/shared/lib/map-canvas/focus-map-canvas';
+import { armMapLayoutMorph } from '@/shared/lib/map-canvas/map-layout-morph-store';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
-import { checkGrayAreaEvidence, type GrayAreaSnapshot } from '@/shared/lib/tauri-gray-area';
+import { checkGrayAreaEvidence, type GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import type { InvestigationSendGuard } from '@/features/acp-session';
 import { useTranslations } from 'next-intl';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';

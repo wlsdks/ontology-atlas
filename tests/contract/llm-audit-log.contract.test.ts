@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseLlmAuditLog } from '@/shared/lib/llm-audit-log';
+import { parseLlmAuditLog } from '@/shared/lib/llm-connection/llm-audit-log';
 
 const FIXTURE = join(__dirname, '../fixtures/llm-audit-log.sample.jsonl');
 

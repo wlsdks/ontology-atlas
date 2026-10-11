@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isGatewayRoute, isGatewaySurface } from '@/shared/lib/nav-destination';
+import { isGatewayRoute, isGatewaySurface } from '@/shared/lib/navigation/nav-destination';
 
 const repoRoot = resolve(__dirname, '../..');
 

@@ -9,7 +9,7 @@ const MountedGlobalSearch = dynamic(() => import("@/widgets/global-search").then
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { GuidedTourOverlay } from "@/features/guided-tour";
 import { readDrawnMapMarks } from "@/widgets/ontology-map";
-import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
+import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
 import dynamic from "next/dynamic";
 const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),

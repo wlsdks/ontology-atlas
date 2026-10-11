@@ -1,4 +1,4 @@
-import { projectSourceRepairWitness, type ProjectSourceView, type ProjectSourceWitnessInput } from "@/shared/lib/project-source-receipt";
+import { projectSourceRepairWitness, type ProjectSourceView, type ProjectSourceWitnessInput } from "@/shared/lib/project-source/project-source-receipt";
 
 export function resolveProjectSourceRepair(input: {
   view: ProjectSourceView | null;

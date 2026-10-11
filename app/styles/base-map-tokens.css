@@ -112,7 +112,7 @@
        spike standing down — and 45-degree rotation after that. Both were arbitration between
        two marks that meant different things, and the second rendered as an X drawn across the
        node. The walked star wears **no cross at all** now, so there is nothing to arbitrate and
-       the magnitude spike keeps its fact; `shared/lib/star-emission.ts` carries the reasoning.
+       the magnitude spike keeps its fact; `shared/lib/map-canvas/star-emission.ts` carries the reasoning.
        Gate: `tests/contract/canvas-composite-license.contract.test.ts`. */
     --color-footprint-trail-star: #ececf0;
     --map-numeral-shadow: #08080a;

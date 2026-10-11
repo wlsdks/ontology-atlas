@@ -5,9 +5,9 @@ const runTurn = vi.hoisted(() => vi.fn());
 const buildProposal = vi.hoisted(() => vi.fn());
 const sourceBridge = vi.hoisted(() => ({ preview: vi.fn(), read: vi.fn() }));
 const clipboard = vi.hoisted(() => ({ copyText: vi.fn() }));
-vi.mock('@/shared/lib/copy-text', () => clipboard);
+vi.mock('@/shared/lib/clipboard/copy-text', () => clipboard);
 const writes = vi.hoisted(() => ({ createDoc: vi.fn(), saveDoc: vi.fn(), refresh: vi.fn() }));
-vi.mock('@/shared/lib/tauri-local-construction', () => ({
+vi.mock('@/shared/lib/llm-connection/tauri-local-construction', () => ({
   previewConstructionSource: sourceBridge.preview, readConstructionSource: sourceBridge.read,
 }));
 
@@ -30,14 +30,14 @@ vi.mock('@/entities/vault-session', () => ({
   }),
 }));
 
-vi.mock('@/shared/lib/tauri-llm', () => ({
+vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   llmChat: vi.fn(async () => ({ text: '' })),
   llmChatErrorMessage: null,
 }));
 
 import { useVaultAgent, type UseVaultAgentArgs } from './use-vault-agent';
 import type { AgentTurn } from '@/features/vault-agent';
-import { llmChat } from '@/shared/lib/tauri-llm';
+import { llmChat } from '@/shared/lib/llm-connection/tauri-llm';
 import { EMPTY_SCREEN_CONTEXT } from '@/features/vault-agent/model/screen-context';
 
 type TurnResult = Awaited<ReturnType<typeof import('@/features/vault-agent').runTurn>>;

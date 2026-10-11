@@ -3,8 +3,8 @@ import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { hasBrokenTextEncoding } from "@/shared/lib/locale-display-name";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
+import { hasBrokenTextEncoding } from "@/shared/lib/locale-text/locale-display-name";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
 const ROOT = join(process.cwd(), "docs", "ontology");
 

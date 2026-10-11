@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { sourceOutline, type SourceOutline } from '@/shared/lib/source-passage';
+import { sourceOutline, type SourceOutline } from '@/shared/lib/library/source-passage';
 
 /**
  * **Read one file's shape, because a person opened its pane.**

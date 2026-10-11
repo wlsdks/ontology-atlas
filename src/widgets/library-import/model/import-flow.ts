@@ -13,7 +13,7 @@ import {
   type CatalogueEntry,
   type CatalogueVariant,
 } from '@/shared/config/mcp-catalogue';
-import type { ConnectorRecord } from '@/shared/lib/connector-record';
+import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 /**
  * The tiles in draw order; `other` is always last. `IMPORT_SERVICES` is the list and its `id` is

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import "./globals.css";
 import { controlClass } from '@/shared/ui/control-class';
-import { reportWebviewError } from '@/shared/lib/report-webview-error';
+import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';
 
 interface Props {
   error: Error & { digest?: string };

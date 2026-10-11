@@ -15,7 +15,7 @@ import {
   agentServerUnavailable,
   type AgentServerAvailability,
 } from '@/shared/config';
-import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
+import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
 
 export function useAgentServer(): AgentServerAvailability {
   /*

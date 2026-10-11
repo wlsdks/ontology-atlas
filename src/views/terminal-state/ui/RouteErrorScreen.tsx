@@ -5,7 +5,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { withBasePath } from '@/shared/lib/base-path';
+import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { TerminalState } from './TerminalState';
 import { StandaloneLocaleProvider, useStandaloneLocale } from './standalone-locale';
 

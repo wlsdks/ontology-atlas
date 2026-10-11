@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/evidence-states';
-import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
-import { gitBoundEvidenceDates, isGitBridgeAvailable, type BoundEvidenceDates, type GitPathLastChange } from '@/shared/lib/tauri-git';
-import { pickTauriSourceDirectory } from '@/shared/lib/tauri-vault-fs';
+import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
+import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
+import { gitBoundEvidenceDates, isGitBridgeAvailable, type BoundEvidenceDates, type GitPathLastChange } from '@/shared/lib/git/tauri-git';
+import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 type Status = BoundEvidenceDates['status'] | 'reading' | 'app-only' | 'no-source' | 'no-anchors';
 type ChangeMap = ReadonlyMap<string, GitPathLastChange>;

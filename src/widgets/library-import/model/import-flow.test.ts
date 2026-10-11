@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { serializeConnectorState } from '@/shared/lib/connector-record';
+import { serializeConnectorState } from '@/shared/lib/connectors/connector-record';
 
 import {
   DEFAULT_IMPORT_LIMIT,

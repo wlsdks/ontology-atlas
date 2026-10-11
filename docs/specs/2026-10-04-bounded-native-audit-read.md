@@ -25,16 +25,16 @@ human-correction boundaries remain constraints to prove, rather than assumptions
 ## Today
 
 - JSONL uses `TauriFileHandle.getFile()`, which receives all binary bytes before
-  constructing a File (`src/shared/lib/tauri-vault-fs.ts:103-125`).
+  constructing a File (`src/shared/lib/vault-folder/tauri-vault-fs.ts:103-125`).
 - Native binary reading allocates the file length plus its eight-byte stamp and
   reads to EOF (`src-tauri/src/lib.rs:2468-2495`). The lead's 10MiB/64MiB probe
   returned 10,485,768/67,108,872 bytes with equal buffer capacities. These are
   allocation-capacity measurements, not peak RSS or installed-app latency.
 - The shared reader admits v1 rows with string `at` and `provider`, skips broken
   rows, preserves unknown/legacy fields, counts all admitted rows and retains a
-  requested tail (`src/shared/lib/llm-audit-log.ts:114-154,170-211`). It decodes in
+  requested tail (`src/shared/lib/llm-connection/llm-audit-log.ts:114-154,170-211`). It decodes in
   64KiB pieces with cooperative yielding; cancellation and errors currently return
-  zero (`src/shared/lib/llm-audit-log.ts:156-168,214-270`).
+  zero (`src/shared/lib/llm-connection/llm-audit-log.ts:156-168,214-270`).
 - Settings asks for five entries and suppresses abandoned results
   (`src/widgets/app-settings-menu/model/use-ai-connection.ts:108-128`). The screen
   withholds unread counts, renders zero as nothing sent, reverses the tail for

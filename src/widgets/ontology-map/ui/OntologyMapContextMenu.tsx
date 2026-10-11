@@ -6,7 +6,7 @@ import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass, RowButton, Surface } from "@/shared/ui";
-import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
+import { currentFloatingRightBound } from "@/shared/lib/overlays/right-dock-reserve";
 
 /**
  * W2-B — node right-click context menu (`use-topology-loop.ts`'s

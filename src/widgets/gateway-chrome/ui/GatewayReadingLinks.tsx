@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
-import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 import { controlClass } from '@/shared/ui/control-class';
 
 /**

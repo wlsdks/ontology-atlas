@@ -85,7 +85,7 @@ returns today.
 
 `isSecret` is the field Atlas's catalogue needs most: it is the publisher saying
 "this one is a credential", which is exactly the judgement
-`looksLikeSecretKey()` in `src/shared/lib/connector-record.ts` has to make from
+`looksLikeSecretKey()` in `src/shared/lib/connectors/connector-record.ts` has to make from
 a name alone today.
 (<https://github.com/modelcontextprotocol/registry/blob/main/docs/reference/server-json/generic-server-json.md>,
 observed 2026-09-07.)

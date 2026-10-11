@@ -3,14 +3,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useFormatter } from "next-intl";
 import { cn } from "@/shared/lib/cn";
-import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { shortHash, stripConventionalPrefix } from "../lib/step-title";
 import { arrivalLens, type DocumentFollow, type Lens } from "../lib/document-follow";
-import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
-import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/tauri-git";
-import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/atlas-git-record";
+import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/git/tauri-git";
+import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";
 import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { ambientSleepFactor, isAmbientAsleep } from "@/widgets/ontology-map";
-import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
 
 import {

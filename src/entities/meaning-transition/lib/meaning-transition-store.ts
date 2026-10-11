@@ -1,4 +1,4 @@
-import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import {
   appendTauriMeaningTransitionBundle,
   canArchiveMeaningTransitions,
@@ -7,14 +7,14 @@ import {
   readTauriMeaningTransitionArtifact,
   readTauriMeaningTransitionRecord,
   type MeaningTransitionRootIdentity,
-} from '@/shared/lib/tauri-meaning-transition-archive';
+} from '@/shared/lib/meaning-transition/tauri-meaning-transition-archive';
 import {
   parseMeaningTransition,
   serializeMeaningTransition,
   verifyMeaningTransitionDigest,
   type MeaningTransitionCandidate,
   type MeaningTransitionPreparation,
-} from '@/shared/lib/meaning-transition';
+} from '@/shared/lib/meaning-transition/meaning-transition';
 import {
   assertMeaningTransitionV2Link,
   meaningTransitionV2DecisionArtifact,
@@ -22,7 +22,7 @@ import {
   serializeMeaningTransitionV2,
   verifyMeaningTransitionV2,
   type MeaningTransitionV2,
-} from '@/shared/lib/meaning-transition-v2';
+} from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
 export interface MeaningTransitionArtifactBytes { digest: `sha256:${string}`; content: string }
 export interface MeaningTransitionArchivePage {

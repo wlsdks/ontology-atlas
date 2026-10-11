@@ -1,5 +1,5 @@
 import { isGuardedRuntime } from '@/features/acp-session';
-import type { AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
+import type { AcpRuntimeStatus } from '@/shared/lib/agent-chat/tauri-acp';
 
 export type ArchitectureAgentRoute = 'checking' | 'agent' | 'clipboard';
 

@@ -1,5 +1,5 @@
 import { buildTopologyDeeplinkForDoc, type VaultDoc } from "@/entities/docs-vault";
-import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-text/locale-display-name";
 
 /**
  * The library's own graph: what this folder's write-ups are made of. It is not the map

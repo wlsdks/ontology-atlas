@@ -1,4 +1,4 @@
-import { WIKI_SECTION_ORDER, WIKI_SOURCES_DIR } from '@/shared/lib/wiki-page-schema';
+import { WIKI_SECTION_ORDER, WIKI_SOURCES_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 import { COMPILE_SOURCES_PER_TURN } from './compile-tool-catalog';
 import { SOURCE_TEXT_CHAR_CAP } from './source-text';
