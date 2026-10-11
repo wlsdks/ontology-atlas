@@ -1,6 +1,7 @@
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
+import { readReviewedEvidence } from './agent-brief/reviewed-evidence.mjs';
 import { extractSummaryExcerpt } from './vault/documents.mjs';
 
 const TASK_NAVIGATION_EVIDENCE_CONTRACT = 'taskNavigation:v1';
@@ -35,28 +36,6 @@ function empty(status, overrides = {}) {
 
 function normalizeText(value) {
   return String(value ?? '').normalize('NFKC').trim();
-}
-
-function markdownSection(body, heading) {
-  if (typeof body !== 'string' || !body) return '';
-  const wanted = heading.toLocaleLowerCase('en-US');
-  const rows = [];
-  let collecting = false;
-  for (const line of body.split('\n')) {
-    const match = line.match(/^##\s+(.+?)\s*$/);
-    if (match) {
-      if (collecting) break;
-      collecting = match[1].trim().toLocaleLowerCase('en-US') === wanted;
-      continue;
-    }
-    if (collecting) rows.push(line);
-  }
-  return rows.join('\n').trim();
-}
-
-function boundedSection(body, heading) {
-  const section = markdownSection(body, heading);
-  return section ? extractSummaryExcerpt(section, 280) : '';
 }
 
 function safeRelativeFilePath(value) {
@@ -110,26 +89,27 @@ export function parseTaskNavigationEvidenceSource(value) {
 function reviewedCoordinates(docs) {
   const coordinates = [];
   const diagnostics = [];
-  // One element's coordinates per handoff: reading every ranked anchor as one list
-  // trips the 1/1/3 cardinality cap. The first ranked element with a coordinate is
-  // the navigation source; the rest stay reachable through nextReads.
+  // Combining ranked anchors would trip the per-element 1/1/3 coordinate cap.
   let sourceDoc = null;
+  let sourceEvidence = null;
   for (const doc of Array.isArray(docs) ? docs : []) {
     if (doc?.frontmatter?.kind !== 'element') continue;
-    const section = markdownSection(doc?.body, 'Evidence');
-    if (!section) continue;
-    if (sourceDoc && sourceDoc !== doc) continue;
+    const evidence = readReviewedEvidence(doc.body);
     let recorded = false;
-    for (const line of section.split('\n')) {
+    for (const { line, code } of evidence.fields) {
       const match = line.match(/^\s*-\s*(Primary implementation|Supporting implementation|Focused test):\s*`([^`]+)`(?:\s+.*)?$/);
-      if (!match) continue;
+      if (!match || normalizeText(match[2]) !== normalizeText(code)) continue;
       const role = LABEL_TO_ROLE.get(match[1]);
       const parsed = parseCoordinate(match[2], role, doc);
       recorded = true;
       if (parsed.coordinate) coordinates.push(parsed.coordinate);
       else diagnostics.push(parsed.diagnostic);
     }
-    if (recorded && !sourceDoc) sourceDoc = doc;
+    if (recorded) {
+      sourceDoc = doc;
+      sourceEvidence = evidence;
+      break;
+    }
   }
   const unique = [];
   const seen = new Set();
@@ -139,7 +119,7 @@ function reviewedCoordinates(docs) {
     seen.add(key);
     unique.push(coordinate);
   }
-  return { coordinates: unique, diagnostics, sourceSlug: sourceDoc?.slug ?? null };
+  return { coordinates: unique, diagnostics, sourceSlug: sourceDoc?.slug ?? null, sourceEvidence };
 }
 
 function outside(root, target) {
@@ -773,10 +753,8 @@ export function buildTaskNavigationEvidence(input = {}) {
   const primary = targets.find((target) => target.role === 'primary') ?? null;
   const supporting = targets.find((target) => target.role === 'supporting') ?? null;
   const tests = targets.filter((target) => target.role === 'test');
-  const boundaryDoc = reviewed.coordinates.find((coordinate) => coordinate.role === 'primary')?.doc
-    ?? reviewed.coordinates[0]?.doc;
-  const boundaryIn = boundedSection(boundaryDoc?.body, 'Includes');
-  const boundaryOut = boundedSection(boundaryDoc?.body, 'Excludes');
+  const boundaryIn = extractSummaryExcerpt(reviewed.sourceEvidence?.includes ?? '', 280);
+  const boundaryOut = extractSummaryExcerpt(reviewed.sourceEvidence?.excludes ?? '', 280);
   const boundary = {
     in: boundaryIn,
     out: boundaryOut,

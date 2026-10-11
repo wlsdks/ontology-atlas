@@ -823,6 +823,12 @@ checks only those named files, requires each symbol/test to resolve uniquely,
 and returns current line locators plus the element's reviewed non-exhaustive
 Includes/Excludes boundary. Missing, ambiguous, outside-root, symlinked, or
 unrecorded evidence emits no exact target; task text never creates one. A
+coordinate must be a direct hyphen-list field under a top-level `## Evidence`
+section. Fenced/indented code, HTML blocks/comments, quotations, and nested
+example lists cannot supply coordinates. Code blocks, HTML blocks/comments and blockquotes cannot
+supply scope boundaries or runner manifests; genuine nested boundary conditions
+are retained. Example-only elements do not prevent selection of the next
+element with authored coordinates. A
 receipt that is behind the source (`source_changed`) does not by itself hide
 coordinates: the same bounded probe that found the change re-checks every
 recorded witness path against the live inventory, and when all of them still

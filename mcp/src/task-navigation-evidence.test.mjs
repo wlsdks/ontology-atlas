@@ -44,6 +44,109 @@ afterEach(() => {
 });
 
 describe('task navigation evidence', () => {
+  test('never promotes literal or quoted Markdown examples into reviewed navigation', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const coordinates = '- Primary implementation: `src/writer.mjs#writeValue`\n- Focused test: `tests/writer.test.mjs#writes values`';
+    const boundary = '\n\n## Includes\n\nWriting values.\n\n## Excludes\n\nParsing values.\n';
+    const literal = [
+      (text) => `\`\`\`markdown\n${text}\n\`\`\``,
+      (text) => `~~~~markdown\n${text}\n~~~\n~~~~`,
+      (text) => `<!--\n${text}\n-->`,
+      (text) => `<pre>\n${text}\n</pre>`,
+      (text) => `<div>\n${text}\n</div>`,
+      (text) => `<?example\n${text}\n?>`,
+      (text) => `<![CDATA[\n${text}\n]]>`,
+      (text) => text.split('\n').map((line) => `    ${line}`).join('\n'),
+      (text) => text.split('\n').map((line) => `> ${line}`).join('\n'),
+      (text) => `- Example:\n\n${text.split('\n').map((line) => `    ${line}`).join('\n')}`,
+    ];
+    for (const wrap of literal) {
+      for (const body of [
+        `${wrap(`## Evidence\n\n${coordinates}`)}${boundary}`,
+        `## Evidence\n\n${wrap(coordinates)}${boundary}`,
+      ]) {
+        const result = current(root, [doc('elements/writer', body)]);
+        assert.equal(result.status, 'unknown', body);
+        assert.equal(result.primary, null);
+        assert.equal(result.tests.length, 0);
+        assert.equal(result.readPlan.targetCount, 0);
+        assert.equal(result.evidenceElement, undefined);
+      }
+    }
+    const genuine = current(root, [doc('elements/writer', `## Evidence\n\n${coordinates}${boundary}`)]);
+    assert.equal(genuine.status, 'ready');
+    assert.equal(genuine.readPlan.targetCount, 2);
+  });
+
+  test('selects genuine evidence after example-only anchors and preserves nested boundary conditions', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const coordinates = '- Primary implementation: `src/writer.mjs#writeValue`\n- Focused test: `tests/writer.test.mjs#writes values`';
+    const body = `## Evidence\n\n\`\`\`md\n- Primary implementation: \`src/missing.mjs#example\`\n\`\`\`\n\n<!--\n- Focused test: \`tests/missing.test.mjs#example\`\n-->\n\n${coordinates}\n\n## Includes\n\n- Writing values.\n    - Only after approval.\n\n## Excludes\n\nParsing values.\n`;
+    const result = current(root, [
+      doc('elements/example', `## Evidence\n\n\`\`\`md\n${coordinates}\n\`\`\``),
+      doc('elements/writer', body),
+    ]);
+    assert.equal(result.status, 'ready');
+    assert.equal(result.evidenceElement, 'elements/writer');
+    assert.equal(result.primary.path, 'src/writer.mjs');
+    assert.deepEqual(result.diagnostics, []);
+    assert.ok(result.boundary.in.includes('Only after approval.'));
+  });
+
+  test('keeps readiness partial when its only scope boundaries are examples', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const result = current(root, [doc('elements/writer', '## Evidence\n\n- Primary implementation: `src/writer.mjs#writeValue`\n- Focused test: `tests/writer.test.mjs#writes values`\n\n## Includes\n\n```md\nWriting everything.\n```\n\n## Excludes\n\n<!--\nNothing is excluded.\n-->\n')]);
+    assert.equal(result.status, 'partial');
+    assert.equal(result.primary.path, 'src/writer.mjs');
+    assert.deepEqual(result.boundary, { in: '', out: '', completeness: 'unknown' });
+  });
+
+  test('preserves real evidence beside large examples, Unicode prose, and inline fence markers', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const coordinate = '- Primary implementation: `src/writer.mjs#writeValue`';
+    const body = `## Definition\n\nUse \`\`\` markers for examples.\n\n\`\`\`md\n${(`${coordinate}\n`).repeat(2000)}\`\`\`\n\n## Evidence\n\n${coordinate}\n${coordinate}\n- Focused test: \`tests/writer.test.mjs#writes values\`\n\n## Includes\n\n승인 이후에만 기록합니다.\n\n## Excludes\n\n외부 저장소에는 쓰지 않습니다.\n`;
+    const result = current(root, [doc('elements/empty', ''), doc('elements/writer', body)]);
+    assert.equal(result.status, 'ready');
+    assert.equal(result.readPlan.targetCount, 2);
+    assert.equal(result.boundary.in, '승인 이후에만 기록합니다.');
+    assert.equal(result.boundary.out, '외부 저장소에는 쓰지 않습니다.');
+    assert.equal(current(root, [doc('elements/empty', '')]).status, 'unknown');
+    const escaped = current(root, [doc('elements/escaped', '## Evidence\n\n- Primary implementation: \\`src/writer.mjs#writeValue\\`\n')]);
+    assert.equal(escaped.status, 'unknown');
+  });
+
+  test('reads deeply nested inline markup without overflowing the call stack', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const nested = '*a '.repeat(3000) + '`package.json`' + ' a*'.repeat(3000);
+    const onlyManifest = current(root, [doc('elements/nested-evidence', `## Evidence\n\n${nested}`)]);
+    assert.equal(onlyManifest.status, 'unknown');
+    const result = current(root, [doc('elements/writer', `## Evidence\n\n${nested}\n\n- Primary implementation: \`src/writer.mjs#writeValue\`\n- Focused test: \`tests/writer.test.mjs#writes values\`\n\n## Includes\n\n${nested}\n\n## Excludes\n\n${nested}\n`)]);
+    assert.equal(result.status, 'ready');
+    assert.equal(result.readPlan.targetCount, 2);
+    assert.ok(result.boundary.in.length > 0);
+    assert.ok(result.boundary.out.length > 0);
+  });
+
+  test('preserves whitespace normalization in reviewed code spans', () => {
+    const root = box();
+    write(root, 'src/writer.mjs', 'export function writeValue() { return true; }\n');
+    write(root, 'tests/writer.test.mjs', "test('writes values', () => {});\n");
+    const result = current(root, [doc('elements/writer', '## Evidence\n\n- Primary implementation: ` src/writer.mjs#writeValue `\n- Focused test: `  tests/writer.test.mjs#writes values  `\n\n## Includes\n\nWriting.\n\n## Excludes\n\nParsing.\n')]);
+    assert.equal(result.status, 'ready');
+    assert.equal(result.primary.symbol, 'writeValue');
+    assert.equal(result.tests[0].symbol, 'writes values');
+  });
+
   test('resolves reviewed Rust implementation, supporting, test, and boundary evidence', () => {
     const root = box();
     write(root, 'src/types.rs', [
