@@ -31,8 +31,6 @@ describe('who holds the write checkpoint', () => {
   });
 
   it('keeps the gate on the server for a runtime whose config does not ask', () => {
-    // Measured 2026-08-24: Codex `read-only` blocked direct file writes while an
-    // Atlas MCP write went through with no permission request.
     expect(runtimeOwnsWriteGate('codex-acp')).toBe(false);
   });
 
@@ -59,17 +57,8 @@ describe('who holds the write checkpoint', () => {
   });
 
   /**
-   * ⚠️ **Isolation and gate ownership are not the same claim**, and conflating them is
-   * how 2026-08-24 happened. Rust's `ISOLATION` says only "the app can control this
-   * runtime's config directory". Owning the gate is the stronger claim that the
-   * resulting configuration actually produces a permission request *for MCP writes* —
-   * measured true for Claude, measured **false** for Codex, whose isolated
-   * `CODEX_HOME` was read (the `model` value applied) while the approval policy was
-   * overridden and an Atlas write landed unasked.
-   *
-   * So the invariant is one-directional: a runtime may be isolated without owning the
-   * gate, but it must never own the gate without being isolated — that would hand the
-   * checkpoint to a configuration the app cannot control.
+   * Isolation and gate ownership differ: a runtime may be isolated without owning the gate,
+   * but must never own the gate without being isolated.
    */
   it('never claims gate ownership for a runtime the app does not isolate', () => {
     const rust = readAcpRust(process.cwd());

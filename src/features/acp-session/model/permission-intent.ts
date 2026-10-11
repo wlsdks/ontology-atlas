@@ -1,22 +1,6 @@
 /**
- * **What the agent is trying to do** — the one word the permission card shows.
- *
- * ## Why (measured 2026-08-17)
- *
- * The permission card shows the path large and in mono, but **whether it means to read, edit, or
- * delete was nowhere.** Reading `/etc/hosts` and editing it are entirely different decisions, and the
- * screen looked identical.
- *
- * The value was arriving — `toolKind` comes with the request, and that field's own comment says it is
- * *"the typed fact the screen picks its icon and colour from"*. The screen simply was not using it.
- * A shape this repository met several times in one day: **computed, with nobody reading it.**
- *
- * ## Unknown is stated as unknown
- *
- * The kind names differ per adapter and may not be sent at all. Guessing "read" then **errs toward the
- * most dangerous side** — a person allows it with confidence. Unknown is stated as unknown, and the
- * judgement is left to the path and the tool name. The same goes for `other`: the adapter failing to
- * classify is not the same statement as "read".
+ * The one word the permission card shows for what the agent is trying to do. Unknown stays
+ * unknown: guessing "read" errs toward the dangerous side, and `other` is not "read".
  */
 
 export type PermissionIntent = 'read' | 'edit' | 'delete' | 'execute' | 'unknown';

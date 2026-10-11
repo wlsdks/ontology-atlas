@@ -2,16 +2,8 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-// Regression guard for public-route coherence.
-//
-// Both `app/sitemap.ts` and `generateStaticParams` in `app/project/[slug]/page.tsx`
-// call `fetchAllProjectsAtBuild`, but Next.js fetch-cache pollution can make them
-// produce different project sets — actually observed 2026-04-20. If the
-// /project/{slug}/ URLs in the built out/sitemap.xml do not match the out/project/*/
-// directories, SEO either advertises 404 URLs or hides real pages from search
-// engines.
-//
-// Skips silently when out/ is absent; fails on a mismatch when it exists.
+// Next.js fetch-cache pollution can make `app/sitemap.ts` and `generateStaticParams` produce
+// different project sets. Skips when out/ is absent; fails on mismatch otherwise.
 describe("공개 라우트 정합성", () => {
   it("out/sitemap.xml 의 프로젝트 URL이 out/<locale>/project/*/ 디렉터리와 정확히 일치한다", async () => {
     const root = path.resolve(__dirname, "../../../..");
@@ -46,8 +38,8 @@ describe("공개 라우트 정합성", () => {
       for (const entry of builtEntries) {
         if (!entry.isDirectory()) continue;
         const name = entry.name;
-        // Next.js internals, legacy redirects, the new-project route, and the
-        // client fallback shell are not real project slugs.
+        // Next.js internals, legacy redirects, the new-project route and the client fallback shell are not
+        // slugs.
         if (name.startsWith("__next")) continue;
         if (name === "view" || name === "topology" || name === "new" || name === "fallback") continue;
         builtSlugs.add(name);

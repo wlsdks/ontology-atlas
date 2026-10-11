@@ -1,27 +1,9 @@
 import { Channel, invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * ACP harness — the Tauri IPC bridge (`src-tauri/src/acp/` plus the five commands in
- * `acp_session`).
- *
- * Contract (the Rust code is the source of truth):
- * - `acp_detect_runtimes()` → `AcpRuntimeStatus[]` — what exists on this machine
- * - `acp_start(runtimeId, cwd, onEvent)` → session name — spawns the process
- * - `acp_send(sessionId, line)` → send one line (Rust appends the newline)
- * - `acp_stop(sessionId)` → ends that session **and everything it spawned**
- * - `acp_permission_verdict(sessionId, filePath)` → `allow-inside-vault` | `ask`
- *
- * Four kinds of event come up the session's own channel: `message` (one protocol line),
- * `stderr` (diagnostics), `exit` (finished), `notice` (dropped lines and similar).
- *
- * Outside Tauri, detection/start return null, send/stop are no-ops, and path
- * permissions return ask. Callers use the existing desktop-only explanations.
- *
- * **The verdict is not reimplemented here.** The permission policy (allow inside the
- * vault, ask outside it) lives only in Rust. A second copy means one of them drifts
- * looser, and the looser one is the copy the user sees. The verdict also has to resolve
- * symlinks and normalise the ancestors of paths that do not exist yet, which the browser
- * cannot do accurately in the first place.
+ * Tauri IPC bridge for ACP (`src-tauri/src/acp/`); the Rust code is the source of truth. Outside
+ * Tauri, detection and start return null, send and stop are no-ops, path permissions return ask. The
+ * path permission policy lives only in Rust; a second copy would drift.
  */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -59,27 +41,8 @@ export interface AcpRuntimeStatus {
   brandInk: string | null;
   launchKind: 'npx' | 'uvx' | 'binary';
   /**
-   * `ready` — **found** on this machine; it can be launched.
-   * `cli-unknown` — launchable, but **we have no way yet to check whether the tool is
-   *   installed** (the executable name that adapter wraps was never recorded). Work left
-   *   on our side, not the user's.
-   * `login-needed` — the tool is there but **not logged in**; one login in that tool
-   *   fixes it. Without this branch the screen says "ready" and then dies with
-   *   `Authentication required` only when a conversation opens.
-   * `login-unknown` — we asked whether it is signed in and **could not get an answer**. Not the
-   *   same as `cli-unknown` (never asked) and not the same as `login-needed` (asked, told no).
-   *   Owner report: under load, right after an in-app session ended, both measured
-   *   runtimes wore 「Sign in needed」 while the same commands exited 0 from a shell. The tool is
-   *   present and launchable, so this row stays usable — only the claim is withdrawn.
-   * `cli-missing` — the tool must be installed.
-   * `node-missing` — the tool is there, but there is no Node to run the adapter.
-   * `uvx-missing` — likewise, no uv.
-   * `binary-missing` — a manually installed executable is absent.
-   *
-   * These eight are never collapsed into installed/not-installed — each implies a
-   * different next action. Merging `ready` with `cli-unknown` in particular makes the
-   * screen **report as verified something it never checked** (20 of 38 were
-   * in that state).
+   * `cli-unknown` and `login-unknown` mean not verified; never report them as `ready`. Each state
+   * implies a different next action.
    */
   state:
     | 'ready'

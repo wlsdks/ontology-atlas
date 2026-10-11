@@ -35,21 +35,9 @@ export const CONNECTOR_TRANSPORTS = ['stdio', 'http'] as const;
 export type ConnectorTransport = (typeof CONNECTOR_TRANSPORTS)[number];
 
 /**
- * One environment variable or HTTP header.
- *
- * **`secretRef` is the person's decision, not a guess about the name.** Whether a value lives in
- * this machine's keychain or in this file is a per-variable choice they make, and its presence
- * here *is* that choice: a reference means the keychain holds it, its absence means the value (if
- * any) is written beside the connector.
- *
- * ⚠️ **The name still decides one thing**, and only one: a credential-shaped name may never carry
- * a literal in the file, so `serializeConnectorState` refuses one whether or not somebody turned
- * the keychain off for it. The name is a **default suggestion** for the choice and a **hard floor**
- * on what may be written; it is not the whole answer, which is what it used to be
- * (measured: `OPENAPI_MCP_HEADERS` - the variable Notion's own server documents, and
- * which carries `Bearer ntn_...` - matched nothing, so the screen offered no field at all and the
- * connector attached with its credential absent while looking perfectly healthy. `GH_PAT`,
- * `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and `COOKIE` all missed the same way.)
+ * `secretRef` is the person's per-variable choice of keychain over file; its presence is that
+ * choice. The name still sets a floor: a credential-shaped name may never carry a literal in the
+ * file (`serializeConnectorState` refuses it).
  */
 export interface ConnectorValueEntry {
   name: string;

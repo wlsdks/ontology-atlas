@@ -5,27 +5,9 @@ import { RowHeightIndex } from "./row-height-index";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /**
- * **Only the rows in view are in the DOM.**
- *
- * A list of 3,000 file rows (installed app, 2026-09-18) cost 33,000 DOM nodes and ~450 ms
- * of element creation on the rail press, and every later measurement that forced layout
- * (`scrollTop`, `scrollHeight`, a tab strip's edges) paid for the whole tree again. Skipping
- * paint for off-screen rows (`content-visibility`) changed nothing, because the cost was
- * the elements, not their pixels. So the list renders the rows that intersect the scroller
- * plus an overscan, and pads the rest with the heights it has measured or estimated.
- *
- * The scroller is the nearest ancestor that scrolls vertically; the list does not own it,
- * because in the Library the column above the list is the one scroller (a section that
- * could shrink is a section that can cut a row in half). Heights are read off the rows that
- * are rendered and remembered per index, so rows of different heights (a two-line title,
- * a folded caption) stay exact once seen; the unseen use the estimate. Without a scroller,
- * every row renders. A zero-height scroller retains a bounded seed until resized.
- *
- * The caller applies `before` and `after` as the list's top and bottom padding (adding its
- * own base padding back), renders `rows.slice(start, end)`, and puts the ref on the list.
- * The third element brings a row into the scroller, for a keyboard walk over rows that
- * are not rendered yet. Returned as a tuple, so the window is a value and the ref stays a
- * ref to the lint.
+ * Only the rows in view are in the DOM: rows intersecting the scroller plus an overscan, padded with
+ * measured or estimated heights; the cost was the elements, not their pixels. The scroller is the
+ * nearest vertically scrolling ancestor; the list does not own it.
  */
 
 export interface WindowedRows {
@@ -157,11 +139,9 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   }, [count, estimate, overscan, initialRows]);
 
   /**
-   * Bring row `index` into the scroller, the way `scrollIntoView({ block: "nearest" })`
-   * would if the row existed: the keyboard walks rows that are not rendered yet, so the
-   * scroller moves first, the window follows on its scroll event, and the row is there to
-   * take focus. Rendering the row where the viewport is not (a "pin") was tried and rendered
-   * every row between the two (measured 2026-09-19: Home at the shelf's end drew all 400).
+   * Bring row `index` into the scroller as `scrollIntoView({ block: "nearest" })` would if the row
+   * existed: the scroller moves first and the window follows on scroll. Rendering a pinned row away
+   * from the viewport would render every row between.
    */
   const scrollToRowRef = useRef<((index: number) => void) | null>(null);
   const scrollToRow = useCallback(

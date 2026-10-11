@@ -1,20 +1,7 @@
 /**
- * Korean particles — **pick one when it can be known, show both only when it
- * cannot.**
- *
- * **Why this exists** (2026-07-29, while dogfooding). Finishing the tutorial
- * used both object-particle forms after a Korean name that ends in a vowel, even
- * though only the no-final-consonant form was correct. Showing both is a
- * **fallback for not knowing**, not a default: once the name is known the
- * particle is decided. The repo's habit is not to ask the user something the
- * screen already knows.
- *
- * **When both are kept.** Only when the last character is **neither a Hangul
- * syllable nor a digit**. For a name ending in Latin letters (`order-create`)
- * there is no settled pronunciation, so no final consonant can be derived —
- * different Korean pronunciations may end with or without a final consonant.
- * Choosing either is unreliable, so showing both is the honest answer, and this
- * function's fallback returns exactly that.
+ * Korean particles: pick one when it can be known, show both only when it cannot. Both are kept only
+ * when the last character is neither a Hangul syllable nor a digit (for example Latin letters),
+ * where no final consonant can be derived.
  */
 
 /** Particle pairs selected by whether the preceding word ends in a final consonant: [with, without]. */

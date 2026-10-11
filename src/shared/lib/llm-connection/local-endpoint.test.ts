@@ -32,7 +32,6 @@ beforeEach(() => {
 
 describe('설치된 모델 목록', () => {
   it('OpenAI 호환 목록에서 이름만 꺼낸다', () => {
-    // The exact response shape measured on the owner's machine, 2026-08-01.
     const body = JSON.stringify({
       object: 'list',
       data: [
@@ -54,10 +53,7 @@ describe('설치된 모델 목록', () => {
   });
 
   it('임베딩 전용 모델은 1번이 되지 못한다 (알파벳 → 쓸모)', () => {
-    // Measured on the owner's machine 2026-08-01: 4 of 7 models were embedding-only,
-    // and alphabetical order put `embeddinggemma:latest` first, so it was selected
-    // and saved as "connected" — a state that would fail on the first question was
-    // reported as success.
+    // Alphabetical order would select an embedding-only model first and save it as connected.
     const body = JSON.stringify({
       data: [
         { id: 'qwen3:8b' },

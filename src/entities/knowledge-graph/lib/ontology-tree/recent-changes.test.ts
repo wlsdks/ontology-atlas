@@ -42,7 +42,7 @@ describe("isWithinRecentWindow", () => {
   });
 
   it("excludes only timestamps beyond the 24h future window", () => {
-    // NOW = 2026-07-21T12:00Z; +12h is session-created.
+    // A timestamp 12 hours ahead is session-created; 25 hours ahead is clock skew.
     expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
     // +25h is clock skew.
     expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);

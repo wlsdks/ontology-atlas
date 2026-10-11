@@ -9,7 +9,7 @@ export const PROMOTION_MIN_FAN_IN = 4;
 export interface OntologyHealthActionTarget {
   slug: string;
   title: string;
-  // `island` and `containment` come from the CLI-parity health verdict and rank first, because the
+  // `island` and `containment` come from the CLI-parity health result and rank first, because the
   // CLI reports `needs_attention` on them.
   kind: "island" | "containment" | "stale" | "orphan" | "promotion";
 }

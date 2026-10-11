@@ -45,14 +45,6 @@ describe('gitInstallGuide', () => {
   });
 });
 
-/**
- * Platform detection — a pure function, so strings are all that go in.
- *
- * Why it exists: the install guidance (`gitInstallGuide`) and its 13 strings **were
- * already there and no screen called them** (found 2026-08-02: `AtlasGitPanel` called
- * `gitProbe` zero times). The door was fully built but never cut open, and the last
- * missing piece was knowing which OS this computer is.
- */
 describe('gitHostPlatformFrom', () => {
   it.each([
     ['MacIntel', 'macos'],

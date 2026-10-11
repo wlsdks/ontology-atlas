@@ -1,28 +1,7 @@
 /**
- * Events where the **shape of the vault** changed — a domain appearing or disappearing, a
- * bridge being inserted.
- *
- * **Why the manifest and not the activity log** (measured). The first idea was to read
- * `domains/…` out of the activity log's `target`. Checked against 98 real log lines, it
- * catches **nothing**: domains are almost always born through `add_concepts` (a batch), and
- * a batch's target is `(batch)` (`summarizeWrite` in `mcp/src/index.js`). Across two real
- * logs, the only domain write with an individual target was one
- * `delete_concept domains/example-domain`.
- *
- * So the source of truth for these events is **the manifest on disk**. Batch write, single
- * write, or a person editing by hand — if the vault gained a domain, the manifest gained
- * one. The activity log knows when and who; the manifest knows what.
- *
- * **Bridges are measured exactly as the ledger defines them.** The 2026-08-01 ledger entry
- * (bridge nodes as a first-class concept in the spec) describes the procedure as *"Name the shared behaviour with one `add_concept`, then re-parent the children onto it."* — name the shared behaviour with one
- * `add_concept`, then re-parent the children onto it. So a bridge here is **a newly created
- * node that two or more pre-existing nodes moved their parent onto**. No new `kind` is
- * invented: a bridge-specific kind has no agreed values yet (`docs/DESIGN-SYSTEM.md`
- * "Node spec" §5 reserves the slot and nothing more), and guessing at a kind
- * that does not exist is precisely the failure this file avoids.
- *
- * Why **two or more**: a single move is a changed parent, not a new layer of hierarchy.
- * Notifications belong to events that are rare and hard to reverse.
+ * Shape events come from the manifest, not the activity log: a batch's target is `(batch)`. A bridge
+ * is a newly created node that two or more pre-existing nodes moved their parent onto; no new `kind`
+ * is invented.
  */
 import { resolveLocaleDisplayName } from "../locale-text/locale-display-name";
 

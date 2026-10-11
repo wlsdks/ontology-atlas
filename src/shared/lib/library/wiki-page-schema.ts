@@ -17,12 +17,8 @@ import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter'
  */
 
 /**
- * Vault folder holding wiki pages.
- *
- * Defined beside the link resolver in `parse-frontmatter.ts` and re-exported here, so the
- * folder half of the contract and the renderer fold a bare `[[slug]]` into the *same*
- * name. They drifted apart once (2026-09-09) and the folder reported the opposite of what
- * the screen drew; one constant is the cheapest guard against a second time.
+ * Vault folder holding wiki pages. Defined beside the link resolver in `parse-frontmatter.ts` and
+ * re-exported so the folder contract and the renderer fold a bare `[[slug]]` into the same name.
  */
 export { WIKI_DIR };
 
@@ -205,18 +201,9 @@ type WikiProblemCode =
   | 'shared-source-unlinked';
 
 /**
- * The parts of a finding's sentence, kept apart from the sentence.
- *
- * `message` is written once, in English, for the machines that consume it: the CLI's
- * output, `validate_wiki`'s payload, and the retry an agent branches on. A **person**
- * reading the Library gets the same finding in their own language, and reassembling a
- * localised sentence means having the pieces rather than parsing them back out of English
- * prose (2026-09-09 — before this, a Korean screen printed `dangling-wikilink:15` followed
- * by a bare English paragraph).
- *
- * `key` names the sentence, not the code, because two codes here have two shapes:
- * `section-order` is a different sentence when sections are missing than when they are
- * merely out of order, and only the validator knows which one it just found.
+ * The parts of a finding's sentence, kept apart from it: `message` is English for machines, and a
+ * localized sentence is rebuilt from `key` and `values`. `key` names the sentence, not the code:
+ * `section-order` is a different sentence for missing than for out-of-order sections.
  */
 interface WikiProblemDetail {
   key: string;
@@ -288,10 +275,8 @@ function sectionBullets(
     if (/^\s*[-*]\s+\S/.test(line)) {
       out.push({ text: line, line: offset + index + 1 });
     } else if (out.length > 0 && /^\s+\S/.test(line)) {
-      // A wrapped bullet: Markdown continues a list item on the indented lines that
-      // follow it, and a writer who wraps at 80 columns puts the citation on the last of
-      // them. Judging only the first line reported every wrapped fact as uncited
-      // (accumulation probe, 2026-09-06: seven false `uncited-fact` on one page).
+      // A wrapped bullet: Markdown continues a list item on indented lines, and a writer who wraps puts
+      // the citation on the last of them, so judging only the first line would report it uncited.
       out[out.length - 1]!.text += `\n${line}`;
     }
   }
@@ -509,35 +494,9 @@ export function validateWikiPage(
 }
 
 /**
- * The folder-level half of the contract — what no single page can know about itself.
- *
- * `validateWikiPage` judges one page against its own frontmatter and body. Three things
- * are only visible with every page on the table, and the accumulation probe
- * (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) found all three at
- * zero in every condition: no page linked another, so every page was an orphan, and
- * pages that cited the same document never mentioned each other. A wiki whose pages
- * never point at each other is a folder of write-ups, not a graph a person can walk.
- *
- * Deterministic on purpose. Whether two pages *disagree* is a judgement and belongs to
- * a Lint pass an agent runs and a person reads; whether a link resolves, whether a page
- * has any inbound link, and whether two pages share a source without linking are facts
- * of the folder, and a fact of the folder is reported by a script, not a model.
- *
- * Codes:
- *
- *   - `dangling-wikilink`      a `[[wiki/…]]` link whose target is not in the folder
- *   - `orphan-page`            no other page links to this one (two or more pages only)
- *   - `shared-source-unlinked` another page was written from a source this page lists
- *                              (or the reverse), and neither links the other
- *
- * ⚠️ **`dangling-wikilink` judges links into `wiki/` and nothing else** (2026-09-09).
- * It used to be raised for *every* unresolved target, including
- * `[[capabilities/checkout]]` — a link into the rest of the vault, which this function
- * never receives and therefore cannot resolve. On a folder whose pages named three real
- * concepts, the Library's status strip read *3 broken links* while the Library's own
- * graph drew the same three as *3 concepts, 6 mentions* and the reader rendered each as
- * a live link. Reporting a link as broken because *this* function cannot see its target is a
- * guess wearing the clothes of a fact; the folder half judges the folder.
+ * The folder-level half of the contract: what no single page can know about itself. Deterministic on
+ * purpose; whether pages disagree is a Lint judgement. `dangling-wikilink` judges links into `wiki/`
+ * only; this function never receives the rest of the vault and cannot resolve those.
  */
 
 /** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */

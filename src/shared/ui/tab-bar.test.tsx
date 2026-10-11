@@ -221,7 +221,6 @@ describe('TabBar', () => {
       screen.queryByRole('tab', { name: 'Connectors2' }),
       'the label and number read as one word',
     ).toBeNull();
-    // The number is still on screen — only its second reading was removed.
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 

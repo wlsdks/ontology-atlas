@@ -6,12 +6,6 @@ import {
   isMissingFolderError,
 } from './classify-vault-access-error';
 
-/**
- * Owner, 2026-08-24, on the repeating macOS consent dialog: *"this comes up every single time — can
- * it not be set once and stop appearing?"* The dialog itself is the operating system's, but what
- * happens when somebody declines it was ours, and it was `Operation not permitted (os error 1)` on
- * screen: an errno, no folder, and no hint that the fix is a checkbox in System Settings.
- */
 describe('금고 접근 실패 분류 — OS 가 막은 것과 폴더가 깨진 것은 다른 말이 필요하다', () => {
   it('macOS 보호 폴더 거부를 알아본다', () => {
     // What `std::io::Error::to_string()` produces for a TCC refusal.
@@ -58,11 +52,6 @@ describe('금고 접근 실패 분류 — OS 가 막은 것과 폴더가 깨진 
     expect(deniedFolderName('/Users/dana/Downloads/my-vault/')).toBe('my-vault');
   });
 
-  /*
-   * The web half of the same fact. The desktop preflights the stored path and reports
-   * `path-missing`; the browser can only read the exception, and it used to print that
-   * exception's English developer sentence on a Korean screen (census state 1b/1c, 2026-08-31).
-   */
   it('폴더가 사라진 실패를 두 런타임의 말 모두에서 알아본다', () => {
     const notFound = new Error(
       'A requested file or directory could not be found at the time an operation was processed.',

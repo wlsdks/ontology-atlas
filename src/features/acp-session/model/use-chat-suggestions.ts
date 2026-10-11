@@ -33,12 +33,8 @@ export function suggestionDisplayNames(
 }
 
 /**
- * The suggestions the conversation pane shows — derived from **the vault currently being viewed**.
- *
- * The verdict rules belong to `chat-suggestions.ts` (a pure function, so easy to test) and this hook
- * only gathers the material. The mode branch has the same shape as the ones `useVaultHealth`,
- * `useVaultConceptFacts`, and `useVaultDocFreshnessIndex` already use — not a new copy but the same
- * source, `useStaticVaultSource`.
+ * Suggestions for the vault currently viewed. The rules live in the pure `chat-suggestions.ts`; this
+ * hook gathers material from the same source as the other vault hooks, `useStaticVaultSource`.
  */
 
 export function useChatSuggestions(
@@ -50,9 +46,8 @@ export function useChatSuggestions(
   const vault = useLocalVault();
   const staticSource = useStaticVaultSource();
 
-  // The choice is made on the manifest's presence rather than `status` — using `status` made the
-  // suggestions vanish entirely and come back during the re-read right after a save
-  // (`use-vault-concept-facts` uses the same verdict for the same reason).
+  // The choice follows the manifest's presence, not `status`, so suggestions do not vanish during the
+  // re-read after a save (as in `use-vault-concept-facts`).
   const manifest = mode === 'static' ? staticSource.manifest : (vault.manifest ?? null);
 
   return useMemo(

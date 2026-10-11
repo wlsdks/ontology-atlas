@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildPageMetadata, type PageMetadataLocales } from './page-metadata';
 
-// Bug found 2026-09-01: Next merges metadata by replacing the whole top-level
-// openGraph/twitter key, so pages built here shipped
-// `twitter:card=summary_large_image` with NO image and no og:site_name — the
-// old comment claimed root-layout inheritance that never happens. Every card
-// fact a page needs must be explicit in what this builder returns.
+// Next replaces the whole top-level openGraph/twitter key when merging metadata, so every card
+// fact must be explicit in what the builder returns.
 describe('buildPageMetadata', () => {
   const base = {
     locale: 'en',
@@ -59,12 +56,8 @@ describe('buildPageMetadata', () => {
 describe('buildPageMetadata — file-convention images', () => {
   it('omits the images key entirely so a directory opengraph-image can win', () => {
     /*
-     * 2026-09-01 review: Next treats an OWN `images` property on the leaf
-     * metadata as authoritative over the file-convention image, and the value
-     * arrives through `{...base.openGraph}` spreads even when the page omits
-     * it deliberately. So the flag must remove the key, not blank it — every
-     * project share was carrying the generic site card instead of its
-     * generated per-slug 1200×630.
+     * Next treats an own `images` property on leaf metadata as authoritative over the file-convention
+     * image, so the flag must remove the key, not blank it.
      */
     const meta = buildPageMetadata({
       locale: 'en',

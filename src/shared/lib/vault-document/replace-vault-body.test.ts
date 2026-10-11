@@ -41,18 +41,7 @@ describe("replaceVaultBody", () => {
   });
 });
 
-/**
- * **Frontmatter must survive** in BOM and CRLF files (2026-07-28).
- *
- * Once the parser learned to read BOM/CRLF, such a document became a graph node
- * for the first time, which made this write path reachable for the first time.
- * The old code saw `raw.startsWith("---")` return false with a BOM present and
- * therefore **discarded the entire frontmatter block**, saving only the body — a
- * destructive path that wiped the kind and every relation.
- *
- * The original file's line endings and BOM are also restored: reading convenience
- * is not a reason to turn someone else's whole file into a diff.
- */
+/** Frontmatter must survive BOM and CRLF files, and the original line endings and BOM are restored. */
 describe("BOM·CRLF 원본", () => {
   it("BOM 이 있어도 frontmatter 를 보존한다", () => {
     const raw = "﻿---\nkind: capability\ntitle: T\n---\n옛 본문\n";

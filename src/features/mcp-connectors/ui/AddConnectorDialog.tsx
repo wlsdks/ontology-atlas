@@ -57,16 +57,9 @@ import {
 import { groupDiscovered, shortSourceKey, type DiscoveredGroup } from './discovered-groups';
 
 /**
- * Adding a connector: one list under one search, like every surveyed MCP client, in the order
- * a person can act without typing: already on this computer (one press copies it), ready to
- * attach (`mcp-catalogue.generated.ts`, showing the verbatim address or command and what it
- * asks), and by hand (a folded form, where an install link lands filled in).
- *
- * A press attaches what its row shows and asks nothing, else unfolds in place: a hosted OAuth
- * address goes straight into the folder switched off; a local program needing a token unfolds
- * one password field per required variable under its row. Nothing is written until the press,
- * and no value ever goes into the folder's file. Record: `docs/DECISIONS.md` (2026-09-07,
- * one list).
+ * Adding a connector: one list under one search, ordered by what a person can act on without typing.
+ * A press attaches what its row shows, else unfolds in place; no value ever goes into the folder's
+ * file.
  */
 
 /** `crypto.randomUUID` exists on every surface this ships to. */
@@ -665,10 +658,7 @@ function FoundSection({
   const visible = searching || showAll ? matches : matches.slice(0, FOUND_FOLD);
   const folded = matches.length - visible.length;
   if (!canDiscover) {
-    /*
-     * The degradation contract, not "coming soon": why it is missing and what still works, placed
-     * after the working list so it does not read as a verdict on the dialog.
-     */
+    /* Placed after the working list: says why discovery is missing and what still works. */
     return (
       <div
         role="status"

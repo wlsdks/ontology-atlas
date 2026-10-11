@@ -19,26 +19,9 @@ export interface TypingShortcut {
 }
 
 /**
- * The physical-key code for a single Latin letter (`d` → `KeyD`).
- *
- * ⚠️ **Why the physical key and not the typed character** (2026-08-24). Every
- * combo used to be matched against `event.key` alone — the character the key
- * *produced*. With a Korean input source active (`2SetKorean`, the default for
- * this product's primary user) the D key emits a Hangul jamo and the K key emits
- * another, so `event.key` was never `"d"` or `"k"` and **every letter shortcut the
- * app advertises was dead**: `d` (docs drawer), `⌘K` / `⇧⌘K` (search), `⌘O`
- * (open folder), `⌘P` (docs palette). The shortcut sheet listed keys that did
- * nothing for the exact audience the sheet is written for.
- *
- * `event.code` is the position on the keyboard and does not change with the
- * input source, so it is the identity a letter shortcut actually means. It is
- * only derived for single Latin letters: punctuation (`?`, `/`) keeps character
- * matching, because its *position* is what moves between layouts while the
- * character stays put — `?` is Shift+/ on both US and 2-set Korean.
- *
- * Verified by dispatching a Hangul-jamo `key` alongside `code:'KeyD'` (and the
- * same for `code:'KeyK'` with `metaKey`) against the built app: dead before,
- * live after.
+ * Physical key code for a single Latin letter (`d` to `KeyD`): with a Korean input source
+ * `event.key` is a jamo, so letter shortcuts match `event.code`. Punctuation keeps character
+ * matching.
  */
 function physicalCodeFor(key: string): string | null {
   return /^[a-z]$/i.test(key) ? `Key${key.toUpperCase()}` : null;
@@ -84,10 +67,8 @@ export function useTypingShortcuts(shortcuts: TypingShortcut[]) {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
       if (isTyping) return;
-      // An open listbox or menu owns the keyboard too: its options are focused
-      // buttons, not inputs, so typing a concept's name into the relation editor's
-      // target picker used to fire the letter shortcuts underneath (`d` painted the
-      // documents drawer over the editor, installed app, 2026-09-06).
+      // An open listbox or menu owns the keyboard too: its options are focused buttons, not inputs, so
+      // typing must not fire letter shortcuts.
       if (target?.closest?.(KEYBOARD_OWNING_POPUP)) return;
 
       for (const shortcut of shortcutsRef.current) {

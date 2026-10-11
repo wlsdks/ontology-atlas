@@ -44,13 +44,8 @@ export function AgentActivityChip({
   /** The current state the in-app ACP on the right already knows. Updates the same chip before file polling. */
   liveWork?: AgentLiveWorkInput | null;
   /**
-   * The conversation panel is open beside the map.
-   *
-   * That panel already streams the in-app turn — its step, its tools, its words — so the
-   * toolbar saying the same thing again is the same fact in two places (2026-09-19,
-   * "nothing said twice"; owner, 2026-09-24, on exactly this pair). While it is open, an
-   * **in-app** turn's status leaves the toolbar. Work the panel does not show — another
-   * agent's heartbeat, a recent write on disk — still speaks here.
+   * The conversation panel is open beside the map and already streams the in-app turn, so an in-app
+   * turn's status leaves the toolbar. Work the panel does not show still speaks here.
    */
   conversationOpen?: boolean;
   /**
@@ -59,18 +54,9 @@ export function AgentActivityChip({
    */
   compact?: boolean;
   /**
-   * Reports when the notification box opens and closes.
-   *
-   * Why the outside needs to know (owner report 2026-08-17: *"Shouldn't
-   * the notification cover what's above?"* — shouldn't
-   * the notification cover what's above?): the utility lane this chip lives in is `z-20` and
-   * therefore **creates a stacking context.** So giving the notification box `z-30` makes that 30
-   * valid **only inside the lane**, and the right-hand tool tiles outside it (same `z-20`, but later
-   * in the DOM and therefore winning) drew on top of it.
-   *
-   * The lane must not be raised permanently — the scrim (`--z-map-scrim`, 25) must be able to cover
-   * it. So it is raised **only while open**. The notification box closes itself on an outside press
-   * or Escape, so the raised state does not last long.
+   * Reports when the notification box opens and closes. The utility lane is `z-20` and creates a
+   * stacking context, so the box's `z-30` only works inside it; the lane is raised only while open so
+   * the scrim (`--z-map-scrim`, 25) can still cover it.
    */
   onOpenChange?: (open: boolean) => void;
   /** Already on the map: updates the same HomePage selection state without a route remount. */
@@ -107,16 +93,9 @@ export function AgentActivityChip({
   );
   const todoCount = inbox.todos.length;
   /*
-   * One mark, two grades (the plan asked for the waiting count alone; the code says it
-   * cannot be that). Nothing waits most of the time, so that alone deletes the
-   * unread mark in exactly the moment this slice was written for — four finished turns
-   * waiting after an hour. So: something waiting on the person wins the badge and its
-   * filled indigo; otherwise the badge counts the **results** nobody has opened.
-   *
-   * ⚠️ Not `feed.unreadCount`, which counts raw notifications: this slice folds a task's
-   * start and its end into one row, so a bell reading 8 sat over a Results tab reading 4 with four
-   * unread dots (measured on the seeded folder, design-lead round 1). The badge, the dots
-   * and the "Mark all read" door now read the same number.
+   * One badge, two grades: something waiting on the person wins, otherwise it counts unread results.
+   * Not `feed.unreadCount`, which counts raw notifications while a task's start and end fold into one
+   * row.
    */
   const badgeCount = todoCount > 0 ? todoCount : inbox.unreadResults;
   const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
@@ -218,9 +197,8 @@ export function AgentActivityChip({
   const phase = feed.work.phase ? t(`phase.${feed.work.phase}`) : null;
   const age = feed.lastAt === null ? null : relative(feed.lastAt);
   /*
-   * How long the agent has been at it (owner, 2026-09-06: "can it say how many minutes it
-   * has been working?"). The number comes from the turn's own start, not from the last
-   * heartbeat, so a long silent tool call still counts.
+   * Elapsed time comes from the turn's own start, not the last heartbeat, so a long silent tool call
+   * still counts.
    */
   const elapsed = (() => {
     const startedAt = feed.work.startedAt ?? null;
@@ -270,19 +248,9 @@ export function AgentActivityChip({
       data-work-mode={feed.work.mode}
     >
       {!suppressed && <AgentMascotPresence feed={feed} />}
-      {/*
-        **The status is a segment of the activity control, not a box under it** (owner,
-        2026-09-24: *"the toast at the top — the design is poor, the colour too, and the
-        position"*, pointing at this line during an in-app turn). It used to hang 8px under
-        the toolbar's right end, `absolute`, attached to nothing: measured at 1040 it lay
-        across the search lane's second row (832–918 × 74–98 over 804–1016 × 76–112), and
-        at 1512 with the meaning panel open a toast covered it. Now it is the left half of
-        one control whose right half is the bell, in the toolbar row itself, so it can
-        neither float over the map nor collide with a lane it does not belong to.
-
-        The node it names moved into the status view this segment opens: the map already
-        rings that node, and the row's width is what the lane cannot spare.
-      */}
+      {/* The status is a segment of the activity control in the toolbar row, not a box hanging under it, so
+         it cannot float over the map or collide with a lane. The node it names lives in the status view
+         this segment opens; the map already rings it. */}
       {showStatus || showBell ? (
         <div
           className="flex shrink-0 items-center"
@@ -350,11 +318,8 @@ export function AgentActivityChip({
               >
                 <AgentWorkFact text={feed.work.mode === 'live' ? liveLabel : statusLabel} />
               </span>
-              {/*
-                The step word stays beside the dot where the sentence folds away
-                (2026-09-25): at 1040 the segment was a bare 36px dot, so "Codex ·
-                verifying" lived only in the accessible name and the native title.
-              */}
+              {/* The step word stays beside the dot where the sentence folds away, so a bare dot still shows the
+                 step. */}
               {foldedPhase ? (
                 <span
                   data-testid="agent-activity-phase"
@@ -396,12 +361,8 @@ export function AgentActivityChip({
               data-testid="agent-activity-bell"
               data-agent-activity-bell-slot="utility-row-end"
               /*
-               * The bell carries its own state, not just a badge beside it. Reported
-               * 2026-08-24: with the count sitting in a 16px badge, a bell holding nine
-               * unread receipts and an empty bell read the same at a glance. Filling the
-               * glyph and lifting it to primary ink changes the **shape and weight** of
-               * the mark, so "there is something here" survives a squint and does not
-               * depend on noticing a small badge -- or on colour alone.
+               * The bell carries its own state: filling the glyph and lifting it to primary ink changes shape and
+               * weight, so unread survives a squint and does not rely on a small badge or colour alone.
                */
               className={cn(
                 'relative shrink-0 overflow-visible',
@@ -442,20 +403,9 @@ export function AgentActivityChip({
         style={{ right: 'calc(var(--chrome-tile-size) + 8px)' }}
         className={cn(
           /*
-           * ⚠️ **The viewport is the hard ceiling; the body's own cap is the preferred one**
-           * (design-responsive, 2026-09-12). With no height token the box grew to whatever
-           * its content wanted: at 768×600 with the browser's text at 150% the closing
-           * sentence was sliced in half by the bottom tab bar, and at 200% four of the five
-           * rows plus the footer sat below the window edge with no way to scroll to them.
-           * The ceiling is the viewport **minus this box's own anchor**, because
-           * `--map-panel-max-height` alone is not it: that token is written for a surface
-           * hanging at `--topology-node-popover-top`, and this one hangs under the utility
-           * lane (`--chrome-inset` + a `--chrome-tile-size` row + the `top` offsets written
-           * on this very element, 52 + 8). Measured at 768×600 with the token alone: the box
-           * ended 28px inside the bottom tab bar because its real top was 124, not 72.
-           * `--map-panel-bottom-reserve` carries the tab bar and the safe area below `lg`,
-           * and the flex column hands the leftover to the scrolling body rather than to the
-           * header or the footer.
+           * The viewport is the hard ceiling: height is the viewport minus this box's own anchor, since
+           * `--map-panel-max-height` is written for another anchor. `--map-panel-bottom-reserve` covers the
+           * tab bar below `lg`.
            */
           'absolute z-30 flex max-h-[calc(100dvh-var(--chrome-inset)-var(--chrome-tile-size)-60px-var(--map-panel-bottom-reserve))] w-[var(--map-panel-width)] flex-col overflow-hidden whitespace-normal rounded-[var(--map-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
           // The status now stands in the row itself, so both views hang from the row.
@@ -511,7 +461,6 @@ export function AgentActivityChip({
             <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 text-caption leading-label">
               {feed.lastNode ? (
                 <>
-                  {/* The prefix the toolbar row used to carry: "current" only while live. */}
                   <dt className="text-[color:var(--color-text-quaternary)]">{targetPrefix}</dt>
                   <dd className="min-w-0">
                     {onOpenNode ? (

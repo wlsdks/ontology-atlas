@@ -8,12 +8,8 @@ import {
 } from './mcp-install-link';
 
 /**
- * The install-link parser is the one surface here that takes input from **outside the app**, and
- * it is the exact surface that produced CVE-2025-54133 ("DeepJack") and CVE-2025-54136
- * ("MCPoison") in another client. So the tests are written as the attacks, not as the happy path:
- * each one is a payload that would have worked somewhere else.
- *
- * Sources and dates for those CVEs: `docs/benchmark/MCP-ONE-CLICK-2026-09-07.md` §3.
+ * The install-link parser takes input from outside the app, so tests are written as attacks, not as
+ * the happy path.
  */
 
 const secretRef = (id: string, name: string) => `${id}:${name}`;

@@ -4,18 +4,8 @@ import { cn, LEADING_RAMP_STEPS, RADIUS_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn
 import { readGlobalCss } from '../../../scripts/lib/global-css.mjs';
 
 /**
- * Reads the ramp steps actually declared in `app/globals.css`.
- *
- * **Why not a hardcoded list.** This gate is named by `cn.ts` and by
- * `.claude/rules/design.md`, yet until the 2026-07-31 audit it held seven
- * hand-written steps — and `hero-lg` had been added to the ramp without being
- * added here. The exact accident this gate claims to prevent (2026-07-23: a step
- * added, its registration missed, chrome rendering at 16px) had already happened
- * inside the gate itself.
- *
- * A hardcoded list only checks what it already lists. Derived from the ramp, a
- * new step is in scope the moment it exists and a missing registration fails
- * here first. `--text-body--line-height` companions are pairs, not steps.
+ * Ramp steps are derived from `app/globals.css`, not a hardcoded list, so a new step is in scope the
+ * moment it exists.
  */
 function rampStepsFromCss(prefix: 'text' | 'leading' | 'radius'): string[] {
   const css = readGlobalCss();
@@ -48,9 +38,8 @@ describe('cn', () => {
 });
 
 /**
- * Regression gate for the 2026-07-23 owner report: a custom ramp step classified
- * as a colour conflicts with `text-[color:…]` and the size is dropped silently —
- * why chrome pills were rendering at the root 16px.
+ * A custom ramp step classified as a colour conflicts with `text-[color:...]` and the size is
+ * dropped silently.
  */
 describe('cn — 타입 램프와 색상 유틸 공존', () => {
   it('**등록 목록이 램프와 일치한다** — 누락은 조용한 크기 드롭이 된다', () => {
@@ -111,14 +100,9 @@ describe('cn — 행간 램프 충돌 병합', () => {
   });
 
   /*
-   * These deliberately use the named utilities that lint forbade on 2026-08-17
-   * (closed with zero product usage, so no noise). The point here is that `cn`
-   * still merges correctly *if* a forbidden one arrives — from third-party code
-   * or an old string. Deleting the test because the rule exists would remove the
-   * last line of defence against sizes and line-heights blending silently.
-   *
-   * The file-level exemption matches the sibling ramp rules (size, weight,
-   * tracking): tests assert rendered className strings (`codexTestIgnores`).
+   * These use named leading utilities that lint forbids: `cn` must still merge correctly if one
+   * arrives from third-party code or an old string. Test files are exempt from that lint rule
+   * (`codexTestIgnores`).
    */
   it('기존 named 행간 유틸리티와의 병합도 유지된다', () => {
     expect(cn('leading-4', 'leading-label')).toBe('leading-label');
@@ -130,11 +114,6 @@ describe('cn — 행간 램프 충돌 병합', () => {
   });
 });
 
-/**
- * Same failure mode as the leading ramp, for radii (`--radius-micro`, added
- * 2026-08-03). It became a live path when the value layer started compounding a
- * size radius over a shape's base radius at chip/xs.
- */
 describe('cn — 반경 램프 충돌 병합', () => {
   it('**등록 목록이 램프와 일치한다** — 누락은 충돌 병합 실패가 된다', () => {
     expect([...RADIUS_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('radius'));

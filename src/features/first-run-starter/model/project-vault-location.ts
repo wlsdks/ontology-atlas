@@ -34,9 +34,6 @@ export function projectVaultLocation(projectRoot: string | null | undefined): Pr
   return { projectRoot: root, vaultRoot, displayPath: vaultRoot };
 }
 
-/**
- * Used to avoid offering to create what exists; takes the names directly under the project.
- */
 export function projectAlreadyHasVault(entryNames: readonly string[]): boolean {
   return entryNames.some((name) => name === PROJECT_VAULT_DIR);
 }

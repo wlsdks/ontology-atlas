@@ -67,7 +67,7 @@ export interface ProviderAdapter {
   reviewResponse?(turn: TurnAssembly, response: NormalizedResponse): ProviderResponseReview;
 }
 
-/** Per-vendor defaults with no picker; a retired name fails visibly rather than switching models. */
+/** A retired model name fails visibly rather than switching models. */
 export const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
   anthropic: 'claude-opus-5',
   openai: 'gpt-5.1',

@@ -1,24 +1,7 @@
 /**
- * **Which node a tool touched.**
- *
- * ## Why (2026-08-17)
- *
- * The tool line only said "read the concept" and **did not specify which concept**.
- * So even when reading the conversation history later, one cannot know what happened, nor
- * can it be linked to the map. The value was arriving. The initial `tool_call` or the completed
- * `tool_call_update` carrying `rawInput`, and the session hook merges both into a single tool row.
- *
- * ## The argument names were chosen by counting
- *
- * Measured frequency of the argument names carrying a slug in our MCP source:
- * `slug` 74 · `from` 40 · `to` 40 · `newSlug` 6 · `oldSlug` 5 · `targetSlug` 2 · `intoSlug` 2 ·
- * `fromSlug` 2. The list was not assembled by guessing.
- *
- * ## And only known names survive
- *
- * The same rule as `link-slugs.ts`. `newSlug` is a name not yet in the vault and is naturally filtered
- * out — which is correct. A marker pointing at something that does not exist goes nowhere when
- * pressed, and someone who meets one stops pressing the rest.
+ * Which node a tool touched. Argument names carrying a slug were chosen by frequency in our
+ * MCP source. Only names already in the vault survive, as in `link-slugs.ts`; a marker to a
+ * missing node goes nowhere when pressed.
  */
 
 /**
@@ -43,21 +26,9 @@ const SLUG_ARG_KEYS = [
 const TOOL_TARGET_LIMIT = 3;
 
 /**
- * **The envelope a call to an MCP server arrives in, opened once.**
- *
- * Measured in the rendered transcript (2026-09-20): a read reported flat as
- * `{ file_path: 'sources/architecture.docx' }` named its file, and the write beside it —
- * reported by the same adapter as `{ server, tool, arguments: { file_path, content } }` because
- * it carried `is_mcp_tool_call` — named nothing at all. Every key these readers look for was one
- * level down, so the row drew `write_wiki_file` and stopped.
- *
- * That is backwards where it costs most: the wrapped shape is what **this product's own vault
- * server** produces, and the row that lost its target was the one that had just **failed**. A
- * failure whose subject is missing is the least readable line in the trace.
- *
- * `acp-client.ts` already required `server`, `tool` and an object `arguments` together before
- * trusting this shape (`readCorrelatedMcpToolContext`); the same three are required here, so a
- * tool that merely happens to take an `arguments` parameter is left alone.
+ * Opens the MCP envelope `{ server, tool, arguments }` once. Requires all three, as
+ * `readCorrelatedMcpToolContext` in `acp-client.ts` does, so a tool that merely takes an
+ * `arguments` parameter is left alone.
  */
 function toolArguments(input: Record<string, unknown>): Record<string, unknown> {
   const inner = input.arguments;
@@ -93,33 +64,9 @@ export function readToolTargets(
 }
 
 /**
- * **When no vault node is named, the row still says what the call was aimed at.**
- *
- * ## Why (2026-09-05)
- *
- * `readToolTargets` deliberately keeps only slugs the vault already holds, so pressing a
- * marker always lands somewhere. That rule is right for a marker and wrong for a trace:
- * it leaves `Read · /src/shared/lib/cn.ts`, `Grep · readToolOutcome`, and
- * `add_concept({slug:'capabilities/not-yet-written'})` — the row that most needs a name,
- * because the concept is being created and therefore cannot be in the vault yet — with
- * nothing after the verb.
- *
- * So this is the second lane, used only when the first found nothing. Its result is
- * **plain text, never a marker**: it names something this vault may not contain, and a
- * dotted underline would promise a destination that does not exist.
- *
- * ## The names are measured, not guessed
- *
- * - Paths: the exact list `acp-client.ts` already uses for the permission gate, measured
- *   there against both claude's built-ins (`file_path`) and our own server (`filePath`,
- *   and `rootPath` for the tools that sweep a folder).
- * - Names: the same `SLUG_ARG_KEYS` above, in the same order, so `from`/`to` keep a
- *   relation's direction.
- * - Queries: `pattern` (Grep, Glob), `query` (search tools), `operation` (our
- *   `query_ontology`, whose only required argument it is), `command` (a shell run), `url`,
- *   and the two filters `list_concepts` narrows a listing by — `kind` and `domain`.
- *   Without those last two the most common read in the app, 「list every capability」,
- *   arrives with an empty target.
+ * When no vault node is named, the row says what the call aimed at, as plain text, never a
+ * marker. Paths use the permission list in `acp-client.ts`; names reuse `SLUG_ARG_KEYS`
+ * order; queries cover `pattern`, `query`, `operation`, `command`, `url`, `kind`, `domain`.
  */
 export type ToolFallbackTarget = {
   kind: 'path' | 'name' | 'query';

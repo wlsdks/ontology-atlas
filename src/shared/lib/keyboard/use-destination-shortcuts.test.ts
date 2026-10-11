@@ -4,32 +4,8 @@ import { blockingSurfaceOpen, useDestinationShortcuts } from "./use-destination-
 import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
 
 /**
- * The navigation shortcuts' **refusal conditions** are measured here, not in e2e.
- *
- * ⚠️ **Measuring them in e2e failed** (2026-08-09). Proving "do not navigate while
- * typing" in a browser needs a focused input, and with no vault selected this app
- * has **no visible input on screen** (measured: `input:visible` count 0 on all of
- * `/topology`, `/projects`, `/docs`, `/git`). Opening the ⌘K palette to borrow its
- * input did not work either — the palette is **itself `aria-modal`**, so the modal
- * check fired first and the spec stayed green even with the typing check deleted
- * entirely. A spec that cannot fail is not a gate (`/gate-probe`).
- *
- * Dispatching keyboard events directly keeps the conditions from masking each
- * other. Whether navigation actually happens is still e2e's job —
- * `tests/e2e/destination-shortcuts.spec.ts`.
- */
-
-/**
- * A key event with a Korean IME active — `key` is a jamo, `code` is the physical
- * position.
- *
- * ⚠️ **This helper exists because of a real defect** (2026-08-10, measured in the
- * installed app). With the Korean IME on, physical `G` arrives as the Hangul
- * letter hieuh (U+314E), and `P` as the Hangul letter e (U+3154). No modifier,
- * focus on body, no blocking surface — and
- * **nothing worked, purely because the character differed.** Korean is this
- * product's primary language, so that is the normal state, not an edge case, and
- * browser e2e types Latin so it can never catch it.
+ * With a Korean IME active `key` is a jamo and `code` is the physical position; browser e2e types
+ * Latin and cannot catch this.
  */
 function pressHangul(jamo: string, code: string) {
   window.dispatchEvent(
@@ -161,13 +137,6 @@ describe("useDestinationShortcuts", () => {
     expect(navigate, "모달이 떠 있는데 뒤 화면을 바꿨다").not.toHaveBeenCalled();
   });
 
-  /**
-   * **Say so when blocked**, rather than going silent.
-   *
-   * While this was missing, the studio was a keyboard trap: arriving there opened
-   * a picker, after which every navigation shortcut **silently** did nothing
-   * (found in the 2026-08-10 sweep).
-   */
   it("막는 표면이 있으면 이동하지 않고 알린다", () => {
     const onBlockedByOverlay = vi.fn();
     renderHook(() => useDestinationShortcuts({ navigate, onBlockedByOverlay }));
@@ -224,19 +193,7 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledTimes(1);
   });
 
-  /**
-   * ⚠️ **This is the spec that catches the installed-app defect** (2026-08-10).
-   *
-   * The first implementation read the clock from **`event.timeStamp`** and treated
-   * 0 as "the leader was never pressed". It worked in the browser and passed e2e,
-   * but **in the installed app (WKWebView) no leader combination worked at all** —
-   * neither `G P` nor `G M`. `?` still worked on the same screen, so the keys were
-   * reaching the WebView.
-   *
-   * The cause was overloading 0 to mean "not pressed": any runtime that reports 0
-   * makes the whole feature vanish **with no clue on screen**. So both events are
-   * pinned at `timeStamp` 0 and navigation must still happen.
-   */
+  /** Pinned at `timeStamp` 0: some runtimes (WKWebView) report 0, so 0 must not mean "not pressed". */
   it("event.timeStamp 가 0 이어도 이동한다 — 시계를 사건에서 읽지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     for (const key of ["g", "p"]) {
@@ -290,12 +247,7 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledWith("/project/atlas/docs/", "docs");
   });
 
-  /**
-   * `g c` had died without anyone noticing (CI, 2026-09-18): MCP folded into the Agents
-   * page, the rail's visible set no longer named it, and the visibility check turned its
-   * key into nothing while the decision record still promised the shortcut. The alias is
-   * a door exactly while the tile that hosts it is drawn — the same rule Docs already had.
-   */
+  /** An alias shortcut is a door exactly while the tile that hosts it is drawn. */
   it("자리 잡은 타일이 보이면 별칭 단축키도 문이다 — g c 는 에이전트 타일을 통해, g d 는 자료실 타일을 통해", () => {
     renderHook(() =>
       useDestinationShortcuts({ navigate, visible: new Set(["map", "agents", "library"]) }),
@@ -351,13 +303,8 @@ describe("useDestinationShortcuts", () => {
 });
 
 /**
- * **A surface on its way out blocks nothing** (2026-09-26).
- *
- * Measured against a real folder: `?` pressed right after Esc closed the Automations sheet did not
- * open the shortcut sheet, and `?` right after Esc closed the search did not either, because the
- * guard still counted the closing dialog while its exit motion played (opacity 0.99 and 1). Each
- * exit path marks the leaving node from its first frame; the guard reads those marks, and a
- * really open modal beside a leaving one still blocks.
+ * A surface on its way out blocks nothing: the guard must not count a closing dialog while its exit
+ * motion plays, but a really open modal beside it still blocks.
  */
 describe("blockingSurfaceOpen", () => {
   /** An `aria-modal` surface that jsdom reports as laid out, like the ones the tests above fake. */

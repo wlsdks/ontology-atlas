@@ -2,11 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { matchSlashCommands, readSlashCommands, slashQuery } from './slash-commands';
 
-/**
- * Owner question, 2026-08-17: typing `/` ought to offer something like Atlas-specific skills. It
- * works — the adapter was already sending it as `available_commands_update` and we were not
- * receiving it.
- */
 describe('명령 목록 읽기', () => {
   it('온 것만 읽는다', () => {
     expect(

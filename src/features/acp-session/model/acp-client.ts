@@ -1,25 +1,7 @@
 /**
- * The ACP client — the layer that turns line-delimited JSON-RPC into a conversation.
- *
- * Transport (process stdio) is injected, so this file's tests run with no real process and the
- * process layer's tests need know nothing of the protocol.
- *
- * **The four contracts this file keeps:**
- *
- * 1. **Only two implementations are required** — `session/request_permission` and
- *    `session/update`. File read/write, terminal, and elicitation are all optional and we **do not
- *    declare them.** An undeclared method is answered with "no such thing".
- *    ⚠️ That alone is not the permission gate — an undeclared capability closes only the ACP
- *    channel, and the real CLI the adapter wraps does not consult this declaration for its own
- *    tools. The actual gate comes from the config the app isolates (`src-tauri/src/acp/isolation.rs`).
- * 2. **Never hardcode an `optionId`.** Options are located by `kind` (`allow_once`,
- *    `reject_once`, …). Measured, those values were short strings like `allow` and `reject`, but
- *    the adapter decides them and they can change at any time.
- * 3. **The app never picks `allow_always` on the user's behalf.** That option carries a rule
- *    granting "this entire directory for the whole session" (measured). Widening the boundary is
- *    the user's decision alone.
- * 4. **Ask Rust for the verdict.** Reimplementing inside/outside-vault here makes two copies, and
- *    the browser side cannot resolve symlinks and not-yet-existing paths correctly anyway.
+ * ACP client: turns line-delimited JSON-RPC into a conversation; transport is injected.
+ * Only `session/request_permission` and `session/update` are implemented; options are found by `kind`.
+ * Never pick `allow_always` for the user (it grants the directory); inside-vault is decided in Rust.
  */
 
 import { modeKeepsGate, partitionModes } from './mode-safety';
@@ -38,12 +20,8 @@ export interface AcpChoice {
   name: string;
   description: string | null;
   /**
-   * `_meta.kind` as the adapter stated it, or null when it stated none.
-   *
-   * ⚠️ **The safety verdict reads this, so dropping it here would silently disarm the verdict**
-   * (2026-09-05). Both shipped adapters now declare a mode's class — `auto_review` for one that
-   * approves in the person's place, `full_access` for one that stops asking — and that class does
-   * **not** travel on the name. `mode-safety.ts` owns what the values mean.
+   * `_meta.kind` as the adapter stated it; the safety check reads it, so dropping it disarms that
+   * check. `mode-safety.ts` owns the values.
    */
   metaKind?: string | null;
   /**
@@ -60,16 +38,7 @@ export interface AcpChoice {
  */
 const CALL_TIMEOUT_MS = 45_000;
 
-/**
- * ⚠️ **The verdict is not rewritten here** (2026-08-17).
- *
- * This function used to be a one-line denylist — hiding only the names written down, so an adapter
- * adding a new mode made it visible and selectable **without our knowing**. A safety device that
- * treats what it does not know as safe is not a device.
- *
- * The verdict is owned solely by `mode-safety.ts`: hide what was measured to be dangerous, offer
- * what was measured to be fine, and **offer what was never measured while marking it unknown.**
- */
+/** Owned by `mode-safety.ts`: hide what is dangerous, offer the unmeasured marked unknown. */
 export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
   return partitionModes(modes).offered;
 }
@@ -143,21 +112,9 @@ export function readSessionChoices(result: Record<string, unknown>): AcpSessionC
 }
 
 /**
- * The choices after **the adapter moved the session itself** (`current_mode_update`).
- *
- * Why this is not one line. `claude-agent-acp` 0.74.0 clamps a session whose model cannot do `auto`
- * into `AUTO_MODE_FALLBACK = "acceptEdits"` and says so only through this notification, so three
- * different things can arrive and they must not be treated alike:
- *
- * - **A mode already on the list** — the person or the adapter picked something offered. Follow it.
- * - **A mode measured to remove the gate** — say where the session is, because a screen that keeps
- *   displaying the old mode is simply wrong about the one value that decides whether it asks. But
- *   **do not put the row back in the list**: offering it would hand the person a way to return to
- *   it, which is the whole thing `mode-safety.ts` exists to prevent. `use-acp-session.ts` raises the
- *   `gate-off` notice for this case; the state change alone is not the announcement.
- * - **A mode nobody advertised** — show it, marked unchecked, exactly as an unmeasured advertised
- *   mode is shown. Leaving it out would blank the dropdown while the session sits in it, and
- *   blocking a perfectly good new mode is a lie too (2026-08-17).
+ * Choices after the adapter moved the session itself (`current_mode_update`).
+ * A gate-removing mode is shown as current but not re-listed; `use-acp-session.ts` raises `gate-off`.
+ * An unadvertised mode is shown marked unchecked.
  */
 export function applyCurrentMode(
   choices: AcpSessionChoices,
@@ -189,18 +146,7 @@ export interface AcpSessionSummary {
 }
 
 /**
- * **We do the filtering** (measured 2026-08-16).
- *
- * Passing `cwd` to `session/list` does **not** make the adapter filter by that folder — measured,
- * conversations from other repositories that were never opened came back, titles and all
- * (`/Users/…/side-project/…`'s "understanding design system level" among them).
- *
- * Rendering that as-is puts **work titles from folders the user has never opened in this app** on
- * screen. The trust charter's second promise (zero collection without the user knowing) and the
- * local-first rule (do not sweep outside the vault) both forbid it outright.
- *
- * So this function is the only path and it must filter here. Even if the adapter starts filtering
- * properly later, this check stays — our promises are not staked on someone else's behaviour.
+ * The adapter ignores `cwd` in `session/list`, so filter here to keep unopened folders off screen.
  * Gate: `tests/contract/acp-session-scope.contract.test.ts`.
  */
 export function keepSessionsInFolder(
@@ -236,7 +182,6 @@ export interface AcpPermissionRequest {
   toolName: string | null;
   /** `edit`, `execute`, `read`, … — the typed fact the screen picks its icon and colour from. */
   toolKind: string | null;
-  /** An absolute path when present. The basis for the policy verdict and what the screen displays. */
   filePath: string | null;
   /** The arguments the tool actually requested. A meaning write builds its typed change from this. */
   rawInput: Record<string, unknown>;
@@ -264,7 +209,6 @@ export interface AcpClientHandlers {
    * classification off — we do not pretend something exists.
    */
   vaultMcpServerName?: string;
-  /** Is this path inside the vault? Goes to the Rust verdict. */
   verdict: (filePath: string | null) => Promise<'allow-inside-vault' | 'ask'>;
   /**
    * Asks the user. Returns the chosen `optionId`, or null for a rejection.
@@ -337,21 +281,9 @@ export interface AcpClient {
   /** Feeds one line from the transport. Used only when the subscription is wired directly. */
   ingest(line: string): void;
   /**
-   * Restarts the deadline on every in-flight call.
-   *
-   * ⚠️ **Why waiting is not the same as hanging** (owner's installed app, 2026-08-24). Opening a
-   * conversation with a tool for the first time makes `npx` fetch the adapter — measured **274 MB**
-   * for `codex-acp`. Nothing answers `initialize` until that finishes, so the 45s ceiling above
-   * expired, the child was killed mid-download, and the screen said "the tool is not responding".
-   * The next attempt deleted the half-built cache and started the same 274 MB from zero, so on any
-   * connection slower than about 6 MB/s **the first conversation could never open** — it failed at
-   * the same second every time.
-   *
-   * The app already knows the difference: Rust sends `npx-download-progress:<mb>` while the fetch
-   * advances, and the panel draws those megabytes. A clock that keeps running against a download it
-   * is watching succeed is measuring the wrong thing. So the caller restarts the deadline on each
-   * progress notice: the ceiling now means **"45s with no sign of life"**, not "45s of wall clock",
-   * and a stalled download still ends in the same timeout it always did.
+   * Restarts the deadline on every in-flight call. The first launch of an adapter downloads
+   * via `npx`, and nothing answers `initialize` meanwhile; the caller restarts on each
+   * `npx-download-progress` notice, so the ceiling means no sign of life, not wall clock.
    */
   extendPendingDeadlines(): void;
   dispose(): void;
@@ -419,12 +351,8 @@ export function createAcpClient(
   };
 
   /**
-   * Sends one line.
-   *
-   * ⚠️ **Failure is swallowed but not silently** (review 2026-08-16). This used to be
-   * `void transport.send(...)`, and `void` **does not catch** a failure — answering a permission
-   * card or pressing "stop" just after the adapter died has that send rejected, and an unhandled
-   * rejection surfaces in the console.
+   * Send failures are swallowed but reported: `void` would not catch a rejection after the
+   * adapter died.
    */
   const send = (payload: unknown): Promise<void> => {
     try {
@@ -444,14 +372,7 @@ export function createAcpClient(
     });
   };
 
-  /**
-   * One request. **With no answer it never finishes** — hence the time limit.
-   *
-   * Review 2026-08-16: with the adapter up but not answering (a wrong binary, or npx waiting on
-   * something), status stuck at "starting" — and in that state the "new conversation" button was
-   * locked too, so **closing the panel was the only way out.** Now it ends in a rejection after the
-   * timeout, and the screen says so.
-   */
+  /** Without an answer a request never finishes, so it ends in a rejection after the timeout. */
   const call = (
     method: string,
     params: unknown,
@@ -514,12 +435,8 @@ export function createAcpClient(
     );
     const ontologyWrite = atlasMode === 'write';
     /*
-     * ⚠️ **Answer even when the verdict fails**.
-     * `await handlers.verdict(...)` used to be unwrapped, so a rejected IPC (the window closing, a
-     * bridge error) left this request with **no answer at all**. The other side waits forever and the
-     * user sees neither a card nor an error.
-     *
-     * Undecidable falls through to **asking** — the safe side.
+     * Answer even when the check fails: a rejected IPC would leave the request unanswered.
+     * Undecidable falls through to asking.
      */
     let verdict: 'allow-inside-vault' | 'ask' = 'ask';
     try {
@@ -528,12 +445,9 @@ export function createAcpClient(
       handlers.onProtocolNotice?.(`verdict-failed: ${String(error)}`);
     }
     /*
-     * A read is auto-allowed only with no path or inside the vault. A read outside falls through
-     * to the ordinary permission card too. Our own server names files **vault-relative**
-     * (`read_source` takes `sources/plan.docx`), and the Rust verdict judges absolute paths only,
-     * so a relative path without `..` on an Atlas read is inside by construction: the server
-     * resolves it against the vault root it was started with and refuses anything else.
-     * Measured 2026-09-07: the first `read_source` call raised a card titled "outside this folder".
+     * A read is auto-allowed only with no path or inside the vault. Our server names files
+     * vault-relative and Rust judges absolute paths only; a relative path without `..` on an
+     * Atlas read is inside by construction, since the server resolves it against its vault root.
      */
     const vaultRelativeAtlasPath =
       atlasMode !== null &&
@@ -550,12 +464,9 @@ export function createAcpClient(
       return;
     }
     /*
-     * A non-Atlas tool is auto-allowed only when it stays inside the vault AND declares a
-     * read-only kind. Path containment alone says nothing about writing: an agent's built-in
-     * edit tool aimed at vault Markdown can rewrite frontmatter, relations, and uids, so it
-     * must reach the permission card exactly like an Atlas write — otherwise the typed change
-     * review guards one door while the same file's other door stands open. An unknown or
-     * missing kind fails closed to asking. Decision: 2026-09-01, refining 2026-08-16 (2) §3.
+     * A non-Atlas tool is auto-allowed only inside the vault AND with a read-only kind: an agent
+     * edit tool on vault Markdown can rewrite frontmatter, so it must reach the card like an
+     * Atlas write. An unknown or missing kind fails closed to asking.
      */
     const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
     if (atlasMode === null && readOnlyKind && verdict === 'allow-inside-vault' && allowOnce) {
@@ -740,12 +651,8 @@ export function createAcpClient(
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
         /*
-         * ⚠️ **A resumed conversation gets the same instructions**.
-         *
-         * They used to be attached to new conversations only. So a session resumed from "past
-         * conversations" **ran under different rules** — no requirement to write `why` when changing a
-         * relation, no requirement to stay inside the folder. If a conversation started yesterday and
-         * one started today behave differently on the same screen and the same folder, that is not a rule.
+         * A resumed conversation gets the same system prompt as a new one, or the two run under
+         * different rules.
          */
         ...(params.appendSystemPrompt
           ? { _meta: { systemPrompt: { append: params.appendSystemPrompt } } }
@@ -858,22 +765,9 @@ function readToolName(params: Record<string, unknown>): string | null {
 }
 
 /**
- * Finds the **path** carried by the request — the argument name differs per tool.
- *
- * Why several names are checked (caught in the second review, 2026-08-16). It used to check
- * `file_path` **alone**. That is the name used by claude's built-in tools, and **the MCP server we
- * wire never uses it once** — our server's argument is `filePath` (measured: `mcp/src/index.js` has
- * zero `file_path` and 30 `filePath`). So a request from our own tools was always "path unknown",
- * and the hole the previous commit claimed to have closed **was in fact still open.**
- *
- * Worse, the test written at the time hand-crafted a `file_path` — a shape the real server never
- * produces, so the test was green while the screen was wide open. That is the failure this
- * repository records as "a gate that passes on invented input is not a gate".
- *
- * Tools that sweep a folder (`analyze_repo_structure`, `index_project`, `infer_imports`,
- * `connect_project_source`) take a **directory** rather than a file, so their name (`rootPath`) is
- * checked too. The verdict is ultimately "is this path inside the vault", and that question has an
- * answer for a folder as much as for a file.
+ * Finds the path carried by the request; the argument name differs per tool. Our server uses
+ * `filePath`, claude built-ins use `file_path`. Folder-sweeping tools take a directory
+ * (`rootPath`), which is checked too.
  */
 function readPathArg(rawInput: Record<string, unknown>): string | null {
   const KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'];
@@ -885,30 +779,9 @@ function readPathArg(rawInput: Record<string, unknown>): string | null {
 }
 
 /**
- * The sentence a person reads on the permission card.
- *
- * ⚠️ **The question was arriving and the screen was not reading it** (wire capture, 2026-08-24).
- * Owner's words at the card: *"this design is not pretty… it feels AI-generated"*. It was worse than
- * unpretty — it said nothing. The card showed 「the tool did not say what it wants to do」 **and**
- * 「cannot tell what it wants to do」, one under the other, in two different inks.
- *
- * The cause: a server-side elicitation reaches ACP with **no `toolCall.title`**. `codex-acp` maps
- * `mcpServer/elicitation/request` onto `session/request_permission` and puts the message in
- * `toolCall.content[]` instead — measured verbatim:
- *
- * ```json
- * "toolCall": { "toolCallId": "elicitation-ontology-atlas", "kind": "other",
- *   "content": [{ "type": "content",
- *                 "content": { "type": "text",
- *                              "text": "Create concept wire-probe. Apply this change to the vault?" } }] }
- * ```
- *
- * So the vault's own question — the one sentence that makes the decision answerable — was on the
- * wire the whole time, one field away from the screen. A gate that cannot say what it is gating
- * teaches people to press whichever button ends the interruption.
- *
- * `title` still wins when it exists: it is the field the protocol names for this, and an adapter
- * that fills it means it.
+ * The sentence shown on the permission card. A server-side elicitation reaches ACP with no
+ * `toolCall.title`; `codex-acp` puts the message in `toolCall.content[]`. `title` wins when
+ * present.
  */
 function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
   if (typeof toolCall.title === 'string' && toolCall.title.trim()) return toolCall.title;
@@ -939,8 +812,8 @@ export function toPermissionRequest(
       ? `mcp__${correlatedMcpTool.server}__${correlatedMcpTool.tool}`
       : readToolName(params),
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
-    // The verdict uses this value rather than the title — the title is a relative path inside the
-    // vault and an absolute one outside, so the policy silently flips the day the wording changes.
+    // The policy reads this value, not the title: the title is relative inside the vault and
+    // absolute outside, so the policy would flip when the wording changes.
     filePath: readPathArg(rawInput),
     rawInput,
     reviewKind: 'permission',

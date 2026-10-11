@@ -19,16 +19,9 @@ function vaultRef(vaultPath: string | null | undefined): string {
 }
 
 /**
- * First step after connecting: survey the repository and propose concept candidates, writing
- * only what a human approved.
- *
- * It does not paraphrase the server's write lifecycle, which the server publishes in
- * its `instructions` and every `nextStep`; a second hand-written copy drifts
- * (`docs/DECISIONS.md`, 2026-08-16). A single-context agent cannot make `canWrite` true (the
- * server rejects `maker-self-evaluation`), so the reviewed small batch comes first, as step 6,
- * and the bulk route after it tells the agent to stop rather than chase the flag or invent an
- * evaluator. The plan digest is a pure function of the proposal, so saving it verbatim keeps
- * the human's acceptance valid.
+ * Does not paraphrase the server's write lifecycle, which it publishes in `instructions` and
+ * `nextStep`. A single-context agent cannot make `canWrite` true, so the reviewed small batch comes
+ * first (step 6).
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,

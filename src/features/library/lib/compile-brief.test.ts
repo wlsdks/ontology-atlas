@@ -192,7 +192,6 @@ describe("the brief names the files and nothing else about them", () => {
   });
 });
 
-/** A writer given no list of existing pages never revises one (docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md). */
 describe("the brief names the pages that already exist", () => {
   const PAGES = [
     { slug: "wiki/quarter-plan", title: "Quarter plan", sourcePaths: ["sources/plan.pdf"], createdBy: "agent:claude", compiledAt: null },

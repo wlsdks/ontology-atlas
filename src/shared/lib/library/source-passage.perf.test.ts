@@ -4,7 +4,7 @@ import { zipFile } from "../../../../tests/fixtures/source-passage-cases.mjs";
 import { sourceUnits } from "./source-passage";
 
 const FILE_BYTES = 256 * 1024;
-// Measured 2026-09-27: at most 60 ms per case, fastest of three.
+// The budget is generous on purpose: it catches a change of shape, not small slowdowns.
 const BUDGET_MS = 1000;
 
 const workbook = { name: "xl/workbook.xml", text: '<sheet name="a" r:id="r1"/>' };

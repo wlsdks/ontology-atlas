@@ -25,16 +25,9 @@ export const DEFAULT_POLL_CADENCE: PollCadenceConfig = {
 };
 
 /**
- * **A poll never takes more than this share of the wall clock.**
- *
- * A web poll walks the whole folder and calls `getFile()` on every entry, because the File
- * System Access API has no cheaper way to read a modification time. Measured on the
- * 12,025-file fixture (2026-09-19, dev server, 15 s CPU profile at rest): about 230 ms per
- * walk, every 5 s — the only work on an idle Library, and it grows with the folder. So the
- * delay after a poll is at least the poll's own duration times this factor: a 230 ms walk
- * still idles at 5 s, a 2 s walk on a far larger folder waits 40 s, and no folder can make
- * the poll take more than a twentieth of the time. `MAX_POLL_DELAY_MS` keeps the promise
- * in `.claude/rules/surfaces.md` that the web is *delayed, not unavailable*.
+ * A web poll walks the whole folder with `getFile()` per entry, so the delay is at least poll time
+ * times this factor, capping polling at a twentieth of wall time. `MAX_POLL_DELAY_MS` keeps the web
+ * delayed, not unavailable (`.claude/rules/surfaces.md`).
  */
 const POLL_COST_SHARE = 20;
 export const MAX_POLL_DELAY_MS = 60_000;

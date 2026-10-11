@@ -38,10 +38,7 @@ export interface VaultDoc {
   mtime?: number;
 }
 
-/**
- * A raw file under `sources/`, known from its directory entry only and never opened
- * (`docs/DECISIONS.md` 2026-09-05, "A vault holds three kinds of file and only one is the graph").
- */
+/** A raw file under `sources/`, known from its directory entry only and never opened. */
 export interface VaultSourceFile {
   /** Always begins `sources/`. */
   path: string;

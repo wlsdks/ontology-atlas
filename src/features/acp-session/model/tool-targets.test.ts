@@ -164,13 +164,6 @@ describe('readToolFallbackTarget — a tool with no vault node still names what 
   });
 });
 
-/*
- * Measured in the rendered transcript (2026-09-20): a read reported flat named its file and the
- * write beside it named nothing, because the adapter wraps a call to an MCP server as
- * `{ server, tool, arguments }` and every key these readers look for was one level down. The row
- * that lost its subject was the one that had just failed, and the wrapped shape is what this
- * product's own vault server produces — so the common case was the blind one.
- */
 describe('a call wrapped by the MCP envelope still names what it touched', () => {
   const wrapped = (args: Record<string, unknown>) => ({
     server: 'atlas-vault',

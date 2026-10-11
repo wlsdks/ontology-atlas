@@ -23,11 +23,8 @@ type ParsedScalar = string | number | boolean;
 
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-// These frontmatter keys are graph edges, not arbitrary metadata (same set as
-// mcp/src/parser.mjs). A scalar at one of these keys parses fine and then
-// silently draws no edge — the mcp parser has diagnosed it since 2026-08 while
-// this parser stayed silent, a 3-way divergence the 4-way contract fixtures
-// did not cover (bug sweep 2026-09-01).
+// Graph edge keys, same set as `mcp/src/parser.mjs`: a scalar here parses but silently draws no
+// edge.
 const GRAPH_ARRAY_KEYS = new Set([
   'domains',
   'capabilities',
@@ -110,23 +107,8 @@ function decodeDoubleQuoted(value: string): string {
 }
 
 export function parseFrontmatter(input: string): ParsedFrontmatter {
-  // Normalise line endings and encoding — **on the read path only**
-  // (measured 2026-07-28).
-  //
-  // CRLF: splitting on `\n` leaves a trailing `\r` on every line. The block-list
-  // regex's `.` does not match `\r` and `$` only sees the end of the string, so
-  // the match fails and the list comes back empty. Scalars survive because
-  // `.trim()` rescues them, so the symptom is **"the nodes are there but every
-  // relation vanished"** — with zero warnings.
-  //
-  // BOM: `raw.startsWith('---')` is false for `\uFEFF---`, so the whole
-  // frontmatter block falls through into the body and `kind:` disappears —
-  // **the document vanishes from the graph as a node**.
-  //
-  // Both are produced by the default editor of the population
-  // `.claude/rules/surfaces.md` names as explicitly supported (Windows
-  // Chromium). The 4-way contract test only guarantees the four parsers *agree*,
-  // and it was passing because **all four were wrong the same way**.
+  // Normalise BOM and CRLF on the read path only. CRLF leaves `\r` that breaks the block-list match
+  // and empties lists; a BOM defeats `startsWith('---')` so `kind:` vanishes.
   const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
@@ -231,29 +213,15 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
 }
 
 /**
- * Reports a scalar that **opens a quote the value never closes as its last
- * character** — `display_ko: "Agents" destination`, found in this repository's own
- * vault on 2026-08-31.
- *
- * `unquote` strips a wrapping pair only when the first and last characters are
- * the same quote, so a value that opens a quote it never closes falls through to
- * its lenient tail
- * (`replace(/^["']|["']$/g, '')`), which removes the opening quote and keeps the
- * rest verbatim, so every reader renders `Agents" destination`. Nothing else noticed:
- * the key parses, the node loads, and `validate` answered `0 issues` while the
- * map, the lists and the app title all showed the broken text.
- *
- * Top-level scalars only. Inline list and object members reach `unquote` through
- * the quote-aware `splitTopLevel`, and a block scalar carries no quoting at all.
+ * Reports a scalar that opens a quote it never closes: `unquote` then strips only the opening
+ * quote and every reader renders the stray quote. Top-level scalars only.
  */
 function quotedScalarFault(value: string): 'trailing' | 'unterminated' | null {
   const trimmed = value.trim();
   const quote = trimmed[0];
   if (quote !== '"' && quote !== "'") return null;
-  // **Match the renderer, not YAML.** `unquote` strips a wrapping pair whenever
-  // the last character is the same quote, so `'Owner's guide'` and
-  // `"He said "hi" today"` render exactly as written. Only a value that never
-  // closes is a fault; anything else would fail a vault that reads correctly.
+  // Match the renderer, not YAML: `unquote` strips a wrapping pair, so only a value that never
+  // closes is a fault.
   if (closesWithQuote(trimmed, quote)) return null;
   for (let i = 1; i < trimmed.length; i += 1) {
     // The same escape rule `unquote` reverses, so a `\\"` is not a closer.
@@ -355,14 +323,7 @@ function unquote(value: string): string {
   return value.replace(/^["']|["']$/g, '');
 }
 
-/**
- * Quote-aware splitting (fixed on measurement, 2026-07-28).
- *
- * Inline lists and objects used to be split on every comma, with a comment
- * declaring that limitation "unsupported". But a comma inside a value **silently
- * truncates data** — the tail of `labels: { ko: "Map, Search" }` disappeared. A
- * separator inside quotes is data, not a separator.
- */
+/** Quote-aware splitting: a separator inside quotes is data, not a separator. */
 function splitTopLevel(input: string, separator: string, mapping = false): string[] {
   const parts: string[] = [];
   let start = 0;
@@ -408,9 +369,7 @@ function* bodyLines(body: string, stripCr = false): Generator<string> {
 }
 
 export function firstHeading(body: string): string | null {
-  // Fence-aware like extractHeadings (bug sweep 2026-09-01): a titleless doc
-  // whose body opens with a fenced shell block containing `# comment` used to
-  // get that comment as its manifest and graph title.
+  // Fence-aware like `extractHeadings`: a `# comment` inside a fenced block is not a title.
   let inCode = false;
   for (const line of body.split('\n')) {
     if (line.startsWith('```')) {
@@ -509,11 +468,7 @@ export function buildExcerpt(body: string, max = 320): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text
     .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows (| --- |, ---)
     .replace(/\s*\|\s*/g, ' · ') // table cell pipes → readable middot separators
-    .replace(/^\s*[-•]\s+/gm, '') // list bullets
-    // `#` is deliberately NOT in this class. Heading marks are gone two lines up, and a `#`
-    // anywhere else is content: `path.tsx#Symbol` is how every element document names its
-    // entrypoint, and deleting the separator glued the two names into `HubRail.tsxHubRail` in
-    // the search palette's reason column (2026-09-21).
+    .replace(/^\s*[-•]\s+/gm, '') // `#` is deliberately not in this class: `path.tsx#Symbol` is content and must keep its separator.
     .replace(/[*_`>]/g, '') // residual emphasis / quote marks
     .replace(/\s+/g, ' ') // collapse whitespace
     .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
@@ -547,36 +502,9 @@ export interface LinkContext {
 export const WIKI_DIR = 'wiki';
 
 /**
- * Normalises a wikilink `[[slug]]` target against the vault the document belongs
- * to.
- *
- * `docs/ontology/` is the **nested MCP vault** this project dogfoods, and
- * wikilinks inside it use slugs relative to that vault's root, as MCP tools and
- * people write them (`capabilities/x`, `domains/y`). In the merged tree the `/docs`
- * page builds, the same document's real slug carries an `ontology/` prefix
- * (`ontology/capabilities/x`), so without this correction
- * the `backlinksDetail` keys disagree and a real backlink is missing from the
- * lookup. Wikilinks in top-level documents outside `ontology/` (such as
- * `[[FEATURES]]` in `docs/CHANGELOG.md`) are already root-relative and are left
- * alone.
- *
- * ⚠️ **`wiki/` is a second such namespace, and this function used to miss it**
- * (measured 2026-09-09). `docs/ONTOLOGY-ATLAS-SPEC.md` §11.4 defines a wiki page
- * link as `[[wiki/<slug>]]` **or** `[[<slug>]]`, and `validateWikiFolder` resolves
- * the bare form inside `wiki/` exactly that way. This function did not, so the two
- * disagreed in both directions on the same folder: `[[budget]]` inside
- * `wiki/quarter-plan.md` rendered as **plain text** and drew no edge while the
- * folder check called it resolved, and every genuinely resolved link the Library
- * graph drew was still reported as `dangling-wikilink` because the check judged
- * targets it could not see. One vault, one resolution: a bare slug written inside
- * `wiki/` names a page in `wiki/`.
- *
- * Only the bare form is folded — a target that already carries a `/`
- * (`[[capabilities/checkout]]`, `[[wiki/budget]]`) is vault-root relative and is
- * left alone, which is the same boundary `normalizeWikiLinkTarget` draws in
- * `wiki-page-schema.ts`. The two must keep agreeing;
- * `tests/contract/wiki-page-schema.contract.test.ts` holds the folder half and
- * `parse-frontmatter.test.ts` holds this one.
+ * Normalises a wikilink target. Slugs inside the nested `docs/ontology/` vault get an `ontology/`
+ * prefix to match the merged tree; a bare slug inside `wiki/` names a page in `wiki/`. Keep in
+ * step with `normalizeWikiLinkTarget` in `wiki-page-schema.ts`.
  */
 export function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string): string {
   if (fromSlug.startsWith('ontology/') && !targetSlug.startsWith('ontology/')) {
@@ -698,14 +626,8 @@ export function restoreVaultSourceShape(text: string, shape: VaultSourceShape): 
 }
 
 /**
- * Consumes a block scalar (`|`, `>` and their chomping variants) as the value.
- *
- * **Why it is needed** (measured while dogfooding, 2026-07-29). Without it the
- * indicator is stored as the value (`definition: "|"`) and the indented body
- * lines fall through to the top-level loop. That loop `.trim()`s keys, so the
- * indentation disappears and a line like `kind: element` inside the prose
- * **overwrote the node's kind** — a document changing its own type through its
- * own description, with zero warnings.
+ * Consumes a block scalar (`|`, `>` and chomping variants); otherwise indented lines such as
+ * `kind: element` fall through to the top-level loop and overwrite the node's kind.
  */
 function readBlockScalar(
   lines: string[],

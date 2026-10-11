@@ -31,25 +31,16 @@ export interface PageMetadataInput {
   /** Only when the page has its own OG image; otherwise the site OG image is used. */
   ogImage?: string;
   /**
-   * Set when the page's directory carries an `opengraph-image.tsx` file
-   * convention. Next injects that generated image itself, and a leaf `images`
-   * value — including one arriving through an object spread — OVERRIDES it
-   * (`resolve-metadata` treats an own `images` property as authoritative). So
-   * the builder must omit the key entirely, not set it to anything
-   * (2026-09-01 review: every project share carried the generic site card
-   * while the page's own comment claimed the per-slug card would win).
+   * Set when the page directory has an `opengraph-image.tsx`. A leaf `images` value, even via
+   * spread, overrides it, so the builder must omit the key entirely.
    */
   hasFileConventionImage?: boolean;
   absoluteTitle?: boolean;
 }
 
 /**
- * The site-wide social card. Every page must carry it EXPLICITLY: Next merges
- * metadata by replacing the whole top-level `openGraph`/`twitter` key, so the
- * root layout's images were dropped on every page that used this builder —
- * the live pages shipped `twitter:card=summary_large_image` with no image at
- * all (bug found 2026-09-01; the old comment claimed inheritance that never
- * happens).
+ * Every page must carry the social card explicitly: Next replaces the whole top-level
+ * `openGraph`/`twitter` key when merging, so root layout images are dropped.
  */
 const SITE_OG_IMAGE = { url: '/og-image.png', width: 1200, height: 630, alt: 'Ontology Atlas' };
 

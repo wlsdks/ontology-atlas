@@ -3,25 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { useRowDisclosure } from "./use-row-disclosure";
 
 /**
- * The **mount versus transition** contract for row disclosure (added from a
- * performance trace, 2026-07-28).
- *
- * **Why it exists.** A single node click cost **62ms of forced reflow, 61ms of
- * it in this hook** (Chrome's ForcedReflow insight named it the top cause). The
- * cause was reading `content.offsetHeight` on the mount path too — a layout read
- * straight after a style write, which is a forced reflow, and with several such
- * rows it becomes layout thrashing.
- *
- * The hook's own comment already held the answer: an already-open row unfolding
- * by itself as it appears is motion the user never asked for. With no animation
- * on mount there is **nothing to measure**.
- *
- * So: mount does not measure (`auto`); a transition measures and interpolates.
- * Either one reversed fails immediately — leaving a transition on `auto` kills
- * the toggle animation, and measuring on mount brings the reflow back.
- *
- * jsdom has no layout, so `offsetHeight` is always 0 and a stub goes on the
- * prototype. What this test watches is **which value is written**, not pixels.
+ * Mount does not measure (`auto`); a transition measures and interpolates. Reversing either fails: a
+ * transition left on `auto` kills the animation, and measuring on mount brings back a forced reflow.
+ * jsdom has no layout, so `offsetHeight` is stubbed; the test watches which value is written.
  */
 
 const CONTENT_HEIGHT = 120;

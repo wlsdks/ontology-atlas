@@ -179,16 +179,8 @@ export async function secretStatus(
 }
 
 /**
- * Delete — **absent still counts as success (idempotent), but a failed delete
- * throws** (2026-08-17).
- *
- * Rust used to discard the delete result and unconditionally report "deleted".
- * With a locked keychain the UI said "deleted" while **the key was still there**.
- * A false "deleted" is what makes someone walk away reassured — and hand the
- * machine on believing the key is gone.
- *
- * The two cases are now separated: "there was nothing" vs "could not delete".
- * The latter throws, so the caller surfaces it via `secretErrorMessage`.
+ * Absent counts as success (idempotent), but a failed delete throws so the caller surfaces it via
+ * `secretErrorMessage`: a locked keychain must not report "deleted" while the key is still there.
  */
 export async function secretClear(
   provider: SecretProvider,

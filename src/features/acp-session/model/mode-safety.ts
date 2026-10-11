@@ -1,43 +1,14 @@
 /**
- * The safety verdict for the "working mode" list — **it separates the known from the unknown.**
- *
- * Why (2026-08-17). The old verdict was a one-line denylist:
- *
- * ```
- * modes.filter((m) => !GATE_REMOVING_MODES.has(m.id))
- * ```
- *
- * It hides only what is written down. So **when the adapter adds a new mode it becomes visible and
- * selectable without our knowing.** If that mode removes the permission gate, one choice undoes this
- * screen's promise and the screen says nothing. **A safety device that treats what it does not know
- * as safe is not a device.**
- *
- * It is an immediate problem too: the adapter versions are being bumped
- * (`claude-agent-acp` 0.68→0.69, `codex-acp` 1.3→1.4) and our gate measurements were taken on the
- * **old versions**.
- *
- * **Three categories:**
- *
- * - **Measured to remove the gate** → never shown (as before).
- * - **Measured to be fine** → shown normally.
- * - **Not yet measured** → shown, but **stated as unknown.** It is not hidden because blocking a
- *   perfectly good new mode is a lie too. The permission card already uses the same discipline
- *   (say unknown when unknown, and recommend the safe side).
+ * The safety decision for the working-mode list separates the known from the unknown.
+ * Measured to remove the gate: never shown. Measured fine: shown. Not yet measured: shown,
+ * stated as unknown.
  */
 
-/**
- * Requires the bare minimum for the verdict. So the caller's wider type (`AcpChoice`) can go in and
- * come back out unchanged.
- */
 export interface AcpModeChoice {
   id: string;
   /**
-   * The adapter's own `_meta.kind` for this mode, or null/absent when it states none.
-   *
-   * ⚠️ **This is the second axis, and it outranks the id** (2026-09-05). The id was the only thing
-   * to go on until the adapters started declaring what class a mode belongs to; now they say it
-   * outright, and the class travels on the kind rather than the name — `claude-agent-acp` calls its
-   * self-approving mode `auto` while `codex-acp` calls the same class `agent`.
+   * The adapter's own `_meta.kind`, or null when none; it outranks the id because the class
+   * travels on the kind, not the name.
    */
   metaKind?: string | null;
 }
@@ -54,51 +25,24 @@ const GATE_REMOVING = new Set([
   // Codex's workspace sandbox permits in-folder edits without an approval request.
   'workspace-write',
   /*
-   * `agent` belongs here. By name it sounds like "the normal mode", but the measurement
-   * is recorded in `docs/DECISIONS.md` (2026-08-16): launching codex on its default (`agent`)
-   * gave *"files written outside the working folder with zero permission requests"*.
-   *
-   * **Re-measured 2026-08-17 — unchanged on `codex-acp` 1.4.** This closes the worry the block above
-   * left open ("our gate measurements were taken on the old versions"). In the installed app this
-   * line was briefly removed, a session opened on `agent`, and it was asked to *"write hello to
-   * /tmp/atlas-gate-probe.txt"* — the file appeared (contents `hello`) with **no permission card at
-   * all**. `Read-only` is safer for direct files but does not guard MCP writes, so mode
-   * classification alone never makes Codex eligible for in-app chat (`runtime-gate.ts`).
-   *
-   * ⚠️ *"This adapter offers only two modes (`Read-only`, `Agent`)"* stood here until 2026-09-05 and
-   * was never true. Read from the pinned distribution, `codex-acp` 1.6.2 builds **three**
-   * (`read-only`, `agent`, `agent-full-access`), and 1.9.0 builds the same three while renaming them
-   * (`Ask for approval`, `Approve for me`, `Full access`) and adding the kinds below.
+   * `agent` belongs here: by name it sounds normal, but launching codex on it wrote outside
+   * the folder with no permission card (`docs/DECISIONS.md`). `Read-only` does not guard MCP
+   * writes, so mode alone never makes Codex eligible for in-app chat (`runtime-gate.ts`).
    */
   'agent',
 
   /*
-   * `auto` — claude's, and it is advertised to **every** session (`claude-agent-acp` 0.74.0
-   * `buildAvailableModes()`, read 2026-09-05: *"Auto" / "Claude handles permission decisions"*).
-   * The adapter's own source records that a mode-level auto-approval never reaches the ACP client as
-   * `session/request_permission`, so Atlas would draw no card at all — the gate-removing class
-   * exactly. It also carries `_meta.kind: "auto_review"`, so the rule below would catch it anyway;
-   * the id is listed because a measured name belongs in the measured list.
-   *
-   * Its neighbour is worth knowing: `AUTO_MODE_FALLBACK = "acceptEdits"`. Selecting `auto` on a model
-   * without `supportsAutoMode` silently moves the session to `acceptEdits` — already on this list —
-   * and announces it only through a `current_mode_update` notification (`use-acp-session.ts`).
+   * `auto` is advertised to every claude session and its auto-approval never reaches the ACP
+   * client as `session/request_permission`. `AUTO_MODE_FALLBACK = "acceptEdits"` moves the
+   * session silently.
    */
   'auto',
 ]);
 
 /**
- * Kinds **measured to remove the gate**, whatever the mode is called.
- *
- * Where they come from (read from the shipped distributions, 2026-09-05):
- * `claude-agent-acp` 0.74.0 `dist/session-mode.js` attaches `standard` / `plan` / `auto_review`
- * (`auto`) / `full_access` (`bypassPermissions`), and `codex-acp` 1.9.0 `dist/index.js` attaches
- * `standard` (`read-only`) / `auto_review` (`agent`) / `full_access` (`agent-full-access`).
- *
- * `auto_review` says the adapter approves in the person's place; `full_access` says it stops asking.
- * Either way the request never arrives and the screen has nothing to show, so **the kind is decisive
- * even when the id is on the safe list below** — a future `read-only` that reviews for you is not
- * read-only in the sense this screen promises.
+ * Kinds that remove the gate, whatever the mode is called: `auto_review` approves for the
+ * person and `full_access` stops asking, so the request never arrives. The kind is decisive
+ * even for a safe id.
  */
 const GATE_REMOVING_KINDS = new Set(['auto_review', 'full_access']);
 
@@ -124,12 +68,8 @@ export interface ModePartition<T extends AcpModeChoice = AcpModeChoice> {
 }
 
 /**
- * Re-runs the verdict for **one** mode id — the shape `current_mode_update` arrives in.
- *
- * ⚠️ The notification carries the id and nothing else: no name, no description, no `_meta`. So this
- * is the id-only half of `partitionModes`, and it answers the question the screen actually has when
- * the adapter moves a session by itself — *may this screen still say it asks first?* An id nobody
- * measured answers yes, the same as in the list: unknown is unverified, not forbidden.
+ * Re-runs the decision for one mode id, the shape `current_mode_update` arrives in (id only,
+ * no `_meta`). An unmeasured id keeps the gate, the same as in the list.
  */
 export function modeKeepsGate(modeId: string): boolean {
   return partitionModes([{ id: modeId }]).offered.length > 0;

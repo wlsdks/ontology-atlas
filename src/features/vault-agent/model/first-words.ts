@@ -141,7 +141,6 @@ export function buildFirstWords(
     chips.push(chipFor('screen', intentFor(focused), labels));
   }
 
-  // Queue slot, by the to-do queue's verdict, skipping the screen slot's concept.
   const queued = concepts.find(
     (concept) => concept.gaps.length > 0 && concept.ref !== focused?.ref,
   );

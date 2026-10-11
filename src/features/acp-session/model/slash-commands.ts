@@ -1,23 +1,7 @@
 /**
- * The **command list** invoked with `/` — the agent reports it during the session.
- *
- * ## Why (owner question, 2026-08-17)
- *
- * *"typing `/` here ought to offer something like Atlas-specific skills"* (typing `/` here
- * ought to offer something like Atlas-specific skills).
- *
- * It works. The adapter was already sending it and **we were not receiving it** — the list arrives
- * mid-session as `available_commands_update` (the adapter's `sendAvailableCommandsUpdate`). Until now
- * that line was silently discarded.
- *
- * ## Where "Atlas-specific" comes from
- *
- * This list is **what the agent found in that folder**. The vault folder is the working folder, so
- * skills placed inside the vault appear here directly. The path to making dedicated skills is
- * therefore already open, and this file is the side that makes them **visible on screen**.
- *
- * The rule against inventing a list stands: only what arrived is drawn. With nothing arriving, typing
- * `/` does nothing — we do not pretend a feature exists.
+ * The `/` command list the agent reports mid-session as `available_commands_update`, i.e.
+ * what the agent found in the vault folder. Only what arrived is drawn; with nothing
+ * arriving, `/` does nothing.
  */
 
 export interface AcpSlashCommand {

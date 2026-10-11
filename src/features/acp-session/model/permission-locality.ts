@@ -1,27 +1,14 @@
 import { projectRootForVault } from './vault-mcp-server';
 
 /**
- * Is what the agent wants to touch **the person's own project**, or somewhere else entirely?
- *
- * ⚠️ **Why this distinction became necessary** (measured in the installed app, 2026-08-25). The
- * permission card says 「it wants to touch something outside this folder」, which was informative
- * while vaults lived beside their code: outside the vault meant somewhere unrelated.
- *
- * Since maps moved to `<project>/atlas`, the product's own headline flow — *make a map from my
- * code* — makes the agent read the code, and the code is by construction outside the vault. So the
- * warning now fires on the exact thing the person just asked for, and reads as alarm rather than
- * information. A warning that cries wolf on the intended path teaches people to click through it,
- * which is precisely what a checkpoint must never teach.
- *
- * The fix is not to suppress the card — every access still stops for an answer. It is to say which
- * of the two situations this is, so the person spends their attention on the one that deserves it.
+ * Is what the agent touches the person's own project, or somewhere else entirely? Every
+ * access still stops for an answer; this only says which situation it is, so the warning is
+ * not noise.
  */
 /**
- * `inside-folder`: the path is in the folder the person opened Atlas on — a page, a node,
- * a source. `inside-project`: outside that folder but inside the project above it — the
- * code the map was built from. `elsewhere`: anything else, and anything unresolvable.
- * The first two share the neutral card; only the words differ, because "look at code in
- * your project" over a wiki page write (live turn, 2026-09-06) named the wrong situation.
+ * `inside-folder`: in the opened folder. `inside-project`: outside it but inside the project
+ * above. `elsewhere`: anything else, or unresolvable. The first two share the neutral card
+ * with different words.
  */
 export type PermissionLocality = 'inside-folder' | 'inside-project' | 'elsewhere';
 
@@ -47,12 +34,8 @@ export function permissionLocality(
    */
   if (/(?:^|[/\\])\.\.(?:[/\\]|$)/.test(target)) return 'elsewhere';
   /*
-   * ⚠️ **The chosen folder itself is the first thing that counts as inside** (2026-09-06). This
-   * used to be measured only against the *project above* the vault, so a folder that is not one of
-   * ours — someone's `~/notes`, or any vault outside a `<project>/atlas` layout — had no project
-   * root, and every request was answered `elsewhere`. The card then headed a write to a file the
-   * person had opened Atlas on with 「it wants to touch something outside this folder」, naming
-   * the folder as outside itself. Whatever else is true, a path inside the open folder is inside it.
+   * The opened folder itself counts as inside first; a folder without a `<project>/atlas`
+   * layout has no project root, so everything else would read as `elsewhere`.
    */
   if (within(vaultPath, target)) return 'inside-folder';
   const projectRoot = projectRootForVault(vaultPath);

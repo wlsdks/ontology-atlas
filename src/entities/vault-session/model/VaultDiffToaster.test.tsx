@@ -226,12 +226,6 @@ describe('VaultDiffToaster', () => {
     expect(toastMocks.show).toHaveBeenLastCalledWith('편집 — answer', 'success');
   });
 
-  /*
-   * Map-edit QA D5 (2026-09-26): a save refused as a conflict raised its own honest notice,
-   * then this watcher reported the same outside write as a green «edited» toast that took the
-   * front of the stack. The refusal already said it; the watcher stays quiet for exactly that
-   * change and reports the next one.
-   */
   it('a change a refused save already reported raises no second notice; the next one does', () => {
     const conflicts = new Map([['capabilities/doctor', 2000]]);
     const consumeReportedConflicts = (observed: ReadonlyMap<string, number | null>) => {
@@ -327,12 +321,6 @@ describe('VaultDiffToaster', () => {
     expect(toastMocks.show).toHaveBeenLastCalledWith('편집 — native-create', 'success');
   });
 
-  /**
-   * **A notification has to carry information** (owner instruction, 2026-08-01). What the owner
-   * caught on screen was `✓ Edited: capabilities/payment-authorization` — `capabilities/` is a
-   * developer folder name, and a slug is not what a person calls the concept. The three below are the
-   * contract against reverting that.
-   */
   describe('문구 계약 — 슬러그가 아니라 종류 + 사람 이름', () => {
     function burst(second: TestDoc[], first: TestDoc[] = [{ slug: 'seed', mtime: 1 }]) {
       localVaultMocks.useLocalVault.mockReturnValue({

@@ -1,21 +1,8 @@
 'use client';
 
 /**
- * "Open a conversation with this tool" — one one-way signal from the settings
- * sheet to the map's conversation panel.
- *
- * **Why it is needed** (review, 2026-08-16). The first step of the getting-started
- * card is named 「Connect an AI agent」 (connect an AI agent) and its button opens
- * the Agents section of settings — but that section held **only a list and
- * outbound links**. It showed what had been detected and offered **no door
- * through to actually connecting**. Which tool to use was picked by the code
- * (the first one), and the only place to open a conversation was the header of
- * the conversation panel, i.e. visible only to someone who had already opened one.
- *
- * So each row gets a door: open a conversation with this tool. The settings
- * sheet is owned by the app shell and the conversation panel by the map, so they
- * are joined by a window event (the convention `app:urlchange` and the appearance
- * preferences use).
+ * One-way signal from the settings sheet to the map's conversation panel, joined by a window event
+ * because the shell owns one and the map the other.
  */
 
 const AGENT_CHAT_INTENT_EVENT = 'ontology-atlas:agent-chat-intent';
@@ -25,18 +12,8 @@ interface AgentChatIntentDetail {
   /** Which runtime to open with; unset means whichever is currently selected. */
   runtimeId: string | null;
   /**
-   * A first turn to open with, or `null` for a conversation that starts empty.
-   *
-   * ⚠️ **Why a door may carry a sentence** (decision, 2026-08-24). The first-run card had no route
-   * from an existing codebase to a map of it: opening a folder with no Markdown gives an empty map,
-   * and the only real path was a folded terminal row whose own copy told app users it excluded
-   * them. Construction is handed to the agent and the person approves writes. The separate
-   * gray-area inspector may call a fixed read-only local MCP child to collect bounded evidence;
-   * it never constructs or accepts ontology meaning.
-   *
-   * The sentence arrives as **the person's own turn**, visible in the transcript, and every write
-   * it leads to still stops at the permission card. Nothing here bypasses a checkpoint; it saves a
-   * person from typing an instruction they already pressed a button to give.
+   * A first turn to open with, or `null` for an empty conversation. It arrives as the person's own
+   * turn and every write still stops at the permission card.
    */
   prompt?: string | null;
 }
@@ -57,12 +34,8 @@ export function requestAgentChat(runtimeId:string|null=null,prompt:string|null=n
  */
 export function queueAgentChatIntent(
   /*
-   * ⚠️ **Null means "whichever runner is already connected".** The map's handler has always read
-   * `runtimeId ?? acpRuntime?.id`, but the queue used to discard any entry without a runtime name,
-   * so a caller that knows the *task* but not the *runner* had no way through. `/architecture` is
-   * exactly that caller: it holds the drafting sentence and has no runner list on screen. Refusing
-   * the entry there would drop the sentence and leave the person on the map with an empty box —
-   * the defect this bridge exists to prevent.
+   * Null runtime means whichever runner is already connected; a caller that knows the task but not the
+   * runner must not be dropped.
    */
   runtimeId: string | null,
   prompt: string | null = null,

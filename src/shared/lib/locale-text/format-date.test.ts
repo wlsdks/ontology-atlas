@@ -36,8 +36,7 @@ describe('formatDate', () => {
   });
 
   it('renders a late-night KST timestamp on its local calendar day, not the UTC day it crosses into (P4-③)', () => {
-    // 2026-07-21 03:12 KST is 2026-07-20 18:12 UTC; a UTC getter would render
-    // this as "07-20".
+    // An early-morning KST time falls on the previous UTC day; a UTC getter would render the wrong date.
     expect(formatDate('2026-07-20T18:12:00.000Z')).toBe('2026.07.21');
   });
 });

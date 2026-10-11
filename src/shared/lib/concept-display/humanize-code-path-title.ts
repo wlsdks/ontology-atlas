@@ -36,16 +36,9 @@ const GENERIC_LEAF = new Set([
 ]);
 const MAX_PROMOTIONS = 2;
 /**
- * Title-casing an acronym produces **the wrong name**. Measured while
- * dogfooding, 2026-07-26: `mcp/src/index.js` rendered as "Mcp" and sat fourth in
- * the insights ranking, while another screen in the same app called the same
- * thing "MCP". One concept under two names on two screens gets counted twice by
- * the user.
- *
- * The list holds **only what actually appears in this repo's paths**. An
- * "all acronyms" dictionary produces false positives (a person's name `Ai`, for
- * instance) that silently distort the data. Add a line when a new acronym shows
- * up in a path.
+ * Title-casing an acronym gives the wrong name (`mcp/src/index.js` as "Mcp"). The list holds only
+ * acronyms that appear in this repo's paths; a broad dictionary gives false positives such as a
+ * person's name `Ai`.
  */
 const ACRONYMS = new Set([
   "mcp",

@@ -3,22 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { partitionModes } from './mode-safety';
 
 /**
- * The safety verdict for the "working mode" list used to be a **denylist**.
- *
- * Why that is dangerous (2026-08-17). The code was
- * `modes.filter((m) => !GATE_REMOVING_MODES.has(m.id))` — it hides only what is written down, so
- * **an adapter adding a new mode makes it visible and selectable without our knowing.** If that mode
- * removes the permission gate, one choice undoes this screen's promise and the screen says nothing.
- *
- * A safety device that treats **the unknown as safe** is not a device.
- *
- * And it is an immediate problem: the adapter versions are being bumped
- * (`claude-agent-acp` 0.68→0.69, `codex-acp` 1.3→1.4) while our gate measurements were taken on the
- * **old versions**.
- *
- * **So there are three categories**: measured safe, measured to remove the gate, and **not yet
- * measured**. The last is not hidden (blocking a perfectly good new mode would be a lie too) —
- * instead it is **stated as unknown**. The permission card already uses the same discipline.
+ * The safety decision has three categories: measured safe, measured to remove the gate, and
+ * not yet measured; the last is shown stated as unknown, not hidden.
  */
 
 const mode = (id: string, name = id) => ({ id, name });
@@ -31,8 +17,7 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
   });
 
   it('codex 의 `agent` 도 숨긴다 — 이름은 평범한데 실측이 다르다', () => {
-    // Measured 2026-08-16: launching codex on `agent` wrote outside the working folder with zero
-    // permission requests.
+    // Launching codex on `agent` wrote outside the working folder with zero permission requests.
     const out = partitionModes([mode('agent'), mode('read-only')]);
     expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
   });
@@ -71,18 +56,9 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
 });
 
 /**
- * The tests above measure the function **abstractly** — they never look at which modes actually
- * arrive, so they stay green even when the adapter changes its modes. This pins **the measured list**.
- *
- * How it was measured (2026-09-03, the installed app and pinned distribution): a `codex-acp` 1.6.2
- * session offers three modes. Its distribution maps `read-only` to the real `readOnly` sandbox and
- * the other two to writable sandboxes. The installed read-only path asked before a direct write,
- * while the previously measured writable path created a file with no card. The writable ids stay
- * hidden; their friendly names are not evidence of a boundary.
- *
- * So this adapter is offered **read only**. The uncomfortable conclusion is frozen into a test to
- * stop the next person seeing "writing does not work" and quietly opening `agent` — opening it
- * requires **measuring again and editing this block**.
+ * Pins the measured `codex-acp` 1.6.2 mode list: `read-only` maps to the real read-only
+ * sandbox, the others to writable ones. Opening `agent` requires measuring again and editing
+ * this block.
  */
 describe('실측한 어댑터 — codex-acp 1.6.2', () => {
   /** The mode list exactly as it arrived in the session. */
@@ -109,24 +85,8 @@ describe('실측한 어댑터 — codex-acp 1.6.2', () => {
 });
 
 /**
- * **The id is not the whole verdict any more — the adapter now states a kind.**
- *
- * Read from the shipped distributions (2026-09-05):
- *
- * - `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js` attaches
- *   `_meta.kind` to every mode it builds: `standard` (`default`, `acceptEdits`), `plan`,
- *   `auto_review` (`auto`), and `full_access` (`bypassPermissions`, only with `ALLOW_BYPASS`).
- * - `@agentclientprotocol/codex-acp@1.9.0` `dist/index.js` does the same on its three modes:
- *   `read-only` is `standard`, `agent` is `auto_review`, `agent-full-access` is `full_access`.
- *
- * `auto_review` means the adapter approves on the person's behalf, and its own source records that
- * such an approval **never becomes an ACP permission request** — so Atlas would draw no card at all.
- * `full_access` says the same thing without the euphemism. Both are the gate-removing class, and the
- * class travels on the kind, not on the name: `codex-acp` calls the first one `agent` and
- * `claude-agent-acp` calls it `auto`, and the next adapter will call it something else again.
- *
- * So the kind **wins over the id in both directions**: an id nobody has measured is dropped when its
- * kind says gate-removing, and an id on the measured-safe list is dropped for the same reason.
+ * The adapter states a kind in `_meta.kind`: `auto_review` and `full_access` skip ACP
+ * permission requests, and the kind wins over the id in both directions.
  */
 const kindMode = (id: string, metaKind: string | null) => ({ id, name: id, metaKind });
 
@@ -159,7 +119,6 @@ describe('mode kind — the adapter states its own safety class', () => {
   });
 
   it('marks a measured-safe id unverified when its kind is one nobody measured', () => {
-    // Unknown is unverified, never safe — the 2026-08-17 stance, now on the kind axis too.
     const out = partitionModes([kindMode('default', 'turbo')]);
     expect(out.offered.map((m) => m.id)).toEqual(['default']);
     expect(out.unverified).toEqual(['default']);
@@ -174,12 +133,8 @@ describe('mode kind — the adapter states its own safety class', () => {
 });
 
 /**
- * The measured mode list of the claude adapter, pinned the way the codex one above is.
- *
- * Read from `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js`
- * `buildAvailableModes()` on 2026-09-05. `bypassPermissions` is appended only when the adapter's
- * `ALLOW_BYPASS` is set, so both shapes are pinned. `dontAsk` — the strict mode this repository
- * used to offer because it fails toward a refusal — **no longer exists** in the built list.
+ * Pins the claude adapter mode list from `buildAvailableModes()`; `bypassPermissions` is
+ * appended only when the adapter's `ALLOW_BYPASS` is set, so both shapes are pinned.
  */
 describe('measured adapter — claude-agent-acp 0.74.0', () => {
   const CLAUDE_ACP_0_74_0_MODES = [
@@ -211,10 +166,9 @@ describe('measured adapter — claude-agent-acp 0.74.0', () => {
 });
 
 /**
- * `codex-acp` 1.9.0, read on 2026-09-05 (1.10.0, read the same day, ships the identical mode table). It is **not** the pinned launch snapshot (1.6.2 is), but its
- * modes are pinned here because the id set did not change while the meaning did: the same
- * `read-only` id now sends `workspaceWrite`, and `agent` gained the `auto_review` kind. The mode
- * filter is not what keeps that adapter out — `runtime-gate.ts` and the launch pin are.
+ * Pins `codex-acp` 1.9.0 modes: same ids, but `read-only` now sends `workspaceWrite` and
+ * `agent` gained `auto_review`. `runtime-gate.ts` and the launch pin keep that adapter out,
+ * not the mode filter.
  */
 describe('measured adapter — codex-acp 1.9.0', () => {
   const CODEX_ACP_1_9_0_MODES = [

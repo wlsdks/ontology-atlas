@@ -1,38 +1,7 @@
 /**
- * Stops the screen stating one failure **twice**.
- *
- * ## What was seen on the real thing (2026-08-17, installed app)
- *
- * Sending one message with an expired claude login made the conversation pane look like this:
- *
- * ```
- * [me]  My project node and example area node …
- *       Failed to authenticate: OAuth session expired and could not be refreshed
- *       ┌─────────────────────────────────────────┐
- *       │ Login has expired                        │
- *       │ Run that tool once in the terminal …      │
- *       │ Details ▸ {"code":-32603,"message":"Inter…│
- *       └─────────────────────────────────────────┘
- * ```
- *
- * The same failure twice, and **the English original reads first.** The card below translates it
- * into human words and even supplies the next step, but the line above it plants "this is not for me
- * to read" first. It is the same failure this repository has already met and fixed (the error
- * card in `chat-panel/ErrorCard.tsx` once pasted what the adapter gave, verbatim) — the card was
- * fixed then, and it was missed that the adapter sends the same thing **as a message too**.
- *
- * ## Why not "hide what the agent said"
- *
- * Erasing something the agent said is dangerous, so the erase condition is kept as narrow as
- * possible: **only the last single line that is wholly contained in the error text already on
- * screen.** The two measured strings stand in exactly that relation —
- *
- * - message: `Failed to authenticate: OAuth session expired and could not be refreshed`
- * - error:   `{"code":-32603,"message":"Internal error: Failed to authenticate: OAuth
- *              session expired and could not be refreshed","data":{…}}`
- *
- * An agent's **real answer** never becomes a substring of an RPC error string. A short coincidence
- * (the agent saying just `Error`) still has to be prevented, hence a length floor.
+ * Stops the screen stating one failure twice: the adapter sends the error as a message and
+ * rejects the RPC. The erase condition is narrow: only the last single line wholly contained
+ * in the error text on screen.
  */
 
 /**

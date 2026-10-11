@@ -1,32 +1,7 @@
 /**
- * The meaning a body either states or does not — the browser's copy of
- * `mcp/src/meaning-findings.mjs`.
- *
- * ## Why a copy exists at all
- *
- * `src/`, `mcp/`, and `cli/` are three packages with no cross-imports, and the
- * canonical module reaches for `node:fs` to answer its sixth question. So the
- * five body-and-slug judgements are ported here and
- * `tests/contract/meaning-findings-parity.contract.test.ts` runs both
- * implementations over one fixture table, asserting identical code sets. That is
- * the repository's standing answer to an unavoidable duplicate — the same one
- * that keeps `mcp/src/schema.mjs` and the app's `KIND_EXPECTED_EXTRAS` in step.
- *
- * The sixth, `folder-only-evidence`, is deliberately absent: it asks the
- * filesystem whether a cited path is a directory. A browser has no filesystem
- * and no repository root, and a guess would accuse a node of something nobody
- * measured. `validate_vault` and the CLI answer it where a root is known.
- *
- * ## What it is for
- *
- * A node can be perfectly valid frontmatter and still say nothing. Until
- * 2026-09-22 only the write door noticed, so an agent could read six findings,
- * tell the person the vault validated clean, and every surface the person could
- * check for themselves agreed with the agent. These functions are how the
- * person's own validator asks the same question.
- *
- * Advisory, always — construction rule 5. Nothing here refuses a body; refusing
- * one would make the honest sequence (name it, then say what it is) an error.
+ * Browser copy of `mcp/src/meaning-findings.mjs`; kept in step by
+ * `tests/contract/meaning-findings-parity.contract.test.ts`. `folder-only-evidence` is absent: no
+ * filesystem.
  */
 
 /**

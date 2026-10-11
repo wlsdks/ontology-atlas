@@ -47,35 +47,15 @@ export function countRecentEntries(entries: readonly AgentActivityEntry[], nowMs
 }
 
 /**
- * Passes through only targets usable as a slug. The log's `target` is mostly a
- * slug but not always — batch tools write `(batch)` and `absorb_document` writes
- * a file path (`summarizeWrite` in `mcp/src/index.js`). The UI navigates to a
- * node using this value, so passing a non-slug off as a slug makes a dead link.
- *
- * ⚠️ **A `/` is not a signal that it is not a slug** (corrected 2026-08-01). The
- * first version of this rule said "a path separator means it is not a slug", but
- * the spec's slug is exactly `folderForKind(kind)` plus a flat name — i.e. it
- * **contains one `/`, as in `capabilities/checkout`** (`flatSlugIssue` in
- * `mcp/src/schema.mjs`). Across 98 measured log lines, **every** non-batch target
- * had that shape, so under the old rule `lastTarget` was effectively always null:
- * instead of blocking dead links it was blocking **all the live ones**. What the
- * ledger forbids is a **path-shaped** slug like `elements/src/views/home`, not a
- * kind folder.
- *
- * So only three "cannot possibly be a slug" shapes are filtered here: the batch
- * marker (`(batch)`), whitespace or a backslash, and **a file path ending in an
- * extension** (`absorb_document`). The remaining layer belongs to the UI, which
- * checks that **the slug actually exists in the manifest** before linking — a
- * regex knows shape, not existence.
+ * Passes only targets usable as a slug. A slug contains one `/` (`capabilities/checkout`), so a `/`
+ * is no signal. Filtered: the `(batch)` marker, whitespace or a backslash, and a file path ending in
+ * an extension.
  */
 const NON_SLUG_TARGET = /[\s\\]|^\(|\.[A-Za-z0-9]{1,8}$/;
 
 /**
- * Turns a log `target` into a slug the UI may link to, or `null`.
- *
- * The "working on" row and the notification tray must use **the same verdict**:
- * if only one of them filters `(batch)`, the other grows dead links. Hence one
- * decision point here.
+ * The working-on row and the notification tray share this one filter, or one of them grows dead
+ * links.
  */
 export function toSlugTarget(target: string | null | undefined): string | null {
   const trimmed = (target ?? "").trim();

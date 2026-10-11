@@ -19,11 +19,7 @@ export interface SourceReadEntry {
 export interface SourceReadPort {
   /** The inventory of `sources/` in the open folder. A path outside it cannot be read. */
   readonly sources: readonly SourceReadEntry[];
-  /**
-   * The raw bytes of one inventoried source. Null when the folder no longer holds it —
-   * the inventory is a snapshot, and a file deleted since the walk is absent rather than
-   * invented.
-   */
+  /** Null when the folder no longer holds it: the inventory is a snapshot. */
   readSourceBytes(path: string): Promise<ArrayBuffer | null>;
   /**
    * sha256 of the supplied read snapshot, never a reopened path, so newer bytes are never

@@ -1,29 +1,7 @@
 /**
- * What to install, and how, on a machine without git.
- *
- * Owner, 2026-07-26: *"If git is
- * missing, may we point at an install page or show a brew command? We support
- * both Windows and macOS."* (if git is
- * missing, may we point at an install page or show a brew command? we support
- * both Windows and macOS).
- *
- * **Yes — not doing it is the defect.** The trust charter forbids silent
- * execution and automatic installs; "paste this command into your terminal" is
- * the opposite, since the user knows what will happen and runs it themselves. We
- * detect and inform; installation happens in the user's hands.
- *
- * The primary option per platform is whichever needs **no additional tooling**:
- *
- * - macOS: `xcode-select --install`. Telling people to install Homebrew first
- *   adds a step; Command Line Tools is Apple's own path and ships git. brew stays
- *   as an alternative for those who already have it.
- * - Windows: `winget`, bundled since Windows 10 1709. The official download page
- *   covers environments without it.
- * - Linux: no single command across distributions — apt and dnf are listed, and
- *   everything else goes to the official page.
- *
- * Pure data so the commands can be unit-tested: a typo would fail in the user's
- * terminal where we would never see it.
+ * The primary option per platform needs no extra tooling: macOS `xcode-select --install`, Windows
+ * `winget`, Linux apt and dnf with the official page for the rest. Atlas informs; the user runs the
+ * command. Pure data so typos are unit-testable.
  */
 
 export type GitHostPlatform = 'macos' | 'windows' | 'linux';

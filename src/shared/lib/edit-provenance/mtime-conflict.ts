@@ -24,8 +24,6 @@ export function hasUnaccountedMtimeChange(params: {
   /** The self-write record present when the baseline was captured. A different
    *  current record proves that this session wrote after open. */
   baselineSelfEditAtMs?: number | null;
-  /** Legacy capture-time comparison for callers that do not yet snapshot the
-   *  self-write record itself. */
   baselineCapturedAtMs?: number;
 }): boolean {
   const {

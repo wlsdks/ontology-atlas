@@ -1,40 +1,7 @@
 /**
- * Turning the connectors a person switched on into `session/new`'s `mcpServers` entries.
- *
- * **Atlas does not run any of them.** The descriptor goes into the ACP handshake and the coding
- * agent — claude-agent-acp, codex-acp — spawns the process or opens the connection on its own side.
- * That is the whole reason this is allowed to exist under
- * `.claude/rules/forbidden.md`'s "Atlas will never execute third-party plugin code": the extension
- * mechanism is MCP running inside a program the person already chose to trust, and Atlas only says
- * which ones.
- *
- * ## Only a runtime whose permission path was measured
- *
- * A connector's tools have to reach a person as a `session/request_permission` before they run,
- * and only Claude's isolated configuration has been measured to do that for an MCP child. Codex
- * was measured not to for our own server (installed app, 2026-08-24: a self-registered
- * `add_relation` changed the vault with no request and no card), and nobody has measured what it
- * does with somebody else's. `runtimeCarriesConnectors` holds that line, reusing the table
- * `runtime-gate.ts` already keeps rather than starting a second one.
- *
- * ## The vault server goes first, and cannot be shadowed
- *
- * claude-agent-acp lets an ACP-supplied server override a same-named one from the caller, so a
- * connector called `atlas-vault` would quietly replace the person's own map with somebody else's
- * server. That name is refused here rather than sorted around.
- *
- * ## A token is a reference until it is out of this process
- *
- * `env` and `headers` carry `__atlasSecretRef` where a value belongs. Rust swaps each one for the
- * real value inside `acp_send` (`src-tauri/src/connector_secrets.rs`), so the token never exists in
- * the WebView. `connectorSecretRefs` names the references a session is about to need, so the screen
- * can check they exist **before** it opens rather than meeting a refusal at the moment somebody was
- * about to ask a question.
- *
- * ## The folder's switch is not this Mac's consent
- *
- * `enabled: true` can arrive with a clone, so a connector also needs this Mac's allowance for its
- * exact definition. `allowedHere` is required so no call site can build a line without it.
+ * Turns enabled connectors into `session/new` `mcpServers` entries; Atlas runs none, the
+ * agent does. Only runtimes known to ask (`runtimeCarriesConnectors`) carry them;
+ * `atlas-vault` is a refused name.
  */
 import {
   connectorProblems,

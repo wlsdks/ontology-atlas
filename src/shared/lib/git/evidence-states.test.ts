@@ -48,8 +48,6 @@ describe('resolveEvidenceStates', () => {
       gone: [],
       folders: [],
     });
-    // The row states its own verdict, so a screen lists exactly the concepts a line counted
-    // rather than inferring the verdict back out of the arrays.
     expect(states.rows.find((row) => row.id === 'gone')?.verdict).toBe('missing');
     expect(states.rows.find((row) => row.id === 'cart')?.reason).toBe('folder-only');
     expect(states.rows.find((row) => row.id === 'unwalked')?.verdict).toBe('unknown');

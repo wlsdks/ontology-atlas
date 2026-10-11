@@ -1,14 +1,6 @@
 /**
- * How the CLI is invoked: the single source for the commands screens offer to copy.
- *
- * There is no global `ontology-atlas` binary (npm publishing is retired, `docs/DECISIONS.md`),
- * and the app bundle carries only the MCP server (`mcp-server-launch.ts`, see the rule
- * file `.claude/rules/surfaces.md`). The one live form is a source checkout:
- *
- *     node $ATLAS/cli/src/index.mjs <command> [vault]
- *
- * The app knows the vault, not the checkout, so the path stays a placeholder that teaches how
- * to fill it in; `npm-channel-retired.contract.test.ts` blocks bare invocations elsewhere.
+ * There is no global `ontology-atlas` binary; the one live form is a source checkout, so the path
+ * stays a placeholder. A contract test blocks bare invocations elsewhere.
  */
 
 /**

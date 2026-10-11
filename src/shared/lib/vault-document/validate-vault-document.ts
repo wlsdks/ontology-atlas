@@ -35,16 +35,8 @@ export type VaultIssueCode =
   | "non-canonical-graph-array"
   | "parse-zero-keys"
   /*
-   * The meaning findings — the half of a node the frontmatter checks never
-   * opened. They joined the three validators on 2026-09-22: the write door had
-   * reported them to the agent since 2026-09-21, and nothing the *person* could
-   * run said a word, so "validation is clean" and "this vault says nothing" were
-   * true at the same time with only the agent able to tell.
-   *
-   * `folder-only-evidence` is not here. It asks the filesystem whether a cited
-   * path is a directory, which a browser cannot do and a guessed repository root
-   * would answer wrongly; `validate_vault` and the CLI report it where a root is
-   * known.
+   * `folder-only-evidence` is absent: it asks the filesystem whether a path is a directory, which a
+   * browser cannot do; `validate_vault` and the CLI report it.
    */
   | "definition-missing"
   | "boundary-missing"
@@ -104,10 +96,8 @@ const GRAPH_ARRAY_KEYS = [
   "relates",
   "contains",
   "describes",
-  // `broader` (is_a / SKOS) was introduced with the Studio surface but left out of this
-  // list (found in the 2026-07-25 audit). This list drives **both** the canonical-sort
-  // check and the dangling-ref check, so the omission meant an agent could write a typo'd
-  // slug in `broader` and CI stayed green. A contract fixture pins the list against drift.
+  // This list drives both the canonical-sort check and the dangling-ref check; a contract fixture
+  // pins it against drift.
   "broader",
 ] as const;
 
@@ -127,11 +117,8 @@ export function validateVaultDocument(
 ): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
 
-  // The same normalization the parser applies (bug sweep 2026-09-01): a
-  // Windows-authored `﻿---` file failed `startsWith("---")`, so this
-  // validator returned ok with zero issues — missing-uid, empty-kind, even an
-  // unclosed frontmatter all skipped — while the manifest and graph treated the
-  // same bytes as a live node.
+  // Same normalization as the parser: a BOM or CRLF file must not fail `startsWith("---")` and skip
+  // every check.
   raw = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   const startsWithDelim = raw.startsWith("---");
   const closingIndex = startsWithDelim ? raw.indexOf("\n---", 3) : -1;
@@ -411,13 +398,8 @@ export function validateVaultDocFrontmatter(
 ): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
   /*
-   * ⚠️ **A line the parser could not read is an issue about this document** (census state 3e,
-   * 2026-08-31). `parseFrontmatter` records `malformed-frontmatter-line` and
-   * `malformed-quoted-scalar`, `build-local-manifest` keeps them on the doc, and
-   * `validateVaultDocument` (the raw-text path, used by the CLI) reports them — but this fast
-   * path never saw them, so on every screen in the app a broken line was silently dropped and
-   * the document simply lost a field with nothing said. The parse already happened; the caller
-   * passes what it produced rather than reading the file a second time.
+   * The caller passes the parser's diagnostics so the file is not parsed twice; unreadable lines
+   * surface as issues on the document.
    */
   pushFrontmatterDiagnostics(diagnostics, issues);
   const hasKindKey = "kind" in frontmatter;

@@ -201,7 +201,6 @@ describe('parseArchitectureProfile — which import usages the rules govern', ()
   });
 
   it('refuses the retired key by name, and says what to write instead', () => {
-    /* The retired key is refused with its own migration message, not aliased or ignored. */
     expect(() => parseArchitectureProfile({ ...base, type_only_dependencies: 'free' })).toThrow(
       'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
     );

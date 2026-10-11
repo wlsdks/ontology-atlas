@@ -1,37 +1,7 @@
 /**
- * The one shape every Tauri command failure arrives in, and the one place it
- * turns back into a sentence a person can read.
- *
- * ## Why the Rust side stopped writing sentences
- *
- * Commands used to reject with a finished Korean sentence and the WebView printed
- * it verbatim. An English-locale reader met Korean; a Korean reader met whatever
- * wording Rust happened to hold. Rust cannot fix this on its own: the locale lives
- * in the frontend router, not in the process.
- *
- * So `src-tauri/src/errors.rs` mints a **code** instead, following the two prefixes
- * this codebase already had (`vault-root-rejected:`, `audit-blocked:`):
- *
- * ```text
- * <code>              e.g. "secret-empty"
- * <code>: <detail>    e.g. "keychain-unavailable: No such keychain"
- * ```
- *
- * `detail` is machine-supplied fact only, in English: an OS error, git's own
- * stderr, a provider or model name the user typed. Never prose, because prose in
- * the detail would be a second untranslatable sentence, which is the whole defect
- * this removes.
- *
- * ## What this module does with it
- *
- * A known code becomes the localized sentence, with the detail in parentheses when
- * there is one, so git's own words about a failed push are not thrown away. An
- * **unknown** code falls back to the English detail rather than to nothing: a code
- * added in Rust and forgotten in `messages/*.json` still says something true.
- *
- * next-intl stays out of this file on purpose (the same choice as
- * `vault-issue-plain-message.ts`): the caller passes a lookup, so a test can drive
- * it with a plain object and no provider.
+ * Every Tauri command failure arrives as `<code>` or `<code>: <detail>`; `detail` is
+ * machine-supplied English fact, never prose. A known code becomes the localized sentence; an
+ * unknown code falls back to the English detail.
  */
 
 /**

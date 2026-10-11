@@ -27,12 +27,6 @@ describe('agent chat intent', () => {
     expect(consumeQueuedAgentChatIntent()).toBeUndefined();
   });
 
-  /*
-   * ⚠️ A door may carry a first turn (decision, 2026-08-24). The first-run card's 「make a map from
-   * my code」 button presses this: the app cannot run the analysis itself — it never calls MCP —
-   * so it hands the work to the agent. The sentence lands in the transcript as the person's own
-   * turn, and every write it leads to still stops at the permission card.
-   */
   it('carries the opening turn a door asked for, live and across a destination change', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeAgentChatIntent(listener);

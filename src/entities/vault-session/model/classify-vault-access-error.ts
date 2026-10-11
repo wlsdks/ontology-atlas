@@ -1,21 +1,6 @@
 /**
- * Tells a folder the operating system is *protecting* apart from a folder that is merely broken.
- *
- * ⚠️ **Why this exists** (owner report, 2026-08-24, then measured). Picking a folder under Desktop,
- * Documents, Downloads, iCloud Drive or an external volume makes macOS ask for consent. Deny it — or
- * have an ad-hoc build whose identity macOS no longer recognises — and the read fails with
- * `Operation not permitted (os error 1)`. That raw string went straight to the screen under the
- * generic `access-failed` code, which told the person nothing they could act on: it names an errno,
- * not a folder, and never mentions that the fix is a checkbox in System Settings.
- *
- * The consequence was worse than an unhelpful sentence. Earlier the app sat on its "moving to the
- * local docs picker" frame forever against a TCC-blocked vault, because nothing in the product
- * distinguished "you have not allowed this yet" from "this folder is gone".
- *
- * **Recognition is by errno text, not by path.** Guessing from the path — "this looks like it is
- * under Documents" — would be wrong in both directions: a protected folder can sit anywhere the user
- * has moved it, and an ordinary project inside Documents needs no warning once consent is granted.
- * The operating system already answered the question; this reads its answer.
+ * Tells a macOS-protected folder (consent denied) apart from a merely broken one.
+ * Recognition is by errno text, not path: a protected folder can be anywhere.
  */
 import { MISSING_TARGET_SIGNATURES, PERMISSION_DENIED_SIGNATURES } from '@/shared/lib/failures/failure-code';
 

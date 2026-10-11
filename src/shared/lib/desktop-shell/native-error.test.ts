@@ -7,15 +7,6 @@ import en from '../../../../messages/en.json';
 import ko from '../../../../messages/ko.json';
 import { nativeErrorMessage, parseNativeError } from './native-error';
 
-/**
- * The seam where a Rust failure becomes a sentence.
- *
- * Rust used to send the sentence itself, in Korean, and the WebView printed it
- * verbatim — so an English-locale reader met Korean and a Korean reader met
- * whatever Rust happened to hold. Rust cannot pick the language: the locale lives
- * here. So Rust sends `<code>: <English detail>` and this file decides the words.
- */
-
 const dict: Record<string, string> = {
   'secret-empty': 'The key box is empty.',
   'keychain-unavailable': "Could not open this computer's keychain.",

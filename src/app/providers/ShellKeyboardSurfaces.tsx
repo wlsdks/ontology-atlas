@@ -27,17 +27,9 @@ const MountedGlobalSearch = dynamic(
 );
 
 /**
- * The keys `?`, ⌘K and ⌘, answer on every screen the rail stands on, as the shortcut sheet
- * promises. Screens that answer a key themselves claim it (`shared/lib/keyboard/shell-key-claims.ts`).
- * `disabled` is the rail's verdict: no rail, no keys, the same rule as the `G` keys.
- *
- * - `?` does not stack the sheet over another dialog (`blockingSurfaceOpen`), but always closes
- *   the sheet it opened.
- * - ⌘K opens the search in the sheet's place, so two modal surfaces never stand at once.
- * - ⌘, asks a visible settings trigger to open its sheet (`requestSettingsOpen`), never over
- *   another dialog.
- * - The search mounts on its first ⌘K, because it derives the whole ontology; once mounted it
- *   stays and binds ⌘K itself (`bindHotkey`) so the key closes it from its own field.
+ * `?`, Cmd+K and Cmd+, answer on every screen the rail stands on unless a screen claims the key
+ * (`shared/lib/keyboard/shell-key-claims.ts`). `disabled` means no rail, so no keys. `?` never
+ * stacks over another dialog; Cmd+K replaces the sheet.
  */
 export function ShellKeyboardSurfaces({ disabled }: { disabled: boolean }) {
   const sheetClaimed = useShellKeyClaimed("shortcuts");

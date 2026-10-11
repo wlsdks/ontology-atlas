@@ -3,14 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 /**
- * A creation door's starter is part of the open, not a follow-up to it (2026-09-25, D1).
- *
- * "Just start" and "Create a new folder" used to open the folder and leave the starter to an
- * effect on the screen that pressed them. On the installed app that screen is gone the moment the
- * open begins (the shell's opening pane replaces it, then the map), so the folder opened empty with
- * no error. These cases pin the session's side: an empty folder asked for a starter gets it before
- * its first manifest is published, a folder with documents is never written into, and a starter
- * that cannot be written is handed back while the folder still opens.
+ * The starter is part of the open: an empty folder asked for one gets it before its first manifest.
+ * A folder with documents is never written into; a failed starter is returned and the folder opens.
  */
 
 const tauri = vi.hoisted(() => ({

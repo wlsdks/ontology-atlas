@@ -31,7 +31,7 @@ interface ArchitectureRecordConformance {
   violations: unknown[];
   /** Optional for older records; rows' undeclared `evidence` passes through unvalidated. */
   observedRoleEdges?: ArchitectureRoleEdge[];
-  /** Edges a profile's `dependency_usages` removed from the verdict (formerly `typeOnlyEdgeCount`). */
+  /** Edges a profile's `dependency_usages` excluded from the result. */
   excludedByUsage?: number;
   unknown?: {
     coverageIncomplete?: boolean;

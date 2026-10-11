@@ -111,16 +111,13 @@ describe("appearance-preferences", () => {
 });
 
 /**
- * Retired background values. Dropping them silently to the default makes **the
- * user's own choice disappear without a sound**, so each value is locked to its
- * successor. Delete this table and the next person takes the cheaper route of
- * "old values just become the default" — the table is the contract.
+ * Removed background values map to a successor; silently falling back to the default would make the
+ * user's own choice disappear. The table is the contract.
  */
 describe("폐기된 캔버스 배경 값의 계승", () => {
   it.each([
     ["constellation", "web"],
     ["contour", "dot"],
-    // 2026-07-29 — this user chose motion, so carry them to the surviving animated background.
     ["flow", "web"],
     ["gravity", "web"],
   ] as const)("%s → %s", (retired, heir) => {
@@ -163,10 +160,8 @@ describe("발자국 설정 정규화", () => {
   });
 
   /**
-   * The retirement's actual promise to a person who had set those six values: their saved
-   * settings still load. Six keys stopped being read on 2026-09-10 because the glyph they
-   * shaped stopped being drawn, and a stored preference from before that day must resolve to a
-   * valid preference rather than throwing or falling back wholesale to the defaults.
+   * Saved settings with keys that are no longer read still load: they resolve to a valid preference
+   * rather than throwing or falling back wholesale to the defaults.
    */
   it("은퇴한 여섯 값이 남아 있어도 나머지는 살아서 돌아온다", () => {
     const out = resolveFootprint({
@@ -187,8 +182,8 @@ describe("발자국 설정 정규화", () => {
 
 describe("map arrangement — the retired Cone", () => {
   /**
-   * The Cone left the picker on 2026-09-25. A reader who had it stored lands on the
-   * containment view that replaced it, never on a value the picker cannot show as chosen.
+   * A stored Cone value opens the containment view (Strata), never a value the picker cannot show as
+   * chosen.
    */
   it("a stored Cone opens Strata, and today's two values pass through", () => {
     expect(resolveStoredMapArrangement("ownership")).toBe("strata");

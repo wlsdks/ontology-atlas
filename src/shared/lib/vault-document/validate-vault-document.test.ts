@@ -8,12 +8,8 @@ import {
 const VALID_UID = "00000000-0000-4000-8000-000000000001";
 
 /**
- * A finished body, per kind.
- *
- * The validator reads the prose too since 2026-09-22, so a case written to test
- * one frontmatter rule needs a body that answers every meaning question —
- * otherwise the rule under test arrives buried under findings about a body
- * nobody meant to write.
+ * A finished body per kind, so a case testing one frontmatter rule is not buried under meaning
+ * findings.
  */
 const FINISHED_BODY: Record<string, string> = {
   domain:
@@ -304,12 +300,6 @@ describe("summarizeVaultValidation", () => {
   });
 });
 
-/*
- * ⚠️ Census state 3e, 2026-08-31. `parseFrontmatter` records these two, `build-local-manifest`
- * keeps them on the doc, and the raw-text validator reports them — but the fast path every screen
- * in the app uses never saw them, so a line the parser could not read silently cost the document a
- * field and nothing anywhere said so.
- */
 describe("파서가 못 읽은 줄은 문서의 문제로 함께 보고된다", () => {
   const malformed = [
     { code: "malformed-frontmatter-line", message: "3행을 읽지 못했습니다" },

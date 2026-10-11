@@ -18,13 +18,8 @@ import {
 } from "./parse-frontmatter";
 
 export function replaceVaultBody(source: string, nextBody: string): string {
-  // With a BOM present, `raw.startsWith("---")` is false and the file is saved with
-  // **the entire frontmatter block gone** — relations and kind lost with it. This
-  // path first became reachable on 2026-07-28, when the parser learned to read
-  // BOM/CRLF and such documents actually became nodes.
-  //
-  // Restore whatever line endings and BOM the original file used: reading
-  // convenience is not a reason to turn somebody's whole file into a diff.
+  // With a BOM, `raw.startsWith("---")` is false and the frontmatter would be lost; restore the
+  // original line endings and BOM so the file does not become a whole-file diff.
   const shape = readVaultSourceShape(source);
   const raw = normalizeVaultSource(source);
   const body = nextBody.replace(/^\s+/, "").replace(/\s+$/, "");

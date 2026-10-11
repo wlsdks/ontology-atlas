@@ -50,11 +50,8 @@ export function useDialogFocusTrap<T extends HTMLElement>({
     if (!container) return undefined;
 
     /*
-     * A child that focused itself during the commit (`autoFocus`) is already inside the
-     * container by the time this effect runs. Recording it as the opener made close restore
-     * focus to an element that unmounts with the dialog, dropping the keyboard to `<body>`
-     * (add-connector dialog, 2026-09-25). Such a child is never the opener; the fallback below
-     * then applies.
+     * A child that focused itself during commit (`autoFocus`) is already inside the container; it is
+     * never the opener, or close would restore focus to an element that unmounts with the dialog.
      */
     const active = document.activeElement;
     previousFocusRef.current =
@@ -115,23 +112,9 @@ export function useDialogFocusTrap<T extends HTMLElement>({
         return;
       }
       /**
-       * **Never drop to `body` just because the opening control is gone**
-       * (measured on the keyboard, 2026-07-29).
-       *
-       * The button that opens the shortcut sheet **unmounts when the sheet
-       * opens**: the sheet raises `topologyBlockingOverlayActive`, which turns
-       * off that button's render condition. So on close there is nothing left to
-       * restore to and focus landed on `body`, from where the next Tab restarts
-       * at the top of the document (the skip link) — measured at 29 stops before
-       * where the user had been.
-       *
-       * Opening the same sheet with `?` from an element that **survives** (the
-       * auto-arrange tile) restored correctly, so this is not a defect in the
-       * trap but an unhandled case: the place to return to disappeared.
-       *
-       * `<main>` is already focusable thanks to the skip-link fix. Returning to
-       * **the start of the content** rather than the start of the page lets the
-       * user resume near the trigger that vanished.
+       * Never drop to `body` when the opening control is gone: the button that opens the shortcut sheet
+       * unmounts while the sheet is open, so focus returns to the start of `<main>` rather than the top of
+       * the document.
        */
       const main = document.querySelector<HTMLElement>("main#main");
       if (main) main.focus({ preventScroll: true });

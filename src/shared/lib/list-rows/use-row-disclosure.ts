@@ -62,12 +62,9 @@ export function useRowDisclosure(open: boolean): {
   }, [open, mounted]);
 
   useLayoutEffect(() => {
-    // Record the previous value **before** checking for the box. While closed the
-    // box is unmounted, so putting this update after the guard below leaves
-    // `previous` at `null` forever — and then a user-initiated open (closed →
-    // open) is misread as a first mount and the animation dies. That regression
-    // happened on 2026-07-28; the "Closed → Open" case (closed → open) in
-    // `use-row-disclosure.test.tsx` caught it.
+    // Record the previous value before checking for the box: while closed the box is unmounted, so
+    // updating after the guard leaves `previous` null and a user-initiated open is misread as a first
+    // mount.
     const previous = previousOpenRef.current;
     previousOpenRef.current = open;
 
@@ -93,19 +90,9 @@ export function useRowDisclosure(open: boolean): {
     if (!content) return undefined;
 
     if (!isTransition) {
-      // **A mount is not a transition** — an already-open row does not unfold by
-      // itself. That also removes any reason to measure the height here: under
-      // `auto` the content takes its own space and nothing is clipped.
-      //
-      // What measuring would cost (trace measured 2026-07-28): `offsetHeight` is a
-      // layout read **immediately after a style write**, i.e. a forced reflow. A
-      // datasheet holds several such rows, each doing it in its own effect, which
-      // becomes layout thrashing — **61ms of the 62ms** of forced reflow on a single
-      // node click was this hook (Chrome ForcedReflow insight, top cause).
-      //
-      // No ResizeObserver here either. That exists to stop a height **pinned** in px
-      // from clipping when the content changes, and `auto` cannot clip in the first
-      // place. The first toggle (a real transition) measures and starts observing.
+      // A mount is not a transition: an already-open row does not unfold by itself, so no height is
+      // measured (`offsetHeight` after a style write forces a reflow). No ResizeObserver: it only guards a
+      // height pinned in px, and `auto` cannot clip.
       box.style.height = 'auto';
       return undefined;
     }

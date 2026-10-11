@@ -4,21 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SKELETON_DELAY_MS, useDelayedVisible } from './use-presence';
 
 /**
- * **Never show a loading indicator for work that takes 0ms** — the property this test locks.
- *
- * Owner report (2026-08-08): *"When selecting and navigating to a document, strange grey lines
- * appear and disappear in the right-hand document pane."* (picking a document makes
- * three grey lines flash in the right-hand pane and vanish in well under a second).
- *
- * Measured in the browser: across all 8 document switches, the viewer's three-line skeleton
- * rendered for **8.2–15.9ms** (median 9.7ms) — inside a single 60Hz frame (16.7ms). Not slow
- * loading: the parent's `key={doc.slug}` remount restarts the body state at null every time
- * and the promise resolves on the next tick, so **the skeleton wins at least one frame**
- * structurally.
- *
- * The locked property is therefore **both** "fast work never shows it" and "slow work still
- * does". Locking only the first would stay green if someone deleted the skeleton entirely;
- * locking only the second lets the original defect back through.
+ * Fast work must never show the loading indicator, and slow work still must; locking only one side
+ * would let the other regress.
  */
 
 function Probe({ active }: { active: boolean }) {
@@ -45,8 +32,7 @@ describe('useDelayedVisible — 기다릴 것이 있을 때만 보인다', () =>
     });
     rerender(<Probe active={false} />);
 
-    // It must stay hidden for the rest of the window. A surviving timer would flip it to
-    // 'visible' right here — exactly the flash the owner saw.
+    // A surviving timer would flip it to visible here.
     act(() => {
       vi.advanceTimersByTime(SKELETON_DELAY_MS * 2);
     });

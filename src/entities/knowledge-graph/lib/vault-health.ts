@@ -1,6 +1,6 @@
 /**
- * Browser mirror of the MCP `health()` verdict, computed from raw frontmatter rather than the
- * auto-healed derived graph so the app and CLI agree (`tests/contract/vault-health.contract.test.ts`).
+ * Browser mirror of the MCP `health()` result, computed from raw frontmatter rather than the
+ * auto-healed derived graph so app and CLI agree (`tests/contract/vault-health.contract.test.ts`).
  */
 
 import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/cli-invocation';
@@ -63,7 +63,6 @@ interface MissingContainmentTarget {
 export interface VaultHealthResult {
   status: VaultHealthStatus;
   checks: VaultHealthCheck[];
-  /** Checks this verdict did not run. */
   unavailableChecks: readonly UnavailableVaultHealthCheck[];
   summary: {
     nodes: number;

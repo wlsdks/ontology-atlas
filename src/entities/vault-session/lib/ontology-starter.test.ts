@@ -117,9 +117,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("OATLAS_VAULT");
   });
 
-  // The npm publishing plan was dropped (docs/DECISIONS.md 2026-07-27). This locks the starter
-  // against planting a command that fails when pasted — a fake absolute-path placeholder and `npx`
-  // guidance had survived here in 12 places.
   it("starter README 에 실행 불가능한 명령이 없다", () => {
     for (const locale of ["en", "ko"] as const) {
       const readme = starterFilesForLocale(locale).find(
@@ -164,9 +161,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    // With npm publishing dropped (docs/DECISIONS.md 2026-07-27) the bare CLI name has no way onto
-    // PATH — the old "If the CLI is installed" was an unreachable conditional. It points at the
-    // terminal-side survivor of the two live paths: invocation from a source checkout.
     expect(readme).toContain("From an Ontology Atlas source checkout");
     expect(readme).toContain("export ATLAS=<path to your ontology-atlas source checkout>");
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs validate .");
@@ -182,8 +176,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
 });
 
 describe("buildMcpConfigJson", () => {
-  // The default for a surface that does not know the launch method (the web) is the source-checkout
-  // placeholder. With npm publishing dropped, `npx` is on no path (docs/DECISIONS.md 2026-07-27).
   it("MCP server 'ontology-atlas' 항목과 OATLAS_VAULT env placeholder 포함", () => {
     const json = buildMcpConfigJson("my-vault");
     const parsed = JSON.parse(json);

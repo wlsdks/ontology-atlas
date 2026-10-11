@@ -1,9 +1,8 @@
 import type { McpServerLaunch } from '@/shared/config';
 
 /**
- * Wire the loaded vault into ACP without a user-written config. Native sessions
- * on 2026-08-16 read the vault through this server. A Codex name collision
- * silently discarded the injected server, so use a distinct session name.
+ * Wires the loaded vault into ACP without a user-written config. A Codex name collision silently
+ * discards the injected server, so use a distinct session name.
  */
 import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
@@ -25,24 +24,9 @@ export interface ExistingVaultMcpRegistration {
 }
 
 /**
- * The config file this runtime's CLI **reads by itself from the working folder**. If the vault has
- * already registered our server there, the app need not wire it again.
- *
- * Why it is needed (measured 2026-08-17). Opening a codex session in a vault created by `init` and
- * asking a question showed **the same server running twice**:
- *
- * - `mcp.ontology-atlas.list_kinds` → `{"total": 5, …}`  ← the vault's `.codex/config.toml`
- * - `mcp.atlas-vault.list_kinds`    → `{"total": 5, …}`  ← the one the app wired
- *
- * `ps` showed two `ontology-atlas-mcp` processes too (same parent). Renaming to `atlas-vault`
- * **dodged** the adapter's deduplication, so instead of being silently discarded it silently became
- * two copies. The model's tool list then holds the same tool under two names, and nobody tells it
- * which to use.
- *
- * **Only what was measured goes in here.** Listing an unmeasured runtime can produce **a session with
- * no tools at all** — far worse than a duplicate. So an unknown runtime is wired as before.
- * (Whether `claude-acp` reads `.mcp.json` has not been measured — the login had expired and the
- * session could not be opened.)
+ * The config file this runtime's CLI reads by itself from the working folder; if the vault registers
+ * our server there, the app must not wire it again or it runs twice. Only measured runtimes are
+ * listed: an unmeasured one could end with no tools.
  */
 const MEASURED_SELF_READ_SLOT: Readonly<Record<string, 'codex-config'>> = {
   'codex-acp': 'codex-config',
@@ -73,13 +57,8 @@ export function vaultAlreadyRegisters(
 }
 
 /**
- * Was the vault server itself wired into this session?
- *
- * ⚠️ **Not "is the list non-empty"** (2026-09-05). The list stopped being ours alone the moment
- * external connectors could join it: a person with a Notion connector switched on and no bundled
- * MCP binary would have had a non-empty array, so the session would have claimed a vault server it
- * never wired — and passed `atlas-vault` as an auto-allowed name, handing that auto-allow to
- * whatever else answers to it. The entry is looked for by name instead.
+ * Was the vault server itself wired? Look for it by name, not a non-empty list: external connectors
+ * share the array, which would otherwise hand the `atlas-vault` auto-allow to another server.
  */
 export function hasVaultMcpServer(servers: readonly unknown[] | null | undefined): boolean {
   if (!Array.isArray(servers)) return false;
@@ -89,18 +68,9 @@ export function hasVaultMcpServer(servers: readonly unknown[] | null | undefined
 }
 
 /**
- * Is the **server-side** write checkpoint on for this session?
- *
- * Derived from the same value that produces it, never from the runtime name: `vaultMcpServers`
- * writes `OATLAS_WRITE_CONSENT=on` only for a runtime whose own configuration does not already ask.
- * The screen's reassurance that "changes through Atlas tools still stop at the server" is true only
- * while that env is actually being passed, so it is read back rather than assumed — a sentence the
- * machinery does not keep is the failure this repository keeps catching.
- *
- * ⚠️ **Only the vault server's own entry is read** (2026-09-05). This used to scan every entry in
- * the array. With external connectors in that array, any one of them carrying an environment
- * variable of that name would have turned the screen's checkpoint claim on for a gate that is not
- * there — a sentence made true by somebody else's config file.
+ * Is the server-side write checkpoint on? Read back from the env `vaultMcpServers` writes
+ * (`OATLAS_WRITE_CONSENT=on`, only for runtimes that do not already ask), not from the runtime name.
+ * Only the vault server's own entry is read.
  */
 export function vaultWriteConsentOn(servers: readonly unknown[] | null | undefined): boolean {
   if (!Array.isArray(servers)) return false;
@@ -134,18 +104,9 @@ export function vaultMcpServers(
   // Preserve ordinary deduplication; explicitly scoped analysis needs its own known-root server.
   if (!options?.sourceRoot&&vaultAlreadyRegisters(launch, registration)) return [];
   /*
-   * **One session, one checkpoint — held by whoever can actually hold it.**
-   *
-   * A runtime with app-owned config isolation (Claude) already raises a permission
-   * request for every tool call, so a second gate here would ask the same person the
-   * same question twice. A runtime without it (Codex, measured 2026-08-24) lets an
-   * Atlas MCP write reach disk with no request at all — there the server has to hold
-   * the gate itself, because nobody else does.
-   *
-   * `ownsWriteGate` means "this runtime's own configuration already produces the
-   * request", so the server gate is switched **off** for it and **on** for everyone
-   * else. Defaulting to `false` is the safe direction: a runtime nobody has measured
-   * gets the gate rather than a silent write path.
+   * One session, one checkpoint, held by whoever can: a runtime with app-owned config isolation
+   * (Claude) already asks, so the server gate is off for it and on for the rest. `ownsWriteGate`
+   * defaults to false so an unmeasured runtime gets the gate.
    */
   const serverGate = options?.ownsWriteGate === true ? null : 'on';
   const projectRoot = options?.sourceRoot??projectRootForVault(vaultPath);
@@ -157,18 +118,9 @@ export function vaultMcpServers(
       env: [
         { name: 'OATLAS_VAULT', value: vaultPath },
         /*
-         * ⚠️ **The repository root, when we actually know it** (measured in the installed app,
-         * 2026-08-25). This used to be omitted on the reasoning that the vault might sit outside the
-         * repository, so guessing would pin a wrong value. That was right while every vault lived
-         * beside its project — and it broke the moment maps moved inside one.
-         *
-         * With the vault at `<project>/atlas`, MCP resolved its code root to the vault itself, which
-         * holds the map and none of the product. The agent surveyed a folder containing four seeded
-         * files, refused to look one level up, and reported it could not start — so the door built
-         * to make a map from somebody's code could not see their code.
-         *
-         * `projectRootForVault` returns a path only for the shape Atlas itself creates. Anywhere
-         * else it returns null and the previous behaviour stands: MCP finds the root on its own.
+         * The repository root when known: with the vault at `<project>/atlas`, MCP would otherwise resolve
+         * its code root to the vault itself and not see the product. `projectRootForVault` returns a path
+         * only for the shape Atlas creates; elsewhere MCP finds the root itself.
          */
         ...(projectRoot ? [{ name: 'OATLAS_REPO_ROOT', value: projectRoot }] : []),
         ...(serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: serverGate }] : []),

@@ -145,21 +145,8 @@ export function splitHighlightSegments(
 }
 
 /**
- * The summary, cut so its first match is near the start.
- *
- * A search result's description is one truncated line, so a match late in the
- * sentence is highlighted past the ellipsis and the row shows **no reason at all**
- * for being in the list — measured live on 2026-09-19: searching an English word
- * the Korean titles do not carry marked the description of every row, and on some
- * of them the mark rendered outside its own box. Starting the line at the match is
- * what every code search does, and the leading ellipsis says the sentence began
- * earlier.
- *
- * The cut lands on the **first** whitespace inside the `leadIn` characters before
- * the match, so a word or two of run-up survives and no word is sliced in half. One
- * unbroken token that long leaves no boundary to use, and the line then starts at
- * the match itself. A match already inside `leadIn` leaves the text alone — nothing
- * is hidden to buy space that was not needed.
+ * Cuts the summary so the first match is near the start; otherwise a late match sits past the
+ * ellipsis. The cut lands on the first whitespace within `leadIn` characters before the match.
  */
 export function snippetAroundFirstMatch(
   text: string,

@@ -140,13 +140,6 @@ describe('readToolOutcome — a number is only read from a shape we wrote', () =
 });
 
 describe('readToolOutcome — a call whose turn ended stops claiming it is running', () => {
-  /*
-   * ⚠️ Measured in the rendered dock, 2026-09-19. Press Stop while a read is in flight, or let a
-   * turn end without the adapter closing its call, and the row kept the word 「running」 and its
-   * pulsing ring for the rest of the conversation — with the session at Ready and the composer
-   * open. Nothing said the call had stopped, because nothing on the wire ever said so: the
-   * adapter simply stops reporting.
-   */
   it('reads an open call as unfinished once its turn is over', () => {
     expect(readToolOutcome(undefined, 'pending', OURS, OVER)).toEqual({
       kind: 'status',

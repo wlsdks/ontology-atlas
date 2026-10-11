@@ -1,7 +1,6 @@
 /**
- * A Library round the person approved (spec `docs/specs/2026-09-17-library-rounds-design.md`; decision
- * `docs/records/decisions/2026-09-17-library-rounds-standing-scope-0e82da66-48d2-44f1-a923-82857d7a3710.md`).
- * Cadence is local wall-clock time, so daylight saving moves a run with the clock.
+ * A Library round the person approved. Cadence is local wall-clock time, so daylight saving moves
+ * a run with the clock.
  */
 
 const ROUND_STORE_VERSION = 1 as const;
@@ -23,7 +22,7 @@ export type RoundCadenceKey = 'hour' | '6h' | 'minutes' | 'hours' | 'daily' | 'w
 /** A day; anything longer is the daily form. */
 const MAX_INTERVAL_MINUTES = 1440;
 
-/** A place a round reads: vault folders, or one connector narrowed to a location (spec `2026-09-21-round-cadence-and-scope.md` §3). */
+/** A place a round reads: vault folders, or one connector narrowed to a location. */
 export interface RoundPlaceVault {
   kind: 'vault';
   /** Folders relative to the root; `[]` is the whole vault. */

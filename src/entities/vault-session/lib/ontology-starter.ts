@@ -687,27 +687,8 @@ export function materializeStarterFiles(
 }
 
 /**
- * The **agent guide** placed inside the vault. The vault folder is the agent's working folder, so
- * codex reads `AGENTS.md` and Claude Code reads `CLAUDE.md`/`AGENTS.md` from here on their own.
- *
- * **Why it is needed** (measured 2026-08-17). Even with the MCP server properly attached, **the
- * agent does not reach for it.** Asked in the installed app to list every concept slug in the
- * folder, codex did this:
- *
- * | | What it did | MCP calls |
- * |---|---|---|
- * | No guide | read five files with `sed`, then `grep '^slug:'` again | **0** |
- * | With guide | *"I will call list_concepts first"* → called it | **1** |
- *
- * The tool description already said *"AI agents call this first"*. What was missing was not a
- * description but **one line readable from the working folder**.
- *
- * This matches the extension mechanism this repository settled on (`.claude/rules/forbidden.md`):
- * the only permitted extension is something written to a file — markdown inside the vault — that
- * executes no code and shows every change in a git diff.
- *
- * ⚠️ **It is not a concept node**, so it stays out of `starterFilesForLocale` (the five concept
- * files) and is written alongside the config files (`.mcp.json`, `.codex/config.toml`).
+ * Agent guide placed in the vault; codex and Claude Code read `AGENTS.md` from the working folder.
+ * Not a concept node: it stays out of `starterFilesForLocale`, beside the config files.
  */
 export const VAULT_AGENT_GUIDE_PATH = "AGENTS.md";
 
@@ -848,30 +829,9 @@ export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
 
 
 /**
- * The **procedural skill set** the vault carries with it.
- *
- * **Why they live inside the vault** (measured 2026-08-17). The app launches the coding agent
- * **from the vault folder** (`cwd: vaultRoot` in `use-acp-session.ts`), so
- * `.claude/skills/<name>/SKILL.md` inside the vault appears directly in that session's `/` listing.
- * Measured: of the 50 commands in a session launched with the app's own configuration, these three
- * took **the first three slots**, tagged `(project)`.
- *
- * **Why the tool table is not enough.** `AGENTS.md` says **what to call** but not **in what order,
- * or where to stop**. With 35 tools the agent re-decides that order every time, so the same request
- * produces different work each time. These three fix the order — in particular "do not write during
- * the proposal step" and "verify after writing".
- *
- * ⚠️ **They are not concept nodes.** Putting them in `starterFilesForLocale` would make the count
- * contract report 8 instead of 5, and screen copy uses that number. They are written alongside the
- * guide and the config files.
- *
- * ⚠️ **`description` is rendered on screen** — the composer's `/` menu truncates it to one line
- * (`AcpChatPanel`). So the opening has to carry the meaning, and em dashes are not used.
- * Gate: `tests/contract/starter-templates.contract.test.ts`.
- *
- * ⚠️ Codex reads `.agents/skills/`. That copy is **not shipped yet** — whether `codex-acp` surfaces
- * skills in its `/` listing has not been measured, and shipping an unmeasured copy into every vault
- * would make it a dead file.
+ * Procedural skills the vault carries; the agent launches from the vault, so `.claude/skills/` shows.
+ * Not concept nodes: adding them to `starterFilesForLocale` would break the count contract.
+ * `description` is cut to one line in `/`; gate: `tests/contract/starter-templates.contract.test.ts`.
  */
 export const VAULT_SKILL_NAMES = ["atlas-review", "atlas-grow", "atlas-absorb"] as const;
 
@@ -1223,14 +1183,7 @@ export function vaultSkillFilesForLocale(locale: string): ReadonlyArray<StarterF
   ];
 }
 
-/**
- * **How** a config template launches the server.
- *
- * The installed app passes the absolute path of the binary inside its own bundle, so the user's
- * machine needs neither node, npx, nor a source checkout. A surface that does not know that path
- * (the web) degrades to a source-checkout placeholder. `npx` is no longer on any path (the npm
- * publishing plan was dropped — docs/DECISIONS.md 2026-07-27).
- */
+/** The installed app passes its bundled binary path; the web uses a source-checkout placeholder. */
 const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
   kind: 'source-checkout',
   command: 'node',

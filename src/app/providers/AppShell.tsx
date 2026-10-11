@@ -270,11 +270,9 @@ function AppNavRailSlot() {
    */
   const soleProjectHref = useSoleProjectHref();
 
-  // Gateway routes hide the rail with `lg:hidden`, not an unmount, so the shell keeps its DOM
-  // identity; the shell decides during render so the rail never paints for one frame.
-  // The verdict comes from `isGatewaySurface`, shared with `RootEntryPage`.
-  // In the static prerender `isDesktopShell()` is false, and hydration does not correct a
-  // baked `lg:hidden`, so `useHydrated()` forces one re-render after hydration.
+  // Gateway routes hide the rail with `lg:hidden`, not an unmount, decided during render so it never
+  // paints for a frame. `isGatewaySurface` is shared with `RootEntryPage`. `useHydrated()` forces a
+  // re-render because hydration does not correct a `lg:hidden` baked in prerender.
   const hydrated = useHydrated();
   const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest && !vault.partialTotal;
   const gateway = isGatewaySurface(pathname, {
@@ -286,7 +284,6 @@ function AppNavRailSlot() {
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
 
-  /* The rail and the keys read the same verdict: what this folder's files say it holds. */
   const visibleDestinations = useMemo(
     () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
     [vault.manifest],
@@ -299,8 +296,8 @@ function AppNavRailSlot() {
   const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
 
   /**
-   * Destination shortcuts (`G` then one key) read the rail's `contextHrefs` and `gateway`
-   * verdict, so keys never reach a destination the rail does not draw.
+   * Destination shortcuts read the rail's `contextHrefs` and `gateway` state, so keys never reach a
+   * destination the rail does not draw.
    */
   useDestinationShortcuts({
     navigate: (href, id) => {

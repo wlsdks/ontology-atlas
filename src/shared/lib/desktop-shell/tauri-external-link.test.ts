@@ -2,17 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { installExternalLinkOpener, isExternalHttpUrl } from './tauri-external-link';
 
-/**
- * Do outbound links **actually open**?
- *
- * A defect caught in the 2026-08-20 walkthrough: inside the app, `<a
- * target="_blank">` did nothing. The one next step offered to someone with no tools
- * installed (the install-instructions link) was dead **silently**, raising no error.
- *
- * So what this measures is not "does the function exist" but **"does a click actually
- * leave the app"**.
- */
-
 const invoke = vi.fn();
 let tauri = true;
 

@@ -121,17 +121,8 @@ export interface NameMatch {
 }
 
 /**
- * The best match across every name this node answers to, in one pass.
- *
- * **Why one call rather than the five booleans above.** A search result that gives
- * no sign of why it is in the list reads as a broken search. Measured on the bundled
- * sample, 2026-09-19: 30.6% of result rows over thirty English queries carried no
- * highlight at all, and a large share of those had matched a name the screen was not
- * showing — the canonical `title`, or another locale's display name. Matching was
- * widened to every name (that is this file's whole reason), but the row was never
- * widened with it. Returning *which* name matched is what lets the row say so.
- *
- * It is also cheaper: the tier questions used to walk the name list up to five times.
+ * The best match across every name this node answers to, with which name matched so the row can
+ * show why it is in the list.
  */
 export function findNameMatch(node: NodeNameSource, normalizedQuery: string): NameMatch | null {
   if (normalizedQuery === "") return null;
@@ -176,17 +167,8 @@ export function findNameMatch(node: NodeNameSource, normalizedQuery: string): Na
 }
 
 /**
- * The part of an id a query is allowed to match, or null when nothing is.
- *
- * Node ids are `<kind>:<slug>`. The kind half is not meaning anybody searched for —
- * every element carries it — so only the slug is offered. Measured 2026-09-19 on the
- * bundled sample: typing the word "element" returned twenty palette rows and every
- * one of them was that prefix. A query containing a colon is someone pasting a real
- * id, and for that the whole id answers.
- *
- * It lives here rather than beside the palette because the map's INDEX filter and the
- * docs tree ask the same question, and a person typing into one of the three boxes on
- * a screen should not get three different answers.
+ * The part of an id a query may match: only the slug, since every element carries the kind prefix.
+ * A query with a colon matches the whole id. Shared by palette, map INDEX and docs tree.
  */
 export function idSearchText(id: string, normalizedQuery: string): string | null {
   if (normalizedQuery.includes(":")) return id;

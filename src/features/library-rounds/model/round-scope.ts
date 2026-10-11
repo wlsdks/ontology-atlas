@@ -4,9 +4,8 @@ import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 import { pageIdentity, roundDraftProblem } from './pass-pages';
 
 /**
- * What one unattended pass may do: allow or reject, never ask, and fail closed on anything
- * unrecognised. Decision: docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md.
- * The round's connector tools pass unless the adapter says they edit, delete, move or execute.
+ * One unattended pass may only allow or reject, never ask, and fails closed on anything
+ * unrecognised. Connector tools pass unless the adapter says they edit, delete, move or execute.
  */
 
 export interface ScopeRequest {
@@ -35,7 +34,6 @@ export interface ScopeInput {
   vaultServerName: string;
   /** `'read' | 'write' | null` for the vault server's own tools; `null` when it is not one. */
   atlasToolMode: (toolName: string | null, serverName: string) => 'read' | 'write' | null;
-  /** The Library's page judge: a verdict for a `wiki/` page write, `null` for anything else. */
   judgeWrite: (request: ScopeRequest) => { path: string; ok: boolean; text: string } | null;
   node?: (relative: string) => boolean;
   unsafe?: (relative: string) => boolean;
@@ -74,7 +72,6 @@ function isToolOf(toolName: string | null, server: string): boolean {
   return Boolean(toolName && server && toolName.startsWith(`mcp__${server}__`));
 }
 
-/** The connectors this round was approved for, from its places and its legacy field alike. */
 function roundConnectors(round: ScopeRound): string[] {
   const names = new Set<string>();
   for (const name of round.connectorNames ?? []) if (name) names.add(name);

@@ -104,11 +104,9 @@ export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
 };
 
 /**
- * The destinations a folder of this shape earns. The shape comes from the files
- * (`describeVaultShape`), never a setting, so a teammate sees the same rail. Map,
- * Architecture, Docs, Insights and Projects would be empty doors without code; an agent
- * compiles a wiki and Git reads it as diffs, and the Library holds `sources/` for any folder
- * (`docs/DECISIONS.md`, 2026-09-06). An empty folder or none earns everything.
+ * The shape comes from the files (`describeVaultShape`), never a setting, so a teammate sees the
+ * same rail. Without code, Map, Architecture, Docs, Insights and Projects would be empty doors. An
+ * empty folder earns all.
  */
 export function destinationsForVaultShape(
   shape: { map: boolean; wiki: boolean } | null | undefined,

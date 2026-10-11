@@ -1,18 +1,7 @@
 /**
- * Where a popover that hangs under its trigger goes, inside a boundary it may not leave.
- *
- * Owner report, 2026-09-25 (installed app, 1512): the map's constellation popover hung off
- * the trigger's right edge with a fixed 320px width. From `xl` the search lane holds the free
- * map's left edge, so the popover ran 284px left of the trigger and over the INDEX panel (and
- * over the collapsed INDEX tab when INDEX was folded). A fixed alignment cannot know where
- * the free map ends; this does, from measured rectangles.
- *
- * The rule: the popover's near edge lines up with the trigger's near edge, on the side with
- * more room (so it grows away from the boundary it is closest to), then shifts — never
- * flips past the trigger — until it sits inside the boundary with one inset to spare. When
- * the boundary is narrower than the preferred width the popover shrinks to fit it. The
- * transform origin points at the trigger's centre, so the entrance grows out of the control
- * that invoked it wherever the clamp put the box.
+ * Popover under its trigger: near edge aligns with the trigger's on the side with more room, then
+ * shifts (never flips) to sit inside the boundary with one inset to spare. It shrinks when the
+ * boundary is narrower; the transform origin is the trigger's centre.
  */
 interface PopoverRect {
   left: number;

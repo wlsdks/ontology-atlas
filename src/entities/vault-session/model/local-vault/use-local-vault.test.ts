@@ -30,14 +30,7 @@ vi.mock('@/entities/docs-vault', async (importOriginal) => ({
   buildLocalManifestWithEntries: entitiesMocks.buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental: entitiesMocks.rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint: entitiesMocks.computeLocalVaultFingerprint,
-  /*
-   * `refresh()` calls the variant that returns the fingerprint **and the stamps** (reducing native
-   * walks to one per change, 2026-08-09). Every test below drives its scenario through
-   * `computeLocalVaultFingerprint`'s return value, so the new function **delegates to it** — that
-   * keeps all four existing scenarios (unchanged, changed, failed, polling) steered from one place.
-   * Holding a separate value here would let the two mocks diverge into "the test passes while the
-   * hook sees something else".
-   */
+  /* Delegates to `computeLocalVaultFingerprint` so every scenario is steered from one mock value. */
   computeLocalVaultFingerprintWithStamps: async (root: unknown) => ({
     fingerprint: await entitiesMocks.computeLocalVaultFingerprint(root),
     nativeStamps: null,
@@ -129,8 +122,6 @@ function fakeRootHandle(name = 'vault'): FileSystemDirectoryHandle {
   return { kind: 'directory', name } as unknown as FileSystemDirectoryHandle;
 }
 
-/** A fake file handle exposing a write spy — used to verify directly whether anything was actually
- * written to disk. */
 function fakeFileHandle(initial: { text: string; lastModified: number }) {
   const state = { ...initial };
   const write = vi.fn(async (data: string) => {
@@ -169,12 +160,6 @@ afterEach(() => {
   fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
 });
 
-/**
- * The launch chooser's "forget all" for folders that no longer exist (2026-09-26): several folders
- * leave the known list through the store's own queue, and the list is read back once, so the
- * chooser redraws once instead of shrinking a row at a time. The folder the session has open, and
- * everything on disk, are untouched.
- */
 describe('useLocalVaultInternal — forgetRecent', () => {
   it('forgets several folders with one read-back and nothing else', async () => {
     fsHandleMocks.getLocalFsHandle.mockResolvedValue(null);
@@ -728,10 +713,6 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(target.state.text).toBe('target content');
   });
 
-  /*
-   * 2026-09-26 map-edit QA D6: every referrer was rewritten, but the moved file itself kept
-   * `slug: <old address>` because its bytes were copied verbatim.
-   */
   it('renameDoc: the moved file declares its new address when its slug mirrored the old one', async () => {
     const source = fakeFileHandle({
       text:
@@ -772,10 +753,6 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(removeEntry).toHaveBeenCalledWith('a.md');
   });
 
-  /*
-   * 2026-09-26 map-edit review: a reclassifying move rewrote the referrer to the new address but
-   * kept the entry under the old kind's list — `capabilities: [..., elements/companion-memories]`.
-   */
   function reclassifyFixture(referrerText: string) {
     const source = fakeFileHandle({
       text:
@@ -946,10 +923,6 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(source.write).not.toHaveBeenCalled();
   });
 
-  /*
-   * 2026-09-26 map-edit QA D5: a refused save reported the outside change, then the watcher
-   * reported the same change again as a green notice that buried the refusal.
-   */
   it('a refused save records the outside change it reported, and only that change', async () => {
     const fh = fakeFileHandle({ text: 'disk content after external edit', lastModified: 2000 });
     const root = fakeRootHandle('my-vault');
@@ -1014,12 +987,6 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
 });
 
 describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', () => {
-  /*
-   * Caught in the 2026-09-01 review. The one-level `===` compare was permanently false for
-   * AgentActivityStatus because reviewTarget/proof/refreshRequest are fresh nested objects on
-   * every parse — so the "nothing changed means state is not touched" guard (2026-08-16) was
-   * dead and the whole app re-rendered on every poll tick again.
-   */
   it('파싱마다 새로 만들어진 동일 내용의 nested status 를 같다고 판정한다', async () => {
     const { structurallyEqualStatus } = await import('./vault-sidecars');
     const { emptyAgentActivityStatus } = await import('../agent-activity-status');
@@ -1036,14 +1003,7 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
     expect(structurallyEqualStatus(emptyAgentActivityStatus(), changed)).toBe(false);
   });
 
-  /*
-   * Bug sweep 2026-09-01. `ageMs` (and `refreshRequest.previousAgeMs`) embed
-   * `Date.now()` at parse time, so with a heartbeat file present two consecutive
-   * poll ticks were never structurally equal — the guard this block protects was
-   * defeated again and the whole app re-rendered every 1.5–5s during (and after)
-   * any agent session. Volatile age fields must not participate in the compare;
-   * `stale` still does, so the one meaningful age transition updates state.
-   */
+  /* Age fields embed `Date.now()` at parse time, so they stay out of the compare; `stale` stays in. */
   it('ageMs 만 다른 두 heartbeat status 는 같다고 판정한다', async () => {
     const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./vault-sidecars');
     const { emptyAgentActivityStatus } = await import('../agent-activity-status');

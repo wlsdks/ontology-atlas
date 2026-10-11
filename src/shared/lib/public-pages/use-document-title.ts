@@ -36,11 +36,8 @@ export function useDocumentTitle(title: string | null | undefined): void {
         characterData: true,
       });
     }
-    // Only the observer is torn down. Restoring the title captured at mount
-    // wrote this route's metadata title over the next route's own after Next
-    // had already applied it: leaving the insights board on the sample left
-    // "My folder analysis" on /git and /architecture (design audit
-    // 2026-09-04). The destination route's metadata owns the title from here.
+    // Only the observer is torn down: restoring the mount-time title would overwrite the next route's
+    // title.
     return () => {
       observer?.disconnect();
     };
