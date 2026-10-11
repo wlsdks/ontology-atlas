@@ -185,20 +185,14 @@ export const rules = [
   },
   {
     order: 5219,
-    command: 'pnpm exec playwright test tests/e2e/library-graph-islands.spec.ts',
-    reason: "the library graph's islands overview changed",
+    command:
+      'pnpm exec playwright test tests/e2e/library-graph-alive.spec.ts tests/e2e/library-graph-card.spec.ts ' +
+      'tests/e2e/library-graph-islands.spec.ts tests/e2e/library-graph-picture.spec.ts',
+    reason: "the library graph changed; these specs measure its motion, card, islands and picture, and other library specs that draw it keep the smoke sweep",
+    additive: true,
     matches: [
-      /^src\/widgets\/library-graph\/ui\/LibraryGraph\.tsx$/,
-      /^src\/widgets\/library-graph\/ui\/LibraryMarkPopover\.tsx$/,
-    ],
-  },
-  {
-    order: 5220,
-    command: 'pnpm exec playwright test tests/e2e/library-graph-picture.spec.ts',
-    reason: "the library graph picture's legibility changed",
-    matches: [
-      /^src\/widgets\/library-graph\/ui\/LibraryGraph\.tsx$/,
-      /^src\/widgets\/library-graph\/ui\/LibraryMarkPopover\.tsx$/,
+      /^src\/widgets\/library-graph\/.+(?<!\.test)\.tsx?$/,
+      /^tests\/e2e\/library-graph-probe\.ts$/,
     ],
   },
   {

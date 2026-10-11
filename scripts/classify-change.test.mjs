@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -139,6 +140,21 @@ test('an additive sweep joins a page root plan without standing in for its smoke
     files: ['tests/e2e/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
   }).lanes.e2e;
   assert.equal(withSpec.mode, 'targeted');
+});
+
+test('every library graph source runs the graph specs and its ui keeps the smoke sweep', () => {
+  const sources = readdirSync('src/widgets/library-graph', { recursive: true })
+    .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+    .map((file) => `src/widgets/library-graph/${file}`);
+  const specs = readdirSync('tests/e2e')
+    .filter((file) => /^library-graph-.+\.spec\.ts$/.test(file))
+    .map((file) => `tests/e2e/${file}`);
+  assert.ok(sources.length > 0 && specs.length > 0, 'the library graph or its specs moved; move this case');
+  for (const source of sources) {
+    const e2e = buildImpactPlan({ files: [source] }).lanes.e2e;
+    for (const spec of specs) assert.ok(e2e.specs.includes(spec), `${source} does not run ${spec}`);
+    if (source.includes('/ui/')) assert.equal(e2e.mode, 'smoke', `${source} dropped the smoke sweep`);
+  }
 });
 
 test('unmapped pure TypeScript relies on affected units instead of browser guesswork', () => {
